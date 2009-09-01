@@ -3,7 +3,7 @@ package cc.factorie
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue}
 import cc.factorie.util.Implicits._
 
-trait GibbsSampling extends Model {
+trait GibbsSampling requires Model {
 	//this : Model =>
 
 	private var _iterations = 0 // accumulates

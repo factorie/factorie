@@ -4,7 +4,7 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue}
 import cc.factorie.util.{Log, ConsoleLogging}
 import cc.factorie.util.Implicits._
 
-trait MHSampling extends Model with ConsoleLogging {
+trait MHSampling requires Model extends ConsoleLogging {
 	//this : Model =>
 
 	private var _iterations = 0 // accumulates

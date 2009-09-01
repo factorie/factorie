@@ -8,7 +8,7 @@ import scalala.tensor.Vector
 import scala.reflect.Manifest
 
 
-trait GenericPerceptronLearningModel extends Model {
+trait GenericPerceptronLearningModel requires Model {
 	var gatherAverageWeights = false
 	var useAverageWeights = false
 
@@ -63,7 +63,7 @@ trait GenericPerceptronLearningModel extends Model {
 			}
 			_weightsSum
 		}
-		// lazy val lastUpdateIteration = { freezeDomains ; new DenseVector(suffsize) } // TODO Why doesn't this work on MacOS?
+		// lazy val lastUpdateIteration = { freezeDomains ; new DenseVector(suffsize) }    TODO Why doesn't this work on MacOS?
 		private var _lastUpdateIteration: DenseVector = null
 
 		def lastUpdateIteration: DenseVector = {
@@ -104,8 +104,8 @@ trait GenericPerceptronLearningModel extends Model {
 
 
 
-trait GibbsPerceptronLearning extends GenericPerceptronLearningModel with GibbsSampling {
-	this: Model =>
+trait GibbsPerceptronLearning requires Model extends GenericPerceptronLearningModel with GibbsSampling  {
+	//this: Model =>
 
 	def perceptronIteration: Double = iterations.toDouble // from GibbsSampling
 
@@ -201,7 +201,7 @@ Console.println ("bestScoring modelScore = "+bestScoring.modelScore)
 
 }
 
-trait MHPerceptronLearning extends GenericPerceptronLearningModel with MHSampling {
+trait MHPerceptronLearning requires Model extends GenericPerceptronLearningModel with MHSampling {
 	def perceptronIteration: Double = iterations.toDouble // from MHSampling
 
 	trait AbstractPerceptronLearning extends GenericPerceptronLearning

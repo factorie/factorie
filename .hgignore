@@ -1,0 +1,17 @@
+syntax: glob
+*.class
+*~
+CVS
+unpack
+*.diff
+.cvsignore
+doc
+target
+.manager
+*.DS_Store
+
+# Eclipse config files
+.project
+.classpath
+.settings
+.distfiles

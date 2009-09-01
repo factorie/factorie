@@ -1,7 +1,7 @@
 package cc.factorie
 
 import scalala.tensor.dense.DenseVector
-trait MHCWLearning extends MHPerceptronLearning //GenericPerceptronLearningModel with MHSampling {
+trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptronLearningModel with MHSampling {
 //trait MHCWLearning extends MHMIRALearning {
 //this : Model =>
 {

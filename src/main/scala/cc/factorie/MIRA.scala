@@ -5,9 +5,9 @@ import scalala.tensor.dense.DenseVector
 //import scalala.tensor.operators.TensorOp
 //import scalala.tensor.operators.OperatorImplicits
 
-trait MHMIRALearning extends MHPerceptronLearning //with Model //extends MHSampling
+trait MHMIRALearning requires Model extends MHPerceptronLearning //with Model //extends MHSampling
 {
-	this: Model =>
+	//this: Model =>
 
 	protected val epsilon: Double = 0.000000001;
 

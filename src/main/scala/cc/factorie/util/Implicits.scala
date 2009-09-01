@@ -48,6 +48,8 @@ object Implicits {
 		def editDistance(s2: String): Int = editDistance(s2, 1, 1, 1)
 	}
 
+ 
+ 
 	implicit def iterableExtras[T](s: Iterable[T]) = new {
 		def sum(extractor: T => Double): Double = s.foldLeft(0.0)((sum, x: T) => sum + extractor(x))
 		// TODO I would love to change "sumInts" to simply "sum" but the type inferencer seems to have trouble with seq.sum(_ score)
@@ -157,6 +159,11 @@ object Implicits {
 		def sample(implicit random: Random): T = {
 			val s2 = s.toSeq
 			s2(random.nextInt(s2.size))
+		}
+  
+		def sampleFiltered(filterTest: T => Boolean)(implicit random: Random): T = {
+		  val s2 = s.toSeq.filter(filterTest)
+		  s2(random.nextInt(s2.size));
 		}
 
 		def sample(extractor: T => Double)(implicit random: Random): T = {
