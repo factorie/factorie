@@ -8,7 +8,7 @@ import scalala.tensor.Vector
 import scala.reflect.Manifest
 
 
-trait GenericPerceptronLearningModel requires Model {
+trait GenericPerceptronLearningModel extends Model { 
 	var gatherAverageWeights = false
 	var useAverageWeights = false
 
@@ -59,7 +59,7 @@ trait GenericPerceptronLearningModel requires Model {
 		def weightsSum: DenseVector = {
 			if (_weightsSum == null) {
 				freezeDomains
-				_weightsSum = new DenseVector(suffsize)
+				_weightsSum = new DenseVector(statsize)
 			}
 			_weightsSum
 		}
@@ -69,7 +69,7 @@ trait GenericPerceptronLearningModel requires Model {
 		def lastUpdateIteration: DenseVector = {
 			if (_lastUpdateIteration == null) {
 				freezeDomains
-				_lastUpdateIteration = new DenseVector(suffsize)
+				_lastUpdateIteration = new DenseVector(statsize)
 			}
 			_lastUpdateIteration
 		}
@@ -83,7 +83,7 @@ trait GenericPerceptronLearningModel requires Model {
 
 		def weightsSum: SparseVector = {
 			if (_weightsSum == null) {
-				_weightsSum = new SparseVector(suffsize)
+				_weightsSum = new SparseVector(statsize)
 			}
 			_weightsSum
 		}
@@ -92,7 +92,7 @@ trait GenericPerceptronLearningModel requires Model {
 
 		def lastUpdateIteration: SparseVector = {
 			if (_lastUpdateIteration == null) {
-				_lastUpdateIteration = new SparseVector(suffsize)
+				_lastUpdateIteration = new SparseVector(statsize)
 			}
 			_lastUpdateIteration
 		}
@@ -104,7 +104,7 @@ trait GenericPerceptronLearningModel requires Model {
 
 
 
-trait GibbsPerceptronLearning requires Model extends GenericPerceptronLearningModel with GibbsSampling  {
+trait GibbsPerceptronLearning extends GenericPerceptronLearningModel with GibbsSampling  {
 	//this: Model =>
 
 	def perceptronIteration: Double = iterations.toDouble // from GibbsSampling
@@ -119,7 +119,7 @@ trait GibbsPerceptronLearning requires Model extends GenericPerceptronLearningMo
 		/**Sample and learning over many variables for numIterations. */
 		def sampleAndLearn[X](variables: Iterable[CoordinatedEnumVariable[X]], numIterations: Int): Unit = {
 			//Console.println ("GibbsPerceptronLearning sampleAndLearn #variables="+variables.toSeq.size)
-			xsample(variables, numIterations, sampleAndLearn1 _)
+			xsample[X](variables, numIterations, sampleAndLearn1 _)
 		}
 
 		/**Sample one variable once, and potentially train from the jump. */
@@ -234,7 +234,7 @@ trait MHPerceptronLearning requires Model extends GenericPerceptronLearningModel
 			incrementIterations
 			difflist = new DiffList
 			// Jump until difflist has changes
-			while (difflist.size <= 0) modelTransitionRatio = mhJump(difflist)
+			while (difflist.size <= 0) modelTransitionRatio = propose(difflist)
 			newTruthScore = difflist.trueScore
 			modelScoreRatio = difflist.scoreAndUndo
 			oldTruthScore = difflist.trueScore

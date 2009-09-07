@@ -3,7 +3,9 @@ package cc.factorie.example
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.io.Source
 import cc.factorie.util.Implicits._
-class NerModel extends factorie.Model with MHPerceptronLearning {
+import cc.factorie._
+
+class NerModel extends Model with MHPerceptronLearning {
   class Label(labelStr: String, val span: Document#Span) extends super.Label(labelStr) {
     override def trueScore = span.trueScore // Label trueScores are managed by the Document#Span, not here
     // This is necessary because we don't know the true label value at the time we create a Span's Label.
@@ -186,7 +188,7 @@ class NerModel extends factorie.Model with MHPerceptronLearning {
 
   }
 
-  abstract class LabelTokenTemplate extends Template2[Label, Token] with Neighbors2[Document#Span, Label] with SpannerLearner {
+  abstract class LabelTokenTemplate extends Template2[Document#Span, Label] with Statistic2[Label, Token] with SpannerLearner {
 
     //gatherAverageWeights = true
     //useAverageWeights = true
@@ -202,13 +204,13 @@ class NerModel extends factorie.Model with MHPerceptronLearning {
     def printWeights() {
       var labelVar = new Label("ORG", null)
       var tokenVar = new Token(".")
-      for (label <- IndexedDomain[Label]; token <- sDomains(1)) {
+      for (label <- IndexedDomain[Label]; token <- statDomains(1)) {
         //for (label <- spanTokensTemplate.sDomains(0); token <- spanTokensTemplate.sDomains(1)) {
         labelVar.set(label)(null)
         tokenVar.clear
         tokenVar += token.toString
         print(labelVar + " " + token + ": ")
-        println(weights dot Suff(labelVar, tokenVar).vector)
+        println(weights dot Stat(labelVar, tokenVar).vector)
         //println(label + "," + token + ": " + (spanTokensTemplate.weights dot spanTokensTemplate.Suff(label,token).vector))
       }
     }
@@ -217,19 +219,17 @@ class NerModel extends factorie.Model with MHPerceptronLearning {
 
   // Label with all words in Span
   val spanTokensTemplate = new LabelTokenTemplate {
-    val nDomains = Domains[Document#Span, Label]
 
     def unroll1(span: Document#Span) = Factor(span, span.label)
 
     def unroll2(label: Label) = Factor(label.span, label)
 
-    def sufficient(span: Document#Span, label: Label) = if (span.present) {for (token <- span) yield Suff(span.label, token)} else Nil
+    def statistic(span: Document#Span, label: Label) = if (span.present) {for (token <- span) yield Stat(span.label, token)} else Nil
     //def sufficient(span: Document#Span, label: Label) = for (token <- span) yield Suff(span.label, token, span.present)
 
-    addModelTemplate(this)
+    modelTemplates += this
 
-
-  }
+  }.init
 
   // All words not in a Span
   //  val nonSpanTokensTemplate = new Template1[Token] with Neighbors1[Document#Span] with PerceptronLearning {
@@ -240,46 +240,43 @@ class NerModel extends factorie.Model with MHPerceptronLearning {
   //
   // Label with word at start of Span
   val startTokenTemplate = new LabelTokenTemplate {
-    val nDomains = Domains[Document#Span, Label]
 
     def unroll1(span: Document#Span) = Factor(span, span.label)
 
     def unroll2(label: Label) = Factor(label.span, label)
 
-    def sufficient(span: Document#Span, label: Label) = if (span.present) Suff(span.label, span.first) else Nil
+    def statistic(span: Document#Span, label: Label) = if (span.present) Stat(span.label, span.first) else Nil
     //def sufficient(span: Document#Span, label: Label) = Suff(span.label, span.first, span.present)
-    addModelTemplate(this)
-  }
+    modelTemplates += this
+  }.init
 
   // Label with word at end of Span
   val endTokenTemplate = new LabelTokenTemplate {
-    val nDomains = Domains[Document#Span, Label]
 
     def unroll1(span: Document#Span) = Factor(span, span.label)
 
     def unroll2(label: Label) = Factor(label.span, label)
 
-    def sufficient(span: Document#Span, label: Label) = if (span.present) Suff(span.label, span.last) else Nil
+    def statistic(span: Document#Span, label: Label) = if (span.present) Stat(span.label, span.last) else Nil
     //def sufficient(span: Document#Span, label: Label) = Suff(span.label, span.last, span.present)
-    addModelTemplate(this)
-  }
+    modelTemplates + this
+  }.init
   //
   //  // Label with word before the Span
-  val prevTokenTemplate = new Template2[Label, Token] with Neighbors1[Document#Span] with SpannerLearner {
-    val nDomains = Domains[Document#Span]
+  val prevTokenTemplate = new Template1[Document#Span] with Statistic2[Label, Token] with SpannerLearner {
 
-    def sufficient(span: Document#Span) = if (span.present && !span.isAtStart) Suff(span.label, span.predecessor(1)) else Nil
-    addModelTemplate(this)
-  }
+    def statistic(span: Document#Span) = if (span.present && !span.isAtStart) Stat(span.label, span.predecessor(1)) else Nil
+    modelTemplates += this
+  }.init
   //
-  // Label with word after the Span
-  val nextTokenTemplate = new Template2[Label, Token] with Neighbors1[Document#Span] with SpannerLearner {
-    val nDomains = Domains[Document#Span]
 
-    def sufficient(span: Document#Span) =
-      if (span.present && !span.isAtEnd) Suff(span.label, span.successor(1)) else Nil
-    addModelTemplate(this)
-  }
+  // Label with word after the Span
+  val nextTokenTemplate = new Template1[Document#Span] with Statistic2[Label, Token] with SpannerLearner {
+
+    def statistic(span: Document#Span) =
+      if (span.present && !span.isAtEnd) Stat(span.label, span.successor(1)) else Nil
+    modelTemplates += this
+  }.init
   //
   //  val spanIncomingTransitionTemplate = new Template2[Label,Label] with Neighbors1[Document#Span] with PerceptronLearning {
   //    val nDomains = Domains[Document#Span]
@@ -388,9 +385,14 @@ object SpannerDemo {
   def main(args: Array[String]): Unit = {
     val myWorld = new World {
       import model._
-
-      val train = load("/Users/riedel/corpora/conll03/eng.train")
-      val test = load("/Users/riedel/corpora/conll03/eng.testa")
+      var trainFilename = "/Users/riedel/corpora/conll03/eng.train"
+      var testFilename = "/Users/riedel/corpora/conll03/eng.testa" 
+      if (args.length == 2) {
+        trainFilename = args(0)
+        testFilename = args(1)
+      }
+      val train = load(trainFilename)
+      val test = load(testFilename)
 
       val docs = train.take(500)
       val testDocs = test.take(100)
@@ -405,7 +407,7 @@ object SpannerDemo {
       var sampler = new MHPerceptronLearner {
         var tokenIterator = tokens.elements
 
-        def mhJump(difflist: DiffList): Double = {
+        def propose(difflist: DiffList): Double = {
           if (!tokenIterator.hasNext)
             tokenIterator = tokens.elements
           val token = tokenIterator.next

@@ -28,7 +28,7 @@ import java.lang.ref.WeakReference;
  *
  * @author dlwh
  */
-class Interner[T] extends (T => T) {
+class Interner[T] extends (T => T) { 
 	override def apply(t: T) = intern(t);
 
 	def intern(t: T): T = synchronized {

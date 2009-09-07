@@ -23,8 +23,8 @@ trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptr
 		//def scratch : Vector
 		//lazy val sigma = new DenseVector(Array.make(suffsize,initialVariance));
 		//lazy val scratch = new SparseVector(suffsize);
-		lazy val sigma = {freezeDomains; new DenseVector(Array.make(suffsize, initialVariance))}
-		lazy val scratch = {freezeDomains; new DenseVector(suffsize)}
+		lazy val sigma = {freezeDomains; new DenseVector(Array.make(statsize, initialVariance))}
+		lazy val scratch = {freezeDomains; new DenseVector(statsize)}
 	}
 
 	// extends MHSampler
@@ -89,7 +89,7 @@ trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptr
 						jumpAccepted = false;
 						difflist = new DiffList
 						// Jump until difflist has changes
-						while (difflist.size <= 0) modelTransitionRatio = mhJump(difflist)
+						while (difflist.size <= 0) modelTransitionRatio = propose(difflist)
 						newTruthScore = difflist.trueScore
 						modelScoreRatio = difflist.scoreAndUndo
 						oldTruthScore = difflist.trueScore

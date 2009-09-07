@@ -85,7 +85,7 @@ trait GibbsSampling requires Model {
 			val max: Double = proposals.max(_ score).score
 			proposals.foreach(p => p.score = Math.exp(p.score - max))
 			// Sample from it to get the new value for variable, and set it
-			val proposal = proposals.sample(_ score)
+			val proposal = proposals.sampleProportionally(_ score)
 			proposal.diff.redo
 			// Populate and manage the size of the priority queue
 			if (useQueue && maxQueueSize > 0) {
@@ -126,7 +126,7 @@ trait GibbsSampling requires Model {
 			}
 			// proposals.foreach(p => p.score = Math.exp(p.score - max)) // TODO why isn't this working?  p.score is unchanged afterward!
 			val proposals2 = proposals.map(p => IndexProposal(Math.exp(p.score - max), p.index))
-			val proposal = proposals2.sample(_ score)
+			val proposal = proposals2.sampleProportionally(_ score)
 			variable.setByIndex(proposal.index)(null)
 		}
 
@@ -144,7 +144,7 @@ trait GibbsSampling requires Model {
 			}
 			if (!proposals.isEmpty) {
 				proposals.foreach(p => p.score = Math.exp(p.score - max))
-				val proposal = proposals.sample(_ score)
+				val proposal = proposals.sampleProportionally(_ score)
 				proposal.variable.setByIndex(proposal.index)(null)
 				proposal.variable
 			} else

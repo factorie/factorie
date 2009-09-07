@@ -166,7 +166,7 @@ object Implicits {
 		  s2(random.nextInt(s2.size));
 		}
 
-		def sample(extractor: T => Double)(implicit random: Random): T = {
+		def sampleProportionally(extractor: T => Double)(implicit random: Random): T = {
 			var sum = s.foldLeft(0.0)((total, x) => total + extractor(x))
 			val r = random.nextDouble * sum
 			sum = 0

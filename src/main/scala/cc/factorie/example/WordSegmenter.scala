@@ -1,7 +1,6 @@
 package cc.factorie.example
 
 import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
-import scala.collection.jcl.WeakHashMap
 import scala.util.Sorting
 import factorie.util.Implicits._
 
@@ -12,60 +11,52 @@ class WordSegmenter extends Model with GibbsPerceptronLearning {
   class Label(b:Boolean) extends EnumVariable(b) with VarInSeq[Label] {
     var token : Token = null 
   }
-  //class Label(b:Boolean) extends super.Label({if (b) "B" else "I"}) with VarInSeq { var token : Token = null }
 
   class Token(val word:String) extends VectorVariable[String] with VarInSeq[Token] {
     this += word
     var label : Label = null
   }
-  object Token extends IndexedDomain[Token] {
-    override def allocSize = 100000
-  }
+  //object Token extends IndexedDomain[Token] { override def allocSize = 100000 }
 
   // The factors:
 
   /** Bias term just on labels */
-  object StateFactor extends TemplateWithNeighbors1[Label] with PerceptronLearning
+  modelTemplates += new TemplateWithStatistic1[Label] with PerceptronLearning
 
   /** Factor between label and observed token */
-  object StateObsFactor extends TemplateWithNeighbors2[Label,Token] with SparsePerceptronLearning {
+  modelTemplates += new TemplateWithStatistic2[Label,Token] with SparsePerceptronLearning {
     def unroll1 (label:Label) = Factor(label, label.token)
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
   }
 
   /** A token bi-gram conjunction  */
-  object StateObsPrevFactor extends TemplateWithNeighbors3[Label,Token,Token] with SparsePerceptronLearning {
+  modelTemplates += new TemplateWithStatistic3[Label,Token,Token] with SparsePerceptronLearning {
     def unroll1 (label:Label) = if (label.hasPrev) Factor(label, label.token, label.prev.token) else Nil
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
     def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
   }
 
   /** Factor between two successive labels */
-  object TransitionFactor extends TemplateWithNeighbors2[Label,Label] with PerceptronLearning {
+  modelTemplates += new TemplateWithStatistic2[Label,Label] with PerceptronLearning {
     def unroll1 (label:Label) = if (label.hasNext) Factor(label, label.next) else Nil
     def unroll2 (label:Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
   }
 
-  object SkipEdge extends Template1[Bool] with Neighbors2[Label,Label] with PerceptronLearning {
-    val nDomains = Domains[Label,Label]
+  /** Skip edge */
+  modelTemplates += new Template2[Label,Label] with Statistic1[Bool] with PerceptronLearning {
     def unroll1 (label:Label) = 
       // could cache this search in label.similarSeq for speed
       for (other <- label.seq; if label.token.word == other.token.word) yield
         if (label.position < other.position) Factor(label, other)
         else Factor(other,label)
     def unroll2 (label:Label) = Nil // We handle symmetric case above
-    def sufficient(label1:Label, label2:Label) = Suff(Bool(label1==label2))
-  }
+    def statistic(label1:Label, label2:Label) = Stat(Bool(label1==label2))
+  }.init
 
 }
 
 object WordSegmenterDemo { 
-  def foo(args: Array[String]) : Unit = {
-    println("foo")
-    // println("Finished in "+util.Profiling.time(1)(()=>go(args))/1000.0+" seconds.")
-  }
   def main(args: Array[String]) : Unit = {
-    println("starting main")
     var startTime:Long = 0
     val model = new WordSegmenter()
     val wordSegWorld = new World {
@@ -74,10 +65,8 @@ object WordSegmenterDemo {
       // Read data and create Variables
       case class Instance (tokenseq:VariableSeq[Token], labelseq:VariableSeq[Label])
       val instances = for (sentence <- data) yield {
-        //val chars = List.fromString(sentence.toLowerCase)
         var tokens = new ArrayBuffer[Token]()
         var labels = new ArrayBuffer[Label]()
-        var tokenos = new ArrayBuffer[Token]()
         var beginword = true
         for (c <- sentence.toLowerCase) {
           if (c >= 'a' && c <= 'z') {
@@ -94,7 +83,6 @@ object WordSegmenterDemo {
       // Connect variables to each other and add additional features to Tokens
       for (instance <- instances) {
         (instance.tokenseq.toList zip instance.labelseq.toList).foreach (tokenlabel => {
-          //Console.println(tokenlabel)
           val token = tokenlabel._1
           val label = tokenlabel._2
           token.label = label
@@ -103,15 +91,8 @@ object WordSegmenterDemo {
           label.token = token
           label.trueValue = label.value
           label.set(label.domain.randomValue)(null)
-          //Console.println(tokenlabel)
         })
       }
-
-      // Create factors.  
-      // (Declarations above are not sufficient because Scala only lazily creates them when they are used.)
-      // (Has to be here after data reading because Factor creation freezes the Indices)
-      // TODO no longer necessary since they are added at constructor time?
-      addModelTemplates(StateFactor, StateObsFactor, StateObsPrevFactor, TransitionFactor)
 
       // Make a test/train split
       val (testSet, trainSet) = instances.shuffle(random).split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)

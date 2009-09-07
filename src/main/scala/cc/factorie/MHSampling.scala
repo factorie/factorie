@@ -12,7 +12,7 @@ trait MHSampling requires Model extends ConsoleLogging {
 
 	def incrementIterations = _iterations += 1
 
-	trait MHSampler {
+	trait MHSampler extends Proposer {
 		// A priority queue to help us revisit Factors that score low
 		var useQueue = false
 		val maxQueueSize = 500
@@ -42,19 +42,22 @@ trait MHSampling requires Model extends ConsoleLogging {
 		// ... feel free to add more diagnostic variables above...
 
 
-		/**Called after each iteration of sampling the full list of variables.  Return true if you want sampling to stop early. */
+		/** Called after each iteration of sampling the full list of variables.  Return true if you want sampling to stop early. */
 		def mhPostIterationHook: Boolean = false
 
-		/**Called just before each variable is sampled.  Return an alternative variable if you want that one sampled instead. */
+		/** Called just before each variable is sampled.  Return an alternative variable if you want that one sampled instead. */
 		def mhPreVariableSampleHook(v: Variable): Variable = v
 
-		/**Metropolis-Hastings jump function must be defined in subclass.  Return the ratio of backward/forward jump probabilities. If desired, you can access the queue of low scoring Factors from here. */
-		def mhJump(difflist: DiffList): Double // TODO consider changing this to have zero args and return (DiffList,Double)
+		/** Metropolis-Hastings jump function must be defined in subclass.  Return the ratio of backward/forward jump probabilities. If desired, you can access the queue of low scoring Factors from here. */
+		/* Inherited from cc.factorie.Model.Proposer
+			 def propose (difflist: DiffList): Double */ 
+    // TODO consider changing this to have zero args and return (DiffList,Double)  
+    // But no, because the proposal code might have to look at Diffs already in the DiffList to ensure no cycles
 
-		/**Called everytime the current configuration is the best configuration found till now. */
+		/** Called everytime the current configuration is the best configuration found till now. */
 		def mhBestConfigFound(): Unit = {}
 
-		/**The jump function is given a (presumably empty) DiffList, and makes some changes to the configuration, returning the log-prob-ratio
+		/** The jump function is given a (presumably empty) DiffList, and makes some changes to the configuration, returning the log-prob-ratio
 		of forward and backward jump probabilities. */
 		def sample(numIterations: Int): Unit = {
 			//Console.println("\nWeights in MH.sample:");
@@ -75,7 +78,7 @@ trait MHSampling requires Model extends ConsoleLogging {
 		def sample1: DiffList = {
 			jumpAccepted = false
 			val difflist = new DiffList
-			var logAcceptanceProb: Double = mhJump(difflist)
+			var logAcceptanceProb: Double = propose(difflist)
 			var modelRatio: Double = difflist.scoreAndUndo
 			logAcceptanceProb += (modelRatio / temperature)
 			if (logAcceptanceProb > Math.log(random.nextDouble)) {

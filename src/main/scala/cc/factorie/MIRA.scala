@@ -8,13 +8,13 @@ import scalala.tensor.dense.DenseVector
 trait MHMIRALearning requires Model extends MHPerceptronLearning //with Model //extends MHSampling
 {
 	//this: Model =>
-
+ 
 	protected val epsilon: Double = 0.000000001;
 
 	trait MIRALearning extends PerceptronLearning //extends template
 	{
 		type TemplateType <: MIRALearning
-		lazy val denseDiff = {freezeDomains; new DenseVector(suffsize)}
+		lazy val denseDiff = {freezeDomains; new DenseVector(statsize)}
 	}
 
 
@@ -91,7 +91,7 @@ val f = t.asInstanceOf[MIRALearning];
 			for (iteration <- 0 until numIterations) {
 				difflist = new DiffList
 				// Jump until difflist has changes
-				while (difflist.size <= 0) modelTransitionRatio = mhJump(difflist)
+				while (difflist.size <= 0) modelTransitionRatio = propose(difflist)
 				newTruthScore = difflist.trueScore
 				modelScoreRatio = difflist.scoreAndUndo
 				oldTruthScore = difflist.trueScore
