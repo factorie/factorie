@@ -1,7 +1,5 @@
 package cc.factorie.util
 
-;
-
 /*
  Copyright 2009 David Hall, Daniel Ramage
  

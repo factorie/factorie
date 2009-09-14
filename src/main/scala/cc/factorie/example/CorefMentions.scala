@@ -4,8 +4,7 @@ import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.Implicits._
 
-class CorefMentionsModel extends Model 
-  with MHPerceptronLearning
+class CorefMentionsModel extends Model
   //with MHMIRALearning 
   //with MHCWLearning
 {
@@ -35,6 +34,20 @@ class CorefMentionsModel extends Model
         })
     }
     override def toString = "Mention(" + name +"=="+ entity.canonical +")"
+  }
+  
+  // Temporary silliness until I make not all Templates require "vector", and I implement a real scoring template for coref.
+  truthTemplates += new Template1[Mention] {
+    import scalala.tensor.Vector
+    import scala.reflect.Manifest
+    def score(s:Stat) = s.s1.trueScore
+  	case class Stat(s1:Mention) extends super.Stat with Iterable[Stat] {
+      def vector : Vector = null
+    } 
+    def statistic(v1:Mention): Iterable[Stat] = Stat(v1)
+    type S = Stat
+    def init(implicit m1:Manifest[Mention]) : this.type = { statClasses += m1.erasure.asInstanceOf[Class[IndexedVariable]]; statClasses.freeze; this }  
+    init
   }
 
   /** A random variable for an entity, which is merely a HashSet collection of Mentions */
@@ -152,8 +165,9 @@ object CorefMentionsDemo {
       // Define the proposal distribution
       //var sampler = new CWLearner {
       //var sampler = new MHMIRALearner {
-      var sampler = new MHPerceptronLearner {
-        def propose(difflist:DiffList) : Double = {
+      var sampler = new MHPerceptronLearner(model) {
+        def propose(mdl:Model, difflist:DiffList) : Double = {
+          if (mdl != model) throw new IllegalArgumentException("Models don't match") // TODO Arg.  This is ugly.  Fix it. -akm
           // Pick a random mention
           val m = mentionList.sample
           // Pick a random place to move it, either an existing Entity or a newly created one
@@ -173,7 +187,7 @@ object CorefMentionsDemo {
         override def mhPerceptronPostProposalHook = {
           if (/*false*/ iterations % 1000 == 0) {
             System.out.println("UPS: " + numUpdates);
-            modelTemplatesOf[LogLinearScoring].foreach(f => Console.println (f.toString+" weights = "+f.weights.toList))
+            model.modelTemplates.ofClass[LogLinearScoring].foreach(f => Console.println (f.toString+" weights = "+f.weights.toList))
             Console.println ("All entities")
             entityList.filter(e=>e.size>0).foreach(e => Console.println(e.toString +" "+ e.mentions.toList))
             Console.println ("All mentions")

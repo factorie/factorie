@@ -25,7 +25,9 @@ import cc.factorie.util._
 */
 
 
+
 object Implicits {
+  
 	implicit def stringExtras(s: String) = new {
 		/**Implements Levenshtein Distance, with specific operation costs to go from this to s2.  Original version was from scalanlp. */
 		def editDistance(s2: String, substCost: Int, deleteCost: Int, insertCost: Int): Int = {
@@ -51,6 +53,7 @@ object Implicits {
  
  
 	implicit def iterableExtras[T](s: Iterable[T]) = new {
+	  //println("iterableExtras constructed with s="+s)
 		def sum(extractor: T => Double): Double = s.foldLeft(0.0)((sum, x: T) => sum + extractor(x))
 		// TODO I would love to change "sumInts" to simply "sum" but the type inferencer seems to have trouble with seq.sum(_ score)
 		def sumInts(extractor: T => Int): Int = s.foldLeft(0)((sum, x: T) => sum + extractor(x))
@@ -167,11 +170,13 @@ object Implicits {
 		}
 
 		def sampleProportionally(extractor: T => Double)(implicit random: Random): T = {
+		  //println("sampleProportionally called with Iteratible="+s)
 			var sum = s.foldLeft(0.0)((total, x) => total + extractor(x))
 			val r = random.nextDouble * sum
 			sum = 0
 			for (choice <- s) {
 				val e = extractor(choice)
+				//println("sampleProportionally e = "+e)
 				if (e < 0.0) throw new Error("BonusIterable sample extractor value " + e + " less than zero.  Sum=" + sum)
 				sum += e
 				if (sum >= r)

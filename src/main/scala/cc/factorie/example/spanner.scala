@@ -5,8 +5,8 @@ import scala.io.Source
 import cc.factorie.util.Implicits._
 import cc.factorie._
 
-class NerModel extends Model with MHPerceptronLearning {
-  class Label(labelStr: String, val span: Document#Span) extends super.Label(labelStr) {
+class NerModel extends Model {
+  class Label(labelStr: String, val span: Document#Span) extends cc.factorie.Label(labelStr) {
     override def trueScore = span.trueScore // Label trueScores are managed by the Document#Span, not here
     // This is necessary because we don't know the true label value at the time we create a Span's Label.
   }
@@ -28,33 +28,33 @@ class NerModel extends Model with MHPerceptronLearning {
 
     def clear = indxs.clear
 
-    def multiPropose(difflist: DiffList): Seq[Proposal] = {
+    def multiPropose(model:Model, difflist: DiffList, calcTrueScores:Boolean): Seq[Proposal] = {
       if (word.first.isLowerCase) return Nil // Don't both trying to create spans starting with lowercase words
       //print("."); System.out.flush
       val spans = document.spans(this.position).toSeq
       //			val span = if (spans.length > 0) spans.first else null
       val proposals = new ArrayBuffer[Proposal]
       //proposals += new AutoProposal(diff => diff += new Diff { def variable = span; def redo = {}; def undo = {}}) // Include no change as one of the proposals
-      proposals += new AutoProposal(diff => {})
+      proposals += new AutoProposal(model, calcTrueScores, diff => {})
       //case class Proposal(modelScore:Double, trueScore:Double, diff:DiffList, span:Document#Span) extends factorie.Proposal
       if (spans.length == 0) {
         // Add a unit-length span, choosing the label that scores best
         for (labelvalue <- IndexedDomain[Label]) {
           // TODO Why not just: new AutoProposal(document.addSpan(this.position, 1, label.entry))
-          proposals += new AutoProposal(diff => document.addSpan(this.position, 1, labelvalue.entry)(diff))
+          proposals += new AutoProposal(model, calcTrueScores, diff => document.addSpan(this.position, 1, labelvalue.entry)(diff))
         }
         //println("Token multiPropose span="+proposals.max(_.modelScore).diff.first.variable.asInstanceOf[Document#Span].phrase)
       } else {
         for (span <- spans) {
           // There exists a span
           if (span.canAppend(1)) // Try lengthening
-            proposals += new AutoProposal(diff => span.append(1)(diff))
+            proposals += new AutoProposal(model, calcTrueScores, diff => span.append(1)(diff))
           if (span.length > 1) // Try shortening
-            proposals += new AutoProposal(diff => span.trimEnd(1)(diff))
-          proposals += new AutoProposal(diff => span.delete(diff)) // Try removing the span
+            proposals += new AutoProposal(model, calcTrueScores, diff => span.trimEnd(1)(diff))
+          proposals += new AutoProposal(model, calcTrueScores, diff => span.delete(diff)) // Try removing the span
           //println("Delete diff:" + proposals.last.diff)
           for (labelvalue <- IndexedDomain[Label]; if (labelvalue.index != span.label.value.index)) // Try changing its label
-            proposals += new AutoProposal(diff => span.label.set(labelvalue)(diff))
+            proposals += new AutoProposal(model, calcTrueScores, diff => span.label.set(labelvalue)(diff))
         }
       }
       if (false) {
@@ -402,16 +402,17 @@ object SpannerDemo {
       //System.exit(-1)
 
       //var tokens = docs.flatMap(doc => doc) //.take(11) // TODO for now, just look at the first 500 words
-      var tokens = docs.flatMap(doc => doc) //.take(11) // TODO for now, just look at the first 500 words
-      var testTokens = test.flatMap(doc => doc)
-      var sampler = new MHPerceptronLearner {
+      var tokens : Seq[Token] = docs.flatMap(doc => doc) //.take(11) // TODO for now, just look at the first 500 words
+      var testTokens : Seq[Token] = test.flatMap(doc => doc)
+      var sampler = new MHPerceptronLearner(model) {
         var tokenIterator = tokens.elements
 
-        def propose(difflist: DiffList): Double = {
+        def propose(mdl:Model, difflist: DiffList): Double = {
+          if (mdl != model) throw new Error("models do not match") // TODO Arg!  Ugly!  Fix this. -akm
           if (!tokenIterator.hasNext)
             tokenIterator = tokens.elements
           val token = tokenIterator.next
-          token.propose(difflist)
+          token.propose(model, difflist)
         }
       }
 
@@ -419,7 +420,7 @@ object SpannerDemo {
         sampler.sampleAndLearn(tokens)
         println(i + " Wrong spans")
         //docs.foreach(doc => doc.spans.foreach(span => println(span.label.value.entry + " " + span.phrase)))
-        println("train accuracy: " + worldAccuracy(docs))
+        println("train accuracy: " + variablesAccuracy(docs))
         //				println("span token Weights")
         //				spanTokensTemplate.printWeights
         //				println("start token Weights")
@@ -428,7 +429,7 @@ object SpannerDemo {
         //				endTokenTemplate.printWeights
 
         sampler.sample(testTokens)
-        println("test accuracy: " + worldAccuracy(testDocs))
+        println("test accuracy: " + variablesAccuracy(testDocs))
 
 
       }

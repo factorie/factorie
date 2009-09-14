@@ -4,18 +4,20 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import factorie.util.Implicits._
 
-class WordSegmenter extends Model with GibbsPerceptronLearning {
+class WordSegmenter extends Model {
 
   // The variable types:
-
   class Label(b:Boolean) extends EnumVariable(b) with VarInSeq[Label] {
     var token : Token = null 
   }
+  truthTemplates += new TrueEnumTemplate[Label]
 
   class Token(val word:String) extends VectorVariable[String] with VarInSeq[Token] {
     this += word
+    //this += word(0).isCapitalized
     var label : Label = null
   }
+  //Domain[Token] = new IndexedDomain[Token] { override def allocSize = 100000 }
   //object Token extends IndexedDomain[Token] { override def allocSize = 100000 }
 
   // The factors:
@@ -99,19 +101,19 @@ object WordSegmenterDemo {
       var trainVariables = trainSet.flatMap(instance => instance.labelseq)
       var testVariables = testSet.flatMap(instance => instance.labelseq)
 
-      Console.println ("Initial test accuracy = "+ testVariables.sum(_ trueScore)/testVariables.size)
+      Console.println ("Initial test accuracy = "+ variablesAccuracy(testVariables))
 
       // Sample and Learn!
-      var sampler = new GibbsPerceptronLearner
+      var sampler = new GibbsPerceptronLearner(model)
       sampler.learningRate = 1.0
       sampler.useQueue = false
       for (i <- 0 until 11) {
-	sampler.sampleAndLearn (trainVariables, 2)
+        sampler.sampleAndLearn (trainVariables, 2)
         sampler.learningRate *= 0.9
         //GibbsSampleWithPriority.sample (testVariables, 20)
         sampler.sample (testVariables, 2)
-        Console.println ("Test accuracy = "+ testVariables.sum(_ trueScore)/testVariables.size)
-	if(startTime == 0) startTime = System.currentTimeMillis
+        Console.println ("Test accuracy = "+ variablesAccuracy(testVariables))
+        if (startTime == 0) startTime = System.currentTimeMillis
       }
 
       // Show the parameters

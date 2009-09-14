@@ -1,6 +1,6 @@
 package cc.factorie.util
 
-;
+import cc.factorie.util.Index
 
 import scala.collection.mutable._;
 

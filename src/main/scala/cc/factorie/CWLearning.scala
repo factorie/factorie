@@ -1,7 +1,8 @@
 package cc.factorie
 
 import scalala.tensor.dense.DenseVector
-trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptronLearningModel with MHSampling {
+
+trait MHCWLearning requires Model //GenericPerceptronLearningModel with MHSampling {
 //trait MHCWLearning extends MHMIRALearning {
 //this : Model =>
 {
@@ -28,7 +29,7 @@ trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptr
 	}
 
 	// extends MHSampler
-	trait MHCWLearner extends MHPerceptronLearner
+	abstract class MHCWLearner(model:Model) extends MHPerceptronLearner(model)
 	{
 		private def kktMultiplier(theModelScoreRatio: Double, fnu: Boolean): Double =
 			{
@@ -46,18 +47,18 @@ trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptr
 
 		//puts a densevector difference on the scratch tape
 		private def putDiffOnScratch: Unit = {
-			modelTemplatesOf[CWLearning].foreach(t => t.scratch.zero)
+			modelTemplates.ofClass[CWLearning].foreach(t => t.scratch.zero)
 			difflist.redo;
-			difflist.factorsOf[CWLearning].foreach(factor => factor.template.scratch += factor.vector)
+			modelTemplates.factorsOf[CWLearning](difflist).foreach(factor => factor.template.scratch += factor.vector)
 			difflist.undo;
-			difflist.factorsOf[CWLearning].foreach(factor => factor.template.scratch -= factor.vector)
+			modelTemplates.factorsOf[CWLearning](difflist).foreach(factor => factor.template.scratch -= factor.vector)
 		}
 
 		/**Returns variance of margin */
 		private def varianceOfMargin: Double = {
 			var result = 0.0
 			putDiffOnScratch
-			modelTemplatesOf[CWLearning].foreach(t => {
+			modelTemplates.ofClass[CWLearning].foreach(t => {
 				for ((i, v) <- t.scratch.activeElements)
 					result += v * v * t.sigma(i);
 			})
@@ -66,7 +67,7 @@ trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptr
 
 		private def updateMu(incr: Double): Unit = {
 			//System.out.println("inc="+incr);
-			difflist.factorsOf[CWLearning].foreach(factor => {
+			modelTemplates.factorsOf[CWLearning](difflist).foreach(factor => {
 				//factor.template.weights += factor.vector * factor.template.sigma * incr // Why doesn't this work?
 				for (i <- factor.vector.activeDomain)
 					factor.template.weights(i) += factor.vector(i) * factor.template.sigma(i) * incr
@@ -76,7 +77,7 @@ trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptr
 		def updateSigma(incr: Double): Unit = {
 			putDiffOnScratch;
 			// Square diff to obtain diag(\bf{x}_i)
-			modelTemplatesOf[CWLearning].foreach(t =>
+			modelTemplates.ofClass[CWLearning].foreach(t =>
 							for ((index, value) <- t.scratch.activeElements) {
 								t.sigma(index) = 1.0 / ((1.0 / t.sigma(index)) + 2 * incr * gaussDeviate * value * value)
 							})
@@ -89,10 +90,10 @@ trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptr
 						jumpAccepted = false;
 						difflist = new DiffList
 						// Jump until difflist has changes
-						while (difflist.size <= 0) modelTransitionRatio = propose(difflist)
-						newTruthScore = difflist.trueScore
-						modelScoreRatio = difflist.scoreAndUndo
-						oldTruthScore = difflist.trueScore
+						while (difflist.size <= 0) modelTransitionRatio = propose(model, difflist)
+						newTruthScore = difflist.trueScore(model)
+						modelScoreRatio = difflist.scoreAndUndo(model)
+						oldTruthScore = difflist.trueScore(model)
 						modelRatio = modelScoreRatio // + modelTransitionRatio
 						bWeightsUpdated = false
 						bFalsePositive = false;
@@ -142,7 +143,7 @@ trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptr
 						 */
 								if (useAveraged)
 									{
-										modelTemplatesOf[CWLearning].foreach(t => {
+										modelTemplates.ofClass[CWLearning].foreach(t => {
 											for (i <- 0 until t.weightsSum.size)
 												t.weightsSum(i) += t.weights(i)
 											t.weightsDivisor += 1
@@ -165,7 +166,7 @@ trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptr
 				//Put the weights average into each Factor's weights array
 				if (useAveraged)
 					{
-						modelTemplatesOf[CWLearning].foreach(t => {
+						modelTemplates.ofClass[CWLearning].foreach(t => {
 							var weightsDivisor = t.weightsDivisor
 							for (i <- 0 until t.weights.size)
 								t.weights(i) = t.weightsSum(i) / weightsDivisor
@@ -173,5 +174,25 @@ trait MHCWLearning requires Model extends MHPerceptronLearning //GenericPerceptr
 					}
 			}
 	}
+ 
+	// TODO perhaps this should be re-factored to have more in common with GibbsPerceptronLearner?
+	// At least it should offer more similar methods, such as
+  // def sampleAndLearn[X](variables: Iterable[CoordinatedEnumVariable[X]], numIterations: Int): Unit
+   /*
+	class GibbsCWLearner[X](model:Model, val variables:Iterable[CoordinatedEnumVariable[X]]) extends MHCWLearner(model) {
+	  var iter = variables.elements
+    assert(iter.hasNext)
+	  def propose(d:DiffList) : Double = {
+	    import cc.factorie.util.Implicits._
+	    if (!iter.hasNext) iter = variables.elements
+	    val variable = iter.next
+      val proposals = variable.multiPropose(model, d, false)
+			val proposal = proposals.max(_.modelScore)
+   		proposal.diff.redo
+			d ++= proposal.diff
+			0.0
+	  }	
+	}
+  */
 }
 

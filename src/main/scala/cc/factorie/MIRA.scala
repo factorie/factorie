@@ -5,12 +5,6 @@ import scalala.tensor.dense.DenseVector
 //import scalala.tensor.operators.TensorOp
 //import scalala.tensor.operators.OperatorImplicits
 
-trait MHMIRALearning requires Model extends MHPerceptronLearning //with Model //extends MHSampling
-{
-	//this: Model =>
- 
-	protected val epsilon: Double = 0.000000001;
-
 	trait MIRALearning extends PerceptronLearning //extends template
 	{
 		type TemplateType <: MIRALearning
@@ -18,8 +12,9 @@ trait MHMIRALearning requires Model extends MHPerceptronLearning //with Model //
 	}
 
 
-	abstract class MHMIRALearner extends MHPerceptronLearner
+	abstract class MHMIRALearner(model:Model) extends MHPerceptronLearner(model)
 	{
+  	protected val epsilon: Double = 0.000000001;
 		def kktMultiplier(loss: Double, fnu: Boolean): Double =
 			{
 				var logP = modelScoreRatio;
@@ -62,22 +57,21 @@ val f = t.asInstanceOf[MIRALearning];
 				var l2n2: Double = 0;
 				//
 				//zero the difference
-				modelTemplates.foreach(f => {
-					val f2 = f.asInstanceOf[MIRALearning];
-					f2.denseDiff.zero
+				model.modelTemplates.ofClass[MIRALearning].foreach(f => {
+					f.denseDiff.zero
 				})
 				//
 				//compute modified config's contribution
 				difflist.redo;
-				difflist.factorsOf[MIRALearning].foreach(factor =>
+				model.modelTemplates.factorsOf[MIRALearning](difflist).foreach(factor =>
 								factor.template.asInstanceOf[MIRALearning].denseDiff += factor.vector * sign)
 				//compute original config's contribution
 				difflist.undo;
-				difflist.factorsOf[MIRALearning].foreach(factor =>
+				model.modelTemplates.factorsOf[MIRALearning](difflist).foreach(factor =>
 								factor.template.denseDiff += factor.vector * -1)
 				//
 				//compute l2 squared
-				modelTemplatesOf[MIRALearning].foreach(t => {
+				model.modelTemplates.ofClass[MIRALearning].foreach(t => {
 					for (i <- 0 until t.denseDiff.size) {
 						val score = t.denseDiff(i)
 						l2n2 += score * score;
@@ -91,10 +85,10 @@ val f = t.asInstanceOf[MIRALearning];
 			for (iteration <- 0 until numIterations) {
 				difflist = new DiffList
 				// Jump until difflist has changes
-				while (difflist.size <= 0) modelTransitionRatio = propose(difflist)
-				newTruthScore = difflist.trueScore
-				modelScoreRatio = difflist.scoreAndUndo
-				oldTruthScore = difflist.trueScore
+				while (difflist.size <= 0) modelTransitionRatio = propose(model, difflist)
+				newTruthScore = difflist.trueScore(model)
+				modelScoreRatio = difflist.scoreAndUndo(model)
+				oldTruthScore = difflist.trueScore(model)
 				modelRatio = modelScoreRatio + modelTransitionRatio
 				bWeightsUpdated = false
 				bFalsePositive = false;
@@ -102,9 +96,9 @@ val f = t.asInstanceOf[MIRALearning];
 				if (newTruthScore > oldTruthScore && modelRatio <= 0) {
 					//          Console.println ("Learning from error: new actually better than old.  DiffList="+difflist.size)
 					learningRate = kktMultiplier(1, true);
-					difflist.factorsOf[MIRALearning].foreach(f => f.template.weights += f.vector * -learningRate)
+					model.modelTemplates.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.vector * -learningRate)
 					difflist.redo
-					difflist.factorsOf[MIRALearning].foreach(f => f.template.weights += f.vector * learningRate)
+					model.modelTemplates.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.vector * learningRate)
 					difflist.undo
 					bWeightsUpdated = true
 					bFalseNegative = true
@@ -112,9 +106,9 @@ val f = t.asInstanceOf[MIRALearning];
 				else if (newTruthScore < oldTruthScore && modelRatio >= 0) {
 					learningRate = kktMultiplier(1, false);
 					//          Console.println ("Learning from error: old actually better than new.  DiffList="+difflist.size)
-					difflist.factorsOf[MIRALearning].foreach(f => f.template.weights += f.vector * learningRate)
+					model.modelTemplates.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.vector * learningRate)
 					difflist.redo
-					difflist.factorsOf[MIRALearning].foreach(f => f.template.weights += f.vector * -learningRate)
+					model.modelTemplates.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.vector * -learningRate)
 					difflist.undo
 					bWeightsUpdated = true
 					bFalsePositive = true
@@ -130,7 +124,7 @@ System.out.println("  after update: " + test+" before: " + jumpLogPRatio);
 */
 					if (useAveraged) {
 						// Sum current weights into the average
-						modelTemplatesOf[MIRALearning].foreach(t => {
+						model.modelTemplates.ofClass[MIRALearning].foreach(t => {
 							for (i <- 0 until t.weightsSum.size)
 								t.weightsSum(i) += t.weights(i)
 							//f.weightsLastUpdated(i) += learningDiagnostic.numUpdates
@@ -158,7 +152,7 @@ System.out.println("  after update: " + test+" before: " + jumpLogPRatio);
 
 			//Put the weights average into each Factor's weights array
 			if (useAveraged) {
-				modelTemplatesOf[PerceptronLearning].foreach(
+				model.modelTemplates.ofClass[PerceptronLearning].foreach(
 					f => {
 						var weightsDivisor = f.asInstanceOf[PerceptronLearning].weightsDivisor
 						for (i <- 0 until f.weights.size)
@@ -167,5 +161,4 @@ System.out.println("  after update: " + test+" before: " + jumpLogPRatio);
 			}
 		}
 	}
-}
 

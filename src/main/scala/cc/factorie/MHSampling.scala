@@ -4,15 +4,11 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue}
 import cc.factorie.util.{Log, ConsoleLogging}
 import cc.factorie.util.Implicits._
 
-trait MHSampling requires Model extends ConsoleLogging {
-	//this : Model =>
+	abstract class MHSampler(val model:Model) extends Proposer {
+		private var _iterations = 0 // accumulates
+		def iterations = _iterations
+		def incrementIterations = _iterations += 1
 
-	private var _iterations = 0 // accumulates
-	def iterations = _iterations
-
-	def incrementIterations = _iterations += 1
-
-	trait MHSampler extends Proposer {
 		// A priority queue to help us revisit Factors that score low
 		var useQueue = false
 		val maxQueueSize = 500
@@ -71,15 +67,15 @@ trait MHSampling requires Model extends ConsoleLogging {
 				sample1
 				if (mhPostIterationHook) return
 			}
-			log(Log.DEBUG)("NumNegative: " + numNegativeMoves + ", NumAccepted: " + numAcceptedMoves)
+			//log(Log.DEBUG)("NumNegative: " + numNegativeMoves + ", NumAccepted: " + numAcceptedMoves)
 		}
 
 
 		def sample1: DiffList = {
 			jumpAccepted = false
 			val difflist = new DiffList
-			var logAcceptanceProb: Double = propose(difflist)
-			var modelRatio: Double = difflist.scoreAndUndo
+			var logAcceptanceProb: Double = propose(model, difflist)
+			var modelRatio: Double = difflist.scoreAndUndo(model)
 			logAcceptanceProb += (modelRatio / temperature)
 			if (logAcceptanceProb > Math.log(random.nextDouble)) {
 				jumpAccepted = true;
@@ -87,7 +83,7 @@ trait MHSampling requires Model extends ConsoleLogging {
 				if (modelRatio < 0) numNegativeMoves += 1
 				difflist.redo
 				if (useQueue && maxQueueSize > 0) {
-					queue ++= difflist.factors
+					queue ++= model.modelTemplates.factors(difflist)
 					if (queue.size > maxQueueSize) queue.reduceToSize(maxQueueSize)
 				}
 				currModelScore += modelRatio
@@ -128,7 +124,7 @@ trait MHSampling requires Model extends ConsoleLogging {
 		def sample1(variable: Variable with MultiProposer): Unit = {
 			incrementIterations
 			val difflist = new DiffList
-			val proposals = variable.multiPropose(difflist)
+			val proposals = variable.multiPropose(model, difflist, false)
 			if (proposals.size < 2) {
 				// Don't bother when there is only one possible proposal
 				// TODO is this right?  Yes, if it is common for multiPropose to also return a proposal for "no change
@@ -141,5 +137,3 @@ trait MHSampling requires Model extends ConsoleLogging {
 
 
 	}
-
-}

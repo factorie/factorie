@@ -1,7 +1,5 @@
 package cc.factorie.util
 
-;
-
 /*
  Copyright 2009 David Hall, Daniel Ramage
  
@@ -33,10 +31,10 @@ import scala.collection.mutable._;
 //@serializable 
 trait Index[T] extends (T => Int) with Collection[T] {
 	/**Forward map from int to object */
-	private val objects = new ArrayBuffer[T];
+	private val objects = new ArrayBuffer[T]
 
 	/**Map from object back to int index */
-	private lazy val indices = Map[T, Int]();
+	private lazy val indices = Map[T, Int]()
 
 	/**If positive, throw error if Index reaches size larger than this.  Use for growable multi-dim Factor weights */
 	var maxSize = -1
@@ -66,7 +64,7 @@ trait Index[T] extends (T => Int) with Collection[T] {
 
 	/**Return a densely-packed positive integer index for the given object.  By default,
 	allocate a new index (at the end) if the object was not found, but if immutable may return -1 */
-	def index(entry: T) = {
+	def index(entry: T) : Int = {
 		def nextMax = {
 			val m = objects.size
 			if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")

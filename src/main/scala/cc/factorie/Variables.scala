@@ -11,12 +11,6 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import cc.factorie.util.{Log, ConsoleLogging}
 import cc.factorie.util.Implicits._
 
-trait Variables {
-  this : Model =>
-  //this : Model with Domains with Templates =>
-
-
-
 	/**A variable whose value is a set of other variables */
 	abstract class SetVariable[X]() extends Variable with TypedVariable {
 		type ValueType = X
@@ -250,36 +244,3 @@ trait Variables {
 	override def seq : S = super.seq.asInstanceOf[S]
 }*/
 
-
-	/**A variable class for boolean values, defined here for convenience.  If you have several different "types" of booleans, you might want to subclass this to enable type safety checks. */
-	class Bool(b: Boolean) extends EnumVariable(b) {
-		type VariableType = Bool
-		def :=(b: Boolean) = set(b)(null)
-	}
-
-	object Bool {
-		val t = new Bool(true)
-		val f = new Bool(false)
-		def apply(b: Boolean) = if (b) t else f
-	}
-
-	/**A variable class for real values. */
-	class Real(v: Double) extends PrimitiveVariable(v) {
-		type VariableType = Real
-		def trueScore = 0.0
-	}
-
-	/* TODO Consider adding such a thing
-class IntRange(i:Int) extends IndexedVariable {
-	type VariableType = IntRange
-	def trueScore = 0.0
-}*/
-
-	/**A variable class for string values. */
-	class StringVariable(str: String) extends PrimitiveVariable(str) {
-		type VariableType = StringVariable
-
-		def trueScore = 0.0
-	}
-
-}
