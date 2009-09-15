@@ -2,24 +2,14 @@ package cc.factorie
 
 import scalala.tensor.dense.DenseVector
 
-trait MHCWLearning requires Model //GenericPerceptronLearningModel with MHSampling {
-//trait MHCWLearning extends MHMIRALearning {
-//this : Model =>
-{
-	/**Confidence value */
-	val epsilon = 0.0000001
-	val eta = 0.95; //it does not really make sense for this to be less than 0.75, since probit(0.5)=0 and probit(x<0.5)<0
-
-	/**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
-	val initialVariance = 0.1;
-
-	/**Function of the confidence, precomputed because probit is expensive. */
-	val gaussDeviate = Maths.probit(eta);
-
 	// extends Templates
 	trait CWLearning extends GenericDensePerceptronLearning //extends MIRALearning
 	{
 		type TemplateType <: CWLearning
+  
+  	/**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
+  	val initialVariance = 0.1;
+
 		//def weights : Vector //if we did it "loglinear learning" style
 		//def scratch : Vector
 		//lazy val sigma = new DenseVector(Array.make(suffsize,initialVariance));
@@ -29,8 +19,15 @@ trait MHCWLearning requires Model //GenericPerceptronLearningModel with MHSampli
 	}
 
 	// extends MHSampler
-	abstract class MHCWLearner(model:Model) extends MHPerceptronLearner(model)
+	abstract class MHCWLearner(model:Model, objective:Model) extends MHPerceptronLearner(model, objective)
 	{
+		/**Confidence value */
+  	val epsilon = 0.0000001
+  	val eta = 0.95; //it does not really make sense for this to be less than 0.75, since probit(0.5)=0 and probit(x<0.5)<0
+
+  	/**Function of the confidence, precomputed because probit is expensive. */
+  	val gaussDeviate = Maths.probit(eta);
+
 		private def kktMultiplier(theModelScoreRatio: Double, fnu: Boolean): Double =
 			{
 				var marginMean = theModelScoreRatio;
@@ -47,18 +44,18 @@ trait MHCWLearning requires Model //GenericPerceptronLearningModel with MHSampli
 
 		//puts a densevector difference on the scratch tape
 		private def putDiffOnScratch: Unit = {
-			modelTemplates.ofClass[CWLearning].foreach(t => t.scratch.zero)
+			model.templatesOf[CWLearning].foreach(t => t.scratch.zero)
 			difflist.redo;
-			modelTemplates.factorsOf[CWLearning](difflist).foreach(factor => factor.template.scratch += factor.vector)
+			model.factorsOf[CWLearning](difflist).foreach(factor => factor.template.scratch += factor.vector)
 			difflist.undo;
-			modelTemplates.factorsOf[CWLearning](difflist).foreach(factor => factor.template.scratch -= factor.vector)
+			model.factorsOf[CWLearning](difflist).foreach(factor => factor.template.scratch -= factor.vector)
 		}
 
 		/**Returns variance of margin */
 		private def varianceOfMargin: Double = {
 			var result = 0.0
 			putDiffOnScratch
-			modelTemplates.ofClass[CWLearning].foreach(t => {
+			model.templatesOf[CWLearning].foreach(t => {
 				for ((i, v) <- t.scratch.activeElements)
 					result += v * v * t.sigma(i);
 			})
@@ -67,7 +64,7 @@ trait MHCWLearning requires Model //GenericPerceptronLearningModel with MHSampli
 
 		private def updateMu(incr: Double): Unit = {
 			//System.out.println("inc="+incr);
-			modelTemplates.factorsOf[CWLearning](difflist).foreach(factor => {
+			model.factorsOf[CWLearning](difflist).foreach(factor => {
 				//factor.template.weights += factor.vector * factor.template.sigma * incr // Why doesn't this work?
 				for (i <- factor.vector.activeDomain)
 					factor.template.weights(i) += factor.vector(i) * factor.template.sigma(i) * incr
@@ -77,7 +74,7 @@ trait MHCWLearning requires Model //GenericPerceptronLearningModel with MHSampli
 		def updateSigma(incr: Double): Unit = {
 			putDiffOnScratch;
 			// Square diff to obtain diag(\bf{x}_i)
-			modelTemplates.ofClass[CWLearning].foreach(t =>
+			model.templatesOf[CWLearning].foreach(t =>
 							for ((index, value) <- t.scratch.activeElements) {
 								t.sigma(index) = 1.0 / ((1.0 / t.sigma(index)) + 2 * incr * gaussDeviate * value * value)
 							})
@@ -91,9 +88,9 @@ trait MHCWLearning requires Model //GenericPerceptronLearningModel with MHSampli
 						difflist = new DiffList
 						// Jump until difflist has changes
 						while (difflist.size <= 0) modelTransitionRatio = propose(model, difflist)
-						newTruthScore = difflist.trueScore(model)
+						newTruthScore = difflist.score(objective)
 						modelScoreRatio = difflist.scoreAndUndo(model)
-						oldTruthScore = difflist.trueScore(model)
+						oldTruthScore = difflist.score(objective)
 						modelRatio = modelScoreRatio // + modelTransitionRatio
 						bWeightsUpdated = false
 						bFalsePositive = false;
@@ -143,7 +140,7 @@ trait MHCWLearning requires Model //GenericPerceptronLearningModel with MHSampli
 						 */
 								if (useAveraged)
 									{
-										modelTemplates.ofClass[CWLearning].foreach(t => {
+										model.templatesOf[CWLearning].foreach(t => {
 											for (i <- 0 until t.weightsSum.size)
 												t.weightsSum(i) += t.weights(i)
 											t.weightsDivisor += 1
@@ -166,7 +163,7 @@ trait MHCWLearning requires Model //GenericPerceptronLearningModel with MHSampli
 				//Put the weights average into each Factor's weights array
 				if (useAveraged)
 					{
-						modelTemplates.ofClass[CWLearning].foreach(t => {
+						model.templatesOf[CWLearning].foreach(t => {
 							var weightsDivisor = t.weightsDivisor
 							for (i <- 0 until t.weights.size)
 								t.weights(i) = t.weightsSum(i) / weightsDivisor
@@ -194,5 +191,4 @@ trait MHCWLearning requires Model //GenericPerceptronLearningModel with MHSampli
 	  }	
 	}
   */
-}
 

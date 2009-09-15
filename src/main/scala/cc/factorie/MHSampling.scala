@@ -83,7 +83,7 @@ import cc.factorie.util.Implicits._
 				if (modelRatio < 0) numNegativeMoves += 1
 				difflist.redo
 				if (useQueue && maxQueueSize > 0) {
-					queue ++= model.modelTemplates.factors(difflist)
+					queue ++= model.factors(difflist)
 					if (queue.size > maxQueueSize) queue.reduceToSize(maxQueueSize)
 				}
 				currModelScore += modelRatio
@@ -124,7 +124,7 @@ import cc.factorie.util.Implicits._
 		def sample1(variable: Variable with MultiProposer): Unit = {
 			incrementIterations
 			val difflist = new DiffList
-			val proposals = variable.multiPropose(model, difflist, false)
+			val proposals = variable.multiPropose(model, null, difflist)
 			if (proposals.size < 2) {
 				// Don't bother when there is only one possible proposal
 				// TODO is this right?  Yes, if it is common for multiPropose to also return a proposal for "no change

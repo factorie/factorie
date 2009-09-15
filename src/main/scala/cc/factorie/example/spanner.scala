@@ -5,7 +5,7 @@ import scala.io.Source
 import cc.factorie.util.Implicits._
 import cc.factorie._
 
-class NerModel extends Model {
+object NerModel extends Model {
   class Label(labelStr: String, val span: Document#Span) extends cc.factorie.Label(labelStr) {
     override def trueScore = span.trueScore // Label trueScores are managed by the Document#Span, not here
     // This is necessary because we don't know the true label value at the time we create a Span's Label.
@@ -28,33 +28,33 @@ class NerModel extends Model {
 
     def clear = indxs.clear
 
-    def multiPropose(model:Model, difflist: DiffList, calcTrueScores:Boolean): Seq[Proposal] = {
+    def multiPropose(model:Model, objective:Model, difflist: DiffList): Seq[Proposal] = {
       if (word.first.isLowerCase) return Nil // Don't both trying to create spans starting with lowercase words
       //print("."); System.out.flush
       val spans = document.spans(this.position).toSeq
       //			val span = if (spans.length > 0) spans.first else null
       val proposals = new ArrayBuffer[Proposal]
       //proposals += new AutoProposal(diff => diff += new Diff { def variable = span; def redo = {}; def undo = {}}) // Include no change as one of the proposals
-      proposals += new AutoProposal(model, calcTrueScores, diff => {})
+      proposals += new AutoProposal(model, objective, diff => {})
       //case class Proposal(modelScore:Double, trueScore:Double, diff:DiffList, span:Document#Span) extends factorie.Proposal
       if (spans.length == 0) {
         // Add a unit-length span, choosing the label that scores best
         for (labelvalue <- IndexedDomain[Label]) {
           // TODO Why not just: new AutoProposal(document.addSpan(this.position, 1, label.entry))
-          proposals += new AutoProposal(model, calcTrueScores, diff => document.addSpan(this.position, 1, labelvalue.entry)(diff))
+          proposals += new AutoProposal(model, objective, diff => document.addSpan(this.position, 1, labelvalue.entry)(diff))
         }
         //println("Token multiPropose span="+proposals.max(_.modelScore).diff.first.variable.asInstanceOf[Document#Span].phrase)
       } else {
         for (span <- spans) {
           // There exists a span
           if (span.canAppend(1)) // Try lengthening
-            proposals += new AutoProposal(model, calcTrueScores, diff => span.append(1)(diff))
+            proposals += new AutoProposal(model, objective, diff => span.append(1)(diff))
           if (span.length > 1) // Try shortening
-            proposals += new AutoProposal(model, calcTrueScores, diff => span.trimEnd(1)(diff))
-          proposals += new AutoProposal(model, calcTrueScores, diff => span.delete(diff)) // Try removing the span
+            proposals += new AutoProposal(model, objective, diff => span.trimEnd(1)(diff))
+          proposals += new AutoProposal(model, objective, diff => span.delete(diff)) // Try removing the span
           //println("Delete diff:" + proposals.last.diff)
           for (labelvalue <- IndexedDomain[Label]; if (labelvalue.index != span.label.value.index)) // Try changing its label
-            proposals += new AutoProposal(model, calcTrueScores, diff => span.label.set(labelvalue)(diff))
+            proposals += new AutoProposal(model, objective, diff => span.label.set(labelvalue)(diff))
         }
       }
       if (false) {
@@ -177,7 +177,24 @@ class NerModel extends Model {
         ret
       }
     }
-  }
+    
+  } // end of Document
+  
+      // Temporary silliness until I make not all Templates require "vector", and I implement a real scoring template for coref.
+    val objective = new Model(new Template1[Document#Span] {
+    	import scalala.tensor.Vector
+    	import scala.reflect.Manifest
+    	def score(s:Stat) = s.s1.trueScore
+  		case class Stat(s1:Document#Span) extends super.Stat with Iterable[Stat] {
+    		def vector : Vector = null
+    	} 
+    	def statistic(v1:Document#Span): Iterable[Stat] = Stat(v1)
+    	type S = Stat
+    	def init(implicit m1:Manifest[Document#Span]) : this.type = { statClasses += m1.erasure.asInstanceOf[Class[IndexedVariable]]; statClasses.freeze; this }  
+    	init
+    })
+
+
 
 
   // Bias term just on labels
@@ -227,7 +244,7 @@ class NerModel extends Model {
     def statistic(span: Document#Span, label: Label) = if (span.present) {for (token <- span) yield Stat(span.label, token)} else Nil
     //def sufficient(span: Document#Span, label: Label) = for (token <- span) yield Suff(span.label, token, span.present)
 
-    modelTemplates += this
+    NerModel += this
 
   }.init
 
@@ -247,7 +264,7 @@ class NerModel extends Model {
 
     def statistic(span: Document#Span, label: Label) = if (span.present) Stat(span.label, span.first) else Nil
     //def sufficient(span: Document#Span, label: Label) = Suff(span.label, span.first, span.present)
-    modelTemplates += this
+    NerModel += this
   }.init
 
   // Label with word at end of Span
@@ -259,14 +276,14 @@ class NerModel extends Model {
 
     def statistic(span: Document#Span, label: Label) = if (span.present) Stat(span.label, span.last) else Nil
     //def sufficient(span: Document#Span, label: Label) = Suff(span.label, span.last, span.present)
-    modelTemplates + this
+    NerModel + this
   }.init
   //
   //  // Label with word before the Span
   val prevTokenTemplate = new Template1[Document#Span] with Statistic2[Label, Token] with SpannerLearner {
 
     def statistic(span: Document#Span) = if (span.present && !span.isAtStart) Stat(span.label, span.predecessor(1)) else Nil
-    modelTemplates += this
+    NerModel += this
   }.init
   //
 
@@ -275,7 +292,7 @@ class NerModel extends Model {
 
     def statistic(span: Document#Span) =
       if (span.present && !span.isAtEnd) Stat(span.label, span.successor(1)) else Nil
-    modelTemplates += this
+    NerModel += this
   }.init
   //
   //  val spanIncomingTransitionTemplate = new Template2[Label,Label] with Neighbors1[Document#Span] with PerceptronLearning {
@@ -327,7 +344,7 @@ class NerModel extends Model {
 
 
 object SpannerDemo {
-  val model = new NerModel()
+  val model = NerModel
   import model._
 
   def load(fileName: String): Seq[Document] = {
@@ -404,7 +421,7 @@ object SpannerDemo {
       //var tokens = docs.flatMap(doc => doc) //.take(11) // TODO for now, just look at the first 500 words
       var tokens : Seq[Token] = docs.flatMap(doc => doc) //.take(11) // TODO for now, just look at the first 500 words
       var testTokens : Seq[Token] = test.flatMap(doc => doc)
-      var sampler = new MHPerceptronLearner(model) {
+      var sampler = new MHPerceptronLearner(model, model.objective) {
         var tokenIterator = tokens.elements
 
         def propose(mdl:Model, difflist: DiffList): Double = {
@@ -420,7 +437,7 @@ object SpannerDemo {
         sampler.sampleAndLearn(tokens)
         println(i + " Wrong spans")
         //docs.foreach(doc => doc.spans.foreach(span => println(span.label.value.entry + " " + span.phrase)))
-        println("train accuracy: " + variablesAccuracy(docs))
+        println("train accuracy: " + model.aveScore(docs))
         //				println("span token Weights")
         //				spanTokensTemplate.printWeights
         //				println("start token Weights")
@@ -429,7 +446,7 @@ object SpannerDemo {
         //				endTokenTemplate.printWeights
 
         sampler.sample(testTokens)
-        println("test accuracy: " + variablesAccuracy(testDocs))
+        println("test accuracy: " + model.aveScore(testDocs))
 
 
       }

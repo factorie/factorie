@@ -37,16 +37,25 @@ class DiffList extends ArrayBuffer[Diff] {
 	def undo: Unit = this.reverse.foreach(d => d.undo)
 	// def factors(templates:TemplateList[_]) : Iterable[Factor] 
 	/**Return the sum of the trueScore's of all the changed variables. */
-	def trueScore(model:Model): Double = if (this.length == 0) 0.0 else model.truthTemplates.score(this)
+	//def trueScore(model:Model): Double = if (this.length == 0) 0.0 else model.truthTemplates.score(this)
+	def score(model:Model) = model.score(this) // TODO Should we provide this kind of syntax reversal, or only provide "one" way to do things?
 	def scoreAndUndo(model:Model): Double = {
-	 if (this.length == 0) return 0.0  // short-cut the simple case
-   var s = model.modelTemplates.score(this)
-   //println("Score: " + s)
-   //log(Log.DEBUG)("DiffList scoreAndUndo  pre-undo score=" + s)
-   this.undo
-   // We need to re-calculate the Factors list because the structure may have changed
-   s -= model.modelTemplates.score(this)
-   //log(Log.DEBUG)("DiffList scoreAndUndo post-undo score=" + s)
-   s
- }
+		if (this.length == 0) return 0.0  // short-cut the simple case
+		var s = model.score(this)
+		//println("Score: " + s)
+		//log(Log.DEBUG)("DiffList scoreAndUndo  pre-undo score=" + s)
+		this.undo
+		// We need to re-calculate the Factors list because the structure may have changed
+		s -= model.score(this)
+		//log(Log.DEBUG)("DiffList scoreAndUndo post-undo score=" + s)
+		s
+	}
+	def scoreAndUndo(model1:Model, model2:Model) : (Double, Double) = {
+		var s1 = model1.score(this)
+		var s2 = model2.score(this)
+		this.undo
+		s1 -= model1.score(this)
+		s2 -= model2.score(this)
+		(s1, s2)
+	}
 }

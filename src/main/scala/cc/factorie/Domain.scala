@@ -38,7 +38,8 @@ class ItemizedDomain[V <: ItemizedVariable](implicit m:Manifest[V]) extends Doma
 abstract class IndexedDomain[V <: IndexedVariable](implicit m: Manifest[V]) extends Domain[V] with util.Index[V#ValueType] {
 	//if (Domain.forClass(m.erasure) != null) throw new Error("IndexedDomain["+m.erasure.getName+"] already exists!")
 	//Domain.set(m.erasure, this)
-	def randomValue(implicit random:Random): V#ValueType = get(random.nextInt(size))
+	def randomValue : V#ValueType = randomValue(Global.random)
+	def randomValue(random:Random): V#ValueType = get(random.nextInt(size))
 }
 
 class StringDomain[V <: IndexedVariable {type ValueType = String}](implicit m: Manifest[V]) extends IndexedDomain[V] {

@@ -15,15 +15,15 @@ class DocumentClassifierModel extends Model {
   }
 
   /** Bias term just on labels */
-  modelTemplates += new TemplateWithStatistic1[Label] with PerceptronLearning
+  this += new TemplateWithStatistic1[Label] with PerceptronLearning
 
   /** Factor between label and observed document */
-  modelTemplates += new TemplateWithStatistic2[Label,Document] with PerceptronLearning {
+  this += new TemplateWithStatistic2[Label,Document] with PerceptronLearning {
     def unroll1 (label:Label) = Factor(label, label.document)
     def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
   }
-  
-  truthTemplates += new TrueLabelTemplate[Label]
+
+  val objective = new Model(new TrueLabelTemplate[Label])
 }
 
 
@@ -49,22 +49,22 @@ object DocumentClassifierDemo {
       }
 
       // Make a test/train split
-      val (testSet, trainSet) = documents.shuffle(random).split(0.5)
+      val (testSet, trainSet) = documents.shuffle.split(0.5)
       var trainVariables = trainSet.map(_ label)
       var testVariables = testSet.map(_ label)
 
       // Set label variables to random values
       documents.foreach(d => d.label.set(d.label.domain.randomValue)(null))
-      Console.println ("Initial test accuracy = "+ variablesAccuracy(testVariables))
+      Console.println ("Initial test accuracy = "+ model.aveScore(testVariables))
 
       // Sample and Learn!
-      val sampler = new GibbsPerceptronLearner(model)
+      val sampler = new GibbsPerceptronLearner(model, model.objective)
       sampler.learningRate = 1.0
       for (i <- 0 until 10) {
         sampler.sampleAndLearn (trainVariables, 1)
         sampler.learningRate *= 0.9
         sampler.sample (testVariables, 4)
-        Console.println ("Test accuracy = "+ variablesAccuracy(testVariables))
+        Console.println ("Test accuracy = "+ model.aveScore(testVariables))
       }
 
       // Show the parameters

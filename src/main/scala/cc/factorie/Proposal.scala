@@ -25,6 +25,10 @@ trait Proposal {
 	def diff: DiffList
 }
 
+trait Proposal2 extends Proposal {
+  // TODO Move trueScore members here??
+}
+
 /**A simple implementation of the Proposal trait as a case class. */
 case class CaseProposal(val model:Model, var transitionRatio:Double, var modelScore:Double, var trueScore:Double, val diff:DiffList) extends Proposal {
 	def this(model:Model, score: Double, difflist: DiffList) = this (model, 0.0, score, 0.0, difflist)
@@ -34,19 +38,19 @@ case class CaseProposal(val model:Model, var transitionRatio:Double, var modelSc
 case class EmptyProposal() extends CaseProposal(null, 0.0, 0.0, 0.0, new DiffList)
 
 /**A Proposal that automatically populates its diff, trueScore and score fields given a closure that makes the proposed change. */
-class AutoProposal(override val model:Model, evalTrueScore:Boolean, change: (DiffList) => Unit) extends Proposal {
+class AutoProposal(val model:Model, val objective:Model, change: (DiffList) => Unit) extends Proposal {
 	implicit val diff = new DiffList
 	//println("Calling change")
 	change(diff)
 	var transitionRatio = 0.0 // TODO provide a way to set this with default value 0.0 when Scala 2.8 comes out.
 	//println("AutoProposal before diff #variables "+diff.map(_.variable).filter(_ != null).toSeq.length)
 	//println("AutoProposal diff = " + diff)
-	var trueScore = if (evalTrueScore) diff.trueScore(model) else 0.0
+	var trueScore = if (objective != null) diff.score(objective) else 0.0
 	//println("true score delta before undo: " + tmpTrueScore)
 	var modelScore = diff.scoreAndUndo(model)
 	//println("tmpModelScore=" + tmpModelScore)
 	//println("AutoProposal after  diff #variables "+diff.map(_.variable).filter(_ != null).toSeq.length)
-	trueScore -= (if (evalTrueScore) diff.trueScore(model) else Math.NEG_INF_DOUBLE)
+	trueScore -= (if (objective != null) diff.score(objective) else Math.NEG_INF_DOUBLE)
 	//println("true score delta after undo: " + tmpTrueScore)
 	//println("AutoProposal modelScore = "+this.modelScore)
 }
@@ -62,11 +66,11 @@ trait MultiProposer extends Proposer {
 	/**Make all possible proposals.
 	The argument is not implicit because we do not want it implicitly passed to other methods that change variables. Instead a new DiffList should be created for each Proposal.  The only reason to pass the DiffList argument to
 	this method is so that implementations can check the DiffList for circular changes. */
-	def multiPropose(model:Model, d:DiffList, evalTrueScore:Boolean): Seq[Proposal]
+	def multiPropose(model:Model, objective:Model, d:DiffList): Seq[Proposal]
   def propose(model:Model, d:DiffList): Double = {
-    val proposals = multiPropose(model, d, false)
+    val proposals = multiPropose(model, null, d)
     val maxModelScore = proposals.max(_.modelScore).modelScore
-    val proposal = proposals.sampleProportionally(p => Math.exp(p.modelScore - maxModelScore))(model.random)
+    val proposal = proposals.sampleProportionally(p => Math.exp(p.modelScore - maxModelScore))
     proposal.diff.redo
     d ++= proposal.diff
     proposal.transitionRatio

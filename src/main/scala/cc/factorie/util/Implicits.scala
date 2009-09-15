@@ -159,17 +159,21 @@ object Implicits {
 		def sortReverse(extractor: T => Double): Seq[T] =
 			Sorting.stableSort(s.toSeq, (x1: T, x2: T) => extractor(x1) > extractor(x2))
 
-		def sample(implicit random: Random): T = {
+		def sample(random: Random): T = {
 			val s2 = s.toSeq
 			s2(random.nextInt(s2.size))
 		}
+		def sample : T = sample(Global.random)
   
-		def sampleFiltered(filterTest: T => Boolean)(implicit random: Random): T = {
+		def sampleFiltered(random: Random, filterTest: T => Boolean): T = {
 		  val s2 = s.toSeq.filter(filterTest)
 		  s2(random.nextInt(s2.size));
 		}
+		def sampleFiltered(filterTest: T => Boolean): T = sampleFiltered(Global.random, filterTest)
+		// TODO use defaults for this when 2.8 comes out
 
-		def sampleProportionally(extractor: T => Double)(implicit random: Random): T = {
+		def sampleProportionally(extractor: T => Double): T = sampleProportionally(Global.random, extractor)
+		def sampleProportionally(random:Random, extractor: T => Double): T = {
 		  //println("sampleProportionally called with Iteratible="+s)
 			var sum = s.foldLeft(0.0)((total, x) => total + extractor(x))
 			val r = random.nextDouble * sum
@@ -185,7 +189,8 @@ object Implicits {
 			throw new Error("BonusIterable sample error: r=" + r + " sum=" + sum)
 		}
 
-		def shuffle(implicit random: Random) = {
+		def shuffle : Seq[T] = shuffle(Global.random)
+		def shuffle(random: Random) : Seq[T] = {
 			val s2 = s.map(x => (x, random.nextInt)).toSeq
 			Sorting.stableSort(s2, (t1: (T, int), t2: (T, int)) => t1._2 > t2._2).map(t => t._1)
 		}
@@ -245,20 +250,20 @@ object Implicits {
 		/**Intern for arbitrary types */
 		def intern: T = {
 			val in: Interner[T] = Interner.forClass(t.getClass.asInstanceOf[Class[T]])
-			in(t);
+			in(t)
 		}
 
 		/**if t is non-null return Some(t), otherwise None */
-		def toOption = if (t eq null) None else Some(t);
+		def toOption = if (t eq null) None else Some(t)
 	}
 
 	implicit def doubleExtras(d: Double) = new {
-		def =~=(e: Double) = d == e || Math.abs(d - e) / d < 1E-4;
+		def =~=(e: Double) = d == e || Math.abs(d - e) / d < 1E-4
 	}
 
 	implicit def seqExtras[T](s: Seq[T]) = new {
 		// useful subset selection
-		def apply(x: Seq[Int]) = x.projection.map(s);
+		def apply(x: Seq[Int]) = x.projection.map(s)
 	}
 
 	implicit def randomExtras(r: Random) = new {

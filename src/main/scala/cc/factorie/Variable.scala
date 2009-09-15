@@ -27,7 +27,7 @@ trait Variable {
 	def printName = shortClassName
 	override def toString = printName + "(_)"
 	def isConstant = false
-	//def factors[M<:Model](model:M): Iterable[M#Factor] = model.modelTemplates.factors(this)
+	def factors(model:Model): Iterable[Factor] = model.factors(this)
 }
 
 /*
@@ -134,21 +134,23 @@ trait SingleIndexedVariable extends IndexedVariable with Proposer with MultiProp
 	type VariableType <: SingleIndexedVariable
 	protected var indx = -1 //domain.index(initval) // but this provides no way to initialize with null
 	// Consider changing this method name to just "set"?  But then will code readers more easily get confused?
-			def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
+	def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
 		if (newIndex < 0) throw new Error("SingleIndexedVariable setByIndex can't be negative.")
 		if (newIndex != indx) {
 			if (d != null) d += new SingleIndexedDiff(indx, newIndex)
 			indx = newIndex
 		}
 	}
-	def setRandomly(implicit random:Random, d:DiffList) = setByIndex(random.nextInt(domain.size))
+	def setRandomly(implicit random:Random, d:DiffList) : Unit = setByIndex(random.nextInt(domain.size))
+	def setRandomly(implicit random:Random) : Unit = setByIndex(random.nextInt(domain.size))(null)
+	def setRandomly : Unit = setRandomly(cc.factorie.Global.random)
 	def propose(d: DiffList)(implicit random:Random) = {setByIndex(random.nextInt(domain.size))(d); 0.0}
 	// The reason for the "toList", see 
 	// http://stackoverflow.com/questions/1332574/common-programming-mistakes-for-scala-developers-to-avoid
 	// http://creativekarma.com/ee.php/weblog/comments/the_scala_for_comprehension_from_a_java_perspective/
   // TODO Look at this issue more carefully and turn on printing in Implicits.bonusIterables to look for additional efficiencies 
-	def multiPropose(model:Model, difflist: DiffList, evalTrueScore:Boolean) = for (i <- 0 until domain.size toList) yield {
-		new AutoProposal(model, evalTrueScore, diff => setByIndex(i)(diff))
+	def multiPropose(model:Model, objective:Model, difflist: DiffList) = for (i <- 0 until domain.size toList) yield {
+		new AutoProposal(model, objective, diff => setByIndex(i)(diff))
 		// val d = new DiffList; setByIndex(i)(d); new CaseProposal(d.scoreAndUndo, d)
 	}
 	def index = indx

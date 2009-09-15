@@ -13,7 +13,7 @@ import cc.factorie.util.Implicits._
 
 // Management of Factor Templates within the Model
 class TemplateList[T<:Template] extends ArrayBuffer[T] {
-	def ofClass[T2<:T](implicit m:Manifest[T2]) : TemplateList[T2] = {
+	def templatesOf[T2<:T](implicit m:Manifest[T2]) : TemplateList[T2] = {
 			val templateClass = m.erasure
 			val ret = new TemplateList[T2]
    for (t <- this) if (templateClass.isAssignableFrom(t.getClass)) ret += t.asInstanceOf[T2]
@@ -25,14 +25,15 @@ class TemplateList[T<:Template] extends ArrayBuffer[T] {
     ret
 	}
 	def factors(d:DiffList) : Seq[Factor] = this.flatMap(template => template.factors(d))
-	def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.ofClass(m).flatMap(template => template.factors(d))
+	def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf(m).flatMap(template => template.factors(d))
 	def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.score)
 	/** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
 	def factors(v:Variable) : Seq[Factor] = this.flatMap(template => template.factors(v))
 	def factors(vs:Iterable[Variable]) : Seq[Factor] = this.flatMap(template => template.factors(vs))
 	def score(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.score)
-	def score(vs:Iterable[Variable]) : Double = factors(vs).foldLeft(0.0)(_+_.score)
-	def factorsOfClass[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.ofClass(m).flatMap(template => template.factors(v))
+	def score(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.score)
+ 	def aveScore(vars:Collection[Variable]): Double = score(vars) / vars.size
+	def factorsOfClass[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf(m).flatMap(template => template.factors(v))
 	def registerFactorsInVariables(variables: Iterable[Variable with FactorList]): Seq[Factor] = {
 	  var factors = new HashSet[Factor]
     // unroll all factors touching all v in variables

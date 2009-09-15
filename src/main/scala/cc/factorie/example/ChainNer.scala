@@ -7,9 +7,9 @@ import cc.factorie._
 import cc.factorie.model.LinearChainModel
 
 class ChainNerModel extends LinearChainModel {
-	modelTemplates += new LabelTemplate with PerceptronLearning
-  modelTemplates += new TransitionTokenTemplate with PerceptronLearning
-  truthTemplates += new TrueLabelTemplate[Label]
+	this += new LabelTemplate with PerceptronLearning
+  this += new TransitionTokenTemplate with PerceptronLearning
+  val objective = new Model(new TrueLabelTemplate[Label])
 }
 
 class ChainNerWorld[M<:ChainNerModel](val model:M) extends World {
@@ -74,21 +74,18 @@ object ChainNerDemo {
       val trainLabels : Seq[Label] = trainTokens.flatMap(_.map(_.label))
       val testLabels : Seq[Label] = testTokens.flatMap(_.map(_.label))
       // Sample and Learn!
-      (trainLabels ++ testLabels).foreach(_.setRandomly(model.random, null))
-      val sampler = new GibbsPerceptronLearner(model)
+      (trainLabels ++ testLabels).foreach(_.setRandomly(Global.random, null))
+      val sampler = new GibbsPerceptronLearner(model, model.objective)
       for (i <- 0 until 10) {
         sampler.sampleAndLearn (trainLabels, 1)
+        Console.println ("Train accuracy = "+ model.aveScore(trainLabels))
         sampler.learningRate *= 0.9
-        sampler.sample (testLabels, 3)
-        Console.println ("Test accuracy = "+ variablesAccuracy(testLabels))
+        sampler.sample (testLabels, 2)
+        Console.println ("Test  accuracy = "+ model.aveScore(testLabels))
       }
 
     }
     0
   }	
   
-  def load(model:ChainNerModel, filename:String) : Seq[ChainNerModel#Sentence] = {
-    val ret = new ArrayBuffer[model.Sentence]
-    ret
-  }
 }

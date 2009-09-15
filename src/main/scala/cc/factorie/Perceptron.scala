@@ -107,28 +107,31 @@ import scala.reflect.Manifest
 	trait GibbsSparsePerceptronLearning extends AbstractPerceptronLearning with GenericSparsePerceptronLearning
 
   // TODO Consider changing name to just "PerceptronLearner", and similarly above
-	class GibbsPerceptronLearner(model:Model) extends GibbsSampler(model) {
-	  if (model.truthTemplates.length == 0) throw new IllegalArgumentException("Loss templates is empty.")
+	class GibbsPerceptronLearner(model:Model, objective:Model) extends GibbsSampler(model) {
+	  if (objective.length == 0) throw new IllegalArgumentException("Objective is empty.")
 		var learningRate = 1.0
 
 		/**Sample and learning over many variables for numIterations. */
-		def sampleAndLearn[X](variables: Iterable[CoordinatedEnumVariable[X]], numIterations: Int): Unit = {
+		def sampleAndLearn(variables: Iterable[Variable with MultiProposer], numIterations: Int): Unit = {
 			//Console.println ("GibbsPerceptronLearning sampleAndLearn #variables="+variables.toSeq.size)
-			xsample[X](variables, numIterations, sampleAndLearn1 _)
+			xsample(variables, numIterations, sampleAndLearn1 _)
 		}
 
 		/**Sample one variable once, and potentially train from the jump. */
-		def sampleAndLearn1[T](variable: CoordinatedEnumVariable[T]): Unit = {
-			case class Proposal(modelScore: Double, trueScore: Double, value: T, diff: DiffList)
+		def sampleAndLearn1(variable: Variable with MultiProposer): Unit = {
+			//case class Proposal(modelScore: Double, trueScore: Double, value: T, diff: DiffList)
+			val proposals = variable.multiPropose(model, objective, new DiffList)
+   /*
 			val proposals =
 			for (value <- variable.domain toList) yield {
 				val diff = new DiffList
 				variable.set(value)(diff)
-				var trueScore = model.truthTemplates.score(variable)
+				var trueScore = objective.score(variable)
 				val modelScore = diff.scoreAndUndo(model)
-				trueScore -= model.truthTemplates.score(variable)
+				trueScore -= objective.score(variable)
 				Proposal(modelScore, trueScore, value, diff)
 			}
+                                                                   */
 			val (bestScoring, bestScoring2) = proposals.max2(_ modelScore)
 			val (bestTruth1, bestTruth2) = proposals.max2(_ trueScore)
 			/*
@@ -144,8 +147,8 @@ import scala.reflect.Manifest
 			// It would not have a preference if the variable in question is unlabeled
 			if (bestTruth1.trueScore != bestTruth2.trueScore) {
 				// If the model doesn't score the truth highest, then update parameters
-				if (bestScoring.value != bestTruth1.value) {
-					def m[T](implicit m: Manifest[T]) = m.erasure
+				if (bestScoring/*.value*/ != bestTruth1/*.value*/) {
+					//def m[T](implicit m: Manifest[T]) = m.erasure
 					//println ("Perceptron learning from error")
 					//Console.println ("Model template assignable "+modelTemplates.map(t=>t.getClass.isAssignableFrom(m[PerceptronLearning])))
 					//Console.println ("Model template assignable "+modelTemplates.map(t=>m[PerceptronLearning].isAssignableFrom(t.getClass)))
@@ -156,20 +159,20 @@ import scala.reflect.Manifest
 					// ...update parameters by adding sufficient stats of truth, and subtracting error
 					//
 					bestTruth1.diff.redo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestTruth1.diff).foreach(f => f.template.increment(f, learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestTruth1.diff).foreach(f => f.template.increment(f, learningRate, iterations))
 					bestTruth1.diff.undo
 					bestScoring.diff.redo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
 					bestScoring.diff.undo
 				}
 				else if (bestScoring.modelScore - bestScoring2.modelScore < learningMargin) {
 					//println ("Perceptron learning from margin")
 					// ...update parameters by adding sufficient stats of truth, and subtracting runner-up
 					bestTruth1.diff.redo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestTruth1.diff).foreach(f => f.template.increment(f, learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestTruth1.diff).foreach(f => f.template.increment(f, learningRate, iterations))
 					bestTruth1.diff.undo
 					bestTruth2.diff.redo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestTruth2.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestTruth2.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
 					bestTruth2.diff.undo
 				}
 			} //else Console.println ("No preference unlabeled "+variable)
@@ -177,7 +180,7 @@ import scala.reflect.Manifest
 			bestScoring.diff.redo // TODO consider sampling here instead?
 			// Populate and manage the size of the priority queue
 			if (useQueue && maxQueueSize > 0) {
-				queue ++= model.modelTemplates.factors(bestScoring.diff)
+				queue ++= model.factors(bestScoring.diff)
 				if (queue.size > maxQueueSize) queue.reduceToSize(maxQueueSize)
 			}
 		}
@@ -188,9 +191,9 @@ import scala.reflect.Manifest
 			val diff = this.sample1(variable)
 			if (origIndex != variable.index) {
 				// The sample wandered from truth
-				model.modelTemplates.factorsOf[AbstractPerceptronLearning](diff).foreach(f => f.template.increment(f, -learningRate, iterations))
+				model.factorsOf[AbstractPerceptronLearning](diff).foreach(f => f.template.increment(f, -learningRate, iterations))
 				diff.undo
-				model.modelTemplates.factorsOf[AbstractPerceptronLearning](diff).foreach(f => f.template.increment(f, learningRate, iterations))
+				model.factorsOf[AbstractPerceptronLearning](diff).foreach(f => f.template.increment(f, learningRate, iterations))
 			}
 		}
 	}
@@ -202,7 +205,7 @@ import scala.reflect.Manifest
 	trait PerceptronLearning extends AbstractPerceptronLearning with GenericDensePerceptronLearning
 	trait SparsePerceptronLearning extends AbstractPerceptronLearning with GenericSparsePerceptronLearning
 
-	abstract class MHPerceptronLearner(model:Model) extends MHSampler(model) {
+	abstract class MHPerceptronLearner(model:Model, objective:Model) extends MHSampler(model) {
 		var difflist: DiffList = null
 		var modelScoreRatio = 0.0
 		var modelTransitionRatio = 0.0
@@ -229,9 +232,9 @@ import scala.reflect.Manifest
 			difflist = new DiffList
 			// Jump until difflist has changes
 			while (difflist.size <= 0) modelTransitionRatio = propose(model, difflist)
-			newTruthScore = difflist.trueScore(model)
-			modelScoreRatio = difflist.scoreAndUndo(model)
-			oldTruthScore = difflist.trueScore(model)
+			newTruthScore = difflist.score(objective)
+			modelScoreRatio = difflist.scoreAndUndo(model) // TODO Change this to use the new 2-arg version of scoreAndUndo
+			oldTruthScore = difflist.score(objective)
 			modelRatio = modelScoreRatio // + modelTransitionRatio
 			bWeightsUpdated = false
 			bFalsePositive = false;
@@ -241,18 +244,18 @@ import scala.reflect.Manifest
 			//        Console.println ("modelScoreRatio = "+modelScoreRatio)
 			if (newTruthScore > oldTruthScore && modelRatio <= 0) {
 				//          Console.println ("Learning from error: new actually better than old.  DiffList="+difflist.size)
-				model.modelTemplates.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, -learningRate, iterations))
+				model.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, -learningRate, iterations))
 				difflist.redo
-				model.modelTemplates.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, learningRate, iterations))
+				model.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, learningRate, iterations))
 				difflist.undo
 				bWeightsUpdated = true
 				bFalseNegative = true
 			}
 			else if (newTruthScore < oldTruthScore && modelRatio >= 0) {
 				//          Console.println ("Learning from error: old actually better than new.  DiffList="+difflist.size)
-				model.modelTemplates.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, learningRate, iterations))
+				model.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, learningRate, iterations))
 				difflist.redo
-				model.modelTemplates.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, -learningRate, iterations))
+				model.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, -learningRate, iterations))
 				difflist.undo
 				bWeightsUpdated = true
 				bFalsePositive = true
@@ -282,7 +285,7 @@ import scala.reflect.Manifest
 		def sampleAndLearn1(variable: Variable with MultiProposer): Unit = {
 			incrementIterations
 			difflist = new DiffList
-			val proposals = variable.multiPropose(model, difflist, true)
+			val proposals = variable.multiPropose(model, objective, difflist)
 			if (proposals.size < 2) {
 				// Don't bother when there is only one possible proposal
 				// TODO is this right?  Yes, if it is common for multiPropose to also return a proposal for "no change
@@ -306,26 +309,26 @@ Console.println ("bestScoring modelScore = "+bestScoring.modelScore)
 					// ...update parameters by adding sufficient stats of truth, and subtracting error
 					//Console.println ("Learning from error")
 					bestTruth1.diff.redo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestTruth1.diff).foreach(f => f.template.increment(f, learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestTruth1.diff).foreach(f => f.template.increment(f, learningRate, iterations))
 					bestTruth1.diff.undo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestTruth1.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestTruth1.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
 					bestScoring.diff.redo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
 					bestScoring.diff.undo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, +learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, +learningRate, iterations))
 				}
 				else if (bestScoring.modelScore - bestScoring2.modelScore < learningMargin) {
 					// bestScore matches bestTruth1, but runner up is within the margin
 					//Console.println ("Learning from margin")
 					// ...update parameters by adding sufficient stats of truth, and subtracting runner-up
 					bestScoring.diff.redo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, learningRate, iterations))
 					bestScoring.diff.undo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
 					bestScoring2.diff.redo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
 					bestScoring2.diff.undo
-					model.modelTemplates.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, learningRate, iterations))
 				}
 			} // else println("No true preference.")
 
@@ -339,7 +342,7 @@ Console.println ("bestScoring modelScore = "+bestScoring.modelScore)
 
 			// Populate and manage the size of the priority queue
 			if (useQueue && maxQueueSize > 0) {
-				queue ++= model.modelTemplates.factors(bestScoring.diff)
+				queue ++= model.factors(bestScoring.diff)
 				if (queue.size > maxQueueSize) queue.reduceToSize(maxQueueSize)
 			}
 		}
