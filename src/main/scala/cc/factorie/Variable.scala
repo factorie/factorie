@@ -15,8 +15,6 @@ import cc.factorie.util.Implicits._
 trait Variable {
 	type VariableType <: Variable
 	def domain: Domain[VariableType] = Domain[VariableType](this.getClass)
-	def trueScore: Double
-	// TODO sometimes trueScores on variables might not be enough; we should consider trueScores in Template
 	private def shortClassName = {
 	  val fields = this.getClass.getName.split('$')
 	  if (fields.last == "class")
@@ -112,7 +110,6 @@ abstract class PrimitiveVariable[T](initval: T) extends Variable with TypedVaria
 trait PrimitiveTrueValue[T] {
 	this: PrimitiveVariable[T] =>
   var trueValue: T = _
-  def trueScore: Double = throw new Error("PrimitiveTrueValue.trueScore is no longer available") //if (_value == trueValue) 1.0 else 0.0
   def isUnlabeled = trueValue == _
 }
 
@@ -192,14 +189,13 @@ trait CoordinatedEnumVariable[T] extends TypedSingleIndexedVariable[T] {
   //setByIndex(domain.index(initval))(null)
 }
 
-/**A variable of finite enumerated values that has a true "labeled" value, separate from its current value, and whose trueScore is 1.0 iff they are equal and 0.0 otherwise. */
+/**A variable of finite enumerated values that has a true "labeled" value, separate from its current value. */
 //trait TrueIndexedValue[T] extends TypedSingleIndexedVariable[T] 
 trait TrueIndexedValue extends SingleIndexedVariable {
   /** The index of the true labeled value for this variable.  If unlabeled, set to -1 */
   var trueIndex: Int
   //private var _trueValue:T = domain.get(trueIndex)
   def trueValue = if (trueIndex >= 0) domain.get(trueIndex) else null // _trueValue
-  def trueScore: Double = throw new Error("PrimitiveTrueValue.trueScore is no longer available") //if (trueIndex >= 0 && indx == trueIndex) 1.0 else 0.0
   def isUnlabeled = trueIndex < 0
   def unlabel = if (trueIndex >= 0) trueIndex = -trueIndex else throw new Error("Already unlabeled.")
 }
@@ -279,7 +275,6 @@ abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
 	type ValueType = T
 	type VariableType <: VectorVariable[T]
   //def this (es:T*) = this(es.toArray)   TODO include this again later
-  def trueScore: Double = 0 // VectorVariable is typically observed; doesn't have a trueValue
   override def isConstant = true
   protected var indxs = new ArrayBuffer[Int]()
   def indices : Seq[Int] = indxs
@@ -300,9 +295,19 @@ abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
   	_vector = null
   }
   def +(value: T) = {this += value; this} // TODO Shouldn't this method actually return a new VectorVariable, leaving old one unchanged?  Yes.
-  		def ++=(vals: Iterable[T]) = vals.foreach(v => this += v)
-  		def ++(vals: Iterable[T]) = {this ++= vals; this} // TODO this method should return a new Vector
-  		override def toString = printName + "(" + vector.activeDomain.foldLeft("")((s, i) => s + domain.get(i).toString + "=" + i + ",") + ")"
+  def ++=(vals: Iterable[T]) = vals.foreach(v => this += v)
+  def ++(vals: Iterable[T]) = {this ++= vals; this} // TODO this method should return a new Vector
+  override def toString = {
+    val s = new StringBuilder(printName + "(")
+    val iter = vector.activeDomain.elements
+    if (iter.hasNext) { val i:Int = iter.next ; s ++= (domain.get(i).toString + "=" + i) }
+    while (iter.hasNext) {
+    	val i:Int = iter.next
+      s ++= ("," + domain.get(iter.next).toString + "=" + i)
+    }
+    s ++= ")"
+    s.toString
+  }
 }
 
 /**A variable class for boolean values, defined here for convenience.  If you have several different "types" of booleans, you might want to subclass this to enable type safety checks. */
@@ -320,7 +325,6 @@ object Bool {
 /**A variable class for real values. */
 class Real(v: Double) extends PrimitiveVariable(v) {
 	type VariableType = Real
-	def trueScore = 0.0
 }
 
 /* TODO Consider adding such a thing
@@ -332,7 +336,6 @@ class IntRange(i:Int) extends IndexedVariable {
 /**A variable class for string values. */
 class StringVariable(str: String) extends PrimitiveVariable(str) {
 	type VariableType = StringVariable
-	def trueScore = 0.0
 }
 
 /**For Variables that hold their list of Factors */

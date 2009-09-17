@@ -8,9 +8,9 @@ object WordSegmenterDemo {
 
 	// The variable types:
 	class Label(b:Boolean, val token:Token) extends EnumVariable(b) 
-	class Token(val char:Character, isWordStart:Boolean) extends VectorVariable[String] with VarInSeq[Token] {
+	class Token(val char:Char, isWordStart:Boolean) extends VectorVariable[String] with VarInSeq[Token] {
 		this += char.toString
-		//this += char(0).isCapitalized
+		if ("aeiou".contains(char)) this += "VOWEL"
 		val label = new Label(isWordStart, this)
 	}
 	//Domain[Token] = new IndexedDomain[Token] { override def allocSize = 100000 }
@@ -37,10 +37,10 @@ object WordSegmenterDemo {
 		def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
 	}
 	/** Skip edge */
-	model += new Template2[Label,Label] with ExpStatistics1[Bool] with PerceptronLearning {
+	val skipTempalte = new Template2[Label,Label] with ExpStatistics1[Bool] with PerceptronLearning {
 		def unroll1 (label:Label) =  
 			// could cache this search in label.similarSeq for speed
-		  for (other <- label.token.seq; if label.token.char == other.char) yield
+		  for (other <- label.token.seq; if label.token.char == other.char) yield 
 		  	if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
 		def unroll2 (label:Label) = Nil // We handle symmetric case above
 		def statistics(label1:Label, label2:Label) = Stat(Bool(label1==label2))
@@ -86,17 +86,16 @@ object WordSegmenterDemo {
 		sampler.learningRate = 1.0
 		for (i <- 0 until 10) {
 			sampler.sampleAndLearn (trainVariables, 2)
-			sampler.learningRate *= 0.9
-			//GibbsSampleWithPriority.sample (testVariables, 20)
+			sampler.learningRate *= 0.8
 			sampler.sample (testVariables, 2)
-			Console.println ("Test accuracy = "+ objective.aveScore(testVariables))
+			Console.println ("Train accuracy = "+ objective.aveScore(trainVariables))
+			Console.println ("Test  accuracy = "+ objective.aveScore(testVariables))
 			if (startTime == 0) startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
 		}
 
 		// Show the parameters
-		//Console.println ("Printing parameters of factors "+modelTemplates.size)
-		//modelTemplates.foreach (f => Console.println(f.weights.toList))
-		println(System.currentTimeMillis - startTime)
+		//model.templatesOf[LogLinearScoring].foreach(t => Console.println(t.weights.toList))
+		println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")
 		0;
 	}
 

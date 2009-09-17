@@ -4,66 +4,30 @@ import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.Implicits._
 
-class CorefMentionsModel extends Model
-  //with MHMIRALearning 
-  //with MHCWLearning
-{
+
+object CorefMentionsDemo {
+
   /** A random variable for a mention */
-  class Mention(val name:String, val trueEntity:Int, initialEntity:Entity, val allMentions:Seq[Mention]) extends PrimitiveVariable(initialEntity) {
-    //Console.println ("new Mention "+name+" domain "+domain+" size "+mentionList.size)
+  class Mention(val name:String, val trueEntity:Int, initialEntity:Entity) extends PrimitiveVariable(initialEntity) {
     // When this mention is assigned to an entity, update the mention
     override def set(e:Entity)(implicit d:DiffList) : Unit = {
-      //        Console.println ("Mention set old="+value+" new="+e)
       if (e != entity) {
         if (entity != null) entity.remove(this)
         e.add(this)
         super.set(e)
       }
     }
-    // Just for readability
-    def entity = _value
-    // Define true eval measure by number of other mentions that are correctly coref'ed with this
-    override def trueScore = {
-      allMentions.foldLeft(0.0)((total,m) => 
-        if (m.trueEntity == this.trueEntity) {
-          if (m.entity == this.entity) total + 1
-          else total - 1
-        } else {
-          if (m.entity == this.entity) total - 1
-          else total + 1
-        })
-    }
+    def entity = value // Just for readability
     override def toString = "Mention(" + name +"=="+ entity.canonical +")"
   }
   
-  // Temporary silliness until I make not all Templates require "vector", and I implement a real scoring template for coref.
-  val objective = new Model(new Template1[Mention] with ExpTemplate {
-    import scalala.tensor.Vector
-    import scala.reflect.Manifest
-    def score(s:Stat) = s.s1.trueScore
-    type StatType = Stat
-  	case class Stat(s1:Mention) extends super.Stat with Iterable[Stat] {
-      def vector : Vector = null
-    } 
-    def statistics(v1:Mention): Iterable[Stat] = Stat(v1)
-    type S = Stat
-    def init(implicit m1:Manifest[Mention]) : this.type = { statClasses += m1.erasure.asInstanceOf[Class[IndexedVariable]]; statClasses.freeze; this }  
-    init
-  })
-
   /** A random variable for an entity, which is merely a HashSet collection of Mentions */
   class Entity(val canonical:String) extends SetVariable[Mention] {
-    def trueScore = 0.0 // Mention takes care of all trueScore'ing
     def mentions = members // Just for readability
     override def toString = "Entity("+canonical+":"+mentions.toSeq.size+")"
   }
 
   /** A feature vector random variable measuring affinity between two mentions */
-  val features = List("match", "-match", "prefix1", "-prefix1", "prefix2", "-prefix2", 
-                      "prefix3", "-prefix3", "substring", "-substring",
-                      "length", "containsword")
-  features.foreach(f=>IndexedDomain[AffinityVector].index(f)) // initialize the index
-  IndexedDomain[AffinityVector].freeze
   class AffinityVector(s1:String, s2:String) extends VectorVariable[String] {
     type VariableType = AffinityVector
     if (s1 equals s2) this += "match" else this += "-match"
@@ -76,65 +40,14 @@ class CorefMentionsModel extends Model
     s2.split(" ").foreach(s => if (s1.contains(s)) this += "containsword")
     // Also consider caching mechanisms
   }
+  val features = List("match", "-match", "prefix1", "-prefix1", "prefix2", "-prefix2", 
+                      "prefix3", "-prefix3", "substring", "-substring",
+                      "length", "containsword")
+  features.foreach(f=>IndexedDomain[AffinityVector].index(f)) // initialize the index
+  IndexedDomain[AffinityVector].freeze
 
-
-  // Pairwise affinity factor between Mentions in the same partition
-  this += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector]
-    with PerceptronLearning 
-    //with MIRALearning
-    //with CWLearning
-  {
-    def unroll1 (mention:Mention) = for (other <- mention.entity.mentions; if (other != mention)) yield 
-      if (mention.hashCode > other.hashCode) Factor(mention, other)
-      else Factor(other, mention)
-    def unroll2 (mention:Mention) = Nil // symmetric
-    def statistics (mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
-  }.init
-
-  // Pairwise repulsion factor between Mentions in different partitions
-  this += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector]
-  with PerceptronLearning 
-  //with MIRALearning
-  //with CWLearning
-  {
-    override def unroll(d:Diff) = d.variable match {
-      case mention : Mention => d match {
-        case mention.PrimitiveDiff(oldEntity:Entity, newEntity:Entity) => 
-          for (other <- oldEntity.mentions; if (other.entity != mention.entity)) yield Factor(mention, other);
-        case _ => super.unroll(d)
-      }
-      case _ => super.unroll(d)
-    }
-    def unroll1 (mention:Mention) = for (other <- mention.allMentions; if (other.entity != mention.entity)) yield Factor(mention, other);
-    def unroll2 (mention:Mention) = Nil // symmetric
-    def statistics(mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
-  }.init
-  
-  /*    // Factor testing if all the mentions in this entity share the same prefix of length 1
-   // A first-order-logic feature!
-   object ForallMentionPrefix1Matches extends Factor11[Entity,Bool] with PerceptronLearning {
-   def sufficient (entity:Entity) = {
-   if (entity.mentions.isEmpty)
-   Bool(true)
-   else {
-   val prefix1 = entity.mentions.elements.next.name.substring(0,1)
-   if (entity.mentions.forall(m => prefix1 equals m.name.substring(0,1)))
-   Bool(true)
-   else
-   Bool(false)
-   }
-   }
-   } */
-} 
-
-
-object CorefMentionsDemo {
 
   def main(args: Array[String]) : Unit = {
-    val model = new CorefMentionsModel()
-    val corefWorld = new World {
-      import model._
-
       var mentionList = new ArrayBuffer[Mention]();
       var entityList = new ArrayBuffer[Entity]();
 
@@ -143,30 +56,84 @@ object CorefMentionsDemo {
         Array("Michael Wick", "Mike Wick", "Michael Andrew Wick", "Wick", "Wick"),
         Array("Khashayar Rohanemanesh", "Khash R.", "Kesh Rohanemanesh"),
         Array("Aron Culotta", "Andrew Culotta", "A. Culotta", "Culotta McCallum", "Culotta", "Culotta"),
-        Array("Charles Sutton", "Charles A. Sutton", "Sutton", "Sutton")
+        Array("Charles Sutton", "Charles A. Sutton", "Sutton", "Sutton"),
+        Array("Nicola Cancceda", "Nicola Canceda", "Nicolla Cancceda", "Nicol Cancheta", "Canceda", "Cancceda")
       )
       
       // Create variables for the data
       var eIndex = 0
       def entityIndex = { eIndex += 1; eIndex }
-      var mentions = data.zipWithIndex.map(x => {
-        val names = x._1
-        val trueEntityIndex = x._2
+      var mentions = data.zipWithIndex.map {case (names, trueEntityIndex) => {
         // Initialize by putting each mention into its own separate entity
         names.map(s => {
           val newEntity = new Entity("e" + entityIndex);
-          val newMention = new Mention(s, trueEntityIndex, newEntity, mentionList);
+          val newMention = new Mention(s, trueEntityIndex, newEntity);
           entityList += newEntity;
           mentionList += newMention;
           newMention;
         })
-      })	
+      }}
+      
+      val model = new Model
+  
+      // Pairwise affinity factor between Mentions in the same partition
+      model += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector] with PerceptronLearning {
+      	def unroll1 (mention:Mention) = for (other <- mention.entity.mentions; if (other != mention)) yield 
+      		if (mention.hashCode > other.hashCode) Factor(mention, other)
+      		else Factor(other, mention)
+      	def unroll2 (mention:Mention) = Nil // symmetric
+      	def statistics (mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
+      }.init
+
+      // Pairwise repulsion factor between Mentions in different partitions
+      model += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector] with PerceptronLearning {
+      	override def unroll(d:Diff) = d.variable match {
+      		case mention : Mention => d match {
+      			case mention.PrimitiveDiff(oldEntity:Entity, newEntity:Entity) => 
+      				for (other <- oldEntity.mentions; if (other.entity != mention.entity)) yield Factor(mention, other);
+      			case _ => super.unroll(d)
+      		}
+      		case _ => super.unroll(d)
+      	}
+      	def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entity != mention.entity)) yield Factor(mention, other);
+      	def unroll2 (mention:Mention) = Nil // symmetric
+      	def statistics(mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
+      }.init
+  
+      // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature!
+      model += new Template1[Entity] with ExpStatistics1[Bool] with PerceptronLearning {
+      	def statistics(entity:Entity) = {
+      		if (entity.mentions.isEmpty) Stat(Bool(true))
+      		else {
+      			val prefix1 = entity.mentions.elements.next.name.substring(0,1)
+      			if (entity.mentions.forall(m => prefix1 equals m.name.substring(0,1)))
+      				Stat(Bool(true))
+      			else
+      				Stat(Bool(false))
+      		}
+      	}
+      }.init
+
+
+      val objective = new Model(new TemplateWithStatistics1[Mention] {
+      	def score(s:Stat) = {
+      		val thisMention = s.s1
+      		mentionList.foldLeft(0.0)((total,m) => 
+      		if (m.trueEntity == thisMention.trueEntity) {
+      			if (m.entity == thisMention.entity) total + 1
+      			else total - 1
+      		} else {
+      			if (m.entity == thisMention.entity) total - 1
+      			else total + 1
+      		})
+      	}
+      })
 
 
       // Define the proposal distribution
       //var sampler = new CWLearner {
       //var sampler = new MHMIRALearner {
-      var sampler = new MHPerceptronLearner(model, model.objective) {
+      var sampler = new MHPerceptronLearner(model, objective) {
         def propose(mdl:Model, difflist:DiffList) : Double = {
           if (mdl != model) throw new IllegalArgumentException("Models don't match") // TODO Arg.  This is ugly.  Fix it. -akm
           // Pick a random mention
@@ -186,13 +153,12 @@ object CorefMentionsDemo {
           return 0.0
         }
         override def mhPerceptronPostProposalHook = {
-          if (/*false*/ iterations % 1000 == 0) {
+          if (iterations % 500 == 0) {
             System.out.println("UPS: " + numUpdates);
             model.templatesOf[LogLinearScoring].foreach(f => Console.println (f.toString+" weights = "+f.weights.toList))
             Console.println ("All entities")
             entityList.filter(e=>e.size>0).foreach(e => Console.println(e.toString +" "+ e.mentions.toList))
-            Console.println ("All mentions")
-            mentionList.foreach(m => Console.println(m.toString +" "+ m.entity))
+            //Console.println ("All mentions"); mentionList.foreach(m => Console.println(m.toString +" "+ m.entity))
             Console.println ()
           }
         }
@@ -200,9 +166,9 @@ object CorefMentionsDemo {
 
       // Sample and learn, providing jump function, temperature, learning rate, #iterations, and diagnostic-printing-function
       Console.println ("About to sampleAndLearn")
-      sampler.sampleAndLearn(3000)
+      sampler.sampleAndLearn(2000)
     }
     0;
-  }
+
 }
 

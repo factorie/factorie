@@ -16,7 +16,7 @@ import cc.factorie.util.Implicits._
 		type ValueType = X
 		type VariableType <: SetVariable[X]
 		private val _members = new HashSet[X]
-		def members: Iterable[X] = _members
+		def members: scala.collection.Set[X] = _members
 		def size = _members.size
 		def add(x: X)(implicit d: DiffList): Unit = if (!_members.contains(x)) {
 			if (d != null) d += new SetVariableAddDiff(x)
@@ -227,16 +227,18 @@ import cc.factorie.util.Implicits._
 	trait VarInSeq[V >: Null <: Variable] {
 		this: Variable =>
 		var seq: Seq[V] = null
+		def seqAfter = seq.drop(position+1)
+		def seqBefore = seq.take(position)
 		var position = -1
 		def setSeqPos(s: Seq[V], p: Int) = {
 			if (s(p) != this) throw new Error
 			seq = s.asInstanceOf[Seq[V]]
 			position = p
 		}
-		def hasNext = seq != null && position + 1 < seq.length
-		def next: V = if (position + 1 < seq.length) seq(position + 1) else null
-		def hasPrev = seq != null && position > 0
-		def prev: V = if (position > 0) seq(position - 1) else null
+		def hasNext = if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") else seq != null && position + 1 < seq.length
+		def next: V = if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (position + 1 < seq.length) seq(position + 1) else null
+		def hasPrev = if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") else seq != null && position > 0
+		def prev: V = if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (position > 0) seq(position - 1) else null
 	}
 
 	/*trait VarInTypedSeq[X,S<:Seq[X]] extends VarInSeq {

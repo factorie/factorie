@@ -7,7 +7,7 @@ import cc.factorie._
 
 object NerModel extends Model {
   class Label(labelStr: String, val span: Document#Span) extends cc.factorie.Label(labelStr) {
-    override def trueScore = span.trueScore // Label trueScores are managed by the Document#Span, not here
+    def trueScore = span.trueScore // Label trueScores are managed by the Document#Span, not here
     // This is necessary because we don't know the true label value at the time we create a Span's Label.
   }
 

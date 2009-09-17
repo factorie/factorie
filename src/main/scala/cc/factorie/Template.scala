@@ -263,6 +263,9 @@ import cc.factorie.util.Implicits._
     } 
     def init(implicit m1:Manifest[S1]) : this.type = { statClasses += m1.erasure.asInstanceOf[Class[IndexedVariable]]; statClasses.freeze; this }  
   }
+  abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1]	{
+		def statistics(v1:N1): Iterable[Stat] = Stat(v1)
+	}
   abstract class TemplateWithExpStatistics1[N1<:IndexedVariable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with ExpStatistics1[N1]	{
 		def statistics(v1:N1): Iterable[Stat] = Stat(v1)
 		init(nm1)
