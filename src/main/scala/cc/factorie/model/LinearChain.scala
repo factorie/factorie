@@ -21,29 +21,29 @@ trait LinearChainModel extends Model {
   
  
 	/** Bias term just on labels */
-	abstract class LabelTemplate extends TemplateWithStatistic1[Label] 
+	abstract class LabelTemplate extends TemplateWithExpStatistics1[Label] 
 
 	/** Factor between two successive labels */
-	abstract class TransitionTemplate extends TemplateWithStatistic2[Label, Label] {
+	abstract class TransitionTemplate extends TemplateWithExpStatistics2[Label, Label] {
 		def unroll1(label: Label) = if (label.hasPrev) Factor(label.token.prev.label, label) else Nil
 		def unroll2(label: Label) = if (label.hasNext) Factor(label, label.token.next.label) else Nil
 	}
 
 	/** Factor between label and observed token */
-	abstract class LabelTokenTemplate extends TemplateWithStatistic2[Label, Token] {
+	abstract class LabelTokenTemplate extends TemplateWithExpStatistics2[Label, Token] {
 		def unroll1(label: Label) = Factor(label, label.token)
 		def unroll2(token: Token) = throw new Error("Token values shouldn't change")
 	}
  
   /** Factor between label, its token and the previous Label */
-	abstract class TransitionTokenTemplate extends TemplateWithStatistic3[Label, Label, Token] {
+	abstract class TransitionTokenTemplate extends TemplateWithExpStatistics3[Label, Label, Token] {
 		def unroll1(label: Label) = if (label.hasNext) Factor(label, label.token.next.label, label.token.next) else Nil
 		def unroll2(label: Label) = if (label.hasPrev) Factor(label.token.prev.label, label, label.token) else Nil
 		def unroll3(token: Token) = throw new Error("Token values shouldn't change")
 	}
 
 	/** A token bi-gram conjunction  */
-	abstract class LabelBiTokenTemplate extends TemplateWithStatistic3[Label, Token, Token] {
+	abstract class LabelBiTokenTemplate extends TemplateWithExpStatistics3[Label, Token, Token] {
 		def unroll1(label: Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
 		def unroll2(token: Token) = throw new Error("Token values shouldn't change")
 	}

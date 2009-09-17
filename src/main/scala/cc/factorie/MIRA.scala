@@ -64,11 +64,11 @@ val f = t.asInstanceOf[MIRALearning];
 				//compute modified config's contribution
 				difflist.redo;
 				model.factorsOf[MIRALearning](difflist).foreach(factor =>
-								factor.template.asInstanceOf[MIRALearning].denseDiff += factor.vector * sign)
+								factor.template.asInstanceOf[MIRALearning].denseDiff += factor.statistic.vector * sign)
 				//compute original config's contribution
 				difflist.undo;
 				model.factorsOf[MIRALearning](difflist).foreach(factor =>
-								factor.template.denseDiff += factor.vector * -1)
+								factor.template.denseDiff += factor.statistic.vector * -1)
 				//
 				//compute l2 squared
 				model.templatesOf[MIRALearning].foreach(t => {
@@ -96,9 +96,9 @@ val f = t.asInstanceOf[MIRALearning];
 				if (newTruthScore > oldTruthScore && modelRatio <= 0) {
 					//          Console.println ("Learning from error: new actually better than old.  DiffList="+difflist.size)
 					learningRate = kktMultiplier(1, true);
-					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.vector * -learningRate)
+					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.statistic.vector * -learningRate)
 					difflist.redo
-					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.vector * learningRate)
+					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.statistic.vector * learningRate)
 					difflist.undo
 					bWeightsUpdated = true
 					bFalseNegative = true
@@ -106,9 +106,9 @@ val f = t.asInstanceOf[MIRALearning];
 				else if (newTruthScore < oldTruthScore && modelRatio >= 0) {
 					learningRate = kktMultiplier(1, false);
 					//          Console.println ("Learning from error: old actually better than new.  DiffList="+difflist.size)
-					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.vector * learningRate)
+					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.statistic.vector * learningRate)
 					difflist.redo
-					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.vector * -learningRate)
+					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.statistic.vector * -learningRate)
 					difflist.undo
 					bWeightsUpdated = true
 					bFalsePositive = true

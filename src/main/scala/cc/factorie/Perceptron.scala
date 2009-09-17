@@ -8,7 +8,7 @@ import scalala.tensor.Vector
 import scala.reflect.Manifest
 
 
-	trait GenericPerceptronLearning extends Template with LogLinearScoring {
+	trait GenericPerceptronLearning extends ExpTemplate with LogLinearScoring {
 	  var gatherAverageWeights = false
 	  var useAverageWeights = false
 
@@ -22,23 +22,23 @@ import scala.reflect.Manifest
 
 		def increment(f: GenericPerceptronLearning#Factor, rate: Double, perceptronIteration:Double) = {
 			if (gatherAverageWeights) {
-				for (i <- f.vector.activeDomain) {
+				for (i <- f.statistic.vector.activeDomain) {
 					val iterationDiff = perceptronIteration - lastUpdateIteration(i)
 					assert(iterationDiff >= 0)
 					if (iterationDiff > 0) {
-						weightsSum(i) += weights(i) * iterationDiff + f.vector(i) * rate
+						weightsSum(i) += weights(i) * iterationDiff + f.statistic.vector(i) * rate
 						lastUpdateIteration(i) = perceptronIteration
 					} else
-						weightsSum(i) += f.vector(i) * rate
+						weightsSum(i) += f.statistic.vector(i) * rate
 				}
 			}
-			weights += f.vector * rate
+			weights += f.statistic.vector * rate
 			//Console.println("GenericPerceptronLearning increment weights.size="+weights.activeDomain.size)
 		}
 
 		def averageWeights = weightsSum :/ lastUpdateIteration
 
-		override def score(s: S) =
+		override def score(s: StatType) =
 			if (useAverageWeights)
 				averageWeights dot s.vector
 			else

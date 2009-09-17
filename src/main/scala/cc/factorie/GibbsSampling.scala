@@ -106,7 +106,7 @@ import cc.factorie.util.Implicits._
 			val proposals =
 			for (index <- 0 until variable.domain.size) yield {
 				variable.setByIndex(index)(null)
-				val s = model.factors(variable).sum(_ score) / temperature
+				val s = model.factors(variable).sum(_.statistic.score) / temperature
 				if (s > max) max = s
 				IndexProposal(s, index)
 			}
@@ -125,7 +125,7 @@ import cc.factorie.util.Implicits._
 			val proposals =
 			for (variable <- factor.variables.filterByClass(classOf[EnumVariable[_]]); val oldIndex = variable.index; index <- 0 until variable.domain.size) yield {
 				variable.setByIndex(index)(null)
-				val s = model.factors(variable).sum(_ score) / temperature
+				val s = model.factors(variable).sum(_.statistic.score) / temperature
 				if (s > max) max = s
 				variable.setByIndex(oldIndex)(null)
 				IndexProposal(s, variable, index)
@@ -141,7 +141,7 @@ import cc.factorie.util.Implicits._
 
 		def sampleChain[X](v: EnumVariable[X], chainLength: Int): Unit = {
 			sample1(v)
-			val minScoringFactor = model.factors(v).min(_ score)
+			val minScoringFactor = model.factors(v).min(_.statistic.score)
 			if (chainLength > 1) {
 				val v2 = sampleFactor(minScoringFactor) // TODO but this may already re-sample v
 				if (v2 != v) // Don't just sample the same variable v again and again

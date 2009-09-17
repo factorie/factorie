@@ -181,14 +181,15 @@ object NerModel extends Model {
   } // end of Document
   
       // Temporary silliness until I make not all Templates require "vector", and I implement a real scoring template for coref.
-    val objective = new Model(new Template1[Document#Span] {
+    val objective = new Model(new Template1[Document#Span] with ExpTemplate {
     	import scalala.tensor.Vector
     	import scala.reflect.Manifest
     	def score(s:Stat) = s.s1.trueScore
+    	type StatType = Stat
   		case class Stat(s1:Document#Span) extends super.Stat with Iterable[Stat] {
     		def vector : Vector = null
     	} 
-    	def statistic(v1:Document#Span): Iterable[Stat] = Stat(v1)
+    	def statistics(v1:Document#Span): Iterable[Stat] = Stat(v1)
     	type S = Stat
     	def init(implicit m1:Manifest[Document#Span]) : this.type = { statClasses += m1.erasure.asInstanceOf[Class[IndexedVariable]]; statClasses.freeze; this }  
     	init
@@ -205,7 +206,7 @@ object NerModel extends Model {
 
   }
 
-  abstract class LabelTokenTemplate extends Template2[Document#Span, Label] with Statistic2[Label, Token] with SpannerLearner {
+  abstract class LabelTokenTemplate extends Template2[Document#Span, Label] with ExpStatistics2[Label, Token] with SpannerLearner {
 
     //gatherAverageWeights = true
     //useAverageWeights = true
@@ -241,7 +242,7 @@ object NerModel extends Model {
 
     def unroll2(label: Label) = Factor(label.span, label)
 
-    def statistic(span: Document#Span, label: Label) = if (span.present) {for (token <- span) yield Stat(span.label, token)} else Nil
+    def statistics(span: Document#Span, label: Label) = if (span.present) {for (token <- span) yield Stat(span.label, token)} else Nil
     //def sufficient(span: Document#Span, label: Label) = for (token <- span) yield Suff(span.label, token, span.present)
 
     NerModel += this
@@ -262,7 +263,7 @@ object NerModel extends Model {
 
     def unroll2(label: Label) = Factor(label.span, label)
 
-    def statistic(span: Document#Span, label: Label) = if (span.present) Stat(span.label, span.first) else Nil
+    def statistics(span: Document#Span, label: Label) = if (span.present) Stat(span.label, span.first) else Nil
     //def sufficient(span: Document#Span, label: Label) = Suff(span.label, span.first, span.present)
     NerModel += this
   }.init
@@ -274,23 +275,23 @@ object NerModel extends Model {
 
     def unroll2(label: Label) = Factor(label.span, label)
 
-    def statistic(span: Document#Span, label: Label) = if (span.present) Stat(span.label, span.last) else Nil
+    def statistics(span: Document#Span, label: Label) = if (span.present) Stat(span.label, span.last) else Nil
     //def sufficient(span: Document#Span, label: Label) = Suff(span.label, span.last, span.present)
     NerModel + this
   }.init
   //
   //  // Label with word before the Span
-  val prevTokenTemplate = new Template1[Document#Span] with Statistic2[Label, Token] with SpannerLearner {
+  val prevTokenTemplate = new Template1[Document#Span] with ExpStatistics2[Label, Token] with SpannerLearner {
 
-    def statistic(span: Document#Span) = if (span.present && !span.isAtStart) Stat(span.label, span.predecessor(1)) else Nil
+    def statistics(span: Document#Span) = if (span.present && !span.isAtStart) Stat(span.label, span.predecessor(1)) else Nil
     NerModel += this
   }.init
   //
 
   // Label with word after the Span
-  val nextTokenTemplate = new Template1[Document#Span] with Statistic2[Label, Token] with SpannerLearner {
+  val nextTokenTemplate = new Template1[Document#Span] with ExpStatistics2[Label, Token] with SpannerLearner {
 
-    def statistic(span: Document#Span) =
+    def statistics(span: Document#Span) =
       if (span.present && !span.isAtEnd) Stat(span.label, span.successor(1)) else Nil
     NerModel += this
   }.init

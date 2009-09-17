@@ -15,10 +15,10 @@ class DocumentClassifierModel extends Model {
   }
 
   /** Bias term just on labels */
-  this += new TemplateWithStatistic1[Label] with PerceptronLearning
+  this += new TemplateWithExpStatistics1[Label] with PerceptronLearning
 
   /** Factor between label and observed document */
-  this += new TemplateWithStatistic2[Label,Document] with PerceptronLearning {
+  this += new TemplateWithExpStatistics2[Label,Document] with PerceptronLearning {
     def unroll1 (label:Label) = Factor(label, label.document)
     def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
   }

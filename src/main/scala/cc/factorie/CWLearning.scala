@@ -46,9 +46,9 @@ import scalala.tensor.dense.DenseVector
 		private def putDiffOnScratch: Unit = {
 			model.templatesOf[CWLearning].foreach(t => t.scratch.zero)
 			difflist.redo;
-			model.factorsOf[CWLearning](difflist).foreach(factor => factor.template.scratch += factor.vector)
+			model.factorsOf[CWLearning](difflist).foreach(factor => factor.template.scratch += factor.statistic.vector)
 			difflist.undo;
-			model.factorsOf[CWLearning](difflist).foreach(factor => factor.template.scratch -= factor.vector)
+			model.factorsOf[CWLearning](difflist).foreach(factor => factor.template.scratch -= factor.statistic.vector)
 		}
 
 		/**Returns variance of margin */
@@ -66,8 +66,8 @@ import scalala.tensor.dense.DenseVector
 			//System.out.println("inc="+incr);
 			model.factorsOf[CWLearning](difflist).foreach(factor => {
 				//factor.template.weights += factor.vector * factor.template.sigma * incr // Why doesn't this work?
-				for (i <- factor.vector.activeDomain)
-					factor.template.weights(i) += factor.vector(i) * factor.template.sigma(i) * incr
+				for (i <- factor.statistic.vector.activeDomain)
+					factor.template.weights(i) += factor.statistic.vector(i) * factor.template.sigma(i) * incr
 			})
 		}
 

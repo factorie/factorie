@@ -37,14 +37,15 @@ class CorefMentionsModel extends Model
   }
   
   // Temporary silliness until I make not all Templates require "vector", and I implement a real scoring template for coref.
-  val objective = new Model(new Template1[Mention] {
+  val objective = new Model(new Template1[Mention] with ExpTemplate {
     import scalala.tensor.Vector
     import scala.reflect.Manifest
     def score(s:Stat) = s.s1.trueScore
+    type StatType = Stat
   	case class Stat(s1:Mention) extends super.Stat with Iterable[Stat] {
       def vector : Vector = null
     } 
-    def statistic(v1:Mention): Iterable[Stat] = Stat(v1)
+    def statistics(v1:Mention): Iterable[Stat] = Stat(v1)
     type S = Stat
     def init(implicit m1:Manifest[Mention]) : this.type = { statClasses += m1.erasure.asInstanceOf[Class[IndexedVariable]]; statClasses.freeze; this }  
     init
@@ -78,7 +79,7 @@ class CorefMentionsModel extends Model
 
 
   // Pairwise affinity factor between Mentions in the same partition
-  this += new Template2[Mention,Mention] with Statistic1[AffinityVector]
+  this += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector]
     with PerceptronLearning 
     //with MIRALearning
     //with CWLearning
@@ -87,11 +88,11 @@ class CorefMentionsModel extends Model
       if (mention.hashCode > other.hashCode) Factor(mention, other)
       else Factor(other, mention)
     def unroll2 (mention:Mention) = Nil // symmetric
-    def statistic (mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
+    def statistics (mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
   }.init
 
   // Pairwise repulsion factor between Mentions in different partitions
-  this += new Template2[Mention,Mention] with Statistic1[AffinityVector]
+  this += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector]
   with PerceptronLearning 
   //with MIRALearning
   //with CWLearning
@@ -106,7 +107,7 @@ class CorefMentionsModel extends Model
     }
     def unroll1 (mention:Mention) = for (other <- mention.allMentions; if (other.entity != mention.entity)) yield Factor(mention, other);
     def unroll2 (mention:Mention) = Nil // symmetric
-    def statistic(mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
+    def statistics(mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
   }.init
   
   /*    // Factor testing if all the mentions in this entity share the same prefix of length 1

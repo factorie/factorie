@@ -208,7 +208,7 @@ trait TypedTrueIndexedValue[T] extends TrueIndexedValue with TypedSingleIndexedV
 	def trueValue_=(x: T) = if (x == null) trueIndex = -1 else trueIndex = domain.index(x)
 }
 
-class TrueIndexedValueTemplate[V<:TrueIndexedValue](implicit m:Manifest[V]) extends TemplateWithStatistic1[V]()(m) {
+class TrueIndexedValueTemplate[V<:TrueIndexedValue](implicit m:Manifest[V]) extends TemplateWithExpStatistics1[V]()(m) {
   def score(s:Stat) = if (s.s1.index == s.s1.trueIndex) 0.0 else 1.0
 }
 
