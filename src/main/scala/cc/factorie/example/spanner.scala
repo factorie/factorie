@@ -39,7 +39,7 @@ object NerModel extends Model {
       //case class Proposal(modelScore:Double, trueScore:Double, diff:DiffList, span:Document#Span) extends factorie.Proposal
       if (spans.length == 0) {
         // Add a unit-length span, choosing the label that scores best
-        for (labelvalue <- IndexedDomain[Label]) {
+        for (labelvalue <- Domain[Label]) {
           // TODO Why not just: new AutoProposal(document.addSpan(this.position, 1, label.entry))
           proposals += new AutoProposal(model, objective, diff => document.addSpan(this.position, 1, labelvalue.entry)(diff))
         }
@@ -53,7 +53,7 @@ object NerModel extends Model {
             proposals += new AutoProposal(model, objective, diff => span.trimEnd(1)(diff))
           proposals += new AutoProposal(model, objective, diff => span.delete(diff)) // Try removing the span
           //println("Delete diff:" + proposals.last.diff)
-          for (labelvalue <- IndexedDomain[Label]; if (labelvalue.index != span.label.value.index)) // Try changing its label
+          for (labelvalue <- Domain[Label]; if (labelvalue.index != span.label.value.index)) // Try changing its label
             proposals += new AutoProposal(model, objective, diff => span.label.set(labelvalue)(diff))
         }
       }
@@ -141,7 +141,7 @@ object NerModel extends Model {
     class Span(initStart: Int, initLength: Int, labelStr: String)(implicit d: DiffList) extends SpanVariableInSeq(initStart, initLength)(d) {
       override def diffIfNotPresent = true
 
-      val label = new Label(IndexedDomain[Label].get(0).entry, this)
+      val label = new Label(Domain[Label].get(0).entry, this)
       //d += new CreationDiff(label)
       label.set(labelStr)(d)
       override def toString = {if (present) "" else "!"} + "Span(" + this.phrase + "=" + this.label.value.entry + ")"
@@ -222,7 +222,7 @@ object NerModel extends Model {
     def printWeights() {
       var labelVar = new Label("ORG", null)
       var tokenVar = new Token(".")
-      for (label <- IndexedDomain[Label]; token <- statDomains(1)) {
+      for (label <- Domain[Label]; token <- statDomains(1)) {
         //for (label <- spanTokensTemplate.sDomains(0); token <- spanTokensTemplate.sDomains(1)) {
         labelVar.set(label)(null)
         tokenVar.clear

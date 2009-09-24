@@ -43,8 +43,8 @@ object CorefMentionsDemo {
   val features = List("match", "-match", "prefix1", "-prefix1", "prefix2", "-prefix2", 
                       "prefix3", "-prefix3", "substring", "-substring",
                       "length", "containsword")
-  features.foreach(f=>IndexedDomain[AffinityVector].index(f)) // initialize the index
-  IndexedDomain[AffinityVector].freeze
+  features.foreach(f=>Domain[AffinityVector].index(f)) // initialize the index
+  Domain[AffinityVector].freeze
 
 
   def main(args: Array[String]) : Unit = {

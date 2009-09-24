@@ -49,9 +49,9 @@ trait Index[T] extends (T => Int) with Collection[T] {
 	/**The size others might want to allocate to hold data relevant to this Index.  If maxSize is set can be bigger than size. */
 	def allocSize = if (maxSize < 0) size else maxSize
 
-	override def size = indices.size
+	def size = indices.size
 
-	override def elements = objects.elements
+	def elements = objects.elements
 
 	def contains(entry: T) = indices.contains(entry)
 

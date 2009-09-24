@@ -129,15 +129,15 @@ import cc.factorie.util.Implicits._
     }
 	  def statDomains : Seq[IndexedDomain[_]] = {
 	    if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
-	    statClasses.map(IndexedDomain.get(_))
+	    statClasses.map(Domain.get[IndexedVariable](_))
 	  }	
     def freezeDomains : Unit = {
       if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
-      statClasses.foreach(IndexedDomain.get[IndexedVariable](_).freeze)
+      statClasses.foreach(Domain.get[IndexedVariable](_).freeze)
     }	
     lazy val statsize : Int = {
       if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
-      statClasses.productInts(IndexedDomain.get[IndexedVariable](_).allocSize)
+      statClasses.productInts(Domain.get[IndexedVariable](_).allocSize)
     }	
     type StatType <: Stat
     trait Stat extends super.Stat {

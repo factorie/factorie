@@ -30,7 +30,8 @@ class DocumentClassifierModel extends Model {
 object DocumentClassifierDemo {
   
   def main(args: Array[String]) : Unit = {
-
+  	if (args.length < 2) 
+  		throw new Error("You must specify at least two directories containing text files for classification")
     val model = new DocumentClassifierModel()
 
     val docClassifyWorld = new World {

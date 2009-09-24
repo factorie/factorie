@@ -15,17 +15,18 @@ import cc.factorie.util.Implicits._
    The trait is abstract not because there are abstract method definitions; 
    it is just preventing users from trying to construct a Variable instance. */
 abstract trait Variable {
+  /** The type of this variable, especially used by this Variable's Domain. */
 	type VariableType <: Variable
-	//type DomainFrom <: AnyRef
-	/** The class of the Domain object, e.g. IndexedDomain, LabelDomain. */
-	def domainClass : Class[_<:Domain[_<:VariableType]] = classOf[Domain[VariableType]];
-	//type DomainType = Domain[VariableType]
-	trait DomainType extends Domain[VariableType]
-	//type domainKeyType <:
-	/** The class used as the key into the global Domain HashMap to find the domain object of this Variable. */
-	def domainKeyClass : Class[_<:VariableType] = this.getClass.asInstanceOf[Class[VariableType]]; // TODO is there a way to avoid this cast?
-	def domain: Domain[VariableType] = Domain[VariableType](this.domainKeyClass)
-	//def domain: DomainType = Domain[VariableType](this.domainKeyClass)
+	/** The type of this.domain and Domain[MyVariable]*/
+	type DomainType <: Domain[VariableType]
+  /** When a Domain is constructed for this class, it will be the superclass of this inner class. */
+  class DomainClass extends Domain[VariableType]
+  /** When DomainInSubclasses appears as an inner class of a Variable class, 
+      it simply ensures that the library will never create a Domain for this class, only its subclasses.
+      If library users create their own new Variable classes, which will be subclassed, and wants each
+      subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
+  class DomainInSubclasses
+  final def domain = Domain.get[VariableType](this.getClass)
 	private def shortClassName = {
 	  var fields = this.getClass.getName.split('$')
 	  if (fields.length == 1)
@@ -39,14 +40,14 @@ abstract trait Variable {
 	}
 	def printName = shortClassName
 	override def toString = printName + "(_)"
-	def isConstant = false
 	def factors(model:Model): Iterable[Factor] = model.factors(this)
 }
 
-/** Used as a marker for Variables whose value does not need to be inferred. */
-trait ConstantValue requires Variable
+/** Used as a marker for Variables whose value does not change once created. */
+abstract trait ConstantValue requires Variable
 
-trait NoCoordination extends SingleIndexedVariable {
+// TODO Remove this.  We can't enforce no coordinated jumps after the fact.
+abstract trait NoCoordination extends SingleIndexedVariable {
   final override def setByIndex(i:Int)(implicit d:DiffList) = super.setByIndex(i)(d)
 }
 
@@ -59,7 +60,8 @@ trait ItemizedVariable extends Variable {
 */
 
 /**For variables whose value has a type stored in type ValueType */
-trait TypedVariable extends Variable {
+abstract trait TypedVariable /*extends Variable*/ {
+  this : Variable =>
 	type ValueType
 }
 
@@ -68,7 +70,7 @@ trait TypedVariable extends Variable {
 // TODO remove this now that we have Proposer
 /**A variable that can provide an Iterator over all of its values. */
 @deprecated
-trait IterableValues[T] {
+abstract trait IterableValues[T] {
 	// TODO Inherit from TypedVariable instead?
 			this: Variable =>
 	/**Values this variable could take on. */
@@ -79,7 +81,8 @@ trait IterableValues[T] {
 
 // TODO remove this now that we have Proposer?
 /** A variable that can iterate over its possible configurations */
-trait IterableSettings {
+@deprecated
+abstract trait IterableSettings {
 	this: Variable =>
   /** Return an iterator over some/all configurations of this variable, each time returning simply the same Variable object. */
   def iterator: Iterator[this.type]
@@ -90,16 +93,16 @@ trait IterableSettings {
 abstract class PrimitiveVariable[T](initval: T) extends Variable with TypedVariable {
 	type VariableType <: PrimitiveVariable[T]
   type ValueType = T
+  class DomainInSubclasses
   protected var _value: T = _
   set(initval)(null) // initialize with method call because subclasses may do coordination in overridden set()()
   def value = _value
-  
   def set(newValue: T)(implicit d: DiffList): Unit =
     if (newValue != _value) {
       if (d != null) d += new PrimitiveDiff(_value, newValue)
       _value = newValue
     }
-  // Should we implement equals to compare values??
+  // Should we implement equals here to compare Variable values??
   // No, I don't think so because we might need to put multiple variables with the same values in a HashMap
   // But we can implement our own specialized equality method... (the shorter === overlaps with an implicit conversion in scalatest)
   def ====(other: PrimitiveVariable[T]) = _value == other._value
@@ -121,12 +124,11 @@ trait PrimitiveTrueValue[T] {
 }
 
 /**For use with variables whose values are mapped to dense integers */
-trait IndexedVariable extends Variable with TypedVariable {
+abstract trait IndexedVariable extends Variable with TypedVariable {
 	type VariableType <: IndexedVariable
-	override def domainClass : Class[_<:IndexedDomain[_<:VariableType]] = classOf[IndexedDomain[VariableType]];
-	override def domainKeyClass : Class[_<:VariableType] = this.getClass.asInstanceOf[Class[VariableType]]
-	override def domain: IndexedDomain[VariableType] = IndexedDomain.get[VariableType](this.domainKeyClass)
-	override def isConstant = true
+	type DomainType <: IndexedDomain[VariableType]
+	class DomainClass extends IndexedDomain[VariableType]
+	class DomainInSubclasses
 	def vector: Vector // TODO remove this method?  No perhaps not.
 	// TODO These next methods are efficient for cycling through all values,
 	// but perhaps should be simply collapsed into IterableValues or MultiProposer -akm
@@ -139,9 +141,10 @@ trait IndexedVariable extends Variable with TypedVariable {
 // But how would it be enforced?
 
 /** For variables whose values are associated with a an Int from an index. */
-trait SingleIndexedVariable extends IndexedVariable with Proposer with MultiProposer {
+abstract trait SingleIndexedVariable extends IndexedVariable with Proposer with MultiProposer {
 	type VariableType <: SingleIndexedVariable
-	protected var indx = -1 //domain.index(initval) // but this provides no way to initialize with null
+ 	class DomainInSubclasses
+	protected var indx = -1
 	// Consider changing this method name to just "set"?  But then will code readers more easily get confused?
 	def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
 		if (newIndex < 0) throw new Error("SingleIndexedVariable setByIndex can't be negative.")
@@ -177,17 +180,19 @@ trait SingleIndexedVariable extends IndexedVariable with Proposer with MultiProp
 }
 
 /** For variables put in a index, and whose value is the variable itself. */
-trait ItemizedVariable[This <: ItemizedVariable[This]] extends SingleIndexedVariable {
+abstract trait ItemizedVariable[This <: ItemizedVariable[This]] extends SingleIndexedVariable {
 	this : This =>
   type VariableType = This
   type ValueType = This
+  class DomainInSubclasses
   domain.index(this) // Put the variable in the index
 }
 
 /** For variables holding a single indexed value, which is not the variable object itself, but a Scala value of type T. */
-trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with TypedVariable {
+abstract trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with TypedVariable {
 	type VariableType <: TypedSingleIndexedVariable[T]
   type ValueType = T
+  class DomainInSubclasses
   def set(newValue: T)(implicit d: DiffList) = setByIndex(domain.index(newValue))
   def value: T = domain.get(indx)
   override def toString = printName + "(" + value.toString + "=" + indx + ")"
@@ -197,16 +202,17 @@ trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with TypedVari
 // It is less efficient, but too error-prone.
 
 /**A variable whose value is a single indexed value; mutable */
-trait CoordinatedEnumVariable[T] extends TypedSingleIndexedVariable[T] {
+abstract trait CoordinatedEnumVariable[T] extends TypedSingleIndexedVariable[T] {
 	type VariableType <: CoordinatedEnumVariable[T]
-  //override def domain: IndexedDomain[VariableType] = IndexedDomain.get[VariableType](this.getClass)
+  class DomainInSubclasses
   // initialize the variable's value; using this method in case coordination in necessary
   //setByIndex(domain.index(initval))(null)
 }
 
 /**A variable of finite enumerated values that has a true "labeled" value, separate from its current value. */
 //trait TrueIndexedValue[T] extends TypedSingleIndexedVariable[T] 
-trait TrueIndexedValue extends SingleIndexedVariable {
+trait TrueIndexedValue /*extends SingleIndexedVariable*/ {
+  this : SingleIndexedVariable =>
 	//type VariableType <: TrueIndexedValue // TODO Try to make this work, so that "trueValue" returns the right type
   /** The index of the true labeled value for this variable.  If unlabeled, set to -1 */
   var trueIndex: Int
@@ -216,17 +222,20 @@ trait TrueIndexedValue extends SingleIndexedVariable {
   def unlabel = if (trueIndex >= 0) trueIndex = -trueIndex else throw new Error("Already unlabeled.")
 }
 
-trait TypedTrueIndexedValue[T] extends TrueIndexedValue with TypedSingleIndexedVariable[T] {
+// TODO consider moving TrueIndexedValue to inside with this:TrueIndexedValue => ?
+abstract trait TypedTrueIndexedValue[T] extends TrueIndexedValue with TypedSingleIndexedVariable[T] {
+  class DomainInSubclasses
 	def trueValue_=(x: T) = if (x == null) trueIndex = -1 else trueIndex = domain.index(x)
 }
 
-class TrueIndexedValueTemplate[V<:TrueIndexedValue](implicit m:Manifest[V]) extends TemplateWithExpStatistics1[V]()(m) {
+abstract class TrueIndexedValueTemplate[V<:SingleIndexedVariable with TrueIndexedValue](implicit m:Manifest[V]) extends TemplateWithExpStatistics1[V]()(m) {
   def score(s:Stat) = if (s.s1.index == s.s1.trueIndex) 1.0 else 0.0
 }
 
 /**A variable whose value is a single indexed value that does no variable coordination in its 'set' method.  Ensuring no coordination is necessary for optimization of belief propagation. */
 abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] with TypedTrueIndexedValue[T] with IterableValues[T] {
 	type VariableType <: EnumVariable[T]
+  class DomainInSubclasses
 	var trueIndex = domain.index(trueval)
 	setByIndex(domain.index(trueval))(null)
 	override final def set(newValue: T)(implicit d: DiffList) = super.set(newValue)(d)
@@ -234,11 +243,13 @@ abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] wit
 	//override def setFirstValue: Unit = setByIndex(0)(null)
 	//override def hasNextValue = indx < domain.size - 1
 	//override def setNextValue: Unit = if (hasNextValue) setByIndex(indx + 1)(null) else throw new Error("No next value")
-	override def isConstant = false
 	def iterableValues: Iterable[T] = domain
 	def iterableOtherValues: Iterable[T] = domain.filter(_ != value)
 	override def trueValue : T = domain.get(trueIndex) 
 }
+
+//trait MyFoo { def myfoo = 3 }
+//class MyEnumVariable[T](trueval:T) extends EnumVariable[T](trueval) with MyFoo
 
 class TrueEnumTemplate[V<:EnumVariable[_]](implicit m:Manifest[V]) extends TrueIndexedValueTemplate[V]()(m)
 
@@ -256,13 +267,15 @@ created or indexed through a String.  LabelValues can be
 efficiently compared. */
 //class Label(initval:String) extends SingleIndexedVariable[LabelValue] with TrueIndexedValue[LabelValue] with IterableValues[LabelValue] {
 class CoordinatedLabel(trueval: String) extends CoordinatedEnumVariable[LabelValue] with TypedTrueIndexedValue[LabelValue] with IterableValues[LabelValue] {
+	type VariableType <: CoordinatedLabel
+	type DomainType <: LabelDomain[VariableType]
+	class DomainClass extends LabelDomain[VariableType]
+	//type ValueType = String 
 	def this(trueval: LabelValue) = this (trueval.entry)
+  class DomainInSubclasses
 	var trueIndex = domain.index(trueval)
 	setByIndex(domain.index(trueval))(null)
 	//def this(initval:String) = this(LabelDomain.get[Label](this/*.getClass*/).get(initval))
-	type VariableType <: CoordinatedLabel
-	override def domain: LabelDomain[VariableType] = LabelDomain.get[VariableType](this.getClass)
-	override def isConstant = false
 	def set(s: String)(implicit d: DiffList) = setByIndex(domain.index(s))
  	override def trueValue : LabelValue = domain.get(trueIndex) 
 	//override def setFirstValue: Unit = setByIndex(0)(null)
@@ -282,6 +295,8 @@ class CoordinatedLabel(trueval: String) extends CoordinatedEnumVariable[LabelVal
 }
 
 class Label(trueval: String) extends CoordinatedLabel(trueval) {
+  type VariableType <: Label
+  class DomainInSubclasses
 	override final def set(newValue: String)(implicit d: DiffList) = super.set(newValue)(d)
 	override final def set(newValue: LabelValue)(implicit d: DiffList) = super.set(newValue)(d)
 	override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d) // TODO should be final, right?
@@ -294,8 +309,8 @@ class TrueLabelTemplate[V<:Label](implicit m:Manifest[V]) extends TrueIndexedVal
 abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
 	type ValueType = T
 	type VariableType <: VectorVariable[T]
+  class DomainInSubclasses
   //def this (es:T*) = this(es.toArray)   TODO include this again later
-  override def isConstant = true
   protected var indxs = new ArrayBuffer[Int]()
   def indices : Seq[Int] = indxs
   def values : Seq[T] = { val d = this.domain; indxs.map(d.get(_)) }
@@ -356,6 +371,7 @@ class IntRange(i:Int) extends IndexedVariable {
 /**A variable class for string values. */
 class StringVariable(str: String) extends PrimitiveVariable(str) {
 	type VariableType = StringVariable
+	class DomainInSubclasses
 }
 
 /**For Variables that hold their list of Factors */
