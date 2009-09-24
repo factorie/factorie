@@ -74,6 +74,9 @@ trait Index[T] extends (T => Int) with Collection[T] {
 		if (frozen) indices.getOrElse(entry, -1)
 		else indices.getOrElseUpdate(entry, nextMax);
 	}
+ 
+	/** Like index, but throw an exception if the entry is not already there. */
+	def getIndex(entry:T) : Int = indices.getOrElse(entry, throw new Error("Entry not present; use index() to cause a lookup."))
 
 	/**Override indexOf's slow, deprecated behavior. */
 	override def indexOf[B >: T](elem: B): Int = index(elem.asInstanceOf[T]);

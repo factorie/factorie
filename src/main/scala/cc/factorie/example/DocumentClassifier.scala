@@ -55,16 +55,16 @@ object DocumentClassifierDemo {
 
       // Set label variables to random values
       documents.foreach(d => d.label.set(d.label.domain.randomValue)(null))
-      Console.println ("Initial test accuracy = "+ model.aveScore(testVariables))
+      Console.println ("Initial test accuracy = "+ model.objective.aveScore(testVariables))
 
       // Sample and Learn!
       val sampler = new GibbsPerceptronLearner(model, model.objective)
       sampler.learningRate = 1.0
       for (i <- 0 until 10) {
         sampler.sampleAndLearn (trainVariables, 1)
-        sampler.learningRate *= 0.9
+        sampler.learningRate *= 0.8
         sampler.sample (testVariables, 4)
-        Console.println ("Test accuracy = "+ model.aveScore(testVariables))
+        Console.println ("Test accuracy = "+ model.objective.aveScore(testVariables))
       }
 
       // Show the parameters

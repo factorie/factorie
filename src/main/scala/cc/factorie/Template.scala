@@ -22,7 +22,7 @@ import cc.factorie.util.Implicits._
 		//def template : TemplateType
 		def numVariables: Int 
 		def variable(index: Int): Variable
-		def variables: Iterable[Variable] = for (i <- 0 until numVariables) yield variable(i)
+		def variables: Iterable[Variable] = for (i <- 0 until numVariables force) yield variable(i)
 		def statistic : Statistic
 		def randomVariable(implicit random:Random): Variable = variable(random.nextInt(numVariables))
 		//def score: Double

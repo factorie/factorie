@@ -11,21 +11,43 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
 
-/**Abstract superclass of all variables.  Don't need to know its value type to use it. */
-trait Variable {
+/**Abstract superclass of all variables.  Don't need to know its value type to use it. 
+   The trait is abstract not because there are abstract method definitions; 
+   it is just preventing users from trying to construct a Variable instance. */
+abstract trait Variable {
 	type VariableType <: Variable
-	def domain: Domain[VariableType] = Domain[VariableType](this.getClass)
+	//type DomainFrom <: AnyRef
+	/** The class of the Domain object, e.g. IndexedDomain, LabelDomain. */
+	def domainClass : Class[_<:Domain[_<:VariableType]] = classOf[Domain[VariableType]];
+	//type DomainType = Domain[VariableType]
+	trait DomainType extends Domain[VariableType]
+	//type domainKeyType <:
+	/** The class used as the key into the global Domain HashMap to find the domain object of this Variable. */
+	def domainKeyClass : Class[_<:VariableType] = this.getClass.asInstanceOf[Class[VariableType]]; // TODO is there a way to avoid this cast?
+	def domain: Domain[VariableType] = Domain[VariableType](this.domainKeyClass)
+	//def domain: DomainType = Domain[VariableType](this.domainKeyClass)
 	private def shortClassName = {
-	  val fields = this.getClass.getName.split('$')
+	  var fields = this.getClass.getName.split('$')
+	  if (fields.length == 1)
+	  	fields = this.getClass.getName.split('.')
 	  if (fields.last == "class")
 	  	fields(fields.length - 2)
-	  else
+	  else if ("1234567890".contains(fields.last))
+     fields(fields.length-2)
+    else
       fields.last
 	}
 	def printName = shortClassName
 	override def toString = printName + "(_)"
 	def isConstant = false
 	def factors(model:Model): Iterable[Factor] = model.factors(this)
+}
+
+/** Used as a marker for Variables whose value does not need to be inferred. */
+trait ConstantValue requires Variable
+
+trait NoCoordination extends SingleIndexedVariable {
+  final override def setByIndex(i:Int)(implicit d:DiffList) = super.setByIndex(i)(d)
 }
 
 /*
@@ -41,33 +63,18 @@ trait TypedVariable extends Variable {
 	type ValueType
 }
 
-/**A Variable with a Domain different than that of this.getClass, instead specified by constructor argument */
-// TODO would like to make this a trait later when traits can take constructor arguments
-abstract class VariableWithDomain[D <: TypedVariable](implicit variableOfDomain: Manifest[D]) extends TypedVariable {
-	// put this.getClass in the Domain global hash.  // TODO but no need to do it again and again!
-	Domain.set(this.getClass, Domain[D](variableOfDomain))
-	override def domain: Domain[VariableType] = Domain[VariableType](variableOfDomain.erasure)
-}
-
-/**An IndexedVariable with a Domain different than that of this.getClass, instead specified by constructor argument */
-// TODO would like to make this a trait later when traits can take constructor arguments
-abstract class IndexedVariableWithDomain[V <: IndexedVariable](implicit variableOfDomain: Manifest[V]) extends IndexedVariable {
-	// put this.getClass in the Domain global hash.  // TODO but no need to do it again and again!
-	Domain.set(this.getClass, Domain[V](variableOfDomain))
-	override def domain: IndexedDomain[VariableType] = IndexedDomain.get[VariableType](variableOfDomain.erasure)
-}
-
 
 
 // TODO remove this now that we have Proposer
 /**A variable that can provide an Iterator over all of its values. */
+@deprecated
 trait IterableValues[T] {
 	// TODO Inherit from TypedVariable instead?
 			this: Variable =>
 	/**Values this variable could take on. */
-	def iterableValues: Iterable[T]
-	                             /**Possible alternative values, that is, values other than its current value. */
-	                             def iterableOtherValues: Iterable[T]
+	def iterableValues: Iterable[T];
+	/**Possible alternative values, that is, values other than its current value. */
+	def iterableOtherValues: Iterable[T]
 }
 
 // TODO remove this now that we have Proposer?
@@ -116,15 +123,20 @@ trait PrimitiveTrueValue[T] {
 /**For use with variables whose values are mapped to dense integers */
 trait IndexedVariable extends Variable with TypedVariable {
 	type VariableType <: IndexedVariable
-	override def domain: IndexedDomain[VariableType] = IndexedDomain.get[VariableType](this.getClass)
+	override def domainClass : Class[_<:IndexedDomain[_<:VariableType]] = classOf[IndexedDomain[VariableType]];
+	override def domainKeyClass : Class[_<:VariableType] = this.getClass.asInstanceOf[Class[VariableType]]
+	override def domain: IndexedDomain[VariableType] = IndexedDomain.get[VariableType](this.domainKeyClass)
 	override def isConstant = true
-	def vector: Vector
+	def vector: Vector // TODO remove this method?  No perhaps not.
 	// TODO These next methods are efficient for cycling through all values,
 	// but perhaps should be simply collapsed into IterableValues or MultiProposer -akm
 	//def setFirstValue: Unit = throw new Error("Cannot set constant IndexedVariable")
 	//def hasNextValue = false
 	//def setNextValue: Unit = {}
 }
+
+// TODO Consider making a ConstantSingleIndexedVariable, for use by MixtureComponent
+// But how would it be enforced?
 
 /** For variables whose values are associated with a an Int from an index. */
 trait SingleIndexedVariable extends IndexedVariable with Proposer with MultiProposer {
@@ -142,11 +154,12 @@ trait SingleIndexedVariable extends IndexedVariable with Proposer with MultiProp
 	def setRandomly(implicit random:Random) : Unit = setByIndex(random.nextInt(domain.size))(null)
 	def setRandomly : Unit = setRandomly(cc.factorie.Global.random)
 	def propose(d: DiffList)(implicit random:Random) = {setByIndex(random.nextInt(domain.size))(d); 0.0}
-	// The reason for the "toList", see 
+	// The reason for the "toList" (now changed to "force"), see 
 	// http://stackoverflow.com/questions/1332574/common-programming-mistakes-for-scala-developers-to-avoid
 	// http://creativekarma.com/ee.php/weblog/comments/the_scala_for_comprehension_from_a_java_perspective/
   // TODO Look at this issue more carefully and turn on printing in Implicits.bonusIterables to look for additional efficiencies 
-	def multiPropose(model:Model, objective:Model, difflist: DiffList) = for (i <- 0 until domain.size toList) yield {
+	def multiPropose(model:Model, objective:Model, difflist: DiffList) = for (i <- 0 until domain.size force) yield {
+	  //println("SingleIndexedVariable multiPropose " +i) // TODO check this for repeated evaluation
 		new AutoProposal(model, objective, diff => setByIndex(i)(diff))
 		// val d = new DiffList; setByIndex(i)(d); new CaseProposal(d.scoreAndUndo, d)
 	}
@@ -180,11 +193,13 @@ trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with TypedVari
   override def toString = printName + "(" + value.toString + "=" + indx + ")"
 }	
 
+// TODO get rid of all this "Coordinated" versus non-coordinated.  Everything should just be coordinated.
+// It is less efficient, but too error-prone.
 
 /**A variable whose value is a single indexed value; mutable */
 trait CoordinatedEnumVariable[T] extends TypedSingleIndexedVariable[T] {
 	type VariableType <: CoordinatedEnumVariable[T]
-  override def domain: IndexedDomain[VariableType] = IndexedDomain.get[VariableType](this.getClass)
+  //override def domain: IndexedDomain[VariableType] = IndexedDomain.get[VariableType](this.getClass)
   // initialize the variable's value; using this method in case coordination in necessary
   //setByIndex(domain.index(initval))(null)
 }
@@ -192,10 +207,11 @@ trait CoordinatedEnumVariable[T] extends TypedSingleIndexedVariable[T] {
 /**A variable of finite enumerated values that has a true "labeled" value, separate from its current value. */
 //trait TrueIndexedValue[T] extends TypedSingleIndexedVariable[T] 
 trait TrueIndexedValue extends SingleIndexedVariable {
+	//type VariableType <: TrueIndexedValue // TODO Try to make this work, so that "trueValue" returns the right type
   /** The index of the true labeled value for this variable.  If unlabeled, set to -1 */
   var trueIndex: Int
   //private var _trueValue:T = domain.get(trueIndex)
-  def trueValue = if (trueIndex >= 0) domain.get(trueIndex) else null // _trueValue
+  def trueValue /*:ValueType*/= if (trueIndex >= 0) domain.get(trueIndex) else null // _trueValue
   def isUnlabeled = trueIndex < 0
   def unlabel = if (trueIndex >= 0) trueIndex = -trueIndex else throw new Error("Already unlabeled.")
 }
@@ -205,11 +221,12 @@ trait TypedTrueIndexedValue[T] extends TrueIndexedValue with TypedSingleIndexedV
 }
 
 class TrueIndexedValueTemplate[V<:TrueIndexedValue](implicit m:Manifest[V]) extends TemplateWithExpStatistics1[V]()(m) {
-  def score(s:Stat) = if (s.s1.index == s.s1.trueIndex) 0.0 else 1.0
+  def score(s:Stat) = if (s.s1.index == s.s1.trueIndex) 1.0 else 0.0
 }
 
 /**A variable whose value is a single indexed value that does no variable coordination in its 'set' method.  Ensuring no coordination is necessary for optimization of belief propagation. */
 abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] with TypedTrueIndexedValue[T] with IterableValues[T] {
+	type VariableType <: EnumVariable[T]
 	var trueIndex = domain.index(trueval)
 	setByIndex(domain.index(trueval))(null)
 	override final def set(newValue: T)(implicit d: DiffList) = super.set(newValue)(d)
@@ -220,6 +237,7 @@ abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] wit
 	override def isConstant = false
 	def iterableValues: Iterable[T] = domain
 	def iterableOtherValues: Iterable[T] = domain.filter(_ != value)
+	override def trueValue : T = domain.get(trueIndex) 
 }
 
 class TrueEnumTemplate[V<:EnumVariable[_]](implicit m:Manifest[V]) extends TrueIndexedValueTemplate[V]()(m)
@@ -230,6 +248,7 @@ trait LabelValue {
 	def index: Int
 	def domain: LabelDomain[_]
   def entry: String = domain.getString(index)
+  override def toString = "LabelValue("+entry+")"
 }
 
 /**A variable whose value is a LabelValue, which in turn can be
@@ -245,12 +264,13 @@ class CoordinatedLabel(trueval: String) extends CoordinatedEnumVariable[LabelVal
 	override def domain: LabelDomain[VariableType] = LabelDomain.get[VariableType](this.getClass)
 	override def isConstant = false
 	def set(s: String)(implicit d: DiffList) = setByIndex(domain.index(s))
+ 	override def trueValue : LabelValue = domain.get(trueIndex) 
 	//override def setFirstValue: Unit = setByIndex(0)(null)
 	//override def hasNextValue = indx < domain.size - 1
 	//override def setNextValue: Unit = if (hasNextValue) setByIndex(indx + 1)(null) else throw new Error("No next value")
 	def iterableValues: Iterable[LabelValue] = domain
 	def iterableOtherValues: Iterable[LabelValue] = domain.filter(_ != value)
-	//type ValueType <: LabelDomain[VariableType]#Value
+	//type ValueType <: LabelDomain[VariableType]#Value // TODO try to get this working
 	/*trait Value {
 		def index : Int
 		g      def domain : LabelDomain[_<:Label]
@@ -264,7 +284,7 @@ class CoordinatedLabel(trueval: String) extends CoordinatedEnumVariable[LabelVal
 class Label(trueval: String) extends CoordinatedLabel(trueval) {
 	override final def set(newValue: String)(implicit d: DiffList) = super.set(newValue)(d)
 	override final def set(newValue: LabelValue)(implicit d: DiffList) = super.set(newValue)(d)
-	override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
+	override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d) // TODO should be final, right?
 }
 
 class TrueLabelTemplate[V<:Label](implicit m:Manifest[V]) extends TrueIndexedValueTemplate[V]()(m)
@@ -303,7 +323,7 @@ abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
     if (iter.hasNext) { val i:Int = iter.next ; s ++= (domain.get(i).toString + "=" + i) }
     while (iter.hasNext) {
     	val i:Int = iter.next
-      s ++= ("," + domain.get(iter.next).toString + "=" + i)
+      s ++= ("," + domain.get(i).toString + "=" + i)
     }
     s ++= ")"
     s.toString

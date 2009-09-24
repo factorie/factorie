@@ -4,7 +4,6 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue}
 import cc.factorie.util.Implicits._
 
 	class GibbsSampler(model:Model) {
-
 	  private var _iterations = 0 // accumulates
 	  def iterations = _iterations
 	  def incrementIterations = _iterations += 1
@@ -104,7 +103,7 @@ import cc.factorie.util.Implicits._
 			case class IndexProposal(var score: Double, index: Int)
 			var max = Math.NEG_INF_DOUBLE
 			val proposals =
-			for (index <- 0 until variable.domain.size) yield {
+			for (index <- 0 until variable.domain.size force) yield {
 				variable.setByIndex(index)(null)
 				val s = model.factors(variable).sum(_.statistic.score) / temperature
 				if (s > max) max = s
@@ -123,7 +122,7 @@ import cc.factorie.util.Implicits._
 			case class IndexProposal(var score: Double, variable: EnumVariable[_], index: Int)
 			var max = Math.NEG_INF_DOUBLE
 			val proposals =
-			for (variable <- factor.variables.filterByClass(classOf[EnumVariable[_]]); val oldIndex = variable.index; index <- 0 until variable.domain.size) yield {
+			for (variable <- factor.variables.filterByClass(classOf[EnumVariable[_]]); val oldIndex = variable.index; index <- 0 until variable.domain.size force) yield {
 				variable.setByIndex(index)(null)
 				val s = model.factors(variable).sum(_.statistic.score) / temperature
 				if (s > max) max = s

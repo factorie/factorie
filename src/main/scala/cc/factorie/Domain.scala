@@ -29,6 +29,14 @@ class Domain[V<:Variable](implicit m:Manifest[V]) {
 	val printName = shortClassName
 }
 
+class Domain2[V<:Variable](implicit vm:Manifest[V], dm:Manifest[V#DomainType]) {
+  if (Domain2.getWithoutCreation(vm) != null) throw new Error("Domain[" + vm.erasure.getName + "] already exists!")
+  if (dm.erasure != this.getClass) throw new Error("DomainType does not match")
+  Domain2.set(vm.erasure, this)
+}
+
+// object Foo { val d = new Domain2[EnumVariable[String]] } // causes compile error
+
 /*
 class ItemizedDomain[V <: ItemizedVariable](implicit m:Manifest[V]) extends Domain[V] with util.Index[V] {
 	def randomValue: V = get(Model.this.random.nextInt(size))
@@ -81,10 +89,11 @@ class LabelDomain[V <: CoordinatedLabel](implicit m: Manifest[V]) extends Indexe
 		if (index < size) throw new Error("LabelDomain Value for this index already exists.")
 		// TODO make sure these are not created by the user, but only through the LabelDomain
 		override def domain = ldomain
-		//def entry : String = stringIndex.get(index)
+		override def toString = "LabelValue("+entry+")"
+		override def entry : String = stringIndex.get(index)
 		override def equals(other: Any) = other match {
-		case label: Value => this.index == label.index
-		case _ => false
+			case label: Value => this.index == label.index
+			case _ => false
 		}
 		def compare(other: Value) = other.index - this.index
 	}
@@ -99,15 +108,15 @@ object Domain {
 			if (classOf[CoordinatedLabel].isAssignableFrom(c)) {
 				//Console.println ("object Domain default Label "+c)
 				new LabelDomain[CoordinatedLabel]()(Manifest.classType[CoordinatedLabel](c))
-			} else if (classOf[IndexedVariable].isAssignableFrom(c))
+			} else if (classOf[IndexedVariable].isAssignableFrom(c)) {
 				//getOrElseUpdate(c, new IndexedDomain[IndexedVariable](c.asInstanceOf[Class[IndexedVariable]]))
 				// Return a new IndexedDomain; its constructor will automatically put it in the Domain map
 				new IndexedDomain[IndexedVariable]()(Manifest.classType[IndexedVariable](c)) {}
-				else {
-					//getOrElseUpdate(c, new Domain[Variable]())
-					// Return a new Domain; its constructor will automatically put it in the Domain map
-					new Domain[Variable]()(Manifest.classType[Variable](c))
-				}
+			} else {
+				//getOrElseUpdate(c, new Domain[Variable]())
+				// Return a new Domain; its constructor will automatically put it in the Domain map
+				new Domain[Variable]()(Manifest.classType[Variable](c))
+			}
 		}
 	}
 	/* Enables syntax like Domain[Token] */
@@ -121,6 +130,29 @@ object Domain {
   // def update[V<:Variable](c:Class[_], d:Domain[V])(implicit m:Manifest[V]) : Unit = _domains.put(c,d)
 }
 
+object Domain2 {
+  private val domains = new HashMap[Class[_],Any]() 
+  def getWithoutCreation[V<:Variable](implicit m:Manifest[V]) = domains.getOrElse(m.erasure, null)
+  def set[V <: Variable](c: Class[_], d: Domain2[V])(implicit m: Manifest[V]): Unit = domains.put(c, d)
+  private def newDomainFor[V<:Variable,D](implicit vm:Manifest[V], dm:Manifest[D]) = 
+    dm.erasure.getDeclaredConstructor(Array(classOf[Manifest[_]])).newInstance(Array(vm)) 
+  private def newDomainFor2[V,D](vm:Manifest[V])(implicit dm:Manifest[D]) = 
+    dm.erasure.getDeclaredConstructor(Array(classOf[Manifest[_]])).newInstance(Array(vm)) 
+  private def newDomainFor3[V,D](vm:Manifest[V], dm:Manifest[D]) = 
+    dm.erasure.getDeclaredConstructor(Array(classOf[Manifest[_]])).newInstance(Array(vm))
+  private def man[T](implicit m:Manifest[T]) = m
+  private def foo(d:Variable#DomainType) = d
+  private def foo2(d:Any) = d
+  //def bar[V<:Variable](implicit m:Manifest[V]) = foo2(man[V#DomainType])
+  def bar2(v:Variable) = foo2(man[v.DomainType])
+  //def bar3[V<:Variable](implicit vm:Manifest[V]) = foo2(man[V#DomainType])
+  def apply[V<:Variable](v:V)(implicit vm:Manifest[V]) : V#DomainType = domains.getOrElseUpdate(v.getClass,newDomainFor3(vm,man[v.DomainType])).asInstanceOf[V#DomainType]
+  //def apply[V<:IndexedVariable](implicit vm:Manifest[V]) : V#DomainType = domains.getOrElseUpdate(vm.erasure, new IndexedDomain[V]()(vm){}).asInstanceOf[V#DomainType]
+  def apply[V<:Variable](implicit m:Manifest[V]) : V#DomainType = domains.getOrElseUpdate(m.erasure, newDomainFor3[V,V#DomainType](m,man[V#DomainType])).asInstanceOf[V#DomainType];
+  //def apply[V >: Null <:Variable](implicit m:Manifest[V]) : V#DomainType = domains.getOrElseUpdate(m.erasure, newDomainFor3[V,V#DomainType](m,man[V#DomainType])).asInstanceOf[V#DomainType]
+  //def apply[V<:Variable](implicit m:Manifest[V]) : V#DomainType = domains.getOrElseUpdate(m.erasure, newDomainFor[V,V#DomainType](Manifest.classType[V],Manifest.classType[V#DomainType,V])).asInstanceOf[V#DomainType]
+}
+
 object IndexedDomain {
 	/**The returned index indicating that the entry is not present in the Domain */
 	val NULL_INDEX: Int = -1;
@@ -129,6 +161,7 @@ object IndexedDomain {
   def get[V <: IndexedVariable](v: V): IndexedDomain[V] = Domain(v.getClass).asInstanceOf[IndexedDomain[V]]
   def get[V <: IndexedVariable](c: Class[_]): IndexedDomain[V] = Domain(c).asInstanceOf[IndexedDomain[V]]
   def apply[V <: IndexedVariable](implicit m: Manifest[V]): IndexedDomain[V] = Domain(m.erasure).asInstanceOf[IndexedDomain[V]]
+  //def get2[V<:IndexedVariable]
   // Enables syntax like IndexedDomain[Label] <-- new IndexedDomain("B", "I", "O").freeze
   // TODO Change this method name; <-- is too obscure; try to find alternative cleaner syntax in general
   //def <-- [V<:IndexedVariable,D<:IndexedDomain[V]](domain:D)(implicit m:Manifest[V]) =

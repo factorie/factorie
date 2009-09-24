@@ -120,7 +120,7 @@ import scala.reflect.Manifest
 		/**Sample one variable once, and potentially train from the jump. */
 		def sampleAndLearn1(variable: Variable with MultiProposer): Unit = {
 			//case class Proposal(modelScore: Double, trueScore: Double, value: T, diff: DiffList)
-			val proposals = variable.multiPropose(model, objective, new DiffList)
+			val proposals = variable.multiPropose(model, objective, new DiffList).toList // toList to make sure Projection doesn't make us eval twice 
    /*
 			val proposals =
 			for (value <- variable.domain toList) yield {
@@ -136,12 +136,12 @@ import scala.reflect.Manifest
 			val (bestTruth1, bestTruth2) = proposals.max2(_ trueScore)
 			/*
 				 proposals.foreach(p => println(p))
-         Console.println ("bestTruth1   trueScore = "+bestTruth1.trueScore+" value = "+bestTruth1.value)
-         Console.println ("bestScoring  trueScore = "+bestScoring.trueScore+" value = "+bestScoring.value)
-         Console.println ("bestTruth1  modelScore = "+bestTruth1.modelScore)
-         Console.println ("bestTruth2  modelScore = "+bestTruth2.modelScore)
-         Console.println ("bestScoring modelScore = "+bestScoring.modelScore)
-         Console.println ()
+         println ("bestTruth1   trueScore = "+bestTruth1.trueScore)//+" value = "+bestTruth1.value)
+         println ("bestScoring  trueScore = "+bestScoring.trueScore)//+" value = "+bestScoring.value)
+         println ("bestTruth1  modelScore = "+bestTruth1.modelScore)
+         println ("bestTruth2  modelScore = "+bestTruth2.modelScore)
+         println ("bestScoring modelScore = "+bestScoring.modelScore)
+         println ()
          */
 			// Only do learning if the trueScore has a preference
 			// It would not have a preference if the variable in question is unlabeled

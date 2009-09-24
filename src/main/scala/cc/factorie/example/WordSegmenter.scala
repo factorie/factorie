@@ -13,8 +13,6 @@ object WordSegmenterDemo {
 		if ("aeiou".contains(char)) this += "VOWEL"
 		val label = new Label(isWordStart, this)
 	}
-	//Domain[Token] = new IndexedDomain[Token] { override def allocSize = 100000 }
-	//object Token extends IndexedDomain[Token] { override def allocSize = 100000 }
 
 	// The factor templates that define the model
 	val model = new Model
@@ -37,13 +35,13 @@ object WordSegmenterDemo {
 		def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
 	}
 	/** Skip edge */
-	val skipTempalte = new Template2[Label,Label] with ExpStatistics1[Bool] with PerceptronLearning {
+	val skipTemplate = new Template2[Label,Label] with ExpStatistics1[Bool] with PerceptronLearning {
 		def unroll1 (label:Label) =  
 			// could cache this search in label.similarSeq for speed
 		  for (other <- label.token.seq; if label.token.char == other.char) yield 
 		  	if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
 		def unroll2 (label:Label) = Nil // We handle symmetric case above
-		def statistics(label1:Label, label2:Label) = Stat(Bool(label1==label2))
+		def statistics(label1:Label, label2:Label) = Stat(Bool(label1.value==label2.value))
 	}.init
 
 	val objective = new Model(new TrueEnumTemplate[Label])
@@ -79,17 +77,19 @@ object WordSegmenterDemo {
 		var testVariables = testSet.flatMap(_.map(_.label))
 
 		testVariables.foreach(_.setRandomly)
-		Console.println ("Initial test accuracy = "+ objective.aveScore(testVariables))
+		println ("Read "+(trainVariables.size+testVariables.size)+" characters")
+		println ("Initial test accuracy = "+ objective.aveScore(testVariables))
 
 		// Sample and Learn!
 		var sampler = new GibbsPerceptronLearner(model, objective)
 		sampler.learningRate = 1.0
-		for (i <- 0 until 10) {
+		for (i <- 0 until 7) {
 			sampler.sampleAndLearn (trainVariables, 2)
 			sampler.learningRate *= 0.8
 			sampler.sample (testVariables, 2)
-			Console.println ("Train accuracy = "+ objective.aveScore(trainVariables))
-			Console.println ("Test  accuracy = "+ objective.aveScore(testVariables))
+			println ("Train accuracy = "+ objective.aveScore(trainVariables))
+			println ("Test  accuracy = "+ objective.aveScore(testVariables))
+			println
 			if (startTime == 0) startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
 		}
 

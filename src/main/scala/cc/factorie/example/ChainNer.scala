@@ -78,10 +78,10 @@ object ChainNerDemo {
       val sampler = new GibbsPerceptronLearner(model, model.objective)
       for (i <- 0 until 10) {
         sampler.sampleAndLearn (trainLabels, 1)
-        Console.println ("Train accuracy = "+ model.aveScore(trainLabels))
+        Console.println ("Train accuracy = "+ objective.aveScore(trainLabels))
         sampler.learningRate *= 0.9
         sampler.sample (testLabels, 2)
-        Console.println ("Test  accuracy = "+ model.aveScore(testLabels))
+        Console.println ("Test  accuracy = "+ objective.aveScore(testLabels))
       }
 
     }

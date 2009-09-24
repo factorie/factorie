@@ -154,6 +154,7 @@ object CorefMentionsDemo {
         }
         override def mhPerceptronPostProposalHook = {
           if (iterations % 500 == 0) {
+            learningRate *= .9
             System.out.println("UPS: " + numUpdates);
             model.templatesOf[LogLinearScoring].foreach(f => Console.println (f.toString+" weights = "+f.weights.toList))
             Console.println ("All entities")
@@ -166,7 +167,7 @@ object CorefMentionsDemo {
 
       // Sample and learn, providing jump function, temperature, learning rate, #iterations, and diagnostic-printing-function
       Console.println ("About to sampleAndLearn")
-      sampler.sampleAndLearn(2000)
+      sampler.sampleAndLearn(3000)
     }
     0;
 
