@@ -111,8 +111,8 @@ abstract class PrimitiveVariable[T](initval: T) extends Variable with TypedVaria
 	case class PrimitiveDiff(oldValue: T, newValue: T) extends Diff {
   	//        Console.println ("new PrimitiveDiff old="+oldValue+" new="+newValue)
   	def variable: PrimitiveVariable[T] = PrimitiveVariable.this
-  	def redo = set(newValue)(null)
-  	def undo = set(oldValue)(null)
+  	def redo = _value = newValue
+  	def undo = _value = oldValue
   }
 }
 
@@ -161,10 +161,15 @@ abstract trait SingleIndexedVariable extends IndexedVariable with Proposer with 
 	// http://stackoverflow.com/questions/1332574/common-programming-mistakes-for-scala-developers-to-avoid
 	// http://creativekarma.com/ee.php/weblog/comments/the_scala_for_comprehension_from_a_java_perspective/
   // TODO Look at this issue more carefully and turn on printing in Implicits.bonusIterables to look for additional efficiencies 
-	def multiPropose(model:Model, objective:Model, difflist: DiffList) = for (i <- 0 until domain.size force) yield {
-	  //println("SingleIndexedVariable multiPropose " +i) // TODO check this for repeated evaluation
-		new AutoProposal(model, objective, diff => setByIndex(i)(diff))
+	def multiPropose(model:Model, objective:Model, difflist: DiffList) = {
+	  val aps = for (i <- 0 until domain.size force) yield {
+	  	//println("SingleIndexedVariable multiPropose " +i) // TODO check this for repeated evaluation
+	  	val ap = new AutoProposal(model, objective, diff => setByIndex(i)(diff))
+	  	//println("SingleIndexedVariable.multiPropose i="+i+" modelScore="+ap.modelScore)
+	  	ap
+    }
 		// val d = new DiffList; setByIndex(i)(d); new CaseProposal(d.scoreAndUndo, d)
+		aps
 	}
 	def index = indx
 	override def toString = printName + "(" + indx + ")"
@@ -174,8 +179,8 @@ abstract trait SingleIndexedVariable extends IndexedVariable with Proposer with 
 	def !===(other: SingleIndexedVariable) = indx != other.indx
 	case class SingleIndexedDiff(oldIndex: Int, newIndex: Int) extends Diff {
 		def variable: SingleIndexedVariable = SingleIndexedVariable.this
-		def redo = setByIndex(newIndex)(null)
-		def undo = setByIndex(oldIndex)(null)
+		def redo = indx = newIndex
+		def undo = indx = oldIndex
 	}
 }
 
@@ -195,7 +200,7 @@ abstract trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with 
   class DomainInSubclasses
   def set(newValue: T)(implicit d: DiffList) = setByIndex(domain.index(newValue))
   def value: T = domain.get(indx)
-  override def toString = printName + "(" + value.toString + "=" + indx + ")"
+  override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + indx + ")"
 }	
 
 // TODO get rid of all this "Coordinated" versus non-coordinated.  Everything should just be coordinated.
@@ -239,7 +244,7 @@ abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] wit
 	var trueIndex = domain.index(trueval)
 	setByIndex(domain.index(trueval))(null)
 	override final def set(newValue: T)(implicit d: DiffList) = super.set(newValue)(d)
-	override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
+	/*final*/ override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d) // TODO uncomment final
 	//override def setFirstValue: Unit = setByIndex(0)(null)
 	//override def hasNextValue = indx < domain.size - 1
 	//override def setNextValue: Unit = if (hasNextValue) setByIndex(indx + 1)(null) else throw new Error("No next value")

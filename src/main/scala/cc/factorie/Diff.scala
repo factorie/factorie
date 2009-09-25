@@ -17,6 +17,7 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 /**A change record for a variable, holding its old and new values */
 trait Diff {
 	def variable: Variable
+	// TODO Make "def redo1" which calls redo, but verfies that we don't do redo twice in a row ??
 	def redo: Unit
 	def undo: Unit
 }
