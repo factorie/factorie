@@ -35,10 +35,7 @@ class TemplateList[T<:Template] extends ArrayBuffer[T] {
  	def aveScore(vars:Collection[Variable]): Double = score(vars) / vars.size
 	def factorsOfClass[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf(m).flatMap(template => template.factors(v))
 	def registerFactorsInVariables(variables: Iterable[Variable with FactorList]): Seq[Factor] = {
-	  var factors = new HashSet[Factor]
-    // unroll all factors touching all v in variables
-    for (v <- variables; t <- this)
-    	t.unroll0(v).foreach(f => factors += f)
+	  val factors = this.factors(variables)
     // Make sure each variables factor list starts empty
     variables.foreach(_.clearFactors)
     // Add relevant factors to each relevant neighboring variable

@@ -49,6 +49,7 @@ class StringDomain[V<:IndexedVariable {type ValueType = String}] extends Indexed
   def Value = "__StringDomainValue__"
 }
 
+// TODO We can get rid of LabelValue??
 //class LabelDomain[V<:Label] extends IndexedDomain[W forSome {type W <: LabelValue}]
 class LabelDomain[V<:CoordinatedLabel] extends IndexedDomain[V] {
   private val stringIndex = new util.Index[String] {} // TODO Why is Index abstract (and thus requiring the {})
@@ -77,6 +78,7 @@ class LabelDomain[V<:CoordinatedLabel] extends IndexedDomain[V] {
 		override def entry : String = stringIndex.get(index)
 		override def equals(other: Any) = other match {
 			case label: Value => this.index == label.index
+			// case value : V#ValueType => this.index == index(value) // TODO consider something like this
 			case _ => false
 		}
 		def compare(other: Value) = other.index - this.index

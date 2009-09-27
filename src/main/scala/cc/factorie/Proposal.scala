@@ -48,6 +48,7 @@ class AutoProposal(val model:Model, val objective:Model, change: (DiffList) => U
 	var trueScore = if (objective != null) diff.score(objective) else 0.0
 	//println("true score delta before undo: " + tmpTrueScore)
 	var modelScore = diff.scoreAndUndo(model)
+	assert (modelScore == modelScore) // check for NaN
 	//println("tmpModelScore=" + tmpModelScore)
 	//println("AutoProposal after  diff #variables "+diff.map(_.variable).filter(_ != null).toSeq.length)
 	trueScore -= (if (objective != null) diff.score(objective) else Math.NEG_INF_DOUBLE)

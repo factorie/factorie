@@ -67,19 +67,21 @@ import cc.factorie.util.Implicits._
 
 		/**Sample one variable once. */
 		protected def sample1(variableToSample: Variable with MultiProposer): DiffList = {
+		  //println("GibbsSampler.sample1 oldValue="+variableToSample)
 			val variable = preVariableSampleHook(variableToSample)
 			val d = new DiffList
 			case class Proposal1 (var modelScore:Double, diff:DiffList)
       //val proposals = for (value <- variable.domain) yield { val diff = new DiffList; variable.set(value)(diff); val score = diff.scoreAndUndo(model) / temperature; Proposal1 (score, diff) }
 			val proposals = variable.multiPropose(model, null, d)
-			proposals.foreach(p => p.modelScore / temperature)
+			if (temperature != 1.0) proposals.foreach(p => p.modelScore / temperature)
 			// exponentiate scores and normalize to get a probability distribution
 			val max: Double = proposals.max(_ modelScore).modelScore
 			proposals.foreach(p => p.modelScore = Math.exp(p.modelScore - max))
-			//proposals.foreach(p => println("GibbsSampler sample1 model score = "+p.modelScore+" proposal "+p)); println()
+			//proposals.foreach(p => println("GibbsSampler.sample1 model score = "+p.modelScore+" proposal "+p)); println()
 			// Sample from it to get the new value for variable, and set it
 			val proposal = proposals.sampleProportionally(_ modelScore)
 			proposal.diff.redo
+   		//println("GibbsSampler.sample1 newValue="+variableToSample)
 			// Populate and manage the size of the priority queue
 			if (useQueue && maxQueueSize > 0) {
 				queue ++= model.factors(proposal.diff)

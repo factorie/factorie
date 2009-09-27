@@ -100,15 +100,12 @@ import cc.factorie.util.Implicits._
       def template : TemplateType = Template.this.asInstanceOf[TemplateType] 
       def score = ss.foldLeft(0.0)(_ + Template.this.score(_)) // TODO verify that this gets overriden definitions of score(_)
     }
- 		/**A version of unroll0 that takes the Diff object instead of just the variable */
-		def unroll(d: Diff): Iterable[Factor] = if (d.variable == null) Nil else unroll0(d.variable)
-		def unroll0(v: Variable): Iterable[Factor]  // TODO change name to factors(v:Variable)
-		def factors(v:Variable) : Iterable[Factor] = unroll0(v)
-		def template : TemplateType = this.asInstanceOf[TemplateType] // for use by inner classes
-    // TODO Should the above TemplateType's be instead this.type?  It would be nice to avoid the need for TemplateType
+ 		/**A version of factors that takes the Diff object instead of just the variable */
+		def factors(d: Diff): Iterable[Factor] = if (d.variable == null) Nil else factors(d.variable)
+		def factors(v: Variable): Iterable[Factor]
 		def factors(difflist: DiffList): Iterable[Factor] = {
 			var result = new LinkedHashSet[Factor]()
-			difflist.foreach(diff => result ++= unroll(diff))
+			difflist.foreach(diff => result ++= factors(diff))
 			result.toList // TODO is this necessary?
 		}
 		def factors(variables:Iterable[Variable]) : Iterable[Factor] = {
@@ -238,7 +235,7 @@ import cc.factorie.util.Implicits._
 
  	abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
  	  val nc1 = nm1.erasure
-    override def unroll0(v:Variable): Iterable[Factor] =
+    override def factors(v:Variable): Iterable[Factor] =
       if (nc1.isAssignableFrom(v.getClass)) unroll1(v.asInstanceOf[N1])
       else Nil
 		def unroll1(v:N1): Iterable[Factor] = new Factor(v)
@@ -274,7 +271,7 @@ import cc.factorie.util.Implicits._
   abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template {
  	  val nc1 = nm1.erasure
  	  val nc2 = nm2.erasure
-    override def unroll0(v: Variable): Iterable[Factor] = {
+    override def factors(v: Variable): Iterable[Factor] = {
       var ret = new ListBuffer[Factor]
       if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1])	
       if (nc2.isAssignableFrom(v.getClass)) ret ++= unroll2(v.asInstanceOf[N2])	
@@ -312,7 +309,7 @@ import cc.factorie.util.Implicits._
  	  val nc1 = nm1.erasure
  	  val nc2 = nm2.erasure
  	  val nc3 = nm3.erasure
-    override def unroll0(v: Variable): Iterable[Factor] = {
+    override def factors(v: Variable): Iterable[Factor] = {
       var ret = new ListBuffer[Factor]
 			if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1])
 			if (nc2.isAssignableFrom(v.getClass)) ret ++= unroll2(v.asInstanceOf[N2])
