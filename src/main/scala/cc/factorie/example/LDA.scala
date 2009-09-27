@@ -122,13 +122,14 @@ object LDADemo {
   }
   
   // Does not have its own Domain.  Size of pr is Domain of O
-  class Multinomial[O<:MultinomialOutcome[O]](implicit m:Manifest[O]) extends Variable with GenerativeDistribution {
+  // TODO should this Iterate over [O] or over [O#VariableType#ValueType] ???
+  class Multinomial[O<:MultinomialOutcome[O]](implicit m:Manifest[O]) extends Variable with GenerativeDistribution with Iterable[O#VariableType#ValueType] {
     type VariableType <: Multinomial[O]
     class DomainInSubclasses
     type OutcomeDomainType = O
     val outcomeDomain = Domain[O](m) // TODO unfortunately this gets fetched and stored repeatedly for each instance
-    lazy val counts = new Array[Int](outcomeDomain.allocSize)
-    var total = 0
+    lazy val counts = new Array[Double](outcomeDomain.allocSize)
+    var total :Double = 0.0
     def size = counts.length
     var source : Dirichlet[O] = _
     def setSource(dir:Dirichlet[O])(implicit d:DiffList) : Unit = {
@@ -140,12 +141,12 @@ object LDADemo {
     def ~(d:Dirichlet[O]) : this.type /*Multinomial[V]*/ = { setSource(d)(null); this }
     def generate(o:O)(implicit d:DiffList) = { 
     	//println("Multinomial.outcomeDomain.size="+outcomeDomain.size+" generate "+o+" size="+size); Console.flush; 
-    	counts(o.index) += 1; total += 1
+    	counts(o.index) += 1.0; total += 1.0
       if (d != null) d += MultinomialGenerateDiff(o.index)
     }
     def ungenerate(o:O)(implicit d:DiffList) = { 
-      counts(o.index) -= 1; assert(counts(o.index) >= 0)
-      total -= 1; assert(total >= 0)
+      counts(o.index) -= 1.0; assert(counts(o.index) >= 0.0)
+      total -= 1.0; assert(total >= 0.0)
       if (d != null) d += MultinomialUngenerateDiff(o.index)
     }
     def estimate : Unit = {} // Nothing to be done; constantly keeps itself estimated
@@ -161,9 +162,16 @@ object LDADemo {
       }
       return size - 1
     }
+    def elements : Iterator[O#VariableType#ValueType] = new Iterator[O#VariableType#ValueType] {
+      def hasNext = true
+      def next = nextOutcomeValue
+    }
     def pr(index:Int) : Double = {
       //println("Multinomial.pr "+counts(index)+" "+source(index)+" "+total+" "+source.sum)
-      (counts(index) + source(index)) / (total + source.sum)
+      if (source != null)
+      	(counts(index) + source(index)) / (total + source.sum)
+      else
+         counts(index) / total
     }
     def pr(o:O#VariableType) : Double = pr(o.index)
     def logpr(index:Int) = Math.log(pr(index))
@@ -172,13 +180,13 @@ object LDADemo {
     override def toString = "Multinomial(count="+total+")"
     case class MultinomialGenerateDiff(i:Int) extends Diff {
       def variable = Multinomial.this
-      def redo = { counts(i) += 1; total += 1 }
-      def undo = { counts(i) -= 1; total -= 1 }
+      def redo = { counts(i) += 1.0; total += 1.0 }
+      def undo = { counts(i) -= 1.0; total -= 1.0 }
     }
     case class MultinomialUngenerateDiff(i:Int) extends Diff {
       def variable = Multinomial.this
-      def redo = { counts(i) -= 1; total -= 1 }
-      def undo = { counts(i) += 1; total += 1 }
+      def redo = { counts(i) -= 1.0; total -= 1.0 }
+      def undo = { counts(i) += 1.0; total += 1.0 }
     }
     case class MultinomialSetSourceDiff(oldSource:Dirichlet[O], newSource:Dirichlet[O]) extends Diff {
       def variable = Multinomial.this
@@ -186,6 +194,7 @@ object LDADemo {
       def undo = { newSource.ungenerate(variable)(null); source = oldSource; if (oldSource != null) oldSource.generate(variable)(null) }
     }
   }
+  
   
   // Trait for any distribution that might be picked as part of a Multinomial mixture.
   // Creates is own Domain.  Number of components in the mixture is the size of the domain.  Values of the domain are these MixtureComponents.
@@ -253,7 +262,11 @@ object LDADemo {
       //println("Multinomial Outcome setSource on outcome "+this+" index="+index)
       source.generate(this)
   	}
-    def ~(m:Multinomial[This]) : this.type = { setSource(m)(null); this }
+    def ~(m:Multinomial[This]) : this.type = {
+      setByIndex(m.nextSample)(null)
+      setSource(m)(null); 
+      this 
+    }
     def ~[M<:Multinomial[This]](mmc:MultinomialMixtureChoice[M,This,_]) : this.type = {
       mmc.setOutcome(this); 
       this.~(mmc.multinomial) // either here or in mmc.setOutcome; not sure which is more natural
@@ -270,6 +283,17 @@ object LDADemo {
       def undo = { newSource.ungenerate(variable)(null); source = oldSource; if (oldSource != null) oldSource.generate(variable)(null) }
     }
   }
+  
+  /** The outcome of a coin flip, with boolean value.  this.value:Boolean */
+	case class Flip extends Bool with MultinomialOutcome[Flip]
+  case class Coin(p:Double, variance:Double) extends Multinomial[Flip] {
+    def this(p:Double) = this(p:Double, 1.0)
+    assert (p >= 0.0 && p <= 1.0)
+    this.counts(0) = (1.0-p)/variance
+    this.counts(1) = p/variance
+  }
+
+
   
   class MultinomialMixtureChoiceTemplate extends TemplateWithStatistics1[MultinomialMixtureChoice[Topic,Word,Z]] {
   	def score(s:Stat) = {

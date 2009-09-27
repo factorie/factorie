@@ -145,7 +145,6 @@ abstract trait SingleIndexedVariable extends IndexedVariable with Proposer with 
 	type VariableType <: SingleIndexedVariable
  	class DomainInSubclasses
 	protected var indx = -1
-	// Consider changing this method name to just "set"?  But then will code readers more easily get confused?
 	def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
 		if (newIndex < 0) throw new Error("SingleIndexedVariable setByIndex can't be negative.")
 		if (newIndex != indx) {
@@ -258,6 +257,7 @@ abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] wit
 
 class TrueEnumTemplate[V<:EnumVariable[_]](implicit m:Manifest[V]) extends TrueIndexedValueTemplate[V]()(m)
 
+// TODO We can get rid of LabelValue
 /** The value of a Label variable.  
 * Previously we simply used String values in a EnumVariable, but here LabelValues can be compared much more efficiently than Strings. */
 trait LabelValue {
@@ -352,6 +352,7 @@ abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
 
 /**A variable class for boolean values, defined here for convenience.  If you have several different "types" of booleans, you might want to subclass this to enable type safety checks. */
 class Bool(b: Boolean) extends EnumVariable(b) {
+  def this() = this(false)
 	type VariableType = Bool
 	def :=(b: Boolean) = set(b)(null)
 }
