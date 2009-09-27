@@ -87,13 +87,13 @@ object CorefMentionsDemo {
 
       // Pairwise repulsion factor between Mentions in different partitions
       model += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector] with PerceptronLearning {
-      	override def unroll(d:Diff) = d.variable match {
+      	override def factors(d:Diff) = d.variable match {
       		case mention : Mention => d match {
       			case mention.PrimitiveDiff(oldEntity:Entity, newEntity:Entity) => 
       				for (other <- oldEntity.mentions; if (other.entity != mention.entity)) yield Factor(mention, other);
-      			case _ => super.unroll(d)
+      			case _ => super.factors(d)
       		}
-      		case _ => super.unroll(d)
+      		case _ => super.factors(d)
       	}
       	def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entity != mention.entity)) yield Factor(mention, other);
       	def unroll2 (mention:Mention) = Nil // symmetric
