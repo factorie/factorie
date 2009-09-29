@@ -47,7 +47,7 @@ trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution
 
 
 // Make a general class Dirichlet to cover both constant and estimated varieties
-abstract class Dirichlet[O<:MultinomialOutcome[O]](initialAlpha:Seq[Double])(implicit m:Manifest[O]) extends AbstractDirichlet[O] with Parameter {
+abstract class Dirichlet[O<:MultinomialOutcome[O]](initialAlpha:Seq[Double])(implicit m:Manifest[O]) extends AbstractDirichlet[O] {
 	//println("Dirichlet")
   def this(initialAlpha:Double)(implicit m:Manifest[O]) = this(Array.make(Domain[O](m).allocSize, initialAlpha))(m)
 	type VariableType <: Dirichlet[O];
