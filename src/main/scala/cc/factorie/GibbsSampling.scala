@@ -4,6 +4,7 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue}
 import cc.factorie.util.Implicits._
 
 	class GibbsSampler(model:Model) {
+	  def this() = this(Global.defaultModel)
 	  private var _iterations = 0 // accumulates
 	  def iterations = _iterations
 	  def incrementIterations = _iterations += 1
@@ -17,10 +18,6 @@ import cc.factorie.util.Implicits._
 		var keepSamples = false
 		var sampleInterval = 100
 
-		// Meta-parameters for learning
-		var learningMargin = 1.0
-
-		// Various internal diagnostics
 		var temperature = 1.0
 		// ... feel free to add more diagnostic variables here...
 
@@ -34,6 +31,8 @@ import cc.factorie.util.Implicits._
 		/**Sample many variables for numIterations. */
 		def sample(variables: Iterable[Variable with MultiProposer], numIterations: Int): Unit =
 			xsample(variables, numIterations, sample1 _)
+		def sample(variable: Variable with MultiProposer) : Unit =
+			sample1(variable)
 
 		protected def xsample(variables: Iterable[Variable with MultiProposer], numIterations: Int, singleSampler: Variable with MultiProposer => Unit): Unit = {
 			for (i <- 1 to numIterations) {

@@ -76,4 +76,7 @@ trait MultiProposer extends Proposer {
     d ++= proposal.diff
     proposal.transitionRatio
   }	
+  
+  
+  
 }

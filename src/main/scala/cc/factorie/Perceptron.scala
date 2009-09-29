@@ -12,6 +12,9 @@ import scala.reflect.Manifest
 	  var gatherAverageWeights = false
 	  var useAverageWeights = false
 
+		// Various internal diagnostics
+
+
 		type TemplateType <: GenericPerceptronLearning
 		// lazy val weightsSum = { freezeDomains ; new DenseVector(suffsize) } // TODO Why doesn't this work on MacOS?
 		def weightsSum: Vector
@@ -108,8 +111,11 @@ import scala.reflect.Manifest
 
   // TODO Consider changing name to just "PerceptronLearner", and similarly above
 	class GibbsPerceptronLearner(model:Model, objective:Model) extends GibbsSampler(model) {
-	  if (objective.length == 0) throw new IllegalArgumentException("Objective is empty.")
+		// Meta-parameters for learning
 		var learningRate = 1.0
+		var learningMargin = 1.0
+
+	  if (objective.length == 0) throw new IllegalArgumentException("Objective is empty.")
 
 		/**Sample and learning over many variables for numIterations. */
 		def sampleAndLearn(variables: Iterable[Variable with MultiProposer], numIterations: Int): Unit = {

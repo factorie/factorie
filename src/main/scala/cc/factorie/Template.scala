@@ -63,12 +63,11 @@ import cc.factorie.util.Implicits._
 	trait Stat extends Iterable[Stat] {
 		def template: Template
 		def score : Double
-		//def vector: Vector // TODO remove this.  Not all Stat's have vectors
-		/**A Stat can act as as singleton Iterable[Stat].
-		This makes it easier to return a single Stat from unroll* methods. */
+		/** A Stat can act as as singleton Iterable[Stat].
+				This makes it easier to return a single Stat from unroll* methods. */
 		def elements: Iterator[Stat] = Iterator.single(this)
-		/**A Factor can be placed into a List with another with this method.
-		This makes it easier to return 2-3 Factors from unroll* methods via Factor() :: Factor() :: Factor() */
+		/** A Stat can be placed into a List with another with this method.
+				This makes it easier to return 2-3 Factors from unroll* methods via Stat() :: Stat() :: Stat() */
 		def ::(that: Stat) = List(that, this)
 	}
 
@@ -218,7 +217,6 @@ import cc.factorie.util.Implicits._
 	trait LogLinearScoring extends ExpTemplate {
 		type TemplateType <: LogLinearScoring
 		def weights: Vector
-		//def score(s:S): Double
 	}
 	trait DenseLogLinearScoring extends ExpTemplate {
 		type TemplateType <: DenseLogLinearScoring
@@ -230,8 +228,6 @@ import cc.factorie.util.Implicits._
 		lazy val weights = new SparseVector(statsize)
 		def score(s:StatType) = weights dot s.vector
 	}
-	//trait LogLinearTemplate extends LogLinearScoring with Template
-	//trait LogLinearTemplate extends Template with LogLinearScoring
 
  	abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
  	  val nc1 = nm1.erasure
@@ -245,8 +241,6 @@ import cc.factorie.util.Implicits._
 		  def numVariables = 1
 		  def variable(i:Int) = i match { case 0 => n1; case _ => throw new IndexOutOfBoundsException(i.toString) }
 		  def statistics : Iterable[StatType] = _statistics(this)
-		  //def score : Double = scoreStats(_statistic(this)) // which is implemented in the Template
-		  //def vector : Vector = vectorStats(_statistic(this)) // which is implemented in the Template
 		}	
  	}
   trait Statistics1[S1<:Variable] extends Template {
@@ -285,8 +279,6 @@ import cc.factorie.util.Implicits._
 		  def numVariables = 2
 		  def variable(i:Int) = i match { case 0 => n1; case 1 => n2; case _ => throw new IndexOutOfBoundsException(i.toString) }
 		  def statistics : Iterable[StatType] = _statistics(this)
-		  //def score : Double = scoreStats(_statistic(this)) // which is implemented in the Template
-		  //def vector : Vector = vectorStats(_statistic(this)) // which is implemented in the Template
 		}	
  	}
   trait Statistics2[S1<:Variable,S2<:Variable] extends Template {
@@ -304,6 +296,11 @@ import cc.factorie.util.Implicits._
 		def statistics(v1:N1,v2:N2): Iterable[Stat] = Stat(v1,v2)
 		init(nm1, nm2)
 	}
+  /*
+  trait Proposer2[P1<:Variable,P2<:Variable] extends Template {
+    case class Stat(s1:S1, s2:S2) extends super.Stat with Iterable[Stat] 
+    type StatType = Stat
+  }*/
 
   abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template {
  	  val nc1 = nm1.erasure
@@ -325,8 +322,6 @@ import cc.factorie.util.Implicits._
  	  	def numVariables = 3
 		  def variable(i:Int) = i match { case 0 => n1; case 1 => n2; case 2 => n3; case _ => throw new IndexOutOfBoundsException(i.toString) }
 		  def statistics : Iterable[StatType] = _statistics(this)
-		  //def score : Double = scoreStats(_statistic(this)) // which is implemented in the Template
-		  //def vector : Vector = vectorStats(_statistic(this)) // which is implemented in the Template
 		}	
  	}
   trait Statistics3[S1<:Variable,S2<:Variable,S3<:Variable] extends Template {

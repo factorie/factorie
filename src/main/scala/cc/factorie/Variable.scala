@@ -46,10 +46,11 @@ abstract trait Variable {
 /** Used as a marker for Variables whose value does not change once created. */
 abstract trait ConstantValue requires Variable
 
-// TODO Remove this.  We can't enforce no coordinated jumps after the fact.
-abstract trait NoCoordination extends SingleIndexedVariable {
-  final override def setByIndex(i:Int)(implicit d:DiffList) = super.setByIndex(i)(d)
-}
+/** A marker for Variables that declare themselves not to automatically change other Variables' values when they are changed*/
+trait NoVariableCoordination 
+/** A marker for Variables that declare themselves not to automatically change which Factors are relevant when they are changed*/
+trait NoFactorCoordination 
+
 
 /*
 trait ItemizedVariable extends Variable {
@@ -81,11 +82,10 @@ abstract trait IterableValues[T] {
 
 // TODO remove this now that we have Proposer?
 /** A variable that can iterate over its possible configurations */
-@deprecated
-abstract trait IterableSettings {
+trait IterableSettings{
 	this: Variable =>
   /** Return an iterator over some/all configurations of this variable, each time returning simply the same Variable object. */
-  def iterator: Iterator[this.type]
+  def settings: Iterator[{def set(d:DiffList):Unit}]
 }
 
 
@@ -141,20 +141,29 @@ abstract trait IndexedVariable extends Variable with TypedVariable {
 // But how would it be enforced?
 
 /** For variables whose values are associated with a an Int from an index. */
-abstract trait SingleIndexedVariable extends IndexedVariable with Proposer with MultiProposer {
+abstract trait SingleIndexedVariable extends IndexedVariable with Proposer with MultiProposer with IterableSettings {
 	type VariableType <: SingleIndexedVariable
  	class DomainInSubclasses
-	protected var indx = -1
+	protected var _index = -1
 	def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
 		if (newIndex < 0) throw new Error("SingleIndexedVariable setByIndex can't be negative.")
-		if (newIndex != indx) {
-			if (d != null) d += new SingleIndexedDiff(indx, newIndex)
-			indx = newIndex
+		if (newIndex != _index) {
+			if (d != null) d += new SingleIndexedDiff(_index, newIndex)
+			_index = newIndex
 		}
 	}
 	def setRandomly(implicit random:Random, d:DiffList) : Unit = setByIndex(random.nextInt(domain.size))
 	def setRandomly(implicit random:Random) : Unit = setByIndex(random.nextInt(domain.size))(null)
 	def setRandomly : Unit = setRandomly(cc.factorie.Global.random)
+	def settings = new Iterator[{def set(d:DiffList):Unit}] {
+	  var d : DiffList = _
+	  var i = -1
+	  val max = domain.size - 1
+	  def hasNext = i < max
+	  def set(d:DiffList) : Unit = setByIndex(i)(d)
+	  def next = { i += 1; this }
+	  //def next = { if (d != null) d.undo; d = new DiffList; setByIndex(i)(d); i += 1; d }
+	}
 	def propose(d: DiffList)(implicit random:Random) = {setByIndex(random.nextInt(domain.size))(d); 0.0}
 	// The reason for the "toList" (now changed to "force"), see 
 	// http://stackoverflow.com/questions/1332574/common-programming-mistakes-for-scala-developers-to-avoid
@@ -170,16 +179,16 @@ abstract trait SingleIndexedVariable extends IndexedVariable with Proposer with 
 		// val d = new DiffList; setByIndex(i)(d); new CaseProposal(d.scoreAndUndo, d)
 		aps
 	}
-	def index = indx
-	override def toString = printName + "(" + indx + ")"
-	override def vector = new SingletonBinaryVector(domain.allocSize, indx)
+	def index = _index
+	override def toString = printName + "(" + _index + ")"
+	override def vector = new SingletonBinaryVector(domain.allocSize, _index)
 	/** Tests equality of variable values, whereas == tests equality of variable objects themselves. */
-	def ====(other: SingleIndexedVariable) = indx == other.indx
-	def !===(other: SingleIndexedVariable) = indx != other.indx
+	def ====(other: SingleIndexedVariable) = _index == other._index
+	def !===(other: SingleIndexedVariable) = _index != other._index
 	case class SingleIndexedDiff(oldIndex: Int, newIndex: Int) extends Diff {
-		def variable: SingleIndexedVariable = SingleIndexedVariable.this
-		def redo = indx = newIndex
-		def undo = indx = oldIndex
+		@scala.inline final def variable: SingleIndexedVariable = SingleIndexedVariable.this
+		@scala.inline final def redo = _index = newIndex
+		@scala.inline final def undo = _index = oldIndex
 	}
 }
 
@@ -198,8 +207,8 @@ abstract trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with 
   type ValueType = T
   class DomainInSubclasses
   def set(newValue: T)(implicit d: DiffList) = setByIndex(domain.index(newValue))
-  def value: T = domain.get(indx)
-  override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + indx + ")"
+  def value: T = domain.get(_index)
+  override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + _index + ")"
 }	
 
 // TODO get rid of all this "Coordinated" versus non-coordinated.  Everything should just be coordinated.
@@ -245,8 +254,8 @@ abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] wit
 	override final def set(newValue: T)(implicit d: DiffList) = super.set(newValue)(d)
 	/*final*/ override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d) // TODO uncomment final
 	//override def setFirstValue: Unit = setByIndex(0)(null)
-	//override def hasNextValue = indx < domain.size - 1
-	//override def setNextValue: Unit = if (hasNextValue) setByIndex(indx + 1)(null) else throw new Error("No next value")
+	//override def hasNextValue = _index < domain.size - 1
+	//override def setNextValue: Unit = if (hasNextValue) setByIndex(_index + 1)(null) else throw new Error("No next value")
 	def iterableValues: Iterable[T] = domain
 	def iterableOtherValues: Iterable[T] = domain.filter(_ != value)
 	override def trueValue : T = domain.get(trueIndex) 
@@ -284,8 +293,8 @@ class CoordinatedLabel(trueval: String) extends CoordinatedEnumVariable[LabelVal
 	def set(s: String)(implicit d: DiffList) = setByIndex(domain.index(s))
  	override def trueValue : LabelValue = domain.get(trueIndex) 
 	//override def setFirstValue: Unit = setByIndex(0)(null)
-	//override def hasNextValue = indx < domain.size - 1
-	//override def setNextValue: Unit = if (hasNextValue) setByIndex(indx + 1)(null) else throw new Error("No next value")
+	//override def hasNextValue = _index < domain.size - 1
+	//override def setNextValue: Unit = if (hasNextValue) setByIndex(_index + 1)(null) else throw new Error("No next value")
 	def iterableValues: Iterable[LabelValue] = domain
 	def iterableOtherValues: Iterable[LabelValue] = domain.filter(_ != value)
 	//type ValueType <: LabelDomain[VariableType]#Value // TODO try to get this working
@@ -294,7 +303,7 @@ class CoordinatedLabel(trueval: String) extends CoordinatedEnumVariable[LabelVal
 		g      def domain : LabelDomain[_<:Label]
 		                                def entry : String
 	}*/
-	override def toString = printName + "(Value=" + value.entry + "=" + indx + ")"
+	override def toString = printName + "(Value=" + value.entry + "=" + _index + ")"
 	def ====(other: CoordinatedLabel) = value.index == other.value.index
 	def !===(other: CoordinatedLabel) = value.index != other.value.index
 }
