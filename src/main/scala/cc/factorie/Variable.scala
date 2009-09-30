@@ -102,7 +102,7 @@ abstract class PrimitiveVariable[T](initval: T) extends Variable with TypedVaria
       if (d != null) d += new PrimitiveDiff(_value, newValue)
       _value = newValue
     }
-  // Should we implement equals here to compare Variable values??
+  // Should we implement "equals" here to compare Variable values??
   // No, I don't think so because we might need to put multiple variables with the same values in a HashMap
   // But we can implement our own specialized equality method... (the shorter === overlaps with an implicit conversion in scalatest)
   def ====(other: PrimitiveVariable[T]) = _value == other._value

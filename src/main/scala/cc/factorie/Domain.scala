@@ -100,8 +100,10 @@ object Domain {
 	}
 	/** Make Variables of type V1 use the same Domain as Variables of type V2. */
 	def alias[V1<:Variable,V2<:Variable](implicit vm1:Manifest[V1], vm2:Manifest[V2]) = {
-		if (_domains.isDefinedAt(vm1.erasure)) throw new Error("Cannot alias a Domain that has already been used.")
-		_domains.put(vm1.erasure, get[V2](vm2.erasure))
+		if (_domains.isDefinedAt(vm1.erasure)) {
+			if (_domains(vm1.erasure) != get[V2](vm2.erasure))
+				throw new Error("Cannot alias a Domain that has already been used (unless aliases match).")
+		} else _domains.put(vm1.erasure, get[V2](vm2.erasure))
 	} 
 	/** Register d as the domain for variables of type V. */
 	def +=[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]) = {
@@ -123,12 +125,15 @@ object Domain {
 	}
 	/** Construct a Domain of class dc.  (Parameter vc is currently unused.)  Domains must have only a zero-arg constructor. */
 	private def newDomainFor[D](dc:Class[D],vc:Class[_]) : Domain[_] = {
-		val constr = dc.getConstructors()(0)
+		val constructors = dc.getConstructors()
+		val i = constructors.findIndexOf(c => c.getParameterTypes.length == 0)
+		if (i == -1) throw new Error("Domain "+dc.getName+" does not have a zero-arg constructor; all Domains must.")
 		//println("constructor # args="+constr.getParameterTypes.length)
-		dc.getConstructors()(0).newInstance().asInstanceOf[Domain[_]]
+		constructors(i).newInstance().asInstanceOf[Domain[_]]
 	}
 	/** Find the (sub)class of Domain to use for constructing a domain for variable class c. */
 	private def getDomainClass(c:Class[_]) : Class[_] = {
+		//println("getDomainClass "+c)
 		// First check this class to see if it specifies the DomainClass
 		val classes = c.getDeclaredClasses()
 		val index = if (classes == null) -1 else classes.findIndexOf(c=>c.getName.endsWith("$DomainClass"))
@@ -136,10 +141,18 @@ object Domain {
 		if (index >= 0) return classes(index).getSuperclass
 		// Next check the interfaces/traits
 		val interfaces = c.getInterfaces.elements
+		val candidateDomainClasses = new ListBuffer[Class[_]]
 		while (interfaces.hasNext) {
 			val dc = getDomainClass(interfaces.next)
-			if (dc != null) return dc
+			if (dc != null) candidateDomainClasses += dc
 		}
+	  if (candidateDomainClasses.size > 0) {
+	    // Find the most specific subclass of the first domain class found
+	    var dc = candidateDomainClasses.first
+	    candidateDomainClasses.foreach(dc2 => if (dc.isAssignableFrom(dc2)) dc = dc2)
+	    //println("getDomainClass "+c+" specific="+dc)
+	    return dc
+	  }
 		// Next check the superclass
 		val sc = c.getSuperclass
 		if (sc == null || sc == classOf[java.lang.Object]) null //throw new Error("DomainClass not found")
@@ -147,7 +160,7 @@ object Domain {
 	}
 	private def domainInSubclasses(c:Class[_]) : Boolean = c.getDeclaredClasses.findIndexOf(c=>c.getName.endsWith("$DomainInSubclasses")) != -1
 
-  def domainInSubclassesByAnnotation(c:Class[_]) : Boolean = c.isAnnotationPresent(classOf[DomainInSubclasses])
+  //def domainInSubclassesByAnnotation(c:Class[_]) : Boolean = c.isAnnotationPresent(classOf[DomainInSubclasses])
 
 
 	/** Find a potential substitute for c as the key into _domains. */

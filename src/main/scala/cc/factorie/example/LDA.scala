@@ -15,12 +15,11 @@ object LDADemo {
   // Declare different types of variables
 	object Beta extends SymmetricDirichlet[Word](0.01)
   class Topic extends Multinomial[Word] with MixtureComponent[Topic]
-  class Z extends MultinomialMixtureChoice[Topic,Word,Z] //with NoFactorCoordination
-  Domain.alias[Z,Topic]
+  class Z extends MixtureChoice[Topic,Z]; Domain.alias[Z,Topic]
   object Alpha extends SymmetricDirichlet[Z](1.0)
 	class Theta extends Multinomial[Z]
 	class Word(s:String) extends EnumVariable(s) with MultinomialOutcome[Word]
- 	class Document(val file:String) extends ArrayBuffer[Word] { var theta:Theta = _	}
+ 	class Document(val file:String) extends ArrayBuffer[Word] { var theta:Theta = _ }
 
   def main(args: Array[String]) : Unit = {
   	// Read observed data and create Documents
@@ -37,7 +36,7 @@ object LDADemo {
   
 		// Create random variables
     val numTopics = 5
-    val topics : Array[Topic] = for (i <- Array.range(0, numTopics)) yield new Topic ~ Beta
+    val topics = Array.fromFunction(i => new Topic ~ Beta)(numTopics)
 		val zs = new ArrayBuffer[Z] 	
   	for (document <- documents) {
   		document.theta = new Theta :~ Alpha
@@ -48,7 +47,7 @@ object LDADemo {
   		}
   	}
     
-		// Fit model
+		// Fit model 
 		val sampler = new GibbsSampler1
 		val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
