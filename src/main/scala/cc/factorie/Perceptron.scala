@@ -13,7 +13,7 @@ import scala.reflect.Manifest
 	  var useAverageWeights = false
 
 		// Various internal diagnostics
-
+		def learningMethod = "Perceptron"
 
 		type TemplateType <: GenericPerceptronLearning
 		// lazy val weightsSum = { freezeDomains ; new DenseVector(suffsize) } // TODO Why doesn't this work on MacOS?

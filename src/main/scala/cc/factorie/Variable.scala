@@ -43,13 +43,11 @@ abstract trait Variable {
 	def factors(model:Model): Iterable[Factor] = model.factors(this)
 }
 
+/** Simple containers for fixed values can inherit from this. */
+abstract trait Constant extends Variable
+
 /** Used as a marker for Variables whose value does not change once created. */
 abstract trait ConstantValue requires Variable
-
-/** A marker for Variables that declare themselves not to automatically change other Variables' values when they are changed*/
-trait NoVariableCoordination 
-/** A marker for Variables that declare themselves not to automatically change which Factors are relevant when they are changed*/
-trait NoFactorCoordination 
 
 
 /*
@@ -88,9 +86,28 @@ trait IterableSettings{
   def settings: Iterator[{def set(d:DiffList):Unit}]
 }
 
+// TODO could this be put in TypedVariable?  But then we'd have to figure out how to compare VectorVariable
+trait PrimitiveComparison[T] {
+  this :Variable =>
+  def value : T
+  def ====(other: PrimitiveComparison[T]) = value == other.value
+  def !===(other: PrimitiveComparison[T]) = value != other.value
+
+}
+
+abstract class PrimitiveObservation[T](theValue:T) extends Variable with TypedVariable with PrimitiveComparison[T] {
+	type VariableType <: PrimitiveObservation[T]
+  type ValueType = T
+  class DomainInSubclasses
+  protected val _value: T = theValue
+  def value = _value
+  //def ====(other: PrimitiveObservation[T]) = value == other.value
+  //def !===(other: PrimitiveObservation[T]) = value != other.value
+  override def toString = printName + "(" + value.toString + ")"
+}
 
 /**A variable with a single mutable (unindexed) value */
-abstract class PrimitiveVariable[T](initval: T) extends Variable with TypedVariable {
+abstract class PrimitiveVariable[T](initval: T) extends Variable with TypedVariable with PrimitiveComparison[T] {
 	type VariableType <: PrimitiveVariable[T]
   type ValueType = T
   class DomainInSubclasses
@@ -102,11 +119,12 @@ abstract class PrimitiveVariable[T](initval: T) extends Variable with TypedVaria
       if (d != null) d += new PrimitiveDiff(_value, newValue)
       _value = newValue
     }
+  def :=(newValue:T) = set(newValue)(null)
   // Should we implement "equals" here to compare Variable values??
   // No, I don't think so because we might need to put multiple variables with the same values in a HashMap
   // But we can implement our own specialized equality method... (the shorter === overlaps with an implicit conversion in scalatest)
-  def ====(other: PrimitiveVariable[T]) = _value == other._value
-  def !===(other: PrimitiveVariable[T]) = _value != other._value
+  //def ====(other: PrimitiveVariable[T]) = _value == other._value
+  //def !===(other: PrimitiveVariable[T]) = _value != other._value
   override def toString = printName + "(" + value.toString + ")"
 	case class PrimitiveDiff(oldValue: T, newValue: T) extends Diff {
   	//        Console.println ("new PrimitiveDiff old="+oldValue+" new="+newValue)
@@ -116,14 +134,14 @@ abstract class PrimitiveVariable[T](initval: T) extends Variable with TypedVaria
   }
 }
 
-/** For variables that have a true value describable by a Scala type T. */
+/** For variables that have a true value described by a Scala type T. */
 trait PrimitiveTrueValue[T] {
 	this: PrimitiveVariable[T] =>
   var trueValue: T = _
   def isUnlabeled = trueValue == _
 }
 
-/**For use with variables whose values are mapped to dense integers */
+/** For use with variables whose values are mapped to dense integers */
 abstract trait IndexedVariable extends Variable with TypedVariable {
 	type VariableType <: IndexedVariable
 	type DomainType <: IndexedDomain[VariableType]
@@ -140,8 +158,19 @@ abstract trait IndexedVariable extends Variable with TypedVariable {
 // TODO Consider making a ConstantSingleIndexedVariable, for use by MixtureComponent
 // But how would it be enforced?
 
+
+abstract trait SingleIndexedObservation extends IndexedVariable {
+	type VariableType <: SingleIndexedObservation
+ 	class DomainInSubclasses
+	def index : Int
+	override def toString = printName + "(" + index + ")"
+	override def vector = new SingletonBinaryVector(domain.allocSize, index)
+	def ====(other: SingleIndexedObservation) = index == other.index
+	def !===(other: SingleIndexedObservation) = index != other.index
+} 
+
 /** For variables whose values are associated with a an Int from an index. */
-abstract trait SingleIndexedVariable extends IndexedVariable with Proposer with MultiProposer with IterableSettings {
+abstract trait SingleIndexedVariable extends SingleIndexedObservation with Proposer with MultiProposer with IterableSettings {
 	type VariableType <: SingleIndexedVariable
  	class DomainInSubclasses
 	protected var _index = -1
@@ -180,11 +209,7 @@ abstract trait SingleIndexedVariable extends IndexedVariable with Proposer with 
 		aps
 	}
 	def index = _index
-	override def toString = printName + "(" + _index + ")"
-	override def vector = new SingletonBinaryVector(domain.allocSize, _index)
 	/** Tests equality of variable values, whereas == tests equality of variable objects themselves. */
-	def ====(other: SingleIndexedVariable) = _index == other._index
-	def !===(other: SingleIndexedVariable) = _index != other._index
 	case class SingleIndexedDiff(oldIndex: Int, newIndex: Int) extends Diff {
 		@scala.inline final def variable: SingleIndexedVariable = SingleIndexedVariable.this
 		@scala.inline final def redo = _index = newIndex
@@ -193,12 +218,21 @@ abstract trait SingleIndexedVariable extends IndexedVariable with Proposer with 
 }
 
 /** For variables put in a index, and whose value is the variable itself. */
+// TODO Do we really want this?  Is it being used?
 abstract trait ItemizedVariable[This <: ItemizedVariable[This]] extends SingleIndexedVariable {
 	this : This =>
   type VariableType = This
   type ValueType = This
   class DomainInSubclasses
   domain.index(this) // Put the variable in the index
+}
+
+abstract trait TypedSingleIndexedObservation[T] extends SingleIndexedObservation with TypedVariable {
+	type VariableType <: TypedSingleIndexedObservation[T]
+  type ValueType = T
+  class DomainInSubclasses
+  def value: T = domain.get(index)
+  override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + index + ")"
 }
 
 /** For variables holding a single indexed value, which is not the variable object itself, but a Scala value of type T. */
@@ -211,8 +245,18 @@ abstract trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with 
   override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + _index + ")"
 }	
 
+/** A Variable to hold one of an enumerated set of values of type T, and which does not change */
+abstract class EnumObservation[T](value:T) extends TypedSingleIndexedObservation[T] with ConstantValue {
+	type VariableType <: EnumObservation[T]
+  class DomainInSubclasses
+  val index = domain.index(value)
+  //final def setByIndex(index:Int)(d:DiffList) = throw new Error("Cannot change the value of an Observation")
+  //final def set(v:T)(d:DiffList) = throw new Error("Cannot change the value of an Observation")
+}
+
 // TODO get rid of all this "Coordinated" versus non-coordinated.  Everything should just be coordinated.
 // It is less efficient, but too error-prone.
+// TODO Really?  Verify how much efficiency gain we could get.
 
 /**A variable whose value is a single indexed value; mutable */
 abstract trait CoordinatedEnumVariable[T] extends TypedSingleIndexedVariable[T] {
@@ -251,6 +295,7 @@ abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] wit
   class DomainInSubclasses
 	var trueIndex = domain.index(trueval)
 	setByIndex(domain.index(trueval))(null)
+	def :=(newValue:T) = set(newValue)(null)
 	override final def set(newValue: T)(implicit d: DiffList) = super.set(newValue)(d)
 	/*final*/ override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d) // TODO uncomment final
 	//override def setFirstValue: Unit = setByIndex(0)(null)
@@ -319,14 +364,16 @@ class Label(trueval: String) extends CoordinatedLabel(trueval) {
 class TrueLabelTemplate[V<:Label](implicit m:Manifest[V]) extends TrueIndexedValueTemplate[V]()(m)
 
 /**A variable whose value is a SparseBinaryVector; immutable. */
-// TODO Rename to BinaryVectorVariable
+// I considered renaming this VectorObservation, but then I realized that methods such as += change its value. -akm
+// TODO Rename to BinaryVectorVariable?
+// TODO Make a constructor that takes argument of Iterable[T]
 abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
 	type ValueType = T
 	type VariableType <: VectorVariable[T]
   class DomainInSubclasses
   //def this (es:T*) = this(es.toArray)   TODO include this again later
   protected var indxs = new ArrayBuffer[Int]()
-  def indices : Seq[Int] = indxs
+  def indices : Seq[Int] = indxs // TODO project to ensure no changes, even with casting?  But this would involve allocating the Projection
   def values : Seq[T] = { val d = this.domain; indxs.map(d.get(_)) }
   private var _vector: Vector = null // TODO Can we make this more memory efficient?  Avoid having both Vector and ArrayBuffer?
   		override def vector = {
@@ -337,6 +384,8 @@ abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
   	}
   	_vector
   }
+  // TODO when we have Scala 2.8, add to the method below difflist argument with default value null
+  // But will a += b syntax with with default arguments?
   def +=(value: T) = {
   	val idx = domain.index(value);
   	if (idx == IndexedDomain.NULL_INDEX) throw new Error("VectorVariable += value " + value + " not found in domain " + domain)
@@ -363,7 +412,9 @@ abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
 class Bool(b: Boolean) extends EnumVariable(b) {
   def this() = this(false)
 	type VariableType = Bool
-	def :=(b: Boolean) = set(b)(null)
+	def ^(other:Bool) = value && other.value
+	def v(other:Bool) = value || other.value
+	def ->(other:Bool) = !value || other.value
 }
 
 object Bool {
@@ -396,5 +447,13 @@ trait FactorList requires Variable {
   def clearFactors = factorList = Nil
   def factors: Iterable[Factor] = factorList
 }
+
+/** A marker for Variables that declare themselves not to automatically change other Variables' values when they are changed */
+trait NoVariableCoordination 
+
+/** A marker for Variables that declare themselves not to only to rely on their own Factors when they are changed,
+    even if changing this variable involves changes to other variables as well. 
+    Furthermore the section of Factors must not change depending on the variable's values. */
+trait NoFactorCoordination 
 
 

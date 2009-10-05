@@ -182,9 +182,10 @@ object NerModel extends Model {
   
       // Temporary silliness until I make not all Templates require "vector", and I implement a real scoring template for coref.
     val objective = new Model(new Template1[Document#Span] with ExpTemplate {
+      def learningMethod = "unknown"
     	import scalala.tensor.Vector
     	import scala.reflect.Manifest
-    	def score(s:Stat) = s.s1.trueScore
+    	override def score(s:Stat) = s.s1.trueScore
     	type StatType = Stat
   		case class Stat(s1:Document#Span) extends super.Stat with Iterable[Stat] {
     		def vector : Vector = null

@@ -58,12 +58,13 @@ class Gaussian1(initialMean:Double, initialVariance:Double) extends GenerativeDi
   def sampleInto(o:Real) : Unit = o.set(sample)(null) // TODO should we put a difflist here?
   def logpr(x:Double) : Double = {
     val diff = x - mean
-    return - diff * diff / (2 * variance) - Math.sqrt( 2 * Math.Pi * variance)
+    return - diff * diff / (2 * variance) - 0.5 * Math.log(2 * Math.Pi * variance)
   }
   def logpr(o:Real) = logpr(o.value)
   def pr(x:Double) = Math.exp(x)
   def pr(o:Real) = pr(o.value)
   def minSamplesForVarianceEstimate = 5
+  /** This implements a moment-matching estimator. */
   def estimate : Unit = {
     if (generatedSamples.size == 0) { mean = 0.0; variance = 1.0; return }
     mean = 0.0

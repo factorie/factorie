@@ -118,6 +118,13 @@ import cc.factorie.util.Implicits._
 	}
  
 	trait ExpTemplate extends Template {
+	  // The oddity of the next two methods are simply to provide a more intuitive compilation error message when
+	  // a FATORIE user leaves out PerceptronLearning or somesuch from their Template definition
+	  //def score(s:StatType) = 0.0 // to be overriden in learning methods
+	  //def learningMethod : String
+    // But then I gave up on this approach, when I saw Templates like TrueIndexedValueTemplate,
+    // which don't do any learning, but do define their own score.
+    // TODO In the FACTORIE documentation, write a note about "compiler error "score" undefined, could mean that you've left out the learning method.
 		val statClasses = new ArrayBuffer[Class[IndexedVariable]] {
       var frozen :Boolean = false;
       def freeze = frozen = true;
@@ -221,12 +228,12 @@ import cc.factorie.util.Implicits._
 	trait DenseLogLinearScoring extends ExpTemplate {
 		type TemplateType <: DenseLogLinearScoring
 		lazy val weights = {freezeDomains; new DenseVector(statsize)}
-		def score(s:StatType) = weights dot s.vector
+		override def score(s:StatType) = weights dot s.vector
 	}
 	trait SparseLogLinearScoring extends ExpTemplate {
 		type TemplateType <: SparseLogLinearScoring
 		lazy val weights = new SparseVector(statsize)
-		def score(s:StatType) = weights dot s.vector
+		override def score(s:StatType) = weights dot s.vector
 	}
 
  	abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {

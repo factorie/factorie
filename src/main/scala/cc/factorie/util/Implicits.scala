@@ -25,9 +25,17 @@ import cc.factorie.util._
 */
 
 
-
+// TODO consider moving to cc.factorie.Implicits??
 object Implicits {
   
+	// http://debasishg.blogspot.com/2009/09/thrush-combinator-in-scala.html
+  case class Thrush[A](x: A) {
+  	def into[B](g: A => B): B = { g(x) }
+  }
+  implicit def int2Thrush(x:Int) = Thrush(x)
+  implicit def double2Thrush(x:Double) = Thrush(x)
+  implicit def anyRefThrush[T<:AnyRef](x:T) = Thrush(x)
+
 	implicit def stringExtras(s: String) = new {
 		/**Implements Levenshtein Distance, with specific operation costs to go from this to s2.  Original version was from scalanlp. */
 		def editDistance(s2: String, substCost: Int, deleteCost: Int, insertCost: Int): Int = {

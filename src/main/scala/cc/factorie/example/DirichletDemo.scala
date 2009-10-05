@@ -8,8 +8,10 @@ object DirichletDemo {
   		List("one", "two", "three", "four", "five", "six").foreach(index(_))
   	}
    
-  	val dir  = new Dirichlet[Word](List(1.0,2.0,3.0,4.0,5.0,6.0)) with DirichletMomentMatchingEstimator[Word];
+  	//val dir  = new Dirichlet[Word](List(1.0,2.0,3.0,4.0,5.0,6.0)) with DirichletMomentMatchingEstimator[Word];
   	//val dir  = new Dirichlet[Word](List(1.0,1.0,1.0,1.0,1.0,1.0)) with DirichletMomentMatchingEstimator[Word];
+  	val dir  = new Dirichlet[Word](List(.1,.1,.1,.1,.1,.1)) with DirichletMomentMatchingEstimator[Word];
+  	//val dir  = new Dirichlet[Word](List(3.0,3.0,3.0,3.0,3.0,3.0)) with DirichletMomentMatchingEstimator[Word];
   	
   	println("Dirichlet1 = "+dir.alphas.toList)
   	println("Dirichlet1 mean = "+dir.means.toList)

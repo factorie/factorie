@@ -7,6 +7,8 @@ import scalala.tensor.dense.DenseVector
 	{
 		type TemplateType <: CWLearning
   
+		override def learningMethod = "CWLearning"
+  
   	/**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
   	val initialVariance = 0.1;
 

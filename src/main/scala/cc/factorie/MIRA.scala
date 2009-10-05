@@ -9,6 +9,7 @@ import scalala.tensor.dense.DenseVector
 	{
 		type TemplateType <: MIRALearning
 		lazy val denseDiff = {freezeDomains; new DenseVector(statsize)}
+		override def learningMethod = "MIRALearning"
 	}
 
 
