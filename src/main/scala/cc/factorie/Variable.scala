@@ -411,10 +411,10 @@ abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
 /**A variable class for boolean values, defined here for convenience.  If you have several different "types" of booleans, you might want to subclass this to enable type safety checks. */
 class Bool(b: Boolean) extends EnumVariable(b) {
   def this() = this(false)
-	type VariableType = Bool
+	type VariableType <: Bool
 	def ^(other:Bool) = value && other.value
 	def v(other:Bool) = value || other.value
-	def ->(other:Bool) = !value || other.value
+	def -->(other:Bool) = !value || other.value
 }
 
 object Bool {
