@@ -8,7 +8,7 @@ import scala.util.Sorting
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
+import cc.factorie.util.{LinkedHashSet}
 import cc.factorie.util.Implicits._
 
 
@@ -88,14 +88,15 @@ class LabelDomain[V<:CoordinatedLabel] extends IndexedDomain[V] {
 
 /** A static map from a Variable class to its Domain. */
 object Domain {
+  val debug = false
 	private val _domains = new HashMap[Class[_], Domain[_]]()
 	def domains : scala.collection.Map[Class[_],Domain[_]] = _domains
 	/** Get the Domain for Variables of type V */
  	def apply[V<:Variable](implicit mv:Manifest[V]) = get[V](mv.erasure)
 	/** Get the Domain for Variables of class vc */
 	def get[V<:Variable](vc:Class[_]) = {
-		//println("Domain.get "+vc+" classes.length="+vc.getDeclaredClasses.length)
-		//if (_domains.isDefinedAt(vc)) println("Domain.get "+vc+" already defined"); Console.flush
+		if (debug) println("Domain.get "+vc+" classes.length="+vc.getDeclaredClasses.length)
+		if (debug && _domains.isDefinedAt(vc)) println("Domain.get "+vc+" already defined"); Console.flush
 		_domains.getOrElseUpdate(vc, getDomainForClass(vc)).asInstanceOf[V#DomainType]
 	}
 	/** Make Variables of type V1 use the same Domain as Variables of type V2. */
@@ -110,7 +111,7 @@ object Domain {
 		val c = vm.erasure
 		if (_domains.isDefinedAt(c)) throw new Error("Cannot add a Domain["+vm+"] when one has already been created for "+c)
 		val dvc = getDomainVariableClass(c)
-		//println("+= dvc="+dvc); println("+= c="+c)
+		if (debug) { println("+= dvc="+dvc); println("+= c="+c) }
 		if (dvc != null && dvc != c && _domains.isDefinedAt(dvc)) throw new Error("Cannot add a Domain["+vm+"] when one has already been created for superclass "+dvc)
 		if (dvc != c) throw new Error("Cannot add a Domain["+vm+"] because superclass "+dvc+" should have the same Domain; you should consider instead adding the domain to "+dvc)
 		_domains.put(vm.erasure, d)
@@ -119,7 +120,7 @@ object Domain {
 	private def getDomainForClass(c:Class[_]) : Domain[_] = {
 		if (domainInSubclasses(c)) throw new Error("Cannot get a Domain for "+c+" because it declares DomainInSubclasses, and should be considered abstract.")
 		var dvc = getDomainVariableClass(c)
-		//println("getDomainForClass c="+c+" dvc="+dvc)
+		if (debug) println("getDomainForClass c="+c+" dvc="+dvc)
 		if (dvc == null) dvc = c
 		_domains.getOrElseUpdate(dvc, newDomainFor(getDomainClass(c),dvc))
 	}
@@ -128,20 +129,25 @@ object Domain {
 		val constructors = dc.getConstructors()
 		val i = constructors.findIndexOf(c => c.getParameterTypes.length == 0)
 		if (i == -1) throw new Error("Domain "+dc.getName+" does not have a zero-arg constructor; all Domains must.")
-		//println("constructor # args="+constr.getParameterTypes.length)
+		if (debug) println("newDomainFor calling "+constructors(i).getClass+" constructor # args="+constructors(i).getParameterTypes.length)
 		constructors(i).newInstance().asInstanceOf[Domain[_]]
 	}
 	/** Find the (sub)class of Domain to use for constructing a domain for variable class c. */
 	private def getDomainClass(c:Class[_]) : Class[_] = {
-		//println("getDomainClass "+c)
+		if (debug) println("getDomainClass "+c)
 		// First check this class to see if it specifies the DomainClass
 		val classes = c.getDeclaredClasses()
 		val index = if (classes == null) -1 else classes.findIndexOf(c=>c.getName.endsWith("$DomainClass"))
-		//println("getDomainClass superclass"+c.getSuperclass.getSuperclass)
-		if (index >= 0) return classes(index).getSuperclass
-		// Next check the interfaces/traits
-		val interfaces = c.getInterfaces.elements
+		if (index >= 0) {
+			if (debug) println("getDomainClass   returning "+classes(index).getSuperclass)
+		  return classes(index).getSuperclass
+    }
+		// Next check the superclass and interfaces/traits; choose the most specific (subclass of) Domain
 		val candidateDomainClasses = new ListBuffer[Class[_]]
+		val sc = c.getSuperclass
+		if (sc != null && sc != classOf[java.lang.Object]) 
+			candidateDomainClasses += getDomainClass(sc)
+		val interfaces = c.getInterfaces.elements
 		while (interfaces.hasNext) {
 			val dc = getDomainClass(interfaces.next)
 			if (dc != null) candidateDomainClasses += dc
@@ -150,22 +156,19 @@ object Domain {
 	    // Find the most specific subclass of the first domain class found
 	    var dc = candidateDomainClasses.first
 	    candidateDomainClasses.foreach(dc2 => if (dc.isAssignableFrom(dc2)) dc = dc2)
-	    //println("getDomainClass "+c+" specific="+dc)
+	    if (debug) println("getDomainClass "+c+" specific="+dc)
 	    return dc
-	  }
-		// Next check the superclass
-		val sc = c.getSuperclass
-		if (sc == null || sc == classOf[java.lang.Object]) null //throw new Error("DomainClass not found")
-		else getDomainClass(sc)
+	  } else
+	  	null
 	}
 	private def domainInSubclasses(c:Class[_]) : Boolean = c.getDeclaredClasses.findIndexOf(c=>c.getName.endsWith("$DomainInSubclasses")) != -1
 
-  //def domainInSubclassesByAnnotation(c:Class[_]) : Boolean = c.isAnnotationPresent(classOf[DomainInSubclasses])
+  def domainInSubclassesByAnnotation(c:Class[_]) : Boolean = c.isAnnotationPresent(classOf[DomainInSubclasses])
 
 
 	/** Find a potential substitute for c as the key into _domains. */
 	private def getDomainVariableClass(c:Class[_]) : Class[_] = {
-		//println("getDomainVariableClass c "+c+" classes.length="+c.getDeclaredClasses.length)
+		if (debug) println("getDomainVariableClass c "+c+" classes.length="+c.getDeclaredClasses.length)
 		if (domainInSubclasses(c)) throw new Error("Cannot create Domain["+c+"] because it declares inner class DomainInSubclasses.")
 		else if (c.getSuperclass == null || c.getSuperclass == classOf[java.lang.Object]) c 
 		else if (domainInSubclasses(c.getSuperclass)) c 
