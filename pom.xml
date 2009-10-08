@@ -15,6 +15,12 @@
             <name>Scala-Tools Maven2 Repository</name>
             <url>http://scala-tools.org/repo-releases</url>
         </repository>
+        <repository>
+            <id>iesl.cs.umass.edu</id>
+            <name>IESL repository</name>
+            <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/thirdparty/</url>
+        </repository>
+
     </repositories>
 
     <pluginRepositories>
@@ -28,12 +34,7 @@
             <name>ScalaNLP repository</name>
             <url>http://repo.scalanlp.org/repo</url>
         </pluginRepository>
-        <pluginRepository>
-            <id>iesl.cs.umass.edu</id>
-            <name>IESL repository</name>
-            <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/thirdparty/</url>
-        </pluginRepository>
-    </pluginRepositories>
+     </pluginRepositories>
 
     <dependencies>
         <dependency>
