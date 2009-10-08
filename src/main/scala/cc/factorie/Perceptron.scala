@@ -325,16 +325,15 @@ Console.println ("bestScoring modelScore = "+bestScoring.modelScore)
 				}
 				else if (bestScoring.modelScore - bestScoring2.modelScore < learningMargin) {
 					// bestScore matches bestTruth1, but runner up is within the margin
-					//Console.println ("Learning from margin")
 					// ...update parameters by adding sufficient stats of truth, and subtracting runner-up
 					bestScoring.diff.redo
 					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, learningRate, iterations))
 					bestScoring.diff.undo
 					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
 					bestScoring2.diff.redo
-					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestScoring2.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
 					bestScoring2.diff.undo
-					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, learningRate, iterations))
+					model.factorsOf[AbstractPerceptronLearning](bestScoring2.diff).foreach(f => f.template.increment(f, learningRate, iterations))
 				}
 			} // else println("No true preference.")
 

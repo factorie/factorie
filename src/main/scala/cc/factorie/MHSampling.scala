@@ -104,11 +104,11 @@ import cc.factorie.util.Implicits._
 
 		def sample(proposals: Seq[Proposal]): Proposal = {
 			val max = proposals.max(p => p.modelScore).modelScore
-			val sum: Double = proposals.sum(p => Math.exp((p.modelScore - max) * temperature))
+			val sum: Double = proposals.sum(p => Math.exp((p.modelScore - max) * 1/temperature))
 			val randomNumber = random.nextDouble * sum
 			var total = 0.0
 			for (proposal <- proposals) {
-				total += Math.exp((proposal.modelScore - max) * temperature)
+				total += Math.exp((proposal.modelScore - max) * 1/temperature)
 				if (randomNumber < total) return proposal
 			}
 			proposals.first
@@ -132,7 +132,9 @@ import cc.factorie.util.Implicits._
 				return difflist
 			}
 
-			sample(proposals).diff.redo
+      val chosen = sample(proposals)
+      //println("Chosen proposal: " + chosen)
+      chosen.diff.redo
 		}
 
 

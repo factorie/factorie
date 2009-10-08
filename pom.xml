@@ -28,6 +28,11 @@
             <name>ScalaNLP repository</name>
             <url>http://repo.scalanlp.org/repo</url>
         </pluginRepository>
+        <pluginRepository>
+            <id>iesl.cs.umass.edu</id>
+            <name>IESL repository</name>
+            <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/thirdparty/</url>
+        </pluginRepository>
     </pluginRepositories>
 
     <dependencies>
@@ -42,10 +47,16 @@
             <version>4.4</version>
             <scope>test</scope>
         </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.scalanlp</groupId>-->
+            <!--<artifactId>scalala</artifactId>-->
+            <!--<version>1.0-Snapshot</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.scalanlp</groupId>
             <artifactId>scalala</artifactId>
-            <version>1.0-Snapshot</version>
+            <version>0.2.2-iesl</version>
+            <!--<version>1.0-Snapshot</version>-->
         </dependency>
         <dependency>
             <groupId>org.scala-tools.testing</groupId>
@@ -77,6 +88,9 @@
                 </executions>
                 <configuration>
                     <scalaVersion>${scala.version}</scalaVersion>
+                    <jvmArgs>
+                        <jvmArg>-Xmx265m</jvmArg>
+                    </jvmArgs>
                 </configuration>
             </plugin>
             <plugin>

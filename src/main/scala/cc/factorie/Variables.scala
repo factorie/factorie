@@ -56,7 +56,12 @@ import cc.factorie.util.Implicits._
 		protected var _length = initLength
 		def length = _length
 		def isAtStart = _start == 0
-		def isAtEnd = _start + _length == parent.length
+
+    def overlaps(that: ImmutableSpanVariable[_]) =
+      (that.start <= this.start && that.end >= this.start) ||
+              (this.start <= that.start && this.end >= that.start)
+
+    def isAtEnd = _start + _length == parent.length
 		def successor(i: Int) = parent(_start + _length - 1 + i)
 		def predecessor(i: Int) = parent(_start - i)
 		def phrase = if (length == 1) this.first.toString else this.foldLeft("")(_ + " " + _.toString).drop(1) // Span as a string
@@ -177,6 +182,7 @@ import cc.factorie.util.Implicits._
 		private val _spans = new ListBuffer[SpanType]
 		def spans: Seq[SpanType] = _spans
 		def spans(index: Int): Iterable[SpanType] = _spans.filter(s => s.start <= index && index < (s.start + s.length))
+    def spansStartingAt(index: Int): Iterable[SpanType] = _spans.filter(s => s.start == index)
 		abstract class SpanVariableInSeq(initStart: Int, initLength: Int)(implicit d: DiffList) extends SpanVariable[X](VariableSeqWithSpans.this, initStart, initLength)(d)
 		{
 			//this : SpanType =>
