@@ -238,9 +238,13 @@ import cc.factorie.util.Implicits._
 
  	abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
  	  val nc1 = nm1.erasure
-    override def factors(v:Variable): Iterable[Factor] =
+    // TODO create methods like this for all Templates and put abstract version in Template
+    def respondsTo[NN](implicit m:Manifest[NN]) = nc1.isAssignableFrom(m.erasure)
+    def factors(v:Variable): Iterable[Factor] = {
+      println("Template1.factors "+v)
       if (nc1.isAssignableFrom(v.getClass)) unroll1(v.asInstanceOf[N1])
       else Nil
+    }
 		def unroll1(v:N1): Iterable[Factor] = new Factor(v)
  	  def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1)
  	  def statistics(v1:N1) : Iterable[StatType]
@@ -346,4 +350,30 @@ import cc.factorie.util.Implicits._
 		def statistics(v1:N1,v2:N2,v3:N3): Iterable[Stat] = Stat(v1,v2,v3)
 		init(nm1, nm2, nm3)
 	}
+
+  abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template {
+ 	  val nc1 = nm1.erasure
+ 	  val nc2 = nm2.erasure
+ 	  val nc3 = nm3.erasure
+ 	  val nc4 = nm4.erasure
+    override def factors(v: Variable): Iterable[Factor] = {
+      var ret = new ListBuffer[Factor]
+			if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1])
+			if (nc2.isAssignableFrom(v.getClass)) ret ++= unroll2(v.asInstanceOf[N2])
+			if (nc3.isAssignableFrom(v.getClass)) ret ++= unroll3(v.asInstanceOf[N3])
+			if (nc4.isAssignableFrom(v.getClass)) ret ++= unroll4(v.asInstanceOf[N4])
+			ret
+		}
+		def unroll1(v:N1): Iterable[Factor]
+		def unroll2(v:N2): Iterable[Factor]
+		def unroll3(v:N3): Iterable[Factor]
+		def unroll4(v:N4): Iterable[Factor]
+ 	  def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1, f.n2, f.n3, f.n4)
+ 	  def statistics(v1:N1, v2:N2, v3:N3, v4:N4) : Iterable[StatType]
+		case class Factor(n1:N1, n2:N2, n3:N3, n4:N4) extends super.Factor with Iterable[Factor] {
+ 	  	def numVariables = 4
+		  def variable(i:Int) = i match { case 0 => n1; case 1 => n2; case 2 => n3; case 3 => n4; case _ => throw new IndexOutOfBoundsException(i.toString) }
+		  def statistics : Iterable[StatType] = _statistics(this)
+		}	
+ 	}
 
