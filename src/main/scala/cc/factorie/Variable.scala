@@ -440,6 +440,15 @@ class StringVariable(str: String) extends PrimitiveVariable(str) {
 	class DomainInSubclasses
 }
 
+class IntRangeVariable(low:Int, high:Int) extends SingleIndexedVariable {
+  type VariableType = IntRangeVariable
+  type ValueType = Int
+  class DomainInSubclasses
+  assert(low < high)
+  if (domain.size == 0) { for (i <- low to high) domain.index(i) }
+  assert (domain.size == high-low)
+}
+
 /**For Variables that hold their list of Factors */
 trait FactorList requires Variable {
   private var factorList: List[Factor] = Nil
