@@ -19,7 +19,7 @@ import cc.factorie.util.Implicits._
 		return a single Factor when an Iterable[Factor] is required. */
 	trait Factor extends Product with Iterable[Factor] with Ordered[Factor] {
 		//type TemplateType <: Template
-		//def template : TemplateType
+		def template : Template
 		def numVariables: Int 
 		def variable(index: Int): Variable
 		def variables: Iterable[Variable] = for (i <- 0 until numVariables force) yield variable(i)
@@ -48,7 +48,14 @@ import cc.factorie.util.Implicits._
 		}
 		var _hashCode = -1
 		override def hashCode: Int = {if (_hashCode == -1) _hashCode = variables.sumInts(_ hashCode); _hashCode}
-		override def toString = this.getClass.getName + variables.foldLeft("(")(_ + _.toString + ",") + ")"
+		def factorName = template.factorName
+		override def toString = {
+		  val sb = new StringBuilder; sb append factorName; sb append '(';
+		  val iter = variables.elements
+		  while (iter.hasNext) { sb append iter.next.toString; if (iter.hasNext) sb append "," } 
+		  sb append ")"
+		  sb.toString
+    }
 	}
 
 
@@ -83,13 +90,14 @@ import cc.factorie.util.Implicits._
 	  type FactorType <: Factor
 	  type StatType <: Stat
     type StatisticType <: Statistic
-		//type S <: Stat // The case class of sufficient statistics
-		//type N <: Factor // The case class of neighbors, defined in subtrait of Neighbors
 		trait Factor extends cc.factorie.Factor { 
-      def template : TemplateType = Template.this.asInstanceOf[TemplateType] // Why isn't "def template" in Template enough?
+      override def template : TemplateType = Template.this.asInstanceOf[TemplateType] // Why isn't "def template" in Template enough?
 		  def statistics : Iterable[StatType]
    		def statistic : StatisticType = Template.this.statistic(this.statistics) // TODO verify that this gets override definitions of statistic()
 		}
+	  var factorName = "Factor"
+	  def name(n:String) : this.type = { factorName = n; this }
+	  def =:(n:String) : this.type = name(n)
     trait Stat extends cc.factorie.Stat { 
       override def template : TemplateType = Template.this.asInstanceOf[TemplateType] 
       def score = Template.this.score(this.asInstanceOf[StatType]) // TODO can we find a way to get rid of this cast?
@@ -112,6 +120,7 @@ import cc.factorie.util.Implicits._
 			variables.foreach(v => result ++= factors(v))
 			result.toList // TODO is this necessary?
 		}
+ 		def stats(v:Variable): Iterable[Stat]
     def score(s:StatType) : Double
 		//def scoreStats(ss:Iterable[_<:S]) : Double = ss.foldLeft(0.0)(_ + score(_))
     def statistic(ss:Iterable[StatType]) : StatisticType = new Statistic(ss).asInstanceOf[StatisticType] // TODO is there some way to avoid this cast?
@@ -139,6 +148,8 @@ import cc.factorie.util.Implicits._
       statClasses.foreach(Domain.get[IndexedVariable](_).freeze)
     }	
     lazy val statsize : Int = {
+      //val d = Domain.get[IndexedVariable](statClasses(0))
+      //println("ExpTemplate domain allocSize "+d.allocSize)
       if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
       statClasses.productInts(Domain.get[IndexedVariable](_).allocSize)
     }	
@@ -241,13 +252,13 @@ import cc.factorie.util.Implicits._
     // TODO create methods like this for all Templates and put abstract version in Template
     def respondsTo[NN](implicit m:Manifest[NN]) = nc1.isAssignableFrom(m.erasure)
     def factors(v:Variable): Iterable[Factor] = {
-      println("Template1.factors "+v)
       if (nc1.isAssignableFrom(v.getClass)) unroll1(v.asInstanceOf[N1])
       else Nil
     }
 		def unroll1(v:N1): Iterable[Factor] = new Factor(v)
  	  def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1)
  	  def statistics(v1:N1) : Iterable[StatType]
+ 	  def stats(v:Variable) = factors(v).flatMap(_statistics(_))
 		case class Factor(n1:N1) extends super.Factor with Iterable[Factor] {
 		  def numVariables = 1
 		  def variable(i:Int) = i match { case 0 => n1; case _ => throw new IndexOutOfBoundsException(i.toString) }
@@ -286,6 +297,7 @@ import cc.factorie.util.Implicits._
 		def unroll2(v:N2): Iterable[Factor]
  	  def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1, f.n2)
  	  def statistics(v1:N1, v2:N2) : Iterable[StatType]
+ 	  def stats(v:Variable) = factors(v).flatMap(_statistics(_))
 		case class Factor(n1:N1, n2:N2) extends super.Factor with Iterable[Factor] {
 		  def numVariables = 2
 		  def variable(i:Int) = i match { case 0 => n1; case 1 => n2; case _ => throw new IndexOutOfBoundsException(i.toString) }
@@ -329,6 +341,7 @@ import cc.factorie.util.Implicits._
 		def unroll3(v:N3): Iterable[Factor]
  	  def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1, f.n2, f.n3)
  	  def statistics(v1:N1, v2:N2, v3:N3) : Iterable[StatType]
+ 	  def stats(v:Variable) = factors(v).flatMap(_statistics(_))
 		case class Factor(n1:N1, n2:N2, n3:N3) extends super.Factor with Iterable[Factor] {
  	  	def numVariables = 3
 		  def variable(i:Int) = i match { case 0 => n1; case 1 => n2; case 2 => n3; case _ => throw new IndexOutOfBoundsException(i.toString) }
@@ -370,6 +383,7 @@ import cc.factorie.util.Implicits._
 		def unroll4(v:N4): Iterable[Factor]
  	  def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1, f.n2, f.n3, f.n4)
  	  def statistics(v1:N1, v2:N2, v3:N3, v4:N4) : Iterable[StatType]
+ 	  def stats(v:Variable) = factors(v).flatMap(_statistics(_))
 		case class Factor(n1:N1, n2:N2, n3:N3, n4:N4) extends super.Factor with Iterable[Factor] {
  	  	def numVariables = 4
 		  def variable(i:Int) = i match { case 0 => n1; case 1 => n2; case 2 => n3; case 3 => n4; case _ => throw new IndexOutOfBoundsException(i.toString) }
