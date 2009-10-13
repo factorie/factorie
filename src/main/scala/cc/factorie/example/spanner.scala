@@ -151,7 +151,7 @@ object NerModel extends Model {
         //def phrase = if (length == 1) this.first.word else this.foldLeft("")(_ + " " + _.word).drop(1) // Span as a string
         val trueSpan = trueSpans.getOrElse(this.first, null)
         val correctBoundaries = trueSpan != null && trueSpan.start == this.start && trueSpan.length == this.length
-        val correctLabel = trueSpan != null && trueSpan.label ==== this.label
+        val correctLabel = trueSpan != null && trueSpan.label === this.label
         //				println("truespan: " + trueSpan)
         //				println("correctBoundaries: " + correctBoundaries)
         //				println("correctLabel: " + correctLabel)

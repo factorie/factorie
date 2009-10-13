@@ -18,6 +18,7 @@ import cc.factorie.util.Implicits._
 		private val _members = new HashSet[X]
 		def members: scala.collection.Set[X] = _members
 		def size = _members.size
+		def contains(x:X) = _members.contains(x)
 		def add(x: X)(implicit d: DiffList): Unit = if (!_members.contains(x)) {
 			if (d != null) d += new SetVariableAddDiff(x)
 			_members += x

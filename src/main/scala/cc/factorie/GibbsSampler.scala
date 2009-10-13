@@ -22,7 +22,7 @@ class GibbsSampler1(model:Model) {
 		val settings = variable.settings 
 		case class Proposal(diff:DiffList, score:Double)
 		val proposals = settings.map(s => {val d = new DiffList; s.set(d); new Proposal(d, d.scoreAndUndo(model))}).toList
-		//proposals.foreach(p => println("Coordination "+p.score))
+		//proposals.foreach(p => println("GibbsSampler1 proposal score="+p.score)); println
 		val proposal = proposals.sampleExpProportionally(_.score)
 		proposal.diff.redo
 		proposal.diff
