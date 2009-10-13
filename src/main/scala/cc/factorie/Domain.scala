@@ -30,6 +30,8 @@ class ItemizedDomain[V <: ItemizedVariable](implicit m:Manifest[V]) extends Doma
 class IndexedDomain[V<:IndexedVariable] extends Domain[V] with util.Index[V#ValueType] {
 	def randomValue : V#ValueType = randomValue(Global.random)
 	def randomValue(random:Random): V#ValueType = get(random.nextInt(size))
+	def +=(x:V#ValueType) : Unit = this.index(x)
+	def ++=(xs:Iterable[V#ValueType]) : Unit = xs.foreach(this.index(_))
 }
 object IndexedDomain {
   val NULL_INDEX = -1
@@ -95,8 +97,11 @@ object Domain {
  	def apply[V<:Variable](implicit mv:Manifest[V]) = get[V](mv.erasure)
 	/** Get the Domain for Variables of class vc */
 	def get[V<:Variable](vc:Class[_]) = {
-		if (debug) println("Domain.get "+vc+" classes.length="+vc.getDeclaredClasses.length)
-		if (debug && _domains.isDefinedAt(vc)) println("Domain.get "+vc+" already defined"); Console.flush
+		if (debug) {
+		  println("Domain.get "+vc+" classes.length="+vc.getDeclaredClasses.length)
+		  if (_domains.isDefinedAt(vc)) println("Domain.get "+vc+" already defined")
+		  Console.flush
+    }
 		_domains.getOrElseUpdate(vc, getDomainForClass(vc)).asInstanceOf[V#DomainType]
 	}
 	/** Make Variables of type V1 use the same Domain as Variables of type V2. */
@@ -138,6 +143,7 @@ object Domain {
 		// First check this class to see if it specifies the DomainClass
 		val classes = c.getDeclaredClasses()
 		val index = if (classes == null) -1 else classes.findIndexOf(c=>c.getName.endsWith("$DomainClass"))
+		//if (debug) println("  $DomainClass index="+index+"  classes "+classes.toList)
 		if (index >= 0) {
 			if (debug) println("getDomainClass   returning "+classes(index).getSuperclass)
 		  return classes(index).getSuperclass
