@@ -50,11 +50,14 @@ abstract trait Constant extends Variable
 abstract trait ConstantValue requires Variable
 
 
-/*
-trait ItemizedVariable extends Variable {
-	type VariableType <: ItemizedVariable
-	def domain: ItemizedDomain[VariableType] = Domain[VariableType](this.getClass).asInstanceOf[ItemizedDomain[VariableType]]
-	                                                                                            domain.index(this) // Put this variable in the index.
+/* Defined properly below
+trait ItemizedVariable[This<:ItemizedVariable[This]] extends Variable {
+	type VariableType = This
+	type ValueType = VariableType
+	type DomainType <: IndexedDomain[VariableType]
+	class DomainClass extends IndexedDomain[VariableType]
+	//def domain: ItemizedDomain[VariableType] = Domain[VariableType](this.getClass).asInstanceOf[ItemizedDomain[VariableType]];
+	domain.index(this) // Put this variable in the index.
 }
 */
 
@@ -78,7 +81,7 @@ abstract trait IterableValues[T] {
 	def iterableOtherValues: Iterable[T]
 }
 
-// TODO remove this now that we have Proposer?
+// TODO remove this now that we have Proposer?  No.  GibbsSampler1 is now using it.  -akm
 /** A variable that can iterate over its possible configurations */
 trait IterableSettings{
 	this: Variable =>
@@ -90,8 +93,8 @@ trait IterableSettings{
 trait PrimitiveComparison[T] {
   this :Variable =>
   def value : T
-  def ====(other: PrimitiveComparison[T]) = value == other.value
-  def !===(other: PrimitiveComparison[T]) = value != other.value
+  def ===(other: PrimitiveComparison[T]) = value == other.value
+  def !==(other: PrimitiveComparison[T]) = value != other.value
 
 }
 
@@ -101,18 +104,19 @@ abstract class PrimitiveObservation[T](theValue:T) extends Variable with TypedVa
   class DomainInSubclasses
   protected val _value: T = theValue
   def value = _value
-  //def ====(other: PrimitiveObservation[T]) = value == other.value
-  //def !===(other: PrimitiveObservation[T]) = value != other.value
+  //def ===(other: PrimitiveObservation[T]) = value == other.value
+  //def !==(other: PrimitiveObservation[T]) = value != other.value
   override def toString = printName + "(" + value.toString + ")"
 }
 
 /**A variable with a single mutable (unindexed) value */
-abstract class PrimitiveVariable[T](initval: T) extends Variable with TypedVariable with PrimitiveComparison[T] {
+// TODO A candidate for Scala 2.8 @specialized
+abstract class PrimitiveVariable[T] extends Variable with TypedVariable with PrimitiveComparison[T] {
+  def this(initval:T) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
 	type VariableType <: PrimitiveVariable[T]
   type ValueType = T
   class DomainInSubclasses
   protected var _value: T = _
-  set(initval)(null) // initialize with method call because subclasses may do coordination in overridden set()()
   def value = _value
   def set(newValue: T)(implicit d: DiffList): Unit =
     if (newValue != _value) {
@@ -122,9 +126,10 @@ abstract class PrimitiveVariable[T](initval: T) extends Variable with TypedVaria
   def :=(newValue:T) = set(newValue)(null)
   // Should we implement "equals" here to compare Variable values??
   // No, I don't think so because we might need to put multiple variables with the same values in a HashMap
-  // But we can implement our own specialized equality method... (the shorter === overlaps with an implicit conversion in scalatest)
-  //def ====(other: PrimitiveVariable[T]) = _value == other._value
-  //def !===(other: PrimitiveVariable[T]) = _value != other._value
+  // But we can implement our own specialized equality method... 
+  // (the name === overlaps with an implicit conversion in scalatest, but I don't think this matters)
+  //def ===(other: PrimitiveVariable[T]) = _value == other._value
+  //def !==(other: PrimitiveVariable[T]) = _value != other._value
   override def toString = printName + "(" + value.toString + ")"
 	case class PrimitiveDiff(oldValue: T, newValue: T) extends Diff {
   	//        Console.println ("new PrimitiveDiff old="+oldValue+" new="+newValue)
@@ -165,8 +170,8 @@ abstract trait SingleIndexedObservation extends IndexedVariable {
 	def index : Int
 	override def toString = printName + "(" + index + ")"
 	override def vector = new SingletonBinaryVector(domain.allocSize, index)
-	def ====(other: SingleIndexedObservation) = index == other.index
-	def !===(other: SingleIndexedObservation) = index != other.index
+	def ===(other: SingleIndexedObservation) = index == other.index
+	def !==(other: SingleIndexedObservation) = index != other.index
 } 
 
 /** For variables whose values are associated with a an Int from an index. */
@@ -181,6 +186,7 @@ abstract trait SingleIndexedVariable extends SingleIndexedObservation with Propo
 			_index = newIndex
 		}
 	}
+	def :=(newIndex:Int) = setByIndex(newIndex)(null)
 	def setRandomly(implicit random:Random, d:DiffList) : Unit = setByIndex(random.nextInt(domain.size))
 	def setRandomly(implicit random:Random) : Unit = setByIndex(random.nextInt(domain.size))(null)
 	def setRandomly : Unit = setRandomly(cc.factorie.Global.random)
@@ -217,8 +223,20 @@ abstract trait SingleIndexedVariable extends SingleIndexedObservation with Propo
 	}
 }
 
-/** For variables put in a index, and whose value is the variable itself. */
-// TODO Do we really want this?  Is it being used?
+/** For variables that can store counts associated with each of their possible values, for use in estimating marginal probabilities from samples. */
+// TODO: I'm not sure I like the names of these methods.  Consider changes. 
+trait SampleCounts {
+  this : SingleIndexedVariable =>
+  val sampleCounts = new Array[Double](domain.allocSize)
+  var sampleTotal = 0.0
+  def incrementSample(incr:Double) : Unit = { sampleCounts(index) += incr; sampleTotal += incr }
+  def incrementSample : Unit = incrementSample(1.0)
+  def clearSamples = { sampleTotal = 0.0; for (i <- 0 until domain.allocSize) sampleCounts(i) = 0.0 }
+  def samplePr(idx:Int) : Double = sampleCounts(idx)/sampleTotal
+  //def samplePr(x:VariableType#ValueType) : Double = samplePr(domain.index(x)) // TODO How can I make this typing work?
+}
+
+/** For variables put in an index, and whose value is the variable itself. */
 abstract trait ItemizedVariable[This <: ItemizedVariable[This]] extends SingleIndexedVariable {
 	this : This =>
   type VariableType = This
@@ -349,8 +367,8 @@ class CoordinatedLabel(trueval: String) extends CoordinatedEnumVariable[LabelVal
 		                                def entry : String
 	}*/
 	override def toString = printName + "(Value=" + value.entry + "=" + _index + ")"
-	def ====(other: CoordinatedLabel) = value.index == other.value.index
-	def !===(other: CoordinatedLabel) = value.index != other.value.index
+	def ===(other: CoordinatedLabel) = value.index == other.value.index
+	def !==(other: CoordinatedLabel) = value.index != other.value.index
 }
 
 class Label(trueval: String) extends CoordinatedLabel(trueval) {
@@ -412,11 +430,17 @@ abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
 class Bool(b: Boolean) extends EnumVariable(b) {
   def this() = this(false)
 	type VariableType <: Bool
+	type DomainType <: BoolDomain[VariableType]
+  class DomainClass extends BoolDomain
 	def ^(other:Bool) = value && other.value
 	def v(other:Bool) = value || other.value
 	def -->(other:Bool) = !value || other.value
 }
-
+class BoolDomain[V<:Bool] extends IndexedDomain[V] {
+  this += false
+  this += true
+  this.freeze
+}
 object Bool {
 	val t = new Bool(true)
 	val f = new Bool(false)
@@ -427,12 +451,6 @@ object Bool {
 class Real(v: Double) extends PrimitiveVariable(v) {
 	type VariableType = Real
 }
-
-/* TODO Consider adding such a thing
-class IntRange(i:Int) extends IndexedVariable {
-	type VariableType = IntRange
-	def trueScore = 0.0
-}*/
 
 /**A variable class for string values. */
 class StringVariable(str: String) extends PrimitiveVariable(str) {
@@ -445,8 +463,14 @@ class IntRangeVariable(low:Int, high:Int) extends SingleIndexedVariable {
   type ValueType = Int
   class DomainInSubclasses
   assert(low < high)
-  if (domain.size == 0) { for (i <- low to high) domain.index(i) }
+  if (domain.size == 0) { for (i <- low until high) domain.index(i) }
   assert (domain.size == high-low)
+}
+
+/** A variable who value is a pointer to an ItemizedVariable; useful for entity-attributes whose value is another variable. */
+class ItemizedVariablePointer[V<:ItemizedVariable[V]] extends TypedSingleIndexedVariable[V] {
+  type VariableType = ItemizedVariablePointer[V]
+  class DomainInSubclasses
 }
 
 /**For Variables that hold their list of Factors */
