@@ -315,6 +315,7 @@ abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] wit
 	setByIndex(domain.index(trueval))(null)
 	def :=(newValue:T) = set(newValue)(null)
 	override final def set(newValue: T)(implicit d: DiffList) = super.set(newValue)(d)
+	// TODO: We must find a way to put the "final" below back in!
 	/*final*/ override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d) // TODO uncomment final
 	//override def setFirstValue: Unit = setByIndex(0)(null)
 	//override def hasNextValue = _index < domain.size - 1
@@ -385,16 +386,18 @@ class TrueLabelTemplate[V<:Label](implicit m:Manifest[V]) extends TrueIndexedVal
 // I considered renaming this VectorObservation, but then I realized that methods such as += change its value. -akm
 // TODO Rename to BinaryVectorVariable?
 // TODO Make a constructor that takes argument of Iterable[T]
-abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
+abstract class VectorVariable[T](initVals:Iterable[T]) extends IndexedVariable with TypedVariable {
+	//def this(iv:T*) = this(iv:Seq[T])
+	def this() = this(null)
 	type ValueType = T
 	type VariableType <: VectorVariable[T]
   class DomainInSubclasses
-  //def this (es:T*) = this(es.toArray)   TODO include this again later
   protected var indxs = new ArrayBuffer[Int]()
+  private var _vector: Vector = null // TODO Can we make this more memory efficient?  Avoid having both Vector and ArrayBuffer?;
+  if (initVals ne null) this ++= initVals
   def indices : Seq[Int] = indxs // TODO project to ensure no changes, even with casting?  But this would involve allocating the Projection
   def values : Seq[T] = { val d = this.domain; indxs.map(d.get(_)) }
-  private var _vector: Vector = null // TODO Can we make this more memory efficient?  Avoid having both Vector and ArrayBuffer?
-  		override def vector = {
+  override def vector = {
   	if (_vector == null || _vector.size != domain.allocSize) {
   		val indices = indxs.toArray
   		Sorting.quickSort(indices)
@@ -404,15 +407,15 @@ abstract class VectorVariable[T] extends IndexedVariable with TypedVariable {
   }
   // TODO when we have Scala 2.8, add to the method below difflist argument with default value null
   // But will a += b syntax with with default arguments?
-  def +=(value: T) = {
+  def +=(value: T) : Unit = {
   	val idx = domain.index(value);
   	if (idx == IndexedDomain.NULL_INDEX) throw new Error("VectorVariable += value " + value + " not found in domain " + domain)
-  	indxs += domain.index(value)
+  	indxs += idx
   	_vector = null
   }
-  def +(value: T) = {this += value; this} // TODO Shouldn't this method actually return a new VectorVariable, leaving old one unchanged?  Yes.
-  def ++=(vals: Iterable[T]) = vals.foreach(v => this += v)
-  def ++(vals: Iterable[T]) = {this ++= vals; this} // TODO this method should return a new Vector
+  //def +(value: T) = {this += value; this} // TODO Shouldn't this method actually return a new VectorVariable, leaving old one unchanged?  Yes.
+  def ++=(vals: Iterable[T]) : Unit = vals.foreach(v => this += v)
+  //def ++(vals: Iterable[T]) = {this ++= vals; this} // TODO this method should return a new Vector
   override def toString = {
     val s = new StringBuilder(printName + "(")
     val iter = vector.activeDomain.elements
