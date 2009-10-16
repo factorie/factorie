@@ -1,6 +1,6 @@
 package cc.factorie
 
-import cc.factorie.er._
+import cc.factorie.er1._
 import scala.reflect.Manifest
 import scala.collection.mutable.ArrayStack
 

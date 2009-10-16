@@ -1,4 +1,4 @@
-package cc.factorie.er
+package cc.factorie.er1
 import scala.collection.mutable.{HashMap,HashSet}
 
 trait Attribute extends Variable {
@@ -32,7 +32,7 @@ class BoolAttributeOf[O<:Variable] extends Bool with AttributeOf[O]
 trait Attributes[This<:Attributes[This] with Variable] {
 	this : This =>
 	def myself : This = this
-	trait Attribute extends cc.factorie.er.Attribute {
+	trait Attribute extends cc.factorie.er1.Attribute {
 		type AttributeOwnerType = This
 		def owner = myself
 		//def owner = `$outer`() // TODO Why doesn't this work?

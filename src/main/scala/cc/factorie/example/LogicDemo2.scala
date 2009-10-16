@@ -1,5 +1,5 @@
 package cc.factorie.example
-import cc.factorie.er._
+import cc.factorie.er1._
 import cc.factorie.logic._
 import scala.collection.mutable.HashMap
 

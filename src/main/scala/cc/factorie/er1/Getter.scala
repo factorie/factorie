@@ -1,4 +1,4 @@
-package cc.factorie.er
+package cc.factorie.er1
 
 /** Defines a reversable many-to-many relation. */
 trait Getter0[A<:Variable,B<:Variable] {

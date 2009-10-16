@@ -1,4 +1,4 @@
-package cc.factorie.er
+package cc.factorie.er1
 import scala.collection.mutable.{HashMap,HashSet}
 import scala.reflect.Manifest
 
@@ -11,7 +11,7 @@ class Relation[A<:Variable,B<:Variable] extends Collection[Relationship[A,B]] wi
 	private val a2t = new HashMap[A,HashMap[B,RelationshipType]] // a to tuple
 	private val b2t = new HashMap[B,HashMap[A,RelationshipType]] // a to tuple
  	def newRelationship(a:A, b:B) : RelationshipType = new Relationship(a,b)
-  type RelationshipType = cc.factorie.er.Relationship[A,B]
+  type RelationshipType = cc.factorie.er1.Relationship[A,B]
   protected def addRelationship(r:RelationshipType) = {
     r := true
     //println("Relationship add "+r.src+" "+r.dst)
