@@ -233,7 +233,7 @@ import cc.factorie.util.Implicits._
 	  this : This =>
 	}*/
  
-	trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This] with cc.factorie.util.DLinkedList[This]] extends cc.factorie.util.DLinkedList[This] {
+	trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This] with cc.factorie.util.LinkList[This]] extends cc.factorie.util.LinkList[This] {
 	  this : This =>
 	}
 
