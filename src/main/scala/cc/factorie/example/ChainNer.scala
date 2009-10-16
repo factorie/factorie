@@ -39,6 +39,7 @@ class ChainNerWorld[M<:ChainNerModel](val model:M) extends World {
   }
 }
 
+/** A demonstraction of Named Entity Recognition from the CoNLL 2003 competition data. */
 object ChainNerDemo {
   def main(args: Array[String]) : Unit = {
     val model = new ChainNerModel()

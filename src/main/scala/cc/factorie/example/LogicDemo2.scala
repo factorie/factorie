@@ -34,8 +34,8 @@ object LogicDemo2 {
 				"SmokingCausesCancer" =: Forany[Person] { p => p->Smokes ==> p->Cancer } % 2.0,
 				"FriendsSmokingMatch" =: Forany[Person] { p => p->Friends->Smokes === p->Smokes } % 1.5,
 				"FriendsAgeMatch" =: Forany[Person] { p => p->Friends->Age === p->Age} % 2.0,
-				"FriendsEmployersMatch" =: Forany[Person] { p => p->Friends->Employer === p->Employer} % 2.0
-				//"NoRespectSmokers" =: Forany[Person] { p => Not(p->Smokes)}
+				"FriendsEmployersMatch" =: Forany[Person] { p => p->Friends->Employer === p->Employer} % 2.0,
+				//"NoRespectSmokers" =: Forany2[Person,Person] { (p1,p2) => Not(p1->Smokes) ^ p2->Smokes ==> Not(Respects(p1,p2)) }
     )
 
 		// Create the data

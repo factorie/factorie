@@ -42,6 +42,7 @@ class Relation[A<:Variable,B<:Variable] extends Collection[Relationship[A,B]] wi
 	def forward : A=>Iterable[B] = (a:A) => get2(a).map(_.dst)
 	def reverse : B=>Iterable[A] = (b:B) => get1(b).map(_.src)
 	def apply(a:A,b:B) = add(a,b)(null)
+	//def apply(g1:Getter[_,A],g2:Getter[_,B]) : Formula = new ... 
 	def +=(pair:(A,B)) = add(pair._1, pair._2)(null)
 	def ++=(abs:Iterable[(A,B)]) = abs.foreach(pair => +=(pair))
 	def -=(pair:(A,B)) = remove(pair._1, pair._2)(null)
@@ -92,7 +93,6 @@ class SymmetricFunction[A>:Null<:Variable] extends Getter1[A,A] {
 	def apply(a1:A, a2:A) = this.add(a1,a2)
 	def forward1 = (a:A) => a2t.getOrElse(a,null)
 	def reverse1 = (a:A) => a2t.getOrElse(a,null)
-	def ->[B<:Variable](g:Getter0[A,B]) = new Getter[A,B](a=>g.forward(this.forward1(a)), b=>g.reverse(b).map(this.reverse1))
 	//protected override def stringPrefix ="SymmetricFunction" 
 }
 

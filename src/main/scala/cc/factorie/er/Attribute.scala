@@ -10,6 +10,7 @@ trait AttributeOf[O<:Variable] extends Attribute {
 	type AttributeOwnerType = O
 	//this.getClass.getDeclaredFields.foreach(println(_))
 	def owner : O = this.getClass().getDeclaredField("$outer").get(this).asInstanceOf[O];
+	//def owner : O = this.`$outer` // Why doesn't this work?
 	override def toString = this match {
 	  case t : TypedSingleIndexedVariable[_] => owner.toString+"."+printName+"="+t.value
 	  case _ => super.toString
