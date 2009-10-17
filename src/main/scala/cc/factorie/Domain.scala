@@ -51,41 +51,6 @@ class StringDomain[V<:IndexedVariable {type ValueType = String}] extends Indexed
   def Value = "__StringDomainValue__"
 }
 
-// TODO We can get rid of LabelValue??
-//class LabelDomain[V<:Label] extends IndexedDomain[W forSome {type W <: LabelValue}]
-class LabelDomain[V<:CoordinatedLabel] extends IndexedDomain[V] {
-  private val stringIndex = new util.Index[String] {} // TODO Why is Index abstract (and thus requiring the {})
-	def index(entry: String): Int = {
-		val i = stringIndex.index(entry)
-		if (i == this.size) this.index(new Value(i))
-		i
-	}
-	def apply(entry: String) = index(entry)
-	def getString(i: Int) = stringIndex.get(i)
-	def get(s: String): V#ValueType = get(index(s))
-	def internValues: Unit = {
-		val fields = this.getClass.getDeclaredFields()
-		for (field <- fields; if (field.getType.isAssignableFrom(classOf[LabelValue]) && Value == field.get(this))) {
-			val i = index(field.getName)
-			field.set(this, get(i))
-		}
-	}
-	def Value = new Value(-1)
-	final private def ldomain = this
-	class Value(val index: Int) extends LabelValue with Ordered[Value] {
-		if (index < size) throw new Error("LabelDomain Value for this index already exists.")
-		// TODO make sure these are not created by the user, but only through the LabelDomain
-		override def domain = ldomain
-		override def toString = "LabelValue("+entry+")"
-		override def entry : String = stringIndex.get(index)
-		override def equals(other: Any) = other match {
-			case label: Value => this.index == label.index
-			// case value : V#ValueType => this.index == index(value) // TODO consider something like this
-			case _ => false
-		}
-		def compare(other: Value) = other.index - this.index
-	}
-}
 
 
 /** A static map from a Variable class to its Domain. */

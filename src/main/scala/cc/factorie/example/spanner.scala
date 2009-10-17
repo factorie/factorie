@@ -41,7 +41,7 @@ object NerModel extends Model {
         // Add a unit-length span, choosing the label that scores best
         for (labelvalue <- Domain[Label]) {
           // TODO Why not just: new AutoProposal(document.addSpan(this.position, 1, label.entry))
-          proposals += new AutoProposal(model, objective, diff => document.addSpan(this.position, 1, labelvalue.entry)(diff))
+          proposals += new AutoProposal(model, objective, diff => document.addSpan(this.position, 1, labelvalue)(diff))
         }
         //println("Token multiPropose span="+proposals.max(_.modelScore).diff.first.variable.asInstanceOf[Document#Span].phrase)
       } else {
@@ -53,7 +53,7 @@ object NerModel extends Model {
             proposals += new AutoProposal(model, objective, diff => span.trimEnd(1)(diff))
           proposals += new AutoProposal(model, objective, diff => span.delete(diff)) // Try removing the span
           //println("Delete diff:" + proposals.last.diff)
-          for (labelvalue <- Domain[Label]; if (labelvalue.index != span.label.value.index)) // Try changing its label
+          for (labelvalue <- Domain[Label]; if (labelvalue!= span.label.value)) // Try changing its label
             proposals += new AutoProposal(model, objective, diff => span.label.set(labelvalue)(diff))
         }
       }
@@ -105,7 +105,7 @@ object NerModel extends Model {
       //override def phrase = if (length == 1) this.first.word else this.foldLeft("")(_ + " " + _.word).drop(1) // Span as a string
 
       def equalsSpan(span: Span) = {
-        span != null && initStart == span.start && initLength == span.length && labelStr == span.label.value.entry
+        span != null && initStart == span.start && initLength == span.length && labelStr == span.label.value
       }
 
       //override def toString =
@@ -141,10 +141,10 @@ object NerModel extends Model {
     class Span(initStart: Int, initLength: Int, labelStr: String)(implicit d: DiffList) extends SpanVariableInSeq(initStart, initLength)(d) {
       override def diffIfNotPresent = true
 
-      val label = new Label(Domain[Label].get(0).entry, this)
+      val label = new Label(Domain[Label].get(0), this)
       //d += new CreationDiff(label)
       label.set(labelStr)(d)
-      override def toString = {if (present) "" else "!"} + "Span(" + this.phrase + "=" + this.label.value.entry + ")"
+      override def toString = {if (present) "" else "!"} + "Span(" + this.phrase + "=" + this.label.value + ")"
 
       def trueScore = {
         var ret = 0.0
@@ -417,7 +417,7 @@ object SpannerDemo {
       val testDocs = test.take(100)
 
       // Print all the true spans
-      docs.foreach(doc => doc.trueSpans.values.foreach(span => println(span.phrase + " " + span.label.value.entry)))
+      docs.foreach(doc => doc.trueSpans.values.foreach(span => println(span.phrase + " " + span.label.value)))
       //System.exit(-1)
 
       //var tokens = docs.flatMap(doc => doc) //.take(11) // TODO for now, just look at the first 500 words

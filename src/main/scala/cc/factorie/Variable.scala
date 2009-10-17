@@ -49,20 +49,8 @@ abstract trait Constant extends Variable
 /** Used as a marker for Variables whose value does not change once created. */
 abstract trait ConstantValue requires Variable
 
-
-/* Defined properly below
-trait ItemizedVariable[This<:ItemizedVariable[This]] extends Variable {
-	type VariableType = This
-	type ValueType = VariableType
-	type DomainType <: IndexedDomain[VariableType]
-	class DomainClass extends IndexedDomain[VariableType]
-	//def domain: ItemizedDomain[VariableType] = Domain[VariableType](this.getClass).asInstanceOf[ItemizedDomain[VariableType]];
-	domain.index(this) // Put this variable in the index.
-}
-*/
-
 /**For variables whose value has a type stored in type ValueType */
-abstract trait TypedVariable /*extends Variable*/ {
+abstract trait TypedVariable {
   this : Variable =>
 	type ValueType
 }
@@ -259,40 +247,52 @@ abstract trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with 
   type ValueType = T
   class DomainInSubclasses
   def set(newValue: T)(implicit d: DiffList) = setByIndex(domain.index(newValue))
+	def :=(newValue:T) = set(newValue)(null)
   def value: T = domain.get(_index)
   override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + _index + ")"
 }	
 
-/** A Variable to hold one of an enumerated set of values of type T, and which does not change */
+/** A Variable to hold one of an enumerated set of values of type T, and which does not change.  */
 abstract class EnumObservation[T](value:T) extends TypedSingleIndexedObservation[T] with ConstantValue {
 	type VariableType <: EnumObservation[T]
   class DomainInSubclasses
   val index = domain.index(value)
-  //final def setByIndex(index:Int)(d:DiffList) = throw new Error("Cannot change the value of an Observation")
-  //final def set(v:T)(d:DiffList) = throw new Error("Cannot change the value of an Observation")
 }
 
 // TODO get rid of all this "Coordinated" versus non-coordinated.  Everything should just be coordinated.
 // It is less efficient, but too error-prone.
 // TODO Really?  Verify how much efficiency gain we could get.
 
-/**A variable whose value is a single indexed value; mutable */
-abstract trait CoordinatedEnumVariable[T] extends TypedSingleIndexedVariable[T] {
+/**A variable whose value is a single indexed value, initialized at construction time; mutable.
+ This variable does not, however, hold a trueValue.  For that you should use a Label. */
+abstract class CoordinatedEnumVariable[T](initialValue:T) extends TypedSingleIndexedVariable[T] {
 	type VariableType <: CoordinatedEnumVariable[T]
   class DomainInSubclasses
-  // initialize the variable's value; using this method in case coordination in necessary
-  //setByIndex(domain.index(initval))(null)
+	if (initialValue != null) setByIndex(domain.index(initialValue))(null)
 }
+
+
+/**A variable whose value is a single indexed value that does no variable coordination in its 'set' method,  
+ * ensuring no coordination is necessary for optimization of belief propagation. 
+ * This variable does not hold a trueValue; for that you should use a Label. */
+abstract class EnumVariable[T](initialValue:T) extends CoordinatedEnumVariable[T](initialValue) {
+	type VariableType <: EnumVariable[T]
+  class DomainInSubclasses
+  final override def set(newValue: T)(implicit d: DiffList) = super.set(newValue)(d)
+	final override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d) // TODO uncomment final
+}
+
+
 
 /**A variable of finite enumerated values that has a true "labeled" value, separate from its current value. */
 //trait TrueIndexedValue[T] extends TypedSingleIndexedVariable[T] 
-trait TrueIndexedValue /*extends SingleIndexedVariable*/ {
+trait TrueIndexedValue {
   this : SingleIndexedVariable =>
 	//type VariableType <: TrueIndexedValue // TODO Try to make this work, so that "trueValue" returns the right type
   /** The index of the true labeled value for this variable.  If unlabeled, set to -1 */
   var trueIndex: Int
   //private var _trueValue:T = domain.get(trueIndex)
-  def trueValue /*:ValueType*/= if (trueIndex >= 0) domain.get(trueIndex) else null // _trueValue
+  def trueValue = if (trueIndex >= 0) domain.get(trueIndex) else null
   def isUnlabeled = trueIndex < 0
   def unlabel = if (trueIndex >= 0) trueIndex = -trueIndex else throw new Error("Already unlabeled.")
 }
@@ -307,80 +307,23 @@ abstract class TrueIndexedValueTemplate[V<:SingleIndexedVariable with TrueIndexe
   def score(s:Stat) = if (s.s1.index == s.s1.trueIndex) 1.0 else 0.0
 }
 
-/**A variable whose value is a single indexed value that does no variable coordination in its 'set' method.  Ensuring no coordination is necessary for optimization of belief propagation. */
-abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] with TypedTrueIndexedValue[T] with IterableValues[T] {
-	type VariableType <: EnumVariable[T]
+class TrueLabelTemplate[V<:CoordinatedLabel[_]](implicit m:Manifest[V]) extends TrueIndexedValueTemplate[V]()(m)
+
+
+/** A variable with a single index and a true value. */
+class CoordinatedLabel[T](trueval:T) extends CoordinatedEnumVariable[T](trueval) with TypedTrueIndexedValue[T] {
+	type VariableType <: CoordinatedLabel[T]
   class DomainInSubclasses
 	var trueIndex = domain.index(trueval)
 	setByIndex(domain.index(trueval))(null)
-	def :=(newValue:T) = set(newValue)(null)
-	override final def set(newValue: T)(implicit d: DiffList) = super.set(newValue)(d)
-	// TODO: We must find a way to put the "final" below back in!
-	/*final*/ override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d) // TODO uncomment final
-	//override def setFirstValue: Unit = setByIndex(0)(null)
-	//override def hasNextValue = _index < domain.size - 1
-	//override def setNextValue: Unit = if (hasNextValue) setByIndex(_index + 1)(null) else throw new Error("No next value")
-	def iterableValues: Iterable[T] = domain
-	def iterableOtherValues: Iterable[T] = domain.filter(_ != value)
-	override def trueValue : T = domain.get(trueIndex) 
 }
 
-//trait MyFoo { def myfoo = 3 }
-//class MyEnumVariable[T](trueval:T) extends EnumVariable[T](trueval) with MyFoo
-
-class TrueEnumTemplate[V<:EnumVariable[_]](implicit m:Manifest[V]) extends TrueIndexedValueTemplate[V]()(m)
-
-// TODO We can get rid of LabelValue
-/** The value of a Label variable.  
-* Previously we simply used String values in a EnumVariable, but here LabelValues can be compared much more efficiently than Strings. */
-trait LabelValue {
-	def index: Int
-	def domain: LabelDomain[_]
-  def entry: String = domain.getString(index)
-  override def toString = "LabelValue("+entry+")"
-}
-
-/**A variable whose value is a LabelValue, which in turn can be
-created or indexed through a String.  LabelValues can be
-efficiently compared. */
-//class Label(initval:String) extends SingleIndexedVariable[LabelValue] with TrueIndexedValue[LabelValue] with IterableValues[LabelValue] {
-class CoordinatedLabel(trueval: String) extends CoordinatedEnumVariable[LabelValue] with TypedTrueIndexedValue[LabelValue] with IterableValues[LabelValue] {
-	type VariableType <: CoordinatedLabel
-	type DomainType <: LabelDomain[VariableType]
-	class DomainClass extends LabelDomain[VariableType]
-	//type ValueType = String 
-	def this(trueval: LabelValue) = this (trueval.entry)
+class Label[T](trueval:T) extends CoordinatedLabel(trueval) {
+  type VariableType <: Label[T]
   class DomainInSubclasses
-	var trueIndex = domain.index(trueval)
-	setByIndex(domain.index(trueval))(null)
-	//def this(initval:String) = this(LabelDomain.get[Label](this/*.getClass*/).get(initval))
-	def set(s: String)(implicit d: DiffList) = setByIndex(domain.index(s))
- 	override def trueValue : LabelValue = domain.get(trueIndex) 
-	//override def setFirstValue: Unit = setByIndex(0)(null)
-	//override def hasNextValue = _index < domain.size - 1
-	//override def setNextValue: Unit = if (hasNextValue) setByIndex(_index + 1)(null) else throw new Error("No next value")
-	def iterableValues: Iterable[LabelValue] = domain
-	def iterableOtherValues: Iterable[LabelValue] = domain.filter(_ != value)
-	//type ValueType <: LabelDomain[VariableType]#Value // TODO try to get this working
-	/*trait Value {
-		def index : Int
-		g      def domain : LabelDomain[_<:Label]
-		                                def entry : String
-	}*/
-	override def toString = printName + "(Value=" + value.entry + "=" + _index + ")"
-	def ===(other: CoordinatedLabel) = value.index == other.value.index
-	def !==(other: CoordinatedLabel) = value.index != other.value.index
+	override final def set(newValue:T)(implicit d: DiffList) = super.set(newValue)(d)
+	override final def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
 }
-
-class Label(trueval: String) extends CoordinatedLabel(trueval) {
-  type VariableType <: Label
-  class DomainInSubclasses
-	override final def set(newValue: String)(implicit d: DiffList) = super.set(newValue)(d)
-	override final def set(newValue: LabelValue)(implicit d: DiffList) = super.set(newValue)(d)
-	override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d) // TODO should be final, right?
-}
-
-class TrueLabelTemplate[V<:Label](implicit m:Manifest[V]) extends TrueIndexedValueTemplate[V]()(m)
 
 /**A variable whose value is a SparseBinaryVector; immutable. */
 // I considered renaming this VectorObservation, but then I realized that methods such as += change its value. -akm
@@ -430,14 +373,14 @@ abstract class VectorVariable[T](initVals:Iterable[T]) extends IndexedVariable w
 }
 
 /**A variable class for boolean values, defined here for convenience.  If you have several different "types" of booleans, you might want to subclass this to enable type safety checks. */
-class Bool(b: Boolean) extends EnumVariable(b) {
+class Bool(b: Boolean) extends CoordinatedEnumVariable(b) {
   def this() = this(false)
 	type VariableType <: Bool
 	type DomainType <: BoolDomain[VariableType]
   class DomainClass extends BoolDomain
 	def ^(other:Bool) = value && other.value
 	def v(other:Bool) = value || other.value
-	def -->(other:Bool) = !value || other.value
+	def ==>(other:Bool) = !value || other.value
 }
 class BoolDomain[V<:Bool] extends IndexedDomain[V] {
   this += false

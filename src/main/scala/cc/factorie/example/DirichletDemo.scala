@@ -3,7 +3,7 @@ package cc.factorie.example
 object DirichletDemo {
 
   def main(args:Array[String]) : Unit = {
-  	class Word(s:String) extends EnumVariable(s) with MultinomialOutcome[Word];
+  	class Word(s:String) extends CoordinatedEnumVariable(s) with MultinomialOutcome[Word];
   	Domain += new StringDomain[Word] {
   		List("one", "two", "three", "four", "five", "six").foreach(index(_))
   	}

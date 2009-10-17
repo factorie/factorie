@@ -7,7 +7,7 @@ import cc.factorie.util.Implicits._
 object WordSegmenterDemo { 
 
 	// The variable types:
-	class Label(b:Boolean, val token:Token) extends EnumVariable(b) 
+	class Label(b:Boolean, val token:Token) extends cc.factorie.Label(b) 
 	class Token(val char:Char, isWordStart:Boolean) extends VectorVariable[String] with VarInSeq[Token] {
 		this += char.toString
 		if ("aeiou".contains(char)) this += "VOWEL"
@@ -44,7 +44,7 @@ object WordSegmenterDemo {
 		def statistics(label1:Label, label2:Label) = Stat(Bool(label1.value==label2.value))
 	}.init
 
-	val objective = new Model(new TrueEnumTemplate[Label])
+	val objective = new Model(new TrueLabelTemplate[Label])
 
 
 

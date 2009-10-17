@@ -92,13 +92,13 @@ object SimpleChainNER {
   }
 
   def printLabel(label:Label) : Unit = {
-    println("%-16s TRUE=%-8s PRED=%-8s %s".format(label.token.word, label.trueValue.entry, label.value.entry, label.token.toString))
+    println("%-16s TRUE=%-8s PRED=%-8s %s".format(label.token.word, label.trueValue, label.value, label.token.toString))
   }
  
   def printDiagnostic(labels:Seq[Label]) : Unit = {
   	for (label <- labels; if (label.index != label.domain.index("O"))) {
   		if (!label.hasPrev || label.value != label.prev.value) 
-  			print("%-7s %-7s ".format((if (label.value != label.trueValue) label.trueValue.entry else " "), label.value.entry))
+  			print("%-7s %-7s ".format((if (label.value != label.trueValue) label.trueValue else " "), label.value))
   		print(label.token.word+" ")
   		if (!label.hasNext || label.value != label.next.value) println()
   	}
