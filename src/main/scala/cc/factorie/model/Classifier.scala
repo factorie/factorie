@@ -4,7 +4,7 @@ import cc.factorie._
 
 class ClassifierModel extends Model {
 	class Label(name: String, val instance: Instance) extends cc.factorie.Label(name)
-	class Instance(labelString: String, features: Iterable[String]) extends VectorVariable[String] {
+	class Instance(labelString: String, features: Iterable[String]) extends BinaryVectorVariable[String] {
 		this ++= features
 		var label: Label = new Label(labelString, this)
 	}

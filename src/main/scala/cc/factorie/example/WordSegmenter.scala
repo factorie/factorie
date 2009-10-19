@@ -8,7 +8,7 @@ object WordSegmenterDemo {
 
 	// The variable types:
 	class Label(b:Boolean, val token:Token) extends cc.factorie.Label(b) 
-	class Token(val char:Char, isWordStart:Boolean) extends VectorVariable[String] with VarInSeq[Token] {
+	class Token(val char:Char, isWordStart:Boolean) extends BinaryVectorVariable[String] with VarInSeq[Token] {
 		this += char.toString
 		if ("aeiou".contains(char)) this += "VOWEL"
 		val label = new Label(isWordStart, this)

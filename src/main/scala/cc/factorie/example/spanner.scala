@@ -14,7 +14,7 @@ object NerModel extends Model {
   val Capitalized = "^[A-Z].*".r
   val Numeric = "^[0-9]+$".r
   val Punctuation = "[,\\.;:?!()]+".r
-  class Token(val word: String) extends VectorVariable[String] with VarInSeq[Token] with MultiProposer {
+  class Token(val word: String) extends BinaryVectorVariable[String] with VarInSeq[Token] with MultiProposer {
     this += "W=" + word
     if (Capitalized.findFirstMatchIn(word) != None) this += "CAPITALIZED"
     if (Numeric.findFirstMatchIn(word) != None) this += "NUMERIC"

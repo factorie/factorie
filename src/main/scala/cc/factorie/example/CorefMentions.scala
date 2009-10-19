@@ -28,7 +28,7 @@ object CorefMentionsDemo {
   }
 
   /** A feature vector random variable measuring affinity between two mentions */
-  class AffinityVector(s1:String, s2:String) extends VectorVariable[String] {
+  class AffinityVector(s1:String, s2:String) extends BinaryVectorVariable[String] {
     type VariableType = AffinityVector
     if (s1 equals s2) this += "match" else this += "-match"
     if (s1.substring(0,1) equals s2.substring(0,1)) this += "prefix1" else this += "-prefix1"

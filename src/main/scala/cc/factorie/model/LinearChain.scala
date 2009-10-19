@@ -11,7 +11,7 @@ trait LinearChainModel extends Model {
 	  def hasPrev = this.token.hasPrev && this.token.prev.label != null && feedForward
 	}
 
-	class Token(val word: String, features: Seq[String], labelString: String) extends VectorVariable[String] with VarInSeq[Token] {
+	class Token(val word: String, features: Seq[String], labelString: String) extends BinaryVectorVariable[String] with VarInSeq[Token] {
 	  def this(w:String, ls:String) = this(w, Nil, ls)
 		this ++= features
 		val label: Label = if (labelString != null) new Label(labelString, this) else null

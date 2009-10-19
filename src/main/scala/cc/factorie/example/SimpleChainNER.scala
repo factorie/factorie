@@ -3,7 +3,7 @@ package cc.factorie.example
 object SimpleChainNER {
 
   // The data
-	class Token(val word:String, features:Seq[String], labelString:String) extends VectorVariable[String] with VarInSeq[Token] {
+	class Token(val word:String, features:Seq[String], labelString:String) extends BinaryVectorVariable[String] with VarInSeq[Token] {
 		val label: Label = new Label(labelString, this)
   	this ++= features
 	}
