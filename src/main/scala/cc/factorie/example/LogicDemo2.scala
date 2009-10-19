@@ -46,8 +46,8 @@ object LogicDemo2 {
 		people.foreach(_.smokes := r.nextBoolean)
 		people.foreach(_.age := r.nextInt(8))
 		people.foreach(Employer(_,Domain[Company].randomValue))
-		for (p1 <- people; p2 <- people; if r.nextBoolean) Friends(p1,p2)
-		for (p1 <- people; if Spouse(p1) == null) Spouse(p1,Domain[Person].randomValue)
+		for (p1 <- people; p2 <- people; if (r.nextBoolean)) Friends(p1,p2)
+		for (p1 <- people; if (Spouse(p1) == null)) Spouse(p1,Domain[Person].randomValue)
   
 		// Print parts of the data
 		for (p <- people)

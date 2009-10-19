@@ -47,7 +47,7 @@ abstract trait Variable {
 abstract trait Constant extends Variable
 
 /** Used as a marker for Variables whose value does not change once created. */
-abstract trait ConstantValue requires Variable
+abstract trait ConstantValue extends Variable
 
 /**For variables whose value has a type stored in type ValueType */
 abstract trait TypedVariable {
@@ -420,7 +420,8 @@ class ItemizedVariablePointer[V<:ItemizedVariable[V]] extends TypedSingleIndexed
 }
 
 /**For Variables that hold their list of Factors */
-trait FactorList requires Variable {
+trait FactorList {
+	this : Variable =>
   private var factorList: List[Factor] = Nil
   def addFactor(f: Factor) = factorList = f :: factorList
   def clearFactors = factorList = Nil
