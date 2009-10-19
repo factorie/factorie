@@ -164,6 +164,10 @@ abstract class Dirichlet[O<:MultinomialOutcome[O]](initialAlpha:Seq[Double], pse
     override def undo = super.redo
   }
 }
+object Dirichlet {
+  def apply[O<:MultinomialOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) = new SymmetricDirichlet[O](initialAlpha)
+  def apply[O<:MultinomialOutcome[O]](implicit m:Manifest[O]) = new SymmetricDirichlet[O](1.0)
+}
   
 trait DirichletMomentMatchingEstimator[O<:MultinomialOutcome[O]] extends AbstractDirichlet[O] {
   this : Dirichlet[O] =>
@@ -251,6 +255,7 @@ class Multinomial[O<:MultinomialOutcome[O]](initCounts:Seq[Double])(implicit m:M
 	def size = _counts.length
 	var source : AbstractDirichlet[O] = _
 	def setSource(dir:AbstractDirichlet[O])(implicit d:DiffList) : Unit = {
+	  // TODO: consider not calling ungenerate and generate here.  Setting the source shouldn't change the Multinomial parameters immediately
 		if (d != null) d += MultinomialSetSourceDiff(source, dir)
 		if (source != null) source.ungenerate(this) 
 		source = dir
@@ -268,6 +273,10 @@ class Multinomial[O<:MultinomialOutcome[O]](initCounts:Seq[Double])(implicit m:M
 	  total = d.sum
 	  this
 	}
+	/** Set source, and incrementally update the parameters of this Multinomial */
+	def ~:(o:O) : this.type = { o.setSource(this)(null); increment(o); this }
+	def increment(o:O) = { _counts(o.index) += 1.0; total += 1.0 }
+	def unincrement(o:O) = { _counts(o.index) -= 1.0; total -= 1.0 }
 	override def generate(o:O)(implicit d:DiffList) = { 
 		//println("Multinomial.outcomeDomain.size="+outcomeDomain.size+" generate "+o+" size="+size); Console.flush; 
 		_counts(o.index) += 1.0; total += 1.0
@@ -285,9 +294,11 @@ class Multinomial[O<:MultinomialOutcome[O]](initCounts:Seq[Double])(implicit m:M
 		while (i < size) {
 			sum += pr(i)
 			if (sum >= s) return i
+			i += 1
 		}
 		return size - 1
 	}
+	def sample(numSamples:Int) : Seq[Int] = for (i <- 0 until numSamples force) yield sample
 	def elements : Iterator[O#VariableType#ValueType] = new Iterator[O#VariableType#ValueType] {
 		def hasNext = true
 		def next = nextOutcomeValue
@@ -300,6 +311,7 @@ class Multinomial[O<:MultinomialOutcome[O]](initCounts:Seq[Double])(implicit m:M
 			_counts(index) / total
 		}
 	def pr(o:O) : Double = pr(o.index)
+	def pr(os:Seq[O]) : Double = os.foldLeft(1.0)(_*pr(_))
 	def prs : RandomAccessSeq[Double] = new RandomAccessSeq[Double] { def apply(i:Int) = pr(i); def length = _counts.size}
 	def logpr(o:O) : Double = Math.log(pr(o))
 	def logpr(index:Int) = Math.log(pr(index))
@@ -325,15 +337,9 @@ class Multinomial[O<:MultinomialOutcome[O]](initCounts:Seq[Double])(implicit m:M
 }
 
   
-// Trait for any distribution that might be picked as part of a Multinomial mixture.
-// Creates is own Domain.  Number of components in the mixture is the size of the domain.  Values of the domain are these MixtureComponents.
-// Note that this is not a MultinomialOutcome, it is the *value* of MultinomialOutcome.
-// The MultinomialOutcome is MixtureChoice
-// class Theta extends Multinomial[Z];
-// class Topic extends Multinomial[Word] with MixtureComponent[Topic];
-// class Z extends MultinomialMixtureChoice[Topic,Theta,Word];
-// class Z extends MultinomialMixtureChoice[Topic,Z];
-// class Word(s:String) extends EnumVariable(s) with MultinomialOutcome[Word] with MultinomialSource[Topic] // optionally to know the type of the generating Multinomial
+/** Trait for any distribution that might be selected as as part of a Multinomial mixture. 
+Creates is own Domain.  Number of components in the mixture is the size of the domain.  Values of the domain are these MixtureComponent objects.
+ Note that this is not a MultinomialOutcome, it is the *value* of MultinomialOutcome. */
 trait MixtureComponent[This<:MixtureComponent[This] with GenerativeDistribution] extends TypedSingleIndexedVariable[This] with GenerativeDistribution {
 	this : This =>
 	//type OutcomeType = This#OutcomeType
@@ -353,8 +359,10 @@ trait MixtureComponent[This<:MixtureComponent[This] with GenerativeDistribution]
 // Usage: 
 // class Topic extends Multinomial[Word] with MixtureComponent[Topic]
 // class Z extends MixtureChoice[Topic,Z]
-// class Theta extends Multinomial[Z]
-class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends MultinomialOutcome[This] {
+// class Theta extends Multinomial[Z];
+/** A multinomial outcome that is an indicator of which mixture component in a MixtureChoice is chosen.  
+ * The "Z" in Latent Dirichlet Allocation is an example. */                                 
+class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends MultinomialOutcomeVariable[This] {
   this : This =>
   type VariableType = This
   type ValueType = M
@@ -379,41 +387,9 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
 }
 
   
-// Order of type arguments: M==The distribution being selected, M==The multinomial distribution from which the selection is made
-@deprecated
-class MultinomialMixtureChoice[M<:Multinomial[O] with MixtureComponent[M],O<:MultinomialOutcome[O],This<:MultinomialMixtureChoice[M,O,This]](implicit mm:Manifest[M/*#OutcomeDomainType*/]) extends /* TODO Typed... so def value works */ MultinomialOutcome[This] {
-	//type VariableType = MultinomialMixtureChoice[C,This];
-	this : This =>
-	type VariableType = This // TODO is this right?
-	type ValueType = M
-	class DomainInSubclasses
-	//override type OutcomeDomainType = M
-	//println("new MultinomialMixtureChoice "+this.getClass.getName+" and manifold "+mm+" domain.size="+domain.size)
-	//println("new MultinomialMixtureChoice "+this.getClass.getName+" Domain[Z].size="+Domain[Z].size)
-	def multinomial : M = domain.get(index)
-	_index = Global.random.nextInt(domain.size) // TODO is this how _index should be initialized?
-	if (!Global.defaultModel.contains(MultinomialMixtureChoiceTemplate))
-		Global.defaultModel += MultinomialMixtureChoiceTemplate
-	private var _outcome : O = _
-	def outcome : O = _outcome
-	def setOutcome(o:O) = 
-		if (_outcome != null) throw new Error
-		else { _outcome = o } 
-	override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
-	  if (_outcome == null) throw new Error("No outcome yet set.")
-	  multinomial.ungenerate(outcome)
-	  super.setByIndex(newIndex)
-	  multinomial.generate(outcome)
-	}
-	def ~~~(m:Multinomial[This]) : this.type = { // TODO Remove this
-		//_index = m.nextSample
-		/*super.*/setSource(m)(null)
-		this // this.asInstanceOf[MultinomialChoice[M,O]]
-	}
-}
     
-// TODO Consider renaming this MultinomialSample, because the instances of this class are idividual samples (e.g. token).  "outcome" may indicate the value (e.g. type) 
-trait MultinomialOutcome[This<:MultinomialOutcome[This]] extends SingleIndexedVariable {
+// TODO Consider renaming this MultinomialSample, because the instances of this class are individual samples (e.g. token).  "outcome" may indicate the value (e.g. type) 
+trait MultinomialOutcome[This<:MultinomialOutcome[This] with SingleIndexed] extends SingleIndexed {
 	this : This =>
 	class DomainInSubclasses
 	type OutcomeDomainType = This // TODO No longer necessary, I think
@@ -428,30 +404,11 @@ trait MultinomialOutcome[This<:MultinomialOutcome[This]] extends SingleIndexedVa
 	}
 	def ~(m:Multinomial[This]) : this.type = {
 		setSource(m)(null); 
-     this 
-	}
-	def ~[M<:Multinomial[This]](mmc:MultinomialMixtureChoice[M,This,_]) : this.type = {
-		mmc.setOutcome(this); 
-		this.~(mmc.multinomial) // either here or in mmc.setOutcome; not sure which is more natural
+		this 
 	}
 	def ~[M<:Multinomial[This]](mmc:MixtureChoice[M,_]) : this.type = {
 		mmc.setOutcome(this); 
 		this.~(mmc.choice) // either here or in mmc.setOutcome; not sure which is more natural
-	}
-	/** Attach to my generator, and also set my value to something sampled from the generator. */
-	def :~(m:Multinomial[This]) : this.type = {
-		_index = m.sample // TODO Do this instead by setByIndex()()?  But causes some problems...
-		this.~(m)
-	}
-	def :~[M<:Multinomial[This]](mmc:MultinomialMixtureChoice[M,This,_]) : this.type = {
-		_index = mmc.multinomial.sample // TODO Do this instead by setByIndex()()?  But causes some problems...
-		this.~(mmc)
-	}
-	//override def toString = "MultinomialOutcome(" + domain.get(_index).toString + "=" + _index + ")"
-	override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
-		if (source != null) source.ungenerate(this)
-		super.setByIndex(newIndex)
-		if (source != null) source.generate(this)
 	}
 	case class MultinomialOutcomeSourceChangeDiff(oldSource:Multinomial[This], newSource:Multinomial[This]) extends Diff {
 		def variable = MultinomialOutcome.this
@@ -459,19 +416,46 @@ trait MultinomialOutcome[This<:MultinomialOutcome[This]] extends SingleIndexedVa
 		def undo = { newSource.ungenerate(variable)(null); source = oldSource; if (oldSource != null) oldSource.generate(variable)(null) }
 	}
 }
+
+trait MultinomialOutcomeVariable[This<:MultinomialOutcomeVariable[This] with SingleIndexedVariable] extends SingleIndexedVariable with MultinomialOutcome[This] {
+  this : This =>
+	/** Attach to Multinomial generator m, and also set my value to something sampled from the generator. */
+	def :~(m:Multinomial[This]) : this.type = {
+		_index = m.sample // TODO Do this instead by setByIndex()()?  But causes some problems...
+		this.~(m)
+	}
+	/** Attach to the Multinomial indicated by MixtureChoice mmc, and also set my value sampled from the generator. */
+	def :~[M<:Multinomial[This]](mmc:MixtureChoice[M,_]) : this.type = {
+		_index = mmc.choice.sample // TODO Do this instead by setByIndex()()?  But causes some problems...
+		this.~(mmc)
+	}
+	override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
+		if (source != null) source.ungenerate(this)
+		super.setByIndex(newIndex)
+		if (source != null) source.generate(this)
+	}
+}
   
 /** The outcome of a coin flip, with boolean value.  this.value:Boolean */
-case class Flip extends Bool with MultinomialOutcome[Flip]
+case class Flip extends Bool with MultinomialOutcomeVariable[Flip]
 case class Coin(p:Double, totalCount:Double) extends Multinomial[Flip](Array((1-p)*totalCount,p*totalCount)) {
 	def this(p:Double) = this(p:Double, 1.0)
+	def this() = this(0.5)
 	assert (p >= 0.0 && p <= 1.0)
+	def flip : Flip = { val f = new Flip; f.setByIndex(this.sample)(null); f }
+	def flip(n:Int) : Seq[Flip] = for (i <- 0 until n force) yield flip
+	def pr(f:Boolean) : Double = if (f) pr(1) else pr(0)
+}
+object Coin { 
+  def apply(p:Double) = new Coin(p)
 }
 
+/*
 class GenericMultinomialOutcome extends MultinomialOutcome[GenericMultinomialOutcome]
 class GenericMultinomial extends Multinomial[GenericMultinomialOutcome] with MixtureComponent[GenericMultinomial]
 class GenericMultinomialMixtureComponent extends MultinomialMixtureChoice[GenericMultinomial,GenericMultinomialOutcome,GenericMultinomialMixtureComponent]
-//class MultinomialMixtureChoiceTemplate[This<:MultinomialMixtureChoice[_<:Multinomial[_<:MultinomialOutcome[_]],_<:MultinomialOutcome[_],_]](implicit m:Manifest[This]) extends TemplateWithStatistics1[This]()(m) {
-//class MultinomialMixtureChoiceTemplate extends TemplateWithStatistics1[MultinomialMixtureChoice[GenericMultinomial,GenericOutcome,MultinomialMixtureChoice[_,_,_]]]()(Manifest.classType[MultinomialMixtureChoice[GenericMultinomial,GenericOutcome,_]]) {
+////class MultinomialMixtureChoiceTemplate[This<:MultinomialMixtureChoice[_<:Multinomial[_<:MultinomialOutcome[_]],_<:MultinomialOutcome[_],_]](implicit m:Manifest[This]) extends TemplateWithStatistics1[This]()(m) {
+////class MultinomialMixtureChoiceTemplate extends TemplateWithStatistics1[MultinomialMixtureChoice[GenericMultinomial,GenericOutcome,MultinomialMixtureChoice[_,_,_]]]()(Manifest.classType[MultinomialMixtureChoice[GenericMultinomial,GenericOutcome,_]]) {
 object MultinomialMixtureChoiceTemplate extends TemplateWithStatistics1[MultinomialMixtureChoice[GenericMultinomial,GenericMultinomialOutcome,GenericMultinomialMixtureComponent]] {
   //val mmcc = classOf[MultinomialMixtureChoice[_,_,_]]; println("Template class="+nc1)
   def score(s:Stat) = {
@@ -479,6 +463,8 @@ object MultinomialMixtureChoiceTemplate extends TemplateWithStatistics1[Multinom
 		mmc.multinomial.logpr(s.s1.outcome.index) + mmc.source.logpr(mmc.index)
 	}
 }
+*/
+
 
 /*
 class GenericMixtureComponent extends MixtureComponent[GenerativeDistribution]
@@ -493,6 +479,7 @@ class MixtureChoiceTemplate[D<:GenerativeDistribution] extends TemplateWithStati
 }
 */
 
+class GenericMultinomialOutcome extends MultinomialOutcome[GenericMultinomialOutcome] { def index = -1 }
 class GenericMixtureComponent extends Multinomial[GenericMultinomialOutcome] with MixtureComponent[GenericMixtureComponent]
 class GenericMixtureChoice extends MixtureChoice[GenericMixtureComponent,GenericMixtureChoice]
 // trait MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]] extends MultinomialOutcome[This] {

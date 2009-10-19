@@ -97,7 +97,7 @@ import cc.factorie.util.Implicits._
 		}
 	  var factorName = "Factor"
 	  def name(n:String) : this.type = { factorName = n; this }
-	  def =:(n:String) : this.type = name(n)
+	  def =:(n:String) : this.type = name(n) // TODO Is this syntax too weird?
     trait Stat extends cc.factorie.Stat { 
       override def template : TemplateType = Template.this.asInstanceOf[TemplateType] 
       def score = Template.this.score(this.asInstanceOf[StatType]) // TODO can we find a way to get rid of this cast?
