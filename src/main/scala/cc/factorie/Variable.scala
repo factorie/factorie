@@ -11,8 +11,8 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
 
-/**Abstract superclass of all variables.  Don't need to know its value type to use it. 
-   The trait is abstract not because there are abstract method definitions; 
+/**Abstract superclass of all variables.  Don't need to know its value type to use it.
+   The trait is abstract not because there are abstract method definitions;
    it is just preventing users from trying to construct a Variable instance. */
 abstract trait Variable {
   /** The type of this variable, especially used by this Variable's Domain. */
@@ -21,7 +21,7 @@ abstract trait Variable {
 	type DomainType <: Domain[VariableType]
   /** When a Domain is constructed for this class, it will be the superclass of this inner class. */
   class DomainClass extends Domain[VariableType]
-  /** When DomainInSubclasses appears as an inner class of a Variable class, 
+  /** When DomainInSubclasses appears as an inner class of a Variable class,
       it simply ensures that the library will never create a Domain for this class, only its subclasses.
       If library users create their own new Variable classes, which will be subclassed, and wants each
       subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
@@ -47,7 +47,9 @@ abstract trait Variable {
 abstract trait Constant extends Variable
 
 /** Used as a marker for Variables whose value does not change once created. */
-abstract trait ConstantValue requires Variable
+abstract trait ConstantValue {
+	this: Variable =>
+}
 
 
 /*
@@ -167,7 +169,7 @@ abstract trait SingleIndexedObservation extends IndexedVariable {
 	override def vector = new SingletonBinaryVector(domain.allocSize, index)
 	def ====(other: SingleIndexedObservation) = index == other.index
 	def !===(other: SingleIndexedObservation) = index != other.index
-} 
+}
 
 /** For variables whose values are associated with a an Int from an index. */
 abstract trait SingleIndexedVariable extends SingleIndexedObservation with Proposer with MultiProposer with IterableSettings {
@@ -197,7 +199,7 @@ abstract trait SingleIndexedVariable extends SingleIndexedObservation with Propo
 	// The reason for the "toList" (now changed to "force"), see 
 	// http://stackoverflow.com/questions/1332574/common-programming-mistakes-for-scala-developers-to-avoid
 	// http://creativekarma.com/ee.php/weblog/comments/the_scala_for_comprehension_from_a_java_perspective/
-  // TODO Look at this issue more carefully and turn on printing in Implicits.bonusIterables to look for additional efficiencies 
+  // TODO Look at this issue more carefully and turn on printing in Implicits.bonusIterables to look for additional efficiencies
 	def multiPropose(model:Model, objective:Model, difflist: DiffList) = {
 	  val aps = for (i <- 0 until domain.size force) yield {
 	  	//println("SingleIndexedVariable multiPropose " +i) // TODO check this for repeated evaluation
@@ -243,7 +245,7 @@ abstract trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with 
   def set(newValue: T)(implicit d: DiffList) = setByIndex(domain.index(newValue))
   def value: T = domain.get(_index)
   override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + _index + ")"
-}	
+}
 
 /** A Variable to hold one of an enumerated set of values of type T, and which does not change */
 abstract class EnumObservation[T](value:T) extends TypedSingleIndexedObservation[T] with ConstantValue {
@@ -303,7 +305,7 @@ abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] wit
 	//override def setNextValue: Unit = if (hasNextValue) setByIndex(_index + 1)(null) else throw new Error("No next value")
 	def iterableValues: Iterable[T] = domain
 	def iterableOtherValues: Iterable[T] = domain.filter(_ != value)
-	override def trueValue : T = domain.get(trueIndex) 
+	override def trueValue : T = domain.get(trueIndex)
 }
 
 //trait MyFoo { def myfoo = 3 }
@@ -312,7 +314,7 @@ abstract class EnumVariable[T](trueval:T) extends CoordinatedEnumVariable[T] wit
 class TrueEnumTemplate[V<:EnumVariable[_]](implicit m:Manifest[V]) extends TrueIndexedValueTemplate[V]()(m)
 
 // TODO We can get rid of LabelValue
-/** The value of a Label variable.  
+/** The value of a Label variable.
 * Previously we simply used String values in a EnumVariable, but here LabelValues can be compared much more efficiently than Strings. */
 trait LabelValue {
 	def index: Int
@@ -336,7 +338,7 @@ class CoordinatedLabel(trueval: String) extends CoordinatedEnumVariable[LabelVal
 	setByIndex(domain.index(trueval))(null)
 	//def this(initval:String) = this(LabelDomain.get[Label](this/*.getClass*/).get(initval))
 	def set(s: String)(implicit d: DiffList) = setByIndex(domain.index(s))
- 	override def trueValue : LabelValue = domain.get(trueIndex) 
+ 	override def trueValue : LabelValue = domain.get(trueIndex)
 	//override def setFirstValue: Unit = setByIndex(0)(null)
 	//override def hasNextValue = _index < domain.size - 1
 	//override def setNextValue: Unit = if (hasNextValue) setByIndex(_index + 1)(null) else throw new Error("No next value")
@@ -441,7 +443,9 @@ class StringVariable(str: String) extends PrimitiveVariable(str) {
 }
 
 /**For Variables that hold their list of Factors */
-trait FactorList requires Variable {
+trait FactorList {
+  this: Variable =>
+	
   private var factorList: List[Factor] = Nil
   def addFactor(f: Factor) = factorList = f :: factorList
   def clearFactors = factorList = Nil
@@ -449,10 +453,10 @@ trait FactorList requires Variable {
 }
 
 /** A marker for Variables that declare themselves not to automatically change other Variables' values when they are changed */
-trait NoVariableCoordination 
+trait NoVariableCoordination
 
 /** A marker for Variables that declare themselves not to only to rely on their own Factors when they are changed,
-    even if changing this variable involves changes to other variables as well. 
+    even if changing this variable involves changes to other variables as well.
     Furthermore the section of Factors must not change depending on the variable's values. */
 trait NoFactorCoordination 
 
