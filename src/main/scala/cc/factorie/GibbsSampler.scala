@@ -20,11 +20,18 @@ import cc.factorie.util.Implicits._
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(V1), 
  * scores each, builds a distribution from the scores, and samples from it. */
 abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model)(implicit m1:Manifest[V1]) extends Sampler1[V1](m1) {
+
+  // This method must be implemented in sub-classes
+  def settings(v:V1) : Iterator[{def set(d:DiffList):Unit}];
+
+  // Meta-parameters
   var temperature = 1.0
   var useQueue = false
   var maxQueueSize = 500
   lazy val queue = new PriorityQueue[Factor]
-	def settings(v:V1) : Iterator[{def set(d:DiffList):Unit}];
+  
+  // Diagnostic information
+  
   def sample(variable:V1) : DiffList = {
     val queueDiff : Seq[Diff] = if (useQueue && Global.random.nextDouble < 0.3 && queue.size > 1)
       sampleFromQueue else Nil
@@ -33,7 +40,7 @@ abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model)(implicit
 		  // For cases in which changing this variable value does not change any other variables' values
 		  case v:NoVariableCoordination => {
 		  	case class Proposal(setting:{def set(d:DiffList):Unit}, score:Double)
-		  	val proposals = vsettings.map(s => {s.set(null); new Proposal(s, temperature * model.score(variable))}).toList		  
+		  	val proposals = vsettings.map(s => {s.set(null); new Proposal(s, model.score(variable)/temperature)}).toList		  
 		  	val proposal = proposals.sampleExpProportionally(_.score)
 		  	val d = new DiffList
 		  	proposal.setting.set(d)
@@ -44,7 +51,7 @@ abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model)(implicit
 		  // but all the changes can be properly evaluating using only the factors that touch this variable
 		  case v:NoFactorCoordination => {
 		  	case class Proposal(diff:DiffList, score:Double)
-		  	val proposals = vsettings.map(s => {val d = new DiffList; s.set(d); val p = new Proposal(d, temperature * model.score(variable)); d.undo; p}).toList
+		  	val proposals = vsettings.map(s => {val d = new DiffList; s.set(d); val p = new Proposal(d, model.score(variable)/temperature); d.undo; p}).toList
 		  	val proposal = proposals.sampleExpProportionally(_.score)
 		  	proposal.diff.redo
 		  	if (useQueue && !queueDiff.isEmpty) proposal.diff prependAll queueDiff
@@ -53,7 +60,7 @@ abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model)(implicit
 		  // For cases in which there are no guarantees about variable factor- and change-locality
 		  case _ => {
 		  	case class Proposal(diff:DiffList, score:Double)
-		  	val proposals = vsettings.map(s => {val d = new DiffList; s.set(d); new Proposal(d, temperature * d.scoreAndUndo(model))}).toList
+		  	val proposals = vsettings.map(s => {val d = new DiffList; s.set(d); new Proposal(d, d.scoreAndUndo(model)/temperature)}).toList
 		  	//proposals.foreach(p => println("GibbsSampler1 proposal score="+p.score)); println
 		  	val proposal = proposals.sampleExpProportionally(_.score)
 		  	proposal.diff.redo

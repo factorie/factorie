@@ -77,16 +77,17 @@ object SimpleChainNER {
   	val testLabels : Seq[Label] = testSentences.flatMap(_.map(_.label)).take(10000)
   	// Sample and Learn!
   	(trainLabels ++ testLabels).foreach(_.setRandomly)
-  	val sampler = new GibbsPerceptronLearner(model, objective)
+  	val learner = new GibbsSamplerPerceptron(model, objective)
+  	val sampler = new GibbsSampler1(model)
   	for (i <- 0 until 10) {
   	  println("Iteration "+(i+1)+"...")
   		trainLabels.take(50).foreach(printLabel _); println; println
   		printDiagnostic(trainLabels.take(400))
   		println ("Train accuracy = "+ objective.aveScore(trainLabels))
   		println ("Test  accuracy = "+ objective.aveScore(testLabels))
-  		sampler.sampleAndLearn (trainLabels, 1)
-  		sampler.sample (testLabels, 1)
-  		sampler.learningRate *= 0.9
+  		learner.process(trainLabels, 1)
+  		learner.learningRate *= 0.9
+  		sampler.process(testLabels, 1)
   	}
   	0
   }

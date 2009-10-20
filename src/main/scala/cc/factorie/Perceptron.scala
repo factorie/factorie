@@ -103,41 +103,40 @@ import scala.reflect.Manifest
 
 
  
-// TODO Rename SampleRankGibbsPerceptron or somesuch
+// TODO Rename SampleRankGibbsPerceptron or somesuch??
  
 	trait GibbsAbstractPerceptronLearning extends GenericPerceptronLearning 
 	trait GibbsPerceptronLearning extends AbstractPerceptronLearning with GenericDensePerceptronLearning
 	trait GibbsSparsePerceptronLearning extends AbstractPerceptronLearning with GenericSparsePerceptronLearning
 
+	class GibbsSamplerPerceptron [V1<:Variable with IterableSettings](model:Model, objective:Model)(implicit m1:Manifest[V1]) extends GibbsSamplerOverSettingsPerceptron[V1](model,objective)(m1) {
+  	//def this()(implicit m1:Manifest[V1]) = this(Global.defaultModel)(m1)
+  	def settings(v:V1) = v.settings
+	}
+ 
   // TODO Consider changing name to just "PerceptronLearner", and similarly above
-	class GibbsPerceptronLearner(model:Model, objective:Model) extends GibbsSampler(model) {
+  // or to "GibbsSamplerPerceptron"	
+	abstract class GibbsSamplerOverSettingsPerceptron[V1<:Variable](model:Model, objective:Model)(implicit m1:Manifest[V1]) extends GibbsSamplerOverSettings1[V1](model)(m1) {
 		// Meta-parameters for learning
 		var learningRate = 1.0
 		var learningMargin = 1.0
 
 	  if (objective.length == 0) throw new IllegalArgumentException("Objective is empty.")
 
-		/**Sample and learning over many variables for numIterations. */
-		def sampleAndLearn(variables: Iterable[Variable with MultiProposer], numIterations: Int): Unit = {
-			//Console.println ("GibbsPerceptronLearning sampleAndLearn #variables="+variables.toSeq.size)
-			xsample(variables, numIterations, sampleAndLearn1 _)
-		}
-
 		/**Sample one variable once, and potentially train from the jump. */
-		def sampleAndLearn1(variable: Variable with MultiProposer): Unit = {
-			//case class Proposal(modelScore: Double, trueScore: Double, value: T, diff: DiffList)
-			val proposals = variable.multiPropose(model, objective, new DiffList).toList // toList to make sure Projection doesn't make us eval twice 
-   /*
+		override def sample(variable:V1): DiffList = {
+			case class Proposal(modelScore: Double, trueScore: Double, diff: DiffList)
 			val proposals =
-			for (value <- variable.domain toList) yield {
+			for (setting <- settings(variable).toList) yield {
 				val diff = new DiffList
-				variable.set(value)(diff)
+				setting.set(diff)
 				var trueScore = objective.score(variable)
 				val modelScore = diff.scoreAndUndo(model)
 				trueScore -= objective.score(variable)
-				Proposal(modelScore, trueScore, value, diff)
+				Proposal(modelScore, trueScore, diff)
 			}
-                                                                   */
+			println("Perceptron proposals class"+proposals.getClass)
+
 			val (bestScoring, bestScoring2) = proposals.max2(_ modelScore)
 			val (bestTruth1, bestTruth2) = proposals.max2(_ trueScore)
 			/*
@@ -189,13 +188,13 @@ import scala.reflect.Manifest
 				queue ++= model.factors(bestScoring.diff)
 				if (queue.size > maxQueueSize) queue.reduceToSize(maxQueueSize)
 			}
+			bestScoring.diff 
 		}
 
 		/**Sample one variable once, and potentially train from the jump.  Assumes that we always start from the truth. */
-		def contrastiveDivergenceSampleAndLearn1[T](variable: CoordinatedEnumVariable[T]): Unit = {
-			val origIndex = variable.index
-			val diff = this.sample1(variable)
-			if (origIndex != variable.index) {
+		def contrastiveDivergenceSampleAndLearn1(variable:V1): Unit = {
+			val diff = this.sample(variable)
+			if (diff.length > 0) {
 				// The sample wandered from truth
 				model.factorsOf[AbstractPerceptronLearning](diff).foreach(f => f.template.increment(f, -learningRate, iterations))
 				diff.undo

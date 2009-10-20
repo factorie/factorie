@@ -76,12 +76,13 @@ object ChainNerDemo {
       val testLabels : Seq[Label] = testTokens.flatMap(_.map(_.label))
       // Sample and Learn!
       (trainLabels ++ testLabels).foreach(_.setRandomly(Global.random, null))
-      val sampler = new GibbsPerceptronLearner(model, model.objective)
+      val learner = new GibbsSamplerPerceptron(model, model.objective)
+      val sampler = new GibbsSampler1(model)
       for (i <- 0 until 10) {
-        sampler.sampleAndLearn (trainLabels, 1)
+        learner.process(trainLabels, 1)
         Console.println ("Train accuracy = "+ objective.aveScore(trainLabels))
-        sampler.learningRate *= 0.9
-        sampler.sample (testLabels, 2)
+        learner.learningRate *= 0.9
+        sampler.process(testLabels, 2)
         Console.println ("Test  accuracy = "+ objective.aveScore(testLabels))
       }
 
