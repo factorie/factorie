@@ -15,7 +15,7 @@ object CoordinatedLabelSpec extends Specification with JUnit {
       implicit val diffList = new DiffList
       val label = new CoordinatedLabel("ORG") {}
       label.set("MISC")
-      label.value.entry must_== "MISC"
+      label.value must_== "MISC"
     }
 
     "create a diff object that undoes a set action when the set method is called" in {
@@ -23,7 +23,7 @@ object CoordinatedLabelSpec extends Specification with JUnit {
       val label = new CoordinatedLabel("ORG") {}
       label.set("MISC")
       diffList(0).undo
-      label.value.entry must_== "ORG"
+      label.value must_== "ORG"
     }
 
   }
