@@ -119,7 +119,7 @@ import cc.factorie.util.Implicits._
 		// TODO For these next two methods, try to widen applicability beyond EnumVariable
   
 		/**Sample a value for some variable of this factor.  Returns the variable whose value was changed. */
-		def sampleFactor(factor: Factor): EnumVariable[_] = {
+		def sampleFactorOld(factor: Factor): EnumVariable[_] = {
 			case class IndexProposal(var score: Double, variable: EnumVariable[_], index: Int)
 			var max = Math.NEG_INF_DOUBLE
 			val proposals =
@@ -143,7 +143,7 @@ import cc.factorie.util.Implicits._
 			sample1(v)
 			val minScoringFactor = model.factors(v).min(_.statistic.score)
 			if (chainLength > 1) {
-				val v2 = sampleFactor(minScoringFactor) // TODO but this may already re-sample v
+				val v2 = sampleFactorOld(minScoringFactor) // TODO but this may already re-sample v
 				if (v2 != v) // Don't just sample the same variable v again and again
 					sampleChain(v2, chainLength - 1)
 			}

@@ -103,7 +103,7 @@ import scala.reflect.Manifest
 
 
  
- 
+// TODO Rename SampleRankGibbsPerceptron or somesuch
  
 	trait GibbsAbstractPerceptronLearning extends GenericPerceptronLearning 
 	trait GibbsPerceptronLearning extends AbstractPerceptronLearning with GenericDensePerceptronLearning

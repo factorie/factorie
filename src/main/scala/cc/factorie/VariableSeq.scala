@@ -233,8 +233,15 @@ import cc.factorie.util.Implicits._
 	  this : This =>
 	}*/
  
-	trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This] with cc.factorie.util.LinkList[This]] extends cc.factorie.util.LinkList[This] {
+	trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This] with cc.factorie.util.LinkList[This] with Variable] extends cc.factorie.util.LinkList[This] {
 	  this : This =>
+	  def swapWithVar(that:This)(implicit d:DiffList) : Unit = new VarInMutableSeqSwapDiff(this, that)
+	  protected def superSwapWith(that:This) = super.swapWith(that)
+		case class VarInMutableSeqSwapDiff(ths:This, that:This)(implicit d:DiffList) extends AutoDiff {
+	  	override def variable : This = VarInMutableSeq.this
+	  	def redo = ths.superSwapWith(that)
+	  	def undo = redo
+	  }
 	}
 
 	// TODO Various tests below.  Remove them.

@@ -73,6 +73,10 @@ trait IterableSettings{
   /** Return an iterator over some/all configurations of this variable, each time returning simply the same Variable object. */
   def settings: Iterator[{def set(d:DiffList):Unit}]
 }
+// TODO Remove this?
+trait Setting {
+  def set(d:DiffList) : Unit
+}
 
 // TODO could this be put in TypedVariable?  But then we'd have to figure out how to compare VectorVariable
 trait PrimitiveComparison[T] {
@@ -162,12 +166,12 @@ abstract trait SingleIndexedVariable extends SingleIndexed with Proposer with Mu
 	def setRandomly(implicit random:Random) : Unit = setByIndex(random.nextInt(domain.size))(null)
 	def setRandomly : Unit = setRandomly(cc.factorie.Global.random)
 	def settings = new Iterator[{def set(d:DiffList):Unit}] {
+	  case class Setting(newIndex:Int) { def set(d:DiffList) : Unit = setByIndex(newIndex)(d) }
 	  var d : DiffList = _
 	  var i = -1
 	  val max = domain.size - 1
 	  def hasNext = i < max
-	  def set(d:DiffList) : Unit = setByIndex(i)(d)
-	  def next = { i += 1; this }
+	  def next = { i += 1; new Setting(i)}
 	}
 	def propose(d: DiffList)(implicit random:Random) = {setByIndex(random.nextInt(domain.size))(d); 0.0}
 	// The reason for the "toList" (now changed to "force"), see 

@@ -61,8 +61,8 @@ object ClusterLDADemo {
 		val sampler = new GibbsSampler1
 		val startTime = System.currentTimeMillis
     for (i <- 1 to 50) {
-      sampler.sample(zs, 1)
-    	zs.foreach(sampler.sample(_))
+      sampler.process(zs, 1)
+    	zs.foreach(sampler.process(_))
     	print("."); Console.flush
     	if (i % 5 == 0) {
     		println ("Iteration "+i)
@@ -71,7 +71,7 @@ object ClusterLDADemo {
       }
     	if (i % 10 == 0) {
     	  // Fit the clusters' Dirichlets
-    	  repeat(2) { sampler.sample(documents.map(_.y), 1); alphas.foreach(_.estimate) }
+    	  repeat(2) { sampler.process(documents.map(_.y), 1); alphas.foreach(_.estimate) }
     	  alphas.foreach(a => println("Alpha %2d %5d %s".format(a.index, a.generatedSamples.size, a.alphas.toList.toString)))
     	}
     }	

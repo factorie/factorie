@@ -40,7 +40,7 @@ object LogicDemo1 {
 		// Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
 		val sampler = new GibbsSampler1(model)
 		for (i <- 1 to 100) {
-			sampler.sample(List(don.cancer, don.smokes), 20)
+			sampler.process(List(don.cancer, don.smokes), 20)
 			don.cancer.incrementSample
 			don.smokes.incrementSample
 		}

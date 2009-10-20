@@ -63,7 +63,7 @@ object LogicDemo2 {
 		val sampler = new GibbsSampler1(model)
 		val numSamples = 100
 		for (i <- 1 to numSamples) {
-			sampler.sample(people.map(_.cancer) + Friends, 20)
+			sampler.process(people.map(_.cancer) + Friends, 20)
 			people.foreach(_.cancer.incrementSample)
 		}
 		for (p <- people)

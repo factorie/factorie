@@ -51,7 +51,7 @@ object LDADemo {
 		val sampler = new GibbsSampler1
 		val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
-      sampler.sample(zs, 1)
+      sampler.process(zs, 1)
     	//zs.foreach(sampler.sample(_))
     	print("."); Console.flush
     	if (i % 5 == 0) {
