@@ -1,0 +1,42 @@
+<assembly>
+    <id>package</id>
+    <formats>
+        <format>tar.gz</format>
+        <format>tar.bz2</format>
+        <format>zip</format>
+    </formats>
+    <fileSets>
+        <fileSet>
+            <directory>.</directory>
+            <includes>
+                <include>README*</include>
+                <include>LICENSE*</include>
+                <include>NOTICE*</include>
+                <include>pom.xml</include>
+                <include>src/**</include>
+            </includes>
+            <useDefaultExcludes>true</useDefaultExcludes>
+        </fileSet>
+        <!--<fileSet>-->
+        <!--&lt;!&ndash;  Somehow this is necessary, otherwise it uses their full paths in my file system  &ndash;&gt;-->
+        <!--<outputDirectory>src</outputDirectory>-->
+        <!--<directory>${project.basedir}/src</directory>-->
+        <!--<useDefaultExcludes>true</useDefaultExcludes>-->
+        <!--&lt;!&ndash;<excludes>&ndash;&gt;-->
+        <!--&lt;!&ndash;<exclude>**/*.orig</exclude>&ndash;&gt;-->
+        <!--&lt;!&ndash;</excludes>&ndash;&gt;-->
+        <!--</fileSet>-->
+    </fileSets>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>lib</outputDirectory>
+            <excludes>
+                <exclude>org.scala-lang:scala-library</exclude>
+                <exclude>*:scala-compiler</exclude>
+                <exclude>*:factorie</exclude>
+            </excludes>
+        </dependencySet>
+    </dependencySets>
+
+</assembly>
+  

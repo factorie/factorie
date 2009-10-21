@@ -34,7 +34,7 @@
             <name>ScalaNLP repository</name>
             <url>http://repo.scalanlp.org/repo</url>
         </pluginRepository>
-     </pluginRepositories>
+    </pluginRepositories>
 
     <dependencies>
         <dependency>
@@ -49,9 +49,9 @@
             <scope>test</scope>
         </dependency>
         <!--<dependency>-->
-            <!--<groupId>org.scalanlp</groupId>-->
-            <!--<artifactId>scalala</artifactId>-->
-            <!--<version>1.0-Snapshot</version>-->
+        <!--<groupId>org.scalanlp</groupId>-->
+        <!--<artifactId>scalala</artifactId>-->
+        <!--<version>1.0-Snapshot</version>-->
         <!--</dependency>-->
         <dependency>
             <groupId>org.scalanlp</groupId>
@@ -92,6 +92,28 @@
                     <jvmArgs>
                         <jvmArg>-Xmx265m</jvmArg>
                     </jvmArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/assembly/package.xml</descriptor>
+                        <descriptor>src/main/assembly/standalone.xml</descriptor>
+                    </descriptors>
+                    <descriptorRefs>
+                        <descriptorRef>project</descriptorRef>
+                        <descriptorRef>src</descriptorRef>
+                    </descriptorRefs>
                 </configuration>
             </plugin>
             <plugin>
