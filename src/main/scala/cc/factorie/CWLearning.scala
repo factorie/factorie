@@ -1,4 +1,5 @@
 package cc.factorie
+import scala.reflect.Manifest
 
 import scalala.tensor.dense.DenseVector
 
@@ -21,7 +22,7 @@ import scalala.tensor.dense.DenseVector
 	}
 
 	// extends MHSampler
-	abstract class MHCWLearner(model:Model, objective:Model) extends MHPerceptronLearner(model, objective)
+	abstract class MHCWLearner[C](model:Model, objective:Model)(implicit mc:Manifest[C]) extends MHPerceptronLearner[C](model, objective)(mc)
 	{
 		/**Confidence value */
   	val epsilon = 0.0000001
@@ -82,18 +83,15 @@ import scalala.tensor.dense.DenseVector
 							})
 		}
 
-		override def sampleAndLearn(numIterations: Int): Unit =
-			{
-				for (iteration <- 0 until numIterations)
-					{
-						jumpAccepted = false;
-						difflist = new DiffList
+		override def process(context:C, difflist:DiffList): Unit = {
+				learningIterations += 1
+						proposalAccepted = false;
 						// Jump until difflist has changes
-						while (difflist.size <= 0) modelTransitionRatio = propose(model, difflist)
-						newTruthScore = difflist.score(objective)
+						while (difflist.size <= 0) modelTransitionRatio = propose(context, difflist)
+						val newTruthScore = difflist.score(objective)
 						modelScoreRatio = difflist.scoreAndUndo(model)
-						oldTruthScore = difflist.score(objective)
-						modelRatio = modelScoreRatio // + modelTransitionRatio
+						val oldTruthScore = difflist.score(objective)
+						val modelRatio = modelScoreRatio // + modelTransitionRatio
 						bWeightsUpdated = false
 						bFalsePositive = false;
 						bFalseNegative = false;
@@ -149,17 +147,16 @@ import scalala.tensor.dense.DenseVector
 										})
 									}
 							}
-						logAccProb = (modelScoreRatio / temperature) + modelTransitionRatio
+						val logAccProb = (modelScoreRatio / temperature) + modelTransitionRatio
 						if (logAccProb > Math.log(random.nextDouble))
 							{
 								if (modelRatio < 0)
 									numNegativeMoves += 1
 								numAcceptedMoves += 1
-								jumpAccepted = true;
+								proposalAccepted = true;
 								difflist.redo
 							}
-						mhPerceptronPostProposalHook
-						incrementIterations
+						postProposalHook
 					}
 				//
 				//Put the weights average into each Factor's weights array
@@ -172,7 +169,7 @@ import scalala.tensor.dense.DenseVector
 						})
 					}
 			}
-	}
+	
  
 	// TODO perhaps this should be re-factored to have more in common with GibbsPerceptronLearner?
 	// At least it should offer more similar methods, such as

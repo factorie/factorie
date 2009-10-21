@@ -1,12 +1,13 @@
 package cc.factorie
-import scala.collection.mutable.Publisher
+import scala.reflect.Manifest
+//import scala.collection.mutable.Publisher
 
-abstract class MHSampler1(val model:Model) extends Publisher[DiffList,MHSampler1] {
+abstract class MHSampler1[C](val model:Model)(implicit mc:Manifest[C]) extends Sampler[C]()(mc) {
   var temperature = 1.0
   var random = Global.random
   
   // This method must be implemented in concrete subclasses
-  def propose(d:DiffList) : Double
+  def propose(context:C, d:DiffList) : Double
 
   // Various diagnostics
   var numProposedMoves = 0
@@ -17,18 +18,16 @@ abstract class MHSampler1(val model:Model) extends Publisher[DiffList,MHSampler1
   var maxModelScore = Math.MIN_DOUBLE
   var currentModelScore = 0.0
   
-  // Various messages we publish
-  case class ProposalAccepted(difflist:DiffList)
-  def bestConfigFound(s:MHSampler1) : Unit = {}
-  val postIterationHook : MHSampler1=>Unit = null // TODO make this a member method?
+  def bestConfigFound : Unit = {}
+  def postProposalHook : Unit = {}
 
   // TODO consider renaming this method
-  def step : DiffList = {
+  def process(context:C) : DiffList = {
     numProposedMoves += 1
     val difflist = new DiffList
     proposalAccepted = true
     // Make the proposed jump
-    var logAcceptanceProb: Double = propose(difflist)
+    var logAcceptanceProb: Double = propose(context, difflist)
     var modelRatio: Double = difflist.scoreAndUndo(model)
     logAcceptanceProb += (modelRatio / temperature)
     if (logAcceptanceProb > Math.log(random.nextDouble)) {
@@ -43,18 +42,13 @@ abstract class MHSampler1(val model:Model) extends Publisher[DiffList,MHSampler1
       currentModelScore += modelRatio
     	if (currentModelScore > maxModelScore) {
     		maxModelScore = currentModelScore
-    		bestConfigFound(this)
+    		bestConfigFound
     	}
     } else {
     	difflist.clear
     }
+    postProposalHook
     difflist
   }
   
-  def step(numIterations:Int): Unit = {
-    for (iteration <- 0 until numIterations) {
-      step
-      if (postIterationHook != null) postIterationHook(this)
-    }
-  }
 }

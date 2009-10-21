@@ -60,7 +60,7 @@ object LogicDemo2 {
 		println(model.factors(Friends(person("Don"))))
 
 		// Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
-		val sampler = new GibbsSampler1(model)
+		val sampler = new GibbsSampler0(model)
 		val numSamples = 100
 		for (i <- 1 to numSamples) {
 			sampler.process(people.map(_.cancer) + Friends, 20)

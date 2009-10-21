@@ -58,7 +58,7 @@ object ClusterLDADemo {
   	}
     
 		// Fit model
-		val sampler = new GibbsSampler1
+		val sampler = new GibbsSampler0
 		val startTime = System.currentTimeMillis
     for (i <- 1 to 50) {
       sampler.process(zs, 1)

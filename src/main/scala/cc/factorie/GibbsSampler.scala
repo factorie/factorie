@@ -19,7 +19,8 @@ import cc.factorie.util.Implicits._
 
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(V1), 
  * scores each, builds a distribution from the scores, and samples from it. */
-abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model)(implicit m1:Manifest[V1]) extends Sampler1[V1](m1) {
+abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model)(implicit m1:Manifest[V1]) extends VariableSampler1[V1](m1) {
+	//println("GibbsSamplerOverSettings V1="+m1)
 
   // This method must be implemented in sub-classes
   def settings(v:V1) : Iterator[{def set(d:DiffList):Unit}];
@@ -79,6 +80,13 @@ abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model)(implicit
 
 
 class GibbsSampler1[V1<:Variable with IterableSettings](model:Model)(implicit m1:Manifest[V1]) extends GibbsSamplerOverSettings1[V1](model)(m1) {
+	//println("GibbsSampler1 V1="+m1)
   def this()(implicit m1:Manifest[V1]) = this(Global.defaultModel)(m1)
 	def settings(v:V1) = v.settings
 }
+
+// TODO Rename to GibbsSampler
+class GibbsSampler0(model:Model) extends GibbsSampler1[Variable with IterableSettings](model) {
+  def this() = this(Global.defaultModel)
+}
+

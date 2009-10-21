@@ -1,5 +1,5 @@
 package cc.factorie
-
+import scala.reflect.Manifest
 import scalala.Scalala._
 import scalala.tensor.dense.DenseVector
 //import scalala.tensor.operators.TensorOp
@@ -13,7 +13,7 @@ import scalala.tensor.dense.DenseVector
 	}
 
 
-	abstract class MHMIRALearner(model:Model, objective:Model) extends MHPerceptronLearner(model, objective)
+	abstract class MHMIRALearner[C](model:Model, objective:Model)(implicit mc:Manifest[C]) extends MHPerceptronLearner[C](model, objective)(mc)
 	{
   	protected val epsilon: Double = 0.000000001;
 		def kktMultiplier(loss: Double, fnu: Boolean): Double =
@@ -82,15 +82,14 @@ val f = t.asInstanceOf[MIRALearning];
 				l2n2;
 			}
 
-		override def sampleAndLearn(numIterations: Int): Unit = {
-			for (iteration <- 0 until numIterations) {
-				difflist = new DiffList
+		override def process(context:C, difflist:DiffList): Unit = {
+				learningIterations += 1
 				// Jump until difflist has changes
-				while (difflist.size <= 0) modelTransitionRatio = propose(model, difflist)
-				newTruthScore = difflist.score(objective)
+				while (difflist.size <= 0) modelTransitionRatio = propose(context, difflist)
+				val newTruthScore = difflist.score(objective)
 				modelScoreRatio = difflist.scoreAndUndo(model)
-				oldTruthScore = difflist.score(objective)
-				modelRatio = modelScoreRatio + modelTransitionRatio
+				val oldTruthScore = difflist.score(objective)
+				val modelRatio = modelScoreRatio + modelTransitionRatio
 				bWeightsUpdated = false
 				bFalsePositive = false;
 				bFalseNegative = false;
@@ -136,19 +135,18 @@ System.out.println("  after update: " + test+" before: " + jumpLogPRatio);
 				}
 				//worldFactors.foreach(f => Console.println (f.toString+" weights = "+f.weights.toList))
 				// Now simply sample according to the model, no matter how imperfect it is
-				logAccProb = (modelScoreRatio / temperature) + modelTransitionRatio
+				val logAccProb = (modelScoreRatio / temperature) + modelTransitionRatio
 				if (logAccProb > Math.log(random.nextDouble)) {
 					if (modelRatio < 0) {
 						//	    Console.print("\\")
 						numNegativeMoves += 1
 					}
 					numAcceptedMoves += 1
-					jumpAccepted = true;
+					proposalAccepted = true;
 					//	  Console.println("iteration: " + iteration + ", pRatio = " + pRatio);
 					difflist.redo
 				}
-				incrementIterations
-				mhPerceptronPostProposalHook
+				postProposalHook
 			}
 
 			//Put the weights average into each Factor's weights array
@@ -161,5 +159,5 @@ System.out.println("  after update: " + test+" before: " + jumpLogPRatio);
 					})
 			}
 		}
-	}
+	
 

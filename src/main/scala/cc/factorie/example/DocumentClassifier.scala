@@ -59,13 +59,13 @@ object DocumentClassifierDemo {
       Console.println ("Initial test accuracy = "+ model.objective.aveScore(testVariables))
 
       // Sample and Learn!
-      val learner = new GibbsSamplerPerceptron(model, model.objective)
-      val sampler = new GibbsSampler(model)
+      val learner = new GibbsSamplerPerceptron0(model, model.objective)
+      val sampler = new GibbsSampler0(model)
       learner.learningRate = 1.0
       for (i <- 0 until 10) {
         learner.process (trainVariables, 1)
         learner.learningRate *= 0.8
-        sampler.sample (testVariables, 4)
+        sampler.process (testVariables, 4)
         Console.println ("Test accuracy = "+ model.objective.aveScore(testVariables))
       }
 

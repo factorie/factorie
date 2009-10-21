@@ -133,11 +133,11 @@ object CorefMentionsDemo {
       // Define the proposal distribution
       //var sampler = new CWLearner {
       //var sampler = new MHMIRALearner {
-      var sampler = new MHPerceptronLearner(model, objective) {
-        def propose(mdl:Model, difflist:DiffList) : Double = {
-          if (mdl != model) throw new IllegalArgumentException("Models don't match") // TODO Arg.  This is ugly.  Fix it. -akm
+      var sampler = new MHPerceptronLearner[Null](model, objective) {
+        def propose(context:Null, difflist:DiffList) : Double = {
           // Pick a random mention
           val m = mentionList.sample(Global.random)
+          //println("CorefMentions MHPerceptronLearner mention="+m)
           // Pick a random place to move it, either an existing Entity or a newly created one
           var e = if (random.nextDouble < 0.8) entityList.sampleFiltered((e:Entity)=>e.size>0) else { var ne=new Entity("e"+entityIndex); entityList += ne; ne}
           // Make sure that we don't try to move it to where it already was
@@ -152,7 +152,7 @@ object CorefMentionsDemo {
           // log-Q-ratio shows that forward and backward jumps are equally likely
           return 0.0
         }
-        override def mhPerceptronPostProposalHook = {
+        override def postProposalHook = {
           if (iterations % 500 == 0) {
             learningRate *= .9
             System.out.println("UPS: " + numUpdates);
@@ -166,8 +166,8 @@ object CorefMentionsDemo {
       }
 
       // Sample and learn, providing jump function, temperature, learning rate, #iterations, and diagnostic-printing-function
-      Console.println ("About to sampleAndLearn")
-      sampler.sampleAndLearn(3000)
+      Console.println ("Beginning inference and learning")
+      sampler.process(3000)
     }
     0;
 

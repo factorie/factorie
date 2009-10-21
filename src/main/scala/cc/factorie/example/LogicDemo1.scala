@@ -38,7 +38,7 @@ object LogicDemo1 {
 		Friends(cas,don); Friends(don,cas)
 		
 		// Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
-		val sampler = new GibbsSampler1(model)
+		val sampler = new GibbsSampler0(model)
 		for (i <- 1 to 100) {
 			sampler.process(List(don.cancer, don.smokes), 20)
 			don.cancer.incrementSample

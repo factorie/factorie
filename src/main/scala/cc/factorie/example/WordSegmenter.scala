@@ -81,8 +81,8 @@ object WordSegmenterDemo {
 		println ("Initial test accuracy = "+ objective.aveScore(testVariables))
 
 		// Sample and Learn!
-		var learner = new GibbsSamplerPerceptron(model, objective)
-		var sampler = new GibbsSampler1(model)
+		var learner = new GibbsSamplerPerceptron[Label](model, objective)
+		var sampler = new GibbsSampler1[Label](model)
 		learner.learningRate = 1.0
 		for (i <- 0 until 7) {
 			learner.process (trainVariables, 2)

@@ -48,7 +48,7 @@ object LDADemo {
   	}
     
 		// Fit model 
-		val sampler = new GibbsSampler1
+		val sampler = new GibbsSampler0
 		val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
       sampler.process(zs, 1)

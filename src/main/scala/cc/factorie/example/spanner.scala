@@ -423,11 +423,10 @@ object SpannerDemo {
       //var tokens = docs.flatMap(doc => doc) //.take(11) // TODO for now, just look at the first 500 words
       var tokens : Seq[Token] = docs.flatMap(doc => doc) //.take(11) // TODO for now, just look at the first 500 words
       var testTokens : Seq[Token] = test.flatMap(doc => doc)
-      var sampler = new MHPerceptronLearner(model, model.objective) {
+      var sampler = new MHPerceptronLearner[Token](model, model.objective) {
         var tokenIterator = tokens.elements
 
-        def propose(mdl:Model, difflist: DiffList): Double = {
-          if (mdl != model) throw new Error("models do not match") // TODO Arg!  Ugly!  Fix this. -akm
+        def propose(t:Token, difflist: DiffList): Double = {
           if (!tokenIterator.hasNext)
             tokenIterator = tokens.elements
           val token = tokenIterator.next
@@ -436,7 +435,7 @@ object SpannerDemo {
       }
 
       for (i <- 1 to 20) {
-        sampler.sampleAndLearn(tokens)
+        sampler.process(tokens,1)
         println(i + " Wrong spans")
         //docs.foreach(doc => doc.spans.foreach(span => println(span.label.value.entry + " " + span.phrase)))
         println("train accuracy: " + model.aveScore(docs))
@@ -447,7 +446,7 @@ object SpannerDemo {
         //				println("end token Weights")
         //				endTokenTemplate.printWeights
 
-        sampler.sample(testTokens)
+        sampler.process(testTokens,1)
         println("test accuracy: " + model.aveScore(testDocs))
 
 
