@@ -36,6 +36,7 @@ object LogicDemo2 {
 				"FriendsAgeMatch" =: Forany[Person] { p => p->Friends->Age === p->Age} % 2.0,
 				"FriendsEmployersMatch" =: Forany[Person] { p => p->Friends->Employer === p->Employer} % 2.0,
 				//"NoRespectSmokers" =: Forany2[Person,Person] { (p1,p2) => Not(p1->Smokes) ^ p2->Smokes ==> Not(Respects(p1,p2)) }
+				//"NoRespectSmokers" =: Forany2[Person,Person] {p1 => {Forany Respects(p1)}  { (p1,p2) => Not(p1->Smokes) ^ p2->Smokes ==> Not(Respects(p1,p2)) }}
     )
 
 		// Create the data
@@ -60,7 +61,7 @@ object LogicDemo2 {
 		println(model.factors(Friends(person("Don"))))
 
 		// Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
-		val sampler = new GibbsSampler0(model)
+		val sampler = new GibbsSampler(model)
 		val numSamples = 100
 		for (i <- 1 to numSamples) {
 			sampler.process(people.map(_.cancer) + Friends, 20)

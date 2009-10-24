@@ -6,281 +6,186 @@ import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.SparseVector
 import scalala.tensor.Vector
 import scala.reflect.Manifest
+import scala.collection.mutable.HashMap
 
 
-	trait GenericPerceptronLearning extends ExpTemplate with LogLinearScoring {
-	  var gatherAverageWeights = false
-	  var useAverageWeights = false
 
-		// Various internal diagnostics
-		def learningMethod = "Perceptron"
-
-		type TemplateType <: GenericPerceptronLearning
-		// lazy val weightsSum = { freezeDomains ; new DenseVector(suffsize) } // TODO Why doesn't this work on MacOS?
-		def weightsSum: Vector
-		// lazy val lastUpdateIteration = { freezeDomains ; new DenseVector(suffsize) } // TODO Why doesn't this work on MacOS?
-		def lastUpdateIteration: Vector
-
-		var weightsDivisor = 1.0
-
-		def increment(f: GenericPerceptronLearning#Factor, rate: Double, perceptronIteration:Double) = {
-			if (gatherAverageWeights) {
-				for (i <- f.statistic.vector.activeDomain) {
-					val iterationDiff = perceptronIteration - lastUpdateIteration(i)
-					assert(iterationDiff >= 0)
-					if (iterationDiff > 0) {
-						weightsSum(i) += weights(i) * iterationDiff + f.statistic.vector(i) * rate
-						lastUpdateIteration(i) = perceptronIteration
-					} else
-						weightsSum(i) += f.statistic.vector(i) * rate
-				}
-			}
-			weights += f.statistic.vector * rate
-			//Console.println("GenericPerceptronLearning increment weights.size="+weights.activeDomain.size)
-		}
-
-		def averageWeights = weightsSum :/ lastUpdateIteration
-
-		override def score(s: StatType) =
-			if (useAverageWeights)
-				averageWeights dot s.vector
-			else
-				weights dot s.vector
-
-		def setWeightsToAverage = weights := averageWeights
+trait PerceptronUpdates {
+  type TemplatesToUpdate = WeightedLinearTemplate
+  var learningRate = 1.0
+  def model : Model
+  def learningMargin : Double
+  
+  def updateWeights(bestModel1:Proposal, bestModel2:Proposal, bestObjective1:Proposal, bestObjective2:Proposal) : Unit = { 
+  	/*
+  	List(bestModel1, bestModel2, bestObjective1, bestObjective2).foreach(p => println(p))
+  	println ("bestObjective1 objectiveScore = "+bestObjective1.objectiveScore)//+" value = "+bestTruth1.value)
+  	println ("bestObjective2 objectiveScore = "+bestObjective2.objectiveScore)//+" value = "+bestTruth1.value)
+  	println ("bestModel1     objectiveScore = "+bestModel1.objectiveScore)//+" value = "+bestScoring.value)
+  	println ("bestObjective1 modelScore = "+bestObjective1.modelScore)
+  	println ("bestObjective2 modelScore = "+bestObjective2.modelScore)
+  	println ("bestModel1     modelScore = "+bestModel1.modelScore)
+  	println ()
+  	*/
+  	// Only do learning if the trueScore has a preference
+  	// It would not have a preference if the variable in question is unlabeled
+  	// TODO Is this the right way to test this though?  Could there be no preference at the top, but the model is selecting something else that is worse?
+  	if (bestObjective1.objectiveScore != bestObjective2.objectiveScore) {
+  		// If the model doesn't score the truth highest, then update parameters
+  		if (bestModel1 ne bestObjective1) { // TODO  I changed != to "ne"  OK?
+  			// ...update parameters by adding sufficient stats of truth, and subtracting error
+  			//println ("Perceptron learning from error, learningRate="+learningRate)
+  			//println (" Model #templates="+model.size)
+  			//println (" Updating bestObjective1 "+(bestObjective1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
+  			//println (" Updating bestModel1 "+(bestModel1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
+  			bestObjective1.diff.redo
+  			bestObjective1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => f.template.weights += f.statistic.vector *  learningRate)
+  			bestObjective1.diff.undo
+  			bestObjective1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => f.template.weights += f.statistic.vector * -learningRate)
+  			bestModel1.diff.redo
+  			bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => f.template.weights += f.statistic.vector * -learningRate)
+  			bestModel1.diff.undo
+  			bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => f.template.weights += f.statistic.vector *  learningRate)
+  		}
+  		else if (bestModel1.modelScore - bestModel2.modelScore < learningMargin) {
+  			// ...update parameters by adding sufficient stats of truth, and subtracting runner-up
+  			//println ("Perceptron learning from margin")
+  			// TODO Note This is changed from previous version, where it was bestTruth.  Think again about this.
+  			bestObjective1.diff.redo
+  			bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => f.template.weights += f.statistic.vector *  learningRate)
+  			bestObjective1.diff.undo
+  			bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => f.template.weights += f.statistic.vector * -learningRate)
+  			bestModel2.diff.redo
+  			bestModel2.diff.factorsOf[TemplatesToUpdate](model).foreach(f => f.template.weights += f.statistic.vector * -learningRate)
+  			bestModel2.diff.undo
+  			bestModel2.diff.factorsOf[TemplatesToUpdate](model).foreach(f => f.template.weights += f.statistic.vector *  learningRate)
+  		}
+  	} //else Console.println ("No preference unlabeled "+variable)
 	}
+  
+}
 
-	trait GenericDensePerceptronLearning extends DenseLogLinearScoring with GenericPerceptronLearning {
-		type TemplateType <: GenericDensePerceptronLearning
-		// lazy val weightsSum = { freezeDomains ; new DenseVector(suffsize) } // TODO Why doesn't this work on MacOS?
-		private var _weightsSum: DenseVector = null
 
-		def weightsSum: DenseVector = {
-			if (_weightsSum == null) {
-				freezeDomains
-				_weightsSum = new DenseVector(statsize)
-			}
-			_weightsSum
-		}
-		// lazy val lastUpdateIteration = { freezeDomains ; new DenseVector(suffsize) }    TODO Why doesn't this work on MacOS?
-		private var _lastUpdateIteration: DenseVector = null
 
-		def lastUpdateIteration: DenseVector = {
-			if (_lastUpdateIteration == null) {
-				freezeDomains
-				_lastUpdateIteration = new DenseVector(statsize)
-			}
-			_lastUpdateIteration
-		}
+// Compiles, but not sure it is working properly.  Needs to be tested.
+@deprecated
+trait AveragePerceptronUpdates {
+  type TemplatesToUpdate = WeightedLinearTemplate
+  var learningRate = 1.0
+  /** To apply this learning to just a subset of the WeightedLinearTemplates, you can define "model" to be a subset of the original model. */
+  def model : Model
+  def learningMargin : Double
+  def iterationCount : Int
+  def perceptronIteration = iterationCount
+  val initialIteration = perceptronIteration
+  val lastUpdateIteration = new HashMap[TemplatesToUpdate,Vector] {
+    override def default(template:TemplatesToUpdate) = { 
+      template.freezeDomains
+      val vector = if (template.isInstanceOf[SparseWeightedLinearTemplate]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
+      vector += initialIteration // Make the default value be the iteration count at which we started learning
+      this(template) = vector
+      vector
+    }
+  }
+  val weightsSum = new HashMap[TemplatesToUpdate,Vector] {
+    override def default(template:TemplatesToUpdate) = {
+      println("AveragePerceptronUpdates weightsSum default "+template)
+      template.freezeDomains
+      val vector = if (template.isInstanceOf[SparseWeightedLinearTemplate]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
+      vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
+      this(template) = vector
+      vector
+    }
+  }
+  var weightsDivisor = 1.0
+
+  /** Make sure that weightsSum reflects the sum of all weights up to the current iterations */
+  def updateWeightsSum : Unit = {
+    for (template <- model.templatesOf[TemplatesToUpdate]) {
+      val templateLastUpdateIteration = lastUpdateIteration(template)
+      val templateWeightsSum = weightsSum(template)
+      val templateWeights = template.weights
+    	for (i <- template.weights.activeDomain) {
+    		val iterationDiff = perceptronIteration - templateLastUpdateIteration(i)
+    		assert(iterationDiff >= 0)
+    		if (iterationDiff > 0) {
+    			templateWeightsSum(i) += templateWeights(i) * iterationDiff
+    			templateLastUpdateIteration(i) = perceptronIteration
+    		}
+    	}
+    }
+  }
+
+  /** Before calling this the average weights are stored unnormalized in weightsSum.  
+   * After calling this the average weights are put in template.weights. */
+  def setWeightsToAverage : Unit = {
+    updateWeightsSum
+    for (template <- model.templatesOf[TemplatesToUpdate]) {
+      println("AveragePerceptronUpdates template="+template)
+      println(weightsSum.size)
+      if (weightsSum.contains(template)) {
+      	println("AveragePerceptronUpdates iteration="+perceptronIteration+" "+template)
+      	template.weights := weightsSum(template) :/ lastUpdateIteration(template)
+      }
+    }
+  }
+  
+  def updateWeights(bestModel1:Proposal, bestModel2:Proposal, bestObjective1:Proposal, bestObjective2:Proposal) : Unit = { 
+  	// Only do learning if the trueScore has a preference
+  	// It would not have a preference if the variable in question is unlabeled
+  	// TODO Is this the right way to test this though?  Could there be no preference at the top, but the model is selecting something else that is worse?
+  	if (bestObjective1.objectiveScore != bestObjective2.objectiveScore) {
+  		// If the model doesn't score the truth highest, then update parameters
+  		if (bestModel1 ne bestObjective1) { // TODO  I changed != to "ne"  OK?
+  			// ...update parameters by adding sufficient stats of truth, and subtracting error
+  			//println ("Perceptron learning from error, learningRate="+learningRate)
+  			bestObjective1.diff.redo
+  			bestObjective1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => increment(f, learningRate))
+  			bestObjective1.diff.undo
+  			bestObjective1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => increment(f, -learningRate))
+  			bestModel1.diff.redo
+  			bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => increment(f, -learningRate))
+  			bestModel1.diff.undo
+  			bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => increment(f, learningRate))
+  		}
+  		else if (bestModel1.modelScore - bestModel2.modelScore < learningMargin) {
+  			// ...update parameters by adding sufficient stats of truth, and subtracting runner-up
+  			//println ("Perceptron learning from margin")
+  			// TODO Note This is changed from previous version, where it was bestTruth.  Think again about this.
+  			bestObjective1.diff.redo
+  			bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => increment(f, learningRate))
+  			bestObjective1.diff.undo
+  			bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => increment(f, -learningRate))
+  			bestModel2.diff.redo
+  			bestModel2.diff.factorsOf[TemplatesToUpdate](model).foreach(f => increment(f, -learningRate))
+  			bestModel2.diff.undo
+  			bestModel2.diff.factorsOf[TemplatesToUpdate](model).foreach(f => increment(f, learningRate))
+  		}
+  	} //else Console.println ("No preference unlabeled "+variable)
 	}
+  
+  /** Sparsely increment weights, accounting for all previous unchanged values in the average */
+  protected def increment(f:TemplatesToUpdate#Factor, rate:Double) = {
+    val template = f.template
+    val templateWeightsSum = weightsSum(template)
+    val templateLastUpdateIteration = lastUpdateIteration(template)
+    val templateWeights = template.weights
+    // First do it for the template's weights
+    template.weights += f.statistic.vector * rate
+    // Now gather weights into weightsSum 
+  	for (i <- f.statistic.vector.activeDomain) {
+  		val iterationDiff = perceptronIteration - templateLastUpdateIteration(i)
+  		assert(iterationDiff >= 0)
+  		if (iterationDiff > 0) {
+  			templateWeightsSum(i) += templateWeights(i) * iterationDiff + f.statistic.vector(i) * rate
+  			templateLastUpdateIteration(i) = perceptronIteration
+  		} else	
+  			templateWeightsSum(i) += f.statistic.vector(i) * rate
+  	}
+  }
 
 
-	trait GenericSparsePerceptronLearning extends SparseLogLinearScoring with GenericPerceptronLearning {
-		type TemplateType <: GenericSparsePerceptronLearning
-		// lazy val weightsSum = { freezeDomains ; new DenseVector(suffsize) } // TODO Why doesn't this work on MacOS?
-		private var _weightsSum: SparseVector = null
-
-		def weightsSum: SparseVector = {
-			if (_weightsSum == null) {
-				_weightsSum = new SparseVector(statsize)
-			}
-			_weightsSum
-		}
-		// lazy val lastUpdateIteration = { freezeDomains ; new SparseVector(suffsize) } // TODO Why doesn't this work on MacOS?
-		private var _lastUpdateIteration: SparseVector = null
-
-		def lastUpdateIteration: SparseVector = {
-			if (_lastUpdateIteration == null) {
-				_lastUpdateIteration = new SparseVector(statsize)
-			}
-			_lastUpdateIteration
-		}
-	}
-
-
-
-
-
-
- 
-// TODO Rename SampleRankGibbsPerceptron or somesuch??
- 
-	trait GibbsAbstractPerceptronLearning extends GenericPerceptronLearning 
-	trait GibbsPerceptronLearning extends AbstractPerceptronLearning with GenericDensePerceptronLearning
-	trait GibbsSparsePerceptronLearning extends AbstractPerceptronLearning with GenericSparsePerceptronLearning
-
-	class GibbsSamplerPerceptron [V1<:Variable with IterableSettings](model:Model, objective:Model)(implicit m1:Manifest[V1]) extends GibbsSamplerOverSettingsPerceptron[V1](model,objective)(m1) {
-  	//def this()(implicit m1:Manifest[V1]) = this(Global.defaultModel)(m1)
-  	def settings(v:V1) = v.settings
-	}
- 
- 	class GibbsSamplerPerceptron0(model:Model, objective:Model) extends GibbsSamplerPerceptron[Variable with IterableSettings](model, objective)
- 
-  // TODO Consider changing name to just "PerceptronLearner", and similarly above
-  // or to "GibbsSamplerPerceptron"	
-	abstract class GibbsSamplerOverSettingsPerceptron[V1<:Variable](model:Model, objective:Model)(implicit m1:Manifest[V1]) extends GibbsSamplerOverSettings1[V1](model)(m1) {
-		// Meta-parameters for learning
-		var learningRate = 1.0
-		var learningMargin = 1.0
-
-	  if (objective.length == 0) throw new IllegalArgumentException("Objective is empty.")
-
-		/**Sample one variable once, and potentially train from the jump. */
-		override def sample(variable:V1): DiffList = {
-			case class Proposal(modelScore: Double, trueScore: Double, diff: DiffList)
-			val proposals =
-			for (setting <- settings(variable).toList) yield {
-				val diff = new DiffList
-				setting.set(diff)
-				var trueScore = objective.score(variable)
-				val modelScore = diff.scoreAndUndo(model)
-				trueScore -= objective.score(variable)
-				Proposal(modelScore, trueScore, diff)
-			}
-			//println("Perceptron proposals class"+proposals.getClass) // TODO consider alternatives to .toList above
-
-			val (bestScoring, bestScoring2) = proposals.max2(_ modelScore)
-			val (bestTruth1, bestTruth2) = proposals.max2(_ trueScore)
-			/*
-				 proposals.foreach(p => println(p))
-         println ("bestTruth1   trueScore = "+bestTruth1.trueScore)//+" value = "+bestTruth1.value)
-         println ("bestScoring  trueScore = "+bestScoring.trueScore)//+" value = "+bestScoring.value)
-         println ("bestTruth1  modelScore = "+bestTruth1.modelScore)
-         println ("bestTruth2  modelScore = "+bestTruth2.modelScore)
-         println ("bestScoring modelScore = "+bestScoring.modelScore)
-         println ()
-         */
-			// Only do learning if the trueScore has a preference
-			// It would not have a preference if the variable in question is unlabeled
-			if (bestTruth1.trueScore != bestTruth2.trueScore) {
-				// If the model doesn't score the truth highest, then update parameters
-				if (bestScoring/*.value*/ != bestTruth1/*.value*/) { // TODO change != to "ne"
-					//def m[T](implicit m: Manifest[T]) = m.erasure
-					//println ("Perceptron learning from error")
-					//Console.println ("Model template assignable "+modelTemplates.map(t=>t.getClass.isAssignableFrom(m[PerceptronLearning])))
-					//Console.println ("Model template assignable "+modelTemplates.map(t=>m[PerceptronLearning].isAssignableFrom(t.getClass)))
-					//Console.println ("Model template assignable "+modelTemplates.map(t=>m[Variable].isAssignableFrom(t.getClass)))
-					//Console.println ("Model templates "+modelTemplates.map(t=>t.toString+" "))
-					//Console.println ("Model templates of PerceptronLearning "+modelTemplatesOf[PerceptronLearning].toSeq.size)
-					//Console.println ("PerceptronLearning factors "+bestTruth1.diff.factorsOf[PerceptronLearning].toSeq.size)
-					// ...update parameters by adding sufficient stats of truth, and subtracting error
-					//
-					bestTruth1.diff.redo
-					model.factorsOf[AbstractPerceptronLearning](bestTruth1.diff).foreach(f => f.template.increment(f, learningRate, iterations))
-					bestTruth1.diff.undo
-					bestScoring.diff.redo
-					model.factorsOf[AbstractPerceptronLearning](bestScoring.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
-					bestScoring.diff.undo
-				}
-				else if (bestScoring.modelScore - bestScoring2.modelScore < learningMargin) {
-					//println ("Perceptron learning from margin")
-					// ...update parameters by adding sufficient stats of truth, and subtracting runner-up
-					// TODO Shouldn't this be bestScoring and bestScoring2 ??? !!!!
-					bestTruth1.diff.redo
-					model.factorsOf[AbstractPerceptronLearning](bestTruth1.diff).foreach(f => f.template.increment(f, learningRate, iterations))
-					bestTruth1.diff.undo
-					bestTruth2.diff.redo
-					model.factorsOf[AbstractPerceptronLearning](bestTruth2.diff).foreach(f => f.template.increment(f, -learningRate, iterations))
-					bestTruth2.diff.undo
-				}
-			} //else Console.println ("No preference unlabeled "+variable)
-			// Set the variable to the value the model thinks is best
-			bestScoring.diff.redo // TODO consider sampling here instead?
-			// Populate and manage the size of the priority queue
-			if (useQueue && maxQueueSize > 0) {
-				queue ++= model.factors(bestScoring.diff)
-				if (queue.size > maxQueueSize) queue.reduceToSize(maxQueueSize)
-			}
-			bestScoring.diff 
-		}
-
-		/**Sample one variable once, and potentially train from the jump.  Assumes that we always start from the truth. */
-		def contrastiveDivergenceSampleAndLearn1(variable:V1): Unit = {
-			val diff = this.sample(variable)
-			if (diff.length > 0) {
-				// The sample wandered from truth
-				model.factorsOf[AbstractPerceptronLearning](diff).foreach(f => f.template.increment(f, -learningRate, iterations))
-				diff.undo
-				model.factorsOf[AbstractPerceptronLearning](diff).foreach(f => f.template.increment(f, learningRate, iterations))
-			}
-		}
-	}
-
-
-
-
-	trait AbstractPerceptronLearning extends GenericPerceptronLearning 
-	trait PerceptronLearning extends AbstractPerceptronLearning with GenericDensePerceptronLearning
-	trait SparsePerceptronLearning extends AbstractPerceptronLearning with GenericSparsePerceptronLearning
-
-	abstract class MHPerceptronLearner[C](model:Model, objective:Model)(implicit mc:Manifest[C]) extends MHSampler1[C](model)(mc) {
-		var difflist: DiffList = null
-		var modelScoreRatio = 0.0
-		var modelTransitionRatio = 0.0
-		var learningIterations = 0
-
-		// Meta-parameters for learning
-		var useAveraged = true
-		var learningRate = 1.0;
-
-		// Various learning diagnostics
-		var bWeightsUpdated = false;
-		var bFalsePositive = false;
-		var bFalseNegative = false;
-		var numUpdates = 0; // accumulates
-
-		def process(context:C, difflist:DiffList): Unit = {
-			learningIterations += 1
-			// Jump until difflist has changes
-			while (difflist.size <= 0) modelTransitionRatio = propose(context, difflist)
-			val newTruthScore = difflist.score(objective)
-			modelScoreRatio = difflist.scoreAndUndo(model) // TODO Change this to use the new 2-arg version of scoreAndUndo
-			val oldTruthScore = difflist.score(objective)
-			val modelRatio = modelScoreRatio // + modelTransitionRatio
-			bWeightsUpdated = false
-			bFalsePositive = false;
-			bFalseNegative = false;
-			//        Console.println ("old truth score = "+oldTruthScore)
-			//        Console.println ("new truth score = "+newTruthScore)
-			//        Console.println ("modelScoreRatio = "+modelScoreRatio)
-			// TODO work the learningMargin in here somehow
-			if (newTruthScore > oldTruthScore && modelRatio <= 0) {
-				//          Console.println ("Learning from error: new actually better than old.  DiffList="+difflist.size)
-				model.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, -learningRate, iterations))
-				difflist.redo
-				model.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, learningRate, iterations))
-				difflist.undo
-				bWeightsUpdated = true
-				bFalseNegative = true
-			}
-			else if (newTruthScore < oldTruthScore && modelRatio >= 0) {
-				//          Console.println ("Learning from error: old actually better than new.  DiffList="+difflist.size)
-				model.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, learningRate, iterations))
-				difflist.redo
-				model.factorsOf[AbstractPerceptronLearning](difflist).foreach(f => f.template.increment(f, -learningRate, iterations))
-				difflist.undo
-				bWeightsUpdated = true
-				bFalsePositive = true
-			}
-			if (bWeightsUpdated) numUpdates += 1;
-			//worldFactors.foreach(f => Console.println (f.toString+" weights = "+f.weights.toList))
-			// Now simply sample according to the model, no matter how imperfect it is
-			val logAccProb = (modelScoreRatio / temperature) + modelTransitionRatio
-			if (logAccProb > Math.log(random.nextDouble)) {
-				if (modelRatio < 0) {
-					//	    Console.print("\\")
-					numNegativeMoves += 1
-				}
-				numAcceptedMoves += 1
-				proposalAccepted = true;
-				//	  Console.println("iteration: " + iteration + ", pRatio = " + pRatio);
-				difflist.redo
-			}
-			postProposalHook
-		}
-
-
-	}
+}
 
 
 

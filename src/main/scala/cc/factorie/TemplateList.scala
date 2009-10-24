@@ -24,12 +24,13 @@ class TemplateList[T<:Template] extends ArrayBuffer[T] {
     for (t <- this) if (test(t)) ret += t
     ret
 	}
-	def factors(d:DiffList) : Seq[Factor] = this.flatMap(template => template.factors(d))
-	def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf(m).flatMap(template => template.factors(d))
+	def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else this.flatMap(template => template.factors(d))
+	def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
 	/** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
 	def factors(v:Variable) : Seq[Factor] = this.flatMap(template => template.factors(v)).toList
 	def factors(vs:Iterable[Variable]) : Seq[Factor] = this.flatMap(template => template.factors(vs))
-	def factorsOfClass[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf(m).flatMap(template => template.factors(v))
+	// TODO Should the method below be renamed "factorsOf"?
+	def factorsOfClass[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
 	def registerFactorsInVariables(variables: Iterable[Variable with FactorList]): Seq[Factor] = {
 	  val factors = this.factors(variables)
     // Make sure each variables factor list starts empty

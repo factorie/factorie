@@ -10,10 +10,10 @@ class ClassifierModel extends Model {
 	}
 
 	/**Bias term just on labels */
-	class LabelTemplate extends TemplateWithExpStatistics1[Label] with DenseLogLinearScoring 
+	class LabelTemplate extends TemplateWithExpStatistics1[Label] with DenseWeightedLinearTemplate
 
 	/**Factor between label and observed document */
-	class LabelInstanceTemplate extends TemplateWithExpStatistics2[Label, Instance] with DenseLogLinearScoring {
+	class LabelInstanceTemplate extends TemplateWithExpStatistics2[Label, Instance] with DenseWeightedLinearTemplate {
 		def unroll1(label: Label) = Factor(label, label.instance)
 		def unroll2(instance: Instance) = throw new Error("Instance VectorVariable shouldn't change")
 	}

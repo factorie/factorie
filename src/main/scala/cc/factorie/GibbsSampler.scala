@@ -32,40 +32,58 @@ abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model)(implicit
   lazy val queue = new PriorityQueue[Factor]
   
   // Diagnostic information
-  
+  val numChanges = 0
+
+  /** For storing one of the proposals considered.  Note that objectiveScore may not be truly set, in which case it will have value Math.NaN_DOUBLE. */
+	//case class Proposal(diff:DiffList, modelScore:Double, objectiveScore:Double)
+ 
+	// Methods override in learning methods
+	def proposalsHook(proposals:Seq[Proposal]) : Unit = {}
+  /** If you want the Proposals to actually contain the objectiveScore, override this method appropriately.  Used for training.	*/
+  def objective : Model = null
+
+  /** Consider all settings(variable), and select one proportionally to the distribution over model scores. */
   def sample(variable:V1) : DiffList = {
     val queueDiff : Seq[Diff] = if (useQueue && Global.random.nextDouble < 0.3 && queue.size > 1)
       sampleFromQueue else Nil
 		val vsettings = settings(variable) 
 		variable match {
+		  /* // TODO Consider re-adding something like this, but using the above case class Proposal, and populating the DiffList 
 		  // For cases in which changing this variable value does not change any other variables' values
 		  case v:NoVariableCoordination => {
 		  	case class Proposal(setting:{def set(d:DiffList):Unit}, score:Double)
-		  	val proposals = vsettings.map(s => {s.set(null); new Proposal(s, model.score(variable)/temperature)}).toList		  
+		  	val proposals = vsettings.map(s => {s.set(null); new Proposal(s, model.score(variable)/temperature)}).toList
 		  	val proposal = proposals.sampleExpProportionally(_.score)
 		  	val d = new DiffList
 		  	proposal.setting.set(d)
 		  	if (useQueue && !queueDiff.isEmpty) d prependAll queueDiff
 		  	d
-		  }
+		  }*/
+		  /* // TODO Not sure this is valid
 		  // For cases in which changing this variable value might change some other variables' values, 
 		  // but all the changes can be properly evaluating using only the factors that touch this variable
 		  case v:NoFactorCoordination => {
-		  	case class Proposal(diff:DiffList, score:Double)
-		  	val proposals = vsettings.map(s => {val d = new DiffList; s.set(d); val p = new Proposal(d, model.score(variable)/temperature); d.undo; p}).toList
-		  	val proposal = proposals.sampleExpProportionally(_.score)
+		    // TODO Note that the modelScore in Proposal will now not be a diff, but a raw score.  Is this OK??? !!!;
+		  	val proposals = vsettings.map(s => {val d = new DiffList; s.set(d); val p = new Proposal(d, model.score(variable)/temperature, objectiveScore(d)); d.undo; p}).toList
+		  	proposalsHook(proposals)
+		  	val proposal = proposals.sampleExpProportionally(_.modelScore)
 		  	proposal.diff.redo
-		  	if (useQueue && !queueDiff.isEmpty) proposal.diff prependAll queueDiff
+		  	if (useQueue && !queue.isEmpty) proposal.diff prependAll queueDiff
 		  	proposal.diff
-		  }
+     } */
 		  // For cases in which there are no guarantees about variable factor- and change-locality
 		  case _ => {
-		  	case class Proposal(diff:DiffList, score:Double)
-		  	val proposals = vsettings.map(s => {val d = new DiffList; s.set(d); new Proposal(d, d.scoreAndUndo(model)/temperature)}).toList
+		    // TODO Find a way to make more efficient by avoiding toList below
+		  	val proposals = 
+		  		if (objective == null)
+		  			vsettings.map(s => {val d = new DiffList; s.set(d); val m = d.scoreAndUndo(model); new Proposal(d, m/temperature, Math.NaN_DOUBLE)}).toList
+		  		else
+		  			vsettings.map(s => {val d = new DiffList; s.set(d); val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m/temperature, o)}).toList
 		  	//proposals.foreach(p => println("GibbsSampler1 proposal score="+p.score)); println
-		  	val proposal = proposals.sampleExpProportionally(_.score)
+		  	proposalsHook(proposals)
+		  	val proposal = proposals.sampleExpProportionally(_.modelScore)
 		  	proposal.diff.redo
-		  	if (useQueue && !queueDiff.isEmpty) proposal.diff prependAll queueDiff
+		  	if (useQueue && !queue.isEmpty) proposal.diff prependAll queueDiff
 		  	proposal.diff
 		  }
     }
@@ -79,14 +97,15 @@ abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model)(implicit
 }
 
 
+/** GibbsSampler for a subclass of Variable with IterableSettings */
 class GibbsSampler1[V1<:Variable with IterableSettings](model:Model)(implicit m1:Manifest[V1]) extends GibbsSamplerOverSettings1[V1](model)(m1) {
 	//println("GibbsSampler1 V1="+m1)
   def this()(implicit m1:Manifest[V1]) = this(Global.defaultModel)(m1)
 	def settings(v:V1) = v.settings
 }
 
-// TODO Rename to GibbsSampler
-class GibbsSampler0(model:Model) extends GibbsSampler1[Variable with IterableSettings](model) {
+/** GibbsSampler for generic Variable with IterableSettings */
+class GibbsSampler(model:Model) extends GibbsSampler1[Variable with IterableSettings](model) {
   def this() = this(Global.defaultModel)
 }
 

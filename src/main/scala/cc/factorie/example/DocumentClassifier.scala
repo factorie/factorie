@@ -15,10 +15,10 @@ class DocumentClassifierModel extends Model {
   }
 
   /** Bias term just on labels */
-  this += new TemplateWithExpStatistics1[Label] with PerceptronLearning
+  this += new TemplateWithExpStatistics1[Label] with DenseWeights
 
   /** Factor between label and observed document */
-  this += new TemplateWithExpStatistics2[Label,Document] with PerceptronLearning {
+  this += new TemplateWithExpStatistics2[Label,Document] with DenseWeights {
     def unroll1 (label:Label) = Factor(label, label.document)
     def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
   }
@@ -59,8 +59,8 @@ object DocumentClassifierDemo {
       Console.println ("Initial test accuracy = "+ model.objective.aveScore(testVariables))
 
       // Sample and Learn!
-      val learner = new GibbsSamplerPerceptron0(model, model.objective)
-      val sampler = new GibbsSampler0(model)
+      val learner = new GibbsSampleRank[Label](model, model.objective) with PerceptronUpdates
+      val sampler = new GibbsSampler(model)
       learner.learningRate = 1.0
       for (i <- 0 until 10) {
         learner.process (trainVariables, 1)

@@ -71,6 +71,9 @@ abstract trait IterableValues[T] {
 trait IterableSettings{
 	this: Variable =>
   /** Return an iterator over some/all configurations of this variable, each time returning simply the same Variable object. */
+  // TODO this "settings" method should take a DiffList argument so it can see what else has changed, to avoid loops?
+  // No, we need something even more powerful, because we'd like to enable nested for-comprehensions of changes to multiple variables.
+  // Think about this some more!!!!
   def settings: Iterator[{def set(d:DiffList):Unit}]
 }
 // TODO Remove this?
@@ -150,7 +153,7 @@ abstract trait SingleIndexed extends IndexedVariable {
 } 
 
 /** For variables whose values are associated with a an Int from an index. */
-abstract trait SingleIndexedVariable extends SingleIndexed with Proposer with MultiProposer with IterableSettings {
+abstract trait SingleIndexedVariable extends SingleIndexed with Proposer with IterableSettings {
 	type VariableType <: SingleIndexedVariable
  	class DomainInSubclasses
 	protected var _index = -1
@@ -173,12 +176,12 @@ abstract trait SingleIndexedVariable extends SingleIndexed with Proposer with Mu
 	  def hasNext = i < max
 	  def next = { i += 1; new Setting(i)}
 	}
-	def propose(d: DiffList)(implicit random:Random) = {setByIndex(random.nextInt(domain.size))(d); 0.0}
+	def propose(model:Model, d: DiffList) = {setByIndex(Global.random.nextInt(domain.size))(d); 0.0}
 	// The reason for the "toList" (now changed to "force"), see 
 	// http://stackoverflow.com/questions/1332574/common-programming-mistakes-for-scala-developers-to-avoid
 	// http://creativekarma.com/ee.php/weblog/comments/the_scala_for_comprehension_from_a_java_perspective/
   // TODO Look at this issue more carefully and turn on printing in Implicits.bonusIterables to look for additional efficiencies 
-	def multiPropose(model:Model, objective:Model, difflist: DiffList) = {
+	/*def multiPropose(model:Model, objective:Model, difflist: DiffList) = {
 	  val aps = for (i <- 0 until domain.size force) yield {
 	  	//println("SingleIndexedVariable multiPropose " +i) // TODO check this for repeated evaluation
 	  	val ap = new AutoProposal(model, objective, diff => setByIndex(i)(diff))
@@ -187,7 +190,7 @@ abstract trait SingleIndexedVariable extends SingleIndexed with Proposer with Mu
     }
 		// val d = new DiffList; setByIndex(i)(d); new CaseProposal(d.scoreAndUndo, d)
 		aps
-	}
+	}*/
 	def index = _index
 	/** Tests equality of variable values, whereas == tests equality of variable objects themselves. */
 	case class SingleIndexedDiff(oldIndex: Int, newIndex: Int) extends Diff {

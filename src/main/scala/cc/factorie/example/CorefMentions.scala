@@ -77,7 +77,7 @@ object CorefMentionsDemo {
       val model = new Model
   
       // Pairwise affinity factor between Mentions in the same partition
-      model += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector] with PerceptronLearning {
+      model += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector] with DenseWeights {
       	def unroll1 (mention:Mention) = for (other <- mention.entity.mentions; if (other != mention)) yield 
       		if (mention.hashCode > other.hashCode) Factor(mention, other)
       		else Factor(other, mention)
@@ -86,7 +86,7 @@ object CorefMentionsDemo {
       }.init
 
       // Pairwise repulsion factor between Mentions in different partitions
-      model += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector] with PerceptronLearning {
+      model += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector] with DenseWeights {
       	override def factors(d:Diff) = d.variable match {
       		case mention : Mention => d match {
       			case mention.PrimitiveDiff(oldEntity:Entity, newEntity:Entity) => 
@@ -101,7 +101,7 @@ object CorefMentionsDemo {
       }.init
   
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature!
-      model += new Template1[Entity] with ExpStatistics1[Bool] with PerceptronLearning {
+      model += new Template1[Entity] with ExpStatistics1[Bool] with DenseWeights {
       	def statistics(entity:Entity) = {
       		if (entity.mentions.isEmpty) Stat(Bool(true))
       		else {
@@ -133,8 +133,8 @@ object CorefMentionsDemo {
       // Define the proposal distribution
       //var sampler = new CWLearner {
       //var sampler = new MHMIRALearner {
-      var sampler = new MHPerceptronLearner[Null](model, objective) {
-        def propose(context:Null, difflist:DiffList) : Double = {
+      var sampler = new MHSampleRank[Null](model, objective) with PerceptronUpdates {
+        def propose(context:Null)(implicit difflist:DiffList) : Double = {
           // Pick a random mention
           val m = mentionList.sample(Global.random)
           //println("CorefMentions MHPerceptronLearner mention="+m)
@@ -152,15 +152,16 @@ object CorefMentionsDemo {
           // log-Q-ratio shows that forward and backward jumps are equally likely
           return 0.0
         }
-        override def postProposalHook = {
-          if (iterations % 500 == 0) {
-            learningRate *= .9
-            System.out.println("UPS: " + numUpdates);
-            model.templatesOf[LogLinearScoring].foreach(f => Console.println (f.toString+" weights = "+f.weights.toList))
-            Console.println ("All entities")
-            entityList.filter(e=>e.size>0).foreach(e => Console.println(e.toString +" "+ e.mentions.toList))
+        override def postProcessHook(context:Null, difflist:DiffList) : Unit = {
+          super.postProcessHook(context, difflist)
+          if (processCount % 500 == 0) {
+            //learningRate *= .9
+            // TODO put back numUpdates   System.out.println("UPS: " + numUpdates);
+            model.templatesOf[WeightedLinearTemplate].foreach(f => println (f.toString+" weights = "+f.weights.toList))
+            println ("All entities")
+            entityList.filter(e=>e.size>0).foreach(e => println(e.toString +" "+ e.mentions.toList))
             //Console.println ("All mentions"); mentionList.foreach(m => Console.println(m.toString +" "+ m.entity))
-            Console.println ()
+            println
           }
         }
       }

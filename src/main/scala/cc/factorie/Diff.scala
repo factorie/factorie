@@ -1,7 +1,7 @@
 package cc.factorie
 
 import scala.collection.mutable.{ArrayBuffer}
-//import scala.reflect.Manifest
+import scala.reflect.Manifest
 //import scala.util.Random
 import scala.Math
 import scala.util.Sorting
@@ -51,6 +51,7 @@ class DiffList extends ArrayBuffer[Diff] {
 		//log(Log.DEBUG)("DiffList scoreAndUndo post-undo score=" + s)
 		s
 	}
+	/** For comparing the scores of two different models. */
 	def scoreAndUndo(model1:Model, model2:Model) : (Double, Double) = {
 		var s1 = model1.score(this)
 		var s2 = model2.score(this)
@@ -59,4 +60,6 @@ class DiffList extends ArrayBuffer[Diff] {
 		s2 -= model2.score(this)
 		(s1, s2)
 	}
+	/** More efficient than model.factorsOf[T](difflist) when the difflist might be empty. */
+	def factorsOf[T<:Template](model:Model)(implicit m:Manifest[T]) : Seq[T#Factor] = if (this.isEmpty) Nil else model.factorsOf[T](this)(m) 
 }

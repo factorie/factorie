@@ -154,7 +154,7 @@ object logic {
   }
 
   
-  trait LogicStatistics extends ExpStatistics1[Bool] with PerceptronLearning {
+  trait LogicStatistics extends ExpStatistics1[Bool] with DenseWeights {
   	def %(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
   }
 

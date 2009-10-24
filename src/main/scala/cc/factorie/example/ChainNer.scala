@@ -7,8 +7,8 @@ import cc.factorie._
 import cc.factorie.model.LinearChainModel
 
 class ChainNerModel extends LinearChainModel {
-	this += new LabelTemplate with PerceptronLearning
-  this += new TransitionTokenTemplate with PerceptronLearning
+	this += new LabelTemplate with DenseWeights
+  this += new TransitionTokenTemplate with DenseWeights
   val objective = new Model(new TrueLabelTemplate[Label])
 }
 
@@ -76,8 +76,8 @@ object ChainNerDemo {
       val testLabels : Seq[Label] = testTokens.flatMap(_.map(_.label))
       // Sample and Learn!
       (trainLabels ++ testLabels).foreach(_.setRandomly(Global.random, null))
-      val learner = new GibbsSamplerPerceptron0(model, model.objective)
-      val sampler = new GibbsSampler0(model)
+      val learner = new GibbsSampleRank[Label](model, model.objective) with PerceptronUpdates
+      val sampler = new GibbsSampler(model)
       for (i <- 0 until 10) {
         learner.process(trainLabels, 1)
         Console.println ("Train accuracy = "+ objective.aveScore(trainLabels))

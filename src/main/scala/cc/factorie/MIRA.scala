@@ -1,163 +1,79 @@
 package cc.factorie
 import scala.reflect.Manifest
+import scala.collection.mutable.HashMap
 import scalala.Scalala._
+import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 //import scalala.tensor.operators.TensorOp
 //import scalala.tensor.operators.OperatorImplicits
 
-	trait MIRALearning extends PerceptronLearning //extends template
-	{
-		type TemplateType <: MIRALearning
-		lazy val denseDiff = {freezeDomains; new DenseVector(statsize)}
-		override def learningMethod = "MIRALearning"
+// TODO Move this to a more generic location
+trait WeightUpdates {
+  def updateWeights(bestModel1:Proposal, bestModel2:Proposal, bestObjective1:Proposal, bestObjective2:Proposal) : Unit
+}
+
+trait MIRAUpdates extends PerceptronUpdates with AbstractMIRAUpdates 
+trait AverageMIRAUpdates extends AveragePerceptronUpdates with AbstractMIRAUpdates 
+
+trait AbstractMIRAUpdates extends WeightUpdates {
+	def learningRate : Double
+	def learningRate_=(x:Double) : Unit
+  def model : Model
+  def learningMargin : Double
+
+  abstract override def updateWeights(bestModel1:Proposal, bestModel2:Proposal, bestObjective1:Proposal, bestObjective2:Proposal) : Unit = {
+    val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
+    learningRate = kktMultiplier(changeProposal, 1, true);
+    super.updateWeights(bestModel1, bestModel2, bestObjective1, bestObjective2)
 	}
+  
+  val denseDiff = new HashMap[WeightedLinearTemplate,Vector] {
+    override def default(template:WeightedLinearTemplate) = { 
+      template.freezeDomains
+      val vector = new DenseVector(template.statsize)
+      this(template) = vector
+      vector
+    }
+  }
 
+  protected val epsilon: Double = 0.000000001
+  def kktMultiplier(changeProposal:Proposal, loss: Double, fnu: Boolean): Double = {
+    val modelScoreRatio = changeProposal.modelScore
+    var logP = modelScoreRatio;
+    if (!fnu)	logP = -logP;
+    //loss could be 0/1 or diff in f1
+    val l2sqrd: Double = computeDenseDiffL2(fnu, changeProposal.diff);
+    val errorGradient: Double = loss - logP;
+    var lambda: Double = 0;
+    if (l2sqrd > 0 + epsilon || l2sqrd < 0 - epsilon)
+    	lambda = errorGradient / l2sqrd;
+    if (lambda < 0) lambda = 0 //no error (the passive part of passive-aggressive)
+    lambda;
+  }
 
-	abstract class MHMIRALearner[C](model:Model, objective:Model)(implicit mc:Manifest[C]) extends MHPerceptronLearner[C](model, objective)(mc)
-	{
-  	protected val epsilon: Double = 0.000000001;
-		def kktMultiplier(loss: Double, fnu: Boolean): Double =
-			{
-				var logP = modelScoreRatio;
-				if (!fnu)
-					logP = -logP;
-				//loss could be 0/1 or diff in f1
-				val l2sqrd: Double = computeDenseDiffL2(fnu);
-				val errorGradient: Double = loss - logP;
-				var lambda: Double = 0;
-				if (l2sqrd > 0 + epsilon || l2sqrd < 0 - epsilon)
-					lambda = errorGradient / l2sqrd;
-				if (lambda < 0) //no error (the passive part of passive-aggressive)
-					lambda = 0;
-				lambda;
-			}
-
-		/*
-		 def computeSparseDiffL2() : Double =
-		 {
-		 HashMap[Int,Double] vec = new HashMap[Int,Double];
-		 var l2n2:Double=0;
-		 difflist.redo;
-		 difflist.scoreFactors.foreach(factor =>
-		 factor.incrementArray(factor.template.asInstanceOf[MIRALearning].denseDiff)(1))
-
+  def computeDenseDiffL2(fnu: Boolean, difflist:DiffList): Double = {
+    //TODO: investigate why sign matters
+    var sign = 1
+    if (fnu) sign = -1
+    var l2n2: Double = 0
+    //zero the difference
+    model.templatesOf[WeightedLinearTemplate].foreach(t => denseDiff(t).zero)
+    //compute modified config's contribution
+    difflist.redo
+    difflist.factorsOf[WeightedLinearTemplate](model).foreach(f => denseDiff(f.template) += f.statistic.vector * sign)
+    //compute original config's contribution
+    difflist.undo;
+    difflist.factorsOf[WeightedLinearTemplate](model).foreach(f => denseDiff(f.template) += f.statistic.vector * -1)
+    //compute l2 squared
+    for (t <- model.templatesOf[WeightedLinearTemplate]) {
+      val templateDenseDiff = denseDiff(t)
+    	for (i <- 0 until denseDiff(t).size) {
+    		val score = templateDenseDiff(i)
+    		l2n2 += score * score;
+    	}
+    }
+    l2n2;
+  }
 }
-def addToHashMap(vec:HashMap[Int,Double], t:Template)
-{
-val f = t.asInstanceOf[MIRALearning];
 
-}
-*/
-
-		def computeDenseDiffL2(fnu: Boolean): Double =
-			{
-				//TODO: investigate why sign matters
-				var sign = 1;
-				if (fnu)
-					sign = -1;
-				var l2n2: Double = 0;
-				//
-				//zero the difference
-				model.templatesOf[MIRALearning].foreach(f => {
-					f.denseDiff.zero
-				})
-				//
-				//compute modified config's contribution
-				difflist.redo;
-				model.factorsOf[MIRALearning](difflist).foreach(factor =>
-								factor.template.asInstanceOf[MIRALearning].denseDiff += factor.statistic.vector * sign)
-				//compute original config's contribution
-				difflist.undo;
-				model.factorsOf[MIRALearning](difflist).foreach(factor =>
-								factor.template.denseDiff += factor.statistic.vector * -1)
-				//
-				//compute l2 squared
-				model.templatesOf[MIRALearning].foreach(t => {
-					for (i <- 0 until t.denseDiff.size) {
-						val score = t.denseDiff(i)
-						l2n2 += score * score;
-					}
-				})
-
-				l2n2;
-			}
-
-		override def process(context:C, difflist:DiffList): Unit = {
-				learningIterations += 1
-				// Jump until difflist has changes
-				while (difflist.size <= 0) modelTransitionRatio = propose(context, difflist)
-				val newTruthScore = difflist.score(objective)
-				modelScoreRatio = difflist.scoreAndUndo(model)
-				val oldTruthScore = difflist.score(objective)
-				val modelRatio = modelScoreRatio + modelTransitionRatio
-				bWeightsUpdated = false
-				bFalsePositive = false;
-				bFalseNegative = false;
-				if (newTruthScore > oldTruthScore && modelRatio <= 0) {
-					//          Console.println ("Learning from error: new actually better than old.  DiffList="+difflist.size)
-					learningRate = kktMultiplier(1, true);
-					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.statistic.vector * -learningRate)
-					difflist.redo
-					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.statistic.vector * learningRate)
-					difflist.undo
-					bWeightsUpdated = true
-					bFalseNegative = true
-				}
-				else if (newTruthScore < oldTruthScore && modelRatio >= 0) {
-					learningRate = kktMultiplier(1, false);
-					//          Console.println ("Learning from error: old actually better than new.  DiffList="+difflist.size)
-					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.statistic.vector * learningRate)
-					difflist.redo
-					model.factorsOf[MIRALearning](difflist).foreach(f => f.template.weights += f.statistic.vector * -learningRate)
-					difflist.undo
-					bWeightsUpdated = true
-					bFalsePositive = true
-				}
-				if (bWeightsUpdated) {
-					numUpdates += 1;
-					/*
-//////////TEST
-difflist.redo
-val test:Double =difflist.scoreAndUndo
-System.out.println("  after update: " + test+" before: " + jumpLogPRatio);
-/////////////
-*/
-					if (useAveraged) {
-						// Sum current weights into the average
-						model.templatesOf[MIRALearning].foreach(t => {
-							for (i <- 0 until t.weightsSum.size)
-								t.weightsSum(i) += t.weights(i)
-							//f.weightsLastUpdated(i) += learningDiagnostic.numUpdates
-							//modelTemplates.foreach(f=> {f.weights.foreach(w =>print(w+", ")); println})
-							t.weightsDivisor += 1
-						})
-					}
-				}
-				//worldFactors.foreach(f => Console.println (f.toString+" weights = "+f.weights.toList))
-				// Now simply sample according to the model, no matter how imperfect it is
-				val logAccProb = (modelScoreRatio / temperature) + modelTransitionRatio
-				if (logAccProb > Math.log(random.nextDouble)) {
-					if (modelRatio < 0) {
-						//	    Console.print("\\")
-						numNegativeMoves += 1
-					}
-					numAcceptedMoves += 1
-					proposalAccepted = true;
-					//	  Console.println("iteration: " + iteration + ", pRatio = " + pRatio);
-					difflist.redo
-				}
-				postProposalHook
-			}
-
-			//Put the weights average into each Factor's weights array
-			if (useAveraged) {
-				model.templatesOf[PerceptronLearning].foreach(
-					f => {
-						var weightsDivisor = f.asInstanceOf[PerceptronLearning].weightsDivisor
-						for (i <- 0 until f.weights.size)
-							f.weights(i) = f.weightsSum(i) / weightsDivisor
-					})
-			}
-		}
-	
 

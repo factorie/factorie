@@ -9,18 +9,29 @@ import cc.factorie.util.Implicits._
 abstract class Sampler[C](implicit mc:Manifest[C]) {
   val contextClass = mc.erasure
   //if (contextClass == classOf[Nothing]) throw new Error("Constructor for class "+this.getClass.getName+" must be given type argument");
-  // TODO Think carefully about "iterations", and its different meanings in different subclasses.  It is possible to have maintenance here in superclass?
-	var iterations = 0
-	// TODO Fix this process0 so it will work with Int !!	
+  // TODO Think carefully about "iterations", and its different meanings in different subclasses.  It is possible to have maintenance here in superclass?;
+  /** The number of calls to process(numIterations:Int) or process(contexts:C,numIterations:Int). */
+	var iterationCount = 0
+	/** The number of calls to process(context:C)*/
+	var processCount = 0
+	// TODO Fix this process0 so it will work with Int?;
+  /** If argument is the right type, then call process. */
 	def process0[T<:AnyRef](context:T): DiffList = if (contextClass.isAssignableFrom(context.getClass)) process(context.asInstanceOf[C]) else null
-	def process(context:C): DiffList
-	protected def _process(contexts:Iterable[C]): Unit = { iterations += 1; contexts.foreach(process(_)); if (!postIterationHook(this)) return }
-	def process(contexts:Iterable[C], numIterations:Int): Unit = for (i <- 0 to numIterations) _process(contexts)
-	def process(numIterations:Int): Unit = for (i <- 0 to numIterations) process(null.asInstanceOf[C]) // TODO Why is this cast necessary?
+	/** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
+	final def process(context:C): DiffList = { val c = preProcessHook(context); val d = process1(c); processCount += 1; postProcessHook(context, d); d }
+  /** The underlying protected method that actually does the work.  Needs to be defined in subclasses. */
+	protected def process1(context:C) : DiffList
+	protected final def processN(contexts:Iterable[C]): Unit = { iterationCount += 1; contexts.foreach(process(_)); if (!postIterationHook(this)) return }
+	def process(contexts:Iterable[C], numIterations:Int): Unit = for (i <- 0 to numIterations) processN(contexts)
+	def process(count:Int): Unit = for (i <- 0 to count) process(null.asInstanceOf[C]) // TODO Why is this cast necessary?;
+ 
+  // Hooks
+  /**Called just before each step of sampling.  Return an alternative variable if you want that one sampled instead. */
+  def preProcessHook(context:C): C = context 
+  /** Call just after each step of sampling. */
+  def postProcessHook(context:C, difflist:DiffList) : Unit = {}
   /**Called after each iteration of sampling the full list of variables.  Return false if you want sampling to stop early. */
   def postIterationHook(s:Sampler[C]): Boolean = true
-  /**Called just before each variable is sampled.  Return an alternative variable if you want that one sampled instead. */
-  def preProcessHook(context:C): C = context // TODO Not yet used
 }
 
 
@@ -54,7 +65,7 @@ trait Block extends Product with Iterable[Block] {
 
 
 abstract class BlockSampler[C](implicit mc:Manifest[C]) extends Sampler[C]()(mc) {
-  def process(context:C) : DiffList = {
+  def process1(context:C) : DiffList = {
     val blocks = block(context)
     blocks match {
       case Nil => new DiffList

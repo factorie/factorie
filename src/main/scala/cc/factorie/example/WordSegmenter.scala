@@ -17,25 +17,25 @@ object WordSegmenterDemo {
 	// The factor templates that define the model
 	val model = new Model
 	/** Bias term just on labels */
-	model += new TemplateWithExpStatistics1[Label] with PerceptronLearning
+	model += new TemplateWithExpStatistics1[Label] with DenseWeights
 	/** Factor between label and observed token */
-	model += new TemplateWithExpStatistics2[Label,Token] with SparsePerceptronLearning {
+	model += new TemplateWithExpStatistics2[Label,Token] with SparseWeights {
 		def unroll1 (label:Label) = Factor(label, label.token)
 		def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
 	}
 	/** A token bi-gram conjunction  */
-	model += new TemplateWithExpStatistics3[Label,Token,Token] with SparsePerceptronLearning {
+	model += new TemplateWithExpStatistics3[Label,Token,Token] with SparseWeights {
 		def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
 		def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
 		def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
 	}
 	/** Factor between two successive labels */
-	model += new TemplateWithExpStatistics2[Label,Label] with PerceptronLearning {
+	model += new TemplateWithExpStatistics2[Label,Label] with DenseWeights {
 		def unroll1 (label:Label) = if (label.token.hasNext) Factor(label, label.token.next.label) else Nil
 		def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
 	}
 	/** Skip edge */
-	val skipTemplate = new Template2[Label,Label] with ExpStatistics1[Bool] with PerceptronLearning {
+	val skipTemplate = new Template2[Label,Label] with ExpStatistics1[Bool] with DenseWeights {
 		def unroll1 (label:Label) =  
 			// could cache this search in label.similarSeq for speed
 		  for (other <- label.token.seq; if label.token.char == other.char) yield 
@@ -81,7 +81,7 @@ object WordSegmenterDemo {
 		println ("Initial test accuracy = "+ objective.aveScore(testVariables))
 
 		// Sample and Learn!
-		var learner = new GibbsSamplerPerceptron[Label](model, objective)
+		var learner = new GibbsSampleRank[Label](model, objective) with AveragePerceptronUpdates 
 		var sampler = new GibbsSampler1[Label](model)
 		learner.learningRate = 1.0
 		for (i <- 0 until 7) {
@@ -93,6 +93,11 @@ object WordSegmenterDemo {
 			println
 			if (startTime == 0) startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
 		}
+		println ("Setting weights to average")
+		learner.setWeightsToAverage
+		println ("Train accuracy = "+ objective.aveScore(trainVariables))
+		println ("Test  accuracy = "+ objective.aveScore(testVariables))
+
 
 		// Show the parameters
 		//model.templatesOf[LogLinearScoring].foreach(t => Console.println(t.weights.toList))

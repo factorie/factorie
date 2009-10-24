@@ -126,6 +126,7 @@ import cc.factorie.util.Implicits._
     def statistic(ss:Iterable[StatType]) : StatisticType = new Statistic(ss).asInstanceOf[StatisticType] // TODO is there some way to avoid this cast?
 	}
  
+	// TODO Rename to VectorTemplate (VectorStatistics1...) or LinearTemplate (LinearStatistics1...), but also look at names that Daphne's book gives to this
 	trait ExpTemplate extends Template {
 	  // The oddity of the next two methods are simply to provide a more intuitive compilation error message when
 	  // a FATORIE user leaves out PerceptronLearning or somesuch from their Template definition
@@ -232,20 +233,25 @@ import cc.factorie.util.Implicits._
 	}
 
  
-	trait LogLinearScoring extends ExpTemplate {
-		type TemplateType <: LogLinearScoring
+	// TODO rename LinearWeights
+	trait WeightedLinearTemplate extends ExpTemplate {
+		type TemplateType <: WeightedLinearTemplate
 		def weights: Vector
 	}
-	trait DenseLogLinearScoring extends ExpTemplate {
-		type TemplateType <: DenseLogLinearScoring
+	// TODO rename DenseWeights or DenseLinearWeights?  Or since it says "extends", the current name is more appropriate?
+	trait DenseWeightedLinearTemplate extends WeightedLinearTemplate {
+		type TemplateType <: DenseWeightedLinearTemplate
 		lazy val weights = {freezeDomains; new DenseVector(statsize)}
 		override def score(s:StatType) = weights dot s.vector
 	}
-	trait SparseLogLinearScoring extends ExpTemplate {
-		type TemplateType <: SparseLogLinearScoring
+	trait DenseWeights extends DenseWeightedLinearTemplate
+	// TODO rename SparseWeights or SparseLinearWeights
+	trait SparseWeightedLinearTemplate extends WeightedLinearTemplate {
+		type TemplateType <: SparseWeightedLinearTemplate 
 		lazy val weights = new SparseVector(statsize)
 		override def score(s:StatType) = weights dot s.vector
 	}
+	trait SparseWeights extends SparseWeightedLinearTemplate
 
  	abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
  	  val nc1 = nm1.erasure
