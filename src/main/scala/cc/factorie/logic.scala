@@ -105,7 +105,7 @@ object logic {
     def eval(x:Args) : Int
     def manifests : Seq[Manifest[_<:Variable]]
     def getters : Array[Seq[Getter0[Variable,SingleIndexedVariable]]]
-    def ===(f:IntExpression) = IntEquals(this, f)
+    def ====(f:IntExpression) = IntEquals(this, f)
     def >(f:IntExpression) = GreaterThan(this, f)
     def <(f:IntExpression) = LessThan(this, f)
   }
@@ -154,7 +154,7 @@ object logic {
   }
 
   
-  trait LogicStatistics extends ExpStatistics1[Bool] with DenseWeights {
+  trait LogicStatistics extends DotStatistics1[Bool] {
   	def %(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
   }
 

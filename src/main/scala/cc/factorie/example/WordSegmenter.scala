@@ -17,25 +17,25 @@ object WordSegmenterDemo {
 	// The factor templates that define the model
 	val model = new Model
 	/** Bias term just on labels */
-	model += new TemplateWithExpStatistics1[Label] with DenseWeights
+	model += new TemplateWithDotStatistics1[Label] 
 	/** Factor between label and observed token */
-	model += new TemplateWithExpStatistics2[Label,Token] with SparseWeights {
+	model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
 		def unroll1 (label:Label) = Factor(label, label.token)
 		def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
 	}
 	/** A token bi-gram conjunction  */
-	model += new TemplateWithExpStatistics3[Label,Token,Token] with SparseWeights {
+	model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
 		def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
 		def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
 		def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
 	}
 	/** Factor between two successive labels */
-	model += new TemplateWithExpStatistics2[Label,Label] with DenseWeights {
+	model += new TemplateWithDotStatistics2[Label,Label] {
 		def unroll1 (label:Label) = if (label.token.hasNext) Factor(label, label.token.next.label) else Nil
 		def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
 	}
 	/** Skip edge */
-	val skipTemplate = new Template2[Label,Label] with ExpStatistics1[Bool] with DenseWeights {
+	val skipTemplate = new Template2[Label,Label] with DotStatistics1[Bool] {
 		def unroll1 (label:Label) =  
 			// could cache this search in label.similarSeq for speed
 		  for (other <- label.token.seq; if label.token.char == other.char) yield 

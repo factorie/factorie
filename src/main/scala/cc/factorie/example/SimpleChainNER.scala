@@ -18,19 +18,19 @@ object SimpleChainNER {
   // The model and objective
   val model = new Model
   // Bias term just on labels 
-  model += new TemplateWithExpStatistics1[Label] with DenseWeights
+  model += new TemplateWithDotStatistics1[Label] 
   // Transition factors
-  model += new TemplateWithExpStatistics2[Label, Label] with DenseWeights {
+  model += new TemplateWithDotStatistics2[Label, Label] {
 		def unroll1(label: Label) = if (label.hasPrev) Factor(label.token.prev.label, label) else Nil
 		def unroll2(label: Label) = if (label.hasNext) Factor(label, label.token.next.label) else Nil
 	}
   // Factor between label and observed token
-	model += new TemplateWithExpStatistics2[Label, Token] with DenseWeights {
+	model += new TemplateWithDotStatistics2[Label, Token] {
 		def unroll1(label: Label) = Factor(label, label.token)
 		def unroll2(token: Token) = throw new Error("Token values shouldn't change")
 	}
   // 	Factor between label, its token and the previous Label
-  val unusedTemplate = new TemplateWithExpStatistics3[Label, Label, Token] with DenseWeights {
+  val unusedTemplate = new TemplateWithDotStatistics3[Label, Label, Token] {
 		def unroll1(label:Label) = if (label.hasNext) Factor(label, label.next, label.token.next) else Nil
 		def unroll2(label:Label) = if (label.hasPrev) Factor(label.prev, label, label.token) else Nil
 		def unroll3(token:Token) = throw new Error("Token values shouldn't change")
@@ -80,7 +80,7 @@ object SimpleChainNER {
   	val learner = new GibbsSampleRank[Label](model, objective) with PerceptronUpdates
   	val sampler = new GibbsSampler1[Label](model)
   	println("SimpleChainNER "+sampler.getClass)
-  	for (i <- 0 until 1) {
+  	for (i <- 0 until 10) {
   	  println("Iteration "+(i+1)+"...") 
   		trainLabels.take(50).foreach(printLabel _); println; println
   		printDiagnostic(trainLabels.take(400))

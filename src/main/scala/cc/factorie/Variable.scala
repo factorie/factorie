@@ -291,7 +291,7 @@ abstract trait TypedTrueIndexedValue[T] extends TrueIndexedValue with TypedSingl
 	def trueValue_=(x: T) = if (x == null) trueIndex = -1 else trueIndex = domain.index(x)
 }
 
-abstract class TrueIndexedValueTemplate[V<:SingleIndexedVariable with TrueIndexedValue](implicit m:Manifest[V]) extends TemplateWithExpStatistics1[V]()(m) {
+abstract class TrueIndexedValueTemplate[V<:SingleIndexedVariable with TrueIndexedValue](implicit m:Manifest[V]) extends TemplateWithVectorStatistics1[V] {
   def score(s:Stat) = if (s.s1.index == s.s1.trueIndex) 1.0 else 0.0
 }
 

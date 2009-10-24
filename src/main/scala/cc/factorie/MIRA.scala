@@ -7,15 +7,12 @@ import scalala.tensor.dense.DenseVector
 //import scalala.tensor.operators.TensorOp
 //import scalala.tensor.operators.OperatorImplicits
 
-// TODO Move this to a more generic location
-trait WeightUpdates {
-  def updateWeights(bestModel1:Proposal, bestModel2:Proposal, bestObjective1:Proposal, bestObjective2:Proposal) : Unit
-}
 
 trait MIRAUpdates extends PerceptronUpdates with AbstractMIRAUpdates 
 trait AverageMIRAUpdates extends AveragePerceptronUpdates with AbstractMIRAUpdates 
 
 trait AbstractMIRAUpdates extends WeightUpdates {
+  override type TemplatesToUpdate = DotTemplate
 	def learningRate : Double
 	def learningRate_=(x:Double) : Unit
   def model : Model
@@ -27,8 +24,8 @@ trait AbstractMIRAUpdates extends WeightUpdates {
     super.updateWeights(bestModel1, bestModel2, bestObjective1, bestObjective2)
 	}
   
-  val denseDiff = new HashMap[WeightedLinearTemplate,Vector] {
-    override def default(template:WeightedLinearTemplate) = { 
+  val denseDiff = new HashMap[TemplatesToUpdate,Vector] {
+    override def default(template:TemplatesToUpdate) = { 
       template.freezeDomains
       val vector = new DenseVector(template.statsize)
       this(template) = vector
@@ -57,15 +54,15 @@ trait AbstractMIRAUpdates extends WeightUpdates {
     if (fnu) sign = -1
     var l2n2: Double = 0
     //zero the difference
-    model.templatesOf[WeightedLinearTemplate].foreach(t => denseDiff(t).zero)
+    model.templatesOf[TemplatesToUpdate].foreach(t => denseDiff(t).zero)
     //compute modified config's contribution
     difflist.redo
-    difflist.factorsOf[WeightedLinearTemplate](model).foreach(f => denseDiff(f.template) += f.statistic.vector * sign)
+    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => denseDiff(f.template) += f.statistic.vector * sign)
     //compute original config's contribution
     difflist.undo;
-    difflist.factorsOf[WeightedLinearTemplate](model).foreach(f => denseDiff(f.template) += f.statistic.vector * -1)
+    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => denseDiff(f.template) += f.statistic.vector * -1)
     //compute l2 squared
-    for (t <- model.templatesOf[WeightedLinearTemplate]) {
+    for (t <- model.templatesOf[TemplatesToUpdate]) {
       val templateDenseDiff = denseDiff(t)
     	for (i <- 0 until denseDiff(t).size) {
     		val score = templateDenseDiff(i)

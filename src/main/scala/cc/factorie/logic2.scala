@@ -48,7 +48,7 @@ object logic2 {
     def eval(x:ArrayStack[Bool]) = throw new Error("Not yet implemented") // Need to think carefully about this
   }
 
-  trait LogicStatistics extends ExpStatistics1[Bool] with DenseWeightedLinearTemplate {
+  trait LogicStatistics extends DotStatistics1[Bool] {
   	def %(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
   }
   object Forany {

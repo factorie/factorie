@@ -77,7 +77,7 @@ object CorefMentionsDemo {
       val model = new Model
   
       // Pairwise affinity factor between Mentions in the same partition
-      model += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector] with DenseWeights {
+      model += new Template2[Mention,Mention] with DotStatistics1[AffinityVector] {
       	def unroll1 (mention:Mention) = for (other <- mention.entity.mentions; if (other != mention)) yield 
       		if (mention.hashCode > other.hashCode) Factor(mention, other)
       		else Factor(other, mention)
@@ -86,7 +86,7 @@ object CorefMentionsDemo {
       }.init
 
       // Pairwise repulsion factor between Mentions in different partitions
-      model += new Template2[Mention,Mention] with ExpStatistics1[AffinityVector] with DenseWeights {
+      model += new Template2[Mention,Mention] with DotStatistics1[AffinityVector] {
       	override def factors(d:Diff) = d.variable match {
       		case mention : Mention => d match {
       			case mention.PrimitiveDiff(oldEntity:Entity, newEntity:Entity) => 
@@ -101,7 +101,7 @@ object CorefMentionsDemo {
       }.init
   
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature!
-      model += new Template1[Entity] with ExpStatistics1[Bool] with DenseWeights {
+      model += new Template1[Entity] with DotStatistics1[Bool] {
       	def statistics(entity:Entity) = {
       		if (entity.mentions.isEmpty) Stat(Bool(true))
       		else {
@@ -157,7 +157,7 @@ object CorefMentionsDemo {
           if (processCount % 500 == 0) {
             //learningRate *= .9
             // TODO put back numUpdates   System.out.println("UPS: " + numUpdates);
-            model.templatesOf[WeightedLinearTemplate].foreach(f => println (f.toString+" weights = "+f.weights.toList))
+            model.templatesOf[DotTemplate].foreach(f => println (f.toString+" weights = "+f.weights.toList))
             println ("All entities")
             entityList.filter(e=>e.size>0).foreach(e => println(e.toString +" "+ e.mentions.toList))
             //Console.println ("All mentions"); mentionList.foreach(m => Console.println(m.toString +" "+ m.entity))

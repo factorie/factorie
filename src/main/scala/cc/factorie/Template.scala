@@ -127,7 +127,9 @@ import cc.factorie.util.Implicits._
 	}
  
 	// TODO Rename to VectorTemplate (VectorStatistics1...) or LinearTemplate (LinearStatistics1...), but also look at names that Daphne's book gives to this
-	trait ExpTemplate extends Template {
+	// Use "Vector" to mean "Stat has vector method".
+  // Use "Linear" or "Dot" to mean template has weights of same dimensions as Stat vector, and score comes from dot product 
+	trait VectorTemplate extends Template {
 	  // The oddity of the next two methods are simply to provide a more intuitive compilation error message when
 	  // a FATORIE user leaves out PerceptronLearning or somesuch from their Template definition
 	  //def score(s:StatType) = 0.0 // to be overriden in learning methods
@@ -150,7 +152,7 @@ import cc.factorie.util.Implicits._
     }	
     lazy val statsize : Int = {
       //val d = Domain.get[IndexedVariable](statClasses(0))
-      //println("ExpTemplate domain allocSize "+d.allocSize)
+      //println("VectorTemplate domain allocSize "+d.allocSize)
       if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
       statClasses.productInts(Domain.get[IndexedVariable](_).allocSize)
     }	
@@ -224,20 +226,30 @@ import cc.factorie.util.Implicits._
  
     // TODO implement this!
     private def unflattenOuter(weightIndex:Int, dimensions:Int*) : Array[Int] = new Array[Int](2) 
-	} // end of ExpTemplate
+	} // end of VectorTemplate
  
  
-	trait MarginalSamples extends ExpTemplate {
+	trait MarginalSamples extends VectorTemplate {
 		lazy val samples = {freezeDomains; new Array[Double](statsize)}
 		def clearSamples = for (i <- 0 until samples.length) samples(i) = 0.0 // TODO surely there is a faster way
 	}
 
  
-	// TODO rename LinearWeights
-	trait WeightedLinearTemplate extends ExpTemplate {
-		type TemplateType <: WeightedLinearTemplate
-		def weights: Vector
+	/** A VectorTemplate that also has a vector of weights, and calculates score by a dot-product between statistics.vector and weights. */
+	trait DotTemplate extends VectorTemplate {
+		type TemplateType <: DotTemplate
+		lazy val weights: Vector = { freezeDomains; new DenseVector(statsize) } // Dense by default, may be override in sub-traits
+		def score(s:StatType) = weights match {
+		  case w:DenseVector => w dot s.vector
+		  case w:SparseVector => w dot s.vector
+		}
 	}
+ 
+	trait SparseWeights extends DotTemplate {
+		override lazy val weights: Vector = { freezeDomains; new SparseVector(statsize) } // Dense by default, may be override in sub-traits
+	}
+	
+	/*
 	// TODO rename DenseWeights or DenseLinearWeights?  Or since it says "extends", the current name is more appropriate?
 	trait DenseWeightedLinearTemplate extends WeightedLinearTemplate {
 		type TemplateType <: DenseWeightedLinearTemplate
@@ -252,7 +264,8 @@ import cc.factorie.util.Implicits._
 		override def score(s:StatType) = weights dot s.vector
 	}
 	trait SparseWeights extends SparseWeightedLinearTemplate
-
+	*/
+ 
  	abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
  	  val nc1 = nm1.erasure
     // TODO create methods like this for all Templates and put abstract version in Template
@@ -275,17 +288,22 @@ import cc.factorie.util.Implicits._
     case class Stat(s1:S1) extends super.Stat with Iterable[Stat] // { def vector : Vector = s1.vector } 
     type StatType = Stat
   }
-  trait ExpStatistics1[S1<:IndexedVariable] extends ExpTemplate {
+  trait VectorStatistics1[S1<:IndexedVariable] extends VectorTemplate {
     type StatType = Stat
     case class Stat(s1:S1) extends super.Stat with Iterable[Stat] {
       def vector : Vector = s1.vector
     } 
     def init(implicit m1:Manifest[S1]) : this.type = { statClasses += m1.erasure.asInstanceOf[Class[IndexedVariable]]; statClasses.freeze; this }  
   }
+  trait DotStatistics1[S1<:IndexedVariable] extends VectorStatistics1[S1] with DotTemplate
   abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1]	{
 		def statistics(v1:N1): Iterable[Stat] = Stat(v1)
 	}
-  abstract class TemplateWithExpStatistics1[N1<:IndexedVariable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with ExpStatistics1[N1]	{
+  abstract class TemplateWithVectorStatistics1[N1<:IndexedVariable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with VectorStatistics1[N1]	{
+		def statistics(v1:N1): Iterable[Stat] = Stat(v1)
+		init(nm1)
+	}
+  class TemplateWithDotStatistics1[N1<:IndexedVariable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1]	{
 		def statistics(v1:N1): Iterable[Stat] = Stat(v1)
 		init(nm1)
 	}
@@ -314,22 +332,22 @@ import cc.factorie.util.Implicits._
     case class Stat(s1:S1, s2:S2) extends super.Stat with Iterable[Stat] 
     type StatType = Stat
   }
-  trait ExpStatistics2[S1<:IndexedVariable,S2<:IndexedVariable] extends ExpTemplate {
+  trait VectorStatistics2[S1<:IndexedVariable,S2<:IndexedVariable] extends VectorTemplate {
     case class Stat(s1:S1, s2:S2) extends super.Stat with Iterable[Stat] {
       lazy val vector : Vector = flatOuter(s1.vector, s2.vector)
     } 
     type StatType = Stat
     def init(implicit m1:Manifest[S1], m2:Manifest[S2]) : this.type = { statClasses ++= List(m1.erasure.asInstanceOf[Class[IndexedVariable]], m2.erasure.asInstanceOf[Class[IndexedVariable]]); this }  
   }
-  abstract class TemplateWithExpStatistics2[N1<:IndexedVariable,N2<:IndexedVariable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2]()(nm1,nm2) with ExpStatistics2[N1,N2]	{
+  trait DotStatistics2[S1<:IndexedVariable,S2<:IndexedVariable] extends VectorStatistics2[S1,S2] with DotTemplate
+  abstract class TemplateWithVectorStatistics2[N1<:IndexedVariable,N2<:IndexedVariable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2]()(nm1,nm2) with VectorStatistics2[N1,N2]	{
 		def statistics(v1:N1,v2:N2): Iterable[Stat] = Stat(v1,v2)
 		init(nm1, nm2)
 	}
-  /*
-  trait Proposer2[P1<:Variable,P2<:Variable] extends Template {
-    case class Stat(s1:S1, s2:S2) extends super.Stat with Iterable[Stat] 
-    type StatType = Stat
-  }*/
+  abstract class TemplateWithDotStatistics2[N1<:IndexedVariable,N2<:IndexedVariable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2]()(nm1,nm2) with DotStatistics2[N1,N2]	{
+		def statistics(v1:N1,v2:N2): Iterable[Stat] = Stat(v1,v2)
+		init(nm1, nm2)
+	}
 
   abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template {
  	  val nc1 = nm1.erasure
@@ -358,14 +376,19 @@ import cc.factorie.util.Implicits._
     case class Stat(s1:S1, s2:S2, s3:S3) extends super.Stat with Iterable[Stat] 
     type StatType = Stat
   }
-  trait ExpStatistics3[S1<:IndexedVariable,S2<:IndexedVariable,S3<:IndexedVariable] extends ExpTemplate {
+  trait VectorStatistics3[S1<:IndexedVariable,S2<:IndexedVariable,S3<:IndexedVariable] extends VectorTemplate {
     case class Stat(s1:S1, s2:S2, s3:S3) extends super.Stat with Iterable[Stat] {
       lazy val vector : Vector = flatOuter(s1.vector, flatOuter(s2.vector, s3.vector))
     } 
     type StatType = Stat
     def init(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]) : this.type = { statClasses ++= List(m1.erasure.asInstanceOf[Class[IndexedVariable]], m2.erasure.asInstanceOf[Class[IndexedVariable]], m3.erasure.asInstanceOf[Class[IndexedVariable]]); this }  
   }
-  abstract class TemplateWithExpStatistics3[N1<:IndexedVariable,N2<:IndexedVariable,N3<:IndexedVariable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3]()(nm1,nm2,nm3) with ExpStatistics3[N1,N2,N3]	{
+  trait DotStatistics3[S1<:IndexedVariable,S2<:IndexedVariable,S3<:IndexedVariable] extends VectorStatistics3[S1,S2,S3] with DotTemplate
+  abstract class TemplateWithVectorStatistics3[N1<:IndexedVariable,N2<:IndexedVariable,N3<:IndexedVariable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3]()(nm1,nm2,nm3) with VectorStatistics3[N1,N2,N3]	{
+		def statistics(v1:N1,v2:N2,v3:N3): Iterable[Stat] = Stat(v1,v2,v3)
+		init(nm1, nm2, nm3)
+	}
+  abstract class TemplateWithDotStatistics3[N1<:IndexedVariable,N2<:IndexedVariable,N3<:IndexedVariable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3]()(nm1,nm2,nm3) with DotStatistics3[N1,N2,N3]	{
 		def statistics(v1:N1,v2:N2,v3:N3): Iterable[Stat] = Stat(v1,v2,v3)
 		init(nm1, nm2, nm3)
 	}
@@ -396,4 +419,24 @@ import cc.factorie.util.Implicits._
 		  def statistics : Iterable[StatType] = _statistics(this)
 		}	
  	}
+  trait Statistics4[S1<:Variable,S2<:Variable,S3<:Variable,S4<:Variable] extends Template {
+    case class Stat(s1:S1, s2:S2, s3:S3, s4:S4) extends super.Stat with Iterable[Stat] 
+    type StatType = Stat
+  }
+  trait VectorStatistics4[S1<:IndexedVariable,S2<:IndexedVariable,S3<:IndexedVariable,S4<:IndexedVariable] extends VectorTemplate {
+    case class Stat(s1:S1, s2:S2, s3:S3, s4:S4) extends super.Stat with Iterable[Stat] {
+      lazy val vector : Vector = flatOuter(s1.vector, flatOuter(s2.vector, flatOuter(s3.vector, s4.vector)))
+    } 
+    type StatType = Stat
+    def init(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]) : this.type = { statClasses ++= List(m1.erasure.asInstanceOf[Class[IndexedVariable]], m2.erasure.asInstanceOf[Class[IndexedVariable]], m3.erasure.asInstanceOf[Class[IndexedVariable]], m4.erasure.asInstanceOf[Class[IndexedVariable]]); this }  
+  }
+  trait DotStatistics4[S1<:IndexedVariable,S2<:IndexedVariable,S3<:IndexedVariable,S4<:IndexedVariable] extends VectorStatistics4[S1,S2,S3,S4] with DotTemplate
+  abstract class TemplateWithVectorStatistics4[N1<:IndexedVariable,N2<:IndexedVariable,N3<:IndexedVariable,N4<:IndexedVariable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4]()(nm1,nm2,nm3,nm4) with VectorStatistics4[N1,N2,N3,N4]	{
+		def statistics(v1:N1,v2:N2,v3:N3,v4:N4): Iterable[Stat] = Stat(v1,v2,v3,v4)
+		init(nm1, nm2, nm3, nm4)
+	}
+  abstract class TemplateWithDotStatistics4[N1<:IndexedVariable,N2<:IndexedVariable,N3<:IndexedVariable,N4<:IndexedVariable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4]()(nm1,nm2,nm3,nm4) with DotStatistics4[N1,N2,N3,N4]	{
+		def statistics(v1:N1,v2:N2,v3:N3,v4:N4): Iterable[Stat] = Stat(v1,v2,v3,v4)
+		init(nm1, nm2, nm3, nm4)
+	}
 

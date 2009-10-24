@@ -7,8 +7,8 @@ import cc.factorie._
 import cc.factorie.model.LinearChainModel
 
 class ChainNerModel extends LinearChainModel {
-	this += new LabelTemplate with DenseWeights
-  this += new TransitionTokenTemplate with DenseWeights
+	this += new LabelTemplate
+  this += new TransitionTokenTemplate
   val objective = new Model(new TrueLabelTemplate[Label])
 }
 

@@ -6,6 +6,7 @@ import scalala.tensor.dense.DenseVector
 import scalala.tensor.Vector
 
 trait ConfidenceWeightedUpdates extends WeightUpdates {
+  override type TemplatesToUpdate = DotTemplate
 	def learningRate : Double
 	def learningRate_=(x:Double) : Unit
   def model : Model
@@ -20,16 +21,16 @@ trait ConfidenceWeightedUpdates extends WeightUpdates {
 	/**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
 	val initialVariance = 0.1;
 
-	val sigma = new HashMap[DenseWeightedLinearTemplate,Vector] {
-    override def default(template:DenseWeightedLinearTemplate) = { 
+	val sigma = new HashMap[TemplatesToUpdate,Vector] {
+    override def default(template:TemplatesToUpdate) = { 
       template.freezeDomains
       val vector = DenseVector(template.statsize)(initialVariance)
       this(template) = vector
       vector
     }
   }
-	val scratch = new HashMap[DenseWeightedLinearTemplate,Vector] {
-    override def default(template:DenseWeightedLinearTemplate) = { 
+	val scratch = new HashMap[TemplatesToUpdate,Vector] {
+    override def default(template:TemplatesToUpdate) = { 
       template.freezeDomains
       val vector = new DenseVector(template.statsize)
       this(template) = vector
@@ -58,18 +59,18 @@ trait ConfidenceWeightedUpdates extends WeightUpdates {
 
 	//puts a densevector difference on the scratch tape
 	private def putDiffOnScratch(difflist:DiffList): Unit = {
-		model.templatesOf[DenseWeightedLinearTemplate].foreach(t => scratch(t).zero)
+		model.templatesOf[TemplatesToUpdate].foreach(t => scratch(t).zero)
 		difflist.redo;
-		model.factorsOf[DenseWeightedLinearTemplate](difflist).foreach(factor => scratch(factor.template) += factor.statistic.vector)
+		model.factorsOf[TemplatesToUpdate](difflist).foreach(factor => scratch(factor.template) += factor.statistic.vector)
 		difflist.undo;
-		model.factorsOf[DenseWeightedLinearTemplate](difflist).foreach(factor => scratch(factor.template) -= factor.statistic.vector)
+		model.factorsOf[TemplatesToUpdate](difflist).foreach(factor => scratch(factor.template) -= factor.statistic.vector)
 	}
 
 	/**Returns variance of margin */
 	private def varianceOfMargin(difflist:DiffList): Double = {
 		var result = 0.0
 		putDiffOnScratch(difflist)
-		model.templatesOf[DenseWeightedLinearTemplate].foreach(t => {
+		model.templatesOf[TemplatesToUpdate].foreach(t => {
 		  val templateSigma = sigma(t)
 			for ((i, v) <- scratch(t).activeElements)
 				result += v * v * templateSigma(i);
@@ -79,7 +80,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates {
 
 	private def updateMu(difflist:DiffList, incr: Double): Unit = {
 		//System.out.println("inc="+incr);
-		model.factorsOf[DenseWeightedLinearTemplate](difflist).foreach(factor => {
+		model.factorsOf[TemplatesToUpdate](difflist).foreach(factor => {
 			//factor.template.weights += factor.vector * factor.template.sigma * incr // Why doesn't this work?;
 		  val templateSigma = sigma(factor.template)
 			for (i <- factor.statistic.vector.activeDomain)
@@ -90,7 +91,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates {
 	def updateSigma(difflist:DiffList, incr: Double): Unit = {
 		putDiffOnScratch(difflist)
 		// Square diff to obtain diag(\bf{x}_i)
-		model.templatesOf[DenseWeightedLinearTemplate].foreach(t => {
+		model.templatesOf[TemplatesToUpdate].foreach(t => {
 		  val templateSigma = sigma(t)
 			for ((index, value) <- scratch(t).activeElements) {
 				templateSigma(index) = 1.0 / ((1.0 / templateSigma(index)) + 2 * incr * gaussDeviate * value * value)

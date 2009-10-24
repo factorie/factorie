@@ -8,10 +8,15 @@ import scalala.tensor.Vector
 import scala.reflect.Manifest
 import scala.collection.mutable.HashMap
 
+// TODO Move this to a more generic location
+trait WeightUpdates {
+  type TemplatesToUpdate = DotTemplate
+  def updateWeights(bestModel1:Proposal, bestModel2:Proposal, bestObjective1:Proposal, bestObjective2:Proposal) : Unit
+}
 
 
-trait PerceptronUpdates {
-  type TemplatesToUpdate = WeightedLinearTemplate
+trait PerceptronUpdates extends WeightUpdates {
+  override type TemplatesToUpdate = DotTemplate
   var learningRate = 1.0
   def model : Model
   def learningMargin : Double
@@ -69,8 +74,8 @@ trait PerceptronUpdates {
 
 // Compiles, but not sure it is working properly.  Needs to be tested.
 @deprecated
-trait AveragePerceptronUpdates {
-  type TemplatesToUpdate = WeightedLinearTemplate
+trait AveragePerceptronUpdates extends WeightUpdates {
+  override type TemplatesToUpdate = DotTemplate
   var learningRate = 1.0
   /** To apply this learning to just a subset of the WeightedLinearTemplates, you can define "model" to be a subset of the original model. */
   def model : Model
@@ -81,7 +86,7 @@ trait AveragePerceptronUpdates {
   val lastUpdateIteration = new HashMap[TemplatesToUpdate,Vector] {
     override def default(template:TemplatesToUpdate) = { 
       template.freezeDomains
-      val vector = if (template.isInstanceOf[SparseWeightedLinearTemplate]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
+      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
       vector += initialIteration // Make the default value be the iteration count at which we started learning
       this(template) = vector
       vector
@@ -89,9 +94,9 @@ trait AveragePerceptronUpdates {
   }
   val weightsSum = new HashMap[TemplatesToUpdate,Vector] {
     override def default(template:TemplatesToUpdate) = {
-      println("AveragePerceptronUpdates weightsSum default "+template)
+      //println("AveragePerceptronUpdates weightsSum default "+template)
       template.freezeDomains
-      val vector = if (template.isInstanceOf[SparseWeightedLinearTemplate]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
+      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
       vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
       this(template) = vector
       vector
@@ -121,10 +126,10 @@ trait AveragePerceptronUpdates {
   def setWeightsToAverage : Unit = {
     updateWeightsSum
     for (template <- model.templatesOf[TemplatesToUpdate]) {
-      println("AveragePerceptronUpdates template="+template)
-      println(weightsSum.size)
+      //println("AveragePerceptronUpdates template="+template)
+      //println(weightsSum.size)
       if (weightsSum.contains(template)) {
-      	println("AveragePerceptronUpdates iteration="+perceptronIteration+" "+template)
+      	//println("AveragePerceptronUpdates iteration="+perceptronIteration+" "+template)
       	template.weights := weightsSum(template) :/ lastUpdateIteration(template)
       }
     }

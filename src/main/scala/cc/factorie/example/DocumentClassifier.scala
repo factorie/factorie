@@ -15,10 +15,10 @@ class DocumentClassifierModel extends Model {
   }
 
   /** Bias term just on labels */
-  this += new TemplateWithExpStatistics1[Label] with DenseWeights
+  this += new TemplateWithDotStatistics1[Label] 
 
   /** Factor between label and observed document */
-  this += new TemplateWithExpStatistics2[Label,Document] with DenseWeights {
+  this += new TemplateWithDotStatistics2[Label,Document] {
     def unroll1 (label:Label) = Factor(label, label.document)
     def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
   }
