@@ -1,13 +1,12 @@
 Coding:
-Finish overhaul of sampling/inference/learning infrastructure
 Implement Forany2 in logic1
+Fix IntTerm in logic1
 Support inference over relations in er1
 Make an example for er2 and logic2
 Fix Generative.scala to not re-estimate Multinomials when it shouldn't
 Re-implement sampling of MixtureChoice for speed
 Consider preliminary message-passing architecture
 Create simple infrastructure for non-relational generative Bayes nets
-Rename ExpStatistics to LinearStatistics
 
 Testing:
 Create more unit tests!
