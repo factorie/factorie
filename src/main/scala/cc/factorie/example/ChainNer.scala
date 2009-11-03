@@ -76,7 +76,7 @@ object ChainNerDemo {
       val testLabels : Seq[Label] = testTokens.flatMap(_.map(_.label))
       // Sample and Learn!
       (trainLabels ++ testLabels).foreach(_.setRandomly(Global.random, null))
-      val learner = new GibbsSampleRank[Label](model, model.objective) with PerceptronUpdates
+      val learner = new GibbsSampler1[Label](model, model.objective) with SampleRank with PerceptronUpdates
       val sampler = new GibbsSampler(model)
       for (i <- 0 until 10) {
         learner.process(trainLabels, 1)

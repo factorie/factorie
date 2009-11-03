@@ -1,7 +1,6 @@
 package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.HashMap
-
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.Vector
 
@@ -12,10 +11,10 @@ trait ConfidenceWeightedUpdates extends WeightUpdates {
   def model : Model
   def learningMargin : Double
 
-  abstract override def updateWeights(bestModel1:Proposal, bestModel2:Proposal, bestObjective1:Proposal, bestObjective2:Proposal) : Unit = {
-    val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
+  abstract override def updateWeights : Unit = {
+    //val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
     //learningRate = kktMultiplier(changeProposal, 1, true);
-    super.updateWeights(bestModel1, bestModel2, bestObjective1, bestObjective2)
+    //super.updateWeights(bestModel1, bestModel2, bestObjective1, bestObjective2)
 	}
   
 	/**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */

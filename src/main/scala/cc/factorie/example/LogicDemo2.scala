@@ -32,7 +32,7 @@ object LogicDemo2 {
 		val model = new Model (
 				"CancerPrior" =: Forany[Person] { p => p->Cancer } % 0.1, 
 				"SmokingCausesCancer" =: Forany[Person] { p => p->Smokes ==> p->Cancer } % 2.0,
-				"FriendsSmokingMatch" =: Forany[Person] { p => p->Friends->Smokes === p->Smokes } % 1.5,
+				"FriendsSmokingMatch" =: Forany[Person] { p => p->Friends->Smokes <==> p->Smokes } % 1.5,
 				//"FriendsAgeMatch" =: Forany[Person] { p => p->Friends->Age === p->Age} % 2.0,
 				//"FriendsEmployersMatch" =: Forany[Person] { p => p->Friends->Employer === p->Employer} % 2.0,
 				//"NoRespectSmokers" =: Forany2[Person,Person] { (p1,p2) => Not(p1->Smokes) ^ p2->Smokes ==> Not(Respects(p1,p2)) }

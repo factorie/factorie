@@ -90,15 +90,15 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
   /** Insert list "that" before this link */
 	def preInsert(that:This): Unit = if (prev ne null) prev.postInsert(that) else prepend(that)
  
-	/** Returning this.last permits usage such as token = new Token() prepend token */
-	def prepend(that:This): This = if (that eq null) this.last else {
+	/** Returning this.first permits usage such as token = new Token() prepend token */
+	def prepend(that:This): This = if (that eq null) this.first else {
 	  if (that.prev != null) throw new IllegalArgumentException("Trying to prepend the middle of another LinkList")
 		if (prev eq null) {
 		  val last = that.last
 			prev = last
 			that.last.next = this
 		} else prev.prepend(that)
-		this.last
+		this.first
   }
 
 	def remove() : This = {
@@ -136,6 +136,10 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
 	def swapWith(that:This): Unit = if (that ne this) {
 	  val thisNext = next
 	  val thisPrev = prev
+	  if (prev != null) prev.next = that
+	  if (next != null) next.prev = that
+	  if (that.prev != null) that.prev.next = this
+	  if (that.next != null) that.next.prev = this
 	  next = that.next
 	  prev = that.prev
 	  that.next = thisNext

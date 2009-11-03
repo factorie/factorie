@@ -3,12 +3,15 @@ import scala.reflect.Manifest
 //import scala.collection.mutable.Publisher
 import scala.collection.mutable.ArrayBuffer
 
-abstract class MHSampler[C](val model:Model)(implicit mc:Manifest[C]) extends Sampler[C]()(mc) {
+abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   var temperature = 1.0
   var random = Global.random
   
   // This method must be implemented in concrete subclasses
   def propose(context:C)(implicit d:DiffList) : Double
+
+  /** If you want the Proposals to actually contain the objectiveScore, override this method appropriately.  Used for training.	*/
+  def objective : Model = null
 
   // Various diagnostics
   var numProposedMoves = 0
@@ -31,7 +34,49 @@ abstract class MHSampler[C](val model:Model)(implicit mc:Manifest[C]) extends Sa
   /** Called whenever we accept a proposal that results in the best configuration seen so far.  If you override, you must call super.bestConfigHook! */
   def bestConfigHook: Unit = {}
   
-  def process1(context:C) : DiffList = {
+  /** Specialization of cc.factorie.Proposal that adds a MH forward-backward transition ratio, typically notated as a ratio of Qs. */
+  case class Proposal(override val diff:DiffList, override val modelScore:Double, override val objectiveScore:Double, fbRatio:Double) extends cc.factorie.Proposal(diff, modelScore, objectiveScore)
+  
+  def proposals(context:C) : Seq[Proposal] = {
+    numProposedMoves += 1
+    proposalAccepted = false
+    val difflist = new DiffList
+    proposalAccepted = false
+    preProposalHook
+    // Make the proposed jump
+    var fbRatio = 0.0
+    var proposalAttemptCount = 0
+    while (difflist.size == 0 && proposalAttemptCount < 10) {
+    	fbRatio = propose(context)(difflist)
+    	proposalAttemptCount += 1
+    }
+    if (difflist.size == 0) throw new Error("No proposal made changes in 10 tries.")
+    postProposalHook(difflist)
+    val (modelScore, objectiveScore) = difflist.scoreAndUndo(model, objective)
+    val goProposal = new Proposal(difflist, modelScore/temperature + fbRatio, objectiveScore, fbRatio)
+    val stayProposal = new Proposal(new DiffList, 0.0, 0.0, Math.NaN_DOUBLE)
+    List(goProposal,stayProposal)
+  }
+  
+  override def proposalHook(proposal:cc.factorie.Proposal): Unit = {
+    val p = proposal.asInstanceOf[Proposal]
+    if (p.fbRatio != Math.NaN_DOUBLE) {
+      numAcceptedMoves += 1
+    	proposalAccepted = true
+    	val modelRatio = p.modelScore - p.fbRatio
+    	if (modelRatio < 0) numNegativeMoves += 1
+    	//log(Log.INFO)("iteration: " + iteration + ", logAcceptanceProb = " + logAcceptanceProb);
+      // Maintain the running incremental change in model score
+      currentModelScore += modelRatio
+    	if (currentModelScore > maxModelScore) {
+    		maxModelScore = currentModelScore
+    		bestConfigHook
+    	}
+      postAcceptanceHook(p.modelScore, p.diff)
+    } 
+  }
+  
+  def process1unused(context:C) : DiffList = {
     numProposedMoves += 1
     val difflist = new DiffList
     proposalAccepted = false

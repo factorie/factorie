@@ -14,6 +14,7 @@ object logic2 {
     def ^(f:Formula[X]) = And(this, f)
     def v(f:Formula[X]) = Or(this, f)
     def !: = Not(this)
+    // def <-->(f:Formula[X]) = Equals(this, f)
   }
   case class Term[X<:Variable,A<:Bool](g1:Accessor[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) extends Formula[X] {
     def eval(x:ArrayStack[Bool]) = x.pop.value

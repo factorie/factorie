@@ -115,7 +115,7 @@ object CorefMentionsDemo {
       }.init
 
 
-      val objective = new Model(new TemplateWithStatistics1[Mention] {
+      val objective1 = new Model(new TemplateWithStatistics1[Mention] {
       	def score(s:Stat) = {
       		val thisMention = s.s1
       		mentionList.foldLeft(0.0)((total,m) => 
@@ -133,7 +133,8 @@ object CorefMentionsDemo {
       // Define the proposal distribution
       //var sampler = new CWLearner {
       //var sampler = new MHMIRALearner {
-      var sampler = new MHSampleRank[Null](model, objective) with PerceptronUpdates {
+      var sampler = new MHSampler[Null](model) with SampleRank with PerceptronUpdates {
+        override val objective = objective1
         def propose(context:Null)(implicit difflist:DiffList) : Double = {
           // Pick a random mention
           val m = mentionList.sample(Global.random)

@@ -59,7 +59,7 @@ object DocumentClassifierDemo {
       Console.println ("Initial test accuracy = "+ model.objective.aveScore(testVariables))
 
       // Sample and Learn!
-      val learner = new GibbsSampleRank[Label](model, model.objective) with PerceptronUpdates
+      val learner = new GibbsSampler1[Label](model, model.objective) with SampleRank with PerceptronUpdates
       val sampler = new GibbsSampler(model)
       learner.learningRate = 1.0
       for (i <- 0 until 10) {

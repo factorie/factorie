@@ -81,20 +81,21 @@ object WordSegmenterDemo {
 		println ("Initial test accuracy = "+ objective.aveScore(testVariables))
 
 		// Sample and Learn!
-		var learner = new GibbsSampleRank[Label](model, objective) with AveragePerceptronUpdates 
-		var sampler = new GibbsSampler1[Label](model)
+		var learner = new GibbsSampler(model, objective) with SampleRank with PerceptronUpdates 
+		var sampler = new GibbsSampler(model)
 		learner.learningRate = 1.0
 		for (i <- 0 until 7) {
-			learner.process (trainVariables, 2)
+			learner.process(trainVariables, 2)
 			learner.learningRate *= 0.8
 			sampler.process(testVariables, 2)
-			println ("Train accuracy = "+ objective.aveScore(trainVariables))
-			println ("Test  accuracy = "+ objective.aveScore(testVariables))
+			sampler.temperature *= 0.8
+			println("Train accuracy = "+ objective.aveScore(trainVariables))
+			println("Test  accuracy = "+ objective.aveScore(testVariables))
 			println
 			if (startTime == 0) startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
 		}
 		println ("Setting weights to average")
-		learner.setWeightsToAverage
+		//learner.setWeightsToAverage
 		println ("Train accuracy = "+ objective.aveScore(trainVariables))
 		println ("Test  accuracy = "+ objective.aveScore(testVariables))
 

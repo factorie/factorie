@@ -77,8 +77,8 @@ object SimpleChainNER {
   	val testLabels : Seq[Label] = testSentences.flatMap(_.map(_.label)).take(10000)
   	// Sample and Learn!
   	(trainLabels ++ testLabels).foreach(_.setRandomly)
-  	val learner = new GibbsSampleRank[Label](model, objective) with PerceptronUpdates
-  	val sampler = new GibbsSampler1[Label](model)
+  	val learner = new GibbsSampler(model, objective) with SampleRank with PerceptronUpdates
+  	val sampler = new GibbsSampler(model)
   	println("SimpleChainNER "+sampler.getClass)
   	for (i <- 0 until 10) {
   	  println("Iteration "+(i+1)+"...") 

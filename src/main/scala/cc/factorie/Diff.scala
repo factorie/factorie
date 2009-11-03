@@ -22,23 +22,30 @@ trait Diff {
 	def undo: Unit
 }
 
+/** A Diff which, when created, performs the change.  
+ *  Thus we avoid duplication of code: rather than doing the change, and then creating a Diff instance, we just create the Diff instance. */
 abstract class AutoDiff(implicit d:DiffList) extends Diff {
 	if (d != null) d += this
 	redo
 	override def toString = this.getClass.toString
 }
 
-/**The default DiffList is null, and therefore calls to
-Variable.set that don't set a DiffList do not accumulate Diffs */
-//implicit val nullDiffList : DiffList = null
  
-/**A collection of changes to variables; the result of a "jump" in configuration */
+/**A collection of changes to variables; the common representation for the result of a proposed change in configuration */
 class DiffList extends ArrayBuffer[Diff] {
-	def redo: Unit = this.foreach(d => d.redo)
-	def undo: Unit = this.reverse.foreach(d => d.undo)
-	// def factors(templates:TemplateList[_]) : Iterable[Factor] 
-	/**Return the sum of the trueScore's of all the changed variables. */
-	//def trueScore(model:Model): Double = if (this.length == 0) 0.0 else model.truthTemplates.score(this)
+  var done = true
+	def redo: Unit = {
+	  if (size == 0) return
+	  if (done) throw new Error("DiffList already done")
+	  this.foreach(d => d.redo)
+	  done = true
+	}
+	def undo: Unit = {
+	  if (size == 0) return
+	  if (!done) throw new Error("DiffList already undone")
+	  this.reverse.foreach(d => d.undo)
+	  done = false
+	}
 	def score(model:Model) = model.score(this) // TODO Should we provide this kind of syntax reversal, or only provide "one" way to do things?
 	def scoreAndUndo(model:Model): Double = {
 		if (this.length == 0) return 0.0  // short-cut the simple case
@@ -54,10 +61,10 @@ class DiffList extends ArrayBuffer[Diff] {
 	/** For comparing the scores of two different models. */
 	def scoreAndUndo(model1:Model, model2:Model) : (Double, Double) = {
 		var s1 = model1.score(this)
-		var s2 = model2.score(this)
+		var s2 = if (model2 == null) Math.NaN_DOUBLE else model2.score(this)
 		this.undo
 		s1 -= model1.score(this)
-		s2 -= model2.score(this)
+		if (model2 != null) s2 -= model2.score(this)
 		(s1, s2)
 	}
 	/** More efficient than model.factorsOf[T](difflist) when the difflist might be empty. */

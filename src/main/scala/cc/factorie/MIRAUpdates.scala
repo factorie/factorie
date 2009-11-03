@@ -9,19 +9,20 @@ import scalala.tensor.dense.DenseVector
 
 
 trait MIRAUpdates extends PerceptronUpdates with AbstractMIRAUpdates 
-trait AverageMIRAUpdates extends AveragePerceptronUpdates with AbstractMIRAUpdates 
+//trait AverageMIRAUpdates extends AveragePerceptronUpdates with AbstractMIRAUpdates 
 
-trait AbstractMIRAUpdates extends WeightUpdates {
+// TODO Generalized this so that it doesn't require SampleRank
+trait AbstractMIRAUpdates extends WeightUpdates with SampleRank {
   override type TemplatesToUpdate = DotTemplate
 	def learningRate : Double
 	def learningRate_=(x:Double) : Unit
   def model : Model
   def learningMargin : Double
 
-  abstract override def updateWeights(bestModel1:Proposal, bestModel2:Proposal, bestObjective1:Proposal, bestObjective2:Proposal) : Unit = {
+  abstract override def updateWeights : Unit = {
     val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
     learningRate = kktMultiplier(changeProposal, 1, true);
-    super.updateWeights(bestModel1, bestModel2, bestObjective1, bestObjective2)
+    addGradient((template:Template) => template match {case t:TemplatesToUpdate => t.weights}, learningRate)
 	}
   
   val denseDiff = new HashMap[TemplatesToUpdate,Vector] {

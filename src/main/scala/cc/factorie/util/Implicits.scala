@@ -183,6 +183,7 @@ object Implicits {
 		def sampleProportionally(extractor: T => Double): T = sampleProportionally(Global.random, extractor)
 		def sampleProportionally(random:Random, extractor: T => Double): T = {
 		  //println("sampleProportionally called with Iteratible="+s)
+		  //if (s.size == 1) return s.first
 			var sum = s.foldLeft(0.0)((total, x) => total + extractor(x))
 			val r = random.nextDouble * sum
 			sum = 0

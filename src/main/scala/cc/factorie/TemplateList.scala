@@ -40,8 +40,10 @@ class TemplateList[T<:Template] extends ArrayBuffer[T] {
     factors.toSeq
 	}
 	def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.statistic.score)
+ 	def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score) // For use when the Variable is also Iterable
 	def score(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score)
 	def score(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
+	def scoreAll(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
  	def aveScore(vars:Collection[Variable]): Double = score(vars) / vars.size
 }
 

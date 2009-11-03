@@ -25,10 +25,10 @@ object logic {
     /** The Array is for each Arg position; the Seq is for the collection of terms using that Arg. */
     def getters : Array[Seq[Getter0[Variable,SingleIndexedVariable]]] // used to be [X,Bool]
     def ==>(f:Formula) = Implies(this, f)
-    def |=>(f:Formula) = Implies(this, f) // TODO perhaps this would be better to make sure it has lower precedence than === !!  http://www.scala-lang.org/docu/files/ScalaReference.pdf
+    //def |=>(f:Formula) = Implies(this, f) // TODO perhaps this would be better to make sure it has lower precedence than === !!  http://www.scala-lang.org/docu/files/ScalaReference.pdf
     def ^(f:Formula) = And(this, f)
     def v(f:Formula) = Or(this, f)
-    def ===(f:Formula) = Equals(this, f)
+    def <==>(f:Formula) = Equals(this, f)
   }
   
   /** A boolean expression consisting of a single boolean variable */

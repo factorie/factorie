@@ -2,7 +2,7 @@ package cc.factorie
 import scala.collection.mutable.HashMap
 import scala.reflect.Manifest
 
- 
+/*
 abstract class MHSampleRank[C](model:Model, val objective:Model)(implicit mc:Manifest[C]) extends MHSampler[C](model)(mc) {
   var learningMargin = 1.0
 
@@ -43,35 +43,4 @@ abstract class MHSampleRank[C](model:Model, val objective:Model)(implicit mc:Man
 }
 
 
-/*
-class SampleRankLearner(model:Model,objective:Objective) extends Sampler {
-    //the update rule to change the weights given a feature delta,
-model and objective ratio
-    var updateRule:UpdateRule //could default to PerceptronUpdateRule
-
-    //note that we could have template specific update rules by just using
-    //val updateRules = new HashMap[Template,UpdateRule]
-
-    //this is the model we store the feature deltas in
-    val deltaModel = model.clone
-
-    def learn(context:C) = {
-         deltaModel.setWeightsToAllZeros
-         val ratio = sampler.propose(context, difflist)
-         var newObjective = difflist.score(objective)
-         deltaModel.factors(difflist).foreach(f => f.template.weights
-+= f.statistic.vector)
-         difflist.undo
-         var oldObjective = difflist.score(objective)
-         deltaModel.factors(difflist).foreach(f => f.template.weights
--= f.statistic.vector)
-         //now update the weights of the model given the delta
-weights, the model ratio and the objective delta
-         update(model, deltaModel,newObjective-oldObjective, ratio,
-deltaModel.factors(difflist))
-
-         //here would be the code that actually makes the jump
-according to model ratio etc.
-    }
-}
 */
