@@ -4,15 +4,6 @@ import scala.collection.mutable.{ListBuffer,ArrayBuffer,HashMap}
 import cc.factorie.util.Implicits._
 import scalala.tensor.Vector
 
-trait Inferencer {
-  def infer(vs:Seq[Variable]): Unit
-}
-
-trait Optimizer {
-  def optimize: Unit
-  def optimize(numIterations:Int): Unit
-}
-
 /** Samplers that key off of particular contexts.  Subclasses implement "process1(context:C) */
 trait Sampler[C] {
   //if (contextClass == classOf[Nothing]) throw new Error("Constructor for class "+this.getClass.getName+" must be given type argument");
