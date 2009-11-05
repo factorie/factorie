@@ -32,7 +32,7 @@ trait Sampler[C] {
 
 // So we can call super in traits that override these methods
 // TODO Is there a better way to do this?
-// TODO Remove this and put ProposalSampler instead
+// TODO Remove this and put ProposalSampler instead?  But then problems with SampleRank trait re-overriding methods it shouldn't?  Look into this. 
 trait ProposalSampler0 {
 	def proposalsHook(proposals:Seq[Proposal]): Unit
   def proposalHook(proposal:Proposal): Unit
@@ -51,6 +51,27 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
   }
 	def proposalsHook(proposals:Seq[Proposal]): Unit = {}
   def proposalHook(proposal:Proposal): Unit = {}
+}
+
+/** Tries each one of the settings in the Iterator provided by the abstract method "settings(C), 
+    scores each, builds a distribution from the scores, and samples from it. */
+abstract class SamplerOverSettings[C](val model:Model, val objective:Model) extends ProposalSampler[C] {
+  def this(m:Model) = this(m, null)
+  // This method must be implemented in sub-classes
+  def settings(context:C) : SettingIterator
+  // Meta-parameters
+  var temperature = 1.0
+  // Diagnostic information
+  var numChanges = 0
+
+  // TODO Some faster alternative to "toList" below?
+  def proposals(context:C): Seq[Proposal] =
+    settings(context).map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m/temperature, o)}).toList
+
+  override def proposalHook(p:Proposal): Unit = {
+    super.proposalHook(p)
+    if (p.diff.size != 0) numChanges += 1
+  }
 }
 
 

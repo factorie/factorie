@@ -16,59 +16,31 @@ import cc.factorie.util.Implicits._
 //   object LabelSampler extends Sampler1[Label]
     
 
-/** Tries each one of the settings in the Iterator provided by the abstract method "settings(V1), 
- * scores each, builds a distribution from the scores, and samples from it. */
-// TODO instead of V1<:Variable, make it an arbitrarily-typed context:C
-// Then implement Block2 sampling with nested iterators over settings
-abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model, val objective:Model)(implicit m1:Manifest[V1]) extends ProposalSampler[V1] {
+
+/** GibbsSampler for a subclass of Variable with IterableSettings */
+// TODO implement Block2 sampling with nested iterators over settings
+class GibbsSampler1[V1<:Variable with IterableSettings](model:Model, objective:Model)(implicit m1:Manifest[V1]) extends SamplerOverSettings[V1](model, objective) {
   def this(m:Model)(implicit man:Manifest[V1]) = this(m, null)
-	//println("GibbsSamplerOverSettings V1="+m1+"  objective="+objective)
+  def this()(implicit m1:Manifest[V1]) = this(Global.defaultModel)(m1)
+  
+	def settings(v:V1) : SettingIterator = v.settings
 
-  // This method must be implemented in sub-classes
-  def settings(v:V1) : SettingIterator
-
-  // Meta-parameters
-  var temperature = 1.0
+	// Manage and use a queue to revisit low-scoring factors more often; by default not used.
   var useQueue = false
   var maxQueueSize = 1000
   lazy val queue = new PriorityQueue[Factor]
-  
-  // Diagnostic information
-  val numChanges = 0
-
-	// Methods override in learning methods
-  /** If you want the Proposals to actually contain the objectiveScore, override this method appropriately.  Used for training.	*/
-  //def objective : Model = null
-  
-  def proposals(variable:V1) : Seq[Proposal] = {
-		val vsettings = settings(variable)
-		//vsettings.map(s => {val d = new DiffList; s.set(d); val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m/temperature, o)}).toList
-		vsettings.map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m/temperature, o)}).toList
-  }
-  
   override def proposalHook(p:Proposal): Unit = {
     super.proposalHook(p)
     if (useQueue && !queue.isEmpty && Global.random.nextDouble < 0.3) 
-    	p.diff prependAll sampleFromQueue
+      p.diff appendAll sampleFromQueue
   }
-
   def sampleFromQueue : DiffList = {
     if (queue.size < 1) return null
     val factor = queue.dequeue
     val variables = factor.variables.filter(v => m1.erasure.isAssignableFrom(v.getClass)).toSeq
     process1(variables(Global.random.nextInt(variables.size)).asInstanceOf[V1])
   }
-}
 
-
-/** GibbsSampler for a subclass of Variable with IterableSettings */
-class GibbsSampler1[V1<:Variable with IterableSettings](model:Model, objective:Model)(implicit m1:Manifest[V1]) extends GibbsSamplerOverSettings1[V1](model, objective) {
-  def this(m:Model)(implicit man:Manifest[V1]) = this(m, null)
-	//println("GibbsSampler1 V1="+m1)
-  def this()(implicit m1:Manifest[V1]) = this(Global.defaultModel)(m1)
-  // TODO For some reason, compiling without Scala's -Xexperimental causes a "dependent type" error here.
-  // I don't know why, and would like to get rid of the need for -Xexperimental   -akm
-	def settings(v:V1) : SettingIterator = v.settings
 }
 
 /** GibbsSampler for generic "Variable with IterableSettings" */

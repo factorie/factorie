@@ -83,7 +83,7 @@ trait SettingIterator extends Iterator[DiffList] {
       This DiffList should not be modified. 
       The method should (optionally) create a new DiffList by calling the method "newDiffList",
       put any changes caused by this method into that DiffList, and return that DiffList. */
-	def next(d:DiffList): DiffList 
+  def next(d:DiffList): DiffList 
 	/** Makes the changes to achieve the next configuration in the iteration, without any context DiffList of previous changes. */
 	def next: DiffList = next(null)
 	/** Rewind this iterator back to its initial state, so that the follow call to "next" will produce the first setting. */
@@ -122,15 +122,14 @@ trait PrimitiveComparison[T] {
   def value : T
   def ===(other: PrimitiveComparison[T]) = value == other.value
   def !==(other: PrimitiveComparison[T]) = value != other.value
-
 }
 
 abstract class PrimitiveObservation[T](theValue:T) extends Variable with TypedVariable with PrimitiveComparison[T] {
-	type VariableType <: PrimitiveObservation[T]
-  type ValueType = T
-  class DomainInSubclasses
-  val value: T = theValue
-  override def toString = printName + "(" + value.toString + ")"
+	type VariableType <: PrimitiveObservation[T];
+	type ValueType = T
+	class DomainInSubclasses
+	val value: T = theValue
+	override def toString = printName + "(" + value.toString + ")"
 }
 
 /**A variable with a single mutable (unindexed) value which is of Scala type T. */
@@ -160,10 +159,10 @@ abstract class PrimitiveVariable[T] extends Variable with TypedVariable with Pri
 /** For variables that have a true value described by a Scala type T. */
 trait PrimitiveTrueValue[T] extends TrueSetting {
 	this: PrimitiveVariable[T] =>
-  var trueValue: T = _
-  def isUnlabeled = trueValue == _
-  def setToTruth(implicit d:DiffList): Unit = set(trueValue)
-  def valueIsTruth: Boolean = trueValue == value
+	var trueValue: T = _
+	def isUnlabeled = trueValue == _
+	def setToTruth(implicit d:DiffList): Unit = set(trueValue)
+	def valueIsTruth: Boolean = trueValue == value
 }
 
 /**A variable class for string values. */
