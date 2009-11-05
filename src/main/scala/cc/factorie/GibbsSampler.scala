@@ -15,32 +15,43 @@ import cc.factorie.util.Implicits._
 //   class Label[T] { def defaultSampler = LabelSampler; def sample(model:Model) = defaultSampler.sample(this,model) }
 //   object LabelSampler extends Sampler1[Label]
     
-
-
-/** GibbsSampler for a subclass of Variable with IterableSettings */
-// TODO implement Block2 sampling with nested iterators over settings
-class GibbsSampler1[V1<:Variable with IterableSettings](model:Model, objective:Model)(implicit m1:Manifest[V1]) extends SamplerOverSettings[V1](model, objective) {
-  def this(m:Model)(implicit man:Manifest[V1]) = this(m, null)
-  def this()(implicit m1:Manifest[V1]) = this(Global.defaultModel)(m1)
-  
-	def settings(v:V1) : SettingIterator = v.settings
-
-	// Manage and use a queue to revisit low-scoring factors more often; by default not used.
-  var useQueue = false
+/** Manage and use a queue to more often revisit low-scoring factors and re-sample their variables. */
+trait FactorQueue[C] extends Sampler[C] {
+  var useQueue = true
   var maxQueueSize = 1000
   lazy val queue = new PriorityQueue[Factor]
-  override def proposalHook(p:Proposal): Unit = {
-    super.proposalHook(p)
-    if (useQueue && !queue.isEmpty && Global.random.nextDouble < 0.3) 
-      p.diff appendAll sampleFromQueue
+  
+  /** Overide to provide the generic sampler that can potentially deal with arbitrary variables coming from Factors */
+  def sampler: Samplers
+  def model: Model
+  
+  override def postProcessHook(context:C, diff:DiffList): Unit = {
+    super.postProcessHook(context, diff)
+    if (useQueue) {
+    	var queueDiff: DiffList = null
+      if (!queue.isEmpty && Global.random.nextDouble < 0.3) queueDiff = sampleFromQueue
+      if (maxQueueSize > 0) {
+      	queue ++= model.factors(diff)
+      	if (queue.size > maxQueueSize) queue.reduceToSize(maxQueueSize)
+      }
+      if (queueDiff != null) diff appendAll queueDiff
+    }
   }
   def sampleFromQueue : DiffList = {
-    if (queue.size < 1) return null
-    val factor = queue.dequeue
-    val variables = factor.variables.filter(v => m1.erasure.isAssignableFrom(v.getClass)).toSeq
-    process1(variables(Global.random.nextInt(variables.size)).asInstanceOf[V1])
+    val factor = queue.dequeue // TODO consider proportionally sampling from the queue instead
+    for (variable <- factor.variables.toSeq.shuffle) {
+    	val difflist = sampler.process(variable)
+    	if (difflist != null && difflist.size > 0) return difflist
+    }
+    null
   }
+}
 
+/** GibbsSampler for a subclass of Variable with IterableSettings */
+class GibbsSampler1[V1<:Variable with IterableSettings](model:Model, objective:Model) extends SamplerOverSettings[V1](model, objective) {
+  def this(m:Model) = this(m, null)
+  def this() = this(Global.defaultModel)
+	def settings(v:V1) : SettingIterator = v.settings
 }
 
 /** GibbsSampler for generic "Variable with IterableSettings" */
@@ -49,3 +60,58 @@ class GibbsSampler(model:Model, objective:Model) extends GibbsSampler1[Variable 
   def this() = this(Global.defaultModel)
 }
 
+// TODO Not yet tested
+/** GibbsSampling over a block size of 2.  Override "block" method to locate the second variable from the first. */
+abstract class GibbsSampler2[V1<:Variable with IterableSettings,V2<:Variable with IterableSettings](model:Model, objective:Model) extends SamplerOverSettings[V1](model, objective) {
+  def this(m:Model) = this(m, null)
+  def this() = this(Global.defaultModel)
+  /** Override this method to define the block, returning the second variable V2 to be paired with V1 */
+  def block(v1:V1): V2
+  /** Return an iterator over the cross product of the settings of V1 and V2. */
+  def settings(v1:V1) : SettingIterator = new SettingIterator {
+    val v2 = block(v1)
+    assert (v2 != v1)
+    val s1 = v1.settings
+    val s2 = v2.settings
+    var first = true // indicates that we haven't yet called next for the first time
+    def next(difflist:DiffList): DiffList = {
+      val d = newDiffList
+      if (first) { s1.next(d); s2.next(d) }
+      else if (s2.hasNext) s2.next(d) 
+      else { s1.next(d); s2.reset; s2.next(d) }
+      first = false
+      d
+    }
+    def hasNext = s1.hasNext || s2.hasNext
+    def reset = { s1.reset; s2.reset; first = true }
+  }
+}
+
+// TODO Not yet tested
+/** GibbsSampling over a block size of 3.  Override "block" method to locate the second and third variables from the first. */
+abstract class GibbsSampler3[V1<:Variable with IterableSettings,V2<:Variable with IterableSettings,V3<:Variable with IterableSettings](model:Model, objective:Model) extends SamplerOverSettings[V1](model, objective) {
+  def this(m:Model) = this(m, null)
+  def this() = this(Global.defaultModel)
+  /** Override this method to define the block, returning the second variable V2 to be paired with V1 */
+  def block(v1:V1): (V2,V3)
+  /** Return an iterator over the cross product of the settings of V1, V2 and V3. */
+  def settings(v1:V1) : SettingIterator = new SettingIterator {
+    val (v2,v3) = block(v1)
+    assert (v2 != v1); assert (v3 != v1); assert (v2 != v3)
+    val s1 = v1.settings
+    val s2 = v2.settings
+    val s3 = v3.settings
+    var first = true // indicates that we haven't yet called next for the first time
+    def next(difflist:DiffList): DiffList = {
+      val d = newDiffList
+      if (first) { s1.next(d); s2.next(d); s3.next(d) }
+      else if (s3.hasNext) s3.next(d)
+      else if (s2.hasNext) { s2.next(d); s3.reset; s3.next(d) }
+      else { s1.next(d); s2.reset; s2.next(d); s3.reset; s3.next(d) }
+      first = false
+      d
+    }
+    def hasNext = s1.hasNext || s2.hasNext || s3.hasNext
+    def reset = { s1.reset; s2.reset; s3.reset; first = true }
+  }
+}

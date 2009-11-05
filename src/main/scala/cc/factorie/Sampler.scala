@@ -11,9 +11,17 @@ trait Sampler[C] {
 	var iterationCount = 0
 	/** The number of calls to process(context:C) */
 	var processCount = 0
-	// TODO Fix this process0 so it will work with Int?;
+	/** The number of calls to process that resulted in a change (a non-empty DiffList) */
+	var changeCount = 0
 	/** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
-	final def process(context:C): DiffList = { val c = preProcessHook(context); val d = process1(c); processCount += 1; postProcessHook(context, d); d }
+	final def process(context:C): DiffList = {
+  	val c = preProcessHook(context)
+  	val d = process1(c)
+  	processCount += 1
+  	postProcessHook(context, d)
+  	if (d.size > 0) changeCount += 1
+  	d
+  }
   /** The underlying protected method that actually does the work.  Needs to be defined in subclasses. */
 	def process1(context:C) : DiffList
 	protected final def processN(contexts:Iterable[C]): Unit = { contexts.foreach(process(_)); iterationCount += 1; if (!postIterationHook) return }
@@ -61,101 +69,11 @@ abstract class SamplerOverSettings[C](val model:Model, val objective:Model) exte
   def settings(context:C) : SettingIterator
   // Meta-parameters
   var temperature = 1.0
-  // Diagnostic information
-  var numChanges = 0
-
   // TODO Some faster alternative to "toList" below?
   def proposals(context:C): Seq[Proposal] =
     settings(context).map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m/temperature, o)}).toList
-
-  override def proposalHook(p:Proposal): Unit = {
-    super.proposalHook(p)
-    if (p.diff.size != 0) numChanges += 1
-  }
 }
 
 
-
-// Currently unused below, but needs to be re-considered
-
-/** A collection of variables to be sampled together. */
-trait Block extends Product with Iterable[Block] {
-  // TODO Default value of d should be "new DiffList"
-  def sample : DiffList
-  def samplePriority : Double = 1.0
-  def template: Sampler[_]
-  def numVariables: Int
-  def variable(i:Int): Variable
-  def variables: Iterable[Variable] = for (i <- 0 until numVariables force) yield variable(i)
-  def elements = Iterator.single(this)
-  def ::(that: Block) = List(that, this)
-  def compare(that:Block) = {
-    val s = this.samplePriority - that.samplePriority
-    if (s > 0) 1 else if (s < 0) -1 else 0
-  }
-  def canEqual(other: Any) = other.isInstanceOf[Block];
-  override def equals(other: Any): Boolean = {
-  	//if (this eq other) return true
-  	if (!canEqual(other)) return false
-  	val fother = other.asInstanceOf[Block];
-  	(this.numVariables == fother.numVariables &&
-  		(0 until numVariables).forall(i => this.variable(i).hashCode == fother.variable(i).hashCode &&
-  				this.variable(i) == fother.variable(i)))
-  }
-  var _hashCode = -1
-  override def hashCode: Int = {if (_hashCode == -1) _hashCode = variables.sumInts(_ hashCode); _hashCode}
-}
-
-
-trait Blocks[C] {
-  this : Sampler[C] =>
-  def process1(context:C) : DiffList = {
-    val blocks = block(context)
-    blocks match {
-      case Nil => new DiffList
-      case b:Block => b.sample
-      case _ => { val d = new DiffList; d ++= blocks.flatMap(_.sample); d } 
-    }
-  }
-  def block(context:C) : Iterable[Block]
-}
-
-/** Sample variables in blocks of size 1.  Blocks are created from an arbitrary context of type C using the method block(). */
-trait Blocks1[C,V1<:Variable] extends Blocks[C] {
-  this : Sampler[C] =>
-  //val vc1 = m1.erasure; // if (m1.erasure == classOf[Null]) class
-  def _sample(b:Block) : DiffList = sample(b.v1)
-  def sample(v1:V1) : DiffList
-  case class Block(v1:V1) extends cc.factorie.Block with Iterable[Block] {
-    def template = Blocks1.this
-    def numVariables = 1
-    def variable(i:Int) = i match { case 0 => v1; case _ => throw new IndexOutOfBoundsException(i.toString)}
-    def sample = _sample(this)
-  } 
-}
-
-/** Sample variables in blocks of size 1.  The context for block creatation is simply the variable itself. */
-trait Blocks1Variable[V1<:Variable] extends Blocks1[V1,V1] {
-  this : Sampler[V1] =>
-	def block(v1:V1) : Iterable[Block] = Block(v1)
-}
-
-/** Sample variables in blocks of size 2.  Blocks are created from an arbitrary context of type C using the method block(). */
-trait Blocks2[C,V1<:Variable,V2<:Variable] extends Blocks[C] {
-  this : Sampler[C] =>
-  def _sample(b:Block) = sample(b.v1, b.v2)
-  def sample(v1:V1, v2:V2) : DiffList
-  case class Block(v1:V1,v2:V2) extends cc.factorie.Block with Iterable[Block] {
-    def template = Blocks2.this
-    def numVariables = 2
-    def variable(i:Int) = i match { case 0 => v1; case 1 => v2; case _ => throw new IndexOutOfBoundsException(i.toString)}
-    def sample = _sample(this)
-  } 
-}
-
-/** Sample variables in blocks of size 2.  The context for block creatation is the first variable in the block. */
-trait Blocks2Variables[V1<:Variable,V2<:Variable] extends Blocks2[V1,V1,V2] {
-  this : Sampler[V1] =>
-}
 
 
