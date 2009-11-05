@@ -406,7 +406,17 @@ object Maths {
     if (b == Math.NEG_INF_DOUBLE) a else a + Math.log (1 - Math.exp(b-a))
 
   
-  
+  /** Exponentiate the elements of the array, and then normalize them to sum to one. */
+  def expNormalize(a:Array[Double]): Unit = {
+    var max = Math.MIN_DOUBLE
+    for (i <- 0 until a.length) if (max < a(i)) max = a(i)
+    var sum = 0.0
+    for (i <- 0 until a.length) {
+      a(i) = Math.exp(a(i) - max)
+      sum += a(i)
+    }
+    for (i <- 0 until a.length) a(i) /= sum
+  }
 
  
  

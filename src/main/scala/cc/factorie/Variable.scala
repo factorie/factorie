@@ -12,7 +12,11 @@ import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
 
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
-   The trait is abstract not because you should not instantiate this trait directly, only subclasses */ 
+   The trait is abstract not because you should not instantiate this trait directly, only subclasses.
+   <p>
+   You should never make a Variable a case class because then it will get hashCode and equals methods
+   dependent on its constructor arguments; but the FACTORIE library depends on being able to distinguish individual
+   Variable instances based on their address. */ 
 abstract trait Variable {
   /** The type of this variable, especially used by this Variable's Domain. */
 	type VariableType <: Variable
