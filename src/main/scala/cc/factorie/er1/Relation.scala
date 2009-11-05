@@ -62,14 +62,15 @@ class Relation[A<:Variable,B<:Variable] extends Collection[Relationship[A,B]] wi
 }
 
 class ItemizedRelation[A<:ItemizedVariable[A],B<:ItemizedVariable[B]](implicit ma:Manifest[A], mb:Manifest[B]) extends Relation[A,B] with Variable with IterableSettings {
-	def settings = new Iterator[{def set(d:DiffList):Unit}] {
+	def settings = new SettingIterator {
 	  var i = -1
 	  val domainb = Domain[B](mb) 
 	  val a = Domain[A](ma).randomValue // randomly pick a src
 	  val max = domainb.size - 1 // we will iterate over all possible changes to dst's
 	  def hasNext = i < max
 	  def set(d:DiffList) : Unit = { val b = domainb.get(i); if (contains(a,b)) remove(a,b)(d) else add(a,b)(d) }
-	  def next = { i += 1; this }
+	  def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(d); d }
+	  def reset = i = -1
 	}
 
 }

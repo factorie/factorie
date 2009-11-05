@@ -40,12 +40,14 @@ abstract trait Variable {
 	def printName = shortClassName
 	override def toString = printName + "(_)"
 	def factors(model:Model): Iterable[Factor] = model.factors(this)
+	def isConstant = false
 }
 
 /** Used as a marker for Variables whose value does not change once created.  
     Be  careful to only use this in class definitions that cannot become mutable in subclasses. */
-@deprecated
-abstract trait ConstantValue requires Variable
+abstract trait ConstantValue extends Variable {
+  override def isConstant = true
+}
 
 /** For variables whose value has a type, indicated in type ValueType */
 abstract trait TypedVariable {
@@ -57,28 +59,53 @@ abstract trait TypedVariable {
 
 // TODO remove this now that we have Proposer
 /**A variable that can provide an Iterator over all of its values. */
+/*
 @deprecated//("Use IterableSettings instead")
 abstract trait IterableValues[T] {
 	// TODO Inherit from TypedVariable instead?
 			this: Variable =>
-	/**Values this variable could take on. */
+	// Values this variable could take on.
 	def iterableValues: Iterable[T];
-	/**Possible alternative values, that is, values other than its current value. */
+	// Possible alternative values, that is, values other than its current value.
 	def iterableOtherValues: Iterable[T]
-}
+}*/
 
-/** A variable that can iterate over its possible configurations */
-trait IterableSettings{
-	this: Variable =>
-  /** Return an iterator over some/all configurations of this variable, each time returning simply the same Variable object. */
-  // TODO this "settings" method should take a DiffList argument so it can see what else has changed, to avoid loops?
-  // No, we need something even more powerful, because we'd like to enable nested for-comprehensions of changes to multiple variables.
-  // Think about this some more!!!!
-  def settings: Iterator[{def set(d:DiffList):Unit}]
-}
 // TODO Remove this?
 trait Setting {
   def set(d:DiffList) : Unit
+}
+
+/** An iterator over changes to the possible world.  Could be implemented as changes to one variable, or more complex changes.   */
+trait SettingIterator extends Iterator[DiffList] {
+  /** Makes the changes to achieve the next configuration in the iteration.  
+      Argument d:DiffList is the "context"---the set of Diffs that have already been made; 
+      you can check this to avoid re-changing something that has already been changed.  
+      This DiffList should not be modified. 
+      The method should (optionally) create a new DiffList by calling the method "newDiffList",
+      put any changes caused by this method into that DiffList, and return that DiffList. */
+	def next(d:DiffList): DiffList 
+	/** Makes the changes to achieve the next configuration in the iteration, without any context DiffList of previous changes. */
+	def next: DiffList = next(null)
+	/** Rewind this iterator back to its initial state, so that the follow call to "next" will produce the first setting. */
+	def reset: Unit
+	def hasNext: Boolean
+	/** If true, calls to "next" will create a new DiffList to describe the changes they made, otherwise "next" will not track the changes, and will return null. */
+	var makeNewDiffList = true
+	def noDiffList: this.type = { makeNewDiffList = false; this }
+	//def noDiffList: SettingIterator = { makeNewDiffList = false; this }
+	/** In your implementation of "next" use this method to optionally create a new DiffList, obeying "makeNewDiffList". */
+	def newDiffList = if (makeNewDiffList) new DiffList else null
+}
+
+/** A Variable that has a SettingIterator, created by calling "settings". */
+trait IterableSettings {
+  this: Variable =>
+  //protected def _iterableSettingsVariable : This = this // TODO Is there a better way to do this?
+  trait SettingIterator extends cc.factorie.SettingIterator {
+    //def variable : IterableSettings2.this.type = IterableSettings2.this
+    def variable: Variable = IterableSettings.this
+  }
+  def settings: SettingIterator
 }
 
 /** A variable for which the true, correct value is known.  Often used for target variables inferred at training time. */
@@ -139,8 +166,21 @@ trait PrimitiveTrueValue[T] extends TrueSetting {
   def valueIsTruth: Boolean = trueValue == value
 }
 
+/**A variable class for string values. */
+class StringVariable(str: String) extends PrimitiveVariable(str) {
+	type VariableType = StringVariable
+	class DomainInSubclasses
+}
 
+/**A variable class for real values. */
+class Real(v: Double) extends PrimitiveVariable(v) {
+	type VariableType = Real
+}
+
+
+// TODO Perhaps this should be held in HashMap[Variable,Buffer[Factor]] in a Lattice
 /** For Variables that hold their list of Factors */
+@deprecated
 trait FactorList {
 	this : Variable =>
   private var factorList: List[Factor] = Nil
@@ -151,8 +191,8 @@ trait FactorList {
 
 
 // The two traits below may enable efficiencies for sampling, scoring and learning
-// But they are currently unused.
-// TODO: consider removing them
+// But they are currently unused?
+// TODO: consider removing them?
 
 /** A marker for Variables that declare themselves not to automatically change other Variables' values when they are changed */
 trait NoVariableCoordination 
@@ -160,6 +200,7 @@ trait NoVariableCoordination
 /** A marker for Variables that declare themselves not to only to rely on their own Factors when they are changed,
     even if changing this variable involves changes to other variables as well. 
     Furthermore the section of Factors must not change depending on the variable's values. */
+// TODO Consider removing this because this constraint is very hard to know locally: one variable cannot know all the factors of another.
 trait NoFactorCoordination 
 
 

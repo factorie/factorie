@@ -184,10 +184,10 @@ import cc.factorie.util.Implicits._
     /** Perform the outer-product of two vectors, to yield */
     protected def flatOuter(vector1: Vector, vector2: Vector) : Vector = vector1 match {
       case v1: SingletonBinaryVector => vector2 match {
-			case v2: SingletonBinaryVector =>
-				new SingletonBinaryVector(v1.size * v2.size, v1.singleIndex * v2.size + v2.singleIndex)
-			case v2: SparseBinaryVector =>
-				new SparseBinaryVector(v1.size * v2.size,
+				case v2: SingletonBinaryVector =>
+					new SingletonBinaryVector(v1.size * v2.size, v1.singleIndex * v2.size + v2.singleIndex)
+				case v2: SparseBinaryVector =>
+					new SparseBinaryVector(v1.size * v2.size,
 					{
 						val arr = new Array[Int](v2.activeDomain.size);
 						var i = 0;
@@ -245,26 +245,10 @@ import cc.factorie.util.Implicits._
 		}
 	}
  
-	trait SparseWeights extends DotTemplate {
-		override lazy val weights: Vector = { freezeDomains; new SparseVector(statsize) } // Dense by default, may be override in sub-traits
+ 	trait SparseWeights extends DotTemplate {
+		override lazy val weights: Vector = { freezeDomains; new SparseVector(statsize) } // Dense by default, here overriden to be sparse
 	}
-	
-	/*
-	// TODO rename DenseWeights or DenseLinearWeights?  Or since it says "extends", the current name is more appropriate?
-	trait DenseWeightedLinearTemplate extends WeightedLinearTemplate {
-		type TemplateType <: DenseWeightedLinearTemplate
-		lazy val weights = {freezeDomains; new DenseVector(statsize)}
-		override def score(s:StatType) = weights dot s.vector
-	}
-	trait DenseWeights extends DenseWeightedLinearTemplate
-	// TODO rename SparseWeights or SparseLinearWeights
-	trait SparseWeightedLinearTemplate extends WeightedLinearTemplate {
-		type TemplateType <: SparseWeightedLinearTemplate 
-		lazy val weights = new SparseVector(statsize)
-		override def score(s:StatType) = weights dot s.vector
-	}
-	trait SparseWeights extends SparseWeightedLinearTemplate
-	*/
+
  
  	abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
  	  val nc1 = nm1.erasure

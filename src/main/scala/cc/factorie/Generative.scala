@@ -437,7 +437,7 @@ trait MultinomialOutcomeVariable[This<:MultinomialOutcomeVariable[This] with Sin
 }
   
 /** The outcome of a coin flip, with boolean value.  this.value:Boolean */
-case class Flip extends Bool with MultinomialOutcomeVariable[Flip]
+case class Flip extends CoordinatedBool with MultinomialOutcomeVariable[Flip]
 case class Coin(p:Double, totalCount:Double) extends Multinomial[Flip](Array((1-p)*totalCount,p*totalCount)) {
 	def this(p:Double) = this(p:Double, 1.0)
 	def this() = this(0.5)

@@ -32,10 +32,11 @@ abstract trait SingleIndexed extends IndexedVariable {
 } 
 
 /** For variables whose values are associated with a an Int from an index. */
-abstract trait SingleIndexedVariable extends SingleIndexed with Proposer with IterableSettings {
+abstract trait SingleIndexedVariable extends SingleIndexed with Proposer /*with IterableSettings*/ with IterableSettings {
 	type VariableType <: SingleIndexedVariable
  	class DomainInSubclasses
 	protected var _index = -1
+	def index = _index
 	def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
 		if (newIndex < 0) throw new Error("SingleIndexedVariable setByIndex can't be negative.")
 		if (newIndex != _index) {
@@ -47,13 +48,22 @@ abstract trait SingleIndexedVariable extends SingleIndexed with Proposer with It
 	def setRandomly(implicit random:Random, d:DiffList) : Unit = setByIndex(random.nextInt(domain.size))
 	def setRandomly(implicit random:Random) : Unit = setByIndex(random.nextInt(domain.size))(null)
 	def setRandomly : Unit = setRandomly(cc.factorie.Global.random)
-	def settings = new Iterator[{def set(d:DiffList):Unit}] {
+	/*def settings = new Iterator[{def set(d:DiffList):Unit}] {
 	  case class Setting(newIndex:Int) { def set(d:DiffList) : Unit = setByIndex(newIndex)(d) }
 	  var d : DiffList = _
 	  var i = -1
 	  val max = domain.size - 1
 	  def hasNext = i < max
 	  def next = { i += 1; new Setting(i)}
+	}*/
+	def settings = new SettingIterator {
+	  var i = -1
+	  val max = domain.size - 1
+	  def hasNext = i < max
+	  def next(difflist:DiffList) = { i += 1; val d = newDiffList; setByIndex(i)(d); d }
+	  def reset = i = -1
+	  override def variable : SingleIndexedVariable.this.type = SingleIndexedVariable.this
+	  //override def variable : SingleIndexedVariable = SingleIndexedVariable.this
 	}
 	def propose(model:Model, d: DiffList) = {setByIndex(Global.random.nextInt(domain.size))(d); 0.0}
 	// The reason for the "toList" (now changed to "force"), see 
@@ -70,7 +80,6 @@ abstract trait SingleIndexedVariable extends SingleIndexed with Proposer with It
 		// val d = new DiffList; setByIndex(i)(d); new CaseProposal(d.scoreAndUndo, d)
 		aps
 	}*/
-	def index = _index
 	/** Tests equality of variable values, whereas == tests equality of variable objects themselves. */
 	case class SingleIndexedDiff(oldIndex: Int, newIndex: Int) extends Diff {
 		@scala.inline final def variable: SingleIndexedVariable = SingleIndexedVariable.this
@@ -104,6 +113,7 @@ abstract trait ItemizedVariable[This <: ItemizedVariable[This]] extends SingleIn
   domain.index(this) // Put the variable in the index
 }
 
+// But doesn't have mixin 'ConstantValue' because we can't yet be guaranteed that this variable's index will not change; we can in EnumObservation, though
 abstract trait TypedSingleIndexedObservation[T] extends SingleIndexed with TypedVariable {
 	type VariableType <: TypedSingleIndexedObservation[T]
   type ValueType = T
@@ -117,7 +127,7 @@ abstract trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with 
 	type VariableType <: TypedSingleIndexedVariable[T]
   type ValueType = T
   class DomainInSubclasses
-  def set(newValue: T)(implicit d: DiffList) = setByIndex(domain.index(newValue))
+  final def set(newValue: T)(implicit d: DiffList) = setByIndex(domain.index(newValue))
 	def :=(newValue:T) = set(newValue)(null)
   def value: T = domain.get(_index)
   override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + _index + ")"
@@ -127,7 +137,7 @@ abstract trait TypedSingleIndexedVariable[T] extends SingleIndexedVariable with 
 abstract class EnumObservation[T](value:T) extends TypedSingleIndexedObservation[T] with ConstantValue {
 	type VariableType <: EnumObservation[T]
   class DomainInSubclasses
-  val index = domain.index(value)
+  final val index = domain.index(value)
 }
 
 // TODO get rid of all this "Coordinated" versus non-coordinated.  Everything should just be coordinated.
@@ -142,15 +152,24 @@ abstract class CoordinatedEnumVariable[T](initialValue:T) extends TypedSingleInd
 	if (initialValue != null) setByIndex(domain.index(initialValue))(null)
 }
 
+/** A kind of _EnumVariable that does no variable value coordination in its 'set' method. 
+    This trait abstracts over both EnumVariable and Label, and is used in belief probagation 
+    and other places that cannot tolerate coordination. */
+trait UncoordinatedSingleIndexedVariable extends SingleIndexedVariable with NoVariableCoordination {
+  // TODO But this does not absolutely guarantee that some other trait hasn't already overriden set and setByIndex to do coordination!
+  // TODO I want some way to tell the compiler that this method should be overriding the SingleIndexedVariable.set method.
+	final override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
+}
+
 
 /**A variable whose value is a single indexed value that does no variable coordination in its 'set' method,  
  * ensuring no coordination is necessary for optimization of belief propagation. 
  * This variable does not hold a trueValue; for that you should use a Label. */
-abstract class EnumVariable[T](initialValue:T) extends CoordinatedEnumVariable[T](initialValue) {
+abstract class EnumVariable[T](initialValue:T) extends CoordinatedEnumVariable[T](initialValue) with UncoordinatedSingleIndexedVariable {
 	type VariableType <: EnumVariable[T]
   class DomainInSubclasses
-  final override def set(newValue: T)(implicit d: DiffList) = super.set(newValue)(d)
-	final override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
+  //final override def set(newValue: T)(implicit d: DiffList) = super.set(newValue)(d)
+	//final override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
 }
 
 
@@ -189,24 +208,30 @@ class CoordinatedLabel[T](trueval:T) extends CoordinatedEnumVariable[T](trueval)
 	setByIndex(domain.index(trueval))(null)
 }
 
-class Label[T](trueval:T) extends CoordinatedLabel(trueval) {
+class Label[T](trueval:T) extends CoordinatedLabel(trueval) with UncoordinatedSingleIndexedVariable {
   type VariableType <: Label[T]
   class DomainInSubclasses
-	override final def set(newValue:T)(implicit d: DiffList) = super.set(newValue)(d)
-	override final def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
+	//override final def set(newValue:T)(implicit d: DiffList) = super.set(newValue)(d)
+	//override final def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
 }
 
 
 /**A variable class for boolean values, defined here for convenience.  If you have several different "types" of booleans, you might want to subclass this to enable type safety checks. */
-class Bool(b: Boolean) extends CoordinatedEnumVariable(b) {
+class CoordinatedBool(b: Boolean) extends CoordinatedEnumVariable(b) {
   def this() = this(false)
-	type VariableType <: Bool
+	type VariableType <: CoordinatedBool
 	type DomainType <: BoolDomain[VariableType]
   class DomainClass extends BoolDomain
 	def ^(other:Bool) = value && other.value
 	def v(other:Bool) = value || other.value
 	def ==>(other:Bool) = !value || other.value
 	override def toString = if (index == 0) printName+"(false)" else printName+"(true)"
+}
+class Bool(b: Boolean) extends CoordinatedBool(b) with UncoordinatedSingleIndexedVariable {
+  def this() = this(false)
+	type VariableType <: Bool
+	type DomainType <: BoolDomain[VariableType]
+  class DomainClass extends BoolDomain
 }
 class BoolDomain[V<:Bool] extends IndexedDomain[V] {
   this += false
@@ -219,26 +244,19 @@ object Bool {
 	def apply(b: Boolean) = if (b) t else f
 }
 
-/**A variable class for real values. */
-class Real(v: Double) extends PrimitiveVariable(v) {
-	type VariableType = Real
-}
 
-/**A variable class for string values. */
-class StringVariable(str: String) extends PrimitiveVariable(str) {
-	type VariableType = StringVariable
-	class DomainInSubclasses
-}
 
 class IntRangeVariable(low:Int, high:Int) extends SingleIndexedVariable {
   type VariableType = IntRangeVariable
   type ValueType = Int
   class DomainInSubclasses
   assert(low < high)
+  // TODO But note that this will not properly initialize the IndexedDomain until an instance is created
   if (domain.size == 0) { for (i <- low until high) domain.index(i) }
   assert (domain.size == high-low)
 }
 
+// TODO Is this really necessary?  Who added this? -akm
 /** A variable who value is a pointer to an ItemizedVariable; useful for entity-attributes whose value is another variable. */
 class ItemizedVariablePointer[V<:ItemizedVariable[V]] extends TypedSingleIndexedVariable[V] {
   type VariableType = ItemizedVariablePointer[V]

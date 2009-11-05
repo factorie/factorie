@@ -18,12 +18,14 @@ import cc.factorie.util.Implicits._
 
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(V1), 
  * scores each, builds a distribution from the scores, and samples from it. */
+// TODO instead of V1<:Variable, make it an arbitrarily-typed context:C
+// Then implement Block2 sampling with nested iterators over settings
 abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model, val objective:Model)(implicit m1:Manifest[V1]) extends ProposalSampler[V1] {
   def this(m:Model)(implicit man:Manifest[V1]) = this(m, null)
 	//println("GibbsSamplerOverSettings V1="+m1+"  objective="+objective)
 
   // This method must be implemented in sub-classes
-  def settings(v:V1) : Iterator[{def set(d:DiffList):Unit}];
+  def settings(v:V1) : SettingIterator
 
   // Meta-parameters
   var temperature = 1.0
@@ -40,7 +42,8 @@ abstract class GibbsSamplerOverSettings1[V1<:Variable](val model:Model, val obje
   
   def proposals(variable:V1) : Seq[Proposal] = {
 		val vsettings = settings(variable)
-		vsettings.map(s => {val d = new DiffList; s.set(d); val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m/temperature, o)}).toList
+		//vsettings.map(s => {val d = new DiffList; s.set(d); val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m/temperature, o)}).toList
+		vsettings.map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m/temperature, o)}).toList
   }
   
   override def proposalHook(p:Proposal): Unit = {
@@ -63,7 +66,9 @@ class GibbsSampler1[V1<:Variable with IterableSettings](model:Model, objective:M
   def this(m:Model)(implicit man:Manifest[V1]) = this(m, null)
 	//println("GibbsSampler1 V1="+m1)
   def this()(implicit m1:Manifest[V1]) = this(Global.defaultModel)(m1)
-	def settings(v:V1) = v.settings
+  // TODO For some reason, compiling without Scala's -Xexperimental causes a "dependent type" error here.
+  // I don't know why, and would like to get rid of the need for -Xexperimental   -akm
+	def settings(v:V1) : SettingIterator = v.settings
 }
 
 /** GibbsSampler for generic "Variable with IterableSettings" */
