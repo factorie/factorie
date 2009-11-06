@@ -1,10 +1,9 @@
 package cc.factorie
 import scala.reflect.Manifest
-//import scala.collection.mutable.Publisher
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.util.{Hooks0,Hooks1,Hooks2}
 
 abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
-  var temperature = 1.0
   var random = Global.random
   
   // This method must be implemented in concrete subclasses
@@ -24,7 +23,8 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   
   // Hooks
   /** Called just before making the proposed change.  If you override, you must call super.preProposalHook! */
-  def preProposalHook : Unit = {}
+  val preProposalHooks = new Hooks0 // TODO And add these to the rest of the hooks below
+  def preProposalHook : Unit = preProposalHooks.apply
   /** Called just after making the proposed change.  If you override, you must call super.postProposalHook! */
   def postProposalHook(d:DiffList) : Unit = {}
   /** Called just after undoing the proposed change.  If you override, you must call super.postUndoHook! */

@@ -232,6 +232,47 @@ class SymmetricDirichlet[O<:MultinomialOutcome[O]](initialAlpha:Double)(implicit
 
 class UniformMultinomial[O<:MultinomialOutcome[O]](implicit m:Manifest[O]) extends Multinomial[O](null)(m)
 
+class GenericMultinomial(initCounts:Seq[Double], dim:Int) extends Variable with GenerativeDistribution {
+  type OutcomeType = SingleIndexedVariable
+  type O = OutcomeType
+  def this(initCounts:Seq[Double]) = this(initCounts, initCounts.size)
+  def this(dim:Int) = this(null, dim)
+  lazy val _counts = new Array[Double](dim)
+  private var total : Double = 0.0
+  def countsTotal = total
+  def counts : RandomAccessSeq[Double] = _counts
+  def setCounts(c:Seq[Double]) : Unit = {
+    assert(c.length == _counts.length)
+    total = 0.0
+    var i = 0
+    c.foreach(x => {_counts(i) = x; total += x; i += 1}) 
+  }
+  if (initCounts != null) setCounts(initCounts)
+  def size = _counts.length
+  var source : AbstractDirichlet[_] = _
+  def setSource(dir:AbstractDirichlet[_])(implicit d:DiffList) : Unit = {
+    throw new Error("Not yet implemented")
+    // TODO: consider not calling ungenerate and generate here.  Setting the source shouldn't change the Multinomial parameters immediately
+    //if (d != null) d += MultinomialSetSourceDiff(source, dir)
+    //if (source != null) source.ungenerate(this) 
+    //source = dir
+    //source.generate(this)
+  }
+  def increment(index:Int) = { _counts(index) += 1.0; total += 1.0 }
+  def unincrement(index:Int) = { _counts(index) -= 1.0; total -= 1.0 }
+  def pr(index:Int) : Double = {
+    //println("Multinomial.pr "+counts(index)+" "+source(index)+" "+total+" "+source.sum)
+    if (/*false &&*/ source != null)
+      (_counts(index) + source.alpha(index)) / (total + source.sum)
+    else
+      _counts(index) / total
+  }
+  def pr(o:O) : Double = pr(o.index)
+  def logpr(o:O) : Double = Math.log(pr(o))
+  def logpr(index:Int) = Math.log(pr(index))
+  def estimate = {}
+}
+
 // Does not have its own Domain.  Size of pr is Domain of O
 // TODO should this Iterate over [O] or over [O#VariableType#ValueType] ???
 class Multinomial[O<:MultinomialOutcome[O]](initCounts:Seq[Double])(implicit m:Manifest[O]) extends Variable with GenerativeDistribution with Iterable[O#VariableType#ValueType] {

@@ -43,7 +43,7 @@ object DocumentClassifierDemo {
         val directoryFile = new File(directory)
         if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
         for (file <- new File(directory).listFiles; if (file.isFile)) {
-          Console.println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
+          println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
           Console.flush
           documents += new Document(directory, lexer.findAllIn(file.contentsAsString).toList.map(_ toLowerCase))
         }
@@ -56,7 +56,7 @@ object DocumentClassifierDemo {
 
       // Set label variables to random values
       documents.foreach(d => d.label.set(d.label.domain.randomValue)(null))
-      Console.println ("Initial test accuracy = "+ model.objective.aveScore(testVariables))
+      println ("Initial test accuracy = "+ model.objective.aveScore(testVariables))
 
       // Sample and Learn!
       val learner = new GibbsSampler1[Label](model, model.objective) with SampleRank with PerceptronUpdates
@@ -66,7 +66,7 @@ object DocumentClassifierDemo {
         learner.process (trainVariables, 1)
         learner.learningRate *= 0.8
         sampler.process (testVariables, 4)
-        Console.println ("Test accuracy = "+ model.objective.aveScore(testVariables))
+        println ("Test accuracy = "+ model.objective.aveScore(testVariables))
       }
 
       // Show the parameters

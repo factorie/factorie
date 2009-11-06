@@ -72,15 +72,15 @@ object SimpleChainNER {
   		if (t.hasPrev) t ++= t.prev.values.filter(!_.contains('@')).map(_+"@-1")
   		if (t.hasNext) t ++= t.next.values.filter(!_.contains('@')).map(_+"@+1")
   	})
-  	// Get the variables to be inferred
+  	// Get the variables to be inferred; prune the data so that it can finish in just ~2 minutes
   	val trainLabels : Seq[Label] = trainSentences.flatMap(_.map(_.label)).take(20000)
   	val testLabels : Seq[Label] = testSentences.flatMap(_.map(_.label)).take(10000)
   	// Sample and Learn!
   	(trainLabels ++ testLabels).foreach(_.setRandomly)
   	val learner = new GibbsSampler(model, objective) with SampleRank with PerceptronUpdates
-  	val sampler = new GibbsSampler(model)
-  	println("SimpleChainNER "+sampler.getClass)
-  	for (i <- 0 until 10) {
+  	//with FactorQueue[Variable with IterableSettings] { def process0(x:AnyRef):DiffList = x match { case l:Label => process(l); case _ => null} }
+  	val predictor = new GibbsSampler(model)
+  	for (i <- 0 until 6) {
   	  println("Iteration "+(i+1)+"...") 
   		trainLabels.take(50).foreach(printLabel _); println; println
   		printDiagnostic(trainLabels.take(400))
@@ -88,7 +88,8 @@ object SimpleChainNER {
   		println ("Test  accuracy = "+ objective.aveScore(testLabels))
   		learner.process(trainLabels, 1)
   		learner.learningRate *= 0.9
-  		sampler.process(testLabels, 1)
+  		predictor.temperature *= 0.9
+  		predictor.process(testLabels, 1)
   	}
   	0
   }

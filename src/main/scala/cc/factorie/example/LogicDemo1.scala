@@ -21,12 +21,12 @@ object LogicDemo1 {
 
 		// Define model
 		val model = new Model (
-				// Apriori, you are only 1/10 as likely to have cancer than not
-				Forany[Person] { p => p->Cancer } % 0.1, 
-				// If you smoke, you are 2 times more likely to have cancer
-				Forany[Person] { p => p->Smokes ==> p->Cancer } % 2.0,
-				// For each of your friends that smoke, you are 1.5 times more likely to smoke yourself
-				Forany[Person] { p => p->Friends->Smokes <==> p->Smokes } % 1.5
+			// Apriori, you are only 1/10 as likely to have cancer than not
+			Forany[Person] { p => p->Cancer } * 0.1, 
+			// If you smoke, you are 2 times more likely to have cancer
+			Forany[Person] { p => p->Smokes ==> p->Cancer } * 2.0,
+			// For each of your friends that smoke, you are 1.5 times more likely to smoke yourself
+			Forany[Person] { p => p->Friends->Smokes <==> p->Smokes } * 1.5
     )
 
 		// Create the data
@@ -38,15 +38,11 @@ object LogicDemo1 {
 		Friends(cas,don); Friends(don,cas)
 		
 		// Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
-		val sampler = new GibbsSampler(model)
-		for (i <- 1 to 100) {
-			sampler.process(List(don.cancer, don.smokes), 20)
-			don.cancer.incrementSample
-			don.smokes.incrementSample
-		}
-		println("p(don.smokes == true) = "+don.smokes.samplePr(1))
-		println("p(don.cancer == true) = "+don.cancer.samplePr(1))
-
+		val inferencer = new SamplingInferencer(new GibbsSampler1[Bool](model))
+		inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
+		val marginals = inferencer.infer(List(don.cancer, don.smokes))
+    println("p(don.smokes == true) = "+marginals(don.smokes).pr(1))
+    println("p(don.cancer == true) = "+marginals(don.cancer).pr(1))
 	}
 }
 
