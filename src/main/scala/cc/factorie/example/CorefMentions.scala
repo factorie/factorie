@@ -129,11 +129,13 @@ object CorefMentionsDemo {
       	}
       })
 
-
-      // Define the proposal distribution
-      //var sampler = new CWLearner {
-      //var sampler = new MHMIRALearner {
-      var sampler = new MHSampler[Null](model) with SampleRank with PerceptronUpdates {
+      var sampler = new MHSampler[Null](model) 
+	with SampleRank 
+	with ConfidenceWeightedUpdates
+	//with MIRAUpdates
+	//with PerceptronUpdates
+ {
+	temperature = 0.001
         override val objective = objective1
         def propose(context:Null)(implicit difflist:DiffList) : Double = {
           // Pick a random mention

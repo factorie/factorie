@@ -14,6 +14,7 @@ trait SampleRank extends ProposalSampler0 {
   var bestModel1, bestModel2, bestObjective1, bestObjective2 : Proposal = null
 	abstract override def proposalsHook(proposals:Seq[Proposal]) : Unit = {
 	  super.proposalsHook(proposals)
+
   	val bestModels = proposals.max2(_ modelScore)
   	val bestObjectives = proposals.max2(_ objectiveScore)
   	bestModel1 = bestModels._1

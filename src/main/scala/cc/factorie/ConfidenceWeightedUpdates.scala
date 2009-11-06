@@ -3,101 +3,100 @@ import scala.reflect.Manifest
 import scala.collection.mutable.HashMap
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.Vector
+import scalala.tensor.sparse.SparseVector
 
-trait ConfidenceWeightedUpdates extends WeightUpdates {
+//TODO: do not make this SampleRank specific
+trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
   override type TemplatesToUpdate = DotTemplate
-	def learningRate : Double
-	def learningRate_=(x:Double) : Unit
   def model : Model
   def learningMargin : Double
+  var learningRate : Double = 1
 
-  abstract override def updateWeights : Unit = {
-    //val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
-    //learningRate = kktMultiplier(changeProposal, 1, true);
-    //super.updateWeights(bestModel1, bestModel2, bestObjective1, bestObjective2)
-	}
+    val epsilon = 0.0000001
+    val eta = 0.95; //condifidence value, make sure eta>0.5 because probit(0.5)=0 and probit(x<0.5)<0
+    
+    /**Function of the confidence (it is more intuitive to express eta than the gaussian deviate directly). */
+    val gaussDeviate = Maths.probit(eta);
+
+
+  def updateWeights : Unit = {
+    val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
+    if(changeProposal.modelScore * changeProposal.objectiveScore > 0 || changeProposal.objectiveScore==0)
+      return;
+    val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
+      override def default(template:TemplatesToUpdate) = {
+  	template.freezeDomains
+  	val vector = new SparseVector(template.statsize)
+  	this(template) = vector
+  	vector
+      }
+    }
+    addGradient(gradient,1.0)
+
+    val learningRate = kktMultiplier(changeProposal,gradient)
+    updateParameters(gradient)
+    updateSigma(gradient)
+  }
   
-	/**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
-	val initialVariance = 0.1;
-
-	val sigma = new HashMap[TemplatesToUpdate,Vector] {
-    override def default(template:TemplatesToUpdate) = { 
-      template.freezeDomains
-      val vector = DenseVector(template.statsize)(initialVariance)
-      this(template) = vector
-      vector
+    /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
+    val initialVariance = 0.1;
+    
+    val sigma = new HashMap[TemplatesToUpdate,Vector] {
+      override def default(template:TemplatesToUpdate) = { 
+	template.freezeDomains
+	val vector = DenseVector(template.statsize)(initialVariance)
+	this(template) = vector
+	vector
+      }
     }
-  }
-	val scratch = new HashMap[TemplatesToUpdate,Vector] {
-    override def default(template:TemplatesToUpdate) = { 
-      template.freezeDomains
-      val vector = new DenseVector(template.statsize)
-      this(template) = vector
-      vector
+ 
+  def kktMultiplier(proposal:Proposal,gradient:HashMap[TemplatesToUpdate,SparseVector]) : Double =
+    {
+      val marginMean = proposal.modelScore.abs
+      val v = 1.0 + 2.0 * gaussDeviate * marginMean
+      val marginVar = marginVariance(gradient)
+      var lambda = 0.0
+     if(marginMean >= gaussDeviate * marginVar)
+	return 0.0
+      if(marginVar > epsilon || marginVar < -epsilon)
+	lambda = (-v + Math.sqrt(v*v - 8*gaussDeviate*(marginMean - gaussDeviate*marginVar))) / (4*gaussDeviate*marginVar);
+      Math.max(0, lambda);
     }
-  }
- 
-	val epsilon = 0.0000001
-	val eta = 0.95; //it does not really make sense for this to be less than 0.75, since probit(0.5)=0 and probit(x<0.5)<0
 
-	/**Function of the confidence, precomputed because probit is expensive. */
-	val gaussDeviate = Maths.probit(eta);
 
-	private def kktMultiplier(theModelScoreRatio: Double, fnu: Boolean): Double =	{
-		var marginMean = theModelScoreRatio;
-		if (!fnu) marginMean = -marginMean;
-		val v = 1 + 2 * gaussDeviate * marginMean;
-		val marginVar = 0 // TODO varianceOfMargin; // What goes here???? !!!
-		var lambda = 0.0;
-		if (marginMean >= gaussDeviate * marginVar)
-			return 0.0;
-		if (marginVar > 0 + epsilon || marginVar < 0 - epsilon)
-			lambda = (-v + Math.sqrt(v * v - 8 * gaussDeviate * (marginMean - gaussDeviate * marginVar))) / (4 * gaussDeviate * marginVar);
-		Math.max(0, lambda);
+  def marginVariance(gradient:HashMap[TemplatesToUpdate,SparseVector]):Double =
+    {
+      var result : Double = 0
+      for((template,templateGradient)<-gradient)
+	{
+	  val templateSigma = sigma(template)
+	  for((index,value)<-templateGradient.activeElements)
+	      result += value*value*templateSigma(index)
 	}
+      result
+    }
 
-	//puts a densevector difference on the scratch tape
-	private def putDiffOnScratch(difflist:DiffList): Unit = {
-		model.templatesOf[TemplatesToUpdate].foreach(t => scratch(t).zero)
-		difflist.redo;
-		model.factorsOf[TemplatesToUpdate](difflist).foreach(factor => scratch(factor.template) += factor.statistic.vector)
-		difflist.undo;
-		model.factorsOf[TemplatesToUpdate](difflist).foreach(factor => scratch(factor.template) -= factor.statistic.vector)
+  def updateSigma(gradient: HashMap[DotTemplate,SparseVector]) : Unit =
+    {
+      for((template,templateGrad)<-gradient)
+	{
+	  val ratesTemplate = sigma(template)
+	  for((index,value)<-templateGrad.activeElements)
+	      ratesTemplate(index) = 1.0 / ((1.0 / ratesTemplate(index)) 
+				  + 2*learningRate*gaussDeviate*value*value)
 	}
+    }
 
-	/**Returns variance of margin */
-	private def varianceOfMargin(difflist:DiffList): Double = {
-		var result = 0.0
-		putDiffOnScratch(difflist)
-		model.templatesOf[TemplatesToUpdate].foreach(t => {
-		  val templateSigma = sigma(t)
-			for ((i, v) <- scratch(t).activeElements)
-				result += v * v * templateSigma(i);
-		})
-		result
+  def updateParameters(gradient:HashMap[TemplatesToUpdate,SparseVector]) : Unit =
+    {
+      for((template,templateGradient)<-gradient)
+	{
+	  val templateSigma = sigma(template)
+	  for((index,value)<-templateGradient.activeElements)
+	    template.weights(index) += 
+	      templateGradient(index)*templateSigma(index)*learningRate
 	}
-
-	private def updateMu(difflist:DiffList, incr: Double): Unit = {
-		//System.out.println("inc="+incr);
-		model.factorsOf[TemplatesToUpdate](difflist).foreach(factor => {
-			//factor.template.weights += factor.vector * factor.template.sigma * incr // Why doesn't this work?;
-		  val templateSigma = sigma(factor.template)
-			for (i <- factor.statistic.vector.activeDomain)
-				factor.template.weights(i) += factor.statistic.vector(i) * templateSigma(i) * incr
-		})
-	}
-
-	def updateSigma(difflist:DiffList, incr: Double): Unit = {
-		putDiffOnScratch(difflist)
-		// Square diff to obtain diag(\bf{x}_i)
-		model.templatesOf[TemplatesToUpdate].foreach(t => {
-		  val templateSigma = sigma(t)
-			for ((index, value) <- scratch(t).activeElements) {
-				templateSigma(index) = 1.0 / ((1.0 / templateSigma(index)) + 2 * incr * gaussDeviate * value * value)
-			}})
-	}
-
- 
+    } 
 }
 
 

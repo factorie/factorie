@@ -86,6 +86,9 @@ trait AveragePerceptronUpdates extends WeightUpdates {
     }
   }
   
+
+
+
   def updateWeights: Unit = {
   	val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
   		override def default(template:TemplatesToUpdate) = {

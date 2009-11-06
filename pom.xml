@@ -142,6 +142,17 @@
                 <artifactId>maven-scala-plugin</artifactId>
                 <configuration>
                     <scalaVersion>${scala.version}</scalaVersion>
+		    <launchers>
+                      <launcher>
+                        <id>CorefMentionsDemo</id>
+                        <mainClass>cc.factorie.example.CorefMentionsDemo</mainClass>
+                        <!-- args are optional -->
+                        <!-- jvmArgs are optional -->
+                        <jvmArgs>
+                          <jvmArg>-Xmx800m</jvmArg>
+                        </jvmArgs>
+                      </launcher>
+		    </launchers>
                 </configuration>
             </plugin>
         </plugins>

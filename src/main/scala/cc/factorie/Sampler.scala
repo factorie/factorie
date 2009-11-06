@@ -49,15 +49,17 @@ trait ProposalSampler0 {
 /** Samplers that generate a list of Proposal objects, and select one log-proportionally to their modelScore. */
 trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
   def proposals(context:C): Seq[Proposal]
+
   def process1(context:C): DiffList = {
     val props = proposals(context)
     proposalsHook(props)
-    val proposal = if (props.size == 1) props.first else props.sampleExpProportionally(_.modelScore)
+    val proposal = if (props.size == 1) props.first else props.sampleExpProportionally(_.acceptanceScore)
     proposal.diff.redo
     proposalHook(proposal)
     proposal.diff
   }
-	def proposalsHook(proposals:Seq[Proposal]): Unit = {}
+
+  def proposalsHook(proposals:Seq[Proposal]): Unit = {}
   def proposalHook(proposal:Proposal): Unit = {}
 }
 
@@ -71,7 +73,7 @@ abstract class SamplerOverSettings[C](val model:Model, val objective:Model) exte
   var temperature = 1.0
   // TODO Some faster alternative to "toList" below?
   def proposals(context:C): Seq[Proposal] =
-    settings(context).map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m/temperature, o)}).toList
+    settings(context).map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m, o, m/temperature)}).toList
 }
 
 
