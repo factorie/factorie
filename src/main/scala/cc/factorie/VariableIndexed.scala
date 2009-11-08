@@ -20,7 +20,7 @@ abstract trait IndexedVariable extends Variable with TypedVariable {
 // TODO Consider making a ConstantSingleIndexedVariable, for use by MixtureComponent
 // But how would it be enforced?
 
-/** If you are looking for a concrete implementation with storage for index, consider EnumObservation. */
+/** If you are looking for a concrete implementation with storage for index, consider EnumObservation or EnumVariable or CoordinatedEnumVariable. */
 abstract trait SingleIndexed extends IndexedVariable {
 	type VariableType <: SingleIndexed
  	class DomainInSubclasses
@@ -38,6 +38,7 @@ abstract trait SingleIndexedVariable extends SingleIndexed with Proposer /*with 
 	protected var _index = -1
 	def index = _index
 	def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
+		// TODO Note that we do not check that (newIndex < domain.size), but perhaps we should; this would slow us down, though!
 		if (newIndex < 0) throw new Error("SingleIndexedVariable setByIndex can't be negative.")
 		if (newIndex != _index) {
 			if (d != null) d += new SingleIndexedDiff(_index, newIndex)
@@ -93,6 +94,7 @@ abstract trait SingleIndexedVariable extends SingleIndexed with Proposer /*with 
 // TODO I think this should be removed.  All inference meta-data should be stored separately from the Variables in the inferencer itself,
 //  because we can't know at Variable creation time which Variables we will want to do inference on and which not.
 //  Likely it would be stored in a HashMap[Variable,Array[Double]], or somesuch.
+@deprecated // Such distributions are now stored separately from variables, in Marginal objects
 trait SampleCounts {
   this : SingleIndexedVariable =>
   val sampleCounts = new Array[Double](domain.allocSize)
@@ -222,6 +224,7 @@ class CoordinatedBool(b: Boolean) extends CoordinatedEnumVariable(b) {
 	type VariableType <: CoordinatedBool
 	type DomainType <: BoolDomain[VariableType]
   class DomainClass extends BoolDomain
+  def intValue = if (b) Bool.t.index else Bool.f.index
 	def ^(other:Bool) = value && other.value
 	def v(other:Bool) = value || other.value
 	def ==>(other:Bool) = !value || other.value

@@ -6,32 +6,68 @@ import cc.factorie.util.Implicits._
 
 // A collection of Variables and Factors relevant to generative models
 
-// TODO Think more carefully about the hierarchy of Variables that are parameters 
-trait GenerativeDistribution extends Variable {
-  type VariableType <: GenerativeDistribution
+/** A Variable that has a 'source' GenerativeDistribution and a 'pr' probability of being generated. */
+trait GenerativeVariable[This<:GenerativeVariable[This]] extends Variable {
+  this: This =>
+  type SourceType <: GenerativeDistribution[This]
+  protected var source: SourceType = _
+  def setSource(dir:SourceType)(implicit d:DiffList) : Unit = {
+    // TODO: consider not calling ungenerate and generate here.  Setting the source shouldn't change the Multinomial parameters immediately
+    if (d != null) d += SetSourceDiff(source, dir)
+    if (source != null) source.ungenerate(this)
+    source = dir
+    source.generate(this)
+  }
+  /** Register this variable as having been generated from source 's'. */
+  def ~(s:SourceType): this.type = { setSource(s)(null); this }
+  /** Register this variable as having been generated from source 's', and furthermore set this variable's value to a sample from 's'. */
+  def :~(s:SourceType): this.type = { this.~(s); s.sampleInto(this); this }
+  /** Register this variable as having been generated from the source indicated by the MixtureChoice 'mmc'. */
+  def ~[M<:SourceType](mmc:MixtureChoice[M,_]) : this.type = {
+    mmc.setOutcome(this); 
+    this.~(mmc.choice) // either here or in mmc.setOutcome; not sure which is more natural
+  }
+  def :~[M<:SourceType](mmc:MixtureChoice[M,_]) : this.type = { this.~(mmc); mmc.choice.sampleInto(this); this }
+  def pr: Double
+  //def sample(implicit d:DiffList): Unit
+  case class SetSourceDiff(oldSource:SourceType, newSource:SourceType) extends Diff {
+    def variable = GenerativeVariable.this
+    def redo = { if (oldSource != null) oldSource.ungenerate(variable)(null); source = newSource; newSource.generate(variable)(null) }
+    def undo = { newSource.ungenerate(variable)(null); source = oldSource; if (oldSource != null) oldSource.generate(variable)(null) }
+  }
+}
+
+
+// Note that 'O' is not *required* to be a GenerativeVariable.  This allows us to put SingleIndexedVariable into Multinomial, for example.
+trait GenerativeDistribution[O<:Variable] extends AbstractGenerativeDistribution {
+  type OutcomeType = O
+}
+
+// A stand-in for GenerativeDistribution that does not take type parameters
+trait AbstractGenerativeDistribution extends Variable {
   type OutcomeType <: Variable
+  type VariableType <: GenerativeDistribution[OutcomeType]
 	def estimate : Unit // TODO consider removing this.  Paramter estimation for generative models should be seen as inference?
-	// This odd arg type below is due to:
-	// http://www.nabble.com/Fwd:--lift--Lift-with-Scala-2.6.1--td14571698.html	
+	//// This odd arg type below is due to:
+	//// http://www.nabble.com/Fwd:--lift--Lift-with-Scala-2.6.1--td14571698.html	
 	//def pr[O<:OutcomeType](o:O) : Double
-  // This caused the compiler to crash. For now we have the "unsafe" work-around below.
+  //// This caused the compiler to crash. For now we have the "unsafe" work-around below.
   lazy val generatedSamples = new HashSet[OutcomeType];
   var keepGeneratedSamples = true
-	def generate(o:OutcomeType)(implicit d:DiffList) = 
+	def generate[O2<:OutcomeType](o:O2)(implicit d:DiffList): Unit = 
    if (generatedSamples.contains(o)) throw new Error("Already generated outcome "+o) 
    else if (keepGeneratedSamples) {
      generatedSamples += o
      if (d != null) d += GenerativeDistributionGenerateDiff(o)
    }
   // TODO Add Handling of DiffList!!!!
-  def ungenerate(o:OutcomeType)(implicit d:DiffList) = if (keepGeneratedSamples) {
+  def ungenerate[O2<:OutcomeType](o:O2)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
   	generatedSamples -= o
   	if (d != null) d += GenerativeDistributionUngenerateDiff(o)
   }	
-  //def generate(o:OutcomeType)(implicit d:DiffList)
-	//def ungenerate(o:OutcomeType)(implicit d:DiffList)
-	def pr(o:OutcomeType) : Double
+	def pr[O2<:OutcomeType](o:O2) : Double
 	def logpr(o:OutcomeType) : Double
+	def sampleInto(o:OutcomeType): Unit
 	// Fighting with the Scala type system
 	// See http://www.nabble.com/Path-dependent-type-question-td16767728.html
 	def unsafeGenerate(o:Variable)(implicit d:DiffList) = generate(o.asInstanceOf[OutcomeType])
@@ -39,19 +75,19 @@ trait GenerativeDistribution extends Variable {
 	def unsafePr(o:Variable) = pr(o.asInstanceOf[OutcomeType])
 	def unsafeLogpr(o:Variable) = logpr(o.asInstanceOf[OutcomeType])
 	case class GenerativeDistributionGenerateDiff(m:OutcomeType) extends Diff {
-		def variable = GenerativeDistribution.this.asInstanceOf[VariableType]
+		def variable = AbstractGenerativeDistribution.this.asInstanceOf[VariableType]
 		def redo = { if (generatedSamples.contains(m)) throw new Error else generatedSamples += m}
 		def undo = { generatedSamples -= m }
 	}
  	case class GenerativeDistributionUngenerateDiff(m:OutcomeType) extends Diff {
-		def variable = GenerativeDistribution.this.asInstanceOf[VariableType]
+		def variable = AbstractGenerativeDistribution.this.asInstanceOf[VariableType]
 		def redo = { generatedSamples -= m }
 		def undo = { if (generatedSamples.contains(m)) throw new Error else generatedSamples += m}
 	}
 }
 
-class Gaussian1(initialMean:Double, initialVariance:Double) extends GenerativeDistribution {
-  type OutcomeType = Real
+class Gaussian1(initialMean:Double, initialVariance:Double) extends GenerativeDistribution[Real] {
+  //type OutcomeType = Real
   private var mean = initialMean
   private var variance = initialVariance
   def sample : Double = Maths.nextGaussian(mean,variance)(Global.random)
@@ -61,8 +97,8 @@ class Gaussian1(initialMean:Double, initialVariance:Double) extends GenerativeDi
     return - diff * diff / (2 * variance) - 0.5 * Math.log(2 * Math.Pi * variance)
   }
   def logpr(o:Real) = logpr(o.value)
-  def pr(x:Double) = Math.exp(x)
-  def pr(o:Real) = pr(o.value)
+  def pr(x:Double):Double = Math.exp(x)
+  def pr[O2<:Real](o:O2):Double = pr(o.value)
   def minSamplesForVarianceEstimate = 5
   /** This implements a moment-matching estimator. */
   def estimate : Unit = {
@@ -79,20 +115,19 @@ class Gaussian1(initialMean:Double, initialVariance:Double) extends GenerativeDi
 
 // Consider using DenseVector instead of Array[Double] everywhere in this file
 
-trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution/*[Multinomial[O]]*/ {
-  type OutcomeType = Multinomial[O]
+//trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution/*[Multinomial[O]]*/
+trait AbstractDirichlet[O<:SingleIndexed] extends GenerativeDistribution[AbstractMultinomial[O]] {
+	//type OutcomeType = AbstractMultinomial[O]
   def size : Int
 	def alpha(index:Int) : Double
 	def alphas : Seq[Double] = for (i <- 0 until size) yield alpha(i)
 	def sum : Double
 	def mean(index:Int) : Double
   def apply(index:Int) = alpha(index)
-	def generate(o:Multinomial[O])(implicit d:DiffList) : Unit
-	def ungenerate(o:Multinomial[O])(implicit d:DiffList) : Unit
-	def sample : Multinomial[O]
+	def sampleValue : OutcomeType
  	def estimate : Unit = throw new Error("Method estimate is not implemented in this class.  You must add a trait for estimation.")
   //def sample(n:Int) : Seq[Multinomial[O]] = for (i <- 0 until n) yield sample
-	def sampleInto(m:Multinomial[O]) : Unit = {
+	def sampleInto(m:OutcomeType) : Unit = {
 	  //println("sampleInto")
 	  var norm = 0.0
 	  val c = new Array[Double](m.size)
@@ -112,9 +147,9 @@ trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution
 	  m.setCounts(c)
 	}
   //def pr[O2<:OutcomeType](m:O2) : Double = throw new Error("Not yet implemented")
-  def pr(m:Multinomial[O]) : Double = Math.exp(logpr(m))
+  def pr(m:OutcomeType) : Double = Math.exp(logpr(m))
   //def logpr[O2<:OutcomeType](m:O2) : Double = Math.log(pr(m))
-  def logpr(m:Multinomial[O]) : Double = {
+  def logpr(m:OutcomeType) : Double = {
     var ret = Maths.logGamma(sum)
     for (i <- 1 until size) ret -= Maths.logGamma(alpha(i))
     for (i <- 1 until size) ret += alpha(i) * Math.log(m.pr(i))
@@ -145,21 +180,21 @@ abstract class Dirichlet[O<:MultinomialOutcome[O]](initialAlpha:Seq[Double], pse
 	@scala.inline final def mean(i:Int) = _mean(i) / _meanNormalizer
 	@scala.inline final def alpha(i:Int) = mean(i) * _sum
 	@scala.inline final def sum = _sum
- 	def sample : Multinomial[O] = { val mul = new Multinomial[O]()(m); sampleInto(mul); mul }
-  override def generate(m:Multinomial[O])(implicit d:DiffList) = {
+ 	def sampleValue = { val mul = new Multinomial[O]()(m); sampleInto(mul); mul }
+  override def generate(m:OutcomeType)(implicit d:DiffList) = {
 		DirichletGenerateDiff
     super.generate(m)
   }
-  override def ungenerate(m:Multinomial[O])(implicit d:DiffList) = {
+  override def ungenerate(m:OutcomeType)(implicit d:DiffList) = {
 		DirichletUngenerateDiff
     super.ungenerate(m)
   }
-  case class DirichletGenerateDiff(m:Multinomial[O])(implicit d:DiffList) extends AutoDiff {
+  case class DirichletGenerateDiff(m:OutcomeType)(implicit d:DiffList) extends AutoDiff {
     def variable = Dirichlet.this
     def redo = { for (i <- 0 until size) _mean(i) += m.pr(i); _meanNormalizer += 1.0 }
     def undo = { for (i <- 0 until size) _mean(i) -= m.pr(i); _meanNormalizer -= 1.0 }
   }
-  case class DirichletUngenerateDiff(override val m:Multinomial[O])(implicit d:DiffList) extends DirichletGenerateDiff(m) {
+  case class DirichletUngenerateDiff(override val m:OutcomeType)(implicit d:DiffList) extends DirichletGenerateDiff(m) {
     override def redo = super.undo
     override def undo = super.redo
   }
@@ -185,7 +220,7 @@ trait DirichletMomentMatchingEstimator[O<:MultinomialOutcome[O]] extends Abstrac
 		val smoothing = uniformPseudoEvidence / _mean.length
 	  for (i <- 0 until _mean.length) _mean(i) = smoothing
 	  val variance = new Array[Double](_mean.length)
-	  for (m <- generatedSamples; i <- 0 until _mean.length) _mean(i) += m.counts(i)/m.countsTotal
+	  for (m <- generatedSamples; i <- 0 until _mean.length) _mean(i) += m.count(i)/m.countTotal
 	  _meanNormalizer = generatedSamples.size + uniformPseudoEvidence
 	  //for (i <- 0 until _mean.length) _mean(i) /= (generatedSamples.size + uniformPseudoEvidence)
 		//println("unnormalized mean "+_mean.take(20).toList)
@@ -197,7 +232,7 @@ trait DirichletMomentMatchingEstimator[O<:MultinomialOutcome[O]] extends Abstrac
 		}
 		// Calculate variance = E[x^2] - E[x]^2 for each dimension
 	  for (m <- generatedSamples; i <- 0 until _mean.length) {
-	    val p = m.counts(i)/m.countsTotal
+	    val p = m.count(i)/m.countTotal
 	    variance(i) += p * p
 	  }
 		for (i <- 0 until _mean.length) {
@@ -227,162 +262,16 @@ class SymmetricDirichlet[O<:MultinomialOutcome[O]](initialAlpha:Double)(implicit
 	def alpha(index:Int) = initialAlpha
 	def mean(index:Int) = meanAlpha
 	lazy val sum = initialAlpha * outcomeDomain.size
- 	def sample = { val mul = new Multinomial[O]()(m); sampleInto(mul); mul }
+ 	def sampleValue = { val mul = new Multinomial[O]()(m); sampleInto(mul); mul }
 }
 
-class UniformMultinomial[O<:MultinomialOutcome[O]](implicit m:Manifest[O]) extends Multinomial[O](null)(m)
-
-class GenericMultinomial(initCounts:Seq[Double], dim:Int) extends Variable with GenerativeDistribution {
-  type OutcomeType = SingleIndexedVariable
-  type O = OutcomeType
-  def this(initCounts:Seq[Double]) = this(initCounts, initCounts.size)
-  def this(dim:Int) = this(null, dim)
-  lazy val _counts = new Array[Double](dim)
-  private var total : Double = 0.0
-  def countsTotal = total
-  def counts : RandomAccessSeq[Double] = _counts
-  def setCounts(c:Seq[Double]) : Unit = {
-    assert(c.length == _counts.length)
-    total = 0.0
-    var i = 0
-    c.foreach(x => {_counts(i) = x; total += x; i += 1}) 
-  }
-  if (initCounts != null) setCounts(initCounts)
-  def size = _counts.length
-  var source : AbstractDirichlet[_] = _
-  def setSource(dir:AbstractDirichlet[_])(implicit d:DiffList) : Unit = {
-    throw new Error("Not yet implemented")
-    // TODO: consider not calling ungenerate and generate here.  Setting the source shouldn't change the Multinomial parameters immediately
-    //if (d != null) d += MultinomialSetSourceDiff(source, dir)
-    //if (source != null) source.ungenerate(this) 
-    //source = dir
-    //source.generate(this)
-  }
-  def increment(index:Int) = { _counts(index) += 1.0; total += 1.0 }
-  def unincrement(index:Int) = { _counts(index) -= 1.0; total -= 1.0 }
-  def pr(index:Int) : Double = {
-    //println("Multinomial.pr "+counts(index)+" "+source(index)+" "+total+" "+source.sum)
-    if (/*false &&*/ source != null)
-      (_counts(index) + source.alpha(index)) / (total + source.sum)
-    else
-      _counts(index) / total
-  }
-  def pr(o:O) : Double = pr(o.index)
-  def logpr(o:O) : Double = Math.log(pr(o))
-  def logpr(index:Int) = Math.log(pr(index))
-  def estimate = {}
-}
-
-// Does not have its own Domain.  Size of pr is Domain of O
-// TODO should this Iterate over [O] or over [O#VariableType#ValueType] ???
-class Multinomial[O<:MultinomialOutcome[O]](initCounts:Seq[Double])(implicit m:Manifest[O]) extends Variable with GenerativeDistribution with Iterable[O#VariableType#ValueType] {
-  def this()(implicit m:Manifest[O]) = this(null)(m)
-  type OutcomeType = O
-  type VariableType <: Multinomial[O];
-	class DomainInSubclasses
-	type OutcomeDomainType = O // TODO No longer necessary, I think
-	val outcomeDomain = Domain[O](m) // TODO unfortunately this gets fetched and stored repeatedly for each instance
-	lazy val _counts = new Array[Double](outcomeDomain.allocSize)
-	private var total : Double = 0.0
-	def countsTotal = total
-	def counts : RandomAccessSeq[Double] = _counts
-	def setCounts(c:Seq[Double]) : Unit = {
-	  assert(c.length == _counts.length)
-	  total = 0.0
-	  var i = 0
-	  c.foreach(x => {_counts(i) = x; total += x; i += 1}) 
-	}
-	if (initCounts != null) setCounts(initCounts)
-	def size = _counts.length
-	var source : AbstractDirichlet[O] = _
-	def setSource(dir:AbstractDirichlet[O])(implicit d:DiffList) : Unit = {
-	  // TODO: consider not calling ungenerate and generate here.  Setting the source shouldn't change the Multinomial parameters immediately
-		if (d != null) d += MultinomialSetSourceDiff(source, dir)
-		if (source != null) source.ungenerate(this) 
-		source = dir
-		source.generate(this)
-	}
-	def ~[D<:Dirichlet[O]](mc:MixtureChoice[D,_]) : this.type = {
-		mc.setOutcome(this); 
-		this.~(mc.choice) // either here or in mmc.setOutcome; not sure which is more natural
-	}
-	def ~(d:AbstractDirichlet[O]) : this.type /*Multinomial[O]*/ = { setSource(d)(null); this }
-	def :~(d:AbstractDirichlet[O]) : this.type = { setSource(d)(null); d.sampleInto(this); this }
-	def :=~(d:AbstractDirichlet[O]) : this.type = { 
-	  setSource(d)(null)
-	  for (i <- 0 until _counts.length) _counts(i) = d.alpha(i)
-	  total = d.sum
-	  this
-	}
-	/** Set source, and incrementally update the parameters of this Multinomial */
-	def ~:(o:O) : this.type = { o.setSource(this)(null); increment(o); this }
-	def increment(o:O) = { _counts(o.index) += 1.0; total += 1.0 }
-	def unincrement(o:O) = { _counts(o.index) -= 1.0; total -= 1.0 }
-	override def generate(o:O)(implicit d:DiffList) = { 
-		//println("Multinomial.outcomeDomain.size="+outcomeDomain.size+" generate "+o+" size="+size); Console.flush; 
-		_counts(o.index) += 1.0; total += 1.0
-		if (d != null) d += MultinomialGenerateDiff(o.index)
-	}
-	override def ungenerate(o:O)(implicit d:DiffList) = { 
-		_counts(o.index) -= 1.0; assert(_counts(o.index) >= 0.0)
-		total -= 1.0; assert(total >= 0.0)
-		if (d != null) d += MultinomialUngenerateDiff(o.index)
-	}
-	def estimate : Unit = {} // Nothing to be done; constantly keeps itself estimated
-	def nextOutcomeValue : O#VariableType#ValueType = outcomeDomain.get(sample) 
-	def sample : Int = {
-		val s = Global.random.nextDouble; var sum = 0.0; var i = 0; val size = outcomeDomain.size
-		while (i < size) {
-			sum += pr(i)
-			if (sum >= s) return i
-			i += 1
-		}
-		return size - 1
-	}
-	def sample(numSamples:Int) : Seq[Int] = for (i <- 0 until numSamples force) yield sample
-	def elements : Iterator[O#VariableType#ValueType] = new Iterator[O#VariableType#ValueType] {
-		def hasNext = true
-		def next = nextOutcomeValue
-	}
-	def pr(index:Int) : Double = {
-		//println("Multinomial.pr "+counts(index)+" "+source(index)+" "+total+" "+source.sum)
-		if (/*false &&*/ source != null)
-			(_counts(index) + source.alpha(index)) / (total + source.sum)
-		else
-			_counts(index) / total
-		}
-	def pr(o:O) : Double = pr(o.index)
-	def pr(os:Seq[O]) : Double = os.foldLeft(1.0)(_*pr(_))
-	def prs : RandomAccessSeq[Double] = new RandomAccessSeq[Double] { def apply(i:Int) = pr(i); def length = _counts.size}
-	def logpr(o:O) : Double = Math.log(pr(o))
-	def logpr(index:Int) = Math.log(pr(index))
-	def logpr(indices:Seq[Int]) : Double = indices.foldLeft(0.0)(_+logpr(_))
-	def top(n:Int) = _counts.zipWithIndex.sortReverse({case (c,i)=>c}).take(n).toList.map({case (c,i)=>(outcomeDomain.get(i),i,pr(i),c)})
-	def topWords(n:Int) = top(n).toList.map(_._1)
-	override def toString = "Multinomial(count="+total+")"
-	case class MultinomialGenerateDiff(i:Int) extends Diff {
-		def variable = Multinomial.this
-		def redo = { _counts(i) += 1.0; total += 1.0 }
-		def undo = { _counts(i) -= 1.0; total -= 1.0 }
-	}
-	case class MultinomialUngenerateDiff(i:Int) extends Diff {
-		def variable = Multinomial.this
-		def redo = { _counts(i) -= 1.0; total -= 1.0 }
-		def undo = { _counts(i) += 1.0; total += 1.0 }
-	}
-	case class MultinomialSetSourceDiff(oldSource:AbstractDirichlet[O], newSource:AbstractDirichlet[O]) extends Diff {
-		def variable = Multinomial.this
-		def redo = { if (oldSource != null) oldSource.ungenerate(variable)(null); source = newSource; newSource.generate(variable)(null) }
-		def undo = { newSource.ungenerate(variable)(null); source = oldSource; if (oldSource != null) oldSource.generate(variable)(null) }
-	}
-}
 
   
 /** Trait for any distribution that might be selected as as part of a Multinomial mixture. 
 Creates is own Domain.  Number of components in the mixture is the size of the domain.  Values of the domain are these MixtureComponent objects.
  Note that this is not a MultinomialOutcome, it is the *value* of MultinomialOutcome. */
-trait MixtureComponent[This<:MixtureComponent[This] with GenerativeDistribution] extends TypedSingleIndexedVariable[This] with GenerativeDistribution {
-	this : This =>
+//trait MixtureComponent[This<:MixtureComponent[This] with GenerativeDistribution] extends TypedSingleIndexedVariable[This] with GenerativeDistribution
+trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistribution] extends TypedSingleIndexedVariable[This] with AbstractGenerativeDistribution {	this : This =>
 	//type OutcomeType = This#OutcomeType
 	type VariableType = This  // can we get away with this = ?
 	type DomainType = IndexedDomain[VariableType] // We must make sure that this.domain is an IndexedDomain
@@ -397,9 +286,9 @@ trait MixtureComponent[This<:MixtureComponent[This] with GenerativeDistribution]
 }
 
 
-// Usage: 
+// Example usage, in LDA: 
 // class Topic extends Multinomial[Word] with MixtureComponent[Topic]
-// class Z extends MixtureChoice[Topic,Z]
+// class Z extends MixtureChoice[Topic,Z]; Domain.alias[Z,Topic]
 // class Theta extends Multinomial[Z];
 /** A multinomial outcome that is an indicator of which mixture component in a MixtureChoice is chosen.  
  * The "Z" in Latent Dirichlet Allocation is an example. */                                 
@@ -420,11 +309,11 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
 		else throw new Error
 	override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
 	  if (_outcome == null) throw new Error("No outcome yet set.")
-	  choice.unsafeUngenerate(outcome)
+	  choice.unsafeUngenerate(outcome) // was unsafe
 	  super.setByIndex(newIndex) // this changes the value of 'choice'
-	  choice.unsafeGenerate(outcome)
+	  choice.unsafeGenerate(outcome) // was unsafe
 	}
-  def logpr : Double = choice.unsafeLogpr(outcome) + source.logpr(index)
+  def logpr : Double = choice.unsafeLogpr(outcome) + source.logpr(index) // was unsafe
 }
 
   
@@ -432,10 +321,11 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
 // TODO Consider renaming this MultinomialSample, because the instances of this class are individual samples (e.g. token).  "outcome" may indicate the value (e.g. type) 
 trait MultinomialOutcome[This<:MultinomialOutcome[This] with SingleIndexed] extends SingleIndexed {
 	this : This =>
+  type SourceType = AbstractMultinomial[This]
 	class DomainInSubclasses
 	type OutcomeDomainType = This // TODO No longer necessary, I think
-	var source : Multinomial[This] = _
-	def setSource(m:Multinomial[This])(implicit d:DiffList) : Unit = {
+	var source : SourceType = _
+	def setSource(m:SourceType)(implicit d:DiffList) : Unit = {
 		if (m == null) throw new IllegalArgumentException("MultinomialOutcome cannot have null source")
 		if (d != null) d += new MultinomialOutcomeSourceChangeDiff(source, m)
 		if (source != null) source.ungenerate(this)
@@ -443,31 +333,32 @@ trait MultinomialOutcome[This<:MultinomialOutcome[This] with SingleIndexed] exte
 		//println("Multinomial Outcome setSource on outcome "+this+" index="+index)
 		source.generate(this)
 	}
-	def ~(m:Multinomial[This]) : this.type = {
+	def ~(m:SourceType) : this.type = {
 		setSource(m)(null); 
 		this 
 	}
-	def ~[M<:Multinomial[This]](mmc:MixtureChoice[M,_]) : this.type = {
+	def ~[M<:SourceType](mmc:MixtureChoice[M,_]) : this.type = {
 		mmc.setOutcome(this); 
 		this.~(mmc.choice) // either here or in mmc.setOutcome; not sure which is more natural
 	}
-	case class MultinomialOutcomeSourceChangeDiff(oldSource:Multinomial[This], newSource:Multinomial[This]) extends Diff {
+	case class MultinomialOutcomeSourceChangeDiff(oldSource:SourceType, newSource:SourceType) extends Diff {
 		def variable = MultinomialOutcome.this
 		def redo = { if (oldSource != null) oldSource.ungenerate(variable)(null); source = newSource; newSource.generate(variable)(null) }
 		def undo = { newSource.ungenerate(variable)(null); source = oldSource; if (oldSource != null) oldSource.generate(variable)(null) }
 	}
 }
 
+/** A MultinomialOutcome that is also a SingleIndexedVariable */
 trait MultinomialOutcomeVariable[This<:MultinomialOutcomeVariable[This] with SingleIndexedVariable] extends SingleIndexedVariable with MultinomialOutcome[This] {
   this : This =>
 	/** Attach to Multinomial generator m, and also set my value to something sampled from the generator. */
-	def :~(m:Multinomial[This]) : this.type = {
-		_index = m.sample // TODO Do this instead by setByIndex()()?  But causes some problems...
+	def :~(m:SourceType) : this.type = {
+		_index = m.sampleValue // TODO Do this instead by setByIndex()()?  But causes some problems...
 		this.~(m)
 	}
 	/** Attach to the Multinomial indicated by MixtureChoice mmc, and also set my value sampled from the generator. */
-	def :~[M<:Multinomial[This]](mmc:MixtureChoice[M,_]) : this.type = {
-		_index = mmc.choice.sample // TODO Do this instead by setByIndex()()?  But causes some problems...
+	def :~[M<:SourceType](mmc:MixtureChoice[M,_]) : this.type = {
+		_index = mmc.choice.sampleValue // TODO Do this instead by setByIndex()()?  But causes some problems...
 		this.~(mmc)
 	}
 	override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
@@ -483,7 +374,7 @@ case class Coin(p:Double, totalCount:Double) extends Multinomial[Flip](Array((1-
 	def this(p:Double) = this(p:Double, 1.0)
 	def this() = this(0.5)
 	assert (p >= 0.0 && p <= 1.0)
-	def flip : Flip = { val f = new Flip; f.setByIndex(this.sample)(null); f }
+	def flip : Flip = { val f = new Flip; f.setByIndex(this.sampleValue)(null); f }
 	def flip(n:Int) : Seq[Flip] = for (i <- 0 until n force) yield flip
 	def pr(f:Boolean) : Double = if (f) pr(1) else pr(0)
 }
@@ -521,7 +412,8 @@ class MixtureChoiceTemplate[D<:GenerativeDistribution] extends TemplateWithStati
 */
 
 class GenericMultinomialOutcome extends MultinomialOutcome[GenericMultinomialOutcome] { def index = -1 }
-class GenericMixtureComponent extends Multinomial[GenericMultinomialOutcome] with MixtureComponent[GenericMixtureComponent]
+// TODO Is this arbitrary "2" below OK?
+class GenericMixtureComponent extends DenseMultinomial[GenericMultinomialOutcome](2) with MixtureComponent[GenericMixtureComponent]
 class GenericMixtureChoice extends MixtureChoice[GenericMixtureComponent,GenericMixtureChoice]
 // trait MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]] extends MultinomialOutcome[This] {
 object MixtureChoiceTemplate extends TemplateWithStatistics1[MixtureChoice[GenericMixtureComponent,GenericMixtureChoice]] {

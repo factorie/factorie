@@ -16,8 +16,9 @@ import cc.factorie.util.Implicits._
    <p>
    You should never make a Variable a case class because then it will get hashCode and equals methods
    dependent on its constructor arguments; but the FACTORIE library depends on being able to distinguish individual
-   Variable instances based on their address. */ 
-abstract trait Variable {
+   Variable instances based on their address. */
+// TODO Consider adding "extends AnyRef"??
+abstract trait Variable /* extends AnyRef */ {
   /** The type of this variable, especially used by this Variable's Domain. */
 	type VariableType <: Variable
 	/** The type of this.domain and Domain[MyVariable]*/
@@ -43,14 +44,14 @@ abstract trait Variable {
 	}
 	def printName = shortClassName
 	override def toString = printName + "(_)"
-	def factors(model:Model): Iterable[Factor] = model.factors(this)
+	def factors(model:Model): Iterable[Factor] = model.factors(this) // TODO Remove this?  Why have two different short ways of doing this?
 	def isConstant = false
 }
 
 /** Used as a marker for Variables whose value does not change once created.  
     Be  careful to only use this in class definitions that cannot become mutable in subclasses. */
 abstract trait ConstantValue extends Variable {
-  override def isConstant = true
+  override final def isConstant = true
 }
 
 /** For variables whose value has a type, indicated in type ValueType */

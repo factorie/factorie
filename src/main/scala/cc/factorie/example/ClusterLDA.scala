@@ -66,7 +66,7 @@ object ClusterLDADemo {
     	print("."); Console.flush
     	if (i % 5 == 0) {
     		println ("Iteration "+i)
-    		topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_._1)))
+    		topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_.value)))
     		println
       }
     	if (i % 10 == 0) {
@@ -75,10 +75,10 @@ object ClusterLDADemo {
     	  alphas.foreach(a => println("Alpha %2d %5d %s".format(a.index, a.generatedSamples.size, a.alphas.toList.toString)))
     	}
     }	
-    topics.foreach(t => {println("Topic "+t.index); t.top(20).foreach(x => println("%-16s %f".format(x._1,x._3)))})
+    topics.foreach(t => {println("Topic "+t.index); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
     alphas.foreach(a => {
       println("Alpha %2d %5d %s".format(a.index, a.generatedSamples.size, a.alphas.toList.toString))
-      a.alphas.toList.zipWithIndex.sortReverse(_._1).foreach(ai => println("Topic %2d %s".format(ai._2, topics(ai._2).topWords(5).toString)))
+      a.alphas.toList.zipWithIndex.sortReverse(_._1).foreach(ai => println("Topic %2d %s".format(ai._2, topics(ai._2).topValues(5).toString)))
     })
 		println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
     

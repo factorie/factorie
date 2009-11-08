@@ -3,7 +3,7 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 import cc.factorie.util.Implicits._
 
 // Preliminary steps toward generic interfaces to inference
-
+// Eventually we will have marginals over factors instead of variables
 
 
 // Generic over sampling-based inference and variational inference
@@ -14,6 +14,7 @@ trait Inferencer[V<:Variable] {
   type LatticeType <: Lattice
   def infer(variables:Collection[V], marginalizing:Collection[V]): LatticeType
   def infer(variables:Collection[V]): LatticeType = infer(variables, null)
+  //def infer(factors:TemplateList[VectorTemplate], variables:Collection[V]): LatticeType
 }
 
 trait Maximizer[V<:Variable] extends Inferencer[V] // Include something like this?
@@ -27,7 +28,7 @@ trait Optimizer {
 }
 
 
-class IndexedMarginal[V<:IndexedVariable](val variable:V) extends GenericMultinomial(variable.domain.size) with Marginal {
+class IndexedMarginal[V<:IndexedVariable](val variable:V) extends DenseMultinomial(variable.domain.size) with Marginal {
   def increment : Unit = variable match {
     case v:SingleIndexedVariable => increment(v.index)
     case v:BinaryVectorVariable[_] => v.incrementInto(this)

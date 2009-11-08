@@ -56,11 +56,11 @@ object LDADemo {
     	print("."); Console.flush
     	if (i % 5 == 0) {
     		println ("Iteration "+i)
-    		topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_._1)))
+    		topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_.value)))
     		println
       }
     }	
-    topics.foreach(t => {println("\nTopic "+t.index); t.top(20).foreach(x => println("%-16s %f".format(x._1,x._3)))})
+    topics.foreach(t => {println("\nTopic "+t.index); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
 		println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
     
 		0
