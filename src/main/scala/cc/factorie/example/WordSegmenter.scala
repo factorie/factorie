@@ -81,7 +81,7 @@ object WordSegmenterDemo {
 		println ("Initial test accuracy = "+ objective.aveScore(testVariables))
 
 		// Sample and Learn!
-		var learner = new GibbsSampler(model, objective) with SampleRank with PerceptronUpdates 
+		var learner = new GibbsSampler(model, objective) with SampleRank with PerceptronUpdates
 		var sampler = new GibbsSampler(model)
 		learner.learningRate = 1.0
 		for (i <- 0 until 7) {
@@ -96,7 +96,9 @@ object WordSegmenterDemo {
 		}
 		println ("Setting weights to average")
 		//learner.setWeightsToAverage
-		println ("Train accuracy = "+ objective.aveScore(trainVariables))
+		//(trainVariables ++ testVariables).foreach(_.setRandomly)
+    var predictor = new SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
+    predictor.infer(testVariables)
 		println ("Test  accuracy = "+ objective.aveScore(testVariables))
 
 

@@ -3,34 +3,42 @@ import scala.reflect.Manifest
 import scala.collection.mutable.ArrayBuffer
 
 
-class GenericSampler[C](sampler:Sampler[C])(implicit mc:Manifest[C]) extends Sampler[C] {
+class GenericSampler[C](val sampler:Sampler[C])(implicit mc:Manifest[C]) extends Sampler[C] {
+  //println("GenericSampler m="+mc)
 	val contextClass = mc.erasure
+	val contextManifest = mc
   /** If argument is the right type, then call process method. */
-  def process0[T<:AnyRef](context:T): DiffList = if (contextClass.isAssignableFrom(context.getClass)) process(context.asInstanceOf[C]) else null
+  def process0[T<:AnyRef](context:T): DiffList = 
+    if (contextManifest >:> Manifest.classType(context.getClass)) 
+      process(context.asInstanceOf[C]) 
+    else 
+      null
   def process1(context:C) = sampler.process1(context)
 }
 
-// TODO Consider using a similar trick to avoid the need for .init in Template with Statistics!!!
-object Samplers {
-  implicit def sampler2GenericSampler[C](s:Sampler[C])(implicit mc:Manifest[C]) = new GenericSampler[C](s)(mc)
-}
 
-class Samplers(ss:Iterable[Sampler[_]]) extends ArrayBuffer[Sampler[_]] {
-  def this() = this(Nil)
+class SamplerSuite extends ArrayBuffer[GenericSampler[_]] with Sampler[AnyRef] {
+  /*def this() = this(Nil)
   def this(ss:Sampler[_]*) = this(ss)
-  this ++= ss
+  this ++= ss*/
   
-  def process(context:AnyRef) : DiffList = {
+  def process1(context:AnyRef) : DiffList = {
     val samplers = this.elements
     while (samplers.hasNext) {
       val sampler = samplers.next
-      throw new Error("Not yet implemented")
-      val d = new DiffList // sampler.process0(context)
-      if (d != null) return d
+      //println("SamplerSuite context "+context+" sampler "+sampler.sampler)
+      val d:DiffList = sampler.process0(context)
+      if (d != null) {
+      	//println("SamplerSuite sampler "+sampler.sampler+" diff "+d)
+        return d
+      }
     }
     return null
   }
   
-  def process(vs:Iterable[AnyRef]) : Unit = vs.foreach(process(_))
+  override def noDiffList: this.type = {
+    this.foreach(_.sampler.noDiffList)
+    super.noDiffList
+  }
   
 }

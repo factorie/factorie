@@ -16,12 +16,12 @@ object ClusterLDADemo {
 
   // Declare different types of variables
 	object Beta extends SymmetricDirichlet[Word](0.01)
-  class Topic extends Multinomial[Word] with MixtureComponent[Topic]
+  class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic]
   class Z extends MixtureChoice[Topic,Z] with NoFactorCoordination; Domain.alias[Z,Topic]
   class Alpha extends Dirichlet[Z](1.0) with DirichletMomentMatchingEstimator[Z] with MixtureComponent[Alpha]
   class Y extends MixtureChoice[Alpha,Y]; Domain.alias[Y,Alpha]
   object Gamma extends UniformMultinomial[Y]
-	class Theta extends Multinomial[Z]
+	class Theta extends DirichletMultinomial[Z]
 	class Word(s:String) extends CoordinatedEnumVariable(s) with MultinomialOutcome[Word]
  	class Document(val file:String) extends ArrayBuffer[Word] { var theta:Theta = _; var y:Y = _ }
 
@@ -66,7 +66,7 @@ object ClusterLDADemo {
     	print("."); Console.flush
     	if (i % 5 == 0) {
     		println ("Iteration "+i)
-    		topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_._1)))
+    		topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_.value)))
     		println
       }
     	if (i % 10 == 0) {
@@ -75,10 +75,10 @@ object ClusterLDADemo {
     	  alphas.foreach(a => println("Alpha %2d %5d %s".format(a.index, a.generatedSamples.size, a.alphas.toList.toString)))
     	}
     }	
-    topics.foreach(t => {println("Topic "+t.index); t.top(20).foreach(x => println("%-16s %f".format(x._1,x._3)))})
+    topics.foreach(t => {println("Topic "+t.index); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
     alphas.foreach(a => {
       println("Alpha %2d %5d %s".format(a.index, a.generatedSamples.size, a.alphas.toList.toString))
-      a.alphas.toList.zipWithIndex.sortReverse(_._1).foreach(ai => println("Topic %2d %s".format(ai._2, topics(ai._2).topWords(5).toString)))
+      a.alphas.toList.zipWithIndex.sortReverse(_._1).foreach(ai => println("Topic %2d %s".format(ai._2, topics(ai._2).topValues(5).toString)))
     })
 		println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
     

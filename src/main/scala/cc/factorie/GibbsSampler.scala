@@ -15,37 +15,6 @@ import cc.factorie.util.Implicits._
 //   class Label[T] { def defaultSampler = LabelSampler; def sample(model:Model) = defaultSampler.sample(this,model) }
 //   object LabelSampler extends Sampler1[Label]
     
-/** Manage and use a queue to more often revisit low-scoring factors and re-sample their variables. */
-trait FactorQueue[C] extends Sampler[C] {
-  var useQueue = true
-  var maxQueueSize = 1000
-  lazy val queue = new PriorityQueue[Factor]
-  
-  /** Overide to provide the generic sampler that can potentially deal with arbitrary variables coming from Factors */
-  def sampler: Samplers
-  def model: Model
-  
-  override def postProcessHook(context:C, diff:DiffList): Unit = {
-    super.postProcessHook(context, diff)
-    if (useQueue) {
-    	var queueDiff: DiffList = null
-      if (!queue.isEmpty && Global.random.nextDouble < 0.3) queueDiff = sampleFromQueue
-      if (maxQueueSize > 0) {
-      	queue ++= model.factors(diff)
-      	if (queue.size > maxQueueSize) queue.reduceToSize(maxQueueSize)
-      }
-      if (queueDiff != null) diff appendAll queueDiff
-    }
-  }
-  def sampleFromQueue : DiffList = {
-    val factor = queue.dequeue // TODO consider proportionally sampling from the queue instead
-    for (variable <- factor.variables.toSeq.shuffle) {
-    	val difflist = sampler.process(variable)
-    	if (difflist != null && difflist.size > 0) return difflist
-    }
-    null
-  }
-}
 
 /** GibbsSampler for a subclass of Variable with IterableSettings */
 class GibbsSampler1[V1<:Variable with IterableSettings](model:Model, objective:Model) extends SamplerOverSettings[V1](model, objective) {

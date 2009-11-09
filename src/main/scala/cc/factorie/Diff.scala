@@ -69,4 +69,6 @@ class DiffList extends ArrayBuffer[Diff] {
 	}
 	/** More efficient than model.factorsOf[T](difflist) when the difflist might be empty. */
 	def factorsOf[T<:Template](model:Model)(implicit m:Manifest[T]) : Seq[T#Factor] = if (this.isEmpty) Nil else model.factorsOf[T](this)(m) 
+	/** Appropriate printed name. */
+	override protected def stringPrefix = "DiffList" 
 }
