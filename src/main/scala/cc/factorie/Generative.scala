@@ -13,13 +13,14 @@ import cc.factorie.util.Implicits._
 trait GenerativeObservation[This<:GenerativeObservation[This] with Variable] extends Variable {
   this: This =>
   type SourceType <: GenerativeDistribution[This]
-  protected var source: SourceType = _
+  protected var _source: SourceType = _ // TODO Consider making this 'private' instead of 'protected'
+  @inline final def source = _source
   def setSource(s:SourceType)(implicit d:DiffList) : Unit = {
     // TODO: consider not calling ungenerate and generate here.  Setting the source shouldn't change the Multinomial parameters immediately
-    if (d != null) d += SetSourceDiff(source, s)
-    if (source != null) source.ungenerate(this)
-    source = s
-    source.generate(this)
+    if (d != null) d += SetSourceDiff(_source, s)
+    if (_source != null) _source.ungenerate(this)
+    _source = s
+    if (_source != null) _source.generate(this)
   }
   /** Register this variable as having been generated from source 's'. */
   def ~(s:SourceType): this.type = { setSource(s)(null); this }
@@ -29,13 +30,13 @@ trait GenerativeObservation[This<:GenerativeObservation[This] with Variable] ext
     this.~(mmc.choice) // either here or in mmc.setOutcome; not sure which is more natural
   }
   /** Probability of this variable given its 'source' parents. */
-  def pr: Double = if (source != null) source.pr(this) else throw new Error("Source not set")
+  def pr: Double = if (_source != null) _source.pr(this) else throw new Error("Source not set")
   /** log-probability of this variable given its 'source' parents. */
   def logpr: Double = Math.log(pr)
   case class SetSourceDiff(oldSource:SourceType, newSource:SourceType) extends Diff {
     def variable = GenerativeObservation.this
-    def redo = { if (oldSource != null) oldSource.ungenerate(variable)(null); source = newSource; newSource.generate(variable)(null) }
-    def undo = { newSource.ungenerate(variable)(null); source = oldSource; if (oldSource != null) oldSource.generate(variable)(null) }
+    def redo = { if (oldSource != null) oldSource.ungenerate(variable)(null); _source = newSource; if (newSource != null) newSource.generate(variable)(null) }
+    def undo = { if (newSource != null) newSource.ungenerate(variable)(null); _source = oldSource; if (oldSource != null) oldSource.generate(variable)(null) }
   }
 }
 
@@ -173,6 +174,7 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
   // this.sample with this.setByIndex = 118.4 seconds (old version)
   // this.sample with local super.setByIndex = 114.5 seconds
   // this.sample with local super.setByIndex and "val dom" = 109.0 seconds
+  // this.sample with local super.setByIndex and "val dom" and "DirichletMultinomial.pre/postChange" = 108.0 seconds // TODO consider removing pre/postChange?
   // this.sample with local super.setByIndex and "val dom" and noDiffList = 503.0 seconds.  Fishy!!!!  // TODO Why?????  Investigate!
   // GibbsSampler = 368.3 seconds
   override def sample(implicit d:DiffList): Unit = {
@@ -186,7 +188,7 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
     while (s < r && i < max) { s += distribution(i); i += 1 }
     //choice.unsafeGenerate(outcome) // Put outcome back, although, inefficiently, the next line moves it again
     //setByIndex(i - 1) // So, instead we do it ourselves.  But then subclassers cannot meaningfully override setByIndex!! // TODO Consider alternatives
-    super.setByIndex(i - 1)
+    super.setByIndex(i - 1) // change the value of choice
     choice.unsafeGenerate(outcome)
     if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, 1)
   }

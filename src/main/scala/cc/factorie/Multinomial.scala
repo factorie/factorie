@@ -21,7 +21,6 @@ trait AbstractMultinomial[O<:SingleIndexed] extends GenerativeVariable[AbstractM
   def set(proportions:Seq[Double]): Unit // TODO include a DiffList here?
   /** Attach and set to the mean of the Dirichlet source 'd'. */ // TODO Too weird?  Remove?  Replace by m ~ d; m.mazimize
   def pr(index:Int) : Double
-  //def pr_=(index:Int, p:Double): Unit = _count(index) = countTotal * p
   final def pr(o:OutcomeType) : Double = pr(o.index)
   // I want 'this' to provide this methods; then method 'prs' should be removed.
   //def prs : RandomAccessSeq[Double] = new RandomAccessSeq[Double] { def apply(i:Int) = pr(i); def length = count.size }
@@ -59,7 +58,7 @@ trait AbstractMultinomial[O<:SingleIndexed] extends GenerativeVariable[AbstractM
 class UniformMultinomial[O<:MultinomialOutcome[O]](implicit m:Manifest[O]) extends AbstractMultinomial[O] {
   val length: Int = Domain[O](m).size
   val pr1 = 1.0/length
-  def pr(index:Int) = pr1
+  final def pr(index:Int) = pr1
   def set(proportions:Seq[Double]): Unit = throw new Error("UniformMultinomial cannot be changed.")
 }
 
@@ -74,7 +73,7 @@ class DenseMultinomial[O<:MultinomialOutcome[O]](proportions:Seq[Double])(implic
     val sum = proportions.foldLeft(0.0)(_+_)
     for (i <- 0 until length) _pr(i) = proportions(i)/sum
   }
-  final def pr(index:Int) = _pr(index)
+  @inline final def pr(index:Int) = _pr(index)
 }
 
 /** A Multinomial that stores its parameters as a collection of "outcome counts" and their total. */
@@ -101,7 +100,7 @@ trait CountsMultinomial[O<:SingleIndexed] extends AbstractMultinomial[O] {
   }
   def pr(index:Int) : Double = {
     //println("Multinomial.pr "+count(index)+" "+source(index)+" "+total+" "+source.sum)
-    if (/*false &&*/ source != null)
+    if (source != null)
       (counts(index) + source.alpha(index)) / (countsTotal + source.sum)
     else if (countsTotal == 0)
       1.0 / size
@@ -225,9 +224,9 @@ trait MultinomialOutcome[This<:MultinomialOutcome[This] with SingleIndexed with 
 trait MultinomialOutcomeVariable[This<:MultinomialOutcomeVariable[This] with SingleIndexedVariable] extends SingleIndexedVariable with MultinomialOutcome[This] with GenerativeVariable[This] {
   this : This =>
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
-    if (source != null) source.ungenerate(this)
+    if (source != null) source.preChange(this)
     super.setByIndex(newIndex)
-    if (source != null) source.generate(this)
+    if (source != null) source.postChange(this)
   }
   def distribution: Array[Double]= {
     val buffer = new Array[Double](domain.size);
