@@ -28,6 +28,10 @@ import cc.factorie.util._
 // TODO consider moving to cc.factorie.Implicits??
 object Implicits {
   
+  // TODO Consider using a similar trick to avoid the need for .init in Template with Statistics!!!
+  implicit def sampler2GenericSampler[C](s:Sampler[C])(implicit mc:Manifest[C]) = new GenericSampler[C](s)(mc)
+  
+  
 	// http://debasishg.blogspot.com/2009/09/thrush-combinator-in-scala.html
   case class Thrush[A](x: A) {
   	def into[B](g: A => B): B = { g(x) }

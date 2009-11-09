@@ -145,7 +145,7 @@ abstract class PrimitiveVariable[T] extends Variable with TypedVariable with Pri
   type ValueType = T
   class DomainInSubclasses
   protected var _value: T = _
-  def value = _value
+  @inline final def value = _value
   def set(newValue: T)(implicit d: DiffList): Unit =
     if (newValue != _value) {
       if (d != null) d += new PrimitiveDiff(_value, newValue)
@@ -179,6 +179,11 @@ class StringVariable(str: String) extends PrimitiveVariable(str) {
 /**A variable class for real values. */
 class Real(v: Double) extends PrimitiveVariable(v) {
 	type VariableType = Real
+	@inline override def :=(x:Double) = _value = x // TODO Do we really want to preclude useful overrides to 'set'? 
+  def +=(x:Double) = set(value + x)(null)
+  def -=(x:Double) = set(value - x)(null)
+  def *=(x:Double) = set(value * x)(null)
+  def /=(x:Double) = set(value / x)(null)
 }
 
 

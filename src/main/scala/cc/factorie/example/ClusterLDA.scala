@@ -16,12 +16,12 @@ object ClusterLDADemo {
 
   // Declare different types of variables
 	object Beta extends SymmetricDirichlet[Word](0.01)
-  class Topic extends Multinomial[Word] with MixtureComponent[Topic]
+  class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic]
   class Z extends MixtureChoice[Topic,Z] with NoFactorCoordination; Domain.alias[Z,Topic]
   class Alpha extends Dirichlet[Z](1.0) with DirichletMomentMatchingEstimator[Z] with MixtureComponent[Alpha]
   class Y extends MixtureChoice[Alpha,Y]; Domain.alias[Y,Alpha]
   object Gamma extends UniformMultinomial[Y]
-	class Theta extends Multinomial[Z]
+	class Theta extends DirichletMultinomial[Z]
 	class Word(s:String) extends CoordinatedEnumVariable(s) with MultinomialOutcome[Word]
  	class Document(val file:String) extends ArrayBuffer[Word] { var theta:Theta = _; var y:Y = _ }
 

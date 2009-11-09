@@ -28,9 +28,9 @@ trait Optimizer {
 }
 
 
-class IndexedMarginal[V<:IndexedVariable](val variable:V) extends DenseMultinomial(variable.domain.size) with Marginal {
+class IndexedMarginal[V<:IndexedVariable](val variable:V) extends DenseCountsMultinomial(variable.domain.size) with Marginal {
   def increment : Unit = variable match {
-    case v:SingleIndexedVariable => increment(v.index)
+    case v:SingleIndexedVariable => increment(v.index, 1.0)(null)
     case v:BinaryVectorVariable[_] => v.incrementInto(this)
   }
 }

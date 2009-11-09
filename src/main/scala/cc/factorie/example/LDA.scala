@@ -14,10 +14,10 @@ object LDADemo {
   
   // Declare different types of variables
 	object Beta extends SymmetricDirichlet[Word](0.01)
-  class Topic extends Multinomial[Word] with MixtureComponent[Topic]
+  class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic]
   class Z extends MixtureChoice[Topic,Z]; Domain.alias[Z,Topic]
   object Alpha extends SymmetricDirichlet[Z](1.0)
-	class Theta extends Multinomial[Z]
+	class Theta extends DirichletMultinomial[Z]
 	class Word(s:String) extends EnumObservation(s) with MultinomialOutcome[Word]
  	class Document(val file:String) extends ArrayBuffer[Word] { var theta:Theta = _ }
 
@@ -48,13 +48,15 @@ object LDADemo {
   	}
     
 		// Fit model 
-		val sampler = new GibbsSampler
+		//val sampler = new GibbsSampler; println("GibbsSampler")
+    val sampler = Global.defaultSamplerSuite; println("GenerativeVariableSampler")
+    //val sampler = Global.defaultSamplerSuite.noDiffList; println("GenerativeVariableSampler noDiffList")
+    sampler.foreach(s => println(s.sampler.makeNewDiffList))
 		val startTime = System.currentTimeMillis
-    for (i <- 1 to 20) {
+    for (i <- 1 to 9) {
       sampler.process(zs, 1)
-    	//zs.foreach(sampler.sample(_))
     	print("."); Console.flush
-    	if (i % 5 == 0) {
+    	if (i % 3 == 0) {
     		println ("Iteration "+i)
     		topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_.value)))
     		println

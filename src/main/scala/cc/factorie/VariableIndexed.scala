@@ -8,7 +8,8 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
 
-/** For use with variables whose values are mapped to dense integers.  It can apply to a single index or a collection of indices (a vector) */
+/** For use with variables whose values are mapped to densely-packed integers from 0 and higher, using an IndexedDomain.
+ * It can apply to a single index (as in EnumVariable or IndexedVariable) or a collection of indices (as in BinaryVectorVariable) */
 abstract trait IndexedVariable extends Variable with TypedVariable {
 	type VariableType <: IndexedVariable
 	type DomainType <: IndexedDomain[VariableType]
@@ -20,7 +21,9 @@ abstract trait IndexedVariable extends Variable with TypedVariable {
 // TODO Consider making a ConstantSingleIndexedVariable, for use by MixtureComponent
 // But how would it be enforced?
 
-/** If you are looking for a concrete implementation with storage for index, consider EnumObservation or EnumVariable or CoordinatedEnumVariable. */
+/** A single-indexed Variable without storage for the index.  Sub-trait SingleIndexedVariable declares mutable storage for the index.
+ * This trait is a generalization of both the (mutable) SingleIndexedVariable and the (immutable) TypedSingleIndexedObservation
+ * If you are looking for a concrete implementation with storage for index, consider EnumObservation or EnumVariable or CoordinatedEnumVariable. */
 abstract trait SingleIndexed extends IndexedVariable {
 	type VariableType <: SingleIndexed
  	class DomainInSubclasses
@@ -145,6 +148,7 @@ abstract class EnumObservation[T](value:T) extends TypedSingleIndexedObservation
 // TODO get rid of all this "Coordinated" versus non-coordinated.  Everything should just be coordinated.
 // It is less efficient, but too error-prone.
 // TODO Really?  Verify how much efficiency gain we could get.
+// No.  We can't do this.  For example, belief propagation relies on having no coordination
 
 /**A variable whose value is a single indexed value, initialized at construction time; mutable.
  This variable does not, however, hold a trueValue.  For that you should use a Label. */

@@ -21,10 +21,17 @@ trait Sampler[C] {
   	processCount += 1
   	postProcessHook(c, d)
   	diffHook(d)
-  	if (d.size > 0) changeCount += 1
+  	if (d != null && d.size > 0) changeCount += 1
   	d
   }
-  /** The underlying protected method that actually does the work.  Needs to be defined in subclasses. */
+  /** If true, calls to "next" will create a new DiffList to describe the changes they made, otherwise "next" will not track the changes, and will return null. */
+  var makeNewDiffList = true
+  /** Convenient method for setting makeNewDiffList to false, and returning this. */
+  def noDiffList: this.type = { makeNewDiffList = false; this }
+  /** In your implementation of "process1" use this method to optionally create a new DiffList, obeying "makeNewDiffList". */
+  def newDiffList = if (makeNewDiffList) new DiffList else null
+  /** The underlying protected method that actually does the work.  Use this.newDiffList to optionally create returned DiffList.
+   		Needs to be defined in subclasses. */
 	def process1(context:C): DiffList
 	protected final def processN(contexts:Iterable[C]): Unit = { contexts.foreach(process(_)); iterationCount += 1; if (!postIterationHook) return }
 	def process(contexts:Iterable[C], numIterations:Int): Unit = for (i <- 0 to numIterations) processN(contexts)

@@ -18,10 +18,10 @@ object DirichletDemo {
    
   	val n = 10000
   	println("Sampling "+n+" multinomials")
-  	val multinomials = for (i <- 1 to 10000) yield dir.sampleValue
+  	val multinomials = for (i <- 1 to 10000) yield dir.sampleOutcome
    
   	println("Example multinomials")
-  	multinomials.take(4).foreach(m => {print("mult "); m.prs.foreach(p => print("%8f ".format(p))); println})
+  	multinomials.take(4).foreach(m => {print("mult "); m.foreach(p => print("%8f ".format(p))); println})
   
   	val dir2 = new Dirichlet[Word](1.0) with DirichletMomentMatchingEstimator[Word];
   	multinomials.foreach(m => m ~ dir2)

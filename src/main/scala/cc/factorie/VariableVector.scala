@@ -33,7 +33,7 @@ abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends VectorVaria
   	}
   	_vector
   }
-  def incrementInto(x:{def increment(i:Int):Unit}): Unit = indxs.foreach(i => x.increment(i))
+  def incrementInto(x:{def increment(i:Int,x:Double)(implicit d:DiffList):Unit}): Unit = indxs.foreach(i => x.increment(i,1.0)(null))
   // TODO when we have Scala 2.8, add to the method below difflist argument with default value null
   // But will a += b syntax with with default arguments?
   def +=(value: T) : Unit = {
@@ -58,7 +58,7 @@ abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends VectorVaria
   }
 }
 
-/** A vector of */
+/** A vector of Real values */
 abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends VectorVariable {
   def this() = this(null)
 	type ValueType = T
