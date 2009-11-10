@@ -3,13 +3,23 @@ package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.HashSet
 import cc.factorie.util.Implicits._
+import cc.factorie.util.SeqAsVector
 import scalala.Scalala._
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
+// TODO Consider changing SingleIndexed to IndexedVariable
+// It would help Inferencer.IndexedMarginal
+// But it is a little odd because
+// * It could be a BinaryVectorVariable, 
+// * It doesn't have "def index".  It might be a little painful to match/case all these places.  
+// but we could certainly define pr(BinaryVectorVariable)
+// Hmm... Requires further thought.
+
 /** Base of the Multinomial class hierarchy, needing only methods length, pr, and set. */
-trait AbstractMultinomial[O<:SingleIndexed] extends GenerativeVariable[AbstractMultinomial[O]] with GenerativeDistribution[O] with RandomAccessSeq[Double] {
+// TODO Rename simply "Multinomial"?
+trait AbstractMultinomial[O<:MultinomialOutcome[O]] extends GenerativeVariable[AbstractMultinomial[O]] with GenerativeDistribution[O] with RandomAccessSeq[Double] {
   type VariableType <: AbstractMultinomial[O];
   //type OutcomeType = O
   type SourceType = AbstractDirichlet[O];
@@ -21,9 +31,9 @@ trait AbstractMultinomial[O<:SingleIndexed] extends GenerativeVariable[AbstractM
   def set(proportions:Seq[Double]): Unit // TODO include a DiffList here?
   /** Attach and set to the mean of the Dirichlet source 'd'. */ // TODO Too weird?  Remove?  Replace by m ~ d; m.mazimize
   def pr(index:Int) : Double
+  def localPr(index:Int) = pr(index) // Alternative that should not use any source.alpha in the estimate; used in Dirichlet.estimate
   final def pr(o:OutcomeType) : Double = pr(o.index)
-  // I want 'this' to provide this methods; then method 'prs' should be removed.
-  //def prs : RandomAccessSeq[Double] = new RandomAccessSeq[Double] { def apply(i:Int) = pr(i); def length = count.size }
+  def prs: RandomAccessSeq[Double] = this //new RandomAccessSeq[Double] { def apply(i:Int) = pr(i); def length = count.size } // TODO Remove this method?
   def logpr(index:Int) = Math.log(pr(index))
   def logprIndices(indices:Seq[Int]) : Double = indices.foldLeft(0.0)(_+logpr(_))
   def prIndices(indices:Seq[Int]) : Double = indices.foldLeft(1.0)(_*pr(_))
@@ -33,6 +43,7 @@ trait AbstractMultinomial[O<:SingleIndexed] extends GenerativeVariable[AbstractM
     generatedSamples.foreach(s => c(s.index) += 1.0)
     c
   }
+  def prVector: Vector = new SeqAsVector { def apply(i:Int) = pr(i); def length = size } // 
   def sampleInto(o:OutcomeType): Unit = o match { // TODO Consider including implicit DiffList here? 
     case v:SingleIndexedVariable => v.setByIndex(sampleIndex)(null)
     //case _ => throw new Error("Trying to sample into immutable Variable") // TODO Is this OK to just do nothing here?;
@@ -62,6 +73,20 @@ class UniformMultinomial[O<:MultinomialOutcome[O]](implicit m:Manifest[O]) exten
   def set(proportions:Seq[Double]): Unit = throw new Error("UniformMultinomial cannot be changed.")
 }
 
+/** A mixture of a fixed set of Multinomials, i.e. you cannot add or remove Multinomials from the mixture. */
+class MultinomialMixture[M<:AbstractMultinomial[O],O<:MultinomialOutcome[O]](ms:Seq[M], ps:Seq[Double]) extends AbstractMultinomial[O] {
+	// TODO How can I avoid needing both M and O as type parameters.  I think M should automatically specify O.
+  val components = ms.toArray
+  val length: Int = components.first.length
+  val proportions = new DenseCountsMultinomial(ps)
+  def pr(index:Int) = {
+    var p = 0.0
+    for (i <- 0 until proportions.length) p += proportions.pr(i) * components(i).pr(index)
+    p
+  }
+  def set(m:Seq[Double]): Unit = throw new Error("MultinomialMixture cannot be set.")
+}
+
 /** Simple Multinomial that represents p(x) directly. */
 class DenseMultinomial[O<:MultinomialOutcome[O]](proportions:Seq[Double])(implicit m:Manifest[O]) extends AbstractMultinomial[O] {
   val length: Int = Domain[O](m).size
@@ -71,19 +96,21 @@ class DenseMultinomial[O<:MultinomialOutcome[O]](proportions:Seq[Double])(implic
   def set(props:Seq[Double]): Unit = {
     assert (proportions.length == length)
     val sum = proportions.foldLeft(0.0)(_+_)
+    assert (sum > 0.0)
     for (i <- 0 until length) _pr(i) = proportions(i)/sum
   }
   @inline final def pr(index:Int) = _pr(index)
 }
 
 /** A Multinomial that stores its parameters as a collection of "outcome counts" and their total. */
-trait CountsMultinomial[O<:SingleIndexed] extends AbstractMultinomial[O] {
+trait CountsMultinomial[O<:MultinomialOutcome[O]] extends AbstractMultinomial[O] {
   type VariableType <: CountsMultinomial[O];
   class DomainInSubclasses
   def length: Int = counts.size 
   protected var total : Double = 0.0
   def countsTotal = total
   protected val _counts : Vector
+  override def prVector: Vector = _counts / total
   override def counts: { def apply(i:Int):Double; def update(i:Int,v:Double):Unit; def size:Int } = _counts // TODO Want Seq[Double], but Vector doesn't mixin Seq?!!
   def increment(index:Int, incr:Double)(implicit d:DiffList) = { // TODO Scala 2.8 add incr:Double=1.0
     _counts(index) += incr; total += incr
@@ -93,20 +120,20 @@ trait CountsMultinomial[O<:SingleIndexed] extends AbstractMultinomial[O] {
     if (d != null) d += new CountsMultinomialIncrementDiff(index, incr)
   }
   def increment(o:O, incr:Double)(implicit d:DiffList): Unit = increment(o.index, incr)
-  def set(c:Seq[Double]) : Unit = { // TODO Add DiffList here?
+  def increment(s:Seq[Double])(implicit d:DiffList): Unit = {
+    assert(s.length == length)
+    for (i <- 0 until length) { _counts(i) += s(i); total += s(i) }
+    if (d != null) d += new CountsMultinomialSeqIncrementDiff(s)
+  }
+  def set(c:Seq[Double]): Unit = { // TODO Add DiffList here?
     assert(c.length == _counts.size)
     total = 0.0
     var i = 0; c.foreach(x => {_counts(i) = x; total += x; i += 1}) 
   }
-  def pr(index:Int) : Double = {
-    //println("Multinomial.pr "+count(index)+" "+source(index)+" "+total+" "+source.sum)
-    if (source != null)
-      (counts(index) + source.alpha(index)) / (countsTotal + source.sum)
-    else if (countsTotal == 0)
-      1.0 / size
-    else
-      counts(index) / countsTotal
-  }
+  // Raw operations on count vector, without Diffs
+  def zero: Unit = { _counts.zero; total = 0.0 }
+  def increment(m:AbstractMultinomial[O], rate:Double): Unit = { total += norm(m,1); for (i <- 0 until size) _counts += m.prVector }  
+  def pr(index:Int) : Double = if (countsTotal == 0) 1.0 / size else counts(index) / countsTotal
   override def sampleIndex: Int = { // TODO More efficient because it avoids the normalization in this.pr
     val s = Global.random.nextDouble * countsTotal; var sum = 0.0; var i = 0; val size = this.size
     while (i < size) {
@@ -119,7 +146,7 @@ trait CountsMultinomial[O<:SingleIndexed] extends AbstractMultinomial[O] {
   override def estimate: Unit = { // TODO Think about how this might make SparseCountsMultinomial unsparse, and how to improve
     if (generatedSamples.isEmpty) throw new Error("No generated samples from which to estimate")
     if (source == null) { _counts.zero; total = 0.0 }
-    else { _counts := source.alphas; total = source.sum }
+    else { _counts := source.alphaVector; total = source.alphaSum }
     generatedSamples.foreach(s => { _counts(s.index) += 1.0; total += 1.0 })
   }
   class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
@@ -129,9 +156,14 @@ trait CountsMultinomial[O<:SingleIndexed] extends AbstractMultinomial[O] {
     def undo = { _counts(index) -= incr; total -= incr }
     def redo = { _counts(index) += incr; total += incr }
   }
+  case class CountsMultinomialSeqIncrementDiff(s:Seq[Double]) extends Diff {
+    def variable = CountsMultinomial.this
+    def undo = { for (i <- 0 until length) { _counts(i) -= s(i); total -= s(i) } }
+    def redo = { for (i <- 0 until length) { _counts(i) += s(i); total += s(i) } }
+  }
 }
 
-class SparseCountsMultinomial[O<:SingleIndexed](dim:Int) extends CountsMultinomial[O] {
+class SparseCountsMultinomial[O<:MultinomialOutcome[O]](dim:Int) extends CountsMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: SparseCountsMultinomial[O]
   class DomainInSubclasses
@@ -140,7 +172,7 @@ class SparseCountsMultinomial[O<:SingleIndexed](dim:Int) extends CountsMultinomi
   def default_=(d:Double) = _counts.default = d
 }
 
-class DenseCountsMultinomial[O<:SingleIndexed](dim:Int) extends CountsMultinomial[O] {
+class DenseCountsMultinomial[O<:MultinomialOutcome[O]](dim:Int) extends CountsMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: DenseCountsMultinomial[O]
   class DomainInSubclasses
@@ -148,7 +180,7 @@ class DenseCountsMultinomial[O<:SingleIndexed](dim:Int) extends CountsMultinomia
 }
 
 //class Multinomial[O<:MultinomialOutcome[O]](initCounts:Seq[Double])(implicit m:Manifest[O]) extends DenseMultinomial[O](initCounts) with Iterable[O#VariableType#ValueType]
-class DirichletMultinomial[O<:SingleIndexed](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
+class DirichletMultinomial[O<:MultinomialOutcome[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
   def this()(implicit m:Manifest[O]) = this(null.asInstanceOf[AbstractDirichlet[O]])(m)
   def this(dirichlet:AbstractDirichlet[O], initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(dirichlet)(m); set(initCounts) }
   def this(initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(null.asInstanceOf[AbstractDirichlet[O]])(m); set(initCounts) }
@@ -158,14 +190,15 @@ class DirichletMultinomial[O<:SingleIndexed](dirichlet:AbstractDirichlet[O])(imp
   override def pr(index:Int) : Double = {
     //println("Multinomial.pr "+count(index)+" "+source(index)+" "+total+" "+source.sum)
     if (source != null)
-      (counts(index) + source.alpha(index)) / (countsTotal + source.sum)
+      (counts(index) + source.alpha(index)) / (countsTotal + source.alphaSum)
     else if (countsTotal == 0)
       1.0 / size
     else
       counts(index) / countsTotal
   }
+  override def localPr(index:Int): Double = super.pr(index)
   override def sampleIndex: Int = { // TODO More efficient because it avoids the normalization in this.pr
-    val s = Global.random.nextDouble * (countsTotal + source.sum); var sum = 0.0; var i = 0; val size = this.size
+    val s = Global.random.nextDouble * (countsTotal + source.alphaSum); var sum = 0.0; var i = 0; val size = this.size
     while (i < size) {
       sum += counts(i) + source.alpha(i)
       if (sum >= s) return i
@@ -173,27 +206,28 @@ class DirichletMultinomial[O<:SingleIndexed](dirichlet:AbstractDirichlet[O])(imp
     }
     return size - 1
   }
-  // Probability of a collection of counts; see http://en.wikipedia.org/wiki/Multivariate_Polya_distribution
+  /** Probability of a collection of counts; see http://en.wikipedia.org/wiki/Multivariate_Polya_distribution. */
+  // TODO Not tested!
   def pr(ocounts:Vector) : Double = {
     import Maths.{gamma => g}
     assert (ocounts.size == length)
     val n = norm(ocounts,1)
     val normalizer1 = g(n) / ocounts.elements.foldLeft(1.0)((p,e) => p * g(e._2))
-    val normalizer2 = g(source.sum) / g(n+source.sum)
+    val normalizer2 = g(source.alphaSum) / g(n+source.alphaSum)
     val ratio = ocounts.elements.foldLeft(1.0)((p,e) => p * g(e._2+source.alpha(e._1)/g(source.alpha(e._1))))
     normalizer1 * normalizer2 * ratio
   }
-  def logpr(indices:Seq[Int]) : Double = indices.foldLeft(0.0)(_+logpr(_))
-  /** Set source, and incrementally update the parameters of this Multinomial */
-  //def ~:(o:O) : this.type = { o.setSource(this)(null); increment(o); this }
+  def logpr(obsCounts:Vector): Double = Math.log(pr(obsCounts)) //indices.foldLeft(0.0)(_+logpr(_))
+  override def prIndices(indices:Seq[Int]): Double = pr({val v = new SparseVector(length); indices.foreach(i => v(i) += 1.0); v})
+  override def logprIndices(indices:Seq[Int]): Double = Math.log(prIndices(indices))
   override def generate[O2<:O](o:O2)(implicit d:DiffList) = { 
     //println("Multinomial.outcomeDomain.size="+outcomeDomain.size+" generate "+o+" size="+size); Console.flush;
-    super.generate(o)
+    super.generate(o) // Consider not calling super: Don't keep the outcomes in a HashMap; we have what we need in 'counts'  How much time would this save?  I tried; very little.
     increment(o.index, 1.0)
   }
   override def ungenerate[O2<:O](o:O2)(implicit d:DiffList) = {
-    super.ungenerate(o)
-    increment(o.index, -1.0)
+    super.ungenerate(o) 
+    increment(o.index, -1.0) // Note that if 'o' weren't a MultinomialOutcome & it changed its 'index', this will do the wrong thing! 
   }
   override def preChange[O2<:O](o:O2)(implicit d:DiffList) = {
     increment(o.index, -1.0)

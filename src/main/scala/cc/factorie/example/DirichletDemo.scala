@@ -14,7 +14,7 @@ object DirichletDemo {
   	//val dir  = new Dirichlet[Word](List(3.0,3.0,3.0,3.0,3.0,3.0)) with DirichletMomentMatchingEstimator[Word];
   	
   	println("Dirichlet1 = "+dir.alphas.toList)
-  	println("Dirichlet1 mean = "+dir.means.toList)
+  	println("Dirichlet1 mean = "+dir.mean.toList)
    
   	val n = 10000
   	println("Sampling "+n+" multinomials")
@@ -29,7 +29,7 @@ object DirichletDemo {
   	println("Estimating Dirichlet2 parameters from sampled Multinomials")
   	dir2.estimate
   	println("Dirichlet2 = "+dir2.alphas.toList)
-  	println("Dirichlet2 mean = "+dir2.means.toList)
+  	println("Dirichlet2 mean = "+dir2.mean.toList)
 
   	0
   }

@@ -10,8 +10,8 @@ object Global {
 	val defaultObjective = new Model(new TrueLabelTemplate[Label[AnyRef]]())
 
   import cc.factorie.util.Implicits._
-  lazy val defaultSamplerSuite = new SamplerSuite
-	defaultSamplerSuite += new GenerativeVariableSampler
-	defaultSamplerSuite += new GibbsSampler(defaultModel)
+  lazy val defaultSampler = new SamplerSuite
+	defaultSampler += new GenerativeVariableSampler
+	defaultSampler += new GibbsSampler(defaultModel)
 
 }

@@ -46,11 +46,13 @@ trait GenerativeVariable[This<:GenerativeVariable[This] with Variable] extends G
   def :~(s:SourceType): this.type = { this.~(s); s.sampleInto(this); this }
   def :~[M<:SourceType](mmc:MixtureChoice[M,_]) : this.type = { this.~(mmc); mmc.choice.sampleInto(this); this }
   def sample(implicit d:DiffList): Unit
-  //def maximize(implicit d:DiffList): Unit // TODO Consider adding this also.  // Set value to that with highest probability
+  //def maximize(implicit d:DiffList): Unit // TODO Consider adding this also; how interact with 'estimate'?  // Set value to that with highest probability
 }
 
 /** A stand-in for GenerativeVariable that does not take type parameters, which we use as the type argument to GenerativeVariableSampler. */
 trait AbstractGenerativeVariable extends Variable {
+  /** Set this variable to a new value, sampled according to the distribution 
+  		indicated by both its 'source' parents and also its 'generatedSamples' children if available. */
 	def sample(implicit d:DiffList): Unit
 }
 
@@ -79,12 +81,10 @@ trait AbstractGenerativeDistribution extends Variable {
   lazy val generatedSamples = new HashSet[OutcomeType];
   var keepGeneratedSamples = true
   /** Notify this GenerativeDistribution that it is now associated with an additional sampled outcome */
-	def generate[O2<:OutcomeType](o:O2)(implicit d:DiffList): Unit = { 
-  	if (generatedSamples.contains(o)) throw new Error("Already generated outcome "+o) 
-  	else if (keepGeneratedSamples) {
-  		generatedSamples += o
-  		if (d != null) d += GenerativeDistributionGenerateDiff(o)
-  	}
+	def generate[O2<:OutcomeType](o:O2)(implicit d:DiffList): Unit = if (keepGeneratedSamples) { 
+		if (generatedSamples.contains(o)) throw new Error("Already generated outcome "+o) 
+		generatedSamples += o
+		if (d != null) d += GenerativeDistributionGenerateDiff(o)
   }
   /** Notify this GenerativeDistribution that it is no longer associated with a sampled outcome */
   def ungenerate[O2<:OutcomeType](o:O2)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
@@ -173,8 +173,9 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
   // 9 iterations, printing topics 4 times: 
   // this.sample with this.setByIndex = 118.4 seconds (old version)
   // this.sample with local super.setByIndex = 114.5 seconds
-  // this.sample with local super.setByIndex and "val dom" = 109.0 seconds
-  // this.sample with local super.setByIndex and "val dom" and "DirichletMultinomial.pre/postChange" = 108.0 seconds // TODO consider removing pre/postChange?
+  // this.sample with above and "val dom" = 109.0 seconds
+  // this.sample with above and "DirichletMultinomial.pre/postChange" = 108.0 seconds // TODO Didn't help much; consider removing pre/postChange?
+  // this.sample with above and keepGeneratedSamples = false = 103.3 seconds (off by default)
   // this.sample with local super.setByIndex and "val dom" and noDiffList = 503.0 seconds.  Fishy!!!!  // TODO Why?????  Investigate!
   // GibbsSampler = 368.3 seconds
   override def sample(implicit d:DiffList): Unit = {
@@ -203,7 +204,7 @@ class GenericMixtureComponent extends DenseCountsMultinomial[GenericMultinomialO
 class GenericMixtureChoice extends MixtureChoice[GenericMixtureComponent,GenericMixtureChoice]
 // trait MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]] extends MultinomialOutcome[This] {
 object MixtureChoiceTemplate extends TemplateWithStatistics1[MixtureChoice[GenericMixtureComponent,GenericMixtureChoice]] {
-  def score(s:Stat) = { /*println("MixtureChoiceTemplate score");*/ s.s1.logpr }
+  def score(s:Stat) = { /*println("MixtureChoiceTemplate score");*/ s.s1.logpr } // MixtureComponent.logpr current includes both source and outcome, but perhaps it shouldn't and both should be here
 }
 
 //trait GenericGenerativeVariable extends GenerativeVariable[GenericGenerativeVariable]

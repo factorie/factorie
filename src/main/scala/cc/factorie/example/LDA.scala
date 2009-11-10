@@ -49,9 +49,8 @@ object LDADemo {
     
 		// Fit model 
 		//val sampler = new GibbsSampler; println("GibbsSampler")
-    val sampler = Global.defaultSamplerSuite; println("GenerativeVariableSampler")
-    //val sampler = Global.defaultSamplerSuite.noDiffList; println("GenerativeVariableSampler noDiffList")
-    sampler.foreach(s => println(s.sampler.makeNewDiffList))
+    val sampler = Global.defaultSampler; println("GenerativeVariableSampler")
+    //val sampler = Global.defaultSampler.noDiffList; println("GenerativeVariableSampler noDiffList")
 		val startTime = System.currentTimeMillis
     for (i <- 1 to 9) {
       sampler.process(zs, 1)
