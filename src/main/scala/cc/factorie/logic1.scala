@@ -12,7 +12,7 @@ implicit conversion functions, but after the release of Scala 2.8, it will be
 defined in a package and package object.
 */
 
-object logic {
+object logic1 {
   // Defining in this way so that "import cc.factorie.logic._" will work, and we get the necessary implicit def getter2formula
 
   /** The collection of arguments to the boolean expression; the variables neighboring the factor */

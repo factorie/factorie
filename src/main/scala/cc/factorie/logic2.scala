@@ -10,11 +10,11 @@ object logic2 {
     def eval(x:ArrayStack[Bool]) : Boolean
     def manifests : Seq[Manifest[_<:Variable]]
     def accessors : Seq[Accessor[X,Bool]]
-    def -->(f:Formula[X]) = Implies(this, f)
+    def ==>(f:Formula[X]) = Implies(this, f)
     def ^(f:Formula[X]) = And(this, f)
     def v(f:Formula[X]) = Or(this, f)
     def !: = Not(this)
-    // def <-->(f:Formula[X]) = Equals(this, f)
+    // def <==>(f:Formula[X]) = Equals(this, f)
   }
   case class Term[X<:Variable,A<:Bool](g1:Accessor[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) extends Formula[X] {
     def eval(x:ArrayStack[Bool]) = x.pop.value
@@ -50,7 +50,9 @@ object logic2 {
   }
 
   trait LogicStatistics extends DotStatistics1[Bool] {
+    @deprecated // Use * instead.
   	def %(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
+    def *(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
   }
   object Forany {
     def apply[X<:AccessorUnit with Variable](x2c:X#AccessorUnitType=>Formula[X])(implicit m:Manifest[X#AccessorUnitType]) : LogicStatistics = {

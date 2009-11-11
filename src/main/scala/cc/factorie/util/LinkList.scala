@@ -134,16 +134,22 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
 	// TODO consider prepending all method names that operate on individual links with "link" ??
 	/** Swap link "this" with link "that" */
 	def swapWith(that:This): Unit = if (that ne this) {
-	  val thisNext = next
-	  val thisPrev = prev
-	  if (prev != null) prev.next = that
-	  if (next != null) next.prev = that
-	  if (that.prev != null) that.prev.next = this
-	  if (that.next != null) that.next.prev = this
-	  next = that.next
-	  prev = that.prev
-	  that.next = thisNext
-	  that.prev = thisPrev
+		val thisNext = next
+		val thisPrev = prev
+		if (this.next eq that) {
+			throw new Error
+    } else if (that.next eq this) {
+      throw new Error
+    } else {
+    	if (prev != null) prev.next = that
+    	if (next != null) next.prev = that
+    	if (that.prev != null) that.prev.next = this
+    	if (that.next != null) that.next.prev = this
+    	next = that.next
+    	prev = that.prev
+    	that.next = thisNext
+    	that.prev = thisPrev
+    }
 	}
  
 	def swapWithNext: Unit =

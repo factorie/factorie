@@ -1,16 +1,16 @@
 package cc.factorie.example
 import cc.factorie.er1._
-import cc.factorie.logic._
+import cc.factorie.logic1._
 import scala.collection.mutable.HashMap
 
 /** A simple example, modeling smoking, cancer and frienships. */
-object LogicDemo1 {
+object LogicDemo1a {
 
 	def main(args:Array[String]) : Unit = {
 		// Define entity, attribute and relation types
 		class Person (val name:String) extends ItemizedVariable[Person] {
-			val smokes = new Smokes; class Smokes extends BoolAttributeOf[Person] with SampleCounts
-			val cancer = new Cancer; class Cancer extends BoolAttributeOf[Person] with SampleCounts
+			val smokes = new Smokes; class Smokes extends BoolAttributeOf[Person]
+			val cancer = new Cancer; class Cancer extends BoolAttributeOf[Person]
 			override def toString = name
 		}
 		object Friends extends Relation[Person,Person];

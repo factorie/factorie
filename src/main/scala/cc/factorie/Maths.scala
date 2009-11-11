@@ -454,7 +454,7 @@ object Maths {
 
   /** Return a random double in the range 0 to 1, inclusive, uniformly sampled from that range. 
    * The mean of this distribution is 0.5.  The variance is 1/12. */
-  @scala.inline final def nextUniform(implicit r:Random) : Double = r.nextDouble
+  @inline final def nextUniform(implicit r:Random) : Double = r.nextDouble
   // Is this good enough?  Code used to be:
   // val l = ((r.self.next(26)).asInstanceOf[Long] << 27) + next(27);
   // l / (1L << 53).asInstanceOf[Double]
@@ -464,17 +464,17 @@ object Maths {
   //def nextUniform(a:Double, b:Double)(implicit r:Random) : Double = a + (b-a)*nextUniform(r)
 
 	/** Draw a single sample from multinomial "a". */
-	def nextDiscrete (a:Array[Double])(implicit rd:Random) = {
+	def nextDiscrete (a:Array[Double])(implicit rd:Random): Int = {
 		var b = 0.0; val r = nextUniform(rd); var i = 0
-		while (b < r && i < a.length-1) { b += a(i); i += 1 }
-		i
+		while (b < r && i < a.length) { b += a(i); i += 1 }
+		i - 1
 	}
 
 	/** draw a single sample from (unnormalized) multinomial "a", with normalizing factor "sum". */
-	def nextDiscrete (a:Array[Double], sum:Double)(implicit rd:Random) {
+	def nextDiscrete (a:Array[Double], sum:Double)(implicit rd:Random): Int = {
 		var b = 0.0; val r = nextUniform(rd) * sum; var i = 0
-		while (b < r && i < a.length-1) { b += a(i); i += 1 }
-		i
+		while (b < r && i < a.length) { b += a(i); i += 1 }
+		i - 1
 	}
 
   private var nextGaussianValue = 0.0

@@ -1,9 +1,9 @@
 package cc.factorie.example
 import cc.factorie.er1._
-import cc.factorie.logic._
+import cc.factorie.logic1._
 import scala.collection.mutable.HashMap
 
-object LogicDemo2 {
+object LogicDemo1b {
 
 	def main(args:Array[String]) : Unit = {
 		// Define entity, attribute and relation types
