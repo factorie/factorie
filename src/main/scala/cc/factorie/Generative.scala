@@ -12,15 +12,20 @@ import cc.factorie.util.Implicits._
  * For the corresponding mutable-valued Variable, see GenerativeVariable. */
 trait GenerativeObservation[This<:GenerativeObservation[This] with Variable] extends Variable {
   this: This =>
+  // This types are a pain.  Could Scala be changed to replace them with this#type ??? 
   type SourceType <: GenerativeDistribution[This]
   protected var _source: SourceType = _ // TODO Consider making this 'private' instead of 'protected'
   @inline final def source = _source
   def setSource(s:SourceType)(implicit d:DiffList) : Unit = {
-    // TODO: consider not calling ungenerate and generate here.  Setting the source shouldn't change the Multinomial parameters immediately
-    if (d != null) d += SetSourceDiff(_source, s)
-    if (_source != null) _source.ungenerate(this)
-    _source = s
-    if (_source != null) _source.generate(this)
+    if (_source != null) _source._unregisterSample(this)
+    _setSource(s)
+    if (_source != null) _source._registerSample(this)
+  }
+  /** Set 'source' directly without coordinating via source.(un)generate.  Don't call this yourself; call 'setSource' instead. */
+  @inline override def _setSource(s:AnyRef)(implicit d:DiffList) : Unit = {
+    val ss = s.asInstanceOf[SourceType] // TODO Arg.  I want s:SourceType, but Scala type system doesn't like M#OutcomeType vs M.OutcomeType
+    if (d != null) d += SetSourceDiff(_source, ss)
+    _source = ss
   }
   /** Register this variable as having been generated from source 's'. */
   def ~(s:SourceType): this.type = { setSource(s)(null); this }
@@ -35,8 +40,8 @@ trait GenerativeObservation[This<:GenerativeObservation[This] with Variable] ext
   def logpr: Double = Math.log(pr)
   case class SetSourceDiff(oldSource:SourceType, newSource:SourceType) extends Diff {
     def variable = GenerativeObservation.this
-    def redo = { if (oldSource != null) oldSource.ungenerate(variable)(null); _source = newSource; if (newSource != null) newSource.generate(variable)(null) }
-    def undo = { if (newSource != null) newSource.ungenerate(variable)(null); _source = oldSource; if (oldSource != null) oldSource.generate(variable)(null) }
+    def redo = _source = newSource
+    def undo = _source = oldSource
   }
 }
 
@@ -45,7 +50,6 @@ trait GenerativeVariable[This<:GenerativeVariable[This] with Variable] extends G
   /** Register this variable as having been generated from source 's', and furthermore set this variable's value to a sample from 's'. */
   def :~(s:SourceType): this.type = { this.~(s); s.sampleInto(this); this }
   def :~[M<:SourceType](mmc:MixtureChoice[M,_]) : this.type = { this.~(mmc); mmc.choice.sampleInto(this); this }
-  def sample(implicit d:DiffList): Unit
   //def maximize(implicit d:DiffList): Unit // TODO Consider adding this also; how interact with 'estimate'?  // Set value to that with highest probability
 }
 
@@ -66,35 +70,50 @@ trait AbstractGenerativeVariable extends Variable {
 // Change this to O<:TypedVariable so that we can add def sampleValue:O#ValueType
 trait GenerativeDistribution[O<:Variable] extends AbstractGenerativeDistribution {
   // Note that 'O' is not *required* to be a GenerativeVariable.  This allows us to put SingleIndexedVariable into Multinomial, for example.
-  type OutcomeType = O
+  type OutcomeType = O // TODO Consider insisting the OutcomeType = GenerativeObservation[O]; For now I've simly added a noop 'setSource' method to Variable
 }
 
 /** A stand-in for GenerativeDistribution that does not take type parameters */
 trait AbstractGenerativeDistribution extends Variable {
-  type OutcomeType <: Variable
+  type OutcomeType <: Variable 
+  // Perhaps we really want OutcomeType to be 'either ConstantVariable or GenerativeObservation', 
+  //  because changing Variables should be able to find their source.
+  // How to do this?  
+  // Perhaps define a trait VariableWithSource[This] { type SourceType <: GenerativeDistribution[This]; def _setSource...}
+  // and then make ConstantVariable and GenerativeObservation both inherit from it?
+  // No, I don't think this is necessary.  Putting Real into Gaussian would be useful, 
+  //  and it is useful even when we are not trying to track score changes due to changes in Real.value
   type VariableType <: AbstractGenerativeDistribution
-	def estimate : Unit // TODO consider removing this.  Paramter estimation for generative models should be seen as inference?
-	//// This odd arg type below is due to:
-	//// http://www.nabble.com/Fwd:--lift--Lift-with-Scala-2.6.1--td14571698.html	
-	//def pr[O<:OutcomeType](o:O) : Double
-  //// This caused the compiler to crash. For now we have the "unsafe" work-around below.
+	def estimate: Unit // TODO consider removing this.  Paramter estimation for generative models should be seen as inference?
   lazy val generatedSamples = new HashSet[OutcomeType];
   var keepGeneratedSamples = true
-  /** Notify this GenerativeDistribution that it is now associated with an additional sampled outcome */
-	def generate[O2<:OutcomeType](o:O2)(implicit d:DiffList): Unit = if (keepGeneratedSamples) { 
-		if (generatedSamples.contains(o)) throw new Error("Already generated outcome "+o) 
-		generatedSamples += o
-		if (d != null) d += GenerativeDistributionGenerateDiff(o)
+  // TODO Rename registerSample, unregisterSample
+  def _registerSample(o:OutcomeType)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
+    if (generatedSamples.contains(o)) throw new Error("Already generated outcome "+o) 
+    generatedSamples += o
+    if (d != null) d += GenerativeDistributionRegisterDiff(o)
   }
-  /** Notify this GenerativeDistribution that it is no longer associated with a sampled outcome */
-  def ungenerate[O2<:OutcomeType](o:O2)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
-  	generatedSamples -= o
-  	if (d != null) d += GenerativeDistributionUngenerateDiff(o)
+  def _unregisterSample(o:OutcomeType)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
+    generatedSamples -= o
+    if (d != null) d += GenerativeDistributionUnregisterDiff(o)
   }
+  /** Notify this GenerativeDistribution that it is now associated with an additional sampled outcome, and set o's source to this. */
+  final def registerSample(o:OutcomeType)(implicit d:DiffList): Unit = {
+    _registerSample(o)
+		//o._setSource(this)//.asInstanceOf[OutcomeType#SourceType]
+    o._setSource(this)
+  }
+  /** Notify this GenerativeDistribution that it is no longer associated with a sampled outcome, and set o's source to null. */
+  final def unregisterSample(o:OutcomeType)(implicit d:DiffList): Unit = {
+    _unregisterSample(o)
+  	//if (o.isInstanceOf[GenerativeObservation[_]]) o.asInstanceOf[GenerativeObservation[_]]._setSource(null.asInstanceOf[OutcomeType#SourceType])
+  	o._setSource(null)
+  }
+  // TODO consider removing preChange/postChange, because it requires extra infrastructure/Diffs from implementers?  Can just use (un)registerSample
   /** Notify this GenerativeDistribution that the value of its associated outcome 'o' is about to change.  
       Calls to this method are always paired with (followed by) a call to postChange. */
-  def preChange[O2<:OutcomeType](o:O2)(implicit d:DiffList): Unit = if (!generatedSamples.contains(o)) throw new Error("Outcome not present")
-  def postChange[O2<:OutcomeType](o:O2)(implicit d:DiffList): Unit = if (!generatedSamples.contains(o)) throw new Error("Outcome not present")
+  def preChange(o:OutcomeType)(implicit d:DiffList): Unit = if (!generatedSamples.contains(o)) throw new Error("Outcome not present")
+  def postChange(o:OutcomeType)(implicit d:DiffList): Unit = if (!generatedSamples.contains(o)) throw new Error("Outcome not present")
   /** Return the probability that this GenerativeDistribution would generate outcome 'o' */
   def pr(o:OutcomeType): Double
   /** Return the log-probability that this GenerativeDistribution would generate outcome 'o' */
@@ -103,16 +122,17 @@ trait AbstractGenerativeDistribution extends Variable {
 	def sampleInto(o:OutcomeType): Unit
 	// Fighting with the Scala type system
 	// See http://www.nabble.com/Path-dependent-type-question-td16767728.html
-	def unsafeGenerate(o:Variable)(implicit d:DiffList) = generate(o.asInstanceOf[OutcomeType])
-	def unsafeUngenerate(o:Variable)(implicit d:DiffList) = ungenerate(o.asInstanceOf[OutcomeType])
+  //// http://www.nabble.com/Fwd:--lift--Lift-with-Scala-2.6.1--td14571698.html 
+	def unsafeRegisterSample(o:Variable)(implicit d:DiffList) = registerSample(o.asInstanceOf[OutcomeType])
+	def unsafeUnregisterSample(o:Variable)(implicit d:DiffList) = unregisterSample(o.asInstanceOf[OutcomeType])
 	def unsafePr(o:Variable) = pr(o.asInstanceOf[OutcomeType])
 	def unsafeLogpr(o:Variable) = logpr(o.asInstanceOf[OutcomeType])
-	case class GenerativeDistributionGenerateDiff(m:OutcomeType) extends Diff {
+	case class GenerativeDistributionRegisterDiff(m:OutcomeType) extends Diff {
 		def variable = AbstractGenerativeDistribution.this.asInstanceOf[VariableType]
 		def redo = { if (generatedSamples.contains(m)) throw new Error else generatedSamples += m}
 		def undo = { generatedSamples -= m }
 	}
- 	case class GenerativeDistributionUngenerateDiff(m:OutcomeType) extends Diff {
+ 	case class GenerativeDistributionUnregisterDiff(m:OutcomeType) extends Diff {
 		def variable = AbstractGenerativeDistribution.this.asInstanceOf[VariableType]
 		def redo = { generatedSamples -= m }
 		def undo = { if (generatedSamples.contains(m)) throw new Error else generatedSamples += m}
@@ -127,8 +147,10 @@ trait AbstractGenerativeDistribution extends Variable {
 Creates is own Domain.  Number of components in the mixture is the size of the domain.  Values of the domain are these MixtureComponent objects.
  Note that this is not a MultinomialOutcome, it is the *value* of MultinomialOutcome. */
 //trait MixtureComponent[This<:MixtureComponent[This] with GenerativeDistribution] extends TypedSingleIndexedVariable[This] with GenerativeDistribution
-trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistribution] extends TypedSingleIndexedVariable[This] with AbstractGenerativeDistribution {	this : This =>
-	//type OutcomeType = This#OutcomeType
+trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistribution] extends TypedSingleIndexedVariable[This] with AbstractGenerativeDistribution {
+	// TODO Make it "This<:MixtureComponent[This] with AbstractGenerativeDistribution with ItemizedVariable[This]" and I think we can get rid of many lines of code below
+  this : This =>
+	//type OutcomeType = This#OutcomeType // Not necessary?
 	type VariableType = This  // can we get away with this = ?
 	type DomainType = IndexedDomain[VariableType] // We must make sure that this.domain is an IndexedDomain
 	class DomainClass extends IndexedDomain[VariableType]
@@ -138,7 +160,7 @@ trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistr
   //println (this.getClass.getName+" MixtureComponent domain class = "+domain.getClass)
 	_index = domain.asInstanceOf[IndexedDomain[This]].index(this) // TODO can we avoid this cast?
 	//println("Creating MixtureComponent this.getClass = "+this.getClass.toString+" index="+_index+" domain size="+domain.asInstanceOf[IndexedDomain[This]].size)
-	override final def setByIndex(index:Int)(implicit d:DiffList) : Unit = new Error
+	override final def setByIndex(index:Int)(implicit d:DiffList) : Unit = new Error // TODO this class should inherit from TypedSingleIndexedObservation instead?  But is does change, though.
 }
 
 
@@ -163,9 +185,9 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
 	def setOutcome(o:M#OutcomeType) = if (_outcome == null) _outcome = o else throw new Error("Outcome already set")
 	override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
 	  if (_outcome == null) throw new Error("No outcome yet set.")
-	  choice.unsafeUngenerate(outcome) // was unsafe
+	  choice.unsafeUnregisterSample(outcome) // was unsafe // TODO Change to preChange/postChange
 	  super.setByIndex(newIndex) // this changes the value of 'choice'
-	  choice.unsafeGenerate(outcome) // was unsafe
+	  choice.unsafeRegisterSample(outcome) // was unsafe
 	}
   override def pr: Double = choice.unsafePr(outcome) * source.pr(index) // TODO Perhaps this should just return pr(index), and handle pr(outcome) somewhere else?  Then must also change MixtureChoiceTemplate below! 
   override def logpr: Double = choice.unsafeLogpr(outcome) + source.logpr(index)
@@ -180,18 +202,24 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
   // GibbsSampler = 368.3 seconds
   override def sample(implicit d:DiffList): Unit = {
     //println("MixtureChoice.sample "+index+" diff "+d)
-    val isDM = classOf[DirichletMultinomial[This]].isAssignableFrom(getClass)
-    choice.unsafeUngenerate(outcome)
-    if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, -1)
+    //val isDM = classOf[DirichletMultinomial[This]].isAssignableFrom(source.getClass)
+    val src = source
+    // Remove this variable and its sufficient statistics from the model
+    choice.unsafeUnregisterSample(outcome)
+    source.unregisterSample(this)
+    //if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, -1)
     val dom = domain // Avoid 'domain' HashMap lookup in inner loop
-    val distribution = Array.fromFunction[Double]((i:Int) => source.pr(i) * dom.get(i).unsafePr(outcome))(dom.size)
-    var i = 0; val max = distribution.size; val r = Global.random.nextDouble * distribution.foldLeft(0.0)(_+_); var s = 0.0
-    while (s < r && i < max) { s += distribution(i); i += 1 }
+    val distribution = Array.fromFunction[Double]((i:Int) => src.pr(i) * dom.get(i).unsafePr(outcome))(dom.size)
+    val i = Maths.nextDiscrete(distribution, distribution.foldLeft(0.0)(_+_))(Global.random)
+    //var i = 0; val max = distribution.size; val r = Global.random.nextDouble * distribution.foldLeft(0.0)(_+_); var s = 0.0
+    //while (s < r && i < max) { s += distribution(i); i += 1 }
     //choice.unsafeGenerate(outcome) // Put outcome back, although, inefficiently, the next line moves it again
     //setByIndex(i - 1) // So, instead we do it ourselves.  But then subclassers cannot meaningfully override setByIndex!! // TODO Consider alternatives
-    super.setByIndex(i - 1) // change the value of choice
-    choice.unsafeGenerate(outcome)
-    if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, 1)
+    super.setByIndex(i) // change the value of choice
+    // Add the variable back into the model, with its new value
+    src.registerSample(this)
+    choice.unsafeRegisterSample(outcome)
+    //if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, 1)
   }
 }
 

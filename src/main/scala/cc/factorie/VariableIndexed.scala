@@ -116,6 +116,8 @@ abstract trait ItemizedVariable[This <: ItemizedVariable[This]] extends SingleIn
   type ValueType = This
   class DomainInSubclasses
   domain.index(this) // Put the variable in the index
+  // TODO inherit from SingleIndexed instead
+  //val index = domain.index(this) // Put the variable in the index
 }
 
 // But doesn't have mixin 'ConstantValue' because we can't yet be guaranteed that this variable's index will not change; we can in EnumObservation, though
@@ -125,6 +127,7 @@ abstract trait TypedSingleIndexedObservation[T] extends SingleIndexed with Typed
   class DomainInSubclasses
   def value: T = domain.get(index)
   override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + index + ")"
+  // NOTE that "def index" has yet to be defined
 }
 
 /** For variables holding a single indexed value, which is not the variable object itself, but a Scala value of type T. */

@@ -27,24 +27,20 @@ trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution
     //println("sampleInto")
     var norm = 0.0
     val c = new Array[Double](m.size)
+    // If m is a DirichletMultinomial, account for the fact that the m.pr(i) estimate will include m.source.alpha(i): 
+    // m.pr(i) will be calculated from its counts, smoothed with the alphas here, in equal proportions (thanks to norm /= alphaSum below)
+    // So we double the variance of random sample in order to make up for it.
+    val varianceScaling = if (m.source != null && classOf[DirichletMultinomial[O]].isAssignableFrom(m.getClass)) 2.0 else 1.0
     for (val i <- 0 until c.length) {
       //println("sampleInto alpha(i)="+alpha(i))
-      c(i) = Maths.nextGamma(alpha(i)+counts(i), 1)(Global.random)
+      c(i) = Maths.nextGamma((alpha(i)+counts(i))/varianceScaling, 1)(Global.random)
       if (c(i) <= 0.0) c(i) = 0.0001
       norm += c(i)
     }
-    norm /= size // trying to make sure that each c(i) is >=1  // Was previously "norm /= alphaSum"
+    norm /= alphaSum // How many pseudo-counts to give the multinomial?  How about as many as this Dirichlet has.
     for (i <- 0 until c.length) {
       c(i) /= norm
       //println("sampleInto c(i)="+c(i))
-      //if (ret.source != null) ret.counts(i) -= ret.source.alpha(i) // TODO consider putting this back!  Because now ret.pr(i) != c(i) !!!
-      // coordinate with Dirichlet parameter estimation
-    }
-    // If m is a DirichletMultinomial, account for the fact that the m.pr(i) estimate will include m.source.alpha(i) 
-    if (m.source != null && classOf[DirichletMultinomial[O]].isAssignableFrom(m.getClass)) {
-      val maxAlpha: Double = m.source.alphas.max(x=>x) // trying to ensure that c(i) doesn't go negative
-      for (i <- 0 until c.length)
-        c(i) = c(i)*maxAlpha - m.source.alpha(i)
     }
     m.set(c)
   }
@@ -94,13 +90,13 @@ class DirichletDirichlet[O<:MultinomialOutcome[O]](val meanSource:AbstractDirich
   val mean = new DirichletMultinomial(meanSource)
   alphaSum = sum
   mean.setSource(meanSource)(null)
-  override def generate[O2<:OutcomeType](m:O2)(implicit d:DiffList) = {
-    super.generate(m)
+  override def _registerSample(m:OutcomeType)(implicit d:DiffList) = {
+    super._registerSample(m)
     throw new Error
     //mean.generate(m.toArray)
   }
-  override def ungenerate[O2<:OutcomeType](m:O2)(implicit d:DiffList) = {
-    super.ungenerate(m)
+  override def _unregisterSample(m:OutcomeType)(implicit d:DiffList) = {
+    super._unregisterSample(m)
     throw new Error
     //mean.ungenerate(m.toArray) // TODO Yipes.  Dangerous, because m.pr could have changed in since mean.generate above
   }

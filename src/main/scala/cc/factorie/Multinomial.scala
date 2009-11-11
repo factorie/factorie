@@ -114,7 +114,7 @@ trait CountsMultinomial[O<:MultinomialOutcome[O]] extends AbstractMultinomial[O]
   override def counts: { def apply(i:Int):Double; def update(i:Int,v:Double):Unit; def size:Int } = _counts // TODO Want Seq[Double], but Vector doesn't mixin Seq?!!
   def increment(index:Int, incr:Double)(implicit d:DiffList) = { // TODO Scala 2.8 add incr:Double=1.0
     _counts(index) += incr; total += incr
-    if (_counts(index) < 0.0) println("CountsMultinomial counts<0 "+this.getClass.getName)
+    if (_counts(index) < 0.0) println("CountsMultinomial "+this.getClass.getName+" counts="+_counts(index)+" incr="+incr)
     assert(_counts(index) >= 0.0)
     assert(total >= 0.0)
     if (d != null) d += new CountsMultinomialIncrementDiff(index, incr)
@@ -163,14 +163,29 @@ trait CountsMultinomial[O<:MultinomialOutcome[O]] extends AbstractMultinomial[O]
   }
 }
 
-class SparseCountsMultinomial[O<:MultinomialOutcome[O]](dim:Int) extends CountsMultinomial[O] {
+trait SparseMultinomial[O<:MultinomialOutcome[O]] extends AbstractMultinomial[O] {
+  def activeIndices: scala.collection.Set[Int];
+  //def sampleIndexProduct(m2:SparseMultinomial[O]): Int // TODO
+}
+
+class SparseCountsMultinomial[O<:MultinomialOutcome[O]](dim:Int) extends CountsMultinomial[O] with SparseMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: SparseCountsMultinomial[O]
   class DomainInSubclasses
   protected val _counts = new SparseVector(dim)
   def default = _counts.default
   def default_=(d:Double) = _counts.default = d
+  def activeIndices: scala.collection.Set[Int] = _counts.activeDomain
+  // def sampleIndex: Int // TODO
 }
+
+@deprecated // Not finished
+abstract class SortedSparseCountsMultinomial[O<:MultinomialOutcome[O]](dim:Int) extends AbstractMultinomial[O] with SparseMultinomial[O] {
+	def length: Int = _count.size 
+  protected var total : Double = 0.0
+  protected val _count = new Array[Int](dim)
+}
+
 
 class DenseCountsMultinomial[O<:MultinomialOutcome[O]](dim:Int) extends CountsMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
@@ -191,7 +206,7 @@ class DirichletMultinomial[O<:MultinomialOutcome[O]](dirichlet:AbstractDirichlet
     //println("Multinomial.pr "+count(index)+" "+source(index)+" "+total+" "+source.sum)
     if (source != null)
       (counts(index) + source.alpha(index)) / (countsTotal + source.alphaSum)
-    else if (countsTotal == 0)
+    else if (countsTotal == 0) // Use super.pr here instead?  But this may be faster
       1.0 / size
     else
       counts(index) / countsTotal
@@ -220,19 +235,18 @@ class DirichletMultinomial[O<:MultinomialOutcome[O]](dirichlet:AbstractDirichlet
   def logpr(obsCounts:Vector): Double = Math.log(pr(obsCounts)) //indices.foldLeft(0.0)(_+logpr(_))
   override def prIndices(indices:Seq[Int]): Double = pr({val v = new SparseVector(length); indices.foreach(i => v(i) += 1.0); v})
   override def logprIndices(indices:Seq[Int]): Double = Math.log(prIndices(indices))
-  override def generate[O2<:O](o:O2)(implicit d:DiffList) = { 
-    //println("Multinomial.outcomeDomain.size="+outcomeDomain.size+" generate "+o+" size="+size); Console.flush;
-    super.generate(o) // Consider not calling super: Don't keep the outcomes in a HashMap; we have what we need in 'counts'  How much time would this save?  I tried; very little.
+  override def _registerSample(o:O)(implicit d:DiffList) = { 
+    super._registerSample(o) // Consider not calling super: Don't keep the outcomes in a HashMap; we have what we need in 'counts'  How much time would this save?  I tried; very little.
     increment(o.index, 1.0)
   }
-  override def ungenerate[O2<:O](o:O2)(implicit d:DiffList) = {
-    super.ungenerate(o) 
+  override def _unregisterSample(o:O)(implicit d:DiffList) = {
+    super._unregisterSample(o) 
     increment(o.index, -1.0) // Note that if 'o' weren't a MultinomialOutcome & it changed its 'index', this will do the wrong thing! 
   }
-  override def preChange[O2<:O](o:O2)(implicit d:DiffList) = {
+  override def preChange(o:O)(implicit d:DiffList) = {
     increment(o.index, -1.0)
   }
-  override def postChange[O2<:O](o:O2)(implicit d:DiffList) = {
+  override def postChange(o:O)(implicit d:DiffList) = {
     increment(o.index, 1.0)
   }
   def sampleValue: O#VariableType#ValueType = outcomeDomain.get(sampleIndex)
