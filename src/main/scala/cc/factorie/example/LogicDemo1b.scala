@@ -8,8 +8,8 @@ object LogicDemo1b {
 	def main(args:Array[String]) : Unit = {
 		// Define entity, attribute and relation types
 		class Person (val name:String) extends ItemizedVariable[Person] {
-			val smokes = new Smokes; class Smokes extends Bool with AttributeOf[Person] with SampleCounts
-			val cancer = new Cancer; class Cancer extends Bool with AttributeOf[Person] with SampleCounts
+			val smokes = new Smokes; class Smokes extends Bool with AttributeOf[Person]
+			val cancer = new Cancer; class Cancer extends Bool with AttributeOf[Person]
 			val mother = new Mother; class Mother extends PrimitiveVariable[Person] with AttributeOf[Person]
 			val age = new Age; class Age extends IntRangeVariable(0,8) with AttributeOf[Person] // in decades
 			override def toString = name
@@ -61,15 +61,14 @@ object LogicDemo1b {
 		println(model.factors(Friends(person("Don"))))
 
 		// Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
-		val sampler = new GibbsSampler(model)
-		val numSamples = 100
-		for (i <- 1 to numSamples) {
-			sampler.process(people.map(_.cancer) + Friends, 20)
-			people.foreach(_.cancer.incrementSample)
-		}
+		val inferencer = new SamplingInferencer(new GibbsSampler1[Bool](model))
+    inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
+    val marginals = inferencer.infer(people.map(_.cancer), people.map(_.cancer) /*+ Friends*/)
 		for (p <- people)
-			println("%s p(cancer)=%f".format(p.name, p.cancer.samplePr(1)))
+			println("%s p(cancer)=%f".format(p.name, marginals(p.cancer).pr(1)))
 	}
 }
 
+/*
 
+ */

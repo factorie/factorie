@@ -9,13 +9,6 @@ import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
-// TODO Consider changing SingleIndexed to IndexedVariable
-// It would help Inferencer.IndexedMarginal
-// But it is a little odd because
-// * It could be a BinaryVectorVariable, 
-// * It doesn't have "def index".  It might be a little painful to match/case all these places.  
-// but we could certainly define pr(BinaryVectorVariable)
-// Hmm... Requires further thought.
 
 /** Base of the Multinomial class hierarchy, needing only methods length, pr, and set. */
 // TODO Rename simply "Multinomial"?
@@ -257,7 +250,14 @@ class DirichletMultinomial[O<:MultinomialOutcome[O]](dirichlet:AbstractDirichlet
   override def toString = "Multinomial(count="+total+")"
 }
 
-    
+// TODO Consider changing SingleIndexed to IndexedVariable
+// It would help Inferencer.IndexedMarginal
+// But it is a little odd because
+// * It could be a BinaryVectorVariable, 
+// * It doesn't have "def index".  It might be a little painful to match/case all these places.  
+// but we could certainly define pr(BinaryVectorVariable)
+// Hmm... Requires further thought.
+
 // TODO Consider renaming this MultinomialSample, because the instances of this class are individual samples (e.g. token)?
 // "outcome" may indicate the value (e.g. type)
 // No, I think I like "MultinomialOutcome"
@@ -276,6 +276,11 @@ trait MultinomialOutcomeVariable[This<:MultinomialOutcomeVariable[This] with Sin
     super.setByIndex(newIndex)
     if (source != null) source.postChange(this)
   }
+  /** Alternative setByIndex that avoids coordination with source, for use when you *really* know what you are doing, 
+      and you are doing the source coordination yourself. */
+  def _setByIndex(newIndex:Int)(implicit d:DiffList) = super.setByIndex(newIndex) 
+  // TODO The above method is a bit scary because we may loose opportunities to fruitfully override setByIndex in subclasses
+  // It saved us 115-111 seconds in the LDA timing run described in Generative.scala. 
   def distribution: Array[Double]= {
     val buffer = new Array[Double](domain.size);
     for (i <- 0 until buffer.length) buffer(i) = source.pr(i); 
@@ -289,7 +294,7 @@ trait MultinomialOutcomeVariable[This<:MultinomialOutcomeVariable[This] with Sin
   }
 }
   
-/** The outcome of a coin flip, with boolean value.  this.value:Boolean */
+/** The outcome of a coin flip, with boolean value.  */
 class Flip extends CoordinatedBool with MultinomialOutcomeVariable[Flip]
 case class Coin(p:Double, totalCount:Double) extends DenseCountsMultinomial[Flip](Array((1-p)*totalCount,p*totalCount)) {
   def this(p:Double) = this(p:Double, 1.0)

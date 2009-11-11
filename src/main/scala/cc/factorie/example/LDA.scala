@@ -39,7 +39,7 @@ object LDADemo {
     val topics = Array.fromFunction(i => new Topic ~ Beta)(numTopics)
 		val zs = new ArrayBuffer[Z] 	
   	for (document <- documents) {
-  		document.theta = new Theta :~ Alpha // TODO Make this simply ~ !!
+  		document.theta = new Theta ~ Alpha
   		for (word <- document) {
   			val z = new Z ~ document.theta
   			word ~ z

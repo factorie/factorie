@@ -69,7 +69,7 @@ abstract trait SingleIndexedVariable extends SingleIndexed with Proposer /*with 
 	  override def variable : SingleIndexedVariable.this.type = SingleIndexedVariable.this
 	  //override def variable : SingleIndexedVariable = SingleIndexedVariable.this
 	}
-	def propose(model:Model, d: DiffList) = {setByIndex(Global.random.nextInt(domain.size))(d); 0.0}
+	def propose(model:Model, d: DiffList) = {setByIndex(Global.random.nextInt(domain.size))(d); 0.0} // TODO remove this method
 	// The reason for the "toList" (now changed to "force"), see 
 	// http://stackoverflow.com/questions/1332574/common-programming-mistakes-for-scala-developers-to-avoid
 	// http://creativekarma.com/ee.php/weblog/comments/the_scala_for_comprehension_from_a_java_perspective/
@@ -86,9 +86,9 @@ abstract trait SingleIndexedVariable extends SingleIndexed with Proposer /*with 
 	}*/
 	/** Tests equality of variable values, whereas == tests equality of variable objects themselves. */
 	case class SingleIndexedDiff(oldIndex: Int, newIndex: Int) extends Diff {
-		@scala.inline final def variable: SingleIndexedVariable = SingleIndexedVariable.this
-		@scala.inline final def redo = _index = newIndex
-		@scala.inline final def undo = _index = oldIndex
+		@inline final def variable: SingleIndexedVariable = SingleIndexedVariable.this
+		@inline final def redo = _index = newIndex
+		@inline final def undo = _index = oldIndex
 	}
 }
 
@@ -97,7 +97,7 @@ abstract trait SingleIndexedVariable extends SingleIndexed with Proposer /*with 
 // TODO I think this should be removed.  All inference meta-data should be stored separately from the Variables in the inferencer itself,
 //  because we can't know at Variable creation time which Variables we will want to do inference on and which not.
 //  Likely it would be stored in a HashMap[Variable,Array[Double]], or somesuch.
-@deprecated // Such distributions are now stored separately from variables, in Marginal objects
+/*@deprecated // Such distributions are now stored separately from variables, in Marginal objects
 trait SampleCounts {
   this : SingleIndexedVariable =>
   val sampleCounts = new Array[Double](domain.allocSize)
@@ -107,21 +107,21 @@ trait SampleCounts {
   def clearSamples = { sampleTotal = 0.0; for (i <- 0 until domain.allocSize) sampleCounts(i) = 0.0 }
   def samplePr(idx:Int) : Double = sampleCounts(idx)/sampleTotal
   //def samplePr(x:VariableType#ValueType) : Double = samplePr(domain.index(x)) // TODO How can I make this typing work?
-}
+}*/
 
 /** For variables put in an index, and whose value is the variable itself. */
-abstract trait ItemizedVariable[This <: ItemizedVariable[This]] extends SingleIndexedVariable {
+abstract trait ItemizedVariable[This <: ItemizedVariable[This]] extends SingleIndexed {
 	this : This =>
   type VariableType = This
   type ValueType = This
   class DomainInSubclasses
-  domain.index(this) // Put the variable in the index
-  // TODO inherit from SingleIndexed instead
-  //val index = domain.index(this) // Put the variable in the index
+  domain.index(this) // Put the variable in the IndexedDomain
+  val index = domain.index(this) // Remember our own index.  We could save memory by looking it up in the Domain each time, but speed is more important
 }
 
-// But doesn't have mixin 'ConstantValue' because we can't yet be guaranteed that this variable's index will not change; we can in EnumObservation, though
-abstract trait TypedSingleIndexedObservation[T] extends SingleIndexed with TypedVariable {
+/** A SingledIndexed variable (which is also a TypedVariable), whose type is specified by a type argument. */
+abstract trait TypedSingleIndexedObservation[T] extends SingleIndexed {
+	// But doesn't have mixin 'ConstantValue' because we can't yet be guaranteed that this variable's index will not change; we can in EnumObservation, though
 	type VariableType <: TypedSingleIndexedObservation[T]
   type ValueType = T
   class DomainInSubclasses
