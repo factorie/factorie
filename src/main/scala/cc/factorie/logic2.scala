@@ -55,8 +55,9 @@ object logic2 {
     def *(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
   }
   object Forany {
-    def apply[X<:AccessorUnit with Variable](x2c:X#AccessorUnitType=>Formula[X])(implicit m:Manifest[X#AccessorUnitType]) : LogicStatistics = {
-      val formula = x2c(m.erasure.getConstructors()(0).newInstance().asInstanceOf[X#AccessorUnitType])
+    def apply[X<:AccessorType with Variable](x2c:X#AccessorType=>Formula[X])(implicit m:Manifest[X#AccessorType]) : LogicStatistics = {
+    	//val formula = x2c(m.erasure.getConstructors()(0).newInstance().asInstanceOf[X#AccessorUnitType])
+      val formula = x2c(AccessorUnit[X](m))
       val manifests = formula.manifests.asInstanceOf[Seq[Manifest[Bool]]]
       val accessors = formula.accessors
       val size = manifests.length
@@ -72,25 +73,25 @@ object logic2 {
           // TODO think about this: what happens when there are multiple factors returned above.  Is root(n1) different for each?
           def statistics(n1:Bool) = { val s = new ArrayStack[Bool]; s+=n1; Stat(Bool(formula.eval(s))) }
           /** Set the weight parameters to make possible worlds in which the template result is true be w-times more likely than worlds in which it is false. */
-        }
+        }.init
         case 2 => new Template2[Bool,Bool]()(manifests(0), manifests(1)) with LogicStatistics {
           def unroll1(n1:Bool) = { val roots = accessors(0).reverse(n1); for (root <- roots; n2 <- accessors(1).forward(root)) yield Factor(n1,n2) }
           def unroll2(n2:Bool) = { val roots = accessors(1).reverse(n2); for (root <- roots; n1 <- accessors(0).forward(root)) yield Factor(n1,n2) }
           def statistics(n1:Bool, n2:Bool) = { val s = new ArrayStack[Bool]; s+=n2; s+=n1; Stat(Bool(formula.eval(s))) }
-        }
+        }.init
         case 3 => new Template3[Bool,Bool,Bool]()(manifests(0), manifests(1), manifests(2)) with LogicStatistics {
           def unroll1(n1:Bool) = { val roots = accessors(0).reverse(n1); for (root <- roots; n2 <- accessors(1).forward(root); n3 <- accessors(2).forward(root)) yield Factor(n1,n2,n3) } 
           def unroll2(n2:Bool) = { val roots = accessors(1).reverse(n2); for (root <- roots; n1 <- accessors(0).forward(root); n3 <- accessors(2).forward(root)) yield Factor(n1,n2,n3) } 
           def unroll3(n3:Bool) = { val roots = accessors(2).reverse(n3); for (root <- roots; n1 <- accessors(0).forward(root); n2 <- accessors(1).forward(root)) yield Factor(n1,n2,n3) } 
           def statistics(n1:Bool, n2:Bool, n3:Bool) = { val s = new ArrayStack[Bool]; s+=n3; s+=n2; s+=n1; Stat(Bool(formula.eval(s))) }
-        }
+        }.init
         case 4 => new Template4[Bool,Bool,Bool,Bool]()(manifests(0), manifests(1), manifests(2), manifests(3)) with LogicStatistics {
           def unroll1(n1:Bool) = { val roots = accessors(0).reverse(n1); for (root <- roots; n2 <- accessors(1).forward(root); n3 <- accessors(2).forward(root); n4 <- accessors(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
           def unroll2(n2:Bool) = { val roots = accessors(1).reverse(n2); for (root <- roots; n1 <- accessors(0).forward(root); n3 <- accessors(2).forward(root); n4 <- accessors(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
           def unroll3(n3:Bool) = { val roots = accessors(2).reverse(n3); for (root <- roots; n1 <- accessors(0).forward(root); n2 <- accessors(1).forward(root); n4 <- accessors(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
           def unroll4(n4:Bool) = { val roots = accessors(3).reverse(n4); for (root <- roots; n1 <- accessors(0).forward(root); n2 <- accessors(1).forward(root); n3 <- accessors(2).forward(root)) yield Factor(n1,n2,n3,n4) } 
           def statistics(n1:Bool, n2:Bool, n3:Bool, n4:Bool) = { val s = new ArrayStack[Bool]; s+=n4; s+=n3; s+=n2; s+=n1; Stat(Bool(formula.eval(s))) }
-        }
+        }.init
       }
     }
   }

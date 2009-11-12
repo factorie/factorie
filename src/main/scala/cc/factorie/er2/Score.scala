@@ -19,8 +19,9 @@ class ScoreNeighbor[X<:Variable,A<:IndexedVariable](a1:Accessor[X,A])(implicit m
 
 
 object For {
-  def apply[X<:AccessorUnit with Variable](x2c:X#AccessorUnitType=>Score[X])(implicit m:Manifest[X#AccessorUnitType]) = {
-    val score = x2c(m.erasure.getConstructors()(0).newInstance().asInstanceOf[X#AccessorUnitType])
+  def apply[X<:AccessorType with Variable](x2c:X#AccessorType=>Score[X])(implicit m:Manifest[X#AccessorType]) = {
+  	//val score = x2c(m.erasure.getConstructors()(0).newInstance().asInstanceOf[X#AccessorUnitType])
+    val score = x2c(AccessorUnit[X](m))
     val manifests = score.manifests.toList.asInstanceOf[List[Manifest[IndexedVariable]]]
     val accessors = score.accessors
     val size = manifests.length
