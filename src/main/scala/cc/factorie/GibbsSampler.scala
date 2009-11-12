@@ -61,7 +61,7 @@ abstract class GibbsSampler2[V1<:Variable with IterableSettings,V2<:Variable wit
 abstract class GibbsSampler3[V1<:Variable with IterableSettings,V2<:Variable with IterableSettings,V3<:Variable with IterableSettings](model:Model, objective:Model) extends SamplerOverSettings[V1](model, objective) {
   def this(m:Model) = this(m, null)
   def this() = this(Global.defaultModel)
-  /** Override this method to define the block, returning the second variable V2 to be paired with V1 */
+  /** Override this method to define the block, returning the other variables (V2,V3) to be jointly varied with V1 */
   def block(v1:V1): (V2,V3)
   /** Return an iterator over the cross product of the settings of V1, V2 and V3. */
   def settings(v1:V1) : SettingIterator = new SettingIterator {

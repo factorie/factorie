@@ -280,8 +280,8 @@ trait MultinomialOutcomeVariable[This<:MultinomialOutcomeVariable[This] with Sin
       and you are doing the source coordination yourself. */
   def _setByIndex(newIndex:Int)(implicit d:DiffList) = super.setByIndex(newIndex) 
   // TODO The above method is a bit scary because we may loose opportunities to fruitfully override setByIndex in subclasses
-  // It saved us 115-111 seconds in the LDA timing run described in Generative.scala. 
-  def distribution: Array[Double]= {
+  // However it saved us 115-111 seconds in the LDA timing run described in Generative.scala. 
+  def distribution: Array[Double] = {
     val buffer = new Array[Double](domain.size);
     for (i <- 0 until buffer.length) buffer(i) = source.pr(i); 
     buffer
