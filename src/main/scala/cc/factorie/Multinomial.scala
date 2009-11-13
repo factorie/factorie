@@ -42,7 +42,6 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[Pr
   type SourceType = AbstractDirichlet[O]; // TODO Why can't I make this ProportionGenerating[O] instead of AbstractDirichlet[O]?
   class DomainInSubclasses
   def asOutcome = this
-  //type DomainType <: IndexedDomain[OutcomeType]; // No! This might be a IndexedVariable, and have a domain different than its OutcomeType
   //def this(initCounts:Seq[Double]) = { this(initCounts.size); setCounts(initCounts) }
   def length: Int
   def apply(index:Int) = pr(index)
@@ -63,9 +62,9 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[Pr
   def prVector: Vector = new SeqAsVector { def apply(i:Int) = pr(i); def length = size } // 
   override def sampleFrom(s:SourceType)(implicit d:DiffList): Unit = set(s.sampleProportionsWithCounts(counts))
   @deprecated def sampleInto(o:OutcomeType): Unit = o match { // TODO Consider including implicit DiffList here? 
-    case v:SingleIndexedVariable => v.setByIndex(sampleIndex)(null)
+    case v:DiscreteVariable => v.setByIndex(sampleIndex)(null)
     case _ => throw new Error("Trying to sample into immutable Variable") // TODO Is this OK to just do nothing here?;
-    // if so, then we really don't need the separation between GenerativeObservation and GenerativeVariable!...  Or perhaps not?
+    // TODO if so, then we really don't need the separation between GenerativeObservation and GenerativeVariable!...  Or perhaps not?
   }
   class DiscretePr(val index:Int, val pr:Double)
   def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)})
@@ -214,8 +213,8 @@ class DenseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMulti
   protected val _counts = new DenseVector(dim)
 }
 
-//class Multinomial[O<:DiscreteOutcome[O]](initCounts:Seq[Double])(implicit m:Manifest[O]) extends DenseMultinomial[O](initCounts) with Iterable[O#VariableType#ValueType]
-class DirichletMultinomial[O<:DiscreteOutcome[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
+// TODO Figure out how to use intead [O<:DiscreteOutcome[O]], but still get O#VariableType#ValueType in "top" below
+class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
   def this()(implicit m:Manifest[O]) = this(null.asInstanceOf[AbstractDirichlet[O]])(m)
   def this(dirichlet:AbstractDirichlet[O], initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(dirichlet)(m); set(initCounts) }
   def this(initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(null.asInstanceOf[AbstractDirichlet[O]])(m); set(initCounts) }
@@ -270,16 +269,17 @@ class DirichletMultinomial[O<:DiscreteOutcome[O]](dirichlet:AbstractDirichlet[O]
   override def postChange(o:O)(implicit d:DiffList) = {
     increment(o.index, 1.0)
   }
-  def sampleValue: O#VariableType#ValueType = outcomeDomain.get(sampleIndex)
+  // TODO Consider finding a way to put this back, in the case when O<:CategoricalValue
+  //def sampleValue: O#VariableType#ValueType = outcomeDomain.get(sampleIndex)
   override def estimate: Unit = {} // Nothing to do because estimated on the fly
 	class DiscretePr(override val index:Int, override val pr:Double, override val count:Double, val value:O#VariableType#ValueType) extends super.DiscretePr(index,pr,count)
   override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i),outcomeDomain.get(i))})
-  def topValues(n:Int) = top(n).toList.map(_.value) // TODO change name to topValues
+  def topValues(n:Int) = top(n).toList.map(_.value)
   override def toString = "Multinomial(count="+total+")"
 }
 
 
-trait MultinomialDiscrete extends SingleIndexed // TODO turn this into Variational representation of SingleIndex with a distribution
+trait MultinomialDiscrete extends DiscreteValue // TODO turn this into Variational representation of SingleIndex with a distribution
 
 
 // The binary special case, for convenience

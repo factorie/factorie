@@ -2,15 +2,15 @@ package cc.factorie.example
 
 object DomainManipulation {
 
-	class MyIndexedVariable extends IndexedVariable { def vector = null }
+	class MyIndexedVariable extends CategoricalVariable //{ def vector = null }
   println("MyIndexedVariable  "+Domain[MyIndexedVariable])
   
-  println("Inner classes of IndexedVariable:")
-  classOf[IndexedVariable].getClasses.foreach(c => println(c))
+  println("Inner classes of CategoricalValues:")
+  classOf[CategoricalValues].getClasses.foreach(c => println(c))
   println("Inner declared classes of IndexedVariable:")
-  classOf[IndexedVariable].getDeclaredClasses.foreach(c => println(c))
+  classOf[CategoricalValues].getDeclaredClasses.foreach(c => println(c))
   println("Inner declared classes of IndexedVariable:")
-  println(classOf[IndexedVariable].getSuperclass)
+  println(classOf[CategoricalValues].getSuperclass)
   //println("method "+classOf[IndexedVariable].getDeclaredMethod("domainInSubclasses", null))
 
   class LabelDomain[V<:Variable] extends Domain[V] {

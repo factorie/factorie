@@ -7,10 +7,10 @@ object Global {
 	implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
   
 	val defaultModel = new Model
-	val defaultObjective = new Model(new TrueLabelTemplate[Label[AnyRef]]())
+	val defaultObjective = new Model(new TrueLabelTemplate[CoordinatedLabel[AnyRef]]())
 
   import cc.factorie.util.Implicits._
-  lazy val defaultSampler = new SamplerSuite
+  val defaultSampler = new SamplerSuite
 	defaultSampler += new GenerativeVariableSampler
 	defaultSampler += new GibbsSampler(defaultModel)
 

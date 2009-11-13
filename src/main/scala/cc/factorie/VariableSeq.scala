@@ -13,7 +13,7 @@ import cc.factorie.util.Implicits._
 
 // Variables for dealing with sequences
 
-	abstract class ImmutableSpanVariable[X](val parent: Seq[X], initStart: Int, initLength: Int) extends Variable with TypedVariable with RandomAccessSeq[X] {
+	abstract class ImmutableSpanVariable[X](val parent: Seq[X], initStart: Int, initLength: Int) extends Variable with TypedValue with RandomAccessSeq[X] {
 		type ValueType = X
 		type VariableType <: SpanVariable[X]
 		assert(initStart + initLength <= parent.length)
@@ -110,7 +110,7 @@ import cc.factorie.util.Implicits._
 
 	/* A variable containing a mutable sequence of other variables.  
   *  This variable stores the sequence itself, and tracks changes to the contets and order of the sequence. */
-	abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with TypedVariable with Seq[X] {
+	abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with TypedValue with Seq[X] {
 	  def this() = this(Nil)
 		type ValueType = X
 		type VariableType <: SeqVariable[X]

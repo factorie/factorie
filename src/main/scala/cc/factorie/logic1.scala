@@ -16,14 +16,14 @@ object logic1 {
   // Defining in this way so that "import cc.factorie.logic._" will work, and we get the necessary implicit def getter2formula
 
   /** The collection of arguments to the boolean expression; the variables neighboring the factor */
-  type Args = ArrayStack[SingleIndexedVariable]
+  type Args = ArrayStack[CategoricalVariable]
 
   /** A boolean expression */
   trait Formula {
     def eval(x:Args) : Boolean
     def manifests : Seq[Manifest[_<:Variable]]
     /** The Array is for each Arg position; the Seq is for the collection of terms using that Arg. */
-    def getters : Array[Seq[Getter0[Variable,SingleIndexedVariable]]] // used to be [X,Bool]
+    def getters : Array[Seq[Getter0[Variable,CategoricalVariable]]] // used to be [X,Bool]
     def ==>(f:Formula) = Implies(this, f)
     //def |=>(f:Formula) = Implies(this, f) // TODO perhaps this would be better to make sure it has lower precedence than === !!  http://www.scala-lang.org/docu/files/ScalaReference.pdf
     def ^(f:Formula) = And(this, f)
@@ -37,8 +37,8 @@ object logic1 {
     def manifests = List(ma)
     val getters = {
       val pos = g1.argPosition
-      val a = new Array[Seq[Getter0[Variable,SingleIndexedVariable]]](pos+1)
-      a(pos) = List(g1.asInstanceOf[Getter0[Variable,SingleIndexedVariable]]) // TODO can we get rid of the cast with covariant typing?
+      val a = new Array[Seq[Getter0[Variable,CategoricalVariable]]](pos+1)
+      a(pos) = List(g1.asInstanceOf[Getter0[Variable,CategoricalVariable]]) // TODO can we get rid of the cast with covariant typing?
       a
     }
   }
@@ -48,14 +48,14 @@ object logic1 {
     def manifests = List(ma,mb)
     val getters = {
       val pos1 = g1.argPosition; val pos2 = g2.argPosition; val max = if (pos1 > pos2) pos1 else pos2
-      val a = new Array[Seq[Getter0[Variable,SingleIndexedVariable]]](max)
+      val a = new Array[Seq[Getter0[Variable,CategoricalVariable]]](max)
       for (i <- 0 until max)
         if (g1.argPosition == i && g2.argPosition == i)
-        	a(i) = List(g1.asInstanceOf[Getter0[Variable,SingleIndexedVariable]], g2.asInstanceOf[Getter0[Variable,SingleIndexedVariable]])
+        	a(i) = List(g1.asInstanceOf[Getter0[Variable,CategoricalVariable]], g2.asInstanceOf[Getter0[Variable,CategoricalVariable]])
         else if (g1.argPosition == i)
-          a(i) = List(g1.asInstanceOf[Getter0[Variable,SingleIndexedVariable]])
+          a(i) = List(g1.asInstanceOf[Getter0[Variable,CategoricalVariable]])
         else if (g2.argPosition == i)
-        	a(i) = List(g2.asInstanceOf[Getter0[Variable,SingleIndexedVariable]])
+        	a(i) = List(g2.asInstanceOf[Getter0[Variable,CategoricalVariable]])
       a
     }
   }
@@ -75,7 +75,7 @@ object logic1 {
     def manifests = c1.manifests ++ c2.manifests
     val getters = {
       val pos1 = c1.getters.size; val pos2 = c2.getters.size; val max = if (pos1 > pos2) pos1 else pos2
-      val a = new Array[Seq[Getter0[Variable,SingleIndexedVariable]]](max)
+      val a = new Array[Seq[Getter0[Variable,CategoricalVariable]]](max)
       for (i <- 0 until max)
         if (c1.getters.length > i && c2.getters.length > i)
         	a(i) = c1.getters(i) ++ c2.getters(i)
@@ -104,25 +104,25 @@ object logic1 {
   trait IntExpression {
     def eval(x:Args) : Int
     def manifests : Seq[Manifest[_<:Variable]]
-    def getters : Array[Seq[Getter0[Variable,SingleIndexedVariable]]]
+    def getters : Array[Seq[Getter0[Variable,CategoricalVariable]]]
     def ====(f:IntExpression) = IntEquals(this, f)
     def >(f:IntExpression) = GreaterThan(this, f)
     def <(f:IntExpression) = LessThan(this, f)
   }
 
-  case class IntTerm[X<:Variable,A<:SingleIndexedVariable](g:Getter0[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) extends IntExpression {
+  case class IntTerm[X<:Variable,A<:CategoricalVariable](g:Getter0[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) extends IntExpression {
     def eval(x:Args) : Int = x.pop.index
     def manifests = List(ma)
     val getters = {
       val pos = g.argPosition
-      val a = new Array[Seq[Getter0[Variable,SingleIndexedVariable]]](pos+1)
-      a(pos+1) = List(g.asInstanceOf[Getter0[Variable,SingleIndexedVariable]]) // TODO can we get rid of the cast with covariant typing?
+      val a = new Array[Seq[Getter0[Variable,CategoricalVariable]]](pos+1)
+      a(pos+1) = List(g.asInstanceOf[Getter0[Variable,CategoricalVariable]]) // TODO can we get rid of the cast with covariant typing?
       a
     }
 
   } 
   
-  implicit def getter2IntTerm[X<:Variable,A<:SingleIndexedVariable](g:Getter0[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) : IntExpression = new IntTerm(g)(mx,ma)
+  implicit def getter2IntTerm[X<:Variable,A<:CategoricalVariable](g:Getter0[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) : IntExpression = new IntTerm(g)(mx,ma)
 
   abstract class IntIntExpression2(c1:IntExpression, c2:IntExpression) extends IntExpression {
     def manifests = c1.manifests ++ c2.manifests
@@ -132,7 +132,7 @@ object logic1 {
     def manifests = c1.manifests ++ c2.manifests
     val getters = {
       val pos1 = c1.getters.size; val pos2 = c2.getters.size; val max = if (pos1 > pos2) pos1 else pos2
-      val a = new Array[Seq[Getter0[Variable,SingleIndexedVariable]]](max+1)
+      val a = new Array[Seq[Getter0[Variable,CategoricalVariable]]](max+1)
       for (i <- 0 until max)
         if (c1.getters.length > i && c2.getters.length > i)
         	a(i) = c1.getters(i) ++ c2.getters(i)
@@ -163,7 +163,7 @@ object logic1 {
 
   object Forany {
     def apply[X<:Variable](x2c:Arg[X]=>Formula) : Template with LogicStatistics = {
-      type I = SingleIndexedVariable 
+      type I = CategoricalVariable 
       val formula = x2c(Arg[X](0))
       val manifests = formula.manifests.asInstanceOf[Seq[Manifest[I]]];
       assert(formula.getters.length == 1)
@@ -172,25 +172,25 @@ object logic1 {
       size match {
         case 1 => new Template1[I]()(manifests(0)) with LogicStatistics {
         	override def unroll1(n1:I) = { val roots = accessors(0).reverse(n1); if (!roots.isEmpty) Factor(n1) else Nil }
-          def statistics(n1:I) = { val s = new ArrayStack[SingleIndexedVariable]; s+=n1; Stat(Bool(formula.eval(s))) }
+          def statistics(n1:I) = { val s = new ArrayStack[I]; s+=n1; Stat(Bool(formula.eval(s))) }
         }.init
         case 2 => new Template2[I,I]()(manifests(0), manifests(1)) with LogicStatistics {
         	def unroll1(n1:I) = { val roots = accessors(0).reverse(n1); for (root <- roots; n2 <- accessors(1).forward(root)) yield Factor(n1,n2) }
           def unroll2(n2:I) = { val roots = accessors(1).reverse(n2); for (root <- roots; n1 <- accessors(0).forward(root)) yield Factor(n1,n2) }
-          def statistics(n1:I, n2:I) = { val s = new ArrayStack[SingleIndexedVariable]; s+=n2; s+=n1; Stat(Bool(formula.eval(s))) }
+          def statistics(n1:I, n2:I) = { val s = new ArrayStack[I]; s+=n2; s+=n1; Stat(Bool(formula.eval(s))) }
         }.init
         case 3 => new Template3[I,I,I]()(manifests(0), manifests(1), manifests(2)) with LogicStatistics {
           def unroll1(n1:I) = { val roots = accessors(0).reverse(n1); for (root <- roots; n2 <- accessors(1).forward(root); n3 <- accessors(2).forward(root)) yield Factor(n1,n2,n3) } 
           def unroll2(n2:I) = { val roots = accessors(1).reverse(n2); for (root <- roots; n1 <- accessors(0).forward(root); n3 <- accessors(2).forward(root)) yield Factor(n1,n2,n3) } 
           def unroll3(n3:I) = { val roots = accessors(2).reverse(n3); for (root <- roots; n1 <- accessors(0).forward(root); n2 <- accessors(1).forward(root)) yield Factor(n1,n2,n3) } 
-          def statistics(n1:I, n2:I, n3:I) = { val s = new ArrayStack[SingleIndexedVariable]; s+=n3; s+=n2; s+=n1; Stat(Bool(formula.eval(s))) }
+          def statistics(n1:I, n2:I, n3:I) = { val s = new ArrayStack[I]; s+=n3; s+=n2; s+=n1; Stat(Bool(formula.eval(s))) }
         }.init
         case 4 => new Template4[I,I,I,I]()(manifests(0), manifests(1), manifests(2), manifests(3)) with LogicStatistics {
         	def unroll1(n1:I) = { val roots = accessors(0).reverse(n1); for (root <- roots; n2 <- accessors(1).forward(root); n3 <- accessors(2).forward(root); n4 <- accessors(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
           def unroll2(n2:I) = { val roots = accessors(1).reverse(n2); for (root <- roots; n1 <- accessors(0).forward(root); n3 <- accessors(2).forward(root); n4 <- accessors(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
           def unroll3(n3:I) = { val roots = accessors(2).reverse(n3); for (root <- roots; n1 <- accessors(0).forward(root); n2 <- accessors(1).forward(root); n4 <- accessors(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
           def unroll4(n4:I) = { val roots = accessors(3).reverse(n4); for (root <- roots; n1 <- accessors(0).forward(root); n2 <- accessors(1).forward(root); n3 <- accessors(2).forward(root)) yield Factor(n1,n2,n3,n4) } 
-          def statistics(n1:I, n2:I, n3:I, n4:I) = { val s = new ArrayStack[SingleIndexedVariable]; s+=n4; s+=n3; s+=n2; s+=n1; Stat(Bool(formula.eval(s))) }
+          def statistics(n1:I, n2:I, n3:I, n4:I) = { val s = new ArrayStack[I]; s+=n4; s+=n3; s+=n2; s+=n1; Stat(Bool(formula.eval(s))) }
         }.init
       }
     }

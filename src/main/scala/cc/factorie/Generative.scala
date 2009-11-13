@@ -83,7 +83,7 @@ trait AbstractGenerativeVariable extends Variable {
     and for use in finding neighbors for factor Templates. */
 // Change this to O<:TypedVariable so that we can add def sampleValue:O#ValueType
 trait GenerativeDistribution[O<:Variable] extends AbstractGenerativeDistribution {
-  // Note that 'O' is not *required* to be a GenerativeVariable.  This allows us to put SingleIndexedVariable into Multinomial, for example.
+  // Note that 'O' is not *required* to be a GenerativeVariable.  This allows us to put any DiscreteVariable into Multinomial, for example.
   type OutcomeType = O // TODO Consider insisting the OutcomeType = GenerativeObservation[O]; For now I've simly added a noop 'setSource' method to Variable
 }
 
@@ -180,17 +180,17 @@ trait AbstractGenerativeDistribution extends Variable {
 /** A GenerativeObservation with non-negative integer values, for example the outcome of a Multinomial or Poisson.  
     This trait is used for Variables whose value is observed and does not change; 
     for Variables with changing value, you should use DiscreteOutcomeVariable. */
-trait DiscreteOutcome2 extends IntObservation with GenerativeObservation[DiscreteOutcome2] {
+trait DiscreteOutcome2 extends IntValue with GenerativeObservation[DiscreteOutcome2] {
   //type SourceType = DiscreteGenerating[DiscreteOutcome2]
   class DomainInSubclasses
   def asOutcome = this
 }
-trait DiscreteOutcomeVariable2 extends DiscreteOutcome2 with IntVariable  
+//trait DiscreteOutcomeVariable2 extends DiscreteOutcome2 with IntVariable  
 
 /** A GenerativeObservation with densely-packed integer values, for example the outcome of a Multinomial or Poisson.  
     This trait is used for Variables whose value is observed and does not change; 
     for Variables with changing value, you should use DiscreteOutcomeVariable. */
-trait DiscreteOutcome[This<:DiscreteOutcome[This] with SingleIndexed with GenerativeObservation[This]] extends SingleIndexed with GenerativeObservation[This] {
+trait DiscreteOutcome[This<:DiscreteOutcome[This] with DiscreteValue with GenerativeObservation[This]] extends DiscreteValue with GenerativeObservation[This] {
 	// DiscreteOutcome should not be merged with DiscreteOutcomeVariable because not everything we want to generate has a "setByIndex" to override
   this: This =>  
   // "This" types are a bit verbose.  Could Scala be changed to replace them with this#type ??? 
@@ -200,8 +200,8 @@ trait DiscreteOutcome[This<:DiscreteOutcome[This] with SingleIndexed with Genera
   def asOutcome = this
 }
 
-/** A DiscreteOutcome that is also a SingleIndexedVariable whose value can be changed. */
-trait DiscreteOutcomeVariable[This<:DiscreteOutcomeVariable[This] with SingleIndexedVariable] extends SingleIndexedVariable with DiscreteOutcome[This] with GenerativeVariable[This] {
+/** A DiscreteOutcome that is also a DiscreteVariable whose value can be changed. */
+trait DiscreteOutcomeVariable[This<:DiscreteOutcomeVariable[This] with DiscreteVariable] extends DiscreteVariable with DiscreteOutcome[This] with GenerativeVariable[This] {
   this : This =>
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
     if (source != null) source.preChange(this)
@@ -228,8 +228,16 @@ trait DiscreteOutcomeVariable[This<:DiscreteOutcomeVariable[This] with SingleInd
   }
 }
 
+trait CategoricalOutcome[This<:CategoricalOutcome[This] with CategoricalValue] extends CategoricalValue with DiscreteOutcome[This] {
+  this : This =>
+}
+trait CategoricalOutcomeVariable[This<:CategoricalOutcomeVariable[This] with CategoricalVariable with CategoricalOutcome[This]] extends CategoricalVariable with DiscreteOutcomeVariable[This] with CategoricalOutcome[This] {
+  this : This =>
+}
+
+
 /** A GenerativeObservation that consists of a vector of Doubles that sum to one, for example the parameters of a Multinomial. */
-trait ProportionOutcome[O<:IndexedVariable] extends RandomAccessSeq[Double] with GenerativeVariable[ProportionOutcome[O]] {
+trait ProportionOutcome[O<:DiscreteValue] extends RandomAccessSeq[Double] with GenerativeVariable[ProportionOutcome[O]] {
   def localPr(index:Int): Double // TODO Needed in DirichletMomentMatchingEstimator, but general enough?
 }
 
@@ -238,14 +246,22 @@ trait ProportionOutcome[O<:IndexedVariable] extends RandomAccessSeq[Double] with
 // Some specific cases of GenerativeDistribution types
 
 /** A GenerativeDistribution that generates discrete (Int) outcomes (perhaps even a DiscreteOutcome), for example a Poisson */
-trait DiscreteGenerating[O<:IndexedVariable] extends GenerativeDistribution[O] {
+trait OrdinalGenerating[O<:OrdinalValue] extends GenerativeDistribution[O] {
+  def sampleIndex: Int // TODO Rename sampleInt?  And likewise below?
+  def pr(index:Int): Double
+  def logpr(index:Int): Double
+}
+
+/** A GenerativeDistribution that generates discrete (Int) outcomes (perhaps even a DiscreteOutcome), for example a Multinomial */
+trait DiscreteGenerating[O<:DiscreteValue] extends GenerativeDistribution[O] {
   def sampleIndex: Int
   def pr(index:Int): Double
   def logpr(index:Int): Double
 }
 
 /** A GenerativeDistribution that generates categorical outcomes (perhaps even a DiscreteOutcome), for example a Multinomial */
-trait CategoricalGenerating[O<:IndexedVariable] extends GenerativeDistribution[O] {
+// TODO This should simply inherit from DiscreteGenerating
+trait CategoricalGenerating[O<:CategoricalValue] extends GenerativeDistribution[O] {
   def sampleIndex: Int
   def pr(index:Int): Double
   def logpr(index:Int): Double
@@ -253,7 +269,7 @@ trait CategoricalGenerating[O<:IndexedVariable] extends GenerativeDistribution[O
 
 
 /** A GenerativeDistribution that generates proportions (vectors with values summing to 1.0), for example a Dirichlet*/
-trait ProportionGenerating[O<:IndexedVariable] extends GenerativeDistribution[ProportionOutcome[O]] {
+trait ProportionGenerating[O<:DiscreteValue] extends GenerativeDistribution[ProportionOutcome[O]] {
   def size: Int
   //def sampleProportions: Seq[Double]
   def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def size:Int}): Seq[Double]
@@ -261,6 +277,7 @@ trait ProportionGenerating[O<:IndexedVariable] extends GenerativeDistribution[Pr
 }
 
 /** A GenerativeDistribution that generates real values as Double (specifically a cc.factorie.Real), for example a Gaussian distribution */
+// TODO Consider changing "Real" to "RealValue" and "RealVariable"
 trait RealGenerating[O<:Real] extends GenerativeDistribution[O] {
   def sampleDouble: Double
 }
@@ -288,7 +305,7 @@ trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistr
 // class Theta extends Multinomial[Z];
 /** A multinomial outcome that is an indicator of which mixture component in a MixtureChoice is chosen.  
     The "Z" in Latent Dirichlet Allocation is an example. */                                 
-class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends DiscreteOutcomeVariable[This] {
+class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends CategoricalOutcomeVariable[This] {
   this : This =>
   type VariableType = This
   type ValueType = M
@@ -297,7 +314,6 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
   def choice: M = domain.get(index)
   _index = Global.random.nextInt(domain.size) // TODO is this how _index should be initialized?
   if (!Global.defaultModel.contains(MixtureChoiceTemplate)) Global.defaultModel += MixtureChoiceTemplate
-  // The following is done in DiscreteOutcome[This]:  type DomainType = IndexedDomain[M]; class DomainClass extends IndexedDomain[M]
   Domain.alias[This,M](mt,mm)
 	private var _outcome : M#OutcomeType = _
 	@inline final def outcome : M#OutcomeType = _outcome // The particular outcome that was generated from this choice of mixture component

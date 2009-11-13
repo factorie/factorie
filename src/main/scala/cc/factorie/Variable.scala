@@ -11,6 +11,12 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
 
+// Notes on class names for Variables:
+// Except for cc.factorie.Variable, "*Variable" means mutable
+// "*Observation" always means immutable, and mixes in trait ConstantValue
+// "*Value" is agnostic about whether it is mutable or not.  Hence "IntValue"
+
+
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
    The trait is abstract not because you should not instantiate this trait directly, only subclasses.
    <p>
@@ -59,7 +65,7 @@ abstract trait ConstantValue extends Variable {
 }
 
 /** For variables whose value has a type, indicated in type ValueType */
-abstract trait TypedVariable {
+abstract trait TypedValue {
   this : Variable =>
 	type ValueType
 }
@@ -133,7 +139,7 @@ trait PrimitiveComparison[T] {
   def !==(other: PrimitiveComparison[T]) = value != other.value
 }
 
-abstract class PrimitiveObservation[T](theValue:T) extends Variable with TypedVariable with PrimitiveComparison[T] {
+abstract class PrimitiveObservation[T](theValue:T) extends Variable with TypedValue with PrimitiveComparison[T] {
 	type VariableType <: PrimitiveObservation[T];
 	type ValueType = T
 	class DomainInSubclasses
@@ -143,7 +149,7 @@ abstract class PrimitiveObservation[T](theValue:T) extends Variable with TypedVa
 
 /**A variable with a single mutable (unindexed) value which is of Scala type T. */
 // TODO A candidate for Scala 2.8 @specialized
-abstract class PrimitiveVariable[T] extends Variable with TypedVariable with PrimitiveComparison[T] {
+abstract class PrimitiveVariable[T] extends Variable with TypedValue with PrimitiveComparison[T] {
   def this(initval:T) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
 	type VariableType <: PrimitiveVariable[T]
   type ValueType = T

@@ -38,27 +38,28 @@ trait Optimizer {
 }
 
 
-// Note that putting a [V], as in DenseCountsMultinomial[V], doesn't work here because IndexedVariable not <: MultinomialOutcome[V].  
+// Note that putting a [V], as in DenseCountsMultinomial[V], doesn't work here because CategoricalValues not <: MultinomialOutcome[V].  
 // But as long as we don't use any methods that require [V], I think we are OK.
-class IndexedMarginal[V<:IndexedVariable](val variable:V) extends DenseCountsMultinomial(variable.domain.size) with Marginal {
+class DiscreteMarginal[V<:CategoricalValues](val variable:V) extends DenseCountsMultinomial(variable.domain.size) with Marginal {
   keepGeneratedSamples = false
   def increment : Unit = variable match {
-    case v:SingleIndexedVariable => increment(v.index, 1.0)(null)
+    case v:CategoricalValue => increment(v.index, 1.0)(null)
     case v:BinaryVectorVariable[_] => v.incrementInto(this)
   }
 }
 
 // TODO This is over variables.  We want something over Factors... and perhaps also something separate over Variables
-class SamplingLattice[V<:IndexedVariable](variables:Collection[V]) extends Lattice {
-  val map = new HashMap[V,IndexedMarginal[V]]
-  variables.foreach(v => map(v) = new IndexedMarginal(v))
+class SamplingLattice[V<:CategoricalValues](variables:Collection[V]) extends Lattice {
+  val map = new HashMap[V,DiscreteMarginal[V]]
+  variables.foreach(v => map(v) = new DiscreteMarginal(v))
   def marginal(v:V) = map(v)
   def apply(v:V) = map(v)
-  def marginals: Iterator[IndexedMarginal[V]] = map.values
+  def marginals: Iterator[DiscreteMarginal[V]] = map.values
 }
 
 // A simple special case, to be generalized later
-class SamplingInferencer[V<:SingleIndexedVariable,C](val sampler:Sampler[C]) extends Inferencer[V,C] {
+// TODO Could be "DiscreteVariable" instead of "CategoricalVariable"?
+class SamplingInferencer[V<:CategoricalVariable,C](val sampler:Sampler[C]) extends Inferencer[V,C] {
   type LatticeType = SamplingLattice[V]
   var burnIn = 100 // I really want these to be default-valued parameters to infer, in Scala 2.8.
   var thinning = 20
@@ -74,7 +75,7 @@ class SamplingInferencer[V<:SingleIndexedVariable,C](val sampler:Sampler[C]) ext
   }
 }
 
-class VariableSamplingInferencer[V<:SingleIndexedVariable](sampler:Sampler[V]) extends SamplingInferencer[V,V](sampler) with VariableInferencer[V] {
+class VariableSamplingInferencer[V<:CategoricalVariable](sampler:Sampler[V]) extends SamplingInferencer[V,V](sampler) with VariableInferencer[V] {
   def this() = this(new GibbsSampler1[V])
   def this(model:Model) = this(new GibbsSampler1[V](model))
 }

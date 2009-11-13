@@ -8,7 +8,7 @@ import cc.factorie.util.Implicits._
 
 
 abstract class BPFactor(val factor:VectorTemplate#Factor) {
-  type V = UncoordinatedSingleIndexedVariable
+  type V = UncoordinatedCategoricalVariable
   /** Given a variable, return the BPFactors touching it. */
   def marginals(v:Variable): Seq[BPFactor];
   /** Given a List of SettingIterators for some Variables, find the next value */
@@ -49,10 +49,10 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
       this // Return this so we can say messageFrom(v).update.message
     }
   }
-  lazy private val _msgTo: Array[MessageTo] = factor.variables.map(v => MessageTo(v.asInstanceOf[UncoordinatedSingleIndexedVariable])).toSeq.toArray
-  lazy private val _msgFrom: Array[MessageFrom] = factor.variables.map(v => MessageFrom(v.asInstanceOf[UncoordinatedSingleIndexedVariable])).toSeq.toArray
-  def messageTo(v: UncoordinatedSingleIndexedVariable) = _msgTo(factor.variables.toSeq.indexOf(v))
-  def messageFrom(v: UncoordinatedSingleIndexedVariable) = _msgFrom(factor.variables.toSeq.indexOf(v))
+  lazy private val _msgTo: Array[MessageTo] = factor.variables.map(v => MessageTo(v.asInstanceOf[UncoordinatedCategoricalVariable])).toSeq.toArray
+  lazy private val _msgFrom: Array[MessageFrom] = factor.variables.map(v => MessageFrom(v.asInstanceOf[UncoordinatedCategoricalVariable])).toSeq.toArray
+  def messageTo(v: UncoordinatedCategoricalVariable) = _msgTo(factor.variables.toSeq.indexOf(v))
+  def messageFrom(v: UncoordinatedCategoricalVariable) = _msgFrom(factor.variables.toSeq.indexOf(v))
   def messageTo(vi: Int) = _msgTo(vi)
   def messageFrom(vi: Int) = _msgFrom(vi)
   def update: Unit = { _msgFrom.foreach(_.update); _msgTo.foreach(_.update);  }
@@ -67,8 +67,8 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
   //def sufficientDistribution : Array[Double]
 }
 
-class BPLattice(model:Model, variables:Collection[UncoordinatedSingleIndexedVariable]) {
-  type V = UncoordinatedSingleIndexedVariable
+class BPLattice(model:Model, variables:Collection[UncoordinatedCategoricalVariable]) {
+  type V = UncoordinatedCategoricalVariable
   // Find all the factors touching the 'variables'
   val factors = model.factorsOf[VectorTemplate](variables)
   // Data structure for holding mapping from Variable to the collection of BPFactors that touch it
@@ -83,8 +83,8 @@ class BPLattice(model:Model, variables:Collection[UncoordinatedSingleIndexedVari
   def update: Unit = marginals.values.foreach(_.update)
   /** Provide outside access to a BPFactor given is associated Factor */
   def marginal(f:Factor): Array[Double] = marginals(f).marginal 
-  //def marginal(v:UncoordinatedSingleIndexedVariable): Array[Double] // TODO implement this
-  //def sample(v:UncoordinatedSingleIndexedVariable): DiffList // TODO implement this
+  //def marginal(v:UncoordinatedCategoricalVariable): Array[Double] // TODO implement this
+  //def sample(v:UncoordinatedCategoricalVariable): DiffList // TODO implement this
   //def sample: Unit // TODO implement this
   
 }

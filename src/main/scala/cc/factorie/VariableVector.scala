@@ -5,16 +5,22 @@ import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import scala.util.Sorting
 
-trait VectorVariable extends IndexedVariable with TypedVariable {
+trait VectorValue extends CategoricalValues {
+  // TODO Remember that DiscreteValues Domains currently need special initialization
   def vector : Vector
   def indices: Collection[Int]
 }
 
+trait CategoricalVectorValue extends VectorValue with CategoricalValues /*with TypedValue*/ {
+	// TODO Anything to put here?
+}
 
 /**A variable whose value is a SparseBinaryVector; immutable. */
 // I considered renaming this VectorObservation, but then I realized that methods such as += change its value. -akm
 // TODO Rename to BinaryVectorVariable?
-abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends VectorVariable {
+// TODO Consider renaming BinaryFeatureVector (where "Feature") refers to being Categorical?
+// or perhaps BinaryCategoricalVector?  But that is a weird name.
+abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends CategoricalVectorValue {
 	//def this(iv:T*) = this(iv:Seq[T])
 	def this() = this(null)
 	type ValueType = T
@@ -38,7 +44,7 @@ abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends VectorVaria
   // But will a += b syntax with with default arguments?
   def +=(value: T) : Unit = {
   	val idx = domain.index(value);
-  	if (idx == IndexedDomain.NULL_INDEX) throw new Error("VectorVariable += value " + value + " not found in domain " + domain)
+  	if (idx == CategoricalDomain.NULL_INDEX) throw new Error("VectorVariable += value " + value + " not found in domain " + domain)
   	indxs += idx
   	_vector = null
   }
@@ -59,7 +65,7 @@ abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends VectorVaria
 }
 
 /** A vector of Real values */
-abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends VectorVariable {
+abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends CategoricalVectorValue {
   def this() = this(null)
 	type ValueType = T
 	type VariableType <: RealVectorVariable[T]

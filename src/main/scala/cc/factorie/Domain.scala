@@ -27,17 +27,30 @@ class ItemizedDomain[V <: ItemizedVariable](implicit m:Manifest[V]) extends Doma
 }
 */
 
-class IndexedDomain[V<:IndexedVariable] extends Domain[V] with util.Index[V#ValueType] {
+abstract class DiscreteDomain[V<:DiscreteValues] extends Domain[V] {
+  private var _size = -1
+  // TODO Arg!  I want to name this simply "size", but then the compiler complains when I mix in util.Index below, because it also defines 'size'
+  def domainSize: Int = if (_size >= 0) return _size else throw new Error("DiscreteDomain.size not yet set")
+  def size: Int // TODO See troubles in comment above, so DiscreteDomain is currently unusable on its own.
+  def size_=(s:Int) = setSize(s)
+  def setSize(s:Int): Unit = 
+    if (s < 0) throw new Error("DiscreteDomain.size cannot be negative.")
+    else if (_size <= 0) throw new Error("DiscreteDomain.size already set.")
+    else _size = s
+}
+
+class CategoricalDomain[V<:CategoricalValues] extends DiscreteDomain[V] with util.Index[V#ValueType] {
+  override def domainSize = size
 	def randomValue : V#ValueType = randomValue(Global.random)
 	def randomValue(random:Random): V#ValueType = get(random.nextInt(size))
 	def +=(x:V#ValueType) : Unit = this.index(x)
 	def ++=(xs:Iterable[V#ValueType]) : Unit = xs.foreach(this.index(_))
 }
-object IndexedDomain {
+object CategoricalDomain {
   val NULL_INDEX = -1
 }
 
-class StringDomain[V<:IndexedVariable {type ValueType = String}] extends IndexedDomain[V] {
+class StringDomain[V<:CategoricalValues {type ValueType = String}] extends CategoricalDomain[V] {
 	/* For all member variables, if its type is String and its name is all upper case or digits,
 		set its value to its name, and intern in the Domain.  Usage:
 		object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value; internValues } */
@@ -64,7 +77,7 @@ object Domain {
 	def get[V<:Variable](vc:Class[_]) = {
 		if (debug) {
 		  println("Domain.get "+vc+" classes.length="+vc.getDeclaredClasses.length)
-		  if (_domains.isDefinedAt(vc)) println("Domain.get "+vc+" already defined")
+		  if (_domains.isDefinedAt(vc)) println("Domain.get "+vc+" already defined: "+_domains(vc).getClass.getName)
 		  Console.flush
     }
 		_domains.getOrElseUpdate(vc, getDomainForClass(vc)).asInstanceOf[V#DomainType]
