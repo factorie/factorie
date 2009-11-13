@@ -46,7 +46,7 @@ abstract trait Variable /* extends AnyRef */ {
 	override def toString = printName + "(_)"
 	def factors(model:Model): Iterable[Factor] = model.factors(this) // TODO Remove this?  Why have two different short ways of doing this?
 	def isConstant = false
-	// Generic handling of GenerativeVariable knowledge of its 'source' parent // TODO Consider if we really want to do this.
+	// Generic handling of GenerativeObservation knowledge of its 'source' parent // TODO Consider if we really want to do this.
 	//type SourceType <: AnyRef
 	def _setSource(source:AnyRef)(implicit difflist:DiffList): Unit = {}
 	//def source:AnyRef = null //.asInstanceOf[SourceType]

@@ -22,10 +22,6 @@ trait CountOutcome {
   type ValueType = Int
 }*/
 
-// Consider renaming ProportionVariable?  Should it really be a variable?  Perhaps not.
-trait ProportionOutcome[O<:IndexedVariable] extends RandomAccessSeq[Double] with Variable { // For example AbstractMultinomial[O]
-  def localPr(index:Int): Double // TODO Needed in DirichletMomentMatchingEstimator, but general enough?
-}
 
 /*
 trait OutcomeGenerating[T] {
@@ -35,32 +31,15 @@ trait OutcomeGenerating[T] {
 }*/
 
 // TODO Rename MultinomialOutcome DiscreteOutcome
-trait DiscreteGenerating[O<:IndexedVariable] extends GenerativeDistribution[O] {
-  def sampleIndex: Int
-  def pr(index:Int): Double
-  def logpr(index:Int): Double
-}
-
-trait ProportionGenerating[O<:IndexedVariable] extends GenerativeDistribution[ProportionOutcome[O]] {
-  def size: Int
-  //def sampleProportions: Seq[Double]
-  def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def size:Int}): Seq[Double]
-  def pr(proportions:ProportionOutcome[O]): Double
-}
-
-trait RealGenerating[O<:Real] extends GenerativeDistribution[O] {
-  def sampleDouble: Double
-}
-trait PositiveRealGenerating[O<:Real] extends RealGenerating[O]
 
 
 /** Base of the Multinomial class hierarchy, needing only methods length, pr, and set. */
 // TODO Rename simply "Multinomial"?
-trait AbstractMultinomial[O<:MultinomialOutcome[O]] extends GenerativeVariable[ProportionOutcome[O]] /*with GenerativeDistribution[O]*/ with DiscreteGenerating[O] with ProportionOutcome[O] with RandomAccessSeq[Double] {
+trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[ProportionOutcome[O]] with*/ DiscreteGenerating[O] with ProportionOutcome[O] {
   type VariableType <: AbstractMultinomial[O];
   //type OutcomeType = O
   //type SourceType = ProportionGenerating[O];
-  type SourceType = AbstractDirichlet[O]; // TODO Why can't I make this ProportionGenerating[O]?
+  type SourceType = AbstractDirichlet[O]; // TODO Why can't I make this ProportionGenerating[O] instead of AbstractDirichlet[O]?
   class DomainInSubclasses
   def asOutcome = this
   //type DomainType <: IndexedDomain[OutcomeType]; // No! This might be a IndexedVariable, and have a domain different than its OutcomeType
@@ -106,7 +85,7 @@ trait AbstractMultinomial[O<:MultinomialOutcome[O]] extends GenerativeVariable[P
 }
 
 /** Compact representation of immutable Multinomial with equal probability for all outcomes. */
-class UniformMultinomial[O<:MultinomialOutcome[O]](implicit m:Manifest[O]) extends AbstractMultinomial[O] {
+class UniformMultinomial[O<:DiscreteOutcome[O]](implicit m:Manifest[O]) extends AbstractMultinomial[O] {
   val length: Int = Domain[O](m).size
   val pr1 = 1.0/length
   final def pr(index:Int) = pr1
@@ -114,7 +93,7 @@ class UniformMultinomial[O<:MultinomialOutcome[O]](implicit m:Manifest[O]) exten
 }
 
 /** A mixture of a fixed set of Multinomials, i.e. you cannot add or remove Multinomials from the mixture. */
-class MultinomialMixture[M<:AbstractMultinomial[O],O<:MultinomialOutcome[O]](ms:Seq[M], ps:Seq[Double]) extends AbstractMultinomial[O] {
+class MultinomialMixture[M<:AbstractMultinomial[O],O<:DiscreteOutcome[O]](ms:Seq[M], ps:Seq[Double]) extends AbstractMultinomial[O] {
 	// TODO How can I avoid needing both M and O as type parameters.  I think M should automatically specify O.
   val components = ms.toArray
   val length: Int = components.first.length
@@ -128,7 +107,7 @@ class MultinomialMixture[M<:AbstractMultinomial[O],O<:MultinomialOutcome[O]](ms:
 }
 
 /** Simple Multinomial that represents p(x) directly. */
-class DenseMultinomial[O<:MultinomialOutcome[O]](proportions:Seq[Double])(implicit m:Manifest[O]) extends AbstractMultinomial[O] {
+class DenseMultinomial[O<:DiscreteOutcome[O]](proportions:Seq[Double])(implicit m:Manifest[O]) extends AbstractMultinomial[O] {
   val length: Int = Domain[O](m).size
   val _pr = new DenseVector(length)
   if (proportions != null) set(proportions)
@@ -143,7 +122,7 @@ class DenseMultinomial[O<:MultinomialOutcome[O]](proportions:Seq[Double])(implic
 }
 
 /** A Multinomial that stores its parameters as a collection of "outcome counts" and their total. */
-trait CountsMultinomial[O<:MultinomialOutcome[O]] extends AbstractMultinomial[O] {
+trait CountsMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   type VariableType <: CountsMultinomial[O];
   class DomainInSubclasses
   override type SourceType = AbstractDirichlet[O]
@@ -204,12 +183,12 @@ trait CountsMultinomial[O<:MultinomialOutcome[O]] extends AbstractMultinomial[O]
   }
 }
 
-trait SparseMultinomial[O<:MultinomialOutcome[O]] extends AbstractMultinomial[O] {
+trait SparseMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   def activeIndices: scala.collection.Set[Int];
   //def sampleIndexProduct(m2:SparseMultinomial[O]): Int // TODO
 }
 
-class SparseCountsMultinomial[O<:MultinomialOutcome[O]](dim:Int) extends CountsMultinomial[O] with SparseMultinomial[O] {
+class SparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMultinomial[O] with SparseMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: SparseCountsMultinomial[O]
   class DomainInSubclasses
@@ -221,22 +200,22 @@ class SparseCountsMultinomial[O<:MultinomialOutcome[O]](dim:Int) extends CountsM
 }
 
 @deprecated // Not finished
-abstract class SortedSparseCountsMultinomial[O<:MultinomialOutcome[O]](dim:Int) extends AbstractMultinomial[O] with SparseMultinomial[O] {
+abstract class SortedSparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends AbstractMultinomial[O] with SparseMultinomial[O] {
 	def length: Int = _count.size 
   protected var total : Double = 0.0
   protected val _count = new Array[Int](dim)
 }
 
 
-class DenseCountsMultinomial[O<:MultinomialOutcome[O]](dim:Int) extends CountsMultinomial[O] {
+class DenseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: DenseCountsMultinomial[O]
   class DomainInSubclasses
   protected val _counts = new DenseVector(dim)
 }
 
-//class Multinomial[O<:MultinomialOutcome[O]](initCounts:Seq[Double])(implicit m:Manifest[O]) extends DenseMultinomial[O](initCounts) with Iterable[O#VariableType#ValueType]
-class DirichletMultinomial[O<:MultinomialOutcome[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
+//class Multinomial[O<:DiscreteOutcome[O]](initCounts:Seq[Double])(implicit m:Manifest[O]) extends DenseMultinomial[O](initCounts) with Iterable[O#VariableType#ValueType]
+class DirichletMultinomial[O<:DiscreteOutcome[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
   def this()(implicit m:Manifest[O]) = this(null.asInstanceOf[AbstractDirichlet[O]])(m)
   def this(dirichlet:AbstractDirichlet[O], initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(dirichlet)(m); set(initCounts) }
   def this(initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(null.asInstanceOf[AbstractDirichlet[O]])(m); set(initCounts) }
@@ -283,7 +262,7 @@ class DirichletMultinomial[O<:MultinomialOutcome[O]](dirichlet:AbstractDirichlet
   }
   override def _unregisterSample(o:O)(implicit d:DiffList) = {
     super._unregisterSample(o) 
-    increment(o.index, -1.0) // Note that if 'o' weren't a MultinomialOutcome & it changed its 'index', this will do the wrong thing! 
+    increment(o.index, -1.0) // Note that if 'o' weren't a DiscreteOutcome & it changed its 'index', this will do the wrong thing! 
   }
   override def preChange(o:O)(implicit d:DiffList) = {
     increment(o.index, -1.0)
@@ -299,58 +278,17 @@ class DirichletMultinomial[O<:MultinomialOutcome[O]](dirichlet:AbstractDirichlet
   override def toString = "Multinomial(count="+total+")"
 }
 
-// TODO Consider changing SingleIndexed to IndexedVariable
-// It would help Inferencer.IndexedMarginal
-// But it is a little odd because
-// * It could be a BinaryVectorVariable, 
-// * It doesn't have "def index".  It might be a little painful to match/case all these places.  
-// but we could certainly define pr(BinaryVectorVariable)
-// Hmm... Requires further thought.
-
-// TODO Consider renaming this MultinomialSample, because the instances of this class are individual samples (e.g. token)?
-// "outcome" may indicate the value (e.g. type)
-// No, I think I like "MultinomialOutcome"
-// Consider merging MultinomialOutcome and MultinomialOutcomeVariable?  No, because not everything we want to generate has a "setByIndex" to override
-trait MultinomialOutcome[This<:MultinomialOutcome[This] with SingleIndexed with GenerativeObservation[This]] extends SingleIndexed with GenerativeObservation[This] {
-	this: This =>  
-  type SourceType = DiscreteGenerating[This]
-  class DomainInSubclasses
-  def asOutcome = this
-}
-
-/** A MultinomialOutcome that is also a SingleIndexedVariable */
-trait MultinomialOutcomeVariable[This<:MultinomialOutcomeVariable[This] with SingleIndexedVariable] extends SingleIndexedVariable with MultinomialOutcome[This] with GenerativeVariable[This] {
-  this : This =>
-  override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
-    if (source != null) source.preChange(this)
-    super.setByIndex(newIndex)
-    if (source != null) source.postChange(this)
-  }
-  override def sampleFrom(source:DiscreteGenerating[This])(implicit d:DiffList) = setByIndex(source.sampleIndex)
-  /** Alternative setByIndex that avoids coordination with source, for use when you *really* know what you are doing, 
-      and you are doing the source coordination yourself. */
-  def _setByIndex(newIndex:Int)(implicit d:DiffList) = super.setByIndex(newIndex) 
-  // TODO The above method is a bit scary because we may loose opportunities to fruitfully override setByIndex in subclasses
-  // However it saved us 115-111 seconds in the LDA timing run described in Generative.scala. 
-  def distribution: Array[Double] = {
-    val buffer = new Array[Double](domain.size);
-    for (i <- 0 until buffer.length) buffer(i) = source.pr(i); 
-    buffer
-  }
-  def sample(implicit d:DiffList): Unit = {
-    // TODO Thursday Check!!!  Just removed this because I think it is redundant with preChange/postChange in setByIndex 
-    //val isDM = classOf[DirichletMultinomial[This]].isAssignableFrom(getClass)
-    //if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, -1)
-    setByIndex(source.sampleIndex)
-    //if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, 1)
-  }
-}
 
 trait MultinomialDiscrete extends SingleIndexed // TODO turn this into Variational representation of SingleIndex with a distribution
-  
+
+
+// The binary special case, for convenience
+
 /** The outcome of a coin flip, with boolean value.  */
-class Flip extends CoordinatedBool with MultinomialOutcomeVariable[Flip]
-case class Coin(p:Double, totalCount:Double) extends DenseCountsMultinomial[Flip](Array((1-p)*totalCount,p*totalCount)) {
+class Flip extends CoordinatedBool with DiscreteOutcomeVariable[Flip]
+// Note that no Variable should ever be a case class.
+/** A coin, with Multinomial distribution over outcomes, which are Flips. */
+class Coin(p:Double, totalCount:Double) extends DenseCountsMultinomial[Flip](Array((1-p)*totalCount,p*totalCount)) {
   def this(p:Double) = this(p:Double, 1.0)
   def this() = this(0.5)
   assert (p >= 0.0 && p <= 1.0)

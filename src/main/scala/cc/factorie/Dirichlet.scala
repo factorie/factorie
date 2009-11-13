@@ -9,7 +9,7 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 
 /** Base of the Dirichlet class hierarchy, needing only methods 'length' and 'mean'. */
 // Used to be with GenerativeDistribution[AbstractMultinomial[O]]
-trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution[ProportionOutcome[O]] with ProportionGenerating[O] with RandomAccessSeq[Double] {
+trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends GenerativeDistribution[ProportionOutcome[O]] with ProportionGenerating[O] with RandomAccessSeq[Double] {
   //type OutcomeType = AbstractMultinomial[O]
   final def length: Int = mean.length
   final def alpha(index:Int): Double = mean(index) * alphaSum
@@ -60,7 +60,7 @@ trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution
 }
 
 /** Immutable Dirichlet with equal alpha for all dimensions. */
-class SymmetricDirichlet[O<:MultinomialOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] {
+class SymmetricDirichlet[O<:DiscreteOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] {
   type VariableType <: Dirichlet[O];
   class DomainInSubclasses
   type OutcomeDomainType = O
@@ -71,7 +71,7 @@ class SymmetricDirichlet[O<:MultinomialOutcome[O]](initialAlpha:Double)(implicit
 }
 
 /** Default Dirichlet, with densely-represented mean, and estimation by moment-matching */
-class Dirichlet[O<:MultinomialOutcome[O]](val mean:AbstractMultinomial[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with DirichletMomentMatchingEstimator[O] {
+class Dirichlet[O<:DiscreteOutcome[O]](val mean:AbstractMultinomial[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with DirichletMomentMatchingEstimator[O] {
   //println("Dirichlet")
   def this(initialAlpha:Double)(implicit m:Manifest[O]) = this(new DenseCountsMultinomial[O](Domain[O](m).size), initialAlpha*Domain[O](m).size)
   def this(initialAlphas:Seq[Double])(implicit m:Manifest[O]) = this(new DenseCountsMultinomial[O](initialAlphas), initialAlphas.foldLeft(0.0)(_+_))
@@ -85,7 +85,7 @@ class Dirichlet[O<:MultinomialOutcome[O]](val mean:AbstractMultinomial[O], sum:D
     and whose 'alphaSum' is not integrated out, but re-estimated with calls to 'estimate'. */
 /*
 @deprecated // Not yet working or tested
-class DirichletDirichlet[O<:MultinomialOutcome[O]](val meanSource:AbstractDirichlet[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with GenerativeVariable[AbstractDirichlet[O]]{
+class DirichletDirichlet[O<:DiscreteOutcome[O]](val meanSource:AbstractDirichlet[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with GenerativeVariable[AbstractDirichlet[O]]{
   def this(dir:AbstractDirichlet[O], initCounts:Seq[Double], as:Double)(implicit m:Manifest[O]) = { this(dir,as)(m); mean.set(initCounts) }
   def this(alphaSum:Double)(implicit m:Manifest[O]) = this(new Dirichlet(1.0), alphaSum)
   def this()(implicit m:Manifest[O]) = this(new Dirichlet(1.0), Domain[O](m).size)
@@ -123,11 +123,11 @@ class DirichletDirichlet[O<:MultinomialOutcome[O]](val meanSource:AbstractDirich
 */
 
 object Dirichlet {
-  def apply[O<:MultinomialOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) = new SymmetricDirichlet[O](initialAlpha)
-  def apply[O<:MultinomialOutcome[O]](implicit m:Manifest[O]) = new SymmetricDirichlet[O](1.0)
+  def apply[O<:DiscreteOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) = new SymmetricDirichlet[O](initialAlpha)
+  def apply[O<:DiscreteOutcome[O]](implicit m:Manifest[O]) = new SymmetricDirichlet[O](1.0)
 }
   
-trait DirichletMomentMatchingEstimator[O<:MultinomialOutcome[O]] extends AbstractDirichlet[O] {
+trait DirichletMomentMatchingEstimator[O<:DiscreteOutcome[O]] extends AbstractDirichlet[O] {
   this : Dirichlet[O] =>
   private def setUniform: Unit = 
     mean.set(new RandomAccessSeq[Double] { def apply(i:Int) = uniformPseudoEvidence/length; def length = size})

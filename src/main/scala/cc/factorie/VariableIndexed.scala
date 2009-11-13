@@ -8,8 +8,45 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
 
+// TODO The separation between "Observation" variables and "Variable" variables is getting a little messy.
+// Sometimes Variable means "mutable", as in IntVariable, 
+//  but other times is doesn't, as in Variable and IndexedVariable.
+// Sometimes Observation means it cannot change (even in subclasses), as in EnumObservation, 
+//  but other times it doesn't because the "Variable" form subclasses it, as in IntObservation.
+// Think about a clean naming convension.
+// Consider the following
+// Except for cc.factorie.Variable, "Variable" means mutable
+// "Observation" always means immutable, and mixes in ConstantValue
+// "Value" is agnostic about whether it is mutable or not.  Hence "IntValue"
+
+// But the "Value" name would imply that that this.value would return "Int" for Discrete and Categorical variables
+// For "Categorical" is currently returns the CategoricalDomain entry
+// Perhaps rename this method this.category
+// Alternatively just have a method called this.intValue = this.index, and this.value would still return the Domain entry.
+
+  
+// IntVariable (has integer value)
+// OrdinalVariable (has integer value 0...)
+// DiscreteVariable (has a finite number of integer values from 0 ... N) { def domainSize: Int }
+// CategoricalVariable <- IndexedVariable
+// 
+  
+/** A Variable with an Int value.  
+    Unlike IndexedVariable, however, the integers are not necessarily mapped to objects stored in an IndexedDomain. */
+abstract trait IntObservation extends Variable {
+  type VariableType <: IntObservation
+  def index: Int
+}
+
+/** A Variable with a mutable Int value */ 
+// TODO Rename CountVariable or OrdinalVariable, or perhaps leave as IntVariable so that it can be a subclass of CategoricalVariable
+abstract trait IntVariable extends IntObservation {
+  type VariableType <: IntVariable
+  def setByIndex(newIndex:Int)(implicit d:DiffList): Unit
+}
+
 /** For use with variables whose values are mapped to densely-packed integers from 0 and higher, using an IndexedDomain.
- * It can apply to a single index (as in EnumVariable or IndexedVariable) or a collection of indices (as in BinaryVectorVariable) */
+    It can apply to a single index (as in EnumVariable or IndexedVariable) or a collection of indices (as in BinaryVectorVariable) */
 abstract trait IndexedVariable extends Variable with TypedVariable {
 	type VariableType <: IndexedVariable
 	type DomainType <: IndexedDomain[VariableType]
@@ -24,7 +61,7 @@ abstract trait IndexedVariable extends Variable with TypedVariable {
 /** A single-indexed Variable without storage for the index.  Sub-trait SingleIndexedVariable declares mutable storage for the index.
  * This trait is a generalization of both the (mutable) SingleIndexedVariable and the (immutable) TypedSingleIndexedObservation
  * If you are looking for a concrete implementation with storage for index, consider EnumObservation or EnumVariable or CoordinatedEnumVariable. */
-abstract trait SingleIndexed extends IndexedVariable {
+abstract trait SingleIndexed extends IndexedVariable with IntObservation {
 	type VariableType <: SingleIndexed
  	class DomainInSubclasses
 	def index : Int
@@ -35,7 +72,7 @@ abstract trait SingleIndexed extends IndexedVariable {
 } 
 
 /** For variables whose values are associated with a an Int from an index. */
-abstract trait SingleIndexedVariable extends SingleIndexed with Proposer /*with IterableSettings*/ with IterableSettings {
+abstract trait SingleIndexedVariable extends SingleIndexed with Proposer with IntVariable with IterableSettings {
 	type VariableType <: SingleIndexedVariable
  	class DomainInSubclasses
 	protected var _index = -1
