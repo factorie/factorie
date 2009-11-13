@@ -3,15 +3,18 @@ import scala.collection.mutable.{HashMap,HashSet}
 import scala.reflect.Manifest
 
 /** Representing a directed relationship from src to dst.  
- * Its boolean value indicates whether the relationship is actually present. */
-case class Relationship[A<:Variable,B<:Variable](src:A, dst:B) extends Bool 
+ * Its boolean value indicates whether the relationship is actually present or not. */
+class Relationship[A<:Variable,B<:Variable](val src:A, val dst:B) extends Bool 
 
 /** Represents a many-to-many relation in an Entity-Relationship model */
 class Relation[A<:Variable,B<:Variable] extends Collection[Relationship[A,B]] with GetterN[A,B] {
 	private val a2t = new HashMap[A,HashMap[B,RelationshipType]] // a to tuple
 	private val b2t = new HashMap[B,HashMap[A,RelationshipType]] // a to tuple
+	class Relationship(src:A, dst:B) extends cc.factorie.er1.Relationship(src,dst) {
+		def relation = Relation.this
+  }
+  type RelationshipType = Relationship
  	def newRelationship(a:A, b:B) : RelationshipType = new Relationship(a,b)
-  type RelationshipType = cc.factorie.er1.Relationship[A,B]
   protected def addRelationship(r:RelationshipType) = {
     r := true
     //println("Relationship add "+r.src+" "+r.dst)
@@ -69,7 +72,7 @@ class ItemizedRelation[A<:ItemizedVariable[A],B<:ItemizedVariable[B]](implicit m
 	  val a = Domain[A](ma).randomValue // randomly pick a src
 	  val max = domainb.size - 1 // we will iterate over all possible changes to dst's
 	  def hasNext = i < max
-	  def set(d:DiffList) : Unit = { val b = domainb.get(i); if (contains(a,b)) remove(a,b)(d) else add(a,b)(d) }
+	  private def set(d:DiffList) : Unit = { val b = domainb.get(i); if (contains(a,b)) remove(a,b)(d) else add(a,b)(d) }
 	  def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(d); d }
 	  def reset = i = -1
 	}

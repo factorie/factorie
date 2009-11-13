@@ -30,11 +30,11 @@ object LogicDemo1b {
 
 		// Define model
 		val model = new Model (
-			"CancerPrior" =: Forany[Person] { p => p->Cancer } % 0.1, 
-			"SmokingCausesCancer" =: Forany[Person] { p => p->Smokes ==> p->Cancer } % 2.0,
-			"FriendsSmokingMatch" =: Forany[Person] { p => p->Friends->Smokes <==> p->Smokes } % 1.5,
-			//"FriendsAgeMatch" =: Forany[Person] { p => p->Friends->Age === p->Age} % 2.0,
-			//"FriendsEmployersMatch" =: Forany[Person] { p => p->Friends->Employer === p->Employer} % 2.0,
+			"CancerPrior" =: Forany[Person] { p => p->Cancer } * 0.1, 
+			"SmokingCausesCancer" =: Forany[Person] { p => p->Smokes ==> p->Cancer } * 2.0,
+			"FriendsSmokingMatch" =: Forany[Person] { p => p->Friends->Smokes <==> p->Smokes } * 1.5,
+			//"FriendsAgeMatch" =: Forany[Person] { p => p->Friends->Age === p->Age} * 2.0,
+			//"FriendsEmployersMatch" =: Forany[Person] { p => p->Friends->Employer === p->Employer} * 2.0,
 			//"NoRespectSmokers" =: Forany2[Person,Person] { (p1,p2) => Not(p1->Smokes) ^ p2->Smokes ==> Not(Respects(p1,p2)) }
 			//"NoRespectSmokers" =: Forany2[Person,Person] {p1 => {Forany Respects(p1)}  { (p1,p2) => Not(p1->Smokes) ^ p2->Smokes ==> Not(Respects(p1,p2)) }}
     )
@@ -61,7 +61,7 @@ object LogicDemo1b {
 		println(model.factors(Friends(person("Don"))))
 
 		// Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
-		val inferencer = new SamplingInferencer(new GibbsSampler1[Bool](model))
+		val inferencer = new VariableSamplingInferencer(new GibbsSampler1[Bool](model))
     inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
     val marginals = inferencer.infer(people.map(_.cancer), people.map(_.cancer) /*+ Friends*/)
 		for (p <- people)
