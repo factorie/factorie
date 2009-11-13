@@ -10,17 +10,21 @@ import cc.factorie.util.Implicits._
 
 /** An immutable-valued Variable that has a 'source' GenerativeDistribution and a 'pr' probability of being generated.  
  * For the corresponding mutable-valued Variable, see GenerativeVariable. */
-trait GenerativeObservation[This<:GenerativeObservation[This] with Variable] extends Variable {
-  this: This =>
-  // This types are a bit verbose.  Could Scala be changed to replace them with this#type ??? 
-  // Geoffrey Washburn says yes, but that Martin is simply against adding this feature to the language.
-  type SourceType <: GenerativeDistribution[This]
+//trait GenerativeObservation[This<:GenerativeObservation[This] with Variable] extends Variable
+// TODO Consider GenerativeObservation[O<:Outcome]?
+trait GenerativeObservation[O] extends Variable {
+  //this: This =>
+  // "This" types are a bit verbose.  Could Scala be changed to replace them with this#type ??? 
+  // Geoffrey Washburn says yes it is technically possible, but that Martin is simply against adding this feature to the language.
+  // WAS: type SourceType <: GenerativeDistribution[This]
+  type SourceType <: GenerativeDistribution[O]
   protected var _source: SourceType = _ // TODO Consider making this 'private' instead of 'protected'
   @inline final def source = _source
+  def asOutcome: O // Everywhere this is, there used to be "this"
   def setSource(s:SourceType)(implicit d:DiffList) : Unit = {
-    if (_source != null) _source._unregisterSample(this)
+    if (_source != null) _source._unregisterSample(asOutcome)
     _setSource(s)
-    if (_source != null) _source._registerSample(this)
+    if (_source != null) _source._registerSample(asOutcome)
   }
   /** Set 'source' directly without coordinating via source.(un)generate.  Don't call this yourself; call 'setSource' instead. */
   @inline override def _setSource(s:AnyRef)(implicit d:DiffList) : Unit = {
@@ -32,11 +36,11 @@ trait GenerativeObservation[This<:GenerativeObservation[This] with Variable] ext
   def ~(s:SourceType): this.type = { setSource(s)(null); this }
   /** Register this variable as having been generated from the source indicated by the MixtureChoice 'mmc'. */
   def ~[M<:SourceType](mmc:MixtureChoice[M,_]) : this.type = {
-    mmc.setOutcome(this); 
+    mmc.setOutcome(asOutcome); 
     this.~(mmc.choice) // either here or in mmc.setOutcome; not sure which is more natural
   }
   /** Probability of this variable given its 'source' parents. */
-  def pr: Double = _source.pr(this)
+  def pr: Double = _source.pr(asOutcome)
   /** log-probability of this variable given its 'source' parents. */
   def logpr: Double = Math.log(pr)
   case class SetSourceDiff(oldSource:SourceType, newSource:SourceType) extends Diff {
@@ -46,16 +50,18 @@ trait GenerativeObservation[This<:GenerativeObservation[This] with Variable] ext
   }
 }
 
-trait GenerativeVariable[This<:GenerativeVariable[This] with Variable] extends GenerativeObservation[This] with AbstractGenerativeVariable {
-  this: This =>
+//trait GenerativeVariable[This<:GenerativeVariable[This] with Variable] extends GenerativeObservation[This] with AbstractGenerativeVariable {
+trait GenerativeVariable[O] extends GenerativeObservation[O] with AbstractGenerativeVariable {
+  //this: This =>
+  def sampleFrom(s:SourceType)(implicit d:DiffList): Unit = throw new Error
   /** Register this variable as having been generated from source 's', and furthermore set this variable's value to a sample from 's'. */
-  def :~(s:SourceType): this.type = { s.sampleInto(this); this.~(s); this } 
+  def :~(s:SourceType): this.type = { this.sampleFrom(s)(null);/*s.sampleInto(asOutcome);*/ this.~(s); this } 
   // Better to sampleInto first then ~, because ~ may look at this.value and because ~ may add this' currentValue to s' parameter estimate
   // Note however that you can't do "MixtureChoice :~ Multinomial" because of outcome-setting-ordering.
   // We could try to change the design to allow this if we decide it is important.
   /** Register this variable as having been generated from the MixtureComponent source indicated by the given MixtureChoice, 
       and furthermore set this variable's value to a sample from it. */
-  def :~[M<:SourceType](mmc:MixtureChoice[M,_]) : this.type = { mmc.choice.sampleInto(this); this.~(mmc); this }
+  def :~[M<:SourceType](mmc:MixtureChoice[M,_]) : this.type = { this.sampleFrom(mmc.choice)(null);/*mmc.choice.sampleInto(asOutcome);*/ this.~(mmc); this }
   //def maximize(implicit d:DiffList): Unit // TODO Consider adding this also; how interact with 'estimate'?  // Set value to that with highest probability
 }
 
@@ -90,7 +96,7 @@ trait AbstractGenerativeDistribution extends Variable {
   // No, I don't think this is necessary.  Putting Real into Gaussian would be useful, 
   //  and it is useful even when we are not trying to track score changes due to changes in Real.value
   type VariableType <: AbstractGenerativeDistribution
-	def estimate: Unit // TODO consider removing this.  Paramter estimation for generative models should be seen as inference?
+	def estimate: Unit // TODO consider removing this.  Paramter estimation for generative models should be seen as inference?  No, but change its name to 'maximize'!  This will apply to both variables and distributions
   lazy val generatedSamples = new HashSet[OutcomeType];
   var keepGeneratedSamples = true
   def _registerSample(o:OutcomeType)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
@@ -138,7 +144,7 @@ trait AbstractGenerativeDistribution extends Variable {
   /** Return the log-probability that this GenerativeDistribution would generate outcome 'o' */
 	def logpr(o:OutcomeType): Double = Math.log(pr(o))
 	/** Change the value of outcome 'o' to a value sampled from this GenerativeDistribution */
-	def sampleInto(o:OutcomeType): Unit // TODO Perhaps this should take a DiffList; then GenerativeVariable.sample could be implemented using it
+	//@deprecated def sampleInto(o:OutcomeType): Unit // TODO Perhaps this should take a DiffList; then GenerativeVariable.sample could be implemented using it
 	// Fighting with the Scala type system, see:
 	// http://www.nabble.com/Path-dependent-type-question-td16767728.html
   // http://www.nabble.com/Fwd:--lift--Lift-with-Scala-2.6.1--td14571698.html 
@@ -183,6 +189,7 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
   type VariableType = This
   type ValueType = M
   class DomainInSubclasses
+  //def asOutcome = this
   def choice: M = domain.get(index)
   _index = Global.random.nextInt(domain.size) // TODO is this how _index should be initialized?
   if (!Global.defaultModel.contains(MixtureChoiceTemplate)) Global.defaultModel += MixtureChoiceTemplate

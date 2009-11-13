@@ -18,7 +18,7 @@ object DirichletDemo {
    
   	val n = 10000
   	println("Sampling "+n+" multinomials")
-  	val multinomials = for (i <- 1 to 10000) yield dir.sampleOutcome
+  	val multinomials = for (i <- 1 to 10000) yield dir.sampleMultinomial
    
   	println("Example multinomials")
   	multinomials.take(4).foreach(m => {print("mult "); m.foreach(p => print("%8f ".format(p))); println})

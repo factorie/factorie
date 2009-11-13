@@ -10,14 +10,24 @@ import cc.factorie.util.Implicits._
 trait Marginal
 trait Lattice
 
-trait Inferencer[V<:Variable] {
+trait Inferencer[V<:Variable,C] {
   type LatticeType <: Lattice
-  def infer(variables:Collection[V], marginalizing:Collection[V]): LatticeType
-  def infer(variables:Collection[V]): LatticeType = infer(variables, null)
+  /** Infer the target 'variables' using 'varying' to drive the exploration of changes to the configuration.  
+      For example, in SamplingInference, 'varying' are Sampler 'contexts' which do not necessarily have to be Variables;
+      they are arbitrary keys to the sampler that may drive exploration, which will eventually result in changes to the 'target' variables.
+      If for you this separation of target variables and sampling contexts is unnecessary or confusing, consider VariableInferencer instead. */
+  def infer(variables:Collection[V], varying:Collection[C]): LatticeType
   //def infer(factors:TemplateList[VectorTemplate], variables:Collection[V]): LatticeType
 }
 
-trait Maximizer[V<:Variable] extends Inferencer[V] // Include something like this?
+trait VariableInferencer[V<:Variable] extends Inferencer[V,V] {
+  /** Infer the 'variables', changing their values, but not other variables' (except perhaps through variable-value coordination). */
+  def infer(variables:Collection[V]): LatticeType = infer(variables, variables)
+  /** Infer the 'targets' variables, considering not only changes their their values, but also changes to the 'marginalizing' variables. */
+  def inferMarginalizing(targets:Collection[V], marginalizing:Collection[V]) = infer(targets, { val a = new ArrayBuffer[V]; a ++= targets; a ++= marginalizing; a})
+}
+
+trait Maximizer[V<:Variable] extends Inferencer[V,V] // Include something like this?
 // 'infer' here would actually change state to the maximum found
 // 'infer' in Inferencer would leave it in some random state, with the results really in the Marginal objects?
 
@@ -48,23 +58,25 @@ class SamplingLattice[V<:IndexedVariable](variables:Collection[V]) extends Latti
 }
 
 // A simple special case, to be generalized later
-class SamplingInferencer[V<:SingleIndexedVariable](val sampler:Sampler[V]) extends Inferencer[V] {
+class SamplingInferencer[V<:SingleIndexedVariable,C](val sampler:Sampler[C]) extends Inferencer[V,C] {
   type LatticeType = SamplingLattice[V]
-  def this() = this(new GibbsSampler1[V])
-  def this(model:Model) = this(new GibbsSampler1[V](model))
   var burnIn = 100 // I really want these to be default-valued parameters to infer, in Scala 2.8.
   var thinning = 20
   var iterations = 500
-  def infer(variables:Collection[V], marginalizing:Collection[V]): SamplingLattice[V] = {
-    val lat = new SamplingLattice(variables)
-    val all = new ArrayBuffer[V]; all ++= variables; if (marginalizing != null) all ++= marginalizing
-    sampler.process(all, burnIn)
+  def infer(targets:Collection[V], contexts:Collection[C]): SamplingLattice[V] = {
+    val lat = new SamplingLattice(targets)
+    sampler.process(contexts, burnIn)
     for (i <- 0 until iterations/thinning) {
-      sampler.process(all, thinning)
-      variables.foreach(v => lat.marginal(v).increment)
+      sampler.process(contexts, thinning)
+      targets.foreach(v => lat.marginal(v).increment)
     }
     lat
   }
+}
+
+class VariableSamplingInferencer[V<:SingleIndexedVariable](sampler:Sampler[V]) extends SamplingInferencer[V,V](sampler) with VariableInferencer[V] {
+  def this() = this(new GibbsSampler1[V])
+  def this(model:Model) = this(new GibbsSampler1[V](model))
 }
 
 
@@ -76,19 +88,19 @@ class SamplingInferencer[V<:SingleIndexedVariable](val sampler:Sampler[V]) exten
 class SamplingMaximizerLattice(val diff:DiffList, val diffScore:Double) extends Lattice
 
 /** Provide 'infer' method that uses the 'sampler' to search for the best-scoring configuration. */
-class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends Maximizer[V] {
+// TODO Update this for the new separated "modelScore" and "acceptScore" in Proposal.
+class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends Maximizer[V] with VariableInferencer[V] {
   def this(model:Model) = this(new GibbsSampler1[V](model))
   type LatticeType = SamplingMaximizerLattice
   var iterations = 500
   var rounds = 10
   var initialTemperature = 1.0
   var finalTemperature = 0.1
-  def infer(variables:Collection[V], marginalizing:Collection[V]): LatticeType = inferd(variables, marginalizing)(null)
+  def infer(variables:Collection[V], varying:Collection[V]): LatticeType = inferd(variables, varying)(null)
   // TODO I really want Scala 2.8 default parameters: (implicit diff:DiffList = null)  !!!
-  def inferd(variables:Collection[V], marginalizing:Collection[V])(implicit diff:DiffList): LatticeType = {
+  def inferd(variables:Collection[V], varying:Collection[V])(implicit diff:DiffList): LatticeType = {
   	var currentScore = 0.0
     var maxScore = currentScore
-    val all = new ArrayBuffer[V]; all ++= variables; if (marginalizing != null) all ++= marginalizing
     val maxdiff = new DiffList
     sampler.temperature = initialTemperature
     def updateMaxScore(p:Proposal): Unit = {
@@ -108,9 +120,9 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
     sampler.proposalHooks += updateHook 
     //sampler.proposalsHooks += { (props:Seq[Proposal]) => { props.foreach(p => println(p.modelScore)) }}
     for (i <- 0 until rounds) {
-    	sampler.process(all, iterations/rounds)
+    	sampler.process(varying, iterations/rounds)
     	sampler.temperature += (finalTemperature-initialTemperature)/rounds
-    	println("Reducing temperature to "+sampler.temperature)
+    	//println("Reducing temperature to "+sampler.temperature)
     }
     maxdiff.undo // Go back to maximum scoring configuration
     sampler.proposalHooks -= updateHook

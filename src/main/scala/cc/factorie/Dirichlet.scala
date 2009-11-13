@@ -8,7 +8,8 @@ import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
 /** Base of the Dirichlet class hierarchy, needing only methods 'length' and 'mean'. */
-trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution[AbstractMultinomial[O]] with RandomAccessSeq[Double] {
+// Used to be with GenerativeDistribution[AbstractMultinomial[O]]
+trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution[ProportionOutcome[O]] with ProportionGenerating[O] with RandomAccessSeq[Double] {
   //type OutcomeType = AbstractMultinomial[O]
   final def length: Int = mean.length
   final def alpha(index:Int): Double = mean(index) * alphaSum
@@ -19,18 +20,21 @@ trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution
   //def mean(index:Int) : Double
   def apply(index:Int) = alpha(index)
   def outcomeDomain: O#DomainType
-  def sampleOutcome: OutcomeType = { val mul = new DenseCountsMultinomial[O](size); sampleInto(mul); mul }
+  // Was sampleOutcome: OutcomeType
+  def sampleMultinomial: AbstractMultinomial[O] = { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this)(null); /*throw new Error;*/ mul }
+  def sampleOutcome: OutcomeType = sampleMultinomial
   def estimate: Unit = throw new Error("Method estimate is not implemented in this class.  You must add a trait for estimation.")
   def sampleOutcomes(n:Int) : Seq[OutcomeType] = for (i <- 0 until n force) yield sampleOutcome
-  def sampleInto(m:OutcomeType): Unit = sampleInto(m:OutcomeType, SparseVector(size)(0.0)) // Waiting Scala 2.8 default args 
-  def sampleInto(m:OutcomeType, counts:{def apply(i:Int):Double; def size:Int}): Unit = {
+  //def sampleInto(m:OutcomeType): Unit = sampleInto(m:OutcomeType, SparseVector(size)(0.0)) // Waiting Scala 2.8 default args 
+  //def sampleInto(m:OutcomeType, counts:{def apply(i:Int):Double; def size:Int}): Unit = m.set(sampleProportionsWithCounts(counts))
+  def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def size:Int}): Seq[Double] = {
     //println("sampleInto")
     var norm = 0.0
-    val c = new Array[Double](m.size)
+    val c = new Array[Double](counts.size)
     // If m is a DirichletMultinomial, account for the fact that the m.pr(i) estimate will include m.source.alpha(i): 
     // m.pr(i) will be calculated from its counts, smoothed with the alphas here, in equal proportions (thanks to norm /= alphaSum below)
     // So we double the variance of random sample in order to make up for it.
-    val varianceScaling = if (m.source != null && classOf[DirichletMultinomial[O]].isAssignableFrom(m.getClass)) 2.0 else 1.0
+    val varianceScaling = 1.0 // TODO Fix this!!! if (m.source != null && classOf[DirichletMultinomial[O]].isAssignableFrom(m.getClass)) 2.0 else 1.0
     for (val i <- 0 until c.length) {
       //println("sampleInto alpha(i)="+alpha(i))
       c(i) = Maths.nextGamma((alpha(i)+counts(i))/varianceScaling, 1)(Global.random)
@@ -42,14 +46,14 @@ trait AbstractDirichlet[O<:MultinomialOutcome[O]] extends GenerativeDistribution
       c(i) /= norm
       //println("sampleInto c(i)="+c(i))
     }
-    m.set(c)
+    c
   }
   //def pr[O2<:OutcomeType](m:O2) : Double = throw new Error("Not yet implemented")
   def pr(m:OutcomeType) : Double = Math.exp(logpr(m))
   override def logpr(m:OutcomeType) : Double = {
     var ret = Maths.logGamma(alphaSum)
     for (i <- 1 until size) ret -= Maths.logGamma(alpha(i))
-    for (i <- 1 until size) ret += alpha(i) * Math.log(m.pr(i))
+    for (i <- 1 until size) ret += alpha(i) * Math.log(m(i)) // m(i) == m.pr(i)
     assert(ret == ret) // check for NaN
     ret
   }
@@ -79,17 +83,21 @@ class Dirichlet[O<:MultinomialOutcome[O]](val mean:AbstractMultinomial[O], sum:D
 
 /** A Dirichlet whose mean is integrated out with distribution 'meanSource', 
     and whose 'alphaSum' is not integrated out, but re-estimated with calls to 'estimate'. */
+/*
 @deprecated // Not yet working or tested
-class DirichletDirichlet[O<:MultinomialOutcome[O]](val meanSource:AbstractDirichlet[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with GenerativeVariable[DirichletDirichlet[O]]{
+class DirichletDirichlet[O<:MultinomialOutcome[O]](val meanSource:AbstractDirichlet[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with GenerativeVariable[AbstractDirichlet[O]]{
   def this(dir:AbstractDirichlet[O], initCounts:Seq[Double], as:Double)(implicit m:Manifest[O]) = { this(dir,as)(m); mean.set(initCounts) }
   def this(alphaSum:Double)(implicit m:Manifest[O]) = this(new Dirichlet(1.0), alphaSum)
   def this()(implicit m:Manifest[O]) = this(new Dirichlet(1.0), Domain[O](m).size)
   type VariableType <: DirichletDirichlet[O];
+  type SourceType = AbstractDirichlet[O];
   class DomainInSubclasses
+  def asOutcome = this
   val outcomeDomain = Domain[O](m)
   val mean = new DirichletMultinomial(meanSource)
   alphaSum = sum
   mean.setSource(meanSource)(null)
+  def sampleFrom(source:ProportionGenerating[O])(implicit d:DiffList) = mean.sampleFrom(source)
   override def _registerSample(m:OutcomeType)(implicit d:DiffList) = {
     super._registerSample(m)
     throw new Error
@@ -112,6 +120,7 @@ class DirichletDirichlet[O<:MultinomialOutcome[O]](val meanSource:AbstractDirich
   override def estimate: Unit = throw new Error("Not implemented")
   def sample(implicit d:DiffList):Unit = throw new Error("Not yet implemented")
 }
+*/
 
 object Dirichlet {
   def apply[O<:MultinomialOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) = new SymmetricDirichlet[O](initialAlpha)
