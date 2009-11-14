@@ -114,6 +114,18 @@
                         <descriptorRef>project</descriptorRef>
                         <descriptorRef>src</descriptorRef>
                     </descriptorRefs>
+  				    <launchers>
+        				<launcher>
+          					<id>LDA</id>
+          					<mainClass>cc.factorie.example.LDADemo</mainClass>
+          					<!-- args are optional <args><arg>arg1</arg></args> -->
+          					<!-- jvmArgs are optional -->
+          					<jvmArgs>
+            					<jvmArg>-Xmx256m</jvmArg>
+          					</jvmArgs>
+        				</launcher>
+        				<!-- you could define other launcher -->
+      				</launchers>
                 </configuration>
             </plugin>
             <plugin>
