@@ -12,7 +12,7 @@ import cc.factorie.util.{Log, ConsoleLogging}
 import cc.factorie.util.Implicits._
 
 /**A variable whose value is a set of other variables */
-abstract class SetVariable[X]() extends Variable with TypedValue {
+abstract class SetVariable[X]() extends Variable with TypedValues {
 	type ValueType = X
 	type VariableType <: SetVariable[X];
 	private val _members = new HashSet[X];

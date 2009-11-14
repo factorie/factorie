@@ -130,7 +130,7 @@ trait DiscreteVariable extends DiscreteValue with OrdinalVariable with IterableS
 
 /** For use with variables whose values are mapped to densely-packed integers from 0 and higher, using a CategoricalDomain.
     It can apply to a single index (as in EnumVariable or CategoricalValue) or a collection of indices (as in BinaryVectorVariable) */
-trait CategoricalValues extends DiscreteValues with TypedValue {
+trait CategoricalValues extends DiscreteValues with TypedValues {
 	type VariableType <: CategoricalValues
 	type DomainType <: CategoricalDomain[VariableType]
 	class DomainClass extends CategoricalDomain[VariableType]
@@ -185,7 +185,7 @@ abstract trait ItemizedVariable[This <: ItemizedVariable[This]] extends Categori
   val index = domain.index(this) // Remember our own index.  We could save memory by looking it up in the Domain each time, but speed is more important
 }
 
-/** A CategoricalValue variable (which is also a TypedValue), but whose type is specified by a type argument. */
+/** A CategoricalValue variable (which is also a TypedValues), but whose type is specified by a type argument. */
 abstract trait TypedCategoricalValue[T] extends CategoricalValue {
 	// But doesn't have mixin 'ConstantValue' because we can't yet be guaranteed that this variable's index will not change; we can in EnumObservation, though
 	type VariableType <: TypedCategoricalValue[T]

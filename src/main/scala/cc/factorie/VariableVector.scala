@@ -11,7 +11,7 @@ trait VectorValue extends CategoricalValues {
   def indices: Collection[Int]
 }
 
-trait CategoricalVectorValue extends VectorValue with CategoricalValues /*with TypedValue*/ {
+trait CategoricalVectorValue extends VectorValue with CategoricalValues {
 	// TODO Anything to put here?
 }
 

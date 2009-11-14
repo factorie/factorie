@@ -65,11 +65,13 @@ abstract trait ConstantValue extends Variable {
 }
 
 /** For variables whose value has a type, indicated in type ValueType */
-abstract trait TypedValue {
+abstract trait TypedValues {
   this : Variable =>
 	type ValueType
 }
 
+// TODO Consider making a trait TypedValue extends TypedValues { this: Variable => def value:T }
+// Then think about whether to get rid of intValue, doubleValue, proportionValue, etc.
 
 
 // TODO remove this now that we have Proposer
@@ -139,7 +141,7 @@ trait PrimitiveComparison[T] {
   def !==(other: PrimitiveComparison[T]) = value != other.value
 }
 
-abstract class PrimitiveObservation[T](theValue:T) extends Variable with TypedValue with PrimitiveComparison[T] {
+abstract class PrimitiveObservation[T](theValue:T) extends Variable with TypedValues with PrimitiveComparison[T] {
 	type VariableType <: PrimitiveObservation[T];
 	type ValueType = T
 	class DomainInSubclasses
@@ -149,7 +151,7 @@ abstract class PrimitiveObservation[T](theValue:T) extends Variable with TypedVa
 
 /**A variable with a single mutable (unindexed) value which is of Scala type T. */
 // TODO A candidate for Scala 2.8 @specialized
-abstract class PrimitiveVariable[T] extends Variable with TypedValue with PrimitiveComparison[T] {
+abstract class PrimitiveVariable[T] extends Variable with TypedValues with PrimitiveComparison[T] {
   def this(initval:T) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
 	type VariableType <: PrimitiveVariable[T]
   type ValueType = T
