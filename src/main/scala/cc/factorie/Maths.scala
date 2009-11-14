@@ -258,8 +258,15 @@ object Maths {
   def logBeta(a:Double , b:Double) = logGamma(a)+logGamma(b)-logGamma(a+b)
   def beta(a:Double, b:Double) = Math.exp(logBeta(a,b))
   def gamma (x:Double) = Math.exp(logGamma(x))
-  def factorial (n:Int) = Math.exp(logGamma(n+1))
-  def logFactorial (n:Int) = logGamma(n+1)
+  
+  object factorialCache {
+    val size = 13 // 12! = 479 001 600, 13! = 6 227 020 800, java.Integer.MAX_INT = (2^31) - 1 = 2 147 483 647
+    private val cache = new Array[Int](size)
+    cache(0) = 1; for (i <- 1 until size) cache(i) = i * cache(i-1)
+    def factorial(n:Int): Int = cache(n)
+  }
+  def factorial(n:Int): Double = if (n < factorialCache.size) factorialCache.factorial(n) else Math.exp(logGamma(n+1))
+  def logFactorial(n:Int): Double = logGamma(n+1)
 
   /**
    * Computes p(x;n,p) where x~B(n,p)
