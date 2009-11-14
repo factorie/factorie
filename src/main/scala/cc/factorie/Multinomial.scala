@@ -59,7 +59,7 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[Pr
     generatedSamples.foreach(s => c(s.index) += 1.0)
     c
   }
-  def prVector: Vector = new SeqAsVector { def apply(i:Int) = pr(i); def length = size } // 
+  def prVector: Vector = new SeqAsVector { def apply(i:Int) = pr(i); def length = size } // TODO Bad idea?  Is Vector.elements supposed to have type Iterable[(Int,Double)]? 
   override def sampleFrom(s:SourceType)(implicit d:DiffList): Unit = set(s.sampleProportionsWithCounts(counts))
   @deprecated def sampleInto(o:OutcomeType): Unit = o match { // TODO Consider including implicit DiffList here? 
     case v:DiscreteVariable => v.setByIndex(sampleIndex)(null)
@@ -126,13 +126,13 @@ trait CountsMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   class DomainInSubclasses
   override type SourceType = AbstractDirichlet[O]
   def length: Int = counts.size 
-  protected var total : Double = 0.0
+  private var total : Double = 0.0
   def countsTotal = total
   protected val _counts : Vector
   override def prVector: Vector = _counts / total
   override def counts: { def apply(i:Int):Double; def update(i:Int,v:Double):Unit; def size:Int } = _counts // TODO Want Seq[Double], but Vector doesn't mixin Seq?!!
   def increment(index:Int, incr:Double)(implicit d:DiffList) = { // TODO Scala 2.8 add incr:Double=1.0
-    _counts(index) += incr; total += incr
+    _counts(index) += incr; total += incr // TODO Wow, in debugging I see BoxesRunTime.unboxToInt(Object) following DenseVector.apply(Object) line 35
     if (_counts(index) < 0.0) println("CountsMultinomial "+this.getClass.getName+" counts="+_counts(index)+" incr="+incr)
     assert(_counts(index) >= 0.0)
     assert(total >= 0.0)
@@ -275,7 +275,7 @@ class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet
 	class DiscretePr(override val index:Int, override val pr:Double, override val count:Double, val value:O#VariableType#ValueType) extends super.DiscretePr(index,pr,count)
   override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i),outcomeDomain.get(i))})
   def topValues(n:Int) = top(n).toList.map(_.value)
-  override def toString = "Multinomial(count="+total+")"
+  override def toString = "Multinomial(count="+countsTotal+")"
 }
 
 

@@ -19,19 +19,19 @@ trait GenerativeObservation[O] extends Variable {
   //this: This =>
   // WAS: type SourceType <: GenerativeDistribution[This]
   type SourceType <: GenerativeDistribution[O]
-  protected var _source: SourceType = _ // TODO Consider making this 'private' instead of 'protected'
+  private var _source: SourceType = _ // TODO Consider making this 'private' instead of 'protected'
   // TODO Consider renaming this "generatingSource" in order to avoid possible method naming conflicts with subclasses
   @inline final def source = _source
   def asOutcome: O // Everywhere this is, there used to be "this"
   def setSource(s:SourceType)(implicit d:DiffList) : Unit = {
-    if (_source != null) _source._unregisterSample(asOutcome)
+    if (_source ne null) _source._unregisterSample(asOutcome)
     _setSource(s)
-    if (_source != null) _source._registerSample(asOutcome)
+    if (_source ne null) _source._registerSample(asOutcome)
   }
   /** Set 'source' directly without coordinating via source.(un)generate.  Don't call this yourself; call 'setSource' instead. */
   @inline override def _setSource(s:AnyRef)(implicit d:DiffList) : Unit = {
     val ss = s.asInstanceOf[SourceType] // TODO Arg.  I want s:SourceType, but Scala type system doesn't like M#OutcomeType vs M.OutcomeType
-    if (d != null) d += SetSourceDiff(_source, ss)
+    if (d ne null) d += SetSourceDiff(_source, ss)
     _source = ss
   }
   /** Register this variable as having been generated from source 's'. */
@@ -177,15 +177,6 @@ trait AbstractGenerativeDistribution extends Variable {
 // but we could certainly define pr(BinaryVectorVariable)
 // Hmm... Requires further thought.
                                     
-/** A GenerativeObservation with non-negative integer values, for example the outcome of a Multinomial or Poisson.  
-    This trait is used for Variables whose value is observed and does not change; 
-    for Variables with changing value, you should use DiscreteOutcomeVariable. */
-trait DiscreteOutcome2 extends IntValue with GenerativeObservation[DiscreteOutcome2] {
-  //type SourceType = DiscreteGenerating[DiscreteOutcome2]
-  class DomainInSubclasses
-  def asOutcome = this
-}
-//trait DiscreteOutcomeVariable2 extends DiscreteOutcome2 with IntVariable  
 
 /** A GenerativeObservation with densely-packed integer values, for example the outcome of a Multinomial or Poisson.  
     This trait is used for Variables whose value is observed and does not change; 
@@ -204,16 +195,16 @@ trait DiscreteOutcome[This<:DiscreteOutcome[This] with DiscreteValue with Genera
 trait DiscreteOutcomeVariable[This<:DiscreteOutcomeVariable[This] with DiscreteVariable] extends DiscreteVariable with DiscreteOutcome[This] with GenerativeVariable[This] {
   this : This =>
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
-    if (source != null) source.preChange(this)
+    if (source ne null) source.preChange(this)
     super.setByIndex(newIndex)
-    if (source != null) source.postChange(this)
+    if (source ne null) source.postChange(this)
   }
   override def sampleFrom(source:DiscreteGenerating[This])(implicit d:DiffList) = setByIndex(source.sampleIndex)
   /** Alternative setByIndex that avoids coordination with source, for use when you *really* know what you are doing, 
       and you are doing the source coordination yourself. */
   def _setByIndex(newIndex:Int)(implicit d:DiffList) = super.setByIndex(newIndex) 
   // TODO The above method is a bit scary because we may loose opportunities to fruitfully override setByIndex in subclasses
-  // However it saved us 115-111 seconds in the LDA timing run described in Generative.scala. 
+  // However it saved us (115-111) seconds in the LDA timing run described in Generative.scala. 
   def distribution: Array[Double] = {
     val buffer = new Array[Double](domain.size);
     for (i <- 0 until buffer.length) buffer(i) = source.pr(i); 
@@ -347,10 +338,14 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
     val dom = domain // Avoid 'domain' HashMap lookup in inner loop
     //**|
     //|**("MixtureChoice.sample.sample")
-    val distribution = Array.fromFunction[Double]((i:Int) => src.pr(i) * dom.get(i).unsafePr(outcome))(dom.size)
-    val i = Maths.nextDiscrete(distribution, distribution.foldLeft(0.0)(_+_))(Global.random)
-    //var i = 0; val max = distribution.size; val r = Global.random.nextDouble * distribution.foldLeft(0.0)(_+_); var s = 0.0
-    //while (s < r && i < max) { s += distribution(i); i += 1 }
+    //val distribution = Array.fromFunction[Double]((i:Int) => src.pr(i) * dom.get(i).unsafePr(outcome))(dom.size)
+    //val i = Maths.nextDiscrete(distribution, distribution.foldLeft(0.0)(_+_))(Global.random) // TODO Yipes, I'm seeing BoxedDoubleArray here!
+    val size = dom.size
+    val distribution = new Array[Double](size)
+    var sum = 0.0
+    var i = 0; while (i < size) { distribution(i) = src.pr(i) * dom.get(i).unsafePr(outcome); sum += distribution(i); i += 1 }
+    i = 0; val r = Global.random.nextDouble * sum; var s = 0.0
+    while (s < r && i < size) { s += distribution(i); i += 1 }; i -= 1
     //choice.unsafeGenerate(outcome) // Put outcome back, although, inefficiently, the next line moves it again
     //setByIndex(i - 1) // So, instead we do it ourselves.  But then subclassers cannot meaningfully override setByIndex!! // TODO Consider alternatives
     //**|

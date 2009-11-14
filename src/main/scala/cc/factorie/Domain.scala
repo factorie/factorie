@@ -68,7 +68,7 @@ class StringDomain[V<:CategoricalValues {type ValueType = String}] extends Categ
 
 /** A static map from a Variable class to its Domain. */
 object Domain {
-  val debug = false
+  private val debug = false
 	private val _domains = new HashMap[Class[_], Domain[_]]()
 	def domains : scala.collection.Map[Class[_],Domain[_]] = _domains
 	/** Get the Domain for Variables of type V */
