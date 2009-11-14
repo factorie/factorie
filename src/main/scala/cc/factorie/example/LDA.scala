@@ -52,6 +52,7 @@ object LDADemo {
     val sampler = Global.defaultSampler; println("GenerativeVariableSampler")
     //val sampler = Global.defaultSampler.noDiffList; println("GenerativeVariableSampler noDiffList")
 		val startTime = System.currentTimeMillis
+		//val timer = new cc.factorie.util.TimingCollector(); cc.factorie.util.Trackers += timer
     for (i <- 1 to 9) {
       sampler.process(zs, 1)
     	print("."); Console.flush
@@ -63,7 +64,7 @@ object LDADemo {
     }	
     topics.foreach(t => {println("\nTopic "+t.index); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
 		println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
-    
+		//println(timer.timings)    
 		0
 	}
 

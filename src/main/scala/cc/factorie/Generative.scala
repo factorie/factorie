@@ -197,7 +197,7 @@ trait DiscreteOutcome[This<:DiscreteOutcome[This] with DiscreteValue with Genera
   // Geoffrey Washburn says yes it is technically possible, but that Martin is simply against adding this feature to the language.
   type SourceType = DiscreteGenerating[This]
   class DomainInSubclasses
-  def asOutcome = this
+  @inline final def asOutcome = this
 }
 
 /** A DiscreteOutcome that is also a DiscreteVariable whose value can be changed. */
@@ -305,7 +305,7 @@ trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistr
 // class Theta extends Multinomial[Z];
 /** A multinomial outcome that is an indicator of which mixture component in a MixtureChoice is chosen.  
     The "Z" in Latent Dirichlet Allocation is an example. */                                 
-class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends CategoricalOutcomeVariable[This] {
+class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends CategoricalOutcomeVariable[This] with cc.factorie.util.Trackable {
   this : This =>
   type VariableType = This
   type ValueType = M
@@ -334,24 +334,32 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
   // NOT DEFAULT this.sample with above and noDiffList = 503.0 seconds.  Fishy!!!!  // TODO Why?????  Investigate!
   // this.sample with above, after Generative infrastructure overhaul = 115.4 seconds
   // this.sample with above, and _setByIndex instead of setByIndex = 111.4 seconds
+  // this.sample with above, after Indexed=>Categorical naming overhaul = 451.5 seconds.  Yipes!  What happened?
+  // this.sample with above, after caching results of Manifest <:< in GenericSampler = 34 seconds.  Wow!  Much better!! :-)
   // GibbsSampler = 368.3 seconds
   override def sample(implicit d:DiffList): Unit = {
     //println("MixtureChoice.sample "+index+" diff "+d)
+    //|**("MixtureChoice.sample.prep")
     val src = source
     // Remove this variable and its sufficient statistics from the model
     choice.unsafeUnregisterSample(outcome)
     source.preChange(this) // TODO this could be preChange(this) instead of unregisterSample(this)
     val dom = domain // Avoid 'domain' HashMap lookup in inner loop
+    //**|
+    //|**("MixtureChoice.sample.sample")
     val distribution = Array.fromFunction[Double]((i:Int) => src.pr(i) * dom.get(i).unsafePr(outcome))(dom.size)
     val i = Maths.nextDiscrete(distribution, distribution.foldLeft(0.0)(_+_))(Global.random)
     //var i = 0; val max = distribution.size; val r = Global.random.nextDouble * distribution.foldLeft(0.0)(_+_); var s = 0.0
     //while (s < r && i < max) { s += distribution(i); i += 1 }
     //choice.unsafeGenerate(outcome) // Put outcome back, although, inefficiently, the next line moves it again
     //setByIndex(i - 1) // So, instead we do it ourselves.  But then subclassers cannot meaningfully override setByIndex!! // TODO Consider alternatives
+    //**|
+    //|**("MixtureChoice.sample.post")
     this._setByIndex(i) // change the value of choice
     // Add the variable back into the model, with its new value
     src.postChange(this) // Could be postChange(this) instead of registerSample(this)
     choice.unsafeRegisterSample(outcome)
+    //**|
   }
 }
 
@@ -372,6 +380,11 @@ abstract class GenericMixtureChoice extends MixtureChoice[GenericMixtureComponen
 
 //trait GenericGenerativeVariable extends GenerativeVariable[GenericGenerativeVariable]
 class GenerativeVariableSampler extends Sampler[AbstractGenerativeVariable] {
-  def process1(v:AbstractGenerativeVariable): DiffList = { val d = newDiffList; v.sample(d); d }
+  def process1(v:AbstractGenerativeVariable): DiffList = { 
+    val d = newDiffList
+    v.sample(d)
+    //println("GenerativeVariableSampler "+d)
+    d
+  }
 }
 

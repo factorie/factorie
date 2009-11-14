@@ -95,6 +95,7 @@ abstract class SamplerOverSettings[C](val model:Model, val objective:Model) exte
 
 
 /** Manage and use a queue to more often revisit low-scoring factors and re-sample their variables. */
+// Consider FactorQueue { this: Sampler[_] => ... abstract override postProcessHook(C,DiffList).  But what to do about C?  
 trait FactorQueue[C] extends Sampler[C] {
   var useQueue = true
   var maxQueueSize = 1000

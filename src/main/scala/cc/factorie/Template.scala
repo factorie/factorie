@@ -257,7 +257,9 @@ import cc.factorie.util.Implicits._
     // TODO create methods like this for all Templates and put abstract version in Template
     def respondsTo[NN](implicit m:Manifest[NN]) = nc1.isAssignableFrom(m.erasure)
     def factors(v:Variable): Iterable[Factor] = {
-      if (nc1.isAssignableFrom(v.getClass)) unroll1(v.asInstanceOf[N1])
+      // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
+      // When I substituted "isAssignable" for HashMap caching in GenericSampler I got 42.8 versus 44.4 seconds ~ 3.7%  Perhaps worth considering?
+      if (nc1.isAssignableFrom(v.getClass)) unroll1(v.asInstanceOf[N1]) 
       else Nil
     }
 		def unroll1(v:N1): Iterable[Factor] = new Factor(v)
