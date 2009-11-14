@@ -57,6 +57,7 @@ object SimpleChainNER {
 	// Read data, train and test
 	def main(args: Array[String]) : Unit = {
   	// Read in the data
+  	//var dataDir = "/Users/mwick/data/conll/"
   	var dataDir = "/Users/mccallum/research/data/ie/ner2003/"
   	var trainFilename = dataDir+"eng.train"
   	var testFilename = dataDir+"eng.testa" 

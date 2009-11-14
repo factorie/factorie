@@ -164,6 +164,16 @@
                           <jvmArg>-Xmx800m</jvmArg>
                         </jvmArgs>
                       </launcher>
+                      <launcher>
+                        <id>SimpleChainNER</id>
+                        <mainClass>cc.factorie.example.SimpleChainNER</mainClass>
+                        <!-- args are optional -->
+                        <!-- jvmArgs are optional -->
+                        <jvmArgs>
+                          <jvmArg>-Xmx800m</jvmArg>
+                        </jvmArgs>
+                      </launcher>
+
 		    </launchers>
                 </configuration>
             </plugin>
