@@ -57,6 +57,7 @@ object SimpleChainNER {
 	// Read data, train and test
 	def main(args: Array[String]) : Unit = {
   	// Read in the data
+  	//var dataDir = "/Users/mwick/data/conll/"
   	var dataDir = "/Users/mccallum/research/data/ie/ner2003/"
   	var trainFilename = dataDir+"eng.train"
   	var testFilename = dataDir+"eng.testa" 
@@ -77,9 +78,13 @@ object SimpleChainNER {
   	val testLabels : Seq[Label] = testSentences.flatMap(_.map(_.label)).take(10000)
   	// Sample and Learn!
   	(trainLabels ++ testLabels).foreach(_.setRandomly)
-  	val learner = new GibbsSampler(model, objective) with SampleRank with PerceptronUpdates
+  	val learner = new GibbsSampler(model, objective)
+	  with SampleRank
+	  with PerceptronUpdates //with ConfidenceWeightedUpdates //with MIRAUpdates
+	  with ParameterAveraging //comment this to disable param averaging
+	  {temperature=0.01}
   	//with FactorQueue[Variable with IterableSettings] { def process0(x:AnyRef):DiffList = x match { case l:Label => process(l); case _ => null} }
-  	val predictor = new GibbsSampler(model)
+  	val predictor = new GibbsSampler(model){temperature=0.01}
   	for (i <- 0 until 6) {
   	  println("Iteration "+(i+1)+"...") 
   		trainLabels.take(50).foreach(printLabel _); println; println
@@ -89,6 +94,9 @@ object SimpleChainNER {
   		learner.process(trainLabels, 1)
   		learner.learningRate *= 0.9
   		predictor.temperature *= 0.9
+//	  System.out.println("NUM UPS: " + learner.numUpdates)
+		if(learner.isInstanceOf[ParameterAveraging]) //not quite right, we need to set weights back to learn again...
+		  learner.asInstanceOf[ParameterAveraging].setWeightsToAverage
   		predictor.process(testLabels, 1)
   	}
   	0
