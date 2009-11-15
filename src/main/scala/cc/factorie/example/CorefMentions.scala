@@ -8,7 +8,7 @@ import cc.factorie.util.Implicits._
 object CorefMentionsDemo {
 
   /** A random variable for a mention */
-  class Mention(val name:String, val trueEntity:Int, initialEntity:Entity) extends PrimitiveVariable(initialEntity) {
+  class Mention(val name:String, val trueEntity:Int, initialEntity:Entity) extends RefVariable(initialEntity) {
     // When this mention is assigned to an entity, update the mention
     override def set(e:Entity)(implicit d:DiffList) : Unit = {
       if (e != entity) {
@@ -89,7 +89,7 @@ object CorefMentionsDemo {
       model += new Template2[Mention,Mention] with DotStatistics1[AffinityVector] {
       	override def factors(d:Diff) = d.variable match {
       		case mention : Mention => d match {
-      			case mention.PrimitiveDiff(oldEntity:Entity, newEntity:Entity) => 
+      			case mention.RefDiff(oldEntity:Entity, newEntity:Entity) => 
       				for (other <- oldEntity.mentions; if (other.entity != mention.entity)) yield Factor(mention, other);
       			case _ => super.factors(d)
       		}

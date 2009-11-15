@@ -10,8 +10,9 @@ object LogicDemo1b {
 		class Person (val name:String) extends ItemizedVariable[Person] {
 			val smokes = new Smokes; class Smokes extends Bool with AttributeOf[Person]
 			val cancer = new Cancer; class Cancer extends Bool with AttributeOf[Person]
-			val mother = new Mother; class Mother extends PrimitiveVariable[Person] with AttributeOf[Person]
-			val age = new Age; class Age extends IntRangeVariable(0,8) with AttributeOf[Person] // in decades
+			val mother = new Mother; class Mother extends RefVariable[Person] with AttributeOf[Person]
+			val age = new Age; class Age extends DiscreteVariable with AttributeOf[Person] // in decades
+			Domain[Age].size = 10
 			override def toString = name
 		}
 		class Company (val name:String) extends ItemizedVariable[Company] {

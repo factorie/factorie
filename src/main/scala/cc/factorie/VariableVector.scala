@@ -6,12 +6,13 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import scala.util.Sorting
 
 trait VectorValue extends CategoricalValues {
+  this: Variable =>
   // TODO Remember that DiscreteValues Domains currently need special initialization
   def vector : Vector
   def indices: Collection[Int]
 }
 
-trait CategoricalVectorValue extends VectorValue with CategoricalValues {
+trait CategoricalVectorValue extends Variable with VectorValue with CategoricalValues {
 	// TODO Anything to put here?
 }
 

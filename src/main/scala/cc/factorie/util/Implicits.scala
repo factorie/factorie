@@ -63,6 +63,10 @@ object Implicits {
 	}
 
  
+  implicit def realValue2Double(r:RealValue): Double = r.doubleValue
+  // implicit def intValue2Int(r:IntValue): Int = r.intValue // TODO Should I add this also?
+  // implicit def booleanValue2Boolean(r:BooleanValue): Boolean = r.booleanValue // TODO Should I add this also?
+  
  
 	implicit def iterableExtras[T](s: Iterable[T]) = new {
 	  //println("iterableExtras constructed with s="+s)

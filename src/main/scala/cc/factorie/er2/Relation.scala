@@ -2,7 +2,7 @@ package cc.factorie.er2
 import scala.collection.mutable.{HashSet}
 import cc.factorie._
 
-class SymmetricFunction[A](initval:A, val getr:A=>SymmetricFunction[A]) extends PrimitiveVariable(initval) {
+class SymmetricFunction[A<:Variable](initval:A, val getr:A=>SymmetricFunction[A]) extends RefVariable(initval) {
 	def this(b:A=>SymmetricFunction[A]) = this(null.asInstanceOf[A], b)
 	protected lazy val owner : A = this.getClass().getDeclaredField("$outer").get(this).asInstanceOf[A];
 	override def set(newValue:A)(implicit d:DiffList) = {
@@ -12,12 +12,12 @@ class SymmetricFunction[A](initval:A, val getr:A=>SymmetricFunction[A]) extends 
 	}
 	protected def _set(newValue:A)(implicit d:DiffList) = super.set(newValue)(d)
 }
-class SymmetricFunctionAccessor[A,B](prefix:Accessor[A,B], rel:SymmetricFunction[B]) extends Accessor[A,B] {
+class SymmetricFunctionAccessor[A<:Variable,B<:Variable](prefix:Accessor[A,B], rel:SymmetricFunction[B]) extends Accessor[A,B] {
   def forward = (a:A) => prefix.forward(a).map(rel.getr(_).value)
   def reverse = (b:B) => prefix.reverse(rel.getr(b).value)
 }
 
-class Relation[A,B](val getra:A=>Relation[A,B], val getrb:B=>Relation[B,A]) extends SetVariable[B] {
+class Relation[A<:Variable,B<:Variable](val getra:A=>Relation[A,B], val getrb:B=>Relation[B,A]) extends SetVariable[B] {
 	protected val back = new HashSet[B] // those b:B's who have relation (b,this); note that this may not have the relation (this,b)
 	protected def owner : A = this.getClass().getDeclaredField("$outer").get(this).asInstanceOf[A];
 	override def add(b:B)(implicit d:DiffList): Unit = if (!this.contains(b)) { getrb(b).back += owner; super.add(b)(d); if (d != null) d += RelationAddDiff(b) }

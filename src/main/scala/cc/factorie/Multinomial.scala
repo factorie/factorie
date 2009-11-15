@@ -49,6 +49,7 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[Pr
   def pr(index:Int) : Double
   def localPr(index:Int) = pr(index) // Alternative that should not use any source.alpha in the estimate; used in Dirichlet.estimate
   final def pr(o:OutcomeType) : Double = pr(o.index)
+  def proportion: RandomAccessSeq[Double] = this
   def prs: RandomAccessSeq[Double] = this //new RandomAccessSeq[Double] { def apply(i:Int) = pr(i); def length = count.size } // TODO Remove this method?
   def logpr(index:Int) = Math.log(pr(index))
   def logprIndices(indices:Seq[Int]) : Double = indices.foldLeft(0.0)(_+logpr(_))
@@ -79,6 +80,11 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[Pr
     }
     return size - 1
   }
+  def maxPrIndex: Int = {
+    var i = 0; var mp = pr(i); var mi = i
+    while (i < size) { if (mp < pr(i)) { mp = pr(i); mi = i }; i += 1 }
+    mi
+  }
   def sampleIndices(numSamples:Int) : Seq[Int] = for (i <- 0 until numSamples force) yield sampleIndex
   def estimate: Unit = { throw new Error("Not yet implemented")} // TODO What to put here?
 }
@@ -107,6 +113,7 @@ class MultinomialMixture[M<:AbstractMultinomial[O],O<:DiscreteOutcome[O]](ms:Seq
 
 /** Simple Multinomial that represents p(x) directly. */
 class DenseMultinomial[O<:DiscreteOutcome[O]](proportions:Seq[Double])(implicit m:Manifest[O]) extends AbstractMultinomial[O] {
+  def this(dim:Int)(implicit m:Manifest[O]) = this(Array.make(dim, 1.0/dim))
   val length: Int = Domain[O](m).size
   val _pr = new DenseVector(length)
   if (proportions != null) set(proportions)
@@ -198,11 +205,22 @@ class SparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMult
   // def sampleIndex: Int // TODO
 }
 
+/** Multinomial for which sampling is efficient because outcomes are considered in order of highest-count first. */
 @deprecated // Not finished
 abstract class SortedSparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends AbstractMultinomial[O] with SparseMultinomial[O] {
-	def length: Int = _count.size 
-  protected var total : Double = 0.0
-  protected val _count = new Array[Int](dim)
+	def length: Int = pos.length
+  private var total: Int = 0 // total of all counts in buf
+  // Make sure we have enough bits to represent the dimension of the multinomial
+  private val topicMask = if (Integer.bitCount(dim) == 1) dim-1 else Integer.highestOneBit(dim) * 2 - 1
+  private val topicBits = Integer.bitCount(topicMask)
+  private var bufsize = 32
+  private var siz = 0 // current size of buf 
+  private val buf = new Array[Int](bufsize) // stores both count and topic packed into a single Int, indexed by pos
+  assert (dim < Math.MAX_SHORT)
+  private val pos = new Array[Short](dim); for (i <- 0 until dim) pos(i) = -1 // mapping from index to pos in count 
+  private def ti(pos:Int) = buf(pos) & topicMask // topic at position 
+  private def co(pos:Int) = buf(pos) >> topicBits // count at position
+  def incrementCount(index:Int, incr:Int): Unit = { val p:Int = pos(index); buf(p) = (co(p) + incr) }
 }
 
 
@@ -278,8 +296,22 @@ class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet
   override def toString = "Multinomial(count="+countsTotal+")"
 }
 
+/** DiscreteValue integrated out over a Multinomial prior distribution */
+// TODO turn this into Variational representation supporting mean-field
+trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends DiscreteOutcomeVariable[This] {
+  this: This =>
+  final val multinomial = new DenseMultinomial(domainSize)
+  def pr(i:Int): Double = multinomial.pr(i)
+  override def sample(implicit d:DiffList): Unit = {
+    super.sample(d)
+    multinomial.set(source.proportion) // TODO also create a Diff for this?
+  }
+  override def maximize(implicit d:DiffList): Unit = {
+    super.maximize(d)
+    multinomial.set(source.proportion) // TODO also create a Diff for this?
+  }
 
-trait MultinomialDiscrete extends DiscreteValue // TODO turn this into Variational representation of SingleIndex with a distribution
+}
 
 
 // The binary special case, for convenience

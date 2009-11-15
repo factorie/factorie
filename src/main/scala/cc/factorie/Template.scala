@@ -32,8 +32,8 @@ import cc.factorie.util.Implicits._
 		/**A Factor can be placed into a List with another with this method.
 		This makes it easier to return 2-3 Factors from unroll* methods via Factor() :: Factor() :: Factor() */
 		def ::(that: Factor) = List(that, this)
-		/**Add this Factor to the FactorList of all the Variables that are this factor's neighbors */
-		def addToVariables = variables.filter(_.isInstanceOf[FactorList]).map(_.asInstanceOf[FactorList].addFactor(this))
+		///**Add this Factor to the FactorList of all the Variables that are this factor's neighbors */
+		//def addToVariables = variables.filter(_.isInstanceOf[FactorList]).map(_.asInstanceOf[FactorList].addFactor(this))
 		// Implement Ordered, such that worst (lowest) scores are considered "high"
 		def compare(that: Factor) = {val d = that.statistic.score - this.statistic.score; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
 		// Implement equality based on class assignability and Variable contents equality

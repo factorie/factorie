@@ -22,7 +22,7 @@ abstract class StructuredPerceptron(model:Model) extends PerceptronUpdates {
     	updateWeights // This will result in a call to "addGradient"
   }
 
-  def addGradient(accumulator:DotTemplate=>Vector, rate:Double): Unit = {
+  def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit = {
     if (!difflist.done) difflist.redo
   	difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
   	difflist.undo

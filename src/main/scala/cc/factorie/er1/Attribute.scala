@@ -17,7 +17,7 @@ trait AttributeOf[O<:Variable] extends Attribute {
 	}
 }
 
-class SymmetricAttribute[O<:Variable](val getf:O=>SymmetricAttribute[O]) extends PrimitiveVariable[O] with AttributeOf[O] {
+class SymmetricAttribute[O<:Variable](val getf:O=>SymmetricAttribute[O]) extends RefVariable[O] with AttributeOf[O] {
   protected def _set(newValue:O)(implicit d:DiffList) = super.set(newValue)(d)
   override def set(newValue:O)(implicit d:DiffList) = {
     if (value != null) getf(value)._set(newValue)(d)
@@ -37,7 +37,7 @@ trait Attributes[This<:Attributes[This] with Variable] {
 		def owner = myself
 		//def owner = `$outer`() // TODO Why doesn't this work?
 	}
-  class SymmetricFunction(initval:This, val getr:This=>SymmetricFunction) extends PrimitiveVariable(initval) {
+  class SymmetricFunction(initval:This, val getr:This=>SymmetricFunction) extends RefVariable(initval) {
     def this(b:This=>SymmetricFunction) = this(null.asInstanceOf[This], b)
   	override def set(newValue:This)(implicit d:DiffList) = {
   		if (value != null) getr(value)._set(null.asInstanceOf[This]) // TODO Why is this cast necessary?

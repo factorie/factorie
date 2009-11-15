@@ -32,14 +32,15 @@ class TemplateList[T<:Template] extends ArrayBuffer[T] {
 	def factors(vs:Iterable[Variable]) : Seq[Factor] = this.flatMap(template => template.factors(vs))
 	// TODO Should the method below be renamed "factorsOf"?
 	def factorsOfClass[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
-	def registerFactorsInVariables(variables: Iterable[Variable with FactorList]): Seq[Factor] = {
+	/* This kind of construction should now be done in a Lattice, not touching the Variables themselves.
+  def registerFactorsInVariables(variables: Iterable[Variable with FactorList]): Seq[Factor] = {
 	  val factors = this.factors(variables)
     // Make sure each variables factor list starts empty
     variables.foreach(_.clearFactors)
     // Add relevant factors to each relevant neighboring variable
     factors.foreach(_.addToVariables)
     factors.toSeq
-	}
+	}*/
 	def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.statistic.score)
  	def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score) // For use when the Variable is also Iterable
 	def score(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score)

@@ -27,6 +27,8 @@ class ItemizedDomain[V <: ItemizedVariable](implicit m:Manifest[V]) extends Doma
 }
 */
 
+// TODO Consider if it would be helpful to have a RealDomain or PositiveRealDomain
+
 abstract class DiscreteDomain[V<:DiscreteValues] extends Domain[V] {
   private var _size = -1
   // TODO Arg!  I want to name this simply "size", but then the compiler complains when I mix in util.Index below, because it also defines 'size'
@@ -35,7 +37,7 @@ abstract class DiscreteDomain[V<:DiscreteValues] extends Domain[V] {
   def size_=(s:Int) = setSize(s)
   def setSize(s:Int): Unit = 
     if (s < 0) throw new Error("DiscreteDomain.size cannot be negative.")
-    else if (_size <= 0) throw new Error("DiscreteDomain.size already set.")
+    else if (_size <= 0 && _size != s) throw new Error("DiscreteDomain.size already set; cannot be reset to a different value.")
     else _size = s
 }
 
