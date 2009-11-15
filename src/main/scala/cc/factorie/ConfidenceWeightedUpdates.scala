@@ -15,18 +15,20 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
   override type TemplatesToUpdate = DotTemplate
   def model : Model
   def learningMargin : Double
+  var numUpdates : Double = 0
+
   var learningRate : Double = 1
-
-    val epsilon = 0.0000001
-    val eta = 0.95; //condifidence value, make sure eta>0.5 because probit(0.5)=0 and probit(x<0.5)<0
+  val epsilon = 0.0000001
+  val eta = 0.95; //condifidence value, make sure eta>0.5 because probit(0.5)=0 and probit(x<0.5)<0
     
-    /**Function of the confidence (it is more intuitive to express eta than the gaussian deviate directly). */
-    val gaussDeviate = Maths.probit(eta);
-
+  /**Function of the confidence (it is more intuitive to express eta than the gaussian deviate directly). */
+  val gaussDeviate = Maths.probit(eta);
 
   def updateWeights : Unit = {
+    numUpdates += 1
     val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
-    if(changeProposal.modelScore * changeProposal.objectiveScore > 0 || changeProposal.objectiveScore==0)
+    if(changeProposal.modelScore * changeProposal.objectiveScore > 0 
+       || changeProposal.objectiveScore==0)
       return;
     val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
       override def default(template:TemplatesToUpdate) = {
@@ -37,7 +39,6 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
       }
     }
     addGradient(gradient,1.0)
-
     learningRate = kktMultiplier(changeProposal,gradient)
     updateParameters(gradient)
     updateSigma(gradient)

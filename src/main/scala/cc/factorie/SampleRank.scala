@@ -14,7 +14,6 @@ trait SampleRank extends ProposalSampler0 {
   var bestModel1, bestModel2, bestObjective1, bestObjective2 : Proposal = null
 	abstract override def proposalsHook(proposals:Seq[Proposal]) : Unit = {
 	  super.proposalsHook(proposals)
-
   	val bestModels = proposals.max2(_ modelScore)
   	val bestObjectives = proposals.max2(_ objectiveScore)
   	bestModel1 = bestModels._1
@@ -34,6 +33,7 @@ trait SampleRank extends ProposalSampler0 {
   }
  
   def addGradient(accumulator:DotTemplate=>Vector, rate:Double): Unit = {
+
   	/*
   	List(bestModel1, bestModel2, bestObjective1, bestObjective2).foreach(p => println(p))
   	println ("bestObjective1 objectiveScore = "+bestObjective1.objectiveScore)//+" value = "+bestTruth1.value)
