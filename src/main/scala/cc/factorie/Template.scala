@@ -151,7 +151,8 @@ import cc.factorie.util.Implicits._
     def freezeDomains : Unit = {
       if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
       statClasses.foreach(Domain.get[CategoricalValues](_).freeze)
-    }	
+    }
+    // TODO Consider changing name to statSize?
     lazy val statsize : Int = {
       //val d = Domain.get[IndexedVariable](statClasses(0))
       //println("VectorTemplate domain allocSize "+d.allocSize)

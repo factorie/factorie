@@ -6,6 +6,7 @@ import scalala.tensor.Vector
 
 /** Set the parameters so that the model.score ranks consecutive samples in the same order as the objective.score, with a margin. */
 trait SampleRank extends ProposalSampler0 {
+  this: ProposalSampler[_] =>
   type TemplatesToUpdate <: DotTemplate
   def model : Model
   var learningMargin = 1.0
@@ -13,6 +14,7 @@ trait SampleRank extends ProposalSampler0 {
   
   var bestModel1, bestModel2, bestObjective1, bestObjective2 : Proposal = null
 	abstract override def proposalsHook(proposals:Seq[Proposal]) : Unit = {
+  	if (proposals.length < 2) return
 	  super.proposalsHook(proposals)
   	val bestModels = proposals.max2(_ modelScore)
   	val bestObjectives = proposals.max2(_ objectiveScore)
@@ -43,6 +45,12 @@ trait SampleRank extends ProposalSampler0 {
   	println ("bestObjective2 modelScore = "+bestObjective2.modelScore)
   	println ("bestModel1     modelScore = "+bestModel1.modelScore)
   	println ()
+  	*/
+    /*
+  	println ("bestObjective1 ms="+bestObjective1.modelScore+" os="+bestObjective1.objectiveScore+" diff="+bestObjective1.diff)
+  	println ("bestObjective1 ms="+bestObjective2.modelScore+" os="+bestObjective2.objectiveScore+" diff="+bestObjective2.diff)
+  	println ("bestModel1     ms="+bestModel1.modelScore+" os="+bestModel1.objectiveScore+" diff="+bestModel1.diff)
+  	println ("bestModel2     ms="+bestModel2.modelScore+" os="+bestModel2.objectiveScore+" diff="+bestModel2.diff)
   	*/
   	// Only do learning if the trueScore has a preference
   	// It would not have a preference if the variable in question is unlabeled

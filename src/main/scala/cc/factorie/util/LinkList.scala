@@ -2,7 +2,7 @@ package cc.factorie.util
 
 /** A Seq represented as a doubly-linked list of This.  
  * Any one element represents the Seq of itself and all following links.  If you want the full collection, use this.first... */
-// TODO Consider changing this to that "length" and "elements" always include all elements of the collection?
+// TODO Consider changing this to that "length" and "elements" always include all elements of the collection?  This be necessary to obey assumptions of trait Seq implementation
 trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
 	this : This =>
 	var prev:This = null
@@ -14,12 +14,12 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
   def hasPrev(n:Int) : Boolean = { var s = this; for (i <- 0 until n) { if (s.prev eq null) return false; s = s.prev }; return true }
  
 	def lengthToFirst : Int = if (prev eq null) 0 else 1 + prev.lengthToFirst
-	def lengthToLast  : Int = if (next eq null) 0 else 1 + next.lengthToFirst
- 	def length: Int = 1 + lengthToLast
-  override def size: Int = 1 + lengthToLast
+	def lengthToLast  : Int = if (next eq null) 0 else 1 + next.lengthToLast
+ 	def length: Int = 1 + first.lengthToLast
+  override def size: Int = length
   override def first: This = if (prev eq null) this else prev.first
   override def last: This = if (next eq null) this else next.last
-  def apply(i:Int): This = next(i)
+  def apply(i:Int): This = first.next(i)
 	
 	def next(n:Int): This =
 		if (n == 0) this
@@ -41,32 +41,41 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
     else if (prev eq null) None
     else prev.getPrev(n - 1)
 
-  /** Return an Iterator over all links after and including this. */
+  /** Return an Iterator over all links in the sequence of which this is a member. */
   override def elements: Iterator[This] = new Iterator[This] {
-  	var elems = LinkList.this
+  	var elems = LinkList.this.first
   	def hasNext = (elems ne null)
   	def next = { val res = elems; elems = elems.next; res }
   }
-  
-  /** Return an iterator over all links before this, in reverse order, starting with this.prev */
+
+  /** Return an iterator over all links before this, in order, starting with this.prev */
   def prevElements: Iterator[This] = new Iterator[This] {
+    var elems = LinkList.this.next
+    def hasNext = (elems ne null)
+    def next = { val res = elems; elems = elems.next; res }
+  }
+  
+  /** Return an iterator over all links after this, in reverse order, starting with this.next */
+  def nextElements: Iterator[This] = new Iterator[This] {
   	var elems = LinkList.this.prev
   	def hasNext = (elems ne null)
   	def next = { val res = elems; elems = elems.prev; res }
   }
   
-  /** Cut the links to the "prev" side of this */
-  def trimPrev : This = {
+  /** Cut the links to the "prev" side of this.  Returns the original this.prev */
+  def trimPrev: This = {
+    val ret = this.prev
     if (prev ne null) prev.next = null
     prev = null
-    this
+    ret
   }
   
-  /** Cut the links to the "next" side of this. */
-  def trimNext : This = {
+  /** Cut the links to the "next" side of this.  Returns the original this.next */
+  def trimNext: This = {
+    val ret = this.next
     if (next ne null) next.prev = null
     next = null
-    this
+    ret
   }
 
   /** Put all the links in the collection "that" at end of the sequence "this". */
@@ -90,7 +99,7 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
   /** Insert list "that" before this link */
 	def preInsert(that:This): Unit = if (prev ne null) prev.postInsert(that) else prepend(that)
  
-	/** Returning this.first permits usage such as token = new Token() prepend token */
+	/** Returning this.first permits usage such as: val token = null; token = new Token() prepend token; */
 	def prepend(that:This): This = if (that eq null) this.first else {
 	  if (that.prev != null) throw new IllegalArgumentException("Trying to prepend the middle of another LinkList")
 		if (prev eq null) {
@@ -132,25 +141,37 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
 	}
 
 	// TODO consider prepending all method names that operate on individual links with "link" ??
-	/** Swap link "this" with link "that" */
+	/** Swap the single link "this" with the single link "that" */
 	def swapWith(that:This): Unit = if (that ne this) {
+		val origLength = this.first.length 
 		val thisNext = next
 		val thisPrev = prev
-		if (this.next eq that) {
-			throw new Error
-    } else if (that.next eq this) {
-      throw new Error
+		if (this.next eq that) { // Neighbors: this, that
+      if (prev != null) prev.next = that
+      if (that.next != null) that.next.prev = this
+      next = that.next
+      prev = that
+      that.prev = thisPrev
+      that.next = this
+    } else if (that.next eq this) { // Neighbors: that, this
+    	if (next != null) next.prev = that
+    	if (that.prev != null) that.prev.next = this
+    	next = that
+    	prev = that.prev
+    	that.prev = this
+    	that.next = thisNext
     } else {
-    	if (prev != null) prev.next = that
+      if (prev != null) prev.next = that
     	if (next != null) next.prev = that
     	if (that.prev != null) that.prev.next = this
     	if (that.next != null) that.next.prev = this
-    	next = that.next
+      next = that.next
     	prev = that.prev
     	that.next = thisNext
     	that.prev = thisPrev
     }
-	}
+		assert(origLength == this.first.length && origLength == that.first.length)
+  }
  
 	def swapWithNext: Unit =
 		if (next eq null) throw new IllegalStateException("No next with which to swap.")
@@ -158,6 +179,7 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
  
 	def swapWithNext(n:Int): Unit = swapWith(this.next(n))
 
+	/** Swap the 'length' tokens preceeding this with hthe 'length' tokens following this, preserving the order of each of the spans swapped. */
 	def swapNextPrev(length:Int): Unit = {
 	  var s = prev(length)
 	  var t = next

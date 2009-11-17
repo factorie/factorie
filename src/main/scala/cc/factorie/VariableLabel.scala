@@ -10,6 +10,9 @@ import cc.factorie.util.Implicits._
 
 // Categorical variables that have true values are referred to as 'Labels'
 
+// TODO Consider using the word "Target" for variables that we are trying to predict at training and/or test time.
+// The word "Hidden" should perhaps also be used somewhere.
+
 /**A variable of finite enumerated values that has a true "labeled" value, separate from its current value. */
 //trait TrueIndexedValue[T] extends TypedSingleIndexedVariable[T]
 // TODO We could make version of this for OrdinalValue: TrueOrdinalValue
@@ -51,4 +54,14 @@ class Label[T](trueval:T) extends CoordinatedLabel(trueval) with UncoordinatedCa
   class DomainInSubclasses
   //override final def set(newValue:T)(implicit d: DiffList) = super.set(newValue)(d)
   //override final def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
+}
+
+/** A Label with a StringDomain.  StringDomains can be conveniently initialized, as in
+    class NerLabel extends StringDomain { val PER, ORG, LOC, MISC, O = Value; freeze } // Then Domain[NerLabel].PER == "PER" */
+class StringLabel(trueval:String) extends Label[String](trueval) {
+  type VariableType <: StringLabel
+  type DomainType <: StringDomain[VariableType]
+  class DomainClass extends StringDomain[VariableType]
+  class DomainInSubclasses
+  
 }

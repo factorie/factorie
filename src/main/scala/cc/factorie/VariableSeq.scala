@@ -149,14 +149,12 @@ import cc.factorie.util.Implicits._
 			seq += v
 			v.setSeqPos(this, seq.size - 1)
 		}
-		def +(v: V) = {this += v; this}
+		def +(v: V) = {this += v; this} // TODO But according to Scala convension this should create a return a new sequence, right?  Remove this method?
 		def ++=(vs: Iterable[V]) = vs.foreach(this += _)
 		def ++(vs: Iterable[V]) = {this ++= vs; this}
 		override def elements = seq.elements
 		def length = seq.length
 		def apply(i: Int) = seq.apply(i)
-		//type ValueType = V
-		def trueScore = 0.0 // Changes to this variable are not tracked by Diffs and they have no truth
 	}
 
 	class VariableSeqWithSpans[X <: Variable with VarInSeq[X]] extends VariableSeq[X] {
@@ -235,13 +233,24 @@ import cc.factorie.util.Implicits._
  
 	trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This] with cc.factorie.util.LinkList[This] with Variable] extends cc.factorie.util.LinkList[This] {
 	  this : This =>
-	  def swapWithVar(that:This)(implicit d:DiffList) : Unit = new VarInMutableSeqSwapDiff(this, that)
-	  protected def superSwapWith(that:This) = super.swapWith(that)
-		case class VarInMutableSeqSwapDiff(ths:This, that:This)(implicit d:DiffList) extends AutoDiff {
-	  	override def variable : This = VarInMutableSeq.this
-	  	def redo = ths.superSwapWith(that)
+	  def swapWithVar(that:This)(implicit d:DiffList) : Unit = {
+      this.swapWith(that)
+      if (d ne null) {
+        d += new VarInMutableSeqSwapDiff(this, that)
+        d += new VarInMutableSeqSwapDiff2(that)
+      }
+	  }
+		case class VarInMutableSeqSwapDiff(ths:This, that:This) extends Diff {
+	  	def variable: This = VarInMutableSeq.this
+	  	def variables = List(ths, that) // TODO Consider handling this in the FACTORIE library
+	  	def redo = ths.swapWith(that)
 	  	def undo = redo
 	  }
+    case class VarInMutableSeqSwapDiff2(that:This) extends Diff {
+      def variable: This = that  // Just to put another variable on the difflist
+      def redo = {}
+      def undo = {}
+    }
 	}
 
 	// TODO Various tests below.  Remove them.

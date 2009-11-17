@@ -5,7 +5,7 @@ import scala.util.Sorting
 import cc.factorie.util.Implicits._
 
 object WordSegmenterDemo { 
-
+  
 	// The variable types:
 	class Label(b:Boolean, val token:Token) extends cc.factorie.Label(b) 
 	class Token(val char:Char, isWordStart:Boolean) extends BinaryVectorVariable[String] with VarInSeq[Token] {

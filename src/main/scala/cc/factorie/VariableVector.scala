@@ -16,14 +16,18 @@ trait CategoricalVectorValue extends Variable with VectorValue with CategoricalV
 	// TODO Anything to put here?
 }
 
-/**A variable whose value is a SparseBinaryVector; immutable. */
+/** A variable whose value is a SparseBinaryVector; immutable.  
+    If the second constructor is false, then attempting to += a category 
+    for which the CategoryDomain returns CategoryDomain.NULL_INDEX == -1 will result in a throw exception.
+    If not specified, it defaults to false. */
 // I considered renaming this VectorObservation, but then I realized that methods such as += change its value. -akm
 // TODO Rename to BinaryVectorVariable?
 // TODO Consider renaming BinaryFeatureVector (where "Feature") refers to being Categorical?
 // or perhaps BinaryCategoricalVector?  But that is a weird name.
-abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends CategoricalVectorValue {
+abstract class BinaryVectorVariable[T](initVals:Iterable[T], var skipNonCategories:Boolean) extends CategoricalVectorValue {
 	//def this(iv:T*) = this(iv:Seq[T])
-	def this() = this(null)
+	def this() = this(null, false)
+	def this(initVals:Iterable[T]) = this(initVals, false)
 	type ValueType = T
 	type VariableType <: BinaryVectorVariable[T]
   class DomainInSubclasses
@@ -45,9 +49,18 @@ abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends Categorical
   // But will a += b syntax with with default arguments?
   def +=(value: T) : Unit = {
   	val idx = domain.index(value);
-  	if (idx == CategoricalDomain.NULL_INDEX) throw new Error("VectorVariable += value " + value + " not found in domain " + domain)
+  	if (idx == CategoricalDomain.NULL_INDEX) {
+  		if (!skipNonCategories)
+  			throw new Error("BinaryVectorVariable += value " + value + " not found in domain " + domain)
+  		else
+  			return
+  	}
   	indxs += idx
   	_vector = null
+  }
+  def +=(index:Int): Unit = {
+    indxs += index
+    _vector = null
   }
   //def +(value: T) = {this += value; this} // TODO Shouldn't this method actually return a new VectorVariable, leaving old one unchanged?  Yes.
   def ++=(vals: Iterable[T]) : Unit = vals.foreach(v => this += v)

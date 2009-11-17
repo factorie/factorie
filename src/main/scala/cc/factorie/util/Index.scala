@@ -31,10 +31,19 @@ import scala.collection.mutable._;
 //@serializable 
 trait Index[T] extends (T => Int) with Collection[T] {
 	/**Forward map from int to object */
-	private val objects = new ArrayBuffer[T]
+	private var objects = new ArrayBuffer[T]
 
 	/**Map from object back to int index */
-	private lazy val indices = Map[T, Int]()
+	private var indices = Map[T, Int]()
+ 
+	/** Wipe the Index clean */
+	def reset: Unit = {
+		_frozen = false
+		objects = new ArrayBuffer[T]
+		indices = Map[T,Int]()
+  }
+	/** Allow subclasses to access the list objects.  Useful for subclasses calling reset and then re-entering a filtered subset of the old objects. */
+	protected def _entries: RandomAccessSeq[T] = objects
 
 	/**If positive, throw error if Index reaches size larger than this.  Use for growable multi-dim Factor weights */
 	var maxSize = -1
@@ -42,9 +51,10 @@ trait Index[T] extends (T => Int) with Collection[T] {
 	//override def maxSize_=(s:Int) : Unit = if (maxSize >= size) maxSize = s else throw new Error("Trying to set maxSize smaller than size.")
 
 	/**If true, do not allow this Index to change. */
-	private var frozen = false
+	private var _frozen = false
+	def frozen = _frozen
 
-	def freeze = {frozen = true; this}
+	def freeze = {_frozen = true; this}
 
 	/**The size others might want to allocate to hold data relevant to this Index.  If maxSize is set can be bigger than size. */
 	def allocSize = if (maxSize < 0) size else maxSize
@@ -71,7 +81,7 @@ trait Index[T] extends (T => Int) with Collection[T] {
 			objects += entry;
 			m
 		}
-		if (frozen) indices.getOrElse(entry, -1)
+		if (_frozen) indices.getOrElse(entry, -1)
 		else indices.getOrElseUpdate(entry, nextMax);
 	}
  

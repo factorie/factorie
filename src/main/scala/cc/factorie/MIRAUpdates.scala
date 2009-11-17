@@ -8,12 +8,10 @@ import scalala.tensor.sparse.SparseVector
 //import scalala.tensor.operators.TensorOp
 //import scalala.tensor.operators.OperatorImplicits
 
-
-trait MIRAUpdates extends PerceptronUpdates with AbstractMIRAUpdates 
-//trait AverageMIRAUpdates extends AveragePerceptronUpdates with AbstractMIRAUpdates 
-
 // TODO Generalized this so that it doesn't require SampleRank
-trait AbstractMIRAUpdates extends WeightUpdates with SampleRank {
+
+trait MIRAUpdates extends PerceptronUpdates with SampleRank {
+  this: ProposalSampler[_] =>
   override type TemplatesToUpdate = DotTemplate
 	def learningRate : Double
 	def learningRate_=(x:Double) : Unit
@@ -57,7 +55,7 @@ trait AbstractMIRAUpdates extends WeightUpdates with SampleRank {
     {
       var result : Double = 0
       for(t <- nabla.keySet)
-	result += nabla(t) dot nabla(t)
+      	result += nabla(t) dot nabla(t)
       return result
     }
 }

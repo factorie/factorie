@@ -12,6 +12,7 @@ val predictor = new GibbsSampler(model){temperature=0.01}*/
 
 //TODO: don't require SampleRank
 trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
+  this: ProposalSampler[_] =>
   override type TemplatesToUpdate = DotTemplate
   def model : Model
   def learningMargin : Double

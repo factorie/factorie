@@ -45,7 +45,9 @@ class TemplateList[T<:Template] extends ArrayBuffer[T] {
  	def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score) // For use when the Variable is also Iterable
 	def score(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score)
 	def score(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
+	/** Score all variables in the Iterable collection.  This method is useful when a Variable is also a Iterable[Variable]; 
+      it forces the Iterable interpretation and avoids the single variable interpretation of score(Variable). */
 	def scoreAll(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
- 	def aveScore(vars:Collection[Variable]): Double = score(vars) / vars.size
+ 	def aveScore(vars:Collection[Variable]): Double = scoreAll(vars) / vars.size
 }
 

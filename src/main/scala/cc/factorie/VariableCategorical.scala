@@ -125,6 +125,9 @@ class IntRangeVariable(low:Int, high:Int) extends TypedCategoricalVariable[Int] 
 */
 
 
+
+// ItemizedVariable support
+
 /** A Variable put in an index, and whose value is the variable itself.  
     For example, you can create 10 'Person extends ItemizedValue[Person]' objects, 
     and upon creation each will be mapped to a unique integer 0..9.
@@ -147,3 +150,15 @@ class ItemizedValueRef[V<:ItemizedVariable[V]] extends TypedCategoricalVariable[
   type VariableType = ItemizedValueRef[V]
   class DomainInSubclasses
 }
+
+
+
+// Domains that count calls to 'index'
+/** When mixed in to  */
+trait CountingCategoricalDomain[This<:CountingCategoricalDomain[This] with CategoricalValues] {
+  this: This =>
+  type VariableType = This
+  type DomainType = CategoricalDomainWithCounter[This]
+  class DomainClass extends CategoricalDomainWithCounter[This]
+}
+

@@ -19,6 +19,10 @@ class Domain[V<:Variable] {
 		val matchingElements : Seq[(Class[_],Domain[_])] = Domain.domains.elements.filter({case (key,value) => value == this}).toList
 		matchingElements.map({case (key,value) => key})
 	}
+  // TODO Trying to create ability for domain assignment syntax like:
+  // Domain[Token] := new CategoricalDomain[Token] { ... }
+  // I don't think this actually works yet
+ 	def :=(d:Domain[Variable]) = println("In Domain.:=")
 }
 
 /*
@@ -41,29 +45,208 @@ abstract class DiscreteDomain[V<:DiscreteValues] extends Domain[V] {
     else _size = s
 }
 
-class CategoricalDomain[V<:CategoricalValues] extends DiscreteDomain[V] with util.Index[V#ValueType] {
+class CategoricalDomain[V<:CategoricalValues] extends DiscreteDomain[V] with util.Index[V#ValueType] /*with DomainEntryCounter[V]*/ {
   override def domainSize = size
 	def randomValue : V#ValueType = randomValue(Global.random)
 	def randomValue(random:Random): V#ValueType = get(random.nextInt(size))
 	def +=(x:V#ValueType) : Unit = this.index(x)
 	def ++=(xs:Iterable[V#ValueType]) : Unit = xs.foreach(this.index(_))
+ 
+ 
+	// Code that used to be in DomainEntryCounter[V], but when separate was causing compiler to crash.
+	/*
+	type T = V#ValueType
+  var gatherCounts = false
+  private val _countsInitialSize = 64
+  private var _counts = new Array[Int](_countsInitialSize)
+  protected def ensureSize(n:Int): Unit = {
+    if (_counts.length - 1 < n) {
+      var newsize = _counts.length * 2
+      while (newsize < n) newsize *= 2
+      val new_counts = new Array[Int](newsize)
+      Array.copy(_counts, 0, new_counts, 0, _counts.size)
+      _counts = new_counts
+    }
+  }
+  def count(i:Int): Int = _counts(i)
+  def count(entry:T): Int = _counts(indexOnly(entry))
+  def incrementCount(i:Int): Unit = { ensureSize(i); _counts(i) += 1 }
+  def incrementCount(entry:T): Unit = incrementCount(indexOnly(entry))
+  private def someCountsGathered: Boolean = { for (i <- 0 until _counts.size) if (_counts(i) > 0) return true; return false }
+  /** Return the index associated with this entry, without incrementing its count, even if 'gatherCounts' is true. */
+  def indexOnly(entry:T): Int = super.index(entry)
+  /** Return the index associated with entry, and also, if 'gatherCounts' is true, increment +1 the count associated with this entry. */
+  override def index(entry:T): Int = {
+    val i = super.index(entry)
+    if (gatherCounts) incrementCount(i)
+    i
+  }
+  /** Returns the number of unique elements trimmed */
+  def trimBelowCount(threshold:Int): Int = {
+    assert(!frozen)
+    if (!someCountsGathered) throw new Error("Can't trim without first gathering any counts.")
+    val origEntries = _entries
+    reset // TODO Should we override reset to also set gatherCounts = true?  I don't think so.
+    gatherCounts = false
+    for (i <- 0 until origEntries.size)
+      if (_counts(i) >= threshold) indexOnly(origEntries(i))
+    _counts = null // We don't need counts any more; allow it to be garbage collected.  Note that if
+    freeze
+    origEntries.size - size
+  }
+  /** Return the number of unique entries with count equal to 'c'. */
+  def sizeAtCount(c:Int): Int = {
+    if (!someCountsGathered) throw new Error("No counts gathered.")
+    var ret = 0
+    val min = Math.min(size, _counts.size)
+    for (i <- 0 until min) if (_counts(i) == c) ret += 1
+    ret
+  }
+  /** Return the number of unique entries with count greater than or equal to 'threshold'. 
+      This returned value will be the size of the Domain after a call to trimBelowCount(threshold). */
+  def sizeAtOrAboveCount(threshold:Int): Int = {
+    if (!someCountsGathered) throw new Error("No counts gathered.")
+    var ret = 0
+    val min = Math.min(size, _counts.size)
+    for (i <- 0 until min) if (_counts(i) >= threshold) ret += 1
+    ret
+  }
+  /** Return the number of unique entries with count below 'threshold'. */
+  def sizeBelowCount(threshold:Int): Int = size - sizeAtOrAboveCount(threshold)  
+  /** Returns the count threshold below which entries were discarded. */
+  def trimBelowSize(target:Int): Int = {
+    assert(!frozen)
+    var threshold = 2
+    while (sizeAtOrAboveCount(threshold) >= target) threshold += 1
+    trimBelowCount(threshold)
+    threshold
+  }
+  */
 }
+
 object CategoricalDomain {
   val NULL_INDEX = -1
 }
 
+
+/** Mixin for CategoricalDomain that facilitates counting occurreces of entries, and trimming the Domain size.
+    WARNING: Any indices that you use and store before trimming will not be valid after trimming!
+    Typical usage:
+    <pre>
+    Domain[Token] := new CategoricalDomain[Token] with DomainEntryCounter[Token]
+    data.readAndIndex
+    Domain[Token].trimBelowSize(100000) // this also automatically turns off counting
+    data.readIndexAndCreateVariables // again
+    </pre>
+    But this typical usage was so awkward, that for now DomainEntryCounter is mixed in to CategoricalDomain by default.
+    */
+trait DomainEntryCounter[V<:CategoricalValues] extends util.Index[V#ValueType] {
+  this: CategoricalDomain[V] =>
+  type T = V#ValueType
+  var gatherCounts = true
+  private val _countsInitialSize = 64
+  private var _counts = new Array[Int](_countsInitialSize)
+  protected def ensureSize(n:Int): Unit = {
+    if (_counts.length - 1 < n) {
+      var newsize = _counts.length * 2
+      while (newsize < n) newsize *= 2
+      val new_counts = new Array[Int](newsize)
+      Array.copy(_counts, 0, new_counts, 0, _counts.size)
+      _counts = new_counts
+    }
+  }
+  def count(i:Int): Int = _counts(i)
+  def count(entry:T): Int = _counts(indexOnly(entry))
+  def incrementCount(i:Int): Unit = { ensureSize(i); _counts(i) += 1 }
+  def incrementCount(entry:T): Unit = incrementCount(indexOnly(entry))
+  private def someCountsGathered: Boolean = { for (i <- 0 until _counts.size) if (_counts(i) > 0) return true; return false }
+  /** Return the index associated with this entry, without incrementing its count, even if 'gatherCounts' is true. */
+  def indexOnly(entry:T): Int = super.index(entry)
+  /** Return the index associated with entry, and also, if 'gatherCounts' is true, increment +1 the count associated with this entry. */
+  override def index(entry:T): Int = {
+    val i = super.index(entry)
+    if (gatherCounts) incrementCount(i)
+    i
+  }
+  /** Returns the number of unique elements trimmed */
+  def trimBelowCount(threshold:Int): Int = {
+    assert(!frozen)
+    if (!someCountsGathered) throw new Error("Can't trim without first gathering any counts.")
+    val origEntries = _entries
+    reset // TODO Should we override reset to also set gatherCounts = true?  I don't think so.
+    gatherCounts = false
+    for (i <- 0 until origEntries.size)
+      if (_counts(i) >= threshold) indexOnly(origEntries(i))
+    _counts = null // We don't need counts any more; allow it to be garbage collected.  Note that if
+    freeze
+    origEntries.size - size
+  }
+  /** Return the number of unique entries with count equal to 'c'. */
+  def sizeAtCount(c:Int): Int = {
+    if (!someCountsGathered) throw new Error("No counts gathered.")
+    var ret = 0
+    val min = Math.min(size, _counts.size)
+    for (i <- 0 until min) if (_counts(i) == c) ret += 1
+    ret
+  }
+  /** Return the number of unique entries with count greater than or equal to 'threshold'. 
+      This returned value will be the size of the Domain after a call to trimBelowCount(threshold). */
+  def sizeAtOrAboveCount(threshold:Int): Int = {
+    if (!someCountsGathered) throw new Error("No counts gathered.")
+    var ret = 0
+    val min = Math.min(size, _counts.size)
+    for (i <- 0 until min) if (_counts(i) >= threshold) ret += 1
+    ret
+  }
+  /** Return the number of unique entries with count below 'threshold'. */
+  def sizeBelowCount(threshold:Int): Int = size - sizeAtOrAboveCount(threshold)  
+  /** Returns the count threshold below which entries were discarded. */
+  def trimBelowSize(target:Int): Int = {
+    assert(!frozen)
+    var threshold = 2
+    while (sizeAtOrAboveCount(threshold) >= target) threshold += 1
+    trimBelowCount(threshold)
+    threshold
+  }
+}
+// An example of real-world usage:
+/*  class Token(val word:String, features:Seq[String]) extends BinaryVectorVariable(features, true) with VarInSeq {
+      type VariableType <: Token
+      type DomainType <: CategoricalDomain[VariableType] with DomainEntryCounter[VariableType]
+    }
+    Domain += new CategoricalDomain[Token] with DomainEntryCounter[Token] 
+*/
+// But now much easier to use class below, simply like this:
+// class Token extends EnumVariable[String] with CountingCategoricalDomain[Token]
+// CountingCategoricalDomain is defined in VariableCategorical.scala
+  
+class CategoricalDomainWithCounter[V<:CategoricalValues] extends CategoricalDomain[V] with DomainEntryCounter[V]
+
+
 class StringDomain[V<:CategoricalValues {type ValueType = String}] extends CategoricalDomain[V] {
 	/* For all member variables, if its type is String and its name is all upper case or digits,
 		set its value to its name, and intern in the Domain.  Usage:
-		object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value; internValues } */
-  def internValues /*(cls:Class[_])*/ : Unit = {
-    val fields = this.getClass.getDeclaredFields()
-    for (field <- fields; if (field.getType == classOf[String] && field.get(this) == Value)) {
-      field.set(this, field.getName)
-      index(field.getName)
+		object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
+  private def stringFields = this.getClass.getDeclaredFields.filter(f => { /*println(f);*/ f.getType == classOf[String] }).reverse
+  private var stringFieldsIterator: Iterator[java.lang.reflect.Field] = _
+  def Value: String = {
+    if (stringFieldsIterator == null) stringFieldsIterator = stringFields.elements
+    assert(stringFieldsIterator.hasNext)
+    val field = stringFieldsIterator.next
+    //println("StringDomain Value got "+field.getName)
+    checkFields
+    field.getName
+  } 
+  private def checkFields: Unit = {
+    for (field <- stringFields) {
+      val fieldName = field.getName
+      val fieldMethod = getClass.getMethod(fieldName, null)
+      val fieldValue = fieldMethod.invoke(this, null).asInstanceOf[String]
+      //val fieldValue = field.get(this) // Violated access protection since in Scala "val PER" creates a private final variable.
+      //println("Field "+fieldName+" has value "+fieldValue)
+      if (fieldValue != null && fieldValue != fieldName) throw new Error("Somehow StringDomain category "+fieldName+" got the wrong String value "+fieldValue+".")
     }
   }
-  def Value = "__StringDomainValue__"
 }
 
 
@@ -91,7 +274,8 @@ object Domain {
 				throw new Error("Cannot alias a Domain that has already been used (unless aliases match).")
 		} else _domains.put(vm1.erasure, get[V2](vm2.erasure))
 	} 
-	/** Register d as the domain for variables of type V. */
+	/** Register d as the domain for variables of type V.  Deprecated.  Use := instead. */
+	@deprecated
 	def +=[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]) = {
 		val c = vm.erasure
 		if (_domains.isDefinedAt(c)) throw new Error("Cannot add a Domain["+vm+"] when one has already been created for "+c)
@@ -101,6 +285,11 @@ object Domain {
 		if (dvc != c) throw new Error("Cannot add a Domain["+vm+"] because superclass "+dvc+" should have the same Domain; you should consider instead adding the domain to "+dvc)
 		_domains.put(vm.erasure, d)
 	}
+  /** Register d as the domain for variables of type V. */
+	def :=[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]) = this.+=[V](d)(vm)
+	def update[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]): Unit = { 
+		println("In Domain.update!")
+  }
 	/** Return a Domain instance for Variables of class c, constructing one if necessary.  Also put it in the _domains map. */
 	private def getDomainForClass(c:Class[_]) : Domain[_] = {
 		if (domainInSubclasses(c)) throw new Error("Cannot get a Domain for "+c+" because it declares DomainInSubclasses, and should be considered abstract.")
