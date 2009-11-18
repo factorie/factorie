@@ -16,6 +16,8 @@ import cc.factorie.util.Implicits._
 	abstract class ImmutableSpanVariable[X](val parent: Seq[X], initStart: Int, initLength: Int) extends Variable with TypedValues with RandomAccessSeq[X] {
 		type ValueType = X
 		type VariableType <: SpanVariable[X]
+    assert(initStart >= 0)
+    assert(initLength > 0)
 		assert(initStart + initLength <= parent.length)
 		override def elements = new Iterator[X] {
 			var i = _start
@@ -87,8 +89,8 @@ import cc.factorie.util.Implicits._
 		}
 		case class TrimStart(n: Int)(implicit d: DiffList) extends AutoDiff {
 			def variable = if (present || diffIfNotPresent) SpanVariable.this else null
-			def redo = {assert(n < _length); assert(_start - n >= 0); _start += n; _length -= n}
-			def undo = {_start -= n; _length += n}
+			def redo = {assert(n < _length); _start += n; _length -= n}
+			def undo = {assert(_start - n >= 0); _start -= n; _length += n}
 		}
 		case class TrimEnd(n: Int)(implicit d: DiffList) extends AutoDiff {
 			def variable = if (present || diffIfNotPresent) SpanVariable.this else null
