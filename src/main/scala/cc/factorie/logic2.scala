@@ -50,8 +50,6 @@ object logic2 {
   }
 
   trait LogicStatistics extends DotStatistics1[Bool] {
-    @deprecated // Use * instead.
-  	def %(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
     def *(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
   }
   object Forany {
@@ -61,7 +59,7 @@ object logic2 {
       val manifests = formula.manifests.asInstanceOf[Seq[Manifest[Bool]]]
       val accessors = formula.accessors
       val size = manifests.length
-      println("Forany leaf size = "+size)
+      //println("Forany leaf size = "+size)
       size match {
         case 1 => new Template1[Bool]()(manifests(0).asInstanceOf[Manifest[Bool]]) with LogicStatistics {
           override def unroll1(n1:Bool) = {

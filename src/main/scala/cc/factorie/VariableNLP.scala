@@ -11,14 +11,13 @@ object nlp {
       It provides access to its attributes through the er2-style entity-attribute-relationship language. */
   class Token(val word:String, features:Seq[String], labelString:String) extends BinaryVectorVariable[String] with VarInSeq[Token] with AccessorType {
   	type AccessorType = TokenAccessor[Token,Token];
-  	val label: TokenLabel = new TokenLabel(labelString, this)
-    //class Label(labelname: String, val token: Token) extends TokenLabel(labelname, token) with AttributeOfOuter
+  	val label: Label = new Label(labelString, this)
     this ++= features
   }
   
   // Define boilerplate, to support access to attributes in the entity-attribute-relationship syntax
   class TokenAccessor[A,B](prefix:Accessor[A,B], forward:B=>Iterable[Token], backward:Token=>Iterable[B]) extends MultiAccessor(prefix, forward, backward) {
-  	def label = new TokenLabelAccessor(this, (t:Token)=>List(t.label), (l:TokenLabel)=>List(l.token))
+  	def label = new LabelAccessor(this, (t:Token)=>List(t.label), (l:Label)=>List(l.token))
     /** Go from a token to the next token. */
     def next = new TokenAccessor(this, (t:Token) => if (!t.hasNext) Nil else List(t.next), (t:Token) => if (!t.hasPrev) Nil else List(t.prev))
     /** Go from a token to the previous token. */
@@ -37,10 +36,7 @@ object nlp {
   	//  Only need to go in one direction, since the Observation variables never change.
   }
 
-  class TokenLabel(labelname: String, val token: Token) extends cc.factorie.Label(labelname) /*with AccessorType with AttributesOf[TokenLabel]*/ {
-    //type AccessorType = TokeLabelAccessor[TokenLabel, TokenLabel];
-    //val token: Token = new TokenAttribute(token) { override def printName = "Token" }
-    //class TokenAttribute(val token: Token) extends AttributeOfOuter
+  class Label(labelname: String, val token: Token) extends cc.factorie.Label(labelname) {
     def hasNext = token.hasNext && token.next.label != null
     def hasPrev = token.hasPrev && token.prev.label != null
     def next = token.next.label
@@ -48,12 +44,11 @@ object nlp {
   }
   
   // Define boilerplate, to support access to attributes in the entity-attribute-relationship syntax
-  class TokenLabelAccessor[A,B](prefix:Accessor[A,B], forward:B=>Iterable[TokenLabel], backward:TokenLabel=>Iterable[B]) extends MultiAccessor(prefix, forward, backward) {
-    def token = new TokenAccessor(this, (l:TokenLabel)=>List(l.token), (t:Token)=>List(t.label))
-    def next = new TokenLabelAccessor(this, (l:TokenLabel)=>List(l.next), (l:TokenLabel)=>List(l.prev))
-    def prev = new TokenLabelAccessor(this, (l:TokenLabel)=>List(l.prev), (l:TokenLabel)=>List(l.next))
+  class LabelAccessor[A,B](prefix:Accessor[A,B], forward:B=>Iterable[Label], backward:Label=>Iterable[B]) extends MultiAccessor(prefix, forward, backward) {
+    def token = new TokenAccessor(this, (l:Label)=>List(l.token), (t:Token)=>List(t.label))
+    def next = new LabelAccessor(this, (l:Label)=>List(l.next), (l:Label)=>List(l.prev))
+    def prev = new LabelAccessor(this, (l:Label)=>List(l.prev), (l:Label)=>List(l.next))
   }
-  
   
   
   class Sentence extends VariableSeq[Token]

@@ -156,8 +156,6 @@ object logic1 {
   
   trait LogicStatistics extends DotStatistics1[Bool] {
     // TODO Should we spread the value among both weights, so neither is zero? 
-    // TODO consider changing this '%' to a '*'
-    def %(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
     def *(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
   }
 

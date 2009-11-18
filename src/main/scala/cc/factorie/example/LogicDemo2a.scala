@@ -18,7 +18,7 @@ object LogicDemo2a {
       override def toString = "Person("+name+")"
     }
 
-    // Define boilerplate, to support access to attributes in the first-order logic syntax
+    // Define boilerplate, to support access to attributes in ER syntax
     class PersonAccessor[A,B](args:AccessorArgs[A,B,Person]) extends MultiAccessor1(args) {
       def smokes = new AttributeAccessor[A,Person,Person#Smokes](this, _.smokes)
       def cancer = new AttributeAccessor[A,Person,Person#Cancer](this, _.cancer)
