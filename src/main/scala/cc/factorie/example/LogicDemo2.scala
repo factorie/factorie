@@ -24,7 +24,7 @@ object LogicDemo2 {
       def smokes = getAttribute(_.smokes)
       def cancer = getAttribute(_.cancer)
       def mother = get[Person](p=>if (p.mother == null) Nil else List(p.mother), _.children)
-      def children = get[Person](_.children, p=>List(p.mother))
+      def children = getOneToMany[Person](_.children, _.mother)
       def siblings = get[Person](p => p.mother.children.filter(p2=>p2 ne p), p => p.mother.children.filter(p2=>p2 ne p))
     } 
 

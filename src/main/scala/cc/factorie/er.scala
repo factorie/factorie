@@ -30,48 +30,99 @@ object er {
   // Accessors for bi-directional relations
 
   // TODO Consider renaming these "Getter", matching the 'get' method name.
-  /** An abstract trait that provides forward and reverse mappings through many-to-many relations. */
+  /** An abstract Accessor will have methods providing forward and reverse mappings through many-to-many relations. */
   trait Accessor0[A,B] {
     def forward : A=>Iterable[B];
     def reverse : B=>Iterable[A];
   }
-  /** An abstract trait that provides forward and reverse mappings through one-to-one relations. */
+  /** An abstract trait that provides forward and reverse mappings through one-to-one relations. */ // TODO No longer needed
   trait Accessor1[A,B] extends Accessor0[A,B] {
     def forward1 : A=>B
     def reverse1 : B=>A
     def forward = (a:A) => List(forward1(a))
     def reverse = (b:B) => List(reverse1(b))
   }
-  trait Accessor2[A,B,C] extends Accessor0[A,C] {
-    var prefix: Accessor2[A,_,B] = null
-    var forward1: B=>Iterable[C] = (b:B) => List(b.asInstanceOf[C])
-    var reverse1: C=>Iterable[B] = (c:C) => List(c.asInstanceOf[B])
-  }
-  /** A class that provides forward and reverse mappings through one-to-one relations; 
-      typically, post-construction, callers would change the prefix, forward1 and reverse1.  
+  /** A class that provides forward and reverse mappings through relations, 
+      enabling creation of nested mappings through what look like normal one-way access method calls.
+      For examples of its usage, see example/LogicDemo*.scala.
+      Typically, post-construction, callers would immediately change the prefix, forward1m (or forward1s) and reverse1m (or reverse1s).  
       You can make the "unit" (initial) element for a chain by constructing FooAccessor[Foo,Foo,Foo],
-      and leaving prefix, forward1 and reverse1 unchanged. */
-  class Accessor[A,B,C] extends Accessor2[A,B,C] {
-    def forward: A=>Iterable[C] = (a:A) => if (prefix == null) forward1(a.asInstanceOf[B]) else prefix.forward(a).flatMap(forward1)
-    def reverse: C=>Iterable[A] = (c:C) => if (prefix == null) reverse1(c).asInstanceOf[Iterable[A]] else reverse1(c).flatMap(prefix.reverse)
-    /** Create a new Accessor, starting from this one and appending an additional mapping. */
-    def get[D<:AccessorType /*{type AccessorType <: Accessor[D,D,D]}*/](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = {
+      and leaving all the above vars unchanged. */
+  class Accessor[A,B,C] extends Accessor0[A,C] {
+    private var prefix: Accessor[A,_,B] = null
+    private var forward1s: B=>C = (b:B) => b.asInstanceOf[C] // Default no-op for "unit" Accessor
+    private var reverse1s: C=>B = (c:C) => c.asInstanceOf[B] // Default no-op for "unit" Accessor
+    private var forward1m: B=>Iterable[C] = null
+    private var reverse1m: C=>Iterable[B] = null
+    private lazy val _forward: A=>Iterable[C] = { // the different ways of combining prefix with different forward1* to append a link to the chain
+      if (prefix == null) {
+        if (forward1m == null)
+          (a:A) => List(forward1s(a.asInstanceOf[B]))
+        else
+          (a:A) => forward1m(a.asInstanceOf[B])
+      } else {
+      	if (forward1m == null)
+      		(a:A) => prefix.forward(a).map(forward1s)
+      	else
+          (a:A) => prefix.forward(a).flatMap(forward1m)
+      }
+    }
+    private lazy val _reverse: C=>Iterable[A] = { // the different ways of combining prefix with different reverse1* to prepend a link to the chain
+      if (prefix == null) {
+        if (reverse1m == null)
+          (c:C) => List(reverse1s(c)).asInstanceOf[Iterable[A]]
+        else
+          (c:C) => reverse1m(c).asInstanceOf[Iterable[A]]
+      } else {
+        if (reverse1m == null)
+          (c:C) => prefix.reverse(reverse1s(c))
+        else
+          (c:C) => reverse1m(c).flatMap(prefix.reverse)
+      }
+    }
+    def forward: A=>Iterable[C] = _forward //(a:A) => if (prefix == null) forward1(a.asInstanceOf[B]) else prefix.forward(a).flatMap(forward1)
+    def reverse: C=>Iterable[A] = _reverse //(c:C) => if (prefix == null) reverse1(c).asInstanceOf[Iterable[A]] else reverse1(c).flatMap(prefix.reverse)
+    /** Create a new Accessor, starting from this one and appending an additional many-to-many mapping. */
+    def getManyToMany[D<:AccessorType /*{type AccessorType <: Accessor[D,D,D]}*/](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = {
       val ret: Accessor[A,C,D] = newAccessor[D](m).asInstanceOf[Accessor[A,C,D]]
       ret.prefix = Accessor.this
-      ret.forward1 = fwd1
-      ret.reverse1 = rev1
+      ret.forward1m = fwd1
+      ret.reverse1m = rev1
       ret
     }
-    //def get[D<:AccessorType](fwd1:C=>D, rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] 
-    //def get[D<:AccessorType](fwd1:C=>D, rev1:D=>C)(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] 
-    //def get[D<:AccessorType](fwd1:C=>Iterable[D], rev1:D=>C)(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] 
+    /** Alias for getManyToMany */
+    def get[D<:AccessorType](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = getManyToMany[D](fwd1, rev1)(m)
+    /** Create a new Accessor, starting from this one and appending an additional many-to-one mapping. */
+    def getManyToOne[D<:AccessorType](fwd1:C=>D, rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = {
+      val ret: Accessor[A,C,D] = newAccessor[D](m).asInstanceOf[Accessor[A,C,D]]
+      ret.prefix = Accessor.this
+      ret.forward1s = fwd1
+      ret.reverse1m = rev1
+      ret
+    } 
+    /** Create a new Accessor, starting from this one and appending an additional one-to-one mapping. */
+    def getOneToOne[D<:AccessorType](fwd1:C=>D, rev1:D=>C)(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = {
+      val ret: Accessor[A,C,D] = newAccessor[D](m).asInstanceOf[Accessor[A,C,D]]
+      ret.prefix = Accessor.this
+      ret.forward1s = fwd1
+      ret.reverse1s = rev1
+      ret
+    } 
+    /** Create a new Accessor, starting from this one and appending an additional one-to-many mapping. */
+    def getOneToMany[D<:AccessorType](fwd1:C=>Iterable[D], rev1:D=>C)(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = {
+      val ret: Accessor[A,C,D] = newAccessor[D](m).asInstanceOf[Accessor[A,C,D]]
+      ret.prefix = Accessor.this
+      ret.forward1m = fwd1
+      ret.reverse1s = rev1
+      ret
+    }
     //def getSymmetric[D<:C with AccessorType](fwd1:C=>Iterable[D])(implicit m:Manifest[D#AccessorType]) = get[D](fwd1,fwd1)(m)
     /** Create a new Accessor, starting from this one and appending a mapping to one of its Attributes. */
     def getAttribute[D<:AttributeOf[C]](fwd1:C=>D)(implicit m:Manifest[D]): Accessor[A,C,D] = {
       val ret = new Accessor[A,C,D] //.asInstanceOf[]
       ret.prefix = Accessor.this
-      ret.forward1 = (c:C) => List(fwd1(c))
-      ret.reverse1 = (d:D) => List(d.attributeOwner)
+      ret.forward1s = (c:C) => fwd1(c)
+      ret.reverse1s = (d:D) => d.attributeOwner
       ret
     }
   }
@@ -89,7 +140,7 @@ object er {
     if (numArgs != 0) throw new Error("Accessor constructors must not take any arguments.")
     constructor.newInstance().asInstanceOf[A#AccessorType]
   }
-  /** Currently unused. */
+  /** Currently unused. */ // TODO Remove this.
   class AccessorUnit0[A] extends Accessor0[A,A] {
     def forward = (a:A) => List(a)
     def reverse = (a:A) => { /*println("AccessorUnit0 a="+a);*/ List(a) }
@@ -97,7 +148,7 @@ object er {
   /** Construct a new Accessor representing the beginning of an accessor chain, taking input A. */
   def newAccessorUnit[A<:AccessorType](implicit m:Manifest[A#AccessorType]): A#AccessorType = {
   	println("AccessorUnit m="+m)
-  	val a = newAccessor[A](m).asInstanceOf[Accessor2[A,A,A]];
+  	val a = newAccessor[A](m).asInstanceOf[Accessor[A,A,A]];
   	a.asInstanceOf[A#AccessorType]
   }
   
