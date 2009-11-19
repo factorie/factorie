@@ -150,6 +150,9 @@ object er {
   case class Not[X<:Variable](f1:Formula[X]) extends Formula1(f1) {
     def eval(x:ArrayStack[BooleanValue]) = ! f1.eval(x)
   }
+  case class True[X<:Variable](f1:Formula[X]) extends Formula1(f1) { // noop, but forces implicit conversion to Term
+    def eval(x:ArrayStack[BooleanValue]) = f1.eval(x)
+  }
   abstract class Formula2[X<:Variable](c1:Formula[X], c2:Formula[X]) extends Formula[X] {
     def manifests = c1.manifests ++ c2.manifests
     def accessors = c1.accessors ++ c2.accessors
