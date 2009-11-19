@@ -2,12 +2,14 @@ package cc.factorie
 import scalala.Scalala._
 import scalala.tensor.Vector
 
+/** For parameter estimation methods that use a gradient to update weight parameters. */
 trait WeightUpdates {
   type TemplatesToUpdate <: DotTemplate
-  /** Call this method to use the current gradient to change the weight parameters. */
+  /** The number of times 'updateWeights' has been called. */
   var updateCount : Int = 0
+  /** Call this method to use the current gradient to change the weight parameters.  When you override it, you must call super.updateWeights. */
   def updateWeights : Unit = updateCount += 1
-
+  /** Abstract method to be provided elsewhere. */
   def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit
 }
 

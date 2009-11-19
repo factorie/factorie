@@ -106,73 +106,59 @@ trait ParameterAveraging extends WeightUpdates {
 
 
   /**This method is agnostic to how the weights were originally updated**/
-  abstract override def updateWeights: Unit = 
-    {
-      //
-      //Get the gradient to identify the locations of weights changed by update
-      val metaGradient = new HashMap[TemplatesToUpdate,SparseVector] {
-  	override def default(template:TemplatesToUpdate) = {
-  	  template.freezeDomains
-  	  val vector = new SparseVector(template.statsize)
-  	  this(template) = vector
-  	  vector
-  	}
+  abstract override def updateWeights: Unit = {
+    //Get the gradient to identify the locations of weights changed by update
+    val metaGradient = new HashMap[TemplatesToUpdate,SparseVector] {
+      override def default(template:TemplatesToUpdate) = {
+        template.freezeDomains
+        val vector = new SparseVector(template.statsize)
+        this(template) = vector
+        vector
       }
-      addGradient(metaGradient, 1.0)
-      //
-      //put on gradient the values of these weights before the update (negated)
-      for((template,vector) <- metaGradient)
-	{
-	  val templateWeights = template.weights
-	  for(i <- vector.activeDomain)
-	      vector(i) = -templateWeights(i)
-	}
-      //
-      //perform the update
-      super.updateWeights
-      //
-      //add the values of these weights after the update
-      for((template,vector) <- metaGradient)
-	{
-	  val templateWeights = template.weights
-	  for(i <- vector.activeDomain)
-	    vector(i) += templateWeights(i)
-	}
-      //
-      //determine if an update actually occurred
-      if(l2Norm(metaGradient)==0.0)
-	return
-      //
-      //accumulate weights sparsely
-      for((template,vector) <- metaGradient)
-	{
+    }
+    addGradient(metaGradient, 1.0)
+    //put on gradient the values of these weights before the update (negated)
+    for((template,vector) <- metaGradient) {
+      val templateWeights = template.weights
+      for(i <- vector.activeDomain)
+	        vector(i) = -templateWeights(i)
+    }
+    //perform the update
+    super.updateWeights
+    //add the values of these weights after the update
+    for((template,vector) <- metaGradient) {
+      val templateWeights = template.weights
+      for(i <- vector.activeDomain)
+        vector(i) += templateWeights(i)
+    }
+    //determine if an update actually occurred
+    if (l2Norm(metaGradient)==0.0)
+      return
+    //accumulate weights sparsely
+    for((template,vector) <- metaGradient) {
   	  val templateWeightsSum = weightsSum(template)
   	  val templateLastUpdateIteration = lastUpdateIteration(template)
   	  val templateWeights = template.weights
   	  // First do it for the template's weights
   	  //templateWeights += vector //already done in super.updateWeights
   	  // Now maintain templateWeightsSum
-  	  for (i <- vector.activeDomain)
-	    {
-  	      val iterationDiff = perceptronIteration - templateLastUpdateIteration(i) // Note avoiding off-by-one relies on when iterationCount is incremented!
-  	      assert(iterationDiff >= 0)
-  	      if (iterationDiff > 0)
-		{
-  		  templateWeightsSum(i) += (templateWeights(i) * iterationDiff) + vector(i)
-  		  templateLastUpdateIteration(i) = perceptronIteration
-  		} 
-	      else	
-  		templateWeightsSum(i) += vector(i)
-	    }
-  	}
-    } 
+  	  for (i <- vector.activeDomain) {
+  	    val iterationDiff = perceptronIteration - templateLastUpdateIteration(i) // Note avoiding off-by-one relies on when iterationCount is incremented!
+  	    assert(iterationDiff >= 0)
+  	    if (iterationDiff > 0) {
+  	      templateWeightsSum(i) += (templateWeights(i) * iterationDiff) + vector(i)
+  	      templateLastUpdateIteration(i) = perceptronIteration
+  	    } else	
+  	      templateWeightsSum(i) += vector(i)
+	    } 
+    }  
+  } 
 
-  def l2Norm(grad : HashMap[TemplatesToUpdate,SparseVector]) : Double = 
-   {
-      var result : Double = 0.0
-      for((t,v) <- grad)
-	result += v dot v
-      result
-    }
+  def l2Norm(grad : HashMap[TemplatesToUpdate,SparseVector]) : Double = {
+    var result : Double = 0.0
+    for((t,v) <- grad)
+      result += v dot v
+    result
+  }
 
 }
