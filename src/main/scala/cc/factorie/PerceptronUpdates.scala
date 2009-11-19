@@ -15,11 +15,10 @@ trait PerceptronUpdates extends WeightUpdates {
   var learningRate = 1.0
   def model : Model
   def learningMargin : Double
-  def updateWeights : Unit = {
+  override def updateWeights : Unit = {
     addGradient((template:Template) => template match {case t:TemplatesToUpdate => t.weights}, learningRate)
-	}
-
-
+    super.updateWeights //increments the updateCount
+  }
 }
 
 
@@ -90,7 +89,7 @@ trait AveragePerceptronUpdates extends WeightUpdates {
 
   
 
-  def updateWeights: Unit = {
+  override def updateWeights: Unit = {
   	val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
   		override def default(template:TemplatesToUpdate) = {
   			template.freezeDomains

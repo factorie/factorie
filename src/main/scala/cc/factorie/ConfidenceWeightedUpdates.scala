@@ -5,6 +5,8 @@ import scalala.tensor.dense.DenseVector
 import scalala.tensor.Vector
 import scalala.tensor.sparse.SparseVector
 
+
+
 /**IMPORTANT NOTE: for default settings, the confidence-weighted updates are small, resulting in a 'low-temperature' distribution. For certain models, it may be necessary to compensate by changing the temperature parameter in both the learner and predictor. For example:
  
 val learner = new GibbsSampler(model, objective) with SampleRank with ConfidenceWeightedUpdates{temperature=0.01}
@@ -17,15 +19,34 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
   def model : Model
   def learningMargin : Double
   var numUpdates : Double = 0
+  def processCount : Int
 
-  var learningRate : Double = 1
-  val epsilon = 0.0000001
-  val eta = 0.95; //condifidence value, make sure eta>0.5 because probit(0.5)=0 and probit(x<0.5)<0
+  protected var learningRate : Double = 1 //adjusted automatically by CW
+  val epsilon = 0.0000001 //used to detect when something is approximately zero
+  var eta = 0.98; //condifidence value, make sure eta>0.5 because probit(0.5)=0 and probit(x<0.5)<0
     
   /**Function of the confidence (it is more intuitive to express eta than the gaussian deviate directly). */
-  val gaussDeviate = Maths.probit(eta);
+  var gaussDeviate = Maths.probit(eta);
 
-  def updateWeights : Unit = {
+  def setConfidence(aeta:Double) : Unit = 
+    {
+      assert(aeta>0.5 && aeta<1.0)
+      eta=aeta
+      gaussDeviate = Maths.probit(eta)
+    }
+
+  /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
+  val initialVariance = 0.1;
+  lazy val sigma = new HashMap[TemplatesToUpdate,Vector] {
+    override def default(template:TemplatesToUpdate) = { 
+      template.freezeDomains
+      val vector = DenseVector(template.statsize)(initialVariance)
+      this(template) = vector
+      vector
+    }
+  }
+
+  override def updateWeights : Unit = {
     numUpdates += 1
     val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
     if(changeProposal.modelScore * changeProposal.objectiveScore > 0 
@@ -43,18 +64,10 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
     learningRate = kktMultiplier(changeProposal,gradient)
     updateParameters(gradient)
     updateSigma(gradient)
+    super.updateWeights //increments the updateCount
   }
-  
-    /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
-    val initialVariance = 0.1;
-    val sigma = new HashMap[TemplatesToUpdate,Vector] {
-      override def default(template:TemplatesToUpdate) = { 
-	template.freezeDomains
-	val vector = DenseVector(template.statsize)(initialVariance)
-	this(template) = vector
-	vector
-      }
-    }
+
+
  
   def kktMultiplier(proposal:Proposal,gradient:HashMap[TemplatesToUpdate,SparseVector]) : Double =
     {

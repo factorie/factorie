@@ -59,7 +59,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     //List(goProposal,stayProposal)
     //System.out.println("MODEL: " + modelScore+" objSCORE:" + objectiveScore)
     val logAcceptanceScore = modelScore/temperature+bfRatio
-    val mirrorLogAcceptanceScore = 0.0
+    val mirrorLogAcceptanceScore = //0.0
       if(logAcceptanceScore>=0)
 	Math.NEG_INF_DOUBLE
       else

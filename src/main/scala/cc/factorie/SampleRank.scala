@@ -11,7 +11,8 @@ trait SampleRank extends ProposalSampler0 {
   def model : Model
   var learningMargin = 1.0
   def updateWeights: Unit
-  
+  val amIMetropolis = this.isInstanceOf[MHSampler[Variable]]
+
   var bestModel1, bestModel2, bestObjective1, bestObjective2 : Proposal = null
 	abstract override def proposalsHook(proposals:Seq[Proposal]) : Unit = {
   	if (proposals.length < 2) return
@@ -27,6 +28,16 @@ trait SampleRank extends ProposalSampler0 {
   	val props = List(bestModel1, bestModel2, bestObjective1, bestObjective2)
 	  //println("SampleRank proposalsHook "+props.map(_.modelScore)+"  "+props.map(_.objectiveScore))
    
+	  if(amIMetropolis)
+	    {
+	      val changeProposal = if (bestModel1.diff.size > 0) bestModel1 
+				   else bestModel2
+	      if(!(changeProposal.modelScore*changeProposal.objectiveScore > 0 
+		 || changeProposal.objectiveScore==0))
+		  updateWeights
+	      return
+	    }
+	  
   	if (bestObjective1.objectiveScore != bestObjective2.objectiveScore &&
         ((bestModel1 ne bestObjective1) || Math.abs(bestModel1.modelScore - bestModel2.modelScore) < learningMargin)) {
   		//println("SampleRank updating weights")
