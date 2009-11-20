@@ -7,7 +7,7 @@ object LogicDemo2 {
 
   def main(args:Array[String]) : Unit = {
     // Define entity, attribute and relation types
-    class Person (val name:String, val mother:Person) extends ItemizedVariable[Person] with Entity[Person] {
+    class Person (val name:String, val mother:Person) extends ItemizedObservation[Person] with Entity[Person] {
       type AccessorType = PersonAccessor
       // When we have Scala 2.8 this next line will simply be:
       // object smokes extends BooleanVariable with Attribute

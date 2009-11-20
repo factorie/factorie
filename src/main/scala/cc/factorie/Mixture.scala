@@ -6,12 +6,12 @@ import cc.factorie.util.Implicits._
 
   
 /** Trait for any distribution that might be selected as as part of a Multinomial mixture.
-    Since it inherits from ItemizedVariable, the variables themselves are entered into the Domain,
+    Since it inherits from ItemizedObservation, the variables themselves are entered into the Domain,
     and this.index is a densely-packed numbering of the distribution instances themselves.
     The number of components in the mixture is the size of the domain.  Values of the domain are these MixtureComponent objects.
     Note that this is not a CategoricalOutcome, it is the *categorical value* of a CategoricalOutcome. 
-    The CategoricalOutcome that might have this value is a MixtureChoice. */
-trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistribution with ItemizedVariable[This]] extends AbstractGenerativeDistribution with ItemizedVariable[This] {
+    A CategoricalOutcome that has this value is a MixtureChoice. */
+trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistribution with ItemizedObservation[This]] extends AbstractGenerativeDistribution with ItemizedObservation[This] {
   this : This =>
 }
 

@@ -8,7 +8,7 @@ object LogicDemo1a {
 
 	def main(args:Array[String]) : Unit = {
 		// Define entity, attribute and relation types
-		class Person (val name:String) extends ItemizedVariable[Person] {
+		class Person (val name:String) extends ItemizedObservation[Person] {
 			val smokes = new Smokes; class Smokes extends BoolAttributeOf[Person]
 			val cancer = new Cancer; class Cancer extends BoolAttributeOf[Person]
 			override def toString = name

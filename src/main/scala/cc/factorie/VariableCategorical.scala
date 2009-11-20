@@ -69,8 +69,14 @@ abstract trait TypedCategoricalVariable[T] extends CategoricalVariable with Type
   def :=(newValue:ValueType) = set(newValue)(null)
 } 
 
+/** For variables holding a single, constant indexed value which is of Scala type T. */
+abstract trait TypedCategoricalObservation[T] extends Variable with TypedCategoricalValue[T] with ConstantValue {
+  type VariableType <: TypedCategoricalObservation[T]
+  class DomainInSubclasses
+}
+
 /** A Variable to hold one of an enumerated set of values of type T, and which does not change.  */
-abstract class EnumObservation[T](value:T) extends Variable with TypedCategoricalValue[T] with ConstantValue {
+abstract class EnumObservation[T](value:T) extends TypedCategoricalObservation[T] {
   type VariableType <: EnumObservation[T]
   class DomainInSubclasses
   final val index = domain.index(value)
@@ -84,6 +90,7 @@ abstract class EnumObservation[T](value:T) extends Variable with TypedCategorica
 /** A variable whose value is a single indexed value, initialized at construction time; mutable.
     This variable does not, however, hold a trueValue.  For that you should use a Label. */
 abstract class CoordinatedEnumVariable[T](initialValue:T) extends TypedCategoricalVariable[T] {
+  def this() = this(null)
   type VariableType <: CoordinatedEnumVariable[T]
   class DomainInSubclasses
   if (initialValue != null) setByIndex(domain.index(initialValue))(null)
@@ -126,35 +133,34 @@ class IntRangeVariable(low:Int, high:Int) extends TypedCategoricalVariable[Int] 
 
 
 
-// ItemizedVariable support
+// ItemizedObservation support
 
-/** A Variable put in an index, and whose value is the variable itself.  
-    For example, you can create 10 'Person extends ItemizedValue[Person]' objects, 
+/** An Observation put into an index, and whose value is the Observation variable itself.  
+    For example, you can create 10 'Person extends ItemizedObservation[Person]' objects, 
     and upon creation each will be mapped to a unique integer 0..9.
     p1 = new Person; p1.index == 0; p1.value == p1. */
-// TODO Since this Variable has constant value, I'm tempted to call it something other than "Variable"
-// but I'm not sure what the right alternative.  "ItemizedObservation" seems awkward.
-trait ItemizedVariable[This <: ItemizedVariable[This]] extends CategoricalValue {
+// Was called ItemizedVariable, but that was the wrong name since its value cannot change.
+trait ItemizedObservation[This <: ItemizedObservation[This]] extends TypedCategoricalObservation[This] {
   this : This =>
   type VariableType = This
-  type ValueType = This
   class DomainInSubclasses
   domain.index(this) // Put the variable in the CategoricalDomain
   val index = domain.index(this) // Remember our own index.  We could save memory by looking it up in the Domain each time, but speed is more important
-  def value = this
+  override def value = this
 }
 
-/** A variable who value is a pointer to an ItemizedValue; useful for entity-attributes whose value is another variable. */
-// TODO Consider renaming to "ItemizedValueRef"
-class ItemizedValueRef[V<:ItemizedVariable[V]] extends TypedCategoricalVariable[V] {
-  type VariableType = ItemizedValueRef[V]
+/** A variable who value is a pointer to an ItemizedObservation.  It is useful for entity-attributes whose value is another variable. */
+class ItemizedObservationRef[V<:ItemizedObservation[V]] extends TypedCategoricalVariable[V] {
+  type VariableType = ItemizedObservationRef[V]
   class DomainInSubclasses
 }
 
 
 
-// Domains that count calls to 'index'
-/** When mixed in to  */
+/** When mixed in to a CategoricalVariable or CategoricalObservation, the variable's Domain will count the number of calls to 'index'.  
+    Then you can reduce the size of the Domain by calling 'trimBelowCount' or 'trimBelowSize', 
+    which will recreate the new mapping from categories to densely-packed non-negative integers. 
+    In typical usage you would (1) read in the data, (2) trim the domain, (3) re-read the data with the new mapping, creating variables. */
 trait CountingCategoricalDomain[This<:CountingCategoricalDomain[This] with CategoricalValues] {
   this: This =>
   type VariableType = This
