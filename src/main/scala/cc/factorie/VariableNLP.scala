@@ -5,16 +5,17 @@ package cc.factorie
 /** Defines Variable classes useful for typically NLP, with conveniet er2-style entity-attribute-relationship access. */
   
 object nlp {
-  import cc.factorie.er2._
+  //import cc.factorie.er2._
   
   /** A word token in a linear sequence of tokens.  It is a constituent of a Sentence.  
       It provides access to its attributes through the er2-style entity-attribute-relationship language. */
-  class Token(val word:String, features:Seq[String], labelString:String) extends BinaryVectorVariable[String] with VarInSeq[Token] with AccessorType {
-  	type AccessorType = TokenAccessor[Token,Token];
+  class Token(val word:String, features:Seq[String], labelString:String) extends BinaryVectorVariable[String] with VarInSeq[Token] /*with AccessorType*/ {
+  	//type AccessorType = TokenAccessor[Token,Token];
   	val label: Label = new Label(labelString, this)
     this ++= features
   }
   
+  /*
   // Define boilerplate, to support access to attributes in the entity-attribute-relationship syntax
   class TokenAccessor[A,B](prefix:Accessor[A,B], forward:B=>Iterable[Token], backward:Token=>Iterable[B]) extends MultiAccessor(prefix, forward, backward) {
   	def label = new LabelAccessor(this, (t:Token)=>List(t.label), (l:Label)=>List(l.token))
@@ -34,7 +35,7 @@ object nlp {
   	def sentenceTokens = new TokenAccessor(this, (t:Token) => t.seq, (t:Token) => t.seq)
   	// def isWord(w:String) // Consider how to create arbitrary Observation variables created and returned on the fly.
   	//  Only need to go in one direction, since the Observation variables never change.
-  }
+  }*/
 
   class Label(labelname: String, val token: Token) extends cc.factorie.Label(labelname) {
     def hasNext = token.hasNext && token.next.label != null
@@ -43,12 +44,13 @@ object nlp {
     def prev = token.prev.label
   }
   
+  /*
   // Define boilerplate, to support access to attributes in the entity-attribute-relationship syntax
   class LabelAccessor[A,B](prefix:Accessor[A,B], forward:B=>Iterable[Label], backward:Label=>Iterable[B]) extends MultiAccessor(prefix, forward, backward) {
     def token = new TokenAccessor(this, (l:Label)=>List(l.token), (t:Token)=>List(t.label))
     def next = new LabelAccessor(this, (l:Label)=>List(l.next), (l:Label)=>List(l.prev))
     def prev = new LabelAccessor(this, (l:Label)=>List(l.prev), (l:Label)=>List(l.next))
-  }
+  }*/
   
   
   class Sentence extends VariableSeq[Token]
