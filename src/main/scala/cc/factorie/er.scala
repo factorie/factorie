@@ -18,7 +18,7 @@ object er {
   /** A trait for entities that have attributes.  Provides an inner trait 'Attribute' for its attribute classes. */
   trait Entity[This<:Entity[This] with Variable] extends Variable with AccessorType {
     this: This =>
-    type AccessorType <: Accessor0[This,This]
+    type AccessorType <: Accessor2[This,This]
     def thisEntity: This = this
     //def entityName = classOf[This].getName
     trait Attribute extends cc.factorie.er.AttributeOf[This] {
@@ -31,12 +31,24 @@ object er {
 
   // TODO Consider renaming these "Getter", matching the 'get' method name.
   /** An abstract Accessor will have methods providing forward and reverse mappings through many-to-many relations. */
-  trait Accessor0[A,B] {
-    def forward : A=>Iterable[B];
-    def reverse : B=>Iterable[A];
+  trait Accessor0 {
+    type A
+    type C
+    def forward : A=>Iterable[C];
+    def reverse : C=>Iterable[A];
   }
+  trait AccessorHead[A1] extends Accessor0 {
+    type A = A1
+  }
+  trait AccessorTail[C1] extends Accessor0 {
+    type C = C1
+  }
+  trait AccessorMiddle[B1] extends Accessor0 {
+    type B = B1
+  }
+  type Accessor2[A1,C1] = Accessor0 with AccessorHead[A1] with AccessorTail[C1]
   /** An abstract trait that provides forward and reverse mappings through one-to-one relations. */ // TODO No longer needed
-  trait Accessor1[A,B] extends Accessor0[A,B] {
+  trait Accessor1[A,B] extends Accessor0 with AccessorHead[A] with AccessorTail[B] {
     def forward1 : A=>B
     def reverse1 : B=>A
     def forward = (a:A) => List(forward1(a))
@@ -48,7 +60,8 @@ object er {
       Typically, post-construction, callers would immediately change the prefix, forward1m (or forward1s) and reverse1m (or reverse1s).  
       You can make the "unit" (initial) element for a chain by constructing FooAccessor[Foo,Foo,Foo],
       and leaving all the above vars unchanged. */
-  class Accessor[A,B,C] extends Accessor0[A,C] {
+  // Change to class Accessor[C1] extends Accessor0 with AccessorTail[C1]
+  class Accessor[A1,B,C1] extends Accessor0 with AccessorHead[A1] with AccessorTail[C1] {
     private var prefix: Accessor[A,_,B] = null
     private var forward1s: B=>C = (b:B) => b.asInstanceOf[C] // Default no-op for "unit" Accessor
     private var reverse1s: C=>B = (c:C) => c.asInstanceOf[B] // Default no-op for "unit" Accessor
@@ -129,7 +142,7 @@ object er {
   class EntityAccessor[A<:Entity[A]] extends Accessor[A,A,A]
   // TODO avoid the need to mix this in to Person by using instead duck typing: type WithAccessorType = { type AccessorType <: Accessor[_,_] }
   trait AccessorType {
-    type AccessorType <: Accessor0[_,_]
+    type AccessorType <: Accessor0 //[_,_]
   }
   /** Construct a new Accessor of type A. */
   def newAccessor[A<:AccessorType](implicit m:Manifest[A#AccessorType]): A#AccessorType = {
@@ -141,7 +154,7 @@ object er {
     constructor.newInstance().asInstanceOf[A#AccessorType]
   }
   /** Currently unused. */ // TODO Remove this.
-  class AccessorUnit0[A] extends Accessor0[A,A] {
+  class AccessorUnit0[A] extends Accessor0 with AccessorHead[A] with AccessorTail[A] {
     def forward = (a:A) => List(a)
     def reverse = (a:A) => { /*println("AccessorUnit0 a="+a);*/ List(a) }
   }
@@ -158,18 +171,18 @@ object er {
   
 	case class Score[X<:Variable](sns:ScoreNeighbor0[X]*) {
   	def manifests : Seq[Manifest[_<:Variable]] = sns.flatMap(_.manifests)
-  	def accessors : Seq[Accessor0[X,CategoricalValues]] = sns.flatMap(_.accessors)
+  	def accessors : Seq[Accessor2[X,CategoricalValues]] = sns.flatMap(_.accessors)
   }
   trait ScoreNeighbor0[X<:Variable] {
   	def manifests : Iterable[Manifest[CategoricalValues]];
-  def accessors : Iterable[Accessor0[X,CategoricalValues]]
+  def accessors : Iterable[Accessor2[X,CategoricalValues]]
   }
-  class ScoreNeighbor[X<:Variable,A<:CategoricalValues](a1:Accessor0[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) extends ScoreNeighbor0[X] {
+  class ScoreNeighbor[X<:Variable,A<:CategoricalValues](a1:Accessor2[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) extends ScoreNeighbor0[X] {
   	def manifests = List(ma.asInstanceOf[Manifest[CategoricalValues]])
-  	def accessors = List(a1.asInstanceOf[Accessor0[X,CategoricalValues]])
+  	def accessors = List(a1.asInstanceOf[Accessor2[X,CategoricalValues]])
   }
   
-  implicit def accessor2scoreneighbor[X<:Variable,A<:CategoricalValues](a:Accessor0[X,A])(implicit mx:Manifest[X], ma:Manifest[A]): ScoreNeighbor0[X] = 
+  implicit def accessor2scoreneighbor[X<:Variable,A<:CategoricalValues](a:Accessor2[X,A])(implicit mx:Manifest[X], ma:Manifest[A]): ScoreNeighbor0[X] = 
     new ScoreNeighbor(a)(mx,ma)
   
   
@@ -179,20 +192,20 @@ object er {
   trait Formula[X<:Variable] {
     def eval(x:ArrayStack[BooleanValue]) : Boolean
     def manifests : Seq[Manifest[_<:Variable]]
-    def accessors : Seq[Accessor0[X,BooleanValue]]
+    def accessors : Seq[Accessor2[X,BooleanValue]]
     def ==>(f:Formula[X]) = Implies(this, f)
     def ^(f:Formula[X]) = And(this, f)
     def v(f:Formula[X]) = Or(this, f)
     def !: = Not(this)
     def <==>(f:Formula[X]) = BooleanEquals(this, f)
   }
-  case class Term[X<:Variable,A<:BooleanValue](g1:Accessor0[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) extends Formula[X] {
+  case class Term[X<:Variable,A<:BooleanValue](g1:Accessor2[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) extends Formula[X] {
     def eval(x:ArrayStack[BooleanValue]) = x.pop.value
     def manifests = List(ma)
-    def accessors = List(g1.asInstanceOf[Accessor0[X,BooleanValue]])
+    def accessors = List(g1.asInstanceOf[Accessor2[X,BooleanValue]])
   }
 
-  implicit def accessor2formula[X<:Variable,A<:BooleanValue](g:Accessor0[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) : Formula[X] = new Term(g)(mx,ma)
+  implicit def accessor2formula[X<:Variable,A<:BooleanValue](g:Accessor2[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) : Formula[X] = new Term(g)(mx,ma)
   
   abstract class Formula1[X<:Variable](c1:Formula[X]) extends Formula[X] {
     def manifests = c1.manifests
