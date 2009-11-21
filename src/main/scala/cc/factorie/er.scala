@@ -16,9 +16,10 @@ object er {
     def attributeOwner: E
   }
   /** A trait for entities that have attributes.  Provides an inner trait 'Attribute' for its attribute classes. */
-  trait Entity[This<:Entity[This] with Variable] extends Variable with AccessorType {
+  // TODO Change this name because it is too generic.  Might be desired for coref.
+  trait Entity[This<:Entity[This] with Variable] extends Variable with AccessorType[This] {
     this: This =>
-    type AccessorType <: Accessor2[This,This]
+    //type AccessorType[This] <: AccessorTail[This]
     def thisEntity: This = this
     //def entityName = classOf[This].getName
     trait Attribute extends cc.factorie.er.AttributeOf[This] {
@@ -31,29 +32,33 @@ object er {
 
   // TODO Consider renaming these "Getter", matching the 'get' method name.
   /** An abstract Accessor will have methods providing forward and reverse mappings through many-to-many relations. */
-  trait Accessor0 {
-    type A
+  /*trait Accessor0 {
+    type A// <: Variable
+    type B
     type C
+    protected var prefix: Accessor0 with AccessorTail[B] with AccessorHead[A]
+    protected var forward1s: B=>C
+    protected var reverse1s: C=>B
+    protected var forward1m: B=>Iterable[C]
+    protected var reverse1m: C=>Iterable[B]
     def forward : A=>Iterable[C];
     def reverse : C=>Iterable[A];
-  }
-  trait AccessorHead[A1] extends Accessor0 {
+  }*/
+  trait AccessorHead[A1,C1] extends Accessor[C1] {
     type A = A1
   }
-  trait AccessorTail[C1] extends Accessor0 {
-    type C = C1
-  }
-  trait AccessorMiddle[B1] extends Accessor0 {
+  //trait AccessorTail[C1] extends Accessor0 { type C = C1 }
+  trait AccessorMiddle[B1,C1] extends Accessor[C1] {
     type B = B1
   }
-  type Accessor2[A1,C1] = Accessor0 with AccessorHead[A1] with AccessorTail[C1]
+  type Accessor2[A1,C1] = AccessorHead[A1,C1]
   /** An abstract trait that provides forward and reverse mappings through one-to-one relations. */ // TODO No longer needed
-  trait Accessor1[A,B] extends Accessor0 with AccessorHead[A] with AccessorTail[B] {
+  /*trait Accessor1[A,B] extends Accessor0 with AccessorHead[A] with AccessorTail[B] {
     def forward1 : A=>B
     def reverse1 : B=>A
     def forward = (a:A) => List(forward1(a))
     def reverse = (b:B) => List(reverse1(b))
-  }
+  }*/
   /** A class that provides forward and reverse mappings through relations, 
       enabling creation of nested mappings through what look like normal one-way access method calls.
       For examples of its usage, see example/LogicDemo*.scala.
@@ -61,12 +66,15 @@ object er {
       You can make the "unit" (initial) element for a chain by constructing FooAccessor[Foo,Foo,Foo],
       and leaving all the above vars unchanged. */
   // Change to class Accessor[C1] extends Accessor0 with AccessorTail[C1]
-  class Accessor[A1,B,C1] extends Accessor0 with AccessorHead[A1] with AccessorTail[C1] {
-    private var prefix: Accessor[A,_,B] = null
-    private var forward1s: B=>C = (b:B) => b.asInstanceOf[C] // Default no-op for "unit" Accessor
-    private var reverse1s: C=>B = (c:C) => c.asInstanceOf[B] // Default no-op for "unit" Accessor
-    private var forward1m: B=>Iterable[C] = null
-    private var reverse1m: C=>Iterable[B] = null
+  trait Accessor[C1] {
+    type A// <: Variable
+    type B
+    type C = C1
+    protected var prefix: Accessor2[A,B] = null
+    protected var forward1s: B=>C = (b:B) => b.asInstanceOf[C] // Default no-op for "unit" Accessor
+    protected var reverse1s: C=>B = (c:C) => c.asInstanceOf[B] // Default no-op for "unit" Accessor
+    protected var forward1m: B=>Iterable[C] = null
+    protected var reverse1m: C=>Iterable[B] = null
     private lazy val _forward: A=>Iterable[C] = { // the different ways of combining prefix with different forward1* to append a link to the chain
       if (prefix == null) {
         if (forward1m == null)
@@ -96,56 +104,56 @@ object er {
     def forward: A=>Iterable[C] = _forward //(a:A) => if (prefix == null) forward1(a.asInstanceOf[B]) else prefix.forward(a).flatMap(forward1)
     def reverse: C=>Iterable[A] = _reverse //(c:C) => if (prefix == null) reverse1(c).asInstanceOf[Iterable[A]] else reverse1(c).flatMap(prefix.reverse)
     /** Create a new Accessor, starting from this one and appending an additional many-to-many mapping. */
-    def getManyToMany[D<:AccessorType /*{type AccessorType <: Accessor[D,D,D]}*/](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = {
-      val ret: Accessor[A,C,D] = newAccessor[D](m).asInstanceOf[Accessor[A,C,D]]
-      ret.prefix = Accessor.this
+    def getManyToMany[D<:AccessorType[D]](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D] = {
+      val ret = newAccessor[D](m).asInstanceOf[D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D]]
+      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] with AccessorHead[A,C]]
       ret.forward1m = fwd1
       ret.reverse1m = rev1
       ret
     }
     /** Alias for getManyToMany */
-    def get[D<:AccessorType](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = getManyToMany[D](fwd1, rev1)(m)
+    def get[D<:AccessorType[D]](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D] = getManyToMany[D](fwd1, rev1)(m)
     /** Create a new Accessor, starting from this one and appending an additional many-to-one mapping. */
-    def getManyToOne[D<:AccessorType](fwd1:C=>D, rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = {
-      val ret: Accessor[A,C,D] = newAccessor[D](m).asInstanceOf[Accessor[A,C,D]]
-      ret.prefix = Accessor.this
+    def getManyToOne[D<:AccessorType[D]](fwd1:C=>D, rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D] = {
+      val ret = newAccessor[D](m).asInstanceOf[D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D]]
+      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] with AccessorHead[A,C]]
       ret.forward1s = fwd1
       ret.reverse1m = rev1
       ret
     } 
     /** Create a new Accessor, starting from this one and appending an additional one-to-one mapping. */
-    def getOneToOne[D<:AccessorType](fwd1:C=>D, rev1:D=>C)(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = {
-      val ret: Accessor[A,C,D] = newAccessor[D](m).asInstanceOf[Accessor[A,C,D]]
-      ret.prefix = Accessor.this
+    def getOneToOne[D<:AccessorType[D]](fwd1:C=>D, rev1:D=>C)(implicit m:Manifest[D#AccessorType]): D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D] = {
+      val ret = newAccessor[D](m).asInstanceOf[D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D]]
+      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] with AccessorHead[A,C]]
       ret.forward1s = fwd1
       ret.reverse1s = rev1
       ret
     } 
     /** Create a new Accessor, starting from this one and appending an additional one-to-many mapping. */
-    def getOneToMany[D<:AccessorType](fwd1:C=>Iterable[D], rev1:D=>C)(implicit m:Manifest[D#AccessorType]): Accessor[A,C,D] = {
-      val ret: Accessor[A,C,D] = newAccessor[D](m).asInstanceOf[Accessor[A,C,D]]
-      ret.prefix = Accessor.this
+    def getOneToMany[D<:AccessorType[D]](fwd1:C=>Iterable[D], rev1:D=>C)(implicit m:Manifest[D#AccessorType]): D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D] = {
+      val ret = newAccessor[D](m).asInstanceOf[D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D]]
+      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] with AccessorHead[A,C]]
       ret.forward1m = fwd1
       ret.reverse1s = rev1
       ret
     }
-    //def getSymmetric[D<:C with AccessorType](fwd1:C=>Iterable[D])(implicit m:Manifest[D#AccessorType]) = get[D](fwd1,fwd1)(m)
+    //def getSymmetric[D<:C with AccessorType](fwd1:C=>Iterable[D])(implicit m:Manifest[D#AccessorType]) = getOneToOne[D](fwd1,fwd1)(m)
     /** Create a new Accessor, starting from this one and appending a mapping to one of its Attributes. */
-    def getAttribute[D<:AttributeOf[C]](fwd1:C=>D)(implicit m:Manifest[D]): Accessor[A,C,D] = {
-      val ret = new Accessor[A,C,D] //.asInstanceOf[]
-      ret.prefix = Accessor.this
+    def getAttribute[D<:AttributeOf[C]](fwd1:C=>D)(implicit m:Manifest[D]): Accessor[D] with AccessorHead[A,D] with AccessorMiddle[C,D] = {
+      val ret = new Accessor[D] with AccessorHead[A,D] with AccessorMiddle[C,D] //.asInstanceOf[]
+      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] with AccessorHead[A,C]]
       ret.forward1s = (c:C) => fwd1(c)
       ret.reverse1s = (d:D) => d.attributeOwner
       ret
     }
   }
-  class EntityAccessor[A<:Entity[A]] extends Accessor[A,A,A]
+  trait EntityAccessor[A<:Entity[A]] extends Accessor[A] // NO! with AccessorHead[A,A]
   // TODO avoid the need to mix this in to Person by using instead duck typing: type WithAccessorType = { type AccessorType <: Accessor[_,_] }
-  trait AccessorType {
-    type AccessorType <: Accessor0 //[_,_]
+  trait AccessorType[D] {
+    type AccessorType <: Accessor[D] //[_,_]
   }
   /** Construct a new Accessor of type A. */
-  def newAccessor[A<:AccessorType](implicit m:Manifest[A#AccessorType]): A#AccessorType = {
+  def newAccessor[A<:AccessorType[A]](implicit m:Manifest[A#AccessorType]): A#AccessorType = {
   	val constructors = m.erasure.getConstructors
     if (constructors.size != 1) throw new Error("Accessors must have only one constructor")
     val constructor = m.erasure.getConstructors.apply(0)
@@ -154,15 +162,15 @@ object er {
     constructor.newInstance().asInstanceOf[A#AccessorType]
   }
   /** Currently unused. */ // TODO Remove this.
-  class AccessorUnit0[A] extends Accessor0 with AccessorHead[A] with AccessorTail[A] {
+  /*trait AccessorUnit0[A] extends Accessor2[A,A] {
     def forward = (a:A) => List(a)
     def reverse = (a:A) => { /*println("AccessorUnit0 a="+a);*/ List(a) }
-  }
+  }*/
   /** Construct a new Accessor representing the beginning of an accessor chain, taking input A. */
-  def newAccessorUnit[A<:AccessorType](implicit m:Manifest[A#AccessorType]): A#AccessorType = {
+  def newAccessorUnit[A<:AccessorType[A]](implicit m:Manifest[A#AccessorType]): A#AccessorType with AccessorHead[A,A] = {
   	println("AccessorUnit m="+m)
-  	val a = newAccessor[A](m).asInstanceOf[Accessor[A,A,A]];
-  	a.asInstanceOf[A#AccessorType]
+  	newAccessor[A](m).asInstanceOf[A#AccessorType with AccessorHead[A,A]];
+  	//a.asInstanceOf[A#AccessorType]
   }
   
   
@@ -182,7 +190,7 @@ object er {
   	def accessors = List(a1.asInstanceOf[Accessor2[X,CategoricalValues]])
   }
   
-  implicit def accessor2scoreneighbor[X<:Variable,A<:CategoricalValues](a:Accessor2[X,A])(implicit mx:Manifest[X], ma:Manifest[A]): ScoreNeighbor0[X] = 
+  implicit def accessor2scoreneighbor[X<:Variable,A<:CategoricalValues](a:Accessor[A] with AccessorHead[X,A])(implicit mx:Manifest[X], ma:Manifest[A]): ScoreNeighbor0[X] = 
     new ScoreNeighbor(a)(mx,ma)
   
   
@@ -205,7 +213,7 @@ object er {
     def accessors = List(g1.asInstanceOf[Accessor2[X,BooleanValue]])
   }
 
-  implicit def accessor2formula[X<:Variable,A<:BooleanValue](g:Accessor2[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) : Formula[X] = new Term(g)(mx,ma)
+  implicit def accessor2formula[X<:Variable,A<:BooleanValue](g:Accessor[A] with AccessorHead[X,A])(implicit mx:Manifest[X], ma:Manifest[A]) : Formula[X] = new Term(g)(mx,ma)
   
   abstract class Formula1[X<:Variable](c1:Formula[X]) extends Formula[X] {
     def manifests = c1.manifests
@@ -247,9 +255,10 @@ object er {
   
   // Application of Score and logic primitives starting with an Accessor
   object Forany {
-    def apply[X<:AccessorType with Variable](x2c:X#AccessorType=>Formula[X])(implicit m:Manifest[X#AccessorType]): Template with LogicStatistics = {
-      type I = BooleanValue 
-      val formula = x2c(newAccessorUnit[X](m))
+    def apply[X<:AccessorType[X] with Variable](x2c:X#AccessorType with AccessorHead[X,X]=>Formula[X])(implicit m:Manifest[X#AccessorType]): Template with LogicStatistics = {
+      type I = BooleanValue
+      val accessorRoot: X#AccessorType with AccessorHead[X,X] = newAccessorUnit[X](m)
+      val formula = x2c(accessorRoot)
       val manifests = formula.manifests.asInstanceOf[Seq[Manifest[I]]];
       assert(formula.accessors.length == 1)
       val accessors = formula.accessors
@@ -281,7 +290,7 @@ object er {
     }
   }
   object For {
-    def apply[X<:AccessorType with Variable](x2c:X#AccessorType=>Score[X])(implicit m:Manifest[X#AccessorType]) = {
+    def apply[X<:AccessorType[X] with Variable](x2c:X#AccessorType=>Score[X])(implicit m:Manifest[X#AccessorType]) = {
     	val score = x2c(newAccessorUnit[X](m))
     	val manifests = score.manifests.toList.asInstanceOf[List[Manifest[CategoricalValues]]];
     	val accessors = score.accessors

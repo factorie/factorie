@@ -31,11 +31,13 @@ object LogicDemo2 {
     // Define model
     val model = new Model (
       // Apriori, you are 10 times more likely not to have cancer
+      //Forany[Person] { p => p} * 10, 
+      Forany[Person] { p => Not(p.mother.cancer) } * 10,
       Forany[Person] { p => Not(p.cancer) } * 10,
       // If you smoke, you are 2 times more likely to have cancer
       Forany[Person] { p => p.smokes ==> p.cancer } * 2.0,
       // If your mother doesn't smoke and 
-      //Forany[Person] { p => Not(p.mother.smokes) ^ Not(p.children.smokes) ==> Not(p.smokes) } * 4
+      Forany[Person] { p => Not(p.mother.smokes) ^ Not(p.children.smokes) ==> Not(p.smokes) } * 4
 
       // For each of your friends that smoke, you are 1.5 times more likely to smoke yourself
       //Forany[Person] { p => p.friends.smokes <==> p->Smokes } * 1.5
