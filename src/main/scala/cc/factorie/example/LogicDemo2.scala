@@ -8,7 +8,7 @@ object LogicDemo2 {
   def main(args:Array[String]) : Unit = {
     // Define entity, attribute and relation types
     class Person (val name:String, val mother:Person) extends ItemizedVariable[Person] with Entity[Person] {
-      type AccessorType = PersonAccessor
+      type GetterType = PersonGetter
       // When we have Scala 2.8 this next line will simply be:
       // object smokes extends BooleanVariable with Attribute
       val smokes = new Smokes; class Smokes extends BooleanVariable with Attribute
@@ -20,7 +20,7 @@ object LogicDemo2 {
     //object Friends extends Relation[Person,Person];
   
     // Define boilerplate, to support access to attributes in the entity-relationship syntax
-    class PersonAccessor extends EntityAccessor[Person] {
+    class PersonGetter extends EntityGetter[Person] {
       def smokes = getAttribute(_.smokes)
       def cancer = getAttribute(_.cancer)
       def mother = getManyToOne[Person](_.mother, _.children)
@@ -49,7 +49,7 @@ object LogicDemo2 {
     //Friends(amy,bob); Friends(bob,amy)
     //Friends(cas,don); Friends(don,cas)
     
-    val siblings = newAccessorUnit[Person].mother.children
+    val siblings = newGetterUnit[Person].mother.children
     println(siblings.forward(bob))
    
     def printFactors(f:Iterable[Factor]) = {
