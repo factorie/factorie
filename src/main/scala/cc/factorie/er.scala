@@ -13,14 +13,18 @@ object er {
 
   /** A generic Attribute */
   trait AttributeOf[E] {
+    /** The entity that is described by this attribute. */
     def attributeOwner: E
+    /** Print the owner of the attribute before the rest of its toString representation. */
+    override def toString = attributeOwner.toString+":"+super.toString
   }
-  /** A trait for entities that have attributes.  Provides an inner trait 'Attribute' for its attribute classes. */
-  // I considered changing this trait name because it was too generic.  For example it might be desired for coref.
+  // I considered changing this trait name because of concerns that it is too generic.  For example it might be desired for coref.
   // But now I think it is good for the "entity-relationship" package.  Users can always specify it with "er.Entity", which isn't bad.
+  /** A trait for entities that have attributes.  Provides an inner trait 'Attribute' for its attribute classes. */
   trait Entity[This<:Entity[This] with Variable] extends Variable with AccessorType[This] {
     this: This =>
     def thisEntity: This = this
+    /** Sub-trait of cc.factorie.er.AttributeOf that has a concrete implementation of 'attributeOwner'. */
     trait Attribute extends cc.factorie.er.AttributeOf[This] {
       override def attributeOwner: This = thisEntity
     }
@@ -38,14 +42,10 @@ object er {
       and leaving all the above vars unchanged. */
     // TODO:  Accessor[A1,C1] { type A <: A1; type C = C1 } AccessorHead[A1,C1] extends Accessor[A1,C1] { type C = C1 }
   trait Accessor[C1] {
-    type A// <: Variable
-    type A0 = A
+    type A
     type B
     type C = C1
     protected var prefix: Accessor[B] = null
-    //protected var prefix: AccessorHead[A,B] = null
-    //protected var prefix: Accessor[B] = null
-    //protected var prefix: Accessor[B] { type A = this.A } = null // note also that prefix.A = this.A 
     protected var forward1s: B=>C = (b:B) => b.asInstanceOf[C] // Default no-op for "unit" Accessor
     protected var reverse1s: C=>B = (c:C) => c.asInstanceOf[B] // Default no-op for "unit" Accessor
     protected var forward1m: B=>Iterable[C] = null
@@ -78,19 +78,18 @@ object er {
     }
     def forward: A=>Iterable[C] = _forward
     def reverse: C=>Iterable[A] = _reverse
+    // Ugly non-type-safe versions of some methods.  I think that with Scala 2.8 path-dependent types these will no longer be necessary
     def unsafeForward(a:Any): Iterable[C] = _forward(a.asInstanceOf[A])
     def unsafeReverse[A8](c:Any): Iterable[A8] = _reverse(c.asInstanceOf[C]).asInstanceOf[Iterable[A8]]
     def unsafeReverseFunc[B8,C8]: B8=>Iterable[C8] = _reverse.asInstanceOf[B8=>Iterable[C8]]
     /** Create a new Accessor, starting from this one and appending an additional many-to-many mapping. */
     def getManyToMany[D<:AccessorType[D]](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D] = {
       val ret = newAccessor[D](m).asInstanceOf[D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D]]
-      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] with AccessorHead[A,C]]
+      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] with AccessorHead[A,C]] // I'm confused as to why this is working because I don't think EntityAccessors have AccessorHead mixed in!
       ret.forward1m = fwd1
       ret.reverse1m = rev1
       ret
     }
-    /** Alias for getManyToMany */
-    //def get[D<:AccessorType[D]](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D] = getManyToMany[D](fwd1, rev1)(m)
     /** Create a new Accessor, starting from this one and appending an additional many-to-one mapping. */
     def getManyToOne[D<:AccessorType[D]](fwd1:C=>D, rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D] = {
       val ret = newAccessor[D](m).asInstanceOf[D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D]]
@@ -127,11 +126,9 @@ object er {
     /** Create a new Accessor, starting from this one and appending a mapping to one of its Attributes. */
     def getAttribute[D<:AttributeOf[C]](fwd1:C=>D)(implicit m:Manifest[D]): Accessor[D] with AccessorHead[A,D] with AccessorMiddle[C,D] = {
       val ret = new Accessor[D] with AccessorHead[A,D] with AccessorMiddle[C,D] //.asInstanceOf[]
-      //println("getAttribute "+this.getClass)
-      //println(" traits"+this.getClass.getInterfaces.elements.toList)
       //ret.prefix = Accessor.this.asInstanceOf[Accessor[C] with AccessorHead[A,C]] // TODO Doesn't run because Accessor doesn't have AccessorHead
       type ThisA = A
-      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] { type A = ThisA }] // TODO Doesn't run because Accessor doesn't have AccessorHead
+      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] { type A = ThisA }]
       ret.forward1s = (c:C) => fwd1(c)
       ret.reverse1s = (d:D) => d.attributeOwner
       ret
@@ -147,7 +144,7 @@ object er {
   }
   /** Typical Accessor trait inherited by users, and thus D#AccessorType is often a sub-class of this. */
   trait EntityAccessor[A<:Entity[A]] extends Accessor[A] //with AccessorHead[AnyRef,A]
-  // TODO? avoid the need to mix this in to Person by using instead duck typing: type WithAccessorType = { type AccessorType <: Accessor[_,_] }
+  // TODO? Consider avoiding the need to mix this into Entity by using instead duck typing: type WithAccessorType = { type AccessorType <: Accessor[_,_] }
   trait AccessorType[D] {
     type AccessorType <: Accessor[D] // We don't want this to specify the AccessorHead because Accessor.get* methods must be able to fill that in themselves
   }
@@ -206,9 +203,7 @@ object er {
     def accessors = List(g1.asInstanceOf[AccessorHead[X,BooleanValue]])
   }
 
-  implicit def accessor2formula[X<:Variable,A<:BooleanValue](g:Accessor[A] with AccessorHead[X,A])(implicit ma:Manifest[A]) : Formula[X] = new Term(g)(ma)
-  //implicit def accessor2formula[X<:Variable,A<:BooleanValue](g:AccessorHead[X,A])(implicit ma:Manifest[A]) : Formula[X] = new Term(g)(ma)
-  //implicit def accessor2formula[X,A](g:AccessorHead[X,A])(implicit ma:Manifest[A]) : Formula[Variable] = new Term(g.asInstanceOf[AccessorHead[Variable,BooleanValue]])(ma.asInstanceOf[Manifest[BooleanValue]])
+  implicit def accessor2formula[X<:Variable,A<:BooleanValue](g:Accessor[A] with AccessorHead[X,A])(implicit ma:Manifest[A]): Formula[X] = new Term(g)(ma)
   
   abstract class Formula1[X<:Variable](c1:Formula[X]) extends Formula[X] {
     def manifests = c1.manifests
@@ -285,7 +280,7 @@ object er {
     }
   }
   object For {
-    def apply[X<:AccessorType[X] with Variable](x2c:X#AccessorType=>Score[X])(implicit m:Manifest[X#AccessorType]) = {
+    def apply[X<:AccessorType[X] with Variable](x2c:X#AccessorType with AccessorHead[X,X]=>Score[X])(implicit m:Manifest[X#AccessorType]) = {
     	val score = x2c(newAccessorUnit[X](m))
     	val manifests = score.manifests.toList.asInstanceOf[List[Manifest[CategoricalValues]]];
     	val accessors = score.accessors

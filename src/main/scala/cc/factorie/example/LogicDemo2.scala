@@ -44,8 +44,8 @@ object LogicDemo2 {
     val amy = new Person("Amy", null); amy.smokes := true
     val bob = new Person("Bob", amy);  bob.smokes := true
     val cas = new Person("Cas", amy);  cas.smokes := true
-    val don = new Person("Don", cas)
-    val eli = new Person("eli", cas)
+    val don = new Person("Don", cas);  don.smokes := false
+    val eli = new Person("eli", cas);  eli.smokes := false
     //Friends(amy,bob); Friends(bob,amy)
     //Friends(cas,don); Friends(don,cas)
     
@@ -75,16 +75,17 @@ object LogicDemo2 {
     printFactors(template2b.factors(bob.smokes))
     println("stats "+template2b.stats(bob.smokes))
 
-    //println("\ntemplate3")
-    //val template3 = Forany[Person] { p => Score(p.smokes, p.mother.smokes) }
-    //printFactors(template3.factors(cas.smokes))
+    println("\ntemplate3")
+    val template3 = For[Person] { p => Score(p.smokes, p.mother.smokes) }
+    printFactors(template3.factors(cas.smokes))
 
-    //println("\ntemplate4")
-    //val template4 = Forany[Person] { p => Score(p.mother.smokes) }
-    //printFactors(template4.factors(amy.smokes))
-    System.exit(0)
+    println("\ntemplate4")
+    val template4 = For[Person] { p => Score(p.mother.smokes) } 
+    printFactors(template4.factors(amy.smokes))
+    //System.exit(0)
     
     // Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
+    println("\ninference")
     val inferencer = new VariableSamplingInferencer(new GibbsSampler1[BooleanVariable](model))
     inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
     val marginals = inferencer.infer(List(don.cancer, don.smokes))
