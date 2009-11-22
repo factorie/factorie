@@ -42,7 +42,8 @@ object er {
     type A0 = A
     type B
     type C = C1
-    protected var prefix: AccessorHead[A,B] = null
+    protected var prefix: Accessor[B] = null
+    //protected var prefix: AccessorHead[A,B] = null
     //protected var prefix: Accessor[B] = null
     //protected var prefix: Accessor[B] { type A = this.A } = null // note also that prefix.A = this.A 
     protected var forward1s: B=>C = (b:B) => b.asInstanceOf[C] // Default no-op for "unit" Accessor
@@ -57,9 +58,9 @@ object er {
           (a:A) => forward1m(a.asInstanceOf[B])
       } else {
       	if (forward1m == null)
-      		(a:A) => prefix.forward(a).map(forward1s)
+      		(a:A) => prefix.unsafeForward(a).map(forward1s).filter(e => e != null) // filter a null from forward1s
       	else
-          (a:A) => prefix.forward(a).flatMap(forward1m)
+          (a:A) => prefix.unsafeForward(a).flatMap(forward1m)
       }
     }
     private lazy val _reverse: C=>Iterable[A] = { // the ways of combining prefix with different reverse1* to prepend a link to the chain
@@ -70,13 +71,16 @@ object er {
           (c:C) => reverse1m(c).asInstanceOf[Iterable[A]]
       } else {
         if (reverse1m == null)
-          (c:C) => prefix.reverse(reverse1s(c))
+          (c:C) => { val c2 = reverse1s(c); if (c2 == null) Nil else prefix.unsafeReverse[A](c2) } // filter a null from reverse1s
         else
-          (c:C) => reverse1m(c).flatMap(prefix.reverse)
+          (c:C) => reverse1m(c).flatMap(prefix.unsafeReverseFunc)
       }
     }
     def forward: A=>Iterable[C] = _forward
     def reverse: C=>Iterable[A] = _reverse
+    def unsafeForward(a:Any): Iterable[C] = _forward(a.asInstanceOf[A])
+    def unsafeReverse[A8](c:Any): Iterable[A8] = _reverse(c.asInstanceOf[C]).asInstanceOf[Iterable[A8]]
+    def unsafeReverseFunc[B8,C8]: B8=>Iterable[C8] = _reverse.asInstanceOf[B8=>Iterable[C8]]
     /** Create a new Accessor, starting from this one and appending an additional many-to-many mapping. */
     def getManyToMany[D<:AccessorType[D]](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#AccessorType]): D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D] = {
       val ret = newAccessor[D](m).asInstanceOf[D#AccessorType with AccessorHead[A,D] with AccessorMiddle[C,D]]
@@ -123,9 +127,11 @@ object er {
     /** Create a new Accessor, starting from this one and appending a mapping to one of its Attributes. */
     def getAttribute[D<:AttributeOf[C]](fwd1:C=>D)(implicit m:Manifest[D]): Accessor[D] with AccessorHead[A,D] with AccessorMiddle[C,D] = {
       val ret = new Accessor[D] with AccessorHead[A,D] with AccessorMiddle[C,D] //.asInstanceOf[]
-      println("getAttribute "+this.getClass)
-      println(" traits"+this.getClass.getInterfaces.elements.toList)
-      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] with AccessorHead[A,C]] // TODO Doesn't run because Accessor doesn't have AccessorHead
+      //println("getAttribute "+this.getClass)
+      //println(" traits"+this.getClass.getInterfaces.elements.toList)
+      //ret.prefix = Accessor.this.asInstanceOf[Accessor[C] with AccessorHead[A,C]] // TODO Doesn't run because Accessor doesn't have AccessorHead
+      type ThisA = A
+      ret.prefix = Accessor.this.asInstanceOf[Accessor[C] { type A = ThisA }] // TODO Doesn't run because Accessor doesn't have AccessorHead
       ret.forward1s = (c:C) => fwd1(c)
       ret.reverse1s = (d:D) => d.attributeOwner
       ret
@@ -156,7 +162,7 @@ object er {
   }
   /** Construct a new Accessor representing the beginning of an accessor chain, taking input A. */
   def newAccessorUnit[A<:AccessorType[A]](implicit m:Manifest[A#AccessorType]): A#AccessorType with AccessorHead[A,A] = {
-  	println("AccessorUnit m="+m)
+  	//println("AccessorUnit m="+m)
   	newAccessor[A](m).asInstanceOf[A#AccessorType with AccessorHead[A,A]];
   }
   

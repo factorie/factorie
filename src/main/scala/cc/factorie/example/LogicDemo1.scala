@@ -18,7 +18,7 @@ object LogicDemo1 {
     //object Friends extends Relation[Person,Person];
   
     // Define boilerplate, to support access to attributes in the entity-relationship syntax
-    class PersonAccessor extends EntityAccessor[Person] with AccessorHead[Person,Person] {
+    class PersonAccessor extends EntityAccessor[Person] /*with AccessorHead[Variable,Person]*/ {
     	def smokes = getAttribute(_.smokes)
       def cancer = getAttribute(_.cancer)
     } 
@@ -27,9 +27,9 @@ object LogicDemo1 {
     val model = new Model (
       // Apriori, you are 10 times more likely not to have cancer
       //Forany[Person] { p => Not(p) } * 10, 
-      //Forany[Person] { p => p.cancer } * 0.1, 
+      Forany[Person] { p => p.cancer } * 0.1, 
       //Forany[Person] { p => Not(p.cancer) } * 10, 
-      Forany[Person] { p => Not(accessor2formula(p.cancer)) } * 10, 
+      //Forany[Person] { p => Not(accessor2formula(p.cancer)) } * 10, 
       // If you smoke, you are 2 times more likely to have cancer
       Forany[Person] { p => p.smokes ==> p.cancer } * 2.0
       // For each of your friends that smoke, you are 1.5 times more likely to smoke yourself
