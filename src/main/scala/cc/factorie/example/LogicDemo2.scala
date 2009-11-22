@@ -23,22 +23,19 @@ object LogicDemo2 {
     class PersonAccessor extends EntityAccessor[Person] {
       def smokes = getAttribute(_.smokes)
       def cancer = getAttribute(_.cancer)
-      def mother = get[Person](p=>if (p.mother == null) Nil else List(p.mother), _.children)
+      def mother = getManyToOne[Person](_.mother, _.children)
       def children = getOneToMany[Person](_.children, _.mother)
-      def siblings = get[Person](p => p.mother.children.filter(p2=>p2 ne p), p => p.mother.children.filter(p2=>p2 ne p))
+      def siblings = getSymmetricManyToMany[Person](p => p.mother.children.filter(p2=>p2 ne p))
     } 
 
     // Define model
     val model = new Model (
       // Apriori, you are 10 times more likely not to have cancer
-      //Forany[Person] { p => p} * 10, 
-      Forany[Person] { p => Not(p.mother.cancer) } * 10,
-      Forany[Person] { p => Not(p.cancer) } * 10,
+      Forany[Person] { p => Not(p.cancer) } * 10, 
       // If you smoke, you are 2 times more likely to have cancer
       Forany[Person] { p => p.smokes ==> p.cancer } * 2.0,
-      // If your mother doesn't smoke and 
+      // If your mother doesn't smoke and one of your children doesn't smoke, you ar 4 times less likely to smoke, for each of your children
       Forany[Person] { p => Not(p.mother.smokes) ^ Not(p.children.smokes) ==> Not(p.smokes) } * 4
-
       // For each of your friends that smoke, you are 1.5 times more likely to smoke yourself
       //Forany[Person] { p => p.friends.smokes <==> p->Smokes } * 1.5
     )
@@ -48,8 +45,44 @@ object LogicDemo2 {
     val bob = new Person("Bob", amy);  bob.smokes := true
     val cas = new Person("Cas", amy);  cas.smokes := true
     val don = new Person("Don", cas)
+    val eli = new Person("eli", cas)
     //Friends(amy,bob); Friends(bob,amy)
     //Friends(cas,don); Friends(don,cas)
+    
+    val siblings = newAccessorUnit[Person].mother.children
+    println(siblings.forward(bob))
+   
+    def printFactors(f:Iterable[Factor]) = {
+      println("Factor count = "+f.toList.size) 
+      println(f)      
+    }
+
+    println("\ntemplate1")
+    val template1 = (Forany[Person] { p => p.smokes ==> p.cancer }) * 2.0
+    printFactors(template1.factors(amy.smokes))
+    println("stats "+template1.stats(amy.smokes))
+    
+    println("\ntemplate2")
+    val template2 = Forany[Person] { p => Not(p.mother.smokes) ^ Not(p.children.smokes) ==> Not(p.smokes) }
+    printFactors(template2.factors(amy.smokes)) // matches a lot because 
+    printFactors(template2.factors(bob.smokes)) // doesn't match because bob doesn't have children
+    printFactors(template2.factors(cas.smokes))
+
+    println("\ntemplate2b")
+    val template2b = Forany[Person] { p => p.mother.smokes }
+    printFactors(template2b.factors(amy.smokes))
+    println("stats "+template2b.stats(amy.smokes))
+    printFactors(template2b.factors(bob.smokes))
+    println("stats "+template2b.stats(bob.smokes))
+
+    //println("\ntemplate3")
+    //val template3 = Forany[Person] { p => Score(p.smokes, p.mother.smokes) }
+    //printFactors(template3.factors(cas.smokes))
+
+    //println("\ntemplate4")
+    //val template4 = Forany[Person] { p => Score(p.mother.smokes) }
+    //printFactors(template4.factors(amy.smokes))
+    System.exit(0)
     
     // Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
     val inferencer = new VariableSamplingInferencer(new GibbsSampler1[BooleanVariable](model))

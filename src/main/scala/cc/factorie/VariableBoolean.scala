@@ -57,7 +57,7 @@ class BooleanDomain[V<:Bool] extends CategoricalDomain[V] {
 }
 
 object Bool {
-  val t = new Bool(true)
+  val t = new Bool(true) // TODO This should be BoolObservation!  Because we wouldn't want t.set(false)!!!
   val f = new Bool(false)
   def apply(b: Boolean) = if (b) t else f
 }
