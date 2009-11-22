@@ -13,8 +13,7 @@ import cc.factorie.util.Implicits._
 // TODO Consider using the word "Target" for variables that we are trying to predict at training and/or test time.
 // The word "Hidden" should perhaps also be used somewhere.
 
-/**A variable of finite enumerated values that has a true "labeled" value, separate from its current value. */
-//trait TrueIndexedValue[T] extends TypedSingleIndexedVariable[T]
+/** A variable of finite enumerated values that has a true "labeled" value, separate from its current value. */
 // TODO We could make version of this for OrdinalValue: TrueOrdinalValue
 trait TrueCategoricalValue extends TrueSetting {
   this : CategoricalVariable =>
