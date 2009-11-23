@@ -89,6 +89,7 @@ trait ParameterAveraging extends WeightUpdates {
     {
       backupWeights
       updateWeightsSum
+      var divisor : Double = perceptronIteration.asInstanceOf[Double]
       for (template <- model.templatesOf[TemplatesToUpdate]) 
 	{
 	  if(weightsSum.contains(template))
@@ -96,9 +97,9 @@ trait ParameterAveraging extends WeightUpdates {
 	      val weightsSumTemplate = weightsSum(template)
 	      val lastUpdateIterationTemplate = lastUpdateIteration(template)
 	      for(i <- template.weights.activeDomain)
-		template.weights(i) = weightsSumTemplate(i)/lastUpdateIterationTemplate(i)
+		template.weights(i) = weightsSumTemplate(i)/divisor///lastUpdateIterationTemplate(i)
 	    }
-	  //the following results in divide-by-zero errors when size of allocated domain is larger than size of active domain:
+	  //the following results in divide-by-zero errors when size of allocated domain is larger than size of active  domain:
 	  //if (weightsSum.contains(template))
       	  //  template.weights := weightsSum(template) :/ lastUpdateIteration(template)
 	}
@@ -154,11 +155,11 @@ trait ParameterAveraging extends WeightUpdates {
     }  
   } 
 
-  def l2Norm(grad : HashMap[TemplatesToUpdate,SparseVector]) : Double = {
-    var result : Double = 0.0
-    for((t,v) <- grad)
-      result += v dot v
-    result
-  }
-
+  def l2Norm(grad : HashMap[TemplatesToUpdate,SparseVector]) : Double = 
+   {
+      var result : Double = 0.0
+      for((t,v) <- grad)
+	result += v dot v
+      result
+    }
 }
