@@ -7,11 +7,11 @@ import scala.Math
 import scala.util.Sorting
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
-import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
+import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
-	// Templates
+// Templates
 	
  	/** A single factor in a factor graph.  In other words, a factor
 		template packaged with a set of variables neighboring the
@@ -244,6 +244,7 @@ import cc.factorie.util.Implicits._
 		lazy val weights: Vector = { freezeDomains; new DenseVector(statsize) } // Dense by default, may be override in sub-traits
 		def score(s:StatType) = weights match {
 		  case w:DenseVector => w dot s.vector
+      case w:SparseHashVector => w dot s.vector
 		  case w:SparseVector => w dot s.vector
 		}
 	}
@@ -252,7 +253,11 @@ import cc.factorie.util.Implicits._
 		override lazy val weights: Vector = { freezeDomains; new SparseVector(statsize) } // Dense by default, here overriden to be sparse
 	}
 
- 
+  trait SparseHashWeights extends DotTemplate {
+    override lazy val weights: Vector = { freezeDomains; new SparseHashVector(statsize) } // Dense by default, override to be sparseHashed
+  }
+
+
  	abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
  	  val nc1 = nm1.erasure
     // TODO create methods like this for all Templates and put abstract version in Template
