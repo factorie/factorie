@@ -7,12 +7,13 @@ object LogicDemo1 {
 
   def main(args:Array[String]) : Unit = {
     // Define entity, attribute and relation types
-    class Person (val name:String) extends ItemizedVariable[Person] with Entity[Person] {
-      type GetterType = PersonGetter
+    class Person (val name:String) extends ItemizedObservation[Person] with Entity[Person] {
+      type GetterClass = PersonGetter
       // When we have Scala 2.8 this next line will simply be:
       // object smokes extends BooleanVariable with Attribute
       val smokes = new Smokes; class Smokes extends BooleanVariable with Attribute
       val cancer = new Cancer; class Cancer extends BooleanVariable with Attribute
+      //val friends = new Relation[Person](_.friends)
       override def toString = name
     }
     //object Friends extends Relation[Person,Person];
@@ -21,6 +22,7 @@ object LogicDemo1 {
     class PersonGetter extends EntityGetter[Person] {
     	def smokes = getAttribute(_.smokes)
       def cancer = getAttribute(_.cancer)
+      //def friends = getRelation[Person](_.friends, _.friends)
     } 
 
     // Define model
