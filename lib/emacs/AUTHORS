@@ -1,0 +1,18 @@
+In Emacs, this file should be read in -*- Outline -*- mode.
+$Id: AUTHORS 17069 2009-02-10 08:30:51Z nielsen $
+
+Below is a list of people who have made changes or contributed to the
+scala emacs mode.
+
+* Main mode developers
+** Michel Schinz <Michel.Schinz at epfl.ch>
+** Anders Bach Nielsen <andersbach.nielsen at epfl.ch>
+
+
+* Contributions
+** Iulian Dragos <dragos at epfl.ch>
+** Stephane Micheloud <michelou at epfl.ch>
+** Victor Rodriguez <victorr at gmail.com>
+** ? <cwitty at newtonlabs.com>
+** Hemant Kumar <gethemant at gmail.com>
+** Ulrick Müller <ulm@gentoo.org>

@@ -1,0 +1,77 @@
+In Emacs, this file should be read in -*- Outline -*- mode.
+
+* Introduction
+
+This directory contains the Emacs mode for Scala programs. This mode
+works only in GNU Emacs 21.1 or later. In particular, it doesn't work
+on any version of XEmacs, or any 20.x version of GNU Emacs.
+
+The mode is currently very basic, and offers:
+
+*** Basic syntax highlighting.
+*** Primitive automatic indentation.
+*** Support for interaction with the Scala interpreter.
+*** Minor mode for inserting ([{" in pairs.
+    (scala-mode-electric)
+*** Tags support in Scala mode for creating, loading and completion using tags files.
+    The current implementation works with exuberant ctags (http://ctags.sf.net)
+    Please see the contrib/ directory for more information.
+*** Simple interaction with speedbar with support for scala files.
+    Using the speedbar it is possible to get an overview of the scala
+    files and using the emacs tags support, to get an overview of the
+    tags in a scala file.
+    For this to work please install CEDET (http://cedet.sf.net)
+*** The Scala mode has been cleaned up to work better with yasnippet from
+    (http://code.google.com/p/yasnippet/). This replaces the old template stuff
+    and the work on scaladoc.
+
+* Installation
+
+Put all ".el" files in a location where Emacs can find them, i.e. a
+directory appearing in the "load-path" variable.
+
+  (add-to-list 'load-path "/path/to/some/directory/scala-mode")
+
+It is recommended, but not required to compile all ".el" files to
+".elc" files. This will improve load time in emacs of the scala
+mode. On Linux/UNIX simply run "make" in the scala mode directory.
+
+Add the following line to your Emacs startup file, usually "~/.emacs":
+
+  (require 'scala-mode-auto)
+
+If you want to use yasnippets with the scala mode there are some things you need to do.
+First of all install yasnippets from http://code.google.com/p/yasnippet/ (the non-bundle version)
+
+Now add the following to your .emacs file to pick up the scala snippets
+
+  (setq yas/my-directory "/path/to/some/directory/scala-mode/contrib/yasnippet/snippets")
+  (yas/load-directory yas/my-directory)
+
+And then add this to your .emacs file
+
+  (add-hook 'scala-mode-hook
+            '(lambda ()
+               (yas/minor-mode-on)
+               ))
+
+Restart Emacs or evaluate the above line.
+
+From that point on, loading a file whose name ends in ".scala"
+automatically turns Scala mode on. It can also be turned on manually
+using the "scala-mode" command. 
+
+The get the best expirience from using the scala mode in emacs, please
+visit the costumization options for the scala mode.
+
+
+* Future plans
+
+See FUTURE file for a list of future enhancements to the scala emacs
+mode. If there is something missing, please post comment on
+scala-tools@listes.epfl.ch.
+
+
+* Version
+
+$Id: README 16681 2008-12-01 22:17:46Z nielsen $
