@@ -18,7 +18,9 @@ trait MIRAUpdates extends PerceptronUpdates with SampleRank {
   def model : Model
   def learningMargin : Double
   def useObjectiveDiffAsMargin : Boolean = true
-  
+  val boxConstraint : Double = 1.0//Math.POS_INF_DOUBLE
+
+
   //
   //TODO: not sure about learning margin violations
   abstract override def updateWeights : Unit = {
@@ -34,8 +36,10 @@ trait MIRAUpdates extends PerceptronUpdates with SampleRank {
     addGradient(gradient,1.0)
     if(useObjectiveDiffAsMargin)
       learningMargin = changeProposal.objectiveScore.abs else 1
-    learningRate = kktMultiplier(changeProposal,gradient);
-    addGradient((template:Template) => template match {case t:TemplatesToUpdate => t.weights}, learningRate)
+    learningRate=Math.min(kktMultiplier(changeProposal,gradient),boxConstraint)
+    super.updateWeights //let perceptron do the work and increment count
+    //addGradient((template:Template) => template match {case t:TemplatesToUpdate => t.weights}, learningRate)
+    //super.asInstanceOf[WeightUpdates].updateWeights
   }
 
   protected val epsilon: Double = 0.000000001
@@ -46,6 +50,10 @@ trait MIRAUpdates extends PerceptronUpdates with SampleRank {
     val l2sqrd : Double = computeL2Diff(gradient)
     val error: Double = learningMargin - margin;
     var lambda: Double = 0;
+    //System.out.println("margin: " + margin)
+    //System.out.println("l2 grad: " + l2sqrd)
+    //System.out.println("err: " + error)
+    
     if (l2sqrd > 0 + epsilon || l2sqrd < 0 - epsilon)
     	lambda = error / l2sqrd;
     if (lambda < 0) lambda = 0 //no error (the passive part of passive-aggressive)
