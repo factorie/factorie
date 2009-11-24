@@ -18,6 +18,7 @@ object LogicDemo2 {
 	}
 	//val friend = new Friends; class Friends extends Relation[Person,Person];
 	object friend extends Relation[Person,Person];
+	println("friend classname "+friend.getClass.getName)
 
 	// Define boilerplate, to support access to attributes in the entity-relationship syntax
 	class PersonGetter extends EntityGetter[Person] {
@@ -52,12 +53,16 @@ object LogicDemo2 {
     val bob = new Person("Bob", amy);  bob.smokes := true
     val cas = new Person("Cas", amy);  cas.smokes := true  
     val don = new Person("Don", cas);  don.smokes := false
-    val eli = new Person("eli", cas);  eli.smokes := false
+    val eli = new Person("Eli", cas);  eli.smokes := false
     friend(amy,bob); friend(amy,eli)
     friend(bob,amy); friend(bob,eli)
     friend(don,eli)
     friend(eli,amy); friend(eli,bob); friend(eli,don)
-                     
+
+    val friendship = friend(amy,bob)
+    println("friendship classname "+friendship.getClass.getName)
+    println("friendship printName "+friendship.printName)
+
     val siblings = newGetterUnit[Person].mother.children
     println("bob's siblings "+(newGetterUnit[Person].siblings).forward(bob))
     
