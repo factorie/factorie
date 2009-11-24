@@ -52,7 +52,6 @@ abstract trait CategoricalVariable extends Variable with CategoricalValue with D
 /** A CategoricalValue variable (which is also a TypedValue), but whose type is specified by a type argument. */
 abstract trait TypedCategoricalValue[T] extends CategoricalValue {
   this: Variable =>
-  // But doesn't have mixin 'ConstantValue' because we can't yet be guaranteed that this variable's index will not change; we can in EnumObservation, though
   type VariableType <: TypedCategoricalValue[T]
   type ValueType = T
   class DomainInSubclasses

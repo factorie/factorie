@@ -7,6 +7,7 @@ trait BooleanValue extends TypedCategoricalValue[Boolean] {
   def ^(other:BooleanValue):Boolean = value && other.value
   def v(other:BooleanValue):Boolean = value || other.value
   def ==>(other:BooleanValue):Boolean = !value || other.value
+  def unary_!(): Boolean = !value
   override def toString = if (intValue == 0) printName+"(false)" else printName+"(true)"
   type DomainType <: BooleanDomain[VariableType]
   class DomainClass extends BooleanDomain
@@ -23,6 +24,7 @@ class BooleanObservation(b:Boolean) extends BooleanValue {
 }
 
 // The next two are versions that take convenient constructor arguments.
+// TODO Are we happy with their names?  "Bool"?  Might someone want/expect to simply extend BooleanVariable(myflag) ??
 
 /** A variable class for boolean values, defined specially for convenience.  
     If you have several different "types" of booleans, you might want to subclass this to enable type safety checks.

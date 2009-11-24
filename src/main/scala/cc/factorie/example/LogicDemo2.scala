@@ -5,57 +5,71 @@ import scala.collection.mutable.ArrayBuffer
 /** A simple example, modeling smoking, cancer and frienships. */
 object LogicDemo2 {
 
-  def main(args:Array[String]) : Unit = {
-    // Define entity, attribute and relation types
-    class Person (val name:String, val mother:Person) extends ItemizedObservation[Person] with Entity[Person] {
-      type GetterClass = PersonGetter
-      // When we have Scala 2.8 this next line will simply be:
-      // object smokes extends BooleanVariable with Attribute
-      val smokes = new Smokes; class Smokes extends BooleanVariable with Attribute
-      val cancer = new Cancer; class Cancer extends BooleanVariable with Attribute
-      val children = new ArrayBuffer[Person]
-      if (mother != null) mother.children += this
-      override def toString = name
-    }
-    //object Friends extends Relation[Person,Person];
-  
-    // Define boilerplate, to support access to attributes in the entity-relationship syntax
-    class PersonGetter extends EntityGetter[Person] {
-      def smokes = getAttribute(_.smokes)
-      def cancer = getAttribute(_.cancer)
-      def mother = getManyToOne[Person](_.mother, _.children)
-      def children = getOneToMany[Person](_.children, _.mother)
-      def siblings = getSymmetricManyToMany[Person](p => p.mother.children.filter(p2=>p2 ne p))
-    } 
+	// Define entity, attribute and relation types
+	class Person (val name:String, val mother:Person) extends ItemizedObservation[Person] with Entity[Person] {
+		type GetterClass = PersonGetter
+		// When we have Scala 2.8 this next line will simply be:
+			// object smokes extends BooleanVariable with Attribute
+			val smokes = new Smokes; class Smokes extends BooleanVariable with Attribute
+			val cancer = new Cancer; class Cancer extends BooleanVariable with Attribute
+			val children = new ArrayBuffer[Person];
+			if (mother != null) mother.children += this
+			override def toString = name
+	}
+	//val friend = new Friends; class Friends extends Relation[Person,Person];
+	object friend extends Relation[Person,Person];
+
+	// Define boilerplate, to support access to attributes in the entity-relationship syntax
+	class PersonGetter extends EntityGetter[Person] {
+		def smokes = getAttribute(_.smokes)
+		def cancer = getAttribute(_.cancer)
+		def mother = getManyToOne[Person](_.mother, _.children)
+		def children = getOneToMany[Person](_.children, _.mother)
+		def siblings = getSymmetricManyToMany[Person](p => p.mother.children.filter(p2=>p2 ne p))
+		def friends = getRelationDst[friend.type,Person](friend) // the people whom this Person considers friends
+		def friendly = getRelationSrc[friend.type,Person](friend) // the people who consider this Person a friend
+	} 
+
+	def main(args:Array[String]) : Unit = {
 
     // Define model
     val model = new Model (
       // Apriori, you are 10 times more likely not to have cancer
-      Forany[Person] { p => Not(p.cancer) } * 10, 
+      "CancerPrior" =: Forany[Person] { p => Not(p.cancer) } * 10,
+      
       // If you smoke, you are 2 times more likely to have cancer
-      Forany[Person] { p => p.smokes ==> p.cancer } * 2.0,
+      "SmokingCausesCancer" =: Forany[Person] { p => p.smokes ==> p.cancer } * 2.0,
+      
       // If your mother doesn't smoke and one of your children doesn't smoke, you ar 4 times less likely to smoke, for each of your children
-      Forany[Person] { p => Not(p.mother.smokes) ^ Not(p.children.smokes) ==> Not(p.smokes) } * 4
+      "MotherChildSmokes" =: Forany[Person] { p => Not(p.mother.smokes) ^ Not(p.children.smokes) ==> Not(p.smokes) } * 4,
+      
       // For each of your friends that smoke, you are 1.5 times more likely to smoke yourself
-      //Forany[Person] { p => p.friends.smokes <==> p->Smokes } * 1.5
+      "FriendsSmoke" =: Forany[Person] { p => p.friends.smokes <==> p.smokes } * 1.5
     )
 
     // Create the data
-    val amy = new Person("Amy", null); amy.smokes := true
+    val amy = new Person("Amy",null);  amy.smokes := true
     val bob = new Person("Bob", amy);  bob.smokes := true
-    val cas = new Person("Cas", amy);  cas.smokes := true
+    val cas = new Person("Cas", amy);  cas.smokes := true  
     val don = new Person("Don", cas);  don.smokes := false
     val eli = new Person("eli", cas);  eli.smokes := false
-    //Friends(amy,bob); Friends(bob,amy)
-    //Friends(cas,don); Friends(don,cas)
-    
+    friend(amy,bob); friend(amy,eli)
+    friend(bob,amy); friend(bob,eli)
+    friend(don,eli)
+    friend(eli,amy); friend(eli,bob); friend(eli,don)
+                     
     val siblings = newGetterUnit[Person].mother.children
-    println(siblings.forward(bob))
+    println("bob's siblings "+(newGetterUnit[Person].siblings).forward(bob))
+    
+    println("bob's friends: "+(newGetterUnit[Person].friends).forward(bob))
    
     def printFactors(f:Iterable[Factor]) = {
       println("Factor count = "+f.toList.size) 
       println(f)      
     }
+    
+    println("\nmodel")
+    printFactors(model.factors(amy.smokes))
 
     println("\ntemplate1")
     val template1 = (Forany[Person] { p => p.smokes ==> p.cancer }) * 2.0

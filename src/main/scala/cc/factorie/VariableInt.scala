@@ -50,7 +50,7 @@ trait IntValue extends IntValues {
   this: Variable =>
   type VariableType <: IntValue
   def index: Int
-  def intValue = index // TODO consider swapping so "def index = intValue"
+  def intValue = index // TODO consider swapping so "def index = intValue".  Yes, do this.
   override def toString = printName + "(" + index + ")"
   def ===(other: IntValue) = index == other.index
   def !==(other: IntValue) = index != other.index
@@ -60,7 +60,7 @@ trait IntValue extends IntValues {
 // TODO Rename CountVariable or OrdinalVariable, or perhaps leave as IntVariable so that it can be a subclass of CategoricalVariable
 trait IntVariable extends Variable with IntValue {
   type VariableType <: IntVariable
-  protected var _index = -1
+  protected var _index = -1 // TODO make this 'private', for efficiency
   @inline final def index = _index
   // TODO Consider renaming "setByInt"?
   def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
