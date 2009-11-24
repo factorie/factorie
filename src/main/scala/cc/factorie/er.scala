@@ -5,6 +5,9 @@ import cc.factorie._
 
 // I'd like to create a cc.factorie.er package and spread these class definitions across multiple files
 // but I need Scala 2.8 package objects for the implicit conversions.
+  
+// TODO There are a disturbing number of casts in this file.  
+// It could benefit from a serious sweep to get rid of as many of these as possible. 
 
 /** Classes and functions supporting Entity-Relationship languages for creating Templates. */
 object er {
@@ -94,23 +97,32 @@ object er {
   	}
   	protected def addEntry(pair:(A,B)) : RelationshipType = { val r = newRelationship(pair._1, pair._2); addRelationship(r); r }
   	protected def removeEntry(pair:(A,B)) : RelationshipType = { val r = ab2r(pair); removeRelationship(r); r	}
-    /** Add a new Relationship between a and b, and set its value to true */
-  	def add(a:A, b:B)(implicit d:DiffList): RelationshipType = { val r = addEntry((a,b)); r.set(true); if (d != null) d += RelationAddDiff(r); r }
-    /** Remove a Relationship between a and b, and set its value to false */
+    /** Add a new Relationship between a and b, but leave its value as false. */
+    protected def add(a:A, b:B, value:Boolean)(implicit d:DiffList): RelationshipType = { val r = addEntry((a,b)); r.set(value); if (d != null) d += RelationAddDiff(r); r }
+    /** Add a new Relationship between a and b, and set its value to true. */
+    def add(a:A, b:B)(implicit d:DiffList): RelationshipType = add(a,b,true)
+    /** Remove a Relationship between a and b, and set its value to false.  
+        Note that the Relationship variable does not actually get removed from this Relation, 
+        it is merely set to false, which causes it to be skipped in various queries. 
+        This supports that ability to specify a Relationship variable as the target of inference. */
   	def remove(a:A, b:B)(implicit d:DiffList):RelationshipType = { val r = removeEntry((a,b)); r.set(false); if (d != null) d += RelationRemoveDiff(r); r }
+  	// TODO If we are ever tempted to prune our tables by actually removing false Relationships, (which is a good idea)
+  	// be very careful to create a mechanism to preserve attributes of the removed relationships, or alternatively make the user
+  	// aware that relationship attributes will not be preserved once purged, and note that the DiffList must handle this case correctly.
   	def size = ab2r.size
-  	def elements = ab2r.values
+  	def elements = ab2r.values.filter(_.value)
   	def asCollection = new Collection[RelationshipType] {
   		def size = Relation.this.size
-  		def elements = ab2r.values
+  		def elements = Relation.this.elements
     }
-  	def get(a:A,b:B): RelationshipType = ab2r((a,b)) 
-  	def getFromSrc(a:A): Iterable[RelationshipType] = a2rs.getOrElse(a, Nil)
-  	def getFromDst(b:B): Iterable[RelationshipType] = b2rs.getOrElse(b, Nil)
+  	/** Return the Relationship between a and b, creating as necessary.  If it is created, its initial value will be false. */
+  	def get(a:A,b:B): RelationshipType = ab2r.getOrElse((a,b), addEntry((a,b))) // TODO verify in the newly-created case that r.value is false
+  	def getFromSrc(a:A): Iterable[RelationshipType] = a2rs.getOrElse(a, Nil).filter(r => r.value)
+  	def getFromDst(b:B): Iterable[RelationshipType] = b2rs.getOrElse(b, Nil).filter(r => r.value)
   	//def forward: A=>Iterable[B] = (a:A) => get2(a).map(_.dst)
   	//def reverse: B=>Iterable[A] = (b:B) => get1(b).map(_.src)
-  	/** Add a relationship from a to b.  If the relationship is already present, simply return it. */
-  	def apply(a:A,b:B): RelationshipType = ab2r.getOrElse((a,b), add(a,b)(null))
+  	/** Set the value of the relationship from a to b to true.  If not already present, create it. */
+  	def apply(a:A,b:B): RelationshipType = { val r = ab2r.getOrElse((a,b), add(a,b)(null)); r := true; r }
   	//def apply(g1:Getter[_,A],g2:Getter[_,B]) : Formula = new ... 
   	def +=(pair:(A,B)) = add(pair._1, pair._2)(null)
   	def ++=(abs:Iterable[(A,B)]) = abs.foreach(pair => +=(pair))
@@ -299,13 +311,13 @@ object er {
       ret
     }
     // TODO Remove this
-    def getRelation[D<:GetterType[D]](fwd1:C=>Entity[C]#Relation[D], bwd1:D=>Entity[D]#Relation[C])(implicit m:Manifest[D#GetterClass]): Getter[D] with GetterHead[A,D] with GetterMiddle[C,D] = {
+    /*def getRelation[D<:GetterType[D]](fwd1:C=>Entity[C]#Relation[D], bwd1:D=>Entity[D]#Relation[C])(implicit m:Manifest[D#GetterClass]): Getter[D] with GetterHead[A,D] with GetterMiddle[C,D] = {
       val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
       ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
       ret.forward1m = (c:C) => fwd1(c).members //.asInstanceOf[Iterable[D]]
       ret.reverse1m = (d:D) => bwd1(d).incoming // asInstanceOf[C]
       ret
-    }
+    }*/
     /** Create a new Getter, starting from this one as the 'src' of a relation, and appending a Getter for the 'dst' of the relation. */
     def getRelationSrc[R<:Relation[D,C],D<:GetterType[D]](r:R)(implicit m:Manifest[D#GetterClass], mr:Manifest[R#RelationshipType]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = {
       val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
@@ -318,7 +330,7 @@ object er {
       val myExtraGetter = new Getter[ExtraD] { type A = ThisA; type B = ThisC }
       myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
       myExtraGetter.forward1m = (c:C) => r.getFromDst(c)
-      myExtraGetter.reverse1s = (d:ExtraD) => d.dst //.asInstanceOf[myExtraGetter.B]
+      myExtraGetter.reverse1m = (d:ExtraD) => if (d.value) List(d.dst) else Nil //{ val dst = d.dst; if (dst.asInstanceOf[BooleanValue].value) List(dst) else Nil } // If the Relationship is false, don't follow the link
       ret.extraManifest = mr.asInstanceOf[Manifest[ExtraNeighborType]]
       ret.extraGetter = myExtraGetter.asInstanceOf[Getter[ExtraNeighborType]]
       ret
@@ -333,7 +345,7 @@ object er {
       val myExtraGetter = new Getter[ExtraD] with GetterHead[A,ExtraD] with GetterMiddle[C,ExtraD] {}
       myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
       myExtraGetter.forward1m = (c:C) => r.getFromSrc(c)
-      myExtraGetter.reverse1s = (d:ExtraD) => d.src
+      myExtraGetter.reverse1m = (d:ExtraD) => if (d.value) List(d.src) else Nil //{ val src = d.src; if (src.asInstanceOf[BooleanValue].value) List(src) else Nil } // If the Relationship is false, don't follow the link
       ret.extraManifest = mr.asInstanceOf[Manifest[ExtraNeighborType]]
       ret.extraGetter = myExtraGetter.asInstanceOf[Getter[ExtraNeighborType]]
       ret
