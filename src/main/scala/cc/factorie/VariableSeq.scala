@@ -224,9 +224,19 @@ import cc.factorie.util.Implicits._
 			position = p
 		}
 		def hasNext = if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") else seq != null && position + 1 < seq.length
-		def next: V = if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (position + 1 < seq.length) seq(position + 1) else null
+    def next: V = if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (position + 1 < seq.length) seq(position + 1) else null
 		def hasPrev = if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") else seq != null && position > 0
-		def prev: V = if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (position > 0) seq(position - 1) else null
+    def prev: V = if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (position > 0) seq(position - 1) else null
+    def next(n:Int): V = { 
+      if (position == -1) throw new IllegalStateException("VarInSeq position not yet set")
+      val i = position + n
+      if (i >= 0 && i < seq.length) seq(i) else null
+    }
+    def prev(n:Int): V = {
+      if (position == -1) throw new IllegalStateException("VarInSeq position not yet set") 
+      val i = position - n
+      if (i >= 0 && i < seq.length) seq(i) else null
+    }
 	}
  
 	/*trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This]] extends cc.factorie.util.DLinkedList[VarInMutableSeq[This]] {
