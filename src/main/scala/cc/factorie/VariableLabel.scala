@@ -37,19 +37,19 @@ abstract class TrueCategoricalTemplate[V<:CategoricalVariable with TrueCategoric
   def score(s:Stat) = if (s.s1.index == s.s1.trueIndex) 1.0 else 0.0
 }
 
-class TrueLabelTemplate[V<:CoordinatedLabel[_]](implicit m:Manifest[V]) extends TrueCategoricalTemplate[V]()(m)
+class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]](implicit m:Manifest[V]) extends TrueCategoricalTemplate[V]()(m)
 
 
 /** A variable with a single index and a true value. */
-class CoordinatedLabel[T](trueval:T) extends CoordinatedEnumVariable[T](trueval) with TypedTrueCategoricalValue[T] {
-  type VariableType <: CoordinatedLabel[T]
+class CoordinatedLabelVariable[T](trueval:T) extends CoordinatedEnumVariable[T](trueval) with TypedTrueCategoricalValue[T] {
+  type VariableType <: CoordinatedLabelVariable[T]
   class DomainInSubclasses
   var trueIndex = domain.index(trueval)
   setByIndex(domain.index(trueval))(null)
 }
 
-class Label[T](trueval:T) extends CoordinatedLabel(trueval) with UncoordinatedCategoricalVariable {
-  type VariableType <: Label[T]
+class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with UncoordinatedCategoricalVariable {
+  type VariableType <: LabelVariable[T]
   class DomainInSubclasses
   //override final def set(newValue:T)(implicit d: DiffList) = super.set(newValue)(d)
   //override final def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
@@ -57,8 +57,9 @@ class Label[T](trueval:T) extends CoordinatedLabel(trueval) with UncoordinatedCa
 
 /** A Label with a StringDomain.  StringDomains can be conveniently initialized, as in
     class NerLabel extends StringDomain { val PER, ORG, LOC, MISC, O = Value; freeze } // Then Domain[NerLabel].PER == "PER" */
-class StringLabel(trueval:String) extends Label[String](trueval) {
-  type VariableType <: StringLabel
+// TODO But should this be Coordinated or Uncoordinated, or should we make both.
+class StringLabelVariable(trueval:String) extends LabelVariable[String](trueval) {
+  type VariableType <: StringLabelVariable
   type DomainType <: StringDomain[VariableType]
   class DomainClass extends StringDomain[VariableType]
   class DomainInSubclasses

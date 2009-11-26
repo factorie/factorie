@@ -8,7 +8,7 @@ import cc.factorie.util.Implicits._
 
 class DocumentClassifierModel extends Model {
 
-  class Label(name:String, val document:Document) extends cc.factorie.Label(name) 
+  class Label(name:String, val document:Document) extends LabelVariable(name) 
   class Document(labelString:String, features:Iterable[String]) extends BinaryVectorVariable[String] {
     var label : Label = new Label(labelString, this)
     this ++= features

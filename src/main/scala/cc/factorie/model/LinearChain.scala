@@ -6,7 +6,7 @@ trait LinearChainModel extends Model {
 	var feedForward = true
 	var feedBackward = true
 
-	class Label(labelname: String, val token: Token) extends cc.factorie.Label(labelname) {
+	class Label(labelname: String, val token: Token) extends LabelVariable(labelname) {
 	  def hasNext = this.token.hasNext && this.token.next.label != null && feedBackward
 	  def hasPrev = this.token.hasPrev && this.token.prev.label != null && feedForward
 	}

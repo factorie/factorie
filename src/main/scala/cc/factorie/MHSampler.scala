@@ -59,12 +59,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     //List(goProposal,stayProposal)
     //System.out.println("MODEL: " + modelScore+" objSCORE:" + objectiveScore)
     val logAcceptanceScore = modelScore/temperature+bfRatio
-    val mirrorLogAcceptanceScore = //0.0
-      if(logAcceptanceScore>=0)
-	Math.NEG_INF_DOUBLE
-      else
-	Math.log(1-Math.exp(logAcceptanceScore))
-
+    val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0)	Math.NEG_INF_DOUBLE	else Math.log(1-Math.exp(logAcceptanceScore))
     val goProposal = new Proposal(difflist,modelScore,objectiveScore,logAcceptanceScore,bfRatio,temperature)
     val stayProposal = new Proposal(new DiffList,0.0,0.0,mirrorLogAcceptanceScore,Math.NaN_DOUBLE,0)
     List(goProposal,stayProposal)

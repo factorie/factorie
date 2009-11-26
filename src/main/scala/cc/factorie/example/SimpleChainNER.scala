@@ -7,7 +7,7 @@ object SimpleChainNER {
 		val label: Label = new Label(labelString, this)
   	this ++= features
 	}
-	class Label(labelname: String, val token: Token) extends cc.factorie.Label(labelname) {
+	class Label(labelname: String, val token: Token) extends LabelVariable(labelname) {
 	  def hasNext = token.hasNext && token.next.label != null
 	  def hasPrev = token.hasPrev && token.prev.label != null
 	  def next = token.next.label

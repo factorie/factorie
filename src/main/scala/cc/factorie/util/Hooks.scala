@@ -1,7 +1,7 @@
 package cc.factorie.util
 import scala.collection.mutable.ArrayBuffer
 
-class Hooks0 extends ArrayBuffer[{def apply:Unit}] {
+class Hooks0 extends ArrayBuffer[()=>Unit] {
   def apply : Unit = this.foreach(_.apply)
 }
 class Hooks1[A] extends ArrayBuffer[A=>Unit] {

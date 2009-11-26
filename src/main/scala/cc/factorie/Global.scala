@@ -9,7 +9,7 @@ object Global {
   // anticipating the time when all these definitions make go in "package object factorie"?
   
 	val defaultModel = new Model
-	val defaultObjective = new Model(new TrueLabelTemplate[CoordinatedLabel[AnyRef]]())
+	val defaultObjective = new Model(new TrueLabelTemplate[CoordinatedLabelVariable[AnyRef]]())
 
   import cc.factorie.util.Implicits._
   val defaultSampler = new SamplerSuite

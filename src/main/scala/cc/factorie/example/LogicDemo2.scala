@@ -97,11 +97,11 @@ object LogicDemo2 {
     println("stats "+template2b.stats(bob.smokes))
 
     println("\ntemplate3")
-    val template3 = For[Person] { p => Score(p.smokes, p.mother.smokes) }
+    val template3 = Foreach[Person] { p => Score(p.smokes, p.mother.smokes) }
     printFactors(template3.factors(cas.smokes))
 
     println("\ntemplate4")
-    val template4 = For[Person] { p => Score(p.mother.smokes) } 
+    val template4 = Foreach[Person] { p => Score(p.mother.smokes) } 
     printFactors(template4.factors(amy.smokes))
     //System.exit(0)
     
