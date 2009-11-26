@@ -93,16 +93,23 @@ class SamplingMaximizerLattice(val diff:DiffList, val diffScore:Double) extends 
 class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends Maximizer[V] with VariableInferencer[V] {
   def this(model:Model) = this(new GibbsSampler1[V](model))
   type LatticeType = SamplingMaximizerLattice
-  var iterations = 500
-  var rounds = 10
+  var iterations = 50 // TODO What should these be by default?
+  var rounds = 3
   var initialTemperature = 1.0
-  var finalTemperature = 0.1
+  var finalTemperature = 0.01
+  def infer(variables:Collection[V], numIterations:Int): LatticeType = {
+    val origIterations = iterations; iterations = numIterations
+    val result = inferd(variables, variables)(null)
+    iterations = origIterations
+    result
+  }
   def infer(variables:Collection[V], varying:Collection[V]): LatticeType = inferd(variables, varying)(null)
   // TODO I really want Scala 2.8 default parameters: (implicit diff:DiffList = null)  !!!
   def inferd(variables:Collection[V], varying:Collection[V])(implicit diff:DiffList): LatticeType = {
   	var currentScore = 0.0
     var maxScore = currentScore
     val maxdiff = new DiffList
+    val origSamplerTemperature = sampler.temperature
     sampler.temperature = initialTemperature
     def updateMaxScore(p:Proposal): Unit = {
       currentScore += p.modelScore // TODO Check proper handling of fbRatio
@@ -120,13 +127,19 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
     val updateHook: Proposal=>Unit = updateMaxScore _ 
     sampler.proposalHooks += updateHook 
     //sampler.proposalsHooks += { (props:Seq[Proposal]) => { props.foreach(p => println(p.modelScore)) }}
-    for (i <- 0 until rounds) {
-    	sampler.process(varying, iterations/rounds)
-    	sampler.temperature += (finalTemperature-initialTemperature)/rounds
+    val iterationsPerRound = if (iterations < rounds) 1 else iterations/rounds
+    var iterationsRemaining = iterations
+    if (iterationsRemaining == 1) sampler.temperature = finalTemperature
+    while (iterationsRemaining > 0) {
+      val iterationsNow = Math.min(iterationsPerRound, iterationsRemaining)
+    	sampler.process(varying, iterationsNow)
+    	iterationsRemaining -= iterationsNow
+    	sampler.temperature += (finalTemperature-initialTemperature)/rounds // Adding a negative number
     	//println("Reducing temperature to "+sampler.temperature)
     }
-    maxdiff.undo // Go back to maximum scoring configuration
-    sampler.proposalHooks -= updateHook
+    maxdiff.undo // Go back to maximum scoring configuration so we return having changed the config to the best
+    sampler.proposalHooks -= updateHook // Remove our temporary hook
+    sampler.temperature = origSamplerTemperature // Put back the sampler's temperature where we found it
     new SamplingMaximizerLattice(diff, maxScore)
   }
 }
