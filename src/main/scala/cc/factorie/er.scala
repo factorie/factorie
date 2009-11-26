@@ -23,6 +23,8 @@ object er {
   }
   // I considered changing this trait name because of concerns that it is too generic.  For example it might be desired for coref.
   // But now I think it is good for the "entity-relationship" package.  Users can always specify it with "er.Entity", which isn't bad.
+  // TODO Note that it is hard to subclass one of these, which seems sad.  
+  //  For example, users might want to subclass the pre-packaged entities in cc.factorie.application.  Think about this some more.
   /** A trait for entities that have attributes.  Provides an inner trait 'Attribute' for its attribute classes. */
   trait Entity[This<:Entity[This] with Variable with GetterType[This]] extends Variable with GetterType[This] {
     this: This =>
@@ -33,6 +35,7 @@ object er {
       type GetterClass = AttributeGetter[Attribute,This]
       def attributeOwner: This = thisEntity
     }
+    /** Consider removing this.  Not sure if it should go here or outside the Entity. */
   	class SymmetricFunction(initval:This, val get:This=>SymmetricFunction) extends RefVariable(initval) {
   		type EntityType = This with GetterType[This]
   		def this(g:This=>SymmetricFunction) = this(null.asInstanceOf[This], g)
@@ -43,14 +46,14 @@ object er {
   		}
   		protected def _set(newValue:This)(implicit d:DiffList) = super.set(newValue)(d)
   	}
-  	class Relation[B](val bwd:B=>Relation[This]) extends SetVariable[B] {
+  	/*class Relation[B](val bwd:B=>Relation[This]) extends SetVariable[B] {
   		protected val back = new HashSet[B] // those b:B's who have relation (b,this); note that this may not have the relation (this,b)
   		def incoming: Iterable[B] = back
   		override def add(b:B)(implicit d:DiffList): Unit = if (!this.contains(b)) { bwd(b).back += thisEntity; super.add(b)(d); if (d != null) d += RelationAddDiff(b) }
   		override def remove(b:B)(implicit d:DiffList): Unit = if (this.contains(b)) { bwd(b).back -= thisEntity; super.remove(b)(d); if (d != null) d += RelationRemoveDiff(b) }
   		case class RelationAddDiff(b:B) extends Diff { def variable = Relation.this; def redo = bwd(b).back += thisEntity; def undo = bwd(b).back -= thisEntity }
   		case class RelationRemoveDiff(b:B) extends Diff { def variable = Relation.this; def redo = bwd(b).back -= thisEntity; def undo = bwd(b).back += thisEntity }
-    }
+    }*/
   }
 
   /** Representing a directed relationship from <code>src</code> to <code>dst</code>.  
@@ -188,7 +191,10 @@ object er {
       For examples of its usage, see example/LogicDemo*.scala.
       Typically, post-construction, callers would immediately change the prefix, forward1m (or forward1s) and reverse1m (or reverse1s).  
       You can make the "unit" (initial) element for a chain by constructing FooGetter[Foo,Foo],
-      and leaving all the above vars unchanged. */
+      and leaving all the above vars unchanged.
+      A Getter may be declared as an inner class, in which case its constructor takes a hidden argument which is a pointer to the outer instance.
+      However, in that case the Getter will be constructed with a null argument.  
+      It is up to you not to use the outer instance in your implementation of Getter subclasses. */
   // TODO I want trait Getter[C1<:GetterType[C1]], but fighting with typing in ScoreNeighor0 below 
   trait Getter[C1] {
     type A
@@ -310,14 +316,6 @@ object er {
       ret.reverse1s = (d:D) => fwd1(d.asInstanceOf[C]).value.asInstanceOf[C]
       ret
     }
-    // TODO Remove this
-    /*def getRelation[D<:GetterType[D]](fwd1:C=>Entity[C]#Relation[D], bwd1:D=>Entity[D]#Relation[C])(implicit m:Manifest[D#GetterClass]): Getter[D] with GetterHead[A,D] with GetterMiddle[C,D] = {
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
-      ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
-      ret.forward1m = (c:C) => fwd1(c).members //.asInstanceOf[Iterable[D]]
-      ret.reverse1m = (d:D) => bwd1(d).incoming // asInstanceOf[C]
-      ret
-    }*/
     /** Create a new Getter, starting from this one as the 'src' of a relation, and appending a Getter for the 'dst' of the relation. */
     def getRelationSrc[R<:Relation[D,C],D<:GetterType[D]](r:R)(implicit m:Manifest[D#GetterClass], mr:Manifest[R#RelationshipType]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = {
       val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
@@ -399,17 +397,35 @@ object er {
   }
   def newGetter[A<:GetterType[A]](getterClass:Class[_]): A#GetterClass = {
     val constructors = getterClass.getConstructors
-    if (constructors.size != 1) throw new Error("Getters must have only one constructor")
+    if (constructors.size != 1) throw new Error("Getters must have only one constructor; class="+getterClass+" has "+constructors.size+".  You can get this error if you failed to correctly set 'type GetterClass'.")
     val constructor = constructors.apply(0)
     val numArgs = constructor.getParameterTypes.length
-    if (numArgs != 0) throw new Error("Getter constructors must not take any arguments.  "+getterClass.getName+" "+numArgs)
-    constructor.newInstance().asInstanceOf[A#GetterClass]
+    if (numArgs == 0) {
+      constructor.newInstance().asInstanceOf[A#GetterClass]
+    } /*else if (numArgs == 1) {
+      val args = new Array[Object](1)
+      args(0) = null
+      constructor.newInstance(args).asInstanceOf[A#GetterClass] // TODO Yipes, passing null here, when expecting a pointer to the outer instance!  OK as long as the user isn't relying on the outer instance.  Can we get it somehow?
+    } */ else {
+    	val msg = new StringBuffer
+    	msg.append("Getter constructors must not take any arguments.\nInstead "+getterClass.getName+" takes "+numArgs+" argument(s): ")
+    	constructor.getParameterTypes.foreach(t => msg.append(t.getName+" "))
+    	msg.append("\nYou will get an unexpected single argument when you declare a Getter as an inner class;\nthe solution is to declare all Getters in packages, not inner classes.")
+      throw new Error(msg.toString)
+    }
   }
   /** Construct a new Getter representing the beginning of an getter chain, taking input A. */
   def newGetterUnit[A<:GetterType[A]](implicit m:Manifest[A#GetterClass]): A#GetterClass with GetterHead[A,A] = {
   	//println("GetterUnit m="+m)
   	newGetter[A](m).asInstanceOf[A#GetterClass with GetterHead[A,A]];
   }
+  /** A immutable boolean observation variable that satisfies the type requirements necessary to be returned by a getter.
+      Useful for implementing simple binary tests on observations.  Since its value will never change, you do not have
+      to provide a rev1 function when creating a getter for it with getOneToOne. */
+  class BooleanObservationWithGetter(f:Boolean) extends BooleanObservation(f) with Entity[BooleanObservationWithGetter] {
+    type GetterClass = BooleanObservationGetter
+  }
+  class BooleanObservationGetter extends EntityGetter[BooleanObservationWithGetter]
   
   
   // Define function for scoring compatibility between getter targets with CategoricalValues
@@ -419,19 +435,25 @@ object er {
   
 	case class Score[X<:Variable](sns:ScoreNeighbor0[X]*) {
   	def manifests : Seq[Manifest[_<:Variable]] = sns.flatMap(_.manifests)
-  	def getters : Seq[GetterHead[X,ScorableValues0]] = sns.flatMap(_.getters)
+  	//def getters : Seq[GetterHead[X,ScorableValues0]] = sns.flatMap(_.getters)
+    def getters : Seq[Getter[ScorableValues0] {type A = X}] = sns.flatMap(_.getters)
   }
   trait ScoreNeighbor0[X<:Variable] {
   	def manifests : Iterable[Manifest[ScorableValues0]];
-  	def getters : Seq[GetterHead[X,ScorableValues0]]
+  	//def getters : Seq[GetterHead[X,ScorableValues0]]
+    def getters : Seq[Getter[ScorableValues0] {type A = X}]
   }
-  class ScoreNeighbor[X<:Variable,A<:ScorableValues[A]](a1:GetterHead[X,A])(implicit ma:Manifest[A]) extends ScoreNeighbor0[X] {
+  //class ScoreNeighbor[X<:Variable,A<:ScorableValues[A]](a1:GetterHead[X,A])(implicit ma:Manifest[A]) extends ScoreNeighbor0[X]
+  class ScoreNeighbor[X<:Variable,A<:ScorableValues[A]](a1:Getter[A] /*with GetterHead[X,A]*/)(implicit ma:Manifest[A]) extends ScoreNeighbor0[X] {
   	def manifests = List(ma.asInstanceOf[Manifest[ScorableValues0]])
-  	def getters = List(a1.asInstanceOf[GetterHead[X,ScorableValues0]])
+  	//def getters = List(a1.asInstanceOf[GetterHead[X,ScorableValues0]])
+    def getters = List(a1.asInstanceOf[Getter[ScorableValues0] {type A = X}])
   }
   
-  implicit def getter2scoreneighbor[X<:Variable,A<:ScorableValues[A]](a:Getter[A] with GetterHead[X,A])(implicit ma:Manifest[A]): ScoreNeighbor0[X] = 
-    new ScoreNeighbor(a)(ma)
+  implicit def getter2scoreneighbor[X<:Variable,A<:ScorableValues[A]](a:Getter[A] with GetterHead[X,A])(implicit ma:Manifest[A]): ScoreNeighbor0[X] = { 
+  	//println("getter2scoreneighbor ma="+ma+" a="+a)
+    new ScoreNeighbor[X,A](a)(ma)
+  }
   
   
   // Define functions for clauses in first-order logic
@@ -554,7 +576,7 @@ object er {
       }
     }
   }
-  object For {
+  object Foreach {
     def apply[X<:GetterType[X] with Variable](x2c:X#GetterClass with GetterHead[X,X]=>Score[X])(implicit m:Manifest[X#GetterClass]) = {
     	val score = x2c(newGetterUnit[X](m))
     	val manifests = score.manifests.toList.asInstanceOf[List[Manifest[ScorableValues0]]];
