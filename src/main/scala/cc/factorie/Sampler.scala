@@ -3,7 +3,7 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{ListBuffer,ArrayBuffer,HashMap,PriorityQueue}
 import scalala.tensor.Vector
 import cc.factorie.util.Implicits._
-import cc.factorie.util.Hooks1
+import cc.factorie.util.{Hooks0,Hooks1}
 
 /** Samplers that key off of particular contexts.  Subclasses implement "process1(context:C)" */
 trait Sampler[C] {
@@ -17,6 +17,7 @@ trait Sampler[C] {
 	/** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
 	final def process(context:C): DiffList = {
   	val c = preProcessHook(context)
+  	if (c == null && !processingWithoutContext) return null // TODO should we return newDiffList here instead?
   	val d = process1(c)
   	processCount += 1
   	postProcessHook(c, d)
@@ -32,15 +33,24 @@ trait Sampler[C] {
   def newDiffList = if (makeNewDiffList) new DiffList else null
   /** The underlying protected method that actually does the work.  Use this.newDiffList to optionally create returned DiffList.
    		Needs to be defined in subclasses. */
-	def process1(context:C): DiffList
-	protected final def processN(contexts:Iterable[C]): Unit = { contexts.foreach(process(_)); iterationCount += 1; if (!postIterationHook) return }
+	def process1(context:C): DiffList // TODO Why isn't this 'protected'?  It should be.  -akm.
+	protected final def processN(contexts:Iterable[C]): Unit = { 
+    contexts.foreach(process(_))
+    iterationCount += 1
+    postIterationHooks
+    if (!postIterationHook) return 
+  }
 	def process(contexts:Iterable[C], numIterations:Int): Unit = for (i <- 0 to numIterations) processN(contexts)
-	def process(count:Int): Unit = for (i <- 0 to count) process(null.asInstanceOf[C]) // TODO Why is this cast necessary?;
-  // Guard is removed by erasure: 
-  //def process00(x:AnyRef): DiffList = if (x.isInstanceOf[C]) process(x.asInstanceOf[C]) else null // x match { case c:C => process(c); case _ => null }
+	private var processingWithoutContext = false
+	def process(count:Int): Unit = {
+		processingWithoutContext = true // examined in process()
+    for (i <- 0 to count) process(null.asInstanceOf[C]) // TODO Why is this cast necessary?;
+    processingWithoutContext = false
+	}
  
   // Hooks
-  /** Called just before each step of sampling.  Return an alternative variable if you want that one sampled instead. */
+  /** Called just before each step of sampling.  Return an alternative variable if you want that one sampled instead.  
+      Return null if you want to abort sampling of this context. */
   def preProcessHook(context:C): C = context 
   /** Call just after each step of sampling. */
   def postProcessHook(context:C, difflist:DiffList): Unit = {}
@@ -48,6 +58,7 @@ trait Sampler[C] {
   def diffHook(difflist:DiffList): Unit = {}
   /** Called after each iteration of sampling the full list of variables.  Return false if you want sampling to stop early. */
   def postIterationHook: Boolean = true
+  def postIterationHooks = new Hooks0
 }
 
 
@@ -78,11 +89,20 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
   def proposalHook(proposal:Proposal): Unit = proposalHooks(proposal)
 }
 
+// Not intended for users.  Here just so that SampleRank can override it.
+// TODO is there a better way to do this?
+trait SamplerOverSettings0 {
+  def objective: Model
+}
+
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(C), 
     scores each, builds a distribution from the scores, and samples from it. */
-abstract class SamplerOverSettings[C](val model:Model, val objective:Model) extends ProposalSampler[C] {
+abstract class SamplerOverSettings[C](theModel:Model, theObjective:Model) extends ProposalSampler[C] with SamplerOverSettings0 {
   def this(m:Model) = this(m, null)
-  // This method must be implemented in sub-classes
+  def model = theModel
+  def objective = theObjective 
+  /** Abstract method must be implemented in sub-classes.  
+      Provides accoess to all different possible worlds we will evaluate for each call to 'process' */ 
   def settings(context:C) : SettingIterator
   // TODO Some faster alternative to "toList" below?
   def proposals(context:C): Seq[Proposal] = {
