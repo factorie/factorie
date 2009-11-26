@@ -34,8 +34,9 @@ abstract class BinaryVectorVariable[T](initVals:Iterable[T], var skipNonCategori
   protected var indxs = new ArrayBuffer[Int]()
   private var _vector: Vector = null // TODO Can we make this more memory efficient?  Avoid having both Vector and ArrayBuffer?;
   if (initVals ne null) this ++= initVals
-  def indices : Seq[Int] = indxs // TODO project to ensure no changes, even with casting?  But this would involve allocating the Projection
-  def values : Seq[T] = { val d = this.domain; indxs.map(d.get(_)) }
+  def indices: Seq[Int] = indxs // TODO project to ensure no changes, even with casting?  But this would involve allocating the Projection
+  def values: Seq[T] = { val d = this.domain; indxs.map(d.get(_)) }
+  def zero: Unit = { indxs.clear; _vector = null }
   override def vector = {
   	if (_vector == null || _vector.size != domain.allocSize) {
   		val indices = indxs.toArray
