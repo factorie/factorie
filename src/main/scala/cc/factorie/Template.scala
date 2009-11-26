@@ -96,8 +96,12 @@ import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector
    		def statistic : StatisticType = Template.this.statistic(this.statistics) // TODO verify that this gets override definitions of statistic()
 		}
 	  var factorName = "Factor"
+    /** Assign this Template a name which will be used later when its factors are printed. */
 	  def name(n:String) : this.type = { factorName = n; this }
-	  def =:(n:String) : this.type = name(n) // TODO Is this syntax too weird?
+    /** Assign this Template a name which will be used later when its factors are printed. */
+	  def =:(n:String): this.type = name(n) // TODO Is this syntax too weird?
+    /** Assign this Template a name which will be used later when its factors are printed. */
+	  def %(n:String): this.type = name(n) // because % is the comment character in shell languages such as /bin/sh and Makefiles.
     trait Stat extends cc.factorie.Stat { 
       override def template : TemplateType = Template.this.asInstanceOf[TemplateType] 
       def score = Template.this.score(this.asInstanceOf[StatType]) // TODO can we find a way to get rid of this cast?
