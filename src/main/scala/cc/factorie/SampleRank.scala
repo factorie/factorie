@@ -5,18 +5,22 @@ import scalala.Scalala._
 import scalala.tensor.Vector
 
 /** Set the parameters so that the model.score ranks consecutive samples in the same order as the objective.score, with a margin. */
-trait SampleRank extends ProposalSampler0 {
+trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
   this: ProposalSampler[_] =>
   type TemplatesToUpdate <: DotTemplate
-  def model : Model
+  def model: Model
   var learningMargin = 1.0
   def updateWeights: Unit
   val amIMetropolis = this.isInstanceOf[MHSampler[Variable]] // TODO Can we find a way to avoid this special case?
 
+  /** If objective has not yet been set non-null, get it from the Global.defaultObjective. */
+  abstract override def objective = if (super.objective == null) Global.defaultObjective else super.objective
+  
   var bestModel1, bestModel2, bestObjective1, bestObjective2 : Proposal = null
 	abstract override def proposalsHook(proposals:Seq[Proposal]) : Unit = {
   	if (proposals.length < 2) return
 	  super.proposalsHook(proposals)
+	  //println("SampleRank proposalsHook "+proposals.toList.map(_.toString))
   	val bestModels = proposals.max2(_ modelScore)
   	val bestObjectives = proposals.max2(_ objectiveScore)
   	bestModel1 = bestModels._1
@@ -94,25 +98,3 @@ trait SampleRank extends ProposalSampler0 {
 	}
 }
 
-
-/*
-abstract class GibbsSampleRank[C<:Variable with IterableSettings](model:Model, override val objective:Model)(implicit mc:Manifest[C]) extends GibbsSampler1[C](model)(mc) {
-  var learningMargin = 1.0
-  def updateWeights(bestModel1:Proposal, bestModel2:Proposal, bestObjective1:Proposal, bestObjective2:Proposal) : Unit 
-	override def proposalsHook(proposals:Seq[Proposal]) : Unit = {
-  	val (bestModel1, bestModel2) = proposals.max2(_ modelScore)
-  	val (bestObjective1, bestObjective2) = proposals.max2(_ objectiveScore)
-  	updateWeights(bestModel1, bestModel2, bestObjective1, bestObjective2)
-  }
-}
-
-abstract class GibbsSampleRank1[C<:Variable](model:Model, override val objective:Model)(implicit mc:Manifest[C]) extends GibbsSamplerOverSettings1[C](model)(mc) {
-  var learningMargin = 1.0
-  def updateWeights(bestModel1:Proposal, bestModel2:Proposal, bestObjective1:Proposal, bestObjective2:Proposal) : Unit 
-	override def proposalsHook(proposals:Seq[Proposal]) : Unit = {
-  	val (bestModel1, bestModel2) = proposals.max2(_ modelScore)
-  	val (bestObjective1, bestObjective2) = proposals.max2(_ objectiveScore)
-  	updateWeights(bestModel1, bestModel2, bestObjective1, bestObjective2)
-  }
-}
-*/
