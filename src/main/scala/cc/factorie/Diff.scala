@@ -60,6 +60,7 @@ class DiffList extends ArrayBuffer[Diff] {
 	}
 	/** For comparing the scores of two different models. */
 	def scoreAndUndo(model1:Model, model2:Model) : (Double, Double) = {
+    if (this.length == 0) return (0.0, if (model2 == null) Math.NaN_DOUBLE else 0.0) // short-cut the simple case
 		var s1 = model1.score(this)
 		var s2 = if (model2 == null) Math.NaN_DOUBLE else model2.score(this)
 		this.undo
