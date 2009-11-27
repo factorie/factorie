@@ -227,8 +227,9 @@ object LabeledTokenSeqs {
   		seqs
   	}
     // TODO Waiting for Scala 2.8 default parameter values
-    def fromOWPL(source:Source, featureFunction:Seq[String]=>Seq[String], ignoreLines:Regex): Seq[LabeledTokenSeq] = 
-      fromOWPL(source, featureFunction, ignoreLines, null)
+    def fromOWPL(source:Source, featureFunction:Seq[String]=>Seq[String], ignoreLines:Regex): Seq[LabeledTokenSeq] = fromOWPL(source, featureFunction, ignoreLines, null)
+    def fromOWPL(source:Source, ignoreLines:Regex): Seq[LabeledTokenSeq] = fromOWPL(source, f => f, ignoreLines, null)
+    def fromOWPL(source:Source, ignoreLines:String): Seq[LabeledTokenSeq] = fromOWPL(source, f => f, ignoreLines.r, null)
 
     
     class PerLabelEvaluation(val labelValue: String) {
