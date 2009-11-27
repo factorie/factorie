@@ -1,0 +1,168 @@
+% FACTORIE User's Guide
+% Copyright (c) 2009-. University of Massachusets, Department of Computer Science.
+% Released under the Creative Commons 3.0 BY License.
+
+%
+% This manual is currently unfinished.  
+% When it has more useful content, it will be directly linked from the
+% FACTORIE web site.
+%
+
+
+
+\documentclass[]{manual}
+
+% Use utf-8 encoding for foreign characters
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+%\usepackage[bitstream-charter]{mathdesign}
+
+% Setup for fullpage use
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{epsfig}
+\usepackage{color}
+%\usepackage{pdfsync}
+
+% Flexible citation syntax
+\usepackage{natbib}
+
+% Multipart figures
+%\usepackage{subfigure}
+
+% More symbols
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{latexsym}
+
+% Line numbering
+\usepackage{lineno}
+
+% Package for including code in the document
+\usepackage{listings}
+
+% Surround parts of graphics with box
+\usepackage{boxedminipage}
+
+\usepackage{upquote}
+
+% This is now the recommended way for checking for PDFLaTeX:
+%\usepackage{ifpdf}
+
+% Enable hyperlinks
+\definecolor{Red}{rgb}{0.5,0,0}
+\definecolor{Blue}{rgb}{0,0,0.5}
+\usepackage[pdfpagemode=FullScreen,colorlinks=true,linkcolor=Red,citecolor=Blue,urlcolor=Red]{hyperref}
+
+%\ifpdf
+%\usepackage[pdftex]{graphicx}
+%\else
+%\usepackage{graphicx}
+%\fi
+
+
+\title{FACTORIE User's Guide:\\
+Probabilistic Programming via Imperatively Defined Factor Graphs}
+\author{Andrew McCallum \\ Karl Schultz \\ Sameer Singh \\ Sebastian Riedel \\ Michael Wick}
+\graphicspath{{figs/}}
+\pdfoutput=1
+%\release{0.8}
+%\date
+
+
+%%%%%%%%%%%%%%% Commands from rst2latex %%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\rubric}[1]{\subsection{#1}}
+\newcommand{\titlereference}[1]{\textsl{#1}}
+\newlength{\locallinewidth}
+\setlength{\locallinewidth}{7in}
+\newlength{\admonitionwidth}
+\setlength{\admonitionwidth}{0.9\textwidth}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setcounter{secnumdepth}{1}
+
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+%\linenumbers
+
+% Examples to consider including:
+% <h2>Coin Flips</h2>
+% <h2>Rain, Sprinkler and Wet Grass</h2>
+% <h2>Document Clustering with a Mixture of Multinomials</h2>
+% <h2>Latent Dirichlet Allocation</h2>
+% <h2>Smoking, Cancer and Friendships</h2>
+% <h2>Companies, Employers and Respect</h2>
+% <h2>Named Entity Recognition with Linear-chain CRFs</h2>
+% <h2>Entity Resolution</h2>
+% <h2>Dependency Parsing</h2>
+
+\chapter{Introduction}
+\label{chap:intro}
+
+An overview of FACTORIE and its features.
+
+\chapter{Installation}
+\label{chap:install}
+
+Where to find FACTORIE.  How to install it.  Where to find updates.
+Where to find other users, discussion groups.  How to report errors
+and suggestions.
+
+
+\chapter{Tutorial}
+\label{chap:tutorial}
+
+A tutorial, based on multiple examples.  Show examples of
+entity-relationship style of template definition, logic syntactic
+sugar, and underlying imperative style.  Show examples of both
+undirected and directed models.
+
+
+\chapter{Variables and Domains}
+\label{chap:variables}
+
+Objects representing random variables.
+
+\section{The Basic Variable Classes}
+\section{Defining Your own Variable Classes}
+\section{Defining a Variable's Domain}
+\section{Variables of Generative Models}
+\section{Generative Distributions}
+
+
+\chapter{Defining Models with Factor Templates}
+\label{chap:models}
+
+
+\chapter{Inference}
+\label{chap:inference}
+
+Sampling, MCMC, variational, maximization.
+
+
+\chapter{Learning}
+\label{chap:learning}
+
+Objective functions as models.
+
+
+\chapter{Diagnostics}
+\label{chap:diagnostics}
+
+\chapter{Database Back-end}
+\label{chap:database}
+
+\chapter{Conclusion}
+\label{chap:conclusion}
+
+
+% \appendix
+% \chapter{Appendix: Foo}
+
+\bibliographystyle{plainnat}
+\bibliography{factorie-users-guide}
+
+\end{document}
