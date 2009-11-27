@@ -9,6 +9,14 @@ target
 .manager
 *.DS_Store
 
+# doc LaTeX 
+doc/usersguide/*.aux
+doc/usersguide/*.log
+doc/usersguide/*.out
+doc/usersguide/*.pdf
+doc/usersguide/*.toc
+
+
 # Eclipse config files
 .project
 .classpath
