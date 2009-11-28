@@ -144,4 +144,16 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
   }
 }
 
+class BPInferencer[V<:UncoordinatedCategoricalVariable](model:Model) extends VariableInferencer[V] {
+  override type LatticeType = BPLattice
+  def infer(variables:Collection[V], varying:Collection[V]): LatticeType = infer(variables, varying, 4) // TODO Make a more sensible default  
+  def infer(variables:Collection[V], varying:Collection[V], numIterations:Int): LatticeType = {
+    val result = new BPLattice(model,varying)
+    result.update(numIterations) // TODO Of course make this smarter later
+    result.setVariablesToMax(variables) // For now, just inference my marginal maximization
+    // NOTE the above line requires that 'variables' is a subset of varying, of course!
+    result
+  }
+  def infer(variables:Collection[V], numIterations:Int): LatticeType = infer(variables, variables, numIterations)
+}
 

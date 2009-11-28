@@ -5,6 +5,7 @@ object ChainNER2 {
   import cc.factorie._ 
   import cc.factorie.er._
   import cc.factorie.application.LabeledTokenSeqs._
+  import scala.collection.mutable.ArrayBuffer
 
   // Variable classes Token, Label and LabeledTokenSeq are already defined in cc.factorie.application.LabeledTokenSeqs
   // Use them to define model:
@@ -21,37 +22,56 @@ object ChainNER2 {
     // Read training and testing data.  The function 'featureExtractor' function is defined below
     val trainSentences = LabeledTokenSeq.fromOWPL(Source.fromFile(args(0)), featureExtractor, "-DOCSTART-".r)
     val testSentences =  LabeledTokenSeq.fromOWPL(Source.fromFile(args(1)), featureExtractor, "-DOCSTART-".r)
-    (trainSentences ++ testSentences).foreach(s => s.addNeighboringFeatureConjunctions(List(0), List(-1,0), List(1)))
+    //(trainSentences ++ testSentences).foreach(s => s.addNeighboringFeatureConjunctions(List(0), List(-1,0), List(1)))
     println("Training on "+trainSentences.size+" sentences, "+trainSentences.foldLeft(0)(_+_.size)+" tokens.")
     println("Testing  on "+testSentences.size+" sentences, "+testSentences.foldLeft(0)(_+_.size)+" tokens.")
     println("Labels: "+Domain[Label].toList)
 
     // Get the variables to be inferred; prune the data so that it can finish in just ~2 minutes
-    val trainLabels = trainSentences.flatMap(_.labels)//.take(20000)
-    val testLabels = testSentences.flatMap(_.labels)//.take(10000)
+    val trainLabels = trainSentences.flatMap(_.labels).take(20000) // was take(20000) 
+    val testLabels = testSentences.flatMap(_.labels).take(2000) // was .take(10000)
 
-    trainLabels.take(20).foreach(printLabel(_))
+    val targets = trainLabels.take(50)// trainSentences(15).map(_.label)
+    targets.foreach(printLabel(_))
+
+    //trainLabels.take(20).foreach(printLabel(_))
     println("Domain size = "+Domain[Token].size)
     
     // Train and test!
     (trainLabels ++ testLabels).foreach(_.setRandomly)
     val learner = new GibbsSampler1[Label](model,Global.defaultObjective) with SampleRank 
-    //with PerceptronUpdates 
-    with ConfidenceWeightedUpdates 
+    with PerceptronUpdates 
+    //with ConfidenceWeightedUpdates 
     {
-      temperature = 0.01
+    	//temperature = 0.01
       override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && Global.random.nextDouble > 0.5) null else label
       override def postIterationHook(): Boolean = { println(LabeledTokenSeq.segmentEvaluation(trainLabels)); true }
     }
     //with FactorQueue[Variable with IterableSettings] { def process0(x:AnyRef):DiffList = x match { case l:Label => process(l); case _ => null} }
     // Train for 5 iterations through all Labels
     val startTime = System.currentTimeMillis
-    learner.process(trainLabels, 6)
+    learner.process(trainLabels, 2)
     println("Finished training in "+(System.currentTimeMillis-startTime)/60000.0+" minutes.")
+    
+    // Predict, testing BP
+    //val targets = new ArrayBuffer[UncoordinatedCategoricalVariable]
+    val lattice = new BPLattice(model, targets)
+    println("Starting BP updates on "+targets.size+" variables")
+    lattice.update(100)
+    lattice.setVariablesToMax
+    targets.foreach(v => println(v.trueValue+"/"+v.value+" "+v.token.word+"  "+
+    		lattice.marginal(v).toArray.zipWithIndex.map((pair:(Double,Int)) => Tuple2(v.domain.get(pair._2), pair._1)).toString))
+
+    
     // Predict, also by sampling, visiting each variable 3 times.
     //new SamplingMaximizer[Label](model).infer(testLabels, 5)
-    new GibbsSampler(model) {temperature = 0.1}.process(testLabels, 1)
-    new GibbsSampler(model) {temperature = 0.01}.process(testLabels, 3)
+    println("GibbsSampling inference")
+    new GibbsSampler(model) {temperature = 0.1}.process(testLabels, 1); new GibbsSampler(model) /*{temperature = 0.01}*/.process(testLabels, 3)
+    println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation(trainLabels))
+    println("TEST\n"+LabeledTokenSeq.segmentEvaluation(testLabels))
+
+    println("BP inference")
+    val predictor = new BPInferencer[Label](model); testSentences.foreach(s => predictor.infer(s.map(_.label), 2))
     println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation(trainLabels))
     println("TEST\n"+LabeledTokenSeq.segmentEvaluation(testLabels))
   }

@@ -80,6 +80,10 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[Pr
     }
     return size - 1
   }
+  def sampleIndexIterator = new Iterator[Int] {
+    def hasNext = true
+    def next = sampleIndex
+  }
   def maxPrIndex: Int = {
     var i = 0; var mp = pr(i); var mi = i
     while (i < size) { if (mp < pr(i)) { mp = pr(i); mi = i }; i += 1 }
@@ -112,13 +116,15 @@ class MultinomialMixture[M<:AbstractMultinomial[O],O<:DiscreteOutcome[O]](ms:Seq
 }
 
 /** Simple Multinomial that represents p(x) directly. */
-class DenseMultinomial[O<:DiscreteOutcome[O]](proportions:Seq[Double])(implicit m:Manifest[O]) extends AbstractMultinomial[O] {
-  def this(dim:Int)(implicit m:Manifest[O]) = this(Array.make(dim, 1.0/dim))
-  val length: Int = Domain[O](m).size
+// TODO Change this to not require a Manifest in the default constructor
+class DenseMultinomial[O<:DiscreteOutcome[O]](proportions:Seq[Double]) extends AbstractMultinomial[O] {
+  def this(dim:Int) = this(Array.make(dim, 1.0/dim))
+  def this()(implicit m:Manifest[O]) = this(Array.make(Domain[O](m).size, 1.0/Domain[O](m).size))
+  val length: Int = proportions.length
   val _pr = new DenseVector(length)
-  if (proportions != null) set(proportions)
+  set(proportions) //if (proportions != null) 
   /** Will normalize for you, if not already normalized. */
-  def set(props:Seq[Double]): Unit = {
+  def set(proportions:Seq[Double]): Unit = {
     assert (proportions.length == length)
     val sum = proportions.foldLeft(0.0)(_+_)
     assert (sum > 0.0)

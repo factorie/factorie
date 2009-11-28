@@ -412,6 +412,13 @@ object Maths {
   def subtractLogProb (a:Double, b:Double) = 
     if (b == Math.NEG_INF_DOUBLE) a else a + Math.log (1 - Math.exp(b-a))
 
+  /** Divide each element of the array by the sum of the elements. */ // TODO Is this already provided somewhere else?
+  def normalize(a:Array[Double]): Unit = {
+    var i = 0; var sum = 0.0
+    while (i < a.length) { sum += a(i); i += 1 }
+    i = 0
+    while (i < a.length) { a(i) /= sum; i += 1 }
+  }
   
   /** Exponentiate the elements of the array, and then normalize them to sum to one. */
   def expNormalize(a:Array[Double]): Unit = {
