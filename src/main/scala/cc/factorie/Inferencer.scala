@@ -42,7 +42,7 @@ trait Optimizer {
 // But as long as we don't use any methods that require [V], I think we are OK.
 class DiscreteMarginal[V<:CategoricalValues](val variable:V) extends DenseCountsMultinomial(variable.domain.size) with Marginal {
   keepGeneratedSamples = false
-  def increment : Unit = variable match {
+  def incrementCurrentValue : Unit = variable match {
     case v:CategoricalValue => increment(v.index, 1.0)(null)
     case v:BinaryVectorVariable[_] => v.incrementInto(this)
   }
@@ -69,7 +69,7 @@ class SamplingInferencer[V<:CategoricalVariable,C](val sampler:Sampler[C]) exten
     sampler.process(contexts, burnIn)
     for (i <- 0 until iterations/thinning) {
       sampler.process(contexts, thinning)
-      targets.foreach(v => lat.marginal(v).increment)
+      targets.foreach(v => lat.marginal(v).incrementCurrentValue)
     }
     lat
   }
@@ -155,5 +155,13 @@ class BPInferencer[V<:UncoordinatedCategoricalVariable](model:Model) extends Var
     result
   }
   def infer(variables:Collection[V], numIterations:Int): LatticeType = infer(variables, variables, numIterations)
+  def inferTreewise(variables:Collection[V], varying:Collection[V]): LatticeType = {
+    val result = new BPLattice(model,varying)
+    result.updateTreewise
+    result.setVariablesToMax(variables) // For now, just inference my marginal maximization
+    // NOTE the above line requires that 'variables' is a subset of varying, of course!
+    result
+  }
+  def inferTreewise(variables:Collection[V]): LatticeType = inferTreewise(variables, variables)
 }
 

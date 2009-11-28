@@ -1,6 +1,7 @@
 package cc.factorie
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 import cc.factorie.util.Implicits._
+import java.util.Arrays
 
 // Very preliminary explorations in inference by belief propagation among discrete variables.
 // Not yet finished, and certainly not yet optimized for speed at all.
@@ -33,10 +34,11 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
     def messageCurrentValue: Double = msg(v.intValue)
     // IterableSettings instances for each of the variables neighboring this BPFactor, except the variable 'v'
     protected val neighborSettings = factor.variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
+    var visitedDuringThisTree = false
     /** Do one step of belief propagation for the message from this BPFactor to variable 'v' */
     def update: MessageTo = {
     	val origIndex = v.index
-    	for (i <- 0 until v.domain.size) {
+    	for (i <- 0 until v.domain.size) { // Consider reversing the nested ordering of this loop and the inner one
     		v.setByIndex(i)(null) // note that this is changing the Variable value
     		if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
           msg(i) = factor.statistic.score
@@ -51,17 +53,37 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
     	v.setByIndex(origIndex)(null) // put it back where it was, just in case someone cares
       this // Return this so we can say messageTo(v).update.message
     }
+    /** Update this message, but first update the messages its depends on, avoiding update loops. */
+    def updateTreewise: MessageTo = {
+    	if (visitedDuringThisTree) return this
+      visitedDuringThisTree = true
+      for (n <- neighborSettings) BPFactor.this.messageFrom(n.variable).updateTreewise
+      update
+    }
   }
   /** Message from Variable v to this factor. */
   case class MessageFrom(v:V) {
     lazy private val msg = new Array[Double](v.domain.size) // Holds unnormalized log-probabilities
-    def message: Array[Double] = msg
+    def message: Array[Double] = msg // TODO Consider making these scalala Vectors
     def messageCurrentValue: Double = msg(v.intValue)
+    val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
+    var visitedDuringThisTree = false
     def update: MessageFrom = {
-      val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
-      for (i <- 0 until v.domain.size)
-        msg(i) = neighborFactors.sum(_.messageTo(v).message(i))
+      if (neighborFactors.size > 0)
+      	for (i <- 0 until v.domain.size)
+      		msg(i) = neighborFactors.sum(_.messageTo(v).message(i))
       this // Return this so we can say messageFrom(v).update.message
+    }
+    def updateTreewise: MessageFrom = {
+      if (visitedDuringThisTree) return this
+      visitedDuringThisTree = true
+      Arrays.fill(msg, 0.0)
+      for (n <- neighborFactors) {
+        val msg2 = n.messageTo(v)
+        msg2.updateTreewise
+        for (i <- 0 until v.domain.size) msg(i) += msg2.message(i)
+      }
+      this
     }
   }
   lazy private val _msgTo: Array[MessageTo] = factor.variables.filter(_.isInstanceOf[UncoordinatedCategoricalVariable]).map(v => MessageTo(v.asInstanceOf[UncoordinatedCategoricalVariable])).toSeq.toArray
@@ -71,6 +93,8 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
   def messageTo(vi: Int) = _msgTo(vi)
   def messageFrom(vi: Int) = _msgFrom(vi)
   def update: Unit = { _msgTo.foreach(_.update); _msgFrom.foreach(_.update);  }
+  def updateTreewise: Unit = { _msgTo.foreach(_.updateTreewise); _msgFrom.foreach(_.updateTreewise);  }
+  def resetTree: Unit = { _msgTo.foreach(_.visitedDuringThisTree = false); _msgFrom.foreach(_.visitedDuringThisTree = false); }
   /** Not the overall marginal over the variable; just this factor's marginal over the variable */
   def marginal(v:V): Array[Double] = {
     val result = new Array[Double](v.domain.size)
@@ -129,9 +153,9 @@ class BPLattice(model:Model, val variables:Collection[UncoordinatedCategoricalVa
   type V = UncoordinatedCategoricalVariable
   // Find all the factors touching the 'variables'
   val factors = model.factorsOf[VectorTemplate](variables)
+  def bpFactorsOf(v:UncoordinatedCategoricalVariable) = v2m(v)
   // Data structure for holding mapping from Variable to the collection of BPFactors that touch it
-  val v2m = new HashMap[Variable,ArrayBuffer[BPFactor]] { override def default(v:Variable) = {this(v) = new ArrayBuffer[BPFactor]; this(v)} }
-  def factorsOf(v:UncoordinatedCategoricalVariable) = v2m(v)
+  private val v2m = new HashMap[Variable,ArrayBuffer[BPFactor]] { override def default(v:Variable) = {this(v) = new ArrayBuffer[BPFactor]; this(v)} }
   // Create a BPFactor for each factor
   val marginals = new HashMap[Factor,BPFactor]
   factors.foreach(f => marginals(f) = new BPFactor(f) {def factorsOf(v:Variable) = v2m(v)})
@@ -141,10 +165,14 @@ class BPLattice(model:Model, val variables:Collection[UncoordinatedCategoricalVa
   /** Perform one iteration of belief propagation. */
   def update: Unit = marginals.values.foreach(_.update)
   def update(iterations:Int): Unit = for (i <- 1 to iterations) update
+  def updateTreewise: Unit = { 
+    v2m.values.foreach(_.foreach(_.resetTree))
+    v2m.values.toList.shuffle.foreach(_.foreach(_.updateTreewise)) // randomly permute order each time
+  }
   /** Provide outside access to a BPFactor given is associated Factor */
   def marginal(f:Factor): Array[Double] = marginals(f).marginal 
   def marginal(v:UncoordinatedCategoricalVariable): DiscreteMarginal1[UncoordinatedCategoricalVariable] = 
-    new DiscreteMarginal1(v, factorsOf(v).map(_.messageTo(v).message))
+    new DiscreteMarginal1(v, bpFactorsOf(v).map(_.messageTo(v).message))
   //def sample(v:UncoordinatedCategoricalVariable): DiffList // TODO implement this
   //def sample: Unit // TODO implement this
   def setVariablesToMax: Unit = variables.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))

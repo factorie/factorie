@@ -71,7 +71,7 @@ object ChainNER2 {
     println("TEST\n"+LabeledTokenSeq.segmentEvaluation(testLabels))
 
     println("BP inference")
-    val predictor = new BPInferencer[Label](model); testSentences.foreach(s => predictor.infer(s.map(_.label), 2))
+    val predictor = new BPInferencer[Label](model); testSentences.foreach(s => predictor.inferTreewise(s.map(_.label)))
     println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation(trainLabels))
     println("TEST\n"+LabeledTokenSeq.segmentEvaluation(testLabels))
   }
