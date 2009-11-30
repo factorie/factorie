@@ -24,6 +24,13 @@ fixindenttest:
 	    -eval "(add-to-list 'load-path \"/Users/mccallum/workspace/factorie/lib/emacs\")" \
 	    -eval "(require 'scala-mode-auto)" \
 	    $$f \
+	    -eval '(scala-mode)' \
+	    -eval '(goto-char (point-min))' \
+	    -eval '(scala-indent-line)' \
+	    -eval '(next-line)' \
+	    -eval '(scala-indent-line)' \
+	    -eval '(indent-region (point-min) (point-max) nil)' \
+	    -eval '(goto-char (point-min))' \
 	  ; \
 	done
 

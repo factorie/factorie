@@ -148,6 +148,7 @@ import cc.factorie.util.Implicits._
 	class VariableSeq[V <: Variable with VarInSeq[V]] extends RandomAccessSeq[V] with Variable {
 		private val seq = new ArrayBuffer[V]
 		def +=(v: V) = {
+			if (v.seq != null) throw new Error("Trying to add VarInSeq that is already assigned to another VariableSeq")
 			seq += v
 			v.setSeqPos(this, seq.size - 1)
 		}
@@ -237,6 +238,9 @@ import cc.factorie.util.Implicits._
       val i = position - n
       if (i >= 0 && i < seq.length) seq(i) else null
     }
+    def prevWindow(n:Int): Seq[V] = for (i <- Math.max(position-n, 0) to Math.max(position-1,0)) yield seq(i)
+    def nextWindow(n:Int): Seq[V] = for (i <- Math.min(position+1, seq.length-1) to Math.min(position+n, seq.length-1)) yield seq(i)
+
 	}
  
 	/*trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This]] extends cc.factorie.util.DLinkedList[VarInMutableSeq[This]] {

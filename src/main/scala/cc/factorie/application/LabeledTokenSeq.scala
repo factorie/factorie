@@ -14,9 +14,18 @@ object LabeledTokenSeqs {
   final class Token(val word:String, features:Seq[String], labelString:String) extends BinaryVectorVariable[String] with VarInSeq[Token] with Entity[Token] {
     type GetterClass = TokenGetter
     val label: Label = new Label(labelString, this)
-    def isCapitalized = java.lang.Character.isTitleCase(word(0)) // or should this be isUpperCase? (and change TokenGetter too)
+    /** Return true if the first  character of the word is upper case. */
+    def isCapitalized = java.lang.Character.isUpperCase(word(0))
+    def containsLowerCase = word.exists(c => java.lang.Character.isLowerCase(c))
+    /* Return true if the word contains only digits. */
     def isDigits = word.matches("\\d+")
-    def hasDigit = word.matches(".*\\d.*")
+    /* Return true if the word contains at least one digit. */
+    def containsDigit = word.matches(".*\\d.*")
+    /** Return a string that captures the generic "shape" of the original word, 
+        mapping lowercase alphabetics to 'a', uppercase to 'A', digits to '1', whitespace to ' '.
+        Skip more than 'maxRepetitions' of the same character class. */
+    def wordShape(maxRepetitions:Int) = LabeledTokenSeqs.wordShape(word, maxRepetitions)
+    def charNGrams(min:Int, max:Int): Seq[String] = LabeledTokenSeqs.charNGrams(word, min, max)
     this ++= features
   }
   
@@ -56,9 +65,9 @@ object LabeledTokenSeqs {
     /** Return a BooleanObservation with value true if the word of this Token is capitalized.  
         Intended for use in tests in er.Formula, not as a feature itself.  
         If you want such a feature, you should += it to the Token (BinaryVectorVariable) */
-    def isCapitalized(w:String) = getOneToOne[BooleanObservationWithGetter](
+    def isCapitalized = getOneToOne[BooleanObservationWithGetter](
       // TODO Consider making this more efficient by looking up an already-constructed instance, as in "object Bool"
-      token => if (java.lang.Character.isTitleCase(token.word.first)) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
+      token => if (java.lang.Character.isUpperCase(token.word.first)) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
       bool => throw new Error("Constant bool shouldn't change"))
   }
 
@@ -93,34 +102,48 @@ object LabeledTokenSeqs {
     def accuracy: Double = this.foldLeft(0)((sum,token) => if (token.label.valueIsTruth) sum + 1 else sum) / size.toDouble
     /** Add new features created as conjunctions of existing features, with the given offsets.
         For example addNeighboringFeatures(List(0,0),List(-2,-1,0),List(0,1)) */
-    def addNeighboringFeatureConjunctions(offsetConjunctions:Seq[Int]*): Unit = {
+    def addNeighboringFeatureConjunctions(offsetConjunctions:Seq[Int]*): Unit = 
+      addNeighboringFeatureConjunctions(null.asInstanceOf[String], offsetConjunctions:_*)
+    /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
+    def addNeighboringFeatureConjunctions(regex:String, offsetConjunctions:Seq[Int]*): Unit = {
       // First gather all the extra features here, then add them to each Token
       val newFeatures = Array.fromFunction(i => new ArrayBuffer[String])(this.size)
       for (i <- 0 until size) {
         val token = this(i)
         val thisTokenNewFeatures = newFeatures(i)
         for (offsets <- offsetConjunctions) 
-          thisTokenNewFeatures ++= appendConjunctions(token, null, offsets)
+          thisTokenNewFeatures ++= appendConjunctions(regex, token, null, offsets)
       }
       for (i <- 0 until size) {
       	val token = this(i)
       	token.zero
         token ++= newFeatures(i)
-      } 
+      }
+      //if (size > 0) println("addNeighboringFeatureConjunctions "+first)
     }
     // Recursive helper function for previous method, expanding out cross-product of conjunctions in tree-like fashion.
     // 't' is the Token to which we are adding features; 'existing' is the list of features already added; 'offsets' is the list of offsets yet to be added
-    private def appendConjunctions(t:Token, existing:ArrayBuffer[String], offsets:Seq[Int]): ArrayBuffer[String] = {
+    private def appendConjunctions(regex:String, t:Token, existing:ArrayBuffer[String], offsets:Seq[Int]): ArrayBuffer[String] = {
       val result = new ArrayBuffer[String];
       val offset: Int = offsets.first
       val t2 = t.next(offset)
-      val adding: Seq[String] = if (t2 == null) { if (t.position + offset < 0) List("<START>") else List("<END>") } else t2.values
-      if (existing != null)
-      	for (e <- existing; a <- adding) result += e+"_&_"+a+"@"+offset
-      else
-        for (a <- adding) result += a+"@"+offset
+      val adding: Seq[String] = 
+        if (t2 == null) { if (t.position + offset < 0) List("<START>") else List("<END>") }
+        else if (regex != null) t2.values.filter(str => str.matches(regex)) // Only include features that match pattern 
+        else t2.values
+      if (existing != null) {
+        if (offset == 0)
+          for (e <- existing; a <- adding) result += e+"_&_"+a
+        else
+          for (e <- existing; a <- adding) result += e+"_&_"+a+"@"+offset
+      } else {
+        if (offset == 0)
+        	for (a <- adding) result += a
+        else
+        	for (a <- adding) result += a+"@"+offset
+      }
       if (offsets.size == 1) result
-      else appendConjunctions(t, result, offsets.drop(1))
+      else appendConjunctions(regex, t, result, offsets.drop(1))
     }
     /** Copy features into each token from its preceding and following tokens, 
         with preceding extent equal to preOffset and following extent equal to -postOffset.
@@ -200,18 +223,22 @@ object LabeledTokenSeqs {
   			The initial and trueValue of the Label will be set from the last element.
   			If ignoreLines is non-null, we skip any lines containing this pattern, for example pass "-DOCSTART-" for CoNLL 2003.
   			If seqSeparator is null, we separate sequences by lines consisting only of carriage return. */
-    def fromOWPL(source:Source, featureFunction:Seq[String]=>Seq[String], ignoreLines:Regex, seqSeparator:Regex): Seq[LabeledTokenSeq] = {
-  		if (seqSeparator != null) throw new Error("seqSeparator argument not yet implemented.")
+    def fromOWPL(source:Source, featureFunction:Seq[String]=>Seq[String], documentBoundary:Regex, sentenceBoundary:Regex, ignoreLines:Regex): Seq[LabeledTokenSeq] = {
   		import scala.collection.mutable.ArrayBuffer
   		var tokenCount = 0
   		var seqs = new ArrayBuffer[LabeledTokenSeq];
   		var seq = new LabeledTokenSeq
   		for (line <- source.getLines) {
-  			if (line.length < 2) { // Sentence boundary
-  				seqs += seq //; println("num words " + document.size + " num docs "+documents.size)
-  				seq = new LabeledTokenSeq
-  			} else if (ignoreLines != null && ignoreLines.findAllIn(line).hasNext) {
-  				// Skip this line, such as document boundaries indicated by "-DOCSTART-" in CoNLL 2003
+  			if (sentenceBoundary != null && sentenceBoundary.findAllIn(line).hasNext && seq.length > 0) {
+  				//println("Completed sentence size=" + seq.size + " num sentences="+seqs.size)   
+          seqs += seq
+          seq = new LabeledTokenSeq
+        } else if (documentBoundary != null && documentBoundary.findAllIn(line).hasNext) {
+        	//println("Completed document with boundary "+documentBoundary)
+          if (seq.length > 0) { seqs += seq; seq = new LabeledTokenSeq }
+          seqs += new LabeledTokenSeq // Insert an empty sentence to mark document boundary
+        } else if (line.length < 2 || (ignoreLines != null && ignoreLines.findAllIn(line).hasNext)) {
+  				// Skip this line
   			} else {
   				val fields = line.split(' ')
   				assert(fields.length == 4)
@@ -227,9 +254,9 @@ object LabeledTokenSeqs {
   		seqs
   	}
     // TODO Waiting for Scala 2.8 default parameter values
-    def fromOWPL(source:Source, featureFunction:Seq[String]=>Seq[String], ignoreLines:Regex): Seq[LabeledTokenSeq] = fromOWPL(source, featureFunction, ignoreLines, null)
-    def fromOWPL(source:Source, ignoreLines:Regex): Seq[LabeledTokenSeq] = fromOWPL(source, f => f, ignoreLines, null)
-    def fromOWPL(source:Source, ignoreLines:String): Seq[LabeledTokenSeq] = fromOWPL(source, f => f, ignoreLines.r, null)
+    def fromOWPL(source:Source, featureFunction:Seq[String]=>Seq[String], documentBoundary:Regex): Seq[LabeledTokenSeq] = fromOWPL(source, featureFunction, documentBoundary, "\\A\\s*\\z".r, null)
+    def fromOWPL(source:Source, documentBoundary:Regex): Seq[LabeledTokenSeq] = fromOWPL(source, (f:Seq[String]) => f, documentBoundary)
+    def fromOWPL(source:Source, documentBoundary:String): Seq[LabeledTokenSeq] = fromOWPL(source, (f:Seq[String]) => f, documentBoundary.r)
 
     
     class PerLabelEvaluation(val labelValue: String) {
@@ -422,6 +449,35 @@ object LabeledTokenSeqs {
     // TODO Add more combinations of arguments
     def segmentEvaluation(labels:Seq[Label]) = new SegmentEvaluation(labels)
 
+  }
+
+  // Feature extraction aids
+  /** Return a string that captures the generic "shape" of the original word, 
+  		mapping lowercase alphabetics to 'a', uppercase to 'A', digits to '1', whitespace to ' '.
+  		Skip more than 'maxRepetitions' of the same character class. */
+  def wordShape(word:String, maxRepetitions:Int): String = {
+  	val sb = new StringBuffer
+  	var i = 0; var c = 'x'; var prevc = 'x'; var repetitions = 0
+  	while (i < word.length) {
+  		val char = word(i); 
+  		if (Character.isUpperCase(char)) c = 'A'
+  		else if (Character.isLowerCase(char)) c = 'a'
+  		else if (Character.isDigit(char)) c = '1'
+  		else if (Character.isWhitespace(char)) c = ' '
+  		else c = char
+  		if (c == prevc) repetitions += 1
+  		else { prevc = c; repetitions = 0 }
+  		if (repetitions < maxRepetitions) sb.append(c)
+  		i += 1
+  	}
+  	sb.toString
+  }
+  def charNGrams(word:String, min:Int, max:Int): Seq[String] = {
+  	val w = "<"+word+">"
+  	val prefixes = for (e <- min+1 to Math.min(max+1, word.length)) yield w.substring(0, e)
+  	val suffices = for (b <- Math.max(w.length-1-max, 0) to w.length-1-min) yield w.substring(b, w.length)
+  	prefixes ++ suffices
+  	//for (i <- 0 until w.length; j <- min to max; if (i+j < w.length)) yield w.substring(i,i+j)
   }
 
 }
