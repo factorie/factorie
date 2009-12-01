@@ -26,18 +26,19 @@ object er {
   // TODO Note that it is hard to subclass one of these, which seems sad.  
   //  For example, users might want to subclass the pre-packaged entities in cc.factorie.application.  Think about this some more.
   /** A trait for entities that have attributes.  Provides an inner trait 'Attribute' for its attribute classes. */
-  trait Entity[This<:Entity[This] with Variable with GetterType[This]] extends Variable with GetterType[This] {
+  trait Entity[This<:Entity[This] with Variable /*with GetterType[This]*/] extends Variable /*with GetterType[This]*/ {
     this: This =>
-    type EntityType = This with GetterType[This]
+    type GetterClass <: Getter[This]
+    type EntityType = This
     def thisEntity: This = this
     /** Sub-trait of cc.factorie.er.AttributeOf that has a concrete implementation of 'attributeOwner'. */
-    trait Attribute extends cc.factorie.er.AttributeOf[This] with GetterType[Attribute] {
+    trait Attribute extends cc.factorie.er.AttributeOf[This] /*with GetterType[Attribute]*/ {
       type GetterClass = AttributeGetter[Attribute,This]
       def attributeOwner: This = thisEntity
     }
     /** Consider removing this.  Not sure if it should go here or outside the Entity. */
   	class SymmetricFunction(initval:This, val get:This=>SymmetricFunction) extends RefVariable(initval) {
-  		type EntityType = This with GetterType[This]
+  		type EntityType = This //with GetterType[This]
   		def this(g:This=>SymmetricFunction) = this(null.asInstanceOf[This], g)
   		override def set(newValue:This)(implicit d:DiffList) = {
   			if (value != null) get(value)._set(null.asInstanceOf[This]) // Why is this cast necessary?
@@ -409,15 +410,14 @@ object er {
   /** Typical Getter trait inherited by users, and thus D#GetterClass is often a sub-class of this. */
   trait EntityGetter[A<:Entity[A]] extends Getter[A] //with GetterHead[AnyRef,A]
   trait AttributeGetter[A<:AttributeOf[E] with GetterType[A],E] extends Getter[A] with GetterType[A] {
+    type GetterClass = Getter[A]
     //def attributeOwner: E = getOneToOne[E]((a:A)=>a.attributeOwner, ??)
   }
   class RelationshipGetter[A<:Entity[A],B<:Entity[B]] extends EntityGetter[Relationship[A,B]] {
     //def getSrc(implicit m:Manifest[A]): Getter  // TODO we can't go backwards from a source to an individual relationship; it would have to map to all matching the src.
   }
   // TODO? Consider avoiding the need to mix this into Entity by using instead duck typing: type WithGetterType = { type GetterClass <: Getter[_,_] }
-  trait GetterType[D] {
-    type GetterClass <: Getter[D] // We don't want this to specify the GetterHead because Getter.get* methods must be able to fill that in themselves
-  }
+  trait GetterType[D] { type GetterClass <: Getter[D] }
   /** Construct a new Getter with tail type A. */
   def newGetter[A<:GetterType[A]](implicit m:Manifest[A#GetterClass]): A#GetterClass = {
     newGetter[A](m.erasure)
@@ -496,7 +496,7 @@ object er {
   }
   
   object Foreach {
-    def apply[X<:GetterType[X] with Variable](x2c:X#GetterClass{ type A = X}=>Score[X])(implicit m:Manifest[X#GetterClass]) = {
+    def apply[X<:Variable with GetterType[X]](x2c:X#GetterClass{ type A = X}=>Score[X])(implicit m:Manifest[X#GetterClass]) = {
       val score = x2c(newGetterUnit[X](m))
       val manifests = score.manifests.toList.asInstanceOf[List[Manifest[ScorableValues0]]];
       val getters = score.getters
@@ -720,7 +720,7 @@ object er {
   
   /** Create a Formula starting from a Getter */
   object Forany {
-    def apply[X<:GetterType[X] with Variable](x2c:X#GetterClass{ type A = X}=>Formula[X])(implicit m:Manifest[X#GetterClass]): Template with LogicStatistics = {
+    def apply[X<:Variable with GetterType[X]](x2c:X#GetterClass{ type A = X}=>Formula[X])(implicit m:Manifest[X#GetterClass]): Template with LogicStatistics = {
       type I = FormulaArg
       val getterRoot: X#GetterClass { type A = X } = newGetterUnit[X](m)
       val formula = x2c(getterRoot)
