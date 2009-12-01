@@ -14,7 +14,7 @@ object ChainNER2 {
     Foreach[Label] { label => Score(label, label.token) }             % "LabelToken",
     Foreach[Label] { label => Score(label.prev, label) }              % "LabelLabel",
     Foreach[Label] { label => Score(label.prev, label, label.next) }  % "LabelLabelLabel",
-    //Foreach[Label] { label => Score(label, label.next, label.token) } % "LabelTokenLabel"
+    Foreach[Label] { label => Score(label, label.next, label.token) } % "LabelTokenLabel"
     //For[Label] { label => Score(label, label.token) }                 % "LabelToken",
     //For[Label] { label => Score(label, label.next) }                  % "LabelMarkov",
   )
@@ -24,12 +24,19 @@ object ChainNER2 {
     // Read training and testing data.  The function 'featureExtractor' function is defined below
     val trainSentences = LabeledTokenSeq.fromOWPL(Source.fromFile(args(0)), featureExtractor, "-DOCSTART-".r)
     val testSentences =  LabeledTokenSeq.fromOWPL(Source.fromFile(args(1)), featureExtractor, "-DOCSTART-".r)
-    //Domain[Label].freeze // Just as precaution
+    println(Domain[Label].toList)
     // Change from CoNLL's IOB notation to to BIO notation
-    (trainSentences ++ testSentences).foreach(s => 
-      s.foreach(t => 
-        if (t.label.value(0) == "I" && (!t.hasPrev || t.prev.label.value.substring(1) != t.label.value.substring(1))) 
-          t.label := "B"+t.label.value.substring(1))) 
+    (trainSentences ++ testSentences).foreach(s => { 
+      s.foreach(t => {
+        //println("Token "+t.word+"  "+t.label.value+"  "+t.label.value(0)+"  "+(t.label.value(0)=='I'))
+        print("  %-8s %-8s ".format(t.label.trueValue, t.label.value))
+        if (t.label.value(0) == 'I' && (!t.hasPrev || t.prev.label.value.substring(1) != t.label.value.substring(1))) {
+          val newValue = "B"+t.label.value.substring(1) 
+          t.label.value = newValue
+          t.label.trueValue = newValue
+        }
+        println("   x %-8s %-8s %s".format(t.label.trueValue, t.label.value, t.word))
+      })}) 
       
     // Gather tokens into documents
     val documents = new ArrayBuffer[ArrayBuffer[Token]]; documents += new ArrayBuffer[Token]

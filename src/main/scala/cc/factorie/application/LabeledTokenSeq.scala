@@ -1,6 +1,10 @@
 package cc.factorie.application
 import cc.factorie.er._
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap}
+import scalala.tensor.Vector
+import scalala.tensor.dense.DenseVector
+import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+import scala.util.Sorting
 
 /** Predefined variables and factor templates for applying FACTORIE to sequences of Tokens, each paired with a categorical Label.
     The Token remembers its String 'word', but its variable 'value' is as a BinaryVectorVariable.
@@ -26,6 +30,13 @@ object LabeledTokenSeqs {
         Skip more than 'maxRepetitions' of the same character class. */
     def wordShape(maxRepetitions:Int) = LabeledTokenSeqs.wordShape(word, maxRepetitions)
     def charNGrams(min:Int, max:Int): Seq[String] = LabeledTokenSeqs.charNGrams(word, min, max)
+    private lazy val svmap = new HashMap[String,BinaryVectorVariable[String]]
+    def subVector(regex:String): BinaryVectorVariable[String] = svmap.getOrElseUpdate(regex, newSubVector(regex))
+    private def newSubVector(regex:String): BinaryVectorVariable[String] = {
+      val result = new BinaryVectorVariable[String] { override def printName = "TokenSubVector" }
+      result ++= this.values.filter(s => s.matches(regex))
+      result
+    }
     this ++= features
   }
   
@@ -37,24 +48,24 @@ object LabeledTokenSeqs {
       label => label.token)
     /** Go from a token to the next token. */
     def next = getManyToMany[Token](
-      token => if (!token.hasNext) Nil else List(token.next), 
-      token => if (!token.hasPrev) Nil else List(token.prev))
+      (token:Token) => if (!token.hasNext) Nil else List(token.next), 
+      (token:Token) => if (!token.hasPrev) Nil else List(token.prev))
     /** Go from a token to the previous token. */
     def prev = getManyToMany[Token](
-      token => if (!token.hasPrev) Nil else List(token.prev), 
-      token => if (!token.hasNext) Nil else List(token.next))
+      (token:Token) => if (!token.hasPrev) Nil else List(token.prev), 
+      (token:Token) => if (!token.hasNext) Nil else List(token.next))
     /** Go from a token to the collection of the next 'n' tokens. */
     def next(n:Int) = getManyToMany[Token](
-    		(t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret },
-        (t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret })
+    	(t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret },
+      (t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret })
     /** Go from a token to the collection of the previous 'n' tokens. */
     def prev(n:Int) = getManyToMany[Token](
-        (t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret },
-        (t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret })
+    	(t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret },
+      (t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret })
     /** All the other tokens in the Sentence. */
     def sentenceTokens = getManyToMany[Token](
-      token => token.seq, 
-      token => token.seq)
+      (token:Token) => token.seq, 
+      (token:Token) => token.seq)
     /** Return a BooleanObservation with value true if the word of this Token is equal to 'w'.  
         Intended for use in tests in er.Formula, not as a feature itself.  
         If you want such a feature, you should += it to the Token (BinaryVectorVariable) */
@@ -69,6 +80,7 @@ object LabeledTokenSeqs {
       // TODO Consider making this more efficient by looking up an already-constructed instance, as in "object Bool"
       token => if (java.lang.Character.isUpperCase(token.word.first)) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
       bool => throw new Error("Constant bool shouldn't change"))
+    def subVector(regex:String) = getOneWay(t=>t.subVector(regex))
   }
 
   /** A Label associated with a Token. */
@@ -359,12 +371,12 @@ object LabeledTokenSeqs {
           labelCount += 1
           if (label.valueIsTruth) correctLabelCount += 1
           predictedStart = false; trueStart = false
-          if (labelValueStart.findAllIn(label.value).hasNext) { // TODO is there a more canonical way to ask if a regex matches a string?
+          if ((!label.hasPrev || label.prev.index != label.index) && labelValueStart.findAllIn(label.value).hasNext) { // TODO is there a more canonical way to ask if a regex matches a string?
             predictedCount += 1
             predictedStart = true
             //print("ps ")
           }
-          if (labelValueStart.findAllIn(label.trueValue.toString).hasNext) {
+          if ((!label.hasPrev || label.prev.trueIndex != label.trueIndex) && labelValueStart.findAllIn(label.trueValue.toString).hasNext) {
             trueCount += 1
             trueStart = true
             //print("ts ")
@@ -404,7 +416,7 @@ object LabeledTokenSeqs {
     }
     
     // Some utilities for automatically filling in values 
-    private val defaultStartPrefix = "B|I-"
+    private val defaultStartPrefix = "B-" // "B|I-" needed for IOB
     private val defaultContinuePrefix = "I-"
     // Assume that the first two characters of each label are the "B-" or "I-" prefix.  Skip the label "O" because it is less than 3 chars long
     private def labelStringsToBase(labelVals:Seq[String]): Seq[String] = {
@@ -437,7 +449,7 @@ object LabeledTokenSeqs {
       def summaryString = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format("OVERALL", f1, precision, recall, tp, fp, fn, tp+fn, tp+fp)
       override def toString = {
         val sb = new StringBuffer
-        sb.append("ACCURACY "+tokenAccuracy)
+        sb.append("ACCURACY "+tokenAccuracy+" ("+evals.values.foldLeft(0)(_+_.correctLabelCount)+"/"+evals.values.foldLeft(0)(_+_.labelCount)+")")
         sb.append("\n")
         sb.append(summaryString)
         sb.append("\n")
