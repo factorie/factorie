@@ -14,7 +14,7 @@
 
 % Use utf-8 encoding for foreign characters
 \usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
+%\usepackage[T1]{fontenc}
 %\usepackage[bitstream-charter]{mathdesign}
 
 % Setup for fullpage use
@@ -120,6 +120,100 @@ entity-relationship style of template definition, logic syntactic
 sugar, and underlying imperative style.  Show examples of both
 undirected and directed models.
 
+\section{Linear chain CRF - ConLL NER}
+SimpleChainNER.scala
+
+\section{Entity Resolution with first order features - Toy Dataset}
+(CorefMentions.scala)
+
+\lstset{% general command to set parameter(s) 
+basicstyle=\small, % print whole listing small 
+keywordstyle=\color{black}\bfseries\underbar, 
+% underlined bold black keywords 
+identifierstyle=, % nothing happens 
+commentstyle=\color{white}, % white comments 
+stringstyle=\ttfamily, % typewriter type for strings 
+showstringspaces=false} % no special string spaces 
+
+
+
+In this section of the tutorial we will apply Factorie to the problem
+of entity resolution (or coreference). Entity resolution is a problem
+studied in many scientific communities, including natural language
+processing, information extraction, data mining, and information
+integration, as well as industry. Informally, entity resolution is the
+problem of clustering {\em mentions} into underlying {\em
+  entities}. An example of mentions clustered into their respective
+entities is shown in Figure~\ref{fig:tutorial-coref-toy-data}
+
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=0.88 \textwidth]{figs/coref-toy-data}
+\caption{Ground truth toy coreference data: twenty-eight mentions
+  clustered into six clusters. Bolded mentions are canonical name for cluster.}
+\label{fig:tutorial-coref-toy-data}
+\end{center}
+\end{figure}
+
+
+\subsection{Step 1: Define data structures and variables}
+Before we delve into the coreference model, we first set up the basic
+data structure and random variables required for solving the
+problem. We begin by defining a mention variable:
+
+\lstinline!class Mention(val name:String, val trueEntity:Int, val initialEntity) extends RefVariable(initialEntity)!
+
+\noindent the Mention has three members: a name containing the text
+(e.g., ``Aron Culotta''), a {\em trueEntity} used for supervised
+training and evaluation, and an {\em initialEntity} used for defining
+the initial configuration. The Mention additional extends {\em
+  RefVariable}, a variable whose domain consists of pointers to scala
+objects. By convention all mentions with a pointer to the same entity
+will be considered coreferent; we are now ready to define the {\em
+  Entity} variable:
+
+\begin{lstlisting}
+class Entity(val canonical:String) extends SetVariable[Mention] {
+  def mentions = members //for readability
+  override def toString = "Entity("+canonical+":"+mentions.toSeq.size+")"
+}
+\end{lstlisting}
+
+\subsection{Step 2: Define the factors}
+
+Traditional machine learning approaches to coreference have modeled
+dependencies between mention pairs. The approach of
+\citep{soon01machine} treat each mention pair as an independent
+classification decision. We begin our model description by expressing such a
+factor.
+
+
+Throughout this section we will highlight the power of several of
+Factorie's types of imperativisms, including variable coordination,
+online constraint preservation,sufficient statistics mapping, and
+unrolling.
+
+
+\subsection{Step 3: Enforce structural constraints}
+Since each mentions can only reference a single entity, an equivalance relation is enforced. Unfortunately, 
+
+
+-up to this point we have defined most of the factor graph
+-still need to enforce deterministic constraints
+-introducing... constraint preservation.. staying in the feasible region
+
+
+
+28 mentions, 6 entities. Number of configurations: Bell(28) = 
+
+While this toy dataset only contains 28 mentions and 6 entities, the
+network described in this chapter is actually impossible to fully
+grounded in memory. The reason is that the first-order-logic feature over clusters would have to be evaluated for all possible entities, for which there are $2^{28}$
+
+\subsection{Step 4: Instantiate data structure}
+
+\subsection{Step 5: }
 
 \chapter{Variables and Domains}
 \label{chap:variables}
@@ -146,7 +240,7 @@ Sampling, MCMC, variational, maximization.
 \chapter{Learning}
 \label{chap:learning}
 
-Objective functions as models.
+Objective functions as models. SampleRank, contrastive divergence (persistent variant?), structured perceptron, reinforcement learning(?).
 
 
 \chapter{Diagnostics}

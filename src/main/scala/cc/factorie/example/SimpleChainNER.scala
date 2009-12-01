@@ -60,7 +60,7 @@ object SimpleChainNER {
   	var dataDir = "/Users/mwick/data/conll/"
   	//var dataDir = "/Users/mccallum/research/data/ie/ner2003/"
   	var trainFilename = dataDir+"eng.train"
-  	var testFilename = dataDir+"eng.testb" 
+  	var testFilename = dataDir+"eng.testa" 
   	if (args.length == 2) {
   		trainFilename = args(0)
   		testFilename = args(1)
@@ -80,7 +80,7 @@ object SimpleChainNER {
   	(trainLabels ++ testLabels).foreach(_.setRandomly)
   	val learner = new GibbsSampler(model, objective)
 	  with SampleRank
-	  with PerceptronUpdates //with ConfidenceWeightedUpdates //with MIRAUpdates
+	  with MIRAUpdates //with ConfidenceWeightedUpdates //with MIRAUpdates
 	  with ParameterAveraging //comment this to disable param averaging
 	  {temperature=0.01}
   	//with FactorQueue[Variable with IterableSettings] { def process0(x:AnyRef):DiffList = x match { case l:Label => process(l); case _ => null} }
