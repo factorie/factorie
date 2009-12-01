@@ -244,89 +244,123 @@ object er {
     def unsafeReverse[A8](c:Any): Iterable[A8] = _reverse(c.asInstanceOf[C]).asInstanceOf[Iterable[A8]]
     def unsafeReverseFunc[B8,C8]: B8=>Iterable[C8] = _reverse.asInstanceOf[B8=>Iterable[C8]]
     /** Create a new Getter, starting from this one and appending an additional many-to-many mapping. */
-    def getManyToMany[D<:GetterType[D]](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#GetterClass]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = {
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
-      ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]] // I'm confused as to why this is working because I don't think EntityGetters have GetterHead mixed in!
+    def getManyToMany[D<:GetterType[D]](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#GetterClass]): D#GetterClass {type A=Getter.this.A; type B=Getter.this.C} = {
+    	initManyToMany[D](newGetter[D](m), fwd1, rev1)
+    }
+    def initManyToMany[D<:GetterType[D]](getter:D#GetterClass, fwd1:C=>Iterable[D], rev1:D=>Iterable[C]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    	type ThisA = A
+    	type ThisC = C
+      val ret = getter.asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      ret.prefix = Getter.this.asInstanceOf[Getter[C] {type A = ThisA}] // I'm confused as to why this is working because I don't think EntityGetters have GetterHead mixed in!
       ret.forward1m = fwd1
       ret.reverse1m = rev1
       ret
     }
     /** Create a new Getter, starting from this one and appending an additional many-to-one mapping. */
-    def getManyToOne[D<:GetterType[D]](fwd1:C=>D, rev1:D=>Iterable[C])(implicit m:Manifest[D#GetterClass]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = {
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
-      ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
+    def getManyToOne[D<:GetterType[D]](fwd1:C=>D, rev1:D=>Iterable[C])(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+      initManyToMany(newGetter[D](m), fwd1, rev1)
+    } 
+    def initManyToOne[D<:GetterType[D]](getter:D#GetterClass, fwd1:C=>D, rev1:D=>Iterable[C]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    	type ThisA = A
+      type ThisC = C
+      val ret = getter.asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      ret.prefix = Getter.this.asInstanceOf[Getter[C] {type A = ThisA} ]
       ret.forward1s = fwd1
       ret.reverse1m = rev1
       ret
-    } 
+    }
     /** Create a new Getter, starting from this one and appending an additional one-to-one mapping. */
-    def getOneToOne[D<:GetterType[D]](fwd1:C=>D, rev1:D=>C)(implicit m:Manifest[D#GetterClass]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = {
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
-      ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
+    def getOneToOne[D<:GetterType[D]](fwd1:C=>D, rev1:D=>C)(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+      initOneToOne(newGetter[D](m), fwd1, rev1)
+    } 
+    def initOneToOne[D<:GetterType[D]](getter:D#GetterClass, fwd1:C=>D, rev1:D=>C): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+      type ThisA = A
+      type ThisC = C
+      val ret = getter.asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1s = fwd1
       ret.reverse1s = rev1
       ret
-    } 
+    }
     /** Create a new Getter, starting from this one and appending an additional one-to-many mapping. */
-    def getOneToMany[D<:GetterType[D]](fwd1:C=>Iterable[D], rev1:D=>C)(implicit m:Manifest[D#GetterClass]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = {
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
-      ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
+    def getOneToMany[D<:GetterType[D]](fwd1:C=>Iterable[D], rev1:D=>C)(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+      initOneToMany(newGetter[D](m), fwd1, rev1)
+    }
+    def initOneToMany[D<:GetterType[D]](getter:D#GetterClass, fwd1:C=>Iterable[D], rev1:D=>C): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+      type ThisA = A
+      type ThisC = C
+      val ret = getter.asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1m = fwd1
       ret.reverse1s = rev1
       ret
-    }
+    }    
     // TODO If I uncomment "C with" below, I get scalac error: "illegal type selection from volatile type D".  It seems I should be able to do this, though.
     /** Create a new Getter, starting from this one and appending an additional symmetric many-to-many mapping.
         For example:  getSymmetricManyToMany[Person](p => p.mother.children.filter(p2=>p2 ne p)). */
-    def getSymmetricManyToMany[D<: /*C with*/ GetterType[D]](fwd1:C=>Iterable[D])(implicit m:Manifest[D#GetterClass]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = 
+    def getSymmetricManyToMany[D<: /*C with*/ GetterType[D]](fwd1:C=>Iterable[D])(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = 
     	getManyToMany[D](fwd1, fwd1.asInstanceOf[D=>Iterable[C]])(m) // TODO this cast is somewhat unsafe.  Would be better to type-check the fwd1 argument
     /** Create a new Getter, starting from this one and appending an additional symmetric one-to-one mapping. 
         For example:  getSymmetricOneToOne[Person](_.spouse)*/
-    def getSymmetricOneToOne[D<: /*C with*/ GetterType[D]](fwd1:C=>D)(implicit m:Manifest[D#GetterClass]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = 
+    def getSymmetricOneToOne[D<: /*C with*/ GetterType[D]](fwd1:C=>D)(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = 
       getOneToOne[D](fwd1, fwd1.asInstanceOf[D=>C])(m) // TODO this cast is somewhat unsafe.  Would be better to type-check the fwd1 argument
     /** Create a new Getter, starting from this one and appending a mapping to one of its Attributes. */
     // TODO Consider [D<:Entity[C]#Attribute] instead
-    def getAttribute2[D<:AttributeOf[C] with GetterType[D]](fwd1:C=>D)(implicit m:Manifest[D#GetterClass]): Getter[D] with GetterHead[A,D] with GetterMiddle[C,D] = {
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]] //.asInstanceOf[]
+    def getAttribute2[D<:AttributeOf[C] with GetterType[D]](fwd1:C=>D)(implicit m:Manifest[D#GetterClass]): Getter[D] { type A = Getter.this.A; type B = Getter.this.C } = {
+    	type ThisA = A
+    	type ThisC = C
+      val ret = newGetter[D](m).asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
       //val ret = new Getter[D] with GetterHead[A,D] with GetterMiddle[C,D] //.asInstanceOf[]
       //ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]] // TODO Doesn't run because Getter doesn't have GetterHead
-      type ThisA = A
       ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1s = (c:C) => fwd1(c)
       ret.reverse1s = (d:D) => d.attributeOwner
       ret
     }
-     def getAttribute[D<:AttributeOf[C]](fwd1:C=>D)(implicit m:Manifest[D]): Getter[D] with GetterHead[A,D] with GetterMiddle[C,D] = {
-      val ret = new Getter[D] with GetterHead[A,D] with GetterMiddle[C,D] //.asInstanceOf[]
-      //ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]] // TODO Doesn't run because Getter doesn't have GetterHead
+     def getAttribute[D<:AttributeOf[C]](fwd1:C=>D): Getter[D] { type A = Getter.this.A; type B = Getter.this.C } = {
       type ThisA = A
+      type ThisC = C
+      val ret = new Getter[D] { type A = ThisA; type B = ThisC }
+      //ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]] // TODO Doesn't run because Getter doesn't have GetterHead
       ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1s = (c:C) => fwd1(c)
       ret.reverse1s = (d:D) => d.attributeOwner
+      ret
+    }
+    def getOneWay[D](fwd1:C=>D): Getter[D] { type A = Getter.this.A; type B = Getter.this.C } = {
+      type ThisA = A
+      type ThisC = C
+      val ret = new Getter[D] { type A = ThisA; type B = ThisC }
+      ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
+      ret.forward1s = (c:C) => fwd1(c)
+      ret.reverse1m = (d:D) => Nil // throw new Error("This type shouldn't have changed.")
       ret
     }
     /** Create a new Getter, starting from this one and appending a symmetric function.  
         This differs from getSymmetricOneToOne in that it represents a mutable one-to-one relation, whereas getSymmetricOneToOne represents an immutable relation. */
     //def getSymmetricFunction[D<:Entity[C]#SymmetricFunction](fwd1:C=>D)(implicit m:Manifest[D#EntityType#GetterClass]): Getter[C] with GetterHead[A,C] with GetterMiddle[C,C] 
     // TODO I really want to say that D == C here.  I thought the above solution would work, but I get error "EntityType" does not have member "GetterClass", when it clearly does! 
-    def getSymmetricFunction[D<:GetterType[D]](fwd1:C=>RefVariable[D])(implicit m:Manifest[D#GetterClass]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = {
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
-      ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
+    def getSymmetricFunction[D<:GetterType[D]](fwd1:C=>RefVariable[D])(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    	type ThisA = A
+    	type ThisC = C
+      val ret = newGetter[D](m).asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1s = (c:C) => fwd1(c).value.asInstanceOf[D]
       ret.reverse1s = (d:D) => fwd1(d.asInstanceOf[C]).value.asInstanceOf[C]
       ret
     }
     /** Create a new Getter, starting from this one as the 'src' of a relation, and appending a Getter for the 'dst' of the relation. */
-    def getRelationSrc[R<:Relation[D,C],D<:GetterType[D]](r:R)(implicit m:Manifest[D#GetterClass], mr:Manifest[R#RelationshipType]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = {
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
-      ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
+    def getRelationSrc[R<:Relation[D,C],D<:GetterType[D]](r:R)(implicit m:Manifest[D#GetterClass], mr:Manifest[R#RelationshipType]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+      type ThisA = A
+      type ThisC = C
+      val ret = newGetter[D](m).asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1m = (c:C) => r.getFromDst(c).map(_.src)
       ret.reverse1m = (d:D) => r.getFromSrc(d).map(_.dst)
       type ExtraD = R#RelationshipType
-      type ThisA = A; type ThisC = C
       //val myExtraGetter = new Getter[ExtraD] with GetterHead[A,ExtraD] with GetterMiddle[C,ExtraD] {}
       val myExtraGetter = new Getter[ExtraD] { type A = ThisA; type B = ThisC }
-      myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
+      myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       myExtraGetter.forward1m = (c:C) => r.getFromDst(c)
       myExtraGetter.reverse1m = (d:ExtraD) => if (d.value) List(d.dst) else Nil //{ val dst = d.dst; if (dst.asInstanceOf[BooleanValue].value) List(dst) else Nil } // If the Relationship is false, don't follow the link
       ret.extraManifest = mr.asInstanceOf[Manifest[ExtraNeighborType]]
@@ -334,14 +368,16 @@ object er {
       ret
     }
     /** Create a new Getter, starting from this one as the 'dst' of a relation, and appending a Getter for the 'src' of the relation. */
-    def getRelationDst[R<:Relation[C,D],D<:GetterType[D]](r:R)(implicit m:Manifest[D#GetterClass], mr:Manifest[R#RelationshipType]): D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D] = {
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass with GetterHead[A,D] with GetterMiddle[C,D]]
-      ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
+    def getRelationDst[R<:Relation[C,D],D<:GetterType[D]](r:R)(implicit m:Manifest[D#GetterClass], mr:Manifest[R#RelationshipType]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+      type ThisA = A
+      type ThisC = C
+      val ret = newGetter[D](m).asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1m = (c:C) => r.getFromSrc(c).map(_.dst)
       ret.reverse1m = (d:D) => r.getFromDst(d).map(_.src)
       type ExtraD = R#RelationshipType
-      val myExtraGetter = new Getter[ExtraD] with GetterHead[A,ExtraD] with GetterMiddle[C,ExtraD] {}
-      myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]]
+      val myExtraGetter = new Getter[ExtraD] { type A = ThisA; type B = ThisC }
+      myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       myExtraGetter.forward1m = (c:C) => r.getFromSrc(c)
       myExtraGetter.reverse1m = (d:ExtraD) => if (d.value) List(d.src) else Nil //{ val src = d.src; if (src.asInstanceOf[BooleanValue].value) List(src) else Nil } // If the Relationship is false, don't follow the link
       ret.extraManifest = mr.asInstanceOf[Manifest[ExtraNeighborType]]
@@ -366,13 +402,10 @@ object er {
     */
   }
   /** Fill in abstract type Getter.A with parameterized type.  Necessary for Scala type-inferencer. */
-  trait GetterHead[A1,C1/*<:GetterType[C1]*/] extends Getter[C1] {
-    type A = A1
-  }
+  //trait GetterHead[A1,C1/*<:GetterType[C1]*/] extends Getter[C1] { type A = A1 }
+  type GetterHead[A1,C1] = Getter[C1] { type A = A1 }
   /** Fill in abstract type Getter.B with parameterized type.  Necessary for Scala type-inferencer. */
-  trait GetterMiddle[B1/*<:GetterType[B1]*/,C1/*<:GetterType[C1]*/] extends Getter[C1] {
-    type B = B1
-  }
+  //trait GetterMiddle[B1/*<:GetterType[B1]*/,C1/*<:GetterType[C1]*/] extends Getter[C1] { type B = B1 }
   /** Typical Getter trait inherited by users, and thus D#GetterClass is often a sub-class of this. */
   trait EntityGetter[A<:Entity[A]] extends Getter[A] //with GetterHead[AnyRef,A]
   trait AttributeGetter[A<:AttributeOf[E] with GetterType[A],E] extends Getter[A] with GetterType[A] {
@@ -415,9 +448,9 @@ object er {
     }
   }
   /** Construct a new Getter representing the beginning of an getter chain, taking input A. */
-  def newGetterUnit[A<:GetterType[A]](implicit m:Manifest[A#GetterClass]): A#GetterClass with GetterHead[A,A] = {
+  def newGetterUnit[X<:GetterType[X]](implicit m:Manifest[X#GetterClass]): X#GetterClass { type A = X } = {
   	//println("GetterUnit m="+m)
-  	newGetter[A](m).asInstanceOf[A#GetterClass with GetterHead[A,A]];
+  	newGetter[X](m).asInstanceOf[X#GetterClass { type A = X}];
   }
   /** A immutable boolean observation variable that satisfies the type requirements necessary to be returned by a getter.
       Useful for implementing simple binary tests on observations.  Since its value will never change, you do not have
@@ -457,13 +490,13 @@ object er {
     def getters = List(a1.asInstanceOf[Getter[ScorableValues0] {type A = X}])
   }
   
-  implicit def getter2scoreneighbor[X<:Variable,A<:ScorableValues[A]](a:Getter[A] with GetterHead[X,A])(implicit ma:Manifest[A]): ScoreNeighbor0[X] = { 
+  implicit def getter2scoreneighbor[X<:Variable,Y<:ScorableValues[Y]](a:Getter[Y] { type A = X})(implicit ma:Manifest[Y]): ScoreNeighbor0[X] = { 
   	//println("getter2scoreneighbor ma="+ma+" a="+a)
-    new ScoreNeighbor[X,A](a)(ma)
+    new ScoreNeighbor[X,Y](a)(ma)
   }
   
   object Foreach {
-    def apply[X<:GetterType[X] with Variable](x2c:X#GetterClass with GetterHead[X,X]=>Score[X])(implicit m:Manifest[X#GetterClass]) = {
+    def apply[X<:GetterType[X] with Variable](x2c:X#GetterClass{ type A = X}=>Score[X])(implicit m:Manifest[X#GetterClass]) = {
       val score = x2c(newGetterUnit[X](m))
       val manifests = score.manifests.toList.asInstanceOf[List[Manifest[ScorableValues0]]];
       val getters = score.getters
@@ -545,7 +578,7 @@ object er {
     def <==>(f:Formula[X]) = BooleanEquals(this, f)
   }
   // TODO Why is this a case class?
-  case class BooleanTerm[X<:Variable,A<:FormulaArg](g1:GetterHead[X,A])(implicit ma:Manifest[A]) extends Formula[X] {
+  case class BooleanTerm[X<:Variable,A<:FormulaArg](g1:Getter[A]{type A=X})(implicit ma:Manifest[A]) extends Formula[X] {
     var extraNeighborCount = 0
     var manifests = ma.asInstanceOf[Manifest[FormulaArg]] :: Nil
     var getters = g1.asInstanceOf[GetterHead[X,FormulaArg]] :: Nil
@@ -585,7 +618,7 @@ object er {
     }
   }*/
 
-  implicit def getter2formula[X<:Variable,A<:BooleanValue/* with GetterType[A]*/](g:Getter[A] with GetterHead[X,A])(implicit ma:Manifest[A]): Formula[X] = new BooleanTerm(g)(ma)
+  implicit def getter2formula[X<:Variable,Y<:BooleanValue/* with GetterType[A]*/](g:Getter[Y] {type A = X})(implicit ma:Manifest[Y]): Formula[X] = new BooleanTerm(g)(ma)
   
   abstract class Formula1[X<:Variable](c1:Formula[X]) extends Formula[X] {
     def manifests = c1.manifests
@@ -687,9 +720,9 @@ object er {
   
   /** Create a Formula starting from a Getter */
   object Forany {
-    def apply[X<:GetterType[X] with Variable](x2c:X#GetterClass with GetterHead[X,X]=>Formula[X])(implicit m:Manifest[X#GetterClass]): Template with LogicStatistics = {
+    def apply[X<:GetterType[X] with Variable](x2c:X#GetterClass{ type A = X}=>Formula[X])(implicit m:Manifest[X#GetterClass]): Template with LogicStatistics = {
       type I = FormulaArg
-      val getterRoot: X#GetterClass with GetterHead[X,X] = newGetterUnit[X](m)
+      val getterRoot: X#GetterClass { type A = X } = newGetterUnit[X](m)
       val formula = x2c(getterRoot)
       val manifests = formula.manifests.asInstanceOf[Seq[Manifest[I]]];
       //assert(formula.getters.length == 1, formula.getters.length)
