@@ -66,6 +66,7 @@ abstract trait TypedCategoricalVariable[T] extends CategoricalVariable with Type
   class DomainInSubclasses
   final def set(newValue: ValueType)(implicit d: DiffList) = setByIndex(domain.index(newValue))
   def :=(newValue:ValueType) = set(newValue)(null)
+  def value_=(newValue:ValueType) = set(newValue)(null)
 } 
 
 /** For variables holding a single, constant indexed value which is of Scala type T. */
