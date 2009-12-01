@@ -13,6 +13,7 @@ import scala.collection.mutable.HashMap
 trait PerceptronUpdates extends WeightUpdates {
   override type TemplatesToUpdate = DotTemplate
   var learningRate = 1.0
+  // var learningRateDecay = 0.9 // TODO I'd like to find a way to decay the learning rate automatically without the user having to manage it.
   def model : Model
   def learningMargin : Double
   override def updateWeights : Unit = {
