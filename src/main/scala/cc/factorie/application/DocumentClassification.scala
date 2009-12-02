@@ -27,6 +27,7 @@ object DocumentClassification {
   }
   
   abstract class Label[D<:Document[This,D],This<:Label[D,This]](labelString:String, override val instance:D) extends FeatureVectorClassification.Label[D,This](labelString, instance) {
+    this: This =>
   	//type GetterType <: LabelGetter[D,This];
   	//class GetterClass extends LabelGetter[D,This]
     def document = instance
@@ -40,15 +41,18 @@ object DocumentClassification {
   
   class LabelGetter[D<:Document[ThisLabel,D],ThisLabel<:Label[D,ThisLabel]] extends FeatureVectorClassification.LabelGetter[D,ThisLabel] {
     override def newInstanceGetter = new DocumentGetter[ThisLabel,D]
-    //def instance = initOneToOne[D](newInstanceGetter, label => label.instance, instance => instance.label)
+    //override def instance = initOneToOne[D](newInstanceGetter, label => label.instance, instance => instance.label)
     def document = instance
   }
 
-  def newModel[L<:Label[D,L],D<:Document[L,D]](implicit lm:Manifest[L],dm:Manifest[D]) =
+  def newModel[L<:Label[D,L],D<:Document[L,D]](implicit lm:Manifest[L],dm:Manifest[D]): Model = {
+    if (lm.erasure == classOf[Nothing] || dm.erasure == classOf[Nothing]) 
+      throw new Error("You must specify type arguments to cc.factorie.applicatio.DocumentClassification.newModel")
     new Model(
       new LabelTemplate[L],
       new LabelInstanceTemplate[L,D]
     )
+  }
 
   def newObjective[L<:Label[D,L],D<:Document[L,D]](implicit lm:Manifest[L]) = new TrueLabelTemplate[L]()(lm)
   //def newObjective[L<:Label[_,L]](implicit lm:Manifest[L]) = new TrueLabelTemplate[L]()(lm)

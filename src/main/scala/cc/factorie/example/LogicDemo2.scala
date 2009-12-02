@@ -8,7 +8,7 @@ object LogicDemo2 {
 	// Define entity, attribute and relation types
 	class Person (val name:String, val mother:Person) extends ItemizedObservation[Person] with Entity[Person] {
 		type GetterType = PersonGetter
-		class GetterClass extends PersonGetter
+		class GetterClass extends PersonGetter // Person#GetterClass#super
 		// When we have Scala 2.8 this next line will simply be:
 			// object smokes extends BooleanVariable with Attribute
 			val smokes = new Smokes; class Smokes extends BooleanVariable with Attribute

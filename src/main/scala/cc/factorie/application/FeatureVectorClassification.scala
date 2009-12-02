@@ -9,7 +9,7 @@ object FeatureVectorClassification {
     this: This =>
     type VariableType <: Instance[L,This]
     class DomainInSubclasses
-    type GetterType = InstanceGetter[L,This]
+    type GetterType <: InstanceGetter[L,This]
     class GetterClass extends InstanceGetter[L,This]
     def newGetter = new InstanceGetter[L,This]
     def newLabel(labelString:String): L
@@ -17,7 +17,8 @@ object FeatureVectorClassification {
   }
   
   abstract class Label[I<:Instance[This,I],This<:Label[I,This]](labelString:String, val instance:I) extends LabelVariable(labelString) /*with GetterType[This]*/ {
-  	type GetterType = LabelGetter[I,This];
+    this: This =>
+  	type GetterType <: LabelGetter[I,This];
   	class GetterClass extends LabelGetter[I,This]
     type VariableType <: Label[I,This]
     class DomainInSubclasses
@@ -26,12 +27,12 @@ object FeatureVectorClassification {
 
   class InstanceGetter[L<:Label[ThisInstance,L],ThisInstance<:Instance[L,ThisInstance]] extends Getter[ThisInstance] {
     def newLabelGetter = new LabelGetter[ThisInstance,L]
-    def label = initOneToOne(newLabelGetter, instance => instance.label, (label:L) => label.instance)
+    def label = initOneToOne[L](newLabelGetter, instance => instance.label, (label:L) => label.instance)
   }
   
   class LabelGetter[I<:Instance[ThisLabel,I],ThisLabel<:Label[I,ThisLabel]] extends Getter[ThisLabel] {
     def newInstanceGetter = new InstanceGetter[ThisLabel,I]
-    def instance = initOneToOne[I,InstanceGetter[ThisLabel,I]](newInstanceGetter, label => label.instance, (instance:I) => instance.label)
+    def instance = initOneToOne[I](newInstanceGetter, label => label.instance, (instance:I) => instance.label)
   }
   
   

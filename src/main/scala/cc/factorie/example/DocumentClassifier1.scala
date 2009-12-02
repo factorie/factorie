@@ -24,7 +24,7 @@ object DocumentClassifier1 {
   }
 
   // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
-  val model = DocumentClassification.newModel
+  val model = DocumentClassification.newModel[Label,Document]
 
   def main(args:Array[String]): Unit = {
     if (args.length < 2) 
@@ -36,16 +36,19 @@ object DocumentClassifier1 {
     	val directoryFile = new File(directory)
     	if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
     	for (file <- new File(directory).listFiles; if (file.isFile)) {
-    		println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
+    		//println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
     		documents += new Document(file)
     	}
     }
-
+    
     // Make a test/train split
     val (testSet, trainSet) = documents.shuffle.split(0.5)
     var trainVariables = trainSet.map(_ label)
     var testVariables = testSet.map(_ label)
     (trainVariables ++ testVariables).foreach(_.setRandomly)
+
+    println(model)
+    println(model.factors(trainVariables.first))
 
     // Train and test
     val learner = new GibbsSampler1[Label](model) with SampleRank with PerceptronUpdates

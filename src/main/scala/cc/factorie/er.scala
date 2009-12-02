@@ -249,7 +249,7 @@ object er {
         fwd1, 
         rev1)
     }
-    def initManyToMany[D<:/*HasGetterType[D]*/{type GetterType<:Getter[D]}](getter:D#GetterType, fwd1:C=>Iterable[D], rev1:D=>Iterable[C]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+    def initManyToMany[D<:{type GetterType<:Getter[D]}](getter:Getter[D]/*D#GetterType*/, fwd1:C=>Iterable[D], rev1:D=>Iterable[C]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
     	type ThisA = A
     	type ThisC = C
       val ret = getter.asInstanceOf[Getter[D] { type A = Getter.this.A; type B = Getter.this.C }]
@@ -263,7 +263,7 @@ object er {
     def getManyToOne[D<:{type GetterType<:Getter[D]}](fwd1:C=>D, rev1:D=>Iterable[C])(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
       initManyToOne[D](newGetter[D](m), fwd1, rev1)
     } 
-    def initManyToOne[D<:{type GetterType<:Getter[D]}](getter:D#GetterType, fwd1:C=>D, rev1:D=>Iterable[C]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+    def initManyToOne[D<:{type GetterType<:Getter[D]}](getter:Getter[D]/*D#GetterType*/, fwd1:C=>D, rev1:D=>Iterable[C]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
     	type ThisA = A
       type ThisC = C
       val ret = getter.asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
@@ -274,9 +274,9 @@ object er {
     }
     /** Create a new Getter, starting from this one and appending an additional one-to-one mapping. */
     def getOneToOne[D<:{type GetterType<:Getter[D]}](fwd1:C=>D, rev1:D=>C)(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
-      initOneToOne(newGetter[D](m), fwd1, rev1)
+      initOneToOne[D](newGetter[D](m), fwd1, rev1)
     } 
-    def initOneToOne[D<:{type GetterType<:Getter[D]},DG<:D#GetterType](getter:DG, fwd1:C=>D, rev1:D=>C): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+    def initOneToOne[D<:{type GetterType<:Getter[D]}/*,DG<:D#GetterType*/](getter:Getter[D]/*D#GetterType*/, fwd1:C=>D, rev1:D=>C): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
       type ThisA = A
       type ThisC = C
       val ret = getter.asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
@@ -289,7 +289,7 @@ object er {
     def getOneToMany[D<:{type GetterType<:Getter[D]}](fwd1:C=>Iterable[D], rev1:D=>C)(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
       initOneToMany[D](newGetter[D](m), fwd1, rev1)
     }
-    def initOneToMany[D<:{type GetterType<:Getter[D]}](getter:D#GetterType, fwd1:C=>Iterable[D], rev1:D=>C): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+    def initOneToMany[D<:{type GetterType<:Getter[D]}](getter:Getter[D]/*D#GetterType*/, fwd1:C=>Iterable[D], rev1:D=>C): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
       type ThisA = A
       type ThisC = C
       val ret = getter.asInstanceOf[D#GetterType{ type A = ThisA; type B = ThisC }]
@@ -306,7 +306,7 @@ object er {
     /** Create a new Getter, starting from this one and appending an additional symmetric one-to-one mapping. 
         For example:  getSymmetricOneToOne[Person](_.spouse)*/
     def getSymmetricOneToOne[D<:{type GetterType<:Getter[D]}](fwd1:C=>D): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = 
-      initOneToOne(newGetter[D](this.getClass), fwd1, fwd1.asInstanceOf[D=>C])
+      initOneToOne[D](newGetter[D](this.getClass), fwd1, fwd1.asInstanceOf[D=>C])
     /** Create a new Getter, starting from this one and appending a mapping to one of its Attributes. */
     def getAttribute[D<:AttributeOf[C]](fwd1:C=>D): Getter[D] { type A = Getter.this.A; type B = Getter.this.C } = {
       type ThisA = A
@@ -464,7 +464,7 @@ object er {
   }
 
   /** Construct a new Getter representing the beginning of an getter chain, taking input A. */
-  def newGetterUnit[X<:{type GetterType <: Getter[X]}](implicit m:Manifest[X]): X#GetterType { type A = X } = {
+  def newGetterUnit[X<:{type GetterType <: Getter[X]}](implicit m:Manifest[X]): X#GetterType { type A = X /* ; type B = X */ } = {
   	//println("GetterUnit m="+m)
   	newGetter[X](m).asInstanceOf[X#GetterType { type A = X }];
   }
