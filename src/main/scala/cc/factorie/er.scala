@@ -12,10 +12,13 @@ import cc.factorie._
 /** Classes and functions supporting Entity-Relationship languages for creating Templates. */
 object er {
   
+	type VariableWithGetter[D] = Variable { type GetterType <: Getter[D] }
+	type HasGetterType[D] = { type GetterType <: Getter[D] }
+
   // Define attributes and entities
 
   /** A generic Attribute */
-  trait AttributeOf[E] {
+  trait AttributeOf[E] extends Variable {
     /** The entity that is described by this attribute. */
     def attributeOwner: E
     /** Print the owner of the attribute before the rest of its toString representation. */
@@ -26,14 +29,15 @@ object er {
   // TODO Note that it is hard to subclass one of these, which seems sad.  
   //  For example, users might want to subclass the pre-packaged entities in cc.factorie.application.  Think about this some more.
   /** A trait for entities that have attributes.  Provides an inner trait 'Attribute' for its attribute classes. */
-  trait Entity[This<:Entity[This] with Variable with GetterType[This]] extends Variable with GetterType[This] {
+  trait Entity[This<:Entity[This] with Variable] extends Variable {
     this: This =>
-    type GetterClass <: Getter[This]
+    //type VariableType = This
     type EntityType = This
     def thisEntity: This = this
     /** Sub-trait of cc.factorie.er.AttributeOf that has a concrete implementation of 'attributeOwner'. */
-    trait Attribute extends cc.factorie.er.AttributeOf[This] with GetterType[Attribute] {
-      type GetterClass = AttributeGetter[Attribute,This]
+    trait Attribute extends cc.factorie.er.AttributeOf[This] {
+      //type VariableType <: Attribute
+      class GetterClass extends AttributeGetter[Attribute,This]
       def attributeOwner: This = thisEntity
     }
     /** Consider removing this.  Not sure if it should go here or outside the Entity. */
@@ -47,14 +51,6 @@ object er {
   		}
   		protected def _set(newValue:This)(implicit d:DiffList) = super.set(newValue)(d)
   	}
-  	/*class Relation[B](val bwd:B=>Relation[This]) extends SetVariable[B] {
-  		protected val back = new HashSet[B] // those b:B's who have relation (b,this); note that this may not have the relation (this,b)
-  		def incoming: Iterable[B] = back
-  		override def add(b:B)(implicit d:DiffList): Unit = if (!this.contains(b)) { bwd(b).back += thisEntity; super.add(b)(d); if (d != null) d += RelationAddDiff(b) }
-  		override def remove(b:B)(implicit d:DiffList): Unit = if (this.contains(b)) { bwd(b).back -= thisEntity; super.remove(b)(d); if (d != null) d += RelationRemoveDiff(b) }
-  		case class RelationAddDiff(b:B) extends Diff { def variable = Relation.this; def redo = bwd(b).back += thisEntity; def undo = bwd(b).back -= thisEntity }
-  		case class RelationRemoveDiff(b:B) extends Diff { def variable = Relation.this; def redo = bwd(b).back -= thisEntity; def undo = bwd(b).back += thisEntity }
-    }*/
   }
 
   /** Representing a directed relationship from <code>src</code> to <code>dst</code>.  
@@ -65,7 +61,8 @@ object er {
   // TODO Is this last sentence a bad idea?  I could avoid it by spliting 'AttributeHolding' out of Entity.
   // Note that the current state allows there to be "Relations among Relationships"... hmmm!  Might this be useful?
   class Relationship[A<:Entity[A],B<:Entity[B]](val src:A, val dst:B) extends BoolVariable with Entity[Relationship[A,B]] {
-    type GetterClass = RelationshipGetter[A,B]
+    type GetterType <: RelationshipGetter[A,B]
+    class GetterClass extends RelationshipGetter[A,B]
     override def toString = printName+"("+src+","+dst+","+value+")" // TODO For some reason this is having no effect, so I re-override below
   }
   
@@ -197,10 +194,11 @@ object er {
       However, in that case the Getter will be constructed with a null argument.  
       It is up to you not to use the outer instance in your implementation of Getter subclasses. */
   // TODO I want trait Getter[C1<:GetterType[C1]], but fighting with typing in ScoreNeighor0 below 
-  trait Getter[C1] {
+  trait Getter[C1/*<:HasGetterType[C1]*/] {
     type A
-    type B //<: GetterType[B]
+    type B
     type C = C1
+    type CG = C1 { type GetterType <: Getter[C1] }
     private var prefix: Getter[B] = null
     def getPrefix: Getter[B] = prefix // TODO fix this non-standard naming
     private var forward1s: B=>C = (b:B) => b.asInstanceOf[C] // Default no-op for "unit" Getter
@@ -245,52 +243,56 @@ object er {
     def unsafeReverse[A8](c:Any): Iterable[A8] = _reverse(c.asInstanceOf[C]).asInstanceOf[Iterable[A8]]
     def unsafeReverseFunc[B8,C8]: B8=>Iterable[C8] = _reverse.asInstanceOf[B8=>Iterable[C8]]
     /** Create a new Getter, starting from this one and appending an additional many-to-many mapping. */
-    def getManyToMany[D<:GetterType[D]](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D#GetterClass]): D#GetterClass {type A=Getter.this.A; type B=Getter.this.C} = {
-    	initManyToMany[D](newGetter[D](m), fwd1, rev1)
+    def getManyToMany[D<:{type GetterType<:Getter[D]}](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+    	initManyToMany[D](
+        newGetter[D](m), 
+        fwd1, 
+        rev1)
     }
-    def initManyToMany[D<:GetterType[D]](getter:D#GetterClass, fwd1:C=>Iterable[D], rev1:D=>Iterable[C]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    def initManyToMany[D<:/*HasGetterType[D]*/{type GetterType<:Getter[D]}](getter:D#GetterType, fwd1:C=>Iterable[D], rev1:D=>Iterable[C]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
     	type ThisA = A
     	type ThisC = C
-      val ret = getter.asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
-      ret.prefix = Getter.this.asInstanceOf[Getter[C] {type A = ThisA}] // I'm confused as to why this is working because I don't think EntityGetters have GetterHead mixed in!
+      val ret = getter.asInstanceOf[Getter[D] { type A = Getter.this.A; type B = Getter.this.C }]
+      ret.prefix = Getter.this.asInstanceOf[Getter[C] {type A = ThisA}]
       ret.forward1m = fwd1
       ret.reverse1m = rev1
-      ret
+      //ret.asInstanceOf[D#GetterType]
+      getter.asInstanceOf[D#GetterType { type A = Getter.this.A; type B = Getter.this.C }]
     }
     /** Create a new Getter, starting from this one and appending an additional many-to-one mapping. */
-    def getManyToOne[D<:GetterType[D]](fwd1:C=>D, rev1:D=>Iterable[C])(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
-      initManyToMany(newGetter[D](m), fwd1, rev1)
+    def getManyToOne[D<:{type GetterType<:Getter[D]}](fwd1:C=>D, rev1:D=>Iterable[C])(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+      initManyToOne[D](newGetter[D](m), fwd1, rev1)
     } 
-    def initManyToOne[D<:GetterType[D]](getter:D#GetterClass, fwd1:C=>D, rev1:D=>Iterable[C]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    def initManyToOne[D<:{type GetterType<:Getter[D]}](getter:D#GetterType, fwd1:C=>D, rev1:D=>Iterable[C]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
     	type ThisA = A
       type ThisC = C
-      val ret = getter.asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      val ret = getter.asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
       ret.prefix = Getter.this.asInstanceOf[Getter[C] {type A = ThisA} ]
       ret.forward1s = fwd1
       ret.reverse1m = rev1
       ret
     }
     /** Create a new Getter, starting from this one and appending an additional one-to-one mapping. */
-    def getOneToOne[D<:GetterType[D]](fwd1:C=>D, rev1:D=>C)(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    def getOneToOne[D<:{type GetterType<:Getter[D]}](fwd1:C=>D, rev1:D=>C)(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
       initOneToOne(newGetter[D](m), fwd1, rev1)
     } 
-    def initOneToOne[D<:GetterType[D]](getter:D#GetterClass, fwd1:C=>D, rev1:D=>C): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    def initOneToOne[D<:{type GetterType<:Getter[D]},DG<:D#GetterType](getter:DG, fwd1:C=>D, rev1:D=>C): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
       type ThisA = A
       type ThisC = C
-      val ret = getter.asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      val ret = getter.asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
       ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1s = fwd1
       ret.reverse1s = rev1
       ret
     }
     /** Create a new Getter, starting from this one and appending an additional one-to-many mapping. */
-    def getOneToMany[D<:GetterType[D]](fwd1:C=>Iterable[D], rev1:D=>C)(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
-      initOneToMany(newGetter[D](m), fwd1, rev1)
+    def getOneToMany[D<:{type GetterType<:Getter[D]}](fwd1:C=>Iterable[D], rev1:D=>C)(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+      initOneToMany[D](newGetter[D](m), fwd1, rev1)
     }
-    def initOneToMany[D<:GetterType[D]](getter:D#GetterClass, fwd1:C=>Iterable[D], rev1:D=>C): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    def initOneToMany[D<:{type GetterType<:Getter[D]}](getter:D#GetterType, fwd1:C=>Iterable[D], rev1:D=>C): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
       type ThisA = A
       type ThisC = C
-      val ret = getter.asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      val ret = getter.asInstanceOf[D#GetterType{ type A = ThisA; type B = ThisC }]
       ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1m = fwd1
       ret.reverse1s = rev1
@@ -299,26 +301,14 @@ object er {
     // TODO If I uncomment "C with" below, I get scalac error: "illegal type selection from volatile type D".  It seems I should be able to do this, though.
     /** Create a new Getter, starting from this one and appending an additional symmetric many-to-many mapping.
         For example:  getSymmetricManyToMany[Person](p => p.mother.children.filter(p2=>p2 ne p)). */
-    def getSymmetricManyToMany[D<: /*C with*/ GetterType[D]](fwd1:C=>Iterable[D])(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = 
-    	getManyToMany[D](fwd1, fwd1.asInstanceOf[D=>Iterable[C]])(m) // TODO this cast is somewhat unsafe.  Would be better to type-check the fwd1 argument
+    def getSymmetricManyToMany[D<:{type GetterType<:Getter[D]}](fwd1:C=>Iterable[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = 
+      initManyToMany[D](newGetter[D](this.getClass), fwd1, fwd1.asInstanceOf[D=>Iterable[C]])
     /** Create a new Getter, starting from this one and appending an additional symmetric one-to-one mapping. 
         For example:  getSymmetricOneToOne[Person](_.spouse)*/
-    def getSymmetricOneToOne[D<: /*C with*/ GetterType[D]](fwd1:C=>D)(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = 
-      getOneToOne[D](fwd1, fwd1.asInstanceOf[D=>C])(m) // TODO this cast is somewhat unsafe.  Would be better to type-check the fwd1 argument
+    def getSymmetricOneToOne[D<:{type GetterType<:Getter[D]}](fwd1:C=>D): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = 
+      initOneToOne(newGetter[D](this.getClass), fwd1, fwd1.asInstanceOf[D=>C])
     /** Create a new Getter, starting from this one and appending a mapping to one of its Attributes. */
-    // TODO Consider [D<:Entity[C]#Attribute] instead
-    def getAttribute2[D<:AttributeOf[C] with GetterType[D]](fwd1:C=>D)(implicit m:Manifest[D#GetterClass]): Getter[D] { type A = Getter.this.A; type B = Getter.this.C } = {
-    	type ThisA = A
-    	type ThisC = C
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
-      //val ret = new Getter[D] with GetterHead[A,D] with GetterMiddle[C,D] //.asInstanceOf[]
-      //ret.prefix = Getter.this.asInstanceOf[Getter[C] with GetterHead[A,C]] // TODO Doesn't run because Getter doesn't have GetterHead
-      ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
-      ret.forward1s = (c:C) => fwd1(c)
-      ret.reverse1s = (d:D) => d.attributeOwner
-      ret
-    }
-     def getAttribute[D<:AttributeOf[C]](fwd1:C=>D): Getter[D] { type A = Getter.this.A; type B = Getter.this.C } = {
+    def getAttribute[D<:AttributeOf[C]](fwd1:C=>D): Getter[D] { type A = Getter.this.A; type B = Getter.this.C } = {
       type ThisA = A
       type ThisC = C
       val ret = new Getter[D] { type A = ThisA; type B = ThisC }
@@ -328,7 +318,7 @@ object er {
       ret.reverse1s = (d:D) => d.attributeOwner
       ret
     }
-    def getOneWay[D](fwd1:C=>D): Getter[D] { type A = Getter.this.A; type B = Getter.this.C } = {
+    def getOneWay[D<:Variable](fwd1:C=>D): Getter[D] { type A = Getter.this.A; type B = Getter.this.C } = {
       type ThisA = A
       type ThisC = C
       val ret = new Getter[D] { type A = ThisA; type B = ThisC }
@@ -341,20 +331,20 @@ object er {
         This differs from getSymmetricOneToOne in that it represents a mutable one-to-one relation, whereas getSymmetricOneToOne represents an immutable relation. */
     //def getSymmetricFunction[D<:Entity[C]#SymmetricFunction](fwd1:C=>D)(implicit m:Manifest[D#EntityType#GetterClass]): Getter[C] with GetterHead[A,C] with GetterMiddle[C,C] 
     // TODO I really want to say that D == C here.  I thought the above solution would work, but I get error "EntityType" does not have member "GetterClass", when it clearly does! 
-    def getSymmetricFunction[D<:GetterType[D]](fwd1:C=>RefVariable[D])(implicit m:Manifest[D#GetterClass]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    def getSymmetricFunction[D<:{type GetterType<:Getter[D]}](fwd1:C=>RefVariable[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
     	type ThisA = A
     	type ThisC = C
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      val ret = newGetter[D](this.getClass).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
       ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
-      ret.forward1s = (c:C) => fwd1(c).value.asInstanceOf[D]
-      ret.reverse1s = (d:D) => fwd1(d.asInstanceOf[C]).value.asInstanceOf[C]
+      ret.forward1s = (c:C) => fwd1(c).value
+      ret.reverse1s = (d:D) => fwd1(d.asInstanceOf[ret.B]).value.asInstanceOf[ret.B]
       ret
     }
     /** Create a new Getter, starting from this one as the 'src' of a relation, and appending a Getter for the 'dst' of the relation. */
-    def getRelationSrc[R<:Relation[D,C],D<:GetterType[D]](r:R)(implicit m:Manifest[D#GetterClass], mr:Manifest[R#RelationshipType]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    def getRelationSrc[R<:Relation[D,C],D<:{type GetterType<:Getter[D]}](r:R)(implicit m:Manifest[D], mr:Manifest[R#RelationshipType]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
       type ThisA = A
       type ThisC = C
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      val ret = newGetter[D](m).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
       ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1m = (c:C) => r.getFromDst(c).map(_.src)
       ret.reverse1m = (d:D) => r.getFromSrc(d).map(_.dst)
@@ -369,10 +359,10 @@ object er {
       ret
     }
     /** Create a new Getter, starting from this one as the 'dst' of a relation, and appending a Getter for the 'src' of the relation. */
-    def getRelationDst[R<:Relation[C,D],D<:GetterType[D]](r:R)(implicit m:Manifest[D#GetterClass], mr:Manifest[R#RelationshipType]): D#GetterClass { type A = Getter.this.A; type B = Getter.this.C } = {
+    def getRelationDst[R<:Relation[C,D],D<:{type GetterType<:Getter[D]}](r:R)(implicit m:Manifest[D], mr:Manifest[R#RelationshipType]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
       type ThisA = A
       type ThisC = C
-      val ret = newGetter[D](m).asInstanceOf[D#GetterClass { type A = ThisA; type B = ThisC }]
+      val ret = newGetter[D](m).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
       ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1m = (c:C) => r.getFromSrc(c).map(_.dst)
       ret.reverse1m = (d:D) => r.getFromDst(d).map(_.src)
@@ -408,33 +398,27 @@ object er {
   /** Fill in abstract type Getter.B with parameterized type.  Necessary for Scala type-inferencer. */
   //trait GetterMiddle[B1/*<:GetterType[B1]*/,C1/*<:GetterType[C1]*/] extends Getter[C1] { type B = B1 }
   /** Typical Getter trait inherited by users, and thus D#GetterClass is often a sub-class of this. */
-  trait EntityGetter[A<:Entity[A]] extends Getter[A] //with GetterHead[AnyRef,A]
-  trait AttributeGetter[A<:AttributeOf[E] with GetterType[A],E] extends Getter[A] with GetterType[A] {
-    type GetterClass = Getter[A]
-    //def attributeOwner: E = getOneToOne[E]((a:A)=>a.attributeOwner, ??)
+  trait EntityGetter[A<:Entity[A]] extends Getter[A]
+  trait AttributeGetter[A<:AttributeOf[E] /*with GetterType[A]*/,E] extends Getter[A] {
+    //def attributeOwner: E = getOneToOne[E]((a:A)=>a.attributeOwner, (e:E)=>e.??)
   }
   class RelationshipGetter[A<:Entity[A],B<:Entity[B]] extends EntityGetter[Relationship[A,B]] {
     //def getSrc(implicit m:Manifest[A]): Getter  // TODO we can't go backwards from a source to an individual relationship; it would have to map to all matching the src.
   }
   // TODO? Consider avoiding the need to mix this into Entity by using instead duck typing: type WithGetterType = { type GetterClass <: Getter[_,_] }
-  trait GetterType[D] { type GetterClass <: Getter[D] }
+  //trait GetterType[D] { type GetterClass <: Getter[D] }
   /** Construct a new Getter with tail type A. */
-  def newGetter[A<:GetterType[A]](implicit m:Manifest[A#GetterClass]): A#GetterClass = {
-    newGetter[A](m.erasure)
-  	/*val constructors = m.erasure.getConstructors
-    if (constructors.size != 1) throw new Error("Getters must have only one constructor")
-    val constructor = m.erasure.getConstructors.apply(0)
-    val numArgs = constructor.getParameterTypes.length
-    if (numArgs != 0) throw new Error("Getter constructors must not take any arguments.")
-    constructor.newInstance().asInstanceOf[A#GetterClass]*/
+  def newGetter[V<:{type GetterType <: Getter[V]}](implicit m:Manifest[V]): V#GetterType = {
+    newGetter[V](m.erasure)
   }
-  def newGetter[A<:GetterType[A]](getterClass:Class[_]): A#GetterClass = {
+  def newGetter[V<:{type GetterType <: Getter[V]}](variableClass:Class[_]): V#GetterType = {
+    val getterClass = getGetterClass(variableClass)
     val constructors = getterClass.getConstructors
     if (constructors.size != 1) throw new Error("Getters must have only one constructor; class="+getterClass+" has "+constructors.size+".  You can get this error if you failed to correctly set 'type GetterClass'.")
     val constructor = constructors.apply(0)
     val numArgs = constructor.getParameterTypes.length
     if (numArgs == 0) {
-      constructor.newInstance().asInstanceOf[A#GetterClass]
+      constructor.newInstance().asInstanceOf[V#GetterType]
     } /*else if (numArgs == 1) {
       val args = new Array[Object](1)
       args(0) = null
@@ -447,16 +431,49 @@ object er {
       throw new Error(msg.toString)
     }
   }
+  /** Find the (sub)class of Getter to use for constructing a getter for variable class c. */
+  private def getGetterClass(c:Class[_]) : Class[_] = {
+    val debug = false
+    if (debug) println("getGetterClass "+c)
+    // First check this class to see if it specifies the GetterClass
+    val classes = c.getDeclaredClasses()
+    val index = if (classes == null) -1 else classes.findIndexOf(c=>c.getName.endsWith("$GetterClass"))
+    //if (debug) println("  $GetterClass index="+index+"  classes "+classes.toList)
+    if (index >= 0) {
+      if (debug) println("getGetterClass   returning "+classes(index).getSuperclass)
+      return classes(index).getSuperclass
+    }
+    // Next check the superclass and interfaces/traits; choose the most specific (subclass of) Domain
+    val candidateGetterClasses = new ListBuffer[Class[_]]
+    val sc = c.getSuperclass
+    if (sc != null && sc != classOf[java.lang.Object]) 
+      candidateGetterClasses += getGetterClass(sc)
+    val interfaces = c.getInterfaces.elements
+    while (interfaces.hasNext) {
+      val dc = getGetterClass(interfaces.next)
+      if (dc != null) candidateGetterClasses += dc
+    }
+    if (candidateGetterClasses.size > 0) {
+      // Find the most specific subclass of the first domain class found
+      var dc = candidateGetterClasses.first
+      candidateGetterClasses.foreach(dc2 => if (dc.isAssignableFrom(dc2)) dc = dc2)
+      if (debug) println("getGetterClass "+c+" specific="+dc)
+      return dc
+    } else
+      null
+  }
+
   /** Construct a new Getter representing the beginning of an getter chain, taking input A. */
-  def newGetterUnit[X<:GetterType[X]](implicit m:Manifest[X#GetterClass]): X#GetterClass { type A = X } = {
+  def newGetterUnit[X<:{type GetterType <: Getter[X]}](implicit m:Manifest[X]): X#GetterType { type A = X } = {
   	//println("GetterUnit m="+m)
-  	newGetter[X](m).asInstanceOf[X#GetterClass { type A = X}];
+  	newGetter[X](m).asInstanceOf[X#GetterType { type A = X }];
   }
   /** A immutable boolean observation variable that satisfies the type requirements necessary to be returned by a getter.
       Useful for implementing simple binary tests on observations.  Since its value will never change, you do not have
       to provide a rev1 function when creating a getter for it with getOneToOne. */
   class BooleanObservationWithGetter(f:Boolean) extends BooleanObservation(f) with Entity[BooleanObservationWithGetter] {
-    type GetterClass = BooleanObservationGetter
+    type GetterType = BooleanObservationGetter
+    class GetterClass extends BooleanObservationGetter
   }
   class BooleanObservationGetter extends EntityGetter[BooleanObservationWithGetter]
   
@@ -496,7 +513,7 @@ object er {
   }
   
   object Foreach {
-    def apply[X<:Variable with GetterType[X]](x2c:X#GetterClass{ type A = X}=>Score[X])(implicit m:Manifest[X#GetterClass]) = {
+    def apply[X<:Variable {type GetterType <: Getter[X]}](x2c:X#GetterType { type A = X}=>Score[X])(implicit m:Manifest[X]) = {
       val score = x2c(newGetterUnit[X](m))
       val manifests = score.manifests.toList.asInstanceOf[List[Manifest[ScorableValues0]]];
       val getters = score.getters
@@ -720,9 +737,9 @@ object er {
   
   /** Create a Formula starting from a Getter */
   object Forany {
-    def apply[X<:Variable with GetterType[X]](x2c:X#GetterClass{ type A = X}=>Formula[X])(implicit m:Manifest[X#GetterClass]): Template with LogicStatistics = {
+    def apply[X<:Variable {type GetterType <: Getter[X]}](x2c:X#GetterType {type A = X}=>Formula[X])(implicit m:Manifest[X]): Template with LogicStatistics = {
       type I = FormulaArg
-      val getterRoot: X#GetterClass { type A = X } = newGetterUnit[X](m)
+      val getterRoot: X#GetterType { type A = X } = newGetterUnit[X](m)
       val formula = x2c(getterRoot)
       val manifests = formula.manifests.asInstanceOf[Seq[Manifest[I]]];
       //assert(formula.getters.length == 1, formula.getters.length)

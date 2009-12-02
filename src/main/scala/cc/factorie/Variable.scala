@@ -28,8 +28,10 @@ import cc.factorie.util.Implicits._
    Variable instances based on their address. */
 // TODO Consider adding "extends AnyRef"??
 abstract trait Variable /* extends AnyRef */ {
-  /** The type of this variable, especially used by this Variable's Domain. */
+  /** The type of this variable, especially used by this Variable's Domain.  Often you can treat this as an approximation to a self-type */
 	type VariableType <: Variable
+ 
+	// Domain handling
 	/** The type of this.domain and Domain.apply[MyVariable]*/
 	type DomainType <: Domain[VariableType]
   /** When a Domain is automatically constructed for this class (in object Domain), it will be the superclass of this inner class. */
@@ -40,6 +42,11 @@ abstract trait Variable /* extends AnyRef */ {
       subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
   class DomainInSubclasses
   final def domain = Domain.get[VariableType](this.getClass)
+  
+  // Getter handling
+  //type GetterType <: VariableGetter[VariableType]
+  //class GetterClass extends VariableGetter
+  
 	private def shortClassName = {
 	  var fields = this.getClass.getName.split('$')
 	  if (fields.length == 1)
@@ -60,6 +67,11 @@ abstract trait Variable /* extends AnyRef */ {
   //type SourceType <: AnyRef
 	//def source:AnyRef = null //.asInstanceOf[SourceType]
 }
+
+/*import cc.factorie.er
+class VariableGetter[This<:Variable] extends er.Getter[This] {
+  def isConstant = getOneWay(v => Bool(v.isConstant))
+}*/
 
 /** Used as a marker for Variables whose value does not change once created.  
     Be  careful to only use this in class definitions that cannot become mutable in subclasses. */

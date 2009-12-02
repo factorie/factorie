@@ -16,7 +16,8 @@ object LabeledTokenSeqs {
       Its value is a BinaryVectorVariable, its feature vector.
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
   final class Token(val word:String, features:Seq[String], labelString:String) extends BinaryVectorVariable[String] with VarInSeq[Token] with Entity[Token] {
-    type GetterClass = TokenGetter
+    type GetterType = TokenGetter
+    class GetterClass extends TokenGetter
     val label: Label = new Label(labelString, this)
     /** Return true if the first  character of the word is upper case. */
     def isCapitalized = java.lang.Character.isUpperCase(word(0))
@@ -87,7 +88,8 @@ object LabeledTokenSeqs {
   // NOTE: If you remove final, add a comment warning the user that different subclasses of will share the same Domain.
   // I don't think we should allow subclassing, hence the "final". -akm
   final class Label(labelname: String, val token: Token) extends LabelVariable(labelname) with Entity[Label] {
-    type GetterClass = LabelGetter
+    type GetterType = LabelGetter
+    class GetterClass extends LabelGetter
     def hasNext = token.hasNext && token.next.label != null
     def hasPrev = token.hasPrev && token.prev.label != null
     def next = token.next.label

@@ -41,7 +41,6 @@ trait IntValues extends Variable {
   def maxIntValue = Math.MAX_INT
   def minIntValue = Math.MIN_INT
   // TODO Consider a def maxValue: Double = Math.POS_INF_DOUBLE ??
-  def vector: Vector
 }
 
 /** A Variable with one Int value.  
@@ -79,6 +78,8 @@ trait IntVariable extends Variable with IntValue {
   }
 }
 
+class IntObservation(val index:Int) extends IntValue 
+
 /** An IntValue with minimum of 0, but no maximum. */
 trait OrdinalValues extends IntValues {
   this: Variable =>
@@ -104,6 +105,7 @@ trait DiscreteValues extends Variable with OrdinalValues {
   class DomainInSubclasses
   def domainSize = domain.domainSize
   override def maxIntValue = domainSize - 1
+  def vector: Vector
 }
 trait DiscreteValue extends DiscreteValues with OrdinalValue {
   this: Variable =>

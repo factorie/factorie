@@ -14,7 +14,7 @@ object ChainNER2 {
     Foreach[Label] { label => Score(label, label.token) }             % "LabelToken",
     Foreach[Label] { label => Score(label.prev, label) }              % "LabelLabel",
     Foreach[Label] { label => Score(label.prev, label, label.next) }  % "LabelLabelLabel",
-    Foreach[Label] { label => Score(label, label.next, label.token) } % "LabelTokenLabel"
+    //Foreach[Label] { label => Score(label, label.next, label.token) } % "LabelTokenLabel"
     //For[Label] { label => Score(label, label.token) }                 % "LabelToken",
     //For[Label] { label => Score(label, label.next) }                  % "LabelMarkov",
   )
