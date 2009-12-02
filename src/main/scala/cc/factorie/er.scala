@@ -26,13 +26,13 @@ object er {
   // TODO Note that it is hard to subclass one of these, which seems sad.  
   //  For example, users might want to subclass the pre-packaged entities in cc.factorie.application.  Think about this some more.
   /** A trait for entities that have attributes.  Provides an inner trait 'Attribute' for its attribute classes. */
-  trait Entity[This<:Entity[This] with Variable /*with GetterType[This]*/] extends Variable /*with GetterType[This]*/ {
+  trait Entity[This<:Entity[This] with Variable with GetterType[This]] extends Variable with GetterType[This] {
     this: This =>
     type GetterClass <: Getter[This]
     type EntityType = This
     def thisEntity: This = this
     /** Sub-trait of cc.factorie.er.AttributeOf that has a concrete implementation of 'attributeOwner'. */
-    trait Attribute extends cc.factorie.er.AttributeOf[This] /*with GetterType[Attribute]*/ {
+    trait Attribute extends cc.factorie.er.AttributeOf[This] with GetterType[Attribute] {
       type GetterClass = AttributeGetter[Attribute,This]
       def attributeOwner: This = thisEntity
     }
