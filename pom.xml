@@ -92,6 +92,9 @@
                     <jvmArgs>
                         <jvmArg>-Xmx265m</jvmArg>
                     </jvmArgs>
+                    <args>
+                        <arg>-explaintypes</arg>
+                    </args>
                 </configuration>
             </plugin>
             <plugin>
