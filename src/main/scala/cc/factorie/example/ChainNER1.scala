@@ -2,9 +2,16 @@ package cc.factorie.example
 import scala.io.Source
 import cc.factorie._ 
 import cc.factorie.er._
-import cc.factorie.application.LabeledTokenSeqs._
+import cc.factorie.application.LabeledTokenSeqs
+import cc.factorie.application.LabeledTokenSeqs.LabeledTokenSeq
 
 object ChainNER1 {
+  
+  // Define the variable classes
+  class Token(word:String, labelString:String) extends LabeledTokenSeqs.Token[Label,Token](word) {
+    val label = new Label(labelString, this)
+  }
+  class Label(tag:String, token:Token) extends LabeledTokenSeqs.Label[Token,Label](tag, token)
 
 	// Define the model:
   val model = new Model(
@@ -16,8 +23,8 @@ object ChainNER1 {
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
     
     // Read training and testing data.
-    val trainSentences = LabeledTokenSeq.fromOWPL(Source.fromFile(args(0)), "-DOCSTART-")
-    val testSentences =  LabeledTokenSeq.fromOWPL(Source.fromFile(args(1)), "-DOCSTART-")
+    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(0)), (word,lab)=>new Token(word,lab), "-DOCSTART-")
+    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(1)), (word,lab)=>new Token(word,lab), "-DOCSTART-")
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.labels)
@@ -33,8 +40,8 @@ object ChainNER1 {
     predictor.process(testLabels, 3)
     
     // Evaluate
-    println("TRAIN "+LabeledTokenSeq.labelEvaluation(trainLabels).accuracy)
-    println("TEST  "+LabeledTokenSeq.labelEvaluation(testLabels).accuracy)
+    println("TRAIN "+LabeledTokenSeq.labelEvaluation[Token,Label](trainLabels).accuracy)
+    println("TEST  "+LabeledTokenSeq.labelEvaluation[Token,Label](testLabels).accuracy)
   }
 
 }

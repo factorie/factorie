@@ -4,17 +4,46 @@ object ChainNER2 {
   import scala.io.Source
   import cc.factorie._ 
   import cc.factorie.er._
-  import cc.factorie.application.LabeledTokenSeqs._
+  import cc.factorie.application.LabeledTokenSeqs
+  import cc.factorie.application.LabeledTokenSeqs.LabeledTokenSeq
   import scala.collection.mutable.ArrayBuffer
 
+  // Define the variable classes
+  class Token(word:String, labelString:String) extends LabeledTokenSeqs.Token[Label,Token](word) {
+    type GetterType = TokenGetter; class GetterClass extends TokenGetter
+    val label = new Label(labelString, this)
+    val wordtype = new Type(word); class Type(s:String) extends EnumVariable(s)
+    val tags = new Tags; class Tags extends BinaryVectorVariable[String]
+    override def +=(feature:String): Unit = {
+      if (feature.matches("(POS|PHRASE)=[-A-Z]+")) tags += feature
+      super.+=(feature)
+    }
+  }
+  
+  class Label(labelString:String, token:Token) extends LabeledTokenSeqs.Label[Token,Label](labelString, token) {
+  	type GetterType = LabelGetter; class GetterClass extends LabelGetter
+  }
+
+  class TokenGetter extends LabeledTokenSeqs.TokenGetter[Label,Token] {
+    override def newTokenGetter = new TokenGetter
+    override def newLabelGetter = new LabelGetter
+    def tags = getOneWay(_.tags)
+    def wordtype = getOneWay(_.wordtype)
+  }
+  class LabelGetter extends LabeledTokenSeqs.LabelGetter[Token,Label] {
+  	override def newTokenGetter = new TokenGetter
+  	override def newLabelGetter = new LabelGetter
+  }
+  
   // Variable classes Token, Label and LabeledTokenSeq are already defined in cc.factorie.application.LabeledTokenSeqs
   // Use them to define model:
   val model = new Model(
-    Foreach[Label] { label => Score(label) }                          % "LabelPrior",
-    Foreach[Label] { label => Score(label, label.token) }             % "LabelToken",
-    Foreach[Label] { label => Score(label.prev, label) }              % "LabelLabel",
-    Foreach[Label] { label => Score(label.prev, label, label.next) }  % "LabelLabelLabel",
-    //Foreach[Label] { label => Score(label, label.next, label.token) } % "LabelTokenLabel"
+    Foreach[Label] { label => Score(label) },
+    Foreach[Label] { label => Score(label, label.token) },
+    Foreach[Label] { label => Score(label.prev, label) },
+    Foreach[Label] { label => Score(label.prev, label, label.next) },
+    Foreach[Label] { label => Score(label, label.next, label.token.tags) },
+    Foreach[Label] { label => Score(label.prev, label, label.next, label.token.tags) }
     //For[Label] { label => Score(label, label.token) }                 % "LabelToken",
     //For[Label] { label => Score(label, label.next) }                  % "LabelMarkov",
   )
@@ -22,8 +51,8 @@ object ChainNER2 {
   def main(args: Array[String]) : Unit = {
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
     // Read training and testing data.  The function 'featureExtractor' function is defined below
-    val trainSentences = LabeledTokenSeq.fromOWPL(Source.fromFile(args(0)), featureExtractor, "-DOCSTART-".r)
-    val testSentences =  LabeledTokenSeq.fromOWPL(Source.fromFile(args(1)), featureExtractor, "-DOCSTART-".r)
+    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(0)), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)
+    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(1)), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)
     println(Domain[Label].toList)
     // Change from CoNLL's IOB notation to to BIO notation
     (trainSentences ++ testSentences).foreach(s => { 
@@ -63,6 +92,7 @@ object ChainNER2 {
 
     //trainLabels.take(20).foreach(printLabel(_))
     println("Domain size = "+Domain[Token].size)
+    println("Tag Domain size = "+trainLabels.first.token.tags.domain.size)
     
     // Train and test!
     (trainLabels ++ testLabels).foreach(_.setRandomly)
@@ -79,8 +109,8 @@ object ChainNER2 {
         println("Test errors")
         printErrors(testLabels, 200)
         println("Iteration "+iterationCount)
-        println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation(trainLabels))
-        println("TEST\n"+LabeledTokenSeq.segmentEvaluation(testLabels))
+        println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
+        println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
         true
       }
     }
@@ -108,15 +138,15 @@ object ChainNER2 {
     new GibbsSampler(model) {temperature = 0.001}.process(testLabels, 2)
     printErrors(testLabels, 100)
     println("GibbsSampling inference")
-    println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation(trainLabels))
-    println("TEST\n"+LabeledTokenSeq.segmentEvaluation(testLabels))
+    println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
+    println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
 
     println("BP inference")
     val predictor = new BPInferencer[Label](model)
     trainSentences.foreach(s => predictor.inferTreewise(s.map(_.label)))
     testSentences.foreach(s => predictor.inferTreewise(s.map(_.label)))
-    println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation(trainLabels))
-    println("TEST\n"+LabeledTokenSeq.segmentEvaluation(testLabels))
+    println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
+    println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
   }
 
   def printLabel(label:Label) : Unit = {
@@ -143,7 +173,7 @@ object ChainNER2 {
     		var j = Math.max(i-contextSize, 0); var numTruthsAfter = -contextSize
     		do {
     			val l = labels(j)
-    			println("%6s/%-6s %-18s %s".format(l.trueValue, l.value, l.token.word, l.token.toString))
+    			println("%s %-6s/%-6s %-18s %s".format((if (l.valueIsTruth) " " else "*"), l.trueValue, l.value, l.token.word, l.token.toString))
     			if (l.valueIsTruth) numTruthsAfter += 1 else { numTruthsAfter = 0; count += 1 }
           j += 1
     		}	while (numTruthsAfter < contextSize && j < labels.length && count < maxErrors) 
@@ -160,7 +190,7 @@ object ChainNER2 {
     import scala.collection.mutable.ArrayBuffer
     val f = new ArrayBuffer[String]
     val word = initialFeatures(0)
-    f += "SHAPE="+wordShape(word, 2)
+    f += "SHAPE="+LabeledTokenSeqs.wordShape(word, 2)
     //f ++= wordNGrams(word, 2,5)
     if (word.matches("(19|20)\\d\\d")) f += "W=<YEAR>" 
     else if (word.matches("\\d+")) f += "W=<NUM>"

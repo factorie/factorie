@@ -240,7 +240,7 @@ import cc.factorie.util.Implicits._
     }
     def prevWindow(n:Int): Seq[V] = for (i <- Math.max(position-n, 0) to Math.max(position-1,0)) yield seq(i)
     def nextWindow(n:Int): Seq[V] = for (i <- Math.min(position+1, seq.length-1) to Math.min(position+n, seq.length-1)) yield seq(i)
-
+		def first = seq(0)
 	}
  
 	/*trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This]] extends cc.factorie.util.DLinkedList[VarInMutableSeq[This]] {

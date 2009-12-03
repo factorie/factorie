@@ -1,4 +1,5 @@
 package cc.factorie.application
+import scala.reflect.Manifest
 import cc.factorie.er._
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap}
 import scalala.tensor.Vector
@@ -15,10 +16,13 @@ object LabeledTokenSeqs {
   /** A word token in a linear sequence of tokens.  It is a constituent of a LabeledTokenSeq.
       Its value is a BinaryVectorVariable, its feature vector.
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
-  final class Token(val word:String, features:Seq[String], labelString:String) extends BinaryVectorVariable[String] with VarInSeq[Token] with Entity[Token] {
-    type GetterType = TokenGetter
-    class GetterClass extends TokenGetter
-    val label: Label = new Label(labelString, this)
+  abstract class Token[L<:Label[This,L], This >:Null <:Token[L,This]](val word:String, features:Seq[String])
+  extends BinaryVectorVariable[String] with VarInSeq[This] with Entity[This] with TokenInSeq[This] {
+    this: This =>
+    def this(word:String) = this(word, Nil)
+    type GetterType <: TokenGetter[L,This]
+    class GetterClass extends TokenGetter[L,This]
+    val label: L //= new Label(labelString, this)
     /** Return true if the first  character of the word is upper case. */
     def isCapitalized = java.lang.Character.isUpperCase(word(0))
     def containsLowerCase = word.exists(c => java.lang.Character.isLowerCase(c))
@@ -42,31 +46,33 @@ object LabeledTokenSeqs {
   }
   
   /** Implementation of the entity-relationship language we can use with Token objects. */
-  class TokenGetter extends EntityGetter[Token] {
+  class TokenGetter[L<:Label[T,L],T<:Token[L,T]] extends EntityGetter[T] {
+    def newLabelGetter = new LabelGetter[T,L]
+    def newTokenGetter = new TokenGetter[L,T]
   	/** Go from a token to its label. */
-    def label = getOneToOne[Label](
+    def label = initOneToOne[L](newLabelGetter,
       token=>token.label, 
       label => label.token)
     /** Go from a token to the next token. */
-    def next = getManyToMany[Token](
-      (token:Token) => if (!token.hasNext) Nil else List(token.next), 
-      (token:Token) => if (!token.hasPrev) Nil else List(token.prev))
+    def next = initManyToMany[T](newTokenGetter,
+      (token:T) => if (!token.hasNext) Nil else List(token.next), 
+      (token:T) => if (!token.hasPrev) Nil else List(token.prev))
     /** Go from a token to the previous token. */
-    def prev = getManyToMany[Token](
-      (token:Token) => if (!token.hasPrev) Nil else List(token.prev), 
-      (token:Token) => if (!token.hasNext) Nil else List(token.next))
+    def prev = initManyToMany[T](newTokenGetter,
+      (token:T) => if (!token.hasPrev) Nil else List(token.prev), 
+      (token:T) => if (!token.hasNext) Nil else List(token.next))
     /** Go from a token to the collection of the next 'n' tokens. */
-    def next(n:Int) = getManyToMany[Token](
-    	(t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret },
-      (t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret })
+    def next(n:Int) = initManyToMany[T](newTokenGetter,
+    	(t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret },
+      (t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret })
     /** Go from a token to the collection of the previous 'n' tokens. */
-    def prev(n:Int) = getManyToMany[Token](
-    	(t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret },
-      (t:Token) => { var i = n; var ret:List[Token] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret })
+    def prev(n:Int) = initManyToMany[T](newTokenGetter,
+    	(t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret },
+      (t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret })
     /** All the other tokens in the Sentence. */
-    def sentenceTokens = getManyToMany[Token](
-      (token:Token) => token.seq, 
-      (token:Token) => token.seq)
+    def sentenceTokens = initManyToMany[T](newTokenGetter,
+      (token:T) => token.seq, 
+      (token:T) => token.seq)
     /** Return a BooleanObservation with value true if the word of this Token is equal to 'w'.  
         Intended for use in tests in er.Formula, not as a feature itself.  
         If you want such a feature, you should += it to the Token (BinaryVectorVariable) */
@@ -87,9 +93,10 @@ object LabeledTokenSeqs {
   /** A Label associated with a Token. */
   // NOTE: If you remove final, add a comment warning the user that different subclasses of will share the same Domain.
   // I don't think we should allow subclassing, hence the "final". -akm
-  final class Label(labelname: String, val token: Token) extends LabelVariable(labelname) with Entity[Label] {
-    type GetterType = LabelGetter
-    class GetterClass extends LabelGetter
+  abstract class Label[T<:Token[This,T],This<:Label[T,This]](labelname: String, val token: T) extends LabelVariable(labelname) with Entity[This] {
+    this: This =>
+    type GetterType <: LabelGetter[T,This]
+    class GetterClass extends LabelGetter[T,This]
     def hasNext = token.hasNext && token.next.label != null
     def hasPrev = token.hasPrev && token.prev.label != null
     def next = token.next.label
@@ -97,19 +104,21 @@ object LabeledTokenSeqs {
   }
   
   // Define boilerplate, to support access to attributes in the entity-attribute-relationship syntax
-  class LabelGetter extends EntityGetter[Label] {
-    def token = getOneToOne[Token](label => label.token, token => token.label)
-    def next = getManyToMany[Label](
+  class LabelGetter[T<:Token[ThisLabel,T],ThisLabel<:Label[T,ThisLabel]] extends EntityGetter[ThisLabel] {
+    def newTokenGetter = new TokenGetter[ThisLabel,T]
+    def newLabelGetter = new LabelGetter[T,ThisLabel]
+    def token = initOneToOne[T](newTokenGetter, label => label.token, token => token.label)
+    def next = initManyToMany[ThisLabel](newLabelGetter,
       label => if (!label.token.hasNext) Nil else List(label.token.next.label),
       label => if (!label.token.hasPrev) Nil else List(label.token.prev.label))
-    def prev = getManyToMany[Label](
+    def prev = initManyToMany[ThisLabel](newLabelGetter,
       label => if (!label.token.hasPrev) Nil else List(label.token.prev.label),
       label => if (!label.token.hasNext) Nil else List(label.token.next.label))
   }
   
  
   // Companion object is below.
-  class LabeledTokenSeq extends VariableSeq[Token] {
+  class LabeledTokenSeq[T<:Token[L,T],L<:Label[T,L]] extends VariableSeq[T] {
     /** Return the collection of Label instances attached to these tokens. */
     def labels = this.map(_.label)
     /** Return the proportion of Labels whose current value is their trueValue. */
@@ -137,7 +146,7 @@ object LabeledTokenSeqs {
     }
     // Recursive helper function for previous method, expanding out cross-product of conjunctions in tree-like fashion.
     // 't' is the Token to which we are adding features; 'existing' is the list of features already added; 'offsets' is the list of offsets yet to be added
-    private def appendConjunctions(regex:String, t:Token, existing:ArrayBuffer[String], offsets:Seq[Int]): ArrayBuffer[String] = {
+    private def appendConjunctions(regex:String, t:T, existing:ArrayBuffer[String], offsets:Seq[Int]): ArrayBuffer[String] = {
       val result = new ArrayBuffer[String];
       val offset: Int = offsets.first
       val t2 = t.next(offset)
@@ -213,7 +222,7 @@ object LabeledTokenSeqs {
   			from a source containing SGML markup to indicate the labels on some tokens. 
   			Tokens not bounded by SGML will be given a Label with initial and true value 'backgroundLabelString'. 
   			Token segmentation will be performed by the extent of regular expression matches to 'lexer'. */
-  	def fromSGML(source:Source, backgroundLabelString:String, lexer:Regex): LabeledTokenSeq = {
+  	def fromSGML[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, backgroundLabelString:String, featureFunction: String=>Seq[String], lexer:Regex): LabeledTokenSeq[T,L] = {
   			val words = lexer.findAllIn(source.mkString)
   			throw new Error("Not implemented yet.")
   	}
@@ -221,9 +230,13 @@ object LabeledTokenSeqs {
   	/** Construct and return a new LabeledTokenSeq (and its constituent Tokens and Labels) 
   			from a source containing plain text.  Since the labels are unknown, all Labels
   			will be given the initial and true value 'defaultLabelString'. */
-  	def fromPlainText(source:Source, defaultLabelString:String, featureFunction: String=>Seq[String], lexer:Regex): LabeledTokenSeq = {
-  			val seq = new LabeledTokenSeq
-  			lexer.findAllIn(source.mkString).foreach(word => seq += new Token(word, featureFunction(word), defaultLabelString))
+  	def fromPlainText[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, defaultLabelString:String, featureFunction: String=>Seq[String], lexer:Regex): LabeledTokenSeq[T,L] = {
+  			val seq = new LabeledTokenSeq[T,L]
+  			lexer.findAllIn(source.mkString).foreach(word => {
+  				val token = newToken(word, defaultLabelString)
+  				token ++= featureFunction(word)
+          seq += token
+  			})
   			seq
   	}
 
@@ -236,12 +249,12 @@ object LabeledTokenSeqs {
   			and its returned strings will be added as features to the BinaryVectorVariable.
   			The initial and trueValue of the Label will be set from the last element.
   			If ignoreLines is non-null, we skip any lines containing this pattern, for example pass "-DOCSTART-" for CoNLL 2003.
-  			If seqSeparator is null, we separate sequences by lines consisting only of carriage return. */
-    def fromOWPL(source:Source, featureFunction:Seq[String]=>Seq[String], documentBoundary:Regex, sentenceBoundary:Regex, ignoreLines:Regex): Seq[LabeledTokenSeq] = {
+  		  */
+    def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, featureFunction:Seq[String]=>Seq[String], documentBoundary:Regex, sentenceBoundary:Regex, ignoreLines:Regex): Seq[LabeledTokenSeq[T,L]] = {
   		import scala.collection.mutable.ArrayBuffer
   		var tokenCount = 0
-  		var seqs = new ArrayBuffer[LabeledTokenSeq];
-  		var seq = new LabeledTokenSeq
+  		var seqs = new ArrayBuffer[LabeledTokenSeq[T,L]];
+  		var seq = new LabeledTokenSeq[T,L]
   		for (line <- source.getLines) {
   			if (sentenceBoundary != null && sentenceBoundary.findAllIn(line).hasNext && seq.length > 0) {
   				//println("Completed sentence size=" + seq.size + " num sentences="+seqs.size)   
@@ -260,7 +273,9 @@ object LabeledTokenSeqs {
   				val inFeatures = fields.slice(0, fields.length-1).force
   				val pos = fields(1)
   				val label = fields.last.stripLineEnd
-  				seq += new Token(word, featureFunction(inFeatures), label)
+  				val token = newToken(word, label)
+  				token ++= featureFunction(inFeatures)
+  				seq += token
   				tokenCount += 1
   			}
   		}
@@ -268,20 +283,20 @@ object LabeledTokenSeqs {
   		seqs
   	}
     // TODO Waiting for Scala 2.8 default parameter values
-    def fromOWPL(source:Source, featureFunction:Seq[String]=>Seq[String], documentBoundary:Regex): Seq[LabeledTokenSeq] = fromOWPL(source, featureFunction, documentBoundary, "\\A\\s*\\z".r, null)
-    def fromOWPL(source:Source, documentBoundary:Regex): Seq[LabeledTokenSeq] = fromOWPL(source, (f:Seq[String]) => f, documentBoundary)
-    def fromOWPL(source:Source, documentBoundary:String): Seq[LabeledTokenSeq] = fromOWPL(source, (f:Seq[String]) => f, documentBoundary.r)
+    def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, featureFunction:Seq[String]=>Seq[String], documentBoundary:Regex): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, featureFunction, documentBoundary, "\\A\\s*\\z".r, null)
+    def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, documentBoundary:Regex): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, (f:Seq[String]) => f, documentBoundary)
+    def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, documentBoundary:String): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, (f:Seq[String]) => f, documentBoundary.r)
 
     
-    class PerLabelEvaluation(val labelValue: String) {
+    class PerLabelEvaluation[T<:Token[L,T],L<:Label[T,L]](val labelValue: String)(implicit m:Manifest[L]) {
     	var fp = 0
     	var fn = 0
     	var tp = 0
-    	private val targetIndex = Domain[Label].index(labelValue)
+    	private val targetIndex = Domain[L](m).index(labelValue)
 
-    	def ++=(seqs:Seq[LabeledTokenSeq]) = seqs.foreach(+= _)
-    	def +=(seq:LabeledTokenSeq): Unit = +=(seq.map(_.label))
-    	def +=(labels: Seq[Label]): Unit = {
+    	def ++=(seqs:Seq[LabeledTokenSeq[T,L]]) = seqs.foreach(this += _)
+    	def +=(seq:LabeledTokenSeq[T,L]): Unit = +=(seq.map(_.label))
+    	def +=(labels: Seq[L])(implicit m:Manifest[L]): Unit = {
     		for (l <- labels) {
     			val trueIndex = l.trueIndex
     			val predIndex = l.index
@@ -308,20 +323,22 @@ object LabeledTokenSeqs {
     	override def toString = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(labelValue, f1, precision, recall, tp, fp, fn, tp+fn, tp+fp) 
     }
 
-    class LabelEvaluation(val backgroundLabelValue:String) {
+    class LabelEvaluation[T<:Token[L,T],L<:Label[T,L]](labels:Seq[L], val backgroundLabelValue:String)(implicit m:Manifest[L]) {
       import scala.collection.mutable.HashMap
-      def this(labels:Seq[Label], bg:String) = { this(bg); this.+=(labels) }
-      def this(labels:Seq[Label]) = { this("O"); this.+=(labels) }
+      def this(labels:Seq[L])(implicit m:Manifest[L]) = this(labels, "O")
       //def this(labels:Seq[LabeledTokenSeq]) = { this("O"); this.+=(labels.flatMap(_.labels)) }
     	var fp = 0
     	var fn = 0
     	var tp = 0
     	//println("Evaluation Labels: "+Domain[Label].toList)
-    	private val labelEval = 
-    		new HashMap[String,PerLabelEvaluation] ++ Domain[Label].map(labelString => (labelString, new PerLabelEvaluation(labelString)))
+    	private val labelEval: HashMap[String,PerLabelEvaluation[T,L]] = { 
+    		val h = new HashMap[String,PerLabelEvaluation[T,L]];
+    		h ++= Domain[L](m).map(labelString => (labelString, new PerLabelEvaluation[T,L](labelString)))
+    		h
+      }
     	/** Return the LabelEvaluation specific to labelString. */
     	def apply(labelString:String) = labelEval(labelString)
-    	def +=(labels: Seq[Label]): Unit = {
+    	def +=(labels: Seq[L]): Unit = {
     		labelEval.values.foreach(eval => { 
           eval += labels
           if (eval.labelValue != backgroundLabelValue) {
@@ -348,30 +365,32 @@ object LabeledTokenSeqs {
     }
 
     // TODO Add more combinations of arguments
-    def labelEvaluation(labels:Seq[Label]) = new LabelEvaluation(labels)
+    // TODO Why does this existential type not work?
+    //def labelEvaluation[L<:Label[T forSome {type T <: Token[L,T]},L]](labels:Seq[L])(implicit m:Manifest[L]) = new LabelEvaluation[L](labels)
+    def labelEvaluation[T<:Token[L,T],L<:Label[T,L]](labels:Seq[L])(implicit m:Manifest[L]) = new LabelEvaluation[T,L](labels)
     
     /** Evalute in terms of correct entire segments.  
         The field start and end boundaries must be perfect to count as correct.  No partial credit. 
         For example, this is the standard for results on CoNLL 2003. */
-    class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val labelValueContinue: Regex) {
+    class PerSegmentEvaluation[T<:Token[L,T],L<:Label[T,L]](val labelName:String, val labelValueStart: Regex, val labelValueContinue: Regex) {
       //println(labelName); println(labelValueStart); println(labelValueContinue); println
       //if (labelValueContinue == null) labelValueContinue = labelValueStart // Waiting for Scala 2.8 default parameters
       var trueCount, predictedCount, correctCount = 0 // per segment
       var labelCount, correctLabelCount = 0 // per label, included here just because it is easy
       var predictedStart, trueStart = false
-      def ++=(seqs:Seq[LabeledTokenSeq]) = seqs.foreach(+= _)
-      def +=(seq:LabeledTokenSeq): Unit = +=(seq.map(_.label))
+      def ++=(seqs:Seq[LabeledTokenSeq[T,L]]) = seqs.foreach(+= _)
+      def +=(seq:LabeledTokenSeq[T,L]): Unit = +=(seq.map(_.label))
       /** Add the given sequence of labels to the statistics for this evalution.
           Even though you may be tempted to put all Label instances across all sentences in a single Seq[] and pass them in here, 
           note that you risk getting slightly incorrect results at document boundaries: when one document ends 
           in a mention and the next document begins with the same mention type, 
           they will be counted as only one mention, when they should have been counted as two. */
-      def +=(labels: Seq[Label]): Unit = {
+      def +=(labels: Seq[Label[T,L]]): Unit = {
         for (position <- 0 until labels.length) {
           val label = labels(position)
           //print("\n"+label.trueValue+"/"+label.value+" ")
           labelCount += 1
-          if (label.valueIsTruth) correctLabelCount += 1
+          if (label.valueIsTruth) correctLabelCount += 1 // TODO Note this is accuracy independent of labelName; change?
           predictedStart = false; trueStart = false
           if ((!label.hasPrev || label.prev.index != label.index) && labelValueStart.findAllIn(label.value).hasNext) { // TODO is there a more canonical way to ask if a regex matches a string?
             predictedCount += 1
@@ -427,14 +446,14 @@ object LabeledTokenSeqs {
       result.toSeq
     }
     
-    class SegmentEvaluation(baseLabelStrings: Seq[String], startPrefix:String, continuePrefix:String) {
-      def this() = this(labelStringsToBase(Domain[Label].toSeq), defaultStartPrefix, defaultContinuePrefix)
-      def this(labels:Seq[Label]) = { this(); this.+=(labels) }
-      private val evals = new HashMap[String,PerSegmentEvaluation]
-      evals ++ baseLabelStrings.map(s => (s, new PerSegmentEvaluation(s, (startPrefix+s).r, (continuePrefix+s).r)))
+    class SegmentEvaluation[T<:Token[L,T],L<:Label[T,L]](baseLabelStrings: Seq[String], startPrefix:String, continuePrefix:String) {
+      def this()(implicit m:Manifest[L]) = this(labelStringsToBase(Domain[L](m).toSeq), defaultStartPrefix, defaultContinuePrefix)
+      def this(labels:Seq[L])(implicit m:Manifest[L]) = { this(); this.+=(labels) }
+      private val evals = new HashMap[String,PerSegmentEvaluation[T,L]]
+      evals ++ baseLabelStrings.map(s => (s, new PerSegmentEvaluation[T,L](s, (startPrefix+s).r, (continuePrefix+s).r)))
       /** Return the LabelEvaluation specific to labelString. */
       def apply(labelString:String) = evals(labelString)
-      def +=(labels: Seq[Label]): Unit =
+      def +=(labels: Seq[L]): Unit =
         evals.values.foreach(eval => eval += labels)
       def correctCount = evals.values.foldLeft(0)(_+_.correctCount)
       def predictedCount = evals.values.foldLeft(0)(_+_.predictedCount)
@@ -461,7 +480,7 @@ object LabeledTokenSeqs {
     }
 
     // TODO Add more combinations of arguments
-    def segmentEvaluation(labels:Seq[Label]) = new SegmentEvaluation(labels)
+    def segmentEvaluation[T<:Token[L,T],L<:Label[T,L]](labels:Seq[L])(implicit m:Manifest[L]) = new SegmentEvaluation[T,L](labels)
 
   }
 
@@ -493,8 +512,78 @@ object LabeledTokenSeqs {
   	prefixes ++ suffices
   	//for (i <- 0 until w.length; j <- min to max; if (i+j < w.length)) yield w.substring(i,i+j)
   }
+  
+
+  trait TokenInSeq[This<:TokenInSeq[This]] {
+  	def word: String
+  	def next: This
+  	def prev: This
+  	def hasNext: Boolean
+  	def hasPrev: Boolean
+  	def first: This
+  }
+
+  class Lexicon(val caseSensitive:Boolean) {
+    import scala.io.Source
+    import java.io.File
+    def this(filename:String) = { this(false); this.++=(Source.fromFile(new File(filename))) }
+  	private class LexiconToken(val word:String) extends TokenInSeq[LexiconToken] {
+  		var next: LexiconToken = null
+  		var prev: LexiconToken = null
+  		def hasNext = next != null
+  		def hasPrev = prev != null
+  		def first = if (prev == null) this else prev.first
+  		def lengthToEnd: Int = if (next == null) 1 else 1 + next.lengthToEnd
+  		def length = first.lengthToEnd
+  	}
+  	private def newLexiconTokens(words:Seq[String]): LexiconToken = {
+  		var t: LexiconToken = null
+  		for (word <- words) {
+  			val t2 = new LexiconToken(word)
+  			t2.prev = t
+  			if (t != null) t.next = t2
+  			t = t2
+  		}
+  		t.first
+  	}
+  	private val contents = new HashMap[String,List[LexiconToken]];
+  	private def _key(s:String) = if (caseSensitive) s else s.toLowerCase
+  	private def +=(t:LexiconToken): Unit = {
+  		val key = _key(t.word)
+  		val old: List[LexiconToken] = contents.getOrElse(key, Nil)
+  		contents(key) = t :: old
+  	}
+  	private def ++=(ts:LexiconToken): Unit = {
+  		var t = ts.first
+  		while (t != null) { this += t; t = t.next }
+  	}
+  	def +=(w:String): Unit = this.+=(new LexiconToken(w))
+  	def ++=(ws:Seq[String]): Unit = this.++=(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
+  	def ++=(source:Source): Unit = for (line <- source.getLines) this.++=(line.trim.split("\\w+"))
+
+  	def contains[T<:TokenInSeq[T]](query:T): Boolean = {
+  		val entries = contents.getOrElse(query.word, Nil)
+  		for (entry <- entries) {
+  			var te = entry
+  			var tq = query
+  			var result = true
+  			// Go the beginning of this lexicon entry
+  			while (te.hasPrev && result) {
+  				if (!tq.hasPrev) result = false
+  				te = te.prev; tq = tq.prev
+  			}
+  			// Check for match all the way to the end of this lexicon entry
+  			while (te.hasNext && tq.hasNext && result == true) {
+  				if ((!caseSensitive && te.word != tq.word.toLowerCase) || te.word != tq.word) result = false
+  				te = te.next; tq = tq.next
+  			}
+  			if (result && !te.hasNext) return true
+  		}
+  		false
+  	}
+
+  }
+
 
 }
 
-/** By making this an object also, we support inclusion by "import cc.factorie.application.LabeledTokenSeq._" */
-//object LabeledTokenSeqs extends LabeledTokenSeqs {}

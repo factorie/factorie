@@ -47,7 +47,7 @@ object DocumentClassification {
 
   def newModel[L<:Label[D,L],D<:Document[L,D]](implicit lm:Manifest[L],dm:Manifest[D]): Model = {
     if (lm.erasure == classOf[Nothing] || dm.erasure == classOf[Nothing]) 
-      throw new Error("You must specify type arguments to cc.factorie.applicatio.DocumentClassification.newModel")
+      throw new Error("You must specify type arguments to cc.factorie.application.DocumentClassification.newModel")
     new Model(
       new LabelTemplate[L],
       new LabelInstanceTemplate[L,D]
