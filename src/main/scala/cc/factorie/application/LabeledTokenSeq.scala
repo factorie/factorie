@@ -25,6 +25,7 @@ object LabeledTokenSeqs {
     val label: L //= new Label(labelString, this)
     /** Return true if the first  character of the word is upper case. */
     def isCapitalized = java.lang.Character.isUpperCase(word(0))
+    def isPunctuation = word.matches("\\{Punct}")
     def containsLowerCase = word.exists(c => java.lang.Character.isLowerCase(c))
     /* Return true if the word contains only digits. */
     def isDigits = word.matches("\\d+")
@@ -200,6 +201,29 @@ object LabeledTokenSeqs {
       // Put the new features in the Token
       for (i <- 0 until size) (this(i)) ++= extraFeatures(i)
     }
+    
+    def entities(background:String): Seq[(L,Seq[T])] = {
+      val result = new ArrayBuffer[(L,Seq[T])]
+      var label = first.label
+      var entity: List[T] = Nil
+      for (token <- this) {
+        if (token.label.value != background) {
+          if (token.label.value == label.value)
+            entity = token :: entity
+          else {
+            if (entity.length > 0) result += (label,entity.reverse)
+            entity = token :: Nil
+            label = token.label
+          }
+        } else {
+          if (entity.length > 0) result += (label,entity.reverse)
+          entity = Nil
+          label = token.label
+        }
+      }
+      result
+    }
+
 
     def print(out:java.io.OutputStream): Unit = {
       throw new Error("Not yet implemented")
@@ -223,21 +247,21 @@ object LabeledTokenSeqs {
   			Tokens not bounded by SGML will be given a Label with initial and true value 'backgroundLabelString'. 
   			Token segmentation will be performed by the extent of regular expression matches to 'lexer'. */
   	def fromSGML[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, backgroundLabelString:String, featureFunction: String=>Seq[String], lexer:Regex): LabeledTokenSeq[T,L] = {
-  			val words = lexer.findAllIn(source.mkString)
-  			throw new Error("Not implemented yet.")
+  		val words = lexer.findAllIn(source.mkString)
+  		throw new Error("Not implemented yet.")
   	}
 
   	/** Construct and return a new LabeledTokenSeq (and its constituent Tokens and Labels) 
   			from a source containing plain text.  Since the labels are unknown, all Labels
   			will be given the initial and true value 'defaultLabelString'. */
   	def fromPlainText[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, defaultLabelString:String, featureFunction: String=>Seq[String], lexer:Regex): LabeledTokenSeq[T,L] = {
-  			val seq = new LabeledTokenSeq[T,L]
-  			lexer.findAllIn(source.mkString).foreach(word => {
-  				val token = newToken(word, defaultLabelString)
-  				token ++= featureFunction(word)
-          seq += token
-  			})
-  			seq
+  		val seq = new LabeledTokenSeq[T,L]
+  		lexer.findAllIn(source.mkString).foreach(word => {
+  			val token = newToken(word, defaultLabelString)
+  			token ++= featureFunction(word)
+  			seq += token
+  		})
+  		seq
   	}
 
   	/** Create a LabeledTokenSeq from a source of characters that has "one word per line", 
@@ -286,7 +310,6 @@ object LabeledTokenSeqs {
     def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, featureFunction:Seq[String]=>Seq[String], documentBoundary:Regex): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, featureFunction, documentBoundary, "\\A\\s*\\z".r, null)
     def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, documentBoundary:Regex): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, (f:Seq[String]) => f, documentBoundary)
     def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, documentBoundary:String): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, (f:Seq[String]) => f, documentBoundary.r)
-
     
     class PerLabelEvaluation[T<:Token[L,T],L<:Label[T,L]](val labelValue: String)(implicit m:Manifest[L]) {
     	var fp = 0
@@ -535,16 +558,24 @@ object LabeledTokenSeqs {
   		def first = if (prev == null) this else prev.first
   		def lengthToEnd: Int = if (next == null) 1 else 1 + next.lengthToEnd
   		def length = first.lengthToEnd
+  		def seq: Seq[LexiconToken] = {
+  			val result = new ArrayBuffer[LexiconToken];
+  			var t = first; result += t
+  			while (t.hasNext) { t = t.next; result += t }
+  			result
+      }
   	}
-  	private def newLexiconTokens(words:Seq[String]): LexiconToken = {
+  	private def newLexiconTokens(words:Seq[String]): Seq[LexiconToken] = {
+  		val result = new ArrayBuffer[LexiconToken]
   		var t: LexiconToken = null
   		for (word <- words) {
   			val t2 = new LexiconToken(word)
   			t2.prev = t
   			if (t != null) t.next = t2
   			t = t2
+  			result += t2
   		}
-  		t.first
+  		result
   	}
   	private val contents = new HashMap[String,List[LexiconToken]];
   	private def _key(s:String) = if (caseSensitive) s else s.toLowerCase
@@ -553,35 +584,42 @@ object LabeledTokenSeqs {
   		val old: List[LexiconToken] = contents.getOrElse(key, Nil)
   		contents(key) = t :: old
   	}
-  	private def ++=(ts:LexiconToken): Unit = {
-  		var t = ts.first
-  		while (t != null) { this += t; t = t.next }
+  	private def addAll(ts:Seq[LexiconToken]): Unit = {
+      //println("Lexicon adding "+ts.map(_.word))
+  		ts.foreach(t => this += t)
   	}
   	def +=(w:String): Unit = this.+=(new LexiconToken(w))
-  	def ++=(ws:Seq[String]): Unit = this.++=(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
-  	def ++=(source:Source): Unit = for (line <- source.getLines) this.++=(line.trim.split("\\w+"))
-
+  	def ++=(ws:Seq[String]): Unit = this.addAll(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
+  	def ++=(source:Source): Unit = for (line <- source.getLines) this.++=(line.trim.split("\\s+"))
+  	/** Is 'query' in the lexicon, accounting for lexicon phrases and the context of 'query' */
   	def contains[T<:TokenInSeq[T]](query:T): Boolean = {
-  		val entries = contents.getOrElse(query.word, Nil)
+  		//println("contains "+query.word+" "+query.hasPrev+" "+query)
+      val key = _key(query.word)
+  		val entries = contents.getOrElse(key, Nil)
   		for (entry <- entries) {
   			var te = entry
   			var tq = query
   			var result = true
   			// Go the beginning of this lexicon entry
   			while (te.hasPrev && result) {
-  				if (!tq.hasPrev) result = false
+  				if (!tq.hasPrev) return false
   				te = te.prev; tq = tq.prev
   			}
+  			//println("  Trying "+query.word+" "+entry.seq.map(_.word).toList)
   			// Check for match all the way to the end of this lexicon entry
-  			while (te.hasNext && tq.hasNext && result == true) {
-  				if ((!caseSensitive && te.word != tq.word.toLowerCase) || te.word != tq.word) result = false
+  			do {
+  				if ((!caseSensitive && te.word != tq.word.toLowerCase) || (caseSensitive && te.word != tq.word)) result = false
   				te = te.next; tq = tq.next
+  			} while (te != null && tq != null && result == true)   
+  			if (result && te == null) {
+  				//print(" contains length="+entry.length+"  "+entry.seq.map(_.word).toList)
+          return true
   			}
-  			if (result && !te.hasNext) return true
   		}
   		false
   	}
-
+  	/** Is 'query' in the lexicon, ignoring context. */
+  	def containsSingle[T<:TokenInSeq[T]](query:T): Boolean = contents.contains(_key(query.word))
   }
 
 
