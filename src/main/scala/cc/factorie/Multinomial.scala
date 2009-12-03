@@ -35,12 +35,12 @@ trait OutcomeGenerating[T] {
 
 /** Base of the Multinomial class hierarchy, needing only methods length, pr, and set. */
 // TODO Rename simply "Multinomial"?
+@DomainInSubclasses
 trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[ProportionOutcome[O]] with*/ DiscreteGenerating[O] with ProportionOutcome[O] {
   type VariableType <: AbstractMultinomial[O];
   //type OutcomeType = O
   //type SourceType = ProportionGenerating[O];
   type SourceType = AbstractDirichlet[O]; // TODO Why can't I make this ProportionGenerating[O] instead of AbstractDirichlet[O]?
-  class DomainInSubclasses
   def asOutcome = this
   //def this(initCounts:Seq[Double]) = { this(initCounts.size); setCounts(initCounts) }
   def length: Int
@@ -134,9 +134,9 @@ class DenseMultinomial[O<:DiscreteOutcome[O]](proportions:Seq[Double]) extends A
 }
 
 /** A Multinomial that stores its parameters as a collection of "outcome counts" and their total. */
+@DomainInSubclasses
 trait CountsMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   type VariableType <: CountsMultinomial[O];
-  class DomainInSubclasses
   override type SourceType = AbstractDirichlet[O]
   def length: Int = counts.size 
   private var total : Double = 0.0
@@ -200,10 +200,10 @@ trait SparseMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   //def sampleIndexProduct(m2:SparseMultinomial[O]): Int // TODO
 }
 
+@DomainInSubclasses
 class SparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMultinomial[O] with SparseMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: SparseCountsMultinomial[O]
-  class DomainInSubclasses
   protected val _counts = new SparseVector(dim)
   def default = _counts.default
   def default_=(d:Double) = _counts.default = d
@@ -229,21 +229,20 @@ abstract class SortedSparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) ext
   def incrementCount(index:Int, incr:Int): Unit = { val p:Int = pos(index); buf(p) = (co(p) + incr) }
 }
 
-
+@DomainInSubclasses
 class DenseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: DenseCountsMultinomial[O]
-  class DomainInSubclasses
   protected val _counts = new DenseVector(dim)
 }
 
 // TODO Figure out how to use intead [O<:DiscreteOutcome[O]], but still get O#VariableType#ValueType in "top" below
+@DomainInSubclasses
 class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
   def this()(implicit m:Manifest[O]) = this(null.asInstanceOf[AbstractDirichlet[O]])(m)
   def this(dirichlet:AbstractDirichlet[O], initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(dirichlet)(m); set(initCounts) }
   def this(initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(null.asInstanceOf[AbstractDirichlet[O]])(m); set(initCounts) }
   type VariableType <: DirichletMultinomial[O];
-  class DomainInSubclasses
   override type SourceType = AbstractDirichlet[O]
   val outcomeDomain = Domain[O](m) // TODO unfortunately this gets fetched and stored repeatedly for each instance; but otherwise 'm' would be stored for each instance anyway?
   override def pr(index:Int) : Double = {

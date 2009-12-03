@@ -92,13 +92,13 @@ trait AbstractGenerativeVariable extends Variable {
 /** A GenerativeObservation with densely-packed integer values, for example the outcome of a Multinomial or Poisson.  
     This trait is used for Variables whose value is observed and does not change; 
     for Variables with changing value, you should use DiscreteOutcomeVariable. */
+@DomainInSubclasses
 trait DiscreteOutcome[This<:DiscreteOutcome[This] with DiscreteValue with GenerativeObservation[This]] extends DiscreteValue with GenerativeObservation[This] {
   // DiscreteOutcome should not be merged with DiscreteOutcomeVariable because not everything we want to generate has a "setByIndex" to override
   this: This =>  
   // "This" types are a bit verbose.  Could Scala be changed to replace them with this#type ??? 
   // Geoffrey Washburn says yes it is technically possible, but that Martin is simply against adding this feature to the language.
   type SourceType = DiscreteGenerating[This]
-  class DomainInSubclasses
   @inline final def asOutcome = this
 }
 

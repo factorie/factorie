@@ -23,11 +23,11 @@ trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistr
 // class Topic extends Multinomial[Word] with MixtureComponent[Topic]
 // class Z extends MixtureChoice[Topic,Z]; Domain.alias[Z,Topic]
 // class Theta extends Multinomial[Z];
+@DomainInSubclasses
 class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends CategoricalOutcomeVariable[This] with cc.factorie.util.Trackable {
   this : This =>
   type VariableType = This
   type ValueType = M
-  class DomainInSubclasses
   //def asOutcome = this
   def choice: M = domain.get(index)
   _index = Global.random.nextInt(domain.size) // TODO is this how _index should be initialized?

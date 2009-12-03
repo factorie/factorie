@@ -27,6 +27,7 @@ import cc.factorie.util.Implicits._
    dependent on its constructor arguments; but the FACTORIE library depends on being able to distinguish individual
    Variable instances based on their address. */
 // TODO Consider adding "extends AnyRef"??
+@DomainInSubclasses
 abstract trait Variable /* extends AnyRef */ {
   /** The type of this variable, especially used by this Variable's Domain.  Often you can treat this as an approximation to a self-type */
 	type VariableType <: Variable
@@ -40,7 +41,6 @@ abstract trait Variable /* extends AnyRef */ {
       it simply ensures that the library will never create a Domain for this class, only its subclasses.
       If library users create their own new Variable classes, which will be subclassed, and wants each
       subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
-  class DomainInSubclasses
   final def domain = Domain.get[VariableType](this.getClass)
   
   // Getter handling

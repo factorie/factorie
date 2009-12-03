@@ -17,19 +17,19 @@ trait RefValue[T<:AnyRef] extends TypedValue {
   def !==(other: RefValue[T]) = value != other.value
 }
 
+@DomainInSubclasses
 abstract class RefObservation[T<:AnyRef](theValue:T) extends Variable with RefValue[T] {
   type VariableType <: RefObservation[T];
-  class DomainInSubclasses
   final val value: T = theValue
   override def toString = printName + "(" + value.toString + ")"
 }
 
 /**A variable with a single mutable (unindexed) value which is of Scala type T. */
 // TODO A candidate for Scala 2.8 @specialized
+@DomainInSubclasses
 abstract class RefVariable[T<:AnyRef] extends Variable with RefValue[T] {
   def this(initval:T) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
   type VariableType <: RefVariable[T]
-  class DomainInSubclasses
   private var _value: T = _
   @inline final def value = _value
   def set(newValue: T)(implicit d: DiffList): Unit =
@@ -57,7 +57,7 @@ trait RefTrueValue[T<:AnyRef] extends TrueSetting {
 }
 
 /**A variable class for string values. */
+@DomainInSubclasses
 class StringVariable(str: String) extends RefVariable(str) {
   type VariableType = StringVariable
-  class DomainInSubclasses
 }

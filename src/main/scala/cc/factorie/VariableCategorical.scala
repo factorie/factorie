@@ -24,61 +24,61 @@ import cc.factorie.util.Implicits._
 /** For use with variables whose values are mapped to densely-packed integers from 0 and higher, using a CategoricalDomain.
     It can apply to a single int value (as in EnumVariable or CategoricalValue) or a collection of indices (as in BinaryVectorVariable) */
 // Semantically "Values" are not really "Variables", but we must inherit from cc.factorie.Variable in order to handle Domain properly
+@DomainInSubclasses
 trait CategoricalValues extends Variable with DiscreteValues with TypedValues {
   type VariableType <: CategoricalValues
   type DomainType <: CategoricalDomain[VariableType]
   class DomainClass extends CategoricalDomain[VariableType]
-  class DomainInSubclasses
   override def domainSize = domain.allocSize
 }
 
 /** A DiscreteValue whose integers 0...N are associated with an categorical objects of type ValueType.
     If you are looking for a concrete implementation, consider EnumObservation or EnumVariable or CoordinatedEnumVariable. */
+@DomainInSubclasses
 abstract trait CategoricalValue extends CategoricalValues with TypedValue with DiscreteValue {
   this: Variable =>
   type VariableType <: CategoricalValue
-  class DomainInSubclasses
   //def value: ValueType = domain.get(index) // TODO I wanted to define this here, but Scala cannot resolve the right type.
   //override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + index + ")"
 } 
 
 /** A DiscreteVariable whose integers 0...N are associated with an object of type ValueType. */
+@DomainInSubclasses
 abstract trait CategoricalVariable extends Variable with CategoricalValue with DiscreteVariable {
   type VariableType <: CategoricalVariable
-  class DomainInSubclasses
-  // final def set(newValue: ValueType)(implicit d: DiffList) = setByIndex(domain.index(newValue)) // TODO I wanted to put this here, but Scala cannot reolve the right type 
+  // final def set(newValue: ValueType)(implicit d: DiffList) = setByIndex(domain.index(newValue)) // TODO I wanted to put this here, but Scala cannot reolve the right type
 }
 
 /** A CategoricalValue variable (which is also a TypedValue), but whose type is specified by a type argument. */
+@DomainInSubclasses
 abstract trait TypedCategoricalValue[T] extends CategoricalValue {
   this: Variable =>
   type VariableType <: TypedCategoricalValue[T]
   type ValueType = T
-  class DomainInSubclasses
   def value: ValueType = domain.get(index) // TODO I'd love to move this to the superclass, but Scala type system is complaining
   override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + index + ")"
   // NOTE that "def index" has yet to be defined
 }
 
 /** For variables holding a single indexed value, which is not the variable object itself, but a Scala value of type T. */
+@DomainInSubclasses
 abstract trait TypedCategoricalVariable[T] extends CategoricalVariable with TypedCategoricalValue[T] {
   type VariableType <: TypedCategoricalVariable[T]
-  class DomainInSubclasses
   final def set(newValue: ValueType)(implicit d: DiffList) = setByIndex(domain.index(newValue))
   def :=(newValue:ValueType) = set(newValue)(null)
   def value_=(newValue:ValueType) = set(newValue)(null)
 } 
 
 /** For variables holding a single, constant indexed value which is of Scala type T. */
+@DomainInSubclasses
 abstract trait TypedCategoricalObservation[T] extends Variable with TypedCategoricalValue[T] with ConstantValue {
   type VariableType <: TypedCategoricalObservation[T]
-  class DomainInSubclasses
 }
 
 /** A Variable to hold one of an enumerated set of values of type T, and which does not change.  */
+@DomainInSubclasses
 abstract class EnumObservation[T](value:T) extends TypedCategoricalObservation[T] {
   type VariableType <: EnumObservation[T]
-  class DomainInSubclasses
   final val index = domain.index(value)
 }
 
@@ -89,10 +89,10 @@ abstract class EnumObservation[T](value:T) extends TypedCategoricalObservation[T
 
 /** A variable whose value is a single indexed value, initialized at construction time; mutable.
     This variable does not, however, hold a trueValue.  For that you should use a Label. */
+@DomainInSubclasses
 abstract class CoordinatedEnumVariable[T](initialValue:T) extends TypedCategoricalVariable[T] {
   def this() = this(null)
   type VariableType <: CoordinatedEnumVariable[T]
-  class DomainInSubclasses
   if (initialValue != null) setByIndex(domain.index(initialValue))(null)
 }
 
@@ -108,9 +108,9 @@ trait UncoordinatedCategoricalVariable extends CategoricalVariable with NoVariab
 /**A variable whose value is a single indexed value that does no variable coordination in its 'set' method,  
  * ensuring no coordination is necessary for optimization of belief propagation. 
  * This variable does not hold a trueValue; for that you should use a Label. */
+@DomainInSubclasses
 abstract class EnumVariable[T](initialValue:T) extends CoordinatedEnumVariable[T](initialValue) with UncoordinatedCategoricalVariable {
   type VariableType <: EnumVariable[T]
-  class DomainInSubclasses
 }
 
 
@@ -140,19 +140,19 @@ class IntRangeVariable(low:Int, high:Int) extends TypedCategoricalVariable[Int] 
     and upon creation each will be mapped to a unique integer 0..9.
     p1 = new Person; p1.index == 0; p1.value == p1. */
 // Was called ItemizedVariable, but that was the wrong name since its value cannot change.
+@DomainInSubclasses
 trait ItemizedObservation[This <: ItemizedObservation[This]] extends TypedCategoricalObservation[This] {
   this : This =>
   type VariableType = This
-  class DomainInSubclasses
   domain.index(this) // Put the variable in the CategoricalDomain
   val index = domain.index(this) // Remember our own index.  We could save memory by looking it up in the Domain each time, but speed is more important
   override def value = this
 }
 
 /** A variable who value is a pointer to an ItemizedObservation.  It is useful for entity-attributes whose value is another variable. */
+@DomainInSubclasses
 class ItemizedObservationRef[V<:ItemizedObservation[V]] extends TypedCategoricalVariable[V] {
   type VariableType = ItemizedObservationRef[V]
-  class DomainInSubclasses
 }
 
 

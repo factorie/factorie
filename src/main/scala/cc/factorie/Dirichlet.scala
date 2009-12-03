@@ -60,9 +60,9 @@ trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends GenerativeDistribution[Pr
 }
 
 /** Immutable Dirichlet with equal alpha for all dimensions. */
+@DomainInSubclasses
 class SymmetricDirichlet[O<:DiscreteOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] {
   type VariableType <: Dirichlet[O];
-  class DomainInSubclasses
   type OutcomeDomainType = O
   val outcomeDomain = Domain[O](m)
   val mean = new UniformMultinomial[O]()(m)
@@ -71,12 +71,12 @@ class SymmetricDirichlet[O<:DiscreteOutcome[O]](initialAlpha:Double)(implicit m:
 }
 
 /** Default Dirichlet, with densely-represented mean, and estimation by moment-matching */
+@DomainInSubclasses
 class Dirichlet[O<:DiscreteOutcome[O]](val mean:AbstractMultinomial[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with DirichletMomentMatchingEstimator[O] {
   //println("Dirichlet")
   def this(initialAlpha:Double)(implicit m:Manifest[O]) = this(new DenseCountsMultinomial[O](Domain[O](m).size), initialAlpha*Domain[O](m).size)
   def this(initialAlphas:Seq[Double])(implicit m:Manifest[O]) = this(new DenseCountsMultinomial[O](initialAlphas), initialAlphas.foldLeft(0.0)(_+_))
   type VariableType <: Dirichlet[O];
-  class DomainInSubclasses
   val outcomeDomain = Domain[O](m)
   alphaSum = sum
 }

@@ -1,27 +1,28 @@
 package cc.factorie.application
 import scala.reflect.Manifest
 import cc.factorie.er._
+import cc.factorie.DomainInSubclasses
 
 /** Variables and factors for independent classification of feature vectors with String-valued features. */
 object FeatureVectorClassification {
   
+  @DomainInSubclasses
   abstract class Instance[L<:Label[This,L],This<:Instance[L,This]](val name:String, labelString:String) extends BinaryVectorVariable[String] /*with GetterType[This]*/ {
     this: This =>
     type VariableType <: Instance[L,This]
-    class DomainInSubclasses
     type GetterType <: InstanceGetter[L,This]
     class GetterClass extends InstanceGetter[L,This]
     def newGetter = new InstanceGetter[L,This]
     def newLabel(labelString:String): L
     val label: L = newLabel(labelString)
   }
-  
+
+  @DomainInSubclasses
   abstract class Label[I<:Instance[This,I],This<:Label[I,This]](labelString:String, val instance:I) extends LabelVariable(labelString) /*with GetterType[This]*/ {
     this: This =>
   	type GetterType <: LabelGetter[I,This];
   	class GetterClass extends LabelGetter[I,This]
     type VariableType <: Label[I,This]
-    class DomainInSubclasses
   }
   
 

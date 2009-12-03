@@ -292,7 +292,7 @@ object Domain {
   }
 	/** Return a Domain instance for Variables of class c, constructing one if necessary.  Also put it in the _domains map. */
 	private def getDomainForClass(c:Class[_]) : Domain[_] = {
-		if (domainInSubclasses(c)) throw new Error("Cannot get a Domain for "+c+" because it declares DomainInSubclasses, and should be considered abstract.")
+		if (domainInSubclassesByAnnotation(c)) throw new Error("Cannot get a Domain for "+c+" because it declares DomainInSubclasses, and should be considered abstract.")
 		var dvc = getDomainVariableClass(c)
 		if (debug) println("getDomainForClass c="+c+" dvc="+dvc)
 		if (dvc == null) dvc = c
@@ -344,9 +344,9 @@ object Domain {
 	/** Find a potential substitute for c as the key into _domains. */
 	private def getDomainVariableClass(c:Class[_]) : Class[_] = {
 		if (debug) println("getDomainVariableClass c "+c+" classes.length="+c.getDeclaredClasses.length)
-		if (domainInSubclasses(c)) throw new Error("Cannot create Domain["+c+"] because it declares inner class DomainInSubclasses.")
+		if (domainInSubclassesByAnnotation(c)) throw new Error("Cannot create Domain["+c+"] because it is annotated with DomainInSubclasses.")
 		else if (c.getSuperclass == null || c.getSuperclass == classOf[java.lang.Object]) c 
-		else if (domainInSubclasses(c.getSuperclass)) c 
+		else if (domainInSubclassesByAnnotation(c.getSuperclass)) c 
 		else getDomainVariableClass(c.getSuperclass)
 	}
 }

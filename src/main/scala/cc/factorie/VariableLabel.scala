@@ -28,8 +28,8 @@ trait TrueCategoricalValue extends TrueSetting {
 }
 
 // TODO consider moving TrueIndexedValue to inside with this:TrueIndexedValue => ?
+@DomainInSubclasses
 abstract trait TypedTrueCategoricalValue[T] extends TrueCategoricalValue with TypedCategoricalVariable[T] {
-  class DomainInSubclasses
   def trueValue_=(x: T) = if (x == null) trueIndex = -1 else trueIndex = domain.index(x)
 }
 
@@ -41,16 +41,16 @@ class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]](implicit m:Manifest[V]) 
 
 
 /** A variable with a single index and a true value. */
+@DomainInSubclasses
 class CoordinatedLabelVariable[T](trueval:T) extends CoordinatedEnumVariable[T](trueval) with TypedTrueCategoricalValue[T] {
   type VariableType <: CoordinatedLabelVariable[T]
-  class DomainInSubclasses
   var trueIndex = domain.index(trueval)
   setByIndex(domain.index(trueval))(null)
 }
 
+@DomainInSubclasses
 class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with UncoordinatedCategoricalVariable {
   type VariableType <: LabelVariable[T]
-  class DomainInSubclasses
   //override final def set(newValue:T)(implicit d: DiffList) = super.set(newValue)(d)
   //override final def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
 }
@@ -58,10 +58,10 @@ class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with
 /** A Label with a StringDomain.  StringDomains can be conveniently initialized, as in
     class NerLabel extends StringDomain { val PER, ORG, LOC, MISC, O = Value; freeze } // Then Domain[NerLabel].PER == "PER" */
 // TODO But should this be Coordinated or Uncoordinated, or should we make both.
+@DomainInSubclasses
 class StringLabelVariable(trueval:String) extends LabelVariable[String](trueval) {
   type VariableType <: StringLabelVariable
   type DomainType <: StringDomain[VariableType]
   class DomainClass extends StringDomain[VariableType]
-  class DomainInSubclasses
   
 }

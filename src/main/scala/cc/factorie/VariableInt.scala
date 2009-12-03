@@ -97,12 +97,12 @@ trait OrdinalVariable extends IntVariable with OrdinalValue {
 /** An OrdinalValue with finite range 0...N.  
     For your own subclass MyDiscreteValue, you can set N with Domain[MyDiscreteValue].size = 9 */
 // Semantically "Values" are not really "Variables", but we must inherit from cc.factorie.Variable in order to handle Domain properly
+@DomainInSubclasses
 trait DiscreteValues extends Variable with OrdinalValues {
   type VariableType <: DiscreteValues
   type DomainType <: DiscreteDomain[VariableType]
   class MyDomain extends DiscreteDomain[VariableType] { def size = domainSize } // See Domain.scala for an explanation of this silliness
   class DomainClass extends MyDomain
-  class DomainInSubclasses
   def domainSize = domain.domainSize
   override def maxIntValue = domainSize - 1
   def vector: Vector

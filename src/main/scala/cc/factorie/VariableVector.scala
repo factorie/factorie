@@ -24,13 +24,13 @@ trait CategoricalVectorValue extends Variable with VectorValue with CategoricalV
 // TODO Rename to BinaryVectorVariable?
 // TODO Consider renaming BinaryFeatureVector (where "Feature") refers to being Categorical?
 // or perhaps BinaryCategoricalVector?  But that is a weird name.
+@DomainInSubclasses
 abstract class BinaryVectorVariable[T](initVals:Iterable[T], var skipNonCategories:Boolean) extends CategoricalVectorValue {
 	//def this(iv:T*) = this(iv:Seq[T])
 	def this() = this(null, false)
 	def this(initVals:Iterable[T]) = this(initVals, false)
 	type ValueType = T
 	type VariableType <: BinaryVectorVariable[T]
-  class DomainInSubclasses
   protected var indxs = new ArrayBuffer[Int]()
   private var _vector: Vector = null // TODO Can we make this more memory efficient?  Avoid having both Vector and ArrayBuffer?;
   if (initVals ne null) this ++= initVals
@@ -80,11 +80,11 @@ abstract class BinaryVectorVariable[T](initVals:Iterable[T], var skipNonCategori
 }
 
 /** A vector of Real values */
+@DomainInSubclasses
 abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends CategoricalVectorValue {
   def this() = this(null)
 	type ValueType = T
 	type VariableType <: RealVectorVariable[T]
-  class DomainInSubclasses
   lazy val vector: Vector = new SparseVector(domain.allocSize)
   if (initVals ne null) this ++= initVals
   def indices : Collection[Int] = if (vector == null) Nil else vector.activeDomain
