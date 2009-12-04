@@ -10,6 +10,7 @@ import scalala.tensor.dense.DenseVector
 import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
 import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector, SingletonBinaryVector}
+import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
 // Templates
 	
@@ -128,6 +129,9 @@ import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector
     def score(s:StatType) : Double
 		//def scoreStats(ss:Iterable[_<:S]) : Double = ss.foldLeft(0.0)(_ + score(_))
     def statistic(ss:Iterable[StatType]) : StatisticType = new Statistic(ss).asInstanceOf[StatisticType] // TODO is there some way to avoid this cast?
+    protected def filename: String = this.getClass.getName
+    def save(dirname:String): Unit = {}
+    def load(dirname:String): Unit = {}
 	}
  
 	// TODO Rename to VectorTemplate (VectorStatistics1...) or LinearTemplate (LinearStatistics1...), but also look at names that Daphne's book gives to this
@@ -235,11 +239,11 @@ import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector
     private def unflattenOuter(weightIndex:Int, dimensions:Int*) : Array[Int] = new Array[Int](2) 
 	} // end of VectorTemplate
  
- 
-	trait MarginalSamples extends VectorTemplate {
+	// TODO Remove this.  It is now handled in various subclasses of Lattice
+	/*trait MarginalSamples extends VectorTemplate {
 		lazy val samples = {freezeDomains; new Array[Double](statsize)}
 		def clearSamples = for (i <- 0 until samples.length) samples(i) = 0.0 // TODO surely there is a faster way
-	}
+	}*/
 
  
 	/** A VectorTemplate that also has a vector of weights, and calculates score by a dot-product between statistics.vector and weights. */
@@ -251,6 +255,33 @@ import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector
       case w:SparseHashVector => w dot s.vector
 		  case w:SparseVector => w dot s.vector
 		}
+    override def save(dirname:String): Unit = {
+      val f = new File(dirname+"/"+filename)
+      if (f.exists) return // Already exists, don't write it again
+      for (d <- statDomains) d.save(dirname)
+      val s = new PrintWriter(new FileWriter(f))
+      for (weight <- weights.elements) {
+      	s.print(weight._1)
+      	s.print(" ")
+      	s.println(weight._2)
+      }
+      s.close
+    }
+    override def load(dirname:String): Unit = {
+      if (statsize <= 0 || scalala.Scalala.norm(weights,1) != 0.0) return // Already have non-zero weights, must already be read.
+      for (d <- statDomains) d.load(dirname)
+      val f = new File(dirname+"/"+filename)
+      val s = new BufferedReader(new FileReader(f))
+      var line = ""
+      while ({ line = s.readLine; line != null }) {
+      	val fields = line.split(" +")
+      	assert(fields.length == 2)
+      	val index = Integer.parseInt(fields(0))
+      	val value = java.lang.Double.parseDouble(fields(1))
+      	weights(index) = value
+      }
+      s.close
+    }
 	}
  
  	trait SparseWeights extends DotTemplate {

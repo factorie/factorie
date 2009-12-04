@@ -100,8 +100,8 @@ object LabeledTokenSeqs {
     class GetterClass extends LabelGetter[T,This]
     def hasNext = token.hasNext && token.next.label != null
     def hasPrev = token.hasPrev && token.prev.label != null
-    def next = token.next.label
-    def prev = token.prev.label
+    def next: This = if (token.next == null) null.asInstanceOf[This] else token.next.label
+    def prev: This = if (token.prev == null) null.asInstanceOf[This] else token.prev.label
   }
   
   // Define boilerplate, to support access to attributes in the entity-attribute-relationship syntax
@@ -415,7 +415,12 @@ object LabeledTokenSeqs {
           labelCount += 1
           if (label.valueIsTruth) correctLabelCount += 1 // TODO Note this is accuracy independent of labelName; change?
           predictedStart = false; trueStart = false
-          if ((!label.hasPrev || label.prev.index != label.index) && labelValueStart.findAllIn(label.value).hasNext) { // TODO is there a more canonical way to ask if a regex matches a string?
+          // Find out if we are at the beginning of a segment.  
+          // We are at a start if either (a) labelValueStart matches, or (b) labelValueContinue matches and the previous label doesn't match
+          // The (b) case makes it work for IOB notation, in which "B-*" is only used at the boundary between two like-categoried mentions.
+          //if ((!label.hasPrev || label.prev.index != label.index) && labelValueStart.findAllIn(label.value).hasNext)
+          if (labelValueStart.findAllIn(label.value).hasNext 
+              || (labelValueContinue.findAllIn(label.value).hasNext && (!label.hasPrev || label.prev.index != label.index))) { // TODO is there a more canonical way to ask if a regex matches a string?
             predictedCount += 1
             predictedStart = true
             //print("ps ")

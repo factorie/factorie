@@ -41,8 +41,8 @@ abstract class GibbsSampler2[V1<:Variable with IterableSettings,V2<:Variable wit
     val v2 = block(v1)
     assert (v2 != v1)
     val s1 = v1.settings
-    val s2 = v2.settings
-    var first = true // indicates that we haven't yet called next for the first time
+    val s2 = if (v2 != null) v2.settings else new SettingIterator { def hasNext = false; def next(d:DiffList) = null; def reset = {} }
+    private var first = true // indicates that we haven't yet called next for the first time
     def next(difflist:DiffList): DiffList = {
       val d = newDiffList
       if (first) { s1.next(d); s2.next(d) }

@@ -79,6 +79,16 @@ object WordSegmenterDemo {
 		testVariables.foreach(_.setRandomly)
 		println ("Read "+(trainVariables.size+testVariables.size)+" characters")
 		println ("Initial test accuracy = "+ objective.aveScore(testVariables))
+  
+		// If a saved model was specified on the command-line, theni instead of training, take parameters from there, test and exit
+		if (args.length > 0) {
+			println("Loading model parameters from "+args(0))
+			model.load(args(0))
+			var predictor = new SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
+			predictor.infer(testVariables)
+			println ("Test  accuracy = "+ objective.aveScore(testVariables))
+			System.exit(0)
+    }
 
 		// Sample and Learn!
 		var learner = new GibbsSampler(model, objective) with SampleRank with PerceptronUpdates
@@ -105,7 +115,8 @@ object WordSegmenterDemo {
 		// Show the parameters
 		//model.templatesOf[LogLinearScoring].foreach(t => Console.println(t.weights.toList))
 		println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")
-		0;
+		
+		//model.save("/Users/mccallum/tmp/wordsegmenter.factorie")
 	}
 
 	val data = Array(

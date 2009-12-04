@@ -10,6 +10,7 @@ import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import cc.factorie.util.{LinkedHashSet}
 import cc.factorie.util.Implicits._
+import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
 
 /**The "domain" of a variable---also essentially serving as the variables' "type" */
@@ -23,6 +24,9 @@ class Domain[V<:Variable] {
   // Domain[Token] := new CategoricalDomain[Token] { ... }
   // I don't think this actually works yet
  	def :=(d:Domain[Variable]) = println("In Domain.:=")
+  def save(dirname:String): Unit = {}
+  def load(dirname:String): Unit = {}
+  protected def filename:String = this.getClass.getName+"["+variableClasses.apply(0).getName+"]"
 }
 
 /*
@@ -43,6 +47,18 @@ abstract class DiscreteDomain[V<:DiscreteValues] extends Domain[V] {
     if (s < 0) throw new Error("DiscreteDomain.size cannot be negative.")
     else if (_size <= 0 && _size != s) throw new Error("DiscreteDomain.size already set; cannot be reset to a different value.")
     else _size = s
+  override def save(dirname:String): Unit = {
+    val f = new File(dirname+"/"+filename)
+    val s = new PrintWriter(new FileWriter(f))
+    s.println(size)
+    s.close
+  }
+  override def load(dirname:String): Unit = {
+    val f = new File(dirname+"/"+filename)
+    val s = new BufferedReader(new FileReader(f))
+    val line = s.readLine
+    setSize(Integer.parseInt(line))
+  }
 }
 
 class CategoricalDomain[V<:CategoricalValues] extends DiscreteDomain[V] with util.Index[V#ValueType] /*with DomainEntryCounter[V]*/ {
@@ -52,7 +68,31 @@ class CategoricalDomain[V<:CategoricalValues] extends DiscreteDomain[V] with uti
 	def +=(x:V#ValueType) : Unit = this.index(x)
 	def ++=(xs:Iterable[V#ValueType]) : Unit = xs.foreach(this.index(_))
  
- 
+   override def save(dirname:String): Unit = {
+    val f = new File(dirname+"/"+filename)
+    if (f.exists) return // Already exists, don't write it again
+    val s = new PrintWriter(new FileWriter(f))
+    //if (elements.next.asInstanceOf[AnyVal].getClass != classOf[String]) throw new Error("Only know how to save ValueType String.")
+    if (frozen) s.println("#frozen = true") else s.println("#frozen = false")
+    for (e <- elements) {
+      if (e.toString.contains("\n")) throw new Error("Cannot save Domain with entry containing newline.")
+      s.println(e.toString)
+    }
+    s.close
+  }
+  override def load(dirname:String): Unit = {
+    if (size > 0) return // Already initialized, don't read again
+    val f = new File(dirname+"/"+filename)
+    val s = new BufferedReader(new FileReader(f))
+    var line = s.readLine
+    if (line.split("\\s+").apply(2) == "true") freeze // Parse '#frozen = true'
+    while (line != null) {
+      line = s.readLine
+      this.index(line.asInstanceOf[V#ValueType])
+    }
+    s.close
+  }
+
 	// Code that used to be in DomainEntryCounter[V], but when separate was causing compiler to crash.
 	/*
 	type T = V#ValueType
