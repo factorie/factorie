@@ -1,17 +1,11 @@
 package cc.factorie.example
-
 import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
-import scala.collection.jcl.WeakHashMap
-import scala.util.Sorting
-import scala.reflect.Manifest
 import scala.util.matching.Regex
 import java.io.File
-
 import cc.factorie.util.Stopwords
 import cc.factorie.util.Implicits._
 
 object LDADemo {
-  
   // Declare different types of variables
 	object Beta extends SymmetricDirichlet[Word](0.01)
   class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic]
@@ -48,25 +42,18 @@ object LDADemo {
   	}
     
 		// Fit model 
-		//val sampler = new GibbsSampler; println("GibbsSampler")
-    val sampler = Global.defaultSampler; println("GenerativeVariableSampler")
-    //val sampler = Global.defaultSampler.noDiffList; println("GenerativeVariableSampler noDiffList")
+    val sampler = Global.defaultSampler
 		val startTime = System.currentTimeMillis
-		//val timer = new cc.factorie.util.TimingCollector(); cc.factorie.util.Trackers += timer
     for (i <- 1 to 9) {
       sampler.process(zs, 1)
     	print("."); Console.flush
     	if (i % 3 == 0) {
     		println ("Iteration "+i)
-    		topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_.value)))
-    		println
+    		topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_.value))); println
       }
     }	
     topics.foreach(t => {println("\nTopic "+t.index); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
 		println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
-		//println(timer.timings)    
-		0
 	}
-
 }
 
