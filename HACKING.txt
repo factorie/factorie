@@ -8,9 +8,7 @@ If you don't already have maven, version 2, install it.
 http://maven.apache.org/download.html
 
 Check out source code:
-$ hg clone ssh://hg@hg-iesl.cs.umass.edu/factorie ./factorie
-or if you have factorie check-in privledges:
-$ hg clone ssh://hg@hg-iesl.cs.umass.edu/factorie ./factorie
+$ hg clone https://factorie.googlecode.com/hg/ factorie
 
 $ cd factorie
 $ mvn compile
@@ -22,6 +20,18 @@ Development
 ===========
 
 For Eclipse 
+
+Menu > File > Import 
+ General > Maven Projects
+  factorie
+Properties of "factorie"
+ Java build path
+  source
+  Add folder
+  src/main/scala
+
+
+
 Maven plugin
 Scala plugin
 
@@ -33,4 +43,4 @@ IntelliJ
 Coding standards
 ================
 
-Tab to indent; many of us then set tab to be displayed as 2 spaces.
+Two spaces indentation.  No tabs!
