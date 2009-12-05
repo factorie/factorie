@@ -49,3 +49,17 @@ fixindenttest2:
 	    -f save-buffer ; \
 	done
 
+
+
+clean-orig:
+	find src -name '*.orig' -exec rm {} \;
+
+strip-first-comment:
+        perl -0777 -i.orig -p -e 's,^/\*[^\*]*\*/,,sm' `find src -name '*.java'`
+        perl -0777 -i.orig -p -e 's,^/\*[^\*]*\*/,,sm' `find src -name '*.scala'`
+
+prepend-license-comment:
+	for f in `find -E src -name '.*\.(java|scala)'` ; do \
+	  mv $$f $$f.orig
+	  cat doc/LICENSE-HEADER.txt $$f.orig > $$f
+	done
