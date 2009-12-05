@@ -420,12 +420,15 @@ object LabeledTokenSeqs {
           // The (b) case makes it work for IOB notation, in which "B-*" is only used at the boundary between two like-categoried mentions.
           //if ((!label.hasPrev || label.prev.index != label.index) && labelValueStart.findAllIn(label.value).hasNext)
           if (labelValueStart.findAllIn(label.value).hasNext 
-              || (labelValueContinue.findAllIn(label.value).hasNext && (!label.hasPrev || label.prev.index != label.index))) { // TODO is there a more canonical way to ask if a regex matches a string?
+              || (labelValueContinue.findAllIn(label.value).hasNext 
+                  && (!label.hasPrev || (!labelValueStart.findAllIn(label.prev.value).hasNext && !labelValueContinue.findAllIn(label.prev.value).hasNext)))) {
             predictedCount += 1
             predictedStart = true
             //print("ps ")
           }
-          if ((!label.hasPrev || label.prev.trueIndex != label.trueIndex) && labelValueStart.findAllIn(label.trueValue.toString).hasNext) {
+          if (labelValueStart.findAllIn(label.trueValue).hasNext
+              || (labelValueContinue.findAllIn(label.trueValue).hasNext 
+                  && (!label.hasPrev || (!labelValueStart.findAllIn(label.prev.trueValue).hasNext && !labelValueContinue.findAllIn(label.prev.trueValue).hasNext)))) {
             trueCount += 1
             trueStart = true
             //print("ts ")

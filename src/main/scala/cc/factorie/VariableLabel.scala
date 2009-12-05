@@ -19,7 +19,7 @@ trait TrueCategoricalValue extends TrueSetting {
   this : CategoricalVariable =>
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
   var trueIndex: Int
-  def trueValue = if (trueIndex >= 0) domain.get(trueIndex) else null
+  def trueValue: VariableType#VariableType#ValueType = if (trueIndex >= 0) domain.get(trueIndex) else null.asInstanceOf[VariableType#VariableType#ValueType]
   def setToTruth(implicit d:DiffList): Unit = setByIndex(trueIndex)
   def valueIsTruth: Boolean = trueIndex == index
   def isUnlabeled = trueIndex < 0

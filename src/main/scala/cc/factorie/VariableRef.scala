@@ -38,6 +38,7 @@ abstract class RefVariable[T<:AnyRef] extends Variable with RefValue[T] {
       _value = newValue
     }
   def :=(newValue:T) = set(newValue)(null)
+  def value_=(newValue:T) = set(newValue)(null)
   override def toString = printName + "(" + value.toString + ")"
   case class RefDiff(oldValue: T, newValue: T) extends Diff {
     //        Console.println ("new RefDiff old="+oldValue+" new="+newValue)
@@ -54,6 +55,11 @@ trait RefTrueValue[T<:AnyRef] extends TrueSetting {
   def isUnlabeled = trueValue == null
   def setToTruth(implicit d:DiffList): Unit = set(trueValue)
   def valueIsTruth: Boolean = trueValue == value
+}
+
+@DomainInSubclasses
+abstract class RefLabel[T<:AnyRef](trueRef:T) extends RefVariable[T] with RefTrueValue[T] {
+  trueValue = trueRef
 }
 
 /**A variable class for string values. */

@@ -13,10 +13,11 @@ object ChainNER2 {
   class Token(word:String, labelString:String) extends LabeledTokenSeqs.Token[Label,Token](word) {
     type GetterType = TokenGetter; class GetterClass extends TokenGetter
     val label = new Label(labelString, this)
-    val wordtype = new Type(word); class Type(s:String) extends EnumVariable(s)
+    val wordtype = new Type(simplify(word)); class Type(s:String) extends EnumVariable(s)
     val tags = new Tags; class Tags extends BinaryVectorVariable[String]
     override def +=(feature:String): Unit = {
-      if (feature.matches("(POS|PHRASE)=[-A-Z]+|SHAPE=[-Aa1,\\.]+")) tags += feature
+    	//if (feature.matches("(POS|PHRASE)=[-A-Z]+|W=(and|or|of|the|for|de|del)")) tags += feature
+      if (feature.matches("POS=[-A-Z]+")) tags += feature
       super.+=(feature)
     }
   }
@@ -42,9 +43,9 @@ object ChainNER2 {
     Foreach[Label] { label => Score(label) },
     Foreach[Label] { label => Score(label, label.token) },
     Foreach[Label] { label => Score(label.prev, label) },
-    Foreach[Label] { label => Score(label.prev, label, label.next) },
-    Foreach[Label] { label => Score(label, label.next, label.token.tags) },
-    Foreach[Label] { label => Score(label.prev, label, label.next, label.token.tags) }
+    //Foreach[Label] { label => Score(label.prev, label, label.next) },
+    Foreach[Label] { label => Score(label.prev, label, label.token.tags) },
+    //Foreach[Label] { label => Score(label.prev, label, label.next, label.token.tags) }
     //For[Label] { label => Score(label, label.token) }                 % "LabelToken",
     //For[Label] { label => Score(label, label.next) }                  % "LabelMarkov",
   )
@@ -59,7 +60,7 @@ object ChainNER2 {
     (trainSentences ++ testSentences).foreach(s => { 
       s.foreach(t => {
         //println("Token "+t.word+"  "+t.label.value+"  "+t.label.value(0)+"  "+(t.label.value(0)=='I'))
-        print("  %-8s %-8s ".format(t.label.trueValue, t.label.value))
+        //print("  %-8s %-8s ".format(t.label.trueValue, t.label.value))
         if (t.label.value(0) == 'I' && (!t.hasPrev || t.prev.label.value.substring(1) != t.label.value.substring(1))) {
           val newValue = "B"+t.label.value.substring(1) 
           t.label.value = newValue
@@ -68,6 +69,8 @@ object ChainNER2 {
         //println("   x %-8s %-8s %s".format(t.label.trueValue, t.label.value, t.word))
       })}) 
       
+    // Make features of offset conjunctions
+    (trainSentences ++ testSentences).foreach(s => s.addNeighboringFeatureConjunctions(List(-1), List(0), List(-1,0), List(0,1), List(1)))
     // Gather tokens into documents
     val documents = new ArrayBuffer[ArrayBuffer[Token]]; documents += new ArrayBuffer[Token]
     (trainSentences ++ testSentences).foreach(s => if (s.length == 0) documents += new ArrayBuffer[Token] else documents.last ++= s)
@@ -75,20 +78,18 @@ object ChainNER2 {
     documents.foreach(d => if (d.take(3).map(_.word).contains("-")) { val f = "HEADER="+d(0).word.toLowerCase; d.foreach(t => t += f)}) // println(d.take(4).map(_.word).mkString("", " ", "")))
     // If the sentence contains no lowercase letters, tell all tokens in the sentence they are part of an uppercase sentence
     (trainSentences ++ testSentences).foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t += "SENTENCEUPPERCASE"))
-    // Make features of offset conjunctions
-    (trainSentences ++ testSentences).foreach(s => s.addNeighboringFeatureConjunctions(List(-1), List(0), List(-1,0), List(0,1), List(1)))
     (trainSentences ++ testSentences).foreach(s => s.foreach(t => if (t.word.matches("[A-Za-z]+")) t ++= t.charNGrams(2,5).map(n => "NGRAM="+n)))
     (trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(5).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
     (trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.nextWindow(5).map(t2 => "NEXTWINDOW="+simplify(t2.word).toLowerCase)))
     // Put features of first mention o later mentions
     (trainSentences ++ testSentences).foreach(s => {
       s.foreach(t => {
-        if (t.isCapitalized && !t.values.exists(f => f.matches(".*FIRSTMENTION.*"))) {
-          println("Looking for later mentions of "+t.word)
+        if (t.isCapitalized && t.word.length > 1 && !t.values.exists(f => f.matches(".*FIRSTMENTION.*"))) {
+          //println("Looking for later mentions of "+t.word)
           var t2 = t
           while (t2.hasNext) {
             t2 = t2.next
-            if (t2.word == t.word) { println("Adding FIRSTMENTION to "+t2.word); t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
+            if (t2.word == t.word) { /*println("Adding FIRSTMENTION to "+t2.word);*/ t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
           }
         }
       })
@@ -111,17 +112,17 @@ object ChainNER2 {
     // Train and test!
     (trainLabels ++ testLabels).foreach(_.setRandomly)
     val predictor2 = new GibbsSampler2[Label,Label](model) {
+      temperature = 0.01
       def block(label:Label) = label.prev
     }
-    val predictor = new GibbsSampler1[Label](model)
-    val learner = new GibbsSampler1[Label](model,Global.defaultObjective) with SampleRank 
-    with PerceptronUpdates with ParameterAveraging
-    //with ConfidenceWeightedUpdates 
+    val predictor = new GibbsSampler1[Label](model) { temperature = 0.01 }
+    val learner = new GibbsSampler1[Label](model) with SampleRank 
+    //with PerceptronUpdates with ParameterAveraging
+    with ConfidenceWeightedUpdates 
     {
-    	//temperature = 0.01
+    	temperature = 0.01
       override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && Global.random.nextDouble > 0.5) null else label
       override def postIterationHook(): Boolean = {
-        learningRate *= 0.9
         predictor.process(testLabels, 1)
         println("Train errors")
         printErrors(trainLabels, 200)
@@ -138,7 +139,6 @@ object ChainNER2 {
     val startTime = System.currentTimeMillis
     learner.process(trainLabels, 10)
     println("Finished training in "+(System.currentTimeMillis-startTime)/60000.0+" minutes.")
-    learner.setWeightsToAverage
     
     // Predict, testing BP
     //val targets = new ArrayBuffer[UncoordinatedCategoricalVariable]
@@ -152,24 +152,23 @@ object ChainNER2 {
     
     // Predict, also by sampling, visiting each variable 3 times.
     //new SamplingMaximizer[Label](model).infer(testLabels, 5)
-    predictor.process(testLabels, 2)
+    predictor.process(testLabels, 1)
     predictor.temperature = 0.1; predictor.process(testLabels, 1)
     predictor.temperature = 0.01; predictor.process(testLabels, 1)
+    predictor.temperature = 0.001; predictor.process(testLabels, 1)
     printErrors(testLabels, 100)
     println("GibbsSampling inference")
     println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
     println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
 
-    println("BP inference")
+    /*println("BP inference")
     val bppredictor = new BPInferencer[Label](model)
     trainSentences.foreach(s => bppredictor.inferTreewise(s.map(_.label)))
     testSentences.foreach(s => bppredictor.inferTreewise(s.map(_.label)))
     println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
-    println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
+    println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))*/
     
-    val saveDir = "/Users/mccallum/tmp/chainner2.factorie"
-    new File(saveDir).mkdir
-    
+    model.save("/Users/mccallum/tmp/chainner2.factorie")
   }
 
   def printLabel(label:Label) : Unit = {
@@ -196,7 +195,7 @@ object ChainNER2 {
     		var j = Math.max(i-contextSize, 0); var numTruthsAfter = -contextSize
     		do {
     			val l = labels(j)
-    			println("%s %-6s/%-6s %-18s %s".format((if (l.valueIsTruth) " " else "*"), l.trueValue, l.value, l.token.word, l.token.toString))
+    			println("%s %-6s %-6s %-18s %s".format((if (l.valueIsTruth) " " else "*"), l.trueValue, l.value, l.token.word, l.token.toString))
     			if (l.valueIsTruth) numTruthsAfter += 1 else { numTruthsAfter = 0; count += 1 }
           j += 1
     		}	while (numTruthsAfter < contextSize && j < labels.length && count < maxErrors) 
