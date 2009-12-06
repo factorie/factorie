@@ -14,6 +14,8 @@ import cc.factorie.application.LabeledTokenSeqs.LabeledTokenSeq
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
 
+/** Demo of CoNLL NER with lots of features.  Aiming for near state-of-the-art accuracy, but not yet finished.
+    Apologies for the current mess here as we explore various options. */
 object ChainNER2 {
 
   // Define the variable classes

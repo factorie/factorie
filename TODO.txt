@@ -17,9 +17,5 @@ Put in final spanner example
 Create a Gaussian mixture example
 Write README.txt
 Write manual in package.html
-Write preliminary web site
+Document how to get a factorie interpretter prompt
 
-Release:
-Make a factorie.sh
-Make mvn targets for creating a releasable .tar.gz
-Create LICENSE.txt
