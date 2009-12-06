@@ -5,7 +5,7 @@ import scalala.Scalala._
 import scalala.tensor.Vector
 
 /** Collins' structured-perceptron */
-abstract class StructuredPerceptron(model:Model) extends PerceptronUpdates {
+abstract class StructuredPerceptron(model:Model) extends GradientAscentUpdates {
   type TemplatesToUpdate <: DotTemplate
   var learningMargin = 1.0 // TODO not currently used
   private var difflist: DiffList = null

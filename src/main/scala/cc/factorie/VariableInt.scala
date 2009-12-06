@@ -96,7 +96,7 @@ trait DiscreteValues extends Variable with OrdinalValues {
 trait DiscreteValue extends DiscreteValues with OrdinalValue {
   this: Variable =>
   type VariableType <: DiscreteValue
-  @inline final def index = intValue 
+  @inline final def index = intValue // simply an alias for intValue 
   def vector = new SingletonBinaryVector(domainSize, intValue)
 }
 @DomainInSubclasses

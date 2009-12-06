@@ -91,7 +91,7 @@ object WordSegmenterDemo {
     }
 
 		// Sample and Learn!
-		var learner = new GibbsSampler(model, objective) with SampleRank with PerceptronUpdates
+		var learner = new GibbsSampler(model, objective) with SampleRank with GradientAscentUpdates
 		var sampler = new GibbsSampler(model)
 		learner.learningRate = 1.0
 		for (i <- 0 until 7) {

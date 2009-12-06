@@ -108,7 +108,7 @@ object Football {
     
     // Train and print diagnostics
   	val labels = documents.flatMap(seq => seq.map(_.label))
-  	val learner = new GibbsSampler1[Label](model,objective) with SampleRank with PerceptronUpdates {
+  	val learner = new GibbsSampler1[Label](model,objective) with SampleRank with GradientAscentUpdates {
   		override def postIterationHook(): Boolean = {
   			println("Iteration "+iterationCount)
   			var docCount = 1

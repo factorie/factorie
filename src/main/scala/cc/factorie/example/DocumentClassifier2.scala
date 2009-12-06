@@ -54,7 +54,7 @@ object DocumentClassifier2 {
     println(model.factors(trainVariables.first))
 
     // Train and test
-    val learner = new GibbsSampler1[Label](model) with SampleRank with PerceptronUpdates
+    val learner = new GibbsSampler1[Label](model) with SampleRank with GradientAscentUpdates
     val predictor = new GibbsSampler(model)
     learner.learningRate = 1.0
     for (i <- 0 until 10) {

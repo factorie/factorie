@@ -32,7 +32,7 @@ object ChainNER1 {
     (trainLabels ++ testLabels).foreach(_.setRandomly) 
 
     // Train for 5 iterations
-    val learner = new GibbsSampler(model) with SampleRank with PerceptronUpdates 
+    val learner = new GibbsSampler(model) with SampleRank with GradientAscentUpdates 
     learner.process(trainLabels, 5) // Train for 5 iterations through all Labels
 
     // Predict, also by sampling, visiting each variable 3 times.
