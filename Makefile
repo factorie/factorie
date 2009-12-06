@@ -77,7 +77,7 @@ strip-first-comment:
 	perl -0777 -i.orig -p -e 's,^/\*[^\*]*\*/,,sm' `find src -name '*.scala'`
 
 prepend-license-comment:
-	for f in `find -E src -name '.*\.(java|scala)'` ; do \
-	  mv $$f $$f.orig
-	  cat doc/LICENSE-HEADER.txt $$f.orig > $$f
+	for f in `find -E src -regex '.*\.(java|scala)'` ; do \
+	  mv $$f $$f.orig ; \
+	  cat doc/LICENSE-HEADER.txt $$f.orig > $$f ; \
 	done
