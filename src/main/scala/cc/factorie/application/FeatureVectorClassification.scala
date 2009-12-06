@@ -23,8 +23,8 @@ object FeatureVectorClassification {
   @DomainInSubclasses
   abstract class Label[I<:Instance[This,I],This<:Label[I,This]](labelString:String, val instance:I) extends LabelVariable(labelString) {
     this: This =>
-  	type GetterType <: LabelGetter[I,This];
-  	class GetterClass extends LabelGetter[I,This]
+    type GetterType <: LabelGetter[I,This];
+    class GetterClass extends LabelGetter[I,This]
     type VariableType <: Label[I,This]
   }
   

@@ -13,18 +13,18 @@ object DocumentClassifier2 {
   class Document(file:File) extends BinaryVectorVariable[String] {
     var label = new Label(file.getParentFile.getName, this)
     // Read file, tokenize with word regular expression, and add all matches to this BinaryVectorVariable
-  	"\\w+".r.findAllIn(Source.fromFile(file).mkString).foreach(regexMatch => this += regexMatch.toString)
+    "\\w+".r.findAllIn(Source.fromFile(file).mkString).foreach(regexMatch => this += regexMatch.toString)
   }
   class Label(name:String, val document:Document) extends LabelVariable(name) 
 
   val model = new Model(
-  	/** Bias term just on labels */
-  	new TemplateWithDotStatistics1[Label], 
-  	/** Factor between label and observed document */
-  	new TemplateWithDotStatistics2[Label,Document] {
-  		def unroll1 (label:Label) = Factor(label, label.document)
-  		def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
-  	}
+    /** Bias term just on labels */
+    new TemplateWithDotStatistics1[Label], 
+    /** Factor between label and observed document */
+    new TemplateWithDotStatistics2[Label,Document] {
+      def unroll1 (label:Label) = Factor(label, label.document)
+      def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
+    }
   )
 
   val objective = new Model(new TrueLabelTemplate[Label])

@@ -16,7 +16,7 @@ object ChainNER2 {
     val wordtype = new Type(simplify(word)); class Type(s:String) extends EnumVariable(s)
     val tags = new Tags; class Tags extends BinaryVectorVariable[String]
     override def +=(feature:String): Unit = {
-    	//if (feature.matches("(POS|PHRASE)=[-A-Z]+|W=(and|or|of|the|for|de|del)")) tags += feature
+      //if (feature.matches("(POS|PHRASE)=[-A-Z]+|W=(and|or|of|the|for|de|del)")) tags += feature
       if (feature.matches("POS=[-A-Z]+")) tags += feature
       super.+=(feature)
     }
@@ -24,7 +24,7 @@ object ChainNER2 {
   }
   
   class Label(labelString:String, token:Token) extends LabeledTokenSeqs.Label[Token,Label](labelString, token) {
-  	type GetterType = LabelGetter; class GetterClass extends LabelGetter
+    type GetterType = LabelGetter; class GetterClass extends LabelGetter
     override def toString: String = "Label("+value+")@"+token.position
   }
 
@@ -35,8 +35,8 @@ object ChainNER2 {
     def wordtype = getOneWay(_.wordtype)
   }
   class LabelGetter extends LabeledTokenSeqs.LabelGetter[Token,Label] {
-  	override def newTokenGetter = new TokenGetter
-  	override def newLabelGetter = new LabelGetter
+    override def newTokenGetter = new TokenGetter
+    override def newLabelGetter = new LabelGetter
   }
   
   // Variable classes Token, Label and LabeledTokenSeq are already defined in cc.factorie.application.LabeledTokenSeqs
@@ -122,7 +122,7 @@ object ChainNER2 {
     //with PerceptronUpdates with ParameterAveraging
     with ConfidenceWeightedUpdates 
     {
-    	temperature = 0.01
+      temperature = 0.01
       override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && Global.random.nextDouble > 0.5) null else label
       override def postIterationHook(): Boolean = {
         predictor.process(testLabels, 1)
@@ -149,7 +149,7 @@ object ChainNER2 {
     lattice.update(100)
     lattice.setVariablesToMax
     targets.foreach(v => println(v.trueValue+"/"+v.value+" "+v.token.word+"  "+
-    		lattice.marginal(v).toArray.zipWithIndex.map((pair:(Double,Int)) => Tuple2(v.domain.get(pair._2), pair._1)).toString))*/
+        lattice.marginal(v).toArray.zipWithIndex.map((pair:(Double,Int)) => Tuple2(v.domain.get(pair._2), pair._1)).toString))*/
 
     
     // Predict, also by sampling, visiting each variable 3 times.
@@ -202,19 +202,19 @@ object ChainNER2 {
     var count = 0
     var i = 0
     while (i < labels.length && count < maxErrors) {
-    	val label = labels(i)
-    	if (!label.valueIsTruth && label.hasPrev && label.hasNext && count < maxErrors) {
-    		var j = Math.max(i-contextSize, 0); var numTruthsAfter = -contextSize
-    		do {
-    			val l = labels(j)
-    			println("%s %-6s %-6s %-18s %s".format((if (l.valueIsTruth) " " else "*"), l.trueValue, l.value, l.token.word, l.token.toString))
-    			if (l.valueIsTruth) numTruthsAfter += 1 else { numTruthsAfter = 0; count += 1 }
+      val label = labels(i)
+      if (!label.valueIsTruth && label.hasPrev && label.hasNext && count < maxErrors) {
+        var j = Math.max(i-contextSize, 0); var numTruthsAfter = -contextSize
+        do {
+          val l = labels(j)
+          println("%s %-6s %-6s %-18s %s".format((if (l.valueIsTruth) " " else "*"), l.trueValue, l.value, l.token.word, l.token.toString))
+          if (l.valueIsTruth) numTruthsAfter += 1 else { numTruthsAfter = 0; count += 1 }
           j += 1
-    		}	while (numTruthsAfter < contextSize && j < labels.length && count < maxErrors) 
-    		println
-    		i = j - 1
+        } while (numTruthsAfter < contextSize && j < labels.length && count < maxErrors) 
+        println
+        i = j - 1
       }
-    	i += 1
+      i += 1
     }
   }
  

@@ -61,7 +61,7 @@ trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends GenerativeDistribution[Pr
 }
 
 /** Immutable Dirichlet with equal alpha for all dimensions. 
-    @author Andrew McCallum	*/
+    @author Andrew McCallum */
 @DomainInSubclasses
 class SymmetricDirichlet[O<:DiscreteOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] {
   type VariableType <: Dirichlet[O];
@@ -150,7 +150,7 @@ trait DirichletMomentMatchingEstimator[O<:DiscreteOutcome[O]] extends AbstractDi
     //println("unnormalized mean "+_mean.take(20).toList)
     //println("normalized mean "+(new Range(0,_mean.size,1).map(mean(_)).toList))
     if (generatedSamples.size <= minSamplesForVarianceEstimate) { // Not enough samples for a reliable variance estimate
-    	alphaSum = length
+      alphaSum = length
       return
     }
     // Calculate variance = E[x^2] - E[x]^2 for each dimension

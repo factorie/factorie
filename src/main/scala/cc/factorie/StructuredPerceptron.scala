@@ -19,14 +19,14 @@ abstract class StructuredPerceptron(model:Model) extends GradientAscentUpdates {
     vs.foreach(_.setToTruth(difflist))
     difflist.undo // TODO Consider commenting this out, but consider carefully.  Dangerous for "addGradient" to have side-effects.
     if (difflist.size > 0)
-    	updateWeights // This will result in a call to "addGradient"
+      updateWeights // This will result in a call to "addGradient"
   }
 
   def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit = {
     if (!difflist.done) difflist.redo
-  	difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
-  	difflist.undo
-  	difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
+    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
+    difflist.undo
+    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
   }
 
 }

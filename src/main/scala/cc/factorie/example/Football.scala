@@ -33,14 +33,14 @@ object Football {
       val oIndex = Domain[Label].index("O")
       val orgIndex = Domain[Label].index("ORG")
       val perIndex = Domain[Label].index("PER")
-    	def score(s:Stat) = {
-    		val label: Label = s.s1
-    		val token = label.token
-    		var result = 0.0
-    		val perLex = perLexicon.contains(token)
-    		val orgLex = orgLexicon.contains(token)
-    		val perLes = perLexicon.containsSingle(token)
-    		val orgLes = orgLexicon.containsSingle(token)
+      def score(s:Stat) = {
+        val label: Label = s.s1
+        val token = label.token
+        var result = 0.0
+        val perLex = perLexicon.contains(token)
+        val orgLex = orgLexicon.contains(token)
+        val perLes = perLexicon.containsSingle(token)
+        val orgLes = orgLexicon.containsSingle(token)
         //if (perLex) println("PERLEX "+token.word+"  "+token.window(2).map(_.word).toList)
         //if (orgLex) println("ORGLEX "+token.word+"  "+token.window(2).map(_.word).toList)
         //if (perLes) println("PERLES "+token.word)
@@ -48,12 +48,12 @@ object Football {
         //if (label.index == perIndex) { if (perLex) result += 1.0 else if (token.isCapitalized && token.word.length > 1 && perLes) result += 0.3 }
         if (label.index == orgIndex) { if (orgLex) result += 1.0 else if (token.isCapitalized && token.word.length > 1 && orgLes) result += 0.3 else result -= 1.0 }
         if (label.index == orgIndex) { if (orgLex) result += 1.0 else if (token.isCapitalized && token.word.length > 1 && orgLes) result += 0.3 }
-    		if (label.index == oIndex) { if (orgLex || perLex) result -= 1.0 }
+        if (label.index == oIndex) { if (orgLex || perLex) result -= 1.0 }
         if (!token.isCapitalized || token.isPunctuation || token.isDigits) if (label.index == oIndex) result += 0.5 else result -= 1.5
-      	if (token.isCapitalized && label.index != oIndex && token.hasPrev && token.prev.word == ".") result -= 0.5
+        if (token.isCapitalized && label.index != oIndex && token.hasPrev && token.prev.word == ".") result -= 0.5
         //if (token.isCapitalized && label.index == orgIndex && orgLes) result += 0.3
         //if (token.isCapitalized && label.index == perIndex && perLes) result += 0.3
-      	result
+        result
       }
     }
   )
@@ -80,49 +80,49 @@ object Football {
         "/Users/mccallum/research/projects/football/data/1987/12/12",
         "/Users/mccallum/research/projects/football/data/1987/12/13",
         "/Users/mccallum/research/projects/football/data/1987/12/14"
-      	)
+        )
     Domain[Label].index("PER")
     Domain[Label].index("ORG")
     // Read in the data
     val documents = new ArrayBuffer[LabeledTokenSeqs.LabeledTokenSeq[Token,Label]]
     for (dirname <- directories) {
-    	for (file <- files(new File(dirname))) {
-    		val article = XML.loadFile(file)
-    		//println(article \\ "head" \\ "title" text)
-    		//println("  charcount "+ (article \\ "body" \\ "body.content").text.length)
-    		val content = article \\ "head" \\ "docdata" \\ "identified-content"
-    		if (printLexiconsOnly) printLexicons(content)
-    		else {
-    			print("Reading ***"+(article\\"head"\\"title").text+"***")
-    			documents +=
-    				LabeledTokenSeqs.LabeledTokenSeq.fromPlainText(Source.fromString((article \\ "body" \\ "body.content").text), (word,lab)=>new Token(word,lab), "O", 
-    						featureFunction, "[A-Za-z0-9]+|\\p{Punct}".r)
-    			println("  "+documents.last.size)
-    			documents.last.foreach(t=> print(t.word+" ")); println
-    		}  
-    	}
+      for (file <- files(new File(dirname))) {
+        val article = XML.loadFile(file)
+        //println(article \\ "head" \\ "title" text)
+        //println("  charcount "+ (article \\ "body" \\ "body.content").text.length)
+        val content = article \\ "head" \\ "docdata" \\ "identified-content"
+        if (printLexiconsOnly) printLexicons(content)
+        else {
+          print("Reading ***"+(article\\"head"\\"title").text+"***")
+          documents +=
+            LabeledTokenSeqs.LabeledTokenSeq.fromPlainText(Source.fromString((article \\ "body" \\ "body.content").text), (word,lab)=>new Token(word,lab), "O", 
+                featureFunction, "[A-Za-z0-9]+|\\p{Punct}".r)
+          println("  "+documents.last.size)
+          documents.last.foreach(t=> print(t.word+" ")); println
+        }  
+      }
     }
     if (printLexiconsOnly) System.exit(0)
     documents.foreach(d => d.addNeighboringFeatureConjunctions(List(-1), List(-1,0), List(0), List(1)))
     documents.foreach(d => d.foreach(t => t ++= LabeledTokenSeqs.charNGrams(t.word, 2,5).map(g => "NGRAMS="+g)))
     
     // Train and print diagnostics
-  	val labels = documents.flatMap(seq => seq.map(_.label))
-  	val learner = new GibbsSampler1[Label](model,objective) with SampleRank with GradientAscentUpdates {
-  		override def postIterationHook(): Boolean = {
-  			println("Iteration "+iterationCount)
-  			var docCount = 1
-  			for (doc <- documents) {
-  				println("Document "+docCount)
-  				for (entity <- doc.entities("O")) { 
-  					println(entity._1.value+" "+entity._2.map(t=>t.word).mkString(" "))
-  				}
-  				docCount += 1
+    val labels = documents.flatMap(seq => seq.map(_.label))
+    val learner = new GibbsSampler1[Label](model,objective) with SampleRank with GradientAscentUpdates {
+      override def postIterationHook(): Boolean = {
+        println("Iteration "+iterationCount)
+        var docCount = 1
+        for (doc <- documents) {
+          println("Document "+docCount)
+          for (entity <- doc.entities("O")) { 
+            println(entity._1.value+" "+entity._2.map(t=>t.word).mkString(" "))
+          }
+          docCount += 1
         } 
-  			true
-  		}
-  	}
-  	learner.process(labels, 40)
+        true
+      }
+    }
+    learner.process(labels, 40)
   }
   
   
@@ -135,24 +135,24 @@ object Football {
     result
   }
   def printLexicons(content:NodeSeq): Unit = {
-  	for (person <- content \\ "person") {
-  		val names = person.text.trim.replaceAll(" *\\(.*\\)","").replaceAll(" JR","").split("\\s*,\\s*")
-  		val namesr = names.reverse
-  		println("p "+namesr.mkString(" "))
-  		if (namesr.length == 3 && namesr(1).length == 1) println("p "+namesr(0)+" "+namesr(2)) // also print names without the middle initial
-  	}
-  	for (org <- content \\ "org") {
-  		val names = org.text.trim.replaceAll("\\n"," ").replaceAll("ASSN", "ASSOCIATION").replaceAll(" *\\(.*\\)","").split("\\s*,\\s*")
-  		println("o "+names.reverse.mkString(" "))
-  	}
+    for (person <- content \\ "person") {
+      val names = person.text.trim.replaceAll(" *\\(.*\\)","").replaceAll(" JR","").split("\\s*,\\s*")
+      val namesr = names.reverse
+      println("p "+namesr.mkString(" "))
+      if (namesr.length == 3 && namesr(1).length == 1) println("p "+namesr(0)+" "+namesr(2)) // also print names without the middle initial
+    }
+    for (org <- content \\ "org") {
+      val names = org.text.trim.replaceAll("\\n"," ").replaceAll("ASSN", "ASSOCIATION").replaceAll(" *\\(.*\\)","").split("\\s*,\\s*")
+      println("o "+names.reverse.mkString(" "))
+    }
   }
   def files(directory:File): Seq[File] = {
     if (!directory.exists) throw new Error("File "+directory+" does not exist")
     if (directory.isFile) return List(directory)
     val result = new ArrayBuffer[File]
     for (entry <- directory.listFiles) {
-    	if (entry.isFile) result += entry
-    	else if (entry.isDirectory) result ++= files(entry)
+      if (entry.isFile) result += entry
+      else if (entry.isDirectory) result ++= files(entry)
     }
     result
   }

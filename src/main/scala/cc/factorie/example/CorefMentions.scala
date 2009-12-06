@@ -81,64 +81,64 @@ object CorefMentionsDemo {
   
       // Pairwise affinity factor between Mentions in the same partition
       model += new Template2[Mention,Mention] with DotStatistics1[AffinityVector] {
-      	def unroll1 (mention:Mention) = for (other <- mention.entity.mentions; if (other != mention)) yield 
-      		if (mention.hashCode > other.hashCode) Factor(mention, other)
-      		else Factor(other, mention)
-      	def unroll2 (mention:Mention) = Nil // symmetric
-      	def statistics (mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
+        def unroll1 (mention:Mention) = for (other <- mention.entity.mentions; if (other != mention)) yield 
+          if (mention.hashCode > other.hashCode) Factor(mention, other)
+          else Factor(other, mention)
+        def unroll2 (mention:Mention) = Nil // symmetric
+        def statistics (mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
       }.init
 
       // Pairwise repulsion factor between Mentions in different partitions
       model += new Template2[Mention,Mention] with DotStatistics1[AffinityVector] {
-      	override def factors(d:Diff) = d.variable match {
-      		case mention : Mention => d match {
-      			case mention.RefDiff(oldEntity:Entity, newEntity:Entity) => 
-      				for (other <- oldEntity.mentions; if (other.entity != mention.entity)) yield Factor(mention, other);
-      			case _ => super.factors(d)
-      		}
-      		case _ => super.factors(d)
-      	}
-      	def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entity != mention.entity)) yield Factor(mention, other);
-      	def unroll2 (mention:Mention) = Nil // symmetric
-      	def statistics(mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
+        override def factors(d:Diff) = d.variable match {
+          case mention : Mention => d match {
+            case mention.RefDiff(oldEntity:Entity, newEntity:Entity) => 
+              for (other <- oldEntity.mentions; if (other.entity != mention.entity)) yield Factor(mention, other);
+            case _ => super.factors(d)
+          }
+          case _ => super.factors(d)
+        }
+        def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entity != mention.entity)) yield Factor(mention, other);
+        def unroll2 (mention:Mention) = Nil // symmetric
+        def statistics(mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
       }.init
   
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature!
       model += new Template1[Entity] with DotStatistics1[Bool] {
-      	def statistics(entity:Entity) = {
-      		if (entity.mentions.isEmpty) Stat(Bool(true))
-      		else {
-      			val prefix1 = entity.mentions.elements.next.name.substring(0,1)
-      			if (entity.mentions.forall(m => prefix1 equals m.name.substring(0,1)))
-      				Stat(Bool(true))
-      			else
-      				Stat(Bool(false))
-      		}
-      	}
+        def statistics(entity:Entity) = {
+          if (entity.mentions.isEmpty) Stat(Bool(true))
+          else {
+            val prefix1 = entity.mentions.elements.next.name.substring(0,1)
+            if (entity.mentions.forall(m => prefix1 equals m.name.substring(0,1)))
+              Stat(Bool(true))
+            else
+              Stat(Bool(false))
+          }
+        }
       }.init
 
 
       val objective1 = new Model(new TemplateWithStatistics1[Mention] {
-      	def score(s:Stat) = {
-      		val thisMention = s.s1
-      		mentionList.foldLeft(0.0)((total,m) => 
-      		if (m.trueEntity == thisMention.trueEntity) {
-      			if (m.entity == thisMention.entity) total + 1
-      			else total - 1
-      		} else {
-      			if (m.entity == thisMention.entity) total - 1
-      			else total + 1
-      		})
-      	}
+        def score(s:Stat) = {
+          val thisMention = s.s1
+          mentionList.foldLeft(0.0)((total,m) => 
+          if (m.trueEntity == thisMention.trueEntity) {
+            if (m.entity == thisMention.entity) total + 1
+            else total - 1
+          } else {
+            if (m.entity == thisMention.entity) total - 1
+            else total + 1
+          })
+        }
       })
 
       var sampler = new MHSampler[Null](model) 
-	with SampleRank 
-	with ConfidenceWeightedUpdates
-	//with MIRAUpdates
-	//with PerceptronUpdates
+  with SampleRank 
+  with ConfidenceWeightedUpdates
+  //with MIRAUpdates
+  //with PerceptronUpdates
  {
-	temperature = 0.001
+  temperature = 0.001
         override val objective = objective1
         def propose(context:Null)(implicit difflist:DiffList) : Double = {
           // Pick a random mention

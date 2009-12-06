@@ -61,10 +61,10 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
       return;
     val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
       override def default(template:TemplatesToUpdate) = {
-  	template.freezeDomains
-  	val vector = new SparseVector(template.statsize)
-  	this(template) = vector
-  	vector
+    template.freezeDomains
+    val vector = new SparseVector(template.statsize)
+    this(template) = vector
+    vector
       }
     }
     addGradient(gradient,1.0)
@@ -83,9 +83,9 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
       val marginVar = marginVariance(gradient)
       var lambda = 0.0
      if(marginMean >= gaussDeviate * marginVar)
-	return 0.0
+  return 0.0
       if(marginVar > epsilon || marginVar < -epsilon)
-	lambda = (-v + Math.sqrt(v*v - 8*gaussDeviate*(marginMean - gaussDeviate*marginVar))) / (4*gaussDeviate*marginVar);
+  lambda = (-v + Math.sqrt(v*v - 8*gaussDeviate*(marginMean - gaussDeviate*marginVar))) / (4*gaussDeviate*marginVar);
       Math.max(0, lambda);
     }
 
@@ -94,34 +94,34 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
     {
       var result : Double = 0
       for((template,templateGradient)<-gradient)
-	{
-	  val templateSigma = sigma(template)
-	  for((index,value)<-templateGradient.activeElements)
-	      result += value*value*templateSigma(index)
-	}
+  {
+    val templateSigma = sigma(template)
+    for((index,value)<-templateGradient.activeElements)
+        result += value*value*templateSigma(index)
+  }
       result
     }
 
   def updateSigma(gradient: HashMap[DotTemplate,SparseVector]) : Unit =
     {
       for((template,templateGrad)<-gradient)
-	{
-	  val ratesTemplate = sigma(template)
-	  for((index,value)<-templateGrad.activeElements)
-	      ratesTemplate(index) = 1.0 / ((1.0 / ratesTemplate(index)) 
-				  + 2*learningRate*gaussDeviate*value*value)
-	}
+  {
+    val ratesTemplate = sigma(template)
+    for((index,value)<-templateGrad.activeElements)
+        ratesTemplate(index) = 1.0 / ((1.0 / ratesTemplate(index)) 
+          + 2*learningRate*gaussDeviate*value*value)
+  }
     }
 
   /**Cannot use the default 'addGradient' method because this update requires a separate learning rate for each parameter*/
   def updateParameters(gradient:HashMap[TemplatesToUpdate,SparseVector]) : Unit =
     {
       for((template,templateGradient)<-gradient)
-	{
-	  val templateSigma = sigma(template)
-	  for((index,value)<-templateGradient.activeElements)
-	    template.weights(index) += 
-	      templateGradient(index)*templateSigma(index)*learningRate
-	}
+  {
+    val templateSigma = sigma(template)
+    for((index,value)<-templateGradient.activeElements)
+      template.weights(index) += 
+        templateGradient(index)*templateSigma(index)*learningRate
+  }
     } 
 }

@@ -15,31 +15,31 @@ class TimingCollector extends Tracker {
   private val texts = new ArrayBuffer[String];
                                       
   def marked(text: String, start: Boolean) = {
-  	if (start) {
-  		starts += System.currentTimeMillis
-  		texts += text
-  	} else {
-  		val duration = System.currentTimeMillis - starts.remove(starts.size - 1)
-  		val text = texts.remove(texts.size - 1)
-  		durations(text) = durations.getOrElse(text, 0l) + duration
-  		counts(text) = counts.getOrElse(text, 0) + 1
-  	}
+    if (start) {
+      starts += System.currentTimeMillis
+      texts += text
+    } else {
+      val duration = System.currentTimeMillis - starts.remove(starts.size - 1)
+      val text = texts.remove(texts.size - 1)
+      durations(text) = durations.getOrElse(text, 0l) + duration
+      counts(text) = counts.getOrElse(text, 0) + 1
+    }
   }
 
   def timings = durations.keySet.map(text =>
-  	text +
-  	"\n\tTotal Time: " + durations(text) +
-  	"\n\tTotal Calls: " + counts(text) +
-  	"\n\tAvg. Time: " + durations(text).toDouble /
-  	counts(text)).mkString("\n")
+    text +
+    "\n\tTotal Time: " + durations(text) +
+    "\n\tTotal Calls: " + counts(text) +
+    "\n\tAvg. Time: " + durations(text).toDouble /
+    counts(text)).mkString("\n")
   
 }
 
 trait Trackable {
-	def mark(text: String, start: Boolean) = {for (t <- Trackers) t.marked(text, start)}
-	def |**(text: String) = mark(text, true);
-	def **|(text: String) = mark(text, false);
-	def **| = mark("End of Event", false);
+  def mark(text: String, start: Boolean) = {for (t <- Trackers) t.marked(text, start)}
+  def |**(text: String) = mark(text, true);
+  def **|(text: String) = mark(text, false);
+  def **| = mark("End of Event", false);
 }
 
 object Trackers extends ArrayBuffer[Tracker]

@@ -8,8 +8,8 @@ import scala.collection.mutable.{ArrayBuffer,HashMap}
     @author Andrew McCallum */
 class GenericSampler[C](val sampler:Sampler[C])(implicit mc:Manifest[C]) extends Sampler[C] with cc.factorie.util.Trackable {
   //println("GenericSampler m="+mc)
-	val contextClass = mc.erasure
-	val contextManifest = mc
+  val contextClass = mc.erasure
+  val contextManifest = mc
   /** If argument is the right type, then call process method. */
   val contextClassCache = new HashMap[Class[_],Boolean]
   def compatible(c:Class[_]): Boolean = {
@@ -43,13 +43,13 @@ class SamplerSuite extends ArrayBuffer[GenericSampler[_]] with Sampler[AnyRef] w
   def process1(context:AnyRef) : DiffList = {
     val samplers = this.elements
     while (samplers.hasNext) {
-    	//|**("SamplerSuite")
+      //|**("SamplerSuite")
       val sampler = samplers.next
       //println("SamplerSuite context "+context+" sampler "+sampler.sampler)
       val d:DiffList = sampler.process0(context)
       //**|
       if (d != null) {
-      	//println("SamplerSuite sampler "+sampler.sampler+" diff "+d)
+        //println("SamplerSuite sampler "+sampler.sampler+" diff "+d)
         return d
       }
     }

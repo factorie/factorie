@@ -9,21 +9,21 @@ import cc.factorie.util.{Hooks0,Hooks1}
 trait Sampler[C] {
   //if (contextClass == classOf[Nothing]) throw new Error("Constructor for class "+this.getClass.getName+" must be given type argument");
   /** The number of calls to process(numIterations:Int) or process(contexts:C,numIterations:Int). */
-	var iterationCount = 0
-	/** The number of calls to process(context:C) */
-	var processCount = 0
-	/** The number of calls to process that resulted in a change (a non-empty DiffList) */
-	var changeCount = 0
-	/** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
-	final def process(context:C): DiffList = {
-  	val c = preProcessHook(context)
-  	if (c == null && !processingWithoutContext) return null // TODO should we return newDiffList here instead?
-  	val d = process1(c)
-  	processCount += 1
-  	postProcessHook(c, d)
-  	diffHook(d)
-  	if (d != null && d.size > 0) changeCount += 1
-  	d
+  var iterationCount = 0
+  /** The number of calls to process(context:C) */
+  var processCount = 0
+  /** The number of calls to process that resulted in a change (a non-empty DiffList) */
+  var changeCount = 0
+  /** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
+  final def process(context:C): DiffList = {
+    val c = preProcessHook(context)
+    if (c == null && !processingWithoutContext) return null // TODO should we return newDiffList here instead?
+    val d = process1(c)
+    processCount += 1
+    postProcessHook(c, d)
+    diffHook(d)
+    if (d != null && d.size > 0) changeCount += 1
+    d
   }
   /** If true, calls to "next" will create a new DiffList to describe the changes they made, otherwise "next" will not track the changes, and will return null. */
   var makeNewDiffList = true
@@ -32,21 +32,21 @@ trait Sampler[C] {
   /** In your implementation of "process1" use this method to optionally create a new DiffList, obeying "makeNewDiffList". */
   def newDiffList = if (makeNewDiffList) new DiffList else null
   /** The underlying protected method that actually does the work.  Use this.newDiffList to optionally create returned DiffList.
-   		Needs to be defined in subclasses. */
-	def process1(context:C): DiffList // TODO Why isn't this 'protected'?  It should be.  -akm.
-	protected final def processN(contexts:Iterable[C]): Unit = { 
+      Needs to be defined in subclasses. */
+  def process1(context:C): DiffList // TODO Why isn't this 'protected'?  It should be.  -akm.
+  protected final def processN(contexts:Iterable[C]): Unit = { 
     contexts.foreach(process(_))
     iterationCount += 1
     postIterationHooks
     if (!postIterationHook) return 
   }
-	def process(contexts:Iterable[C], numIterations:Int): Unit = for (i <- 0 to numIterations) processN(contexts)
-	private var processingWithoutContext = false
-	def process(count:Int): Unit = {
-		processingWithoutContext = true // examined in process()
+  def process(contexts:Iterable[C], numIterations:Int): Unit = for (i <- 0 to numIterations) processN(contexts)
+  private var processingWithoutContext = false
+  def process(count:Int): Unit = {
+    processingWithoutContext = true // examined in process()
     for (i <- 0 to count) process(null.asInstanceOf[C]) // TODO Why is this cast necessary?;
     processingWithoutContext = false
-	}
+  }
  
   // Hooks
   /** Called just before each step of sampling.  Return an alternative variable if you want that one sampled instead.  
@@ -66,7 +66,7 @@ trait Sampler[C] {
 // TODO Is there a better way to do this?
 // TODO Remove this and put ProposalSampler instead?  But then problems with SampleRank trait re-overriding methods it shouldn't?  Look into this. 
 trait ProposalSampler0 {
-	def proposalsHook(proposals:Seq[Proposal]): Unit
+  def proposalsHook(proposals:Seq[Proposal]): Unit
   def proposalHook(proposal:Proposal): Unit
 }
 
@@ -84,8 +84,8 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
     proposal.diff
   }
   val proposalsHooks = new Hooks1[Seq[Proposal]] // Allows non-overriders to add hooks
-	def proposalsHook(proposals:Seq[Proposal]): Unit = proposalsHooks(proposals)
-	val proposalHooks = new Hooks1[Proposal]
+  def proposalsHook(proposals:Seq[Proposal]): Unit = proposalsHooks(proposals)
+  val proposalHooks = new Hooks1[Proposal]
   def proposalHook(proposal:Proposal): Unit = proposalHooks(proposal)
 }
 
@@ -133,8 +133,8 @@ trait FactorQueue[C] extends Sampler[C] {
       var queueDiff: DiffList = new DiffList
       if (queueProportion > 1.0 && !queue.isEmpty) {
         for (i <- 0 until (queueProportion.toInt)) if (!queue.isEmpty) {
-        	val qd = sampleFromQueue
-        	if (qd != null) queueDiff ++= qd
+          val qd = sampleFromQueue
+          if (qd != null) queueDiff ++= qd
         }
       } else if (!queue.isEmpty && Global.random.nextDouble < queueProportion) {
         val qd = sampleFromQueue
@@ -160,8 +160,8 @@ trait FactorQueue[C] extends Sampler[C] {
 // TODO But I haven't been able to make this existential typing work in practice yet.
 /*
 trait AlternativeFactorQueue extends Sampler[C forSome {type C <: Variable}] {
-	override def diffHook(diff:DiffList): Unit = {
+  override def diffHook(diff:DiffList): Unit = {
    println("foo") 
-	}
+  }
 }
 */

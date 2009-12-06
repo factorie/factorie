@@ -34,7 +34,7 @@ trait AbstractGenerativeDistribution extends Variable {
   // No, I don't think this is necessary.  Putting Real into Gaussian would be useful, 
   //  and it is useful even when we are not trying to track score changes due to changes in Real.value
   type VariableType <: AbstractGenerativeDistribution
-	def estimate: Unit // TODO consider removing this.  Paramter estimation for generative models should be seen as inference?  No, but change its name to 'maximize'!  This will apply to both variables and distributions
+  def estimate: Unit // TODO consider removing this.  Paramter estimation for generative models should be seen as inference?  No, but change its name to 'maximize'!  This will apply to both variables and distributions
   lazy val generatedSamples = new HashSet[OutcomeType];
   var keepGeneratedSamples = true
   def _registerSample(o:OutcomeType)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
@@ -63,14 +63,14 @@ trait AbstractGenerativeDistribution extends Variable {
   /** Notify this GenerativeDistribution that it is now associated with an additional sampled outcome, and set o's source to this. */
   final def registerSample(o:OutcomeType)(implicit d:DiffList): Unit = {
     _registerSample(o)
-		//o._setSource(this)//.asInstanceOf[OutcomeType#SourceType]
+    //o._setSource(this)//.asInstanceOf[OutcomeType#SourceType]
     o._setSource(this)
   }
   /** Notify this GenerativeDistribution that it is no longer associated with a sampled outcome, and set o's source to null. */
   final def unregisterSample(o:OutcomeType)(implicit d:DiffList): Unit = {
     _unregisterSample(o)
-  	//if (o.isInstanceOf[GenerativeObservation[_]]) o.asInstanceOf[GenerativeObservation[_]]._setSource(null.asInstanceOf[OutcomeType#SourceType])
-  	o._setSource(null)
+    //if (o.isInstanceOf[GenerativeObservation[_]]) o.asInstanceOf[GenerativeObservation[_]]._setSource(null.asInstanceOf[OutcomeType#SourceType])
+    o._setSource(null)
   }
   // TODO consider removing preChange/postChange, because it requires extra infrastructure/Diffs from implementers?  Can just use (un)registerSample
   /** Notify this GenerativeDistribution that the value of its associated outcome 'o' is about to change.  
@@ -80,26 +80,26 @@ trait AbstractGenerativeDistribution extends Variable {
   /** Return the probability that this GenerativeDistribution would generate outcome 'o' */
   def pr(o:OutcomeType): Double
   /** Return the log-probability that this GenerativeDistribution would generate outcome 'o' */
-	def logpr(o:OutcomeType): Double = Math.log(pr(o))
-	/** Change the value of outcome 'o' to a value sampled from this GenerativeDistribution */
-	//@deprecated def sampleInto(o:OutcomeType): Unit // TODO Perhaps this should take a DiffList; then GenerativeVariable.sample could be implemented using it
-	// Fighting with the Scala type system, see:
-	// http://www.nabble.com/Path-dependent-type-question-td16767728.html
+  def logpr(o:OutcomeType): Double = Math.log(pr(o))
+  /** Change the value of outcome 'o' to a value sampled from this GenerativeDistribution */
+  //@deprecated def sampleInto(o:OutcomeType): Unit // TODO Perhaps this should take a DiffList; then GenerativeVariable.sample could be implemented using it
+  // Fighting with the Scala type system, see:
+  // http://www.nabble.com/Path-dependent-type-question-td16767728.html
   // http://www.nabble.com/Fwd:--lift--Lift-with-Scala-2.6.1--td14571698.html 
-	def unsafeRegisterSample(o:Variable)(implicit d:DiffList) = registerSample(o.asInstanceOf[OutcomeType])
-	def unsafeUnregisterSample(o:Variable)(implicit d:DiffList) = unregisterSample(o.asInstanceOf[OutcomeType])
-	def unsafePr(o:Variable) = pr(o.asInstanceOf[OutcomeType])
-	def unsafeLogpr(o:Variable) = logpr(o.asInstanceOf[OutcomeType])
-	case class GenerativeDistributionRegisterDiff(m:OutcomeType) extends Diff {
-		def variable = AbstractGenerativeDistribution.this.asInstanceOf[VariableType]
-		def redo = { if (generatedSamples.contains(m)) throw new Error else generatedSamples += m}
-		def undo = { generatedSamples -= m }
-	}
- 	case class GenerativeDistributionUnregisterDiff(m:OutcomeType) extends Diff {
-		def variable = AbstractGenerativeDistribution.this.asInstanceOf[VariableType]
-		def redo = { generatedSamples -= m }
-		def undo = { if (generatedSamples.contains(m)) throw new Error else generatedSamples += m}
-	}
+  def unsafeRegisterSample(o:Variable)(implicit d:DiffList) = registerSample(o.asInstanceOf[OutcomeType])
+  def unsafeUnregisterSample(o:Variable)(implicit d:DiffList) = unregisterSample(o.asInstanceOf[OutcomeType])
+  def unsafePr(o:Variable) = pr(o.asInstanceOf[OutcomeType])
+  def unsafeLogpr(o:Variable) = logpr(o.asInstanceOf[OutcomeType])
+  case class GenerativeDistributionRegisterDiff(m:OutcomeType) extends Diff {
+    def variable = AbstractGenerativeDistribution.this.asInstanceOf[VariableType]
+    def redo = { if (generatedSamples.contains(m)) throw new Error else generatedSamples += m}
+    def undo = { generatedSamples -= m }
+  }
+  case class GenerativeDistributionUnregisterDiff(m:OutcomeType) extends Diff {
+    def variable = AbstractGenerativeDistribution.this.asInstanceOf[VariableType]
+    def redo = { generatedSamples -= m }
+    def undo = { if (generatedSamples.contains(m)) throw new Error else generatedSamples += m}
+  }
 }
 
 // TODO Consider something like this?  Would be needed in "def sample"

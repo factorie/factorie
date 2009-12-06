@@ -40,42 +40,42 @@ package cc.factorie.util
  */
 object JavaCollections {
 
-	//
-	// Iterators
-	//
+  //
+  // Iterators
+  //
 
-	implicit def iScalaIterator[T](iterator: java.util.Iterator[T]): scala.Iterator[T] = {
-		new scala.Iterator[T] {
-			override def hasNext = iterator.hasNext();
-			override def next = iterator.next();
-		}
-	}
+  implicit def iScalaIterator[T](iterator: java.util.Iterator[T]): scala.Iterator[T] = {
+    new scala.Iterator[T] {
+      override def hasNext = iterator.hasNext();
+      override def next = iterator.next();
+    }
+  }
 
-	implicit def iScalaEnumeration[T](iterator: java.util.Enumeration[T]): scala.Iterator[T] = {
-		new scala.Iterator[T] {
-			override def hasNext = iterator.hasMoreElements;
-			override def next = iterator.nextElement;
-		}
-	}
+  implicit def iScalaEnumeration[T](iterator: java.util.Enumeration[T]): scala.Iterator[T] = {
+    new scala.Iterator[T] {
+      override def hasNext = iterator.hasMoreElements;
+      override def next = iterator.nextElement;
+    }
+  }
 
 
-	implicit def iJavaIterator[T](iterator: scala.Iterator[T]): java.util.Iterator[T] = {
-		new java.util.Iterator[T] {
-			override def hasNext = iterator.hasNext;
-			override def next = iterator.next;
-			override def remove = throw new UnsupportedOperationException;
-		}
-	}
+  implicit def iJavaIterator[T](iterator: scala.Iterator[T]): java.util.Iterator[T] = {
+    new java.util.Iterator[T] {
+      override def hasNext = iterator.hasNext;
+      override def next = iterator.next;
+      override def remove = throw new UnsupportedOperationException;
+    }
+  }
 
-	implicit def iScalaIterable[T](iterable: java.lang.Iterable[T]): scala.Iterable[T] = {
-		new scala.Iterable[T] {
-			override def elements = iterable.iterator();
-		}
-	}
+  implicit def iScalaIterable[T](iterable: java.lang.Iterable[T]): scala.Iterable[T] = {
+    new scala.Iterable[T] {
+      override def elements = iterable.iterator();
+    }
+  }
 
-	implicit def iJavaIterable[T](iterable: scala.Iterable[T]): java.lang.Iterable[T] = {
-		new java.lang.Iterable[T] {
-			override def iterator = iterable.elements;
-		}
-	}
+  implicit def iJavaIterable[T](iterable: scala.Iterable[T]): java.lang.Iterable[T] = {
+    new java.lang.Iterable[T] {
+      override def iterator = iterable.elements;
+    }
+  }
 }

@@ -13,7 +13,7 @@ trait VectorValue extends CategoricalValues {
 }
 
 trait CategoricalVectorValue extends Variable with VectorValue with CategoricalValues {
-	// TODO Anything to put here?
+  // TODO Anything to put here?
 }
 
 /** A variable whose value is a SparseBinaryVector; immutable.  
@@ -26,11 +26,11 @@ trait CategoricalVectorValue extends Variable with VectorValue with CategoricalV
 // or perhaps BinaryCategoricalVector?  But that is a weird name.
 @DomainInSubclasses
 abstract class BinaryVectorVariable[T](initVals:Iterable[T], var skipNonCategories:Boolean) extends CategoricalVectorValue {
-	//def this(iv:T*) = this(iv:Seq[T])
-	def this() = this(null, false)
-	def this(initVals:Iterable[T]) = this(initVals, false)
-	type ValueType = T
-	type VariableType <: BinaryVectorVariable[T]
+  //def this(iv:T*) = this(iv:Seq[T])
+  def this() = this(null, false)
+  def this(initVals:Iterable[T]) = this(initVals, false)
+  type ValueType = T
+  type VariableType <: BinaryVectorVariable[T]
   protected var indxs = new ArrayBuffer[Int]()
   private var _vector: Vector = null // TODO Can we make this more memory efficient?  Avoid having both Vector and ArrayBuffer?;
   if (initVals ne null) this ++= initVals
@@ -38,26 +38,26 @@ abstract class BinaryVectorVariable[T](initVals:Iterable[T], var skipNonCategori
   def values: Seq[T] = { val d = this.domain; indxs.map(d.get(_)) }
   def zero: Unit = { indxs.clear; _vector = null }
   override def vector = {
-  	if (_vector == null || _vector.size != domain.allocSize) {
-  		val indices = indxs.toArray
-  		Sorting.quickSort(indices)
-  		_vector = new SparseBinaryVector(domain.allocSize, indices)
-  	}
-  	_vector
+    if (_vector == null || _vector.size != domain.allocSize) {
+      val indices = indxs.toArray
+      Sorting.quickSort(indices)
+      _vector = new SparseBinaryVector(domain.allocSize, indices)
+    }
+    _vector
   }
   def incrementInto(x:{def increment(i:Int,x:Double)(implicit d:DiffList):Unit}): Unit = indxs.foreach(i => x.increment(i,1.0)(null))
   // TODO when we have Scala 2.8, add to the method below difflist argument with default value null
   // But will a += b syntax with with default arguments?
   def +=(value: T) : Unit = {
-  	val idx = domain.index(value);
-  	if (idx == CategoricalDomain.NULL_INDEX) {
-  		if (!skipNonCategories)
-  			throw new Error("BinaryVectorVariable += value " + value + " not found in domain " + domain)
-  		else
-  			return
-  	}
-  	indxs += idx
-  	_vector = null
+    val idx = domain.index(value);
+    if (idx == CategoricalDomain.NULL_INDEX) {
+      if (!skipNonCategories)
+        throw new Error("BinaryVectorVariable += value " + value + " not found in domain " + domain)
+      else
+        return
+    }
+    indxs += idx
+    _vector = null
   }
   def +=(index:Int): Unit = {
     indxs += index
@@ -71,7 +71,7 @@ abstract class BinaryVectorVariable[T](initVals:Iterable[T], var skipNonCategori
     val iter = vector.activeDomain.elements
     if (iter.hasNext) { val i:Int = iter.next ; s ++= (domain.get(i).toString + "=" + i) }
     while (iter.hasNext) {
-    	val i:Int = iter.next
+      val i:Int = iter.next
       s ++= ("," + domain.get(i).toString + "=" + i)
     }
     s ++= ")"
@@ -83,8 +83,8 @@ abstract class BinaryVectorVariable[T](initVals:Iterable[T], var skipNonCategori
 @DomainInSubclasses
 abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends CategoricalVectorValue {
   def this() = this(null)
-	type ValueType = T
-	type VariableType <: RealVectorVariable[T]
+  type ValueType = T
+  type VariableType <: RealVectorVariable[T]
   lazy val vector: Vector = new SparseVector(domain.allocSize)
   if (initVals ne null) this ++= initVals
   def indices : Collection[Int] = if (vector == null) Nil else vector.activeDomain

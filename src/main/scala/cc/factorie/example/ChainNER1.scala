@@ -13,7 +13,7 @@ object ChainNER1 {
   }
   class Label(tag:String, token:Token) extends LabeledTokenSeqs.Label[Token,Label](tag, token)
 
-	// Define the model:
+  // Define the model:
   val model = new Model(
     Foreach[Label] { label => Score(label) },
     Foreach[Label] { label => Score(label.prev, label, label.token) }

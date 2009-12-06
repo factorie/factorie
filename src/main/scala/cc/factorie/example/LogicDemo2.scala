@@ -5,34 +5,34 @@ import scala.collection.mutable.ArrayBuffer
 /** A simple example, modeling smoking, cancer and frienships. */
 object LogicDemo2 {
 
-	// Define entity, attribute and relation types
-	class Person (val name:String, val mother:Person) extends ItemizedObservation[Person] with Entity[Person] {
-		type GetterType = PersonGetter
-		class GetterClass extends PersonGetter // Person#GetterClass#super
-		// When we have Scala 2.8 this next line will simply be:
-			// object smokes extends BooleanVariable with Attribute
-			val smokes = new Smokes; class Smokes extends BooleanVariable with Attribute
-			val cancer = new Cancer; class Cancer extends BooleanVariable with Attribute
-			val children = new ArrayBuffer[Person];
-			if (mother != null) mother.children += this
-			override def toString = name
-	}
-	//val friend = new Friends; class Friends extends Relation[Person,Person];
-	object friend extends Relation[Person,Person];
-	println("friend classname "+friend.getClass.getName)
+  // Define entity, attribute and relation types
+  class Person (val name:String, val mother:Person) extends ItemizedObservation[Person] with Entity[Person] {
+    type GetterType = PersonGetter
+    class GetterClass extends PersonGetter // Person#GetterClass#super
+    // When we have Scala 2.8 this next line will simply be:
+      // object smokes extends BooleanVariable with Attribute
+      val smokes = new Smokes; class Smokes extends BooleanVariable with Attribute
+      val cancer = new Cancer; class Cancer extends BooleanVariable with Attribute
+      val children = new ArrayBuffer[Person];
+      if (mother != null) mother.children += this
+      override def toString = name
+  }
+  //val friend = new Friends; class Friends extends Relation[Person,Person];
+  object friend extends Relation[Person,Person];
+  println("friend classname "+friend.getClass.getName)
 
-	// Define boilerplate, to support access to attributes in the entity-relationship syntax
-	class PersonGetter extends EntityGetter[Person] {
-		def smokes = getAttribute(_.smokes)
-		def cancer = getAttribute(_.cancer)
-		def mother = getManyToOne[Person](_.mother, _.children)
-		def children = getOneToMany[Person](_.children, _.mother)
-		def siblings = getSymmetricManyToMany[Person](p => p.mother.children.filter(p2=>p2 ne p))
-		def friends = getRelationDst[friend.type,Person](friend) // the people whom this Person considers friends
-		def friendly = getRelationSrc[friend.type,Person](friend) // the people who consider this Person a friend
-	} 
+  // Define boilerplate, to support access to attributes in the entity-relationship syntax
+  class PersonGetter extends EntityGetter[Person] {
+    def smokes = getAttribute(_.smokes)
+    def cancer = getAttribute(_.cancer)
+    def mother = getManyToOne[Person](_.mother, _.children)
+    def children = getOneToMany[Person](_.children, _.mother)
+    def siblings = getSymmetricManyToMany[Person](p => p.mother.children.filter(p2=>p2 ne p))
+    def friends = getRelationDst[friend.type,Person](friend) // the people whom this Person considers friends
+    def friendly = getRelationSrc[friend.type,Person](friend) // the people who consider this Person a friend
+  } 
 
-	def main(args:Array[String]) : Unit = {
+  def main(args:Array[String]) : Unit = {
 
     // Define model
     val model = new Model (

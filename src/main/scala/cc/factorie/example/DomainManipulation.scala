@@ -2,7 +2,7 @@ package cc.factorie.example
 
 object DomainManipulation {
 
-	class MyIndexedVariable extends CategoricalVariable //{ def vector = null }
+  class MyIndexedVariable extends CategoricalVariable //{ def vector = null }
   println("MyIndexedVariable  "+Domain[MyIndexedVariable])
   
   println("Inner classes of CategoricalValues:")
@@ -14,9 +14,9 @@ object DomainManipulation {
   //println("method "+classOf[IndexedVariable].getDeclaredMethod("domainInSubclasses", null))
 
   class LabelDomain[V<:Variable] extends Domain[V] {
-  	println("Creating LabelDomain "+this.getClass.getName)
-  	def numLabels = 2
-  	def +=(x:AnyRef) = println("Adding "+x.toString)
+    println("Creating LabelDomain "+this.getClass.getName)
+    def numLabels = 2
+    def +=(x:AnyRef) = println("Adding "+x.toString)
   }
 
   // Here we are declaring a new Variable class that has a special Domain subclass
@@ -87,7 +87,7 @@ object DomainManipulation {
 
   
   
-	def main (args:Array[String]) : Unit = {
+  def main (args:Array[String]) : Unit = {
     println("Hello")
 
     //println(Domain.get[Label](classOf[Label]))

@@ -15,8 +15,8 @@ import cc.factorie._
 */
 object er {
   
-	type VariableWithGetter[D] = Variable { type GetterType <: Getter[D] }
-	type HasGetterType[D] = { type GetterType <: Getter[D] }
+  type VariableWithGetter[D] = Variable { type GetterType <: Getter[D] }
+  type HasGetterType[D] = { type GetterType <: Getter[D] }
 
   // Define attributes and entities
 
@@ -44,16 +44,16 @@ object er {
       def attributeOwner: This = thisEntity
     }
     /** Consider removing this.  Not sure if it should go here or outside the Entity. */
-  	class SymmetricFunction(initval:This, val get:This=>SymmetricFunction) extends RefVariable(initval) {
-  		type EntityType = This //with GetterType[This]
-  		def this(g:This=>SymmetricFunction) = this(null.asInstanceOf[This], g)
-  		override def set(newValue:This)(implicit d:DiffList) = {
-  			if (value != null) get(value)._set(null.asInstanceOf[This]) // Why is this cast necessary?
-  			super.set(newValue)(d)
+    class SymmetricFunction(initval:This, val get:This=>SymmetricFunction) extends RefVariable(initval) {
+      type EntityType = This //with GetterType[This]
+      def this(g:This=>SymmetricFunction) = this(null.asInstanceOf[This], g)
+      override def set(newValue:This)(implicit d:DiffList) = {
+        if (value != null) get(value)._set(null.asInstanceOf[This]) // Why is this cast necessary?
+        super.set(newValue)(d)
         if (newValue != null) get(newValue)._set(thisEntity)
-  		}
-  		protected def _set(newValue:This)(implicit d:DiffList) = super.set(newValue)(d)
-  	}
+      }
+      protected def _set(newValue:This)(implicit d:DiffList) = super.set(newValue)(d)
+    }
   }
 
   /** Representing a directed relationship from <code>src</code> to <code>dst</code>.  
@@ -75,32 +75,32 @@ object er {
   class Relation[A<:Entity[A],B<:Entity[B]] extends Variable {
     type SrcType = A
     type DstType = B
-  	private val a2rs = new HashMap[A,ListBuffer[RelationshipType]] // a to collection of Relationships
-  	private val b2rs = new HashMap[B,ListBuffer[RelationshipType]] // b to collection of Relationships
-  	private val ab2r = new HashMap[(A,B),RelationshipType] // (a,b) to the corresponding Relationship
-  	class Relationship(src:A, dst:B) extends cc.factorie.er.Relationship(src,dst) {
-    	//type GetterClass = RelationshipGetter[A,B];
-    	def relation = Relation.this
-    	override def printName = Relation.this.printName
-    	override def toString = printName+"("+src+","+dst+","+value+")"
-  	}
-  	type RelationshipType = Relationship
-  	def newRelationship(a:A, b:B) : RelationshipType =  new Relationship(a,b)
-  	protected def addRelationship(r:RelationshipType) = {
-  		val pair = (r.src, r.dst)
-  		assert(!ab2r.contains(pair))
-  		//println("Relationship add "+r.src+" "+r.dst)
-  		a2rs.getOrElseUpdate(r.src, new ListBuffer[RelationshipType]) += r
-  		b2rs.getOrElseUpdate(r.dst, new ListBuffer[RelationshipType]) += r
-  		ab2r(pair) = r
-  	}
-  	protected def removeRelationship(r:RelationshipType) = {
-  		a2rs(r.src) -= r
-  		b2rs(r.dst) -= r
-  		ab2r -= ((r.src,r.dst))
-  	}
-  	protected def addEntry(pair:(A,B)) : RelationshipType = { val r = newRelationship(pair._1, pair._2); addRelationship(r); r }
-  	protected def removeEntry(pair:(A,B)) : RelationshipType = { val r = ab2r(pair); removeRelationship(r); r	}
+    private val a2rs = new HashMap[A,ListBuffer[RelationshipType]] // a to collection of Relationships
+    private val b2rs = new HashMap[B,ListBuffer[RelationshipType]] // b to collection of Relationships
+    private val ab2r = new HashMap[(A,B),RelationshipType] // (a,b) to the corresponding Relationship
+    class Relationship(src:A, dst:B) extends cc.factorie.er.Relationship(src,dst) {
+      //type GetterClass = RelationshipGetter[A,B];
+      def relation = Relation.this
+      override def printName = Relation.this.printName
+      override def toString = printName+"("+src+","+dst+","+value+")"
+    }
+    type RelationshipType = Relationship
+    def newRelationship(a:A, b:B) : RelationshipType =  new Relationship(a,b)
+    protected def addRelationship(r:RelationshipType) = {
+      val pair = (r.src, r.dst)
+      assert(!ab2r.contains(pair))
+      //println("Relationship add "+r.src+" "+r.dst)
+      a2rs.getOrElseUpdate(r.src, new ListBuffer[RelationshipType]) += r
+      b2rs.getOrElseUpdate(r.dst, new ListBuffer[RelationshipType]) += r
+      ab2r(pair) = r
+    }
+    protected def removeRelationship(r:RelationshipType) = {
+      a2rs(r.src) -= r
+      b2rs(r.dst) -= r
+      ab2r -= ((r.src,r.dst))
+    }
+    protected def addEntry(pair:(A,B)) : RelationshipType = { val r = newRelationship(pair._1, pair._2); addRelationship(r); r }
+    protected def removeEntry(pair:(A,B)) : RelationshipType = { val r = ab2r(pair); removeRelationship(r); r }
     /** Add a new Relationship between a and b, but leave its value as false. */
     protected def add(a:A, b:B, value:Boolean)(implicit d:DiffList): RelationshipType = { val r = addEntry((a,b)); r.set(value); if (d != null) d += RelationAddDiff(r); r }
     /** Add a new Relationship between a and b, and set its value to true. */
@@ -109,69 +109,69 @@ object er {
         Note that the Relationship variable does not actually get removed from this Relation, 
         it is merely set to false, which causes it to be skipped in various queries. 
         This supports that ability to specify a Relationship variable as the target of inference. */
-  	def remove(a:A, b:B)(implicit d:DiffList):RelationshipType = { val r = removeEntry((a,b)); r.set(false); if (d != null) d += RelationRemoveDiff(r); r }
-  	// TODO If we are ever tempted to prune our tables by actually removing false Relationships, (which is a good idea)
-  	// be very careful to create a mechanism to preserve attributes of the removed relationships, or alternatively make the user
-  	// aware that relationship attributes will not be preserved once purged, and note that the DiffList must handle this case correctly.
-  	def size = ab2r.size
-  	def elements = ab2r.values.filter(_.value)
-  	def asCollection = new Collection[RelationshipType] {
-  		def size = Relation.this.size
-  		def elements = Relation.this.elements
+    def remove(a:A, b:B)(implicit d:DiffList):RelationshipType = { val r = removeEntry((a,b)); r.set(false); if (d != null) d += RelationRemoveDiff(r); r }
+    // TODO If we are ever tempted to prune our tables by actually removing false Relationships, (which is a good idea)
+    // be very careful to create a mechanism to preserve attributes of the removed relationships, or alternatively make the user
+    // aware that relationship attributes will not be preserved once purged, and note that the DiffList must handle this case correctly.
+    def size = ab2r.size
+    def elements = ab2r.values.filter(_.value)
+    def asCollection = new Collection[RelationshipType] {
+      def size = Relation.this.size
+      def elements = Relation.this.elements
     }
-  	/** Return the Relationship between a and b, creating as necessary.  If it is created, its initial value will be false. */
-  	def get(a:A,b:B): RelationshipType = ab2r.getOrElse((a,b), addEntry((a,b))) // TODO verify in the newly-created case that r.value is false
-  	def getFromSrc(a:A): Iterable[RelationshipType] = a2rs.getOrElse(a, Nil).filter(r => r.value)
-  	def getFromDst(b:B): Iterable[RelationshipType] = b2rs.getOrElse(b, Nil).filter(r => r.value)
-  	//def forward: A=>Iterable[B] = (a:A) => get2(a).map(_.dst)
-  	//def reverse: B=>Iterable[A] = (b:B) => get1(b).map(_.src)
-  	/** Set the value of the relationship from a to b to true.  If not already present, create it. */
-  	def apply(a:A,b:B): RelationshipType = { val r = ab2r.getOrElse((a,b), add(a,b)(null)); r := true; r }
-  	//def apply(g1:Getter[_,A],g2:Getter[_,B]) : Formula = new ... 
-  	def +=(pair:(A,B)) = add(pair._1, pair._2)(null)
-  	def ++=(abs:Iterable[(A,B)]) = abs.foreach(pair => +=(pair))
-  	def -=(pair:(A,B)) = remove(pair._1, pair._2)(null)
-  	def --=(abs:Iterable[(A,B)]) = abs.foreach(pair => -=(pair))
-  	def contains(a:A,b:B) = ab2r.contains((a,b))
-  	protected def stringPrefix ="Relation"
-  	case class RelationAddDiff(r:RelationshipType) extends Diff {
-  		def variable = if (r.value) r else null
-  		def redo = addRelationship(r)
-  		def undo = removeRelationship(r)
-  	} 
-  	case class RelationRemoveDiff(r:RelationshipType) extends Diff {
-  		def variable = if (r.value) r else null
-  		def redo = removeRelationship(r)
-  		def undo = addRelationship(r)
-  	} 
+    /** Return the Relationship between a and b, creating as necessary.  If it is created, its initial value will be false. */
+    def get(a:A,b:B): RelationshipType = ab2r.getOrElse((a,b), addEntry((a,b))) // TODO verify in the newly-created case that r.value is false
+    def getFromSrc(a:A): Iterable[RelationshipType] = a2rs.getOrElse(a, Nil).filter(r => r.value)
+    def getFromDst(b:B): Iterable[RelationshipType] = b2rs.getOrElse(b, Nil).filter(r => r.value)
+    //def forward: A=>Iterable[B] = (a:A) => get2(a).map(_.dst)
+    //def reverse: B=>Iterable[A] = (b:B) => get1(b).map(_.src)
+    /** Set the value of the relationship from a to b to true.  If not already present, create it. */
+    def apply(a:A,b:B): RelationshipType = { val r = ab2r.getOrElse((a,b), add(a,b)(null)); r := true; r }
+    //def apply(g1:Getter[_,A],g2:Getter[_,B]) : Formula = new ... 
+    def +=(pair:(A,B)) = add(pair._1, pair._2)(null)
+    def ++=(abs:Iterable[(A,B)]) = abs.foreach(pair => +=(pair))
+    def -=(pair:(A,B)) = remove(pair._1, pair._2)(null)
+    def --=(abs:Iterable[(A,B)]) = abs.foreach(pair => -=(pair))
+    def contains(a:A,b:B) = ab2r.contains((a,b))
+    protected def stringPrefix ="Relation"
+    case class RelationAddDiff(r:RelationshipType) extends Diff {
+      def variable = if (r.value) r else null
+      def redo = addRelationship(r)
+      def undo = removeRelationship(r)
+    } 
+    case class RelationRemoveDiff(r:RelationshipType) extends Diff {
+      def variable = if (r.value) r else null
+      def redo = removeRelationship(r)
+      def undo = addRelationship(r)
+    } 
   }
 
   // TODO It would be easier to make *Relation be a SingleIndexedVariable (for use with SamplingInferencer) if Relation(Amy,Bob) were a SingleIndexedVariable
   class ItemizedRelation[A<:ItemizedObservation[A] with Entity[A],B<:ItemizedObservation[B] with Entity[B]](implicit ma:Manifest[A], mb:Manifest[B]) extends Relation[A,B] with Variable with IterableSettings {
-  	def settings = new SettingIterator {
-  		var i = -1
-  		val domainb = Domain[B](mb) 
-  		val a = Domain[A](ma).randomValue // randomly pick a src
-  		val max = domainb.size - 1 // we will iterate over all possible changes to dst's
-  		def hasNext = i < max
-  		private def set(d:DiffList) : Unit = { val b = domainb.get(i); if (contains(a,b)) remove(a,b)(d) else add(a,b)(d) }
-  		def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(d); d }
-  		def reset = i = -1
-  	}
+    def settings = new SettingIterator {
+      var i = -1
+      val domainb = Domain[B](mb) 
+      val a = Domain[A](ma).randomValue // randomly pick a src
+      val max = domainb.size - 1 // we will iterate over all possible changes to dst's
+      def hasNext = i < max
+      private def set(d:DiffList) : Unit = { val b = domainb.get(i); if (contains(a,b)) remove(a,b)(d) else add(a,b)(d) }
+      def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(d); d }
+      def reset = i = -1
+    }
   }
 
   /*class SymmetricFunction[A>:Null<:Entity[A]] /*extends GetterType[A]*/ {
     //type GetterClass = SymmetricFunctionGetter[A]
-  	private val a2t = new HashMap[A,A];
+    private val a2t = new HashMap[A,A];
     def add(a:A,b:A) = {
-    	if (a2t.contains(a)) a2t -= a2t(a)
-    	if (a2t.contains(b)) a2t -= a2t(b)
-    	a2t(a) = b
-    	a2t(b) = a
+      if (a2t.contains(a)) a2t -= a2t(a)
+      if (a2t.contains(b)) a2t -= a2t(b)
+      a2t(a) = b
+      a2t(b) = a
     }
     def remove(a:A,b:A) = {
-    	a2t -= a
-    	a2t -= b
+      a2t -= a
+      a2t -= b
     }
     def size = a2t.size / 2
     def contains(pair:(A,A)) = a2t.contains(pair._1)
@@ -220,9 +220,9 @@ object er {
         else
           (a:A) => forward1m(a.asInstanceOf[B])
       } else {
-      	if (forward1m == null)
-      		(a:A) => prefix.unsafeForward(a).map(forward1s).filter(e => e != null) // filter a null from forward1s
-      	else
+        if (forward1m == null)
+          (a:A) => prefix.unsafeForward(a).map(forward1s).filter(e => e != null) // filter a null from forward1s
+        else
           (a:A) => prefix.unsafeForward(a).flatMap(forward1m)
       }
     }
@@ -247,14 +247,14 @@ object er {
     def unsafeReverseFunc[B8,C8]: B8=>Iterable[C8] = _reverse.asInstanceOf[B8=>Iterable[C8]]
     /** Create a new Getter, starting from this one and appending an additional many-to-many mapping. */
     def getManyToMany[D<:{type GetterType<:Getter[D]}](fwd1:C=>Iterable[D], rev1:D=>Iterable[C])(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
-    	initManyToMany[D](
+      initManyToMany[D](
         newGetter[D](m), 
         fwd1, 
         rev1)
     }
     def initManyToMany[D<:{type GetterType<:Getter[D]}](getter:Getter[D]/*D#GetterType*/, fwd1:C=>Iterable[D], rev1:D=>Iterable[C]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
-    	type ThisA = A
-    	type ThisC = C
+      type ThisA = A
+      type ThisC = C
       val ret = getter.asInstanceOf[Getter[D] { type A = Getter.this.A; type B = Getter.this.C }]
       ret.prefix = Getter.this.asInstanceOf[Getter[C] {type A = ThisA}]
       ret.forward1m = fwd1
@@ -267,7 +267,7 @@ object er {
       initManyToOne[D](newGetter[D](m), fwd1, rev1)
     } 
     def initManyToOne[D<:{type GetterType<:Getter[D]}](getter:Getter[D]/*D#GetterType*/, fwd1:C=>D, rev1:D=>Iterable[C]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
-    	type ThisA = A
+      type ThisA = A
       type ThisC = C
       val ret = getter.asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
       ret.prefix = Getter.this.asInstanceOf[Getter[C] {type A = ThisA} ]
@@ -335,8 +335,8 @@ object er {
     //def getSymmetricFunction[D<:Entity[C]#SymmetricFunction](fwd1:C=>D)(implicit m:Manifest[D#EntityType#GetterClass]): Getter[C] with GetterHead[A,C] with GetterMiddle[C,C] 
     // TODO I really want to say that D == C here.  I thought the above solution would work, but I get error "EntityType" does not have member "GetterClass", when it clearly does! 
     def getSymmetricFunction[D<:{type GetterType<:Getter[D]}](fwd1:C=>RefVariable[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
-    	type ThisA = A
-    	type ThisC = C
+      type ThisA = A
+      type ThisC = C
       val ret = newGetter[D](this.getClass).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
       ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
       ret.forward1s = (c:C) => fwd1(c).value
@@ -427,10 +427,10 @@ object er {
       args(0) = null
       constructor.newInstance(args).asInstanceOf[A#GetterClass] // TODO Yipes, passing null here, when expecting a pointer to the outer instance!  OK as long as the user isn't relying on the outer instance.  Can we get it somehow?
     } */ else {
-    	val msg = new StringBuffer
-    	msg.append("Getter constructors must not take any arguments.\nInstead "+getterClass.getName+" takes "+numArgs+" argument(s): ")
-    	constructor.getParameterTypes.foreach(t => msg.append(t.getName+" "))
-    	msg.append("\nYou will get an unexpected single argument when you declare a Getter as an inner class;\nthe solution is to declare all Getters in packages, not inner classes.")
+      val msg = new StringBuffer
+      msg.append("Getter constructors must not take any arguments.\nInstead "+getterClass.getName+" takes "+numArgs+" argument(s): ")
+      constructor.getParameterTypes.foreach(t => msg.append(t.getName+" "))
+      msg.append("\nYou will get an unexpected single argument when you declare a Getter as an inner class;\nthe solution is to declare all Getters in packages, not inner classes.")
       throw new Error(msg.toString)
     }
   }
@@ -468,8 +468,8 @@ object er {
 
   /** Construct a new Getter representing the beginning of an getter chain, taking input A. */
   def newGetterUnit[X<:{type GetterType <: Getter[X]}](implicit m:Manifest[X]): X#GetterType { type A = X /* ; type B = X */ } = {
-  	//println("GetterUnit m="+m)
-  	newGetter[X](m).asInstanceOf[X#GetterType { type A = X }];
+    //println("GetterUnit m="+m)
+    newGetter[X](m).asInstanceOf[X#GetterType { type A = X }];
   }
   /** A immutable boolean observation variable that satisfies the type requirements necessary to be returned by a getter.
       Useful for implementing simple binary tests on observations.  Since its value will never change, you do not have
@@ -492,26 +492,26 @@ object er {
   type ScorableValues[X] = CategoricalValues //with GetterType[X]
   type ScorableValues0 = CategoricalValues //with GetterType[CategoricalValues]
   
-	case class Score[X<:Variable](sns:ScoreNeighbor0[X]*) {
-  	def manifests : Seq[Manifest[_<:Variable]] = sns.flatMap(_.manifests)
-  	//def getters : Seq[GetterHead[X,ScorableValues0]] = sns.flatMap(_.getters)
+  case class Score[X<:Variable](sns:ScoreNeighbor0[X]*) {
+    def manifests : Seq[Manifest[_<:Variable]] = sns.flatMap(_.manifests)
+    //def getters : Seq[GetterHead[X,ScorableValues0]] = sns.flatMap(_.getters)
     def getters : Seq[Getter[ScorableValues0] {type A = X}] = sns.flatMap(_.getters)
   }
  case class SparseScore[X<:Variable](override val sns:ScoreNeighbor0[X]*) extends Score(sns:_*)
   trait ScoreNeighbor0[X<:Variable] {
-  	def manifests : Iterable[Manifest[ScorableValues0]];
-  	//def getters : Seq[GetterHead[X,ScorableValues0]]
+    def manifests : Iterable[Manifest[ScorableValues0]];
+    //def getters : Seq[GetterHead[X,ScorableValues0]]
     def getters : Seq[Getter[ScorableValues0] {type A = X}]
   }
   //class ScoreNeighbor[X<:Variable,A<:ScorableValues[A]](a1:GetterHead[X,A])(implicit ma:Manifest[A]) extends ScoreNeighbor0[X]
   class ScoreNeighbor[X<:Variable,A<:ScorableValues[A]](a1:Getter[A] /*with GetterHead[X,A]*/)(implicit ma:Manifest[A]) extends ScoreNeighbor0[X] {
-  	def manifests = List(ma.asInstanceOf[Manifest[ScorableValues0]])
-  	//def getters = List(a1.asInstanceOf[GetterHead[X,ScorableValues0]])
+    def manifests = List(ma.asInstanceOf[Manifest[ScorableValues0]])
+    //def getters = List(a1.asInstanceOf[GetterHead[X,ScorableValues0]])
     def getters = List(a1.asInstanceOf[Getter[ScorableValues0] {type A = X}])
   }
   
   implicit def getter2scoreneighbor[X<:Variable,Y<:ScorableValues[Y]](a:Getter[Y] { type A = X})(implicit ma:Manifest[Y]): ScoreNeighbor0[X] = { 
-  	//println("getter2scoreneighbor ma="+ma+" a="+a)
+    //println("getter2scoreneighbor ma="+ma+" a="+a)
     new ScoreNeighbor[X,Y](a)(ma)
   }
   
@@ -544,26 +544,26 @@ object er {
           }
         }
       } else {
-      	size match {
-      		case 1 => new TemplateWithDotStatistics1[I]()(manifests(0)) {
-      			override def unroll1(n1:I) = { val roots = getters(0).reverse(n1); if (!roots.isEmpty) Factor(n1) else Nil }
-      		}
-      		case 2 => new TemplateWithDotStatistics2[I,I]()(manifests(0), manifests(1)) {
-      			def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root)) yield Factor(n1,n2) }
-      			def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root)) yield Factor(n1,n2) }
-      		}
-      		case 3 => new TemplateWithDotStatistics3[I,I,I]()(manifests(0), manifests(1), manifests(2)) {
-      			def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3) } 
-      			def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3) } 
-      			def unroll3(n3:I) = { val roots = getters(2).reverse(n3); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root)) yield Factor(n1,n2,n3) } 
-      		}
-      		case 4 => new TemplateWithDotStatistics4[I,I,I,I]()(manifests(0), manifests(1), manifests(2), manifests(3)) {
-      			def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root); n3 <- getters(2).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
-      			def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root); n3 <- getters(2).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
-      			def unroll3(n3:I) = { val roots = getters(2).reverse(n3); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
-      			def unroll4(n4:I) = { val roots = getters(3).reverse(n4); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3,n4) } 
-      		}
-      	}
+        size match {
+          case 1 => new TemplateWithDotStatistics1[I]()(manifests(0)) {
+            override def unroll1(n1:I) = { val roots = getters(0).reverse(n1); if (!roots.isEmpty) Factor(n1) else Nil }
+          }
+          case 2 => new TemplateWithDotStatistics2[I,I]()(manifests(0), manifests(1)) {
+            def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root)) yield Factor(n1,n2) }
+            def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root)) yield Factor(n1,n2) }
+          }
+          case 3 => new TemplateWithDotStatistics3[I,I,I]()(manifests(0), manifests(1), manifests(2)) {
+            def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3) } 
+            def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3) } 
+            def unroll3(n3:I) = { val roots = getters(2).reverse(n3); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root)) yield Factor(n1,n2,n3) } 
+          }
+          case 4 => new TemplateWithDotStatistics4[I,I,I,I]()(manifests(0), manifests(1), manifests(2), manifests(3)) {
+            def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root); n3 <- getters(2).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
+            def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root); n3 <- getters(2).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
+            def unroll3(n3:I) = { val roots = getters(2).reverse(n3); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
+            def unroll4(n4:I) = { val roots = getters(3).reverse(n4); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3,n4) } 
+          }
+        }
       }
     }
   }
@@ -609,9 +609,9 @@ object er {
     //println("Term ma "+ma)
     while (g.getPrefix != null) { 
       if (g.extraManifest != null) {
-      	//println("Term adding extraManifest "+g.extraManifest)
-      	manifests = g.extraManifest.asInstanceOf[Manifest[FormulaArg]] :: manifests
-      	getters = g.extraGetter.asInstanceOf[GetterHead[X,FormulaArg]] :: getters
+        //println("Term adding extraManifest "+g.extraManifest)
+        manifests = g.extraManifest.asInstanceOf[Manifest[FormulaArg]] :: manifests
+        getters = g.extraGetter.asInstanceOf[GetterHead[X,FormulaArg]] :: getters
       }
       g = g.getPrefix
     }

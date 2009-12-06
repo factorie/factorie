@@ -21,7 +21,7 @@ import cc.factorie.util.Implicits._
 class GibbsSampler1[V1<:Variable with IterableSettings](model:Model, objective:Model) extends SamplerOverSettings[V1](model, objective) {
   def this(m:Model) = this(m, null)
   def this() = this(Global.defaultModel)
-	def settings(v:V1) : SettingIterator = v.settings
+  def settings(v:V1) : SettingIterator = v.settings
 }
 
 /** GibbsSampler for generic "Variable with IterableSettings".

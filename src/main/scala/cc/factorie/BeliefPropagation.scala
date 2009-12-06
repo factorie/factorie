@@ -9,7 +9,7 @@ import java.util.Arrays
 
 /** Holds some global definitions for BP. */
 object BeliefPropagation {
-	type BPVariable = UncoordinatedCategoricalVariable
+  type BPVariable = UncoordinatedCategoricalVariable
 }
 
 /** A factor in a belief propagation lattice used for inference.  
@@ -27,8 +27,8 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
   private def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
     if (vs == Nil) false
     else if (vs.first.hasNext) {vs.first.next; true}
-  	else if (vs.tail != Nil) {vs.first.reset; vs.first.next; nextValues(vs.tail)}
-  	else false
+    else if (vs.tail != Nil) {vs.first.reset; vs.first.next; nextValues(vs.tail)}
+    else false
   }
   /** Message from this factor to Variable v. */
   case class MessageTo(v:V) {
@@ -40,25 +40,25 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
     var visitedDuringThisTree = false
     /** Do one step of belief propagation for the message from this BPFactor to variable 'v' */
     def update: MessageTo = {
-    	val origIndex = v.index
-    	for (i <- 0 until v.domain.size) { // Consider reversing the nested ordering of this loop and the inner one
-    		v.setByIndex(i)(null) // note that this is changing the Variable value
-    		if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
+      val origIndex = v.index
+      for (i <- 0 until v.domain.size) { // Consider reversing the nested ordering of this loop and the inner one
+        v.setByIndex(i)(null) // note that this is changing the Variable value
+        if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
           msg(i) = factor.statistic.score
         } else { // This factor has variable neighbors in addition to v itself 
-        	neighborSettings.foreach(setting => {setting.reset; setting.next})
-        	msg(i) = Math.NEG_INF_DOUBLE
-        	do {
-        		msg(i) = Maths.sumLogProb(msg(i), factor.statistic.score + neighborSettings.sum(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
-        	} while (nextValues(neighborSettings))
+          neighborSettings.foreach(setting => {setting.reset; setting.next})
+          msg(i) = Math.NEG_INF_DOUBLE
+          do {
+            msg(i) = Maths.sumLogProb(msg(i), factor.statistic.score + neighborSettings.sum(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
+          } while (nextValues(neighborSettings))
         }
-    	}
-    	v.setByIndex(origIndex)(null) // put it back where it was, just in case someone cares
+      }
+      v.setByIndex(origIndex)(null) // put it back where it was, just in case someone cares
       this // Return this so we can say messageTo(v).update.message
     }
     /** Update this message, but first update the messages its depends on, avoiding update loops. */
     def updateTreewise: MessageTo = {
-    	if (visitedDuringThisTree) return this
+      if (visitedDuringThisTree) return this
       visitedDuringThisTree = true
       println("updateTreewise MessageTo   "+factor+" >>>> "+v)
       for (n <- neighborSettings) BPFactor.this.messageFrom(n.variable).updateTreewise
@@ -74,8 +74,8 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
     var visitedDuringThisTree = false
     def update: MessageFrom = {
       if (neighborFactors.size > 0)
-      	for (i <- 0 until v.domain.size)
-      		msg(i) = neighborFactors.sum(_.messageTo(v).message(i))
+        for (i <- 0 until v.domain.size)
+          msg(i) = neighborFactors.sum(_.messageTo(v).message(i))
       this // Return this so we can say messageFrom(v).update.message
     }
     def updateTreewise: MessageFrom = {

@@ -14,10 +14,10 @@ object Stopwords {
     index indexAll this.asArray
     index.freeze
     index
-  }	
+  } 
   
   val asArray = Array(
-  		"a",
+      "a",
   "able",
   "about",
   "above",

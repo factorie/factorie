@@ -7,53 +7,53 @@ import cc.factorie.util.Implicits._
 
 object LDADemo {
   // Declare different types of variables
-	object Beta extends SymmetricDirichlet[Word](0.01)
+  object Beta extends SymmetricDirichlet[Word](0.01)
   class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic]
   class Z extends MixtureChoice[Topic,Z]; Domain.alias[Z,Topic]
   object Alpha extends SymmetricDirichlet[Z](1.0)
-	class Theta extends DirichletMultinomial[Z]
-	class Word(s:String) extends EnumObservation(s) with CategoricalOutcome[Word]
- 	class Document(val file:String) extends ArrayBuffer[Word] { var theta:Theta = _ }
+  class Theta extends DirichletMultinomial[Z]
+  class Word(s:String) extends EnumObservation(s) with CategoricalOutcome[Word]
+  class Document(val file:String) extends ArrayBuffer[Word] { var theta:Theta = _ }
 
   def main(args: Array[String]) : Unit = {
-  	// Read observed data and create Documents
-		val documents = new ListBuffer[Document];
-		val lexer = new Regex("[a-zA-Z]+")
-		for (directory <- if (args.length > 0) args else List("/Users/mccallum/research/data/text/nipstxt/nips05")) {
-			for (file <- new File(directory).listFiles; if (file.isFile)) {
-				val d = new Document(file.toString)
-				d ++= lexer.findAllIn(file.contentsAsString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_)).map(new Word(_))
-				documents += d
-			}
-		}
-		println("Read "+documents.size+" documents with "+documents.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
+    // Read observed data and create Documents
+    val documents = new ListBuffer[Document];
+    val lexer = new Regex("[a-zA-Z]+")
+    for (directory <- if (args.length > 0) args else List("/Users/mccallum/research/data/text/nipstxt/nips05")) {
+      for (file <- new File(directory).listFiles; if (file.isFile)) {
+        val d = new Document(file.toString)
+        d ++= lexer.findAllIn(file.contentsAsString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_)).map(new Word(_))
+        documents += d
+      }
+    }
+    println("Read "+documents.size+" documents with "+documents.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
   
-		// Create random variables
+    // Create random variables
     val numTopics = 5
     val topics = Array.fromFunction(i => new Topic ~ Beta)(numTopics)
-		val zs = new ArrayBuffer[Z] 	
-  	for (document <- documents) {
-  		document.theta = new Theta ~ Alpha
-  		for (word <- document) {
-  			val z = new Z ~ document.theta
-  			word ~ z
-  			zs +=z // just to gather the variables we need to sample later 
-  		}
-  	}
+    val zs = new ArrayBuffer[Z]   
+    for (document <- documents) {
+      document.theta = new Theta ~ Alpha
+      for (word <- document) {
+        val z = new Z ~ document.theta
+        word ~ z
+        zs +=z // just to gather the variables we need to sample later 
+      }
+    }
     
-		// Fit model 
+    // Fit model 
     val sampler = Global.defaultSampler
-		val startTime = System.currentTimeMillis
+    val startTime = System.currentTimeMillis
     for (i <- 1 to 9) {
       sampler.process(zs, 1)
-    	print("."); Console.flush
-    	if (i % 3 == 0) {
-    		println ("Iteration "+i)
-    		topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_.value))); println
+      print("."); Console.flush
+      if (i % 3 == 0) {
+        println ("Iteration "+i)
+        topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_.value))); println
       }
-    }	
+    } 
     topics.foreach(t => {println("\nTopic "+t.index); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
-		println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
-	}
+    println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
+  }
 }
 

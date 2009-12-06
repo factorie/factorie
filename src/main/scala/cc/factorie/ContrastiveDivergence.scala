@@ -14,13 +14,13 @@ abstract class ContrastiveDivergence[C](model:Model) extends MHSampler[C](model)
   
   override def postProcessHook(context:C, d:DiffList) : Unit = {
     super.postProcessHook(context, d)
-  	difflist = d
-  	updateWeights // This will result in a call to addGradient
+    difflist = d
+    updateWeights // This will result in a call to addGradient
   }
 
   def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit = {
-  	difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
-  	difflist.undo
-  	difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
+    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
+    difflist.undo
+    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
   }  
 }

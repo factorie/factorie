@@ -23,12 +23,12 @@ object DocumentClassifier1 {
     // Read data and create Variables
     var documents = new ArrayBuffer[Document];
     for (directory <- args) {
-    	val directoryFile = new File(directory)
-    	if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
-    	for (file <- new File(directory).listFiles; if (file.isFile)) {
-    		//println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
-    		documents += new Document(file)
-    	}
+      val directoryFile = new File(directory)
+      if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
+      for (file <- new File(directory).listFiles; if (file.isFile)) {
+        //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
+        documents += new Document(file)
+      }
     }
     
     // Make a test/train split
@@ -45,11 +45,11 @@ object DocumentClassifier1 {
     val predictor = new GibbsSampler(model)
     learner.learningRate = 1.0
     for (i <- 0 until 10) {
-    	learner.process (trainVariables, 1)
-    	learner.learningRate *= 0.9
-    	predictor.process (testVariables, 1)
-    	println ("Train accuracy = "+ Global.defaultObjective.aveScore(trainVariables))
-    	println ("Test  accuracy = "+ Global.defaultObjective.aveScore(testVariables))
+      learner.process (trainVariables, 1)
+      learner.learningRate *= 0.9
+      predictor.process (testVariables, 1)
+      println ("Train accuracy = "+ Global.defaultObjective.aveScore(trainVariables))
+      println ("Test  accuracy = "+ Global.defaultObjective.aveScore(testVariables))
     }
 
   }

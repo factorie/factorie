@@ -106,7 +106,7 @@ class UniformMultinomial[O<:DiscreteOutcome[O]](implicit m:Manifest[O]) extends 
 /** A mixture of a fixed set of Multinomials, i.e. you cannot add or remove Multinomials from the mixture. 
     @author Andrew McCallum */
 class MultinomialMixture[M<:AbstractMultinomial[O],O<:DiscreteOutcome[O]](ms:Seq[M], ps:Seq[Double]) extends AbstractMultinomial[O] {
-	// TODO How can I avoid needing both M and O as type parameters.  I think M should automatically specify O.
+  // TODO How can I avoid needing both M and O as type parameters.  I think M should automatically specify O.
   val components = ms.toArray
   val length: Int = components.first.length
   val proportions = new DenseCountsMultinomial(ps)
@@ -223,7 +223,7 @@ class SparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMult
     @author Andrew McCallum */
 @deprecated // Not finished
 abstract class SortedSparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends AbstractMultinomial[O] with SparseMultinomial[O] {
-	def length: Int = pos.length
+  def length: Int = pos.length
   private var total: Int = 0 // total of all counts in buf
   // Make sure we have enough bits to represent the dimension of the multinomial
   private val topicMask = if (Integer.bitCount(dim) == 1) dim-1 else Integer.highestOneBit(dim) * 2 - 1
@@ -308,7 +308,7 @@ class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet
   // TODO Consider finding a way to put this back, in the case when O<:CategoricalValue
   //def sampleValue: O#VariableType#ValueType = outcomeDomain.get(sampleIndex)
   override def estimate: Unit = {} // Nothing to do because estimated on the fly
-	class DiscretePr(override val index:Int, override val pr:Double, override val count:Double, val value:O#VariableType#ValueType) extends super.DiscretePr(index,pr,count)
+  class DiscretePr(override val index:Int, override val pr:Double, override val count:Double, val value:O#VariableType#ValueType) extends super.DiscretePr(index,pr,count)
   override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i),outcomeDomain.get(i))})
   def topValues(n:Int) = top(n).toList.map(_.value)
   override def toString = "Multinomial(count="+countsTotal+")"

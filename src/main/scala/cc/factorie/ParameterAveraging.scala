@@ -47,29 +47,29 @@ trait ParameterAveraging extends WeightUpdates {
   def backupWeights : Unit =
     {
       _backupWeights = new HashMap[TemplatesToUpdate,Vector] {
-	override def default(template:TemplatesToUpdate) = {
-	  template.freezeDomains
-	  val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
-	  vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
-	  this(template) = vector
-	  vector
-	}
+  override def default(template:TemplatesToUpdate) = {
+    template.freezeDomains
+    val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
+    vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
+    this(template) = vector
+    vector
+  }
       }
     }
 
   def unsetWeightsToAverage : Unit =
     {
       if(_backupWeights==null)
-	throw new Exception("Cannot 'unset' weights because 'setWeightsToAverage' has not been called")
+  throw new Exception("Cannot 'unset' weights because 'setWeightsToAverage' has not been called")
       for (template <- model.templatesOf[TemplatesToUpdate]) 
-	{
-	  if(_backupWeights.contains(template))
-	    {
-	      val backupWeightsTemplate = _backupWeights(template)
-	      for(i <- template.weights.activeDomain)
-		template.weights(i) = backupWeightsTemplate(i)
-	    }
-	}
+  {
+    if(_backupWeights.contains(template))
+      {
+        val backupWeightsTemplate = _backupWeights(template)
+        for(i <- template.weights.activeDomain)
+    template.weights(i) = backupWeightsTemplate(i)
+      }
+  }
     }
 
   // Make sure that weightsSum reflects the sum of all weights up to the current iterations
@@ -78,14 +78,14 @@ trait ParameterAveraging extends WeightUpdates {
       val templateLastUpdateIteration = lastUpdateIteration(template)
       val templateWeightsSum = weightsSum(template)
       val templateWeights = template.weights
-    	for (i <- template.weights.activeDomain) {
-    	  val iterationDiff = perceptronIteration - templateLastUpdateIteration(i)
-    	  assert(iterationDiff >= 0)
-    	  if (iterationDiff > 0) {
-    	    templateWeightsSum(i) += templateWeights(i) * iterationDiff
-    	    templateLastUpdateIteration(i) = perceptronIteration
-    	  }
-    	}
+      for (i <- template.weights.activeDomain) {
+        val iterationDiff = perceptronIteration - templateLastUpdateIteration(i)
+        assert(iterationDiff >= 0)
+        if (iterationDiff > 0) {
+          templateWeightsSum(i) += templateWeights(i) * iterationDiff
+          templateLastUpdateIteration(i) = perceptronIteration
+        }
+      }
     }
   }
 
@@ -96,18 +96,18 @@ trait ParameterAveraging extends WeightUpdates {
       updateWeightsSum
       var divisor : Double = perceptronIteration.asInstanceOf[Double]
       for (template <- model.templatesOf[TemplatesToUpdate]) 
-	{
-	  if(weightsSum.contains(template))
-	    {
-	      val weightsSumTemplate = weightsSum(template)
-	      val lastUpdateIterationTemplate = lastUpdateIteration(template)
-	      for(i <- template.weights.activeDomain)
-		template.weights(i) = weightsSumTemplate(i)/divisor///lastUpdateIterationTemplate(i)
-	    }
-	  //the following results in divide-by-zero errors when size of allocated domain is larger than size of active  domain:
-	  //if (weightsSum.contains(template))
-      	  //  template.weights := weightsSum(template) :/ lastUpdateIteration(template)
-	}
+  {
+    if(weightsSum.contains(template))
+      {
+        val weightsSumTemplate = weightsSum(template)
+        val lastUpdateIterationTemplate = lastUpdateIteration(template)
+        for(i <- template.weights.activeDomain)
+    template.weights(i) = weightsSumTemplate(i)/divisor///lastUpdateIterationTemplate(i)
+      }
+    //the following results in divide-by-zero errors when size of allocated domain is larger than size of active  domain:
+    //if (weightsSum.contains(template))
+          //  template.weights := weightsSum(template) :/ lastUpdateIteration(template)
+  }
     }
 
 
@@ -127,7 +127,7 @@ trait ParameterAveraging extends WeightUpdates {
     for((template,vector) <- metaGradient) {
       val templateWeights = template.weights
       for(i <- vector.activeDomain)
-	        vector(i) = -templateWeights(i)
+          vector(i) = -templateWeights(i)
     }
     //perform the update
     super.updateWeights
@@ -142,21 +142,21 @@ trait ParameterAveraging extends WeightUpdates {
       return
     //accumulate weights sparsely
     for((template,vector) <- metaGradient) {
-  	  val templateWeightsSum = weightsSum(template)
-  	  val templateLastUpdateIteration = lastUpdateIteration(template)
-  	  val templateWeights = template.weights
-  	  // First do it for the template's weights
-  	  //templateWeights += vector //already done in super.updateWeights
-  	  // Now maintain templateWeightsSum
-  	  for (i <- vector.activeDomain) {
-  	    val iterationDiff = perceptronIteration - templateLastUpdateIteration(i) // Note avoiding off-by-one relies on when iterationCount is incremented!
-  	    assert(iterationDiff >= 0)
-  	    if (iterationDiff > 0) {
-  	      templateWeightsSum(i) += (templateWeights(i) * iterationDiff) + vector(i)
-  	      templateLastUpdateIteration(i) = perceptronIteration
-  	    } else	
-  	      templateWeightsSum(i) += vector(i)
-	    } 
+      val templateWeightsSum = weightsSum(template)
+      val templateLastUpdateIteration = lastUpdateIteration(template)
+      val templateWeights = template.weights
+      // First do it for the template's weights
+      //templateWeights += vector //already done in super.updateWeights
+      // Now maintain templateWeightsSum
+      for (i <- vector.activeDomain) {
+        val iterationDiff = perceptronIteration - templateLastUpdateIteration(i) // Note avoiding off-by-one relies on when iterationCount is incremented!
+        assert(iterationDiff >= 0)
+        if (iterationDiff > 0) {
+          templateWeightsSum(i) += (templateWeights(i) * iterationDiff) + vector(i)
+          templateLastUpdateIteration(i) = perceptronIteration
+        } else  
+          templateWeightsSum(i) += vector(i)
+      } 
     }  
   } 
 
@@ -164,7 +164,7 @@ trait ParameterAveraging extends WeightUpdates {
    {
       var result : Double = 0.0
       for((t,v) <- grad)
-	result += v dot v
+  result += v dot v
       result
     }
 }

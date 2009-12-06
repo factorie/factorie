@@ -21,7 +21,7 @@ object LogicDemo1 {
   
     // Define boilerplate, to support access to attributes in the entity-relationship syntax
     class PersonGetter extends EntityGetter[Person] {
-    	def smokes = getAttribute(_.smokes)
+      def smokes = getAttribute(_.smokes)
       def cancer = getAttribute(_.cancer)
       //def friends = getRelation[Person](_.friends, _.friends)
     } 

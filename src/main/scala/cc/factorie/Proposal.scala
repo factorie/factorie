@@ -21,6 +21,6 @@ case class Proposal(diff:DiffList, modelScore:Double, objectiveScore:Double,  ac
 
 /**An object (typically a variable or a world) that can propose changes to itself, and possibly also other variables through variable value coordination */
 trait Proposer {
-	/** Make a random proposal.  Return Metropolis-Hastings' log(q(old|new)/q(new|old)) */
-	def propose(model:Model, d:DiffList): Double
+  /** Make a random proposal.  Return Metropolis-Hastings' log(q(old|new)/q(new|old)) */
+  def propose(model:Model, d:DiffList): Double
 }

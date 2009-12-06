@@ -16,8 +16,8 @@ import scalala.tensor.sparse.SparseVector
 trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
   this: ProposalSampler[_] =>
   override type TemplatesToUpdate = DotTemplate
-	def learningRate : Double
-	def learningRate_=(x:Double) : Unit
+  def learningRate : Double
+  def learningRate_=(x:Double) : Unit
   def model : Model
   def learningMargin : Double
   def useObjectiveDiffAsMargin : Boolean = true
@@ -30,10 +30,10 @@ trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
     val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
     val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
       override def default(template:TemplatesToUpdate) = {
-  	template.freezeDomains
-  	val vector = new SparseVector(template.statsize)
-  	this(template) = vector
-  	vector
+    template.freezeDomains
+    val vector = new SparseVector(template.statsize)
+    this(template) = vector
+    vector
       }
     }
     addGradient(gradient,1.0)
@@ -58,7 +58,7 @@ trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
     //System.out.println("err: " + error)
     
     if (l2sqrd > 0 + epsilon || l2sqrd < 0 - epsilon)
-    	lambda = error / l2sqrd;
+      lambda = error / l2sqrd;
     if (lambda < 0) lambda = 0 //no error (the passive part of passive-aggressive)
     lambda;
   }
@@ -66,7 +66,7 @@ trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
     {
       var result : Double = 0
       for(t <- nabla.keySet)
-      	result += nabla(t) dot nabla(t)
+        result += nabla(t) dot nabla(t)
       return result
     }
 }

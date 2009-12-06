@@ -14,41 +14,41 @@ import cc.factorie.util.Implicits._
 /** Management of Factor Templates within the Model 
     @author Andrew McCallum */
 class TemplateList[T<:Template] extends ArrayBuffer[T] {
-	def templatesOf[T2<:T](implicit m:Manifest[T2]) : TemplateList[T2] = {
-			val templateClass = m.erasure
-			val ret = new TemplateList[T2]
+  def templatesOf[T2<:T](implicit m:Manifest[T2]) : TemplateList[T2] = {
+      val templateClass = m.erasure
+      val ret = new TemplateList[T2]
    for (t <- this) if (templateClass.isAssignableFrom(t.getClass)) ret += t.asInstanceOf[T2]
    ret
-	}
-	override def filter(test:(T)=>Boolean) : TemplateList[T] = { 	    
-	  val ret = new TemplateList[T]
+  }
+  override def filter(test:(T)=>Boolean) : TemplateList[T] = {      
+    val ret = new TemplateList[T]
     for (t <- this) if (test(t)) ret += t
     ret
-	}
-	def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else this.flatMap(template => template.factors(d))
+  }
+  def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else this.flatMap(template => template.factors(d))
   def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
   def factorsOf[T2<:T](vs:Iterable[Variable])(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
-	/** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
-	def factors(v:Variable) : Seq[Factor] = this.flatMap(template => template.factors(v)).toList
-	def factors(vs:Iterable[Variable]) : Seq[Factor] = this.flatMap(template => template.factors(vs))
-	// TODO Should the method below be renamed "factorsOf"?
-	def factorsOfClass[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
-	/* This kind of construction should now be done in a Lattice, not touching the Variables themselves.
+  /** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
+  def factors(v:Variable) : Seq[Factor] = this.flatMap(template => template.factors(v)).toList
+  def factors(vs:Iterable[Variable]) : Seq[Factor] = this.flatMap(template => template.factors(vs))
+  // TODO Should the method below be renamed "factorsOf"?
+  def factorsOfClass[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
+  /* This kind of construction should now be done in a Lattice, not touching the Variables themselves.
   def registerFactorsInVariables(variables: Iterable[Variable with FactorList]): Seq[Factor] = {
-	  val factors = this.factors(variables)
+    val factors = this.factors(variables)
     // Make sure each variables factor list starts empty
     variables.foreach(_.clearFactors)
     // Add relevant factors to each relevant neighboring variable
     factors.foreach(_.addToVariables)
     factors.toSeq
-	}*/
-	def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.statistic.score)
- 	def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score) // For use when the Variable is also Iterable
-	def score(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score)
-	def score(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
-	/** Score all variables in the Iterable collection.  This method is useful when a Variable is also a Iterable[Variable]; 
+  }*/
+  def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.statistic.score)
+  def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score) // For use when the Variable is also Iterable
+  def score(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score)
+  def score(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
+  /** Score all variables in the Iterable collection.  This method is useful when a Variable is also a Iterable[Variable]; 
       it forces the Iterable interpretation and avoids the single variable interpretation of score(Variable). */
-	def scoreAll(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
- 	def aveScore(vars:Collection[Variable]): Double = scoreAll(vars) / vars.size
+  def scoreAll(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
+  def aveScore(vars:Collection[Variable]): Double = scoreAll(vars) / vars.size
 }
 

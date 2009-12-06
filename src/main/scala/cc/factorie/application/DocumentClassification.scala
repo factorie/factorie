@@ -10,31 +10,31 @@ import scala.reflect.Manifest
     @since 0.8
  */
 object DocumentClassification {
-	import cc.factorie.application.FeatureVectorClassification._
+  import cc.factorie.application.FeatureVectorClassification._
  
-	val defaultLexer = "\\w+".r
+  val defaultLexer = "\\w+".r
   
-	abstract class Document[L<:Label[This,L],This<:Document[L,This]](override val name:String) extends FeatureVectorClassification.Instance[L,This](name) {
+  abstract class Document[L<:Label[This,L],This<:Document[L,This]](override val name:String) extends FeatureVectorClassification.Instance[L,This](name) {
     this: This =>
-		//type GetterType <: DocumentGetter[L,This];
-		//class GetterClass extends DocumentGetter[L,This]
-		/** Populate the document from the words in the file. */
-		def this(file:File, lexer:Regex) = {
-			this(file.toString)
-			val source = Source.fromFile(file)
-			lexer.findAllIn(source.mkString).foreach(m => this += m.toString)
+    //type GetterType <: DocumentGetter[L,This];
+    //class GetterClass extends DocumentGetter[L,This]
+    /** Populate the document from the words in the file. */
+    def this(file:File, lexer:Regex) = {
+      this(file.toString)
+      val source = Source.fromFile(file)
+      lexer.findAllIn(source.mkString).foreach(m => this += m.toString)
     }
-		/** By default use the defaultLexer */
-		def this(file:File) = this(file, defaultLexer)
-		/* By default take the directory name to be the label string. */
-		//def this(file:File) = this(file, file.getParentFile.getName)
-		def size = 3 // TODO implement this
+    /** By default use the defaultLexer */
+    def this(file:File) = this(file, defaultLexer)
+    /* By default take the directory name to be the label string. */
+    //def this(file:File) = this(file, file.getParentFile.getName)
+    def size = 3 // TODO implement this
   }
   
   abstract class Label[D<:Document[This,D],This<:Label[D,This]](labelString:String, override val instance:D) extends FeatureVectorClassification.Label[D,This](labelString, instance) {
     this: This =>
-  	//type GetterType <: LabelGetter[D,This];
-  	//class GetterClass extends LabelGetter[D,This]
+    //type GetterType <: LabelGetter[D,This];
+    //class GetterClass extends LabelGetter[D,This]
     def document = instance
   }
 

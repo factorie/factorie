@@ -18,7 +18,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   // This method must be implemented in concrete subclasses
   def propose(context:C)(implicit d:DiffList) : Double
 
-  /** If you want the Proposals to actually contain the objectiveScore, override this method appropriately.  Used for training.	*/
+  /** If you want the Proposals to actually contain the objectiveScore, override this method appropriately.  Used for training. */
   def objective : Model = null
 
   // Various diagnostics
@@ -56,8 +56,8 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     var bfRatio = 0.0
     var proposalAttemptCount = 0
     while (difflist.size == 0 && proposalAttemptCount < 10) {
-    	bfRatio = propose(context)(difflist)
-    	proposalAttemptCount += 1
+      bfRatio = propose(context)(difflist)
+      proposalAttemptCount += 1
     }
     if (difflist.size == 0) throw new Error("No proposal made changes in 10 tries.")
     postProposalHook(difflist)
@@ -68,7 +68,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     //List(goProposal,stayProposal)
     //System.out.println("MODEL: " + modelScore+" objSCORE:" + objectiveScore)
     val logAcceptanceScore = modelScore/temperature+bfRatio
-    val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0)	Math.NEG_INF_DOUBLE	else Math.log(1-Math.exp(logAcceptanceScore))
+    val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0) Math.NEG_INF_DOUBLE else Math.log(1-Math.exp(logAcceptanceScore))
     val goProposal = new Proposal(difflist,modelScore,objectiveScore,logAcceptanceScore,bfRatio,temperature)
     val stayProposal = new Proposal(new DiffList,0.0,0.0,mirrorLogAcceptanceScore,Math.NaN_DOUBLE,0)
     List(goProposal,stayProposal)
@@ -83,13 +83,13 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
       if(proposal.modelScore * proposal.objectiveScore<=0 && proposal.objectiveScore!=0)
       proposalsHook(props)
       if(proposal.acceptanceScore >= Math.log(Global.random.nextDouble()))
-	{
-	  System.out.println("REDO")
-	  System.out.println("accept: " + proposal.acceptanceScore)
-	  proposal.diff.redo
-	}
+  {
+    System.out.println("REDO")
+    System.out.println("accept: " + proposal.acceptanceScore)
+    proposal.diff.redo
+  }
       //else
-//	proposal.diff.undo
+//  proposal.diff.undo
       proposal.diff
     }
 */
@@ -99,38 +99,38 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     val p = proposal.asInstanceOf[Proposal]
     if (p.bfRatio != Math.NaN_DOUBLE) {
       numAcceptedMoves += 1
-    	proposalAccepted = true
-    	val modelRatio = p.modelScore
-    	if (modelRatio < 0) numNegativeMoves += 1
-    	//log(Log.INFO)("iteration: " + iteration + ", logAcceptanceProb = " + logAcceptanceProb);
+      proposalAccepted = true
+      val modelRatio = p.modelScore
+      if (modelRatio < 0) numNegativeMoves += 1
+      //log(Log.INFO)("iteration: " + iteration + ", logAcceptanceProb = " + logAcceptanceProb);
       // Maintain the running incremental change in model score
       currentModelScore += modelRatio
-    	if (currentModelScore > maxModelScore) {
-    		maxModelScore = currentModelScore
-    		bestConfigHook
-    	}
+      if (currentModelScore > maxModelScore) {
+        maxModelScore = currentModelScore
+        bestConfigHook
+      }
       postAcceptanceHook(p.modelScore/temperature+p.bfRatio, p.diff)
     } 
 /*
     //mwick quick test of MIRA... if OBJ and MOD disagree on sign, then "UPD" should equal "OBJ" after the update
     if(p.objectiveScore!=0)
       {
-	if(proposalAccepted)
-	  {
-	    val score = p.diff.scoreAndUndo(model)
-	    System.out.println("OBJ: " + p.objectiveScore)
-	    System.out.println("MOD: " + p.rawModelScore)
-	    System.out.println("UPD: " + score)
-	    p.diff.redo
-	  }
-	else
-	  {
-	    p.diff.redo
-	    val score = p.diff.scoreAndUndo(model)
-	    System.out.println("99OBJ: " + p.objectiveScore)
-	    System.out.println("99MOD: " + p.rawModelScore)
-	    System.out.println("99UPD: " + score)
-	  }
+  if(proposalAccepted)
+    {
+      val score = p.diff.scoreAndUndo(model)
+      System.out.println("OBJ: " + p.objectiveScore)
+      System.out.println("MOD: " + p.rawModelScore)
+      System.out.println("UPD: " + score)
+      p.diff.redo
+    }
+  else
+    {
+      p.diff.redo
+      val score = p.diff.scoreAndUndo(model)
+      System.out.println("99OBJ: " + p.objectiveScore)
+      System.out.println("99MOD: " + p.rawModelScore)
+      System.out.println("99UPD: " + score)
+    }
       }
 */
     
@@ -155,18 +155,18 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
       difflist.redo
       // Update diagnostics
       numAcceptedMoves += 1
-    	proposalAccepted = true
-    	if (modelRatio < 0) numNegativeMoves += 1
-    	//log(Log.INFO)("iteration: " + iteration + ", logAcceptanceProb = " + logAcceptanceProb);
+      proposalAccepted = true
+      if (modelRatio < 0) numNegativeMoves += 1
+      //log(Log.INFO)("iteration: " + iteration + ", logAcceptanceProb = " + logAcceptanceProb);
       // Maintain the running incremental change in model score
       currentModelScore += modelRatio
-    	if (currentModelScore > maxModelScore) {
-    		maxModelScore = currentModelScore
-    		bestConfigHook
-    	}
+      if (currentModelScore > maxModelScore) {
+        maxModelScore = currentModelScore
+        bestConfigHook
+      }
       postAcceptanceHook(logAcceptanceProb, difflist)
     } else {
-    	difflist.clear
+      difflist.clear
     }
     difflist
   }

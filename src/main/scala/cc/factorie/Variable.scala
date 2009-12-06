@@ -31,11 +31,11 @@ import cc.factorie.util.Implicits._
 @DomainInSubclasses
 abstract trait Variable /* extends AnyRef */ {
   /** The type of this variable, especially used by this Variable's Domain.  Often you can treat this as an approximation to a self-type */
-	type VariableType <: Variable
+  type VariableType <: Variable
  
-	// Domain handling
-	/** The type of this.domain and Domain.apply[MyVariable]*/
-	type DomainType <: Domain[VariableType]
+  // Domain handling
+  /** The type of this.domain and Domain.apply[MyVariable]*/
+  type DomainType <: Domain[VariableType]
   /** When a Domain is automatically constructed for this class (in object Domain), it will be the superclass of this inner class. */
   class DomainClass extends Domain[VariableType]
   /** When DomainInSubclasses appears as an inner class of a Variable class, 
@@ -44,25 +44,25 @@ abstract trait Variable /* extends AnyRef */ {
       subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
   final def domain = Domain.get[VariableType](this.getClass)
   
-	private def shortClassName = {
-	  var fields = this.getClass.getName.split('$')
-	  if (fields.length == 1)
-	  	fields = this.getClass.getName.split('.')
-	  if (fields.last == "class")
-	  	fields(fields.length - 2)
-	  else if ("1234567890".contains(fields.last))
+  private def shortClassName = {
+    var fields = this.getClass.getName.split('$')
+    if (fields.length == 1)
+      fields = this.getClass.getName.split('.')
+    if (fields.last == "class")
+      fields(fields.length - 2)
+    else if ("1234567890".contains(fields.last))
      fields(fields.length-2)
     else
       fields.last
-	}
-	def printName = shortClassName
-	override def toString = printName + "(_)"
-	def factors(model:Model): Iterable[Factor] = model.factors(this) // TODO Remove this?  Why have two different short ways of doing this?
-	def isConstant = false
-	// Generic handling of GenerativeObservation knowledge of its 'source' parent // TODO Consider if we really want to do this.
-	def _setSource(source:AnyRef)(implicit difflist:DiffList): Unit = {}
+  }
+  def printName = shortClassName
+  override def toString = printName + "(_)"
+  def factors(model:Model): Iterable[Factor] = model.factors(this) // TODO Remove this?  Why have two different short ways of doing this?
+  def isConstant = false
+  // Generic handling of GenerativeObservation knowledge of its 'source' parent // TODO Consider if we really want to do this.
+  def _setSource(source:AnyRef)(implicit difflist:DiffList): Unit = {}
   //type SourceType <: AnyRef
-	//def source:AnyRef = null //.asInstanceOf[SourceType]
+  //def source:AnyRef = null //.asInstanceOf[SourceType]
 }
 
 /*import cc.factorie.er
@@ -81,7 +81,7 @@ trait ConstantValue extends Variable {
 /** For variables whose value has a type, indicated in type ValueType */
 abstract trait TypedValues {
   this: Variable =>
-	type ValueType
+  type ValueType
 }
 
 /** For A Variable whose value has type ValueType.  

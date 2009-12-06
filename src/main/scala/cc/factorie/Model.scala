@@ -13,7 +13,7 @@ import cc.factorie.util.Implicits._
 
 /** A Model in FACTORIE consists of a collection of factor Templates and methods that operate on the collection.
     Most of these methods are implemented in TemplateList.
- 	  @author Andrew McCallum
+    @author Andrew McCallum
     @since 0.8
     @see Template
     @see TemplateList

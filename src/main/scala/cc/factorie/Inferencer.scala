@@ -100,7 +100,7 @@ class SamplingMaximizerLattice(val diff:DiffList, val diffScore:Double) extends 
 
 /** Provide 'infer' method that uses the 'sampler' to search for the best-scoring configuration.
  
-		@author Andrew McCallum
+    @author Andrew McCallum
     @since 0.8
  */
 // TODO Update this for the new separated "modelScore" and "acceptScore" in Proposal.
@@ -120,7 +120,7 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
   def infer(variables:Collection[V], varying:Collection[V]): LatticeType = inferd(variables, varying)(null)
   // TODO I really want Scala 2.8 default parameters: (implicit diff:DiffList = null)  !!!
   def inferd(variables:Collection[V], varying:Collection[V])(implicit diff:DiffList): LatticeType = {
-  	var currentScore = 0.0
+    var currentScore = 0.0
     var maxScore = currentScore
     val maxdiff = new DiffList
     val origSamplerTemperature = sampler.temperature
@@ -146,10 +146,10 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
     if (iterationsRemaining == 1) sampler.temperature = finalTemperature
     while (iterationsRemaining > 0) {
       val iterationsNow = Math.min(iterationsPerRound, iterationsRemaining)
-    	sampler.process(varying, iterationsNow)
-    	iterationsRemaining -= iterationsNow
-    	sampler.temperature += (finalTemperature-initialTemperature)/rounds // Adding a negative number
-    	//println("Reducing temperature to "+sampler.temperature)
+      sampler.process(varying, iterationsNow)
+      iterationsRemaining -= iterationsNow
+      sampler.temperature += (finalTemperature-initialTemperature)/rounds // Adding a negative number
+      //println("Reducing temperature to "+sampler.temperature)
     }
     maxdiff.undo // Go back to maximum scoring configuration so we return having changed the config to the best
     sampler.proposalHooks -= updateHook // Remove our temporary hook
@@ -160,8 +160,8 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
 
 /** Perform inference according to belief propagation.
  
- 		@author Andrew McCallum
- 		@since 0.8
+    @author Andrew McCallum
+    @since 0.8
  */
 class BPInferencer[V<:UncoordinatedCategoricalVariable](model:Model) extends VariableInferencer[V] {
   override type LatticeType = BPLattice

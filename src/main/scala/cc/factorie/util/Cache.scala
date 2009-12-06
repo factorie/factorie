@@ -33,135 +33,135 @@ class FileCache[D <: FileCacheDescriptor[K],K,V](pipes : Pipes) extends Cache[K,
  */
 class SoftMemCache[K, V] extends Map[K, V] with Cache[K, V] {
 
-	/**cache of values */
-	protected val inner =
-	new java.util.HashMap[HashableSoftReference, SoftReference[Option[V]]];
+  /**cache of values */
+  protected val inner =
+  new java.util.HashMap[HashableSoftReference, SoftReference[Option[V]]];
 
-	/**queue of objects to remove */
-	protected val removalQueue =
-	new scala.collection.mutable.Queue[HashableSoftReference];
+  /**queue of objects to remove */
+  protected val removalQueue =
+  new scala.collection.mutable.Queue[HashableSoftReference];
 
-	/**Removes all objects in the removal queue */
-	protected def dequeue() = {
-		while (!removalQueue.isEmpty) {
-			inner.remove(removalQueue.dequeue);
-		}
-	}
+  /**Removes all objects in the removal queue */
+  protected def dequeue() = {
+    while (!removalQueue.isEmpty) {
+      inner.remove(removalQueue.dequeue);
+    }
+  }
 
-	/**
-	 * Resolves the soft reference, returning None if the reference
-	 * has dissappeared or Some(value) or Some(null) depending on whether
-	 * null was the stored value.
-	 */
-	private def resolve(key: K, ref: SoftReference[Option[V]]): Option[V] = {
-		val got = ref.get;
-		if (ref.get == null) {
-			// value has been gc'd, free key
-			inner.remove(new HashableSoftReference(key));
-			None
-		} else {
-			got match {
-				case Some(value) => Some(value);
-				case None => Some(null.asInstanceOf[V]);
-			}
-		}
-	}
+  /**
+   * Resolves the soft reference, returning None if the reference
+   * has dissappeared or Some(value) or Some(null) depending on whether
+   * null was the stored value.
+   */
+  private def resolve(key: K, ref: SoftReference[Option[V]]): Option[V] = {
+    val got = ref.get;
+    if (ref.get == null) {
+      // value has been gc'd, free key
+      inner.remove(new HashableSoftReference(key));
+      None
+    } else {
+      got match {
+        case Some(value) => Some(value);
+        case None => Some(null.asInstanceOf[V]);
+      }
+    }
+  }
 
-	override def clear = {
-		dequeue();
-		removalQueue.clear;
-		inner.clear();
-	}
+  override def clear = {
+    dequeue();
+    removalQueue.clear;
+    inner.clear();
+  }
 
-	override def contains(key: K) = {
-		dequeue();
-		inner.containsKey(new HashableSoftReference(key));
-	}
+  override def contains(key: K) = {
+    dequeue();
+    inner.containsKey(new HashableSoftReference(key));
+  }
 
-	/**
-	 * Returns the value currently associated with the given key if one
-	 * has been set with put and not been subsequently garbage collected.
-	 */
-	override def get(key: K): Option[V] = {
-		dequeue();
-		val ref = inner.get(new HashableSoftReference(key));
-		if (ref != null) {
-			resolve(key, ref);
-		} else {
-			None;
-		}
-	};
+  /**
+   * Returns the value currently associated with the given key if one
+   * has been set with put and not been subsequently garbage collected.
+   */
+  override def get(key: K): Option[V] = {
+    dequeue();
+    val ref = inner.get(new HashableSoftReference(key));
+    if (ref != null) {
+      resolve(key, ref);
+    } else {
+      None;
+    }
+  };
 
-	/**
-	 * Returns the expected size of the cache.  Note that this may over-report
-	 * as objects may have been garbage collected.
-	 */
-	override def size(): Int = {
-		dequeue();
-		inner.size;
-	}
+  /**
+   * Returns the expected size of the cache.  Note that this may over-report
+   * as objects may have been garbage collected.
+   */
+  override def size(): Int = {
+    dequeue();
+    inner.size;
+  }
 
-	/**
-	 * Iterates the elements of the cache that are currently present.
-	 */
-	override def elements: Iterator[(K, V)] = {
-		dequeue();
-		for (pair <- JavaCollections.iScalaIterator(inner.entrySet.iterator);
-				 val k = pair.getKey.get;
-				 val v = resolve(k, pair.getValue);
-				 if k != null && v != None)
-		yield (k, v.asInstanceOf[Some[V]].get);
-	}
+  /**
+   * Iterates the elements of the cache that are currently present.
+   */
+  override def elements: Iterator[(K, V)] = {
+    dequeue();
+    for (pair <- JavaCollections.iScalaIterator(inner.entrySet.iterator);
+         val k = pair.getKey.get;
+         val v = resolve(k, pair.getValue);
+         if k != null && v != None)
+    yield (k, v.asInstanceOf[Some[V]].get);
+  }
 
-	/**
-	 * Associates the given key with a weak reference to the given value.
-	 * Either key or value or both may be garbage collected at any point.
-	 * Returns the previously associated value or null if none was
-	 * associated. Value must be non-null.
-	 */
-	override def update(key: K, value: V): Unit = {
-		dequeue();
-		inner.put(new HashableSoftReference(key), new SoftReference(Some(value)));
-	}
+  /**
+   * Associates the given key with a weak reference to the given value.
+   * Either key or value or both may be garbage collected at any point.
+   * Returns the previously associated value or null if none was
+   * associated. Value must be non-null.
+   */
+  override def update(key: K, value: V): Unit = {
+    dequeue();
+    inner.put(new HashableSoftReference(key), new SoftReference(Some(value)));
+  }
 
-	/**
-	 * Removes the given key from the map.
-	 */
-	override def -=(key: K): Unit = {
-		dequeue();
-		inner.remove(new HashableSoftReference(key));
-	}
+  /**
+   * Removes the given key from the map.
+   */
+  override def -=(key: K): Unit = {
+    dequeue();
+    inner.remove(new HashableSoftReference(key));
+  }
 
-	/**
-	 * A SoftReference with equality and hashcode based on the underlying
-	 * object.  Automatically removes itself from the containing map if the
-	 * reference has been gc'd.
-	 *
-	 * @author dramage
-	 */
-	class HashableSoftReference(ref: SoftReference[K], hash: Int) {
-		def this(key: K) = this (new SoftReference(key), key.hashCode);
+  /**
+   * A SoftReference with equality and hashcode based on the underlying
+   * object.  Automatically removes itself from the containing map if the
+   * reference has been gc'd.
+   *
+   * @author dramage
+   */
+  class HashableSoftReference(ref: SoftReference[K], hash: Int) {
+    def this(key: K) = this (new SoftReference(key), key.hashCode);
 
-		var removing = false;
+    var removing = false;
 
-		def get = {
-			val got = ref.get;
-			if (!removing && got == null) {
-				removing = true;
-				SoftMemCache.this.removalQueue += this;
-			}
-			got;
-		}
+    def get = {
+      val got = ref.get;
+      if (!removing && got == null) {
+        removing = true;
+        SoftMemCache.this.removalQueue += this;
+      }
+      got;
+    }
 
-		override def hashCode = hash;
+    override def hashCode = hash;
 
-		override def equals(other: Any) = {
-			if (other.isInstanceOf[HashableSoftReference]) {
-				val otherref = other.asInstanceOf[HashableSoftReference];
-				(this eq otherref) || (this.get == otherref.get);
-			} else {
-				false;
-			}
-		}
-	}
+    override def equals(other: Any) = {
+      if (other.isInstanceOf[HashableSoftReference]) {
+        val otherref = other.asInstanceOf[HashableSoftReference];
+        (this eq otherref) || (this.get == otherref.get);
+      } else {
+        false;
+      }
+    }
+  }
 }
