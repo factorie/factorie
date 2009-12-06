@@ -54,7 +54,7 @@ fixindenttest2:
 	done
 
 untabify:
-	for f in `find src/main/scala/cc/factorie/model -name '*.scala' -print` ; do \
+	for f in `find src/main/scala -name '*.scala' -print` ; do \
 	  /usr/bin/emacs -q -batch \
 	    $$f \
 	    -eval "(setq indent-tabs-mode nil)" \
