@@ -67,7 +67,7 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
     def updateTreewise: MessageTo = {
       if (visitedDuringThisTree) return this
       visitedDuringThisTree = true
-      println("updateTreewise MessageTo   "+factor+" >>>> "+v)
+      //println("updateTreewise MessageTo   "+factor+" >>>> "+v)
       for (n <- neighborSettings) BPFactor.this.messageFrom(n.variable).updateTreewise
       update
     }
@@ -88,7 +88,7 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
     def updateTreewise: MessageFrom = {
       if (visitedDuringThisTree) return this
       visitedDuringThisTree = true
-      println("updateTreewise MessageFrom "+factor+" <<<< "+v)
+      //println("updateTreewise MessageFrom "+factor+" <<<< "+v)
       Arrays.fill(msg, 0.0)
       for (n <- neighborFactors) {
         val msg2 = n.messageTo(v)
