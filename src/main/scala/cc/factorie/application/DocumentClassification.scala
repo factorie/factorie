@@ -4,25 +4,30 @@ import java.io.File
 import scala.io.Source
 import scala.reflect.Manifest
 
+/** Variables and factors for independent classification of documents represented as bag-of-words feature vectors.
+ 
+    @author Andrew McCallum
+    @since 0.8
+ */
 object DocumentClassification {
 	import cc.factorie.application.FeatureVectorClassification._
  
 	val defaultLexer = "\\w+".r
   
-	abstract class Document[L<:Label[This,L],This<:Document[L,This]](override val name:String, labelString:String) extends FeatureVectorClassification.Instance[L,This](name, labelString) {
+	abstract class Document[L<:Label[This,L],This<:Document[L,This]](override val name:String) extends FeatureVectorClassification.Instance[L,This](name) {
     this: This =>
 		//type GetterType <: DocumentGetter[L,This];
 		//class GetterClass extends DocumentGetter[L,This]
 		/** Populate the document from the words in the file. */
-		def this(file:File, labelString:String, lexer:Regex) = {
-			this(file.toString, labelString)
+		def this(file:File, lexer:Regex) = {
+			this(file.toString)
 			val source = Source.fromFile(file)
 			lexer.findAllIn(source.mkString).foreach(m => this += m.toString)
     }
 		/** By default use the defaultLexer */
-		def this(file:File, labelString:String) = this(file, labelString, defaultLexer)
-		/** By default take the directory name to be the label string. */
-		def this(file:File) = this(file, file.getParentFile.getName)
+		def this(file:File) = this(file, defaultLexer)
+		/* By default take the directory name to be the label string. */
+		//def this(file:File) = this(file, file.getParentFile.getName)
 		def size = 3 // TODO implement this
   }
   

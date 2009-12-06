@@ -3,7 +3,6 @@ package cc.factorie
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
 import scala.reflect.Manifest
 import scala.util.Random
-//import scala.Math
 import scala.util.Sorting
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
@@ -13,7 +12,10 @@ import cc.factorie.util.Implicits._
 import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
 
-/**The "domain" of a variable---also essentially serving as the variables' "type" */
+/** The "domain" of a variable---also essentially serving as the variables' "type".
+    @author Andrew McCallum
+    @since 0.8
+*/
 class Domain[V<:Variable] {
   /** Return the classes that have this Domain. */
 	def variableClasses : Seq[Class[V]] = {
@@ -249,7 +251,7 @@ trait DomainEntryCounter[V<:CategoricalValues] extends util.Index[V#ValueType] {
     threshold
   }
 }
-// An example of real-world usage:
+// An example of old real-world usage:
 /*  class Token(val word:String, features:Seq[String]) extends BinaryVectorVariable(features, true) with VarInSeq {
       type VariableType <: Token
       type DomainType <: CategoricalDomain[VariableType] with DomainEntryCounter[VariableType]
@@ -262,7 +264,9 @@ trait DomainEntryCounter[V<:CategoricalValues] extends util.Index[V#ValueType] {
   
 class CategoricalDomainWithCounter[V<:CategoricalValues] extends CategoricalDomain[V] with DomainEntryCounter[V]
 
-
+/** A Categorical domain with string values.  Provides convenient intialization to known values, 
+    with value members holding those known values.  For example:
+    object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
 class StringDomain[V<:CategoricalValues {type ValueType = String}] extends CategoricalDomain[V] {
 	/* For all member variables, if its type is String and its name is all upper case or digits,
 		set its value to its name, and intern in the Domain.  Usage:

@@ -11,6 +11,13 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
 
+/** A Model in FACTORIE consists of a collection of factor Templates and methods that operate on the collection.
+    Most of these methods are implemented in TemplateList.
+ 	  @author Andrew McCallum
+    @since 0.8
+    @see Template
+    @see TemplateList
+ */
 class Model(templates:Iterable[Template]) extends TemplateList[Template] {
   def this() = this(Nil)
   def this(templates:Template*) = this(templates)

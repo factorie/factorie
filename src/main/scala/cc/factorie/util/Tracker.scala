@@ -1,8 +1,9 @@
 package cc.factorie.util
 import scala.collection.mutable.{ArrayBuffer,LinkedHashMap}
 
-// Original code by Sebastian Riedel
-
+/** Track and time bounded regions of code. 
+    @author Sebastian Riedel
+*/
 trait Tracker {
   def marked(text: String, start: Boolean)
 }

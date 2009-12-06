@@ -10,7 +10,11 @@ import scala.util.Sorting
 /** Predefined variables and factor templates for applying FACTORIE to sequences of Tokens, each paired with a categorical Label.
     The Token remembers its String 'word', but its variable 'value' is as a BinaryVectorVariable.
     This package also provides Getters for Tokens and Labels, enabling template building with the tools in cc.factorie.er.
-    For exmaple usage see cc.factorie.example.ChainNER1 */
+    For exmaple usage see cc.factorie.example.ChainNER1
+ 
+    @author Andrew McCallum
+    @since 0.8
+ */
 object LabeledTokenSeqs {
     
   /** A word token in a linear sequence of tokens.  It is a constituent of a LabeledTokenSeq.
@@ -224,12 +228,16 @@ object LabeledTokenSeqs {
       result
     }
 
-
     def print(out:java.io.OutputStream): Unit = {
       throw new Error("Not yet implemented")
     }
   }
 
+  /** Tools for creating and evaluating LabeledTokenSeq 
+   
+      @author Andrew McCallum
+      @since 0.8
+   */
   object LabeledTokenSeq {
   	import scala.util.matching.Regex
   	import scala.io.Source
@@ -396,10 +404,9 @@ object LabeledTokenSeqs {
         The field start and end boundaries must be perfect to count as correct.  No partial credit. 
         For example, this is the standard for results on CoNLL 2003. */
     class PerSegmentEvaluation[T<:Token[L,T],L<:Label[T,L]](val labelName:String, val labelValueStart: Regex, val labelValueContinue: Regex) {
-      //println(labelName); println(labelValueStart); println(labelValueContinue); println
+      //println("PerSegmentEvaluation "); println(labelName); println(labelValueStart); println(labelValueContinue); println
       //if (labelValueContinue == null) labelValueContinue = labelValueStart // Waiting for Scala 2.8 default parameters
       var trueCount, predictedCount, correctCount = 0 // per segment
-      var labelCount, correctLabelCount = 0 // per label, included here just because it is easy
       var predictedStart, trueStart = false
       def ++=(seqs:Seq[LabeledTokenSeq[T,L]]) = seqs.foreach(+= _)
       def +=(seq:LabeledTokenSeq[T,L]): Unit = +=(seq.map(_.label))
@@ -409,26 +416,25 @@ object LabeledTokenSeqs {
           in a mention and the next document begins with the same mention type, 
           they will be counted as only one mention, when they should have been counted as two. */
       def +=(labels: Seq[Label[T,L]]): Unit = {
+        //println("PerSegmentEvaluation += "+labels.size)
         for (position <- 0 until labels.length) {
           val label = labels(position)
-          //print("\n"+label.trueValue+"/"+label.value+" ")
-          labelCount += 1
-          if (label.valueIsTruth) correctLabelCount += 1 // TODO Note this is accuracy independent of labelName; change?
+          //print("\n"+label.token.word+"="+label.trueValue+"/"+label.value+" ")
           predictedStart = false; trueStart = false
           // Find out if we are at the beginning of a segment.  
-          // We are at a start if either (a) labelValueStart matches, or (b) labelValueContinue matches and the previous label doesn't match
+          // This complicated conditional is necessary to make the start pattern "(B|I)-" work for both BIO and IOB formats.
+          // We are at a start if either (a) only labelValueStart matches, or (b) labelValueContinue matches and the previous label doesn't match
           // The (b) case makes it work for IOB notation, in which "B-*" is only used at the boundary between two like-categoried mentions.
-          //if ((!label.hasPrev || label.prev.index != label.index) && labelValueStart.findAllIn(label.value).hasNext)
-          if (labelValueStart.findAllIn(label.value).hasNext 
+          if ((labelValueStart.findAllIn(label.value).hasNext && !labelValueContinue.findAllIn(label.value).hasNext)
               || (labelValueContinue.findAllIn(label.value).hasNext 
                   && (!label.hasPrev || (!labelValueStart.findAllIn(label.prev.value).hasNext && !labelValueContinue.findAllIn(label.prev.value).hasNext)))) {
             predictedCount += 1
             predictedStart = true
             //print("ps ")
           }
-          if (labelValueStart.findAllIn(label.trueValue).hasNext
+          if ((labelValueStart.findAllIn(label.trueValue).hasNext && !labelValueContinue.findAllIn(label.trueValue).hasNext)
               || (labelValueContinue.findAllIn(label.trueValue).hasNext 
-                  && (!label.hasPrev || (!labelValueStart.findAllIn(label.prev.trueValue).hasNext && !labelValueContinue.findAllIn(label.prev.trueValue).hasNext)))) {
+                  && ((!label.hasPrev) || (!labelValueStart.findAllIn(label.prev.trueValue).hasNext && !labelValueContinue.findAllIn(label.prev.trueValue).hasNext)))) {
             trueCount += 1
             trueStart = true
             //print("ts ")
@@ -436,6 +442,7 @@ object LabeledTokenSeqs {
           // Truth and prediction both agree that a segment is starting here, let's see if they end in the same place
           if (predictedStart && trueStart) {
             //print(" pts ")
+            //print("%s=%s ".format(label.token.word, label.value))
             var predictedContinue, trueContinue = false
             var j = position + 1
             var stopSearchForSegmentEnd = false
@@ -444,10 +451,15 @@ object LabeledTokenSeqs {
               predictedContinue = labelValueContinue.findAllIn(label2.value).hasNext
               trueContinue = labelValueContinue.findAllIn(label2.trueValue.toString).hasNext
               //print("j="+j+predictedContinue+trueContinue)
+              //if (predictedContinue) print("pc ")
+              //if (trueContinue) print("tc ")
               if (!predictedContinue || !trueContinue) {
-                if (predictedContinue == trueContinue) correctCount += 1 // Both sequences ended at the same position: correct
+                if (predictedContinue == trueContinue) {
+                  correctCount += 1 // Both sequences ended at the same position: correct
+                  //print("%s=%s/%s correct".format(label2.token.word, label2.trueValue.toString, label2.value))
+                } //else print("%s=%s %s=%s/%s @%d wrong".format(if (label2.hasPrev) label2.prev.token.word else "(null)", if (label2.hasPrev) label2.prev.value else "(null)", label2.token.word, label2.trueValue, label2.value, j-position))
                 stopSearchForSegmentEnd = true
-              }
+              } //else print("%s=%s ".format(label2.token.word, label2.value))
               j += 1
             }
             // Handle special case for the end of the sequence
@@ -455,7 +467,6 @@ object LabeledTokenSeqs {
           }
         }
       }
-      def tokenAccuracy = correctLabelCount.toDouble / labelCount
       def precision = if (predictedCount == 0) 1.0 else correctCount.toDouble / predictedCount
       def recall = if (trueCount == 0) 1.0 else correctCount.toDouble / trueCount
       def f1 = if (recall+precision == 0.0) 0.0 else (2.0 * recall * precision) / (recall + precision)
@@ -464,11 +475,11 @@ object LabeledTokenSeqs {
       def tp = correctCount
       def fn = missCount
       def fp = alarmCount
-      override def toString = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(labelName, f1, precision, recall, tp, fp, fn, trueCount, predictedCount) 
+      override def toString = "%-8s f1=%-6f p=%-6f r=%-6f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(labelName, f1, precision, recall, tp, fp, fn, trueCount, predictedCount) 
     }
     
     // Some utilities for automatically filling in values 
-    private val defaultStartPrefix = "B-" // "B|I-" needed for IOB
+    private val defaultStartPrefix = "(B|I)-" // Although just "B-" would be enough for BIO, "(B|I)-" is needed for IOB
     private val defaultContinuePrefix = "I-"
     // Assume that the first two characters of each label are the "B-" or "I-" prefix.  Skip the label "O" because it is less than 3 chars long
     private def labelStringsToBase(labelVals:Seq[String]): Seq[String] = {
@@ -481,15 +492,22 @@ object LabeledTokenSeqs {
       def this()(implicit m:Manifest[L]) = this(labelStringsToBase(Domain[L](m).toSeq), defaultStartPrefix, defaultContinuePrefix)
       def this(labels:Seq[L])(implicit m:Manifest[L]) = { this(); this.+=(labels) }
       private val evals = new HashMap[String,PerSegmentEvaluation[T,L]]
+      private var labelCount = 0
+      private var labelCorrectCount = 0
       evals ++ baseLabelStrings.map(s => (s, new PerSegmentEvaluation[T,L](s, (startPrefix+s).r, (continuePrefix+s).r)))
       /** Return the LabelEvaluation specific to labelString. */
       def apply(labelString:String) = evals(labelString)
-      def +=(labels: Seq[L]): Unit =
+      def +=(labels: Seq[L]): Unit = {
         evals.values.foreach(eval => eval += labels)
+        labelCount += labels.length
+        labels.foreach(label => if (label.valueIsTruth) labelCorrectCount += 1)
+      }
+      // This is a per-label measure
+      def tokenAccuracy = labelCorrectCount.toDouble / labelCount
+      // The rest are per-segment
       def correctCount = evals.values.foldLeft(0)(_+_.correctCount)
       def predictedCount = evals.values.foldLeft(0)(_+_.predictedCount)
       def trueCount = evals.values.foldLeft(0)(_+_.trueCount)
-      def tokenAccuracy = evals.values.foldLeft(0)(_+_.correctLabelCount).toDouble / evals.values.foldLeft(0)(_+_.labelCount)
       def precision = if (predictedCount == 0) 1.0 else correctCount.toDouble / predictedCount
       def recall = if (trueCount == 0) 1.0 else correctCount.toDouble / trueCount
       def f1: Double = if (precision + recall == 0.0) 0.0 else 2.0 * precision * recall / (precision + recall)
@@ -498,13 +516,12 @@ object LabeledTokenSeqs {
       def tp = correctCount
       def fn = missCount
       def fp = alarmCount
-      def summaryString = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format("OVERALL", f1, precision, recall, tp, fp, fn, tp+fn, tp+fp)
+      def summaryString = "%-8s f1=%-6f p=%-6f r=%-6f (tp=%d fp=%d fn=%d true=%d pred=%d) acc=%-5f (%d/%d)\n".format("OVERALL", f1, precision, recall, tp, fp, fn, tp+fn, tp+fp, tokenAccuracy, labelCorrectCount, labelCount)
       override def toString = {
         val sb = new StringBuffer
-        sb.append("ACCURACY "+tokenAccuracy+" ("+evals.values.foldLeft(0)(_+_.correctLabelCount)+"/"+evals.values.foldLeft(0)(_+_.labelCount)+")")
-        sb.append("\n")
+        //sb.append("ACCURACY "+tokenAccuracy+" ("+labelCorrectCount+"/"+labelCount+")")
+        //sb.append("\n")
         sb.append(summaryString)
-        sb.append("\n")
         evals.values.foreach(e => { sb.append(e.toString); sb.append("\n") })
         sb.toString
       } 

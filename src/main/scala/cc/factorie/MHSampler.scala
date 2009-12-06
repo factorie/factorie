@@ -3,6 +3,15 @@ import scala.reflect.Manifest
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.{Hooks0,Hooks1,Hooks2}
 
+/** A Metropolis-Hastings sampler.  
+    The abstract method 'propose' should be defined to make a random proposal, putting changes in its implicit DiffList, 
+    and returning the ratio of q/q' (backward to forward jump probabilities.) 
+    @author Andrew McCallum
+    @author Michael Wick
+    @since 0.8
+    @see ProposalSampler
+    @see GibbsSampler
+*/
 abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   var random = Global.random
   

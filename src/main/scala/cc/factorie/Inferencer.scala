@@ -7,6 +7,7 @@ import cc.factorie.util.Implicits._
 
 
 // Generic over sampling-based inference and variational inference
+// TODO Not yet sure what general interfaces should go here.
 trait Marginal
 trait Lattice
 
@@ -15,11 +16,20 @@ trait Inferencer[V<:Variable,C] {
   /** Infer the target 'variables' using 'varying' to drive the exploration of changes to the configuration.  
       For example, in SamplingInference, 'varying' are Sampler 'contexts' which do not necessarily have to be Variables;
       they are arbitrary keys to the sampler that may drive exploration, which will eventually result in changes to the 'target' variables.
-      If for you this separation of target variables and sampling contexts is unnecessary or confusing, consider VariableInferencer instead. */
+      If for you this separation of target variables and sampling contexts is unnecessary or confusing, consider VariableInferencer instead.
+   
+      @author Andrew McCallum
+      @since 0.8
+   */
   def infer(variables:Collection[V], varying:Collection[C]): LatticeType
   //def infer(factors:TemplateList[VectorTemplate], variables:Collection[V]): LatticeType
 }
 
+/** An Inferencer in which the context arguments are Variables.
+ 
+    @author Andrew McCallum
+    @since 0.8
+ */
 trait VariableInferencer[V<:Variable] extends Inferencer[V,V] {
   /** Infer the 'variables', changing their values, but not other variables' (except perhaps through variable-value coordination). */
   def infer(variables:Collection[V]): LatticeType = infer(variables, variables)
@@ -88,7 +98,11 @@ class VariableSamplingInferencer[V<:CategoricalVariable](sampler:Sampler[V]) ext
     'diffScore' is the relative change in model score from the initial configuration. */
 class SamplingMaximizerLattice(val diff:DiffList, val diffScore:Double) extends Lattice
 
-/** Provide 'infer' method that uses the 'sampler' to search for the best-scoring configuration. */
+/** Provide 'infer' method that uses the 'sampler' to search for the best-scoring configuration.
+ 
+		@author Andrew McCallum
+    @since 0.8
+ */
 // TODO Update this for the new separated "modelScore" and "acceptScore" in Proposal.
 class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends Maximizer[V] with VariableInferencer[V] {
   def this(model:Model) = this(new GibbsSampler1[V](model))
@@ -144,6 +158,11 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
   }
 }
 
+/** Perform inference according to belief propagation.
+ 
+ 		@author Andrew McCallum
+ 		@since 0.8
+ */
 class BPInferencer[V<:UncoordinatedCategoricalVariable](model:Model) extends VariableInferencer[V] {
   override type LatticeType = BPLattice
   def infer(variables:Collection[V], varying:Collection[V]): LatticeType = infer(variables, varying, 4) // TODO Make a more sensible default  

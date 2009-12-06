@@ -33,7 +33,8 @@ trait OutcomeGenerating[T] {
 // TODO Rename MultinomialOutcome DiscreteOutcome
 
 
-/** Base of the Multinomial class hierarchy, needing only methods length, pr, and set. */
+/** Base of the Multinomial class hierarchy, needing only methods length, pr, and set. 
+    @author Andrew McCallum */
 // TODO Rename simply "Multinomial"?
 @DomainInSubclasses
 trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[ProportionOutcome[O]] with*/ DiscreteGenerating[O] with ProportionOutcome[O] {
@@ -93,7 +94,8 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[Pr
   def estimate: Unit = { throw new Error("Not yet implemented")} // TODO What to put here?
 }
 
-/** Compact representation of immutable Multinomial with equal probability for all outcomes. */
+/** Compact representation of immutable Multinomial with equal probability for all outcomes. 
+    @author Andrew McCallum */
 class UniformMultinomial[O<:DiscreteOutcome[O]](implicit m:Manifest[O]) extends AbstractMultinomial[O] {
   val length: Int = Domain[O](m).size
   val pr1 = 1.0/length
@@ -101,7 +103,8 @@ class UniformMultinomial[O<:DiscreteOutcome[O]](implicit m:Manifest[O]) extends 
   def set(proportions:Seq[Double]): Unit = throw new Error("UniformMultinomial cannot be changed.")
 }
 
-/** A mixture of a fixed set of Multinomials, i.e. you cannot add or remove Multinomials from the mixture. */
+/** A mixture of a fixed set of Multinomials, i.e. you cannot add or remove Multinomials from the mixture. 
+    @author Andrew McCallum */
 class MultinomialMixture[M<:AbstractMultinomial[O],O<:DiscreteOutcome[O]](ms:Seq[M], ps:Seq[Double]) extends AbstractMultinomial[O] {
 	// TODO How can I avoid needing both M and O as type parameters.  I think M should automatically specify O.
   val components = ms.toArray
@@ -115,7 +118,8 @@ class MultinomialMixture[M<:AbstractMultinomial[O],O<:DiscreteOutcome[O]](ms:Seq
   def set(m:Seq[Double]): Unit = throw new Error("MultinomialMixture cannot be set.")
 }
 
-/** Simple Multinomial that represents p(x) directly. */
+/** Simple Multinomial that represents p(x) directly. 
+    @author Andrew McCallum */
 // TODO Change this to not require a Manifest in the default constructor
 class DenseMultinomial[O<:DiscreteOutcome[O]](proportions:Seq[Double]) extends AbstractMultinomial[O] {
   def this(dim:Int) = this(Array.make(dim, 1.0/dim))
@@ -133,7 +137,8 @@ class DenseMultinomial[O<:DiscreteOutcome[O]](proportions:Seq[Double]) extends A
   @inline final def pr(index:Int) = _pr(index)
 }
 
-/** A Multinomial that stores its parameters as a collection of "outcome counts" and their total. */
+/** A Multinomial that stores its parameters as a collection of "outcome counts" and their total. 
+    @author Andrew McCallum */
 @DomainInSubclasses
 trait CountsMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   type VariableType <: CountsMultinomial[O];
@@ -200,6 +205,8 @@ trait SparseMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   //def sampleIndexProduct(m2:SparseMultinomial[O]): Int // TODO
 }
 
+/** A Multinomial that stores its counts in a Scalala SparseVector. 
+    @author Andrew McCallum */
 @DomainInSubclasses
 class SparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMultinomial[O] with SparseMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
@@ -211,7 +218,9 @@ class SparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMult
   // def sampleIndex: Int // TODO
 }
 
-/** Multinomial for which sampling is efficient because outcomes are considered in order of highest-count first. */
+/** Multinomial for which sampling is efficient because outcomes are considered in order of highest-count first.
+    This implementation is not yet finished.
+    @author Andrew McCallum */
 @deprecated // Not finished
 abstract class SortedSparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends AbstractMultinomial[O] with SparseMultinomial[O] {
 	def length: Int = pos.length
@@ -229,6 +238,8 @@ abstract class SortedSparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) ext
   def incrementCount(index:Int, incr:Int): Unit = { val p:Int = pos(index); buf(p) = (co(p) + incr) }
 }
 
+/** A Multinomial that stores its counts in a Scalala DenseVector.
+    @author Andrew McCallum */
 @DomainInSubclasses
 class DenseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
@@ -236,6 +247,8 @@ class DenseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMulti
   protected val _counts = new DenseVector(dim)
 }
 
+/** A Multinomial with parameters integrated out with a Dirichlet prior.  Also known as a Multivariate Polya distribution.
+    @author Andrew McCallum */
 // TODO Figure out how to use intead [O<:DiscreteOutcome[O]], but still get O#VariableType#ValueType in "top" below
 @DomainInSubclasses
 class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
@@ -301,7 +314,8 @@ class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet
   override def toString = "Multinomial(count="+countsTotal+")"
 }
 
-/** DiscreteValue integrated out over a Multinomial prior distribution */
+/** DiscreteValue integrated out over a Multinomial prior distribution.
+    @author Andrew McCallum */
 // TODO turn this into Variational representation supporting mean-field
 trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends DiscreteOutcomeVariable[This] {
   this: This =>

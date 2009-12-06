@@ -1,10 +1,11 @@
 # Some simple processing for source code maintenance.
 # To compile FACTORIE use Maven2, by typing "mvn compile"
 
-all:
+default:
 	echo To compile FACTORIE use Maven2, "mvn compile"
 
 # Use emacs' default indenter to fix indentation on all *.scala files in src.
+# Not yet working!
 # TODO: This could be made more efficient by having emacs loop through the files instead of the shell
 fixindent:
 	for f in `find src -name '*.scala' -print` ; do \
@@ -31,6 +32,9 @@ fixindenttest:
 	    -eval '(scala-indent-line)' \
 	    -eval '(indent-region (point-min) (point-max) nil)' \
 	    -eval '(goto-char (point-min))' \
+	    -eval '(defun indent-all () (interactive) (indent-region (point-min) (point-max) nil))' \
+	    -eval "(global-set-key (kbd \"C-d\") 'indent-all)" \
+	    -eval '(indent-all)' \
 	  ; \
 	done
 
@@ -49,14 +53,28 @@ fixindenttest2:
 	    -f save-buffer ; \
 	done
 
+untabify:
+	for f in `find src/main/scala/cc/factorie/model -name '*.scala' -print` ; do \
+	  /usr/bin/emacs -q -batch \
+	    $$f \
+	    -eval "(setq indent-tabs-mode nil)" \
+	    -eval "(setq tab-width 2)" \
+	    -eval '(untabify (point-min) (point-max))' \
+	    -f save-buffer \
+	  ; \
+	done
 
 
-clean-orig:
-	find src -name '*.orig' -exec rm {} \;
+
+cleanfiles:
+	find -E src -regex '.*(~|\.orig)' -print
+
+clean:
+	find -E src -regex '.*(~|\.orig)' -exec rm {} \;
 
 strip-first-comment:
-        perl -0777 -i.orig -p -e 's,^/\*[^\*]*\*/,,sm' `find src -name '*.java'`
-        perl -0777 -i.orig -p -e 's,^/\*[^\*]*\*/,,sm' `find src -name '*.scala'`
+	perl -0777 -i.orig -p -e 's,^/\*[^\*]*\*/,,sm' `find src -name '*.java'`
+	perl -0777 -i.orig -p -e 's,^/\*[^\*]*\*/,,sm' `find src -name '*.scala'`
 
 prepend-license-comment:
 	for f in `find -E src -name '.*\.(java|scala)'` ; do \

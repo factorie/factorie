@@ -1,13 +1,13 @@
 package cc.factorie.example
+import scala.io.Source
+import cc.factorie._ 
+import cc.factorie.er._
+import cc.factorie.application.LabeledTokenSeqs
+import cc.factorie.application.LabeledTokenSeqs.LabeledTokenSeq
+import scala.collection.mutable.ArrayBuffer
+import java.io.File
 
 object ChainNER2 {
-  import scala.io.Source
-  import cc.factorie._ 
-  import cc.factorie.er._
-  import cc.factorie.application.LabeledTokenSeqs
-  import cc.factorie.application.LabeledTokenSeqs.LabeledTokenSeq
-  import scala.collection.mutable.ArrayBuffer
-  import java.io.File
 
   // Define the variable classes
   class Token(word:String, labelString:String) extends LabeledTokenSeqs.Token[Label,Token](word) {
@@ -20,10 +20,12 @@ object ChainNER2 {
       if (feature.matches("POS=[-A-Z]+")) tags += feature
       super.+=(feature)
     }
+    override def toString: String = "Token("+word+")@"+position
   }
   
   class Label(labelString:String, token:Token) extends LabeledTokenSeqs.Label[Token,Label](labelString, token) {
   	type GetterType = LabelGetter; class GetterClass extends LabelGetter
+    override def toString: String = "Label("+value+")@"+token.position
   }
 
   class TokenGetter extends LabeledTokenSeqs.TokenGetter[Label,Token] {
@@ -40,11 +42,11 @@ object ChainNER2 {
   // Variable classes Token, Label and LabeledTokenSeq are already defined in cc.factorie.application.LabeledTokenSeqs
   // Use them to define model:
   val model = new Model(
-    Foreach[Label] { label => Score(label) },
-    Foreach[Label] { label => Score(label, label.token) },
-    Foreach[Label] { label => Score(label.prev, label) },
+    Foreach[Label] { label => Score(label) } %"Prior",
+    Foreach[Label] { label => Score(label, label.token) } %"LabelToken",
+    Foreach[Label] { label => Score(label.prev, label) } %"LabelLabel",
+    //Foreach[Label] { label => Score(label.prev, label, label.token.tags) },
     //Foreach[Label] { label => Score(label.prev, label, label.next) },
-    Foreach[Label] { label => Score(label.prev, label, label.token.tags) },
     //Foreach[Label] { label => Score(label.prev, label, label.next, label.token.tags) }
     //For[Label] { label => Score(label, label.token) }                 % "LabelToken",
     //For[Label] { label => Score(label, label.next) }                  % "LabelMarkov",
@@ -53,8 +55,8 @@ object ChainNER2 {
   def main(args: Array[String]) : Unit = {
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
     // Read training and testing data.  The function 'featureExtractor' function is defined below
-    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(0)), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)
-    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(1)), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)
+    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(0)), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)//.take(200)
+    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(1)), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)//.take(200)
     println(Domain[Label].toList)
     // Change from CoNLL's IOB notation to to BIO notation
     (trainSentences ++ testSentences).foreach(s => { 
@@ -70,7 +72,7 @@ object ChainNER2 {
       })}) 
       
     // Make features of offset conjunctions
-    (trainSentences ++ testSentences).foreach(s => s.addNeighboringFeatureConjunctions(List(-1), List(0), List(-1,0), List(0,1), List(1)))
+    (trainSentences ++ testSentences).foreach(s => s.addNeighboringFeatureConjunctions(List(0), List(0,0), List(-1), List(-1,0), List(0,1), List(1)))
     // Gather tokens into documents
     val documents = new ArrayBuffer[ArrayBuffer[Token]]; documents += new ArrayBuffer[Token]
     (trainSentences ++ testSentences).foreach(s => if (s.length == 0) documents += new ArrayBuffer[Token] else documents.last ++= s)
@@ -79,8 +81,8 @@ object ChainNER2 {
     // If the sentence contains no lowercase letters, tell all tokens in the sentence they are part of an uppercase sentence
     (trainSentences ++ testSentences).foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t += "SENTENCEUPPERCASE"))
     (trainSentences ++ testSentences).foreach(s => s.foreach(t => if (t.word.matches("[A-Za-z]+")) t ++= t.charNGrams(2,5).map(n => "NGRAM="+n)))
-    (trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(5).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
-    (trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.nextWindow(5).map(t2 => "NEXTWINDOW="+simplify(t2.word).toLowerCase)))
+    //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(5).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
+    //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.nextWindow(5).map(t2 => "NEXTWINDOW="+simplify(t2.word).toLowerCase)))
     // Put features of first mention o later mentions
     (trainSentences ++ testSentences).foreach(s => {
       s.foreach(t => {
@@ -102,8 +104,8 @@ object ChainNER2 {
     val trainLabels = trainSentences.flatMap(_.labels)//.take(50000) // was take(20000) 
     val testLabels = testSentences.flatMap(_.labels)//.take(2000) // was .take(10000)
 
-    val targets = trainLabels.take(100)// trainSentences(15).map(_.label)
-    targets.foreach(printLabel(_))
+    //val targets = trainLabels.take(100)// trainSentences(15).map(_.label)
+    //targets.foreach(printLabel(_))
 
     //trainLabels.take(20).foreach(printLabel(_))
     println("Domain size = "+Domain[Token].size)
@@ -137,7 +139,7 @@ object ChainNER2 {
     //with FactorQueue[Variable with IterableSettings] { def process0(x:AnyRef):DiffList = x match { case l:Label => process(l); case _ => null} }
     // Train for 5 iterations through all Labels
     val startTime = System.currentTimeMillis
-    learner.process(trainLabels, 10)
+    learner.process(trainLabels, 5)
     println("Finished training in "+(System.currentTimeMillis-startTime)/60000.0+" minutes.")
     
     // Predict, testing BP
@@ -155,20 +157,30 @@ object ChainNER2 {
     predictor.process(testLabels, 1)
     predictor.temperature = 0.1; predictor.process(testLabels, 1)
     predictor.temperature = 0.01; predictor.process(testLabels, 1)
-    predictor.temperature = 0.001; predictor.process(testLabels, 1)
+    predictor.temperature = 0.001; predictor.process(testLabels, 2)
     printErrors(testLabels, 100)
     println("GibbsSampling inference")
     println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
     println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
 
-    /*println("BP inference")
+    println("BP inference")
     val bppredictor = new BPInferencer[Label](model)
-    trainSentences.foreach(s => bppredictor.inferTreewise(s.map(_.label)))
-    testSentences.foreach(s => bppredictor.inferTreewise(s.map(_.label)))
+    (trainSentences ++ testSentences).foreach(s => {
+      val labels = s.map(_.label)
+      println("BP sentence")
+      labels.foreach(l => print(l.token.word+"="+l+"  ")); println
+      if (labels.size >0) { labels.first.token.seq.foreach(t => print(t.word+"="+t.label+"  ")); println }
+      s.foreach(t => print(t.word+"="+t.label+"  ")); println
+      if (s.size > 0) {
+        var t = s.first
+        while (t != null) { print(t.word+"="+t.label); t = t.next }; println
+      }
+      bppredictor.inferTreewise(labels)
+    })
     println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
-    println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))*/
+    println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
     
-    model.save("/Users/mccallum/tmp/chainner2.factorie")
+    //model.save("/Users/mccallum/tmp/chainner2.factorie")
   }
 
   def printLabel(label:Label) : Unit = {
@@ -206,13 +218,12 @@ object ChainNER2 {
     }
   }
  
-
   // Feature extraction
   def simplify(word:String): String = {
     if (word.matches("(19|20)\\d\\d")) "<YEAR>" 
     else if (word.matches("\\d+")) "<NUM>"
-    else if (word.matches(".*\\d.*")) word.replaceAll("\\d","#")
-    else word
+    else if (word.matches(".*\\d.*")) word.replaceAll("\\d","#").toLowerCase
+    else word.toLowerCase
   }
   def featureExtractor(initialFeatures:Seq[String]) : Seq[String] = {
     import scala.collection.mutable.ArrayBuffer

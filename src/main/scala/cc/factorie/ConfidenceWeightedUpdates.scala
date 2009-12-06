@@ -6,13 +6,20 @@ import scalala.tensor.Vector
 import scalala.tensor.sparse.SparseVector
 
 
-
-/**IMPORTANT NOTE: for default settings, the confidence-weighted updates are small, resulting in a 'low-temperature' distribution. For certain models, it may be necessary to compensate by changing the temperature parameter in both the learner and predictor. For example:
- 
-val learner = new GibbsSampler(model, objective) with SampleRank with ConfidenceWeightedUpdates{temperature=0.01}
-val predictor = new GibbsSampler(model){temperature=0.01}*/
-
 //TODO: don't require SampleRank
+/** Given a gradient, change parameters according to "Confidence Weighted Learning", Dredze, Crammar, Pereira, ICML 2008.
+    IMPORTANT NOTE:  for default settings, the confidence-weighted updates are small, resulting in a 'low-temperature' distribution. 
+    For certain models, it may be necessary to compensate by changing the temperature parameter in both the learner and predictor. 
+    For example:
+    <code> 
+    val learner = new GibbsSampler(model, objective) with SampleRank with ConfidenceWeightedUpdates {temperature=0.01}
+    val predictor = new GibbsSampler(model) {temperature=0.01}
+    </code>
+    @author Michael Wick
+    @see MIRAUpdates
+    @WeightUpdates
+    @since 0.8
+ */
 trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
   this: ProposalSampler[_] =>
   override type TemplatesToUpdate = DotTemplate

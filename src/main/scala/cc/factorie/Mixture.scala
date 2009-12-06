@@ -10,7 +10,9 @@ import cc.factorie.util.Implicits._
     and this.index is a densely-packed numbering of the distribution instances themselves.
     The number of components in the mixture is the size of the domain.  Values of the domain are these MixtureComponent objects.
     Note that this is not a CategoricalOutcome, it is the *categorical value* of a CategoricalOutcome. 
-    A CategoricalOutcome that has this value is a MixtureChoice. */
+    A CategoricalOutcome that has this value is a MixtureChoice. 
+    @author Andrew McCallum
+*/
 trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistribution with ItemizedObservation[This]] extends AbstractGenerativeDistribution with ItemizedObservation[This] {
   this : This =>
 }
@@ -18,7 +20,9 @@ trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistr
 
 /** A multinomial outcome that is an indicator of which mixture component in a MixtureChoice is chosen.
     Its categorical value is a MixtureComponent. 
-    The "Z" in Latent Dirichlet Allocation is an example. */  
+    The "Z" in Latent Dirichlet Allocation is an example. 
+    @author Andrew McCallum
+ */  
 // Example usage, in LDA: 
 // class Topic extends Multinomial[Word] with MixtureComponent[Topic]
 // class Z extends MixtureChoice[Topic,Z]; Domain.alias[Z,Topic]
@@ -30,7 +34,7 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
   type ValueType = M
   //def asOutcome = this
   def choice: M = domain.get(index)
-  _index = Global.random.nextInt(domain.size) // TODO is this how _index should be initialized?
+  setByInt(Global.random.nextInt(domain.size))(null) // TODO is this how _index should be initialized?
   // Make sure the defaultModel is prepared to handle this
   if (!Global.defaultModel.contains(MixtureChoiceTemplate)) Global.defaultModel += MixtureChoiceTemplate
   Domain.alias[This,M](mt,mm) // We must share the same domain as M; this aliasing might have been done already, but just make sure its done.
@@ -135,7 +139,7 @@ object MixtureChoiceTemplate extends TemplateWithStatistics1[MixtureChoice[Gener
   def score(s:Stat) = { val mc = s.s1; mc.logpr + mc.choice.unsafeLogpr(mc.outcome) } 
   // MixtureComponent.logpr current includes both source and outcome, but perhaps it shouldn't and both should be here
 }
-abstract class GenericDiscreteOutcome extends DiscreteOutcome[GenericDiscreteOutcome] { def index = -1 }
+abstract class GenericDiscreteOutcome extends DiscreteOutcome[GenericDiscreteOutcome] { def intValue = -1 }
 // The "2" below is arbitrary, but since this constructor is never called, it shouldn't make any difference
 abstract class GenericMixtureComponent extends DenseCountsMultinomial[GenericDiscreteOutcome](2) with MixtureComponent[GenericMixtureComponent]
 abstract class GenericMixtureChoice extends MixtureChoice[GenericMixtureComponent,GenericMixtureChoice]

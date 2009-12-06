@@ -16,21 +16,24 @@ import cc.factorie.util.Implicits._
 //   object LabelSampler extends Sampler1[Label]
     
 
-/** GibbsSampler for a subclass of Variable with IterableSettings */
+/** GibbsSampler for a subclass of Variable with IterableSettings.
+    @author Andrew McCallum */
 class GibbsSampler1[V1<:Variable with IterableSettings](model:Model, objective:Model) extends SamplerOverSettings[V1](model, objective) {
   def this(m:Model) = this(m, null)
   def this() = this(Global.defaultModel)
 	def settings(v:V1) : SettingIterator = v.settings
 }
 
-/** GibbsSampler for generic "Variable with IterableSettings" */
+/** GibbsSampler for generic "Variable with IterableSettings".
+    @author Andrew McCallum */
 class GibbsSampler(model:Model, objective:Model) extends GibbsSampler1[Variable with IterableSettings](model, objective) {
   def this(m:Model) = this(m, null)
   def this() = this(Global.defaultModel)
 }
 
 // TODO Not yet tested
-/** GibbsSampling over a block size of 2.  Override "block" method to locate the second variable from the first. */
+/** GibbsSampling over a block size of 2.  Override "block" method to locate the second variable from the first. 
+    @author Andrew McCallum */
 abstract class GibbsSampler2[V1<:Variable with IterableSettings,V2<:Variable with IterableSettings](model:Model, objective:Model) extends SamplerOverSettings[V1](model, objective) {
   def this(m:Model) = this(m, null)
   def this() = this(Global.defaultModel)
@@ -57,7 +60,8 @@ abstract class GibbsSampler2[V1<:Variable with IterableSettings,V2<:Variable wit
 }
 
 // TODO Not yet tested
-/** GibbsSampling over a block size of 3.  Override "block" method to locate the second and third variables from the first. */
+/** GibbsSampling over a block size of 3.  Override "block" method to locate the second and third variables from the first. 
+    @author Andrew McCallum */
 abstract class GibbsSampler3[V1<:Variable with IterableSettings,V2<:Variable with IterableSettings,V3<:Variable with IterableSettings](model:Model, objective:Model) extends SamplerOverSettings[V1](model, objective) {
   def this(m:Model) = this(m, null)
   def this() = this(Global.defaultModel)

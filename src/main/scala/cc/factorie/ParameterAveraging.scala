@@ -8,7 +8,12 @@ import scalala.tensor.Vector
 import scala.reflect.Manifest
 import scala.collection.mutable.HashMap
 
-
+/** Weight updates that keep a running average once per iteration.
+    For example "Average Perceptron" can be implemented by
+    <code>
+    new StructuredPerceptron(model) with GradientAscentUpdates with ParameterAveraging
+    </code>
+    @author Michael Wick */
 trait ParameterAveraging extends WeightUpdates {
   override type TemplatesToUpdate = DotTemplate
   // To apply this learning to just a subset of the WeightedLinearTemplates, you can define "model" to be a subset of the original model.

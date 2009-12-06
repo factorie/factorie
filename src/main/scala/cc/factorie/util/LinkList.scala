@@ -1,7 +1,10 @@
 package cc.factorie.util
 
 /** A Seq represented as a doubly-linked list of This.  
- * Any one element represents the Seq of itself and all following links.  If you want the full collection, use this.first... */
+    Any one element represents the Seq of itself and all links of its sequence.  
+    @author Andrew McCallum
+    @see VarInMutableSeq
+ */
 // TODO Consider changing this to that "length" and "elements" always include all elements of the collection?  This be necessary to obey assumptions of trait Seq implementation
 trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
 	this : This =>

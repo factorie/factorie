@@ -13,17 +13,21 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 
 // Diffs
 
-// TODO consider adding state that throws error if users try to "undo" or "redo" twice in a row.
-/**A change record for a variable, holding its old and new values */
+/** A change record for a variable, holding its old and new values, with capability to undo and redo the change.
+ 	  @author Andrew McCallum
+ */
 trait Diff {
 	def variable: Variable
 	// TODO Make "def redo1" which calls redo, but verfies that we don't do redo twice in a row ??
 	def redo: Unit
 	def undo: Unit
 }
+// TODO consider adding state that throws error if users try to "undo" or "redo" twice in a row.
 
 /** A Diff which, when created, performs the change.  
- *  Thus we avoid duplication of code: rather than doing the change, and then creating a Diff instance, we just create the Diff instance. */
+    Thus we avoid duplication of code: rather than doing the change, and then creating a Diff instance, we just create the Diff instance. 
+    @author Andrew McCallum
+ */
 abstract class AutoDiff(implicit d:DiffList) extends Diff {
 	if (d != null) d += this
 	redo
@@ -31,7 +35,11 @@ abstract class AutoDiff(implicit d:DiffList) extends Diff {
 }
 
  
-/**A collection of changes to variables; the common representation for the result of a proposed change in configuration */
+/** A collection of changes to variables; the common representation for the result of a proposed change in configuration.
+    Tracks whether the change is in its done or undone state and throws an error if repeated undo or redo is attempted.
+    A DiffList can be scored according to a model (or two models) with scoreAndUndo methods.
+    @author Andrew McCallum
+ */
 class DiffList extends ArrayBuffer[Diff] {
   var done = true
 	def redo: Unit = {

@@ -13,7 +13,8 @@ import cc.factorie.util.Implicits._
 // TODO Consider using the word "Target" for variables that we are trying to predict at training and/or test time.
 // The word "Hidden" should perhaps also be used somewhere.
 
-/** A variable of finite enumerated values that has a true "labeled" value, separate from its current value. */
+/** A variable of finite enumerated values that has a true "labeled" value, separate from its current value. 
+    @author Andrew McCallum */
 // TODO We could make version of this for OrdinalValue: TrueOrdinalValue
 trait TrueCategoricalValue extends TrueSetting {
   this : CategoricalVariable =>
@@ -40,7 +41,11 @@ abstract class TrueCategoricalTemplate[V<:CategoricalVariable with TrueCategoric
 class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]](implicit m:Manifest[V]) extends TrueCategoricalTemplate[V]()(m)
 
 
-/** A variable with a single index and a true value. */
+/** A variable with a single index and a true value.
+    Subclasses can override setByIndex to coordinate the value of other variables with this one.
+    @author Andrew McCallum
+    @see LabelVariable
+*/
 @DomainInSubclasses
 class CoordinatedLabelVariable[T](trueval:T) extends CoordinatedEnumVariable[T](trueval) with TypedTrueCategoricalValue[T] {
   type VariableType <: CoordinatedLabelVariable[T]
@@ -48,6 +53,12 @@ class CoordinatedLabelVariable[T](trueval:T) extends CoordinatedEnumVariable[T](
   setByIndex(domain.index(trueval))(null)
 }
 
+/** A CategoricalVariable with a single value and a true value.
+    Subclasses cannot override setByIndex to coordinate the value of other variables with this one;
+    hence belief propagation can be used with these variables.
+    @author Andrew McCallum
+    @see CoordinatedLabelVariable
+ */
 @DomainInSubclasses
 class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with UncoordinatedCategoricalVariable {
   type VariableType <: LabelVariable[T]
@@ -56,7 +67,8 @@ class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with
 }
 
 /** A Label with a StringDomain.  StringDomains can be conveniently initialized, as in
-    class NerLabel extends StringDomain { val PER, ORG, LOC, MISC, O = Value; freeze } // Then Domain[NerLabel].PER == "PER" */
+    class NerLabel extends StringDomain { val PER, ORG, LOC, MISC, O = Value; freeze } // Then Domain[NerLabel].PER == "PER" 
+    @author Andrew McCallum */
 // TODO But should this be Coordinated or Uncoordinated, or should we make both.
 @DomainInSubclasses
 class StringLabelVariable(trueval:String) extends LabelVariable[String](trueval) {

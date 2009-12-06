@@ -1,5 +1,9 @@
 package cc.factorie.util
 
+/** A collection of standard English "stop words"---common words often left out of processing. 
+    @author Andrew McCallum
+    @see cc.factorie.example.LDA
+*/
 object Stopwords {
   
   def contains(s:String) = asIndex.contains(s)

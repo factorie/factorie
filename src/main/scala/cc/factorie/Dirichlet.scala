@@ -7,8 +7,9 @@ import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
-/** Base of the Dirichlet class hierarchy, needing only methods 'length' and 'mean'. */
-// Used to be with GenerativeDistribution[AbstractMultinomial[O]]
+/** Base of the Dirichlet class hierarchy, needing only methods 'length' and 'mean'. 
+    @author Andrew McCallum
+*/
 trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends GenerativeDistribution[ProportionOutcome[O]] with ProportionGenerating[O] with RandomAccessSeq[Double] {
   //type OutcomeType = AbstractMultinomial[O]
   final def length: Int = mean.length
@@ -59,7 +60,8 @@ trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends GenerativeDistribution[Pr
   }
 }
 
-/** Immutable Dirichlet with equal alpha for all dimensions. */
+/** Immutable Dirichlet with equal alpha for all dimensions. 
+    @author Andrew McCallum	*/
 @DomainInSubclasses
 class SymmetricDirichlet[O<:DiscreteOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] {
   type VariableType <: Dirichlet[O];
@@ -70,7 +72,8 @@ class SymmetricDirichlet[O<:DiscreteOutcome[O]](initialAlpha:Double)(implicit m:
   keepGeneratedSamples = false
 }
 
-/** Default Dirichlet, with densely-represented mean, and estimation by moment-matching */
+/** Default Dirichlet, with densely-represented mean, and estimation by moment-matching.
+    @author Andrew McCallum */
 @DomainInSubclasses
 class Dirichlet[O<:DiscreteOutcome[O]](val mean:AbstractMultinomial[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with DirichletMomentMatchingEstimator[O] {
   //println("Dirichlet")
@@ -127,6 +130,8 @@ object Dirichlet {
   def apply[O<:DiscreteOutcome[O]](implicit m:Manifest[O]) = new SymmetricDirichlet[O](1.0)
 }
   
+/** Estimate the parameters of a Dirichlet by moment-matching.
+    @author Andrew McCallum */
 trait DirichletMomentMatchingEstimator[O<:DiscreteOutcome[O]] extends AbstractDirichlet[O] {
   this : Dirichlet[O] =>
   private def setUniform: Unit = 

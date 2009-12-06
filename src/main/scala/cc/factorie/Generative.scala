@@ -14,14 +14,16 @@ import cc.factorie.util.Implicits._
 /** A Variable representing a probability distribution that generates other variable values with type OutcomeType
     It provides methods returning the probability of given values, and for (re-)sampling a new value into an existing variable. 
     Optionally, it keeps track of all the variables generated, for use in estimating the parameters of this distribution,
-    and for use in finding neighbors for factor Templates. */
+    and for use in finding neighbors for factor Templates. 
+    @author Andrew McCallum */
 // Change this to O<:TypedVariable so that we can add def sampleValue:O#ValueType
 trait GenerativeDistribution[O<:Variable] extends AbstractGenerativeDistribution {
   // Note that 'O' is not *required* to be a GenerativeVariable.  This allows us to put any DiscreteVariable into Multinomial, for example.
   type OutcomeType = O // TODO Consider insisting the OutcomeType = GenerativeObservation[O]; For now I've simly added a noop 'setSource' method to Variable
 }
 
-/** A stand-in for GenerativeDistribution that does not take type parameters */
+/** A stand-in for GenerativeDistribution that does not take type parameters.
+    @author Andrew McCallum */
 trait AbstractGenerativeDistribution extends Variable {
   type OutcomeType <: Variable 
   // Perhaps we really want OutcomeType to be 'either ConstantVariable or GenerativeObservation', 
@@ -109,7 +111,7 @@ trait AbstractGenerativeDistribution extends Variable {
 // Some specific cases of GenerativeDistribution types
 // TODO Rename OrdinalDistribution, DiscreteDistribution, CategoricalDistribution, ProportionDistribution, RealDistribution, etc.
 
-/** A GenerativeDistribution that generates discrete (Int) outcomes (perhaps even a DiscreteOutcome), for example a Poisson */
+/** A GenerativeDistribution that generates discrete (Int) outcomes (perhaps even a DiscreteOutcome), for example a Poisson. */
 trait OrdinalGenerating[O<:OrdinalValue] extends GenerativeDistribution[O] {
   def sampleIndex: Int // TODO Rename sampleInt?  And likewise below?
   def pr(index:Int): Double

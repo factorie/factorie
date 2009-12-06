@@ -2,27 +2,17 @@ package cc.factorie.example
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.Implicits._
+import cc.factorie.application.DocumentClassification
+import cc.factorie.application.FeatureVectorClassification
 
 object DocumentClassifier1 {
-  import cc.factorie.application.DocumentClassification
-  import cc.factorie.application.FeatureVectorClassification
   
   // Define variable classes
   class Document(file:File) extends DocumentClassification.Document[Label,Document](file) {
-    //override type GetterClass = DocumentGetter
-    def newLabel(lab:String) = new Label(lab, this)
+    val label = new Label(file.getParentFile.getName, this)
   }
   class Label(labelString:String, document:Document) extends DocumentClassification.Label[Document,Label](labelString, document)
   
-  class DocumentGetter extends FeatureVectorClassification.InstanceGetter[Label,Document] {
-    override def newLabelGetter = new LabelGetter
-  }
-  
-  class LabelGetter extends FeatureVectorClassification.LabelGetter[Document,Label] {
-    override def newInstanceGetter = new DocumentGetter
-    def labelIsCapitalized = getOneWay(label => Bool(java.lang.Character.isUpperCase(label.value(0))))
-  }
-
   // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
   val model = DocumentClassification.newModel[Label,Document]
 

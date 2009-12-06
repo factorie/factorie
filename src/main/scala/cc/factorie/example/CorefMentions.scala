@@ -5,6 +5,8 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.Implicits._
 
 
+/** A simple coreference engine on toy data.  
+    Demonstrates the use of RefVariable and setVariable for representing mentions and entities. */
 object CorefMentionsDemo {
 
   /** A random variable for a mention */
@@ -17,34 +19,35 @@ object CorefMentionsDemo {
         super.set(e)
       }
     }
-    def entity = value // Just for readability
+    def entity = value // an alias just for readability
     override def toString = "Mention(" + name +"=="+ entity.canonical +")"
   }
   
-  /** A random variable for an entity, which is merely a HashSet collection of Mentions */
+  /** A random variable for an entity, which is merely a set of Mentions */
   class Entity(val canonical:String) extends SetVariable[Mention] {
-    def mentions = members // Just for readability
+    def mentions = members // an alias just for readability
     override def toString = "Entity("+canonical+":"+mentions.toSeq.size+")"
   }
 
   /** A feature vector random variable measuring affinity between two mentions */
+  object AffinityDomain extends StringDomain[AffinityVector] {
+    val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
+    freeze
+  }
+  Domain := AffinityDomain
   class AffinityVector(s1:String, s2:String) extends BinaryVectorVariable[String] {
+    import AffinityDomain._
     type VariableType = AffinityVector
-    if (s1 equals s2) this += "match" else this += "-match"
-    if (s1.substring(0,1) equals s2.substring(0,1)) this += "prefix1" else this += "-prefix1"
-    if (s1.substring(0,2) equals s2.substring(0,2)) this += "prefix2" else this += "-prefix2"
-    if (s1.substring(0,3) equals s2.substring(0,3)) this += "prefix3" else this += "-prefix3"
-    if (s1.contains(s2) || s2.contains(s1)) this += "substring" else this += "-substring"
-    if (s1.length == s2.length) this += "length"
-    s1.split(" ").foreach(s => if (s2.contains(s)) this += "containsword")
-    s2.split(" ").foreach(s => if (s1.contains(s)) this += "containsword")
+    if (s1 equals s2) this += streq else this += nstreq
+    if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
+    if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
+    if (s1.substring(0,3) equals s2.substring(0,3)) this += prefix3 else this += nprefix3
+    if (s1.contains(s2) || s2.contains(s1)) this += substring else this += nsubstring
+    if (s1.length == s2.length) this += lengtheq
+    s1.split(" ").foreach(s => if (s2.contains(s)) this += containsword)
+    s2.split(" ").foreach(s => if (s1.contains(s)) this += containsword)
     // Also consider caching mechanisms
   }
-  val features = List("match", "-match", "prefix1", "-prefix1", "prefix2", "-prefix2", 
-                      "prefix3", "-prefix3", "substring", "-substring",
-                      "length", "containsword")
-  features.foreach(f=>Domain[AffinityVector].index(f)) // initialize the index
-  Domain[AffinityVector].freeze
 
 
   def main(args: Array[String]) : Unit = {

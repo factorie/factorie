@@ -73,7 +73,7 @@ object DomainManipulation {
   }
   
   // Here is yet another way to give a Variable a new Domain subclass, but it would be
-  // better to use the DomainClass declaration in Label6
+  // better to use the DomainClass declaration in Label5
   // because if someone asks for Domain[Label6] before Domain+= is called, then we get error.
   class Label6 extends Variable {
     // following two lines are optional

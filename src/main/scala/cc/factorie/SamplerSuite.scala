@@ -4,7 +4,8 @@ import scala.collection.mutable.{ArrayBuffer,HashMap}
 
 /** A sampler that has a Manifest for its context type.  
     Samplers are implicit converted to these before being added to a SamplerSuite. 
-    The Manifest is necessary for type checking the AnyRef arguments to 'process'. */
+    The Manifest is necessary for type checking the AnyRef arguments to 'process'. 
+    @author Andrew McCallum */
 class GenericSampler[C](val sampler:Sampler[C])(implicit mc:Manifest[C]) extends Sampler[C] with cc.factorie.util.Trackable {
   //println("GenericSampler m="+mc)
 	val contextClass = mc.erasure
@@ -31,7 +32,9 @@ class GenericSampler[C](val sampler:Sampler[C])(implicit mc:Manifest[C]) extends
 /** A collection of samplers that might play beautiful music together.  
     Can you call this.process passing AnyRef, and the suite will offer each sampler (in order) the opportunity to handle this context.
     The first sampler in the suite to accept it, gets it.  
-    It is envisioned that the individual samplers in the suite may send variables back to the suite or coordinate among the suite. */
+    It is envisioned that the individual samplers in the suite may send variables back to the suite or coordinate among the suite. 
+    @author Andrew McCallum
+*/
 class SamplerSuite extends ArrayBuffer[GenericSampler[_]] with Sampler[AnyRef] with cc.factorie.util.Trackable {
   /*def this() = this(Nil)
   def this(ss:Sampler[_]*) = this(ss)

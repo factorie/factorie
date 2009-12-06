@@ -4,7 +4,8 @@ import cc.factorie.util.Implicits._
 // TODO I am now storing the mean and variance as Real variables, so that they can, in turn, be generated from other distributions.
 // Perhaps we need to do this for all other GenerativeDistributions also?
 
-/** A one-dimensional Gaussian distribution, generating Real (valued) variables.  Default estimation by moment-matching. */
+/** A one-dimensional Gaussian distribution, generating Real (valued) variables.  Default estimation by moment-matching. 
+    @author Andrew McCallum */
 class Gaussian1(initialMean:Real, initialVariance:Real) extends GenerativeDistribution[Real] {
   def this(initMean:Double, initVariance:Double) = this(new Real(initMean), new Real(initVariance))
   private var mean = initialMean

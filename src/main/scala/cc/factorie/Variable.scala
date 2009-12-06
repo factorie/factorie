@@ -25,7 +25,8 @@ import cc.factorie.util.Implicits._
    <p>
    You should never make a Variable a Scala 'case class' because then it will get hashCode and equals methods
    dependent on its constructor arguments; but the FACTORIE library depends on being able to distinguish individual
-   Variable instances based on their address. */
+   Variable instances based on their address. 
+   @author Andrew McCallum */
 // TODO Consider adding "extends AnyRef"??
 @DomainInSubclasses
 abstract trait Variable /* extends AnyRef */ {
@@ -42,10 +43,6 @@ abstract trait Variable /* extends AnyRef */ {
       If library users create their own new Variable classes, which will be subclassed, and wants each
       subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
   final def domain = Domain.get[VariableType](this.getClass)
-  
-  // Getter handling
-  //type GetterType <: VariableGetter[VariableType]
-  //class GetterClass extends VariableGetter
   
 	private def shortClassName = {
 	  var fields = this.getClass.getName.split('$')
@@ -103,21 +100,6 @@ trait TypedValue extends TypedValues {
 
 
 
-
-
-
-// TODO Perhaps this should be held in HashMap[Variable,Buffer[Factor]] in a Lattice.  This is now what is done.
-/** For Variables that hold their list of Factors */
-/*@deprecated
-trait FactorList {
-	this : Variable =>
-  private var factorList: List[Factor] = Nil
-  def addFactor(f: Factor) = factorList = f :: factorList
-  def clearFactors = factorList = Nil
-  def factors: Iterable[Factor] = factorList
-}*/
-
-
 // The two traits below may enable efficiencies for sampling, scoring and learning
 // But they are currently unused?
 // TODO: consider removing them?
@@ -145,7 +127,8 @@ trait NoFactorCoordination {
 }*/
 
 /** An iterator over changes to the possible world.  
-    Could be implemented as changes to one variable, as in IterableSettings, or more complex changes.   */
+    Could be implemented as changes to one variable, as in IterableSettings, or more complex changes.   
+    @author Andrew McCallum */
 trait SettingIterator extends Iterator[DiffList] {
   /** Makes the changes to achieve the next configuration in the iteration.  
       Argument d:DiffList is the "context"---the set of Diffs that have already been made; 
@@ -167,7 +150,8 @@ trait SettingIterator extends Iterator[DiffList] {
   def newDiffList = if (makeNewDiffList) new DiffList else null
 }
 
-/** A Variable that has a SettingIterator, created by calling "settings". */
+/** A Variable that has a SettingIterator, created by calling "settings". 
+    @author Andrew McCallum */
 trait IterableSettings {
   this: Variable =>
   //protected def _iterableSettingsVariable : This = this // TODO Is there a better way to do this?
@@ -178,7 +162,8 @@ trait IterableSettings {
   def settings: SettingIterator
 }
 
-/** A variable for which the true, correct value is known.  Often used for target variables inferred at training time. */
+/** A variable for which the true, correct value is known.  Often used for target variables inferred at training time. 
+    @author Andrew McCallum */
 trait TrueSetting {
   this: Variable =>
   def setToTruth(implicit d:DiffList): Unit

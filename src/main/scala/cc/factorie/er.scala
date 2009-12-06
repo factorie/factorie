@@ -9,7 +9,10 @@ import cc.factorie._
 // TODO There are a disturbing number of casts in this file.  
 // It could benefit from a serious sweep to get rid of as many of these as possible. 
 
-/** Classes and functions supporting Entity-Relationship languages for creating Templates. */
+/** Classes and functions supporting Entity-Relationship languages for creating Templates. 
+    @author Andrew McCallum
+    @since 0.8
+*/
 object er {
   
 	type VariableWithGetter[D] = Variable { type GetterType <: Getter[D] }

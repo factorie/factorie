@@ -1,5 +1,8 @@
 package cc.factorie.util
 
+/** Set implemented as a List. 
+ 	  @author Sameer Singh
+*/
 class LinkedHashSet[A] extends scala.collection.mutable.Set[A] with scala.collection.mutable.FlatHashTable[A] {
 	var list = List[A]()
 	override def initialSize: Int = 32

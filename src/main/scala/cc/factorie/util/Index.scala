@@ -26,7 +26,8 @@ import scala.collection.mutable._;
  * enables threadsafe access and the index.immutable view keeps
  * prevents the (view) from being updated. 
  *
- * @author dlwh, dramage, with a few changes by mccallum
+ * @author dlwh, dramage, 
+ * @author Andrew McCallum (few changes from original)
  */
 //@serializable 
 trait Index[T] extends (T => Int) with Collection[T] {

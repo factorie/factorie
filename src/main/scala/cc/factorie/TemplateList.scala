@@ -11,7 +11,8 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
 
-// Management of Factor Templates within the Model
+/** Management of Factor Templates within the Model 
+    @author Andrew McCallum */
 class TemplateList[T<:Template] extends ArrayBuffer[T] {
 	def templatesOf[T2<:T](implicit m:Manifest[T2]) : TemplateList[T2] = {
 			val templateClass = m.erasure

@@ -6,7 +6,8 @@ import cc.factorie.util.Implicits._
 
 // TODO Consider creating PostiveReal, and then Gamma extends 
 
-/** The Gamma distribution generating real values with parameters alpha and beta. */
+/** The Gamma distribution generating real values with parameters alpha and beta. 
+    @author Andrew McCallum. */
 class Gamma(alpha:Real, beta:Real) extends GenerativeDistribution[Real] {
   def this(alpha:Double, beta:Double) = this(new Real(alpha), new Real(beta))
   // Note that there is an implicit conversion from RealValue to Double, which we leverage below

@@ -1,5 +1,9 @@
 package cc.factorie
 
+/** A Variable containing a single Boolean value, which might be mutable or immutable.
+    @see BooleanVariable
+    @see BooleanObservation
+    @author Andrew McCallum */
 trait BooleanValue extends TypedCategoricalValue[Boolean] {
   type VariableType <: BooleanValue
   override def value = (intValue == 1) // Efficiently avoid a lookup in the domain 
@@ -14,13 +18,16 @@ trait BooleanValue extends TypedCategoricalValue[Boolean] {
   // Domain is not in subclasses:  all BooleanValue variables share the same domain.
 }
 
-/** A trait for mutable Boolean variables. */
+/** A trait for mutable Boolean variables. 
+    @author Andrew McCallum */
 trait BooleanVariable extends BooleanValue with TypedCategoricalVariable[Boolean] { 
   type VariableType <: BooleanVariable
 }
 
+/** A trait for variables with immutable Boolean values.
+    @author Andrew McCallum */
 class BooleanObservation(b:Boolean) extends BooleanValue {
-  final val index = if (b) 1 else 0 // matches mapping from Boolean=>Int in BooleanDomain 
+  final val intValue = if (b) 1 else 0 // matches mapping from Boolean=>Int in BooleanDomain 
 }
 
 // The next two are versions that take convenient constructor arguments.

@@ -2,8 +2,11 @@ package cc.factorie
 import scalala.Scalala._
 import scalala.tensor.Vector
 
-/** Implements Hinton's Constrastive Divergence, obtaining a gradient after one step away from the true configuration.
- *  This implementation assumes that the initial configuration is the truth. */
+/** Implements Geoff Hinton's Constrastive Divergence, obtaining a gradient after one step away from the true configuration.
+    This implementation assumes that the initial configuration is the truth. 
+    @author Andrew McCallum
+    @since 0.8
+ */
 abstract class ContrastiveDivergence[C](model:Model) extends MHSampler[C](model) {
   type TemplatesToUpdate = DotTemplate
   def updateWeights: Unit

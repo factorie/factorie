@@ -10,6 +10,9 @@ import scalala.tensor.sparse.SparseVector
 
 // TODO Generalized this so that it doesn't require SampleRank
 
+/** Changes parameters in the direction of the gradient, selecting jump size based on passive-aggressive MIRA method of Crammer and Singer. 
+    @author Michael Wick
+ */
 trait MIRAUpdates extends PerceptronUpdates with SampleRank {
   this: ProposalSampler[_] =>
   override type TemplatesToUpdate = DotTemplate

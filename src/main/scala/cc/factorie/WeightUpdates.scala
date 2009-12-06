@@ -2,7 +2,10 @@ package cc.factorie
 import scalala.Scalala._
 import scalala.tensor.Vector
 
-/** For parameter estimation methods that use a gradient to update weight parameters. */
+// TODO Consider renaming GradientWeightUpdates
+
+/** For parameter estimation methods that use a gradient to update weight parameters. 
+    @author Andrew McCallum */
 trait WeightUpdates {
   type TemplatesToUpdate <: DotTemplate
   /** The number of times 'updateWeights' has been called. */

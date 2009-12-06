@@ -13,8 +13,11 @@ object BeliefPropagation {
 }
 
 /** A factor in a belief propagation lattice used for inference.  
-    Note that instances of this class are not actually Template#Factors themselves; 
-    but point to it with their 'factor' member. */
+    Note that an instance of this class is not actually a Template#Factor itself; 
+    but it points to a Template#Factor with its 'factor' member.
+  
+    @author Andrew McCallum
+ */
 abstract class BPFactor(val factor:VectorTemplate#Factor) {
   import BeliefPropagation._
   type V = BPVariable
@@ -57,6 +60,7 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
     def updateTreewise: MessageTo = {
     	if (visitedDuringThisTree) return this
       visitedDuringThisTree = true
+      println("updateTreewise MessageTo   "+factor+" >>>> "+v)
       for (n <- neighborSettings) BPFactor.this.messageFrom(n.variable).updateTreewise
       update
     }
@@ -77,6 +81,7 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
     def updateTreewise: MessageFrom = {
       if (visitedDuringThisTree) return this
       visitedDuringThisTree = true
+      println("updateTreewise MessageFrom "+factor+" <<<< "+v)
       Arrays.fill(msg, 0.0)
       for (n <- neighborFactors) {
         val msg2 = n.messageTo(v)
@@ -150,7 +155,8 @@ class DiscreteMarginal1[V<:DiscreteValue](val variable:V) extends RandomAccessSe
 }
 
 class BPLattice(model:Model, val variables:Collection[UncoordinatedCategoricalVariable]) extends Lattice {
-  type V = UncoordinatedCategoricalVariable
+  import BeliefPropagation._
+  type V = BPVariable
   // Find all the factors touching the 'variables'
   val factors = model.factorsOf[VectorTemplate](variables)
   def bpFactorsOf(v:UncoordinatedCategoricalVariable) = v2m(v)
@@ -164,7 +170,9 @@ class BPLattice(model:Model, val variables:Collection[UncoordinatedCategoricalVa
   
   /** Perform one iteration of belief propagation. */
   def update: Unit = marginals.values.foreach(_.update)
+  /** Perform N iterations of belief propagation */
   def update(iterations:Int): Unit = for (i <- 1 to iterations) update
+  /** Send each message in the lattice once, in order determined by a random tree traversal. */
   def updateTreewise: Unit = { 
     v2m.values.foreach(_.foreach(_.resetTree))
     v2m.values.toList.shuffle.foreach(_.foreach(_.updateTreewise)) // randomly permute order each time
