@@ -322,9 +322,18 @@ object LabeledTokenSeqs {
       seqs
     }
     // TODO Waiting for Scala 2.8 default parameter values
+    def defaultFeatureFunction(inFeatures:Seq[String]): Seq[String] = {
+      val result = new ArrayBuffer[String]
+      // Assume the first feature is the word
+      result += "W="+inFeatures(0)
+      result += "SHAPE="+wordShape(inFeatures(0), 2)
+      result ++= charNGrams(inFeatures(0), 2, 5)
+      result ++= inFeatures.drop(1)
+      result
+    }
     def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, featureFunction:Seq[String]=>Seq[String], documentBoundary:Regex): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, featureFunction, documentBoundary, "\\A\\s*\\z".r, null)
-    def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, documentBoundary:Regex): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, (f:Seq[String]) => f, documentBoundary)
-    def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, documentBoundary:String): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, (f:Seq[String]) => f, documentBoundary.r)
+    def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, documentBoundary:Regex): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, defaultFeatureFunction _, documentBoundary)
+    def fromOWPL[T<:Token[L,T],L<:Label[T,L]](source:Source, newToken:(String,String)=>T, documentBoundary:String): Seq[LabeledTokenSeq[T,L]] = fromOWPL(source, newToken, defaultFeatureFunction _, documentBoundary.r)
     
     class PerLabelEvaluation[T<:Token[L,T],L<:Label[T,L]](val labelValue: String)(implicit m:Manifest[L]) {
       var fp = 0
@@ -361,9 +370,10 @@ object LabeledTokenSeqs {
       override def toString = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(labelValue, f1, precision, recall, tp, fp, fn, tp+fn, tp+fp) 
     }
 
-    class LabelEvaluation[T<:Token[L,T],L<:Label[T,L]](labels:Seq[L], val backgroundLabelValue:String)(implicit m:Manifest[L]) {
+    class LabelEvaluation[T<:Token[L,T],L<:Label[T,L]](val backgroundLabelValue:String)(implicit m:Manifest[L]) {
       import scala.collection.mutable.HashMap
-      def this(labels:Seq[L])(implicit m:Manifest[L]) = this(labels, "O")
+      def this(labels:Seq[L])(implicit m:Manifest[L]) = { this("O"); this += labels }
+      def this(lab:String, labels:Seq[L])(implicit m:Manifest[L]) = { this(lab); this += labels }
       //def this(labels:Seq[LabeledTokenSeq]) = { this("O"); this.+=(labels.flatMap(_.labels)) }
       var fp = 0
       var fn = 0
