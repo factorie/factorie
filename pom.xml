@@ -3,11 +3,17 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie</artifactId>
-    <version>0.8.0</version>
-    <inceptionYear>2008</inceptionYear>
+    <version>0.8.1-SNAPSHOT</version>
+    <inceptionYear>2009</inceptionYear>
     <properties>
         <scala.version>2.7.7</scala.version>
     </properties>
+    <url>http://factorie.googlecode.com</url>
+    <scm>
+        <connection>scm:hg:http://factorie.googlecode.com/hg/</connection>
+        <developerConnection>scm:hg:https://factorie.googlecode.com/hg/</developerConnection>
+        <url>http://code.google.com/p/factorie/source/checkout</url>
+    </scm>
 
     <repositories>
         <repository>
@@ -95,10 +101,43 @@
                     <args>
                         <arg>-explaintypes</arg>
                     </args>
+                    <launchers>
+                        <launcher>
+                            <id>LDA</id>
+                            <mainClass>cc.factorie.example.LDADemo</mainClass>
+                            <!-- args are optional <args><arg>arg1</arg></args> -->
+                            <!-- jvmArgs are optional -->
+                            <jvmArgs>
+                                <jvmArg>-Xmx256m</jvmArg>
+                            </jvmArgs>
+                        </launcher>
+                        <!-- you could define other launcher -->
+                        <launcher>
+                            <id>CorefMentionsDemo</id>
+                            <mainClass>cc.factorie.example.CorefMentionsDemo</mainClass>
+                            <!-- args are optional -->
+                            <!-- jvmArgs are optional -->
+                            <jvmArgs>
+                                <jvmArg>-Xmx800m</jvmArg>
+                            </jvmArgs>
+                        </launcher>
+                        <launcher>
+                            <id>SimpleChainNER</id>
+                            <mainClass>cc.factorie.example.SimpleChainNER</mainClass>
+                            <!-- args are optional -->
+                            <!-- jvmArgs are optional -->
+                            <jvmArgs>
+                                <jvmArg>-Xmx800m</jvmArg>
+                            </jvmArgs>
+                        </launcher>
+
+                    </launchers>
+
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2-beta-4</version>
                 <executions>
                     <execution>
                         <id>make-assembly</id>
@@ -110,25 +149,18 @@
                 </executions>
                 <configuration>
                     <descriptors>
-                        <descriptor>src/main/assembly/package.xml</descriptor>
-                        <descriptor>src/main/assembly/standalone.xml</descriptor>
+                        <descriptor>src/main/assembly/src.xml</descriptor>
+                        <!--
+                                                <descriptor>src/main/assembly/package.xml</descriptor>
+                                                <descriptor>src/main/assembly/standalone.xml</descriptor>
+                        -->
                     </descriptors>
-                    <descriptorRefs>
-                        <descriptorRef>project</descriptorRef>
-                        <descriptorRef>src</descriptorRef>
-                    </descriptorRefs>
-  				    <launchers>
-        				<launcher>
-          					<id>LDA</id>
-          					<mainClass>cc.factorie.example.LDADemo</mainClass>
-          					<!-- args are optional <args><arg>arg1</arg></args> -->
-          					<!-- jvmArgs are optional -->
-          					<jvmArgs>
-            					<jvmArg>-Xmx256m</jvmArg>
-          					</jvmArgs>
-        				</launcher>
-        				<!-- you could define other launcher -->
-      				</launchers>
+                    <!--
+                                        <descriptorRefs>
+                                            <descriptorRef>project</descriptorRef>
+                                            <descriptorRef>src</descriptorRef>
+                                        </descriptorRefs>
+                    -->
                 </configuration>
             </plugin>
             <plugin>
@@ -148,6 +180,36 @@
                     </classpathContainers>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <!-- <version>2.0-beta-8</version> -->
+                <configuration>
+                    <!--<tagBase>https://gcupload-maven-plugin.googlecode.com/svn/tags</tagBase>-->
+                    <releaseProfiles>release</releaseProfiles>
+                    <goals>deploy assembly:assembly site-deploy</goals>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>pdflatex</executable>
+                    <!-- optional -->
+                    <workingDirectory>doc/usersguide</workingDirectory>
+                    <arguments>
+                        <argument>factorie-users-guide.tex</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
     <reporting>
@@ -157,27 +219,7 @@
                 <artifactId>maven-scala-plugin</artifactId>
                 <configuration>
                     <scalaVersion>${scala.version}</scalaVersion>
-		    <launchers>
-                      <launcher>
-                        <id>CorefMentionsDemo</id>
-                        <mainClass>cc.factorie.example.CorefMentionsDemo</mainClass>
-                        <!-- args are optional -->
-                        <!-- jvmArgs are optional -->
-                        <jvmArgs>
-                          <jvmArg>-Xmx800m</jvmArg>
-                        </jvmArgs>
-                      </launcher>
-                      <launcher>
-                        <id>SimpleChainNER</id>
-                        <mainClass>cc.factorie.example.SimpleChainNER</mainClass>
-                        <!-- args are optional -->
-                        <!-- jvmArgs are optional -->
-                        <jvmArgs>
-                          <jvmArg>-Xmx800m</jvmArg>
-                        </jvmArgs>
-                      </launcher>
 
-		    </launchers>
                 </configuration>
             </plugin>
         </plugins>
