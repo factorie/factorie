@@ -3,8 +3,8 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie</artifactId>
-    <version>0.8.0</version>
-    <inceptionYear>2008</inceptionYear>
+    <version>0.8.1-SNAPSHOT</version>
+    <inceptionYear>2009</inceptionYear>
     <properties>
         <scala.version>2.7.7</scala.version>
     </properties>
@@ -95,6 +95,19 @@
                     <args>
                         <arg>-explaintypes</arg>
                     </args>
+		    <launchers>
+		      <launcher>
+			<id>LDA</id>
+			<mainClass>cc.factorie.example.LDADemo</mainClass>
+			<!-- args are optional <args><arg>arg1</arg></args> -->
+          					<!-- jvmArgs are optional -->
+						<jvmArgs>
+						  <jvmArg>-Xmx256m</jvmArg>
+						</jvmArgs>
+		      </launcher>
+		      <!-- you could define other launcher -->
+		    </launchers>
+
                 </configuration>
             </plugin>
             <plugin>
@@ -110,25 +123,18 @@
                 </executions>
                 <configuration>
                     <descriptors>
+                        <descriptor>src/main/assembly/src.xml</descriptor>
+<!--
                         <descriptor>src/main/assembly/package.xml</descriptor>
                         <descriptor>src/main/assembly/standalone.xml</descriptor>
+-->
                     </descriptors>
+<!--
                     <descriptorRefs>
                         <descriptorRef>project</descriptorRef>
                         <descriptorRef>src</descriptorRef>
                     </descriptorRefs>
-  				    <launchers>
-        				<launcher>
-          					<id>LDA</id>
-          					<mainClass>cc.factorie.example.LDADemo</mainClass>
-          					<!-- args are optional <args><arg>arg1</arg></args> -->
-          					<!-- jvmArgs are optional -->
-          					<jvmArgs>
-            					<jvmArg>-Xmx256m</jvmArg>
-          					</jvmArgs>
-        				</launcher>
-        				<!-- you could define other launcher -->
-      				</launchers>
+-->
                 </configuration>
             </plugin>
             <plugin>
