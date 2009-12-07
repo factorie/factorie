@@ -167,7 +167,7 @@ class ItemizedObservationRef[V<:ItemizedObservation[V]] extends TypedCategorical
 trait CountingCategoricalDomain[This<:CountingCategoricalDomain[This] with CategoricalValues] {
   this: This =>
   type VariableType = This
-  type DomainType = CategoricalDomainWithCounter[This]
-  class DomainClass extends CategoricalDomainWithCounter[This]
+  type DomainType = CategoricalDomainWithCounter[VariableType]
+  class DomainClass extends CategoricalDomainWithCounter[VariableType]()(null)
 }
 

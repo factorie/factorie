@@ -66,7 +66,7 @@ class CoordinatedBool(b:Boolean) extends CoordinatedBoolVariable(b) {
 }
 
 
-class BooleanDomain[V<:Bool] extends CategoricalDomain[V] {
+class BooleanDomain[V<:Bool](implicit m:scala.reflect.Manifest[V]) extends CategoricalDomain[V]()(m) {
   this += false // Make sure we initialize the domain contents in this order to that false==0 and true==1
   this += true
   this.freeze

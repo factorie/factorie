@@ -19,7 +19,7 @@ object Stopwords {
   lazy val asIndex = {
     val index = new cc.factorie.util.Index[String] {}
     index indexAll this.asArray
-    index.freeze
+    index.freeze0
     index
   } 
   

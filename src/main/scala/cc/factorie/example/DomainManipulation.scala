@@ -6,6 +6,7 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie.example
+import scala.reflect.Manifest
 
 object DomainManipulation {
 
@@ -20,7 +21,7 @@ object DomainManipulation {
   println(classOf[CategoricalValues].getSuperclass)
   //println("method "+classOf[IndexedVariable].getDeclaredMethod("domainInSubclasses", null))
 
-  class LabelDomain[V<:Variable] extends Domain[V] {
+  class LabelDomain[V<:Variable](implicit m:Manifest[V]) extends Domain[V]()(m) {
     println("Creating LabelDomain "+this.getClass.getName)
     def numLabels = 2
     def +=(x:AnyRef) = println("Adding "+x.toString)
@@ -71,7 +72,7 @@ object DomainManipulation {
     override type DomainType <: Label5Domain[VariableType]
     class DomainClass extends Label5Domain[VariableType]
   }
-  class Label5Domain[V<:Label5] extends LabelDomain[V] {
+  class Label5Domain[V<:Label5](implicit m:Manifest[V]) extends LabelDomain[V]()(m) {
     println("In Label5Domain constructor")
     this += ("label5one")
     this += ("label5two")
@@ -87,7 +88,7 @@ object DomainManipulation {
     //type VariableType <: Label6
     override type DomainType <: Label6Domain[VariableType]
   }
-  class Label6Domain[V<:Variable] extends LabelDomain[V] {
+  class Label6Domain[V<:Variable](implicit m:Manifest[V]) extends LabelDomain[V]()(m) {
     def numSixes = 66
   }
   Domain += new Label6Domain[Label6]

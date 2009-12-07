@@ -93,9 +93,8 @@ trait OrdinalVariable extends IntVariable with OrdinalValue {
 trait DiscreteValues extends Variable with OrdinalValues {
   type VariableType <: DiscreteValues
   type DomainType <: DiscreteDomain[VariableType]
-  class MyDomain extends DiscreteDomain[VariableType] { def size = domainSize } // See Domain.scala for an explanation of this silliness
-  class DomainClass extends MyDomain
-  def domainSize = domain.domainSize
+  class DomainClass extends DiscreteDomain[VariableType]
+  def domainSize: Int = domain.size
   override def maxIntValue = domainSize - 1
   def vector: Vector
 }
@@ -121,7 +120,7 @@ trait DiscreteVariable extends OrdinalVariable with DiscreteValue with IterableS
   def setRandomly : Unit = setRandomly(cc.factorie.Global.random)
   def settings = new SettingIterator {
     var i = -1
-    val max = domain.domainSize - 1
+    val max = domain.size - 1
     def hasNext = i < max
     def next(difflist:DiffList) = { i += 1; val d = newDiffList; setByIndex(i)(d); d }
     def reset = i = -1
@@ -137,7 +136,7 @@ trait DiscreteVariable extends OrdinalVariable with DiscreteValue with IterableS
 /** A DiscreteVariable with initial value set by constructor.  
     Note that you must set the size of your subclasses' DiscreteDomain. */
 @DomainInSubclasses
-class DiscVariable(initialValue:Int) extends DiscreteVariable {
+abstract class DiscVariable(initialValue:Int) extends DiscreteVariable {
   type VariableType <: DiscVariable
   setByInt(initialValue)(null)
 }

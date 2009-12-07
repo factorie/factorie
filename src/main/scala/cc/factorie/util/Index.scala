@@ -37,7 +37,7 @@ import scala.collection.mutable._;
  * @author Andrew McCallum (few changes from original)
  */
 //@serializable 
-trait Index[T] extends (T => Int) with Collection[T] {
+trait Index[T] extends (T => Int) /*with Collection[T]*/ {
   /**Forward map from int to object */
   private var objects = new ArrayBuffer[T]
 
@@ -62,12 +62,14 @@ trait Index[T] extends (T => Int) with Collection[T] {
   private var _frozen = false
   def frozen = _frozen
 
-  def freeze = {_frozen = true; this}
+  // NOTE This used to be just "freeze", but I ran into troubles overriding freeze in DiscreteDomain
+  def freeze0: Unit = _frozen = true
 
+  // NOTE This used to be just "allocSize", but I ran into troubles overriding freeze in DiscreteDomain  
   /**The size others might want to allocate to hold data relevant to this Index.  If maxSize is set can be bigger than size. */
-  def allocSize = if (maxSize < 0) size else maxSize
+  def allocSize0 = if (maxSize < 0) size0 else maxSize
 
-  def size = indices.size
+  def size0 = indices.size
 
   def elements = objects.elements
 
@@ -75,7 +77,7 @@ trait Index[T] extends (T => Int) with Collection[T] {
 
   override def apply(entry: T) = index(entry)
 
-  def unapply(pos: Int): Option[T] = if (pos < size) Some(get(pos)) else None
+  def unapply(pos: Int): Option[T] = if (pos < size0) Some(get(pos)) else None
 
   /**Return an object at the given position or throws an exception if it's not found. */
   def get(pos: Int): T = objects(pos)
@@ -96,8 +98,8 @@ trait Index[T] extends (T => Int) with Collection[T] {
   /** Like index, but throw an exception if the entry is not already there. */
   def getIndex(entry:T) : Int = indices.getOrElse(entry, throw new Error("Entry not present; use index() to cause a lookup."))
 
-  /**Override indexOf's slow, deprecated behavior. */
-  override def indexOf[B >: T](elem: B): Int = index(elem.asInstanceOf[T]);
+  /** Override indexOf's slow, deprecated behavior. */
+  //def indexOf[B >: T](elem: B): Int = index(elem.asInstanceOf[T]);
 
   /**Clears the index. */
   def clear() = {indices.clear(); objects.clear(); }
@@ -128,7 +130,7 @@ trait Index[T] extends (T => Int) with Collection[T] {
     val outer = this;
     new Index[T] {
       override def elements = outer.elements;
-      override def size = outer.size;
+      override def size0 = outer.size0;
       override def get(pos: Int) = outer.get(pos);
       override def index(t: T) = outer.indices.getOrElse(t, -1);
       override def clear = {};
@@ -140,7 +142,7 @@ trait Index[T] extends (T => Int) with Collection[T] {
     val outer = this;
     new Index[T] {
       override def elements = outer.elements;
-      override def size = outer.size;
+      override def size0 = outer.size0;
       override def get(pos: Int) = synchronized {outer.get(pos); }
 
       override def index(t: T) = synchronized {outer.index(t); }

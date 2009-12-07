@@ -23,7 +23,7 @@ import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWri
     @author Andrew McCallum
     @since 0.8
 */
-class Domain[V<:Variable] {
+class Domain[V<:Variable](implicit m:Manifest[V]) {
   /** Return the classes that have this Domain. */
   def variableClasses : Seq[Class[V]] = {
     val matchingElements : Seq[(Class[_],Domain[_])] = Domain.domains.elements.filter({case (key,value) => value == this}).toList
@@ -36,6 +36,9 @@ class Domain[V<:Variable] {
   def save(dirname:String): Unit = {}
   def load(dirname:String): Unit = {}
   protected def filename:String = this.getClass.getName+"["+variableClasses.apply(0).getName+"]"
+  // Automatically register ourselves.  
+  // This enables pairing a Domain with its variable V by simply: "val MyDomain = new FooDomain[MyVariable]"
+  Domain.+=[V](this)(m)
 }
 
 /*
@@ -46,16 +49,17 @@ class ItemizedDomain[V <: ItemizedVariable](implicit m:Manifest[V]) extends Doma
 
 // TODO Consider if it would be helpful to have a RealDomain or PositiveRealDomain
 
-abstract class DiscreteDomain[V<:DiscreteValues] extends Domain[V] {
-  private var _size = -1
-  // TODO Arg!  I want to name this simply "size", but then the compiler complains when I mix in util.Index below, because it also defines 'size'
-  def domainSize: Int = if (_size >= 0) return _size else throw new Error("DiscreteDomain.size not yet set")
-  def size: Int // TODO See troubles in comment above, so DiscreteDomain is currently unusable on its own.
-  def size_=(s:Int) = setSize(s)
-  def setSize(s:Int): Unit = 
-    if (s < 0) throw new Error("DiscreteDomain.size cannot be negative.")
-    else if (_size <= 0 && _size != s) throw new Error("DiscreteDomain.size already set; cannot be reset to a different value.")
-    else _size = s
+/** A Domain that has a positive integer size. */
+class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V]()(m) {
+  private val _size: Int = {
+    val c = m.erasure
+    if (c.isAnnotationPresent(classOf[DomainSize]))	m.erasure.getAnnotation(classOf[DomainSize]).value
+    else -1
+  }
+  def size = _size
+  //assert (size > 0)
+  def freeze: Unit = {}
+  def allocSize = size
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)
     val s = new PrintWriter(new FileWriter(f))
@@ -66,12 +70,14 @@ abstract class DiscreteDomain[V<:DiscreteValues] extends Domain[V] {
     val f = new File(dirname+"/"+filename)
     val s = new BufferedReader(new FileReader(f))
     val line = s.readLine
-    setSize(Integer.parseInt(line))
+    if (size != Integer.parseInt(line)) throw new Error("Saved size does not match")
   }
 }
 
-class CategoricalDomain[V<:CategoricalValues] extends DiscreteDomain[V] with util.Index[V#ValueType] /*with DomainEntryCounter[V]*/ {
-  override def domainSize = size
+class CategoricalDomain[V<:CategoricalValues](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with util.Index[V#ValueType] with Collection[V#ValueType] /*with DomainEntryCounter[V]*/ {
+  override def freeze = freeze0
+  override def allocSize = allocSize0
+  override def size = size0
   def randomValue : V#ValueType = randomValue(Global.random)
   def randomValue(random:Random): V#ValueType = get(random.nextInt(size))
   def +=(x:V#ValueType) : Unit = this.index(x)
@@ -269,12 +275,12 @@ trait DomainEntryCounter[V<:CategoricalValues] extends util.Index[V#ValueType] {
 // class Token extends EnumVariable[String] with CountingCategoricalDomain[Token]
 // CountingCategoricalDomain is defined in VariableCategorical.scala
   
-class CategoricalDomainWithCounter[V<:CategoricalValues] extends CategoricalDomain[V] with DomainEntryCounter[V]
+class CategoricalDomainWithCounter[V<:CategoricalValues](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) with DomainEntryCounter[V]
 
 /** A Categorical domain with string values.  Provides convenient intialization to known values, 
     with value members holding those known values.  For example:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
-class StringDomain[V<:CategoricalValues {type ValueType = String}] extends CategoricalDomain[V] {
+class StringDomain[V<:CategoricalValues {type ValueType = String}](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) {
   /* For all member variables, if its type is String and its name is all upper case or digits,
     set its value to its name, and intern in the Domain.  Usage:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
@@ -286,6 +292,7 @@ class StringDomain[V<:CategoricalValues {type ValueType = String}] extends Categ
     val field = stringFieldsIterator.next
     //println("StringDomain Value got "+field.getName)
     checkFields
+    index(field.getName) // Add it to the index
     field.getName
   } 
   private def checkFields: Unit = {
@@ -329,7 +336,7 @@ object Domain {
   @deprecated
   def +=[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]) = {
     val c = vm.erasure
-    if (_domains.isDefinedAt(c)) throw new Error("Cannot add a Domain["+vm+"] when one has already been created for "+c)
+    if (_domains.isDefinedAt(c) && _domains(c) != d) throw new Error("Cannot add a Domain["+vm+"]="+d+" when one has already been created for ["+c+"]="+_domains(c))
     val dvc = getDomainVariableClass(c)
     if (debug) { println("+= dvc="+dvc); println("+= c="+c) }
     if (dvc != null && dvc != c && _domains.isDefinedAt(dvc)) throw new Error("Cannot add a Domain["+vm+"] when one has already been created for superclass "+dvc)
@@ -352,10 +359,12 @@ object Domain {
   /** Construct a Domain of class dc.  (Parameter vc is currently unused.)  Domains must have only a zero-arg constructor. */
   private def newDomainFor[D](dc:Class[D],vc:Class[_]) : Domain[_] = {
     val constructors = dc.getConstructors()
-    val i = constructors.findIndexOf(c => c.getParameterTypes.length == 0)
-    if (i == -1) throw new Error("Domain "+dc.getName+" does not have a zero-arg constructor; all Domains must.")
+    val i = constructors.findIndexOf(c => c.getParameterTypes.length == 1)
+    if (i == -1) throw new Error("Domain "+dc.getName+" does not have a one-arg constructor; all Domains must.")
     if (debug) println("newDomainFor calling "+constructors(i).getClass+" constructor # args="+constructors(i).getParameterTypes.length)
-    constructors(i).newInstance().asInstanceOf[Domain[_]]
+    val manifest = Manifest.classType[Variable](vc)
+    val constructorArgs = Array(manifest)
+    constructors(i).newInstance(constructorArgs).asInstanceOf[Domain[_]]
   }
   /** Find the (sub)class of Domain to use for constructing a domain for variable class c. */
   private def getDomainClass(c:Class[_]) : Class[_] = {

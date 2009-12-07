@@ -41,7 +41,7 @@ object CorefMentionsDemo {
     val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
     freeze
   }
-  Domain := AffinityDomain
+  Domain += AffinityDomain
   class AffinityVector(s1:String, s2:String) extends BinaryVectorVariable[String] {
     import AffinityDomain._
     type VariableType = AffinityVector
