@@ -16,28 +16,28 @@ object SpanNER1 {
     def spans:Seq[Span] = seq.spansContaining(position).toList
     def isCapitalized = java.lang.Character.isUpperCase(word(0))
     // The proposer for changes to Spans touching this Token
-  	def settings = new SettingIterator {
-    	val changes = new ArrayBuffer[(DiffList)=>Unit];
-    	val existingSpans = spans
-    	//println("existing spans = "+existingSpans)
-    	for (span <- existingSpans) {
-    		for (labelValue <- Domain[Label]; if (labelValue != "O"))
-    			changes += {(d:DiffList) => span.label.set(labelValue)(d)}
+    def settings = new SettingIterator {
+      val changes = new ArrayBuffer[(DiffList)=>Unit];
+      val existingSpans = spans
+      //println("existing spans = "+existingSpans)
+      for (span <- existingSpans) {
+        for (labelValue <- Domain[Label]; if (labelValue != "O"))
+          changes += {(d:DiffList) => span.label.set(labelValue)(d)}
         changes += {(d:DiffList) => span.delete(d)}
         if (span.length > 1) changes += {(d:DiffList) => span.trimEnd(1)(d)}
         if (span.length > 1) changes += {(d:DiffList) => span.trimStart(1)(d)}
         if (span.canPrepend(1)) changes += {(d:DiffList) => span.prepend(1)(d)}
         if (span.canAppend(1)) changes += {(d:DiffList) => span.append(1)(d)}
       }
-    	if (existingSpans.isEmpty) {
-    		for (labelValue <- Domain[Label]; if (labelValue != "O"))
-    			changes += {(d:DiffList) => new Span(labelValue, seq, position, 1)(d)}
-     	}
-   		println("Token.settings length="+changes.length)
-    	var i = 0
-    	def hasNext = i < changes.length-1
-    	def next(d:DiffList) = { val d = new DiffList; changes(i).apply(d); i += 1; d }
-    	def reset = i = 0
+      if (existingSpans.isEmpty) {
+        for (labelValue <- Domain[Label]; if (labelValue != "O"))
+          changes += {(d:DiffList) => new Span(labelValue, seq, position, 1)(d)}
+      }
+      println("Token.settings length="+changes.length)
+      var i = 0
+      def hasNext = i < changes.length-1
+      def next(d:DiffList) = { val d = new DiffList; changes(i).apply(d); i += 1; d }
+      def reset = i = 0
     }
   }
   class Label(labelName:String, val span: Span) extends LabelVariable(labelName)
@@ -54,8 +54,8 @@ object SpanNER1 {
   
   // The model
   abstract class SpanLabelTemplate extends Template2[Span,Label] {
-  	def unroll1(span:Span) = Factor(span, span.label)
-  	def unroll2(label:Label) = Factor(label.span, label)
+    def unroll1(span:Span) = Factor(span, span.label)
+    def unroll2(label:Label) = Factor(label.span, label)
   }
   val model = new Model(
     // Bias term on each individual label 

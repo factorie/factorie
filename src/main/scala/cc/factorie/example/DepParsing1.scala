@@ -182,7 +182,7 @@ object DepParsing1 {
     val cl = new Array[Array[Entry]](length,length)
     // Initialize the chart
     for (s <- 0 until length) {
-    	il(s)(s) = Entry(0.0, s)
+      il(s)(s) = Entry(0.0, s)
       ir(s)(s) = Entry(0.0, s)
       cl(s)(s) = Entry(0.0, s)
       cr(s)(s) = Entry(0.0, s)
