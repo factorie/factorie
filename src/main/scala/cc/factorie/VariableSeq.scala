@@ -220,8 +220,8 @@ import cc.factorie.util.Implicits._
   }
 
   /**For use with variables that have immutable-valued .next and .prev in a sequence. */
-  trait VarInSeq[V >: Null <: Variable] {
-    this: Variable =>
+  trait VarInSeq[V >: Null <: VarInSeq[V] with Variable] {
+    this: V =>
     var seq: Seq[V] = null
     def seqAfter = seq.drop(position+1)
     def seqBefore = seq.take(position)
@@ -249,7 +249,14 @@ import cc.factorie.util.Implicits._
     def nextWindow(n:Int): Seq[V] = for (i <- Math.min(position+1, seq.length-1) to Math.min(position+n, seq.length-1)) yield seq(i)
     def window(n:Int): Seq[V] = for (i <- Math.max(position-n,0) to Math.min(position+n,seq.length-1)) yield seq(i)
     def windowWithoutSelf(n:Int): Seq[V] = for (i <- Math.max(position-n,0) to Math.min(position+n,seq.length-1); if (i != position)) yield seq(i)
-    def first = seq(0)
+    def between(other:V): Seq[V] = {
+      assert (other.seq == seq)
+      if (other.position > position)
+        for (i <- position until other.position) yield seq(i)
+      else
+        for (i <- other.position until position) yield seq(i)
+    } 
+    def firstInSeq = seq(0)
   }
  
   /*trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This]] extends cc.factorie.util.DLinkedList[VarInMutableSeq[This]] {

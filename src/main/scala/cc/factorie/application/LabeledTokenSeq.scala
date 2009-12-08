@@ -585,7 +585,7 @@ object LabeledTokenSeqs {
     def prev: This
     def hasNext: Boolean
     def hasPrev: Boolean
-    def first: This
+    def firstInSeq: This
   }
 
   class Lexicon(val caseSensitive:Boolean) {
@@ -597,12 +597,12 @@ object LabeledTokenSeqs {
       var prev: LexiconToken = null
       def hasNext = next != null
       def hasPrev = prev != null
-      def first = if (prev == null) this else prev.first
+      def firstInSeq = if (prev == null) this else prev.firstInSeq
       def lengthToEnd: Int = if (next == null) 1 else 1 + next.lengthToEnd
-      def length = first.lengthToEnd
+      def length = firstInSeq.lengthToEnd
       def seq: Seq[LexiconToken] = {
         val result = new ArrayBuffer[LexiconToken];
-        var t = first; result += t
+        var t = firstInSeq; result += t
         while (t.hasNext) { t = t.next; result += t }
         result
       }
