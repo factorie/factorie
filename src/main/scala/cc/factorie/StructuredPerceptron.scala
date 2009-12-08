@@ -12,15 +12,15 @@ import scalala.Scalala._
 import scalala.tensor.Vector
 
 /** Collins' structured-perceptron */
-abstract class StructuredPerceptron(model:Model) extends GradientAscentUpdates {
+abstract class StructuredPerceptron[V<:Variable with TrueSetting](model:Model) extends GradientAscentUpdates {
   type TemplatesToUpdate <: DotTemplate
   var learningMargin = 1.0 // TODO not currently used
   private var difflist: DiffList = null
   
   // Abstract method to be provided elsewhere
-  def predict(vs:Seq[Variable with TrueSetting]): Unit
+  def predict(vs:Seq[V]): Unit
   
-  def process(vs:Seq[Variable with TrueSetting]): Unit = {
+  def process(vs:Seq[V]): Unit = {
     predict(vs)
     difflist = new DiffList
     vs.foreach(_.setToTruth(difflist))
