@@ -25,9 +25,9 @@ import cc.factorie.util.Implicits._
     @see Template
     @see TemplateList
  */
-class Model(templates:Iterable[Template]) extends TemplateList[Template] {
-  def this() = this(Nil)
-  def this(templates:Template*) = this(templates)
+class Model(templates:Template*) extends TemplateList[Template] {
+  //def this() = this(Nil)
+  //def this(templates:Template*) = this(templates)
 
   this ++= templates
   
@@ -47,3 +47,24 @@ class Model(templates:Iterable[Template]) extends TemplateList[Template] {
   }
 }
 
+/* TODO
+ * I will add this trick when we have Scala 2.8, so that we can use package objects to make the implicit conversions nicer.
+
+// These classes, together with the implicit conversions from Template to InitializedTemplate perform a little
+// slight of hand in order to automatically initialize templates with their proper Manifests before they are
+// appended to a model.  This will no longer be necessary in the future when Scala has trait constructor arguments.
+class InitializedTemplate(val template:Template)
+class InitializedVectorTemplate1[S1<:DiscreteValues](template:VectorStatistics1[S1])(implicit m1:Manifest[S1]) extends InitializedTemplate(template) {
+  template.init(m1)
+} 
+class InitializedVectorTemplate2[S1<:DiscreteValues,S2<:DiscreteValues](template:VectorStatistics2[S1,S2])(implicit m1:Manifest[S1], m2:Manifest[S2]) extends InitializedTemplate(template) {
+	template.init(m1,m2)
+} 
+class InitializedVectorTemplate3[S1<:DiscreteValues,S2<:DiscreteValues,S3<:DiscreteValues](template:VectorStatistics3[S1,S2,S3])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]) extends InitializedTemplate(template) {
+  template.init(m1,m2,m3)
+} 
+class InitializedVectorTemplate4[S1<:DiscreteValues,S2<:DiscreteValues,S3<:DiscreteValues,S4<:DiscreteValues](template:VectorStatistics4[S1,S2,S3,S4])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]) extends InitializedTemplate(template) {
+  template.init(m1,m2,m3,m4)
+} 
+
+*/
