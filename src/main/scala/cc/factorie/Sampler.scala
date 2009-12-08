@@ -14,6 +14,7 @@ import cc.factorie.util.{Hooks0,Hooks1}
 
 /** Samplers that key off of particular contexts.  Subclasses implement "process1(context:C)" */
 trait Sampler[C] {
+  type ContextType = C
   //if (contextClass == classOf[Nothing]) throw new Error("Constructor for class "+this.getClass.getName+" must be given type argument");
   /** The number of calls to process(numIterations:Int) or process(contexts:C,numIterations:Int). */
   var iterationCount = 0
@@ -32,7 +33,7 @@ trait Sampler[C] {
     if (d != null && d.size > 0) changeCount += 1
     d
   }
-  /** If true, calls to "next" will create a new DiffList to describe the changes they made, otherwise "next" will not track the changes, and will return null. */
+  /** If true, calls to "newDiffList" will create a new DiffList to describe the changes they made, otherwise "newDiffList" will return null. */
   var makeNewDiffList = true
   /** Convenient method for setting makeNewDiffList to false, and returning this. */
   def noDiffList: this.type = { makeNewDiffList = false; this }
@@ -109,11 +110,11 @@ abstract class SamplerOverSettings[C](theModel:Model, theObjective:Model) extend
   def model = theModel
   def objective = theObjective 
   /** Abstract method must be implemented in sub-classes.  
-      Provides accoess to all different possible worlds we will evaluate for each call to 'process' */ 
+      Provides access to all different possible worlds we will evaluate for each call to 'process' */ 
   def settings(context:C) : SettingIterator
-  // TODO Some faster alternative to "toList" below?
   def proposals(context:C): Seq[Proposal] = {
     // 'map's call to 'next' is actually what causes the change in state to happen
+    // TODO some more efficient alternative to 'toList'?  But we have to be careful to make the collection 'strict'
     val s = settings(context).map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m, o, m/temperature)}).toList
     //if (s.exists(p=>p.modelScore > 0.0)) { s.foreach(p => println(p.modelScore+" "+model)); println("SamplerOverSettings^") }
     s
@@ -157,7 +158,7 @@ trait FactorQueue[C] extends Sampler[C] {
   def sampleFromQueue : DiffList = {
     val factor = queue.dequeue // TODO consider proportionally sampling from the queue instead
     for (variable <- factor.variables.toSeq.shuffle; if (!variable.isConstant)) {
-      val difflist = process0(variable) // TODO This is not type-safe!
+      val difflist = process0(variable)
       if (difflist != null && difflist.size > 0) return difflist
     }
     null

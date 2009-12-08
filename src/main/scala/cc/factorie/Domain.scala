@@ -53,8 +53,9 @@ class ItemizedDomain[V <: ItemizedVariable](implicit m:Manifest[V]) extends Doma
 class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V]()(m) {
   private val _size: Int = {
     val c = m.erasure
-    if (c.isAnnotationPresent(classOf[DomainSize]))	m.erasure.getAnnotation(classOf[DomainSize]).value
-    else -1
+    val s = if (c.isAnnotationPresent(classOf[DomainSize]))	m.erasure.getAnnotation(classOf[DomainSize]).value else -1
+    if (s == -1 && this.getClass == classOf[DiscreteDomain[V]]) throw new Error("DiscreteDomain must have its size set with a @DomainSize annotation.")
+    s
   }
   def size = _size
   //assert (size > 0)
@@ -363,8 +364,8 @@ object Domain {
     if (i == -1) throw new Error("Domain "+dc.getName+" does not have a one-arg constructor; all Domains must.")
     if (debug) println("newDomainFor calling "+constructors(i).getClass+" constructor # args="+constructors(i).getParameterTypes.length)
     val manifest = Manifest.classType[Variable](vc)
-    val constructorArgs = Array(manifest)
-    constructors(i).newInstance(constructorArgs).asInstanceOf[Domain[_]]
+    val constructorArgs: Array[Object] = Array(manifest)
+    constructors(i).newInstance(constructorArgs: _*).asInstanceOf[Domain[_]]
   }
   /** Find the (sub)class of Domain to use for constructing a domain for variable class c. */
   private def getDomainClass(c:Class[_]) : Class[_] = {
