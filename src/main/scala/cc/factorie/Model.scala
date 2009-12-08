@@ -58,7 +58,7 @@ class InitializedVectorTemplate1[S1<:DiscreteValues](template:VectorStatistics1[
   template.init(m1)
 } 
 class InitializedVectorTemplate2[S1<:DiscreteValues,S2<:DiscreteValues](template:VectorStatistics2[S1,S2])(implicit m1:Manifest[S1], m2:Manifest[S2]) extends InitializedTemplate(template) {
-	template.init(m1,m2)
+  template.init(m1,m2)
 } 
 class InitializedVectorTemplate3[S1<:DiscreteValues,S2<:DiscreteValues,S3<:DiscreteValues](template:VectorStatistics3[S1,S2,S3])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]) extends InitializedTemplate(template) {
   template.init(m1,m2,m3)

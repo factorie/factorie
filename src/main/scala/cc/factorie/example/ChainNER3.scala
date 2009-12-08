@@ -24,18 +24,18 @@ object ChainNER3 {
   
   // The model
   val model = new Model(
-  	// Bias term on each individual label 
-  	new TemplateWithDotStatistics1[Label], 
-  	// Transition factors between two successive labels
-  	new TemplateWithDotStatistics2[Label, Label] {
-  		def unroll1(label: Label) = if (label.hasPrev) Factor(label.token.prev.label, label) else Nil
-  		def unroll2(label: Label) = if (label.hasNext) Factor(label, label.token.next.label) else Nil
-  	},
-  	// Factor between label and observed token
-  	new TemplateWithDotStatistics2[Label, Token] {
-  		def unroll1(label: Label) = Factor(label, label.token)
-  		def unroll2(token: Token) = throw new Error("Token values shouldn't change")
-  	}
+    // Bias term on each individual label 
+    new TemplateWithDotStatistics1[Label], 
+    // Transition factors between two successive labels
+    new TemplateWithDotStatistics2[Label, Label] {
+      def unroll1(label: Label) = if (label.hasPrev) Factor(label.token.prev.label, label) else Nil
+      def unroll2(label: Label) = if (label.hasNext) Factor(label, label.token.next.label) else Nil
+    },
+    // Factor between label and observed token
+    new TemplateWithDotStatistics2[Label, Token] {
+      def unroll1(label: Label) = Factor(label, label.token)
+      def unroll2(token: Token) = throw new Error("Token values shouldn't change")
+    }
   )
   
   // The training objective
@@ -44,7 +44,7 @@ object ChainNER3 {
 
 
   def main(args: Array[String]): Unit = {
-  	if (args.length != 2) throw new Error("Usage: ChainNER3 trainfile testfile")
+    if (args.length != 2) throw new Error("Usage: ChainNER3 trainfile testfile")
 
     // Read in the data
     val trainSentences = load(args(0))

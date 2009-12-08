@@ -53,7 +53,7 @@ class ItemizedDomain[V <: ItemizedVariable](implicit m:Manifest[V]) extends Doma
 class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V]()(m) {
   private val _size: Int = {
     val c = m.erasure
-    val s = if (c.isAnnotationPresent(classOf[DomainSize]))	m.erasure.getAnnotation(classOf[DomainSize]).value else -1
+    val s = if (c.isAnnotationPresent(classOf[DomainSize])) m.erasure.getAnnotation(classOf[DomainSize]).value else -1
     if (s == -1 && this.getClass == classOf[DiscreteDomain[V]]) throw new Error("DiscreteDomain must have its size set with a @DomainSize annotation.")
     s
   }
