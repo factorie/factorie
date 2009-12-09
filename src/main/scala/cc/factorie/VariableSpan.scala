@@ -73,9 +73,12 @@ abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(imp
   def append(n: Int)(implicit d: DiffList) = new Append(n)
   def canPrepend(n: Int) = _start >= n
   def canAppend(n: Int) = _start + _length + n <= seq.length
-  case class NewSpanVariable(implicit d: DiffList) extends AutoDiff {
+  case class NewSpanVariable(implicit d: DiffList) extends Diff {
+    // NewSpanVariable cannot be an AutoDiff because of initialization ordering, done will end up false. 
     //println("NewSpanVariable d.length="+d.length)
     var done = false
+    if (d != null) d += this
+    redo
     def variable: SpanVariable[T] = {if (done || diffIfNotPresent) SpanVariable.this else null}
     def redo = {assert(!done); done = true; present = true }
     def undo = {assert(done); done = false; present = false}
@@ -139,15 +142,21 @@ class VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable
   }
   /** Remove the span from the list of spans maintained by this VariableSeqWithSpans.
       Typically you would not call this yourself; it is called automatically from the SpanVariable constructor. */
-  case class AddSpanVariable(span:S)(implicit d: DiffList) extends AutoDiff {
+  case class AddSpanVariable(span:S)(implicit d: DiffList) extends Diff {
+    // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
     var done = false
+    if (d != null) d += this
+    redo
     def variable: S = if (done) span else null.asInstanceOf[S]
     def redo = { _spans.prepend(span); assert(!done); done = true }
     def undo = { _spans.-=(span); assert(done); done = false }
     override def toString = "AddSpanVariable("+variable+")"
   }
-  case class RemoveSpanVariable(span:S)(implicit d: DiffList) extends AutoDiff {
+  case class RemoveSpanVariable(span:S)(implicit d: DiffList) extends Diff {
+    // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
     var done = false
+    if (d != null) d += this
+    redo
     def variable: S = if (done) null.asInstanceOf[S] else span
     def redo = { _spans.-=(span); assert(!done); done = true }
     def undo = { _spans.prepend(span); assert(done); done = false }
