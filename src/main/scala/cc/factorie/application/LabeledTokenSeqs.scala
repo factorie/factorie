@@ -480,7 +480,8 @@ object LabeledTokenSeqs {
               j += 1
             }
             // Handle special case for the end of the sequence
-            if (j == labels.length && predictedContinue == trueContinue) trueCount += 1
+            // srr: fixed this to check not only whether trueContinue==predictedContinue, but if both are continuing.
+            if (j == labels.length && predictedContinue && trueContinue) trueCount += 1
           }
         }
       }
