@@ -24,28 +24,47 @@ object SpanNER1 {
         for (labelValue <- Domain[Label]; if (labelValue != "O"))
           changes += {(d:DiffList) => span.label.set(labelValue)(d)}
         changes += {(d:DiffList) => span.delete(d)}
-        if (span.length > 1) changes += {(d:DiffList) => span.trimEnd(1)(d)}
-        if (span.length > 1) changes += {(d:DiffList) => span.trimStart(1)(d)}
-        if (span.canPrepend(1)) changes += {(d:DiffList) => span.prepend(1)(d)}
-        if (span.canAppend(1)) changes += {(d:DiffList) => span.append(1)(d)}
+        if (span.length > 1) {
+          changes += {(d:DiffList) => span.trimEnd(1)(d)}
+          changes += {(d:DiffList) => span.trimStart(1)(d)}
+          for (labelValue <- Domain[Label]; if (labelValue != "O")) {
+            changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue, seq, span.end+1, 1)(d) } }
+            changes += {(d:DiffList) => { span.trimStart(1)(d); new Span(labelValue, seq, span.start-1, 1)(d) } }
+          }
+        }
+        if (span.canPrepend(1)) {
+          for (labelValue <- Domain[Label]; if (labelValue != "O"))
+          	changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.prepend(1)(d); span.first.spans.filter(_ != span).foreach(_.trimEnd(1)(d)) } }
+        }
+        if (span.canAppend(1)) {
+          for (labelValue <- Domain[Label]; if (labelValue != "O"))
+          	changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.append(1)(d); span.last.spans.filter(_ != span).foreach(_.trimStart(1)(d)) } }
+        }
+        //if (span.length > 1) changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue, seq, position+1, 1)(d) } }
       }
       if (existingSpans.isEmpty) {
-        for (labelValue <- Domain[Label]; if (labelValue != "O"))
+        changes += {(d:DiffList) => {}} // The no-op action
+        for (labelValue <- Domain[Label]; if (labelValue != "O")) {
           changes += {(d:DiffList) => new Span(labelValue, seq, position, 1)(d)}
+          //if (position != seq.length-1) changes += {(d:DiffList) => new Span(labelValue, seq, position, 2)(d)}
+        }
       }
       println("Token.settings length="+changes.length)
       var i = 0
-      def hasNext = i < changes.length-1
+      def hasNext = i < changes.length
       def next(d:DiffList) = { val d = new DiffList; changes(i).apply(d); i += 1; d }
       def reset = i = 0
     }
   }
   class Label(labelName:String, val span: Span) extends LabelVariable(labelName)
-  class Span(labelString:String, seq:Sentence, start:Int, length:Int)(implicit d:DiffList) extends SpanVariable(seq, start, length) {
+  class Span(labelString:String, seq:Sentence, start:Int, len:Int)(implicit d:DiffList) extends SpanVariable(seq, start, len) {
     val label = new Label(labelString, this)
-    def spanLength = new SpanLength(length)
-    override def phrase = if (length == 1) this.first.word else this.map(_.word).mkString(" ")
-    override def toString = "Span("+label.value+":"+this.phrase+")"
+    def spanLength = new SpanLength(len)
+    override def phrase = this.map(_.word).mkString(" ")
+    def isCorrect = this.forall(token => token.trueLabelValue == label.value) &&
+    	(!hasPredecessor(1) || predecessor(1).trueLabelValue != label.value) && 
+    	(!hasSuccessor(1) || successor(1).trueLabelValue != label.value)
+    override def toString = "Span("+length+","+label.value+":"+this.phrase+")"
   }
   class Sentence extends VariableSeqWithSpans[Token,Span]
   @DomainSize(5) class SpanLength(x:Int) extends DiscreteVariable {
@@ -59,7 +78,7 @@ object SpanNER1 {
   }
   val model = new Model(
     // Bias term on each individual label 
-    new TemplateWithDotStatistics1[Label],
+    //new TemplateWithDotStatistics1[Label],
     // Token-Label within Span
     new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = for (token <- span) yield Stat(token, label) }.init,
     // First Token of Span
@@ -71,19 +90,25 @@ object SpanNER1 {
     // Token after Span
     new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext) Stat(span.last.next, span.label) else Nil }.init,
     // Span Length with Label
-    new SpanLabelTemplate with DotStatistics2[SpanLength,Label] { def statistics(span:Span, label:Label) = Stat(span.spanLength, span.label) }.init
+    //new SpanLabelTemplate with DotStatistics2[SpanLength,Label] { def statistics(span:Span, label:Label) = Stat(span.spanLength, span.label) }.init
   )
   
   // The training objective
   val objective = new Model(
-    new TemplateWithStatistics1[Span] {
+    new TemplateWithStatistics2[Span,Label] {
+      def unroll1(span:Span) = Factor(span, span.label)
+      def unroll2(label:Label) = Factor(label.span, label)
       def score(s:Stat) = {
         val span = s.s1
         var result = 0.0
         for (token <- span) {
           if (token.trueLabelValue != "O") result += 2.0 else result -= 1.0
-          if (token.trueLabelValue == span.label.value) result += 5.0
-          if (token.spans.length > 1) result -= 10.0 // penalize overlapping spans
+          if (token.trueLabelValue == span.label.value) {
+            result += 5.0 
+            if (!span.hasPredecessor(1) || span.predecessor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
+            if (!span.hasSuccessor(1) || span.successor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
+          } else result -= 1.0
+          if (token.spans.length > 1) result -= 100.0 // penalize overlapping spans
         }
         result
       }
@@ -95,45 +120,72 @@ object SpanNER1 {
     if (args.length != 2) throw new Error("Usage: ChainNER3 trainfile testfile")
 
     // Read in the data
-    val trainSentences = load(args(0))
+    val trainSentences = load(args(0)) //.take(500)
     val testSentences = load(args(1))
-    val trainTokens = trainSentences.flatMap(x=>x).take(2000)
+    val trainTokens = trainSentences.flatMap(x=>x) //.take(2000)
     val testTokens = testSentences.flatMap(x=>x)
     val allTokens: Seq[Token] = trainTokens ++ testTokens
     // Add features from next and previous tokens 
     allTokens.foreach(t => {
+      //if (t.hasPrev) t ++= (for (f1 <- t.values; f2 <- t.prev.values; if (!f1.contains('@') && !f2.contains('@'))) yield f1+"_&_"+f2+"@-1")
+      //if (t.hasNext) t ++= (for (f1 <- t.values; f2 <- t.next.values; if (!f1.contains('@') && !f2.contains('@'))) yield f1+"_&_"+f2+"@+1")
       if (t.hasPrev) t ++= t.prev.values.filter(!_.contains('@')).map(_+"@-1")
       if (t.hasNext) t ++= t.next.values.filter(!_.contains('@')).map(_+"@+1")
     })
     println("Have "+trainTokens.length+" trainTokens")
+    println("Domain[Label] "+Domain[Label].toList)
+    
+    trainTokens.take(200).foreach(printFeatures _)
     
     // Sample and Learn!
     val learner = new GibbsSampler1[Token](model, objective) with SampleRank with GradientAscentUpdates {
       temperature = 0.1
-      override def preProcessHook(t:Token): Token = { super.preProcessHook(t); if (t.isCapitalized) t else null.asInstanceOf[Token] } 
+      override def preProcessHook(t:Token): Token = { super.preProcessHook(t); if (t.isCapitalized) t else null.asInstanceOf[Token] }
+      override def proposalsHook(proposals:Seq[Proposal]): Unit = {
+        proposals.foreach(println(_))
+        super.proposalsHook(proposals)
+      }
     }
     val predictor = new GibbsSampler1[Token](model) { temperature = 0.1 }
-    for (i <- 1 to 10) {
+    for (i <- 1 to 20) {
       println("Iteration "+i) 
       learner.process(trainTokens, 1)
-      println("*** Spans ***")
-      trainTokens.take(200).foreach(printToken _); println; println
-      //printDiagnostic(trainLabels.take(400))
+      predictor.process(testTokens, 1)
+      println("*** TRAIN OUTPUT ***"); trainSentences.foreach(printSentence _); println; println
+      println("*** TEST OUTPUT ***"); testSentences.foreach(printSentence _); println; println
       //println ("Train accuracy = "+ objective.aveScore(trainLabels))
       //println ("Test  accuracy = "+ objective.aveScore(testLabels))
     }
-    //predictor.temperature *= 0.1
-    //predictor.process(testTokens, 2)
-    //testTokens.take(300).foreach(printToken _)
   }
 
+  def printFeatures(token:Token): Unit = {
+    println(token)
+  }
   
+  def printSentence(sentence:Sentence): Unit = {
+    for (span <- sentence.spans) {
+      println("%s len=%-2d %-8s %-15s %-30s %-15s".format(
+          if (span.isCorrect) " " else "*",
+          span.length,
+          span.label.value, 
+          if (span.hasPredecessor(1)) span.predecessor(1).word else "<START>", 
+          span.phrase, 
+          if (span.hasSuccessor(1)) span.successor(1).word else "<END>"))
+    }
+  }
   
   def printToken(token:Token) : Unit = {
     //print("printToken "+token.word+"  ")
     val spans = token.spans
-    for (span <- spans)
-      println("%-8s %s".format(span.label.value, span.phrase))
+    for (span <- spans) {
+      println("%s %-8s %-15s %-30s %-15s".format(
+      		if (span.isCorrect) " " else "*",
+      		span.label.value, 
+      		if (span.hasPredecessor(1)) span.predecessor(1).word else "<START>", 
+      		span.phrase, 
+      		if (span.hasSuccessor(1)) span.successor(1).word else "<END>"))
+      span.foreach(token => print(token.word+" ")); println
+    }
   }
 
   // Feature extraction
@@ -141,6 +193,7 @@ object SpanNER1 {
     import scala.collection.mutable.ArrayBuffer
     val f = new ArrayBuffer[String]
     f += "W="+simplify(word)
+    if (word.matches("[A-Za-z0-9]+")) f += "SHAPE="+cc.factorie.application.LabeledTokenSeqs.wordShape(word, 2)
     //if (word.length > 3) f += "PRE="+word.substring(0,3)
     if (Capitalized.findFirstMatchIn(word) != None) f += "CAPITALIZED"
     if (Numeric.findFirstMatchIn(word) != None) f += "NUMERIC"
@@ -155,8 +208,8 @@ object SpanNER1 {
   def simplify(word:String): String = {
     if (word.matches("(19|20)\\d\\d")) "<YEAR>" 
     else if (word.matches("\\d+")) "<NUM>"
-    else if (word.matches(".*\\d.*")) word.replaceAll("\\d","#").toLowerCase
-    else word.toLowerCase
+    else if (word.matches(".*\\d.*")) word.replaceAll("\\d","#")
+    else word
   }
 
   def load(filename:String) : Seq[Sentence] = {
