@@ -84,8 +84,11 @@ abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(imp
     def undo = {assert(done); done = false; present = false}
     override def toString = "NewSpanVariable("+SpanVariable.this+")"
   }
-  case class DeleteSpanVariable(implicit d: DiffList) extends AutoDiff {
+  case class DeleteSpanVariable(implicit d: DiffList) extends Diff {
+    // cannot be AutoDiff for same reasons as NewSpanVariable
     var done = false
+    if (d != null) d += this
+    redo
     def variable: SpanVariable[T] = if (done && !diffIfNotPresent) null else SpanVariable.this
     def redo = { assert(!done); done = true; present = false }
     def undo = { assert(done); done = false; present = true }
