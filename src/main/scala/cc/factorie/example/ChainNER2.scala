@@ -71,9 +71,9 @@ object ChainNER2 {
     (trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
     (trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplify(t2.word).toLowerCase)))
 
-    // Put features of first mention o later mentions
-    (trainSentences ++ testSentences).foreach(s => {
-      s.foreach(t => {
+    // Put features of first mention on later mentions
+    documents.foreach(d => {
+      d.foreach(t => {
         if (t.isCapitalized && t.word.length > 1 && !t.values.exists(f => f.matches(".*FIRSTMENTION.*"))) {
           //println("Looking for later mentions of "+t.word)
           var t2 = t
