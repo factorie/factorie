@@ -58,7 +58,7 @@ import cc.factorie.util.Implicits._
 
   /** A variable containing a mutable (but untracked by Diff) sequence of variables; used in conjunction with VarInSeq.
       @author Andrew McCallum */
-  class VariableSeq[V <: Variable with VarInTypedSeq[V,_]] extends RandomAccessSeq[V] with Variable {
+  trait VariableSeq[V <: Variable with VarInTypedSeq[V,_]] extends RandomAccessSeq[V] with Variable {
     private val seq = new ArrayBuffer[V]
     def +=(v: V) = {
       if (v.seq != null) throw new Error("Trying to add VarInSeq that is already assigned to another VariableSeq")
