@@ -75,6 +75,8 @@ class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V
   }
 }
 
+// TODO Also make a randomized-representation CategoricalDomain
+
 class CategoricalDomain[V<:CategoricalValues](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with util.Index[V#ValueType] with Collection[V#ValueType] /*with DomainEntryCounter[V]*/ {
   override def freeze = freeze0
   override def allocSize = allocSize0
