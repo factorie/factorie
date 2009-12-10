@@ -26,7 +26,7 @@ import scala.util.Sorting
  */
 object TokenSeqs {
 
-  /** A word token in a linear sequence of tokens.  It is a constituent of a LabeledTokenSeq.
+  /** A word token in a linear sequence of tokens.  It is a constituent of a TokenSeq.
       Its value is a BinaryVectorVariable, its feature vector.
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
   abstract class Token[S<:VariableSeq[This], This >:Null <:Token[S,This]](val word:String, features:Seq[String], trueLabelString:String)
@@ -37,6 +37,7 @@ object TokenSeqs {
     type GetterType <: TokenGetter[S,This]
     class GetterClass extends TokenGetter[S,This]
     def trueLabelValue = trueLabelString
+    def matches(t2:Token[S,This]): Boolean = word == t2.word
     /** Return true if the first  character of the word is upper case. */
     def isCapitalized = java.lang.Character.isUpperCase(word(0))
     def isPunctuation = word.matches("\\{Punct}")
@@ -48,8 +49,8 @@ object TokenSeqs {
     /** Return a string that captures the generic "shape" of the original word, 
         mapping lowercase alphabetics to 'a', uppercase to 'A', digits to '1', whitespace to ' '.
         Skip more than 'maxRepetitions' of the same character class. */
-    def wordShape(maxRepetitions:Int) = LabeledTokenSeqs.wordShape(word, maxRepetitions)
-    def charNGrams(min:Int, max:Int): Seq[String] = LabeledTokenSeqs.charNGrams(word, min, max)
+    def wordShape(maxRepetitions:Int) = TokenSeqs.wordShape(word, maxRepetitions)
+    def charNGrams(min:Int, max:Int): Seq[String] = TokenSeqs.charNGrams(word, min, max)
     this ++= features
   }
 
@@ -107,14 +108,16 @@ object TokenSeqs {
       addNeighboringFeatureConjunctions(null.asInstanceOf[String], offsetConjunctions:_*)
     /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
     def addNeighboringFeatureConjunctions(regex:String, offsetConjunctions:Seq[Int]*): Unit = {
-      // First gather all the extra features here, then add them to each Token
+      // First gather all the extra features here,...
       val newFeatures = Array.fromFunction(i => new ArrayBuffer[String])(this.size)
       for (i <- 0 until size) {
         val token = this(i)
         val thisTokenNewFeatures = newFeatures(i)
         for (offsets <- offsetConjunctions) 
-          thisTokenNewFeatures ++= appendConjunctions(regex, token, null, offsets)
+          thisTokenNewFeatures ++= appendConjunctions(regex, token, null, offsets).
+            map(list => list.sort((a,b)=>a.compare(b)>0).map({case(f,o)=>f+"@"+o}).mkString("_&_"))
       }
+      // ... then add them to each Token
       for (i <- 0 until size) {
         val token = this(i)
         token.zero
@@ -124,8 +127,8 @@ object TokenSeqs {
     }
     // Recursive helper function for previous method, expanding out cross-product of conjunctions in tree-like fashion.
     // 't' is the Token to which we are adding features; 'existing' is the list of features already added; 'offsets' is the list of offsets yet to be added
-    private def appendConjunctions(regex:String, t:T, existing:ArrayBuffer[String], offsets:Seq[Int]): ArrayBuffer[String] = {
-      val result = new ArrayBuffer[String];
+    private def appendConjunctions(regex:String, t:T, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
+      val result = new ArrayBuffer[List[(String,Int)]];
       val offset: Int = offsets.first
       val t2 = t.next(offset)
       val adding: Seq[String] = 
@@ -133,15 +136,9 @@ object TokenSeqs {
         else if (regex != null) t2.values.filter(str => str.matches(regex)) // Only include features that match pattern 
         else t2.values
       if (existing != null) {
-        if (offset == 0)
-          for (e <- existing; a <- adding) result += e+"_&_"+a
-        else
-          for (e <- existing; a <- adding) result += e+"_&_"+a+"@"+offset
+      	for (e <- existing; a <- adding) { val elt = (a,offset); if (!e.contains(elt)) result += (a,offset) :: e }
       } else {
-        if (offset == 0)
-          for (a <- adding) result += a
-        else
-          for (a <- adding) result += a+"@"+offset
+      	for (a <- adding) result += List((a,offset))
       }
       if (offsets.size == 1) result
       else appendConjunctions(regex, t, result, offsets.drop(1))
@@ -187,7 +184,7 @@ object TokenSeqs {
   
   
   
-  /** Tools for creating and evaluating LabeledTokenSeq 
+  /** Tools for creating and evaluating TokenSeq 
    
       @author Andrew McCallum
       @since 0.8
@@ -204,7 +201,7 @@ object TokenSeqs {
     val nonWhitespaceClasses = new Regex("\\p{Alpha}+|\\p{Digit}+|\\p{Punct}")
     private val whitespaceRegex = new Regex("\\s+")
 
-    /** Construct and return a new LabeledTokenSeq (and its constituent Tokens and Labels) 
+    /** Construct and return a new TokenSeq (and its constituent Tokens and Labels) 
         from a source containing SGML markup to indicate the labels on some tokens. 
         Tokens not bounded by SGML will be given a Label with initial and true value 'backgroundLabelString'. 
         Token segmentation will be performed by the extent of regular expression matches to 'lexer'. */
@@ -213,7 +210,7 @@ object TokenSeqs {
       throw new Error("Not implemented yet.")
     }
 
-    /** Construct and return a new LabeledTokenSeq (and its constituent Tokens and Labels) 
+    /** Construct and return a new TokenSeq (and its constituent Tokens and Labels) 
         from a source containing plain text.  Since the labels are unknown, all Labels
         will be given the initial and true value 'defaultLabelString'. */
     def fromPlainText[T<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, defaultLabelString:String, featureFunction: String=>Seq[String], lexer:Regex): S = {
@@ -226,7 +223,7 @@ object TokenSeqs {
       seq
     }
 
-    /** Create a LabeledTokenSeq from a source of characters that has "one word per line", 
+    /** Create a TokenSeq from a source of characters that has "one word per line", 
         each line consisting of information about one token: a whitespace-separated list of elements, 
         in which the first element is the word itself and the last element is the true target label for the token.
         The CoNLL 2003 NER Shared Task is an example of such a format.
@@ -327,6 +324,11 @@ object TokenSeqs {
     def hasNext: Boolean
     def hasPrev: Boolean
     def firstInSeq: This
+    def tokensInSeq: Iterator[This] = new Iterator[This] {
+      var t: This = firstInSeq
+      def hasNext: Boolean = t != null
+      def next: This = { val result = t; if (t.hasNext) t = t.next else t = null.asInstanceOf[This]; result }
+    }
   }
 
   class Lexicon(val caseSensitive:Boolean) {
