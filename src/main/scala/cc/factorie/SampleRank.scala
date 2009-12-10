@@ -19,6 +19,7 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
   var learningMargin = 1.0
   def updateWeights: Unit
   val amIMetropolis = this.isInstanceOf[MHSampler[Variable]] // TODO Can we find a way to avoid this special case?
+  var logLevel = 0
 
   /** If objective has not yet been set non-null, get it from the Global.defaultObjective. */
   abstract override def objective = if (super.objective == null) Global.defaultObjective else super.objective
@@ -62,12 +63,13 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
     println ("bestModel1     modelScore = "+bestModel1.modelScore)
     println ()
     */
-    /*
-    println ("bestObjective1 ms="+bestObjective1.modelScore+" os="+bestObjective1.objectiveScore+" diff="+bestObjective1.diff)
-    println ("bestObjective1 ms="+bestObjective2.modelScore+" os="+bestObjective2.objectiveScore+" diff="+bestObjective2.diff)
-    println ("bestModel1     ms="+bestModel1.modelScore+" os="+bestModel1.objectiveScore+" diff="+bestModel1.diff)
-    println ("bestModel2     ms="+bestModel2.modelScore+" os="+bestModel2.objectiveScore+" diff="+bestModel2.diff)
-    */
+    if (logLevel > 0) {
+    	println ("bestObjective1 ms="+bestObjective1.modelScore+" os="+bestObjective1.objectiveScore+" diff="+bestObjective1.diff)
+    	println ("bestObjective2 ms="+bestObjective2.modelScore+" os="+bestObjective2.objectiveScore+" diff="+bestObjective2.diff)
+    	println ("bestModel1     ms="+bestModel1.modelScore+" os="+bestModel1.objectiveScore+" diff="+bestModel1.diff)
+    	println ("bestModel2     ms="+bestModel2.modelScore+" os="+bestModel2.objectiveScore+" diff="+bestModel2.diff)
+    }
+
     // Only do learning if the trueScore has a preference
     // It would not have a preference if the variable in question is unlabeled
     // TODO Is this the right way to test this though?  Could there be no preference at the top, but the model is selecting something else that is worse?
