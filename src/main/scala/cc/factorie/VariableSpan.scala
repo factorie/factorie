@@ -26,16 +26,16 @@ abstract class SpanValue[T](val seq: Seq[T], initStart: Int, initLength: Int) ex
   assert(initStart >= 0)
   assert(initLength > 0)
   assert(initStart + initLength <= seq.length)
+  protected var _start = initStart
+  protected var _length = initLength
   override def elements = new Iterator[T] {
     var i = _start
     def hasNext = i < _start + _length
     def next: T = {i += 1; seq(i - 1)}
   }
   def apply(i: Int) = seq(i + _start)
-  protected var _start = initStart
   def start = _start
   def end = _start + _length - 1
-  protected var _length = initLength
   def length = _length
   def isAtStart = _start == 0
 
@@ -44,8 +44,10 @@ abstract class SpanValue[T](val seq: Seq[T], initStart: Int, initLength: Int) ex
     (this.start <= that.start && this.end >= that.start)
 
   def isAtEnd = _start + _length == seq.length
-  def successor(i: Int) = seq(_start + _length - 1 + i)
-  def predecessor(i: Int) = seq(_start - i)
+  def hasSuccessor(i: Int) = (_start + _length - 1 + i) < seq.length
+  def hasPredecessor(i: Int) = (_start - i) > 0
+  def successor(i: Int) = if (hasSuccessor(i)) seq(_start + _length - 1 + i) else null.asInstanceOf[T]
+  def predecessor(i: Int) = if (hasPredecessor(i)) seq(_start - i) else null.asInstanceOf[T]
   /** Return a String representation of the span */
   def phrase = if (length == 1) this.first.toString else this.mkString(" ")
 }
@@ -67,14 +69,15 @@ abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(imp
     seq match { case s:VariableSeqWithSpans[T,SpanVariable[T]] => s.removeSpan(this) }
   }
   def setLength(l: Int)(implicit d: DiffList) = new SetLength(_length, l)
-  def trimStart(n: Int)(implicit d: DiffList) = new TrimStart(n)
-  def trimEnd(n: Int)(implicit d: DiffList) = new TrimEnd(n)
+  def trimStart(n: Int)(implicit d: DiffList) = if (n >= length) this.delete else new TrimStart(n)
+  def trimEnd(n: Int)(implicit d: DiffList) = if (n >= length) this.delete else new TrimEnd(n)
   def prepend(n: Int)(implicit d: DiffList) = new Prepend(n)
   def append(n: Int)(implicit d: DiffList) = new Append(n)
   def canPrepend(n: Int) = _start >= n
   def canAppend(n: Int) = _start + _length + n <= seq.length
   case class NewSpanVariable(implicit d: DiffList) extends Diff {
     // NewSpanVariable cannot be an AutoDiff because of initialization ordering, done will end up false. 
+    // TODO But I should get rid of 'done' and just use 'present' instead.
     //println("NewSpanVariable d.length="+d.length)
     var done = false
     if (d != null) d += this
@@ -105,11 +108,13 @@ abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(imp
     def variable = if (present || diffIfNotPresent) SpanVariable.this else null
     def redo = {assert(n < _length); _start += n; _length -= n}
     def undo = {assert(_start - n >= 0); _start -= n; _length += n}
+    override def toString = "TrimStart("+n+","+SpanVariable.this+")"
   }
   case class TrimEnd(n: Int)(implicit d: DiffList) extends AutoDiff {
     def variable = if (present || diffIfNotPresent) SpanVariable.this else null
     def redo = {assert(n < _length); _length -= n}
     def undo = _length += n
+    override def toString = "TrimEnd("+n+","+SpanVariable.this+")"
   }
   case class Prepend(n: Int)(implicit d: DiffList) extends AutoDiff {
     def variable = if (present || diffIfNotPresent) SpanVariable.this else null
@@ -125,11 +130,13 @@ abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(imp
 }
 
 
-class VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable[T]] extends VariableSeq[T] {
+trait VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable[T]] extends VariableSeq[T] {
   private val _spans = new ListBuffer[S];
   def spans: Seq[S] = _spans
   def spansContaining(position: Int): Iterable[S] = _spans.filter(s => s.start <= position && position < (s.start + s.length))
   def spansStartingAt(position: Int): Iterable[S] = _spans.filter(s => s.start == position)
+  /** Add the span to the list of spans maintained by this VariableSeqWithSpans.
+      Typically you would not call this yourself; it is called automatically from the SpanVariable constructor. */
   def addSpan(s:S)(implicit d:DiffList): Unit = {
     require(s.seq == this)
     AddSpanVariable(s)
@@ -140,8 +147,6 @@ class VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable
     require(s.seq == this)
     RemoveSpanVariable(s)
   }
-  /** Remove the span from the list of spans maintained by this VariableSeqWithSpans.
-      Typically you would not call this yourself; it is called automatically from the SpanVariable constructor. */
   case class AddSpanVariable(span:S)(implicit d: DiffList) extends Diff {
     // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
     var done = false
@@ -150,7 +155,7 @@ class VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable
     def variable: S = if (done) span else null.asInstanceOf[S]
     def redo = { _spans.prepend(span); assert(!done); done = true }
     def undo = { _spans.-=(span); assert(done); done = false }
-    override def toString = "AddSpanVariable("+variable+")"
+    override def toString = "AddSpanVariable("+span+")"
   }
   case class RemoveSpanVariable(span:S)(implicit d: DiffList) extends Diff {
     // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
@@ -160,7 +165,7 @@ class VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable
     def variable: S = if (done) null.asInstanceOf[S] else span
     def redo = { _spans.-=(span); assert(!done); done = true }
     def undo = { _spans.prepend(span); assert(done); done = false }
-    override def toString = "RemoveSpanVariable("+variable+")"
+    override def toString = "RemoveSpanVariable("+span+")"
   }
 }
 
