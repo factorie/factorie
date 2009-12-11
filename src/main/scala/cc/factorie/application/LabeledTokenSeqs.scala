@@ -141,14 +141,16 @@ object LabeledTokenSeqs {
       addNeighboringFeatureConjunctions(null.asInstanceOf[String], offsetConjunctions:_*)
     /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
     def addNeighboringFeatureConjunctions(regex:String, offsetConjunctions:Seq[Int]*): Unit = {
-      // First gather all the extra features here, then add them to each Token
+      // First gather all the extra features here,...
       val newFeatures = Array.fromFunction(i => new ArrayBuffer[String])(this.size)
       for (i <- 0 until size) {
         val token = this(i)
         val thisTokenNewFeatures = newFeatures(i)
         for (offsets <- offsetConjunctions) 
-          thisTokenNewFeatures ++= appendConjunctions(regex, token, null, offsets)
+          thisTokenNewFeatures ++= appendConjunctions(regex, token, null, offsets).
+            map(list => list.sort((a,b)=>a.compare(b)>0).map({case(f,o)=>f+"@"+o}).mkString("_&_"))
       }
+      // ... then add them to each Token
       for (i <- 0 until size) {
         val token = this(i)
         token.zero
@@ -158,8 +160,8 @@ object LabeledTokenSeqs {
     }
     // Recursive helper function for previous method, expanding out cross-product of conjunctions in tree-like fashion.
     // 't' is the Token to which we are adding features; 'existing' is the list of features already added; 'offsets' is the list of offsets yet to be added
-    private def appendConjunctions(regex:String, t:T, existing:ArrayBuffer[String], offsets:Seq[Int]): ArrayBuffer[String] = {
-      val result = new ArrayBuffer[String];
+    private def appendConjunctions(regex:String, t:T, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
+      val result = new ArrayBuffer[List[(String,Int)]];
       val offset: Int = offsets.first
       val t2 = t.next(offset)
       val adding: Seq[String] = 
@@ -167,15 +169,9 @@ object LabeledTokenSeqs {
         else if (regex != null) t2.values.filter(str => str.matches(regex)) // Only include features that match pattern 
         else t2.values
       if (existing != null) {
-        if (offset == 0)
-          for (e <- existing; a <- adding) result += e+"_&_"+a
-        else
-          for (e <- existing; a <- adding) result += e+"_&_"+a+"@"+offset
+        for (e <- existing; a <- adding) { val elt = (a,offset); if (!e.contains(elt)) result += (a,offset) :: e }
       } else {
-        if (offset == 0)
-          for (a <- adding) result += a
-        else
-          for (a <- adding) result += a+"@"+offset
+        for (a <- adding) result += List((a,offset))
       }
       if (offsets.size == 1) result
       else appendConjunctions(regex, t, result, offsets.drop(1))
