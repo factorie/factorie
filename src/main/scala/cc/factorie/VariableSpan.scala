@@ -45,7 +45,7 @@ abstract class SpanValue[T](val seq: Seq[T], initStart: Int, initLength: Int) ex
 
   def isAtEnd = _start + _length == seq.length
   def hasSuccessor(i: Int) = (_start + _length - 1 + i) < seq.length
-  def hasPredecessor(i: Int) = (_start - i) > 0
+  def hasPredecessor(i: Int) = (_start - i) >= 0
   def successor(i: Int) = if (hasSuccessor(i)) seq(_start + _length - 1 + i) else null.asInstanceOf[T]
   def predecessor(i: Int) = if (hasPredecessor(i)) seq(_start - i) else null.asInstanceOf[T]
   /** Return a String representation of the span */
