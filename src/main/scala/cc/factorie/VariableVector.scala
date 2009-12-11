@@ -32,12 +32,13 @@ trait CategoricalVectorValue extends Variable with VectorValue with CategoricalV
 // TODO Consider renaming BinaryFeatureVector (where "Feature") refers to being Categorical?
 // or perhaps BinaryCategoricalVector?  But that is a weird name.
 @DomainInSubclasses
-abstract class BinaryVectorVariable[T](initVals:Iterable[T], var skipNonCategories:Boolean) extends CategoricalVectorValue {
+abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends CategoricalVectorValue {
   //def this(iv:T*) = this(iv:Seq[T])
-  def this() = this(null, false)
-  def this(initVals:Iterable[T]) = this(initVals, false)
+  def this() = this(null)
+  //def this(initVals:Iterable[T]) = this(initVals, false)
   type ValueType = T
   type VariableType <: BinaryVectorVariable[T];
+  def skipNonCategories = false
   private val _indices = new it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet
   //protected var indxs = new ArrayBuffer[Int]()
   private var _vector: Vector = null // TODO Can we make this more memory efficient?  Avoid having both Vector and ArrayBuffer?;
