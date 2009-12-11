@@ -37,14 +37,19 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
     bestObjective2 = bestObjectives._2
     assert(bestObjective1.objectiveScore == bestObjective1.objectiveScore) // Check not NaN 
     assert(bestObjective2.objectiveScore == bestObjective2.objectiveScore)  
-    val props = List(bestModel1, bestModel2, bestObjective1, bestObjective2)
+    //val props = List(bestModel1, bestModel2, bestObjective1, bestObjective2)
     //println("SampleRank proposalsHook "+props.map(_.modelScore)+"  "+props.map(_.objectiveScore))
+    
+    if (logLevel > 0) {
+      println ("bestObjective ms="+bestObjective1.modelScore+" os="+bestObjective1.objectiveScore+" diff="+bestObjective1.diff)
+      println ("bestModel     ms="+bestModel1.modelScore+" os="+bestModel1.objectiveScore+" diff="+bestModel1.diff)
+    }
    
     if (amIMetropolis) {
       val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
       if (!(changeProposal.modelScore * changeProposal.objectiveScore > 0 || changeProposal.objectiveScore==0))
         updateWeights
-    } else if (bestObjective1.objectiveScore != bestObjective2.objectiveScore &&
+    } else if (proposals.exists(p => p.objectiveScore < bestObjective1.objectiveScore) &&
         ((bestModel1 ne bestObjective1) || Math.abs(bestModel1.modelScore - bestModel2.modelScore) < learningMargin)) {
       //println("SampleRank updating weights")
       updateWeights
