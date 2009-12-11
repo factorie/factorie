@@ -63,19 +63,17 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
   override def updateWeights : Unit = {
     numUpdates += 1
     val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
-    if(changeProposal.modelScore * changeProposal.objectiveScore > 0 
-       || changeProposal.objectiveScore==0)
-      return;
+    if (!shouldUpdate) return;
     val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
-      override def default(template:TemplatesToUpdate) = {
-    template.freezeDomains
-    val vector = new SparseVector(template.statsize)
-    this(template) = vector
-    vector
-      }
+    	override def default(template:TemplatesToUpdate) = {
+    		template.freezeDomains
+    		val vector = new SparseVector(template.statsize)
+    		this(template) = vector
+    		vector
+    	}
     }
-    addGradient(gradient,1.0)
-    learningRate = kktMultiplier(changeProposal,gradient)
+    addGradient(gradient, 1.0)
+    learningRate = kktMultiplier(changeProposal, gradient)
     updateParameters(gradient)
     updateSigma(gradient)
     super.updateWeights //increments the updateCount

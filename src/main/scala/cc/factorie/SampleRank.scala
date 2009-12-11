@@ -41,18 +41,25 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
     //println("SampleRank proposalsHook "+props.map(_.modelScore)+"  "+props.map(_.objectiveScore))
     
     if (logLevel > 0) {
-      println ("bestObjective ms="+bestObjective1.modelScore+" os="+bestObjective1.objectiveScore+" diff="+bestObjective1.diff)
-      println ("bestModel     ms="+bestModel1.modelScore+" os="+bestModel1.objectiveScore+" diff="+bestModel1.diff)
+      println("bestObjective1 "+bestObjective1)
+      println("bestModel1     "+bestModel1)
+      println("bestModel2     "+bestModel2)
+      if (shouldUpdate) println("SHOULDUPDATE") else println("NOTUPDATE")
     }
    
+    if (shouldUpdate)	updateWeights
+  }
+  
+  def shouldUpdate: Boolean = {
     if (amIMetropolis) {
-      val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
-      if (!(changeProposal.modelScore * changeProposal.objectiveScore > 0 || changeProposal.objectiveScore==0))
-        updateWeights
-    } else if (proposals.exists(p => p.objectiveScore < bestObjective1.objectiveScore) &&
-        ((bestModel1 ne bestObjective1) || Math.abs(bestModel1.modelScore - bestModel2.modelScore) < learningMargin)) {
-      //println("SampleRank updating weights")
-      updateWeights
+    	val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
+    	!(changeProposal.modelScore * changeProposal.objectiveScore > 0 || changeProposal.objectiveScore == 0)      
+    } else {
+    	// the objective function has some preference (e.g. we don't have an unlabeled example here)
+    	(bestObjective1.objectiveScore > bestObjective2.objectiveScore || bestObjective1.objectiveScore > bestModel1.objectiveScore) &&
+    	// the model got it wrong, or isn't confident enough about being right
+    	// TODO should this be based on acceptanceScore instead of modelScore?
+    	((bestModel1 ne bestObjective1) || Math.abs(bestModel1.modelScore - bestModel2.modelScore) < learningMargin)
     }
   }
  
@@ -78,7 +85,7 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
     // Only do learning if the trueScore has a preference
     // It would not have a preference if the variable in question is unlabeled
     // TODO Is this the right way to test this though?  Could there be no preference at the top, but the model is selecting something else that is worse?
-    if (bestObjective1.objectiveScore != bestObjective2.objectiveScore) {
+    if (shouldUpdate) {
       // If the model doesn't score the truth highest, then update parameters
       if (bestModel1 ne bestObjective1) { // TODO  I changed != to "ne"  OK?  Should I be comparing values here instead?
         // ...update parameters by adding sufficient stats of truth, and subtracting error

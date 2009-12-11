@@ -33,6 +33,7 @@ trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
 
   //
   //TODO: not sure about learning margin violations
+  // TODO  This needs a careful code review.  -akm
   abstract override def updateWeights : Unit = {
     val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
     val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
