@@ -50,6 +50,10 @@ abstract class SpanValue[T](val seq: Seq[T], initStart: Int, initLength: Int) ex
   def predecessor(i: Int) = if (hasPredecessor(i)) seq(_start - i) else null.asInstanceOf[T]
   /** Return a String representation of the span */
   def phrase = if (length == 1) this.first.toString else this.mkString(" ")
+  def prevWindow(n:Int): Seq[T] = for (i <- Math.max(0,start-n) until start) yield seq(i)
+  def nextWindow(n:Int): Seq[T] = for (i <- end+1 until Math.min(seq.length-1,end+n)) yield seq(i)
+  def window(n:Int): Seq[T] = for (i <- Math.max(0,start-n) to Math.min(seq.length-1,end+n)) yield seq(i)
+  def windowWithoutSelf(n:Int): Seq[T] = for (i <- Math.max(0,start-n) to Math.min(seq.length-1,end+n); if (i < start || i > end)) yield seq(i)
 }
 
   
@@ -149,6 +153,10 @@ trait VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable
   def removeSpan(s:S)(implicit d:DiffList): Unit = {
     require(s.seq == this)
     RemoveSpanVariable(s)
+  }
+  def clearSpans: Unit = {
+    // Make a copy of the collection of spans so its iterator doesn't get confused as we delete them
+    spans.toArray.foreach(_.delete(null))
   }
   case class AddSpanVariable(span:S)(implicit d: DiffList) extends Diff {
     // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
