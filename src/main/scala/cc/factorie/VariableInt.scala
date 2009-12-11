@@ -63,6 +63,10 @@ trait IntVariable extends Variable with IntValue {
     @inline final def variable: IntVariable = IntVariable.this
     @inline final def redo = _index = newIndex
     @inline final def undo = _index = oldIndex
+    override def toString = variable match { 
+      case cv:CategoricalVariable => "IntVariableDiff("+cv.domain.get(oldIndex)+","+cv.domain.get(newIndex)+")"
+      case _ => "IntVariableDiff("+oldIndex+","+newIndex+")"
+    }
   }
 }
 
