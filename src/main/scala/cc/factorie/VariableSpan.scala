@@ -133,6 +133,7 @@ abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(imp
     def variable = if (present || diffIfNotPresent) SpanVariable.this else null
     def redo = {assert(canAppend(n)); _length += n}
     def undo = _length -= n
+    //override def toString = "Append("+n+","+(how do I reliably get the appended token)+")"
   }
 }
 
@@ -140,6 +141,7 @@ abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(imp
 trait VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable[T]] extends VariableSeq[T] {
   private val _spans = new ListBuffer[S];
   def spans: Seq[S] = _spans
+  def orderedSpans: Seq[S] = _spans.toList.sort((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
   def spansContaining(position: Int): Iterable[S] = _spans.filter(s => s.start <= position && position < (s.start + s.length))
   def spansStartingAt(position: Int): Iterable[S] = _spans.filter(s => s.start == position)
   /** Add the span to the list of spans maintained by this VariableSeqWithSpans.
