@@ -88,6 +88,8 @@ object SpanNER1 {
     //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.first.hasPrev && span.first.prev.hasPrev) Stat(span.first.prev.prev, span.label) else Nil }.init,
     // Token after Span
     new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext) Stat(span.last.next, span.label) else Nil }.init,
+    // Single Token Span
+    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.length == 1) Stat(span.first, span.label) else Nil }.init,
     //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil }.init,
     // Span Length with Label
     //new SpanLabelTemplate with DotStatistics2[SpanLength,Label] { def statistics(span:Span, label:Label) = Stat(span.spanLength, span.label) }.init,
@@ -106,16 +108,25 @@ object SpanNER1 {
         val span = s.s1
         var result = 0.0
         var trueLabelIncrement = 10.0
+        var allTokensCorrect = true
         for (token <- span) {
-          if (token.trueLabelValue != "O") result += 2.0 else result -= 1.0
+          //if (token.trueLabelValue != "O") result += 2.0 else result -= 1.0
           if (token.trueLabelValue == span.label.value) {
             result += trueLabelIncrement
-            trueLabelIncrement += 1.0 // proportionally more benefit for longer sequences to help the longer seq steal tokens from the shorter one.
-          } else result -= 1.0
+            trueLabelIncrement += 2.0 // proportionally more benefit for longer sequences to help the longer seq steal tokens from the shorter one.
+          } else if (token.trueLabelValue == "O") {
+            result -= 1.0
+            allTokensCorrect = false
+          } else {
+          	result += 1.0
+            allTokensCorrect = false
+          }
           if (token.spans.length > 1) result -= 100.0 // penalize overlapping spans
         }
-        if (!span.hasPredecessor(1) || span.predecessor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
-        if (!span.hasSuccessor(1) || span.successor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
+        if (allTokensCorrect) {
+        	if (!span.hasPredecessor(1) || span.predecessor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
+        	if (!span.hasSuccessor(1) || span.successor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
+        }
         result
       }
     }
@@ -212,8 +223,8 @@ object SpanNER1 {
     (trainSentences ++ testSentences).foreach(s => s.foreach(t => if (t.word.matches("[A-Za-z]+")) t ++= t.charNGrams(2,5).map(n => "NGRAM="+n)))
 
     // Add features from window of 4 words before and after
-    (trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
-    (trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplify(t2.word).toLowerCase)))
+    //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
+    //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplify(t2.word).toLowerCase)))
 
     // Put features of first mention on later mentions
     documents.foreach(d => {
@@ -233,7 +244,7 @@ object SpanNER1 {
     val trainTokens = trainSentences.flatMap(x=>x) //.take(2000)
     val testTokens = testSentences.flatMap(x=>x)
 
-    println("Have "+trainTokens.length+" trainTokens")
+    println("Have "+trainTokens.length+" trainTokens "+testTokens.length+" testTokens")
     println("Domain[Token] size="+Domain[Token].size)
     println("Domain[Label] "+Domain[Label].toList)
     
@@ -248,11 +259,11 @@ object SpanNER1 {
         if (t.isCapitalized) { // Skip tokens that are not capitalized
           t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
           // Skip this token if it has the same spans as the previous token, avoiding duplicate sampling
-          if (t.hasPrev && t.prev.spans.sameElements(t.spans)) null.asInstanceOf[Token] else t 
+          /*if (t.hasPrev && t.prev.spans.sameElements(t.spans)) null.asInstanceOf[Token] else*/ t 
         } else null.asInstanceOf[Token] 
       }
       override def proposalsHook(proposals:Seq[Proposal]): Unit = {
-        proposals.foreach(p => println(p+"  "+(if (p.modelScore >= 0.0) "MM" else "")+(if (p.objectiveScore >= 0.0) "OO" else ""))); println
+        proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else "")+(if (p.objectiveScore > 0.0) "OO" else ""))); println
         super.proposalsHook(proposals)
       }
     }
@@ -267,13 +278,27 @@ object SpanNER1 {
       }
       override def proposalsHook(proposals:Seq[Proposal]): Unit = {
       	println("Test proposal")
-        proposals.foreach(println(_)); println
+      	//proposals.foreach(println(_)); println
+        proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else ""))); println
         super.proposalsHook(proposals)
+      }
+      /*override*/ def disabled_proposalHook(proposal:Proposal): Unit = {
+        super.proposalHook(proposal)
+        // If we changed the possible world last time, try sampling it again right away to see if we can make more changes
+        if (proposal.diff.size > 0) {
+          val diffOption = proposal.diff.find(d => d.variable match { case s:SpanVariable[Token] => s.present; case _ => false })
+          diffOption match {
+            case Some(diff) => this.process(diff.variable.asInstanceOf[SpanVariable[Token]].last)
+            case None => {}
+          }
+        }
       }
     }
     
-    for (i <- 1 to 10) {
+    for (i <- 1 to 11) {
       println("Iteration "+i) 
+      // Every third iteration remove all the predictions
+      if (i % 3 == 0) { println("Removing all spans"); (trainSentences ++ testSentences).foreach(_.clearSpans) }
       learner.process(trainTokens, 1)
       //learner.learningRate *= 0.9
       predictor.process(testTokens, 1)
