@@ -9,13 +9,19 @@ package cc.factorie.example
 import scala.collection.mutable.{ArrayBuffer,HashMap,ListBuffer}
 import cc.factorie.application.TokenSeqs
 import scala.io.Source
+import java.io.File
 
+/** Span-based named entity recognition.
+    Includes the ability to save model to disk, and run saved model on NYTimes-style XML files.
+    @author Andrew McCallum */
 object SpanNER1 {
 
   // The variable classes
   class Token(word:String, trueLabelString:String) extends TokenSeqs.Token[Sentence,Token](word, trueLabelString) {
+    // TODO Consider instead implementing truth with true spans in VariableSeqWithSpans. 
     val trueLabelIndex = Domain[Label].index(trueLabelValue)
     def spans:Seq[Span] = seq.spansContaining(position).toList
+    override def skipNonCategories = true
   }
   class Label(labelName:String, val span: Span) extends LabelVariable(labelName)
   class Span(labelString:String, seq:Sentence, start:Int, len:Int)(implicit d:DiffList) extends SpanVariable(seq, start, len) {
@@ -25,6 +31,7 @@ object SpanNER1 {
     def isCorrect = this.forall(token => token.trueLabelValue == label.value) &&
     	(!hasPredecessor(1) || predecessor(1).trueLabelValue != label.value) && 
     	(!hasSuccessor(1) || successor(1).trueLabelValue != label.value)
+    // Does this span contains the words of argument span in order?
     def contains(span:Span): Boolean = {
       for (i <- 0 until length) {
         if (length - i < span.length) return false
@@ -189,11 +196,96 @@ object SpanNER1 {
     }
   }
   
+  // The predictor for test data
+  val predictor = new TokenSpanSampler(model, null) { 
+  	temperature = 0.001 
+  	override def preProcessHook(t:Token): Token = { 
+  		super.preProcessHook(t)
+  		if (t.isCapitalized) {
+  			t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
+  			t 
+  		} else null.asInstanceOf[Token] 
+  	}
+  	override def proposalsHook(proposals:Seq[Proposal]): Unit = {
+  		println("Test proposal")
+  		//proposals.foreach(println(_)); println
+  		proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else ""))); println
+  		super.proposalsHook(proposals)
+  	}
+  	override def proposalHook(proposal:Proposal): Unit = {
+  		super.proposalHook(proposal)
+  		// If we changed the possible world last time, try sampling it again right away to see if we can make more changes
+  		if (proposal.diff.size > 0) {
+  			val spanDiffs = proposal.diff.filter(d => d.variable match { case s:Span => s.present; case _ => false })
+  			spanDiffs.foreach(_.variable match {
+  			case span:Span => if (span.present) this.process(span.last)
+  			})
+  		}
+  	}
+  }
 
-
+  
+  
+  
+  // The "main", examine the command line and do some work
   def main(args: Array[String]): Unit = {
-    if (!(args.length == 2 || args.length == 3)) throw new Error("Usage: ChainNER3 trainfile testfile")
-
+    // Parse command-line
+    if (!(args.length == 2 || args.length == 3)) 
+      throw new Error("Usage: ChainNER3 [--model=dirname] trainfile testfile\nor   ChainNER3 --model=dirname --run=xmldir")
+    var trainFile: String = null // train
+    var devFile: String = null // test while training
+    var modelDir: String = null // write or read model from here
+    var runXmlDir: String = null // run saved model
+    for (arg <- args) {
+      if (arg.matches("--model=.*")) { modelDir = arg.split("=").apply(1); println("got "+modelDir) }
+      else if (arg.matches("--run=.*")) runXmlDir = arg.split("=").apply(1)
+      else if (trainFile == null) trainFile = arg
+      else devFile = arg
+    }
+    
+    if (runXmlDir != null) {
+    	model.load(modelDir)
+      run(runXmlDir)
+    } else {
+      train(trainFile, devFile)
+      if (modelDir != null) model.save(modelDir)
+    }   
+  }
+  
+  
+  // Run a pre-trained model on some NYTimes XML data
+  def run(runXmlDir:String): Unit = {
+    import scala.xml._
+    // Read in the data
+    val documents = new ArrayBuffer[Sentence]
+    for (dirname <- List(runXmlDir)) { // TODO make this take multiple directories
+      for (file <- files(new File(dirname))) {
+        val article = XML.loadFile(file)
+        //println(article \\ "head" \\ "title" text)
+        //println("  charcount "+ (article \\ "body" \\ "body.content").text.length)
+        val content = article \\ "head" \\ "docdata" \\ "identified-content"
+        print("Reading ***"+(article\\"head"\\"title").text+"***")
+        documents += TokenSeqs.TokenSeq.fromPlainText(
+        	Source.fromString((article \\ "body" \\ "body.content").text), 
+        	(word,lab)=>new Token(word,lab),
+        	()=>new Sentence,
+        	"O", 
+        	(str)=>featureExtractor(List(str)), "'s|n't|[-0-9,\\.]+|$|[-A-Za-z0-9\\+$]+|\\p{Punct}".r)
+        println("  "+documents.last.size)
+        documents.last.foreach(t=> print(t.word+" ")); println
+      }
+    }
+    addFeatures(documents)
+    val testTokens = documents.flatMap(x=>x)
+    println("Have "+testTokens.length+" tokens")
+    println("Domain[Token] size="+Domain[Token].size)
+    println("Domain[Label] "+Domain[Label].toList)
+    predictor.process(testTokens, 3)
+    documents.foreach(printSentence _)
+  }
+  
+  // Train a new model and evaluate on the dev set
+  def train(trainFile:String, devFile:String): Unit = {
     // Read training and testing data.  The function 'featureExtractor' function is defined below
     def newSentenceFromOWPL(filename:String) = 
       TokenSeqs.TokenSeq.fromOWPL[Token,Sentence](
@@ -203,24 +295,72 @@ object SpanNER1 {
         featureExtractor _, 
         (lab:String) => if (lab.length > 2) lab.substring(2) else lab, 
         "-DOCSTART-".r)
-    val trainSentences = newSentenceFromOWPL(args(0)) 
-    val testSentences = newSentenceFromOWPL(args(1)) 
+    val trainSentences = newSentenceFromOWPL(trainFile) 
+    val testSentences = newSentenceFromOWPL(devFile) 
     println("Read "+trainSentences.length+" training sentences, and "+testSentences.length+" testing ")
 
+    addFeatures(trainSentences ++ testSentences)
+    val trainTokens = trainSentences.flatMap(x=>x) //.take(2000)
+    val testTokens = testSentences.flatMap(x=>x)
+    println("Have "+trainTokens.length+" trainTokens "+testTokens.length+" testTokens")
+    println("Domain[Token] size="+Domain[Token].size)
+    println("Domain[Label] "+Domain[Label].toList)
+    
+    trainTokens.take(500).foreach(printFeatures _)
+    
+    // The learner
+    val learner = new TokenSpanSampler(model, objective) with SampleRank with ConfidenceWeightedUpdates {
+      temperature = 0.01
+      logLevel = 1
+      override def preProcessHook(t:Token): Token = { 
+        super.preProcessHook(t)
+        if (t.isCapitalized) { // Skip tokens that are not capitalized
+          t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
+          // Skip this token if it has the same spans as the previous token, avoiding duplicate sampling
+          /*if (t.hasPrev && t.prev.spans.sameElements(t.spans)) null.asInstanceOf[Token] else*/ t 
+        } else null.asInstanceOf[Token] 
+      }
+      override def proposalsHook(proposals:Seq[Proposal]): Unit = {
+        proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else "")+(if (p.objectiveScore > 0.0) "OO" else ""))); println
+        super.proposalsHook(proposals)
+      }
+    }
+    
+    // Train!
+    for (i <- 1 to 11) {
+      println("Iteration "+i) 
+      // Every third iteration remove all the predictions
+      if (i % 3 == 0) { println("Removing all spans"); (trainSentences ++ testSentences).foreach(_.clearSpans) }
+      learner.process(trainTokens, 1)
+      //learner.learningRate *= 0.9
+      predictor.process(testTokens, 1)
+      println("*** TRAIN OUTPUT *** Iteration "+i); trainSentences.foreach(printSentence _); println; println
+      println("*** TEST OUTPUT *** Iteration "+i); testSentences.foreach(printSentence _); println; println
+      println ("Iteration %2d TRAIN EVAL ".format(i)+evalString(trainSentences))
+      println ("Iteration %2d TEST  EVAL ".format(i)+evalString(testSentences))
+    }
+
+  }
+
+  
+  
+  
+  
+  def addFeatures(sentences:Seq[Sentence]): Unit = {
     // Make features of offset conjunctions
-    (trainSentences ++ testSentences).foreach(s => s.addNeighboringFeatureConjunctions(List(0), List(0,0), List(-1), List(-1,0), List(1)))
+    sentences.foreach(s => s.addNeighboringFeatureConjunctions(List(0), List(0,0), List(-1), List(-1,0), List(1)))
 
     // Gather tokens into documents
     val documents = new ArrayBuffer[ArrayBuffer[Token]]; documents += new ArrayBuffer[Token]
-    (trainSentences ++ testSentences).foreach(s => if (s.length == 0) documents += new ArrayBuffer[Token] else documents.last ++= s)
+    sentences.foreach(s => if (s.length == 0) documents += new ArrayBuffer[Token] else documents.last ++= s)
     // For documents that have a "-" within the first three words, the first word is a HEADER feature; apply it to all words in the document
     documents.foreach(d => if (d.take(3).map(_.word).contains("-")) { val f = "HEADER="+d(0).word.toLowerCase; d.foreach(t => t += f)})
 
     // If the sentence contains no lowercase letters, tell all tokens in the sentence they are part of an uppercase sentence
-    (trainSentences ++ testSentences).foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t += "SENTENCEUPPERCASE"))
+    sentences.foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t += "SENTENCEUPPERCASE"))
 
     // Add features for character n-grams between sizes 2 and 5
-    (trainSentences ++ testSentences).foreach(s => s.foreach(t => if (t.word.matches("[A-Za-z]+")) t ++= t.charNGrams(2,5).map(n => "NGRAM="+n)))
+    sentences.foreach(s => s.foreach(t => if (t.word.matches("[A-Za-z]+")) t ++= t.charNGrams(2,5).map(n => "NGRAM="+n)))
 
     // Add features from window of 4 words before and after
     //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
@@ -239,80 +379,7 @@ object SpanNER1 {
         }
       })
     })
-
-    
-    val trainTokens = trainSentences.flatMap(x=>x) //.take(2000)
-    val testTokens = testSentences.flatMap(x=>x)
-
-    println("Have "+trainTokens.length+" trainTokens "+testTokens.length+" testTokens")
-    println("Domain[Token] size="+Domain[Token].size)
-    println("Domain[Label] "+Domain[Label].toList)
-    
-    trainTokens.take(500).foreach(printFeatures _)
-    
-    // Sample and Learn!
-    val learner = new TokenSpanSampler(model, objective) with SampleRank with ConfidenceWeightedUpdates {
-      temperature = 0.01
-      logLevel = 1
-      override def preProcessHook(t:Token): Token = { 
-        super.preProcessHook(t)
-        if (t.isCapitalized) { // Skip tokens that are not capitalized
-          t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
-          // Skip this token if it has the same spans as the previous token, avoiding duplicate sampling
-          /*if (t.hasPrev && t.prev.spans.sameElements(t.spans)) null.asInstanceOf[Token] else*/ t 
-        } else null.asInstanceOf[Token] 
-      }
-      override def proposalsHook(proposals:Seq[Proposal]): Unit = {
-        proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else "")+(if (p.objectiveScore > 0.0) "OO" else ""))); println
-        super.proposalsHook(proposals)
-      }
-    }
-    val predictor = new TokenSpanSampler(model, null) { 
-      temperature = 0.001 
-      override def preProcessHook(t:Token): Token = { 
-        super.preProcessHook(t)
-        if (t.isCapitalized) {
-          t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
-          t 
-        } else null.asInstanceOf[Token] 
-      }
-      override def proposalsHook(proposals:Seq[Proposal]): Unit = {
-      	println("Test proposal")
-      	//proposals.foreach(println(_)); println
-        proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else ""))); println
-        super.proposalsHook(proposals)
-      }
-      /*override*/ def disabled_proposalHook(proposal:Proposal): Unit = {
-        super.proposalHook(proposal)
-        // If we changed the possible world last time, try sampling it again right away to see if we can make more changes
-        if (proposal.diff.size > 0) {
-          val diffOption = proposal.diff.find(d => d.variable match { case s:SpanVariable[Token] => s.present; case _ => false })
-          diffOption match {
-            case Some(diff) => this.process(diff.variable.asInstanceOf[SpanVariable[Token]].last)
-            case None => {}
-          }
-        }
-      }
-    }
-    
-    for (i <- 1 to 11) {
-      println("Iteration "+i) 
-      // Every third iteration remove all the predictions
-      if (i % 3 == 0) { println("Removing all spans"); (trainSentences ++ testSentences).foreach(_.clearSpans) }
-      learner.process(trainTokens, 1)
-      //learner.learningRate *= 0.9
-      predictor.process(testTokens, 1)
-      println("*** TRAIN OUTPUT *** Iteration "+i); trainSentences.foreach(printSentence _); println; println
-      println("*** TEST OUTPUT *** Iteration "+i); testSentences.foreach(printSentence _); println; println
-      println ("Iteration %2d TRAIN EVAL ".format(i)+evalString(trainSentences))
-      println ("Iteration %2d TEST  EVAL ".format(i)+evalString(testSentences))
-    }
-
-    // Save model parameters
-    if (args.length == 3)	model.save(args(2))
   }
-
-  
   
   def evalString(sentences:Seq[Sentence]): String = {
     var trueCount = 0
@@ -363,20 +430,6 @@ object SpanNER1 {
   }
 
   // Feature extraction
-  def wordToFeatures(word:String) : Seq[String] = {
-    import scala.collection.mutable.ArrayBuffer
-    val f = new ArrayBuffer[String]
-    f += "W="+simplify(word)
-    if (word.matches("[A-Za-z0-9]+")) f += "SHAPE="+cc.factorie.application.LabeledTokenSeqs.wordShape(word, 2)
-    //if (word.length > 3) f += "PRE="+word.substring(0,3)
-    if (Capitalized.findFirstMatchIn(word) != None) f += "CAPITALIZED"
-    if (Numeric.findFirstMatchIn(word) != None) f += "NUMERIC"
-    if (Punctuation.findFirstMatchIn(word) != None) f += "PUNCTUATION"
-    f
-  }
-  val Capitalized = "^[A-Z].*".r
-  val Numeric = "^[0-9]+$".r
-  val Punctuation = "[-,\\.;:?!()]+".r
 
   // Simplified form of word for feature generation
   def simplify(word:String): String = {
@@ -393,41 +446,24 @@ object SpanNER1 {
     val word = initialFeatures(0)
     f += "SHAPE="+TokenSeqs.wordShape(word, 2)
     f += "W="+simplify(word)
-    f += "POS="+initialFeatures(1)
-    f += "PHRASE="+initialFeatures(2)
+    if (initialFeatures.length > 1) f += "POS="+initialFeatures(1)
+    if (initialFeatures.length > 2) f += "PHRASE="+initialFeatures(2)
     if (Character.isUpperCase(word(0))) f += "CAPITALIZED"
     f
   }
-
-  /*def load(filename:String) : Seq[Sentence] = {
-    import scala.io.Source
-    import scala.collection.mutable.ArrayBuffer
-    var wordCount = 0
-    var sentences = new ArrayBuffer[Sentence]
-    val source = Source.fromFile(filename)
-    var sentence = new Sentence
-    for (line <- source.getLines) {
-      if (line.length < 2) { // Sentence boundary
-        sentences += sentence
-        sentence = new Sentence
-      } else if (line.startsWith("-DOCSTART-")) {
-        // Skip document boundaries
-      } else {
-        val fields = line.split(' ')
-        assert(fields.length == 4)
-        val word = fields(0)
-        val pos = fields(1)
-        val label = if (fields(3).length > 2) fields(3).stripLineEnd.substring(2).intern else fields(3).stripLineEnd.intern
-        val token = new Token(word, label)
-        token ++= wordToFeatures(word)
-        token += "POS="+pos
-        sentence += token 
-        wordCount += 1
-      }
+  
+  /** Recursively descend directory, returning a list of files. */
+  def files(directory:File): Seq[File] = {
+    if (!directory.exists) throw new Error("File "+directory+" does not exist")
+    if (directory.isFile) return List(directory)
+    val result = new ArrayBuffer[File]
+    for (entry <- directory.listFiles) {
+      if (entry.isFile) result += entry
+      else if (entry.isDirectory) result ++= files(entry)
     }
-    println("Loaded "+sentences.length+" sentences with "+wordCount+" words total from file "+filename)
-    sentences
-  }*/
+    result
+  }
+  
 
 }
 
