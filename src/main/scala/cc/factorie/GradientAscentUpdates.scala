@@ -23,8 +23,10 @@ trait GradientAscentUpdates extends WeightUpdates {
   def model : Model
   def learningMargin : Double
   override def updateWeights : Unit = {
+    // Add the gradient directly to each relevant Template's weight vector, with factor 'learningRate'
     addGradient((template:Template) => template match {case t:TemplatesToUpdate => t.weights}, learningRate)
-    super.updateWeights //increments the updateCount
+    // Call super to increment the updateCount
+    super.updateWeights 
   }
 }
 
