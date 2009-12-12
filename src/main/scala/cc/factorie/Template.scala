@@ -283,7 +283,7 @@ trait DotTemplate extends VectorTemplate {
 /** A DotTemplate that stores its parameters in a Scalala SparseVector instead of a DenseVector 
     @author Andrew McCallum */
 trait SparseWeights extends DotTemplate {
-  override lazy val weights: Vector = { freezeDomains; new SparseVector(statsize) } // Dense by default, here overriden to be sparse
+  override lazy val weights: Vector = { new SparseVector(statsize) } // Dense by default, here overriden to be sparse
 }
 
 /** A DotTemplate that stores its parameters in a Scalala SparseHashVector instead of a DenseVector 
