@@ -29,6 +29,7 @@ object TokenSeqs {
   /** A word token in a linear sequence of tokens.  It is a constituent of a TokenSeq.
       Its value is a BinaryVectorVariable, its feature vector.
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
+  @DomainInSubclasses
   abstract class Token[S<:VariableSeq[This], This >:Null <:Token[S,This]](val word:String, features:Seq[String], trueLabelString:String)
   extends BinaryVectorVariable[String] with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
     this: This =>
@@ -216,9 +217,11 @@ object TokenSeqs {
     def fromPlainText[T<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, defaultLabelString:String, featureFunction: String=>Seq[String], lexer:Regex): S = {
       val seq = newSeq()
       lexer.findAllIn(source.mkString).foreach(word => {
-        val token = newToken(word, defaultLabelString)
-        token ++= featureFunction(word)
-        seq += token
+        if (word.length > 0) {
+        	val token = newToken(word, defaultLabelString)
+        	token ++= featureFunction(word)
+        	seq += token
+         }
       })
       seq
     }
