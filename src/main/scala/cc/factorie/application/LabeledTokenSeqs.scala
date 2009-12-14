@@ -27,6 +27,7 @@ object LabeledTokenSeqs {
   /** A word token in a linear sequence of tokens.  It is a constituent of a LabeledTokenSeq.
       Its value is a BinaryVectorVariable, its feature vector.
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
+  @DomainInSubclasses
   abstract class Token[L<:Label[This,L], This >:Null <:Token[L,This]](val word:String, features:Seq[String])
   extends BinaryVectorVariable[String] with VarInSeq[This] with Entity[This] with TokenInSeq[This] {
     this: This =>
@@ -105,6 +106,7 @@ object LabeledTokenSeqs {
   /** A Label associated with a Token. */
   // NOTE: If you remove final, add a comment warning the user that different subclasses of will share the same Domain.
   // I don't think we should allow subclassing, hence the "final". -akm
+  @DomainInSubclasses
   abstract class Label[T<:Token[This,T],This<:Label[T,This]](labelname: String, val token: T) extends LabelVariable(labelname) with Entity[This] {
     this: This =>
     type GetterType <: LabelGetter[T,This]
