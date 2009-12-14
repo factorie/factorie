@@ -33,7 +33,7 @@ class Model(templates:Template*) extends TemplateList[Template] {
   
   def save(dirname:String): Unit = {
     import java.io.File
-    println("Saving model "+getClass.getName+" to "+dirname)
+    //println("Saving model "+getClass.getName+" to "+dirname)
     val f = new File(dirname)
     // Recursively delete all files in directory "f"
     def delete(f:File): Boolean = { if (f.isDirectory) f.listFiles.forall(f2 => delete(f2)) else f.delete }

@@ -264,8 +264,9 @@ trait DotTemplate extends VectorTemplate {
     s.close
   }
   override def load(dirname:String): Unit = {
-    if (statsize <= 0 || scalala.Scalala.norm(weights,1) != 0.0) return // Already have non-zero weights, must already be read.
+    //println("Loading "+this.getClass.getName+" from directory "+dirname)
     for (d <- statDomains) d.load(dirname)
+    if (statsize <= 0 || scalala.Scalala.norm(weights,1) != 0.0) return // Already have non-zero weights, must already be read.
     val f = new File(dirname+"/"+filename)
     val s = new BufferedReader(new FileReader(f))
     var line = ""
