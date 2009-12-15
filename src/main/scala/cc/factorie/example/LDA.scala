@@ -15,8 +15,8 @@ import cc.factorie.util.Implicits._
 object LDADemo {
   // Declare different types of variables
   object Beta extends SymmetricDirichlet[Word](0.01)
-  class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic]
-  class Z extends MixtureChoice[Topic,Z]; Domain.alias[Z,Topic]
+  class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic,Word]
+  class Z extends MixtureChoice[Topic,Word,Z]; Domain.alias[Z,Topic]
   object Alpha extends SymmetricDirichlet[Z](1.0)
   class Theta extends DirichletMultinomial[Z]
   class Word(s:String) extends EnumObservation(s) with CategoricalOutcome[Word]

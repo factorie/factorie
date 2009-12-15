@@ -17,8 +17,8 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 /** Base of the Dirichlet class hierarchy, needing only methods 'length' and 'mean'. 
     @author Andrew McCallum
 */
-trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends GenerativeDistribution[ProportionOutcome[O]] with ProportionGenerating[O] with RandomAccessSeq[Double] {
-  //type OutcomeType = AbstractMultinomial[O]
+trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends  ProportionDistribution[O] with GenerativeDistributionLike[AbstractDirichlet[O],ProportionOutcome[O]] with RandomAccessSeq[Double] {
+  type OutcomeType = ProportionOutcome[O] // AbstractMultinomial[O]
   final def length: Int = mean.length
   final def alpha(index:Int): Double = mean(index) * alphaSum
   def alphas: Seq[Double] = this
@@ -29,7 +29,7 @@ trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends GenerativeDistribution[Pr
   def apply(index:Int) = alpha(index)
   def outcomeDomain: O#DomainType
   // Was sampleOutcome: OutcomeType
-  def sampleMultinomial: AbstractMultinomial[O] = { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this)(null); /*throw new Error;*/ mul }
+  def sampleMultinomial: DenseCountsMultinomial[O] = { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this.asInstanceOf[GenerativeDistributionLike[AbstractDirichlet[O],ProportionOutcome[O]]])(null); /*throw new Error;*/ mul }
   def sampleOutcome: OutcomeType = sampleMultinomial
   def estimate: Unit = throw new Error("Method estimate is not implemented in this class.  You must add a trait for estimation.")
   def sampleOutcomes(n:Int) : Seq[OutcomeType] = for (i <- 0 until n force) yield sampleOutcome

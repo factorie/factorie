@@ -40,37 +40,38 @@ trait OutcomeGenerating[T] {
 // TODO Rename MultinomialOutcome DiscreteOutcome
 
 
-/** Base of the Multinomial class hierarchy, needing only methods length, pr, and set. 
+/** Base of the Multinomial class hierarchy, abstract, needing only methods length, pr, and set. 
     @author Andrew McCallum */
 // TODO Rename simply "Multinomial"?
 @DomainInSubclasses
-trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[ProportionOutcome[O]] with*/ DiscreteGenerating[O] with ProportionOutcome[O] {
+trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends GenerativeDistributionLike[AbstractMultinomial[O],O] with /*GenerativeVariable[ProportionOutcome[O]] with*/ DiscreteDistribution[O] with ProportionOutcome[O] {
   type VariableType <: AbstractMultinomial[O];
   //type OutcomeType = O
   //type SourceType = ProportionGenerating[O];
-  type SourceType = AbstractDirichlet[O]; // TODO Why can't I make this ProportionGenerating[O] instead of AbstractDirichlet[O]?
-  def asOutcome = this
+  type SourceType <: GenerativeDistributionLike[ProportionDistribution[O],ProportionOutcome[O]]; // TODO Just changed from = to <: !!!!
+  //type SourceType = AbstractDirichlet[O]; // TODO Why can't I make this ProportionGenerating[O] instead of AbstractDirichlet[O]?
+  //def asOutcome = this
   //def this(initCounts:Seq[Double]) = { this(initCounts.size); setCounts(initCounts) }
   def length: Int
   def apply(index:Int) = pr(index)
   def set(proportions:Seq[Double]): Unit // TODO include a DiffList here?
   def pr(index:Int) : Double
   def localPr(index:Int) = pr(index) // Alternative that should not use any source.alpha in the estimate; used in Dirichlet.estimate
-  final def pr(o:OutcomeType) : Double = pr(o.index)
+  final def pr(o:O) : Double = pr(o.index)
   def proportion: RandomAccessSeq[Double] = this
   def prs: RandomAccessSeq[Double] = this //new RandomAccessSeq[Double] { def apply(i:Int) = pr(i); def length = count.size } // TODO Remove this method?
   def logpr(index:Int) = Math.log(pr(index))
   def logprIndices(indices:Seq[Int]) : Double = indices.foldLeft(0.0)(_+logpr(_))
   def prIndices(indices:Seq[Int]) : Double = indices.foldLeft(1.0)(_*pr(_))
-  def pr(outcomes:Seq[OutcomeType]) : Double = prIndices(outcomes.map(_.index))
+  def pr(outcomes:Seq[O]) : Double = prIndices(outcomes.map(_.index))
   def counts: { def apply(i:Int):Double; def size:Int } = {
     val c = new Array[Double](length)
     generatedSamples.foreach(s => c(s.index) += 1.0)
     c
   }
   def prVector: Vector = new SeqAsVector { def apply(i:Int) = pr(i); def length = size } // TODO Bad idea?  Is Vector.elements supposed to have type Iterable[(Int,Double)]? 
-  override def sampleFrom(s:SourceType)(implicit d:DiffList): Unit = set(s.sampleProportionsWithCounts(counts))
-  @deprecated def sampleInto(o:OutcomeType): Unit = o match { // TODO Consider including implicit DiffList here? 
+  def sampleFrom(s:SourceType)(implicit d:DiffList): Unit = set(s.asGenerativeSource.sampleProportionsWithCounts(counts))
+  @deprecated def sampleInto(o:O): Unit = o match { // TODO Consider including implicit DiffList here? 
     case v:DiscreteVariable => v.setByIndex(sampleIndex)(null)
     case _ => throw new Error("Trying to sample into immutable Variable") // TODO Is this OK to just do nothing here?;
     // TODO if so, then we really don't need the separation between GenerativeObservation and GenerativeVariable!...  Or perhaps not?
@@ -78,7 +79,7 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends /*GenerativeVariable[Pr
   class DiscretePr(val index:Int, val pr:Double)
   def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)})
   // TODO Put next method in superclass
-  def sample(implicit d:DiffList): Unit = { if (source != null) this.sampleFrom(source) else throw new Error("Source not set") } 
+  def sample(implicit d:DiffList): Unit = { if (generativeSource != null) this.sampleFrom(generativeSource) else throw new Error("Source not set") } 
   def sampleIndex: Int = {
     val s = Global.random.nextDouble; var sum = 0.0; var i = 0; val size = this.size
     while (i < size) {
@@ -149,7 +150,7 @@ class DenseMultinomial[O<:DiscreteOutcome[O]](proportions:Seq[Double]) extends A
 @DomainInSubclasses
 trait CountsMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   type VariableType <: CountsMultinomial[O];
-  override type SourceType = AbstractDirichlet[O]
+  override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],ProportionOutcome[O]]
   def length: Int = counts.size 
   private var total : Double = 0.0
   def countsTotal = total
@@ -189,8 +190,8 @@ trait CountsMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   }
   override def estimate: Unit = { // TODO Think about how this might make SparseCountsMultinomial unsparse, and how to improve
     if (generatedSamples.isEmpty) throw new Error("No generated samples from which to estimate")
-    if (source == null) { _counts.zero; total = 0.0 }
-    else { _counts := source.alphaVector; total = source.alphaSum }
+    if (generativeSource == null) { _counts.zero; total = 0.0 }
+    else { _counts := generativeSource.asGenerativeSource.alphaVector; total = generativeSource.asGenerativeSource.alphaSum }
     generatedSamples.foreach(s => { _counts(s.index) += 1.0; total += 1.0 })
   }
   class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
@@ -263,12 +264,13 @@ class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet
   def this(dirichlet:AbstractDirichlet[O], initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(dirichlet)(m); set(initCounts) }
   def this(initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(null.asInstanceOf[AbstractDirichlet[O]])(m); set(initCounts) }
   type VariableType <: DirichletMultinomial[O];
-  override type SourceType = AbstractDirichlet[O]
+  //override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],ProportionOutcome[O]]
   val outcomeDomain = Domain[O](m) // TODO unfortunately this gets fetched and stored repeatedly for each instance; but otherwise 'm' would be stored for each instance anyway?
+  def actualGenerativeSource = generativeSource.asGenerativeSource
   override def pr(index:Int) : Double = {
     //println("Multinomial.pr "+count(index)+" "+source(index)+" "+total+" "+source.sum)
-    if (source != null)
-      (counts(index) + source.alpha(index)) / (countsTotal + source.alphaSum) // I considered +1 to both numerator and denominator in order to encourge unused mixture components to get data, but what objective does this correspond to?
+    if (generativeSource != null)
+      (counts(index) + actualGenerativeSource.alpha(index)) / (countsTotal + actualGenerativeSource.alphaSum) // I considered +1 to both numerator and denominator in order to encourge unused mixture components to get data, but what objective does this correspond to?
     else if (countsTotal == 0) // Use super.pr here instead?  But this may be faster
       1.0 / size
     else
@@ -276,9 +278,9 @@ class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet
   }
   override def localPr(index:Int): Double = super.pr(index)
   override def sampleIndex: Int = { // TODO More efficient because it avoids the normalization in this.pr
-    val s = Global.random.nextDouble * (countsTotal + source.alphaSum); var sum = 0.0; var i = 0; val size = this.size
+    val s = Global.random.nextDouble * (countsTotal + actualGenerativeSource.alphaSum); var sum = 0.0; var i = 0; val size = this.size
     while (i < size) {
-      sum += counts(i) + source.alpha(i)
+      sum += counts(i) + actualGenerativeSource.alpha(i)
       if (sum >= s) return i
       i += 1
     }
@@ -291,8 +293,8 @@ class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet
     assert (ocounts.size == length)
     val n = norm(ocounts,1)
     val normalizer1 = g(n) / ocounts.elements.foldLeft(1.0)((p,e) => p * g(e._2))
-    val normalizer2 = g(source.alphaSum) / g(n+source.alphaSum)
-    val ratio = ocounts.elements.foldLeft(1.0)((p,e) => p * g(e._2+source.alpha(e._1)/g(source.alpha(e._1))))
+    val normalizer2 = g(actualGenerativeSource.alphaSum) / g(n+actualGenerativeSource.alphaSum)
+    val ratio = ocounts.elements.foldLeft(1.0)((p,e) => p * g(e._2+actualGenerativeSource.alpha(e._1)/g(actualGenerativeSource.alpha(e._1))))
     normalizer1 * normalizer2 * ratio
   }
   def logpr(obsCounts:Vector): Double = Math.log(pr(obsCounts)) //indices.foldLeft(0.0)(_+logpr(_))
@@ -330,11 +332,11 @@ trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends DiscreteOutco
   def pr(i:Int): Double = multinomial.pr(i)
   override def sample(implicit d:DiffList): Unit = {
     super.sample(d)
-    multinomial.set(source.proportion) // TODO also create a Diff for this?
+    multinomial.set(generativeSource.asGenerativeSource.proportion) // TODO also create a Diff for this?
   }
   override def maximize(implicit d:DiffList): Unit = {
     super.maximize(d)
-    multinomial.set(source.proportion) // TODO also create a Diff for this?
+    multinomial.set(generativeSource.asGenerativeSource.proportion) // TODO also create a Diff for this?
   }
 
 }

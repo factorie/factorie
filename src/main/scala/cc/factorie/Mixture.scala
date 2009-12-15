@@ -20,7 +20,7 @@ import cc.factorie.util.Implicits._
     A CategoricalOutcome that has this value is a MixtureChoice. 
     @author Andrew McCallum
 */
-trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistribution with ItemizedObservation[This]] extends AbstractGenerativeDistribution with ItemizedObservation[This] {
+trait MixtureComponent[This<:MixtureComponent[This,O] with GenerativeDistribution[O] with ItemizedObservation[This],O<:Variable] extends GenerativeDistribution[O] with ItemizedObservation[This] {
   this : This =>
 }
 
@@ -35,24 +35,30 @@ trait MixtureComponent[This<:MixtureComponent[This] with AbstractGenerativeDistr
 // class Z extends MixtureChoice[Topic,Z]; Domain.alias[Z,Topic]
 // class Theta extends Multinomial[Z];
 @DomainInSubclasses
-class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends CategoricalOutcomeVariable[This] with cc.factorie.util.Trackable {
+class MixtureChoice[M<:MixtureComponent[M,O],O<:Variable,This<:MixtureChoice[M,O,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends CategoricalOutcomeVariable[This] with GenerativeDistributionProxy[M,O] {
   this : This =>
   type VariableType = This
   type ValueType = M
   //def asOutcome = this
+  override def asGenerativeSource = choice
   def choice: M = domain.get(index)
-  setByInt(Global.random.nextInt(domain.size))(null) // TODO is this how _index should be initialized?
+  // We do the following line in super because "_outcome" will not be set at initialization time.
+  super.setByIndex(Global.random.nextInt(domain.size))(null) // TODO is this how _index should be initialized?
   // Make sure the defaultModel is prepared to handle this
   if (!Global.defaultModel.contains(MixtureChoiceTemplate)) Global.defaultModel += MixtureChoiceTemplate
   Domain.alias[This,M](mt,mm) // We must share the same domain as M; this aliasing might have been done already, but just make sure its done.
-  private var _outcome : M#OutcomeType = _
-  @inline final def outcome : M#OutcomeType = _outcome // The particular outcome that was generated from this choice of mixture component
-  def setOutcome(o:M#OutcomeType) = if (_outcome == null) _outcome = o else throw new Error("Outcome already set")
+  private var _outcome : O = _
+  @inline final def outcome : O = _outcome // The particular outcome that was generated from this choice of mixture component
+  override def _registerSample(o:O)(implicit d:DiffList): Unit = {
+    setOutcome(o)
+    super._registerSample(o)
+  }
+  private def setOutcome(o:O) = if (_outcome == null) _outcome = o else if (o != _outcome) throw new Error("Outcome already set")
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
     if (_outcome == null) throw new Error("No outcome yet set.")
-    choice.unsafeUnregisterSample(outcome)
+    choice.unregisterSample(outcome)
     super.setByIndex(newIndex) // this changes the value of 'choice'
-    choice.unsafeRegisterSample(outcome)
+    choice.registerSample(outcome)
   }
   // example.LDA on 127 documents with 185129 tokens and 17032 types (Users/mccallum/research/data/text/nipstxt/nips05)
   // 9 iterations, printing topics 4 times: 
@@ -70,10 +76,10 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
   override def sample(implicit d:DiffList): Unit = {
     //println("MixtureChoice.sample "+index+" diff "+d)
     //|**("MixtureChoice.sample.prep")
-    val src = source
+    val src = generativeSource
     // Remove this variable and its sufficient statistics from the model
-    choice.unsafeUnregisterSample(outcome)
-    source.preChange(this) // TODO this could be preChange(this) instead of unregisterSample(this)
+    choice.unregisterSample(outcome)
+    generativeSource.preChange(this) // TODO this could be preChange(this) instead of unregisterSample(this)
     val dom = domain // Avoid 'domain' HashMap lookup in inner loop
     //**|
     //|**("MixtureChoice.sample.sample")
@@ -82,7 +88,7 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
     val size = dom.size
     val distribution = new Array[Double](size)
     var sum = 0.0
-    var i = 0; while (i < size) { distribution(i) = src.pr(i) * dom.get(i).unsafePr(outcome); sum += distribution(i); i += 1 }
+    var i = 0; while (i < size) { distribution(i) = src.asGenerativeSource.pr(i) * dom.get(i).pr(outcome); sum += distribution(i); i += 1 }
     //// If we are actually a MultinomialDiscrete distribution (integrating out our discrete value )
     ////this match { case md:MultinomialDiscrete[This] => md.multinomial.set(distribution) }
     i = 0; val r = Global.random.nextDouble * sum; var s = 0.0
@@ -94,7 +100,7 @@ class MixtureChoice[M<:MixtureComponent[M],This<:MixtureChoice[M,This]](implicit
     this._setByIndex(i) // change the value of choice
     // Add the variable back into the model, with its new value
     src.postChange(this) // Could be postChange(this) instead of registerSample(this)
-    choice.unsafeRegisterSample(outcome)
+    choice.registerSample(outcome)
     //**|
   }
 }
@@ -142,11 +148,10 @@ class MarginalizedMixtureChoice[M<:MixtureComponent[M],This<:MarginalizedMixture
 */
 
 /** A Template for scoring changes to a MixtureChoice. */ 
-object MixtureChoiceTemplate extends TemplateWithStatistics1[MixtureChoice[GenericMixtureComponent,GenericMixtureChoice]] {
-  def score(s:Stat) = { val mc = s.s1; mc.logpr + mc.choice.unsafeLogpr(mc.outcome) } 
-  // MixtureComponent.logpr current includes both source and outcome, but perhaps it shouldn't and both should be here
+object MixtureChoiceTemplate extends TemplateWithStatistics1[GenericMixtureChoice] {
+  def score(s:Stat) = { val mc = s.s1; mc.logpr + mc.choice.logpr(mc.outcome) } 
 }
 abstract class GenericDiscreteOutcome extends DiscreteOutcome[GenericDiscreteOutcome] { def intValue = -1 }
 // The "2" below is arbitrary, but since this constructor is never called, it shouldn't make any difference
-abstract class GenericMixtureComponent extends DenseCountsMultinomial[GenericDiscreteOutcome](2) with MixtureComponent[GenericMixtureComponent]
-abstract class GenericMixtureChoice extends MixtureChoice[GenericMixtureComponent,GenericMixtureChoice]
+abstract class GenericMixtureComponent extends DenseCountsMultinomial[GenericDiscreteOutcome](2) with MixtureComponent[GenericMixtureComponent,GenericDiscreteOutcome]
+abstract class GenericMixtureChoice extends MixtureChoice[GenericMixtureComponent,GenericDiscreteOutcome,GenericMixtureChoice]

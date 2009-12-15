@@ -23,10 +23,10 @@ object ClusterLDADemo {
 
   // Declare different types of variables
   object Beta extends SymmetricDirichlet[Word](0.01)
-  class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic]
-  class Z extends MixtureChoice[Topic,Z] with NoFactorCoordination; Domain.alias[Z,Topic]
-  class Alpha extends Dirichlet[Z](1.0) with DirichletMomentMatchingEstimator[Z] with MixtureComponent[Alpha]
-  class Y extends MixtureChoice[Alpha,Y]; Domain.alias[Y,Alpha]
+  class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic,Word]
+  class Z extends MixtureChoice[Topic,Word,Z] with NoFactorCoordination; Domain.alias[Z,Topic]
+  class Alpha extends Dirichlet[Z](1.0) with DirichletMomentMatchingEstimator[Z] with MixtureComponent[Alpha,ProportionOutcome[Z]]
+  class Y extends MixtureChoice[Alpha,ProportionOutcome[Z],Y]; Domain.alias[Y,Alpha]
   object Gamma extends UniformMultinomial[Y]
   class Theta extends DirichletMultinomial[Z]
   class Word(s:String) extends CoordinatedEnumVariable(s) with CategoricalOutcome[Word]
