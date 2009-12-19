@@ -145,7 +145,7 @@ trait ParameterAveraging extends WeightUpdates {
         vector(i) += templateWeights(i)
     }
     //determine if an update actually occurred
-    if (l2Norm(metaGradient)==0.0)
+    if (l2Norm(metaGradient)==0.0) //TODO figure this out by checking updateCount instead because it is much faster
       return
     //accumulate weights sparsely
     for((template,vector) <- metaGradient) {

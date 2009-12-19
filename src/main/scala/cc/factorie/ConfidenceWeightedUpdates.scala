@@ -14,7 +14,7 @@ import scalala.tensor.sparse.SparseVector
 
 
 //TODO: don't require SampleRank
-/** Given a gradient, change parameters according to "Confidence Weighted Learning", Dredze, Crammar, Pereira, ICML 2008.
+/** Given a gradient, change parameters according to approximate version outlined in "Confidence Weighted Learning", Dredze, Krammer, Pereira, ICML 2008.
     IMPORTANT NOTE:  for default settings, the confidence-weighted updates are small, resulting in a 'low-temperature' distribution. 
     For certain models, it may be necessary to compensate by changing the temperature parameter in both the learner and predictor. 
     For example:
@@ -54,7 +54,8 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
   lazy val sigma = new HashMap[TemplatesToUpdate,Vector] {
     override def default(template:TemplatesToUpdate) = { 
       template.freezeDomains
-      val vector = DenseVector(template.statsize)(initialVariance)
+      //val vector = DenseVector(template.statsize)(initialVariance)
+      val vector = if(template.isInstanceOf[SparseWeights])SparseVector(template.statsize)(initialVariance) else DenseVector(template.statsize)(initialVariance)
       this(template) = vector
       vector
     }

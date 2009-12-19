@@ -14,7 +14,7 @@
 
 % Use utf-8 encoding for foreign characters
 \usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
+%\usepackage[T1]{fontenc}
 %\usepackage[bitstream-charter]{mathdesign}
 
 % Setup for fullpage use
@@ -123,8 +123,6 @@ entity-relationship style of template definition, logic syntactic
 sugar, and underlying imperative style.  Show examples of both
 undirected and directed models.
 
-\section{Linear chain CRF - ConLL NER}
-SimpleChainNER.scala
 
 \section{Entity Resolution with first order features - Toy Dataset}
 (CorefMentions.scala)
@@ -141,13 +139,18 @@ showstringspaces=false} % no special string spaces
 
 
 In this section of the tutorial we will apply Factorie to the problem
-of entity resolution (or coreference). Entity resolution is a problem
+of entity resolution (or coreference). \cut{Entity resolution is a problem
 studied in many scientific communities, including natural language
 processing, information extraction, data mining, and information
-integration, as well as industry. Informally, entity resolution is the
+integration, as well as industry.} Informally, entity resolution is the
 problem of clustering {\em mentions} into underlying {\em
-  entities}. An example of mentions clustered into their respective
-entities is shown in Figure~\ref{fig:tutorial-coref-toy-data}
+  entities} (see Figure~\ref{fig:tutorial-coref-toy-data}).
+
+
+\cut{Throughout this section we will highlight the power of several of
+Factorie's types of imperativisms, including variable coordination,
+online constraint preservation,sufficient statistics mapping, and
+unrolling.}
 
 
 \begin{figure}[h]
@@ -160,20 +163,22 @@ entities is shown in Figure~\ref{fig:tutorial-coref-toy-data}
 
 
 \subsection{Step 1: Define data structures and variables}
-Before we delve into the coreference model, we first set up the basic
-data structure and random variables required for solving the
-problem. We begin by defining a mention variable:
+Before defining the structure of our model, we must
+first create the basic data structures and random variables that
+naturally support coreference data. We begin by defining a mention
+variable:
 
 \lstinline!class Mention(val name:String, val trueEntity:Int, val initialEntity) extends RefVariable(initialEntity)!
 
 \noindent the Mention has three members: a name containing the text
 (e.g., ``Aron Culotta''), a {\em trueEntity} used for supervised
 training and evaluation, and an {\em initialEntity} used for defining
-the initial configuration. The Mention additional extends {\em
-  RefVariable}, a variable whose domain consists of pointers to scala
-objects. By convention all mentions with a pointer to the same entity
-will be considered coreferent; we are now ready to define the {\em
-  Entity} variable:
+the initial configuration. The Mention additionally extends {\em
+  RefVariable}, a factorie trait for variables whose possible values
+points to scala objects; in our case, a setting to the mention
+variable is a pointer to some entity in our hypothesis (by convention
+all mentions with a pointer to the same entity will be considered
+coreferent); we are now ready to define the {\em Entity} variable:
 
 \begin{lstlisting}
 class Entity(val canonical:String) extends SetVariable[Mention] {
@@ -191,10 +196,6 @@ classification decision. We begin our model description by expressing such a
 factor.
 
 
-Throughout this section we will highlight the power of several of
-Factorie's types of imperativisms, including variable coordination,
-online constraint preservation,sufficient statistics mapping, and
-unrolling.
 
 
 \subsection{Step 3: Enforce structural constraints}
