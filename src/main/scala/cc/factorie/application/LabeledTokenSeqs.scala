@@ -663,6 +663,75 @@ object LabeledTokenSeqs {
     def containsSingle[T<:TokenInSeq[T]](query:T): Boolean = contents.contains(_key(query.word))
   }
 
+  /**A proposer that enforces BIO constraints*/
+  abstract class BIOProposer[T<:Token[L,T],L<:Label[T,L]](model:Model) extends MHSampler[L](model)
+  {
+    def labelSpace : Array[String]
+    def labels : Seq[Label[T,L]] //def labels = this.map(_.label)
+    def propose(context:L)(implicit delta:DiffList) : Double =
+      {
+	//val labelSpace = Domain[Label]
+	val label = labels(random.nextInt(labels.size))
+	//var label = labels(indices.get(index))
+	var newLabel = labelSpace(random.nextInt(labelSpace.length))
+	if(newLabel.startsWith("I-"))
+	  {
+	    val suffix = newLabel.substring(2,newLabel.length)
+	    if(label.hasPrev && label.prev.value.indexOf(suffix) == -1)
+	      label.prev.set("B-"+suffix)(delta)
+	    if(!label.hasPrev)
+	      newLabel="B-"+suffix
+	  }
+	
+	if(newLabel.startsWith("B-"))
+	  {
+	    val suffix = newLabel.substring(2,newLabel.length)
+	    if(label.hasNext && label.next.value.indexOf("I-") != -1 && label.next.value.indexOf(suffix) == -1)
+	      {
+		//TODO check if label.next.next isn't violated
+		if(random.nextBoolean)
+		  label.next.set("I-"+suffix)(delta)
+		else 
+		  label.next.set("O")(delta)
+	      }
+	  }
+	label.set(newLabel)(delta)
+	0.0 //TODO calculate this precisely
+      }
+  }
 
+/*
+  class FirstOrderDecoder[T,L](amodel : Model)
+  {
+    var model : Model = amodel
+    var transitionTemplates : ArrayBuffer[DotTemplate]
+    var observationTemplates : ArrayBuffer[DotTemplate]
+    var labelPriorTemplates : ArrayBuffer[DotTemplate]
+   
+    def setModel(amodel:Model) : Unit =
+      {
+	if(model == amodel)
+	  return
+	model = amodel
+	for(template <- model.templatesOf[DotTemplate])
+	  {
+	    if(template.isInstanceOf[DotTemplate[L, L]])
+	      System.out.println("SWEET")
+	    else System.out.println("ASDFSADFSF")
+	  }
+      }
+   
+
+    def decodeBIO[T,L](sequences : Seq[LabeledTokenSeq[T,L]]) : Unit
+    {
+      
+    }
+
+    def decodeBIO[T,L](sequence : LabeledTokenSeq[T,L])
+    {
+      
+    }
+  }
+*/
 }
 

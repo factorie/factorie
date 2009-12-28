@@ -48,7 +48,7 @@ trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
     if(useObjectiveDiffAsMargin)
       learningMargin = changeProposal.objectiveScore.abs else 1
     learningRate=Math.min(kktMultiplier(changeProposal,gradient),boxConstraint)
-    if(learningRate>0)
+    if(learningRate!=0)
       super.updateWeights //let perceptron do the work and increment count
     //addGradient((template:Template) => template match {case t:TemplatesToUpdate => t.weights}, learningRate)
     //super.asInstanceOf[WeightUpdates].updateWeights
