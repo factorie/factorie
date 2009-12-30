@@ -1,9 +1,17 @@
+/* Copyright (C) 2008-2009 Univ of Massachusetts Amherst, Computer Science Dept
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   This software is provided under the terms of the Eclipse Public License 1.0
+   as published by http://www.opensource.org.  For further information,
+   see the file `LICENSE.txt' included with this distribution. */
+
 package cc.factorie.util
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 
 
-/** Concrete version is implemented as an inner class of @see CmdOptions. */
+/** Concrete version is implemented as an inner class of @see CmdOptions. 
+    @author Andrew McCallum */
 trait CmdOption[T] {
   def name: String
   def shortName: Char
@@ -142,7 +150,7 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
   	def invoke: Unit = {}
   	/** After we have found a match, request that argument(s) to command-line option be parsed. 
         Return the index position that should be processed next. 
-        This allows one option to possibly consume multiple args. */
+        This method allows one option to possibly consume multiple args, (in contrast with parseValue(String).) */
   	protected def parseValue(args:Seq[String], index:Int): Int = { parseValue(args(index)); index + 1 }
   	/** Parse a value from a single arg */
   	protected def parseValue(valueStr:String): Unit = {

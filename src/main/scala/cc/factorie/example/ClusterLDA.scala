@@ -25,11 +25,11 @@ object ClusterLDADemo {
   object Beta extends SymmetricDirichlet[Word](0.01)
   class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic,Word]
   class Z extends MixtureChoice[Topic,Word,Z] with NoFactorCoordination; Domain.alias[Z,Topic]
-  class Alpha extends Dirichlet[Z](1.0) with DirichletMomentMatchingEstimator[Z] with MixtureComponent[Alpha,ProportionOutcome[Z]]
-  class Y extends MixtureChoice[Alpha,ProportionOutcome[Z],Y]; Domain.alias[Y,Alpha]
+  class Alpha extends Dirichlet[Z](1.0) with DirichletMomentMatchingEstimator[Z] with MixtureComponent[Alpha,GeneratedProportionValue[Z]]
+  class Y extends MixtureChoice[Alpha,GeneratedProportionValue[Z],Y]; Domain.alias[Y,Alpha]
   object Gamma extends UniformMultinomial[Y]
   class Theta extends DirichletMultinomial[Z]
-  class Word(s:String) extends CoordinatedEnumVariable(s) with CategoricalOutcome[Word]
+  class Word(s:String) extends CoordinatedEnumVariable(s) with GeneratedCategoricalValue[Word]
   class Document(val file:String) extends ArrayBuffer[Word] { var theta:Theta = _; var y:Y = _ }
 
   def main(args: Array[String]) : Unit = {

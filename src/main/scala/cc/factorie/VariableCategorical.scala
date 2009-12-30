@@ -48,7 +48,7 @@ abstract trait CategoricalValue extends CategoricalValues with TypedValue with D
   this: Variable =>
   type VariableType <: CategoricalValue
   //def value: ValueType = domain.get(index) // TODO I wanted to define this here, but Scala cannot resolve the right type.
-  //override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + index + ")"
+  //override def toString = printName + "(" + (if (value == this) "this" else value.toString) + "=" + index + ")"
 } 
 
 /** A DiscreteVariable whose integers 0...N are associated with an object of type ValueType. 
@@ -67,7 +67,7 @@ abstract trait TypedCategoricalValue[T] extends CategoricalValue {
   type VariableType <: TypedCategoricalValue[T]
   type ValueType = T
   def value: ValueType = domain.get(intValue) // TODO I'd love to move this to the superclass, but Scala type system is complaining
-  override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + intValue + ")"
+  override def toString = printName + "(" + (if (value == this) "this" else value.toString) + "=" + intValue + ")"
   // NOTE that "def index" has yet to be defined
 }
 

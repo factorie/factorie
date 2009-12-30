@@ -119,9 +119,9 @@ trait DiscreteVariable extends OrdinalVariable with DiscreteValue with IterableS
     if (newIndex < 0) throw new Error("DiscreteVariable setByIndex can't be negative.")
     super.setByInt(newIndex)(d)
   }
-  def setRandomly(implicit random:Random, d:DiffList) : Unit = setByIndex(random.nextInt(domainSize))(d)
-  def setRandomly(implicit random:Random) : Unit = setByIndex(random.nextInt(domainSize))(null)
-  def setRandomly : Unit = setRandomly(cc.factorie.Global.random)
+  def setRandomly(random:Random, d:DiffList): Unit = setByIndex(random.nextInt(domainSize))(d)
+  def setRandomly(random:Random): Unit = setRandomly(random, null)
+  def setRandomly: Unit = setRandomly(cc.factorie.Global.random)
   def settings = new SettingIterator {
     var i = -1
     val max = domain.size - 1

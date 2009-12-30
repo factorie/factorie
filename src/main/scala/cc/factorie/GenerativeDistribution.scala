@@ -12,17 +12,23 @@ import cc.factorie.util.Implicits._
 
 // A collection abstract Variables for the distributions of generative models (directed Bayesian networks, 
 // as opposed to undirected in which there is not a DAG-shaped generative storyline).
+                                                                               
+// TODO Create factors for all generative distributions, so that BP will be supported.
+// Make sure there is a factor between a Gaussian, its Real mean parameter, and the data generated from the Gaussian.
+// So GeneratedVariables should have children also.
+// Then factors could have gate numbers, and we could try harder to implement Minka and Winn's "Gates".
 
-// TODO Rename GeneratedValueLike and asGeneratedValue
-trait OutcomeProxy[O<:GenerativeValue[O]] {
-  def asOutcome: O
-}
+// TODO Consider also making a GenerativeFunction for deterministic relations between parent and child.
 
-// Rename to GenerativeDistributionLike
-// TODO Consider renaming asGenerativeDistribution
+
+
+/** A stand-in for a GenerativeDistribution.  Note that GenerativeDistribution itself inherits from this.
+    This allows a MixtureChoice to be a the generativeSource of a GeneratedVariable, 
+    because although MixtureChoice does not inherit from GenerativeDistribution it does inherit from
+    GenerativeDistributionProxy, which in turn inherits from GenerativeDistributionLike. */
 trait GenerativeDistributionLike[+S<:GenerativeDistribution[O],O<:Variable] extends Variable {
   //type GenerativeDistributionType = S
-  def asGenerativeSource: S //= this.asInstanceOf[S]
+  def asGenerativeDistribution: S //= this.asInstanceOf[S]
   def registerSample(o:O)(implicit d:DiffList): Unit
   def unregisterSample(o:O)(implicit d:DiffList): Unit
   def _registerSample(o:O)(implicit d:DiffList): Unit
@@ -33,53 +39,59 @@ trait GenerativeDistributionLike[+S<:GenerativeDistribution[O],O<:Variable] exte
   def logpr(o:O): Double
 }
 
+/** A GenerativeDistributionLike that forwards all its requests to a proxy, returned by method asGenerativeDistribution. */
 trait GenerativeDistributionProxy[+S<:GenerativeDistribution[O],O<:Variable] extends GenerativeDistributionLike[S,O] {
-  def registerSample(o:O)(implicit d:DiffList): Unit = asGenerativeSource.registerSample(o)
-  def unregisterSample(o:O)(implicit d:DiffList): Unit = asGenerativeSource.unregisterSample(o)
-  def _registerSample(o:O)(implicit d:DiffList): Unit = asGenerativeSource._registerSample(o)
-  def _unregisterSample(o:O)(implicit d:DiffList): Unit = asGenerativeSource._unregisterSample(o)
-  def preChange(o:O)(implicit d:DiffList): Unit = asGenerativeSource.preChange(o)
-  def postChange(o:O)(implicit d:DiffList): Unit = asGenerativeSource.postChange(o)
-  def pr(o:O): Double = asGenerativeSource.pr(o)
-  def logpr(o:O): Double = asGenerativeSource.logpr(o)
+  def registerSample(o:O)(implicit d:DiffList): Unit = asGenerativeDistribution.registerSample(o)
+  def unregisterSample(o:O)(implicit d:DiffList): Unit = asGenerativeDistribution.unregisterSample(o)
+  def _registerSample(o:O)(implicit d:DiffList): Unit = asGenerativeDistribution._registerSample(o)
+  def _unregisterSample(o:O)(implicit d:DiffList): Unit = asGenerativeDistribution._unregisterSample(o)
+  def preChange(o:O)(implicit d:DiffList): Unit = asGenerativeDistribution.preChange(o)
+  def postChange(o:O)(implicit d:DiffList): Unit = asGenerativeDistribution.postChange(o)
+  def pr(o:O): Double = asGenerativeDistribution.pr(o)
+  def logpr(o:O): Double = asGenerativeDistribution.logpr(o)
 }
 
 // TODO  Consider something like this.  A trait for factory objects
 //trait GenerativeFactory[Source<:AbstractGenerativeDistribution] { def apply(Source#OutcomeType#ValueType): Source#OutcomeType }
 
-/** A Variable representing a probability distribution that generates other variable values with type OutcomeType
+/** A Variable representing a probability distribution that generates other variable values with type O.
     It provides methods returning the probability of given values, and for (re-)sampling a new value into an existing variable. 
     Optionally, it keeps track of all the variables generated, for use in estimating the parameters of this distribution,
     and for use in finding neighbors for factor Templates. 
     @author Andrew McCallum */
-// Change this to O<:TypedVariable so that we can add def sampleValue:O#ValueType
+// TODO Change this to O<:TypedVariable so that we can add def sampleValue:O#ValueType
+//   but then make sure this still works for IntValue and RealValue.
 trait GenerativeDistribution[O<:Variable] extends GenerativeDistributionLike[GenerativeDistribution[O],O] {
   // Note that 'O' is not *required* to be a GenerativeVariable.  This allows us to put any DiscreteVariable into Multinomial, for example.
   type VariableType <: GenerativeDistribution[O];
-  //type OutcomeType = O // TODO Consider insisting the OutcomeType = GenerativeObservation[O]; For now I've simly added a noop 'setSource' method to Variable
-  def asGenerativeSource = this
+  type OutcomeType = O // TODO Consider insisting the OutcomeType = GenerativeObservation[O]; For now I've simly added a noop 'setSource' method to Variable
+  def asGenerativeDistribution = this
   def estimate: Unit // TODO consider removing this.  Paramter estimation for generative models should be seen as inference?  No, but change its name to 'maximize'!  This will apply to both variables and distributions
-  lazy val generatedSamples = new HashSet[O];
-  var keepGeneratedSamples = true
+  private lazy val _generatedSamples: HashSet[O] = new HashSet[O];
+  def generatedSamples: scala.collection.Set[O] = _generatedSamples.readOnly
+  def weightedGeneratedSamples: Iterator[(O,Double)] = new Iterator[(O,Double)] {
+    val elts = _generatedSamples.elements
+    def hasNext = elts.hasNext
+    def next = (elts.next,1.0)
+  }
+  def keepGeneratedSamples = true
   override def _registerSample(o:O)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
-    if (generatedSamples.contains(o)) throw new Error("Already generated outcome "+o) 
-    generatedSamples += o
-    if (d != null) d += GenerativeDistributionRegisterDiff(o)
+  	if (generatedSamples.contains(o)) throw new Error("Already generated outcome "+o) 
+  	_generatedSamples += o
+  	if (d != null) d += GenerativeDistributionRegisterDiff(o)
   }
   override def _unregisterSample(o:O)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
-    generatedSamples -= o
-    if (d != null) d += GenerativeDistributionUnregisterDiff(o)
+  	_generatedSamples -= o
+  	if (d != null) d += GenerativeDistributionUnregisterDiff(o)
   }
   /** Notify this GenerativeDistribution that it is now associated with an additional sampled outcome, and set o's source to this. */
   final override def registerSample(o:O)(implicit d:DiffList): Unit = {
     _registerSample(o)
-    //o._setSource(this)//.asInstanceOf[OutcomeType#SourceType]
     o._setSource(this)
   }
   /** Notify this GenerativeDistribution that it is no longer associated with a sampled outcome, and set o's source to null. */
   final override def unregisterSample(o:O)(implicit d:DiffList): Unit = {
     _unregisterSample(o)
-    //if (o.isInstanceOf[GenerativeObservation[_]]) o.asInstanceOf[GenerativeObservation[_]]._setSource(null.asInstanceOf[OutcomeType#SourceType])
     o._setSource(null)
   }
   // TODO consider removing preChange/postChange, because it requires extra infrastructure/Diffs from implementers?  Can just use (un)registerSample
@@ -91,24 +103,15 @@ trait GenerativeDistribution[O<:Variable] extends GenerativeDistributionLike[Gen
   def pr(o:O): Double
   /** Return the log-probability that this GenerativeDistribution would generate outcome 'o' */
   override def logpr(o:O): Double = Math.log(pr(o))
-  /** Change the value of outcome 'o' to a value sampled from this GenerativeDistribution */
-  //@deprecated def sampleInto(o:OutcomeType): Unit // TODO Perhaps this should take a DiffList; then GenerativeVariable.sample could be implemented using it
-  // Fighting with the Scala type system, see:
-  // http://www.nabble.com/Path-dependent-type-question-td16767728.html
-  // http://www.nabble.com/Fwd:--lift--Lift-with-Scala-2.6.1--td14571698.html 
-  //def unsafeRegisterSample(o:Variable)(implicit d:DiffList) = registerSample(o.asInstanceOf[OutcomeType])
-  //def unsafeUnregisterSample(o:Variable)(implicit d:DiffList) = unregisterSample(o.asInstanceOf[OutcomeType])
-  //def unsafePr(o:Variable) = pr(o.asInstanceOf[OutcomeType])
-  //def unsafeLogpr(o:Variable) = logpr(o.asInstanceOf[OutcomeType])
   case class GenerativeDistributionRegisterDiff(m:O) extends Diff {
   	def variable: GenerativeDistribution[O] = GenerativeDistribution.this//.asInstanceOf[VariableType]
-    def redo = { if (generatedSamples.contains(m)) throw new Error else generatedSamples += m}
-    def undo = { generatedSamples -= m }
+    def redo = { if (_generatedSamples.contains(m)) throw new Error else _generatedSamples += m}
+    def undo = { _generatedSamples -= m }
   }
   case class GenerativeDistributionUnregisterDiff(m:O) extends Diff {
     def variable: GenerativeDistribution[O] = GenerativeDistribution.this //.asInstanceOf[VariableType]
-    def redo = { generatedSamples -= m }
-    def undo = { if (generatedSamples.contains(m)) throw new Error else generatedSamples += m}
+    def redo = { _generatedSamples -= m }
+    def undo = { if (_generatedSamples.contains(m)) throw new Error else _generatedSamples += m}
   }
 }
 
@@ -158,7 +161,7 @@ trait DiscreteDistribution[O<:DiscreteValue] extends GenerativeDistributionLike[
 
 
   /** A GenerativeDistribution that generates proportions (vectors with values summing to 1.0), for example a Dirichlet*/
-trait ProportionDistributionLike[O<:DiscreteValue] extends GenerativeDistributionLike[ProportionDistribution[O],ProportionOutcome[O]] {
+trait ProportionDistributionLike[O<:DiscreteValue] extends GenerativeDistributionLike[ProportionDistribution[O],GeneratedProportionValue[O]] {
   //def size: Int
   ////def sampleProportions: Seq[Double]
   //def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def size:Int}): Seq[Double]
@@ -166,22 +169,24 @@ trait ProportionDistributionLike[O<:DiscreteValue] extends GenerativeDistributio
 }
 
 /** A GenerativeDistribution that generates proportions (vectors with values summing to 1.0), for example a Dirichlet*/
-trait ProportionDistribution[O<:DiscreteValue] extends ProportionDistributionLike[O] with GenerativeDistribution[ProportionOutcome[O]] {
+trait ProportionDistribution[O<:DiscreteValue] extends ProportionDistributionLike[O] with GenerativeDistribution[GeneratedProportionValue[O]] {
   def size: Int
   //def sampleProportions: Seq[Double]
   def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def size:Int}): Seq[Double]
-  def pr(proportions:ProportionOutcome[O]): Double
+  def pr(proportions:GeneratedProportionValue[O]): Double
 }
 
 
 /** A GenerativeDistribution that generates real values as Double (specifically a cc.factorie.Real), for example a Gaussian distribution */
 // TODO Consider changing "Real" to "RealValue" and "RealVariable"
-trait RealDistributionLike[O<:Real] extends GenerativeDistributionLike[RealDistribution[O],O] {
+trait RealDistributionLike[O<:RealValue] extends GenerativeDistributionLike[RealDistribution[O],O] {
   //def sampleDouble: Double
 }
 
-trait RealDistribution[O<:Real] extends RealDistributionLike[O] with GenerativeDistribution[O] {
+trait RealDistribution[O<:RealValue] extends RealDistributionLike[O] with GenerativeDistribution[O] {
   def sampleDouble: Double
+  def pr(x:Double): Double
+  def logpr(x:Double): Double
 }
 
 /** A GenerativeDistribution that generates positive real values as Double (represented by a cc.factorie.Real), for example a Gamma distribution */

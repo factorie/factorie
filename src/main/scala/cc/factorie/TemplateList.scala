@@ -18,7 +18,9 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
 import cc.factorie.util.Implicits._
 
-/** Management of Factor Templates within the Model 
+// TODO Consider simply moving these methods to Model and deleting this class
+
+/** Management of the collection of Factor Templates within the Model. 
     @author Andrew McCallum */
 class TemplateList[T<:Template] extends ArrayBuffer[T] {
   def templatesOf[T2<:T](implicit m:Manifest[T2]) : TemplateList[T2] = {
@@ -35,11 +37,10 @@ class TemplateList[T<:Template] extends ArrayBuffer[T] {
   def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else this.flatMap(template => template.factors(d))
   def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
   def factorsOf[T2<:T](vs:Iterable[Variable])(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
+  def factorsOf[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
   /** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
   def factors(v:Variable) : Seq[Factor] = this.flatMap(template => template.factors(v)).toList
   def factors(vs:Iterable[Variable]) : Seq[Factor] = this.flatMap(template => template.factors(vs))
-  // TODO Should the method below be renamed "factorsOf"?
-  def factorsOfClass[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
   /* This kind of construction should now be done in a Lattice, not touching the Variables themselves.
   def registerFactorsInVariables(variables: Iterable[Variable with FactorList]): Seq[Factor] = {
     val factors = this.factors(variables)

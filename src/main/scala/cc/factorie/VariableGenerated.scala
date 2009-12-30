@@ -10,30 +10,37 @@ import scala.reflect.Manifest
 import scala.collection.mutable.HashSet
 import cc.factorie.util.Implicits._
 
-// A collection abstract Variables (and a generic Sampler) for generative models (directed Bayesian networks, 
+// A collection of abstract Variables (and a generic Sampler) for generative models (directed Bayesian networks, 
 // as opposed to undirected in which there is not a DAG-shaped generative storyline).
-                                                                                  
 
-/** An Variable that has a 'source' GenerativeDistribution and a 'pr' probability of being generated.  
-    For the corresponding mutable-valued Variable, see GenerativeVariable.  
-    The type parameter O is the return type for 'asOutcome', which typically simply returns 'this'; 
-    so the most common case is to put a self-type there. */
-//trait GenerativeObservation[This<:GenerativeObservation[This] with Variable] extends Variable
-// TODO Consider renaming to GeneratedValue, and then also asGeneratedValue
-trait GenerativeValue[This<:GenerativeValue[This]] extends Variable with OutcomeProxy[This] {
+// TODO Remove these next two traits.  I don't think they are necessary.
+/** A stand-in for a GeneratedValue.  Note that GeneratedValue itself inherits from this.
+    This allows a MarginalizedMixtureChoice to be ... */
+trait GeneratedValueLike[O<:GeneratedValue[O]] {
+  def asGeneratedValue: O
+}
+trait GeneratedValueProxy[O<:GeneratedValue[O]] extends GeneratedValueLike[O] {
+  def asGeneratedValue: O
+}
+
+                                                                                  
+/** An Variable that has a 'generativeSource' GenerativeDistribution and a 'pr' probability of being generated.
+    This trait does not indicate whether the Variable is mutable or immutable.
+    For the corresponding mutable-valued Variable, see GenerativeVariable. */  
+trait GeneratedValue[This<:GeneratedValue[This]] extends Variable with GeneratedValueLike[This] {
   this: This => 
   type SourceType <: GenerativeDistributionLike[GenerativeDistribution[This],This]
   private var _generativeSource: SourceType = _
-  //def generativeSource: SourceType#GenerativeDistributionType = _generativeSource //.asGenerativeSource
+  //def generativeSource: SourceType#GenerativeDistributionType = _generativeSource //.asGenerativeDistribution
   def generativeSource: SourceType = _generativeSource
-  @inline final def asOutcome: This = this
+  @inline final def asGeneratedValue: This = this
   final def setSource(s:SourceType)(implicit d:DiffList) : Unit = {
-    if (generativeSource ne null) generativeSource._unregisterSample(asOutcome)
+    if (generativeSource ne null) generativeSource._unregisterSample(asGeneratedValue)
     _setSource(s)
-    if (generativeSource ne null) generativeSource._registerSample(asOutcome)
+    if (generativeSource ne null) generativeSource._registerSample(asGeneratedValue)
   }
   /** Set 'source' directly without coordinating via source.(un)registerSample.  Don't call this yourself; call 'setSource' instead. */
-  @inline final override def _setSource(s:AnyRef)(implicit d:DiffList) : Unit = {
+  override def _setSource(s:AnyRef)(implicit d:DiffList) : Unit = {
     val ss = s.asInstanceOf[SourceType] // TODO Arg.  I want s:SourceType, but Scala type system doesn't like M#OutcomeType vs M.OutcomeType
     if (d ne null) d += SetSourceDiff(_generativeSource, ss)
     _generativeSource = ss
@@ -46,28 +53,29 @@ trait GenerativeValue[This<:GenerativeValue[This]] extends Variable with Outcome
     this.~(mc.choice) // either here or in mmc.setOutcome; not sure which is more natural
   }*/
   /** Probability of this variable given its 'source' parents. */
-  def pr: Double = generativeSource.pr(asOutcome)
+  def pr: Double = generativeSource.pr(asGeneratedValue)
   /** log-probability of this variable given its 'source' parents. */
   def logpr: Double = Math.log(pr)
   case class SetSourceDiff(oldSource:SourceType, newSource:SourceType) extends Diff {
-    def variable = GenerativeValue.this
+    def variable = GeneratedValue.this
     def redo = _generativeSource = newSource
     def undo = _generativeSource = oldSource
   }
 }
 
 //trait GenerativeVariable[This<:GenerativeVariable[This] with Variable] extends GenerativeObservation[This] with AbstractGenerativeVariable {
-trait GenerativeVariable[This<:GenerativeVariable[This]] extends GenerativeValue[This] with AbstractGenerativeVariable {
+trait GeneratedVariable[This<:GeneratedVariable[This]] extends GeneratedValue[This] with AbstractGeneratedVariable {
   this: This =>
   /** Sample a new value for this variable from the distribution defined by 's'.  
-      Note, this differs from the method 'sample' (defined in AbstractGenerativeVariable), which accounts for both the parent and children 
-      when this is a GenerativeDistribution as well as a GenerativeVariable */
-  // TODO So make the next method abstract
-  // Uncomment next next line!!!!
-  //def sampleFrom(s:SourceType)(implicit d:DiffList): Unit // = throw new Error("Must be defined in subclasses.")
+      Note, this differs from the method 'sample' (defined in AbstractGeneratedVariable), which accounts for both the parent and children 
+      when this is a GenerativeDistribution as well as a GeneratedVariable */
+  def sampleFrom(s:SourceType)(implicit d:DiffList): Unit // = throw new Error("Must be defined in subclasses.")
+  def :==(s:SourceType): Unit = sampleFrom(s)(null)
+  /** Set this variable to a new value, sampled according to the distribution indicated by its 'generativeSource' parents, but not its children. 
+      By contrast, see @see sample. */
+  def regenerate(implicit d:DiffList): Unit = sampleFrom(generativeSource)
   /** Register this variable as having been generated from source 's', and furthermore set this variable's value to a sample from 's'. */
-  // TODO Uncomment sampleFrom below!!!!!
-  def :~(s:SourceType): this.type = { /*this.sampleFrom(s)(null);*/ this.~(s); this } 
+  def :~(s:SourceType): this.type = { this.sampleFrom(s)(null); this.~(s); this } 
   // Better to sampleFrom first then :~, because :~ may look at this.value and because :~ may add this' currentValue to s' parameter estimate
   // Note however that you can't do "MixtureChoice :~ Multinomial" because of outcome-setting-ordering.
   // We could try to change the design to allow this if we decide it is important.
@@ -78,15 +86,15 @@ trait GenerativeVariable[This<:GenerativeVariable[This]] extends GenerativeValue
   // 'maximize' would differ from 'estimate' in that maximum likelihood estimation is just one way to 'estimate' a parameter      
 }
 
-/** A stand-in for GenerativeVariable that does not take type parameters, which we use as the type argument to GenerativeVariableSampler. */
-trait AbstractGenerativeVariable extends Variable {
+/** A stand-in for GeneratedVariable that does not take type parameters, which we use as the type argument to GeneratedVariableSampler. */
+trait AbstractGeneratedVariable extends Variable {
   /** Set this variable to a new value, sampled according to the distribution 
       indicated by both its 'source' parents and also its 'generatedSamples' children if available. */
   def sample(implicit d:DiffList): Unit
 }
 
 
-// Some specific cases of GenerativeObservation types
+// Some specific cases of GeneratedObservation types
 
 // TODO Consider changing DiscreteValue to DiscreteValues
 // It would help Inferencer.IndexedMarginal
@@ -96,12 +104,26 @@ trait AbstractGenerativeVariable extends Variable {
 // but we could certainly define pr(BinaryVectorVariable)
 // Hmm... Requires further thought.
                                     
-//TODO Rename GeneratedDiscreteValue, GeneratedDiscreteVariable, etc.
-/** A GenerativeObservation with densely-packed integer values, for example the outcome of a Multinomial or Poisson.  
+
+
+trait GeneratedRealValue[This<:GeneratedRealValue[This] with RealValue with GeneratedValue[This]] extends RealValue with GeneratedValue[This] {
+  this: This =>
+  type SourceType = GenerativeDistributionLike[RealDistribution[This],This]
+  //def pr: Double = generativeSource.asGenerativeDistribution.pr(this)
+  //def logpr: Double = generativeSource.asGenerativeDistribution.logpr(this)
+}
+
+trait GeneratedRealVariable[This<:GeneratedRealVariable[This]] extends RealVariable with GeneratedRealValue[This] with GeneratedVariable[This] {
+  this: This =>
+  def sampleFrom(source:SourceType)(implicit d:DiffList) = set(source.asGenerativeDistribution.sampleDouble)
+  def sample(implicit d:DiffList) = sampleFrom(generativeSource)
+}
+                                    
+/** A GeneratedObservation with densely-packed integer values, for example the outcome of a Multinomial or Poisson.  
     This trait is used for Variables whose value is observed and does not change; 
     for Variables with changing value, you should use DiscreteOutcomeVariable. */
 @DomainInSubclasses
-trait DiscreteOutcome[This<:DiscreteOutcome[This] with DiscreteValue with GenerativeValue[This]] extends DiscreteValue with GenerativeValue[This] {
+trait GeneratedDiscreteValue[This<:GeneratedDiscreteValue[This] with DiscreteValue with GeneratedValue[This]] extends DiscreteValue with GeneratedValue[This] {
   // DiscreteOutcome should not be merged with DiscreteOutcomeVariable because not everything we want to generate has a "setByIndex" to override
   this: This =>  
   // "This" types are a bit verbose.  Could Scala be changed to replace them with this#type ??? 
@@ -111,7 +133,7 @@ trait DiscreteOutcome[This<:DiscreteOutcome[This] with DiscreteValue with Genera
 }
 
 /** A DiscreteOutcome that is also a DiscreteVariable whose value can be changed. */
-trait DiscreteOutcomeVariable[This<:DiscreteOutcomeVariable[This] with DiscreteVariable] extends DiscreteVariable with DiscreteOutcome[This] with GenerativeVariable[This] {
+trait GeneratedDiscreteVariable[This<:GeneratedDiscreteVariable[This] with DiscreteVariable] extends DiscreteVariable with GeneratedDiscreteValue[This] with GeneratedVariable[This] {
   this : This =>
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
     if (generativeSource ne null) generativeSource.preChange(this)
@@ -123,38 +145,38 @@ trait DiscreteOutcomeVariable[This<:DiscreteOutcomeVariable[This] with DiscreteV
   def _setByIndex(newIndex:Int)(implicit d:DiffList) = super.setByIndex(newIndex) 
   // TODO The above method is a bit scary because we may loose opportunities to fruitfully override setByIndex in subclasses
   // However it saved us (115-111) seconds in the LDA timing run described in Generative.scala. 
-  def sampleFrom(source:SourceType)(implicit d:DiffList) = setByIndex(source.asGenerativeSource.sampleIndex)
+  def sampleFrom(source:SourceType)(implicit d:DiffList) = setByIndex(source.asGenerativeDistribution.sampleIndex)
   def distribution: Array[Double] = { // TODO Remove or rename?  Rename proportion?
     val buffer = new Array[Double](domain.size);
-    for (i <- 0 until buffer.length) buffer(i) = generativeSource.asGenerativeSource.pr(i); 
+    for (i <- 0 until buffer.length) buffer(i) = generativeSource.asGenerativeDistribution.pr(i); 
     buffer
   }
   def sample(implicit d:DiffList): Unit = {
     // TODO Thursday Check!!!  Just removed this because I think it is redundant with preChange/postChange in setByIndex 
     //val isDM = classOf[DirichletMultinomial[This]].isAssignableFrom(getClass)
     //if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, -1)
-    setByIndex(generativeSource.asGenerativeSource.sampleIndex)
+    setByIndex(generativeSource.asGenerativeDistribution.sampleIndex)
     //if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, 1)
   }
   def maximize(implicit d:DiffList): Unit = {
-    setByIndex(generativeSource.asGenerativeSource.maxPrIndex)
+    setByIndex(generativeSource.asGenerativeDistribution.maxPrIndex)
   }
 }
 
 
 // TODO Delete these next two.  DiscreteGenerating is sufficient to generate a CategoricalValue
-trait CategoricalOutcome[This<:CategoricalOutcome[This] with CategoricalValue] extends CategoricalValue with DiscreteOutcome[This] {
+trait GeneratedCategoricalValue[This<:GeneratedCategoricalValue[This] with CategoricalValue] extends CategoricalValue with GeneratedDiscreteValue[This] {
   this : This =>
   //type SourceType = CategoricalGenerating[This]
 }
-trait CategoricalOutcomeVariable[This<:CategoricalOutcomeVariable[This] with CategoricalVariable with CategoricalOutcome[This]] extends CategoricalVariable with DiscreteOutcomeVariable[This] with CategoricalOutcome[This] {
+trait GeneratedCategoricalVariable[This<:GeneratedCategoricalVariable[This] with CategoricalVariable with GeneratedCategoricalValue[This]] extends CategoricalVariable with GeneratedDiscreteVariable[This] with GeneratedCategoricalValue[This] {
   this : This =>
 }
 
 
-/** A GenerativeObservation that consists of a vector of Doubles that sum to one, for example the parameters of a Multinomial. */
-trait ProportionOutcome[O<:DiscreteValue] extends RandomAccessSeq[Double] with GenerativeVariable[ProportionOutcome[O]] {
-  type SourceType <: GenerativeDistributionLike[ProportionDistribution[O],ProportionOutcome[O]]
+/** A GeneratedObservation that consists of a vector of Doubles that sum to one, for example the parameters of a Multinomial. */
+trait GeneratedProportionValue[O<:DiscreteValue] extends RandomAccessSeq[Double] with GeneratedVariable[GeneratedProportionValue[O]] {
+  type SourceType <: GenerativeDistributionLike[ProportionDistribution[O],GeneratedProportionValue[O]]
   def localPr(index:Int): Double // TODO Needed in DirichletMomentMatchingEstimator, but general enough?
   def proportion: RandomAccessSeq[Double]
 }
@@ -162,12 +184,13 @@ trait ProportionOutcome[O<:DiscreteValue] extends RandomAccessSeq[Double] with G
 
 
 
-/** A generic Sampler for any AbstractGenerativeVariable, relying on its 'sample' method. */
-class GenerativeVariableSampler extends Sampler[AbstractGenerativeVariable] {
-  def process1(v:AbstractGenerativeVariable): DiffList = { 
+
+/** A generic Sampler for any AbstractGeneratedVariable, relying on its 'sample' method. */
+class GeneratedVariableSampler extends Sampler[AbstractGeneratedVariable] {
+  def process1(v:AbstractGeneratedVariable): DiffList = { 
     val d = newDiffList
     v.sample(d)
-    //println("GenerativeVariableSampler "+d)
+    //println("GeneratedVariableSampler "+d)
     d
   }
 }

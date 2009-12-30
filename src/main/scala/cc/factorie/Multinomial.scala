@@ -44,11 +44,11 @@ trait OutcomeGenerating[T] {
     @author Andrew McCallum */
 // TODO Rename simply "Multinomial"?
 @DomainInSubclasses
-trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends GenerativeDistributionLike[AbstractMultinomial[O],O] with /*GenerativeVariable[ProportionOutcome[O]] with*/ DiscreteDistribution[O] with ProportionOutcome[O] {
+trait AbstractMultinomial[O<:GeneratedDiscreteValue[O]] extends GenerativeDistributionLike[AbstractMultinomial[O],O] with /*GenerativeVariable[ProportionOutcome[O]] with*/ DiscreteDistribution[O] with GeneratedProportionValue[O] {
   type VariableType <: AbstractMultinomial[O];
   //type OutcomeType = O
   //type SourceType = ProportionGenerating[O];
-  type SourceType <: GenerativeDistributionLike[ProportionDistribution[O],ProportionOutcome[O]]; // TODO Just changed from = to <: !!!!
+  type SourceType <: GenerativeDistributionLike[ProportionDistribution[O],GeneratedProportionValue[O]]; // TODO Just changed from = to <: !!!!
   //type SourceType = AbstractDirichlet[O]; // TODO Why can't I make this ProportionGenerating[O] instead of AbstractDirichlet[O]?
   //def asOutcome = this
   //def this(initCounts:Seq[Double]) = { this(initCounts.size); setCounts(initCounts) }
@@ -70,7 +70,7 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends GenerativeDistributionL
     c
   }
   def prVector: Vector = new SeqAsVector { def apply(i:Int) = pr(i); def length = size } // TODO Bad idea?  Is Vector.elements supposed to have type Iterable[(Int,Double)]? 
-  def sampleFrom(s:SourceType)(implicit d:DiffList): Unit = set(s.asGenerativeSource.sampleProportionsWithCounts(counts))
+  def sampleFrom(s:SourceType)(implicit d:DiffList): Unit = set(s.asGenerativeDistribution.sampleProportionsWithCounts(counts))
   @deprecated def sampleInto(o:O): Unit = o match { // TODO Consider including implicit DiffList here? 
     case v:DiscreteVariable => v.setByIndex(sampleIndex)(null)
     case _ => throw new Error("Trying to sample into immutable Variable") // TODO Is this OK to just do nothing here?;
@@ -80,6 +80,7 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends GenerativeDistributionL
   def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)})
   // TODO Put next method in superclass
   def sample(implicit d:DiffList): Unit = { if (generativeSource != null) this.sampleFrom(generativeSource) else throw new Error("Source not set") } 
+  def sampleInt: Int = sampleIndex
   def sampleIndex: Int = {
     val s = Global.random.nextDouble; var sum = 0.0; var i = 0; val size = this.size
     while (i < size) {
@@ -104,7 +105,7 @@ trait AbstractMultinomial[O<:DiscreteOutcome[O]] extends GenerativeDistributionL
 
 /** Compact representation of immutable Multinomial with equal probability for all outcomes. 
     @author Andrew McCallum */
-class UniformMultinomial[O<:DiscreteOutcome[O]](implicit m:Manifest[O]) extends AbstractMultinomial[O] {
+class UniformMultinomial[O<:GeneratedDiscreteValue[O]](implicit m:Manifest[O]) extends AbstractMultinomial[O] {
   val length: Int = Domain[O](m).size
   val pr1 = 1.0/length
   final def pr(index:Int) = pr1
@@ -113,8 +114,9 @@ class UniformMultinomial[O<:DiscreteOutcome[O]](implicit m:Manifest[O]) extends 
 
 /** A mixture of a fixed set of Multinomials, i.e. you cannot add or remove Multinomials from the mixture. 
     @author Andrew McCallum */
-class MultinomialMixture[M<:AbstractMultinomial[O],O<:DiscreteOutcome[O]](ms:Seq[M], ps:Seq[Double]) extends AbstractMultinomial[O] {
+class MultinomialMixture[M<:AbstractMultinomial[O],O<:GeneratedDiscreteValue[O]](ms:Seq[M], ps:Seq[Double]) extends AbstractMultinomial[O] {
   // TODO How can I avoid needing both M and O as type parameters.  I think M should automatically specify O.
+  type SourceType = GenerativeDistributionLike[ProportionDistribution[O],GeneratedProportionValue[O]];
   val components = ms.toArray
   val length: Int = components.first.length
   val proportions = new DenseCountsMultinomial(ps)
@@ -126,15 +128,15 @@ class MultinomialMixture[M<:AbstractMultinomial[O],O<:DiscreteOutcome[O]](ms:Seq
   def set(m:Seq[Double]): Unit = throw new Error("MultinomialMixture cannot be set.")
 }
 
-/** Simple Multinomial that represents p(x) directly. 
+/** Simple Multinomial that stores p(x) directly in a Scalala DenseVector. 
     @author Andrew McCallum */
-// TODO Change this to not require a Manifest in the default constructor
-class DenseMultinomial[O<:DiscreteOutcome[O]](proportions:Seq[Double]) extends AbstractMultinomial[O] {
+class DenseMultinomial[O<:GeneratedDiscreteValue[O]](proportions:Seq[Double]) extends AbstractMultinomial[O] {
+  type SourceType = GenerativeDistributionLike[ProportionDistribution[O],GeneratedProportionValue[O]];
   def this(dim:Int) = this(Array.make(dim, 1.0/dim))
   def this()(implicit m:Manifest[O]) = this(Array.make(Domain[O](m).size, 1.0/Domain[O](m).size))
   val length: Int = proportions.length
   val _pr = new DenseVector(length)
-  set(proportions) //if (proportions != null) 
+  set(proportions) //if (proportions != null)
   /** Will normalize for you, if not already normalized. */
   def set(proportions:Seq[Double]): Unit = {
     assert (proportions.length == length)
@@ -142,20 +144,24 @@ class DenseMultinomial[O<:DiscreteOutcome[O]](proportions:Seq[Double]) extends A
     assert (sum > 0.0)
     for (i <- 0 until length) _pr(i) = proportions(i)/sum
   }
+  def setDirac(index:Int): Unit = {
+    _pr.zero
+    _pr(index) = 1.0
+  }
   @inline final def pr(index:Int) = _pr(index)
 }
 
 /** A Multinomial that stores its parameters as a collection of "outcome counts" and their total. 
+    The counts themselves are stored in a Scalala Vector '_counts', which is abstract in this class.
     @author Andrew McCallum */
 @DomainInSubclasses
-trait CountsMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
+trait CountsMultinomial[O<:GeneratedDiscreteValue[O]] extends AbstractMultinomial[O] {
   type VariableType <: CountsMultinomial[O];
-  override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],ProportionOutcome[O]]
+  override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],GeneratedProportionValue[O]]
   def length: Int = counts.size 
   private var total : Double = 0.0
   def countsTotal = total
-  protected val _counts : Vector
-  override def prVector: Vector = _counts / total
+  protected val _counts: { def apply(i:Int): Double; def update(i:Int, x:Double): Unit; def size:Int }
   override def counts: { def apply(i:Int):Double; def update(i:Int,v:Double):Unit; def size:Int } = _counts // TODO Want Seq[Double], but Vector doesn't mixin Seq?!!
   def increment(index:Int, incr:Double)(implicit d:DiffList) = { // TODO Scala 2.8 add incr:Double=1.0
     _counts(index) += incr; total += incr // TODO Wow, in debugging I see BoxesRunTime.unboxToInt(Object) following DenseVector.apply(Object) line 35
@@ -176,8 +182,10 @@ trait CountsMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
     var i = 0; c.foreach(x => {_counts(i) = x; total += x; i += 1}) 
   }
   // Raw operations on count vector, without Diffs
-  def zero: Unit = { _counts.zero; total = 0.0 }
-  def increment(m:AbstractMultinomial[O], rate:Double): Unit = { total += norm(m,1); for (i <- 0 until size) _counts += m.prVector }  
+  def zero(): Unit = { total = 0.0; for (i <- 0 until size) _counts(i) = 0.0 }
+  def increment(m:AbstractMultinomial[O], rate:Double): Unit = { 
+    total += norm(m,1)
+    for (i <- 0 until size) _counts(i) += m(i) }  
   def pr(index:Int) : Double = if (countsTotal == 0) 1.0 / size else counts(index) / countsTotal
   override def sampleIndex: Int = { // TODO More efficient because it avoids the normalization in this.pr
     val s = Global.random.nextDouble * countsTotal; var sum = 0.0; var i = 0; val size = this.size
@@ -190,9 +198,18 @@ trait CountsMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   }
   override def estimate: Unit = { // TODO Think about how this might make SparseCountsMultinomial unsparse, and how to improve
     if (generatedSamples.isEmpty) throw new Error("No generated samples from which to estimate")
-    if (generativeSource == null) { _counts.zero; total = 0.0 }
-    else { _counts := generativeSource.asGenerativeSource.alphaVector; total = generativeSource.asGenerativeSource.alphaSum }
-    generatedSamples.foreach(s => { _counts(s.index) += 1.0; total += 1.0 })
+    if (generativeSource == null) { zero }
+    else { 
+      total = generativeSource.asGenerativeDistribution.alphaSum
+      for (i <- 0 until size) _counts(i) = generativeSource.asGenerativeDistribution.alphaVector(i)
+    }
+  	generatedSamples.foreach(o => {
+  		o.generativeSource match {
+  			case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
+  				for (i <- 0 until length) { _counts(i) += mixture.multinomial(i); total += 1.0 }
+  			case _ => { _counts(o.index) += 1.0; total += 1.0 }
+  		}
+    })
   }
   class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
   override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i))})
@@ -208,7 +225,19 @@ trait CountsMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
   }
 }
 
-trait SparseMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
+trait GrowableCountsMultinomial[O<:GeneratedDiscreteValue[O]] extends CountsMultinomial[O] {
+  import scala.collection.mutable.ArrayBuffer
+  type VariableType <: GrowableCountsMultinomial[O];
+  override protected val _counts: ArrayBuffer[Double] // Scala 2.8 make this @specialized 
+}
+
+trait VectorCountsMultinomial[O<:GeneratedDiscreteValue[O]] extends CountsMultinomial[O] {
+  type VariableType <: VectorCountsMultinomial[O];
+  override protected val _counts: Vector
+  override def prVector: Vector = _counts / countsTotal
+}
+
+trait SparseMultinomial[O<:GeneratedDiscreteValue[O]] extends AbstractMultinomial[O] {
   def activeIndices: scala.collection.Set[Int];
   //def sampleIndexProduct(m2:SparseMultinomial[O]): Int // TODO
 }
@@ -216,7 +245,7 @@ trait SparseMultinomial[O<:DiscreteOutcome[O]] extends AbstractMultinomial[O] {
 /** A Multinomial that stores its counts in a Scalala SparseVector. 
     @author Andrew McCallum */
 @DomainInSubclasses
-class SparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMultinomial[O] with SparseMultinomial[O] {
+class SparseCountsMultinomial[O<:GeneratedDiscreteValue[O]](dim:Int) extends VectorCountsMultinomial[O] with SparseMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: SparseCountsMultinomial[O]
   protected val _counts = new SparseVector(dim)
@@ -230,7 +259,7 @@ class SparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMult
     This implementation is not yet finished.
     @author Andrew McCallum */
 @deprecated // Not finished
-abstract class SortedSparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends AbstractMultinomial[O] with SparseMultinomial[O] {
+abstract class SortedSparseCountsMultinomial[O<:GeneratedDiscreteValue[O]](dim:Int) extends AbstractMultinomial[O] with SparseMultinomial[O] {
   def length: Int = pos.length
   private var total: Int = 0 // total of all counts in buf
   // Make sure we have enough bits to represent the dimension of the multinomial
@@ -249,7 +278,7 @@ abstract class SortedSparseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) ext
 /** A Multinomial that stores its counts in a Scalala DenseVector.
     @author Andrew McCallum */
 @DomainInSubclasses
-class DenseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMultinomial[O] {
+class DenseCountsMultinomial[O<:GeneratedDiscreteValue[O]](dim:Int) extends VectorCountsMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: DenseCountsMultinomial[O]
   protected val _counts = new DenseVector(dim)
@@ -259,14 +288,14 @@ class DenseCountsMultinomial[O<:DiscreteOutcome[O]](dim:Int) extends CountsMulti
     @author Andrew McCallum */
 // TODO Figure out how to use intead [O<:DiscreteOutcome[O]], but still get O#VariableType#ValueType in "top" below
 @DomainInSubclasses
-class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
+class DirichletMultinomial[O<:GeneratedCategoricalValue[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
   def this()(implicit m:Manifest[O]) = this(null.asInstanceOf[AbstractDirichlet[O]])(m)
   def this(dirichlet:AbstractDirichlet[O], initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(dirichlet)(m); set(initCounts) }
   def this(initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(null.asInstanceOf[AbstractDirichlet[O]])(m); set(initCounts) }
   type VariableType <: DirichletMultinomial[O];
   //override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],ProportionOutcome[O]]
   val outcomeDomain = Domain[O](m) // TODO unfortunately this gets fetched and stored repeatedly for each instance; but otherwise 'm' would be stored for each instance anyway?
-  def actualGenerativeSource = generativeSource.asGenerativeSource
+  def actualGenerativeSource = generativeSource.asGenerativeDistribution
   override def pr(index:Int) : Double = {
     //println("Multinomial.pr "+count(index)+" "+source(index)+" "+total+" "+source.sum)
     if (generativeSource != null)
@@ -302,17 +331,27 @@ class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet
   override def logprIndices(indices:Seq[Int]): Double = Math.log(prIndices(indices))
   override def _registerSample(o:O)(implicit d:DiffList) = { 
     super._registerSample(o) // Consider not calling super: Don't keep the outcomes in a HashMap; we have what we need in 'counts'  How much time would this save?  I tried; very little.
-    increment(o.index, 1.0)
+    postChange(o)
   }
   override def _unregisterSample(o:O)(implicit d:DiffList) = {
     super._unregisterSample(o) 
-    increment(o.index, -1.0) // Note that if 'o' weren't a DiscreteOutcome & it changed its 'index', this will do the wrong thing! 
+    preChange(o) // Note that if 'o' weren't a *Generated*DiscreteVariable & it changed its 'index', this will do the wrong thing! 
   }
   override def preChange(o:O)(implicit d:DiffList) = {
-    increment(o.index, -1.0)
+    o.generativeSource match {
+      // TODO !!!!! This is not right.  The mixture.multinomial domain is not the domain of o !!!
+      case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
+        for (i <- 0 until o.domain.size) increment(i, -mixture.multinomial(i))
+      case _ => increment(o.index, -1.0)
+    }
   }
   override def postChange(o:O)(implicit d:DiffList) = {
-    increment(o.index, 1.0)
+    o.generativeSource match {
+      // TODO !!!!! This is not right.  The mixture.multinomial domain is not the domain of o !!!
+      case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
+        for (i <- 0 until o.domain.size) increment(i, mixture.multinomial(i))
+      case _ => increment(o.index, 1.0)
+    }
   }
   // TODO Consider finding a way to put this back, in the case when O<:CategoricalValue
   //def sampleValue: O#VariableType#ValueType = outcomeDomain.get(sampleIndex)
@@ -326,26 +365,37 @@ class DirichletMultinomial[O<:CategoricalOutcome[O]](dirichlet:AbstractDirichlet
 /** DiscreteValue integrated out over a Multinomial prior distribution.
     @author Andrew McCallum */
 // TODO turn this into Variational representation supporting mean-field
-trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends DiscreteOutcomeVariable[This] {
+trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends GeneratedDiscreteVariable[This] {
   this: This =>
-  final val multinomial = new DenseMultinomial(domainSize)
+  final val multinomial = new DenseMultinomial[This](domainSize)
   def pr(i:Int): Double = multinomial.pr(i)
   override def sample(implicit d:DiffList): Unit = {
     super.sample(d)
-    multinomial.set(generativeSource.asGenerativeSource.proportion) // TODO also create a Diff for this?
+    // TODO No!  The next commented line is wrong.  We want the distribution that includes the children.
+    // This multinomial.set is already done in MarginalizedMixtureChoice, but it needs to be done for other cases.
+    // Perhaps all GeneratedValue should have not only a 'sample' method but also a 'sampleDistribution' method
+    //  for these purposes.
+    // TODO Fix this!!!!
+    //multinomial.set(generativeSource.asGenerativeDistribution.proportion) // TODO also create a Diff for this?
+    // TODO This needs to be changed to account for children as well as the parent.
   }
   override def maximize(implicit d:DiffList): Unit = {
     super.maximize(d)
-    multinomial.set(generativeSource.asGenerativeSource.proportion) // TODO also create a Diff for this?
+    multinomial.set(generativeSource.asGenerativeDistribution.proportion) // TODO also create a Diff for this?
   }
+}
 
+/** CategoricalValue integrated out over a Multinomial prior distribution.
+    @author Andrew McCallum */
+trait MultinomialCategorical[This<:MultinomialCategorical[This]] extends GeneratedCategoricalVariable[This] with MultinomialDiscrete[This] {
+  this: This =>
 }
 
 
 // The binary special case, for convenience
 
 /** The outcome of a coin flip, with boolean value.  */
-class Flip extends CoordinatedBool with DiscreteOutcomeVariable[Flip]
+class Flip extends CoordinatedBool with GeneratedDiscreteVariable[Flip]
 // Note that no Variable should ever be a case class.
 /** A coin, with Multinomial distribution over outcomes, which are Flips. */
 class Coin(p:Double, totalCount:Double) extends DenseCountsMultinomial[Flip](Array((1-p)*totalCount,p*totalCount)) {

@@ -22,9 +22,6 @@ import cc.factorie._
 */
 object er {
   
-  type VariableWithGetter[D] = Variable { type GetterType <: Getter[D] }
-  type HasGetterType[D] = { type GetterType <: Getter[D] }
-
   // Define attributes and entities
 
   /** A generic Attribute */
@@ -814,7 +811,11 @@ object er {
    */
 
 
-  
+  // TODO Consider using something like the following?
+  //type VariableWithGetter[D] = Variable { type GetterType <: Getter[D] }
+  //type HasGetterType[D] = { type GetterType <: Getter[D] }
+
+
 
 }
 

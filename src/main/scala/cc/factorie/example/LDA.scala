@@ -19,7 +19,7 @@ object LDADemo {
   class Z extends MixtureChoice[Topic,Word,Z]; Domain.alias[Z,Topic]
   object Alpha extends SymmetricDirichlet[Z](1.0)
   class Theta extends DirichletMultinomial[Z]
-  class Word(s:String) extends EnumObservation(s) with CategoricalOutcome[Word]
+  class Word(s:String) extends EnumObservation(s) with GeneratedCategoricalValue[Word]
   class Document(val file:String) extends ArrayBuffer[Word] { var theta:Theta = _ }
 
   def main(args: Array[String]) : Unit = {

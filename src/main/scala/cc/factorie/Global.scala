@@ -20,7 +20,7 @@ object Global {
 
   import cc.factorie.util.Implicits._
   val defaultSampler = new SamplerSuite
-  defaultSampler += new GenerativeVariableSampler
+  defaultSampler += new GeneratedVariableSampler
   defaultSampler += new GibbsSampler(defaultModel)
 
 }
