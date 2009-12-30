@@ -126,15 +126,20 @@ object ChainNER2b {
       temperature = 0.01
       def block(label:Label) = label.prev
     }
-    val predictor = new GibbsSampler1[Label](model) { temperature = 0.01 }
+    val predictor = new GibbsSampler1[Label](model) { temperature = 0.001 }
     val learner = new GibbsSampler1[Label](model) with SampleRank 
     //with PerceptronUpdates with ParameterAveraging
-    with ConfidenceWeightedUpdates 
+    with ConfidenceWeightedUpdates
     {
-      temperature = 0.01
+      temperature = 0.001
       override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && Global.random.nextDouble > 0.5) null else label
       override def postIterationHook(): Boolean = {
+	if(this.isInstanceOf[ParameterAveraging])
+	  this.asInstanceOf[ParameterAveraging].setWeightsToAverage
         predictor.process(testLabels, 1)
+	if(this.isInstanceOf[ParameterAveraging])
+	  this.asInstanceOf[ParameterAveraging].unsetWeightsToAverage
+
         println("Train errors")
         printErrors(trainLabels, 200)
         println("Test errors")
@@ -148,8 +153,10 @@ object ChainNER2b {
     //with FactorQueue[Variable with IterableSettings] { def process0(x:AnyRef):DiffList = x match { case l:Label => process(l); case _ => null} }
     // Train for 5 iterations through all Labels
     val startTime = System.currentTimeMillis
-    learner.process(trainLabels, 5)
+    learner.process(trainLabels, 8)
     println("Finished training in "+(System.currentTimeMillis-startTime)/60000.0+" minutes.")
+    if(learner.isInstanceOf[ParameterAveraging])
+      learner.asInstanceOf[ParameterAveraging].setWeightsToAverage
     
     // Predict, testing BP
     //val targets = new ArrayBuffer[UncoordinatedCategoricalVariable]

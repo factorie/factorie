@@ -15,7 +15,6 @@ import cc.factorie.util.Implicits._
 /** A simple coreference engine on toy data.  
     Demonstrates the use of RefVariable and setVariable for representing mentions and entities. */
 object CorefMentionsDemo {
-
   /** A random variable for a mention */
   class Mention(val name:String, val trueEntity:Int, initialEntity:Entity) extends RefVariable(initialEntity) {
     // When this mention is assigned to an entity, update the mention
