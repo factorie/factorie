@@ -115,11 +115,7 @@ abstract class CoordinatedEnumVariable[T](initialValue:T) extends TypedCategoric
     This trait abstracts over both EnumVariable and Label, and is used in belief probagation 
     and other places that cannot tolerate coordination. 
     @author Andrew McCallum */
-trait UncoordinatedCategoricalVariable extends CategoricalVariable with NoVariableCoordination {
-  // TODO But this does not absolutely guarantee that some other trait hasn't already overriden set and setByIndex to do coordination!
-  // TODO I want some way to tell the compiler that this method should be overriding the CategoricalVariable.set method.
-  final override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
-}
+trait UncoordinatedCategoricalVariable extends CategoricalVariable with UncoordinatedDiscreteVariable
 
 /** A variable whose value is a single indexed value that does no variable coordination in its 'set' method,  
     ensuring no coordination is necessary for optimization of belief propagation. 

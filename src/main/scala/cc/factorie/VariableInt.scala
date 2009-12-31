@@ -132,6 +132,12 @@ trait DiscreteVariable extends OrdinalVariable with DiscreteValue with IterableS
   }
 }
 
+trait UncoordinatedDiscreteVariable extends DiscreteVariable with NoVariableCoordination {
+  // TODO But this does not absolutely guarantee that some other trait hasn't already overriden set and setByIndex to do coordination!
+  // TODO I want some way to tell the compiler that this method should be overriding the CategoricalVariable.set method.
+  final override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
+}
+
 
 // TODO Perhaps I should create an IntervalValue, see http://en.wikipedia.org/wiki/Nominal_scale
 // ??? class DiscreteIntervalValue(low:Int, high:Int, bins:Int) extends DiscreteValue {}
