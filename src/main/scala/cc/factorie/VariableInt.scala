@@ -19,14 +19,26 @@ import cc.factorie.util.Implicits._
 // OrdinalVariable (has integer value 0...)
 // DiscreteVariable (has a finite number of integer values from 0 ... N) { def domainSize: Int }
 // CategoricalVariable (its integer values are mapped to categorical values) (was called "IndexedVariable")
-// 
+
+// Considering additional Variable naming conventions:
+//  akm 31/12/09
+// DiscreteVariable is a trait
+// Discrete is a class with a constructor argument giving initial value
+// DiscreteConstant is a class (inheriting from DiscreteObservation) with a constructor argument (although perhaps no need for both, and Observation -> Constant) 
+// UncoordinatedDiscrete is also likewise a class, (although perhaps CoordinatedDiscrete instead, with uncoordinated default)
+// then we also have class names:
+// Integer
+// Ordinal
+// Categorical (which will replace the EnumVariable)
+// Real and RealConstant
+// PositiveReal
   
 /** A Variable with one or more Int values.  It encompasses single integer values, 
     as well as vector collections of many (weighted) int values.  Either way you can get a scalala.tensor.Vector from it. 
     @author Andrew McCallum */
 // A "Value" is not really a "Variable", but it turns out to be more convenient shorthand inherit directly instead of insisting with "this:Variable=>"
-trait IntValues extends Variable {
-  type VariableType <: IntValues
+trait IntegerValues extends Variable {
+  type VariableType <: IntegerValues
   def maxIntValue = Math.MAX_INT
   def minIntValue = Math.MIN_INT
   // TODO Consider a def maxValue: Double = Math.POS_INF_DOUBLE ??
@@ -35,57 +47,56 @@ trait IntValues extends Variable {
 /** A Variable with one Int value.  
     Unlike CategoricalVariable, however, the integers are not necessarily mapped to objects stored in an CategoricalDomain. 
     @author Andrew McCallum */
-trait IntValue extends IntValues {
+trait IntegerValue extends IntegerValues {
   this: Variable =>
-  type VariableType <: IntValue
+  type VariableType <: IntegerValue
   //def index: Int
   def intValue: Int
   override def toString = printName + "(" + intValue + ")"
-  def ===(other: IntValue) = intValue == other.intValue
-  def !==(other: IntValue) = intValue != other.intValue
+  def ===(other: IntegerValue) = intValue == other.intValue
+  def !==(other: IntegerValue) = intValue != other.intValue
 }
 
 /** A Variable with a mutable Int value.
     @author Andrew McCallum */ 
-// TODO Rename CountVariable or OrdinalVariable, or perhaps leave as IntVariable so that it can be a subclass of CategoricalVariable
-trait IntVariable extends Variable with IntValue {
-  type VariableType <: IntVariable
+trait IntegerVariable extends Variable with IntegerValue {
+  type VariableType <: IntegerVariable
   private var _index = -1 // TODO make this 'private', for efficiency
   @inline final def intValue = _index
   def setByInt(newValue: Int)(implicit d: DiffList): Unit = {
     if (newValue != _index) {
-      if (d != null) d += new IntVariableDiff(_index, newValue)
+      if (d != null) d += new IntegerVariableDiff(_index, newValue)
       _index = newValue
     }
   }
   def :=(newIndex:Int) = setByInt(newIndex)(null)
-  case class IntVariableDiff(oldIndex: Int, newIndex: Int) extends Diff {
-    @inline final def variable: IntVariable = IntVariable.this
+  case class IntegerVariableDiff(oldIndex: Int, newIndex: Int) extends Diff {
+    @inline final def variable: IntegerVariable = IntegerVariable.this
     @inline final def redo = _index = newIndex
     @inline final def undo = _index = oldIndex
     override def toString = variable match { 
-      case cv:CategoricalVariable => "IntVariableDiff("+cv.domain.get(oldIndex)+","+cv.domain.get(newIndex)+")"
-      case _ => "IntVariableDiff("+oldIndex+","+newIndex+")"
+      case cv:CategoricalVariable => "IntegerVariableDiff("+cv.domain.get(oldIndex)+","+cv.domain.get(newIndex)+")"
+      case _ => "IntegerVariableDiff("+oldIndex+","+newIndex+")"
     }
   }
 }
 
 /** A Variable with a immutable Int value.
     @author Andrew McCallum */
-class IntObservation(val intValue:Int) extends IntValue 
+class IntegerObservation(val intValue:Int) extends IntegerValue 
 
-/** An IntValue with minimum of 0, but no maximum. 
+/** An IntegerValue with minimum of 0, but no maximum. 
     @author Andrew McCallum */
-trait OrdinalValues extends IntValues {
+trait OrdinalValues extends IntegerValues {
   this: Variable =>
   type VariableType <: OrdinalValues
   override def minIntValue = 0
 }
-trait OrdinalValue extends OrdinalValues with IntValue {
+trait OrdinalValue extends OrdinalValues with IntegerValue {
   this: Variable =>
   type VariableType <: OrdinalValue
 }
-trait OrdinalVariable extends IntVariable with OrdinalValue {
+trait OrdinalVariable extends IntegerVariable with OrdinalValue {
   type VariableType <: OrdinalVariable
 }
 

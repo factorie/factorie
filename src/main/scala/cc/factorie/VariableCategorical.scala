@@ -87,6 +87,7 @@ abstract trait TypedCategoricalVariable[T] extends CategoricalVariable with Type
 abstract trait TypedCategoricalObservation[T] extends Variable with TypedCategoricalValue[T] with ConstantValue {
   type VariableType <: TypedCategoricalObservation[T]
 }
+// TODO Consider making this a class with a constructor argument.
 
 /** A Variable to hold one of an enumerated set of values of type T, and which does not change.  
     @author Andrew McCallum */

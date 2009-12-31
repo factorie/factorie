@@ -48,7 +48,7 @@ object DocumentClassification {
   class DocumentGetter[L<:Label[ThisDocument,L],ThisDocument<:Document[L,ThisDocument]] extends InstanceGetter[L,ThisDocument] {
     override def newLabelGetter = new LabelGetter[ThisDocument,L]
     //def label = initOneToOne[L](newLabelGetter, instance => instance.label, label => label.instance)
-    def size = getOneWay(document => new IntObservation(document.size))
+    def size = getOneWay(document => new IntegerObservation(document.size))
   }
   
   class LabelGetter[D<:Document[ThisLabel,D],ThisLabel<:Label[D,ThisLabel]] extends FeatureVectorClassification.LabelGetter[D,ThisLabel] {
