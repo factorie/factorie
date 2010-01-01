@@ -21,12 +21,12 @@ import cc.factorie.util.Implicits._
 // Proposals
 
 /** For storing one of the proposals considered.  Note that objectiveScore may not be truly set, in which case it will have value Math.NaN_DOUBLE. */
-// TODO Should replace Proposal in Proposal.scala
-// TODO rename acceptanceScore to samplingWeight? (more general)
 case class Proposal(diff:DiffList, modelScore:Double, objectiveScore:Double,  acceptanceScore:Double)
 
 
-/**An object (typically a variable or a world) that can propose changes to itself, and possibly also other variables through variable value coordination */
+// TODO The following trait is currently unused.  Remove it?
+/** An object (typically a variable or a world) that can propose changes to itself, 
+    and possibly also other variables through variable value coordination. */
 trait Proposer {
   /** Make a random proposal.  Return Metropolis-Hastings' log(q(old|new)/q(new|old)) */
   def propose(model:Model, d:DiffList): Double

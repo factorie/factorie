@@ -10,11 +10,13 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,ListBuffer}
 import cc.factorie.application.TokenSeqs
 import scala.io.Source
 import java.io.File
+import cc.factorie.util.DefaultCmdOptions
 
 /** Span-based named entity recognition.
     Includes the ability to save model to disk, and run saved model on NYTimes-style XML files.
     @author Andrew McCallum */
 object SpanNER1 {
+  var verbose = false
 
   // The variable classes
   class Token(word:String, trueLabelString:String) extends TokenSeqs.Token[Sentence,Token](word, trueLabelString) {
@@ -47,7 +49,9 @@ object SpanNER1 {
     }
     override def toString = "Span("+length+","+label.value+":"+this.phrase+")"
   }
-  class Sentence extends TokenSeqs.TokenSeq[Token,Sentence] with VariableSeqWithSpans[Token,Span]
+  class Sentence extends TokenSeqs.TokenSeq[Token,Sentence] with VariableSeqWithSpans[Token,Span] {
+    var filename:String = null
+  }
   @DomainSize(5) class SpanLength(x:Int) extends DiscreteVariable {
     if (x < domain.size) setByInt(x)(null) else setByInt(domain.size-1)(null)
   }
@@ -202,14 +206,14 @@ object SpanNER1 {
   	override def preProcessHook(t:Token): Token = { 
   		super.preProcessHook(t)
   		if (t.isCapitalized) {
-  			t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
+  			if (verbose) t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
   			t 
   		} else null.asInstanceOf[Token] 
   	}
   	override def proposalsHook(proposals:Seq[Proposal]): Unit = {
-  		println("Test proposal")
+  		if (verbose) println("Test proposal")
   		//proposals.foreach(println(_)); println
-  		proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else ""))); println
+  		if (verbose) { proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else ""))); println }
   		super.proposalsHook(proposals)
   	}
   	override def proposalHook(proposal:Proposal): Unit = {
@@ -218,7 +222,8 @@ object SpanNER1 {
   		if (proposal.diff.size > 0) {
   			val spanDiffs = proposal.diff.filter(d => d.variable match { case s:Span => s.present; case _ => false })
   			spanDiffs.foreach(_.variable match {
-  			case span:Span => if (span.present) this.process(span.last)
+  				case span:Span => if (span.present) { if (verbose) println("RECURSIVE PROPOSAL"); this.process(span.last) }
+  				case _ => {}
   			})
   		}
   	}
@@ -230,25 +235,22 @@ object SpanNER1 {
   // The "main", examine the command line and do some work
   def main(args: Array[String]): Unit = {
     // Parse command-line
-    if (!(args.length == 2 || args.length == 3)) 
-      throw new Error("Usage: ChainNER3 [--model=dirname] trainfile testfile\nor   ChainNER3 --model=dirname --run=xmldir")
-    var trainFile: String = null // train
-    var devFile: String = null // test while training
-    var modelDir: String = null // write or read model from here
-    var runXmlDir: String = null // run saved model
-    for (arg <- args) {
-      if (arg.matches("--model=.*")) { modelDir = arg.split("=").apply(1); println("got "+modelDir) }
-      else if (arg.matches("--run=.*")) runXmlDir = arg.split("=").apply(1)
-      else if (trainFile == null) trainFile = arg
-      else devFile = arg
+    object opts extends DefaultCmdOptions {
+      val trainFile = new CmdOption("train", "FILE", "eng.train", "CoNLL formatted training file.")
+      val testFile  = new CmdOption("test",  "FILE", "eng.testa", "CoNLL formatted dev file.")
+      val modelDir =  new CmdOption("model", "DIR",  "spanner1.factorie", "Directory for saving or loading model.")
+      val runXmlDir = new CmdOption("run",   "DIR",  "xml", "Directory for reading data on which to run saved model.")
+      val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER1.this.verbose = true }
     }
+    opts.parse(args)
     
-    if (runXmlDir != null) {
-    	model.load(modelDir)
-      run(runXmlDir)
+    if (opts.runXmlDir.wasInvoked) {
+      //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
+    	model.load(opts.modelDir.value)
+      run(opts.runXmlDir.value)
     } else {
-      train(trainFile, devFile)
-      if (modelDir != null) model.save(modelDir)
+      train(opts.trainFile.value, opts.testFile.value)
+      if (opts.modelDir.wasInvoked) model.save(opts.modelDir.value)
     }   
   }
   
@@ -270,7 +272,8 @@ object SpanNER1 {
         	(word,lab)=>new Token(word,lab),
         	()=>new Sentence,
         	"O", 
-        	(str)=>featureExtractor(List(str)), "'s|n't|[-0-9,\\.]+|$|[-A-Za-z0-9\\+$]+|\\p{Punct}".r)
+        	(str)=>featureExtractor(List(str)), "'s|n't|a\\.m\\.|p\\.m\\.|Inc\\.|Corp\\.|St\\.|Mr\\.|Mrs\\.|Dr\\.|([A-Z]\\.)+|vs\\.|[-0-9,\\.]+|$|[-A-Za-z0-9\\+$]+|\\p{Punct}".r)
+        documents.last.filename = file.toString
         println("  "+documents.last.size)
         documents.last.foreach(t=> print(t.word+" ")); println
       }
@@ -280,8 +283,8 @@ object SpanNER1 {
     println("Have "+testTokens.length+" tokens")
     println("Domain[Token] size="+Domain[Token].size)
     println("Domain[Label] "+Domain[Label].toList)
-    predictor.process(testTokens, 3)
-    documents.foreach(printSentence _)
+    predictor.process(testTokens, 5)
+    documents.foreach(s => { println("FILE "+s.filename); printSentence(s) })
   }
   
   // Train a new model and evaluate on the dev set
@@ -306,7 +309,7 @@ object SpanNER1 {
     println("Domain[Token] size="+Domain[Token].size)
     println("Domain[Label] "+Domain[Label].toList)
     
-    trainTokens.take(500).foreach(printFeatures _)
+    if (verbose) trainTokens.take(500).foreach(printFeatures _)
     
     // The learner
     val learner = new TokenSpanSampler(model, objective) with SampleRank with ConfidenceWeightedUpdates {
@@ -315,13 +318,13 @@ object SpanNER1 {
       override def preProcessHook(t:Token): Token = { 
         super.preProcessHook(t)
         if (t.isCapitalized) { // Skip tokens that are not capitalized
-          t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
+          if (verbose) t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
           // Skip this token if it has the same spans as the previous token, avoiding duplicate sampling
           /*if (t.hasPrev && t.prev.spans.sameElements(t.spans)) null.asInstanceOf[Token] else*/ t 
         } else null.asInstanceOf[Token] 
       }
       override def proposalsHook(proposals:Seq[Proposal]): Unit = {
-        proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else "")+(if (p.objectiveScore > 0.0) "OO" else ""))); println
+        if (verbose) { proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else "")+(if (p.objectiveScore > 0.0) "OO" else ""))); println }
         super.proposalsHook(proposals)
       }
     }
@@ -330,12 +333,12 @@ object SpanNER1 {
     for (i <- 1 to 11) {
       println("Iteration "+i) 
       // Every third iteration remove all the predictions
-      if (i % 3 == 0) { println("Removing all spans"); (trainSentences ++ testSentences).foreach(_.clearSpans) }
+      if (i % 3 == 0) { if (verbose) println("Removing all spans"); (trainSentences ++ testSentences).foreach(_.clearSpans) }
       learner.process(trainTokens, 1)
       //learner.learningRate *= 0.9
       predictor.process(testTokens, 1)
-      println("*** TRAIN OUTPUT *** Iteration "+i); trainSentences.foreach(printSentence _); println; println
-      println("*** TEST OUTPUT *** Iteration "+i); testSentences.foreach(printSentence _); println; println
+      println("*** TRAIN OUTPUT *** Iteration "+i); if (verbose) { trainSentences.foreach(printSentence _); println; println }
+      println("*** TEST OUTPUT *** Iteration "+i); if (verbose) { testSentences.foreach(printSentence _); println; println }
       println ("Iteration %2d TRAIN EVAL ".format(i)+evalString(trainSentences))
       println ("Iteration %2d TEST  EVAL ".format(i)+evalString(testSentences))
     }
@@ -441,13 +444,14 @@ object SpanNER1 {
 
   // Collection of features created using raw features from data file 
   def featureExtractor(initialFeatures:Seq[String]) : Seq[String] = {
+    //println("featureExtractor "+initialFeatures)
     import scala.collection.mutable.ArrayBuffer
     val f = new ArrayBuffer[String]
     val word = initialFeatures(0)
     f += "SHAPE="+TokenSeqs.wordShape(word, 2)
     f += "W="+simplify(word)
-    if (initialFeatures.length > 1) f += "POS="+initialFeatures(1)
-    if (initialFeatures.length > 2) f += "PHRASE="+initialFeatures(2)
+    //if (initialFeatures.length > 1) f += "POS="+initialFeatures(1)
+    //if (initialFeatures.length > 2) f += "PHRASE="+initialFeatures(2)
     if (Character.isUpperCase(word(0))) f += "CAPITALIZED"
     f
   }

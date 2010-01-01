@@ -9,12 +9,12 @@ package cc.factorie
 import cc.factorie.util.Implicits._
 
 /** The Poisson distribution generating integer values with parameter lambda. */
-class Poisson(val lambda:Real) extends GenerativeDistribution[IntValue] {
+class Poisson(val lambda:Real) extends GenerativeDistribution[IntegerValue] {
   def this(lambda:Double) = this(new Real(lambda))
   def mean: Double = lambda
   def variable: Double = lambda
   def pr(k:Int) = Math.pow(lambda, k) * Math.exp(-lambda) / Maths.factorial(k)
-  def pr(o:IntValue): Double = pr(o.intValue)
+  def pr(o:IntegerValue): Double = pr(o.intValue)
   def sample: Int = Maths.nextPoisson(lambda)(Global.random).toInt
   /** This implements the maximum likelihood estimator */
   def estimate: Unit = {
@@ -24,7 +24,7 @@ class Poisson(val lambda:Real) extends GenerativeDistribution[IntValue] {
   }
 }
 
-abstract class GammaPoisson(gamma:Gamma) extends GenerativeDistribution[IntValue] {
+abstract class GammaPoisson(gamma:Gamma) extends GenerativeDistribution[IntegerValue] {
   throw new Error("Not yet implemented")
 }
 

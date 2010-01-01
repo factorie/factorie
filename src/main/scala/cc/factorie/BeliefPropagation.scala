@@ -14,9 +14,9 @@ import java.util.Arrays
 // Not yet finished, and certainly not yet optimized for speed at all.
 // This is here mostly to get some idea of what the interfaces might look like.
 
-/** Holds some global definitions for BP. */
+/** Holds some global definitions for BP.  Our BP implementation currently only handles  */
 object BeliefPropagation {
-  type BPVariable = UncoordinatedCategoricalVariable
+  type BPVariable = UncoordinatedDiscreteVariable
 }
 
 /** A factor in a belief propagation lattice used for inference.  
@@ -24,10 +24,10 @@ object BeliefPropagation {
     but it points to a Template#Factor with its 'factor' member.
   
     @author Andrew McCallum
+    @author Tim Viera
  */
 abstract class BPFactor(val factor:VectorTemplate#Factor) {
-  import BeliefPropagation._
-  type V = BPVariable
+  type V = BeliefPropagation.BPVariable
   /** Given a variable, return the BPFactors touching it.  This method must be provided by subclassers. */
   def factorsOf(v:Variable): Seq[BPFactor];
   /** Given a List of SettingIterators for some Variables, find the next value */
@@ -39,7 +39,7 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
   }
   /** Message from this factor to Variable v. */
   case class MessageTo(v:V) {
-    lazy private val msg = new Array[Double](v.domain.size) // Holds unnormalized log-probabilities
+    lazy protected val msg = new Array[Double](v.domain.size) // Holds unnormalized log-probabilities
     def message: Array[Double] = msg 
     def messageCurrentValue: Double = msg(v.intValue)
     // IterableSettings instances for each of the variables neighboring this BPFactor, except the variable 'v'
@@ -72,6 +72,31 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
       update
     }
   }
+  case class MaxProductMessageTo(override val v:V) extends MessageTo(v) {
+    lazy protected val maxIndex = new Array[Int](v.domain.size) // Holds how many nextValues calls it takes to get to max value
+  	override def update: MaxProductMessageTo = {
+      val origIndex = v.index
+      for (i <- 0 until v.domain.size) { // Consider reversing the nested ordering of this loop and the inner one
+        v.setByIndex(i)(null) // note that this is changing the Variable value
+        if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
+          msg(i) = factor.statistic.score
+          maxIndex(i) = -1
+        } else { // This factor has variable neighbors in addition to v itself 
+          neighborSettings.foreach(setting => {setting.reset; setting.next})
+          msg(i) = Math.NEG_INF_DOUBLE
+          maxIndex(i) = -1
+          var settingCount = 0
+          do {
+            val score = factor.statistic.score + neighborSettings.sum(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
+            if (score > msg(i)) { msg(i) = score; maxIndex(i) = settingCount }
+            settingCount += 1
+          } while (nextValues(neighborSettings))
+        }
+      }
+      v.setByIndex(origIndex)(null) // put it back where it was, just in case someone cares
+      this // Return this so we can say messageTo(v).update.message
+    }
+  }
   /** Message from Variable v to this factor. */
   case class MessageFrom(v:V) {
     lazy private val msg = new Array[Double](v.domain.size) // Holds unnormalized log-probabilities
@@ -98,10 +123,10 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
       this
     }
   }
-  lazy private val _msgTo: Array[MessageTo] = factor.variables.filter(_.isInstanceOf[UncoordinatedCategoricalVariable]).map(v => MessageTo(v.asInstanceOf[UncoordinatedCategoricalVariable])).toSeq.toArray
-  lazy private val _msgFrom: Array[MessageFrom] = factor.variables.filter(_.isInstanceOf[UncoordinatedCategoricalVariable]).map(v => MessageFrom(v.asInstanceOf[UncoordinatedCategoricalVariable])).toSeq.toArray
-  def messageTo(v: UncoordinatedCategoricalVariable) = _msgTo(factor.variables.toSeq.indexOf(v))
-  def messageFrom(v: UncoordinatedCategoricalVariable) = _msgFrom(factor.variables.toSeq.indexOf(v))
+  lazy private val _msgTo: Array[MessageTo] = factor.variables.filter(_.isInstanceOf[V]).map(v => MessageTo(v.asInstanceOf[V])).toSeq.toArray
+  lazy private val _msgFrom: Array[MessageFrom] = factor.variables.filter(_.isInstanceOf[V]).map(v => MessageFrom(v.asInstanceOf[V])).toSeq.toArray
+  def messageTo(v:V) = _msgTo(factor.variables.toSeq.indexOf(v))
+  def messageFrom(v:V) = _msgFrom(factor.variables.toSeq.indexOf(v))
   def messageTo(vi: Int) = _msgTo(vi)
   def messageFrom(vi: Int) = _msgFrom(vi)
   def update: Unit = { _msgTo.foreach(_.update); _msgFrom.foreach(_.update);  }
@@ -161,12 +186,11 @@ class DiscreteMarginal1[V<:DiscreteValue](val variable:V) extends RandomAccessSe
   }
 }
 
-class BPLattice(model:Model, val variables:Collection[UncoordinatedCategoricalVariable]) extends Lattice {
-  import BeliefPropagation._
-  type V = BPVariable
+class BPLattice(model:Model, val variables:Collection[BeliefPropagation.BPVariable]) extends Lattice {
+  type V = BeliefPropagation.BPVariable
   // Find all the factors touching the 'variables'
   val factors = model.factorsOf[VectorTemplate](variables)
-  def bpFactorsOf(v:UncoordinatedCategoricalVariable) = v2m(v)
+  def bpFactorsOf(v:V) = v2m(v)
   // Data structure for holding mapping from Variable to the collection of BPFactors that touch it
   private val v2m = new HashMap[Variable,ArrayBuffer[BPFactor]] { override def default(v:Variable) = {this(v) = new ArrayBuffer[BPFactor]; this(v)} }
   // Create a BPFactor for each factor
@@ -186,11 +210,14 @@ class BPLattice(model:Model, val variables:Collection[UncoordinatedCategoricalVa
   }
   /** Provide outside access to a BPFactor given is associated Factor */
   def marginal(f:Factor): Array[Double] = marginals(f).marginal 
-  def marginal(v:UncoordinatedCategoricalVariable): DiscreteMarginal1[UncoordinatedCategoricalVariable] = 
+  def marginal(v:V): DiscreteMarginal1[V] = 
     new DiscreteMarginal1(v, bpFactorsOf(v).map(_.messageTo(v).message))
   //def sample(v:UncoordinatedCategoricalVariable): DiffList // TODO implement this
   //def sample: Unit // TODO implement this
+  def setVariablesToMarginalMax: Unit = variables.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
+  def setVariablesToMarginalMax(vs:Iterable[V]): Unit = vs.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
+  // TODO Change these to implment max-product-wise global max.  Currently just a max-marginal placeholder. 
   def setVariablesToMax: Unit = variables.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
-  def setVariablesToMax(vs:Iterable[UncoordinatedCategoricalVariable]): Unit = vs.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
+  def setVariablesToMax(vs:Iterable[V]): Unit = vs.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
 }
 

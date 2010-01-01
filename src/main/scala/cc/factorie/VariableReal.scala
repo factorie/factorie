@@ -7,8 +7,9 @@
 
 package cc.factorie
 
-trait RealValue {
-  this: Variable =>
+/** A Variable with a real (double) value. */
+trait RealValue extends Variable {
+  type VariableType <: RealValue
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
   def ===(other: RealValue) = doubleValue == other.doubleValue
@@ -16,13 +17,15 @@ trait RealValue {
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
-class RealObservation(val doubleValue:Double) extends Variable with RealValue
+/** A variable class for immutable real (double) values. */
+class RealObservation(val doubleValue:Double) extends RealValue with ConstantValue {
+  type VariableType <: RealObservation
+}
 
-/**A variable class for real values. */
-class RealVariable(initialValue: Double) extends Variable with RealValue {
-  def this() = this(0.0)
-  type VariableType = RealVariable
-  private var _value: Double = initialValue
+/** A variable trait for mutable real (double) values. */
+trait RealVariable extends RealValue {
+  type VariableType <: RealVariable
+  private var _value: Double = _
   @inline final def doubleValue = _value
   def +=(x:Double) = set(_value + x)(null)
   def -=(x:Double) = set(_value - x)(null)
@@ -43,5 +46,9 @@ class RealVariable(initialValue: Double) extends Variable with RealValue {
   }
 }
 
-// Temporary alias to old name  // TODO Remove this?
-class Real(v:Double) extends RealVariable(v)
+// TODO, I should create corresponding classes for Integer, Discrete, Ordinal, Categorical (to replace EnumVariable) and Proportion
+/** A RealVariable with a constructor argument. */
+class Real(initialValue:Double) extends RealVariable {
+  type VariableType <: Real
+  set(initialValue)(null)
+}

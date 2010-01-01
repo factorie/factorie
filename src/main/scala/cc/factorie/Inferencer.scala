@@ -58,7 +58,7 @@ trait Optimizer {
 // Note that putting a [V], as in DenseCountsMultinomial[V], doesn't work here because CategoricalValues not <: MultinomialOutcome[V].  
 // But as long as we don't use any methods that require [V], I think we are OK.
 class DiscreteMarginal[V<:CategoricalValues](val variable:V) extends DenseCountsMultinomial(variable.domain.size) with Marginal {
-  keepGeneratedSamples = false
+  override def keepGeneratedSamples = false
   def incrementCurrentValue : Unit = variable match {
     case v:CategoricalValue => increment(v.index, 1.0)(null)
     case v:BinaryVectorVariable[_] => v.incrementInto(this)
@@ -170,7 +170,7 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
     @author Andrew McCallum
     @since 0.8
  */
-class BPInferencer[V<:UncoordinatedCategoricalVariable](model:Model) extends VariableInferencer[V] {
+class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
   override type LatticeType = BPLattice
   def infer(variables:Collection[V], varying:Collection[V]): LatticeType = infer(variables, varying, 4) // TODO Make a more sensible default  
   def infer(variables:Collection[V], varying:Collection[V], numIterations:Int): LatticeType = {

@@ -10,7 +10,7 @@ package cc.factorie.example
 object DirichletDemo {
 
   def main(args:Array[String]) : Unit = {
-    class Word(s:String) extends CoordinatedEnumVariable(s) with DiscreteOutcome[Word];
+    class Word(s:String) extends CoordinatedEnumVariable(s) with GeneratedDiscreteValue[Word];
     Domain += new StringDomain[Word] {
       List("one", "two", "three", "four", "five", "six").foreach(index(_))
     }

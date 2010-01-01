@@ -28,7 +28,7 @@ trait RefValue[T<:AnyRef] extends TypedValue {
 abstract class RefObservation[T<:AnyRef](theValue:T) extends Variable with RefValue[T] {
   type VariableType <: RefObservation[T];
   final val value: T = theValue
-  override def toString = printName + "(" + (if (value != this) value.toString else "this") + ")"
+  override def toString = printName + "(" + (if (value == this) "this" else value.toString) + ")"
 }
 
 /**A variable with a single mutable (unindexed) value which is of Scala type T. */
@@ -46,7 +46,7 @@ abstract class RefVariable[T<:AnyRef] extends Variable with RefValue[T] {
     }
   def :=(newValue:T) = set(newValue)(null)
   def value_=(newValue:T) = set(newValue)(null)
-  override def toString = printName + "(" + value.toString + ")"
+  override def toString = printName + "(" + (if (value == this) "this" else value.toString) + ")"
   case class RefDiff(oldValue: T, newValue: T) extends Diff {
     //        Console.println ("new RefDiff old="+oldValue+" new="+newValue)
     def variable: RefVariable[T] = RefVariable.this

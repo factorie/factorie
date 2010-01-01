@@ -103,12 +103,15 @@ class CategoricalDomain[V<:CategoricalValues](implicit m:Manifest[V]) extends Di
     val f = new File(dirname+"/"+filename)
     val s = new BufferedReader(new FileReader(f))
     var line = s.readLine
-    if (line.split("\\s+").apply(2) == "true") freeze // Parse '#frozen = true'
-    while (line != null) {
-      line = s.readLine
+    var willFreeze = false
+    if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
+    while ({line = s.readLine; line != null}) {
+      //println("Domain load got "+line)
       this.index(line.asInstanceOf[V#ValueType])
     }
+    if (willFreeze) freeze
     s.close
+    //println("Loading Domain["+filename+"].size="+size)
   }
 
   // Code that used to be in DomainEntryCounter[V], but when separate was causing compiler to crash.

@@ -17,8 +17,8 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 /** Base of the Dirichlet class hierarchy, needing only methods 'length' and 'mean'. 
     @author Andrew McCallum
 */
-trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends GenerativeDistribution[ProportionOutcome[O]] with ProportionGenerating[O] with RandomAccessSeq[Double] {
-  //type OutcomeType = AbstractMultinomial[O]
+trait AbstractDirichlet[O<:GeneratedDiscreteValue[O]] extends  ProportionDistribution[O] with GenerativeDistributionLike[AbstractDirichlet[O],GeneratedProportionValue[O]] with RandomAccessSeq[Double] {
+  //type OutcomeType = GeneratedProportionValue[O] // AbstractMultinomial[O]
   final def length: Int = mean.length
   final def alpha(index:Int): Double = mean(index) * alphaSum
   def alphas: Seq[Double] = this
@@ -29,7 +29,7 @@ trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends GenerativeDistribution[Pr
   def apply(index:Int) = alpha(index)
   def outcomeDomain: O#DomainType
   // Was sampleOutcome: OutcomeType
-  def sampleMultinomial: AbstractMultinomial[O] = { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this)(null); /*throw new Error;*/ mul }
+  def sampleMultinomial: DenseCountsMultinomial[O] = { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this.asInstanceOf[GenerativeDistributionLike[AbstractDirichlet[O],GeneratedProportionValue[O]]])(null); /*throw new Error;*/ mul }
   def sampleOutcome: OutcomeType = sampleMultinomial
   def estimate: Unit = throw new Error("Method estimate is not implemented in this class.  You must add a trait for estimation.")
   def sampleOutcomes(n:Int) : Seq[OutcomeType] = for (i <- 0 until n force) yield sampleOutcome
@@ -70,19 +70,21 @@ trait AbstractDirichlet[O<:DiscreteOutcome[O]] extends GenerativeDistribution[Pr
 /** Immutable Dirichlet with equal alpha for all dimensions. 
     @author Andrew McCallum */
 @DomainInSubclasses
-class SymmetricDirichlet[O<:DiscreteOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] {
+class SymmetricDirichlet[O<:GeneratedDiscreteValue[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] {
   type VariableType <: Dirichlet[O];
   type OutcomeDomainType = O
   val outcomeDomain = Domain[O](m)
   val mean = new UniformMultinomial[O]()(m)
   alphaSum = length
-  keepGeneratedSamples = false
+  override def keepGeneratedSamples = false
 }
+
+class UniformDirichlet[O<:GeneratedDiscreteValue[O]](implicit m:Manifest[O]) extends SymmetricDirichlet[O](1.0)
 
 /** Default Dirichlet, with densely-represented mean, and estimation by moment-matching.
     @author Andrew McCallum */
 @DomainInSubclasses
-class Dirichlet[O<:DiscreteOutcome[O]](val mean:AbstractMultinomial[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with DirichletMomentMatchingEstimator[O] {
+class Dirichlet[O<:GeneratedDiscreteValue[O]](val mean:AbstractMultinomial[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with DirichletMomentMatchingEstimator[O] {
   //println("Dirichlet")
   def this(initialAlpha:Double)(implicit m:Manifest[O]) = this(new DenseCountsMultinomial[O](Domain[O](m).size), initialAlpha*Domain[O](m).size)
   def this(initialAlphas:Seq[Double])(implicit m:Manifest[O]) = this(new DenseCountsMultinomial[O](initialAlphas), initialAlphas.foldLeft(0.0)(_+_))
@@ -133,13 +135,13 @@ class DirichletDirichlet[O<:DiscreteOutcome[O]](val meanSource:AbstractDirichlet
 */
 
 object Dirichlet {
-  def apply[O<:DiscreteOutcome[O]](initialAlpha:Double)(implicit m:Manifest[O]) = new SymmetricDirichlet[O](initialAlpha)
-  def apply[O<:DiscreteOutcome[O]](implicit m:Manifest[O]) = new SymmetricDirichlet[O](1.0)
+  def apply[O<:GeneratedDiscreteValue[O]](initialAlpha:Double)(implicit m:Manifest[O]) = new SymmetricDirichlet[O](initialAlpha)
+  def apply[O<:GeneratedDiscreteValue[O]](implicit m:Manifest[O]) = new SymmetricDirichlet[O](1.0)
 }
   
 /** Estimate the parameters of a Dirichlet by moment-matching.
     @author Andrew McCallum */
-trait DirichletMomentMatchingEstimator[O<:DiscreteOutcome[O]] extends AbstractDirichlet[O] {
+trait DirichletMomentMatchingEstimator[O<:GeneratedDiscreteValue[O]] extends AbstractDirichlet[O] {
   this : Dirichlet[O] =>
   private def setUniform: Unit = 
     mean.set(new RandomAccessSeq[Double] { def apply(i:Int) = uniformPseudoEvidence/length; def length = size})

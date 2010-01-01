@@ -48,7 +48,7 @@ abstract trait CategoricalValue extends CategoricalValues with TypedValue with D
   this: Variable =>
   type VariableType <: CategoricalValue
   //def value: ValueType = domain.get(index) // TODO I wanted to define this here, but Scala cannot resolve the right type.
-  //override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + index + ")"
+  //override def toString = printName + "(" + (if (value == this) "this" else value.toString) + "=" + index + ")"
 } 
 
 /** A DiscreteVariable whose integers 0...N are associated with an object of type ValueType. 
@@ -67,7 +67,7 @@ abstract trait TypedCategoricalValue[T] extends CategoricalValue {
   type VariableType <: TypedCategoricalValue[T]
   type ValueType = T
   def value: ValueType = domain.get(intValue) // TODO I'd love to move this to the superclass, but Scala type system is complaining
-  override def toString = printName + "(" + (if (value == this) "this" else value.toString + "=") + intValue + ")"
+  override def toString = printName + "(" + (if (value == this) "this" else value.toString) + "=" + intValue + ")"
   // NOTE that "def index" has yet to be defined
 }
 
@@ -87,6 +87,7 @@ abstract trait TypedCategoricalVariable[T] extends CategoricalVariable with Type
 abstract trait TypedCategoricalObservation[T] extends Variable with TypedCategoricalValue[T] with ConstantValue {
   type VariableType <: TypedCategoricalObservation[T]
 }
+// TODO Consider making this a class with a constructor argument.
 
 /** A Variable to hold one of an enumerated set of values of type T, and which does not change.  
     @author Andrew McCallum */
@@ -115,11 +116,7 @@ abstract class CoordinatedEnumVariable[T](initialValue:T) extends TypedCategoric
     This trait abstracts over both EnumVariable and Label, and is used in belief probagation 
     and other places that cannot tolerate coordination. 
     @author Andrew McCallum */
-trait UncoordinatedCategoricalVariable extends CategoricalVariable with NoVariableCoordination {
-  // TODO But this does not absolutely guarantee that some other trait hasn't already overriden set and setByIndex to do coordination!
-  // TODO I want some way to tell the compiler that this method should be overriding the CategoricalVariable.set method.
-  final override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
-}
+trait UncoordinatedCategoricalVariable extends CategoricalVariable with UncoordinatedDiscreteVariable
 
 /** A variable whose value is a single indexed value that does no variable coordination in its 'set' method,  
     ensuring no coordination is necessary for optimization of belief propagation. 

@@ -19,13 +19,20 @@ import cc.factorie.util.Implicits._
 import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
-// Templates
+// Factor Templates, which create factors in a factor graph on-the-fly as necessary.
+// A factor template specifies
+// (1) a description of the arbitrary relationship among its variable neighbors
+// (2) a sufficient statistics function that maps those neighbors to the statistics necessary to return a real-valued score
+// (3) an aggregator for multiple statistics of the same template
+// (4) a function mapping those aggregated statistics to a real-valued score
+// (5) optionally, the parameters used in the function to calculate that score;
+//     (alternatively the score may be calculated in some fixed way without learned parameters) 
 
 /** A single factor in a factor graph.  In other words, a factor
- template packaged with a set of variables neighboring the
- factor.  Factor inherits from Iterable[Factor] so that we can
- return a single Factor when an Iterable[Factor] is required. 
- @author Andrew McCallum */
+    template packaged with a set of variables neighboring the
+    factor.  Factor inherits from Iterable[Factor] so that we can
+    return a single Factor when an Iterable[Factor] is required. 
+    @author Andrew McCallum */
 trait Factor extends Product with Iterable[Factor] with Ordered[Factor] {
   //type TemplateType <: Template
   def template : Template
@@ -70,8 +77,8 @@ trait Factor extends Product with Iterable[Factor] with Ordered[Factor] {
 
 
 /**A container for the sufficient statistics of a Factor. */
-// TODO Make this also extend Product, support scoring, etc, like Factor
 trait Stat extends Iterable[Stat] {
+	// TODO Make this also extend Product, support scoring, etc, like Factor
   def template: Template
   def score : Double
   /** A Stat can act as as singleton Iterable[Stat].
@@ -88,7 +95,6 @@ trait Statistic extends Iterable[Stat] {
 
 
 /** The template for many factors.  Manages its connections to neighboring variables.
-    Stores its parameters and has methods for templating behavior.
     @Andrew McCallum
 */
 trait Template {
@@ -234,12 +240,6 @@ trait VectorTemplate extends Template {
   private def unflattenOuter(weightIndex:Int, dimensions:Int*) : Array[Int] = new Array[Int](2) 
 } // end of VectorTemplate
 
-// TODO Remove this.  It is now handled in various subclasses of Lattice
-/*trait MarginalSamples extends VectorTemplate {
-  lazy val samples = {freezeDomains; new Array[Double](statsize)}
-def clearSamples = for (i <- 0 until samples.length) samples(i) = 0.0 // TODO surely there is a faster way
-}*/
-
 
 /** A VectorTemplate that also has a vector of weights, and calculates score by a dot-product between statistics.vector and weights. 
     @author Andrew McCallum */
@@ -264,8 +264,9 @@ trait DotTemplate extends VectorTemplate {
     s.close
   }
   override def load(dirname:String): Unit = {
-    if (statsize <= 0 || scalala.Scalala.norm(weights,1) != 0.0) return // Already have non-zero weights, must already be read.
+    //println("Loading "+this.getClass.getName+" from directory "+dirname)
     for (d <- statDomains) d.load(dirname)
+    if (statsize <= 0 || scalala.Scalala.norm(weights,1) != 0.0) return // Already have non-zero weights, must already be read.
     val f = new File(dirname+"/"+filename)
     val s = new BufferedReader(new FileReader(f))
     var line = ""
