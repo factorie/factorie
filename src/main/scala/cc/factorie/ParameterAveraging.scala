@@ -31,8 +31,10 @@ trait ParameterAveraging extends WeightUpdates {
   val initialIteration = perceptronIteration
   val lastUpdateIteration = new HashMap[TemplatesToUpdate,Vector] {
     override def default(template:TemplatesToUpdate) = { 
-      template.freezeDomains
-      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
+      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else {
+        template.freezeDomains
+        new DenseVector(template.statsize)
+      }
       vector += initialIteration // Make the default value be the iteration count at which we started learning
       this(template) = vector
       vector
@@ -40,8 +42,10 @@ trait ParameterAveraging extends WeightUpdates {
   }
   val weightsSum = new HashMap[TemplatesToUpdate,Vector] {
     override def default(template:TemplatesToUpdate) = {
-      template.freezeDomains
-      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
+      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else {
+        template.freezeDomains
+        new DenseVector(template.statsize)
+      }
       vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
       this(template) = vector
       vector
@@ -55,8 +59,10 @@ trait ParameterAveraging extends WeightUpdates {
     {
       _backupWeights = new HashMap[TemplatesToUpdate,Vector] {
 	override def default(template:TemplatesToUpdate) = {
-	  template.freezeDomains
-	  val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else new DenseVector(template.statsize)
+    val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else {
+      template.freezeDomains
+      new DenseVector(template.statsize)
+    }
 	  vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
 	  this(template) = vector
 	  vector
@@ -127,7 +133,8 @@ trait ParameterAveraging extends WeightUpdates {
     //Get the gradient to identify the locations of weights changed by update
     val metaGradient = new HashMap[TemplatesToUpdate,SparseVector] {
       override def default(template:TemplatesToUpdate) = {
-        template.freezeDomains
+        //SR: is freezing necessary?
+        //template.freezeDomains
         val vector = new SparseVector(template.statsize)
         this(template) = vector
         vector
