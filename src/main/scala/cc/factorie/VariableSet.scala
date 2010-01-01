@@ -45,6 +45,7 @@ abstract class SetVariable[X]() extends Variable with TypedValues {
     def variable: SetVariable[X] = SetVariable.this
     def redo = _members -= removed
     def undo = _members += removed //if (_members.contains(removed)) throw new Error else
+    override def toString = "SetVariableRemoveDiff of " + removed + " from " + SetVariable.this
   }
 }
 
