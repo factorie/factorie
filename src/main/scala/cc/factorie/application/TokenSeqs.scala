@@ -30,14 +30,12 @@ object TokenSeqs {
       Its value is a BinaryVectorVariable, its feature vector.
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
   @DomainInSubclasses
-  abstract class Token[S<:VariableSeq[This], This >:Null <:Token[S,This]](val word:String, features:Seq[String], trueLabelString:String)
+  abstract class Token[S<:VariableSeq[This], This >:Null <:Token[S,This]](val word:String, features:Seq[String])
   extends BinaryVectorVariable[String] with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
     this: This =>
-    def this(word:String) = this(word, Nil, null)
-    def this(word:String, trueLabelString:String) = this(word, Nil, trueLabelString)
+    def this(word:String) = this(word, Nil)
     type GetterType <: TokenGetter[S,This]
     class GetterClass extends TokenGetter[S,This]
-    def trueLabelValue = trueLabelString
     def matches(t2:Token[S,This]): Boolean = word == t2.word
     /** Return true if the first  character of the word is upper case. */
     def isCapitalized = java.lang.Character.isUpperCase(word(0))
@@ -59,8 +57,6 @@ object TokenSeqs {
   /** Implementation of the entity-relationship language we can use with Token objects. */
   class TokenGetter[S<:VariableSeq[T],T<:Token[S,T]] extends EntityGetter[T] {
     def newTokenGetter = new TokenGetter[S,T];
-    /** Go from a token to its trueLabelValue String, which are assumed never to change. */
-    //def trueLabelValue = getOneWay(token => token.trueLabelValue)
     /** Go from a token to the next token. */
     def next = initManyToMany[T](newTokenGetter,
       (token:T) => if (!token.hasNext) Nil else List(token.next), 
@@ -337,7 +333,9 @@ object TokenSeqs {
   class Lexicon(val caseSensitive:Boolean) {
     import scala.io.Source
     import java.io.File
-    def this(filename:String) = { this(false); this.++=(Source.fromFile(new File(filename))) }
+    /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */
+    def this(filename:String) = { this(false); this.++=(Source.fromFile(new File(filename), "UTF-8")) }
+    var lexer = TokenSeq.nonWhitespaceClasses
     private class LexiconToken(val word:String) extends TokenInSeq[LexiconToken] {
       var next: LexiconToken = null
       var prev: LexiconToken = null
@@ -378,7 +376,7 @@ object TokenSeqs {
     }
     def +=(w:String): Unit = this.+=(new LexiconToken(w))
     def ++=(ws:Seq[String]): Unit = this.addAll(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
-    def ++=(source:Source): Unit = for (line <- source.getLines) this.++=(line.trim.split("\\s+"))
+    def ++=(source:Source): Unit = for (line <- source.getLines) { this.++=(lexer.findAllIn(line).toList); /*println("TokenSeqs.Lexicon adding "+line)*/ }
     /** Is 'query' in the lexicon, accounting for lexicon phrases and the context of 'query' */
     def contains[T<:TokenInSeq[T]](query:T): Boolean = {
       //println("contains "+query.word+" "+query.hasPrev+" "+query)
