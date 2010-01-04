@@ -19,8 +19,9 @@ object SpanNER1 {
   var verbose = false
 
   // The variable classes
-  class Token(word:String, trueLabelString:String) extends TokenSeqs.Token[Sentence,Token](word, trueLabelString) {
+  class Token(word:String, trueLabelString:String) extends TokenSeqs.Token[Sentence,Token](word) {
     // TODO Consider instead implementing truth with true spans in VariableSeqWithSpans. 
+    def trueLabelValue = trueLabelString
     val trueLabelIndex = Domain[Label].index(trueLabelValue)
     def spans:Seq[Span] = seq.spansContaining(position).toList
     override def skipNonCategories = true
@@ -55,6 +56,10 @@ object SpanNER1 {
   @DomainSize(5) class SpanLength(x:Int) extends DiscreteVariable {
     if (x < domain.size) setByInt(x)(null) else setByInt(domain.size-1)(null)
   }
+  class Lexicon(filename:String) extends TokenSeqs.Lexicon(filename) {
+    def name = filename.substring(filename.lastIndexOf('/')+1).toUpperCase
+  }
+  val lexicons = new ArrayBuffer[Lexicon]
   
   // Not ready for use because does not coordinate with changes to Span boundaries
   val allSpans = new HashMap[String,ListBuffer[Span]] {
@@ -240,9 +245,17 @@ object SpanNER1 {
       val testFile  = new CmdOption("test",  "FILE", "eng.testa", "CoNLL formatted dev file.")
       val modelDir =  new CmdOption("model", "DIR",  "spanner1.factorie", "Directory for saving or loading model.")
       val runXmlDir = new CmdOption("run",   "DIR",  "xml", "Directory for reading data on which to run saved model.")
+      val lexiconDir =new CmdOption("lexicons", "DIR", "lexicons", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
       val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER1.this.verbose = true }
     }
     opts.parse(args)
+    
+    if (opts.lexiconDir.wasInvoked) {
+    	for (filename <- List("cities", "companies", "companysuffix", "countries", "days", "firstname.high", "firstname.highest", "firstname.med", "jobtitle", "lastname.high", "lastname.highest", "lastname.med", "months", "states")) {
+    		println("Reading lexicon "+filename)
+    		lexicons += new Lexicon(opts.lexiconDir.value+"/"+filename)
+      }
+    }
     
     if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
@@ -265,10 +278,10 @@ object SpanNER1 {
         val article = XML.loadFile(file)
         //println(article \\ "head" \\ "title" text)
         //println("  charcount "+ (article \\ "body" \\ "body.content").text.length)
-        val content = article \\ "head" \\ "docdata" \\ "identified-content"
-        print("Reading ***"+(article\\"head"\\"title").text+"***")
+        val content = article \ "head" \ "docdata" \ "identified-content"
+        print("Reading ***"+(article\"head"\"title").text+"***")
         documents += TokenSeqs.TokenSeq.fromPlainText(
-        	Source.fromString((article \\ "body" \\ "body.content").text), 
+        	Source.fromString((article \ "body" \ "body.content").text), 
         	(word,lab)=>new Token(word,lab),
         	()=>new Sentence,
         	"O", 
@@ -350,6 +363,10 @@ object SpanNER1 {
   
   
   def addFeatures(sentences:Seq[Sentence]): Unit = {
+    // Add lexicon features.  Do it before making conjunctions so that they will be part of conjunctions
+    if (lexicons.size > 0)
+      for (sentence <- sentences; token <- sentence; lexicon <- lexicons) if (lexicon.contains(token)) token += "LEX="+lexicon.name
+
     // Make features of offset conjunctions
     sentences.foreach(s => s.addNeighboringFeatureConjunctions(List(0), List(0,0), List(-1), List(-1,0), List(1)))
 
@@ -368,7 +385,7 @@ object SpanNER1 {
     // Add features from window of 4 words before and after
     //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
     //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplify(t2.word).toLowerCase)))
-
+    
     // Put features of first mention on later mentions
     documents.foreach(d => {
       d.foreach(t => {
@@ -452,7 +469,7 @@ object SpanNER1 {
     f += "W="+simplify(word)
     //if (initialFeatures.length > 1) f += "POS="+initialFeatures(1)
     //if (initialFeatures.length > 2) f += "PHRASE="+initialFeatures(2)
-    if (Character.isUpperCase(word(0))) f += "CAPITALIZED"
+    //if (Character.isUpperCase(word(0))) f += "CAPITALIZED" // Already handled by SHAPE features
     f
   }
   
