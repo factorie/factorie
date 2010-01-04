@@ -61,7 +61,7 @@ trait IntegerValue extends IntegerValues {
     @author Andrew McCallum */ 
 trait IntegerVariable extends Variable with IntegerValue {
   type VariableType <: IntegerVariable
-  private var _index = -1 // TODO make this 'private', for efficiency
+  private var _index = -1
   @inline final def intValue = _index
   def setByInt(newValue: Int)(implicit d: DiffList): Unit = {
     if (newValue != _index) {
@@ -79,6 +79,11 @@ trait IntegerVariable extends Variable with IntegerValue {
       case _ => "IntegerVariableDiff("+oldIndex+","+newIndex+")"
     }
   }
+}
+
+/** An IntegerVariable class with a constructor argument.  The canonical concrete IntegerVariable. */
+class Integer(initialValue:Int) extends IntegerVariable {
+  setByInt(initialValue)(null)
 }
 
 /** A Variable with a immutable Int value.
