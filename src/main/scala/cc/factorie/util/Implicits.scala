@@ -197,9 +197,9 @@ object Implicits {
       throw new Error("BonusIterable sample error: r=" + r + " sum=" + sum)
     }
     def sampleExpProportionally(random:Random, extractor: T => Double): T = {
-      val maxValue : Double = s.foldLeft(Math.NEG_INF_DOUBLE)((max,t) => {val x = extractor(t); if (x>max) x else max})
+      val maxValue : Double = s.foldLeft(Math.NEG_INF_DOUBLE)((max,t) => {val x = extractor(t); assert(x==x); if (x>max) x else max})
       if (maxValue == Math.NEG_INF_DOUBLE) throw new Error("Cannot sample from an empty list.")
-      sampleProportionally(random, t=>Math.exp(extractor(t) - maxValue))
+      sampleProportionally(random, t => if (extractor(t) == Math.NEG_INF_DOUBLE) Math.NEG_INF_DOUBLE else Math.exp(extractor(t) - maxValue))
     }
     def sampleExpProportionally(extractor: T => Double): T = sampleExpProportionally(Global.random, extractor)
 
