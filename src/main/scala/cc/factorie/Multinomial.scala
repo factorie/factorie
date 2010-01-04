@@ -44,7 +44,7 @@ trait OutcomeGenerating[T] {
     @author Andrew McCallum */
 // TODO Rename simply "Multinomial"?
 @DomainInSubclasses
-trait AbstractMultinomial[O<:GeneratedDiscreteValue[O]] extends GenerativeDistributionLike[AbstractMultinomial[O],O] with /*GenerativeVariable[ProportionOutcome[O]] with*/ DiscreteDistribution[O] with GeneratedProportionValue[O] {
+trait AbstractMultinomial[O<:DiscreteValue] extends GenerativeDistributionLike[AbstractMultinomial[O],O] with /*GenerativeVariable[ProportionOutcome[O]] with*/ DiscreteDistribution[O] with GeneratedProportionValue[O] {
   type VariableType <: AbstractMultinomial[O];
   //type OutcomeType = O
   //type SourceType = ProportionGenerating[O];
@@ -77,7 +77,7 @@ trait AbstractMultinomial[O<:GeneratedDiscreteValue[O]] extends GenerativeDistri
     // TODO if so, then we really don't need the separation between GenerativeObservation and GenerativeVariable!...  Or perhaps not?
   }
   class DiscretePr(val index:Int, val pr:Double)
-  def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)})
+  def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
   // TODO Put next method in superclass
   def sample(implicit d:DiffList): Unit = { if (generativeSource != null) this.sampleFrom(generativeSource) else throw new Error("Source not set") } 
   def sampleInt: Int = sampleIndex
@@ -155,14 +155,17 @@ class DenseMultinomial[O<:GeneratedDiscreteValue[O]](proportions:Seq[Double]) ex
     The counts themselves are stored in a Scalala Vector '_counts', which is abstract in this class.
     @author Andrew McCallum */
 @DomainInSubclasses
-trait CountsMultinomial[O<:GeneratedDiscreteValue[O]] extends AbstractMultinomial[O] {
+trait CountsMultinomial[O<:DiscreteValue] extends AbstractMultinomial[O] {
   type VariableType <: CountsMultinomial[O];
   override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],GeneratedProportionValue[O]]
   def length: Int = counts.size 
+  def smoothing = 0.0
   private var total : Double = 0.0
   def countsTotal = total
+  def countTotal = total + smoothing * length
   protected val _counts: { def apply(i:Int): Double; def update(i:Int, x:Double): Unit; def size:Int }
   override def counts: { def apply(i:Int):Double; def update(i:Int,v:Double):Unit; def size:Int } = _counts // TODO Want Seq[Double], but Vector doesn't mixin Seq?!!
+  def count(index:Int): Double = counts(index) + smoothing
   def increment(index:Int, incr:Double)(implicit d:DiffList) = { // TODO Scala 2.8 add incr:Double=1.0
     _counts(index) += incr; total += incr // TODO Wow, in debugging I see BoxesRunTime.unboxToInt(Object) following DenseVector.apply(Object) line 35
     if (_counts(index) < 0.0) println("CountsMultinomial "+this.getClass.getName+" counts="+_counts(index)+" incr="+incr)
@@ -176,21 +179,23 @@ trait CountsMultinomial[O<:GeneratedDiscreteValue[O]] extends AbstractMultinomia
     for (i <- 0 until length) { _counts(i) += s(i); total += s(i) }
     if (d != null) d += new CountsMultinomialSeqIncrementDiff(s)
   }
+  // TODO Note that this does not factor in smoothing.  I think "smoothing" should go into a trait.
   def set(c:Seq[Double]): Unit = { // TODO Add DiffList here?
     assert(c.length == _counts.size)
     total = 0.0
-    var i = 0; c.foreach(x => {_counts(i) = x; total += x; i += 1}) 
+    // Make the assignment, attempting to preserve sparsity
+    var i = 0; c.foreach(x => { if (x > 0.0 || _counts(i) != 0.0) _counts(i) = x; total += x; i += 1}) 
   }
   // Raw operations on count vector, without Diffs
   def zero(): Unit = { total = 0.0; for (i <- 0 until size) _counts(i) = 0.0 }
   def increment(m:AbstractMultinomial[O], rate:Double): Unit = { 
     total += norm(m,1)
     for (i <- 0 until size) _counts(i) += m(i) }  
-  def pr(index:Int) : Double = if (countsTotal == 0) 1.0 / size else counts(index) / countsTotal
+  def pr(index:Int) : Double = if (countsTotal == 0) 1.0 / size else count(index) / countTotal
   override def sampleIndex: Int = { // TODO More efficient because it avoids the normalization in this.pr
-    val s = Global.random.nextDouble * countsTotal; var sum = 0.0; var i = 0; val size = this.size
+    val s = Global.random.nextDouble * countTotal; var sum = 0.0; var i = 0; val size = this.size
     while (i < size) {
-      sum += counts(i)
+      sum += count(i)
       if (sum >= s) return i
       i += 1
     }
@@ -204,15 +209,18 @@ trait CountsMultinomial[O<:GeneratedDiscreteValue[O]] extends AbstractMultinomia
       for (i <- 0 until size) _counts(i) = generativeSource.asGenerativeDistribution.alphaVector(i)
     }
   	generatedSamples.foreach(o => {
-  		o.generativeSource match {
-  			case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
-  				for (i <- 0 until length) { _counts(i) += mixture.multinomial(i); total += 1.0 }
-  			case _ => { _counts(o.index) += 1.0; total += 1.0 }
+  		o match { // TODO clean this up
+        case o2:GeneratedDiscreteValue[O] => o2.generativeSource match {
+  				case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
+  					for (i <- 0 until length) { _counts(i) += mixture.multinomial(i); total += 1.0 }
+  				case _ => { _counts(o.index) += 1.0; total += 1.0 }
+        }
+        case _ => { _counts(o.index) += 1.0; total += 1.0 }
   		}
     })
   }
   class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
-  override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i))})
+  override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i))}).filter(_.pr > 0.0)
   case class CountsMultinomialIncrementDiff(index:Int, incr:Double) extends Diff {
     def variable = CountsMultinomial.this
     def undo = { _counts(index) -= incr; total -= incr }
@@ -225,10 +233,15 @@ trait CountsMultinomial[O<:GeneratedDiscreteValue[O]] extends AbstractMultinomia
   }
 }
 
-trait GrowableCountsMultinomial[O<:GeneratedDiscreteValue[O]] extends CountsMultinomial[O] {
-  import scala.collection.mutable.ArrayBuffer
+class GrowableCountsMultinomial[O<:DiscreteValue](implicit m:Manifest[O]) extends CountsMultinomial[O] {
   type VariableType <: GrowableCountsMultinomial[O];
-  override protected val _counts: ArrayBuffer[Double] // Scala 2.8 make this @specialized 
+  override protected val _counts = new {
+    private val h = new it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap
+    private val d = Domain[O](m)
+    def size: Int = d.size
+    def apply(key:Int) = h.get(key)
+    def update(key:Int, value:Double): Unit = h.put(key, value)
+  }
 }
 
 trait VectorCountsMultinomial[O<:GeneratedDiscreteValue[O]] extends CountsMultinomial[O] {
@@ -286,7 +299,7 @@ class DenseCountsMultinomial[O<:GeneratedDiscreteValue[O]](dim:Int) extends Vect
 
 /** A Multinomial with parameters integrated out with a Dirichlet prior.  Also known as a Multivariate Polya distribution.
     @author Andrew McCallum */
-// TODO Figure out how to use intead [O<:DiscreteOutcome[O]], but still get O#VariableType#ValueType in "top" below
+// TODO Figure out how to use intead [O<:GeneratedDiscreteValue[O]], but still get O#VariableType#ValueType in "top" below
 @DomainInSubclasses
 class DirichletMultinomial[O<:GeneratedCategoricalValue[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
   def this()(implicit m:Manifest[O]) = this(null.asInstanceOf[AbstractDirichlet[O]])(m)

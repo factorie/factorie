@@ -82,11 +82,16 @@ trait ProposalSampler0 {
 trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
   var temperature = 1.0 // Not used here, but used in subclasses; here for uniformity
   def proposals(context:C): Seq[Proposal]
-
+  def skipEmptyProposals = true
   def process1(context:C): DiffList = {
     val props = proposals(context)
+    if (props.size == 0 && skipEmptyProposals) return new DiffList
     proposalsHook(props)
-    val proposal = if (props.size == 1) props.first else props.sampleExpProportionally(_.acceptanceScore)
+    val proposal = props.size match {
+      case 0 => throw new Error("No proposals created.")
+      case 1 => props.first 
+      case _ => props.sampleExpProportionally(_.acceptanceScore)
+    }
     proposal.diff.redo
     proposalHook(proposal)
     proposal.diff

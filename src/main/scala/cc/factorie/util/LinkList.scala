@@ -23,6 +23,7 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
   def hasPrev(n:Int) : Boolean = { var s = this; for (i <- 0 until n) { if (s.prev eq null) return false; s = s.prev }; return true }
  
   def lengthToFirst : Int = if (prev eq null) 0 else 1 + prev.lengthToFirst
+  def position = lengthToFirst
   def lengthToLast  : Int = if (next eq null) 0 else 1 + next.lengthToLast
   def length: Int = 1 + first.lengthToLast
   override def size: Int = length
