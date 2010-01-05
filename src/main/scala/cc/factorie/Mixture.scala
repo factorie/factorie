@@ -135,6 +135,7 @@ class MixtureChoice[M<:MixtureComponent[M,O],O<:Variable,This<:MixtureChoice[M,O
   // this.sample with above, after Indexed=>Categorical naming overhaul = 451.5 seconds.  Yipes!  What happened?
   // this.sample with above, after caching results of Manifest <:< in GenericSampler = 34 seconds.  Wow!  Much better!! :-)
   // GibbsSampler = 368.3 seconds
+  def temperature = 1.0
   override def sample(implicit d:DiffList): Unit = {
     //println("MixtureChoice.sample "+index+" diff "+d)
     //|**("MixtureChoice.sample.prep")
@@ -151,7 +152,14 @@ class MixtureChoice[M<:MixtureComponent[M,O],O<:Variable,This<:MixtureChoice[M,O
     val size = dom.size
     val distribution = new Array[Double](size)
     var sum = 0.0
-    var i = 0; while (i < size) { distribution(i) = src.asGenerativeDistribution.pr(i) * dom.get(i).pr(outcome); sum += distribution(i); i += 1 }
+    var i = 0
+    while (i < size) { 
+      distribution(i) = src.asGenerativeDistribution.pr(i) * dom.get(i).pr(outcome)
+      if (temperature != 1.0) distribution(i) = Math.pow(distribution(i), 1.0/temperature)
+      sum += distribution(i)
+      i += 1
+    }
+    assert(sum > 0.0) // This can happen is the temperature is too low
     // If we are actually a MultinomialDiscrete distribution (integrating out our discrete value) then save the distribution
     this match { case md:MultinomialDiscrete[This] => md.multinomial.set(distribution); case _ => {} }
     i = 0; val r = Global.random.nextDouble * sum; var s = 0.0
