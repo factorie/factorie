@@ -11,6 +11,7 @@ import cc.factorie.application.TokenSeqs
 import scala.io.Source
 import java.io.File
 import cc.factorie.util.DefaultCmdOptions
+import cc.factorie.util.Implicits._
 
 /** Span-based named entity recognition.
     Includes the ability to save model to disk, and run saved model on NYTimes-style XML files.
@@ -24,6 +25,8 @@ object SpanNER1 {
     def trueLabelValue = trueLabelString
     val trueLabelIndex = Domain[Label].index(trueLabelValue)
     def spans:Seq[Span] = seq.spansContaining(position).toList
+    def spanStarts: Iterable[Span] = seq.spansStartingAt(position)
+    def spanEnds: Iterable[Span] = seq.spansEndingAt(position)
     override def skipNonCategories = true
   }
   class Label(labelName:String, val span: Span) extends LabelVariable(labelName)
@@ -296,7 +299,7 @@ object SpanNER1 {
     println("Have "+testTokens.length+" tokens")
     println("Domain[Token] size="+Domain[Token].size)
     println("Domain[Label] "+Domain[Label].toList)
-    predictor.process(testTokens, 5)
+    predictor.process(testTokens, 4)
     documents.foreach(s => { println("FILE "+s.filename); printSentence(s) })
   }
   
@@ -424,7 +427,14 @@ object SpanNER1 {
   }
   
   def printSentence(sentence:Sentence): Unit = {
-    for (span <- sentence.spans) {
+    for (token <- sentence) {
+      token.spanStarts.foreach(span => print("<"+span.label.value+">"))
+      print(token.word)
+      token.spanEnds.foreach(span => print("</"+span.label.value+">"))
+      print(" ")
+    }
+    println
+    for (span <- sentence.spans.sortForward(span => span.start.toDouble)) {
       println("%s len=%-2d %-8s %-15s %-30s %-15s".format(
           if (span.isCorrect) " " else "*",
           span.length,

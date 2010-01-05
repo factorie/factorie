@@ -162,7 +162,11 @@ object Implicits {
     }
     //def filterByClass[X](implicit m:Manifest[X]) = s.filter(x:T => m.erasure.isAssignableFrom(x.getClass)).asInstanceOf[Seq[X]]
 
-    /**Sorts with maximum first.*/
+    /** Sorts with minimum first. */
+    def sortForward(extractor: T => Double): Seq[T] =
+      Sorting.stableSort(s.toSeq, (x1: T, x2: T) => extractor(x1) < extractor(x2))
+
+    /** Sorts with maximum first.*/
     def sortReverse(extractor: T => Double): Seq[T] =
       Sorting.stableSort(s.toSeq, (x1: T, x2: T) => extractor(x1) > extractor(x2))
 

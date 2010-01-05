@@ -144,6 +144,7 @@ trait VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable
   def orderedSpans: Seq[S] = _spans.toList.sort((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
   def spansContaining(position: Int): Iterable[S] = _spans.filter(s => s.start <= position && position < (s.start + s.length))
   def spansStartingAt(position: Int): Iterable[S] = _spans.filter(s => s.start == position)
+  def spansEndingAt(position: Int): Iterable[S] = _spans.filter(s => s.start + s.length - 1 == position)
   /** Add the span to the list of spans maintained by this VariableSeqWithSpans.
       Typically you would not call this yourself; it is called automatically from the SpanVariable constructor. */
   def addSpan(s:S)(implicit d:DiffList): Unit = {
