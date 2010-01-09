@@ -107,7 +107,8 @@ trait Template {
     def statistics : Iterable[StatType];
     def statistic : StatisticType = Template.this.statistic(this.statistics) // TODO verify that this gets override definitions of statistic()
   }
-  var factorName = "Factor"
+  def defaultFactorName = "Factor"
+  var factorName = defaultFactorName
   /** Assign this Template a name which will be used later when its factors are printed. */
   def name(n:String) : this.type = { factorName = n; this }
   /** Assign this Template a name which will be used later when its factors are printed. */
@@ -140,7 +141,8 @@ trait Template {
   def score(s:StatType) : Double
   //def scoreStats(ss:Iterable[_<:S]) : Double = ss.foldLeft(0.0)(_ + score(_))
   def statistic(ss:Iterable[StatType]) : StatisticType = new Statistic(ss).asInstanceOf[StatisticType] // TODO is there some way to avoid this cast?
-  protected def filename: String = this.getClass.getName
+  /** The filename into which to save this factor.  If factorName is not the default, use it, otherwise use the class name. */
+  protected def filename: String = if (factorName != defaultFactorName) factorName else this.getClass.getName
   def save(dirname:String): Unit = {}
   def load(dirname:String): Unit = {}
 }
