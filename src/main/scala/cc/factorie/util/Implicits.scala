@@ -172,7 +172,8 @@ object Implicits {
 
     def sample(random: Random): T = {
       val s2 = s.toSeq
-      s2(random.nextInt(s2.size))
+      if (s2.size == 1) s2.first
+      else s2(random.nextInt(s2.size))
     }
     def sample : T = sample(Global.random)
   
