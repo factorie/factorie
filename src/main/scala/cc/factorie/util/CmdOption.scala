@@ -59,7 +59,7 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
   def usageString: String = {
     val sb = new StringBuffer
     sb append "Usage: "
-    opts.values.foreach(o => if (o.hasValue) sb.append(o.name+"="+o.valueName) else sb.append(o.name)); sb.append(" ")
+    opts.values.foreach(o => { if (o.hasValue) sb.append(o.name+"="+o.valueName) else sb.append(o.name); sb.append(" ") })
     sb.toString
   }
   /** Parse sequence of command-line arguments.  Return sequence of arguments that were unqualified by dashed options. */
@@ -112,7 +112,8 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
     CmdOptions.this += this
   	// TODO When we have Scala 2.8 default args, add a "shortName" one-char alternative here
     var shortName: Char = ' ' // space char indicates no shortName
-  	val valueClass: Class[_] = m.erasure
+    val valueManifest: Manifest[T] = m
+  	def valueClass: Class[_] = m.erasure
   	var valueName: String = null
   	var defaultValue: T = _
   	var value: T = _
@@ -139,7 +140,7 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
   		} else if (args(index).startsWith("--"+name+"=")) {
   			// support --file=foo
   			val fields = args(index).split("=")
-  			if (fields.length != 2) error("Expected a single '=' in command "+args(index))
+  			if (fields.length != 2) error("Expected a single '=' followed by a value.  Instead got command "+args(index))
   			parseValue(List(fields(1)), 0)
   			invoke
   			invokedCount += 1
@@ -154,7 +155,7 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
   	protected def parseValue(args:Seq[String], index:Int): Int = { parseValue(args(index)); index + 1 }
   	/** Parse a value from a single arg */
   	protected def parseValue(valueStr:String): Unit = {
-  		// TODO Is there a better way to do this
+  		// TODO Is there a better way to do this?
   		if (valueClass eq classOf[Int]) value = Integer.parseInt(valueStr).asInstanceOf[T]
       else if (valueClass eq classOf[Float]) value = java.lang.Float.parseFloat(valueStr).asInstanceOf[T]
       else if (valueClass eq classOf[Double]) value = java.lang.Double.parseDouble(valueStr).asInstanceOf[T]
@@ -163,13 +164,18 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
       else if (valueClass eq classOf[Boolean]) value = java.lang.Boolean.parseBoolean(valueStr).asInstanceOf[T]
       else if (valueClass eq classOf[Char]) value = valueStr.apply(0).asInstanceOf[T]
       else if (valueClass eq classOf[String]) value = valueStr.asInstanceOf[T]
-      else throw new Error("CmdOption does not handle type "+valueClass.getName)
+      // Support comma-separated multiple values, e.g. --train=eng.train,eng.testa
+      else if (valueManifest <:< Manifest.classType[List[String]](classOf[List[String]], Manifest.classType[String](classOf[String]))) value = valueStr.split(",").toList.asInstanceOf[T]
+      //else if (valueManifest <:< Manifest.classType[List[Int]](classOf[List[Int]], Manifest.classType[Int](classOf[Int]))) value = valueStr.split(',').map(Integer.parseInt(_)).toList.asInstanceOf[T]
+      else throw new Error("CmdOption does not handle value of type "+valueManifest)
       // TODO Add an option that will run the interpreter on some code
     }
   	// TODO Format long help messages more nicely.
-  	def helpString: String = 
-  		if (valueClass != classOf[Nothing]) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValue)
+  	def helpString: String = {
+  		val defaultValueString = defaultValue match { case d:Seq[_] => d.mkString(","); case _ => defaultValue.toString }
+  		if (valueClass != classOf[Nothing]) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
   		else "--%-15s %s\n".format(name, helpMsg)
+    }
   }
 }
 
