@@ -9,7 +9,7 @@ package cc.factorie
 import scalala.Scalala._
 import scalala.tensor.Vector
 
-// TODO Consider renaming GradientWeightUpdates
+// TODO Consider renaming GradientWeightUpdates or simply GradientUpdates
 
 /** For parameter estimation methods that use a gradient to update weight parameters. 
     @author Andrew McCallum */

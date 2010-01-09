@@ -20,7 +20,12 @@ import cc.factorie.util.Implicits._
 
 // Proposals
 
-/** For storing one of the proposals considered.  Note that objectiveScore may not be truly set, in which case it will have value Math.NaN_DOUBLE. */
+/** For storing one of the proposals considered.
+    "diff" is the list of changes represented by this Proposal.
+    "modelScore" is the difference in score after-before, according to the model.
+    "objectiveScore" is the difference in score after-before, according to the objective function.
+    "acceptanceScore" is the score that will be used to accept/rank/select among multiple proposals.  It is typically the modelScore multiplied by a temperature.
+    Note that objectiveScore may not be truly set, in which case it will have value Math.NaN_DOUBLE. */
 case class Proposal(diff:DiffList, modelScore:Double, objectiveScore:Double,  acceptanceScore:Double)
 
 
