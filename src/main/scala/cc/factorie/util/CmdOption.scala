@@ -90,17 +90,17 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
     }
     result
   }
-	class CmdOption[T](val name:String, val helpMsg:String)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
-  	// TODO Add "required" constructor argument when we have Scala 2.8
+  class CmdOption[T](val name:String, val helpMsg:String)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
+    // TODO Add "required" constructor argument when we have Scala 2.8
     def this(name:String, valueName:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
       this(name, helpMsg)
       this.valueName = valueName
       value = defaultValue
       this.defaultValue = defaultValue
     }
-  	def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
-  		this(name, { val fields = m.erasure.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.first }, defaultValue, helpMsg)
-  	}
+    def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
+      this(name, { val fields = m.erasure.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.first }, defaultValue, helpMsg)
+    }
     def this(name:String, shortName:Char, valueName:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
       this(name, valueName, defaultValue, helpMsg)
       this.shortName = shortName
@@ -110,53 +110,53 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
       this.shortName = shortName
     }
     CmdOptions.this += this
-  	// TODO When we have Scala 2.8 default args, add a "shortName" one-char alternative here
+    // TODO When we have Scala 2.8 default args, add a "shortName" one-char alternative here
     var shortName: Char = ' ' // space char indicates no shortName
     val valueManifest: Manifest[T] = m
-  	def valueClass: Class[_] = m.erasure
-  	var valueName: String = null
-  	var defaultValue: T = _
-  	var value: T = _
-  	var invokedCount = 0
-  	def required = false
-  	def hasValue = valueClass != classOf[Nothing]
-  	/** Attempt to match and process command-line option at position 'index' in 'args'.  
+    def valueClass: Class[_] = m.erasure
+    var valueName: String = null
+    var defaultValue: T = _
+    var value: T = _
+    var invokedCount = 0
+    def required = false
+    def hasValue = valueClass != classOf[Nothing]
+    /** Attempt to match and process command-line option at position 'index' in 'args'.  
         Return the index of the next position to be processed. */
-  	def parse(args:Seq[String], index:Int): Int = {
+    def parse(args:Seq[String], index:Int): Int = {
       if (valueClass == classOf[Nothing] && args(index) == "--"+name || args(index) == "-"+shortName) {
-  			// support --help or -h (i.e. no arguments to option)
-  			invoke
-  			invokedCount += 1
-  			index + 1
-  		} else if (args(index) == "--"+name || args(index) == "-"+shortName) {
-  			// support --file foo, or -f foo (or just --file or -f, in which case value is the defaultValue)
-  			var newIndex = index + 1
-  			// If the next args does not begin with a "-" assume it is the value of this argument and parse it...
-  			if (!args(newIndex).startsWith("-")) newIndex = parseValue(args, newIndex)
-  			// ...otherwise the value will just remain the defaultValue
-  			invoke
-  			invokedCount += 1
-  			newIndex
-  		} else if (args(index).startsWith("--"+name+"=")) {
-  			// support --file=foo
-  			val fields = args(index).split("=")
-  			if (fields.length != 2) error("Expected a single '=' followed by a value.  Instead got command "+args(index))
-  			parseValue(List(fields(1)), 0)
-  			invoke
-  			invokedCount += 1
-  			index + 1
-  		} else index
-  	}
-  	/** Called after this CmdOption has been matched and value has been parsed. */
-  	def invoke: Unit = {}
-  	/** After we have found a match, request that argument(s) to command-line option be parsed. 
+        // support --help or -h (i.e. no arguments to option)
+        invoke
+        invokedCount += 1
+        index + 1
+      } else if (args(index) == "--"+name || args(index) == "-"+shortName) {
+        // support --file foo, or -f foo (or just --file or -f, in which case value is the defaultValue)
+        var newIndex = index + 1
+        // If the next args does not begin with a "-" assume it is the value of this argument and parse it...
+        if (!args(newIndex).startsWith("-")) newIndex = parseValue(args, newIndex)
+        // ...otherwise the value will just remain the defaultValue
+        invoke
+        invokedCount += 1
+        newIndex
+      } else if (args(index).startsWith("--"+name+"=")) {
+        // support --file=foo
+        val fields = args(index).split("=")
+        if (fields.length != 2) error("Expected a single '=' followed by a value.  Instead got command "+args(index))
+        parseValue(List(fields(1)), 0)
+        invoke
+        invokedCount += 1
+        index + 1
+      } else index
+    }
+    /** Called after this CmdOption has been matched and value has been parsed. */
+    def invoke: Unit = {}
+    /** After we have found a match, request that argument(s) to command-line option be parsed. 
         Return the index position that should be processed next. 
         This method allows one option to possibly consume multiple args, (in contrast with parseValue(String).) */
-  	protected def parseValue(args:Seq[String], index:Int): Int = { parseValue(args(index)); index + 1 }
-  	/** Parse a value from a single arg */
-  	protected def parseValue(valueStr:String): Unit = {
-  		// TODO Is there a better way to do this?
-  		if (valueClass eq classOf[Int]) value = Integer.parseInt(valueStr).asInstanceOf[T]
+    protected def parseValue(args:Seq[String], index:Int): Int = { parseValue(args(index)); index + 1 }
+    /** Parse a value from a single arg */
+    protected def parseValue(valueStr:String): Unit = {
+      // TODO Is there a better way to do this?
+      if (valueClass eq classOf[Int]) value = Integer.parseInt(valueStr).asInstanceOf[T]
       else if (valueClass eq classOf[Float]) value = java.lang.Float.parseFloat(valueStr).asInstanceOf[T]
       else if (valueClass eq classOf[Double]) value = java.lang.Double.parseDouble(valueStr).asInstanceOf[T]
       else if (valueClass eq classOf[Short]) value = java.lang.Short.parseShort(valueStr).asInstanceOf[T]
@@ -170,11 +170,11 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
       else throw new Error("CmdOption does not handle value of type "+valueManifest)
       // TODO Add an option that will run the interpreter on some code
     }
-  	// TODO Format long help messages more nicely.
-  	def helpString: String = {
-  		val defaultValueString = defaultValue match { case d:Seq[_] => d.mkString(","); case _ => defaultValue.toString }
-  		if (valueClass != classOf[Nothing]) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
-  		else "--%-15s %s\n".format(name, helpMsg)
+    // TODO Format long help messages more nicely.
+    def helpString: String = {
+      val defaultValueString = defaultValue match { case d:Seq[_] => d.mkString(","); case _ => defaultValue.toString }
+      if (valueClass != classOf[Nothing]) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
+      else "--%-15s %s\n".format(name, helpMsg)
     }
   }
 }

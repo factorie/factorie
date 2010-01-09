@@ -133,9 +133,9 @@ object TokenSeqs {
         else if (regex != null) t2.values.filter(str => str.matches(regex)) // Only include features that match pattern 
         else t2.values
       if (existing != null) {
-      	for (e <- existing; a <- adding) { val elt = (a,offset); if (!e.contains(elt)) result += (a,offset) :: e }
+        for (e <- existing; a <- adding) { val elt = (a,offset); if (!e.contains(elt)) result += (a,offset) :: e }
       } else {
-      	for (a <- adding) result += List((a,offset))
+        for (a <- adding) result += List((a,offset))
       }
       if (offsets.size == 1) result
       else appendConjunctions(regex, t, result, offsets.drop(1))
@@ -214,9 +214,9 @@ object TokenSeqs {
       val seq = newSeq()
       lexer.findAllIn(source.mkString).foreach(word => {
         if (word.length > 0) {
-        	val token = newToken(word, defaultLabelString)
-        	token ++= featureFunction(word)
-        	seq += token
+          val token = newToken(word, defaultLabelString)
+          token ++= featureFunction(word)
+          seq += token
          }
       })
       seq

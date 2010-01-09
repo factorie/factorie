@@ -76,13 +76,13 @@ trait GenerativeDistribution[O<:Variable] extends GenerativeDistributionLike[Gen
   }
   def keepGeneratedSamples = true
   override def _registerSample(o:O)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
-  	if (generatedSamples.contains(o)) throw new Error("Already generated outcome "+o) 
-  	_generatedSamples += o
-  	if (d != null) d += GenerativeDistributionRegisterDiff(o)
+    if (generatedSamples.contains(o)) throw new Error("Already generated outcome "+o) 
+    _generatedSamples += o
+    if (d != null) d += GenerativeDistributionRegisterDiff(o)
   }
   override def _unregisterSample(o:O)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
-  	_generatedSamples -= o
-  	if (d != null) d += GenerativeDistributionUnregisterDiff(o)
+    _generatedSamples -= o
+    if (d != null) d += GenerativeDistributionUnregisterDiff(o)
   }
   /** Notify this GenerativeDistribution that it is now associated with an additional sampled outcome, and set o's source to this. */
   final override def registerSample(o:O)(implicit d:DiffList): Unit = {
@@ -104,7 +104,7 @@ trait GenerativeDistribution[O<:Variable] extends GenerativeDistributionLike[Gen
   /** Return the log-probability that this GenerativeDistribution would generate outcome 'o' */
   override def logpr(o:O): Double = Math.log(pr(o))
   case class GenerativeDistributionRegisterDiff(m:O) extends Diff {
-  	def variable: GenerativeDistribution[O] = GenerativeDistribution.this//.asInstanceOf[VariableType]
+    def variable: GenerativeDistribution[O] = GenerativeDistribution.this//.asInstanceOf[VariableType]
     def redo = { if (_generatedSamples.contains(m)) throw new Error else _generatedSamples += m}
     def undo = { _generatedSamples -= m }
   }

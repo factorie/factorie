@@ -78,7 +78,7 @@ trait Factor extends Product with Iterable[Factor] with Ordered[Factor] {
 
 /**A container for the sufficient statistics of a Factor. */
 trait Stat extends Iterable[Stat] {
-	// TODO Make this also extend Product, support scoring, etc, like Factor
+  // TODO Make this also extend Product, support scoring, etc, like Factor
   def template: Template
   def score : Double
   /** A Stat can act as as singleton Iterable[Stat].

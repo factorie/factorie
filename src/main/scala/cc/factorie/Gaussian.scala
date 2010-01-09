@@ -55,9 +55,9 @@ class GaussianReal[R<:GeneratedRealVariable[R]] extends GeneratedRealVariable[R]
 
 /** A one-dimensional Gaussian, with integrated out mean, having a Gaussian prior. */
 class GaussianGaussian1[R<:GeneratedRealValue[R]](override val variance:RealVariable) extends Gaussian1[R](new Real(0.0), variance) {
-	// The evidence
+  // The evidence
   private val meanSum: Double = 0.0
-	private val meanTotal: Double = 0.0
+  private val meanTotal: Double = 0.0
   override def preChange(o:R)(implicit d:DiffList) = {
     o.generativeSource match {
       case mixture:MarginalizedMixtureChoice[_,R,_] => {

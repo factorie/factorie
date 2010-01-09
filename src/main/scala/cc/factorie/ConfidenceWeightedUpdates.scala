@@ -70,12 +70,12 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
     if (!shouldUpdate) return;
     numUpdates += 1
     val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
-    	override def default(template:TemplatesToUpdate) = {
-    		template.freezeDomains
-    		val vector = new SparseVector(template.statsize)
-    		this(template) = vector
-    		vector
-    	}
+      override def default(template:TemplatesToUpdate) = {
+        template.freezeDomains
+        val vector = new SparseVector(template.statsize)
+        this(template) = vector
+        vector
+      }
     }
     addGradient(gradient, 1.0)
     learningRate = kktMultiplier(changeProposal, gradient)
@@ -104,23 +104,23 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
     {
       var result : Double = 0
       for((template,templateGradient)<-gradient)
-	{
-	  val templateSigma = sigma(template)
-	  for((index,value)<-templateGradient.activeElements)
+  {
+    val templateSigma = sigma(template)
+    for((index,value)<-templateGradient.activeElements)
             result += value*value*templateSigma(index)
-	}
+  }
       result
     }
 
   def updateSigma(gradient: HashMap[DotTemplate,SparseVector]) : Unit =
     {
       for((template,templateGrad)<-gradient)
-	{
-	  val ratesTemplate = sigma(template)
-	  for((index,value)<-templateGrad.activeElements)
+  {
+    val ratesTemplate = sigma(template)
+    for((index,value)<-templateGrad.activeElements)
             ratesTemplate(index) = 1.0 / ((1.0 / ratesTemplate(index)) 
-					  + 2*learningRate*gaussDeviate*value*value)
-	}
+            + 2*learningRate*gaussDeviate*value*value)
+  }
     }
 
   /**Cannot use the default 'addGradient' method because this update requires a separate learning rate for each parameter*/
@@ -128,12 +128,12 @@ trait ConfidenceWeightedUpdates extends WeightUpdates with SampleRank {
     {
       //TODO replace with elementwise product?
       for((template,templateGradient)<-gradient)
-	{
-	  val templateSigma = sigma(template)
-	  for((index,value)<-templateGradient.activeElements)
-	    template.weights(index) += 
+  {
+    val templateSigma = sigma(template)
+    for((index,value)<-templateGradient.activeElements)
+      template.weights(index) += 
           templateGradient(index)*templateSigma(index)*learningRate
-	}
+  }
     } 
 
 }
@@ -206,12 +206,12 @@ trait AROWUpdates extends ConfidenceWeightedUpdates
       numUpdates += 1
       
       val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
-    	override def default(template:TemplatesToUpdate) = {
-    	  template.freezeDomains
-    	  val vector = new SparseVector(template.statsize)
-    	  this(template) = vector
-    	  vector
-    	}
+      override def default(template:TemplatesToUpdate) = {
+        template.freezeDomains
+        val vector = new SparseVector(template.statsize)
+        this(template) = vector
+        vector
+      }
       }
       
       addGradient(gradient, 1.0)
@@ -225,11 +225,11 @@ trait AROWUpdates extends ConfidenceWeightedUpdates
   override def updateSigma(gradient:HashMap[DotTemplate,SparseVector]) : Unit =
     {
       for((template,templateGrad)<-gradient)
-	{
-	  val ratesTemplate = sigma(template)
-	  for((index,value)<-templateGrad.activeElements)
-	    ratesTemplate(index) = ratesTemplate(index) - beta(gradient) * ratesTemplate(index)*ratesTemplate(index)*value*value
-	}
+  {
+    val ratesTemplate = sigma(template)
+    for((index,value)<-templateGrad.activeElements)
+      ratesTemplate(index) = ratesTemplate(index) - beta(gradient) * ratesTemplate(index)*ratesTemplate(index)*value*value
+  }
     }
 }
 
@@ -254,12 +254,12 @@ trait SecondOrderGradientAscentUpdates extends ConfidenceWeightedUpdates
       numUpdates += 1
       
       val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
-    	override def default(template:TemplatesToUpdate) = {
-    	  template.freezeDomains
-    	  val vector = new SparseVector(template.statsize)
-    	  this(template) = vector
-    	  vector
-    	}
+      override def default(template:TemplatesToUpdate) = {
+        template.freezeDomains
+        val vector = new SparseVector(template.statsize)
+        this(template) = vector
+        vector
+      }
       }
       
       addGradient(gradient, 1.0)

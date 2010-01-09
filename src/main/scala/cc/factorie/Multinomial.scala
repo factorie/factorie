@@ -208,15 +208,15 @@ trait CountsMultinomial[O<:DiscreteValue] extends AbstractMultinomial[O] {
       total = generativeSource.asGenerativeDistribution.alphaSum
       for (i <- 0 until size) _counts(i) = generativeSource.asGenerativeDistribution.alphaVector(i)
     }
-  	generatedSamples.foreach(o => {
-  		o match { // TODO clean this up
+    generatedSamples.foreach(o => {
+      o match { // TODO clean this up
         case o2:GeneratedDiscreteValue[O] => o2.generativeSource match {
-  				case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
-  					for (i <- 0 until length) { _counts(i) += mixture.multinomial(i); total += 1.0 }
-  				case _ => { _counts(o.index) += 1.0; total += 1.0 }
+          case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
+            for (i <- 0 until length) { _counts(i) += mixture.multinomial(i); total += 1.0 }
+          case _ => { _counts(o.index) += 1.0; total += 1.0 }
         }
         case _ => { _counts(o.index) += 1.0; total += 1.0 }
-  		}
+      }
     })
   }
   class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)

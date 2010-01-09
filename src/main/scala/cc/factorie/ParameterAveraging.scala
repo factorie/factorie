@@ -58,31 +58,31 @@ trait ParameterAveraging extends WeightUpdates {
   def backupWeights : Unit =
     {
       _backupWeights = new HashMap[TemplatesToUpdate,Vector] {
-	override def default(template:TemplatesToUpdate) = {
+  override def default(template:TemplatesToUpdate) = {
     val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else {
       template.freezeDomains
       new DenseVector(template.statsize)
     }
-	  vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
-	  this(template) = vector
-	  vector
-	}
+    vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
+    this(template) = vector
+    vector
+  }
       }
     }
 
   def unsetWeightsToAverage : Unit =
     {
       if(_backupWeights==null)
-	throw new Exception("Cannot 'unset' weights because 'setWeightsToAverage' has not been called")
+  throw new Exception("Cannot 'unset' weights because 'setWeightsToAverage' has not been called")
       for (template <- model.templatesOf[TemplatesToUpdate]) 
-	{
-	  if(_backupWeights.contains(template))
-	    {
+  {
+    if(_backupWeights.contains(template))
+      {
               val backupWeightsTemplate = _backupWeights(template)
               for(i <- template.weights.activeDomain)
-		template.weights(i) = backupWeightsTemplate(i)
-	    }
-	}
+    template.weights(i) = backupWeightsTemplate(i)
+      }
+  }
     }
 
   // Make sure that weightsSum reflects the sum of all weights up to the current iterations
@@ -110,20 +110,20 @@ trait ParameterAveraging extends WeightUpdates {
       var divisor : Double = perceptronIteration.asInstanceOf[Double]
 //      System.out.println("PA: " + perceptronIteration+" up: " + updateCount+" div="+divisor)
       for (template <- model.templatesOf[TemplatesToUpdate]) 
-	{
-	  if(weightsSum.contains(template))
-	    {
+  {
+    if(weightsSum.contains(template))
+      {
               val weightsSumTemplate = weightsSum(template)
               val lastUpdateIterationTemplate = lastUpdateIteration(template)
               for(i <- template.weights.activeDomain)
-		{
-		template.weights(i) = weightsSumTemplate(i)/divisor///lastUpdateIterationTemplate(i)
-		}
-	    }
-	  //the following results in divide-by-zero errors when size of allocated domain is larger than size of active  domain:
-	  //if (weightsSum.contains(template))
+    {
+    template.weights(i) = weightsSumTemplate(i)/divisor///lastUpdateIterationTemplate(i)
+    }
+      }
+    //the following results in divide-by-zero errors when size of allocated domain is larger than size of active  domain:
+    //if (weightsSum.contains(template))
           //  template.weights := weightsSum(template) :/ lastUpdateIteration(template)
-	}
+  }
       System.out.println("WEIGHtS DIVISOR: " + divisor)
     }
 

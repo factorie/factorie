@@ -134,11 +134,11 @@ object ChainNER2b {
       temperature = 0.001
       override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && Global.random.nextDouble > 0.5) null else label
       override def postIterationHook(): Boolean = {
-	if(this.isInstanceOf[ParameterAveraging])
-	  this.asInstanceOf[ParameterAveraging].setWeightsToAverage
+  if(this.isInstanceOf[ParameterAveraging])
+    this.asInstanceOf[ParameterAveraging].setWeightsToAverage
         predictor.process(testLabels, 1)
-	if(this.isInstanceOf[ParameterAveraging])
-	  this.asInstanceOf[ParameterAveraging].unsetWeightsToAverage
+  if(this.isInstanceOf[ParameterAveraging])
+    this.asInstanceOf[ParameterAveraging].unsetWeightsToAverage
 
         println("Train errors")
         printErrors(trainLabels, 200)

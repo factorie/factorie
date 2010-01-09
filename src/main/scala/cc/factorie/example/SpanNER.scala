@@ -365,7 +365,7 @@ object SpanNER {
       def unroll2 (label:Label) = Nil // We handle symmetric case above
       def statistics(label1:Label, label2:Label) = Stat(Bool(label1.token.word==label2.token.word))
     }.init*/
-    // 	Factor between label, its token and the previous Label
+    //  Factor between label, its token and the previous Label
     val unusedTemplate = new TemplateWithDotStatistics3[Label, Label, Token] {
       def unroll1(label: Label) = if (label.hasNext) Factor(label, label.next, label.token.next) else Nil
 

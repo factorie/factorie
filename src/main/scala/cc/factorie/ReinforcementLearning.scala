@@ -89,35 +89,35 @@ trait QLearning extends ProposalSampler0 with SamplerOverSettings0 with Policy /
   def addGradient(accumulator:DotTemplate=>Vector, rate:Double): Unit =
     {
       if(currentAction==null)
-	return
+  return
       currentAction.diff.redo
       currentAction.diff.factorsOf[TemplatesToUpdate](model)
-	.foreach(f => accumulator(f.template) += f.statistic.vector * rate)
+  .foreach(f => accumulator(f.template) += f.statistic.vector * rate)
       currentAction.diff.undo
       currentAction.diff.factorsOf[TemplatesToUpdate](model)
-	.foreach(f => accumulator(f.template) -= f.statistic.vector * rate)
+  .foreach(f => accumulator(f.template) -= f.statistic.vector * rate)
     }
   //perform correction
   def updateWeights : Unit =
     {
       if(correctionMagnitude != 0) //scalala complains if multiplier is 0
-	addGradient((template:Template) => template match {case t:DotTemplate => t.weights}, correctionMagnitude)
+  addGradient((template:Template) => template match {case t:DotTemplate => t.weights}, correctionMagnitude)
       //super.updateWeights
       if(count % 100 == 0)
-	{
-	  var norm : Double = 0.0
-	  for(template<-model.templatesOf[DotTemplate])
-	    {
-	      norm += template.weights dot template.weights
-	    }
-	  System.out.println("UPDATE #"+count)
-	  System.out.println("  |theta|: " + norm)
-	  System.out.println("  delta: "+correctionMagnitude)
-	}
+  {
+    var norm : Double = 0.0
+    for(template<-model.templatesOf[DotTemplate])
+      {
+        norm += template.weights dot template.weights
+      }
+    System.out.println("UPDATE #"+count)
+    System.out.println("  |theta|: " + norm)
+    System.out.println("  delta: "+correctionMagnitude)
+  }
       if(correctionMagnitude!=0)
-	{
-	  System.out.println("    iter:"+count+" mag: " + correctionMagnitude)
-	}
+  {
+    System.out.println("    iter:"+count+" mag: " + correctionMagnitude)
+  }
       count += 1
 
     }
@@ -142,12 +142,12 @@ trait EligibilityTraces
   def resetTrace : Unit =
     {
       eligibilityTrace = new HashMap[TemplatesToUpdate,SparseVector] {
-	override def default(template:TemplatesToUpdate) = {
-	  template.freezeDomains
-	  val vector = new SparseVector(template.statsize)
-	  this(template) = vector
-	  vector
-	}
+  override def default(template:TemplatesToUpdate) = {
+    template.freezeDomains
+    val vector = new SparseVector(template.statsize)
+    this(template) = vector
+    vector
+  }
       }
     }
 
@@ -155,10 +155,10 @@ trait EligibilityTraces
     {
       currentAction.diff.redo
       currentAction.diff.factorsOf[TemplatesToUpdate](model)
-	.foreach(f => accumulator(f.template) += f.statistic.vector * rate)
+  .foreach(f => accumulator(f.template) += f.statistic.vector * rate)
       currentAction.diff.undo
       currentAction.diff.factorsOf[TemplatesToUpdate](model)
-	.foreach(f => accumulator(f.template) -= f.statistic.vector * rate)
+  .foreach(f => accumulator(f.template) -= f.statistic.vector * rate)
     }
 }
 
@@ -166,12 +166,12 @@ trait EligibilityTraces
   def getGradient : HashMap[TemplatesToUpdate,SparseVector] =
     {
       val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
-    	override def default(template:TemplatesToUpdate) = {
-    	  template.freezeDomains
-    	  val vector = new SparseVector(template.statsize)
-    	  this(template) = vector
-    	  vector
-    	}
+      override def default(template:TemplatesToUpdate) = {
+        template.freezeDomains
+        val vector = new SparseVector(template.statsize)
+        this(template) = vector
+        vector
+      }
       }
       addGradient(gradient, 1.0)
       gradient
@@ -220,7 +220,7 @@ trait SampledPolicy[C] extends MHSampler[C] with Policy
   def maxAction : Proposal =
     {
       if(_maxAction != null)
-	return _maxAction
+  return _maxAction
       _maxAction = candidateActions.max(_.modelScore);
       _maxAction
     }
@@ -236,33 +236,33 @@ trait SampledPolicy[C] extends MHSampler[C] with Policy
   abstract override def proposals(context:C) : Seq[Proposal] =
     {
       if(candidateActions == null)
-	candidateActions = new ArrayBuffer[Proposal]
+  candidateActions = new ArrayBuffer[Proposal]
       else
-	return candidateActions
+  return candidateActions
       numActionSteps += 1
       var bfRatio = 0.0
       while(candidateActions.size<samplesPerAction)
       {
-	var proposalAttemptCount = 0
-	val difflist = new DiffList
-	while (difflist.size == 0 && proposalAttemptCount < 10)
-	{
-	  bfRatio = propose(context)(difflist)
-	  proposalAttemptCount += 1
-	}
-	if(difflist.size != 0)
-	  {
-	    val (modelScore, objectiveScore) = difflist.scoreAndUndo(model,objective)
-	    val logAcceptanceScore = modelScore/temperature+bfRatio
-	    candidateActions += new Proposal(difflist, modelScore, objectiveScore, logAcceptanceScore, bfRatio, temperature)
-	  }
+  var proposalAttemptCount = 0
+  val difflist = new DiffList
+  while (difflist.size == 0 && proposalAttemptCount < 10)
+  {
+    bfRatio = propose(context)(difflist)
+    proposalAttemptCount += 1
+  }
+  if(difflist.size != 0)
+    {
+      val (modelScore, objectiveScore) = difflist.scoreAndUndo(model,objective)
+      val logAcceptanceScore = modelScore/temperature+bfRatio
+      candidateActions += new Proposal(difflist, modelScore, objectiveScore, logAcceptanceScore, bfRatio, temperature)
+    }
       }
       if(includeNoOpAction)
-	{
-	  val mirrorLogAcceptanceScore = Math.NEG_INF_DOUBLE //TODO: compute this properly taking into account all actions, requires sumLogProbs
-	  //val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0) Math.NEG_INF_DOUBLE else Math.log(1-Math.exp(logAcceptanceScore))
-	  candidateActions += new Proposal(new DiffList,0.0,0.0,mirrorLogAcceptanceScore,Math.NaN_DOUBLE,0)
-	}
+  {
+    val mirrorLogAcceptanceScore = Math.NEG_INF_DOUBLE //TODO: compute this properly taking into account all actions, requires sumLogProbs
+    //val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0) Math.NEG_INF_DOUBLE else Math.log(1-Math.exp(logAcceptanceScore))
+    candidateActions += new Proposal(new DiffList,0.0,0.0,mirrorLogAcceptanceScore,Math.NaN_DOUBLE,0)
+  }
       return candidateActions
     }
   
@@ -288,17 +288,17 @@ trait EGreedyPolicy[C] extends SampledPolicy[C]
   override def nextAction : Proposal =
     {
       if(_nextAction != null)
-	return _nextAction
+  return _nextAction
       if(random.nextDouble>epsilon)
-	  {
-	    _nextAction = candidateActions.max(_.modelScore);
-	    resetTraceTrigger=true
-	  }
+    {
+      _nextAction = candidateActions.max(_.modelScore);
+      resetTraceTrigger=true
+    }
       else
-	{
-	  _nextAction = candidateActions(random.nextInt(candidateActions.size))
-	  resetTraceTrigger=false
-	}
+  {
+    _nextAction = candidateActions(random.nextInt(candidateActions.size))
+    resetTraceTrigger=false
+  }
       _nextAction
     }
 }
@@ -318,7 +318,7 @@ trait BoltzmannPolicy[C] extends SampledPolicy[C]
   override def nextAction : Proposal =
     {
       if(_nextAction == null)
-	_nextAction = candidateActions.sampleExpProportionally(random, _.modelScore)
+  _nextAction = candidateActions.sampleExpProportionally(random, _.modelScore)
       super.nextAction //calls post proposal hook and returns
     }
 }

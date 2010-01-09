@@ -74,7 +74,7 @@ abstract class BPFactor(val factor:VectorTemplate#Factor) {
   }
   case class MaxProductMessageTo(override val v:V) extends MessageTo(v) {
     lazy protected val maxIndex = new Array[Int](v.domain.size) // Holds how many nextValues calls it takes to get to max value
-  	override def update: MaxProductMessageTo = {
+    override def update: MaxProductMessageTo = {
       val origIndex = v.index
       for (i <- 0 until v.domain.size) { // Consider reversing the nested ordering of this loop and the inner one
         v.setByIndex(i)(null) // note that this is changing the Variable value

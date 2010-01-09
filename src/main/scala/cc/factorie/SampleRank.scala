@@ -47,19 +47,19 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
       if (shouldUpdate) println("SHOULDUPDATE") else println("NOTUPDATE")
     }
    
-    if (shouldUpdate)	updateWeights
+    if (shouldUpdate) updateWeights
   }
   
   def shouldUpdate: Boolean = {
     if (amIMetropolis) {
-    	val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
-    	!(changeProposal.modelScore * changeProposal.objectiveScore > 0 || changeProposal.objectiveScore == 0)      
+      val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
+      !(changeProposal.modelScore * changeProposal.objectiveScore > 0 || changeProposal.objectiveScore == 0)      
     } else {
-    	// the objective function has some preference (e.g. we don't have an unlabeled example here)
-    	(bestObjective1.objectiveScore > bestObjective2.objectiveScore || bestObjective1.objectiveScore > bestModel1.objectiveScore) &&
-    	// the model got it wrong, or isn't confident enough about being right
-    	// TODO should this be based on acceptanceScore instead of modelScore?
-    	((bestModel1 ne bestObjective1) || Math.abs(bestModel1.modelScore - bestModel2.modelScore) < learningMargin)
+      // the objective function has some preference (e.g. we don't have an unlabeled example here)
+      (bestObjective1.objectiveScore > bestObjective2.objectiveScore || bestObjective1.objectiveScore > bestModel1.objectiveScore) &&
+      // the model got it wrong, or isn't confident enough about being right
+      // TODO should this be based on acceptanceScore instead of modelScore?
+      ((bestModel1 ne bestObjective1) || Math.abs(bestModel1.modelScore - bestModel2.modelScore) < learningMargin)
     }
   }
  
@@ -76,10 +76,10 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
     println ()
     */
     if (logLevel > 0) {
-    	println ("bestObjective1 ms="+bestObjective1.modelScore+" os="+bestObjective1.objectiveScore+" diff="+bestObjective1.diff)
-    	println ("bestObjective2 ms="+bestObjective2.modelScore+" os="+bestObjective2.objectiveScore+" diff="+bestObjective2.diff)
-    	println ("bestModel1     ms="+bestModel1.modelScore+" os="+bestModel1.objectiveScore+" diff="+bestModel1.diff)
-    	println ("bestModel2     ms="+bestModel2.modelScore+" os="+bestModel2.objectiveScore+" diff="+bestModel2.diff)
+      println ("bestObjective1 ms="+bestObjective1.modelScore+" os="+bestObjective1.objectiveScore+" diff="+bestObjective1.diff)
+      println ("bestObjective2 ms="+bestObjective2.modelScore+" os="+bestObjective2.objectiveScore+" diff="+bestObjective2.diff)
+      println ("bestModel1     ms="+bestModel1.modelScore+" os="+bestModel1.objectiveScore+" diff="+bestModel1.diff)
+      println ("bestModel2     ms="+bestModel2.modelScore+" os="+bestModel2.objectiveScore+" diff="+bestModel2.diff)
     }
 
     // Only do learning if the trueScore has a preference

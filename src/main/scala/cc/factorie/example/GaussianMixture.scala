@@ -17,15 +17,15 @@ object GaussianMixture {
     val numMixtureComponents = 3
     val numDataPoints = 200
     // Generative storyline
-  	val gs = for (i <- 1 to numMixtureComponents force) yield new G(i)
-  	val zs = for (i <- 1 to numDataPoints force) yield new Z ~ mixtureWeights
-  	val xs = zs.map(z => new X :~ z).toList
+    val gs = for (i <- 1 to numMixtureComponents force) yield new G(i)
+    val zs = for (i <- 1 to numDataPoints force) yield new Z ~ mixtureWeights
+    val xs = zs.map(z => new X :~ z).toList
    
-  	// Print initial state
+    // Print initial state
     println("Original means "+gs.map(_.mean))
     println(xs.map(x => (x,x.generativeSource)))
    
-  	// Randomize assignment of x's to mixture components 
+    // Randomize assignment of x's to mixture components 
     zs.foreach(_.setRandomly)
     //zs.foreach(z => { z.multinomial :== alpha; /*z := z.multinomial.sampleInt*/ })
     println(xs.map(x => (x,x.generativeSource)))
@@ -36,7 +36,7 @@ object GaussianMixture {
     println(xs.map(x => (x,x.generativeSource)))
     
     for (iteration <- 1 to 30) {
-    	zs.foreach(_.sample(null))
+      zs.foreach(_.sample(null))
       gs.foreach(_.estimate)
       println("Estimated means from current assignments "+gs)
       //println("Estimated means from current assignments "+gs.map(_.mean))

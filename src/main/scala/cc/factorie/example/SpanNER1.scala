@@ -40,19 +40,19 @@ object SpanNER1 {
     def spanLength = new SpanLength(len)
     override def phrase = this.map(_.word).mkString(" ")
     def isCorrect = this.forall(token => token.trueLabelValue == label.value) &&
-    	(!hasPredecessor(1) || predecessor(1).trueLabelValue != label.value) && 
-    	(!hasSuccessor(1) || successor(1).trueLabelValue != label.value)
+      (!hasPredecessor(1) || predecessor(1).trueLabelValue != label.value) && 
+      (!hasSuccessor(1) || successor(1).trueLabelValue != label.value)
     // Does this span contains the words of argument span in order?
     def contains(span:Span): Boolean = {
       for (i <- 0 until length) {
         if (length - i < span.length) return false
-      	var result = true
-      	var i2 = i; var j = 0
-      	while (j < span.length && i2 < this.length && result) {
+        var result = true
+        var i2 = i; var j = 0
+        while (j < span.length && i2 < this.length && result) {
           if (span(j).word != this(i2)) result = false
           j += 1; i2 += 1
-      	}
-      	if (result == true) return true 
+        }
+        if (result == true) return true 
       }
       return false
     }
@@ -142,14 +142,14 @@ object SpanNER1 {
             result -= 1.0
             allTokensCorrect = false
           } else {
-          	result += 1.0
+            result += 1.0
             allTokensCorrect = false
           }
           if (token.spans.length > 1) result -= 100.0 // penalize overlapping spans
         }
         if (allTokensCorrect) {
-        	if (!span.hasPredecessor(1) || span.predecessor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
-        	if (!span.hasSuccessor(1) || span.successor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
+          if (!span.hasPredecessor(1) || span.predecessor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
+          if (!span.hasSuccessor(1) || span.successor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
         }
         result
       }
@@ -215,31 +215,31 @@ object SpanNER1 {
   
   // The predictor for test data
   val predictor = new TokenSpanSampler(model, null) { 
-  	temperature = 0.0001 
-  	override def preProcessHook(t:Token): Token = { 
-  		super.preProcessHook(t)
-  		if (t.isCapitalized) {
-  			if (verbose) t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
-  			t 
-  		} else null.asInstanceOf[Token] 
-  	}
-  	override def proposalsHook(proposals:Seq[Proposal]): Unit = {
-  		if (verbose) println("Test proposal")
-  		//proposals.foreach(println(_)); println
-  		if (verbose) { proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else ""))); println }
-  		super.proposalsHook(proposals)
-  	}
-  	override def proposalHook(proposal:Proposal): Unit = {
-  		super.proposalHook(proposal)
-  		// If we changed the possible world last time, try sampling it again right away to see if we can make more changes
-  		if (proposal.diff.size > 0) {
-  			val spanDiffs = proposal.diff.filter(d => d.variable match { case s:Span => s.present; case _ => false })
-  			spanDiffs.foreach(_.variable match {
-  				case span:Span => if (span.present) { if (verbose) println("RECURSIVE PROPOSAL"); this.process(span.last) }
-  				case _ => {}
-  			})
-  		}
-  	}
+    temperature = 0.0001 
+    override def preProcessHook(t:Token): Token = { 
+      super.preProcessHook(t)
+      if (t.isCapitalized) {
+        if (verbose) t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
+        t 
+      } else null.asInstanceOf[Token] 
+    }
+    override def proposalsHook(proposals:Seq[Proposal]): Unit = {
+      if (verbose) println("Test proposal")
+      //proposals.foreach(println(_)); println
+      if (verbose) { proposals.foreach(p => println(p+"  "+(if (p.modelScore > 0.0) "MM" else ""))); println }
+      super.proposalsHook(proposals)
+    }
+    override def proposalHook(proposal:Proposal): Unit = {
+      super.proposalHook(proposal)
+      // If we changed the possible world last time, try sampling it again right away to see if we can make more changes
+      if (proposal.diff.size > 0) {
+        val spanDiffs = proposal.diff.filter(d => d.variable match { case s:Span => s.present; case _ => false })
+        spanDiffs.foreach(_.variable match {
+          case span:Span => if (span.present) { if (verbose) println("RECURSIVE PROPOSAL"); this.process(span.last) }
+          case _ => {}
+        })
+      }
+    }
   }
 
   
@@ -248,26 +248,26 @@ object SpanNER1 {
   def main(args: Array[String]): Unit = {
     // Parse command-line
     object opts extends DefaultCmdOptions {
-    	val trainFile = new CmdOption("train", "FILE", List("eng.train"), "CoNLL formatted training file.")
-    	val testFile  = new CmdOption("test",  "FILE", "", "CoNLL formatted dev file.")
-    	val modelDir =  new CmdOption("model", "DIR",  "spanner1.factorie", "Directory for saving or loading model.")
-    	val runXmlDir = new CmdOption("run",   "DIR",  "xml", "Directory for reading data on which to run saved model.")
-    	val lexiconDir =new CmdOption("lexicons", "DIR", "lexicons", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
-    	val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER1.this.verbose = true }
-    	val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
+      val trainFile = new CmdOption("train", "FILE", List("eng.train"), "CoNLL formatted training file.")
+      val testFile  = new CmdOption("test",  "FILE", "", "CoNLL formatted dev file.")
+      val modelDir =  new CmdOption("model", "DIR",  "spanner1.factorie", "Directory for saving or loading model.")
+      val runXmlDir = new CmdOption("run",   "DIR",  "xml", "Directory for reading data on which to run saved model.")
+      val lexiconDir =new CmdOption("lexicons", "DIR", "lexicons", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
+      val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER1.this.verbose = true }
+      val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
     }
     opts.parse(args)
     
     if (opts.lexiconDir.wasInvoked) {
-    	for (filename <- List("cities", "companies", "companysuffix", "countries", "days", "firstname.high", "firstname.highest", "firstname.med", "jobtitle", "lastname.high", "lastname.highest", "lastname.med", "months", "states")) {
-    		println("Reading lexicon "+filename)
-    		lexicons += new Lexicon(opts.lexiconDir.value+"/"+filename)
+      for (filename <- List("cities", "companies", "companysuffix", "countries", "days", "firstname.high", "firstname.highest", "firstname.med", "jobtitle", "lastname.high", "lastname.highest", "lastname.med", "months", "states")) {
+        println("Reading lexicon "+filename)
+        lexicons += new Lexicon(opts.lexiconDir.value+"/"+filename)
       }
     }
     
     if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-    	model.load(opts.modelDir.value)
+      model.load(opts.modelDir.value)
       run(opts.runXmlDir.value)
     } else {
       train(opts.trainFile.value, opts.testFile.value, opts.noSentences.wasInvoked)
@@ -289,11 +289,11 @@ object SpanNER1 {
         val content = article \ "head" \ "docdata" \ "identified-content"
         print("Reading ***"+(article\"head"\"title").text+"***")
         documents += TokenSeqs.TokenSeq.fromPlainText(
-        	Source.fromString((article \ "body" \ "body.content").text), 
-        	(word,lab)=>new Token(word,lab),
-        	()=>new Sentence,
-        	"O", 
-        	(str)=>featureExtractor(List(str)), "'s|n't|a\\.m\\.|p\\.m\\.|Inc\\.|Corp\\.|St\\.|Mr\\.|Mrs\\.|Dr\\.|([A-Z]\\.)+|vs\\.|[-0-9,\\.]+|$|[-A-Za-z0-9\\+$]+|\\p{Punct}".r)
+          Source.fromString((article \ "body" \ "body.content").text), 
+          (word,lab)=>new Token(word,lab),
+          ()=>new Sentence,
+          "O", 
+          (str)=>featureExtractor(List(str)), "'s|n't|a\\.m\\.|p\\.m\\.|Inc\\.|Corp\\.|St\\.|Mr\\.|Mrs\\.|Dr\\.|([A-Z]\\.)+|vs\\.|[-0-9,\\.]+|$|[-A-Za-z0-9\\+$]+|\\p{Punct}".r)
         documents.last.filename = file.toString
         println("  "+documents.last.size)
         documents.last.foreach(t=> print(t.word+" ")); println
@@ -455,11 +455,11 @@ object SpanNER1 {
     val spans = token.spans
     for (span <- spans) {
       println("%s %-8s %-15s %-30s %-15s".format(
-      		if (span.isCorrect) " " else "*",
-      		span.label.value, 
-      		if (span.hasPredecessor(1)) span.predecessor(1).word else "<START>", 
-      		span.phrase, 
-      		if (span.hasSuccessor(1)) span.successor(1).word else "<END>"))
+          if (span.isCorrect) " " else "*",
+          span.label.value, 
+          if (span.hasPredecessor(1)) span.predecessor(1).word else "<START>", 
+          span.phrase, 
+          if (span.hasSuccessor(1)) span.successor(1).word else "<END>"))
       span.foreach(token => print(token.word+" ")); println
     }
   }
