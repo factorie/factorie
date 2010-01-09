@@ -101,7 +101,7 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
   /** Insert list "that" after this link */
   def postInsert(that:This): Unit = if (that ne null) {
     if (that.prev != null) throw new IllegalArgumentException("Trying to insert the middle of another LinkList")
-    that.append(next)
+    that.append(trimNext)
     next = that
     that.prev = this
   }
