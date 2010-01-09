@@ -153,8 +153,40 @@ import cc.factorie.util.Implicits._
       this.swapWith(that)
       if (d ne null) {
         d += new VarInMutableSeqSwapDiff(this, that)
-        d += new VarInMutableSeqSwapDiff2(that)
+        d += new VarInMutableSeqOtherVar(that)
       }
+    }
+    /** Delete "this". */
+    def deleteVar(implicit d:DiffList): Unit = {
+      if (d ne null) {
+        d += new VarInMutableSeqOtherVar(prev)
+        d += new VarInMutableSeqOtherVar(next)
+      }
+      VarInMutableSeqDeleteDiff(prev, next)
+    }
+    /** Insert "that" before "this". */
+    def insertVar(that:This)(implicit d:DiffList): Unit = {
+      VarInMutableSeqPreInsertDiff(that)
+      if (d ne null) {
+        d += new VarInMutableSeqOtherVar(that)
+        if (that.hasPrev) d += new VarInMutableSeqOtherVar(that.prev)
+      }
+    }
+    case class VarInMutableSeqDeleteDiff(prevElt:This, nextElt:This)(implicit d:DiffList) extends Diff {
+      if (d ne null) d += this
+      var done = false
+      redo
+      def variable: This = if (!done) VarInMutableSeq.this else null
+      def redo = { assert(!done); done = true; remove }
+      def undo = { assert(done); done = false; if (prevElt ne null) prevElt.postInsert(variable) else nextElt.preInsert(variable) }
+    }
+    case class VarInMutableSeqPreInsertDiff(that:This)(implicit d:DiffList) extends Diff {
+      if (d ne null) d += this
+      var done = false
+      redo
+      def variable: This = if (done) VarInMutableSeq.this else null
+      def redo = { assert(!done); done = true; preInsert(that) }
+      def undo = { assert(done); done = false; that.remove }
     }
     case class VarInMutableSeqSwapDiff(ths:This, that:This) extends Diff {
       def variable: This = VarInMutableSeq.this
@@ -162,7 +194,7 @@ import cc.factorie.util.Implicits._
       def redo = ths.swapWith(that)
       def undo = redo
     }
-    case class VarInMutableSeqSwapDiff2(that:This) extends Diff {
+    case class VarInMutableSeqOtherVar(that:This) extends Diff {
       def variable: This = that  // Just to put another variable on the difflist
       def redo = {}
       def undo = {}
