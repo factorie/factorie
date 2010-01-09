@@ -13,6 +13,11 @@ import java.io.File
 import cc.factorie.util.DefaultCmdOptions
 import cc.factorie.util.Implicits._
 
+// Sample training command line:
+// --train=/Users/mccallum/research/data/ie/ner2003/eng.train,/Users/mccallum/research/data/ie/ner2003/eng.testa --test=/Users/mccallum/research/data/ie/ner2003/eng.testb --model=/Users/mccallum/tmp/spanner1.factorie --lexicons=/Users/mccallum/research/data/resources/lexicons --nosentences --verbose
+// Sample running command line:
+// --run=/Users/mccallum/research/projects/football/data/1990/12/05  --model=/Users/mccallum/tmp/spanner1.factorie --lexicons=/Users/mccallum/research/data/resources/lexicons --verbose --nosentences
+  
 /** Span-based named entity recognition.
     Includes the ability to save model to disk, and run saved model on NYTimes-style XML files.
     @author Andrew McCallum */
@@ -210,7 +215,7 @@ object SpanNER1 {
   
   // The predictor for test data
   val predictor = new TokenSpanSampler(model, null) { 
-  	temperature = 0.001 
+  	temperature = 0.0001 
   	override def preProcessHook(t:Token): Token = { 
   		super.preProcessHook(t)
   		if (t.isCapitalized) {
@@ -239,17 +244,17 @@ object SpanNER1 {
 
   
   
-  
   // The "main", examine the command line and do some work
   def main(args: Array[String]): Unit = {
     // Parse command-line
     object opts extends DefaultCmdOptions {
-      val trainFile = new CmdOption("train", "FILE", "eng.train", "CoNLL formatted training file.")
-      val testFile  = new CmdOption("test",  "FILE", "eng.testa", "CoNLL formatted dev file.")
-      val modelDir =  new CmdOption("model", "DIR",  "spanner1.factorie", "Directory for saving or loading model.")
-      val runXmlDir = new CmdOption("run",   "DIR",  "xml", "Directory for reading data on which to run saved model.")
-      val lexiconDir =new CmdOption("lexicons", "DIR", "lexicons", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
-      val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER1.this.verbose = true }
+    	val trainFile = new CmdOption("train", "FILE", List("eng.train"), "CoNLL formatted training file.")
+    	val testFile  = new CmdOption("test",  "FILE", "", "CoNLL formatted dev file.")
+    	val modelDir =  new CmdOption("model", "DIR",  "spanner1.factorie", "Directory for saving or loading model.")
+    	val runXmlDir = new CmdOption("run",   "DIR",  "xml", "Directory for reading data on which to run saved model.")
+    	val lexiconDir =new CmdOption("lexicons", "DIR", "lexicons", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
+    	val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER1.this.verbose = true }
+    	val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
     }
     opts.parse(args)
     
@@ -265,7 +270,7 @@ object SpanNER1 {
     	model.load(opts.modelDir.value)
       run(opts.runXmlDir.value)
     } else {
-      train(opts.trainFile.value, opts.testFile.value)
+      train(opts.trainFile.value, opts.testFile.value, opts.noSentences.wasInvoked)
       if (opts.modelDir.wasInvoked) model.save(opts.modelDir.value)
     }   
   }
@@ -299,22 +304,22 @@ object SpanNER1 {
     println("Have "+testTokens.length+" tokens")
     println("Domain[Token] size="+Domain[Token].size)
     println("Domain[Label] "+Domain[Label].toList)
-    predictor.process(testTokens, 4)
+    predictor.process(testTokens, 2)
     documents.foreach(s => { println("FILE "+s.filename); printSentence(s) })
   }
   
   // Train a new model and evaluate on the dev set
-  def train(trainFile:String, devFile:String): Unit = {
-    // Read training and testing data.  The function 'featureExtractor' function is defined below
-    def newSentenceFromOWPL(filename:String) = 
+  def train(trainFiles:Seq[String], devFile:String, ignoreSentenceBoundaries:Boolean): Unit = {
+    // Read training and testing data.  The function 'featureExtractor' function is defined below.  Now training on seq == whole doc, not seq == sentece
+    def newSentenceFromOWPL(filename:String) = if (filename.length == 0) List[Sentence]() else 
       TokenSeqs.TokenSeq.fromOWPL[Token,Sentence](
         Source.fromFile(filename), 
         (word,lab)=>new Token(word,lab), 
         ()=>new Sentence, 
         featureExtractor _, 
         (lab:String) => if (lab.length > 2) lab.substring(2) else lab, 
-        "-DOCSTART-".r)
-    val trainSentences = newSentenceFromOWPL(trainFile) 
+        "-DOCSTART-".r, if (ignoreSentenceBoundaries) null else "\\A\\s*\\z".r, null)
+    val trainSentences = trainFiles.flatMap(newSentenceFromOWPL(_)) 
     val testSentences = newSentenceFromOWPL(devFile) 
     println("Read "+trainSentences.length+" training sentences, and "+testSentences.length+" testing ")
 
