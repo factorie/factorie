@@ -355,6 +355,10 @@ object Domain {
   def update[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]): Unit = { 
     println("In Domain.update!")
   }
+  //todo: this should be more picky about the type parameter
+  def update(c:Class[_],d:Domain[_]): Unit = { 
+    _domains(c) = d     
+  }
   /** Return a Domain instance for Variables of class c, constructing one if necessary.  Also put it in the _domains map. */
   private def getDomainForClass(c:Class[_]) : Domain[_] = {
     if (domainInSubclassesByAnnotation(c)) throw new Error("Cannot get a Domain for "+c+" because it declares DomainInSubclasses, and should be considered abstract.")
