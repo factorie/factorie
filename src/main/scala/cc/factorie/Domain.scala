@@ -35,7 +35,8 @@ class Domain[V<:Variable](implicit m:Manifest[V]) {
   def :=(d:Domain[Variable]) = println("In Domain.:=")
   def save(dirname:String): Unit = {}
   def load(dirname:String): Unit = {}
-  protected def filename:String = this.getClass.getName+"["+variableClasses.apply(0).getName+"]"
+  //made this public in order to check from outside whether the file to load from exists
+  def filename:String = this.getClass.getName+"["+variableClasses.apply(0).getName+"]"
   // Automatically register ourselves.  
   // This enables pairing a Domain with its variable V by simply: "val MyDomain = new FooDomain[MyVariable]"
   Domain.+=[V](this)(m)
