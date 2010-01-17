@@ -30,7 +30,7 @@ object TokenSeqs {
       Its value is a BinaryVectorVariable, its feature vector.
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
   @DomainInSubclasses
-  abstract class Token[S<:VariableSeq[This], This >:Null <:Token[S,This]](val word:String, features:Seq[String])
+  abstract class Token[S<:VariableSeq[This], This >:Null <:Token[S,This]](val wordForm:String, features:Seq[String])
   extends BinaryVectorVariable[String] with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
     this: This =>
     def this(word:String) = this(word, Nil)
@@ -51,6 +51,8 @@ object TokenSeqs {
     def wordShape(maxRepetitions:Int) = TokenSeqs.wordShape(word, maxRepetitions)
     def charNGrams(min:Int, max:Int): Seq[String] = TokenSeqs.charNGrams(word, min, max)
     this ++= features
+    def word=wordForm
+
   }
 
   
