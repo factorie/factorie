@@ -47,6 +47,8 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
   def get(key:String) = opts.get(key)
   def size = opts.size
   def elements = opts.elements
+  var strict = true
+
   def +=[T](c:CmdOption[T]): Unit = {
     if (opts.contains(c.name)) throw new Error("CmdOption "+c.name+" already exists.")
     opts(c.name) = c
@@ -79,7 +81,7 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
       }
       if (!invoked) {
         // Handle options not recognized by any CmdOption parse
-        if (args(index).startsWith("-")) error("Unrecognized option "+args(index))
+        if (strict && args(index).startsWith("-")) error("Unrecognized option "+args(index))
         result += args(index)
         index += 1
       } 
