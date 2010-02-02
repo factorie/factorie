@@ -187,6 +187,7 @@ import cc.factorie.util.Implicits._
       def variable: This = if (done) VarInMutableSeq.this else null
       def redo = { assert(!done); done = true; preInsert(that) }
       def undo = { assert(done); done = false; that.remove }
+      override def toString = "VarInMutableSeqDeleteDiff(prev="+VarInMutableSeq.this+",insert="+that+")"
     }
     case class VarInMutableSeqSwapDiff(ths:This, that:This) extends Diff {
       def variable: This = VarInMutableSeq.this
