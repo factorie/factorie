@@ -160,36 +160,36 @@ trait CountsMultinomial[O<:DiscreteValue] extends AbstractMultinomial[O] {
   override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],GeneratedProportionValue[O]]
   def length: Int = counts.size 
   def smoothing = 0.0
-  private var total : Double = 0.0
-  def countsTotal = total
-  def countTotal = total + smoothing * length
+  var _total: Double = 0.0 // TODO I want this to be "private", but Eclipse is failing to compile in this case.
+  def countTotal = _total + smoothing * length
+  def countsTotal = _total
   protected val _counts: { def apply(i:Int): Double; def update(i:Int, x:Double): Unit; def size:Int }
   override def counts: { def apply(i:Int):Double; def update(i:Int,v:Double):Unit; def size:Int } = _counts // TODO Want Seq[Double], but Vector doesn't mixin Seq?!!
   def count(index:Int): Double = counts(index) + smoothing
   def increment(index:Int, incr:Double)(implicit d:DiffList) = { // TODO Scala 2.8 add incr:Double=1.0
-    _counts(index) += incr; total += incr // TODO Wow, in debugging I see BoxesRunTime.unboxToInt(Object) following DenseVector.apply(Object) line 35
+    _counts(index) += incr; _total += incr // TODO Wow, in debugging I see BoxesRunTime.unboxToInt(Object) following DenseVector.apply(Object) line 35
     if (_counts(index) < 0.0) println("CountsMultinomial "+this.getClass.getName+" counts="+_counts(index)+" incr="+incr)
     assert(_counts(index) >= 0.0)
-    assert(total >= 0.0)
+    assert(_total >= 0.0)
     if (d != null) d += new CountsMultinomialIncrementDiff(index, incr)
   }
   def increment(o:O, incr:Double)(implicit d:DiffList): Unit = increment(o.index, incr)
   def increment(s:Seq[Double])(implicit d:DiffList): Unit = {
     assert(s.length == length)
-    for (i <- 0 until length) { _counts(i) += s(i); total += s(i) }
+    for (i <- 0 until length) { _counts(i) += s(i); _total += s(i) }
     if (d != null) d += new CountsMultinomialSeqIncrementDiff(s)
   }
   // TODO Note that this does not factor in smoothing.  I think "smoothing" should go into a trait.
   def set(c:Seq[Double]): Unit = { // TODO Add DiffList here?
     assert(c.length == _counts.size)
-    total = 0.0
+    _total = 0.0
     // Make the assignment, attempting to preserve sparsity
-    var i = 0; c.foreach(x => { if (x > 0.0 || _counts(i) != 0.0) _counts(i) = x; total += x; i += 1}) 
+    var i = 0; c.foreach(x => { if (x > 0.0 || _counts(i) != 0.0) _counts(i) = x; _total += x; i += 1}) 
   }
   // Raw operations on count vector, without Diffs
-  def zero(): Unit = { total = 0.0; for (i <- 0 until size) _counts(i) = 0.0 }
+  def zero(): Unit = { _total = 0.0; for (i <- 0 until size) _counts(i) = 0.0 }
   def increment(m:AbstractMultinomial[O], rate:Double): Unit = { 
-    total += norm(m,1)
+    _total += norm(m,1)
     for (i <- 0 until size) _counts(i) += m(i) }  
   def pr(index:Int) : Double = if (countsTotal == 0) 1.0 / size else count(index) / countTotal
   override def sampleIndex: Int = { // TODO More efficient because it avoids the normalization in this.pr
@@ -205,17 +205,17 @@ trait CountsMultinomial[O<:DiscreteValue] extends AbstractMultinomial[O] {
     if (generatedSamples.isEmpty) throw new Error("No generated samples from which to estimate")
     if (generativeSource == null) { zero }
     else { 
-      total = generativeSource.asGenerativeDistribution.alphaSum
+      _total = generativeSource.asGenerativeDistribution.alphaSum
       for (i <- 0 until size) _counts(i) = generativeSource.asGenerativeDistribution.alphaVector(i)
     }
     generatedSamples.foreach(o => {
       o match { // TODO clean this up
         case o2:GeneratedDiscreteValue[O] => o2.generativeSource match {
           case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
-            for (i <- 0 until length) { _counts(i) += mixture.multinomial(i); total += 1.0 }
-          case _ => { _counts(o.index) += 1.0; total += 1.0 }
+            for (i <- 0 until length) { _counts(i) += mixture.multinomial(i); _total += 1.0 }
+          case _ => { _counts(o.index) += 1.0; _total += 1.0 }
         }
-        case _ => { _counts(o.index) += 1.0; total += 1.0 }
+        case _ => { _counts(o.index) += 1.0; _total += 1.0 }
       }
     })
   }
@@ -223,13 +223,13 @@ trait CountsMultinomial[O<:DiscreteValue] extends AbstractMultinomial[O] {
   override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortReverse({case (p,i)=>p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i))}).filter(_.pr > 0.0)
   case class CountsMultinomialIncrementDiff(index:Int, incr:Double) extends Diff {
     def variable = CountsMultinomial.this
-    def undo = { _counts(index) -= incr; total -= incr }
-    def redo = { _counts(index) += incr; total += incr }
+    def undo = { _counts(index) -= incr; _total -= incr }
+    def redo = { _counts(index) += incr; _total += incr }
   }
   case class CountsMultinomialSeqIncrementDiff(s:Seq[Double]) extends Diff {
     def variable = CountsMultinomial.this
-    def undo = { for (i <- 0 until length) { _counts(i) -= s(i); total -= s(i) } }
-    def redo = { for (i <- 0 until length) { _counts(i) += s(i); total += s(i) } }
+    def undo = { for (i <- 0 until length) { _counts(i) -= s(i); _total -= s(i) } }
+    def redo = { for (i <- 0 until length) { _counts(i) += s(i); _total += s(i) } }
   }
 }
 
