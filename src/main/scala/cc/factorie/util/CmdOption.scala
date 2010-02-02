@@ -64,9 +64,11 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
     opts.values.foreach(o => { if (o.hasValue) sb.append(o.name+"="+o.valueName) else sb.append(o.name); sb.append(" ") })
     sb.toString
   }
-  /** Parse sequence of command-line arguments.  Return sequence of arguments that were unqualified by dashed options. */
-  def parse(args:Seq[String]): Seq[String] = {
-    val result = new ArrayBuffer[String]
+  /** The arguments that were unqualified by dashed options. */
+  private val _remaining = new ArrayBuffer[String]
+  def remaining: Seq[String] = _remaining
+  /** Parse sequence of command-line arguments. */
+  def parse(args:Seq[String]): Unit = {
     //opts.values.foreach(o => o.invokedCount = 0) // Reset for each parse?  No, might want to parse multiple times.
     var index = 0
     while (index < args.length) {
@@ -82,7 +84,7 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
       if (!invoked) {
         // Handle options not recognized by any CmdOption parse
         if (strict && args(index).startsWith("-")) error("Unrecognized option "+args(index))
-        result += args(index)
+        _remaining += args(index)
         index += 1
       } 
     }
@@ -90,7 +92,6 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
       case Some(o) => error("Required CmdOption "+o.name+" was not provided.")
       case None =>
     }
-    result
   }
   class CmdOption[T](val name:String, val helpMsg:String)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
     // TODO Add "required" constructor argument when we have Scala 2.8
