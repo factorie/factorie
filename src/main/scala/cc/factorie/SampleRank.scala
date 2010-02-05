@@ -24,7 +24,11 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
   /** If objective has not yet been set non-null, get it from the Global.defaultObjective. */
   abstract override def objective = if (super.objective == null) Global.defaultObjective else super.objective
   
-  var bestModel1, bestModel2, bestObjective1, bestObjective2 : Proposal = null
+  var bestModel1, bestModel2, bestObjective1, bestObjective2, changeProposal : Proposal = null
+
+  def predictedScore = changeProposal.modelScore
+  def targetScore = changeProposal.objectiveScore
+
   abstract override def proposalsHook(proposals:Seq[Proposal]) : Unit = {
     if (proposals.length < 2) return
     super.proposalsHook(proposals)
@@ -35,6 +39,7 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
     bestModel2 = bestModels._2
     bestObjective1 = bestObjectives._1
     bestObjective2 = bestObjectives._2
+    changeProposal = if(bestModel1.diff.size>0) bestModel1 else bestModel2
     assert(bestObjective1.objectiveScore == bestObjective1.objectiveScore) // Check not NaN 
     assert(bestObjective2.objectiveScore == bestObjective2.objectiveScore)  
     //val props = List(bestModel1, bestModel2, bestObjective1, bestObjective2)

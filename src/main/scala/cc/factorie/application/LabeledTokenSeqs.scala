@@ -368,6 +368,19 @@ object LabeledTokenSeqs {
       override def toString = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(labelValue, f1, precision, recall, tp, fp, fn, tp+fn, tp+fp) 
     }
 
+/*
+    class MetaLabelEvaluation[T<:Token[L,T],L<:Label[T,L]](val backgroundLabelValue:String)(implicit m:Manifest[L])
+    {
+      //
+      //for f1 only? TODO: include pr and re
+      var stddev : Double = 0
+      var variance : Double = 0
+      var avg : Double = 0
+      var stderr : Double = 0
+      var numTrials : Double = 0
+    }
+*/
+
     class LabelEvaluation[T<:Token[L,T],L<:Label[T,L]](val backgroundLabelValue:String)(implicit m:Manifest[L]) {
       import scala.collection.mutable.HashMap
       def this(labels:Seq[L])(implicit m:Manifest[L]) = { this("O"); this += labels }
@@ -546,8 +559,12 @@ object LabeledTokenSeqs {
     // TODO Add more combinations of arguments
     def segmentEvaluation[T<:Token[L,T],L<:Label[T,L]](labels:Seq[L])(implicit m:Manifest[L]) = new SegmentEvaluation[T,L](labels)
 
+  def segmentEvaluationAndGetF1[T<:Token[L,T],L<:Label[T,L]](labels:Seq[L])(implicit m:Manifest[L]) : Double = new SegmentEvaluation[T,L](labels).f1
+
   }
 
+  
+  
   // Feature extraction aids
   /** Return a string that captures the generic "shape" of the original word, 
       mapping lowercase alphabetics to 'a', uppercase to 'A', digits to '1', whitespace to ' '.
