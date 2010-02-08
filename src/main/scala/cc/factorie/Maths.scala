@@ -439,10 +439,14 @@ object Maths {
     for (i <- 0 until a.length) a(i) /= sum
   }
 
- 
- 
-  // Random number helpers
- 
+  def normalizeLogProb(a:Array[Double]):Unit = {
+    // normalizeLogProb: [log(a), log(b), log(c)] --> [log(a/Z), log(b/Z), log(c/Z)] where Z = a+b+c
+    // expNormalize: [log(a), log(b), log(c)] --> [a/Z, b/Z, c/Z] where Z=a+b+c
+    expNormalize(a)
+    for (i <- 0 until a.length) a(i) = Math.log(a(i))
+  }
+
+  // Random number helpers 
  
   /** Return random integer from Poission with parameter lambda.  
    * The mean of this distribution is lambda.  The variance is lambda. */
