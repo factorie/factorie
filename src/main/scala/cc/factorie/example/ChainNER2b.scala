@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2010 Univ of Massachusetts Amherst, Computer Science Dept
+/* Copyright (C) 2008-2009 Univ of Massachusetts Amherst, Computer Science Dept
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
    This software is provided under the terms of the Eclipse Public License 1.0
@@ -7,16 +7,30 @@
 
 package cc.factorie.example
 import scala.io.Source
-import cc.factorie._ 
+import cc.factorie._
 import cc.factorie.er._
 import cc.factorie.application.LabeledTokenSeqs
 import cc.factorie.application.LabeledTokenSeqs.LabeledTokenSeq
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
 
+import scala.collection.mutable.HashMap
+
 /** Demo of CoNLL NER with lots of features.  Aiming for near state-of-the-art accuracy, but not yet finished.
     Apologies for the current mess here as we explore various options. */
 object ChainNER2b {
+
+  // Misc. Utils
+  def printred(s:String): Unit = println("\033[31m" + s + "\033[0m" )
+  def printgreen(s:String): Unit = println("\033[32m" + s + "\033[0m")
+  class ProgressBar(val N:Double) {
+    var completed = 0.0
+    def update(amount:Double) = {
+      completed += amount
+      print("\r%5.1f%% (%s/%s) complete".format(completed*100.0/N, completed, N))
+    }
+  }
+
 
   // Define the variable classes
   class Token(word:String, labelString:String) extends LabeledTokenSeqs.Token[Label,Token](word) {
@@ -31,7 +45,7 @@ object ChainNER2b {
     }
     override def toString: String = "Token("+word+")@"+position
   }
-  
+
   class Label(labelString:String, token:Token) extends LabeledTokenSeqs.Label[Token,Label](labelString, token) {
     type GetterType = LabelGetter; class GetterClass extends LabelGetter
     override def toString: String = "Label("+value+")@"+token.position
@@ -43,146 +57,347 @@ object ChainNER2b {
     def tags = getOneWay(_.tags)
     def wordtype = getOneWay(_.wordtype)
   }
+
   class LabelGetter extends LabeledTokenSeqs.LabelGetter[Token,Label] {
     override def newTokenGetter = new TokenGetter
     override def newLabelGetter = new LabelGetter
   }
-  
+
+
+  type InstanceType = LabeledTokenSeq[Token,Label]
+
   // Variable classes Token, Label and LabeledTokenSeq are already defined in cc.factorie.application.LabeledTokenSeqs
   // Use them to define model:
   val model = new Model(
+    //Foreach[Label] { label => Score(label.prev, label, label.token) } %"LabelLabelToken",
     Foreach[Label] { label => Score(label) } %"Prior",
     Foreach[Label] { label => Score(label, label.token) } %"LabelToken",
     Foreach[Label] { label => Score(label.prev, label) } %"LabelLabel",
+    Foreach[Label] { label => Score(label.prev, label, label.token.tags) },
+//    Foreach[Label] { label => Score(label.prev.prev, label.prev, label) } %"SecondOrder",
+//    Foreach[Label] { label => Score(label.prev, label, label.next, label.token.tags) },
+//    Foreach[Label] { label => Score(label, label.token.tags) },
     //Foreach[Label] { label => Score(label.prev, label, label.token.tags) },
     //Foreach[Label] { label => Score(label.prev, label, label.next) },
-    //Foreach[Label] { label => Score(label.prev, label, label.next, label.token.tags) }
-    //For[Label] { label => Score(label, label.token) }                 % "LabelToken",
-    //For[Label] { label => Score(label, label.next) }                  % "LabelMarkov",
   )
 
-  def main(args: Array[String]) : Unit = {
-    if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
-    // Read training and testing data.  The function 'featureExtractor' function is defined below
-    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(0)), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)//.take(200)
-    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(1)), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)//.take(200)
-    println(Domain[Label].toList)
-    // Change from CoNLL's IOB notation to to BIO notation
-    (trainSentences ++ testSentences).foreach(s => { 
-      s.foreach(t => {
-        //println("Token "+t.word+"  "+t.label.value+"  "+t.label.value(0)+"  "+(t.label.value(0)=='I'))
-        //print("  %-8s %-8s ".format(t.label.trueValue, t.label.value))
-        if (t.label.value(0) == 'I' && (!t.hasPrev || t.prev.label.value.substring(1) != t.label.value.substring(1))) {
-          val newValue = "B"+t.label.value.substring(1) 
-          t.label.value = newValue
-          t.label.trueValue = newValue
+  // Utility function for mapping between different label encodings
+  var useBILOU = false
+
+  // Change the encoding of a sequence of Labels from BIO to BILOU
+  // WARNING: this operation changes Domain[Label]
+  def bio2bilou(labels:Seq[Label]): Unit = {
+    if (!useBILOU) return
+    labels.foreach(lbl => {
+      assert(lbl.trueValue(0) != 'L') // sanity check: make sure you weren't using BILOU already.
+      // convert true value
+      if (lbl.trueValue(0) == 'B' && (!lbl.hasNext || (lbl.hasNext && lbl.next.trueValue(0) != 'I')))
+        lbl.trueValue = "U" + lbl.trueValue.substring(1)
+      if (lbl.trueValue(0) == 'I' && (!lbl.hasNext || (lbl.hasNext && lbl.next.trueValue(0) != 'I')))
+        lbl.trueValue = "L" + lbl.trueValue.substring(1)
+      // convert predicted value
+      if (lbl.value(0) == 'B' && (!lbl.hasNext || (lbl.hasNext && lbl.next.value(0) != 'I')))
+        lbl.value = "U" + lbl.value.substring(1)
+      if (lbl.value(0) == 'I' && (!lbl.hasNext || (lbl.hasNext && lbl.next.value(0) != 'I')))
+        lbl.value = "L" + lbl.value.substring(1)
+    })
+  }
+
+  // Change the encoding of a sequence of Labels from BILOU to BIO
+  // NOTE: Domain[Label] does not return BIO, it stays BILOU
+  def bilou2bio(labels:Seq[Label]): Unit = {
+    if (!useBILOU) return
+    var existsatleastoneL = false // sanity check: make sure you were using BILOU.
+    labels.foreach(lbl => {
+      existsatleastoneL = existsatleastoneL || (lbl.trueValue(0)=='L')
+      // convert true value
+      if (lbl.trueValue(0) == 'U')
+        lbl.trueValue = "B" + lbl.trueValue.substring(1)
+      if (lbl.trueValue(0) == 'L')
+        lbl.trueValue = "I" + lbl.trueValue.substring(1)
+      // convert predicted value
+      if (lbl.value(0) == 'U')
+        lbl.value = "B" + lbl.value.substring(1)
+      if (lbl.value(0) == 'L')
+        lbl.value = "I" + lbl.value.substring(1)
+    })
+    assert(existsatleastoneL)
+  }
+
+  // Change from CoNLL's IOB notation to BIO notation
+  // NOTE: IOB and BIO labels still have the same string values. So, rest assure the Domain[Label]
+  // does not change in this transformation).
+  def iob2bio(labels:Seq[Label]): Unit = {
+    labels.foreach(lbl => {
+        if (lbl.value(0) == 'I' && (!lbl.hasPrev || lbl.prev.value.substring(1) != lbl.value.substring(1))) {
+          val newValue = "B" + lbl.value.substring(1)
+          lbl.value = newValue
+          lbl.trueValue = newValue
         }
-        //println("   x %-8s %-8s %s".format(t.label.trueValue, t.label.value, t.word))
-      })}) 
-      
+      })
+  }
+
+  // For capitalized words, aggregate the features of the first occurence of a
+  // word to the words that follow it in the document. The assumptions being,
+  // the first occurence is typically easier to resolve than others.
+  def addFirstMentionFeatures(documents:Seq[Seq[Token]]) {
+    documents.foreach(d => {
+      for (i <- 0 until d.size) {
+        var t = d(i)
+        if (t.hasNext && t.isCapitalized && t.word.length > 1 && !t.values.exists(f => f.matches(".*FIRSTMENTION.*"))) {
+          // for each token after t
+          for (j <- (i+1) until d.size) {
+            var t2 = d(j)
+            if (t2.word == t.word) {
+              // add t's features to t2 prefixed with "FIRSTMENTION="
+              t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION=" + f)
+            }
+          }
+        }
+      }
+    })
+  }
+
+  def resetLabels(x:Seq[Label]): Unit = x.foreach(_:="O") //x.foreach(_.setRandomly)
+
+
+  def g(y:String, X:InstanceType): Double = {
+    var Y = X(0).label;   Y := y
+    local_score(Y)
+  }
+
+  def g(y:String, yp:String, X:InstanceType, t:Int): Double = {
+    var Y  = X(t).label;  Y  := y
+    var Yp = Y.prev;      Yp := yp
+    local_score(Y, Yp)
+  }
+
+  def g(y:String, yp:String, ypp:String, X:InstanceType, t:Int): Double = {
+    var Y  = X(t).label;   Y  := y
+    var Yp = Y.prev;       Yp := yp
+    var Ypp = Y.prev.prev; Ypp := ypp
+    local_score(Y, Yp, Ypp)
+  }
+
+  def local_score(Y:Label, local_labels:Label*): Double = {
+    // filter out factors touching Y which touch Labels other than Yp
+    val factors = model.factors(Y).filter(
+      _.variables.forall(x => !x.isInstanceOf[Label] || (x == Y) || local_labels.contains(x))
+    )
+    // add-up factor scores
+    factors.foldLeft(0.0)((acc,f) => acc + f.statistic.score)
+  }
+
+
+  def score_region(Y: Label, local_labels: List[Label]): Double = {
+    // filter out factors touching Y which touch Labels other than Yp
+    val factors = model.factors(Y).filter(
+      _.variables.forall(x => !x.isInstanceOf[Label] || (x == Y) || local_labels.contains(x))
+    )
+    // add-up factor scores
+    factors.foldLeft(0.0)((acc,f) => acc + f.statistic.score)
+  }
+
+  // cycle thru all combinations of a List of Variables
+  def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
+    if (vs == Nil) false
+    else if (vs.first.hasNext) {vs.first.next; true}
+    else if (vs.tail != Nil) {vs.first.reset; vs.first.next; nextValues(vs.tail)}
+    else false
+  }
+
+
+  def decode_viterbi(instance: InstanceType): Unit = {
+    if (instance.size == 0) return
+
+    val S = Domain[Label]
+    val N = instance.size
+
+    // make life less verbose with some typedefs...
+    type LabelType = String
+    type PathType = List[LabelType]
+    type TraceType = Tuple2[Double,PathType]
+    val null_PathType = null.asInstanceOf[PathType]
+
+    var V, W = new HashMap[LabelType, TraceType]
+
+    for (y <- S)
+      V(y) = (g(y, instance), List(y))
+
+    for (i <- 1 until N) {
+      W = new HashMap
+      for (y <- S) {
+        instance(i).label := y //<< might need to loop over more variables, e.g. order-2 or semi-markov
+
+        var max = Math.NEG_INF_DOUBLE
+        var argmax = null_PathType
+        var neighbors = List(instance(i-1).label)
+        val neighborSettings = neighbors.map(_.settings); neighborSettings.foreach(setting => {setting.reset; setting.next})
+        do {
+          var (score, path) = V( neighbors(0).value )
+          score += score_region(instance(i).label, neighbors)
+          if (score > max || argmax == null) { argmax = path; max = score }
+        } while (nextValues(neighborSettings))
+
+        W(y) = (max, argmax ++ List(y))
+      }
+      // we can forget about V[i-1,:] in the next iteration
+      V = W
+    }
+
+    // y* = argmax_{y in S} V[N,y]
+    var max = Math.NEG_INF_DOUBLE
+    var argmax = null_PathType
+    for (y <- S) {
+      var (score, path) = V(y)
+      if (score > max || argmax == null) {
+        argmax = path
+        max = score
+      }
+    }
+
+    // set variables to values in optimal path
+    for ((label, value) <- instance.labels.toList.zip(argmax)) label := value
+
+    null
+  }
+
+
+
+  def main(args: Array[String]): Unit = {
+
+    if (args.length != 2) {
+      println("Usage: %s <trainfile> <testfile>\n".format(args(0)))
+      return
+    }
+
+    printred("Reading training and testing data...")
+    // Read training and testing data.  The function 'featureExtractor' function is defined below
+    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(0)), (word,lab) => new Token(word, lab), featureExtractor _, "-DOCSTART-".r) //.take(100)
+    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(1)), (word,lab) => new Token(word, lab), featureExtractor _, "-DOCSTART-".r) //.take(50)
+
+    // Get the variables to be inferred
+    val trainLabels = trainSentences.flatMap(_.labels)
+    val testLabels = testSentences.flatMap(_.labels)
+
+    // print out performance measures of the current configuration
+    def evaluatePerformance() = {
+      // NOTE: the evaluation procedures are for the BIO encoding so we need to switch back to it temporarily.
+      bilou2bio(testLabels ++ trainLabels)
+      println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
+      println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
+      bio2bilou(testLabels ++ trainLabels)
+    }
+
+
+    printred("Adding offset conjunctions...")
     // Make features of offset conjunctions
     (trainSentences ++ testSentences).foreach(s => s.addNeighboringFeatureConjunctions(List(0), List(0,0), List(-1), List(-1,0), List(0,1), List(1)))
+
+    printred("Gathering tokens into documents...")
     // Gather tokens into documents
     val documents = new ArrayBuffer[ArrayBuffer[Token]]; documents += new ArrayBuffer[Token]
     (trainSentences ++ testSentences).foreach(s => if (s.length == 0) documents += new ArrayBuffer[Token] else documents.last ++= s)
-    // For documents that have a "-" within the first three words, the first word is a HEADER feature; apply it to all words in the document
+
+    printred("Adding header features...")
+    // For documents that have a "-" within the first three words,
+    // the first word is a HEADER feature; apply it to all words in the document
     documents.foreach(d => if (d.take(3).map(_.word).contains("-")) { val f = "HEADER="+d(0).word.toLowerCase; d.foreach(t => t += f)}) // println(d.take(4).map(_.word).mkString("", " ", "")))
-    // If the sentence contains no lowercase letters, tell all tokens in the sentence they are part of an uppercase sentence
-    (trainSentences ++ testSentences).foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t += "SENTENCEUPPERCASE"))
+
+    printred("Adding uppercase sentence features...")
+    // If the sentence contains no lowercase letters,
+    // tell all tokens in the sentence they are part of an uppercase sentence
+    (trainSentences ++ testSentences).foreach(s => if (!s.exists(_.containsLowerCase)) { s.foreach(t => t += "SENTENCEUPPERCASE"); } )
+
+    printred("Adding character n-gram features...")
     (trainSentences ++ testSentences).foreach(s => s.foreach(t => if (t.word.matches("[A-Za-z]+")) t ++= t.charNGrams(2,5).map(n => "NGRAM="+n)))
-    //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(5).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
-    //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.nextWindow(5).map(t2 => "NEXTWINDOW="+simplify(t2.word).toLowerCase)))
-    // Put features of first mention o later mentions
-    (trainSentences ++ testSentences).foreach(s => {
-      s.foreach(t => {
-        if (t.isCapitalized && t.word.length > 1 && !t.values.exists(f => f.matches(".*FIRSTMENTION.*"))) {
-          //println("Looking for later mentions of "+t.word)
-          var t2 = t
-          while (t2.hasNext) {
-            t2 = t2.next
-            if (t2.word == t.word) { /*println("Adding FIRSTMENTION to "+t2.word);*/ t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
-          }
-        }
-      })
-    })
-    println("Training on "+trainSentences.size+" sentences, "+trainSentences.foldLeft(0)(_+_.size)+" tokens.")
-    println("Testing  on "+testSentences.size+" sentences, "+testSentences.foldLeft(0)(_+_.size)+" tokens.")
-    println("Labels: "+Domain[Label].toList)
 
-    // Get the variables to be inferred; prune the data so that it can finish in just ~2 minutes
-    val trainLabels = trainSentences.flatMap(_.labels)//.take(50000) // was take(20000) 
-    val testLabels = testSentences.flatMap(_.labels)//.take(2000) // was .take(10000)
+    printred("Adding first mention features...")
+    addFirstMentionFeatures(documents)
 
-    //val targets = trainLabels.take(100)// trainSentences(15).map(_.label)
-    //targets.foreach(printLabel(_))
 
-    //trainLabels.take(20).foreach(printLabel(_))
-    println("Domain size = "+Domain[Token].size)
-    println("Tag Domain size = "+trainLabels.first.token.tags.domain.size)
-    
-    // Train and test!
-    (trainLabels ++ testLabels).foreach(_.setRandomly)
-    val predictor2 = new GibbsSampler2[Label,Label](model) {
-      temperature = 0.01
-      def block(label:Label) = label.prev
-    }
+    println("Training on " + trainSentences.size + " sentences, " + trainSentences.foldLeft(0)(_+_.size) + " tokens.")
+    println("Testing  on " + testSentences.size + " sentences, " + testSentences.foldLeft(0)(_+_.size) + " tokens.")
+    println("Labels: " + Domain[Label].toList)
+    println("Domain size = " + Domain[Token].size)
+    println("Tag Domain size = " + trainLabels.first.token.tags.domain.size)
+
+    // Set-up learner and predictor
     val predictor = new GibbsSampler1[Label](model) { temperature = 0.001 }
-    val learner = new GibbsSampler1[Label](model) with SampleRank 
-    //with PerceptronUpdates with ParameterAveraging
+    val learner = new GibbsSampler1[Label](model) with SampleRank
+    //with GradientAscentUpdates with ParameterAveraging
     with ConfidenceWeightedUpdates
+    //with MIRAUpdates
     {
+      // parameters of learning algorithm
       temperature = 0.001
-      override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && Global.random.nextDouble > 0.5) null else label
-      override def postIterationHook(): Boolean = {
-  if(this.isInstanceOf[ParameterAveraging])
-    this.asInstanceOf[ParameterAveraging].setWeightsToAverage
-        predictor.process(testLabels, 1)
-  if(this.isInstanceOf[ParameterAveraging])
-    this.asInstanceOf[ParameterAveraging].unsetWeightsToAverage
+      learningMargin = 2.0
 
-        println("Train errors")
-        printErrors(trainLabels, 200)
-        println("Test errors")
-        printErrors(testLabels, 200)
-        println("Iteration "+iterationCount)
-        println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
-        println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
+      override def preProcessHook(label:Label) = {
+        if (label.valueIsTruth && !label.token.isCapitalized && Global.random.nextDouble > 0.5) null else label
+      }
+
+      override def postIterationHook(): Boolean = {
+        printred("Iteration " + iterationCount)
+
+        // temporarily use the averaged parameters
+        if (this.isInstanceOf[ParameterAveraging]) this.asInstanceOf[ParameterAveraging].setWeightsToAverage
+        println("processing testing examples...")
+        resetLabels(testLabels)
+        //predictor.process(testLabels, 1)
+        runViterbiInference(/*trainSentences ++ */ testSentences)
+        evaluatePerformance()
+        if (this.isInstanceOf[ParameterAveraging]) this.asInstanceOf[ParameterAveraging].unsetWeightsToAverage
+
+        //resetLabels(trainLabels ++ testLabels)
+        //trainLabels.foreach(x => {x.value=x.trueValue})
+        //temperature *= temperature
         true
       }
     }
     //with FactorQueue[Variable with IterableSettings] { def process0(x:AnyRef):DiffList = x match { case l:Label => process(l); case _ => null} }
-    // Train for 5 iterations through all Labels
+
+    // Train for serveral iterations
+    printred("Training...")
     val startTime = System.currentTimeMillis
-    learner.process(trainLabels, 8)
-    println("Finished training in "+(System.currentTimeMillis-startTime)/60000.0+" minutes.")
-    if(learner.isInstanceOf[ParameterAveraging])
-      learner.asInstanceOf[ParameterAveraging].setWeightsToAverage
-    
-    // Predict, testing BP
-    //val targets = new ArrayBuffer[UncoordinatedCategoricalVariable]
-    /*val lattice = new BPLattice(model, targets)
-    println("Starting BP updates on "+targets.size+" variables")
-    lattice.update(100)
-    lattice.setVariablesToMax
-    targets.foreach(v => println(v.trueValue+"/"+v.value+" "+v.token.word+"  "+
-        lattice.marginal(v).toArray.zipWithIndex.map((pair:(Double,Int)) => Tuple2(v.domain.get(pair._2), pair._1)).toString))*/
+    learner.process(trainLabels, 10)
+    //learner.process(trainLabels, 1)
+    println("Finished training in " + (System.currentTimeMillis - startTime) / 60000.0 + " minutes.")
+    if (learner.isInstanceOf[ParameterAveraging]) learner.asInstanceOf[ParameterAveraging].setWeightsToAverage
 
-    
-    // Predict, also by sampling, visiting each variable 3 times.
-    //new SamplingMaximizer[Label](model).infer(testLabels, 5)
-    predictor.process(testLabels, 1)
-    predictor.temperature = 0.1; predictor.process(testLabels, 1)
-    predictor.temperature = 0.01; predictor.process(testLabels, 1)
-    predictor.temperature = 0.001; predictor.process(testLabels, 2)
-    printErrors(testLabels, 100)
+    resetLabels(trainLabels ++ testLabels)
+    println("==========================================")
     println("GibbsSampling inference")
-    println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
-    println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
+    println("processing training examples...")
+    predictor.process(trainLabels, 1)
+    println("processing testing examples...")
+    predictor.process(testLabels, 5)
+    evaluatePerformance()
 
+    println("==========================================")
     println("BP inference")
+    runBPInference(trainSentences ++ testSentences)
+    evaluatePerformance()
+
+    println("==========================================")
+    println("Viterbi inference")
+    runViterbiInference(trainSentences ++ testSentences)
+    evaluatePerformance()
+  }
+
+  /* Use Belief Propogation for decoding */
+  def runBPInference(data:Seq[InstanceType]) = {
+
+    var progress = new ProgressBar(data.size)
+    
+    // NOTE the inferencer resets before predicting each sequence 
+    // so there is no need to use "resetLabels(data)" out here.
     val bppredictor = new BPInferencer[Label](model)
-    (trainSentences ++ testSentences).foreach(s => {
+    data.foreach(s => {
       val labels = s.map(_.label)
+      var gibbs_score = model.score(labels)
+      resetLabels(labels)
+      /*
       println("BP sentence")
       labels.foreach(l => print(l.token.word+"="+l+"  ")); println
       if (labels.size >0) { labels.first.token.seq.foreach(t => print(t.word+"="+t.label+"  ")); println }
@@ -191,27 +406,56 @@ object ChainNER2b {
         var t = s.first
         while (t != null) { print(t.word+"="+t.label); t = t.next }; println
       }
+      */
       bppredictor.inferTreewise(labels)
+
+      /*
+      var bp_score = model.score(labels)
+      if (bp_score < gibbs_score) {
+        printred("Warning: BP-config (%.2f) < GS-config (%.2f)".format(bp_score, gibbs_score))
+      }
+      */
+
+      progress.update(1)
     })
-    println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
-    println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
-    
-    //model.save("/Users/mccallum/tmp/chainner2.factorie")
   }
 
-  def printLabel(label:Label) : Unit = {
+
+  def runViterbiInference(data:Seq[InstanceType]) = {
+    data.foreach(s => {
+      val labels = s.map(_.label)
+      var bp_score = model.score(labels)
+      resetLabels(labels)
+      decode_viterbi(s)
+      /*
+      var viterbi_score = model.score(labels)
+      if (bp_score > viterbi_score) {
+        println("\033[31mWarning\033[0m: BP(%.3f) > Viterbi(%.3f). viterbi broken?".format(bp_score, viterbi_score))
+        assert(false)
+      } else if (bp_score < viterbi_score) {
+        println("\033[31mWarning\033[0m: BP(%.3f) < Viterbi(%.3f). bp broken?".format(bp_score, viterbi_score))
+        //assert(false)
+      } else {
+        //printgreen("good.")
+      }
+      */
+    })
+  }
+
+
+  def printLabel(label:Label): Unit = {
     println("%-16s TRUE=%-8s PRED=%-8s %s".format(label.token.word, label.trueValue, label.value, label.token.toString))
   }
- 
-  def printDiagnostic(labels:Seq[Label]) : Unit = {
+
+  def printDiagnostic(labels:Seq[Label]): Unit = {
     for (label <- labels; if (label.index != label.domain.index("O"))) {
-      if (!label.hasPrev || label.value != label.prev.value) 
+      if (!label.hasPrev || label.value != label.prev.value)
         print("%-7s %-7s ".format((if (label.value != label.trueValue) label.trueValue else " "), label.value))
       print(label.token.word+" ")
       if (!label.hasNext || label.value != label.next.value) println()
     }
   }
-  
+
   /** Print diagnostics for error tokens, plus two true tokens before and after. */
   def printErrors(labels:Seq[Label], maxErrors:Int): Unit = {
     val contextSize = 2
@@ -226,22 +470,23 @@ object ChainNER2b {
           println("%s %-6s %-6s %-18s %s".format((if (l.valueIsTruth) " " else "*"), l.trueValue, l.value, l.token.word, l.token.toString))
           if (l.valueIsTruth) numTruthsAfter += 1 else { numTruthsAfter = 0; count += 1 }
           j += 1
-        } while (numTruthsAfter < contextSize && j < labels.length && count < maxErrors) 
+        } while (numTruthsAfter < contextSize && j < labels.length && count < maxErrors)
         println
         i = j - 1
       }
       i += 1
     }
   }
- 
+
   // Feature extraction
   def simplify(word:String): String = {
-    if (word.matches("(19|20)\\d\\d")) "<YEAR>" 
-    else if (word.matches("\\d+")) "<NUM>"
+    if (word.matches("(19|20)\\d\\d")) "<YEAR>"
+    else if (word.matches("[\\d,]+\\.?\\d*")) "<NUM>"
     else if (word.matches(".*\\d.*")) word.replaceAll("\\d","#").toLowerCase
     else word.toLowerCase
   }
-  def featureExtractor(initialFeatures:Seq[String]) : Seq[String] = {
+
+  def featureExtractor(initialFeatures:Seq[String]): Seq[String] = {
     import scala.collection.mutable.ArrayBuffer
     val f = new ArrayBuffer[String]
     val word = initialFeatures(0)
@@ -258,7 +503,4 @@ object ChainNER2b {
   //val Capitalized = "^[A-Z].*".r
   //val Numeric = "^[0-9]+$".r
   //val Punctuation = "[,\\.;:?!()]+".r
-
 }
-
-
