@@ -183,8 +183,22 @@ class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends Variabl
   def infer(variables:Collection[V], numIterations:Int): LatticeType = infer(variables, variables, numIterations)
   def inferTreewise(variables:Collection[V], varying:Collection[V]): LatticeType = {
     val result = new BPLattice(model,varying)
-    result.updateTreewise
-    result.setVariablesToMax(variables) // For now, just inference my marginal maximization
+
+    val MAXITER = 100
+    var i = 0
+    do {
+      BeliefPropagation.maxdiff = 0
+      result.updateTreewise
+      //result.update
+      //println("iteration %s: max-message-diff %s".format(i,BeliefPropagation.maxdiff))
+      i += 1
+    } while (BeliefPropagation.maxdiff > 0.00000001 && i < MAXITER)
+    if (i >= MAXITER) {
+        println("\n\033[31mWARNING\033[0m: loopy BP did not converge in <= %s iterations".format(i))
+    }
+
+    result.setVariablesToMax(variables) // For now, just inference by marginal maximization
+
     // NOTE the above line requires that 'variables' is a subset of varying, of course!
     result
   }
