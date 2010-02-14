@@ -130,6 +130,15 @@
                                 <jvmArg>-Xmx2100m</jvmArg>
                             </jvmArgs>
                         </launcher>
+                        <launcher>
+                            <id>ChainNER2b</id>
+                            <mainClass>cc.factorie.example.ChainNER2b</mainClass>
+                            <!-- args are optional -->
+                            <!-- jvmArgs are optional -->
+                            <jvmArgs>
+                                <jvmArg>-Xmx2100m</jvmArg>
+                            </jvmArgs>
+                        </launcher>
 
                     </launchers>
 
