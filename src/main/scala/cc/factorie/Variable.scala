@@ -15,8 +15,8 @@ import scala.util.Sorting
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
-import cc.factorie.util.Implicits._
+import cc.factorie.util.{Log, LinkedHashSet}
+//import cc.factorie.util.Implicits._
 
 // Notes on class names for Variables:
 // Except for cc.factorie.Variable, "*Variable" means mutable
@@ -44,7 +44,7 @@ abstract trait Variable /* extends AnyRef */ {
   /** The type of this.domain and Domain.apply[MyVariable]*/
   type DomainType <: Domain[VariableType]
   /** When a Domain is automatically constructed for this class (in object Domain), it will be the superclass of this inner class. */
-  class DomainClass extends Domain[VariableType]
+  class DomainClass extends Domain[VariableType]()(Manifest.classType[Variable](classOf[Variable]).asInstanceOf[Manifest[VariableType]])
   /** When DomainInSubclasses appears as an inner class of a Variable class, 
       it simply ensures that the library will never create a Domain for this class, only its subclasses.
       If library users create their own new Variable classes, which will be subclassed, and wants each

@@ -7,6 +7,7 @@
 
 package cc.factorie.application
 import scala.reflect.Manifest
+import cc.factorie._
 import cc.factorie.er._
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap}
 import scalala.tensor.Vector
@@ -64,7 +65,7 @@ object LabeledTokenSeqs {
     def newTokenGetter = new TokenGetter[L,T]
     /** Go from a token to its label. */
     def label = initOneToOne[L](newLabelGetter,
-      token=>token.label, 
+      token=>token.label.asInstanceOf[L], 
       label => label.token)
     /** Go from a token to the next token. */
     def next = initManyToMany[T](newTokenGetter,
@@ -121,7 +122,7 @@ object LabeledTokenSeqs {
   class LabelGetter[T<:Token[ThisLabel,T],ThisLabel<:Label[T,ThisLabel]] extends EntityGetter[ThisLabel] {
     def newTokenGetter = new TokenGetter[ThisLabel,T]
     def newLabelGetter = new LabelGetter[T,ThisLabel]
-    def token = initOneToOne[T](newTokenGetter, label => label.token, token => token.label)
+    def token = initOneToOne[T](newTokenGetter, label => label.token.asInstanceOf[T], token => token.label)
     def next = initManyToMany[ThisLabel](newLabelGetter,
       label => if (!label.token.hasNext) Nil else List(label.token.next.label),
       label => if (!label.token.hasPrev) Nil else List(label.token.prev.label))
@@ -150,7 +151,7 @@ object LabeledTokenSeqs {
         val thisTokenNewFeatures = newFeatures(i)
         for (offsets <- offsetConjunctions) 
           thisTokenNewFeatures ++= appendConjunctions(regex, token, null, offsets).
-            map(list => list.sort((a,b)=>a.compare(b)>0).map({case(f,o)=>f+"@"+o}).mkString("_&_"))
+            map(list => list.sorted.map({case(f,o)=>f+"@"+o}).mkString("_&_"))
       }
       // ... then add them to each Token
       for (i <- 0 until size) {
@@ -220,12 +221,12 @@ object LabeledTokenSeqs {
           if (token.label.value == label.value)
             entity = token :: entity
           else {
-            if (entity.length > 0) result += (label,entity.reverse)
+            if (entity.length > 0) result += ((label,entity.reverse))
             entity = token :: Nil
             label = token.label
           }
         } else {
-          if (entity.length > 0) result += (label,entity.reverse)
+          if (entity.length > 0) result += ((label,entity.reverse))
           entity = Nil
           label = token.label
         }
@@ -292,7 +293,7 @@ object LabeledTokenSeqs {
       var tokenCount = 0
       var seqs = new ArrayBuffer[LabeledTokenSeq[T,L]];
       var seq = new LabeledTokenSeq[T,L]
-      for (line <- source.getLines) {
+      for (line <- source.getLines()) {
         if (sentenceBoundary != null && sentenceBoundary.findAllIn(line).hasNext && seq.length > 0) {
           //println("Completed sentence size=" + seq.size + " num sentences="+seqs.size)   
           seqs += seq
@@ -307,7 +308,7 @@ object LabeledTokenSeqs {
           val fields = line.split(' ')
           assert(fields.length == 4)
           val word = fields(0)
-          val inFeatures = fields.slice(0, fields.length-1).force
+          val inFeatures = fields.slice(0, fields.length-1) // Used to also have here ".force"
           val pos = fields(1)
           val label = fields.last.stripLineEnd
           val token = newToken(word, label)
@@ -648,7 +649,7 @@ object LabeledTokenSeqs {
     }
     def +=(w:String): Unit = this.+=(new LexiconToken(w))
     def ++=(ws:Seq[String]): Unit = this.addAll(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
-    def ++=(source:Source): Unit = for (line <- source.getLines) this.++=(line.trim.split("\\s+"))
+    def ++=(source:Source): Unit = for (line <- source.getLines()) this.++=(line.trim.split("\\s+"))
     /** Is 'query' in the lexicon, accounting for lexicon phrases and the context of 'query' */
     def contains[T<:TokenInSeq[T]](query:T): Boolean = {
       //println("contains "+query.word+" "+query.hasPrev+" "+query)

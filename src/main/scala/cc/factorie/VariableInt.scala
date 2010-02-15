@@ -12,7 +12,7 @@ import scalala.Scalala._
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
+import cc.factorie.util.{Log, LinkedHashSet}
 import cc.factorie.util.Implicits._
   
 // IntVariable (has integer value)
@@ -75,7 +75,7 @@ trait IntegerVariable extends Variable with IntegerValue {
     @inline final def redo = _index = newIndex
     @inline final def undo = _index = oldIndex
     override def toString = variable match { 
-      case cv:CategoricalVariable if (oldIndex != -1) => "IntegerVariableDiff("+cv.domain.get(oldIndex)+","+cv.domain.get(newIndex)+")"
+      //case cv:CategoricalVariable if (oldIndex != -1) => "IntegerVariableDiff("+cv.domain.get(oldIndex)+","+cv.domain.get(newIndex)+")"
       case _ => "IntegerVariableDiff("+oldIndex+","+newIndex+")"
     }
   }
@@ -113,7 +113,8 @@ trait OrdinalVariable extends IntegerVariable with OrdinalValue {
 trait DiscreteValues extends Variable with OrdinalValues {
   type VariableType <: DiscreteValues
   type DomainType <: DiscreteDomain[VariableType]
-  class DomainClass extends DiscreteDomain[VariableType]
+  // TODO Replace this mechanism with an Annotation
+  class DomainClass extends DiscreteDomain[VariableType]()(null)
   def domainSize: Int = domain.size
   override def maxIntValue = domainSize - 1
   def vector: Vector

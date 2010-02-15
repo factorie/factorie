@@ -245,7 +245,7 @@ object PipeIO {
    * not close the output stream.
    */
   def drain(in: InputStream, out: OutputStream) {
-    val buffer = new Array[byte](1024);
+    val buffer = new Array[Byte](1024);
 
     var numRead = 0;
     do {

@@ -9,6 +9,7 @@ package cc.factorie.example
 
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie._
 import cc.factorie.util.Implicits._
 
 

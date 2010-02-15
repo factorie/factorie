@@ -1,5 +1,7 @@
 package cc.factorie.example
 
+import cc.factorie._
+
 object GaussianMixture {
   
   // The Gaussian mixture components and their mixture weights
@@ -17,8 +19,8 @@ object GaussianMixture {
     val numMixtureComponents = 3
     val numDataPoints = 200
     // Generative storyline
-    val gs = for (i <- 1 to numMixtureComponents force) yield new G(i)
-    val zs = for (i <- 1 to numDataPoints force) yield new Z ~ mixtureWeights
+    val gs = for (i <- 1 to numMixtureComponents) yield new G(i)
+    val zs = for (i <- 1 to numDataPoints) yield new Z ~ mixtureWeights
     val xs = zs.map(z => new X :~ z).toList
    
     // Print initial state

@@ -68,7 +68,7 @@ trait GenerativeDistribution[O<:Variable] extends GenerativeDistributionLike[Gen
   def asGenerativeDistribution = this
   def estimate: Unit // TODO consider removing this.  Paramter estimation for generative models should be seen as inference?  No, but change its name to 'maximize'!  This will apply to both variables and distributions
   private lazy val _generatedSamples: HashSet[O] = new HashSet[O];
-  def generatedSamples: scala.collection.Set[O] = _generatedSamples.readOnly
+  def generatedSamples: scala.collection.Set[O] = _generatedSamples // TODO I want this to be .readOnly, but how in Scala 2.8?
   def weightedGeneratedSamples: Iterator[(O,Double)] = new Iterator[(O,Double)] {
     val elts = _generatedSamples.elements
     def hasNext = elts.hasNext

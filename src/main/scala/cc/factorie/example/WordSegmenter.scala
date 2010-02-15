@@ -9,6 +9,7 @@ package cc.factorie.example
 
 import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
+import cc.factorie._
 import cc.factorie.util.Implicits._
 
 object WordSegmenterDemo { 
@@ -61,7 +62,7 @@ object WordSegmenterDemo {
   
     // Read data and create Variables
     class Sentence extends VariableSeq[Token]
-    val sentences = for (string <- data) yield {
+    val sentences = for (string <- data.toList) yield {
       val sentence = new Sentence
       var beginword = true
       for (c <- string.toLowerCase) {

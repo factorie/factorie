@@ -9,8 +9,7 @@ package cc.factorie
 import cc.factorie.util.Implicits._
 
 /** The Poisson distribution generating integer values with parameter lambda. */
-class Poisson(val lambda:Real) extends GenerativeDistribution[IntegerValue] {
-  def this(lambda:Double) = this(new Real(lambda))
+class Poisson(var lambda:Double) extends GenerativeDistribution[IntegerValue] {
   def mean: Double = lambda
   def variable: Double = lambda
   def pr(k:Int) = Math.pow(lambda, k) * Math.exp(-lambda) / Maths.factorial(k)
@@ -19,8 +18,8 @@ class Poisson(val lambda:Real) extends GenerativeDistribution[IntegerValue] {
   /** This implements the maximum likelihood estimator */
   def estimate: Unit = {
     if (generatedSamples.size == 0) throw new Error("No samles from which to estimate")
-    val sum = generatedSamples.sum(_.intValue)
-    lambda.set(sum/generatedSamples.size)(null) // TODO Should we put a DiffList here?
+    val sum = generatedSamples.sumInts(_.intValue).toDouble
+    lambda = sum/generatedSamples.size
   }
 }
 

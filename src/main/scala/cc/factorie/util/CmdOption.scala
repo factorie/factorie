@@ -201,7 +201,7 @@ trait DefaultCmdOptions extends CmdOptions {
     override def invoke = {
       import java.io.File
       import scala.io.Source
-      val contents = Source.fromFile(this.value).mkString
+      val contents = Source.fromFile(new File(this.value)).mkString
       val args = contents.split("\\s+")
       DefaultCmdOptions.this.parse(args)
     }

@@ -65,7 +65,7 @@ val trainer = new MHSampler[Label](model) with QLearning with EGreedyPolicy[Labe
 trait QLearning extends ProposalSampler0 with SamplerOverSettings0 with Policy //with WeightUpdates .. I can't extend weights because of some odd subtleties in scala typing/erasure
 {
   this: ProposalSampler[_] =>
-  type TemplatesToUpdate <: DotTemplate
+  type TemplatesToUpdate = DotTemplate
   //
   //parameters
   var gamma : Double = 0.9
@@ -254,7 +254,7 @@ trait SampledPolicy[C] extends MHSampler[C] with Policy
     {
       if(_maxAction != null)
 	return _maxAction
-      _maxAction = candidateActions.max(_.modelScore);
+      _maxAction = candidateActions.maxByDouble(_.modelScore);
       _maxAction
     }
 
@@ -324,7 +324,7 @@ trait EGreedyPolicy[C] extends SampledPolicy[C]
 	return _nextAction
       if(random.nextDouble>epsilon)
 	  {
-	    _nextAction = candidateActions.max(_.modelScore);
+	    _nextAction = candidateActions.maxByDouble(_.modelScore);
 	    resetTraceTrigger=false
 	  }
       else

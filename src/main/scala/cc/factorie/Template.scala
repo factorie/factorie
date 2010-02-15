@@ -14,7 +14,7 @@ import scala.Math
 import scala.util.Sorting
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
-import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
+import cc.factorie.util.{Log, LinkedHashSet}
 import cc.factorie.util.Implicits._
 import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
@@ -38,7 +38,7 @@ trait Factor extends Product with Iterable[Factor] with Ordered[Factor] {
   def template : Template
   def numVariables: Int 
   def variable(index: Int): Variable
-  def variables: Iterable[Variable] = for (i <- 0 until numVariables force) yield variable(i)
+  def variables: Iterable[Variable] = for (i <- 0 until numVariables) yield variable(i)
   def statistic : Statistic
   def randomVariable(implicit random:Random): Variable = variable(random.nextInt(numVariables))
   //def score: Double

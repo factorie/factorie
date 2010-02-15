@@ -7,6 +7,7 @@
 
 package cc.factorie.example
 import scala.collection.mutable.{ArrayBuffer,HashMap,ListBuffer}
+import cc.factorie._
 import cc.factorie.application.TokenSeqs
 import scala.io.Source
 import java.io.File
@@ -113,8 +114,8 @@ object SpanNER1 {
     // Token after Span
     new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext) Stat(span.last.next, span.label) else Nil }.init,
     // Single Token Span
-    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.length == 1) Stat(span.first, span.label) else Nil }.init,
-    //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil }.init,
+    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.length == 1) Stat(span.first, span.label) else Nil }.init
+    //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil }.init
     // Span Length with Label
     //new SpanLabelTemplate with DotStatistics2[SpanLength,Label] { def statistics(span:Span, label:Label) = Stat(span.spanLength, span.label) }.init,
     // Label of span that preceeds or follows this one
@@ -289,7 +290,7 @@ object SpanNER1 {
         val content = article \ "head" \ "docdata" \ "identified-content"
         print("Reading ***"+(article\"head"\"title").text+"***")
         documents += TokenSeqs.TokenSeq.fromPlainText(
-          Source.fromString((article \ "body" \ "body.content").text), 
+          scala.io.Source.fromString((article \ "body" \ "body.content").text), 
           (word,lab)=>new Token(word,lab),
           ()=>new Sentence,
           "O", 
@@ -313,7 +314,7 @@ object SpanNER1 {
     // Read training and testing data.  The function 'featureExtractor' function is defined below.  Now training on seq == whole doc, not seq == sentece
     def newSentenceFromOWPL(filename:String) = if (filename.length == 0) List[Sentence]() else 
       TokenSeqs.TokenSeq.fromOWPL[Token,Sentence](
-        Source.fromFile(filename), 
+        Source.fromFile(new File(filename)), 
         (word,lab)=>new Token(word,lab), 
         ()=>new Sentence, 
         featureExtractor _, 

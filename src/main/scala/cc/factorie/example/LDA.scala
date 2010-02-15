@@ -9,6 +9,7 @@ package cc.factorie.example
 import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.matching.Regex
 import java.io.File
+import cc.factorie._
 import cc.factorie.util.Stopwords
 import cc.factorie.util.Implicits._
 
@@ -26,7 +27,7 @@ object LDADemo {
     // Read observed data and create Documents
     val documents = new ListBuffer[Document];
     val lexer = new Regex("[a-zA-Z]+")
-    for (directory <- if (args.length > 0) args else List("/Users/mccallum/research/data/text/nipstxt/nips05")) {
+    for (directory <- if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips05")) {
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         val d = new Document(file.toString)
         d ++= lexer.findAllIn(file.contentsAsString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_)).map(new Word(_))

@@ -14,7 +14,7 @@ import scalala.tensor.Vector
 /** For parameter estimation methods that use a gradient to update weight parameters. 
     @author Andrew McCallum */
 trait WeightUpdates {
-  type TemplatesToUpdate <: DotTemplate
+  type TemplatesToUpdate <: DotTemplate // TODO Was type TemplatesToUpdate <: DotTemplate, but this no longer works in Scala 2.8
   /** The number of times 'updateWeights' has been called. */
   var updateCount : Int = 0
   /** Call this method to use the current gradient to change the weight parameters.  When you override it, you must call super.updateWeights. */

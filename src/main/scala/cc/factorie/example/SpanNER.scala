@@ -1,7 +1,8 @@
 package cc.factorie.example
 
 import cc.factorie.util.Implicits._
-import io.Source
+import scala.io.Source
+import java.io.File
 import collection.mutable.{HashSet, ArrayBuffer}
 import cc.factorie._
 import application.LabeledTokenSeqs
@@ -445,9 +446,9 @@ object SpanNER {
     var wordCount = 0
     val uniqueL = new HashSet[String]
     var sentences = new ArrayBuffer[Sentence]
-    val source = Source.fromFile(filename)
+    val source = Source.fromFile(new File(filename))
     var sentence = new Sentence
-    for (line <- source.getLines) {
+    for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
         sentences += sentence //; println("num words " + document.size + " num docs "+documents.size)
         if (sentences.size > maxSentences) {

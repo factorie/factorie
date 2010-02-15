@@ -69,7 +69,7 @@ abstract class BPFactor(val factor:Factor) {
     def message: Array[Double] = msg 
     def messageCurrentValue: Double = msg(v.intValue)
     // IterableSettings instances for each of the variables neighboring this BPFactor, except the variable 'v'
-    protected val neighborSettings = factor.variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
+    protected val neighborSettings: List[IterableSettings#SettingIterator] = factor.variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
     /** Do one step of belief propagation for the message from this BPFactor to variable 'v' */
     def update: MessageTo
     /** Update this message, but first update the messages its depends on, avoiding update loops. */
@@ -96,7 +96,7 @@ abstract class BPFactor(val factor:Factor) {
           // Sum over all combinations of values in neighboring variables with v's value fixed to i.
           msg(i) = Math.NEG_INF_DOUBLE // i.e. log(0)
           do {
-            msg(i) = Maths.sumLogProb(msg(i), factor.statistic.score + neighborSettings.sum(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
+            msg(i) = Maths.sumLogProb(msg(i), factor.statistic.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
           } while (nextValues(neighborSettings))
         }
       }
@@ -121,7 +121,7 @@ abstract class BPFactor(val factor:Factor) {
           //maxIndex(i) = -1
           //var settingCount = 0
           do {
-            val score = factor.statistic.score + neighborSettings.sum(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
+            val score = factor.statistic.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
             if (score > msg(i)) { msg(i) = score; /*maxIndex(i) = settingCount*/ }
             //settingCount += 1
           } while (nextValues(neighborSettings))
@@ -143,7 +143,7 @@ abstract class BPFactor(val factor:Factor) {
     def update: MessageFrom = {
       if (neighborFactors.size > 0)
         for (i <- 0 until v.domain.size)
-          msg(i) = neighborFactors.sum(_.messageTo(v).message(i))
+          msg(i) = neighborFactors.sumDoubles(_.messageTo(v).message(i))
       if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
       this
     }
@@ -168,7 +168,7 @@ abstract class BPFactor(val factor:Factor) {
   /* For Max-Product: */
   lazy private val _msgTo: Array[MessageTo] = factor.variables.filter(_.isInstanceOf[V]).map(v => MaxProductMessageTo(v.asInstanceOf[V])).toSeq.toArray
   lazy private val _msgFrom: Array[MessageFrom] = factor.variables.filter(_.isInstanceOf[V]).map(v => MessageFrom(v.asInstanceOf[V])).toSeq.toArray
-  def messageTo(v:V): MessageTo = messageTo(factor.variables.toSeq.indexOf(v))
+  def messageTo(v:Variable): MessageTo = messageTo(factor.variables.toSeq.indexOf(v))
   def messageTo(vi:Int): MessageTo = {
     var m = _msgTo(vi)
     // keep track of largest change in a message
@@ -176,7 +176,7 @@ abstract class BPFactor(val factor:Factor) {
     m.message.copyToArray(m.previous_msg, 0)
     m
   }
-  def messageFrom(v:V): MessageFrom = messageFrom(factor.variables.toSeq.indexOf(v))
+  def messageFrom(v:Variable): MessageFrom = messageFrom(factor.variables.toSeq.indexOf(v))
   def messageFrom(vi:Int): MessageFrom = {
     var m = _msgFrom(vi)
     // keep track of largest change in a message
@@ -219,7 +219,7 @@ trait DiscreteMarginalN {
 // TODO This should really inherit from Multinomial, but first I have to make it not require an "Outcome" variable.
 // I should also make a multi-dimensional multinomial.
 class DiscreteMarginal1[V<:DiscreteValue](val variable:V) extends RandomAccessSeq[Double] with DiscreteMarginalN {
-  def this(v:V, messages:Iterable[Seq[Double]]) = { 
+  def this(v:V, messages:Iterable[Array[Double]]) = { 
     this(v);
     for (message <- messages) {
       assert(message.length == m.length)

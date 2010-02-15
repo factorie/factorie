@@ -29,27 +29,27 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
   override def size: Int = length
   override def first: This = if (prev eq null) this else prev.first
   override def last: This = if (next eq null) this else next.last
-  def apply(i:Int): This = first.next(i)
+  def apply(i:Int): This = first.nextBy(i)
   
-  def next(n:Int): This =
+  def nextBy(n:Int): This =
     if (n == 0) this
     else if (next eq null) throw new IndexOutOfBoundsException("unknown element")
-    else next.next(n - 1)
+    else next.nextBy(n - 1)
   
-  def getNext(n:Int): Option[This] =
+  def getNextBy(n:Int): Option[This] =
     if (n == 0) Some(this)
     else if (next eq null) None
-    else next.getNext(n - 1)
+    else next.getNextBy(n - 1)
   
-  def prev(n:Int): This =
+  def prevBy(n:Int): This =
     if (n == 0) this
     else if (prev eq null) throw new IndexOutOfBoundsException("unknown element")
-    else prev.prev(n - 1)
+    else prev.prevBy(n - 1)
     
-  def getPrev(n:Int): Option[This] =
+  def getPrevBy(n:Int): Option[This] =
     if (n == 0) Some(this)
     else if (prev eq null) None
-    else prev.getPrev(n - 1)
+    else prev.getPrevBy(n - 1)
 
   /** Return an Iterator over all links in the sequence of which this is a member. */
   override def elements: Iterator[This] = new Iterator[This] {

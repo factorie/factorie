@@ -12,7 +12,7 @@ import scalala.Scalala._
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
+import cc.factorie.util.{Log, LinkedHashSet}
 import cc.factorie.util.Implicits._
 
 // Categorical variables are Discrete variables in which the integers 0...N have each been mapped to some other objects of type ValueType.
@@ -36,7 +36,7 @@ import cc.factorie.util.Implicits._
 trait CategoricalValues extends Variable with DiscreteValues with TypedValues {
   type VariableType <: CategoricalValues
   type DomainType <: CategoricalDomain[VariableType]
-  class DomainClass extends CategoricalDomain[VariableType]
+  class DomainClass extends CategoricalDomain[VariableType]()(null)
   override def domainSize = domain.allocSize
 }
 

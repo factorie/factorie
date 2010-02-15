@@ -7,6 +7,7 @@
 
 package cc.factorie.application
 import scala.reflect.Manifest
+import cc.factorie._
 import cc.factorie.er._
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap}
 import scalala.tensor.Vector
@@ -31,7 +32,7 @@ object TokenSeqs {
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
   @DomainInSubclasses
   abstract class Token[S<:VariableSeq[This], This >:Null <:Token[S,This]](val wordForm:String, features:Seq[String])
-  extends BinaryVectorVariable[String] with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
+  extends cc.factorie.BinaryVectorVariable[String] with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
     this: This =>
     def this(word:String) = this(word, Nil)
     type GetterType <: TokenGetter[S,This]
@@ -114,7 +115,7 @@ object TokenSeqs {
         val thisTokenNewFeatures = newFeatures(i)
         for (offsets <- offsetConjunctions) 
           thisTokenNewFeatures ++= appendConjunctions(regex, token, null, offsets).
-            map(list => list.sort((a,b)=>a.compare(b)>0).map({case(f,o)=>f+"@"+o}).mkString("_&_"))
+            map(list => list.sorted.map({case(f,o)=>f+"@"+o}).mkString("_&_"))
       }
       // ... then add them to each Token
       for (i <- 0 until size) {
@@ -241,7 +242,7 @@ object TokenSeqs {
       var tokenCount = 0
       var seqs = new ArrayBuffer[S];
       var seq = newSeq()
-      for (line <- source.getLines) {
+      for (line <- source.getLines()) {
         if (sentenceBoundary != null && sentenceBoundary.findAllIn(line).hasNext && seq.length > 0) {
           //println("Completed sentence size=" + seq.size + " num sentences="+seqs.size)   
           seqs += seq
@@ -256,7 +257,7 @@ object TokenSeqs {
           val fields = line.split(' ')
           assert(fields.length == 4)
           val word = fields(0)
-          val inFeatures = fields.slice(0, fields.length-1).force
+          val inFeatures = fields.slice(0, fields.length-1) // This used to be with ".force"
           val pos = fields(1)
           val label = labelFunction(fields.last.stripLineEnd)
           val token = newToken(word, label)
@@ -336,7 +337,7 @@ object TokenSeqs {
     import scala.io.Source
     import java.io.File
     /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */
-    def this(filename:String) = { this(false); this.++=(Source.fromFile(new File(filename), "UTF-8")) }
+    def this(filename:String) = { this(false); this.++=(Source.fromFile(new File(filename))(scala.io.Codec.UTF8)) }
     var lexer = TokenSeq.nonWhitespaceClasses
     private class LexiconToken(val word:String) extends TokenInSeq[LexiconToken] {
       var next: LexiconToken = null
@@ -378,7 +379,7 @@ object TokenSeqs {
     }
     def +=(w:String): Unit = this.+=(new LexiconToken(w))
     def ++=(ws:Seq[String]): Unit = this.addAll(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
-    def ++=(source:Source): Unit = for (line <- source.getLines) { this.++=(lexer.findAllIn(line).toList); /*println("TokenSeqs.Lexicon adding "+line)*/ }
+    def ++=(source:Source): Unit = for (line <- source.getLines()) { this.++=(lexer.findAllIn(line).toList); /*println("TokenSeqs.Lexicon adding "+line)*/ }
     /** Is 'query' in the lexicon, accounting for lexicon phrases and the context of 'query' */
     def contains[T<:TokenInSeq[T]](query:T): Boolean = {
       //println("contains "+query.word+" "+query.hasPrev+" "+query)

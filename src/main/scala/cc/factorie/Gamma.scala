@@ -20,11 +20,11 @@ class Gamma(alpha:Real, beta:Real) extends GenerativeDistribution[Real] {
   // Note that there is an implicit conversion from RealValue to Double, which we leverage below
   def pr(x:Double) = {
     assert (x > 0)
-    Math.pow(beta, alpha) / Maths.gamma(alpha) * Math.pow(x, alpha - 1) * Math.exp(- beta * x)
+    Math.pow(beta.doubleValue, alpha.doubleValue) / Maths.gamma(alpha.doubleValue) * Math.pow(x, alpha.doubleValue - 1) * Math.exp(- beta.doubleValue * x)
   }
   def pr(o:Real): Double = pr(o.doubleValue)
   // TODO def logpr(x:Double) = 
-  def sample: Double = Maths.nextGamma(alpha, beta)(Global.random)
+  def sample: Double = Maths.nextGamma(alpha.doubleValue, beta.doubleValue)(Global.random)
   def estimate: Unit = {
     throw new Error("Not yet implemented")
   }

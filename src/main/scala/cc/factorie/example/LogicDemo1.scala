@@ -6,6 +6,7 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie.example
+import cc.factorie._
 import cc.factorie.er._
 import scala.collection.mutable.ArrayBuffer
 

@@ -6,6 +6,8 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie.example
+import cc.factorie._
+import java.io.File
 
 object ChainNER3 {
 
@@ -113,9 +115,9 @@ object ChainNER3 {
     import scala.collection.mutable.ArrayBuffer
     var wordCount = 0
     var sentences = new ArrayBuffer[Sentence]
-    val source = Source.fromFile(filename)
+    val source = Source.fromFile(new File(filename))
     var sentence = new Sentence
-    for (line <- source.getLines) {
+    for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
         sentences += sentence
         sentence = new Sentence

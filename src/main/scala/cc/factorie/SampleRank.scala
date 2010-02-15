@@ -14,7 +14,7 @@ import scalala.tensor.Vector
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
 trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
   this: ProposalSampler[_] =>
-  type TemplatesToUpdate <: DotTemplate
+  type TemplatesToUpdate = DotTemplate  // was type TemplatesToUpdate <: DotTemplate, but this no longer provides a Manifest on Scala 2.8
   def model: Model
   var learningMargin = 1.0
   def updateWeights: Unit
@@ -33,8 +33,8 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
     if (proposals.length < 2) return
     super.proposalsHook(proposals)
     //println("SampleRank proposalsHook "+proposals.toList.map(_.toString))
-    val bestModels = proposals.max2(_ modelScore)
-    val bestObjectives = proposals.max2(_ objectiveScore)
+    val bestModels = proposals.max2ByDouble(_ modelScore)
+    val bestObjectives = proposals.max2ByDouble(_ objectiveScore)
     bestModel1 = bestModels._1
     bestModel2 = bestModels._2
     bestObjective1 = bestObjectives._1

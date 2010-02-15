@@ -5,12 +5,13 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie.util.tree
+package cc.factorie.util
 
 /***
  * Test for the Tree data structure
  **/
 
+// TODO this should be moved to the factorie/src/test/scala directory
 object TreeTest {
   val n0 = new TreeNode("0")
   val n00 = new TreeNode("00")

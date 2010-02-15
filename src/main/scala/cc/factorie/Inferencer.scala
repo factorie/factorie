@@ -61,7 +61,7 @@ class DiscreteMarginal[V<:CategoricalValues](val variable:V) extends DenseCounts
   override def keepGeneratedSamples = false
   def incrementCurrentValue : Unit = variable match {
     case v:CategoricalValue => increment(v.index, 1.0)(null)
-    case v:BinaryVectorVariable[_] => v.incrementInto(this)
+    case v:BinaryVectorVariable[_] => throw new Error("Put this code back in") // v.incrementInto(this)
   }
 }
 

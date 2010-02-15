@@ -32,7 +32,7 @@ trait AbstractDirichlet[O<:GeneratedDiscreteValue[O]] extends  ProportionDistrib
   def sampleMultinomial: DenseCountsMultinomial[O] = { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this.asInstanceOf[GenerativeDistributionLike[AbstractDirichlet[O],GeneratedProportionValue[O]]])(null); /*throw new Error;*/ mul }
   def sampleOutcome: OutcomeType = sampleMultinomial
   def estimate: Unit = throw new Error("Method estimate is not implemented in this class.  You must add a trait for estimation.")
-  def sampleOutcomes(n:Int) : Seq[OutcomeType] = for (i <- 0 until n force) yield sampleOutcome
+  def sampleOutcomes(n:Int) : Seq[OutcomeType] = for (i <- 0 until n) yield sampleOutcome
   //def sampleInto(m:OutcomeType): Unit = sampleInto(m:OutcomeType, SparseVector(size)(0.0)) // Waiting Scala 2.8 default args 
   //def sampleInto(m:OutcomeType, counts:{def apply(i:Int):Double; def size:Int}): Unit = m.set(sampleProportionsWithCounts(counts))
   def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def size:Int}): Seq[Double] = {
@@ -154,7 +154,7 @@ trait DirichletMomentMatchingEstimator[O<:GeneratedDiscreteValue[O]] extends Abs
     val m = new Array[Double](length)
     for (i <- 0 until length) m(i) = smoothing // TODO Use Arrays.fill?
     for (s <- generatedSamples; i <- 0 until length) m(i) += s.localPr(i) // TODO just make sure that this Dirichlet's alphas are not part of m.pr!
-    assert(Maths.almostEquals(m.sum(x=>x), generatedSamples.size + smoothing*length))
+    assert(Maths.almostEquals(m.sum, generatedSamples.size + smoothing*length))
     mean.set(m)
     //println("unnormalized mean "+_mean.take(20).toList)
     //println("normalized mean "+(new Range(0,_mean.size,1).map(mean(_)).toList))

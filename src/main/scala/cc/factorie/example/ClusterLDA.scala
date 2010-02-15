@@ -8,11 +8,12 @@
 package cc.factorie.example
 
 import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
-import scala.collection.jcl.WeakHashMap
+import scala.collection.mutable.WeakHashMap
 import scala.util.Sorting
 import scala.reflect.Manifest
 import scala.util.matching.Regex
 import java.io.File
+import cc.factorie._
 import cc.factorie.util.Stopwords
 import cc.factorie.util.Implicits._
 

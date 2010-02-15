@@ -25,10 +25,9 @@ import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWri
 */
 class Domain[V<:Variable](implicit m:Manifest[V]) {
   /** Return the classes that have this Domain. */
-  def variableClasses : Seq[Class[V]] = {
-    val matchingElements : Seq[(Class[_],Domain[_])] = Domain.domains.elements.filter({case (key,value) => value == this}).toList
-    matchingElements.map({case (key,value) => key})
-  }
+  def variableClasses: Seq[Class[V]] =
+    Domain.domains.elements.filter({case (key,value) => value == this}).map({case (key,value) => key.asInstanceOf[Class[V]]}).toList
+
   // TODO Trying to create ability for domain assignment syntax like:
   // Domain[Token] := new CategoricalDomain[Token] { ... }
   // I don't think this actually works yet

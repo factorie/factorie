@@ -13,8 +13,8 @@ import cc.factorie.util.Implicits._
 
 /** A one-dimensional Gaussian distribution, generating Real (valued) variables.  Default estimation by moment-matching. 
     @author Andrew McCallum */
-class Gaussian1[R<:RealValue](val mean:RealVariable, val variance:RealVariable) extends RealDistribution[R] {
-  def this(initMean:Double, initVariance:Double) = this(new Real(initMean), new Real(initVariance))
+class Gaussian1[R<:RealValue](var mean:Double, var variance:Double) extends RealDistribution[R] {
+  //def this(initMean:Double, initVariance:Double) = this(new Real(initMean), new Real(initVariance))
   // TODO Consider sampleInto(o:R with RealVariable)
   def sampleInto(o:RealVariable) : Unit = o.set(sampleDouble)(null) // TODO should we put a difflist here?
   def logpr(x:Double) : Double = {
@@ -28,18 +28,18 @@ class Gaussian1[R<:RealValue](val mean:RealVariable, val variance:RealVariable) 
   def minSamplesForVarianceEstimate = 5
   /** This implements a moment-matching estimator. */
   def estimate : Unit = {
-    if (generatedSamples.size == 0) { mean := 0.0; variance := 1.0; return }
-    mean := 0.0
+    if (generatedSamples.size == 0) { mean = 0.0; variance = 1.0; return }
+    mean = 0.0
     var weightSum = 0.0
-    for ((s,w) <- weightedGeneratedSamples) { mean += s * w; weightSum += w }
+    for ((s,w) <- weightedGeneratedSamples) { mean += s.doubleValue * w; weightSum += w }
     mean /= weightSum
-    if (weightSum < minSamplesForVarianceEstimate) { variance := 1.0; return }
-    variance := 0.0
+    if (weightSum < minSamplesForVarianceEstimate) { variance = 1.0; return }
+    variance = 0.0
     for ((s,w) <- weightedGeneratedSamples) { 
-      val diff = mean - s
+      val diff = mean - s.doubleValue
       variance += diff * diff * w
     }
-    variance := Math.sqrt(variance / (weightSum - 1))
+    variance = Math.sqrt(variance / (weightSum - 1))
   }
   override def toString = "Gaussian1("+mean.doubleValue+","+variance.doubleValue+")"
 }
@@ -53,6 +53,7 @@ class GaussianReal[R<:GeneratedRealVariable[R]] extends GeneratedRealVariable[R]
   def decrement(e:Double): Unit = { evidenceSum -= e; evidenceNormalizer -= 1.0 }
 }
 
+// TODO Make WishartGaussian also.
 /** A one-dimensional Gaussian, with integrated out mean, having a Gaussian prior. */
 class GaussianGaussian1[R<:GeneratedRealValue[R]](override val variance:RealVariable) extends Gaussian1[R](new Real(0.0), variance) {
   // The evidence

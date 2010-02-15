@@ -89,6 +89,7 @@ object er {
       override def toString = printName+"("+src+","+dst+","+value+")"
     }
     type RelationshipType = Relationship
+    val noRelationships = ListBuffer.empty[RelationshipType]
     def newRelationship(a:A, b:B) : RelationshipType =  new Relationship(a,b)
     protected def addRelationship(r:RelationshipType) = {
       val pair = (r.src, r.dst)
@@ -125,8 +126,8 @@ object er {
     }
     /** Return the Relationship between a and b, creating as necessary.  If it is created, its initial value will be false. */
     def get(a:A,b:B): RelationshipType = ab2r.getOrElse((a,b), addEntry((a,b))) // TODO verify in the newly-created case that r.value is false
-    def getFromSrc(a:A): Iterable[RelationshipType] = a2rs.getOrElse(a, Nil).filter(r => r.value)
-    def getFromDst(b:B): Iterable[RelationshipType] = b2rs.getOrElse(b, Nil).filter(r => r.value)
+    def getFromSrc(a:A): Iterable[RelationshipType] = a2rs.getOrElse(a, noRelationships).filter(r => r.value)
+    def getFromDst(b:B): Iterable[RelationshipType] = b2rs.getOrElse(b, noRelationships).filter(r => r.value)
     //def forward: A=>Iterable[B] = (a:A) => get2(a).map(_.dst)
     //def reverse: B=>Iterable[A] = (b:B) => get1(b).map(_.src)
     /** Set the value of the relationship from a to b to true.  If not already present, create it. */
