@@ -27,16 +27,20 @@ object LDADemo {
     val documents = new ListBuffer[Document];
     val lexer = new Regex("[a-zA-Z]+")
     for (directory <- if (args.length > 0) args else List("/Users/mccallum/research/data/text/nipstxt/nips05")) {
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
-        val d = new Document(file.toString)
-        d ++= lexer.findAllIn(file.contentsAsString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_)).map(new Word(_))
-        documents += d
+      Console.println("trying arg: " + directory);
+      val dir = new File(directory)
+      if(dir.exists()) { 
+	for (file <- new File(directory).listFiles; if (file.isFile)) {
+          val d = new Document(file.toString)
+          d ++= lexer.findAllIn(file.contentsAsString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_)).map(new Word(_))
+          documents += d
+	}
       }
     }
     println("Read "+documents.size+" documents with "+documents.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
   
     // Create random variables
-    val numTopics = 5
+    val numTopics = 20
     val topics = Array.fromFunction(i => new Topic ~ Beta)(numTopics)
     val zs = new ArrayBuffer[Z]   
     for (document <- documents) {
@@ -51,7 +55,7 @@ object LDADemo {
     // Fit model 
     val sampler = Global.defaultSampler
     val startTime = System.currentTimeMillis
-    for (i <- 1 to 9) {
+    for (i <- 1 to 100) {
       sampler.process(zs, 1)
       print("."); Console.flush
       if (i % 3 == 0) {
