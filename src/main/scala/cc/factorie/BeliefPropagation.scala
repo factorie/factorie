@@ -250,11 +250,20 @@ class DiscreteMarginal1[V<:DiscreteValue](val variable:V) extends RandomAccessSe
   }
 }
 
-class BPLattice(model:Model, val variables:Collection[BeliefPropagation.BPVariable]) extends Lattice {
+class BPLattice(val variables:Collection[BeliefPropagation.BPVariable]) extends Lattice {
+
+  import cc.factorie.util.LinkedHashSet
+  
   type V = BeliefPropagation.BPVariable
 
   // Find all the factors touching the 'variables'
-  val factors = model.factorsOf[Template](variables)
+  val factors = new LinkedHashSet[Factor]
+  //val factors = model.factorsOf[Template](variables)
+
+  def this(model:Model, variables:Collection[BeliefPropagation.BPVariable]) {
+    this(variables)
+    for (factor <- model.factorsOf[Template](variables)) addFactor(factor)
+  }
 
   def bpFactorsOf(v:V) = v2m(v)
 
@@ -262,9 +271,17 @@ class BPLattice(model:Model, val variables:Collection[BeliefPropagation.BPVariab
   private val v2m = new HashMap[Variable, ArrayBuffer[BPFactor]] { override def default(v:Variable) = {this(v) = new ArrayBuffer[BPFactor]; this(v)} }
   // Create a BPFactor for each factor
   val marginals = new HashMap[Factor, BPFactor]
-  factors.foreach(f => marginals(f) = new BPFactor(f) {def factorsOf(v:Variable) = v2m(v)})
+
+  def addFactor(factor:Factor) = {
+    val bpFactor = new BPFactor(factor) {def factorsOf(v:Variable) = v2m(v)}
+    marginals(factor) = bpFactor
+    for (v <- factor.variables) v2m(v) += bpFactor
+    factors += factor
+  }
+
+  //factors.foreach(f => marginals(f) = new BPFactor(f) {def factorsOf(v:Variable) = v2m(v)})
   // Populate the 'v2m' mapping
-  marginals.values.foreach(m => m.factor.variables.foreach(v => v2m(v) += m))
+  //marginals.values.foreach(m => m.factor.variables.foreach(v => v2m(v) += m))
 
   /** Perform one iteration of belief propagation. */
   def update: Unit = marginals.values.foreach(_.update)
