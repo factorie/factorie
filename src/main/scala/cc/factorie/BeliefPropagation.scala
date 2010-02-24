@@ -244,7 +244,7 @@ class DiscreteMarginal1[V<:DiscreteValue](val variable:V) extends RandomAccessSe
   }
   override def toString: String = {
     val sb = new StringBuffer
-    for (i <- 0 to length) sb.append("%d=%-6f ".format(i, m(i))) 
+    for (i <- 0 until length) sb.append("%d=%-6f ".format(i, m(i))) 
     // TODO Make DiscreteDomain have index and lookup, with Int values, so that the above line will work nicely for CategoricalDomains also
     sb.toString
   }
