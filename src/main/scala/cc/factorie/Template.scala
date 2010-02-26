@@ -120,7 +120,7 @@ trait Template {
     def score = Template.this.score(this.asInstanceOf[StatType]) // TODO can we find a way to get rid of this cast?
   }
   class Statistic(val ss:Iterable[StatType]) extends cc.factorie.Statistic with Iterable[StatType] { /* or just "Stat" */
-    def elements = ss.elements
+    def iterator = ss.iterator
     def template : TemplateType = Template.this.asInstanceOf[TemplateType];
     def score = ss.foldLeft(0.0)(_ + Template.this.score(_)) // TODO verify that this gets overriden definitions of score(_)
   }

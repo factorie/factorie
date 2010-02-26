@@ -115,7 +115,7 @@ object CorefMentionsDemo {
         def statistics(entity:Entity) = {
           if (entity.mentions.isEmpty) Stat(Bool(true))
           else {
-            val prefix1 = entity.mentions.elements.next.name.substring(0,1)
+            val prefix1 = entity.mentions.iterator.next.name.substring(0,1)
             if (entity.mentions.forall(m => prefix1 equals m.name.substring(0,1)))
               Stat(Bool(true))
             else

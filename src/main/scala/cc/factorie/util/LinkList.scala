@@ -52,12 +52,13 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
     else prev.getPrevBy(n - 1)
 
   /** Return an Iterator over all links in the sequence of which this is a member. */
-  override def elements: Iterator[This] = new Iterator[This] {
+  override def iterator: Iterator[This] = new Iterator[This] {
     var elems = LinkList.this.first
     def hasNext = (elems ne null)
     def next = { val res = elems; elems = elems.next; res }
   }
 
+  // TODO Consider changing name to be more consistent with Scala 2.8 "iterator" method name.
   /** Return an iterator over all links before this, in order, starting with this.prev */
   def prevElements: Iterator[This] = new Iterator[This] {
     var elems = LinkList.this.next

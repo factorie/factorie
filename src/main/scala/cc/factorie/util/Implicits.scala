@@ -73,7 +73,7 @@ object Implicits {
     def productInts(extractor: T => Int): Int = s.foldLeft(1)((prod, x) => prod * extractor(x))
 
     def maxByDouble(extractor: T => Double): T = {
-      val xs = s.elements
+      val xs = s.iterator
       if (!xs.hasNext) throw new IllegalArgumentException("<empty>.max((x:T)=>Double)")
       var maxElement = xs.next
       var maxValue = extractor(maxElement)
@@ -89,7 +89,7 @@ object Implicits {
     }
 
     def maxByInt(extractor: T => Int): T = {
-      val xs = s.elements
+      val xs = s.iterator
       if (!xs.hasNext) throw new IllegalArgumentException("<empty>.maxInt((x:T)=>Int)")
       var maxElement = xs.next
       var maxValue = extractor(maxElement)
@@ -105,7 +105,7 @@ object Implicits {
     }
 
     def minByDouble(extractor: T => Double): T = {
-      val xs = s.elements
+      val xs = s.iterator
       if (!xs.hasNext) throw new IllegalArgumentException("<empty>.max((x:T)=>Double)")
       var minElement = xs.next
       var minValue = extractor(minElement)
@@ -121,7 +121,7 @@ object Implicits {
     }
 
     def minByInt(extractor: T => Int): T = {
-      val xs = s.elements
+      val xs = s.iterator
       if (!xs.hasNext) throw new IllegalArgumentException("<empty>.minInt((x:T)=>Int)")
       var minElement = xs.next
       var minValue = extractor(minElement)
@@ -138,7 +138,7 @@ object Implicits {
 
     def sumAndMinByDouble(extractor: T => Double): (Double, T) = {
       var sum = 0.0
-      val xs = s.elements
+      val xs = s.iterator
       if (!xs.hasNext) throw new IllegalArgumentException("<empty>.max((x:T)=>Double)")
       var minElement = xs.next
       var minValue = extractor(minElement)

@@ -127,7 +127,7 @@ class SoftMemCache[K, V] extends Map[K, V] with Cache[K, V] {
   /**
    * Iterates the elements of the cache that are currently present.
    */
-  override def elements: Iterator[(K, V)] = {
+  override def iterator: Iterator[(K, V)] = {
     dequeue();
     for (pair <- JavaCollections.iScalaIterator(inner.entrySet.iterator);
          val k = pair.getKey.get;

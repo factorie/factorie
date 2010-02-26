@@ -41,9 +41,9 @@ object SpanNER {
   def syncLabelDomains: Unit = {
     val dLabel = Domain[Label]
     val dSpanLabel = Domain[SpanLabel]
-    dLabel.elements.filter(l => !(l equals O)).map(spanLabel(_).get).foreach(dSpanLabel(_))
-    dSpanLabel.elements.map(beginLabel(_)).foreach(dLabel(_))
-    dSpanLabel.elements.map(insideLabel(_)).foreach(dLabel(_))
+    dLabel.iterator.filter(l => !(l equals O)).map(spanLabel(_).get).foreach(dSpanLabel(_))
+    dSpanLabel.iterator.map(beginLabel(_)).foreach(dLabel(_))
+    dSpanLabel.iterator.map(insideLabel(_)).foreach(dLabel(_))
   }
 
   //The token representing one word
@@ -159,7 +159,7 @@ object SpanNER {
      * This sets all labels to the 'O' state
      */
     override def delete(implicit d: DiffList) = {
-      elements.foreach(_.label.set(O)(d))
+      iterator.foreach(_.label.set(O)(d))
       super.delete(d)
     }
 

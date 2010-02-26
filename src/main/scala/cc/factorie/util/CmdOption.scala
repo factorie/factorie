@@ -46,7 +46,7 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
   private val opts = new HashMap[String,CmdOption[_]]
   def get(key:String) = opts.get(key)
   def size = opts.size
-  def elements = opts.elements
+  def iterator = opts.iterator
   var strict = true
 
   def +=[T](c:CmdOption[T]): Unit = {

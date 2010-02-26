@@ -70,7 +70,7 @@ trait GenerativeDistribution[O<:Variable] extends GenerativeDistributionLike[Gen
   private lazy val _generatedSamples: HashSet[O] = new HashSet[O];
   def generatedSamples: scala.collection.Set[O] = _generatedSamples // TODO I want this to be .readOnly, but how in Scala 2.8?
   def weightedGeneratedSamples: Iterator[(O,Double)] = new Iterator[(O,Double)] {
-    val elts = _generatedSamples.elements
+    val elts = _generatedSamples.iterator
     def hasNext = elts.hasNext
     def next = (elts.next,1.0)
   }
@@ -132,7 +132,7 @@ trait OrdinalDistributionLike[O<:OrdinalValue] extends GenerativeDistributionLik
 }
 
 /** A GenerativeDistribution that generates discrete (Int) outcomes (perhaps even a OrdinalOutcome), for example a Poisson. */
-trait OrdinalDistribution[O<:OrdinalValue] extends GenerativeDistributionLike[OrdinalDistribution[O],O] /*OrdinalDistributionLike[O]*/ with GenerativeDistribution[O] {
+trait OrdinalDistribution[O<:OrdinalValue] extends /*GenerativeDistributionLike[OrdinalDistribution[O],O]*/ OrdinalDistributionLike[O] with GenerativeDistribution[O] {
   def sampleIndex: Int // TODO Rename sampleInt or sampleIntValue?  And likewise below?
   def pr(index:Int): Double
   def logpr(index:Int): Double

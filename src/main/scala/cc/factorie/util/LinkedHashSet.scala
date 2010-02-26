@@ -27,6 +27,6 @@ class LinkedHashSet[A] extends scala.collection.mutable.Set[A] with scala.collec
   case Some(elem) => list = list.filter(_ != elem); true
   }
   override def clear() {list = Nil; super.clear()}
-  override def elements = list.elements
+  override def iterator = list.iterator
 }
 
