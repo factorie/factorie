@@ -36,7 +36,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   // To track best configuration
   var maxModelScore = Math.MIN_DOUBLE
   var currentModelScore = 0.0
-  
+
   // Hooks
   /** Called just before making the proposed change.  If you override, you must call super.preProposalHook! */
   val preProposalHooks = new Hooks0 // TODO And add these to the rest of the hooks below
@@ -104,7 +104,8 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
 
   override def proposalHook(proposal:cc.factorie.Proposal): Unit = {
     val p = proposal.asInstanceOf[Proposal]
-    if (p.bfRatio != Math.NaN_DOUBLE) {
+    //if (p.bfRatio != Math.NaN_DOUBLE) {
+    if(!p.bfRatio.isNaN) {
       numAcceptedMoves += 1
       proposalAccepted = true
       val modelRatio = p.modelScore
