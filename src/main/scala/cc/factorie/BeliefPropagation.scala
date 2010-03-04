@@ -20,13 +20,6 @@ object BeliefPropagation {
   type BPVariable = UncoordinatedDiscreteVariable  // Our BP implementation currently only handles these types of Variables
   var maxdiff = 0.0  // maximum message difference (used for checking if messages are converging)
   val normalizeMessages = true
-
-  def L2(a:Seq[Double], b:Seq[Double]): Double = {
-    assert(a.size == b.size)
-    var sum = 0.0
-    for (i <- 0 until a.size) sum += (a(i)-b(i))*(a(i)-b(i))
-    Math.sqrt(sum)
-  }
 }
 
 object TreewiseBookkeeping {
@@ -36,10 +29,10 @@ object TreewiseBookkeeping {
   var stack = new ArrayBuffer[BPFactor#Message]
 }
 
-/** A factor in a belief propagation lattice used for inference.  
-    Note that an instance of this class is not actually a Template#Factor itself; 
+/** A factor in a belief propagation lattice used for inference.
+    Note that an instance of this class is not actually a Template#Factor itself;
     but it points to a Template#Factor with its 'factor' member.
-  
+
     @author Andrew McCallum
     @author Tim Vieira
  */
@@ -47,7 +40,7 @@ abstract class BPFactor(val factor:Factor) {
   type V = BeliefPropagation.BPVariable
 
   /** Given a variable, return the BPFactors touching it.  This method must be provided by subclasses. */
-  def factorsOf(v:Variable): Seq[BPFactor]; 
+  def factorsOf(v:Variable): Seq[BPFactor];
 
   /** Iterate through all combinations of values in Variables given their `SettingIterators */
   private def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
@@ -61,7 +54,7 @@ abstract class BPFactor(val factor:Factor) {
     type MsgType = Message
     lazy protected val msg = new Array[Double](v.domain.size)          // Holds unnormalized log-probabilities
     lazy protected val previous_msg = new Array[Double](v.domain.size) // store previous message so we can look at message convergence
-    def msgDiff = BeliefPropagation.L2(message, previous_msg)
+    def msgDiff = Maths.L2(message, previous_msg)
     def message: Array[Double] = msg                                   // TODO: Consider making these scalala Vectors
     def messageCurrentValue: Double = msg(v.intValue)
 
@@ -82,7 +75,7 @@ abstract class BPFactor(val factor:Factor) {
       BeliefPropagation.maxdiff = BeliefPropagation.maxdiff.max(msgDiff)  // track largest change in a message
       v.setByIndex(origIndex)(null)    // restore orginal value, just in case someone cares
       this   // Returns reference to `this` so we can say messageTo(v).update.message
-    } 
+    }
     protected def update2: Unit
 
     /*
@@ -90,7 +83,6 @@ abstract class BPFactor(val factor:Factor) {
       - automatically manage the visitedDuringThisTree conditions
       - manage the update order stack (`TreewiseBookkeeping.stack`).
       - does NOT automatically normalize */
-    var visitedDuringThisTree = false
     final def updateTreewise: this.type = {
       if (visitedDuringThisTree) return this
       visitedDuringThisTree = true
@@ -98,8 +90,8 @@ abstract class BPFactor(val factor:Factor) {
       updateTreewise2
       this
     }
+    var visitedDuringThisTree = false
     protected def updateTreewise2: Unit
-
   }
 
   // Message from this factor to Variable v.
@@ -122,7 +114,7 @@ abstract class BPFactor(val factor:Factor) {
         v.setByIndex(i)(null)              // Note: this is changing the value of this Variable
         if (neighborSettings.size == 0) {  // This factor has only one variable neighbor, v itself
           msg(i) = factor.statistic.score
-        } else {                           // This factor has variable neighbors in addition to v itself 
+        } else {                           // This factor has variable neighbors in addition to v itself
           // Sum over all combinations of values in neighboring variables with v's value fixed to i.
           neighborSettings.foreach(setting => {setting.reset; setting.next}) // reset iterator and advance to first setting.
           msg(i) = Math.NEG_INF_DOUBLE     // i.e. log(0)
@@ -142,7 +134,7 @@ abstract class BPFactor(val factor:Factor) {
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
           msg(i) = factor.statistic.score
           //maxIndex(i) = -1
-        } else { // This factor has variable neighbors in addition to v itself 
+        } else { // This factor has variable neighbors in addition to v itself
           neighborSettings.foreach(setting => {setting.reset; setting.next})
           msg(i) = Math.NEG_INF_DOUBLE
           //maxIndex(i) = -1
@@ -222,7 +214,7 @@ trait DiscreteMarginalN {
 // TODO: This should really inherit from Multinomial, but first I have to make it not require an "Outcome" variable.
 // I should also make a multi-dimensional multinomial.
 class DiscreteMarginal1[V<:DiscreteValue](val variable:V) extends RandomAccessSeq[Double] with DiscreteMarginalN {
-  def this(v:V, messages:Iterable[Seq[Double]]) = { 
+  def this(v:V, messages:Iterable[Seq[Double]]) = {
     this(v);
     for (message <- messages) {
       assert(message.length == m.length)
@@ -235,7 +227,7 @@ class DiscreteMarginal1[V<:DiscreteValue](val variable:V) extends RandomAccessSe
   private var sum = 0.0
   def length = m.length
   def apply(i:Int) = m(i)
-  def maxEntry = { 
+  def maxEntry = {
     var i = 0; var mv = m(i); var mi = i
     while (i < m.length) { if (mv < m(i)) { mv = m(i); mi = i }; i += 1 }
     val result = new Array[Int](1); result(0) = mi; result
@@ -247,14 +239,13 @@ class DiscreteMarginal1[V<:DiscreteValue](val variable:V) extends RandomAccessSe
   }
   override def toString: String = {
     val sb = new StringBuffer
-    for (i <- 0 until length) sb.append("%d=%-6f ".format(i, m(i))) 
+    for (i <- 0 until length) sb.append("%d=%-6f ".format(i, m(i)))
     // TODO: Make DiscreteDomain have index and lookup, with Int values, so that the above line will work nicely for CategoricalDomains also
     sb.toString
   }
 }
 
 class BPLattice(val variables:Collection[BeliefPropagation.BPVariable]) extends Lattice {
-  
   type V = BeliefPropagation.BPVariable
 
   // Find all the factors touching the 'variables'
@@ -285,7 +276,7 @@ class BPLattice(val variables:Collection[BeliefPropagation.BPVariable]) extends 
   def update(iterations:Int): Unit = for (i <- 1 to iterations) update
 
   /** Send each message in the lattice once, in order determined by a random tree traversal. */
-  def updateTreewise: Unit = { 
+  def updateTreewise: Unit = {
     v2m.values.foreach(_.foreach(_.resetTree))
     v2m.values.toList.shuffle.foreach(_.foreach(_.updateTreewise)) // randomly permute order each time
     // check that our "randomized tree traversal" touched everything (to run change _msgTo and _msgFrom to public)
@@ -296,7 +287,7 @@ class BPLattice(val variables:Collection[BeliefPropagation.BPVariable]) extends 
     TreewiseBookkeeping.stack.clear
   }
   /** Provide outside access to a BPFactor given is associated Factor */
-  def marginal(f:Factor): Array[Double] = marginals(f).marginal 
+  def marginal(f:Factor): Array[Double] = marginals(f).marginal
   def marginal(v:V): DiscreteMarginal1[V] = new DiscreteMarginal1(v, bpFactorsOf(v).map(_.messageTo(v).message))
   /* def sample(v:UncoordinatedCategoricalVariable): DiffList  // TODO: implement this */
   /* def sample: Unit   // TODO: implement this */
@@ -305,4 +296,3 @@ class BPLattice(val variables:Collection[BeliefPropagation.BPVariable]) extends 
   def setVariablesToMax: Unit = variables.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
   def setVariablesToMax(vs:Iterable[V]): Unit = vs.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
 }
-
