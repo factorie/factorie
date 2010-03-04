@@ -20,11 +20,11 @@ trait Lattice
 
 trait Inferencer[V<:Variable,C] {
   type LatticeType <: Lattice
-  /** Infer the target 'variables' using 'varying' to drive the exploration of changes to the configuration.  
+  /** Infer the target 'variables' using 'varying' to drive the exploration of changes to the configuration.
       For example, in SamplingInference, 'varying' are Sampler 'contexts' which do not necessarily have to be Variables;
       they are arbitrary keys to the sampler that may drive exploration, which will eventually result in changes to the 'target' variables.
       If for you this separation of target variables and sampling contexts is unnecessary or confusing, consider VariableInferencer instead.
-   
+
       @author Andrew McCallum
       @since 0.8
    */
@@ -33,7 +33,7 @@ trait Inferencer[V<:Variable,C] {
 }
 
 /** An Inferencer in which the context arguments are Variables.
- 
+
     @author Andrew McCallum
     @since 0.8
  */
@@ -48,14 +48,14 @@ trait Maximizer[V<:Variable] extends Inferencer[V,V] // Include something like t
 // 'infer' here would actually change state to the maximum found
 // 'infer' in Inferencer would leave it in some random state, with the results really in the Marginal objects?
 
-// TODO Something like this also??  Where will optimizers like CongugateGradient and BFGS go?  
+// TODO Something like this also??  Where will optimizers like CongugateGradient and BFGS go?
 trait Optimizer {
   def optimize: Unit
   def optimize(numIterations:Int): Unit
 }
 
 
-// Note that putting a [V], as in DenseCountsMultinomial[V], doesn't work here because CategoricalValues not <: MultinomialOutcome[V].  
+// Note that putting a [V], as in DenseCountsMultinomial[V], doesn't work here because CategoricalValues not <: MultinomialOutcome[V].
 // But as long as we don't use any methods that require [V], I think we are OK.
 class DiscreteMarginal[V<:CategoricalValues](val variable:V) extends DenseCountsMultinomial(variable.domain.size) with Marginal {
   override def keepGeneratedSamples = false
@@ -100,13 +100,13 @@ class VariableSamplingInferencer[V<:CategoricalVariable](sampler:Sampler[V]) ext
 
 // Max-Product inference, finding the best scoring configuration
 
-/** The result of inference by a SamplingMaximizer.  
+/** The result of inference by a SamplingMaximizer.
     'diff' is the list the changes from the initial configuration.  It may be null if no DiffList is provided to 'infer'.
     'diffScore' is the relative change in model score from the initial configuration. */
 class SamplingMaximizerLattice(val diff:DiffList, val diffScore:Double) extends Lattice
 
 /** Provide 'infer' method that uses the 'sampler' to search for the best-scoring configuration.
- 
+
     @author Andrew McCallum
     @since 0.8
  */
@@ -145,8 +145,8 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
         //println("SamplingMaximizer diff.size="+diff.size)
       }
     }
-    val updateHook: Proposal=>Unit = updateMaxScore _ 
-    sampler.proposalHooks += updateHook 
+    val updateHook: Proposal=>Unit = updateMaxScore _
+    sampler.proposalHooks += updateHook
     //sampler.proposalsHooks += { (props:Seq[Proposal]) => { props.foreach(p => println(p.modelScore)) }}
     val iterationsPerRound = if (iterations < rounds) 1 else iterations/rounds
     var iterationsRemaining = iterations
@@ -166,13 +166,14 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
 }
 
 /** Perform inference according to belief propagation.
- 
+
     @author Andrew McCallum
+    @author Tim Vieira
     @since 0.8
  */
 class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
   override type LatticeType = BPLattice
-  def infer(variables:Collection[V], varying:Collection[V]): LatticeType = infer(variables, varying, 4) // TODO Make a more sensible default  
+  def infer(variables:Collection[V], varying:Collection[V]): LatticeType = infer(variables, varying, 4) // TODO Make a more sensible default
   def infer(variables:Collection[V], varying:Collection[V], numIterations:Int): LatticeType = {
     val result = new BPLattice(model,varying)
     result.update(numIterations) // TODO Of course make this smarter later
@@ -181,10 +182,11 @@ class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends Variabl
     result
   }
   def infer(variables:Collection[V], numIterations:Int): LatticeType = infer(variables, variables, numIterations)
-  def inferTreewise(variables:Collection[V], varying:Collection[V]): LatticeType = {
+  // waiting for Scala 2.8 default parameters...
+  def inferTreewise(variables:Collection[V], varying:Collection[V]): LatticeType = inferTreewise(variables, varying, 1)
+  def inferTreewise(variables:Collection[V], varying:Collection[V], maxiterations:Int): LatticeType = {
+    // NOTE: 'variables' must be a subset of varying, of course!
     val result = new BPLattice(model,varying)
-
-    val MAXITER = 100
     var i = 0
     do {
       BeliefPropagation.maxdiff = 0
@@ -192,16 +194,61 @@ class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends Variabl
       //result.update
       //println("iteration %s: max-message-diff %s".format(i,BeliefPropagation.maxdiff))
       i += 1
-    } while (BeliefPropagation.maxdiff > 0.00000001 && i < MAXITER)
-    if (i >= MAXITER) {
+    } while (BeliefPropagation.maxdiff > 0.00000001 && i < maxiterations)
+    if (i >= maxiterations && maxiterations > 1) {
         println("\n\033[31mWARNING\033[0m: loopy BP did not converge in <= %s iterations".format(i))
     }
-
-    result.setVariablesToMax(variables) // For now, just inference by marginal maximization
-
-    // NOTE the above line requires that 'variables' is a subset of varying, of course!
+    result.setVariablesToMax(variables)
     result
   }
-  def inferTreewise(variables:Collection[V]): LatticeType = inferTreewise(variables, variables)
+  def inferTreewise(variables:Collection[V]): LatticeType = inferTreewise(variables, variables, 1)
+  def inferTreewise(variables:Collection[V], maxiterations:Int): LatticeType = inferTreewise(variables, variables, maxiterations)
 }
 
+
+
+/** BruteForce searches for the optimal configuration of a Collection of Variables
+    by doing exhaustive enumeration or all possible configurations.
+
+  @author Tim Vieira
+*/
+class BruteForce[V<:UncoordinatedDiscreteVariable with IterableSettings](model:Model) {
+
+  // TODO: make this conform to some of the existing Inferencer interfaces.
+  // extends VariableInferencer[V]?
+
+  def infer(variables:Seq[V]): Unit = {
+    assert(variables.forall(_.isInstanceOf[V]))
+    // Argmax over all combinations of variable values
+    val iterators = variables.map(v2 => v2.asInstanceOf[V].settings).toList
+    iterators.foreach(setting => {setting.reset; setting.next}) // reset each iterator and advance to first setting.
+    var score = 0.0
+    var best_score = Math.NEG_INF_DOUBLE
+    var best = null.asInstanceOf[Config]
+    do {
+      score = model.score(variables)
+      if (score > best_score || best == null) {
+        best = new Config(variables) // snapshot the variable configuration
+        best_score = score
+      }
+    } while (nextValues(iterators))
+    best.load // leave the variables in the best configuration found.
+  }
+
+  class Config(val variables:Seq[V]) {
+    // remember the settings of each variable
+    val settings = new Array[Int](variables.size)
+    for ((v,i) <- variables.toList.zipWithIndex) { settings(i) = v.intValue }
+    // set the values of each variable to that in this configuration
+    def load = for ((v,k) <- variables.toList.zip(settings.toList)) v.setByIndex(k)(null)
+    override def toString = ("Config(" + settings.toList.toString + ")")
+  }
+
+  /** Iterate through all combinations of values in Variables given their `SettingIterators */
+  private def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
+    if (vs == Nil) false
+    else if (vs.first.hasNext) {vs.first.next; true}
+    else if (vs.tail != Nil) {vs.first.reset; vs.first.next; nextValues(vs.tail)}
+    else false
+  }
+}
