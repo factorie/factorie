@@ -24,7 +24,7 @@ object LDADemo {
 
   def main(args: Array[String]) : Unit = {
     // Read observed data and create Documents
-    val documents = new ListBuffer[Document];
+    val documents = new ArrayBuffer[Document];
     val lexer = new Regex("[a-zA-Z]+")
     for (directory <- if (args.length > 0) args else List("/Users/mccallum/research/data/text/nipstxt/nips05")) {
       Console.println("trying arg: " + directory);
@@ -42,17 +42,16 @@ object LDADemo {
     // Create random variables
     val numTopics = 20
     val topics = Array.fromFunction(i => new Topic ~ Beta)(numTopics)
-    val zs = new ArrayBuffer[Z]   
     for (document <- documents) {
       document.theta = new Theta ~ Alpha
       for (word <- document) {
         val z = new Z ~ document.theta
         word ~ z
-        zs +=z // just to gather the variables we need to sample later 
       }
     }
     
-    // Fit model 
+    // Fit model
+    val zs = documents.flatMap(document => document.map(word => word.generativeSource))
     val sampler = Global.defaultSampler
     val startTime = System.currentTimeMillis
     for (i <- 1 to 100) {
