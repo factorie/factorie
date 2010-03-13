@@ -216,7 +216,7 @@ class BPLattice(model:Model, val variables:Collection[BeliefPropagation.BPVariab
   //def sample: Unit // TODO implement this
   def setVariablesToMarginalMax: Unit = variables.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
   def setVariablesToMarginalMax(vs:Iterable[V]): Unit = vs.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
-  // TODO Change these to implment max-product-wise global max.  Currently just a max-marginal placeholder. 
+  // TODO Change these to implement max-product-wise global max.  Currently just a max-marginal placeholder. 
   def setVariablesToMax: Unit = variables.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
   def setVariablesToMax(vs:Iterable[V]): Unit = vs.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
 }
