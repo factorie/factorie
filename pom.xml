@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie</artifactId>
-    <version>0.8.1</version>
+    <version>0.8.2-SNAPSHOT</version>
     <inceptionYear>2009</inceptionYear>
     <properties>
         <scala.version>2.7.7</scala.version>
