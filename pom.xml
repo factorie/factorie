@@ -10,9 +10,13 @@
     </properties>
     <url>http://factorie.googlecode.com</url>
     <scm>
+        <connection>scm:hg:file://${basedir}</connection>
+        <developerConnection>scm:hg:file://${basedir}</developerConnection>
+<!--
         <connection>scm:hg:http://factorie.googlecode.com/hg/</connection>
         <developerConnection>scm:hg:https://factorie.googlecode.com/hg/</developerConnection>
         <url>http://code.google.com/p/factorie/source/checkout</url>
+-->
     </scm>
 
     <repositories>
@@ -196,7 +200,7 @@
                 <configuration>
                     <!--<tagBase>https://gcupload-maven-plugin.googlecode.com/svn/tags</tagBase>-->
                     <releaseProfiles>release</releaseProfiles>
-                    <goals>deploy assembly:assembly site-deploy</goals>
+		    <goals>assembly:assembly</goals>
                 </configuration>
             </plugin>
             <plugin>
