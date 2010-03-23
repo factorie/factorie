@@ -64,12 +64,20 @@ abstract trait Variable /* extends AnyRef */ {
   }
   def printName = shortClassName
   override def toString = printName + "(_)"
-  def factors(model:Model): Iterable[Factor] = model.factors(this) // TODO Remove this?  Why have two different short ways of doing this?
+  //def factors(model:Model): Iterable[Factor] = model.factors(this) // TODO Remove this?  Why have two different short ways of doing this?
   def isConstant = false
   // Generic handling of GenerativeObservation knowledge of its 'source' parent // TODO Consider if we really want to do this.
   def _setSource(source:AnyRef)(implicit difflist:DiffList): Unit = {}
   //type SourceType <: AnyRef
   //def source:AnyRef = null //.asInstanceOf[SourceType]
+}
+
+/** For variables that support integrating out their uncertainty with a distribution Q over their values, 
+    or variational inference with an approximate distribution Q.
+    @author Andrew McCallum */
+abstract trait QDistribution {
+  this: Variable =>
+  def newQ: GenerativeDistribution[VariableType]
 }
 
 /*import cc.factorie.er
@@ -116,7 +124,7 @@ trait NoVariableCoordination {
   this: Variable =>
 }
 
-/** A marker for Variables that declare themselves not to only to rely on their own Factors when they are changed,
+/** A marker for Variables that declare themselves to only to rely on their own Factors when they are changed,
     even if changing this variable involves changes to other variables as well. 
     Furthermore the section of Factors must not change depending on the variable's values. */
 // TODO Consider removing this because this constraint is very hard to know locally: one variable cannot know all the factors of another.

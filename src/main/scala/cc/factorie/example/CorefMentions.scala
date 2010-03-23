@@ -12,7 +12,6 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
 import cc.factorie.util.Implicits._
 
-
 /** A simple coreference engine on toy data.  
     Demonstrates the use of RefVariable and setVariable for representing mentions and entities. */
 object CorefMentionsDemo {

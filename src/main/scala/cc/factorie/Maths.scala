@@ -311,6 +311,14 @@ object Maths {
     true
   }
 
+  /* given two sequences calculate the L2 distance */
+  def L2(a:Seq[Double], b:Seq[Double]): Double = {
+    assert(a.size == b.size)
+    var sum = 0.0
+    for (i <- 0 until a.size) sum += (a(i)-b(i))*(a(i)-b(i))
+    Math.sqrt(sum)
+  }
+
   // gsc
   /**
    * Checks if <tt>min &lt;= value &lt;= max</tt>.

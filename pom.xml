@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie</artifactId>
@@ -10,9 +9,13 @@
     </properties>
     <url>http://factorie.googlecode.com</url>
     <scm>
+        <connection>scm:hg:file://${basedir}</connection>
+        <developerConnection>scm:hg:file://${basedir}</developerConnection>
+<!--
         <connection>scm:hg:http://factorie.googlecode.com/hg/</connection>
         <developerConnection>scm:hg:https://factorie.googlecode.com/hg/</developerConnection>
         <url>http://code.google.com/p/factorie/source/checkout</url>
+-->
     </scm>
 
     <repositories>
@@ -134,6 +137,15 @@
                                 <jvmArg>-Xmx2100m</jvmArg>
                             </jvmArgs>
                         </launcher>
+                        <launcher>
+                            <id>ChainNER2b</id>
+                            <mainClass>cc.factorie.example.ChainNER2b</mainClass>
+                            <!-- args are optional -->
+                            <!-- jvmArgs are optional -->
+                            <jvmArgs>
+                                <jvmArg>-Xmx2100m</jvmArg>
+                            </jvmArgs>
+                        </launcher>
 
                     </launchers>
 
@@ -191,7 +203,7 @@
                 <configuration>
                     <!--<tagBase>https://gcupload-maven-plugin.googlecode.com/svn/tags</tagBase>-->
                     <releaseProfiles>release</releaseProfiles>
-                    <goals>deploy assembly:assembly site-deploy</goals>
+		    <goals>assembly:assembly</goals>
                 </configuration>
             </plugin>
             <plugin>

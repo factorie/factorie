@@ -57,32 +57,33 @@ trait ParameterAveraging extends WeightUpdates {
   var _backupWeights : HashMap[TemplatesToUpdate,Vector] = null
   def backupWeights : Unit =
     {
-      _backupWeights = new HashMap[TemplatesToUpdate,Vector] {
-  override def default(template:TemplatesToUpdate) = {
-    val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else {
-      template.freezeDomains
-      new DenseVector(template.statsize)
-    }
-    vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
-    this(template) = vector
-    vector
-  }
+      _backupWeights = new HashMap[TemplatesToUpdate,Vector] 
+      {
+	override def default(template:TemplatesToUpdate) = 
+	  {
+	    val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statsize) else{template.freezeDomains;new DenseVector(template.statsize)}
+	    vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
+	    this(template) = vector
+	    vector
+	  }
       }
+      for(template <- model.templatesOf[TemplatesToUpdate])
+	  _backupWeights(template)
     }
 
   def unsetWeightsToAverage : Unit =
     {
       if(_backupWeights==null)
-  throw new Exception("Cannot 'unset' weights because 'setWeightsToAverage' has not been called")
+	throw new Exception("Cannot 'unset' weights because 'setWeightsToAverage' has not been called")
       for (template <- model.templatesOf[TemplatesToUpdate]) 
-  {
-    if(_backupWeights.contains(template))
-      {
+	{
+	  if(_backupWeights.contains(template))
+	    {
               val backupWeightsTemplate = _backupWeights(template)
               for(i <- template.weights.activeDomain)
-    template.weights(i) = backupWeightsTemplate(i)
-      }
-  }
+		template.weights(i) = backupWeightsTemplate(i)
+	    }
+	}
     }
 
   // Make sure that weightsSum reflects the sum of all weights up to the current iterations
