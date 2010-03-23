@@ -17,19 +17,21 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 /** Base of the Dirichlet class hierarchy, needing only methods 'length' and 'mean'. 
     @author Andrew McCallum
 */
-trait AbstractDirichlet[O<:GeneratedDiscreteValue[O]] extends  ProportionDistribution[O] with GenerativeDistributionLike[AbstractDirichlet[O],GeneratedProportionValue[O]] with RandomAccessSeq[Double] {
+// TODO was GeneratedDiscreteValue
+//trait AbstractDirichlet[O<:GeneratedDiscreteValue[O]] extends  ProportionDistribution[O] with RandomAccessSeq[Double] 
+trait AbstractDirichlet[O<:DiscreteValue] extends  ProportionDistribution[O] with RandomAccessSeq[Double] {
   //type OutcomeType = GeneratedProportionValue[O] // AbstractMultinomial[O]
   final def length: Int = mean.length
   final def alpha(index:Int): Double = mean(index) * alphaSum
   def alphas: Seq[Double] = this
   var alphaSum: Double = 1.0 // TODO Is this a reasonable value?
-  def alphaVector = mean.prVector * alphaSum
+  def alphaVector: Vector = throw new Error // mean.prVector * alphaSum
   def mean: AbstractMultinomial[O]
   //def mean(index:Int) : Double
   def apply(index:Int) = alpha(index)
   def outcomeDomain: O#DomainType
   // Was sampleOutcome: OutcomeType
-  def sampleMultinomial: DenseCountsMultinomial[O] = { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this.asInstanceOf[GenerativeDistributionLike[AbstractDirichlet[O],GeneratedProportionValue[O]]])(null); /*throw new Error;*/ mul }
+  def sampleMultinomial: AbstractMultinomial[O] = throw new Error // TODO { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this)(null); /*throw new Error;*/ mul }
   def sampleOutcome: OutcomeType = sampleMultinomial
   def estimate: Unit = throw new Error("Method estimate is not implemented in this class.  You must add a trait for estimation.")
   def sampleOutcomes(n:Int) : Seq[OutcomeType] = for (i <- 0 until n) yield sampleOutcome
@@ -141,6 +143,8 @@ object Dirichlet {
   
 /** Estimate the parameters of a Dirichlet by moment-matching.
     @author Andrew McCallum */
+// TODO was GeneratedDiscreteValue
+//trait DirichletMomentMatchingEstimator[O<:GeneratedDiscreteValue[O]] extends AbstractDirichlet[O] 
 trait DirichletMomentMatchingEstimator[O<:GeneratedDiscreteValue[O]] extends AbstractDirichlet[O] {
   this : Dirichlet[O] =>
   private def setUniform: Unit = 

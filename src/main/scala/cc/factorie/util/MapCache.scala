@@ -134,9 +134,14 @@ class MapCache[K, V] extends Map[K, V] {
   /**
    * Removes the given key from the map.
    */
-  override def -=(key: K): Unit = {
+  override def -=(key: K): this.type = {
     dequeue();
     inner.remove(new HashableSoftReference(key));
+    this
+  }
+  
+  def +=(kv:(K,V)): this.type = {
+  	throw new Error // TODO Implement this
   }
 
   /**

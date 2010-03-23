@@ -71,7 +71,7 @@ class SamplingLattice[V<:CategoricalValues](variables:Collection[V]) extends Lat
   variables.foreach(v => map(v) = new DiscreteMarginal(v))
   def marginal(v:V) = map(v)
   def apply(v:V) = map(v)
-  def marginals: Iterator[DiscreteMarginal[V]] = map.values
+  def marginals: Iterator[DiscreteMarginal[V]] = map.valuesIterator
 }
 
 // A simple special case, to be generalized later

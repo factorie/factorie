@@ -152,7 +152,7 @@ object CorefMentionsDemo {
           val m = mentionList.sample(Global.random)
           //println("CorefMentions MHPerceptronLearner mention="+m)
           // Pick a random place to move it, either an existing Entity or a newly created one
-          var e = if (random.nextDouble < 0.8) entityList.sampleFiltered((e:Entity)=>e.size>0) else { var ne=new Entity("e"+entityIndex); entityList += ne; ne}
+          var e = if (random.nextDouble < 0.8) sampleFiltered(entityList, (e:Entity)=>e.size>0) else { var ne=new Entity("e"+entityIndex); entityList += ne; ne}
           // Make sure that we don't try to move it to where it already was
           if (e == m.entity) {
             //              Console.println ("Proposal: Trying to move to self, so create new Entity.")

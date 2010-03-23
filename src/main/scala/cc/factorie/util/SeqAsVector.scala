@@ -18,7 +18,7 @@ import scalala.collection.{MergeableSet, IntSpanSet}
 trait SeqAsVector extends Vector {
   def apply(i:Int): Double
   def length: Int
-  def size: Int = length
+  //def size: Int = length
   def update(i:Int, value:Double) = throw new Error("Not implemented")
   def create[J](d:MergeableSet[J]):Tensor[J] = throw new Error("Not implemented")
   val activeDomain: MergeableSet[Int] = IntSpanSet(0, size);

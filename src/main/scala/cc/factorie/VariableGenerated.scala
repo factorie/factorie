@@ -16,28 +16,28 @@ import cc.factorie.util.Implicits._
 // TODO Remove these next two traits.  I don't think they are necessary.
 /** A stand-in for a GeneratedValue.  Note that GeneratedValue itself inherits from this.
     This allows a MarginalizedMixtureChoice to be ... */
-trait GeneratedValueLike[O<:GeneratedValue[O]] {
-  def asGeneratedValue: O
-}
-trait GeneratedValueProxy[O<:GeneratedValue[O]] extends GeneratedValueLike[O] {
-  def asGeneratedValue: O
-}
+//trait GeneratedValueLike[O<:GeneratedValue[O]] {
+//  def asGeneratedValue: O
+//}
+//trait GeneratedValueProxy[O<:GeneratedValue[O]] extends GeneratedValueLike[O] {
+//  def asGeneratedValue: O
+//}
 
                                                                                   
 /** An Variable that has a 'generativeSource' GenerativeDistribution and a 'pr' probability of being generated.
     This trait does not indicate whether the Variable is mutable or immutable.
     For the corresponding mutable-valued Variable, see GenerativeVariable. */  
-trait GeneratedValue[This<:GeneratedValue[This]] extends Variable with GeneratedValueLike[This] {
+trait GeneratedValue[This<:GeneratedValue[This]] extends Variable {
   this: This => 
-  type SourceType <: GenerativeDistributionLike[GenerativeDistribution[This],This]
+  type SourceType <: GenerativeDistribution[This]
   private var _generativeSource: SourceType = _
   //def generativeSource: SourceType#GenerativeDistributionType = _generativeSource //.asGenerativeDistribution
   def generativeSource: SourceType = _generativeSource
-  @inline final def asGeneratedValue: This = this
+  //@inline final def asGeneratedValue: This = this
   final def setSource(s:SourceType)(implicit d:DiffList) : Unit = {
-    if (generativeSource ne null) generativeSource._unregisterSample(asGeneratedValue)
+    if (generativeSource ne null) generativeSource._unregisterSample(this)
     _setSource(s)
-    if (generativeSource ne null) generativeSource._registerSample(asGeneratedValue)
+    if (generativeSource ne null) generativeSource._registerSample(this)
   }
   /** Set 'source' directly without coordinating via source.(un)registerSample.  Don't call this yourself; call 'setSource' instead. */
   override def _setSource(s:AnyRef)(implicit d:DiffList) : Unit = {
@@ -47,13 +47,14 @@ trait GeneratedValue[This<:GeneratedValue[This]] extends Variable with Generated
   }
   /** Register this variable as having been generated from source 's'. */
   def ~(s:SourceType): this.type = { setSource(s)(null); this }
+  def ~(mc:MixtureChoice[_,_,_]) = throw new Error("Not yet implemented")
   /** Register this variable as having been generated from the source indicated by the MixtureChoice 'mmc'. */
   /*def ~[M<:SourceType](mc:MixtureChoice[M,This,_]) : this.type = {
     mc.setOutcome(asOutcome); 
     this.~(mc.choice) // either here or in mmc.setOutcome; not sure which is more natural
   }*/
   /** Probability of this variable given its 'source' parents. */
-  def pr: Double = generativeSource.pr(asGeneratedValue)
+  def pr: Double = generativeSource.pr(this)
   /** log-probability of this variable given its 'source' parents. */
   def logpr: Double = Math.log(pr)
   case class SetSourceDiff(oldSource:SourceType, newSource:SourceType) extends Diff {
@@ -76,6 +77,7 @@ trait GeneratedVariable[This<:GeneratedVariable[This]] extends GeneratedValue[Th
   def regenerate(implicit d:DiffList): Unit = sampleFrom(generativeSource)
   /** Register this variable as having been generated from source 's', and furthermore set this variable's value to a sample from 's'. */
   def :~(s:SourceType): this.type = { this.sampleFrom(s)(null); this.~(s); this } 
+  def :~(mc:MixtureChoice[_,_,_]) = throw new Error("Not yet implemented")
   // Better to sampleFrom first then :~, because :~ may look at this.value and because :~ may add this' currentValue to s' parameter estimate
   // Note however that you can't do "MixtureChoice :~ Multinomial" because of outcome-setting-ordering.
   // We could try to change the design to allow this if we decide it is important.
@@ -108,14 +110,14 @@ trait AbstractGeneratedVariable extends Variable {
 
 trait GeneratedRealValue[This<:GeneratedRealValue[This] with RealValue with GeneratedValue[This]] extends RealValue with GeneratedValue[This] {
   this: This =>
-  type SourceType = GenerativeDistributionLike[RealDistribution[This],This]
+  type SourceType = RealDistribution[This]
   //def pr: Double = generativeSource.asGenerativeDistribution.pr(this)
   //def logpr: Double = generativeSource.asGenerativeDistribution.logpr(this)
 }
 
 trait GeneratedRealVariable[This<:GeneratedRealVariable[This]] extends RealVariable with GeneratedRealValue[This] with GeneratedVariable[This] {
   this: This =>
-  def sampleFrom(source:SourceType)(implicit d:DiffList) = set(source.asGenerativeDistribution.sampleDouble)
+  def sampleFrom(source:SourceType)(implicit d:DiffList) = set(source.sampleDouble)
   def sample(implicit d:DiffList) = sampleFrom(generativeSource)
 }
                                     
@@ -128,7 +130,7 @@ trait GeneratedDiscreteValue[This<:GeneratedDiscreteValue[This] with DiscreteVal
   this: This =>  
   // "This" types are a bit verbose.  Could Scala be changed to replace them with this#type ??? 
   // Geoffrey Washburn says yes it is technically possible, but that Martin is simply against adding this feature to the language.
-  type SourceType = GenerativeDistributionLike[DiscreteDistribution[This],This]
+  type SourceType = DiscreteDistribution[This]
   //@inline final def asOutcome = this
 }
 
@@ -145,21 +147,21 @@ trait GeneratedDiscreteVariable[This<:GeneratedDiscreteVariable[This] with Discr
   def _setByIndex(newIndex:Int)(implicit d:DiffList) = super.setByIndex(newIndex) 
   // TODO The above method is a bit scary because we may loose opportunities to fruitfully override setByIndex in subclasses
   // However it saved us (115-111) seconds in the LDA timing run described in Generative.scala. 
-  def sampleFrom(source:SourceType)(implicit d:DiffList) = setByIndex(source.asGenerativeDistribution.sampleIndex)
+  def sampleFrom(source:SourceType)(implicit d:DiffList) = setByIndex(source.sampleIndex)
   def distribution: Array[Double] = { // TODO Remove or rename?  Rename proportion?
     val buffer = new Array[Double](domain.size);
-    for (i <- 0 until buffer.length) buffer(i) = generativeSource.asGenerativeDistribution.pr(i); 
+    for (i <- 0 until buffer.length) buffer(i) = generativeSource.pr(i); 
     buffer
   }
   def sample(implicit d:DiffList): Unit = {
     // TODO Thursday Check!!!  Just removed this because I think it is redundant with preChange/postChange in setByIndex 
     //val isDM = classOf[DirichletMultinomial[This]].isAssignableFrom(getClass)
     //if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, -1)
-    setByIndex(generativeSource.asGenerativeDistribution.sampleIndex)
+    setByIndex(generativeSource.sampleIndex)
     //if (isDM) source.asInstanceOf[DirichletMultinomial[This]].increment(this, 1)
   }
   def maximize(implicit d:DiffList): Unit = {
-    setByIndex(generativeSource.asGenerativeDistribution.maxPrIndex)
+    setByIndex(generativeSource.maxPrIndex)
   }
 }
 
@@ -176,7 +178,7 @@ trait GeneratedCategoricalVariable[This<:GeneratedCategoricalVariable[This] with
 
 /** A GeneratedObservation that consists of a vector of Doubles that sum to one, for example the parameters of a Multinomial. */
 trait GeneratedProportionValue[O<:DiscreteValue] extends RandomAccessSeq[Double] with GeneratedVariable[GeneratedProportionValue[O]] {
-  type SourceType <: GenerativeDistributionLike[ProportionDistribution[O],GeneratedProportionValue[O]]
+  type SourceType <: ProportionDistribution[O]
   def localPr(index:Int): Double // TODO Needed in DirichletMomentMatchingEstimator, but general enough?
   def proportion: RandomAccessSeq[Double]
 }

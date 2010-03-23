@@ -44,11 +44,11 @@ trait OutcomeGenerating[T] {
     @author Andrew McCallum */
 // TODO Rename simply "Multinomial"?
 @DomainInSubclasses
-trait AbstractMultinomial[O<:DiscreteValue] extends GenerativeDistributionLike[AbstractMultinomial[O],O] with /*GenerativeVariable[ProportionOutcome[O]] with*/ DiscreteDistribution[O] with GeneratedProportionValue[O] {
+trait AbstractMultinomial[O<:DiscreteValue] extends DiscreteDistribution[O] with GeneratedProportionValue[O] {
   type VariableType <: AbstractMultinomial[O];
   //type OutcomeType = O
   //type SourceType = ProportionGenerating[O];
-  type SourceType <: GenerativeDistributionLike[ProportionDistribution[O],GeneratedProportionValue[O]]; // TODO Just changed from = to <: !!!!
+  type SourceType <: ProportionDistribution[O]; // TODO Just changed from = to <: !!!!
   //type SourceType = AbstractDirichlet[O]; // TODO Why can't I make this ProportionGenerating[O] instead of AbstractDirichlet[O]?
   //def asOutcome = this
   //def this(initCounts:Seq[Double]) = { this(initCounts.size); setCounts(initCounts) }
@@ -69,8 +69,8 @@ trait AbstractMultinomial[O<:DiscreteValue] extends GenerativeDistributionLike[A
     generatedSamples.foreach(s => c(s.index) += 1.0)
     c
   }
-  def prVector: Vector = new SeqAsVector { def apply(i:Int) = pr(i); def length = size } // TODO Bad idea?  Is Vector.elements supposed to have type Iterable[(Int,Double)]? 
-  def sampleFrom(s:SourceType)(implicit d:DiffList): Unit = set(s.asGenerativeDistribution.sampleProportionsWithCounts(counts))
+  //def prVector: Vector = new SeqAsVector { def apply(i:Int) = pr(i); def length = size } // TODO Bad idea?  Is Vector.elements supposed to have type Iterable[(Int,Double)]? 
+  def sampleFrom(s:SourceType)(implicit d:DiffList): Unit = set(s.sampleProportionsWithCounts(counts))
   @deprecated def sampleInto(o:O): Unit = o match { // TODO Consider including implicit DiffList here? 
     case v:DiscreteVariable => v.setByIndex(sampleIndex)(null)
     case _ => throw new Error("Trying to sample into immutable Variable") // TODO Is this OK to just do nothing here?;
@@ -116,7 +116,7 @@ class UniformMultinomial[O<:GeneratedDiscreteValue[O]](implicit m:Manifest[O]) e
     @author Andrew McCallum */
 class MultinomialMixture[M<:AbstractMultinomial[O]:ClassManifest,O<:GeneratedDiscreteValue[O]](ms:Seq[M], ps:Seq[Double]) extends AbstractMultinomial[O] {
   // TODO How can I avoid needing both M and O as type parameters.  I think M should automatically specify O.
-  type SourceType = GenerativeDistributionLike[ProportionDistribution[O],GeneratedProportionValue[O]];
+  type SourceType = ProportionDistribution[O];
   val components = ms.toArray
   val length: Int = components.first.length
   val proportions = new DenseCountsMultinomial(ps)
@@ -131,7 +131,7 @@ class MultinomialMixture[M<:AbstractMultinomial[O]:ClassManifest,O<:GeneratedDis
 /** Simple Multinomial that stores p(x) directly in a Scalala DenseVector. 
     @author Andrew McCallum */
 class DenseMultinomial[O<:GeneratedDiscreteValue[O]](proportions:Seq[Double]) extends AbstractMultinomial[O] {
-  type SourceType = GenerativeDistributionLike[ProportionDistribution[O],GeneratedProportionValue[O]];
+  type SourceType = ProportionDistribution[O];
   def this(dim:Int) = this(Array.make(dim, 1.0/dim))
   def this()(implicit m:Manifest[O]) = this(Array.make(Domain[O](m).size, 1.0/Domain[O](m).size))
   val length: Int = proportions.length
@@ -157,7 +157,7 @@ class DenseMultinomial[O<:GeneratedDiscreteValue[O]](proportions:Seq[Double]) ex
 @DomainInSubclasses
 trait CountsMultinomial[O<:DiscreteValue] extends AbstractMultinomial[O] {
   type VariableType <: CountsMultinomial[O];
-  override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],GeneratedProportionValue[O]]
+  override type SourceType = AbstractDirichlet[O];
   def length: Int = counts.size 
   def smoothing = 0.0
   var _total: Double = 0.0 // TODO I want this to be "private", but Eclipse is failing to compile in this case.
@@ -204,8 +204,9 @@ trait CountsMultinomial[O<:DiscreteValue] extends AbstractMultinomial[O] {
     if (generatedSamples.isEmpty) throw new Error("No generated samples from which to estimate")
     if (generativeSource == null) { zero }
     else { 
-      _total = generativeSource.asGenerativeDistribution.alphaSum
-      for (i <- 0 until size) _counts(i) = generativeSource.asGenerativeDistribution.alphaVector(i)
+      _total = generativeSource.alphaSum
+      throw new Error("Next line needs to be uncommented, but without using alphaVector")
+      //for (i <- 0 until size) _counts(i) = generativeSource.alphaVector(i)
     }
     generatedSamples.foreach(o => {
       o match { // TODO clean this up
@@ -246,7 +247,7 @@ class GrowableCountsMultinomial[O<:DiscreteValue](implicit m:Manifest[O]) extend
 trait VectorCountsMultinomial[O<:GeneratedDiscreteValue[O]] extends CountsMultinomial[O] {
   type VariableType <: VectorCountsMultinomial[O];
   override protected val _counts: Vector
-  override def prVector: Vector = _counts / countsTotal
+  //override def prVector: Vector = _counts / countsTotal
 }
 
 trait SparseMultinomial[O<:GeneratedDiscreteValue[O]] extends AbstractMultinomial[O] {
@@ -307,7 +308,7 @@ class DirichletMultinomial[O<:GeneratedCategoricalValue[O]](dirichlet:AbstractDi
   type VariableType <: DirichletMultinomial[O];
   //override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],ProportionOutcome[O]]
   val outcomeDomain = Domain[O](m) // TODO unfortunately this gets fetched and stored repeatedly for each instance; but otherwise 'm' would be stored for each instance anyway?
-  def actualGenerativeSource = generativeSource.asGenerativeDistribution
+  def actualGenerativeSource = generativeSource
   override def pr(index:Int) : Double = {
     //println("Multinomial.pr "+count(index)+" "+source(index)+" "+total+" "+source.sum)
     if (generativeSource != null)
@@ -393,7 +394,7 @@ trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends GeneratedDisc
   }
   override def maximize(implicit d:DiffList): Unit = {
     super.maximize(d)
-    multinomial.set(generativeSource.asGenerativeDistribution.proportion) // TODO also create a Diff for this?
+    multinomial.set(generativeSource.proportion) // TODO also create a Diff for this?
   }
 }
 

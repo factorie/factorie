@@ -138,7 +138,7 @@ abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(imp
 }
 
 
-trait VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable[T]] extends VariableSeq[T] {
+trait VariableSeqWithSpans[T >:Null <: Variable with VarInTypedSeq[T,_],S<:SpanVariable[T]] extends VariableSeq[T] {
   private val _spans = new ListBuffer[S];
   def spans: Seq[S] = _spans
   def orderedSpans: Seq[S] = _spans.toList.sort((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
@@ -183,6 +183,7 @@ trait VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable
   }
 }
 
+/*
 @deprecated
 class VariableSeqWithSpansOld[X <: Variable with VarInSeq[X]] extends VariableSeq[X] {
   type SpanType >: Null <: SpanVariable[X];
@@ -211,6 +212,7 @@ class VariableSeqWithSpansOld[X <: Variable with VarInSeq[X]] extends VariableSe
     }
   }
 }
+*/
 
 //class LabelSeqWithSpans[T<:Variable { def label:Label }]
 

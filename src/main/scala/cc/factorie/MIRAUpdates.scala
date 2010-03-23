@@ -23,6 +23,7 @@ import scalala.tensor.sparse.SparseVector
 trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
   this: ProposalSampler[_] =>
   override type TemplatesToUpdate = DotTemplate
+  //def templateClassToUpdate = classOf[DotTemplate]
   def learningRate : Double
   def learningRate_=(x:Double) : Unit
   def model : Model

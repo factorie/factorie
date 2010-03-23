@@ -90,7 +90,7 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
     val proposal = props.size match {
       case 0 => throw new Error("No proposals created.")
       case 1 => props.first 
-      case _ => props.sampleExpProportionally(_.acceptanceScore)
+      case _ => sampleExpProportionally(props, (p:Proposal) => p.acceptanceScore)
     }
     proposal.diff.redo
     proposalHook(proposal)

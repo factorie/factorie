@@ -5,7 +5,7 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie.util
+package cc.factorie.util;
 
 import scala.util.Random
 import scala.util.Sorting
@@ -60,8 +60,39 @@ object Implicits {
   //implicit def realValue2Double(r:RealValue): Double = r.doubleValue
   ////implicit def intValue2Int(r:IntValue): Int = r.intValue // TODO Should I add this also?
   ////implicit def booleanValue2Boolean(r:BooleanValue): Boolean = r.booleanValue // TODO Should I add this also?
+   def sample[T](s2: Seq[T])(implicit random: Random = defaultRandom): T = {
+     if (s2.size == 1) s2.first
+     else s2(random.nextInt(s2.size))
+   }
   
- 
+   def sampleFiltered[T](s: Iterable[T], filterTest: T => Boolean)(implicit random:Random = defaultRandom): T = {
+     val s2 = s.toSeq.filter(filterTest)
+     s2(random.nextInt(s2.size));
+   }
+
+   def sampleProportionally[T](s: Iterable[T], extractor: T => Double)(implicit random:Random = defaultRandom): T = {
+     //println("sampleProportionally called with Iteratible="+s)
+     //if (s.size == 1) return s.first
+     var sum = s.foldLeft(0.0)((total, x) => total + extractor(x))
+     val r = random.nextDouble * sum
+     sum = 0
+     for (choice <- s) {
+       val e = extractor(choice)
+       //println("sampleProportionally e = "+e)
+       if (e < 0.0) throw new Error("BonusIterable sample extractor value " + e + " less than zero.  Sum=" + sum)
+       sum += e
+       if (sum >= r)
+         return choice;
+     }
+     throw new Error("BonusIterable sample error: r=" + r + " sum=" + sum)
+   }
+   def sampleExpProportionally[T](s:Iterable[T], extractor: T => Double)(implicit random:Random  = defaultRandom): T = {
+     val maxValue : Double = s.foldLeft(Math.NEG_INF_DOUBLE)((max,t) => {val x = extractor(t); assert(x==x); if (x>max) x else max})
+     if (maxValue == Math.NEG_INF_DOUBLE) throw new Error("Cannot sample from an empty list.")
+     sampleProportionally(s, (t:T) => if (extractor(t) == Math.NEG_INF_DOUBLE) Math.NEG_INF_DOUBLE else Math.exp(extractor(t) - maxValue))
+   }
+
+  
   implicit def iterableExtras[T](s: Iterable[T]) = new {
     //println("iterableExtras constructed with s="+s)
     def sumDoubles(extractor: T => Double): Double = s.foldLeft(0.0)((sum, x: T) => sum + extractor(x))

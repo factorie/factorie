@@ -14,7 +14,7 @@ import scala.Math
 import scala.util.Sorting
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
-import cc.factorie.util.{Log, LinkedHashSet}
+import cc.factorie.util.{Log}
 import cc.factorie.util.Implicits._
 import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
@@ -33,7 +33,7 @@ import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWri
     factor.  Factor inherits from Iterable[Factor] so that we can
     return a single Factor when an Iterable[Factor] is required. 
     @author Andrew McCallum */
-trait Factor extends Product with Iterable[Factor] with Ordered[Factor] {
+trait Factor extends Product with Ordered[Factor] {
   //type TemplateType <: Template
   def template : Template
   def numVariables: Int 
@@ -43,8 +43,8 @@ trait Factor extends Product with Iterable[Factor] with Ordered[Factor] {
   def randomVariable(implicit random:Random): Variable = variable(random.nextInt(numVariables))
   //def score: Double
   //def vector: Vector // TODO Remove this.  Not all Factors have a vector
-  /**A Factor can act as as singleton Iterable[Factor].  This makes it easier to return a single Factor from unroll* methods. */
-  def elements: Iterator[Factor] = Iterator.single(this)
+  /** A Factor can act as as singleton Iterable[Factor].  This makes it easier to return a single Factor from unroll* methods. */
+  //def iterator: Iterator[Factor] = Iterator.single(this)
   /**A Factor can be placed into a List with another with this method.
   This makes it easier to return 2-3 Factors from unroll* methods via Factor() :: Factor() :: Factor() */
   def ::(that: Factor) = List(that, this)
@@ -53,7 +53,7 @@ trait Factor extends Product with Iterable[Factor] with Ordered[Factor] {
   // Implement Ordered, such that worst (lowest) scores are considered "high"
   def compare(that: Factor) = {val d = that.statistic.score - this.statistic.score; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
   // Implement equality based on class assignability and Variable contents equality
-  def canEqual(other: Any) = other.isInstanceOf[Factor];
+  override def canEqual(other: Any) = other.isInstanceOf[Factor];
   override def equals(other: Any): Boolean = {
     //(this eq other) ||
     if (!canEqual(other)) return false
@@ -65,9 +65,9 @@ trait Factor extends Product with Iterable[Factor] with Ordered[Factor] {
   var _hashCode = -1
   override def hashCode: Int = {if (_hashCode == -1) _hashCode = variables.sumInts(_ hashCode); _hashCode}
   def factorName = template.factorName
-  override def toString = {
+  override def toString = { // TODO change to mkString
     val sb = new StringBuilder; sb append factorName; sb append '(';
-    val iter = variables.elements
+    val iter = variables.iterator
     while (iter.hasNext) { sb append iter.next.toString; if (iter.hasNext) sb append "," } 
     sb append ")"
     sb.toString
@@ -77,13 +77,13 @@ trait Factor extends Product with Iterable[Factor] with Ordered[Factor] {
 
 
 /**A container for the sufficient statistics of a Factor. */
-trait Stat extends Iterable[Stat] {
+trait Stat {
   // TODO Make this also extend Product, support scoring, etc, like Factor
   def template: Template
   def score : Double
   /** A Stat can act as as singleton Iterable[Stat].
-  This makes it easier to return a single Stat from unroll* methods. */
-  def elements: Iterator[Stat] = Iterator.single(this)
+  		This makes it easier to return a single Stat from unroll* methods. */
+  //def iterator: Iterator[Stat] = Iterator.single(this)
   /** A Stat can be placed into a List with another with this method.
   This makes it easier to return 2-3 Factors from unroll* methods via Stat() :: Stat() :: Stat() */
   def ::(that: Stat) = List(that, this)
@@ -93,12 +93,16 @@ trait Statistic extends Iterable[Stat] {
   def score : Double
 }
 
+trait IterableSingle[T] extends Iterable[T] {
+	this: T =>
+  def iterator: Iterator[T] = Iterator.single(this)
+}
 
 /** The template for many factors.  Manages its connections to neighboring variables.
     @Andrew McCallum
 */
 trait Template {
-  type TemplateType <: Template
+  type TemplateType <: Template // like a self-type
   type FactorType <: Factor
   type StatType <: Stat
   type StatisticType <: Statistic
@@ -128,16 +132,18 @@ trait Template {
   def factors(d: Diff): Iterable[Factor] = if (d.variable == null) Nil else factors(d.variable)
   def factors(v: Variable): Iterable[Factor];
   def factors(difflist: DiffList): Iterable[Factor] = {
-    var result = new LinkedHashSet[Factor]()
+    //var result = new LinkedHashSet[Factor]()
+    var result = new HashSet[Factor]()
     difflist.foreach(diff => result ++= factors(diff))
     result.toList // TODO is this necessary?
   }
   def factors(variables:Iterable[Variable]) : Iterable[Factor] = {
-    var result = new LinkedHashSet[Factor]()
+    //var result = new LinkedHashSet[Factor]()
+    var result = new HashSet[Factor]()
     variables.foreach(v => result ++= factors(v))
     result.toList // TODO is this necessary?
   }
-  def stats(v:Variable): Iterable[Stat];
+  def stats(v:Variable): Iterable[Stat]; // TODO make this Iterable[StatType]
   def score(s:StatType) : Double
   //def scoreStats(ss:Iterable[_<:S]) : Double = ss.foldLeft(0.0)(_ + score(_))
   def statistic(ss:Iterable[StatType]) : StatisticType = new Statistic(ss).asInstanceOf[StatisticType] // TODO is there some way to avoid this cast?
@@ -178,7 +184,7 @@ trait VectorTemplate extends Template {
   override type StatisticType = Statistic
   class Statistic(ss:Iterable[_<:StatType]) extends super.Statistic(ss) {
     lazy val vector : Vector = {
-      val iter = ss.elements
+      val iter = ss.iterator
       if (iter.hasNext) {
         val first: Vector = iter.next.vector
         if (!iter.hasNext) // There is only one there
@@ -258,7 +264,7 @@ trait DotTemplate extends VectorTemplate {
     if (f.exists) return // Already exists, don't write it again
     for (d <- statDomains) d.save(dirname)
     val s = new PrintWriter(new FileWriter(f))
-    for (weight <- weights.elements) {
+    for (weight <- weights.iterator) {
       s.print(weight._1)
       s.print(" ")
       s.println(weight._2)
@@ -286,7 +292,7 @@ trait DotTemplate extends VectorTemplate {
 /** A DotTemplate that stores its parameters in a Scalala SparseVector instead of a DenseVector 
     @author Andrew McCallum */
 trait SparseWeights extends DotTemplate {
-  override lazy val weights: Vector = { new SparseVector(statsize) } // Dense by default, here overriden to be sparse
+  override lazy val weights: Vector = { new SparseVector(statsize) } // Dense by default, here overridden to be sparse
 }
 
 /** A DotTemplate that stores its parameters in a Scalala SparseHashVector instead of a DenseVector 
@@ -310,19 +316,19 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1)
   def statistics(v1:N1) : Iterable[StatType]
   def stats(v:Variable) = factors(v).flatMap(_statistics(_))
-  case class Factor(n1:N1) extends super.Factor with Iterable[Factor] {
+  case class Factor(n1:N1) extends super.Factor with IterableSingle[Factor] {
     def numVariables = 1
     def variable(i:Int) = i match { case 0 => n1; case _ => throw new IndexOutOfBoundsException(i.toString) }
     def statistics : Iterable[StatType] = _statistics(this)
   } 
 }
 trait Statistics1[S1<:Variable] extends Template {
-  case class Stat(s1:S1) extends super.Stat with Iterable[Stat] // { def vector : Vector = s1.vector } 
+  case class Stat(s1:S1) extends super.Stat with IterableSingle[Stat]
   type StatType = Stat
 }
 trait VectorStatistics1[S1<:DiscreteValues] extends VectorTemplate {
   type StatType = Stat
-  case class Stat(s1:S1) extends super.Stat with Iterable[Stat] {
+  case class Stat(s1:S1) extends super.Stat with IterableSingle[Stat] {
     def vector : Vector = s1.vector
   } 
   def init(implicit m1:Manifest[S1]) : this.type = { statClasses += m1.erasure.asInstanceOf[Class[DiscreteValues]]; statClasses.freeze; this }  
@@ -354,18 +360,18 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
   def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1, f.n2)
   def statistics(v1:N1, v2:N2) : Iterable[StatType]
   def stats(v:Variable) = factors(v).flatMap(_statistics(_))
-  case class Factor(n1:N1, n2:N2) extends super.Factor with Iterable[Factor] {
+  case class Factor(n1:N1, n2:N2) extends super.Factor with IterableSingle[Factor] {
     def numVariables = 2
     def variable(i:Int) = i match { case 0 => n1; case 1 => n2; case _ => throw new IndexOutOfBoundsException(i.toString) }
     def statistics : Iterable[StatType] = _statistics(this)
   } 
 }
 trait Statistics2[S1<:Variable,S2<:Variable] extends Template {
-  case class Stat(s1:S1, s2:S2) extends super.Stat with Iterable[Stat] 
+  case class Stat(s1:S1, s2:S2) extends super.Stat with IterableSingle[Stat]
   type StatType = Stat
 }
 trait VectorStatistics2[S1<:DiscreteValues,S2<:DiscreteValues] extends VectorTemplate {
-  case class Stat(s1:S1, s2:S2) extends super.Stat with Iterable[Stat] {
+  case class Stat(s1:S1, s2:S2) extends super.Stat with IterableSingle[Stat] {
     lazy val vector : Vector = flatOuter(s1.vector, s2.vector)
   } 
   type StatType = Stat
@@ -401,18 +407,18 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
   def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1, f.n2, f.n3)
   def statistics(v1:N1, v2:N2, v3:N3) : Iterable[StatType]
   def stats(v:Variable) = factors(v).flatMap(_statistics(_))
-  case class Factor(n1:N1, n2:N2, n3:N3) extends super.Factor with Iterable[Factor] {
+  case class Factor(n1:N1, n2:N2, n3:N3) extends super.Factor with IterableSingle[Factor] {
     def numVariables = 3
     def variable(i:Int) = i match { case 0 => n1; case 1 => n2; case 2 => n3; case _ => throw new IndexOutOfBoundsException(i.toString) }
     def statistics : Iterable[StatType] = _statistics(this)
   } 
 }
 trait Statistics3[S1<:Variable,S2<:Variable,S3<:Variable] extends Template {
-  case class Stat(s1:S1, s2:S2, s3:S3) extends super.Stat with Iterable[Stat] 
+  case class Stat(s1:S1, s2:S2, s3:S3) extends super.Stat with IterableSingle[Stat]
   type StatType = Stat
 }
 trait VectorStatistics3[S1<:DiscreteValues,S2<:DiscreteValues,S3<:DiscreteValues] extends VectorTemplate {
-  case class Stat(s1:S1, s2:S2, s3:S3) extends super.Stat with Iterable[Stat] {
+  case class Stat(s1:S1, s2:S2, s3:S3) extends super.Stat with IterableSingle[Stat] {
     lazy val vector : Vector = flatOuter(s1.vector, flatOuter(s2.vector, s3.vector))
   } 
   type StatType = Stat
@@ -451,19 +457,19 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
   def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1, f.n2, f.n3, f.n4)
   def statistics(v1:N1, v2:N2, v3:N3, v4:N4) : Iterable[StatType]
   def stats(v:Variable) = factors(v).flatMap(_statistics(_))
-  case class Factor(n1:N1, n2:N2, n3:N3, n4:N4) extends super.Factor with Iterable[Factor] {
+  case class Factor(n1:N1, n2:N2, n3:N3, n4:N4) extends super.Factor with IterableSingle[Factor] {
     def numVariables = 4
     def variable(i:Int) = i match { case 0 => n1; case 1 => n2; case 2 => n3; case 3 => n4; case _ => throw new IndexOutOfBoundsException(i.toString) }
     def statistics : Iterable[StatType] = _statistics(this)
   } 
 }
 trait Statistics4[S1<:Variable,S2<:Variable,S3<:Variable,S4<:Variable] extends Template {
-  case class Stat(s1:S1, s2:S2, s3:S3, s4:S4) extends super.Stat with Iterable[Stat] 
+  case class Stat(s1:S1, s2:S2, s3:S3, s4:S4) extends super.Stat with IterableSingle[Stat] 
   type StatType = Stat
 }
 trait VectorStatistics4[S1<:DiscreteValues,S2<:DiscreteValues,S3<:DiscreteValues,S4<:DiscreteValues] extends VectorTemplate {
-  case class Stat(s1:S1, s2:S2, s3:S3, s4:S4) extends super.Stat with Iterable[Stat] {
-    lazy val vector : Vector = flatOuter(s1.vector, flatOuter(s2.vector, flatOuter(s3.vector, s4.vector)))
+  case class Stat(s1:S1, s2:S2, s3:S3, s4:S4) extends super.Stat with IterableSingle[Stat] {
+    lazy val vector : Vector = flatOuter(s1.vector, flatOuter(s2.vector, flatOuter(s3.vector, s4.vector))) // TODO Really?  There isn't a risk of a bad cached value here?
   } 
   type StatType = Stat
   def init(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]) : this.type = { statClasses ++= List(m1.erasure.asInstanceOf[Class[DiscreteValues]], m2.erasure.asInstanceOf[Class[DiscreteValues]], m3.erasure.asInstanceOf[Class[DiscreteValues]], m4.erasure.asInstanceOf[Class[DiscreteValues]]); this }  
