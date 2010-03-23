@@ -27,7 +27,7 @@ object ChainNER2 {
   val model = new Model(
     Foreach[Label] { label => Score(label) } % "Prior",
     Foreach[Label] { label => Score(label, label.token) } % "LabelToken",
-    Foreach[Label] { label => Score(label.prev, label) } % "LabelLabel",
+    Foreach[Label] { label => Score(label.prev, label) } % "LabelLabel"
     //Foreach[Label] { label => Score(label.prev, label, label.token.tags) },
     //Foreach[Label] { label => Score(label.prev, label, label.next) },
     //Foreach[Label] { label => Score(label.prev, label, label.next, label.token.tags) }
@@ -38,9 +38,9 @@ object ChainNER2 {
 
     // Read training and testing data.  The function 'featureExtractor' function is defined below
     val trainSentences = 
-      LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(0)), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)
+      LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(0))), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)
     val testSentences = 
-      LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(1)), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)
+      LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(1))), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)
 
     // Change from CoNLL's IOB notation to to BIO notation
     (trainSentences ++ testSentences).foreach(s => { 

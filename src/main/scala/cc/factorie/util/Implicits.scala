@@ -5,22 +5,24 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie.util
+package cc.factorie.util;
 
 import scala.util.Random
 import scala.util.Sorting
 import scala.reflect.Manifest
 import java.io.File
-import cc.factorie.util._
+//import cc.factorie.util._
 
 
 // TODO consider moving to cc.factorie.Implicits??
 
 /** Implicit conversions used in FACTORIE, and which might also be useful to FACTORIE users. */
 object Implicits {
+  // TODO! Put this somewhere more appropriate
+  val defaultRandom = new Random(1)
   
   // TODO Consider using a similar trick to avoid the need for .init in Template with Statistics!!!
-  implicit def sampler2GenericSampler[C](s:Sampler[C])(implicit mc:Manifest[C]) = new GenericSampler[C](s)(mc)
+  //implicit def sampler2GenericSampler[C](s:Sampler[C])(implicit mc:Manifest[C]) = new GenericSampler[C](s)(mc)
   
   
   // http://debasishg.blogspot.com/2009/09/thrush-combinator-in-scala.html
@@ -53,15 +55,47 @@ object Implicits {
     def editDistance(s2: String): Int = editDistance(s2, 1, 1, 1)
   }
 
- 
-  implicit def realValue2Double(r:RealValue): Double = r.doubleValue
-  // implicit def intValue2Int(r:IntValue): Int = r.intValue // TODO Should I add this also?
-  // implicit def booleanValue2Boolean(r:BooleanValue): Boolean = r.booleanValue // TODO Should I add this also?
+
+  // TODO! Re-add this
+  //implicit def realValue2Double(r:RealValue): Double = r.doubleValue
+  ////implicit def intValue2Int(r:IntValue): Int = r.intValue // TODO Should I add this also?
+  ////implicit def booleanValue2Boolean(r:BooleanValue): Boolean = r.booleanValue // TODO Should I add this also?
+   def sample[T](s2: Seq[T])(implicit random: Random = defaultRandom): T = {
+     if (s2.size == 1) s2.first
+     else s2(random.nextInt(s2.size))
+   }
   
- 
+   def sampleFiltered[T](s: Iterable[T], filterTest: T => Boolean)(implicit random:Random = defaultRandom): T = {
+     val s2 = s.toSeq.filter(filterTest)
+     s2(random.nextInt(s2.size));
+   }
+
+   def sampleProportionally[T](s: Iterable[T], extractor: T => Double)(implicit random:Random = defaultRandom): T = {
+     //println("sampleProportionally called with Iteratible="+s)
+     //if (s.size == 1) return s.first
+     var sum = s.foldLeft(0.0)((total, x) => total + extractor(x))
+     val r = random.nextDouble * sum
+     sum = 0
+     for (choice <- s) {
+       val e = extractor(choice)
+       //println("sampleProportionally e = "+e)
+       if (e < 0.0) throw new Error("BonusIterable sample extractor value " + e + " less than zero.  Sum=" + sum)
+       sum += e
+       if (sum >= r)
+         return choice;
+     }
+     throw new Error("BonusIterable sample error: r=" + r + " sum=" + sum)
+   }
+   def sampleExpProportionally[T](s:Iterable[T], extractor: T => Double)(implicit random:Random  = defaultRandom): T = {
+     val maxValue : Double = s.foldLeft(Math.NEG_INF_DOUBLE)((max,t) => {val x = extractor(t); assert(x==x); if (x>max) x else max})
+     if (maxValue == Math.NEG_INF_DOUBLE) throw new Error("Cannot sample from an empty list.")
+     sampleProportionally(s, (t:T) => if (extractor(t) == Math.NEG_INF_DOUBLE) Math.NEG_INF_DOUBLE else Math.exp(extractor(t) - maxValue))
+   }
+
+  
   implicit def iterableExtras[T](s: Iterable[T]) = new {
     //println("iterableExtras constructed with s="+s)
-    def sum(extractor: T => Double): Double = s.foldLeft(0.0)((sum, x: T) => sum + extractor(x))
+    def sumDoubles(extractor: T => Double): Double = s.foldLeft(0.0)((sum, x: T) => sum + extractor(x))
     // TODO I would love to change "sumInts" to simply "sum" but the type inferencer seems to have trouble with seq.sum(_ score)
     def sumInts(extractor: T => Int): Int = s.foldLeft(0)((sum, x: T) => sum + extractor(x))
 
@@ -69,8 +103,8 @@ object Implicits {
 
     def productInts(extractor: T => Int): Int = s.foldLeft(1)((prod, x) => prod * extractor(x))
 
-    def max(extractor: T => Double): T = {
-      val xs = s.elements
+    def maxByDouble(extractor: T => Double): T = {
+      val xs = s.iterator
       if (!xs.hasNext) throw new IllegalArgumentException("<empty>.max((x:T)=>Double)")
       var maxElement = xs.next
       var maxValue = extractor(maxElement)
@@ -85,8 +119,8 @@ object Implicits {
       maxElement
     }
 
-    def maxInt(extractor: T => Int): T = {
-      val xs = s.elements
+    def maxByInt(extractor: T => Int): T = {
+      val xs = s.iterator
       if (!xs.hasNext) throw new IllegalArgumentException("<empty>.maxInt((x:T)=>Int)")
       var maxElement = xs.next
       var maxValue = extractor(maxElement)
@@ -101,8 +135,8 @@ object Implicits {
       maxElement
     }
 
-    def min(extractor: T => Double): T = {
-      val xs = s.elements
+    def minByDouble(extractor: T => Double): T = {
+      val xs = s.iterator
       if (!xs.hasNext) throw new IllegalArgumentException("<empty>.max((x:T)=>Double)")
       var minElement = xs.next
       var minValue = extractor(minElement)
@@ -117,8 +151,8 @@ object Implicits {
       minElement
     }
 
-    def minInt(extractor: T => Int): T = {
-      val xs = s.elements
+    def minByInt(extractor: T => Int): T = {
+      val xs = s.iterator
       if (!xs.hasNext) throw new IllegalArgumentException("<empty>.minInt((x:T)=>Int)")
       var minElement = xs.next
       var minValue = extractor(minElement)
@@ -133,9 +167,9 @@ object Implicits {
       minElement
     }
 
-    def sumAndMin(extractor: T => Double): (Double, T) = {
+    def sumAndMinByDouble(extractor: T => Double): (Double, T) = {
       var sum = 0.0
-      val xs = s.elements
+      val xs = s.iterator
       if (!xs.hasNext) throw new IllegalArgumentException("<empty>.max((x:T)=>Double)")
       var minElement = xs.next
       var minValue = extractor(minElement)
@@ -154,38 +188,43 @@ object Implicits {
 
     /**Returns both the maximum element and the second-to-max element */
     // TODO reimplement this to make it more efficient; no need to sort the whole sequence
-    def max2(extractor: T => Double): (T, T) = {
+    def max2ByDouble(extractor: T => Double): (T, T) = {
       val s1 = s.toSeq
       assert(s1.length > 1)
-      val s2: Seq[T] = Sorting.stableSort(s1, (x1: T, x2: T) => extractor(x1) > extractor(x2))
+      val s2: Seq[T] = s1.sortWith((x1: T, x2: T) => extractor(x1) > extractor(x2))
       (s2(0), s2(1))
     }
     //def filterByClass[X](implicit m:Manifest[X]) = s.filter(x:T => m.erasure.isAssignableFrom(x.getClass)).asInstanceOf[Seq[X]]
 
     /** Sorts with minimum first. */
+    @deprecated // use SeqLike sort instead
     def sortForward(extractor: T => Double): Seq[T] =
-      Sorting.stableSort(s.toSeq, (x1: T, x2: T) => extractor(x1) < extractor(x2))
+      s.toSeq.sortWith((x1: T, x2: T) => extractor(x1) < extractor(x2))
+      //Sorting.stableSort(s.toSeq, (x1: T, x2: T) => extractor(x1) < extractor(x2))
 
     /** Sorts with maximum first.*/
+    @deprecated // use SeqLike sort instead
     def sortReverse(extractor: T => Double): Seq[T] =
-      Sorting.stableSort(s.toSeq, (x1: T, x2: T) => extractor(x1) > extractor(x2))
+      s.toSeq.sortWith((x1: T, x2: T) => extractor(x1) > extractor(x2))
+      //Sorting.stableSort(s.toSeq, (x1: T, x2: T) => extractor(x1) > extractor(x2))
 
-    def sample(random: Random): T = {
+    def sample(implicit random: Random = defaultRandom): T = {
       val s2 = s.toSeq
       if (s2.size == 1) s2.first
       else s2(random.nextInt(s2.size))
     }
-    def sample : T = sample(Global.random)
+    //def sample(implicit r:Random) : T = sample(r)
+    //def sample : T = sample(Global.random)
   
-    def sampleFiltered(random: Random, filterTest: T => Boolean): T = {
+    def sampleFiltered(filterTest: T => Boolean)(implicit random:Random = defaultRandom): T = {
       val s2 = s.toSeq.filter(filterTest)
       s2(random.nextInt(s2.size));
     }
-    def sampleFiltered(filterTest: T => Boolean): T = sampleFiltered(Global.random, filterTest)
+    //def sampleFiltered(filterTest: T => Boolean): T = sampleFiltered(Global.random, filterTest)
     // TODO use defaults for this when 2.8 comes out
 
-    def sampleProportionally(extractor: T => Double): T = sampleProportionally(Global.random, extractor)
-    def sampleProportionally(random:Random, extractor: T => Double): T = {
+    //def sampleProportionally(extractor: T => Double): T = sampleProportionally(Global.random, extractor)
+    def sampleProportionally(extractor: T => Double)(implicit random:Random = defaultRandom): T = {
       //println("sampleProportionally called with Iteratible="+s)
       //if (s.size == 1) return s.first
       var sum = s.foldLeft(0.0)((total, x) => total + extractor(x))
@@ -201,17 +240,17 @@ object Implicits {
       }
       throw new Error("BonusIterable sample error: r=" + r + " sum=" + sum)
     }
-    def sampleExpProportionally(random:Random, extractor: T => Double): T = {
+    def sampleExpProportionally(extractor: T => Double)(implicit random:Random  = defaultRandom): T = {
       val maxValue : Double = s.foldLeft(Math.NEG_INF_DOUBLE)((max,t) => {val x = extractor(t); assert(x==x); if (x>max) x else max})
       if (maxValue == Math.NEG_INF_DOUBLE) throw new Error("Cannot sample from an empty list.")
-      sampleProportionally(random, t => if (extractor(t) == Math.NEG_INF_DOUBLE) Math.NEG_INF_DOUBLE else Math.exp(extractor(t) - maxValue))
+      sampleProportionally(t => if (extractor(t) == Math.NEG_INF_DOUBLE) Math.NEG_INF_DOUBLE else Math.exp(extractor(t) - maxValue))
     }
-    def sampleExpProportionally(extractor: T => Double): T = sampleExpProportionally(Global.random, extractor)
+    //def sampleExpProportionally(extractor: T => Double): T = sampleExpProportionally(Global.random, extractor)
 
-    def shuffle : Seq[T] = shuffle(Global.random)
-    def shuffle(random: Random) : Seq[T] = {
+    //def shuffle : Seq[T] = shuffle(Global.random)
+    def shuffle(implicit random: Random = defaultRandom) : Seq[T] = {
       val s2 = s.map(x => (x, random.nextInt)).toSeq
-      Sorting.stableSort(s2, (t1: (T, int), t2: (T, int)) => t1._2 > t2._2).map(t => t._1)
+      Sorting.stableSort(s2, (t1: (T, Int), t2: (T, Int)) => t1._2 > t2._2).map(t => t._1)
     }
 
     def split(ratio: Double): (Seq[T], Seq[T]) = {

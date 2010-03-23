@@ -15,7 +15,7 @@ import scala.util.Sorting
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log, ConsoleLogging}
+import cc.factorie.util.{Log}
 import cc.factorie.util.Implicits._
 
 // Variables for dealing with spans of sequences
@@ -138,7 +138,7 @@ abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(imp
 }
 
 
-trait VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable[T]] extends VariableSeq[T] {
+trait VariableSeqWithSpans[T >:Null <: Variable with VarInTypedSeq[T,_],S<:SpanVariable[T]] extends VariableSeq[T] {
   private val _spans = new ListBuffer[S];
   def spans: Seq[S] = _spans
   def orderedSpans: Seq[S] = _spans.toList.sort((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
@@ -159,7 +159,7 @@ trait VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable
   }
   def clearSpans: Unit = {
     // Make a copy of the collection of spans so its iterator doesn't get confused as we delete them
-    spans.toArray.foreach(_.delete(null))
+    spans.toList.foreach(_.delete(null))
   }
   case class AddSpanVariable(span:S)(implicit d: DiffList) extends Diff {
     // Cannot be an AutoDiff, because of initialization ordering 'done' will end up false
@@ -183,6 +183,7 @@ trait VariableSeqWithSpans[T <: Variable with VarInTypedSeq[T,_],S<:SpanVariable
   }
 }
 
+/*
 @deprecated
 class VariableSeqWithSpansOld[X <: Variable with VarInSeq[X]] extends VariableSeq[X] {
   type SpanType >: Null <: SpanVariable[X];
@@ -211,6 +212,7 @@ class VariableSeqWithSpansOld[X <: Variable with VarInSeq[X]] extends VariableSe
     }
   }
 }
+*/
 
 //class LabelSeqWithSpans[T<:Variable { def label:Label }]
 

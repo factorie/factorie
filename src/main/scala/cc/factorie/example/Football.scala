@@ -10,6 +10,7 @@ import scala.xml._
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
+import cc.factorie._
 import cc.factorie.application.LabeledTokenSeqs
 import cc.factorie.er._
 

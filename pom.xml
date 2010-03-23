@@ -3,10 +3,10 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie</artifactId>
-    <version>0.8.1-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <inceptionYear>2009</inceptionYear>
     <properties>
-        <scala.version>2.7.7</scala.version>
+        <scala.version>2.8.0-SNAPSHOT</scala.version>
     </properties>
     <url>http://factorie.googlecode.com</url>
     <scm>
@@ -19,21 +19,25 @@
         <repository>
             <id>scala-tools.org</id>
             <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
+            <url>http://scala-tools.org/repo-snapshots</url>
         </repository>
         <repository>
             <id>iesl.cs.umass.edu</id>
             <name>IESL repository</name>
             <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/thirdparty/</url>
         </repository>
-
+        <repository>
+            <id>scalanlp.org</id>
+            <name>ScalaNLP repository</name>
+            <url>http://repo.scalanlp.org/repo</url>
+        </repository>
     </repositories>
 
     <pluginRepositories>
         <pluginRepository>
             <id>scala-tools.org</id>
             <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
+            <url>http://scala-tools.org/repo-snapshots</url>
         </pluginRepository>
         <pluginRepository>
             <id>scalanlp.org</id>
@@ -62,13 +66,13 @@
         <dependency>
             <groupId>org.scalanlp</groupId>
             <artifactId>scalala</artifactId>
-            <version>0.2.2-iesl</version>
+            <version>0.3-SNAPSHOT</version>
             <!--<version>1.0-Snapshot</version>-->
         </dependency>
         <dependency>
             <groupId>org.scala-tools.testing</groupId>
             <artifactId>specs</artifactId>
-            <version>1.6.0</version>
+            <version>1.6.1-2.8.0.Beta1-RC6</version>
             <!-- specify the version here -->
         </dependency>
     </dependencies>
@@ -96,7 +100,7 @@
                 <configuration>
                     <scalaVersion>${scala.version}</scalaVersion>
                     <jvmArgs>
-                        <jvmArg>-Xmx265m</jvmArg>
+                        <jvmArg>-Xmx1024m</jvmArg>
                     </jvmArgs>
                     <args>
                         <arg>-explaintypes</arg>

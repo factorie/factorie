@@ -73,7 +73,7 @@ object ChainNER2b {
     Foreach[Label] { label => Score(label) } %"Prior",
     Foreach[Label] { label => Score(label, label.token) } %"LabelToken",
     Foreach[Label] { label => Score(label.prev, label) } %"LabelLabel",
-    Foreach[Label] { label => Score(label.prev, label, label.token.tags) },
+    Foreach[Label] { label => Score(label.prev, label, label.token.tags) }
 //    Foreach[Label] { label => Score(label.prev.prev, label.prev, label) } %"SecondOrder",
 //    Foreach[Label] { label => Score(label.prev, label, label.next, label.token.tags) },
 //    Foreach[Label] { label => Score(label, label.token.tags) },
@@ -273,8 +273,8 @@ object ChainNER2b {
 
     printred("Reading training and testing data...")
     // Read training and testing data.  The function 'featureExtractor' function is defined below
-    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(0)), (word,lab) => new Token(word, lab), featureExtractor _, "-DOCSTART-".r) //.take(100)
-    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(1)), (word,lab) => new Token(word, lab), featureExtractor _, "-DOCSTART-".r) //.take(50)
+    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(0))), (word,lab) => new Token(word, lab), featureExtractor _, "-DOCSTART-".r) //.take(100)
+    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(1))), (word,lab) => new Token(word, lab), featureExtractor _, "-DOCSTART-".r) //.take(50)
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.labels)

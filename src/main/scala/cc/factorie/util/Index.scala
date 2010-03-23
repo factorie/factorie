@@ -71,7 +71,7 @@ trait Index[T] extends (T => Int) /*with Collection[T]*/ {
 
   def size0 = indices.size
 
-  def elements = objects.elements
+  def iterator = objects.iterator
 
   def contains(entry: T) = indices.contains(entry)
 
@@ -129,7 +129,7 @@ trait Index[T] extends (T => Int) /*with Collection[T]*/ {
   def immutable: Index[T] = {
     val outer = this;
     new Index[T] {
-      override def elements = outer.elements;
+      override def iterator = outer.iterator;
       override def size0 = outer.size0;
       override def get(pos: Int) = outer.get(pos);
       override def index(t: T) = outer.indices.getOrElse(t, -1);
@@ -141,7 +141,7 @@ trait Index[T] extends (T => Int) /*with Collection[T]*/ {
   def synchronized: Index[T] = {
     val outer = this;
     new Index[T] {
-      override def elements = outer.elements;
+      override def iterator = outer.iterator;
       override def size0 = outer.size0;
       override def get(pos: Int) = synchronized {outer.get(pos); }
 

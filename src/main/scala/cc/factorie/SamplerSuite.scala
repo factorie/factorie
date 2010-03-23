@@ -13,7 +13,7 @@ import scala.collection.mutable.{ArrayBuffer,HashMap}
     Samplers are implicit converted to these before being added to a SamplerSuite. 
     The Manifest is necessary for type checking the AnyRef arguments to 'process'. 
     @author Andrew McCallum */
-class GenericSampler[C](val sampler:Sampler[C])(implicit mc:Manifest[C]) extends Sampler[C] with cc.factorie.util.Trackable {
+class GenericSampler[C](val sampler:Sampler[C])(implicit mc:Manifest[C]) extends Sampler[C] {
   //println("GenericSampler m="+mc)
   val contextClass = mc.erasure
   val contextManifest = mc

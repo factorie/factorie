@@ -14,7 +14,9 @@ import scalala.tensor.Vector
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
 trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
   this: ProposalSampler[_] =>
+  //type TemplatesToUpdate = DotTemplate  // was type TemplatesToUpdate <: DotTemplate, but this no longer provides a Manifest on Scala 2.8
   type TemplatesToUpdate <: DotTemplate
+  def templateClassToUpdate: Class[DotTemplate]
   def model: Model
   var learningMargin = 1.0
   def updateWeights: Unit
@@ -33,8 +35,8 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
     if (proposals.length < 2) return
     super.proposalsHook(proposals)
     //println("SampleRank proposalsHook "+proposals.toList.map(_.toString))
-    val bestModels = proposals.max2(_ modelScore)
-    val bestObjectives = proposals.max2(_ objectiveScore)
+    val bestModels = proposals.max2ByDouble(_ modelScore)
+    val bestObjectives = proposals.max2ByDouble(_ objectiveScore)
     bestModel1 = bestModels._1
     bestModel2 = bestModels._2
     bestObjective1 = bestObjectives._1
@@ -91,6 +93,7 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
     // It would not have a preference if the variable in question is unlabeled
     // TODO Is this the right way to test this though?  Could there be no preference at the top, but the model is selecting something else that is worse?
     if (shouldUpdate) {
+    	val templatesToUpdate = templateClassToUpdate
       // If the model doesn't score the truth highest, then update parameters
       if (bestModel1 ne bestObjective1) { // TODO  I changed != to "ne"  OK?  Should I be comparing values here instead?
         // ...update parameters by adding sufficient stats of truth, and subtracting error
@@ -99,26 +102,26 @@ trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
         //println (" Updating bestObjective1 "+(bestObjective1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
         //println (" Updating bestModel1 "+(bestModel1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
         bestObjective1.diff.redo
-        bestObjective1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
+        bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
         bestObjective1.diff.undo
-        bestObjective1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
+        bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
         bestModel1.diff.redo
-        bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
+        bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
         bestModel1.diff.undo
-        bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
+        bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
       }
       else if (bestModel1.modelScore - bestModel2.modelScore < learningMargin) {
         // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
         //println ("SampleRank learning from margin")
         // TODO Note This is changed from previous version, where it was bestTruth.  Think again about this.
         bestObjective1.diff.redo
-        bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
+        bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
         bestObjective1.diff.undo
-        bestModel1.diff.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
+        bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
         bestModel2.diff.redo
-        bestModel2.diff.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
+        bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
         bestModel2.diff.undo
-        bestModel2.diff.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
+        bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
       }
     } //else Console.println ("No preference unlabeled "+variable)
   }

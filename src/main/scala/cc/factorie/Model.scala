@@ -15,7 +15,7 @@ import scala.util.Sorting
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
+import cc.factorie.util.{Log}
 import cc.factorie.util.Implicits._
 
 /** A Model in FACTORIE consists of a collection of factor Templates and methods that operate on the collection.

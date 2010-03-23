@@ -26,7 +26,7 @@ package cc.factorie.util
 */
 
 
-import scala.collection.jcl.WeakHashMap;
+import scala.collection.mutable.WeakHashMap;
 import java.lang.ref.WeakReference;
 
 /**
@@ -47,7 +47,7 @@ class Interner[T] extends (T => T) {
 
   def internAll(c: Iterable[T]) = c map apply
 
-  def internAll(c: Collection[T]) = c map apply
+  //def internAll(c: Collection[T]) = c map apply
 
   def internAll(c: List[T]) = c map apply
 

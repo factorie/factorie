@@ -12,7 +12,7 @@ import scalala.Scalala._
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
+import cc.factorie.util.{Log}
 import cc.factorie.util.Implicits._
 
 // Categorical variables that have true values are referred to as 'Labels'
@@ -81,6 +81,6 @@ class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with
 class StringLabelVariable(trueval:String) extends LabelVariable[String](trueval) {
   type VariableType <: StringLabelVariable
   type DomainType <: StringDomain[VariableType]
-  class DomainClass extends StringDomain[VariableType]
+  class DomainClass extends StringDomain[VariableType]()(null)
   
 }

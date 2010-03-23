@@ -6,6 +6,7 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie.example
+import cc.factorie._
 import cc.factorie.util.Implicits._
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
@@ -110,7 +111,7 @@ object DepParsing1 {
     val sentences = new ArrayBuffer[Sentence];
     var sentence = new Sentence
     val source = Source.fromFile(new File(datafile))
-    for (line <- source.getLines) {
+    for (line <- source.getLines()) {
       if (line.length < 2) {
         if (sentence.length > 0) { sentences += sentence; sentence = new Sentence }
       } else {
@@ -145,8 +146,8 @@ object DepParsing1 {
       }
       override def proposalsHook(proposals:Seq[Proposal]): Unit = {
         //proposals.foreach(p => println("%-6f %-6f %s".format(p.modelScore, p.objectiveScore, p.diff.toString)))
-        val bestModel = proposals.max(_.modelScore)
-        val bestObjective = proposals.max(_.objectiveScore)
+        val bestModel = proposals.maxByDouble(_.modelScore)
+        val bestObjective = proposals.maxByDouble(_.objectiveScore)
         println(bestModel.diff)
         println(bestObjective.diff)
         println("modelBest modelScore "+bestModel.modelScore)
@@ -189,10 +190,10 @@ object DepParsing1 {
     }
     // Fill the chart
     for (k <- 0 until length; s <- 0 until length; val t = s + k; if (t < length)) {
-      il(s)(t) = (for (r <- s until t) yield Entry(cr(s)(r).score + cl(r+1)(t).score + score(t)(s), r)).max(_.score)
-      ir(s)(t) = (for (r <- s until t) yield Entry(cr(s)(r).score + cl(r+1)(t).score + score(s)(t), r)).max(_.score)
-      cl(s)(t) = (for (r <- s until t) yield Entry(cl(s)(r).score + il(r)(t).score, r)).max(_.score)
-      cr(s)(t) = (for (r <- s+1 to  t) yield Entry(ir(s)(r).score + cr(r)(t).score, r)).max(_.score)
+      il(s)(t) = (for (r <- s until t) yield Entry(cr(s)(r).score + cl(r+1)(t).score + score(t)(s), r)).maxByDouble(_.score)
+      ir(s)(t) = (for (r <- s until t) yield Entry(cr(s)(r).score + cl(r+1)(t).score + score(s)(t), r)).maxByDouble(_.score)
+      cl(s)(t) = (for (r <- s until t) yield Entry(cl(s)(r).score + il(r)(t).score, r)).maxByDouble(_.score)
+      cr(s)(t) = (for (r <- s+1 to  t) yield Entry(ir(s)(r).score + cr(r)(t).score, r)).maxByDouble(_.score)
     }
     // Use the chart to set the parents, recursively
     def setParents(start:Int, end:Int, parent:Token): Unit = {

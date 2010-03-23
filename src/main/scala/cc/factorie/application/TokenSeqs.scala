@@ -7,6 +7,7 @@
 
 package cc.factorie.application
 import scala.reflect.Manifest
+import cc.factorie._
 import cc.factorie.er._
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap}
 import scalala.tensor.Vector
@@ -30,10 +31,10 @@ object TokenSeqs {
       Its value is a BinaryVectorVariable, its feature vector.
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
   @DomainInSubclasses
-  abstract class Token[S<:VariableSeq[This], This >:Null <:Token[S,This]](val wordForm:String, features:Seq[String])
-  extends BinaryVectorVariable[String] with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
+  abstract class Token[S<:VariableSeq[This], This>:Null<:Token[S,This] with VarInTypedSeq[This,S]](val wordForm:String, features:Seq[String] = Nil)
+  extends cc.factorie.BinaryVectorVariable[String] with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
     this: This =>
-    def this(word:String) = this(word, Nil)
+    //def this(word:String) = this(word, Nil)
     type GetterType <: TokenGetter[S,This]
     class GetterClass extends TokenGetter[S,This]
     def matches(t2:Token[S,This]): Boolean = word == t2.word
@@ -50,14 +51,13 @@ object TokenSeqs {
         Skip more than 'maxRepetitions' of the same character class. */
     def wordShape(maxRepetitions:Int) = TokenSeqs.wordShape(word, maxRepetitions)
     def charNGrams(min:Int, max:Int): Seq[String] = TokenSeqs.charNGrams(word, min, max)
-    this ++= features
-    def word=wordForm
-
+    def word = wordForm
+    throw new Error // this ++= features
   }
 
   
   /** Implementation of the entity-relationship language we can use with Token objects. */
-  class TokenGetter[S<:VariableSeq[T],T<:Token[S,T]] extends EntityGetter[T] {
+  class TokenGetter[S<:VariableSeq[T],T>:Null<:Token[S,T]] extends EntityGetter[T] {
     def newTokenGetter = new TokenGetter[S,T];
     /** Go from a token to the next token. */
     def next = initManyToMany[T](newTokenGetter,
@@ -99,7 +99,7 @@ object TokenSeqs {
   
   
   // Companion object is below.
-  class TokenSeq[T<:Token[This,T],This<:VariableSeq[T]] extends VariableSeq[T] {
+  class TokenSeq[T>:Null<:Token[This,T],This<:VariableSeq[T]] extends VariableSeq[T] {
     this: This =>
     /** Add new features created as conjunctions of existing features, with the given offsets.
         For example addNeighboringFeatures(List(0,0),List(-2,-1,0),List(0,1)) */
@@ -114,7 +114,7 @@ object TokenSeqs {
         val thisTokenNewFeatures = newFeatures(i)
         for (offsets <- offsetConjunctions) 
           thisTokenNewFeatures ++= appendConjunctions(regex, token, null, offsets).
-            map(list => list.sort((a,b)=>a.compare(b)>0).map({case(f,o)=>f+"@"+o}).mkString("_&_"))
+            map(list => list.sortBy({case(f,o)=>f+o}).map({case(f,o)=>f+"@"+o}).mkString("_&_")) // TODO "f+o" is doing string concatenation, consider something faster
       }
       // ... then add them to each Token
       for (i <- 0 until size) {
@@ -204,7 +204,7 @@ object TokenSeqs {
         from a source containing SGML markup to indicate the labels on some tokens. 
         Tokens not bounded by SGML will be given a Label with initial and true value 'backgroundLabelString'. 
         Token segmentation will be performed by the extent of regular expression matches to 'lexer'. */
-    def fromSGML[T<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, featureFunction: String=>Seq[String], lexer:Regex): S = {
+    def fromSGML[T>:Null<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, featureFunction: String=>Seq[String], lexer:Regex): S = {
       val words = lexer.findAllIn(source.mkString)
       throw new Error("Not implemented yet.")
     }
@@ -212,7 +212,7 @@ object TokenSeqs {
     /** Construct and return a new TokenSeq (and its constituent Tokens and Labels) 
         from a source containing plain text.  Since the labels are unknown, all Labels
         will be given the initial and true value 'defaultLabelString'. */
-    def fromPlainText[T<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, defaultLabelString:String, featureFunction: String=>Seq[String], lexer:Regex): S = {
+    def fromPlainText[T>:Null<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, defaultLabelString:String, featureFunction: String=>Seq[String], lexer:Regex): S = {
       val seq = newSeq()
       lexer.findAllIn(source.mkString).foreach(word => {
         if (word.length > 0) {
@@ -234,14 +234,14 @@ object TokenSeqs {
         The initial and trueValue of the Label will be set from the last element.
         If ignoreLines is non-null, we skip any lines containing this pattern, for example pass "-DOCSTART-" for CoNLL 2003.
         */
-    def fromOWPL[T<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, 
+    def fromOWPL[T>:Null<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, 
                                                  featureFunction:Seq[String]=>Seq[String], labelFunction:String=>String, 
                                                  documentBoundary:Regex, sentenceBoundary:Regex, ignoreLines:Regex): Seq[S] = {
       import scala.collection.mutable.ArrayBuffer
       var tokenCount = 0
       var seqs = new ArrayBuffer[S];
       var seq = newSeq()
-      for (line <- source.getLines) {
+      for (line <- source.getLines()) {
         if (sentenceBoundary != null && sentenceBoundary.findAllIn(line).hasNext && seq.length > 0) {
           //println("Completed sentence size=" + seq.size + " num sentences="+seqs.size)   
           seqs += seq
@@ -256,7 +256,7 @@ object TokenSeqs {
           val fields = line.split(' ')
           assert(fields.length == 4)
           val word = fields(0)
-          val inFeatures = fields.slice(0, fields.length-1).force
+          val inFeatures = fields.slice(0, fields.length-1) // This used to be with ".force"
           val pos = fields(1)
           val label = labelFunction(fields.last.stripLineEnd)
           val token = newToken(word, label)
@@ -279,9 +279,9 @@ object TokenSeqs {
       result
     }
     def defaultLabelFunction(inLabel:String): String = inLabel
-    def fromOWPL[T<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, featureFunction:Seq[String]=>Seq[String], labelFunction:String=>String, documentBoundary:Regex): Seq[S] = fromOWPL(source, newToken, newSeq, featureFunction, labelFunction, documentBoundary, "\\A\\s*\\z".r, null)
-    def fromOWPL[T<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, documentBoundary:Regex): Seq[S] = fromOWPL(source, newToken, newSeq, defaultFeatureFunction _, defaultLabelFunction _, documentBoundary)
-    def fromOWPL[T<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, documentBoundary:String): Seq[S] = fromOWPL(source, newToken, newSeq, defaultFeatureFunction _, defaultLabelFunction _, documentBoundary.r)
+    def fromOWPL[T>:Null<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, featureFunction:Seq[String]=>Seq[String], labelFunction:String=>String, documentBoundary:Regex): Seq[S] = fromOWPL(source, newToken, newSeq, featureFunction, labelFunction, documentBoundary, "\\A\\s*\\z".r, null)
+    def fromOWPL[T>:Null<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, documentBoundary:Regex): Seq[S] = fromOWPL(source, newToken, newSeq, defaultFeatureFunction _, defaultLabelFunction _, documentBoundary)
+    def fromOWPL[T>:Null<:Token[S,T],S<:TokenSeq[T,S]](source:Source, newToken:(String,String)=>T, newSeq:()=>S, documentBoundary:String): Seq[S] = fromOWPL(source, newToken, newSeq, defaultFeatureFunction _, defaultLabelFunction _, documentBoundary.r)
   }  
   
   
@@ -336,7 +336,7 @@ object TokenSeqs {
     import scala.io.Source
     import java.io.File
     /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */
-    def this(filename:String) = { this(false); this.++=(Source.fromFile(new File(filename), "UTF-8")) }
+    def this(filename:String) = { this(false); this.++=(Source.fromFile(new File(filename))(scala.io.Codec.UTF8)) }
     var lexer = TokenSeq.nonWhitespaceClasses
     private class LexiconToken(val word:String) extends TokenInSeq[LexiconToken] {
       var next: LexiconToken = null
@@ -378,7 +378,7 @@ object TokenSeqs {
     }
     def +=(w:String): Unit = this.+=(new LexiconToken(w))
     def ++=(ws:Seq[String]): Unit = this.addAll(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
-    def ++=(source:Source): Unit = for (line <- source.getLines) { this.++=(lexer.findAllIn(line).toList); /*println("TokenSeqs.Lexicon adding "+line)*/ }
+    def ++=(source:Source): Unit = for (line <- source.getLines()) { this.++=(lexer.findAllIn(line).toList); /*println("TokenSeqs.Lexicon adding "+line)*/ }
     /** Is 'query' in the lexicon, accounting for lexicon phrases and the context of 'query' */
     def contains[T<:TokenInSeq[T]](query:T): Boolean = {
       //println("contains "+query.word+" "+query.hasPrev+" "+query)

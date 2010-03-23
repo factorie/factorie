@@ -7,7 +7,7 @@
 
 package cc.factorie.util
 import scala.reflect.Manifest
-import scala.collection.mutable.{HashMap,ArrayBuffer}
+import scala.collection.mutable.{HashMap,HashSet,ArrayBuffer}
 
 
 /** Concrete version is implemented as an inner class of @see CmdOptions. 
@@ -20,9 +20,13 @@ trait CmdOption[T] {
   def valueName: String
   def defaultValue: T
   def value: T
+  def hasValue: Boolean
   def invokedCount: Int
   def wasInvoked = invokedCount > 0
   def required: Boolean
+  def parse(args:Seq[String], index:Int): Int
+  override def hashCode = name.hashCode
+  override def equals(other:Any) = name.equals(other)
 }
 
 
@@ -42,16 +46,21 @@ trait CmdOption[T] {
     </code>
     @author Andrew McCallum
  */
-trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
-  private val opts = new HashMap[String,CmdOption[_]]
+class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
+  private val opts = new HashMap[String,cc.factorie.util.CmdOption[_]]
   def get(key:String) = opts.get(key)
-  def size = opts.size
-  def elements = opts.elements
+  override def size = opts.size
+  //def iterator = opts.iterator
   var strict = true
 
-  def +=[T](c:CmdOption[T]): Unit = {
+  override def addEntry(c:cc.factorie.util.CmdOption[_]): Boolean = {
     if (opts.contains(c.name)) throw new Error("CmdOption "+c.name+" already exists.")
     opts(c.name) = c
+    super.addEntry(c)
+  }
+  override def removeEntry(c:cc.factorie.util.CmdOption[_]): Option[cc.factorie.util.CmdOption[_]] = {
+  	opts -= c.name
+  	super.removeEntry(c)
   }
   def error(msg:String): Unit = {
     System.err.println(msg)
@@ -74,7 +83,7 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
     while (index < args.length) {
       val origIndex = index
       var invoked = false
-      val optsIter = opts.values
+      val optsIter = opts.valuesIterator
       while (optsIter.hasNext && !invoked) {
         val opt = optsIter.next
         index = opt.parse(args, index)
@@ -88,7 +97,7 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
         index += 1
       } 
     }
-    this.values.find(o => o.required && o.invokedCount == 0) match {
+    this.find(o => o.required && o.invokedCount == 0) match {
       case Some(o) => error("Required CmdOption "+o.name+" was not provided.")
       case None =>
     }
@@ -186,7 +195,7 @@ trait CmdOptions extends scala.collection.Map[String,CmdOption[_]] {
 trait DefaultCmdOptions extends CmdOptions {
   new CmdOption("help", "Print this help message.") {
     override def invoke = {
-      DefaultCmdOptions.this.values.foreach(o => println(o.helpMsg))
+      DefaultCmdOptions.this.foreach(o => println(o.helpMsg))
       System.exit(0)
     }
   }
@@ -201,7 +210,7 @@ trait DefaultCmdOptions extends CmdOptions {
     override def invoke = {
       import java.io.File
       import scala.io.Source
-      val contents = Source.fromFile(this.value).mkString
+      val contents = Source.fromFile(new File(this.value)).mkString
       val args = contents.split("\\s+")
       DefaultCmdOptions.this.parse(args)
     }

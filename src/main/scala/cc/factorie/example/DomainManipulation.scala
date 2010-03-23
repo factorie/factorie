@@ -7,6 +7,7 @@
 
 package cc.factorie.example
 import scala.reflect.Manifest
+import cc.factorie._
 
 object DomainManipulation {
 
@@ -32,7 +33,7 @@ object DomainManipulation {
   class Label1 extends Variable {
     type VariableType <: Label1
     override type DomainType <: LabelDomain[VariableType]
-    class DomainClass extends LabelDomain[VariableType]
+    class DomainClass extends LabelDomain[VariableType]()(null)
   }
   
   // Here we declare that the Domain of Label2 should be the same object as the Domain for Label1
@@ -70,7 +71,7 @@ object DomainManipulation {
   class Label5 extends Variable {
     type VariableType <: Label5
     override type DomainType <: Label5Domain[VariableType]
-    class DomainClass extends Label5Domain[VariableType]
+    class DomainClass extends Label5Domain[VariableType]()(null)
   }
   class Label5Domain[V<:Label5](implicit m:Manifest[V]) extends LabelDomain[V]()(m) {
     println("In Label5Domain constructor")

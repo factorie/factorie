@@ -15,7 +15,7 @@ import scala.util.Sorting
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log, ConsoleLogging}
+import cc.factorie.util.{Log}
 import cc.factorie.util.Implicits._
 
 // Variables for dealing with sequences
@@ -49,7 +49,7 @@ import cc.factorie.util.Implicits._
     case class Swap1Diff(i:Int,j:Int)(implicit d:DiffList) extends SeqVariableDiff { def undo = {val e = seq(i); seq(i) = seq(j); seq(j) = e}; def redo = undo }
     // for Seq trait
     def length = seq.length
-    def elements = seq.elements
+    def iterator = seq.iterator
     def apply(index: Int) = seq(index)
     // for changes without Diff tracking
     def +=(x:X) = seq += x
@@ -58,7 +58,7 @@ import cc.factorie.util.Implicits._
 
   /** A variable containing a mutable (but untracked by Diff) sequence of variables; used in conjunction with VarInSeq.
       @author Andrew McCallum */
-  trait VariableSeq[V <: Variable with VarInTypedSeq[V,_]] extends RandomAccessSeq[V] with Variable {
+  trait VariableSeq[V >: Null <: Variable with VarInTypedSeq[V,_]] extends RandomAccessSeq[V] with Variable {
     private val seq = new ArrayBuffer[V]
     def +=(v: V) = {
       if (v.seq != null) throw new Error("Trying to add VarInSeq that is already assigned to another VariableSeq")

@@ -17,7 +17,8 @@ import scala.collection.mutable.HashMap
 
 
 trait GradientAscentUpdates extends WeightUpdates {
-  override type TemplatesToUpdate = DotTemplate
+  type TemplatesToUpdate = DotTemplate
+  def templateClassToUpdate = classOf[DotTemplate]
   var learningRate = 1.0
   // var learningRateDecay = 0.9 // TODO I'd like to find a way to decay the learning rate automatically without the user having to manage it.
   def model : Model
@@ -29,8 +30,3 @@ trait GradientAscentUpdates extends WeightUpdates {
     super.updateWeights 
   }
 }
-
-
-
-
-

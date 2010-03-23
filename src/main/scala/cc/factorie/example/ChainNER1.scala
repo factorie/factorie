@@ -7,6 +7,7 @@
 
 package cc.factorie.example
 import scala.io.Source
+import java.io.File
 import cc.factorie._ 
 import cc.factorie.er._
 import cc.factorie.application.LabeledTokenSeqs
@@ -30,8 +31,8 @@ object ChainNER1 {
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
     
     // Read training and testing data.
-    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(0)), (word,lab)=>new Token(word,lab), "-DOCSTART-")
-    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(args(1)), (word,lab)=>new Token(word,lab), "-DOCSTART-")
+    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(0))), (word,lab)=>new Token(word,lab), "-DOCSTART-")
+    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(1))), (word,lab)=>new Token(word,lab), "-DOCSTART-")
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.labels)

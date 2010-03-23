@@ -93,12 +93,12 @@ trait MixtureComponent[This<:MixtureComponent[This,O] with GenerativeDistributio
 // TODO Can I make this:
 // MixtureChoice[M<:MixtureComponent[M,_],This<:MixtureChoice[M,M#O,This]]
 @DomainInSubclasses
-class MixtureChoice[M<:MixtureComponent[M,O],O<:Variable,This<:MixtureChoice[M,O,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends GeneratedCategoricalVariable[This] with GenerativeDistributionProxy[M,O] {
+class MixtureChoice[M<:MixtureComponent[M,O],O<:GeneratedValue[O],This<:MixtureChoice[M,O,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends GeneratedCategoricalVariable[This] {
   this : This =>
   type VariableType = This
   type ValueType = M
   //def asOutcome = this
-  override def asGenerativeDistribution = choice
+  //override def asGenerativeDistribution = choice
   def choice: M = domain.get(index)
   // We do the following line in super because "_outcome" will not be set at initialization time.
   Domain.alias[This,M](mt,mm) // We must share the same domain as M; this aliasing might have been done already, but just make sure its done.
@@ -108,13 +108,13 @@ class MixtureChoice[M<:MixtureComponent[M,O],O<:Variable,This<:MixtureChoice[M,O
   if (!Global.defaultModel.contains(MixtureChoiceTemplate)) Global.defaultModel += MixtureChoiceTemplate
   private var _outcome : O = _
   @inline final def outcome : O = _outcome // The particular outcome that was generated from this choice of mixture component
-  /** Acting as a GenerativeDistributionProxy, register a sample with the distribution pointed to by this MixtureChoice. 
-      This is done in GenerativeDistributionProxy (hence the call to super).  
-      Here we also take the opportunity to remember the sample with setOutcome. */
-  override def _registerSample(o:O)(implicit d:DiffList): Unit = {
-    setOutcome(o)
-    super._registerSample(o)
-  }
+//  /** Acting as a GenerativeDistributionProxy, register a sample with the distribution pointed to by this MixtureChoice. 
+//      This is done in GenerativeDistributionProxy (hence the call to super).  
+//      Here we also take the opportunity to remember the sample with setOutcome. */
+//  override def _registerSample(o:O)(implicit d:DiffList): Unit = {
+//    setOutcome(o)
+//    super._registerSample(o)
+//  }
   private def setOutcome(o:O): Unit = if (_outcome == null) _outcome = o else if (o != _outcome) throw new Error("Outcome already set")
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
     if (_outcome == null) throw new Error("No outcome yet set.")
@@ -154,7 +154,7 @@ class MixtureChoice[M<:MixtureComponent[M,O],O<:Variable,This<:MixtureChoice[M,O
     var sum = 0.0
     var i = 0
     while (i < size) { 
-      distribution(i) = src.asGenerativeDistribution.pr(i) * dom.get(i).pr(outcome)
+      distribution(i) = src.pr(i) * dom.get(i).pr(outcome)
       if (temperature != 1.0) distribution(i) = Math.pow(distribution(i), 1.0/temperature)
       sum += distribution(i)
       i += 1
@@ -181,18 +181,18 @@ class MarginalizedMixtureChoice[M<:MixtureComponent[M,O],O<:GeneratedVariable[O]
   this : This =>
   // Next two methods removed because we will actually register and unregister samples, even if it means we will most of the time simply remove/add to the same MixtureChoice.generatedSample HashSet
   // This way is will be safe to move a sample from a MixtureChoice to a different source. 
-  def disabled_registerSample(o:O)(implicit d:DiffList): Unit = {
-    if (!(o.generativeSource == null || o.generativeSource == this)) throw new Error("Trying to move a sample to a MixtureChoice not part of its original Domain")
-    // If 'o' is already registered assume that it has been registered in all mixture components
-    if (choice.generatedSamples.contains(o)) return // TODO remove this so that we throw error if we try to register twice.
-    // Register this 'o' with this mixture component's choice
-    super._registerSample(o)
-  }
-  def disabled_unregisterSample(o:O)(implicit d:DiffList): Unit = {
-    if (o.generativeSource != this) throw new Error("Trying to remove a sample from a MixtureComponent of which is was not a part.")
-    // Do nothing.  The degree of membership of an 'o' in each mixture component is determined by this.multinomial.
-    // TODO Note that this does not allow us to change the generativeSource to a GenerativeDistribution outside the mixture once it has been set in the mixture!
-  }
+//  def disabled_registerSample(o:O)(implicit d:DiffList): Unit = {
+//    if (!(o.generativeSource == null || o.generativeSource == this)) throw new Error("Trying to move a sample to a MixtureChoice not part of its original Domain")
+//    // If 'o' is already registered assume that it has been registered in all mixture components
+//    if (choice.generatedSamples.contains(o)) return // TODO remove this so that we throw error if we try to register twice.
+//    // Register this 'o' with this mixture component's choice
+//    super._registerSample(o)
+//  }
+//  def disabled_unregisterSample(o:O)(implicit d:DiffList): Unit = {
+//    if (o.generativeSource != this) throw new Error("Trying to remove a sample from a MixtureComponent of which is was not a part.")
+//    // Do nothing.  The degree of membership of an 'o' in each mixture component is determined by this.multinomial.
+//    // TODO Note that this does not allow us to change the generativeSource to a GenerativeDistribution outside the mixture once it has been set in the mixture!
+//  }
   // TODO !!! I'm not sure the next method is correct.
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
     if (outcome == null) throw new Error("No outcome yet set.")
@@ -207,13 +207,13 @@ class MarginalizedMixtureChoice[M<:MixtureComponent[M,O],O<:GeneratedVariable[O]
     super.setRandomly(random, d)
     this match { case md:MultinomialDiscrete[This] => md.multinomial.setDirac(this.index); case _ => {} }
   }
-  override def setRandomly:Unit = super.setRandomly
+  //override def setRandomly:Unit = super.setRandomly
   // TODO Are these next two methods correct?
-  override def preChange(o:O)(implicit d:DiffList): Unit = Domain[M](mm).foreach(mc => mc.preChange(o))
-  override def postChange(o:O)(implicit d:DiffList): Unit = Domain[M](mm).foreach(mc => mc.postChange(o))
+  //override def preChange(o:O)(implicit d:DiffList): Unit = Domain[M](mm).foreach(mc => mc.preChange(o))
+  //override def postChange(o:O)(implicit d:DiffList): Unit = Domain[M](mm).foreach(mc => mc.postChange(o))
   /** Return the weighted average of the pr from each mixture component. */
-  override def pr(o:O): Double = { val d = Domain[M](mm); var result = 0.0; for (i <- 0 until d.size) result += multinomial(i) * d.get(i).pr(o); result } 
-  override def logpr(o:O): Double = Math.log(pr(o))
+  //override def pr(o:O): Double = { val d = Domain[M](mm); var result = 0.0; for (i <- 0 until d.size) result += multinomial(i) * d.get(i).pr(o); result } 
+  //override def logpr(o:O): Double = Math.log(pr(o))
   def unused_sample(implicit d:DiffList): Unit = {
     val src = generativeSource
     // Remove this variable and its sufficient statistics from the model
@@ -224,7 +224,7 @@ class MarginalizedMixtureChoice[M<:MixtureComponent[M,O],O<:GeneratedVariable[O]
     val size = dom.size
     val distribution = new Array[Double](size)
     var sum = 0.0
-    var i = 0; while (i < size) { distribution(i) = src.asGenerativeDistribution.pr(i) * dom.get(i).pr(outcome); sum += distribution(i); i += 1 }
+    var i = 0; while (i < size) { distribution(i) = src.pr(i) * dom.get(i).pr(outcome); sum += distribution(i); i += 1 }
     // If we are actually a MultinomialDiscrete distribution (integrating out our discrete value) then save the distribution
     this match { case md:MultinomialDiscrete[This] => md.multinomial.set(distribution); case _ => {} }
     i = 0; val r = Global.random.nextDouble * sum; var s = 0.0

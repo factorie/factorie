@@ -90,7 +90,7 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
     val proposal = props.size match {
       case 0 => throw new Error("No proposals created.")
       case 1 => props.first 
-      case _ => props.sampleExpProportionally(_.acceptanceScore)
+      case _ => sampleExpProportionally(props, (p:Proposal) => p.acceptanceScore)
     }
     proposal.diff.redo
     proposalHook(proposal)
@@ -136,7 +136,7 @@ trait FactorQueue[C] extends Sampler[C] {
   /** The proportion of sampling process steps to take from the queue, versus from the standard source of contexts. */
   var queueProportion = 0.5
   
-  /** Overide to provide the generic sampler that can potentially deal with arbitrary variables coming from Factors */
+  /** Override to provide the generic sampler that can potentially deal with arbitrary variables coming from Factors */
   def process0(x:AnyRef): DiffList
   def model: Model
   
@@ -155,7 +155,7 @@ trait FactorQueue[C] extends Sampler[C] {
       }
       if (maxQueueSize > 0) {
         queue ++= model.factors(diff)
-        if (queue.size > maxQueueSize) queue.reduceToSize(maxQueueSize)
+        if (queue.size > maxQueueSize) throw new Error // TODO find alternative, reduceToSize is missing from Scala 2.8; queue.reduceToSize(maxQueueSize)
       }
       diff appendAll queueDiff
     }

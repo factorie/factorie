@@ -6,6 +6,7 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie.example
+import cc.factorie._
 
 object DirichletDemo {
 
@@ -31,12 +32,13 @@ object DirichletDemo {
     multinomials.take(4).foreach(m => {print("mult "); m.foreach(p => print("%8f ".format(p))); println})
   
     val dir2 = new Dirichlet[Word](1.0) with DirichletMomentMatchingEstimator[Word];
-    multinomials.foreach(m => m ~ dir2)
+    // Commented for Scala 2.8
+    //multinomials.foreach(m => m ~ dir2)
 
-    println("Estimating Dirichlet2 parameters from sampled Multinomials")
-    dir2.estimate
-    println("Dirichlet2 = "+dir2.alphas.toList)
-    println("Dirichlet2 mean = "+dir2.mean.toList)
+    //println("Estimating Dirichlet2 parameters from sampled Multinomials")
+    //dir2.estimate
+    //println("Dirichlet2 = "+dir2.alphas.toList)
+    //println("Dirichlet2 mean = "+dir2.mean.toList)
 
     0
   }
