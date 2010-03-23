@@ -7,9 +7,9 @@
 
 package cc.factorie
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
+import scala.collection.SeqLike
 import cc.factorie.util.Implicits._
 import java.util.Arrays
-import cc.factorie.util.LinkedHashSet
 
 // Very preliminary explorations in inference by belief propagation among discrete variables.
 // Not yet finished, and certainly not yet optimized for speed at all.
@@ -155,7 +155,7 @@ abstract class BPFactor(val factor:Factor) {
     def update2 = {
       if (neighborFactors.size > 0)
         for (i <- 0 until v.domain.size) {
-          msg(i) = neighborFactors.sum(_.messageTo(v).message(i))
+          msg(i) = neighborFactors.sumDoubles(_.messageTo(v).message(i))
         }
     }
     def updateTreewise2 = {
@@ -214,7 +214,7 @@ trait DiscreteMarginalN {
 // TODO: This should really inherit from Multinomial, but first I have to make it not require an "Outcome" variable.
 // I should also make a multi-dimensional multinomial.
 class DiscreteMarginal1[V<:DiscreteValue](val variable:V) extends RandomAccessSeq[Double] with DiscreteMarginalN {
-  def this(v:V, messages:Iterable[Seq[Double]]) = {
+  def this(v:V, messages:Iterable[Array[Double]]) = {
     this(v);
     for (message <- messages) {
       assert(message.length == m.length)
@@ -249,7 +249,7 @@ class BPLattice(val variables:Collection[BeliefPropagation.BPVariable]) extends 
   type V = BeliefPropagation.BPVariable
 
   // Find all the factors touching the 'variables'
-  val factors = new LinkedHashSet[Factor]
+  val factors = new HashSet[Factor]
 
   def this(model:Model, variables:Collection[BeliefPropagation.BPVariable]) {
     this(variables)

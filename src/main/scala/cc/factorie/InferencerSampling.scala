@@ -15,7 +15,7 @@ class DiscreteMarginal[V<:DiscreteValues](val variable:V) extends DenseCountsMul
   override def keepGeneratedSamples = false
   def incrementCurrentValue : Unit = variable match {
     case v:DiscreteValue => increment(v.index, 1.0)(null)
-    case v:BinaryVectorVariable[_] => v.incrementInto(this)
+    case v:BinaryVectorVariable[_] => throw new Error // TODO Put this code back in: v.incrementInto(this)
   }
 }
 
@@ -25,7 +25,7 @@ class SamplingLattice[V<:CategoricalValues](variables:Collection[V]) extends Lat
   variables.foreach(v => map(v) = new DiscreteMarginal(v))
   def marginal(v:V) = map(v)
   def apply(v:V) = map(v)
-  def marginals: Iterator[DiscreteMarginal[V]] = map.values
+  def marginals: Iterator[DiscreteMarginal[V]] = map.valuesIterator
 }
 
 // A simple special case, to be generalized later
