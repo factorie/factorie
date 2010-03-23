@@ -71,6 +71,7 @@ object ChainNER3 {
       learner.process(trainLabels, 1)
       trainLabels.take(50).foreach(printLabel _); println; println
       printDiagnostic(trainLabels.take(400))
+      predictor.process(testLabels, 1)
       println ("Train accuracy = "+ objective.aveScore(trainLabels))
       println ("Test  accuracy = "+ objective.aveScore(testLabels))
     }
