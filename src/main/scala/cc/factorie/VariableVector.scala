@@ -32,7 +32,7 @@ trait CategoricalVectorValue extends Variable with VectorValue with CategoricalV
 // TODO Consider renaming BinaryFeatureVector (where "Feature") refers to being Categorical?
 // or perhaps BinaryCategoricalVector?  But that is a weird name.
 @DomainInSubclasses
-abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends CategoricalVectorValue {
+abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends CategoricalVectorValue {
   //def this(iv:T*) = this(iv:Seq[T])
   def this() = this(null)
   //def this(initVals:Iterable[T]) = this(initVals, false)

@@ -28,7 +28,7 @@ import cc.factorie.util.{Log}
 
 
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
-   The trait is abstract not because you should not instantiate this trait directly, only subclasses.
+   The trait is abstract because you should not instantiate this trait directly, only subclasses.
    <p>
    You should never make a Variable a Scala 'case class' because then it will get hashCode and equals methods
    dependent on its constructor arguments; but the FACTORIE library depends on being able to distinguish individual
@@ -36,7 +36,7 @@ import cc.factorie.util.{Log}
    @author Andrew McCallum */
 // TODO Consider adding "extends AnyRef"??
 @DomainInSubclasses
-abstract trait Variable /* extends AnyRef */ {
+trait Variable /* extends AnyRef */ {
   /** The type of this variable, especially used by this Variable's Domain.  Often you can treat this as an approximation to a self-type */
   type VariableType <: Variable
  
@@ -49,7 +49,7 @@ abstract trait Variable /* extends AnyRef */ {
       it simply ensures that the library will never create a Domain for this class, only its subclasses.
       If library users create their own new Variable classes, which will be subclassed, and wants each
       subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
-  final def domain = Domain.get[VariableType](this.getClass)
+  final def domain: VariableType#DomainType = Domain.get[VariableType](this.getClass)
   
   private def shortClassName = {
     var fields = this.getClass.getName.split('$')
@@ -75,7 +75,7 @@ abstract trait Variable /* extends AnyRef */ {
 /** For variables that support integrating out their uncertainty with a distribution Q over their values, 
     or variational inference with an approximate distribution Q.
     @author Andrew McCallum */
-abstract trait QDistribution {
+trait QDistribution {
   this: Variable =>
   def newQ: GenerativeDistribution[VariableType]
 }
@@ -94,7 +94,7 @@ trait ConstantValue extends Variable {
 }
 
 /** For variables whose value has a type, indicated in type ValueType */
-abstract trait TypedValues {
+trait TypedValues {
   this: Variable =>
   type ValueType
 }

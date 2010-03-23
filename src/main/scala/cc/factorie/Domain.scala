@@ -322,7 +322,7 @@ object Domain {
   /** Get the Domain for Variables of type V */
   def apply[V<:Variable](implicit mv:Manifest[V]) = get[V](mv.erasure)
   /** Get the Domain for Variables of class vc */
-  def get[V<:Variable](vc:Class[_]) = {
+  def get[V<:Variable](vc:Class[_]): V#DomainType = {
     if (debug) {
       println("Domain.get "+vc+" classes.length="+vc.getDeclaredClasses.length)
       if (_domains.isDefinedAt(vc)) println("Domain.get "+vc+" already defined: "+_domains(vc).getClass.getName)

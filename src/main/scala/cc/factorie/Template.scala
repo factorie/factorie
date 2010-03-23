@@ -53,8 +53,9 @@ trait Factor extends Product with Ordered[Factor] {
   // Implement Ordered, such that worst (lowest) scores are considered "high"
   def compare(that: Factor) = {val d = that.statistic.score - this.statistic.score; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
   // Implement equality based on class assignability and Variable contents equality
-  override def canEqual(other: Any) = other.isInstanceOf[Factor];
+  override def canEqual(other: Any) = (null != other) && other.isInstanceOf[Factor];
   override def equals(other: Any): Boolean = {
+  	if (null == other) return false;
     //(this eq other) ||
     if (!canEqual(other)) return false
     val fother = other.asInstanceOf[Factor];
@@ -134,13 +135,14 @@ trait Template {
   def factors(difflist: DiffList): Iterable[Factor] = {
     //var result = new LinkedHashSet[Factor]()
     var result = new HashSet[Factor]()
-    difflist.foreach(diff => result ++= factors(diff))
+    for (diff <- difflist; factor <- factors(diff)) { if (factor eq null) throw new Error("unroll returned null Factor") else result += factor } 
+    //difflist.foreach(diff => result ++= factors(diff))
     result.toList // TODO is this necessary?
   }
   def factors(variables:Iterable[Variable]) : Iterable[Factor] = {
     //var result = new LinkedHashSet[Factor]()
     var result = new HashSet[Factor]()
-    variables.foreach(v => result ++= factors(v))
+    for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("unroll returned null Factor") else result += factor }  //variables.foreach(v => result ++= factors(v))
     result.toList // TODO is this necessary?
   }
   def stats(v:Variable): Iterable[Stat]; // TODO make this Iterable[StatType]

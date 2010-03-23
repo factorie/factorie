@@ -86,6 +86,7 @@ object WordSegmenterDemo {
 
     testVariables.foreach(_.setRandomly)
     println ("Read "+(trainVariables.size+testVariables.size)+" characters")
+    println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
     println ("Initial test accuracy = "+ objective.aveScore(testVariables))
   
     // If a saved model was specified on the command-line, theni instead of training, take parameters from there, test and exit
