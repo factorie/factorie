@@ -57,16 +57,17 @@ object ChainNER3 {
       if (t.hasPrev) t ++= t.prev.values.filter(!_.contains('@')).map(_+"@-1")
       if (t.hasNext) t ++= t.next.values.filter(!_.contains('@')).map(_+"@+1")
     })
+    println("Using "+Domain[Token].size+" observable features.")
     
     // Get the variables to be inferred
-    val trainLabels = trainSentences.flatMap(_.map(_.label))
-    val testLabels = testSentences.flatMap(_.map(_.label))
+    val trainLabels = trainSentences.flatMap(_.map(_.label)).take(7000)
+    val testLabels = testSentences.flatMap(_.map(_.label)).take(2000)
     
     // Sample and Learn!
     (trainLabels ++ testLabels).foreach(_.setRandomly)
-    val learner = new GibbsSampler(model, objective) with SampleRank with MIRAUpdates with ParameterAveraging { temperature = 0.01 }
+    val learner = new GibbsSampler(model, objective) with SampleRank with ConfidenceWeightedUpdates { temperature = 0.01 }
     val predictor = new GibbsSampler(model) { temperature = 0.01 }
-    for (i <- 1 to 6) {
+    for (i <- 1 to 3) {
       println("Iteration "+i) 
       learner.process(trainLabels, 1)
       trainLabels.take(50).foreach(printLabel _); println; println
@@ -75,7 +76,7 @@ object ChainNER3 {
       println ("Train accuracy = "+ objective.aveScore(trainLabels))
       println ("Test  accuracy = "+ objective.aveScore(testLabels))
     }
-    learner.setWeightsToAverage
+    //learner.setWeightsToAverage
     predictor.temperature *= 0.1
     predictor.process(testLabels, 2)
     println ("Final Test  accuracy = "+ objective.aveScore(testLabels))

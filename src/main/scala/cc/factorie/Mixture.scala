@@ -115,7 +115,7 @@ class MixtureChoice[M<:MixtureComponent[M,O],O<:GeneratedValue[O],This<:MixtureC
 //    setOutcome(o)
 //    super._registerSample(o)
 //  }
-  private def setOutcome(o:O): Unit = if (_outcome == null) _outcome = o else if (o != _outcome) throw new Error("Outcome already set")
+  def setOutcome(o:O): Unit = if (_outcome == null) _outcome = o else if (o != _outcome) throw new Error("Outcome already set")
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
     if (_outcome == null) throw new Error("No outcome yet set.")
     choice.unregisterSample(outcome)

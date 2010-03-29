@@ -50,7 +50,7 @@ trait GeneratedValue[This<:GeneratedValue[This]] extends Variable {
   def ~(mc:MixtureChoice[_,_,_]) = throw new Error("Not yet implemented")
   /** Register this variable as having been generated from the source indicated by the MixtureChoice 'mmc'. */
   /*def ~[M<:SourceType](mc:MixtureChoice[M,This,_]) : this.type = {
-    mc.setOutcome(asOutcome); 
+    mc.setOutcome(this) //(asOutcome); 
     this.~(mc.choice) // either here or in mmc.setOutcome; not sure which is more natural
   }*/
   /** Probability of this variable given its 'source' parents. */

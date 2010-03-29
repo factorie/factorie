@@ -332,11 +332,18 @@ object Domain {
   }
   /** Make Variables of type V1 use the same Domain as Variables of type V2. */
   def alias[V1<:Variable,V2<:Variable](implicit vm1:Manifest[V1], vm2:Manifest[V2]) = {
+    // TODO make this simple call the 'alias' implementation below.
     if (_domains.isDefinedAt(vm1.erasure)) {
       if (_domains(vm1.erasure) != get[V2](vm2.erasure))
         throw new Error("Cannot alias a Domain that has already been used (unless aliases match).")
     } else _domains.put(vm1.erasure, get[V2](vm2.erasure))
-  } 
+  }
+  def alias(class1:Class[_<:Variable], class2:Class[_<:Variable]): Unit = {
+    if (_domains.isDefinedAt(class1)) {
+      if (_domains(class1) != getDomainForClass(class2))
+        throw new Error("Cannot alias a Domain that has already been used (unless aliases match).")
+    } else _domains.put(class1, getDomainForClass(class2))
+  }
   /** Register d as the domain for variables of type V.  Deprecated.  Use := instead. */
   @deprecated
   def +=[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]) = {

@@ -69,8 +69,9 @@ abstract class RefLabel[T<:AnyRef](trueRef:T) extends RefVariable[T] with RefTru
   trueValue = trueRef
 }
 
+// TODO Who put this here?  This doesn't make sense, and isn't a good name.
 /**A variable class for string values. */
 @DomainInSubclasses
-class StringVariable(str: String) extends RefVariable(str) {
+abstract class StringVariable(str: String) extends RefVariable(str) {
   type VariableType = StringVariable
 }
