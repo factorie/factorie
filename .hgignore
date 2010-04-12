@@ -22,3 +22,14 @@ doc/usersguide/*.toc
 .classpath
 .settings
 .distfiles
+
+
+## sbt build directories
+lib_managed/
+src_managed/
+target/
+project/boot/
+project/build/target/
+project/plugins/target/
+project/plugins/lib_managed/
+project/plugins/src_managed/
