@@ -5,7 +5,7 @@
     <version>0.9.0-SNAPSHOT</version>
     <inceptionYear>2009</inceptionYear>
     <properties>
-        <scala.version>2.8.0-SNAPSHOT</scala.version>
+        <scala.version>2.8.0.RC1</scala.version>
     </properties>
     <url>http://factorie.googlecode.com</url>
     <scm>
@@ -69,7 +69,7 @@
         <dependency>
             <groupId>org.scalanlp</groupId>
             <artifactId>scalala</artifactId>
-            <version>0.3-SNAPSHOT</version>
+            <version>0.3.0</version>
             <!--<version>1.0-Snapshot</version>-->
         </dependency>
         <dependency>

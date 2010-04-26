@@ -16,8 +16,8 @@ import cc.factorie.util.Implicits._
 object LDADemo {
   // Declare different types of variables
   object Beta extends SymmetricDirichlet[Word](0.01)
-  class Topic extends DirichletMultinomial[Word] with MixtureComponent[Topic,Word]
-  class Z extends MixtureChoice[Topic,Word,Z]; Domain.alias[Z,Topic]
+  class Topic extends DirichletMultinomial[Word] with MixtureComponent
+  class Z extends MixtureChoice[Z]; Domain.alias[Z,Topic]
   object Alpha extends SymmetricDirichlet[Z](1.0)
   class Theta extends DirichletMultinomial[Z]
   class Word(s:String) extends EnumObservation(s) with GeneratedCategoricalValue[Word]
@@ -43,7 +43,7 @@ object LDADemo {
       document.theta = new Theta ~ Alpha
       for (word <- document) {
         val z = new Z ~ document.theta
-        word ~ z
+        word.~[Topic](z)
       }
     }
     
@@ -56,10 +56,10 @@ object LDADemo {
       print("."); Console.flush
       if (i % 3 == 0) {
         println ("Iteration "+i)
-        topics.foreach(t => println("Topic "+t.index+"  "+t.top(20).map(_.value))); println
+        topics.foreach(t => println("Topic "+t.mixtureIndex+"  "+t.top(20).map(_.value))); println
       }
     } 
-    topics.foreach(t => {println("\nTopic "+t.index); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
+    topics.foreach(t => {println("\nTopic "+t.mixtureIndex); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
     println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
   }
 }

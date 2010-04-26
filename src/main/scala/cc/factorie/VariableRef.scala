@@ -16,56 +16,56 @@ package cc.factorie
 // I considered alternatives "Simple"?  "Stored"?  "Basic"?  "Object"?  "Ref"?  
 // I think the best choice is "Ref" because it really is a "Ref" to a Scala object, and this reminds the user
 //  that they might have to be careful about changes to the contents of the Scala object.
-trait RefValue[T<:AnyRef] extends TypedValue {
+trait RefValue[A<:AnyRef] extends TypedValue {
   this: Variable =>
-  type ValueType = T
-  def value:T
-  def ===(other: RefValue[T]) = value == other.value
-  def !==(other: RefValue[T]) = value != other.value
+  type ValueType = A
+  def value:A
+  def ===(other: RefValue[A]) = value == other.value
+  def !==(other: RefValue[A]) = value != other.value
 }
 
 @DomainInSubclasses
-abstract class RefObservation[T<:AnyRef](theValue:T) extends Variable with RefValue[T] {
-  type VariableType <: RefObservation[T];
-  final val value: T = theValue
+abstract class RefObservation[A<:AnyRef](theValue:A) extends Variable with RefValue[A] {
+  type VariableType <: RefObservation[A];
+  final val value: A = theValue
   override def toString = printName + "(" + (if (value == this) "this" else value.toString) + ")"
 }
 
-/**A variable with a single mutable (unindexed) value which is of Scala type T. */
+/**A variable with a single mutable (unindexed) value which is of Scala type A. */
 // TODO A candidate for Scala 2.8 @specialized
 @DomainInSubclasses
-abstract class RefVariable[T<:AnyRef] extends Variable with RefValue[T] {
-  def this(initval:T) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
-  type VariableType <: RefVariable[T]
-  private var _value: T = _
-  @inline final def value = _value
-  def set(newValue: T)(implicit d: DiffList): Unit =
+abstract class RefVariable[A<:AnyRef] extends Variable with RefValue[A] {
+  type VariableType <: RefVariable[A]
+  def this(initval:A) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
+  private var _value: A = _
+  @inline final def value: A = _value
+  def set(newValue:A)(implicit d: DiffList): Unit =
     if (newValue != _value) {
       if (d != null) d += new RefDiff(_value, newValue)
       _value = newValue
     }
-  def :=(newValue:T) = set(newValue)(null)
-  def value_=(newValue:T) = set(newValue)(null)
+  def :=(newValue:A) = set(newValue)(null)
+  def value_=(newValue:A) = set(newValue)(null)
   override def toString = printName + "(" + (if (value == this) "this" else value.toString) + ")"
-  case class RefDiff(oldValue: T, newValue: T) extends Diff {
+  case class RefDiff(oldValue:A, newValue:A) extends Diff {
     //        Console.println ("new RefDiff old="+oldValue+" new="+newValue)
-    def variable: RefVariable[T] = RefVariable.this
+    def variable: RefVariable[A] = RefVariable.this
     def redo = _value = newValue
     def undo = _value = oldValue
   }
 }
 
 /** For variables that have a true value described by a Scala AnyRef type T. */
-trait RefTrueValue[T<:AnyRef] extends TrueSetting {
-  this: RefVariable[T] =>
-  var trueValue: T = _
+trait RefTrueValue[A<:AnyRef] extends TrueSetting {
+  this: RefVariable[A] =>
+  var trueValue: A = _
   def isUnlabeled = trueValue == null
   def setToTruth(implicit d:DiffList): Unit = set(trueValue)
   def valueIsTruth: Boolean = trueValue == value
 }
 
 @DomainInSubclasses
-abstract class RefLabel[T<:AnyRef](trueRef:T) extends RefVariable[T] with RefTrueValue[T] {
+abstract class RefLabel[A<:AnyRef](trueRef:A) extends RefVariable[A] with RefTrueValue[A] {
   trueValue = trueRef
 }
 

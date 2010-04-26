@@ -48,7 +48,7 @@ object er {
       def attributeOwner: This = thisEntity
     }
     /** Consider removing this.  Not sure if it should go here or outside the Entity. */
-    class SymmetricFunction(initval:This, val get:This=>SymmetricFunction) extends RefVariable(initval) {
+    class SymmetricFunction(initval:This, val get:This=>SymmetricFunction) extends RefVariable[This](initval) {
       type EntityType = This //with GetterType[This]
       def this(g:This=>SymmetricFunction) = this(null.asInstanceOf[This], g)
       override def set(newValue:This)(implicit d:DiffList) = {

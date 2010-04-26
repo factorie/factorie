@@ -46,7 +46,6 @@ trait OutcomeGenerating[T] {
 @DomainInSubclasses
 trait AbstractMultinomial[O<:DiscreteValue] extends DiscreteDistribution[O] with GeneratedProportionValue[O] {
   type VariableType <: AbstractMultinomial[O];
-  //type OutcomeType = O
   //type SourceType = ProportionGenerating[O];
   type SourceType <: ProportionDistribution[O]; // TODO Just changed from = to <: !!!!
   //type SourceType = AbstractDirichlet[O]; // TODO Why can't I make this ProportionGenerating[O] instead of AbstractDirichlet[O]?
@@ -55,9 +54,9 @@ trait AbstractMultinomial[O<:DiscreteValue] extends DiscreteDistribution[O] with
   def length: Int
   def apply(index:Int) = pr(index)
   def set(proportions:Seq[Double]): Unit // TODO include a DiffList here?
-  def pr(index:Int) : Double
+  def pr(index:Int): Double
   def localPr(index:Int) = pr(index) // Alternative that should not use any source.alpha in the estimate; used in Dirichlet.estimate
-  final def pr(o:O) : Double = pr(o.index)
+  final def pr(o:O): Double = pr(o.index)
   def proportion: RandomAccessSeq[Double] = this
   def prs: RandomAccessSeq[Double] = this //new RandomAccessSeq[Double] { def apply(i:Int) = pr(i); def length = count.size } // TODO Remove this method?
   def logpr(index:Int) = Math.log(pr(index))
@@ -79,7 +78,7 @@ trait AbstractMultinomial[O<:DiscreteValue] extends DiscreteDistribution[O] with
   class DiscretePr(val index:Int, val pr:Double)
   def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
   // TODO Put next method in superclass
-  def sample(implicit d:DiffList): Unit = { if (generativeSource != null) this.sampleFrom(generativeSource) else throw new Error("Source not set") } 
+  def sample(implicit d:DiffList): Unit = { if ((generativeSource ne null) && (generativeSource.value ne null)) this.sampleFrom(generativeSource.value) else throw new Error("Source not set") } 
   def sampleInt: Int = sampleIndex
   def sampleIndex: Int = {
     val s = Global.random.nextDouble; var sum = 0.0; var i = 0; val size = this.size
@@ -202,21 +201,22 @@ trait CountsMultinomial[O<:DiscreteValue] extends AbstractMultinomial[O] {
   }
   override def estimate: Unit = { // TODO Think about how this might make SparseCountsMultinomial unsparse, and how to improve
     if (generatedSamples.isEmpty) throw new Error("No generated samples from which to estimate")
-    if (generativeSource == null) { zero }
+    if ((generativeSource != null) || (generativeSource.value != null)) { zero }
     else { 
-      _total = generativeSource.alphaSum
+      _total = generativeSource.value.alphaSum
       throw new Error("Next line needs to be uncommented, but without using alphaVector")
       //for (i <- 0 until size) _counts(i) = generativeSource.alphaVector(i)
     }
     generatedSamples.foreach(o => {
-      o match { // TODO clean this up
-        case o2:GeneratedDiscreteValue[O] => o2.generativeSource match {
-          case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
+    	{ _counts(o.index) += 1.0; _total += 1.0 }
+      /*o match { // TODO clean this up
+        case o2:GeneratedDiscreteValue[O] => o2.generativeSource.value match {
+          case mixture:MarginalizedMixtureChoice[_] =>
             for (i <- 0 until length) { _counts(i) += mixture.multinomial(i); _total += 1.0 }
           case _ => { _counts(o.index) += 1.0; _total += 1.0 }
         }
         case _ => { _counts(o.index) += 1.0; _total += 1.0 }
-      }
+      }*/
     })
   }
   class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
@@ -308,7 +308,7 @@ class DirichletMultinomial[O<:GeneratedCategoricalValue[O]](dirichlet:AbstractDi
   type VariableType <: DirichletMultinomial[O];
   //override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],ProportionOutcome[O]]
   val outcomeDomain = Domain[O](m) // TODO unfortunately this gets fetched and stored repeatedly for each instance; but otherwise 'm' would be stored for each instance anyway?
-  def actualGenerativeSource = generativeSource
+  def actualGenerativeSource = generativeSource.value
   override def pr(index:Int) : Double = {
     //println("Multinomial.pr "+count(index)+" "+source(index)+" "+total+" "+source.sum)
     if (generativeSource != null)
@@ -351,20 +351,22 @@ class DirichletMultinomial[O<:GeneratedCategoricalValue[O]](dirichlet:AbstractDi
     preChange(o) // Note that if 'o' weren't a *Generated*DiscreteVariable & it changed its 'index', this will do the wrong thing! 
   }
   override def preChange(o:O)(implicit d:DiffList) = {
-    o.generativeSource match {
+  	increment(o.index, -1.0)
+    /*o.generativeSource match {
       // TODO !!!!! This is not right.  The mixture.multinomial domain is not the domain of o !!!
-      case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
+      case mixture:MarginalizedMixtureChoice[_] =>
         for (i <- 0 until o.domain.size) increment(i, -mixture.multinomial(i))
       case _ => increment(o.index, -1.0)
-    }
+    }*/
   }
   override def postChange(o:O)(implicit d:DiffList) = {
-    o.generativeSource match {
+  	increment(o.index, 1.0)
+    /*o.generativeSource match {
       // TODO !!!!! This is not right.  The mixture.multinomial domain is not the domain of o !!!
-      case mixture:MarginalizedMixtureChoice[SourceType,O,_] =>
+      case mixture:MarginalizedMixtureChoice[_] =>
         for (i <- 0 until o.domain.size) increment(i, mixture.multinomial(i))
       case _ => increment(o.index, 1.0)
-    }
+    }*/
   }
   // TODO Consider finding a way to put this back, in the case when O<:CategoricalValue
   //def sampleValue: O#VariableType#ValueType = outcomeDomain.get(sampleIndex)
@@ -394,7 +396,7 @@ trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends GeneratedDisc
   }
   override def maximize(implicit d:DiffList): Unit = {
     super.maximize(d)
-    multinomial.set(generativeSource.proportion) // TODO also create a Diff for this?
+    multinomial.set(generativeSource.value.proportion) // TODO also create a Diff for this?
   }
 }
 

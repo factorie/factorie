@@ -26,11 +26,6 @@ class Domain[V<:Variable](implicit m:Manifest[V]) {
   /** Return the classes that have this Domain. */
   def variableClasses: Seq[Class[V]] =
     Domain.domains.elements.filter({case (key,value) => value == this}).map({case (key,value) => key.asInstanceOf[Class[V]]}).toList
-
-  // TODO Trying to create ability for domain assignment syntax like:
-  // Domain[Token] := new CategoricalDomain[Token] { ... }
-  // I don't think this actually works yet
-  def :=(d:Domain[Variable]) = println("In Domain.:=")
   def save(dirname:String): Unit = {}
   def load(dirname:String): Unit = {}
   //made this public in order to check from outside whether the file to load from exists
@@ -40,25 +35,22 @@ class Domain[V<:Variable](implicit m:Manifest[V]) {
   Domain.+=[V](this)(m)
 }
 
-/*
-class ItemizedDomain[V <: ItemizedVariable](implicit m:Manifest[V]) extends Domain[V] with util.Index[V] {
-  def randomValue: V = get(Model.this.random.nextInt(size))
-}
-*/
-
 // TODO Consider if it would be helpful to have a RealDomain or PositiveRealDomain
 
 /** A Domain that has a positive integer size. */
 class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V]()(m) {
-  private val _size: Int = {
-    val c = m.erasure
-    val s = if (c.isAnnotationPresent(classOf[DomainSize])) m.erasure.getAnnotation(classOf[DomainSize]).value else -1
-    if (s == -1 && this.getClass == classOf[DiscreteDomain[V]]) throw new Error("DiscreteDomain must have its size set with a @DomainSize annotation.")
-    s
+  private var _size: Int = -1
+  private var _sizeFunction: ()=>Int = null
+  def size_=(sizeFunction: ()=>Int): Unit = {
+    if (_size == -1) _sizeFunction = sizeFunction
+    else throw new Error("DiscreteDomain["+m.erasure.getName+"].size already accessed; cannot re-set size.")
   }
-  def size = _size
-  //assert (size > 0)
-  def freeze: Unit = {}
+  /** Actually call the sizeFunction to */
+  private def setSize(): Unit = 
+    if (_sizeFunction != null) { _size = _sizeFunction.apply; require(_size > 0) }
+    else throw new Error("DiscreteDomain size must be set; e.g. Domain[MyDiscrete].size = 10")
+  def size: Int = { if (_size == -1) setSize(); _size }
+  def freeze: Unit = setSize()
   def allocSize = size
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)
@@ -70,22 +62,24 @@ class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V
     val f = new File(dirname+"/"+filename)
     val s = new BufferedReader(new FileReader(f))
     val line = s.readLine
-    if (size != Integer.parseInt(line)) throw new Error("Saved size does not match")
+    val readSize = Integer.parseInt(line)
+    this.size_=(()=>readSize)
   }
 }
 
-// TODO Also make a randomized-representation CategoricalDomain
+// TODO Also make a randomized-representation CategoricalDomain, with hashes.
 
 class CategoricalDomain[V<:CategoricalValues](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with util.Index[V#ValueType] with Collection[V#ValueType] /*with DomainEntryCounter[V]*/ {
   override def freeze = freeze0
   override def allocSize = allocSize0
   override def size = size0
+  override def size_=(sizeFunction: ()=>Int): Unit = throw new Error("CategoricalDomain.size cannot be set directly; only DiscreteDomains' can.")
   def randomValue : V#ValueType = randomValue(Global.random)
   def randomValue(random:Random): V#ValueType = get(random.nextInt(size))
   def +=(x:V#ValueType) : Unit = this.index(x)
   def ++=(xs:Iterable[V#ValueType]) : Unit = xs.foreach(this.index(_))
  
-   override def save(dirname:String): Unit = {
+  override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)
     if (f.exists) return // Already exists, don't write it again
     val s = new PrintWriter(new FileWriter(f))

@@ -16,7 +16,7 @@ import scalala.collection.{MergeableSet, IntSpanSet}
                              
 /** Helper class making it easier to view as Seq[Double] as a scalala.tensor.Vector. */
 trait SeqAsVector extends Vector {
-  def apply(i:Int): Double
+  def apply(i:Int): Double = throw new Error("If not defined, caused compile error: Concrete method has no definition: <specialized> def apply$mcDI$sp($this: cc.factorie.util.SeqAsVector, v1: Int): Double")
   def length: Int
   //def size: Int = length
   def update(i:Int, value:Double) = throw new Error("Not implemented")

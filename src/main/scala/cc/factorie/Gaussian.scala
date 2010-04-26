@@ -28,7 +28,8 @@ class Gaussian1[R<:RealValue](var mean:Double, var variance:Double) extends Real
   def minSamplesForVarianceEstimate = 5
   /** This implements a moment-matching estimator. */
   def estimate : Unit = {
-    if (generatedSamples.size == 0) { mean = 0.0; variance = 1.0; return }
+  	throw new Error
+    /*if (generatedSamples.size == 0) { mean = 0.0; variance = 1.0; return }
     mean = 0.0
     var weightSum = 0.0
     for ((s,w) <- weightedGeneratedSamples) { mean += s.doubleValue * w; weightSum += w }
@@ -40,6 +41,7 @@ class Gaussian1[R<:RealValue](var mean:Double, var variance:Double) extends Real
       variance += diff * diff * w
     }
     variance = Math.sqrt(variance / (weightSum - 1))
+    */
   }
   override def toString = "Gaussian1("+mean.doubleValue+","+variance.doubleValue+")"
 }
@@ -61,8 +63,8 @@ class GaussianGaussian1[R<:GeneratedRealValue[R]](override val variance:RealVari
   private val meanTotal: Double = 0.0
   override def preChange(o:R)(implicit d:DiffList) = {
     o.generativeSource match {
-      case mixture:MarginalizedMixtureChoice[_,R,_] => {
-        val index = this.asInstanceOf[MixtureComponent[_,_]].index
+      case mixture:MarginalizedMixtureChoice[_] => {
+        val index = this.asInstanceOf[MixtureComponent].index
         increment(index, -mixture.multinomial(index))
       }
       case _ => increment(o.index, -1.0)
@@ -70,7 +72,7 @@ class GaussianGaussian1[R<:GeneratedRealValue[R]](override val variance:RealVari
   }
   override def postChange(o:R)(implicit d:DiffList) = {
     o.generativeSource match {
-      case mixture:MarginalizedMixtureChoice[_,R,_] =>
+      case mixture:MarginalizedMixtureChoice[_,] =>
         for (i <- 0 until o.domain.size) increment(i, mixture.multinomial(i))
       case _ => increment(o.index, 1.0)
     }
