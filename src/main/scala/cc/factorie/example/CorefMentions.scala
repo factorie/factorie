@@ -151,14 +151,19 @@ object CorefMentionsDemo {
           val m = mentionList.sample(Global.random)
           //println("CorefMentions MHPerceptronLearner mention="+m)
           // Pick a random place to move it, either an existing Entity or a newly created one
-          var e = if (random.nextDouble < 0.8) sampleFiltered(entityList, (e:Entity)=>e.size>0) else { var ne=new Entity("e"+entityIndex); entityList += ne; ne}
-          // Make sure that we don't try to move it to where it already was
-          if (e == m.entity) {
-            //              Console.println ("Proposal: Trying to move to self, so create new Entity.")
-            e = new Entity("e"+entityIndex)
-            entityList += e
+          var e = null
+          // Pick an existing entity to move it to
+          if (m.entity.size == 1 || random.nextDouble < 0.8) {
+            val s2 = entityList.filter((e: Entity) => e.size > 0 && e != m.entity)
+            if (s2.size != 0) e = s2(random.nextInt(s2.size))
           }
-          // Move it
+          // Pick an empty entity to move it to (create one if it doesn't exist)
+          if (e == null) {
+            val s2 = entityList.filter((e: Entity) => e.size == 0)
+            if (s2.size != 0) e = s2(random.nextInt(s2.size))
+            else {e = new Entity("e"+entityIndex); entityList += e}
+          }
+      	  // Move it
           //            Console.println ("Proposal.jump moving "+m+" to "+e)
           m.set(e)(difflist)
           // log-Q-ratio shows that forward and backward jumps are equally likely
