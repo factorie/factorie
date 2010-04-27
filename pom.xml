@@ -80,114 +80,65 @@
         </dependency>
     </dependencies>
 
+
     <build>
         <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                </configuration>
-            </plugin>
+            <!-- Tells Maven to use the Scala compiler first, from http://scala-tools.org/mvnsites/maven-scala-plugin/usage_java.html -->
             <plugin>
                 <groupId>org.scala-tools</groupId>
                 <artifactId>maven-scala-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
                         <goals>
+                            <goal>add-source</goal>
                             <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
                             <goal>testCompile</goal>
                         </goals>
                     </execution>
                 </executions>
+                <!-- <scalaVersion>${scala.version}</scalaVersion> -->
                 <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                    <jvmArgs>
-                        <jvmArg>-Xmx1024m</jvmArg>
-                    </jvmArgs>
-                    <args>
-                        <arg>-explaintypes</arg>
-                    </args>
-                    <launchers>
-                        <launcher>
-                            <id>LDA</id>
-                            <mainClass>cc.factorie.example.LDADemo</mainClass>
-                            <!-- args are optional <args><arg>arg1</arg></args> -->
-                            <!-- jvmArgs are optional -->
-                            <jvmArgs>
-                                <jvmArg>-Xmx256m</jvmArg>
-                            </jvmArgs>
-                        </launcher>
-                        <!-- you could define other launcher -->
-                        <launcher>
-                            <id>CorefMentionsDemo</id>
-                            <mainClass>cc.factorie.example.CorefMentionsDemo</mainClass>
-                            <!-- args are optional -->
-                            <!-- jvmArgs are optional -->
-                            <jvmArgs>
-                                <jvmArg>-Xmx800m</jvmArg>
-                            </jvmArgs>
-                        </launcher>
-                        <launcher>
-                            <id>ChainNER2c</id>
-                            <mainClass>cc.factorie.example.ChainNER2c</mainClass>
-                            <!-- args are optional -->
-                            <!-- jvmArgs are optional -->
-                            <jvmArgs>
-                                <jvmArg>-Xmx2100m</jvmArg>
-                            </jvmArgs>
-                        </launcher>
-                        <launcher>
-                            <id>ChainNER2b</id>
-                            <mainClass>cc.factorie.example.ChainNER2b</mainClass>
-                            <!-- args are optional -->
-                            <!-- jvmArgs are optional -->
-                            <jvmArgs>
-                                <jvmArg>-Xmx2100m</jvmArg>
-                            </jvmArgs>
-                        </launcher>
-
-                    </launchers>
-
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.2-beta-4</version>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>attached</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/main/assembly/src.xml</descriptor>
-                        <!--
-                                                <descriptor>src/main/assembly/package.xml</descriptor>
-                                                <descriptor>src/main/assembly/standalone.xml</descriptor>
-                        -->
-                    </descriptors>
-                    <!--
-                                        <descriptorRefs>
-                                            <descriptorRef>project</descriptorRef>
-                                            <descriptorRef>src</descriptorRef>
-                                        </descriptorRefs>
-                    -->
-                </configuration>
+                  <jvmArgs><jvmArg>-Xmx1024m</jvmArg></jvmArgs>
+                  <args><arg>-explaintypes</arg></args>
+		</configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                  <source>1.5</source>
+                  <target>1.5</target>
+		</configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Customize the generated Eclipse project files for Scala -->
+            <plugin>
                 <artifactId>maven-eclipse-plugin</artifactId>
                 <configuration>
-                    <downloadSources>true</downloadSources>
+                    <!-- <jvmArgs><jvmArg>-Xmx1524m</jvmArg></jvmArgs> -->
+                    <sourceIncludes>
+                        <sourceInclude>**/*.scala</sourceInclude>
+                    </sourceIncludes>
                     <buildcommands>
                         <buildcommand>ch.epfl.lamp.sdt.core.scalabuilder</buildcommand>
                     </buildcommands>
                     <additionalProjectnatures>
+                        <!-- maven-eclipse-plugin puts this nature after org.eclipse.jdt.core.javanature in .project so the project will have a J badge instead of an S in the Package Explorer -->
                         <projectnature>ch.epfl.lamp.sdt.core.scalanature</projectnature>
                     </additionalProjectnatures>
                     <classpathContainers>
@@ -196,38 +147,43 @@
                     </classpathContainers>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <!-- <version>2.0-beta-8</version> -->
-                <configuration>
-                    <!--<tagBase>https://gcupload-maven-plugin.googlecode.com/svn/tags</tagBase>-->
-                    <releaseProfiles>release</releaseProfiles>
-		    <goals>assembly:assembly</goals>
-                </configuration>
-            </plugin>
+            <!-- Adds src/main/scala and src/test/scala as source folders, from http://groups.google.com/group/liftweb/browse_thread/thread/3dac7002f9e59546/3918bba2f7a92cd3?pli=1 -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.1</version>
+                <artifactId>build-helper-maven-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
                         <goals>
-                            <goal>exec</goal>
+                            <goal>add-source</goal>
                         </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/scala</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-test-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/test/scala</source>
+                            </sources>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <executable>pdflatex</executable>
-                    <!-- optional -->
-                    <workingDirectory>doc/usersguide</workingDirectory>
-                    <arguments>
-                        <argument>factorie-users-guide.tex</argument>
-                    </arguments>
-                </configuration>
             </plugin>
         </plugins>
     </build>
+
+
+
+
     <reporting>
         <plugins>
             <plugin>

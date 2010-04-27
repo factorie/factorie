@@ -283,10 +283,10 @@ class StringDomain[V<:CategoricalValues {type ValueType = String}](implicit m:Ma
   /* For all member variables, if its type is String and its name is all upper case or digits,
     set its value to its name, and intern in the Domain.  Usage:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
-  private def stringFields = this.getClass.getDeclaredFields.filter(f => { /*println(f);*/ f.getType == classOf[String] }).reverse
+  private def stringFields = this.getClass.getDeclaredFields.filter(f => { /*println(f);*/ f.getType == classOf[String] })
   private var stringFieldsIterator: Iterator[java.lang.reflect.Field] = _
   def Value: String = {
-    if (stringFieldsIterator == null) stringFieldsIterator = stringFields.elements
+    if (stringFieldsIterator == null) stringFieldsIterator = stringFields.iterator
     assert(stringFieldsIterator.hasNext)
     val field = stringFieldsIterator.next
     //println("StringDomain Value got "+field.getName)
@@ -297,8 +297,10 @@ class StringDomain[V<:CategoricalValues {type ValueType = String}](implicit m:Ma
   private def checkFields: Unit = {
     for (field <- stringFields) {
       val fieldName = field.getName
-      val fieldMethod = getClass.getMethod(fieldName, null)
-      val fieldValue = fieldMethod.invoke(this, null).asInstanceOf[String]
+      //getClass.getMethods.foreach(m => println(m.toString))
+      val fieldMethod = getClass.getMethod(fieldName) // was with ,null)
+      val fieldValue = fieldMethod.invoke(this).asInstanceOf[String]
+      // field.get(this).asInstanceOf[String] //  
       //val fieldValue = field.get(this) // Violated access protection since in Scala "val PER" creates a private final variable.
       //println("Field "+fieldName+" has value "+fieldValue)
       if (fieldValue != null && fieldValue != fieldName) throw new Error("Somehow StringDomain category "+fieldName+" got the wrong String value "+fieldValue+".")

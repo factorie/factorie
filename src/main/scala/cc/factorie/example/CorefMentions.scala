@@ -60,13 +60,13 @@ object CorefMentionsDemo {
       var mentionList = new ArrayBuffer[Mention]();
       var entityList = new ArrayBuffer[Entity]();
 
-      val data = Array(
-        Array("Andrew McCallum", "Andrew MacCallum", "Angrew McCallum", "McCallum", "A. McCallum"),
-        Array("Michael Wick", "Mike Wick", "Michael Andrew Wick", "Wick", "Wick"),
-        Array("Khashayar Rohanemanesh", "Khash R.", "Kesh Rohanemanesh"),
-        Array("Aron Culotta", "Andrew Culotta", "A. Culotta", "Culotta McCallum", "Culotta", "Culotta"),
-        Array("Charles Sutton", "Charles A. Sutton", "Sutton", "Sutton"),
-        Array("Nicola Cancceda", "Nicola Canceda", "Nicolla Cancceda", "Nicol Cancheta", "Canceda", "Cancceda")
+      val data = List(
+        List("Andrew McCallum", "Andrew MacCallum", "Angrew McCallum", "McCallum", "A. McCallum"),
+        List("Michael Wick", "Mike Wick", "Michael Andrew Wick", "Wick", "Wick"),
+        List("Khashayar Rohanemanesh", "Khash R.", "Kesh Rohanemanesh"),
+        List("Aron Culotta", "Andrew Culotta", "A. Culotta", "Culotta McCallum", "Culotta", "Culotta"),
+        List("Charles Sutton", "Charles A. Sutton", "Sutton", "Sutton"),
+        List("Nicola Cancceda", "Nicola Canceda", "Nicolla Cancceda", "Nicol Cancheta", "Canceda", "Cancceda")
       )
       
       // Create variables for the data
@@ -151,7 +151,7 @@ object CorefMentionsDemo {
           val m = mentionList.sample(Global.random)
           //println("CorefMentions MHPerceptronLearner mention="+m)
           // Pick a random place to move it, either an existing Entity or a newly created one
-          var e = null
+          var e: Entity = null
           // Pick an existing entity to move it to
           if (m.entity.size == 1 || random.nextDouble < 0.8) {
             val s2 = entityList.filter((e: Entity) => e.size > 0 && e != m.entity)
@@ -174,7 +174,7 @@ object CorefMentionsDemo {
           if (processCount % 500 == 0) {
             //learningRate *= .9
             // TODO put back numUpdates   System.out.println("UPS: " + numUpdates);
-            model.templatesOf[DotTemplate].foreach(f => println (f.toString+" weights = "+f.weights.toList))
+            // model.templatesOf[DotTemplate].foreach(f => println (f.toString+" weights = "+f.weights.toList)) // TODO Commented out when DenseVectors.toList stopped working, most likely due to FACTORIE using 2.8.0.RC1 and Scalala using 2.8.0.Beta1
             println ("All entities")
             entityList.filter(e=>e.size>0).foreach(e => println(e.toString +" "+ e.mentions.toList))
             //Console.println ("All mentions"); mentionList.foreach(m => Console.println(m.toString +" "+ m.entity))
