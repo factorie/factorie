@@ -109,7 +109,6 @@ trait GeneratedRealVariable[This<:GeneratedRealVariable[This]] extends RealVaria
 /** A GeneratedObservation with densely-packed integer values, for example the outcome of a Multinomial or Poisson.  */
 @DomainInSubclasses
 trait GeneratedDiscreteValue[This<:GeneratedDiscreteValue[This] with DiscreteValue with GeneratedValue[This]] extends DiscreteValue with GeneratedValue[This] {
-  // DiscreteOutcome should not be merged with DiscreteOutcomeVariable because not everything we want to generate has a "setByIndex" to override
   this: This =>  
   // "This" types are a bit verbose.  Could Scala be changed to replace them with this#type ??? 
   // Geoffrey Washburn says yes it is technically possible, but that Martin is simply against adding this feature to the language.
@@ -117,7 +116,7 @@ trait GeneratedDiscreteValue[This<:GeneratedDiscreteValue[This] with DiscreteVal
 }
 
 /** A DiscreteOutcome that is also a DiscreteVariable whose value can be changed. */
-trait GeneratedDiscreteVariable[This<:GeneratedDiscreteVariable[This] with DiscreteVariable] extends DiscreteVariable with GeneratedDiscreteValue[This] with GeneratedVariable[This] {
+trait GeneratedDiscreteVariable[This<:GeneratedDiscreteVariable[This] with DiscreteVariable] extends DiscreteVariable with GeneratedDiscreteValue[This] with GeneratedVariable[This] /*with QDistribution with MarginalDistribution*/ {
   this : This =>
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
     if (generativeSource.value ne null) generativeSource.value.preChange(this)
@@ -141,6 +140,8 @@ trait GeneratedDiscreteVariable[This<:GeneratedDiscreteVariable[This] with Discr
   def maximize(implicit d:DiffList): Unit = {
     setByIndex(generativeSource.value.maxPrIndex)
   }
+  //override def newQ: DenseMultinomial[This] = new DenseMultinomial[This](domain.size)
+  //override def newMarginal: MultinomialDiscrete[This] = new MultinomialDiscrete[This] {}
 }
 
 

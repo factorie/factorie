@@ -72,12 +72,22 @@ trait Variable /* extends AnyRef */ {
   //def source:AnyRef = null //.asInstanceOf[SourceType]
 }
 
-/** For variables that support integrating out their uncertainty with a distribution Q over their values, 
-    or variational inference with an approximate distribution Q.
+/** For variables that support representating of their uncertainty with a distribution Q over their values, 
+    for variational inference with an approximate distribution Q.
     @author Andrew McCallum */
 trait QDistribution {
   this: Variable =>
+  type QType
   def newQ: GenerativeDistribution[VariableType]
+}
+
+/** For variables that support integrating out their uncertainty with a distribution Q over their values, 
+    for variational inference with an approximate distribution Q.
+    @author Andrew McCallum */
+trait MarginalDistribution {
+  this: Variable =>
+  type MarginalType
+  def newMarginal: VariableType
 }
 
 /*import cc.factorie.er

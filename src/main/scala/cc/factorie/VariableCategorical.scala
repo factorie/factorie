@@ -133,6 +133,8 @@ abstract class EnumVariable[T](initialValue:T) extends CoordinatedEnumVariable[T
 
 // ItemizedObservation support
 
+// TODO Replace this with Catalog?
+
 /** An Observation put into an index, and whose value is the Observation variable itself.  
     For example, you can create 10 'Person extends ItemizedObservation[Person]' objects, 
     and upon creation each will be mapped to a unique integer 0..9.

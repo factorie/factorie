@@ -21,7 +21,7 @@ object GaussianMixture {
 //    // Generative storyline
 //    val gs = for (i <- 1 to numMixtureComponents) yield new G(i)
 //    val zs = for (i <- 1 to numDataPoints) yield new Z ~ mixtureWeights
-//    val xs = zs.map(z => new X :~ z).toList
+//    val xs = zs.map(z => new X :~ [G](z)).toList
 //   
 //    // Print initial state
 //    println("Original means "+gs.map(_.mean))

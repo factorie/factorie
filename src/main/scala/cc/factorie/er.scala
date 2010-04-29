@@ -348,8 +348,8 @@ object er {
       ret.reverse1s = (d:D) => fwd1(d.asInstanceOf[ret.B]).value.asInstanceOf[ret.B]
       ret
     }
-//    /** Create a new Getter, starting from this one as the 'src' of a relation, and appending a Getter for the 'dst' of the relation. */
-//    def getRelationSrc[R<:Relation[D,C],D<:Entity[D]{type GetterType<:Getter[D]}](r:R)(implicit m:Manifest[D], mr:Manifest[R#RelationshipType]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+//     /** Create a new Getter, starting from this one as the 'src' of a relation, and appending a Getter for the 'dst' of the relation. */
+//     def getRelationSrc[R<:Relation[D,C],D<:Entity[D]{type GetterType<:Getter[D]}](r:R)(implicit m:Manifest[D], mr:Manifest[R#RelationshipType]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
 //      type ThisA = A
 //      type ThisC = C
 //      val ret = newGetter[D](m).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]

@@ -7,7 +7,6 @@
 
 package cc.factorie
 import scala.util.Random
-import scala.reflect.Manifest
 import scalala.Scalala._
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector

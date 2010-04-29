@@ -44,13 +44,15 @@ trait OutcomeGenerating[T] {
     @author Andrew McCallum */
 // TODO Rename simply "Multinomial"?
 @DomainInSubclasses
-trait AbstractMultinomial[O<:DiscreteValue] extends DiscreteDistribution[O] with GeneratedProportionValue[O] {
+trait AbstractMultinomial[O<:DiscreteValue] extends DiscreteDistribution[O] with GeneratedProportionValue[O] /*with MarginalDistribution with QDistribution*/ {
   type VariableType <: AbstractMultinomial[O];
   //type SourceType = ProportionGenerating[O];
   type SourceType <: ProportionDistribution[O]; // TODO Just changed from = to <: !!!!
   //type SourceType = AbstractDirichlet[O]; // TODO Why can't I make this ProportionGenerating[O] instead of AbstractDirichlet[O]?
   //def asOutcome = this
   //def this(initCounts:Seq[Double]) = { this(initCounts.size); setCounts(initCounts) }
+//  def newMarginal(implicit m:Manifest[O]) = new DirichletMultinomial[O]()(m)
+//  def newQ(implicit m:Manifest[O]) = new Dirichlet[O](1.0)(m)
   def length: Int
   def apply(index:Int) = pr(index)
   def set(proportions:Seq[Double]): Unit // TODO include a DiffList here?
