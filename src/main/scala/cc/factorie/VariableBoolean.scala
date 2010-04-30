@@ -11,7 +11,7 @@ package cc.factorie
     @see BooleanVariable
     @see BooleanObservation
     @author Andrew McCallum */
-trait BooleanValue extends TypedCategoricalValue[Boolean] {
+trait BooleanValue extends CategoricalValue[Boolean] {
   type VariableType <: BooleanValue
   override def value = (intValue == 1) // Efficiently avoid a lookup in the domain 
   def booleanValue: Boolean = (intValue == 1)
@@ -27,43 +27,45 @@ trait BooleanValue extends TypedCategoricalValue[Boolean] {
 
 /** A trait for mutable Boolean variables. 
     @author Andrew McCallum */
-trait BooleanVariable extends BooleanValue with TypedCategoricalVariable[Boolean] { 
+class BooleanVariable(initialValue:Boolean = false) extends CategoricalVariable[Boolean](initialValue) with BooleanValue { 
   type VariableType <: BooleanVariable
 }
 
 /** A trait for variables with immutable Boolean values.
     @author Andrew McCallum */
-class BooleanObservation(b:Boolean) extends BooleanValue {
-  final val intValue = if (b) 1 else 0 // matches mapping from Boolean=>Int in BooleanDomain 
+class BooleanObservation(b:Boolean) extends CategoricalObservation(b) with BooleanValue {
+  type VariableType <: BooleanObservation
 }
 
 // The next two are versions that take convenient constructor arguments.
 // TODO Are we happy with their names?  "Bool"?  Might someone want/expect to simply extend BooleanVariable(myflag) ??
 
-/** A variable class for boolean values, defined specially for convenience.  
-    If you have several different "types" of booleans, you might want to subclass this to enable type safety checks.
-    This class allowed variable-value coordination by overriding the 'setByIndex' method; by contrast the 'Bool' class does not. */
-class CoordinatedBoolVariable(initialValue: Boolean) extends BooleanVariable {
-  def this() = this(false)
-  type VariableType <: CoordinatedBoolVariable
-  setByIndex(if (initialValue == true) 1 else 0)(null)
-}
+// /** A variable class for boolean values, defined specially for convenience.  
+//     If you have several different "types" of booleans, you might want to subclass this to enable type safety checks.
+//     This class allowed variable-value coordination by overriding the 'setByIndex' method; by contrast the 'Bool' class does not. */
+// class CoordinatedBoolVariable(initialValue: Boolean) extends BooleanVariable {
+//   def this() = this(false)
+//   type VariableType <: CoordinatedBoolVariable
+//   setByIndex(if (initialValue == true) 1 else 0)(null)
+// }
 
-/** A variable class for boolean values, defined specially for convenience.  
-    If you have several different "types" of booleans, you might want to subclass this to enable type safety checks. */
-// TODO Should I rename this BoolVariable for consistency?
-class BoolVariable(b: Boolean) extends CoordinatedBoolVariable(b) with UncoordinatedCategoricalVariable {
-  def this() = this(false)
-  type VariableType <: BoolVariable
-}
+// /** A variable class for boolean values, defined specially for convenience.  
+//     If you have several different "types" of booleans, you might want to subclass this to enable type safety checks. */
+// // TODO Should I rename this BoolVariable for consistency?
+// class BoolVariable(b: Boolean) extends CoordinatedBoolVariable(b) with UncoordinatedCategoricalVariable {
+//   def this() = this(false)
+//   type VariableType <: BoolVariable
+// }
 
-// Provide an alias to the old name for now
-class Bool(b:Boolean) extends BoolVariable(b) {
-  def this() = this(false)
+// Provide an alias with a shorter name
+// TODO Consider removing this for uniformity and simplicity
+class Bool(b:Boolean = false) extends BooleanVariable(b) {
+  type VariableType <: Bool
+  //def this() = this(false)
 }
-class CoordinatedBool(b:Boolean) extends CoordinatedBoolVariable(b) {
-  def this() = this(false)
-}
+// class CoordinatedBool(b:Boolean) extends CoordinatedBoolVariable(b) {
+//   def this() = this(false)
+// }
 
 
 class BooleanDomain[V<:BooleanValue](implicit m:scala.reflect.Manifest[V]) extends CategoricalDomain[V]()(m) {
@@ -73,7 +75,7 @@ class BooleanDomain[V<:BooleanValue](implicit m:scala.reflect.Manifest[V]) exten
 }
 
 object Bool {
-  val t = new Bool(true) // TODO This should be BoolObservation!  Because we wouldn't want t.set(false)!!!
-  val f = new Bool(false)
+  val t = new BooleanObservation(true) // TODO This should be BoolObservation!  Because we wouldn't want t.set(false)!!!
+  val f = new BooleanObservation(false)
   def apply(b: Boolean) = if (b) t else f
 }

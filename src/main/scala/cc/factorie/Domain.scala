@@ -37,7 +37,8 @@ class Domain[V<:Variable](implicit m:Manifest[V]) {
 
 // TODO Consider if it would be helpful to have a RealDomain or PositiveRealDomain
 
-/** A Domain that has a positive integer size. */
+/** A Domain that has a positive integer size.  
+    Set its size by Domain[MyDiscrete].size = 9; or Domain[MyDiscrete].size = Domain[MyOther].size. */
 class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V]()(m) {
   private var _size: Int = -1
   private var _sizeFunction: ()=>Int = null
@@ -69,7 +70,7 @@ class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V
 
 // TODO Also make a randomized-representation CategoricalDomain, with hashes.
 
-class CategoricalDomain[V<:CategoricalValues](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with util.Index[V#ValueType] with Collection[V#ValueType] /*with DomainEntryCounter[V]*/ {
+class CategoricalDomain[V<:AbstractCategoricalValues](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with util.Index[V#ValueType] with Collection[V#ValueType] /*with DomainEntryCounter[V]*/ {
   override def freeze = freeze0
   override def allocSize = allocSize0
   override def size = size0
@@ -194,7 +195,7 @@ object CategoricalDomain {
     </pre>
     But this typical usage was so awkward, that for now DomainEntryCounter is mixed in to CategoricalDomain by default.
     */
-trait DomainEntryCounter[V<:CategoricalValues] extends util.Index[V#ValueType] {
+trait DomainEntryCounter[V<:CategoricalValues[_]] extends util.Index[V#ValueType] {
   this: CategoricalDomain[V] =>
   type T = V#ValueType
   var gatherCounts = true
@@ -271,15 +272,15 @@ trait DomainEntryCounter[V<:CategoricalValues] extends util.Index[V#ValueType] {
     Domain += new CategoricalDomain[Token] with DomainEntryCounter[Token] 
 */
 // But now much easier to use class below, simply like this:
-// class Token extends EnumVariable[String] with CountingCategoricalDomain[Token]
+// class Token extends CategoricalVariable[String] with CountingCategoricalDomain[Token]
 // CountingCategoricalDomain is defined in VariableCategorical.scala
   
-class CategoricalDomainWithCounter[V<:CategoricalValues](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) with DomainEntryCounter[V]
+class CategoricalDomainWithCounter[V<:CategoricalValues[_]](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) with DomainEntryCounter[V]
 
 /** A Categorical domain with string values.  Provides convenient intialization to known values, 
     with value members holding those known values.  For example:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
-class StringDomain[V<:CategoricalValues {type ValueType = String}](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) {
+class StringDomain[V<:CategoricalValues[_] {type ValueType = String}](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) {
   /* For all member variables, if its type is String and its name is all upper case or digits,
     set its value to its name, and intern in the Domain.  Usage:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */

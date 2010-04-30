@@ -102,7 +102,7 @@ class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends Variabl
 
   @author Tim Vieira
 */
-class BruteForce[V<:UncoordinatedDiscreteVariable with IterableSettings](model:Model) {
+class BruteForce[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
 
   // TODO: make this conform to some of the existing Inferencer interfaces.
   // extends VariableInferencer[V]?

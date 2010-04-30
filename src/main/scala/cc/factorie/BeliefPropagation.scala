@@ -17,7 +17,7 @@ import java.util.Arrays
 
 /** Holds some global definitions for BP.  */
 object BeliefPropagation {
-  type BPVariable = UncoordinatedDiscreteVariable  // Our BP implementation currently only handles these types of Variables
+  type BPVariable = DiscreteVariable with NoVariableCoordination  // Our BP implementation currently only handles these types of Variables
   var maxdiff = 0.0  // maximum message difference (used for checking if messages are converging)
   val normalizeMessages = true
 }

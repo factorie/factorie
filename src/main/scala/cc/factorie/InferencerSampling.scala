@@ -20,7 +20,7 @@ class DiscreteMarginal[V<:DiscreteValues](val variable:V) extends DenseCountsMul
 }
 
 // TODO This is over variables.  We want something over Factors... and perhaps also something separate over Variables
-class SamplingLattice[V<:CategoricalValues](variables:Collection[V]) extends Lattice {
+class SamplingLattice[V<:DiscreteValues](variables:Collection[V]) extends Lattice {
   val map = new HashMap[V,DiscreteMarginal[V]]
   variables.foreach(v => map(v) = new DiscreteMarginal(v))
   def marginal(v:V) = map(v)
@@ -30,7 +30,7 @@ class SamplingLattice[V<:CategoricalValues](variables:Collection[V]) extends Lat
 
 // A simple special case, to be generalized later
 // TODO Could be "DiscreteVariable" instead of "CategoricalVariable"?
-class SamplingInferencer[V<:CategoricalVariable,C](val sampler:Sampler[C]) extends Inferencer[V,C] {
+class SamplingInferencer[V<:DiscreteVariable,C](val sampler:Sampler[C]) extends Inferencer[V,C] {
   type LatticeType = SamplingLattice[V]
   var burnIn = 100 // I really want these to be  the default-values for parameters to infer, in Scala 2.8.
   var thinning = 20
@@ -46,7 +46,7 @@ class SamplingInferencer[V<:CategoricalVariable,C](val sampler:Sampler[C]) exten
   }
 }
 
-class VariableSamplingInferencer[V<:CategoricalVariable](sampler:Sampler[V]) extends SamplingInferencer[V,V](sampler) with VariableInferencer[V] {
+class VariableSamplingInferencer[V<:DiscreteVariable](sampler:Sampler[V]) extends SamplingInferencer[V,V](sampler) with VariableInferencer[V] {
   def this() = this(new GibbsSampler1[V])
   def this(model:Model) = this(new GibbsSampler1[V](model))
 }

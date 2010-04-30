@@ -62,7 +62,7 @@ object DepParsing1 {
   @DomainSize(6) class Distance(d:Int) extends DiscreteVariable {
     if (d < domain.size-1) setByInt(d)(null) else setByInt(domain.size-1)(null)
   }
-  class POS(posString:String) extends EnumVariable(posString) 
+  class POS(posString:String) extends CategoricalVariable(posString) 
   class Label(trueString:String) extends LabelVariable(trueString)
   class Sentence extends VariableSeq[Token] {
     this += new Token("<ROOT>", ".", 0, "ROOT")

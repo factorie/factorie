@@ -43,7 +43,7 @@ object WordSegmenterDemo {
     def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
   }
   /** Skip edge */
-  val skipTemplate = new Template2[Label,Label] with DotStatistics1[Bool] {
+  val skipTemplate = new Template2[Label,Label] with DotStatistics1[BooleanValue] {
     def unroll1 (label:Label) =  
       // could cache this search in label.similarSeq for speed
       for (other <- label.token.seq; if label.token.char == other.char) yield 

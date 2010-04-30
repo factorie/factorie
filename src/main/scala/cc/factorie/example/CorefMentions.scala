@@ -110,7 +110,7 @@ object CorefMentionsDemo {
       }.init
   
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature!
-      model += new Template1[Entity] with DotStatistics1[Bool] {
+      model += new Template1[Entity] with DotStatistics1[BooleanValue] {
         def statistics(entity:Entity) = {
           if (entity.mentions.isEmpty) Stat(Bool(true))
           else {

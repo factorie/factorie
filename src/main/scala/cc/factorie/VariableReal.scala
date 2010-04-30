@@ -22,10 +22,10 @@ class RealObservation(val doubleValue:Double) extends RealValue with ConstantVal
   type VariableType <: RealObservation
 }
 
-/** A variable trait for mutable real (double) values. */
-trait RealVariable extends RealValue {
+/** A variable class for mutable real (double) values. */
+class RealVariable(initialValue: Double = 0.0) extends RealValue {
   type VariableType <: RealVariable
-  private var _value: Double = _
+  private var _value: Double = initialValue
   @inline final def doubleValue = _value
   def +=(x:Double) = set(_value + x)(null)
   def -=(x:Double) = set(_value - x)(null)
@@ -46,9 +46,9 @@ trait RealVariable extends RealValue {
   }
 }
 
-// TODO, I should create corresponding classes for Integer, Discrete, Ordinal, Categorical (to replace EnumVariable) and Proportion
-/** A RealVariable with a constructor argument. */
-class Real(initialValue:Double) extends RealVariable {
+// TODO, I should create corresponding classes for Integer, Discrete, Ordinal, Categorical and Proportion
+// Alternatively, consider removing this class.
+/** A RealVariable with a shorter name. */
+class Real(initialValue:Double) extends RealVariable(initialValue) {
   type VariableType <: Real
-  set(initialValue)(null)
 }

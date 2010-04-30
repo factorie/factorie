@@ -100,7 +100,7 @@ trait GeneratedRealValue[This<:GeneratedRealValue[This] with RealValue with Gene
   type SourceType = RealDistribution[This]
 }
 
-trait GeneratedRealVariable[This<:GeneratedRealVariable[This]] extends RealVariable with GeneratedRealValue[This] with GeneratedVariable[This] {
+trait GeneratedRealVariable[This<:RealVariable with GeneratedRealVariable[This]] extends GeneratedRealValue[This] with GeneratedVariable[This] {
   this: This =>
   def sampleFrom(source:SourceType)(implicit d:DiffList) = set(source.sampleDouble)
   def sample(implicit d:DiffList) = sampleFrom(generativeSource.value)
@@ -113,10 +113,11 @@ trait GeneratedDiscreteValue[This<:GeneratedDiscreteValue[This] with DiscreteVal
   // "This" types are a bit verbose.  Could Scala be changed to replace them with this#type ??? 
   // Geoffrey Washburn says yes it is technically possible, but that Martin is simply against adding this feature to the language.
   type SourceType = DiscreteDistribution[This]
+  def setByIndex(newIndex:Int)(implicit d:DiffList): Unit
 }
 
 /** A DiscreteOutcome that is also a DiscreteVariable whose value can be changed. */
-trait GeneratedDiscreteVariable[This<:GeneratedDiscreteVariable[This] with DiscreteVariable] extends DiscreteVariable with GeneratedDiscreteValue[This] with GeneratedVariable[This] /*with QDistribution with MarginalDistribution*/ {
+trait GeneratedDiscreteVariable[This<:DiscreteVariable with GeneratedDiscreteVariable[This]] extends DiscreteVariable with GeneratedDiscreteValue[This] with GeneratedVariable[This] /*with QDistribution with MarginalDistribution*/ {
   this : This =>
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
     if (generativeSource.value ne null) generativeSource.value.preChange(this)
@@ -127,7 +128,7 @@ trait GeneratedDiscreteVariable[This<:GeneratedDiscreteVariable[This] with Discr
       and you are doing the source coordination yourself. */
   def _setByIndex(newIndex:Int)(implicit d:DiffList) = super.setByIndex(newIndex) 
   // TODO The above method is a bit scary because we may loose opportunities to fruitfully override setByIndex in subclasses
-  // However it saved us (115-111) seconds in the LDA timing run described in Generative.scala. 
+  // However it saved us (115-111 = 4) seconds in the LDA timing run described in Generative.scala. 
   def sampleFrom(source:SourceType)(implicit d:DiffList) = setByIndex(source.sampleIndex)
   def distribution: Array[Double] = { // TODO Remove or rename?  Rename proportion?
     val buffer = new Array[Double](domain.size);
@@ -146,12 +147,13 @@ trait GeneratedDiscreteVariable[This<:GeneratedDiscreteVariable[This] with Discr
 
 
 // TODO Delete these next two.  DiscreteGenerating is sufficient to generate a CategoricalValue
-trait GeneratedCategoricalValue[This<:GeneratedCategoricalValue[This] with CategoricalValue] extends CategoricalValue with GeneratedDiscreteValue[This] {
-  this : This =>
-}
-trait GeneratedCategoricalVariable[This<:GeneratedCategoricalVariable[This] with CategoricalVariable with GeneratedCategoricalValue[This]] extends CategoricalVariable with GeneratedDiscreteVariable[This] with GeneratedCategoricalValue[This] {
-  this : This =>
-}
+// trait GeneratedCategoricalValue[T,This<:GeneratedCategoricalValue[T,This] with CategoricalValue[T]] extends CategoricalValue[T] with GeneratedDiscreteValue[This] {
+//   this : This =>
+// }
+// trait GeneratedCategoricalVariable[This<:CategoricalVariable[_] with GeneratedCategoricalVariable[This]] extends GeneratedDiscreteVariable[This] with GeneratedCategoricalValue[T,This] {
+//   this : This =>
+//   def this(initialValue:T) = { this(); set(initialValue)(null) }
+// }
 
 
 /** A GeneratedObservation that consists of a vector of Doubles that sum to one, for example the parameters of a Multinomial. */

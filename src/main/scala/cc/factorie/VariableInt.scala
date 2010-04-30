@@ -28,7 +28,7 @@ import cc.factorie.util.Implicits._
 // then we also have class names:
 // Integer
 // Ordinal
-// Categorical (which will replace the EnumVariable)
+// Categorical
 // Real and RealConstant
 // PositiveReal
   
@@ -49,8 +49,8 @@ trait IntegerValues extends Variable {
 trait IntegerValue extends IntegerValues {
   this: Variable =>
   type VariableType <: IntegerValue
-  //def index: Int
   def intValue: Int
+  def doubleValue: Double = intValue.toDouble
   override def toString = printName + "(" + intValue + ")"
   def ===(other: IntegerValue) = intValue == other.intValue
   def !==(other: IntegerValue) = intValue != other.intValue
@@ -58,8 +58,9 @@ trait IntegerValue extends IntegerValues {
 
 /** A Variable with a mutable Int value.
     @author Andrew McCallum */ 
-trait IntegerVariable extends Variable with IntegerValue {
+class IntegerVariable extends Variable with IntegerValue {
   type VariableType <: IntegerVariable
+  def this(initialValue:Int) = { this(); setByInt(initialValue)(null) }
   private var _index = -1
   @inline final def intValue = _index
   def setByInt(newValue: Int)(implicit d: DiffList): Unit = {
@@ -80,14 +81,12 @@ trait IntegerVariable extends Variable with IntegerValue {
   }
 }
 
-/** An IntegerVariable class with a constructor argument.  The canonical concrete IntegerVariable. */
-class Integer(initialValue:Int) extends IntegerVariable {
-  setByInt(initialValue)(null)
-}
-
 /** A Variable with a immutable Int value.
     @author Andrew McCallum */
-class IntegerObservation(val intValue:Int) extends IntegerValue 
+class IntegerObservation(val intValue:Int) extends IntegerValue with ConstantValue {
+  type VariableType <: IntegerObservation
+}
+
 
 /** An IntegerValue with minimum of 0, but no maximum. 
     @author Andrew McCallum */
@@ -96,75 +95,18 @@ trait OrdinalValues extends IntegerValues {
   type VariableType <: OrdinalValues
   override def minIntValue = 0
 }
+
 trait OrdinalValue extends OrdinalValues with IntegerValue {
   this: Variable =>
   type VariableType <: OrdinalValue
 }
-trait OrdinalVariable extends IntegerVariable with OrdinalValue {
+
+abstract class OrdinalVariable extends IntegerVariable with OrdinalValue {
   type VariableType <: OrdinalVariable
+  def this(initialValue:Int) = { this(); setByInt(initialValue)(null) }
 }
 
-/** An OrdinalValue with finite range 0...N.  
-    For your own subclass MyDiscreteValue, you can set N=9 with Domain[MyDiscreteValue].size = 9 
-    @author Andrew McCallum */
-// Semantically "Values" are not really "Variables", but we must inherit from cc.factorie.Variable in order to handle Domain properly
-@DomainInSubclasses
-trait DiscreteValues extends Variable with OrdinalValues {
-  type VariableType <: DiscreteValues
-  type DomainType <: DiscreteDomain[VariableType]
-  // TODO Replace this mechanism with an Annotation
-  class DomainClass extends DiscreteDomain[VariableType]()(null)
-  def domainSize: Int = domain.size
-  override def maxIntValue = domainSize - 1
-  def vector: Vector
+abstract class OrdinalObservation(theValue:Int) extends IntegerObservation(theValue) with OrdinalValue {
+  type VariableType <: OrdinalObservation
 }
-@DomainInSubclasses
-trait DiscreteValue extends DiscreteValues with OrdinalValue {
-  this: Variable =>
-  type VariableType <: DiscreteValue
-  @inline final def index = intValue // simply an alias for intValue 
-  def vector = new SingletonBinaryVector(domainSize, intValue)
-}
-@DomainInSubclasses
-trait DiscreteVariable extends OrdinalVariable with DiscreteValue with IterableSettings {
-  type VariableType <: DiscreteVariable
-  // TODO Consider doing a range check on "setByIndex", but it would slow us down, so do a speed/timing check.
-  final override def setByInt(newValue: Int)(implicit d: DiffList): Unit = setByIndex(newValue)(d) 
-  def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
-    // TODO Note that we do not check that (newIndex < domain.size), but perhaps we should; this would slow us down, though!
-    if (newIndex < 0) throw new Error("DiscreteVariable setByIndex can't be negative.")
-    super.setByInt(newIndex)(d)
-  }
-  def setRandomly(random:Random, d:DiffList): Unit = setByIndex(random.nextInt(domainSize))(d)
-  def setRandomly(random:Random): Unit = setRandomly(random, null)
-  def setRandomly: Unit = setRandomly(cc.factorie.Global.random)
-  def settings = new SettingIterator {
-    var i = -1
-    val max = domain.size - 1
-    def hasNext = i < max
-    def next(difflist:DiffList) = { i += 1; val d = newDiffList; setByIndex(i)(d); d }
-    def reset = i = -1
-    override def variable : DiscreteVariable.this.type = DiscreteVariable.this
-  }
-}
-
-trait UncoordinatedDiscreteVariable extends DiscreteVariable with NoVariableCoordination {
-  // TODO But this does not absolutely guarantee that some other trait hasn't already overriden set and setByIndex to do coordination!
-  // TODO I want some way to tell the compiler that this method should be overriding the CategoricalVariable.set method.
-  final override def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
-}
-
-
-// TODO Perhaps I should create an IntervalValue, see http://en.wikipedia.org/wiki/Nominal_scale
-// ??? class DiscreteIntervalValue(low:Int, high:Int, bins:Int) extends DiscreteValue {}
-
-// TODO I don't especially like this name.  Need to think more generally about names for class versions of the *Variable traits.
-/** A DiscreteVariable with initial value set by constructor.  
-    Note that you must set the size of your subclasses' DiscreteDomain. */
-@DomainInSubclasses
-abstract class DiscVariable(initialValue:Int) extends DiscreteVariable {
-  type VariableType <: DiscVariable
-  setByInt(initialValue)(null)
-}
-
 

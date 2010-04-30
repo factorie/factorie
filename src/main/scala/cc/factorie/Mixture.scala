@@ -82,7 +82,7 @@ class MixtureComponentRef[A<:GenerativeDistribution[O] with MixtureComponent,O<:
 // TODO Can I make this:
 // MixtureChoice[M<:MixtureComponent[M,_],This<:MixtureChoice[M,M#O,This]]
 @DomainInSubclasses
-class MixtureChoice[This<:MixtureChoice[This]] extends GeneratedCategoricalVariable[This] with Gate[AbstractMixtureComponentRef] {
+class MixtureChoice[This<:MixtureChoice[This]] extends DiscreteVariable with GeneratedDiscreteVariable[This] with Gate[AbstractMixtureComponentRef] {
   this: This =>
   type VariableType = This
   //type ContentType <: AbstractMixtureComponentRef //[GenerativeDistribution[Variable],Variable] // forSome {A<:Variable}
@@ -118,7 +118,7 @@ class MixtureChoice[This<:MixtureChoice[This]] extends GeneratedCategoricalVaria
   }
 }
 
-class MarginalizedMixtureChoice[This<:MarginalizedMixtureChoice[This]] extends MixtureChoice[This] with MultinomialCategorical[This] {
+class MarginalizedMixtureChoice[This<:MarginalizedMixtureChoice[This]] extends MixtureChoice[This] with MultinomialDiscrete[This] {
   this: This =>
 }
 

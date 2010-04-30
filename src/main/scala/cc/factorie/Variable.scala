@@ -112,16 +112,16 @@ trait TypedValues {
 /** For A Variable whose value has type ValueType.  
     Typically this is not used to for Values with simple numeric types such as Int and Double.
     Rather, those values are obtained through methods such as intValue and doubleValue. 
-    Other variables, such as EnumVariable, have both an Int value and a ValueType value. */
+    Other variables, such as CategoricalVariable, have both an Int value and a ValueType value. */
 trait TypedValue extends TypedValues {
   this: Variable =>
   type VariableType <: TypedValue
-  //def value: ValueType // TODO I wanted to put this here, but then an implementation in CategoricalValue won't type check.
+  def value: ValueType
 }
 // TODO think about whether to get rid of intValue, doubleValue, proportionValue, etc.
-//  No, I don't think so.  DiscreteValue.intValue is convenient, and I would like EnumVariable.value to still have type T.
+//  No, I don't think so.  DiscreteValue.intValue is convenient, and I would like CategoricalVariable.value to still have type T.
 // I considered whether RefValue and TypedValue should be merged, but then I see that we need to 
-// distinguish a _Value that stores its value as x:T and one that doesn't (like EnumVariable[T])
+// distinguish a _Value that stores its value as x:T and one that doesn't (like CategoricalVariable[T])
 
 
 

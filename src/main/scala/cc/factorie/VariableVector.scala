@@ -12,14 +12,14 @@ import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import scala.util.Sorting
 
-trait VectorValue extends CategoricalValues {
+trait VectorValue extends DiscreteValues {
   this: Variable =>
   // TODO Remember that DiscreteValues Domains currently need special initialization
   def vector : Vector
   def indices: Collection[Int]
 }
 
-trait CategoricalVectorValue extends Variable with VectorValue with CategoricalValues {
+trait CategoricalVectorValue[T] extends Variable with VectorValue with CategoricalValues[T] {
   // TODO Anything to put here?
 }
 
@@ -32,11 +32,10 @@ trait CategoricalVectorValue extends Variable with VectorValue with CategoricalV
 // TODO Consider renaming BinaryFeatureVector (where "Feature") refers to being Categorical?
 // or perhaps BinaryCategoricalVector?  But that is a weird name.
 @DomainInSubclasses
-abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends CategoricalVectorValue {
+abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends CategoricalVectorValue[T] {
   //def this(iv:T*) = this(iv:Seq[T])
   def this() = this(null)
   //def this(initVals:Iterable[T]) = this(initVals, false)
-  type ValueType = T
   type VariableType <: BinaryVectorVariable[T];
   def skipNonCategories = false
   private val _indices = new it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet
@@ -44,7 +43,7 @@ abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends Cat
   private var _vector: Vector = null // TODO Can we make this more memory efficient?  Avoid having both Vector and ArrayBuffer?;
   if (initVals ne null) this ++= initVals
   def indices: Seq[Int] = _indices.toIntArray // TODO project to ensure no changes, even with casting?  But this would involve allocating the Projection
-  def values: Seq[T] = { val indxs = _indices.toIntArray; val d = this.domain; indxs.map(d.get(_)) }
+  def values: Seq[T] = { val indxs = _indices.toIntArray.asInstanceOf[Array[Int]]; val d = this.domain; indxs.map(d.get(_)) }
   def zero: Unit = { _indices.clear; _vector = null }
   override def vector = {
     if (_vector == null || _vector.size != domain.allocSize) {
@@ -90,9 +89,8 @@ abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends Cat
 
 /** A vector of Real values */
 @DomainInSubclasses
-abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends CategoricalVectorValue {
+abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends CategoricalVectorValue[T] {
   def this() = this(null)
-  type ValueType = T
   type VariableType <: RealVectorVariable[T]
   lazy val vector: Vector = new SparseVector(domain.allocSize)
   if (initVals ne null) this ++= initVals

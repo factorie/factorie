@@ -31,7 +31,7 @@ object ClusterLDADemo {
   class Y extends MixtureChoice[Alpha,GeneratedProportionValue[Z],Y]; Domain.alias[Y,Alpha]
   object Gamma extends UniformMultinomial[Y]
   class Theta extends DirichletMultinomial[Z]
-  class Word(s:String) extends CoordinatedEnumVariable(s) with GeneratedCategoricalValue[Word]
+  class Word(s:String) extends CategoricalVariable(s) with GeneratedDiscreteVariable[Word]
   class Document(val file:String) extends ArrayBuffer[Word] { var theta:Theta = _; var y:Y = _ }
 
   def main(args: Array[String]) : Unit = {

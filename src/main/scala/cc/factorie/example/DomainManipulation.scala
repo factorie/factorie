@@ -15,11 +15,11 @@ object DomainManipulation {
   println("MyIndexedVariable  "+Domain[MyIndexedVariable])
   
   println("Inner classes of CategoricalValues:")
-  classOf[CategoricalValues].getClasses.foreach(c => println(c))
+  classOf[CategoricalValues[_]].getClasses.foreach(c => println(c))
   println("Inner declared classes of IndexedVariable:")
-  classOf[CategoricalValues].getDeclaredClasses.foreach(c => println(c))
+  classOf[CategoricalValues[_]].getDeclaredClasses.foreach(c => println(c))
   println("Inner declared classes of IndexedVariable:")
-  println(classOf[CategoricalValues].getSuperclass)
+  println(classOf[CategoricalValues[_]].getSuperclass)
   //println("method "+classOf[IndexedVariable].getDeclaredMethod("domainInSubclasses", null))
 
   class LabelDomain[V<:Variable](implicit m:Manifest[V]) extends Domain[V]()(m) {

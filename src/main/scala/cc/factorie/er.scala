@@ -67,7 +67,7 @@ object er {
       sets its value to true, the change gets put on the DiffList. */
   // TODO Is this last sentence a bad idea?  I could avoid it by spliting 'AttributeHolding' out of Entity.
   // Note that the current state allows there to be "Relations among Relationships"... hmmm!  Might this be useful?
-  class Relationship[A<:Entity[A],B<:Entity[B]](val src:A, val dst:B) extends BoolVariable with Entity[Relationship[A,B]] {
+  class Relationship[A<:Entity[A],B<:Entity[B]](val src:A, val dst:B) extends BooleanVariable with Entity[Relationship[A,B]] {
     type GetterType <: RelationshipGetter[A,B]
     class GetterClass extends RelationshipGetter[A,B]
     override def toString = printName+"("+src+","+dst+","+value+")" // TODO For some reason this is having no effect, so I re-override below
@@ -494,8 +494,8 @@ object er {
   // Example usage:  Forany[Token] { t => Score(t, t.label) }
     
     
-  type ScorableValues[X] = CategoricalValues //with GetterType[X]
-  type ScorableValues0 = CategoricalValues //with GetterType[CategoricalValues]
+  type ScorableValues[X] = DiscreteValues // CategoricalValues //with GetterType[X]
+  type ScorableValues0 = DiscreteValues // CategoricalValues //with GetterType[CategoricalValues]
   
   // TODO!!! Put this back for 2.8.0.Beta2
   // See http://old.nabble.com/Re:--scala-internals--RC8-candidate-for-the-first-2.8.0-beta-td27262766.html
@@ -599,7 +599,7 @@ object er {
   type FormulaArg = DiscreteValue //with GetterType[BooleanValue]
   //type FormulaValue[A] = BooleanValue //with GetterType[A];
   /** The collection of arguments to the boolean expression; the variables neighboring the factor.  
-      Using CategoricalVariable instead of BooleanValue enables mixed use of BooleanValue and other DiscreteValues, as in IntExpression. */
+      Using DiscreteValue instead of BooleanValue enables mixed use of BooleanValue and other DiscreteValues, as in IntExpression. */
   type FormulaArgs = ArrayStack[FormulaArg]
 
     

@@ -11,7 +11,7 @@ import cc.factorie._
 object DirichletDemo {
 
   def main(args:Array[String]) : Unit = {
-    class Word(s:String) extends CoordinatedEnumVariable(s) with GeneratedDiscreteValue[Word];
+    class Word(s:String) extends CategoricalVariable(s) with GeneratedDiscreteVariable[Word]
     Domain += new StringDomain[Word] {
       List("one", "two", "three", "four", "five", "six").foreach(index(_))
     }

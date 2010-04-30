@@ -62,7 +62,7 @@ trait GatedRefVariable[A<:AnyRef] extends RefVariable[A] with AbstractGatedRefVa
 
 /*
 object GateTest {
-  class Word(s:String) extends GeneratedCategoricalVariable(s)
+  class Word(s:String) extends GeneratedCategoricalVariable[String,Word](s)
   class Topic extends DirichletMultinomial[Word] with MixtureComponent
   class Z extends MixtureChoice[Z]; Domain[Z].size = Domain[Topic].size
   val z = new Z

@@ -302,14 +302,16 @@ class DenseCountsMultinomial[O<:GeneratedDiscreteValue[O]](dim:Int) extends Vect
 /** A Multinomial with parameters integrated out with a Dirichlet prior.  Also known as a Multivariate Polya distribution.
     @author Andrew McCallum */
 // TODO Figure out how to use intead [O<:GeneratedDiscreteValue[O]], but still get O#VariableType#ValueType in "top" below
+// TODO class DirichletMultinomial[O<:DiscreteValue](val dirichlet:Dirichlet[O]) extends DiscreteDistribution[O] with MarginalizingDistribution
+// TODO trait MarginalizingDistribution { val target: Variable }
 @DomainInSubclasses
-class DirichletMultinomial[O<:GeneratedCategoricalValue[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
+class DirichletMultinomial[O<:GeneratedDiscreteValue[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
   def this()(implicit m:Manifest[O]) = this(null.asInstanceOf[AbstractDirichlet[O]])(m)
   def this(dirichlet:AbstractDirichlet[O], initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(dirichlet)(m); set(initCounts) }
   def this(initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(null.asInstanceOf[AbstractDirichlet[O]])(m); set(initCounts) }
   type VariableType <: DirichletMultinomial[O];
   //override type SourceType = GenerativeDistributionLike[AbstractDirichlet[O],ProportionOutcome[O]]
-  val outcomeDomain = Domain[O](m) // TODO unfortunately this gets fetched and stored repeatedly for each instance; but otherwise 'm' would be stored for each instance anyway?
+  //val outcomeDomain = Domain[O](m) // TODO unfortunately this gets fetched and stored repeatedly for each instance; but otherwise 'm' would be stored for each instance anyway?
   def actualGenerativeSource = generativeSource.value
   override def pr(index:Int) : Double = {
     //println("Multinomial.pr "+count(index)+" "+source(index)+" "+total+" "+source.sum)
@@ -373,16 +375,22 @@ class DirichletMultinomial[O<:GeneratedCategoricalValue[O]](dirichlet:AbstractDi
   // TODO Consider finding a way to put this back, in the case when O<:CategoricalValue
   //def sampleValue: O#VariableType#ValueType = outcomeDomain.get(sampleIndex)
   override def estimate: Unit = {} // Nothing to do because estimated on the fly
-  class DiscretePr(override val index:Int, override val pr:Double, override val count:Double, val value:O#VariableType#ValueType) extends super.DiscretePr(index,pr,count)
-  override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i),outcomeDomain.get(i))})
-  def topValues(n:Int) = top(n).toList.map(_.value)
-  override def toString = "Multinomial(count="+countsTotal+")"
+  class DiscretePr(override val index:Int, override val pr:Double, override val count:Double, val value:String) extends super.DiscretePr(index,pr,count)
+  def top(n:Int)(implicit m:Manifest[O]): Seq[DiscretePr] = {
+    val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList
+    Domain.get[O](m.erasure) match {
+      case d:CategoricalDomain[_] => entries.map({case (p,i)=>new DiscretePr(i,p,counts(i),d.get(i).toString)})
+      case d:Any => entries.map({case (p,i)=>new DiscretePr(i,p,counts(i),"")})
+    }
+  }
+  def topValues(n:Int)(implicit m:Manifest[O]) = top(n).toList.map(_.value)
+  override def toString = "DirichletMultinomial="+countsTotal+")"
 }
 
 /** DiscreteValue integrated out over a Multinomial prior distribution.
     @author Andrew McCallum */
 // TODO turn this into Variational representation supporting mean-field
-trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends GeneratedDiscreteVariable[This] {
+trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends DiscreteVariable with GeneratedDiscreteVariable[This] {
   this: This =>
   final val multinomial = new DenseMultinomial[This](domainSize)
   def pr(i:Int): Double = multinomial.pr(i)
@@ -404,15 +412,15 @@ trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends GeneratedDisc
 
 /** CategoricalValue integrated out over a Multinomial prior distribution.
     @author Andrew McCallum */
-trait MultinomialCategorical[This<:MultinomialCategorical[This]] extends GeneratedCategoricalVariable[This] with MultinomialDiscrete[This] {
-  this: This =>
-}
+//trait MultinomialCategorical[T,This<:MultinomialCategorical[T,This]] extends GeneratedCategoricalVariable[T,This] with MultinomialDiscrete[This] {
+//  this: This =>
+//}
 
 
 // The binary special case, for convenience
 
 /** The outcome of a coin flip, with boolean value.  */
-class Flip extends CoordinatedBool with GeneratedDiscreteVariable[Flip]
+class Flip extends Bool with GeneratedDiscreteVariable[Flip]
 // Note that no Variable should ever be a case class.
 /** A coin, with Multinomial distribution over outcomes, which are Flips. */
 class Coin(p:Double, totalCount:Double) extends DenseCountsMultinomial[Flip](Array((1-p)*totalCount,p*totalCount)) {

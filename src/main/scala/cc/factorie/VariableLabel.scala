@@ -23,11 +23,12 @@ import cc.factorie.util.Implicits._
 /** A variable of finite enumerated values that has a true "labeled" value, separate from its current value. 
     @author Andrew McCallum */
 // TODO We could make version of this for OrdinalValue: TrueOrdinalValue
-trait TrueCategoricalValue extends TrueSetting {
-  this : CategoricalVariable =>
+trait TrueCategoricalValue[T] extends TrueSetting {
+  this : CategoricalVariable[T] =>
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
   var trueIndex: Int
   def trueValue: VariableType#VariableType#ValueType = if (trueIndex >= 0) domain.get(trueIndex) else null.asInstanceOf[VariableType#VariableType#ValueType]
+  def trueValue_=(x: T) = if (x == null) trueIndex = -1 else trueIndex = domain.index(x)
   def setToTruth(implicit d:DiffList): Unit = setByIndex(trueIndex)
   def valueIsTruth: Boolean = trueIndex == index
   def isUnlabeled = trueIndex < 0
@@ -35,29 +36,23 @@ trait TrueCategoricalValue extends TrueSetting {
   def relabel = if (trueIndex < 0) trueIndex = -(trueIndex+1) else throw new Error("Already labeled.")
 }
 
-// TODO consider moving TrueIndexedValue to inside with this:TrueIndexedValue => ?
-@DomainInSubclasses
-abstract trait TypedTrueCategoricalValue[T] extends TrueCategoricalValue with TypedCategoricalVariable[T] {
-  def trueValue_=(x: T) = if (x == null) trueIndex = -1 else trueIndex = domain.index(x)
+abstract class TrueDiscreteTemplate[V<:DiscreteVariable with TrueSetting](implicit m:Manifest[V]) extends TemplateWithVectorStatistics1[V] {
+  def score(s:Stat) = if (s.s1.valueIsTruth) 1.0 else 0.0
 }
+class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest]/*(implicit m:Manifest[V])*/ extends TrueDiscreteTemplate[V] /*()(m)*/
 
-abstract class TrueCategoricalTemplate[V<:CategoricalVariable with TrueCategoricalValue](implicit m:Manifest[V]) extends TemplateWithVectorStatistics1[V] {
-  def score(s:Stat) = if (s.s1.index == s.s1.trueIndex) 1.0 else 0.0
-}
 
-class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]](implicit m:Manifest[V]) extends TrueCategoricalTemplate[V]()(m)
 
 
 /** A variable with a single index and a true value.
-    Subclasses can override setByIndex to coordinate the value of other variables with this one.
+    Subclasses are allowed to override setByIndex to coordinate the value of other variables with this one.
     @author Andrew McCallum
     @see LabelVariable
 */
 @DomainInSubclasses
-class CoordinatedLabelVariable[T](trueval:T) extends CoordinatedEnumVariable[T](trueval) with TypedTrueCategoricalValue[T] {
+abstract class CoordinatedLabelVariable[T](trueval:T) extends CategoricalVariable[T](trueval) with TrueCategoricalValue[T] {
   type VariableType <: CoordinatedLabelVariable[T]
   var trueIndex = domain.index(trueval)
-  setByIndex(domain.index(trueval))(null)
 }
 
 /** A CategoricalVariable with a single value and a true value.
@@ -67,10 +62,10 @@ class CoordinatedLabelVariable[T](trueval:T) extends CoordinatedEnumVariable[T](
     @see CoordinatedLabelVariable
  */
 @DomainInSubclasses
-class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with UncoordinatedCategoricalVariable {
+class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with NoVariableCoordination {
   type VariableType <: LabelVariable[T]
-  //override final def set(newValue:T)(implicit d: DiffList) = super.set(newValue)(d)
-  //override final def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
+  // TODO Does this ext line really provide the protection we want from creating variable-value coordination?
+  override final def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
 }
 
 /** A Label with a StringDomain.  StringDomains can be conveniently initialized, as in
