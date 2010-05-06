@@ -76,7 +76,7 @@ abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends Cat
   //def ++(vals: Iterable[T]) = {this ++= vals; this} // TODO this method should return a new Vector
   override def toString = {
     val s = new StringBuilder(printName + "(")
-    val iter = vector.activeDomain.elements
+    val iter = vector.activeDomain.iterator
     if (iter.hasNext) { val i:Int = iter.next ; s ++= (domain.get(i).toString + "=" + i) }
     while (iter.hasNext) {
       val i:Int = iter.next
