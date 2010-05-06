@@ -20,27 +20,27 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 // TODO was GeneratedDiscreteValue
 //trait AbstractDirichlet[O<:GeneratedDiscreteValue[O]] extends  ProportionDistribution[O] with RandomAccessSeq[Double] 
 trait AbstractDirichlet[O<:DiscreteValue] extends  ProportionDistribution[O] with RandomAccessSeq[Double] {
-  //type OutcomeType = GeneratedProportionValue[O] // AbstractMultinomial[O]
+  //type OutcomeType = GeneratedProportionValue[O] // Multinomial[O]
   final def length: Int = mean.length
   final def alpha(index:Int): Double = mean(index) * alphaSum
   def alphas: Seq[Double] = this
   var alphaSum: Double = 1.0 // TODO Is this a reasonable value?
   def alphaVector: Vector = throw new Error // mean.prVector * alphaSum
-  def mean: AbstractMultinomial[O]
+  def mean: Multinomial[O]
   //def mean(index:Int) : Double
   def apply(index:Int) = alpha(index)
   def outcomeDomain: O#DomainType
   // Was sampleOutcome: OutcomeType
-  def sampleMultinomial: AbstractMultinomial[O] = throw new Error // TODO { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this)(null); /*throw new Error;*/ mul }
+  def sampleMultinomial: Multinomial[O] = throw new Error // TODO { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this)(null); /*throw new Error;*/ mul }
   def sampleOutcome: OutcomeType = sampleMultinomial
   def estimate: Unit = throw new Error("Method estimate is not implemented in this class.  You must add a trait for estimation.")
   def sampleOutcomes(n:Int) : Seq[OutcomeType] = for (i <- 0 until n) yield sampleOutcome
   //def sampleInto(m:OutcomeType): Unit = sampleInto(m:OutcomeType, SparseVector(size)(0.0)) // Waiting Scala 2.8 default args 
   //def sampleInto(m:OutcomeType, counts:{def apply(i:Int):Double; def size:Int}): Unit = m.set(sampleProportionsWithCounts(counts))
-  def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def size:Int}): Seq[Double] = {
+  def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def length:Int}): Seq[Double] = {
     //println("sampleInto")
     var norm = 0.0
-    val c = new Array[Double](counts.size)
+    val c = new Array[Double](counts.length)
     // If m is a DirichletMultinomial, account for the fact that the m.pr(i) estimate will include m.source.alpha(i): 
     // m.pr(i) will be calculated from its counts, smoothed with the alphas here, in equal proportions (thanks to norm /= alphaSum below)
     // So we double the variance of random sample in order to make up for it.
@@ -86,7 +86,7 @@ class UniformDirichlet[O<:GeneratedDiscreteValue[O]](implicit m:Manifest[O]) ext
 /** Default Dirichlet, with densely-represented mean, and estimation by moment-matching.
     @author Andrew McCallum */
 @DomainInSubclasses
-class Dirichlet[O<:GeneratedDiscreteValue[O]](val mean:AbstractMultinomial[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with DirichletMomentMatchingEstimator[O] {
+class Dirichlet[O<:GeneratedDiscreteValue[O]](val mean:Multinomial[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with DirichletMomentMatchingEstimator[O] {
   //println("Dirichlet")
   def this(initialAlpha:Double)(implicit m:Manifest[O]) = this(new DenseCountsMultinomial[O](Domain[O](m).size), initialAlpha*Domain[O](m).size)
   def this(initialAlphas:Seq[Double])(implicit m:Manifest[O]) = this(new DenseCountsMultinomial[O](initialAlphas), initialAlphas.foldLeft(0.0)(_+_))

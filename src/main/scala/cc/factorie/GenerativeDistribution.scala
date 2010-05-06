@@ -8,6 +8,7 @@
 package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.HashSet
+import scala.collection.mutable.IndexedSeqLike
 import cc.factorie.util.Implicits._
 
 // A collection abstract Variables for the distributions of generative models (directed Bayesian networks, 
@@ -38,11 +39,11 @@ trait GenerativeDistribution[O<:Variable] extends Variable {
   def estimate: Unit // TODO consider removing this.  Paramter estimation for generative models should be seen as inference?  No, but change its name to 'maximize'!  This will apply to both variables and distributions
   private lazy val _generatedSamples: HashSet[O] = new HashSet[O];
   def generatedSamples: scala.collection.Set[O] = _generatedSamples // TODO I want this to be .readOnly, but how in Scala 2.8?
-  /*def weightedGeneratedSamples: Iterator[(O,Double)] = new Iterator[(O,Double)] {
+  def weightedGeneratedSamples: Iterator[(O,Double)] = new Iterator[(O,Double)] {
     val elts = _generatedSamples.iterator
     def hasNext = elts.hasNext
     def next = (elts.next,1.0)
-  }*/
+  }
   def keepGeneratedSamples = true
   /** The next two methods should only be called from SourceRefVariable.  */
   def _registerSample(o:O)(implicit d:DiffList): Unit = if (keepGeneratedSamples) {
@@ -94,14 +95,14 @@ trait OrdinalDistribution[O<:OrdinalValue] extends GenerativeDistribution[O] {
 /** A GenerativeDistribution that generates discrete (finite-range non-negative) outcomes (perhaps even a DiscreteOutcome), for example a Multinomial */
 trait DiscreteDistribution[O<:DiscreteValue] extends OrdinalDistribution[O] {
   def maxPrIndex: Int
-  def proportion: IndexedSeq[Double]
+  def proportion: Seq[Double] // TODO Consider also 'extends TypedValue[Seq[Double]]
 }
 
 /** A GenerativeDistribution that generates proportions (vectors with values summing to 1.0), for example a Dirichlet*/
 trait ProportionDistribution[O<:DiscreteValue] extends GenerativeDistribution[GeneratedProportionValue[O]] {
   def size: Int
   //def sampleProportions: Seq[Double]
-  def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def size:Int}): Seq[Double]
+  def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def length:Int}): Seq[Double]
   def pr(proportions:GeneratedProportionValue[O]): Double
 }
 

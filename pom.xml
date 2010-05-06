@@ -108,6 +108,16 @@
                 <configuration>
                   <jvmArgs><jvmArg>-Xmx1024m</jvmArg></jvmArgs>
                   <args><arg>-explaintypes</arg></args>
+                  <launchers>
+                     <launcher>
+                        <id>Docu1</id>
+                        <mainClass>cc.factorie.example.Docu1</mainClass>
+                        <!-- args are optional <args><arg>arg1</arg></args> -->
+			<args><arg>/Users/mccallum/Downloads/docu</arg></args>
+                        <!-- jvmArgs are optional -->
+                        <jvmArgs><jvmArg>-Xmx256m</jvmArg></jvmArgs>
+                      </launcher>
+		  </launchers>
 		</configuration>
             </plugin>
             <plugin>

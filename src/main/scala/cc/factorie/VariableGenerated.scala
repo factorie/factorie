@@ -100,7 +100,7 @@ trait GeneratedRealValue[This<:GeneratedRealValue[This] with RealValue with Gene
   type SourceType = RealDistribution[This]
 }
 
-trait GeneratedRealVariable[This<:RealVariable with GeneratedRealVariable[This]] extends GeneratedRealValue[This] with GeneratedVariable[This] {
+trait GeneratedRealVariable[This<:RealVariable with GeneratedRealVariable[This]] extends RealVariable with GeneratedRealValue[This] with GeneratedVariable[This] {
   this: This =>
   def sampleFrom(source:SourceType)(implicit d:DiffList) = set(source.sampleDouble)
   def sample(implicit d:DiffList) = sampleFrom(generativeSource.value)
@@ -160,7 +160,7 @@ trait GeneratedDiscreteVariable[This<:DiscreteVariable with GeneratedDiscreteVar
 trait GeneratedProportionValue[O<:DiscreteValue] extends RandomAccessSeq[Double] with GeneratedVariable[GeneratedProportionValue[O]] {
   type SourceType <: ProportionDistribution[O]
   def localPr(index:Int): Double // TODO Needed in DirichletMomentMatchingEstimator, but general enough?
-  def proportion: RandomAccessSeq[Double]
+  def proportion: Seq[Double]
 }
 
 

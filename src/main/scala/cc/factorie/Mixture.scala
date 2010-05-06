@@ -183,7 +183,7 @@ class MarginalizedMixtureChoice[M<:MixtureComponent[M,O],O<:GeneratedVariable[O]
 }
 */
 
-//@DomainInSubclasses class MultinomialMixtureChoice[M<:MixtureComponent[AbstractMultinomial[O],O],O<:DiscreteOutcome[O],This<:MixtureChoice[M,O,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends MixtureChoice[M,O,This] { this: This => }
+//@DomainInSubclasses class MultinomialMixtureChoice[M<:MixtureComponent[Multinomial[O],O],O<:DiscreteOutcome[O],This<:MixtureChoice[M,O,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends MixtureChoice[M,O,This] { this: This => }
 //class DirichletMixtureChoice
 //class GaussianMixtureChoice
 

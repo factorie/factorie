@@ -427,6 +427,12 @@ object Maths {
   def subtractLogProb (a:Double, b:Double) = 
     if (b == Math.NEG_INF_DOUBLE) a else a + Math.log (1 - Math.exp(b-a))
 
+  def maxIndex(a:Array[Double]): Int = {
+    var i = 0; var j = 0
+    for (i <- 0 until a.length) if (a(j) < a(i)) j = i
+    j
+  }
+
   /** Divide each element of the array by the sum of the elements. */ // TODO Is this already provided somewhere else?
   def normalize(a:Array[Double]): Unit = {
     var i = 0; var sum = 0.0

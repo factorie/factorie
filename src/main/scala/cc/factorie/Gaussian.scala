@@ -14,6 +14,7 @@ import cc.factorie.util.Implicits._
 /** A one-dimensional Gaussian distribution, generating Real (valued) variables.  Default estimation by moment-matching. 
     @author Andrew McCallum */
 class Gaussian1[R<:RealValue](var mean:Double, var variance:Double) extends RealDistribution[R] {
+  def this() = this(0.0, 1.0)
   //def this(initMean:Double, initVariance:Double) = this(new Real(initMean), new Real(initVariance))
   // TODO Consider sampleInto(o:R with RealVariable)
   def sampleInto(o:RealVariable) : Unit = o.set(sampleDouble)(null) // TODO should we put a difflist here?
