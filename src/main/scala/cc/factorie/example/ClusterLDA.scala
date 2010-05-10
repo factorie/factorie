@@ -15,7 +15,6 @@ import scala.util.matching.Regex
 import java.io.File
 import cc.factorie._
 import cc.factorie.util.Stopwords
-import cc.factorie.util.Implicits._
 
 /** Implements "Cluster LDA" from Hanna Wallach's thesis.
     Runs, but would benefit from a DirichletMultinomial implementation. */

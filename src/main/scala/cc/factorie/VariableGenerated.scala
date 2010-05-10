@@ -8,7 +8,6 @@
 package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.HashSet
-import cc.factorie.util.Implicits._
 
 // A collection of abstract Variables (and a generic Sampler) for generative models (directed Bayesian networks, 
 // as opposed to undirected in which there is not a DAG-shaped generative storyline).

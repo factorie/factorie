@@ -7,7 +7,6 @@
 
 package cc.factorie.example
 import cc.factorie._
-import cc.factorie.util.Implicits._
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import java.io.File

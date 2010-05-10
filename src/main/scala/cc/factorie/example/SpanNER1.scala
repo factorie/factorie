@@ -12,7 +12,6 @@ import cc.factorie.application.TokenSeqs
 import scala.io.Source
 import java.io.File
 import cc.factorie.util.DefaultCmdOptions
-import cc.factorie.util.Implicits._
 
 // Sample training command line:
 // --train=/Users/mccallum/research/data/ie/ner2003/eng.train,/Users/mccallum/research/data/ie/ner2003/eng.testa --test=/Users/mccallum/research/data/ie/ner2003/eng.testb --model=/Users/mccallum/tmp/spanner1.factorie --lexicons=/Users/mccallum/research/data/resources/lexicons --nosentences --verbose

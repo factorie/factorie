@@ -16,7 +16,6 @@ import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 //import cc.factorie.util.{Log, ConsoleLogging, LinkedHashSet}
-//import cc.factorie.util.Implicits._
 
 // Diffs
 

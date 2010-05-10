@@ -8,7 +8,6 @@
 package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.HashSet
-import cc.factorie.util.Implicits._
 import scalala.Scalala._
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector

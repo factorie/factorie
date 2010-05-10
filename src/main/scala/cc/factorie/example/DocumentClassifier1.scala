@@ -9,7 +9,6 @@ package cc.factorie.example
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
-import cc.factorie.util.Implicits._
 import cc.factorie.application.DocumentClassification
 import cc.factorie.application.FeatureVectorClassification
 

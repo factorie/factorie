@@ -7,7 +7,6 @@
 
 package cc.factorie
 import scala.reflect.Manifest
-import cc.factorie.util.Implicits._
 import scalala.Scalala._
 import scalala.tensor.Vector
 

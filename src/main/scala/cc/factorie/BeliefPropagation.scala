@@ -8,8 +8,8 @@
 package cc.factorie
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 import scala.collection.SeqLike
-import cc.factorie.util.Implicits._
 import java.util.Arrays
+import cc.factorie._
 
 // Very preliminary explorations in inference by belief propagation among discrete variables.
 // Not yet finished, and certainly not yet optimized for speed at all.
@@ -197,7 +197,7 @@ abstract class BPFactor(val factor:Factor) {
     result
   }
   def marginal: Array[Double] = {
-    val dim = factor.variables.productInts(_.asInstanceOf[V].domain.size)
+    val dim = factor.variables.multiplyInts(_.asInstanceOf[V].domain.size)
     val m = new Array[Double](dim)
     throw new Error("Not yet implemented")
     //_msgFrom.foreach(m => )

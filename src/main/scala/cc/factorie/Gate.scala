@@ -9,7 +9,6 @@
 package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.{ListBuffer,HashSet,ArrayBuffer}
-import cc.factorie.util.Implicits._
 
 /** Similar to the definition of "gate" from Tom Minka and Jon Winn.
     A discrete variable that indicates which one among a finite number relations are currently in effect.

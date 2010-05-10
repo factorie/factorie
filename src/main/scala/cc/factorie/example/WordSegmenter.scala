@@ -10,7 +10,6 @@ package cc.factorie.example
 import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
-import cc.factorie.util.Implicits._
 
 object WordSegmenterDemo { 
   

@@ -6,7 +6,6 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
-import cc.factorie.util.Implicits._
 
 // TODO Consider renaming Real -> PositiveRealValue ??
 // TODO Consider Real.value -> Real.toDouble and/or Real.doubleValue GenerativeDistribution[PositiveReal]

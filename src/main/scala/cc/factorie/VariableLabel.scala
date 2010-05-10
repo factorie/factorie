@@ -13,7 +13,6 @@ import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import cc.factorie.util.{Log}
-import cc.factorie.util.Implicits._
 
 // Categorical variables that have true values are referred to as 'Labels'
 

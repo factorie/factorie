@@ -7,7 +7,6 @@
 
 package cc.factorie
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
-import cc.factorie.util.Implicits._
 
 // Note that putting a [V], as in DenseCountsMultinomial[V], doesn't work here because CategoricalValues not <: MultinomialOutcome[V].  
 // But as long as we don't use any methods that require [V], I think we are OK.

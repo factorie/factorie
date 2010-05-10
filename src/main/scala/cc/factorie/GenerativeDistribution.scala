@@ -9,7 +9,6 @@ package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.IndexedSeqLike
-import cc.factorie.util.Implicits._
 
 // A collection abstract Variables for the distributions of generative models (directed Bayesian networks, 
 // as opposed to undirected in which there is not a DAG-shaped generative storyline).

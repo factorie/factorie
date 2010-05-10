@@ -7,7 +7,6 @@
 
 package cc.factorie
 
-import cc.factorie.util.Implicits._
 import scalala.Scalala._
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.SparseVector

@@ -13,7 +13,6 @@
 //import scalala.tensor.Vector
 //import scalala.tensor.dense.DenseVector
 //import scalala.tensor.sparse.SparseVector
-//import cc.factorie.util.Implicits._
 //
 //
 ///**

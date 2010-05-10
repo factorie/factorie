@@ -8,7 +8,6 @@
 package cc.factorie
 import scala.reflect.Manifest 
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue}
-import cc.factorie.util.Implicits._
 
 // How to think about Proposals and MCMC:
 // Variables know their own range of values.  This needs to be coded on a per-variable basis

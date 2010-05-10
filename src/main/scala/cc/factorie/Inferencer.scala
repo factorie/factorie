@@ -7,7 +7,6 @@
 
 package cc.factorie
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
-import cc.factorie.util.Implicits._
 
 // Preliminary steps toward generic interfaces to inference
 // Eventually we will have marginals over factors instead of variables

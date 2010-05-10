@@ -9,7 +9,6 @@ package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.{ListBuffer,ArrayBuffer,HashMap,PriorityQueue}
 import scalala.tensor.Vector
-import cc.factorie.util.Implicits._
 import cc.factorie.util.{Hooks0,Hooks1}
 
 /** Samplers that key off of particular contexts.  Subclasses implement "process1(context:C)" */
@@ -90,7 +89,7 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
     val proposal = props.size match {
       case 0 => throw new Error("No proposals created.")
       case 1 => props.first 
-      case _ => sampleExpProportionally(props, (p:Proposal) => p.acceptanceScore)
+      case _ => props.sampleExpProportionally((p:Proposal) => p.acceptanceScore)
     }
     proposal.diff.redo
     proposalHook(proposal)

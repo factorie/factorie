@@ -16,7 +16,6 @@ import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import cc.factorie.util.{Log}
-import cc.factorie.util.Implicits._
 
 /**A variable whose value is a set of other variables */
 abstract class SetVariable[X]() extends Variable with TypedValues {

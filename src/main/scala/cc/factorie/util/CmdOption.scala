@@ -201,7 +201,7 @@ trait DefaultCmdOptions extends CmdOptions {
   }
   new CmdOption("version", "Print version numbers.") {
     override def invoke = {
-      println("FACTORIE version "+cc.factorie.factorie.factorieVersionString)
+      println("FACTORIE version "+cc.factorie.factorieVersionString)
       // TODO How do I print the Scala and JVM version numbers?
       System.exit(0)
     }

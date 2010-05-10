@@ -12,7 +12,6 @@ import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import cc.factorie.util.{Log}
-import cc.factorie.util.Implicits._
   
 // IntVariable (has integer value)
 // OrdinalVariable (has integer value 0...)

@@ -6,7 +6,6 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
-import cc.factorie.util.Implicits._
 
 // TODO I am now storing the mean and variance as Real variables, so that they can, in turn, be generated from other distributions.
 // Perhaps we need to do this for all other GenerativeDistributions also?

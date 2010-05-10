@@ -6,7 +6,6 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
-import cc.factorie.util.Implicits._
 
 /** The Poisson distribution generating integer values with parameter lambda. */
 class Poisson(var lambda:Double) extends GenerativeDistribution[IntegerValue] {

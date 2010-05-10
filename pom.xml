@@ -5,7 +5,7 @@
     <version>0.9.0-SNAPSHOT</version>
     <inceptionYear>2009</inceptionYear>
     <properties>
-        <scala.version>2.8.0.RC1</scala.version>
+        <scala.version>2.8.0-SNAPSHOT</scala.version>
     </properties>
     <url>http://factorie.googlecode.com</url>
     <scm>
@@ -110,12 +110,12 @@
                   <args><arg>-explaintypes</arg></args>
                   <launchers>
                      <launcher>
-                        <id>Docu1</id>
-                        <mainClass>cc.factorie.example.Docu1</mainClass>
+                        <id>Docu2</id>
+                        <mainClass>cc.factorie.example.Docu2</mainClass>
                         <!-- args are optional <args><arg>arg1</arg></args> -->
 			<args><arg>/Users/mccallum/Downloads/docu</arg></args>
                         <!-- jvmArgs are optional -->
-                        <jvmArgs><jvmArg>-Xmx256m</jvmArg></jvmArgs>
+                        <jvmArgs><jvmArg>-Xmx1024m</jvmArg></jvmArgs>
                       </launcher>
 		  </launchers>
 		</configuration>

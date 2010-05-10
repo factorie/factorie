@@ -12,7 +12,6 @@ import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
-import cc.factorie.util.Implicits._
 
 /** A raw document classifier without using any of the facilities of cc.factorie.application.DocumentClassification,
  and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */

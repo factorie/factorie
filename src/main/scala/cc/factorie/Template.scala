@@ -15,7 +15,6 @@ import scala.util.Sorting
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import cc.factorie.util.{Log}
-import cc.factorie.util.Implicits._
 import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
@@ -175,7 +174,7 @@ trait VectorTemplate extends Template {
   // TODO Consider changing name to statSize?
   lazy val statsize : Int = {
     if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
-    val ss = statClasses.productInts(Domain.get[DiscreteValues](_).allocSize)
+    val ss = statClasses.multiplyInts(Domain.get[DiscreteValues](_).allocSize)
     //println("statsize "+ss)
     ss
   } 

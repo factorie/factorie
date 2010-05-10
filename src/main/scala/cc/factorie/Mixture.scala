@@ -9,7 +9,6 @@ package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
-import cc.factorie.util.Implicits._
 
 
 /** Trait for any distribution that might be selected as as part of a mixture.

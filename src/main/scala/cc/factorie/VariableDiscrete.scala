@@ -12,7 +12,6 @@ import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import cc.factorie.util.{Log}
-import cc.factorie.util.Implicits._
 
 /** An OrdinalValue with finite range 0...N.  
     For your own subclass MyDiscreteValue, you can set N=9 with Domain[MyDiscreteValue].size = 9 

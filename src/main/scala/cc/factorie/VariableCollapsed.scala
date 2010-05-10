@@ -9,7 +9,6 @@ package cc.factorie
 
 import scala.reflect.Manifest
 import scala.collection.mutable.HashSet
-import cc.factorie.util.Implicits._
 import cc.factorie.util.SeqAsVector
 import scalala.Scalala._
 import scalala.tensor.Vector

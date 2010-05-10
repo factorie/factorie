@@ -16,20 +16,50 @@ import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import cc.factorie.util.{Log}
-import cc.factorie.util.Implicits._
 
 /** A Model in FACTORIE consists of a collection of factor Templates and methods that operate on the collection.
-    Most of these methods are implemented in TemplateList.
     @author Andrew McCallum
     @since 0.8
     @see Template
-    @see TemplateList
  */
-class Model(templates:Template*) extends TemplateList[Template] {
-  //def this() = this(Nil)
-  //def this(templates:Template*) = this(templates)
-
+class Model(templates:Template*) extends ArrayBuffer[Template] {
+  type T = Template
   this ++= templates
+
+  def templatesOf[T2<:T](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
+    val templateClass = m.erasure
+    val ret = new ArrayBuffer[T2]
+    for (t <- this) if (templateClass.isAssignableFrom(t.getClass)) ret += t.asInstanceOf[T2]
+    ret
+  }
+  def templatesOfClass[T2<:T](cls:Class[T2]): IndexedSeq[T2] = {
+    val ret = new ArrayBuffer[T2]
+    for (t <- this) if (cls.isAssignableFrom(t.getClass)) ret += t.asInstanceOf[T2]
+    ret
+  }
+  /*override def filter(test:(T)=>Boolean): Seq[T2] = {
+    val ret = new Model
+    for (t <- this) if (test(t)) ret += t
+    ret
+  }*/
+  def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else this.flatMap(template => template.factors(d))
+  def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
+  def factorsOf[T2<:T](cls:Class[T2])(d:DiffList): Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOfClass[T2](cls).flatMap(template => template.factors(d))
+  def factorsOf[T2<:T](vs:Iterable[Variable])(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
+  def factorsOf[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
+  /** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
+  def factors(v:Variable) : Seq[Factor] = this.flatMap(template => template.factors(v)).toList
+  def factors(vs:Iterable[Variable]) : Seq[Factor] = this.flatMap(template => template.factors(vs))
+  def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.statistic.score)
+  def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score) // For use when the Variable is also Iterable
+  def score(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistic.score)
+  def score(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
+  /** Score all variables in the Iterable collection.  This method is useful when a Variable is also a Iterable[Variable]; 
+      it forces the Iterable interpretation and avoids the single variable interpretation of score(Variable). */
+  def scoreAll(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
+  /** Returns the average score, that is scoreAll of vars, normalized by the size of the collections vars. */
+  def aveScore(vars:Collection[Variable]): Double = scoreAll(vars) / vars.size
+
   
   def save(dirname:String): Unit = {
     import java.io.File
