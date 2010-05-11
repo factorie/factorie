@@ -21,6 +21,9 @@ Development
 
 For Eclipse 
 
+For factorie branch "0.8.x", using Scala 2.7.7, the following will work:
+Install Eclipse Maven plugin
+Install Eclipse Scala plugin
 Menu > File > Import 
  General > Maven Projects
   factorie
@@ -30,13 +33,34 @@ Properties of "factorie"
   Add folder
   src/main/scala
 
+For factorie branch "default", using Scala 2.8, the following will work:
+1.
+Install Eclipse plugin from at http://www.scala-lang.org/scala-eclipse-plugin-rc
+Menu > Help > Install New Software
+Paste URL above, click "Add", click "Finish"
+2.
+Menu > File > New > Scala Project
+name it "factorie"
+move all files from a separate hg clone into this directory
+right click on "factorie" project, Menu > Build Path
+"Source" tab: 
+  remove "src", add "src/main/scala", "src/main/java", "src/test/scala".
+"Libraries" tab:
+  "Add External Jars", adding the followig jars
+   fastutil-5.1.5.jar
+   itext-2.1.5.jar
+   jcommon-1.0.12.jar
+   jfreechart-1.0.9.jar
+   junit-4.5.jar
+   mtj-0.9.9.jar
+   scalala_2.8.0.RC2-0.3.1-SNAPSHOT.jar (available from mccallum)
+   specs_2.8.0.Beta1-1.6.2.jar
+   xmlgraphics-commons-1.3.1.jar
+Menu > Project > Clean
 
-
-Maven plugin
-Scala plugin
 
 IntelliJ
-
+As of this writing, works with scala 2.7.7, but not with 2.8
 
 
 

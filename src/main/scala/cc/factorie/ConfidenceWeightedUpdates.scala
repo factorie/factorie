@@ -63,7 +63,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
     override def default(template:TemplatesToUpdate) = { 
       template.freezeDomains
       //val vector = DenseVector(template.statsize)(initialVariance)
-      val vector = if(template.isInstanceOf[SparseWeights])SparseVector(template.statsize)(initialVariance) else DenseVector(template.statsize)(initialVariance)
+      val vector = if (template.isInstanceOf[SparseWeights]) { val sv = new SparseVector(template.statsize); sv.default = initialVariance; sv } else DenseVector(template.statsize)(initialVariance)
       this(template) = vector
       vector
     }
