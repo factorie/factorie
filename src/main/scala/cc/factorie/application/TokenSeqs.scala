@@ -20,7 +20,7 @@ import scala.util.Sorting
 /** Predefined variables and factor templates for applying FACTORIE to sequences of Tokens.
     The Token remembers its String 'word', but its variable 'value' is as a BinaryVectorVariable.
     This package also provides Getters for Tokens, enabling template building with the tools in cc.factorie.er.
-    For exmaple usage see cc.factorie.example.SpanNER1
+    For example usage see cc.factorie.example.SpanNER1
  
     @author Andrew McCallum
     @since 0.8.1
@@ -32,8 +32,9 @@ object TokenSeqs {
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
   @DomainInSubclasses
   abstract class Token[S<:VariableSeq[This], This>:Null<:Token[S,This] with VarInTypedSeq[This,S]](val wordForm:String, features:Seq[String] = Nil)
-  extends cc.factorie.BinaryVectorVariable[String] with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
+  extends BinaryVectorVariable[String](features) with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
     this: This =>
+    //this ++= features
     //def this(word:String) = this(word, Nil)
     type GetterType <: TokenGetter[S,This]
     class GetterClass extends TokenGetter[S,This]
@@ -52,7 +53,6 @@ object TokenSeqs {
     def wordShape(maxRepetitions:Int) = TokenSeqs.wordShape(word, maxRepetitions)
     def charNGrams(min:Int, max:Int): Seq[String] = TokenSeqs.charNGrams(word, min, max)
     def word = wordForm
-    throw new Error // this ++= features
   }
 
   
@@ -108,7 +108,7 @@ object TokenSeqs {
     /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
     def addNeighboringFeatureConjunctions(regex:String, offsetConjunctions:Seq[Int]*): Unit = {
       // First gather all the extra features here,...
-      val newFeatures = Array.fromFunction(i => new ArrayBuffer[String])(this.size)
+      val newFeatures = Array.tabulate(this.size)(i => new ArrayBuffer[String])
       for (i <- 0 until size) {
         val token = this(i)
         val thisTokenNewFeatures = newFeatures(i)

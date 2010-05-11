@@ -69,7 +69,7 @@ class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V
 
 // TODO Also make a randomized-representation CategoricalDomain, with hashes.
 
-class CategoricalDomain[V<:AbstractCategoricalValues](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with util.Index[V#ValueType] with Collection[V#ValueType] /*with DomainEntryCounter[V]*/ {
+class CategoricalDomain[V<:AbstractCategoricalValues](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with util.Index[V#ValueType] /*with DomainEntryCounter[V]*/ {
   override def freeze = freeze0
   override def allocSize = allocSize0
   override def size = size0
@@ -77,7 +77,7 @@ class CategoricalDomain[V<:AbstractCategoricalValues](implicit m:Manifest[V]) ex
   def randomValue : V#ValueType = randomValue(Global.random)
   def randomValue(random:Random): V#ValueType = get(random.nextInt(size))
   def +=(x:V#ValueType) : Unit = this.index(x)
-  def ++=(xs:Iterable[V#ValueType]) : Unit = xs.foreach(this.index(_))
+  def ++=(xs:Traversable[V#ValueType]) : Unit = xs.foreach(this.index(_))
  
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)

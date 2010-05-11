@@ -38,22 +38,23 @@ abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends Cat
   //def this(initVals:Iterable[T]) = this(initVals, false)
   type VariableType <: BinaryVectorVariable[T];
   def skipNonCategories = false
-  private val _indices = new it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet
-  //protected var indxs = new ArrayBuffer[Int]()
+  //private val _indices = new it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet
+  private val _indices: ArrayBuffer[Int] = new ArrayBuffer[Int]()
   private var _vector: Vector = null // TODO Can we make this more memory efficient?  Avoid having both Vector and ArrayBuffer?;
   if (initVals ne null) this ++= initVals
-  def indices: Seq[Int] = _indices.toIntArray // TODO project to ensure no changes, even with casting?  But this would involve allocating the Projection
-  def values: Seq[T] = { val indxs = _indices.toIntArray.asInstanceOf[Array[Int]]; val d = this.domain; indxs.map(d.get(_)) }
+  def indices: Seq[Int] = _indices // TODO project to ensure no changes, even with casting?  But this would involve allocating the Projection
+  def values: Seq[T] = { val d = this.domain; val result = new ArrayBuffer[T](_indices.size); _indices.foreach(result += d.get(_)); result }
+  //{ val indxs = _indices.toIntArray.asInstanceOf[Array[Int]]; val d = this.domain; val result = new ArrayBuffer[T](indxs.length) ++= indxs.map(d.get(_)); result }
   def zero: Unit = { _indices.clear; _vector = null }
   override def vector = {
     if (_vector == null || _vector.size != domain.allocSize) {
-      val indices = _indices.toIntArray
+      val indices = _indices.toArray
       Sorting.quickSort(indices)
       _vector = new SparseBinaryVector(domain.allocSize, indices)
     }
     _vector
   }
-  def incrementInto(x:{def increment(i:Int,x:Double)(implicit d:DiffList):Unit}): Unit = _indices.toIntArray.foreach(i => x.increment(i,1.0)(null))
+  def incrementInto(x:{def increment(i:Int,x:Double)(implicit d:DiffList):Unit}): Unit = _indices.foreach(i => x.increment(i,1.0)(null))
   // TODO when we have Scala 2.8, add to the method below difflist argument with default value null
   // But will a += b syntax with with default arguments?
   def +=(value: T) : Unit = {
@@ -64,11 +65,11 @@ abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends Cat
       else
         return
     }
-    _indices.add(idx)
+    if (!_indices.contains(idx)) _indices += idx
     _vector = null
   }
   def +=(index:Int): Unit = {
-    _indices.add(index)
+    if (!_indices.contains(index)) _indices += index
     _vector = null
   }
   //def +(value: T) = {this += value; this} // TODO Shouldn't this method actually return a new VectorVariable, leaving old one unchanged?  Yes.

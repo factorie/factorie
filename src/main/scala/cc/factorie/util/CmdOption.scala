@@ -8,7 +8,7 @@
 package cc.factorie.util
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashMap,HashSet,ArrayBuffer}
-
+import cc.factorie._
 
 /** Concrete version is implemented as an inner class of @see CmdOptions. 
     @author Andrew McCallum */
@@ -53,14 +53,16 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
   //def iterator = opts.iterator
   var strict = true
 
-  override def addEntry(c:cc.factorie.util.CmdOption[_]): Boolean = {
+  override def +=(c:cc.factorie.util.CmdOption[_]): this.type = {
     if (opts.contains(c.name)) throw new Error("CmdOption "+c.name+" already exists.")
     opts(c.name) = c
-    super.addEntry(c)
+    super.+=(c)
+    this
   }
-  override def removeEntry(c:cc.factorie.util.CmdOption[_]): Option[cc.factorie.util.CmdOption[_]] = {
+  override def -=(c:cc.factorie.util.CmdOption[_]): this.type = {
   	opts -= c.name
-  	super.removeEntry(c)
+  	super.-=(c)
+  	this
   }
   def error(msg:String): Unit = {
     System.err.println(msg)
@@ -131,11 +133,12 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
     var value: T = _
     var invokedCount = 0
     def required = false
-    def hasValue = valueClass != classOf[Nothing]
+    def hasValue = valueClass != noValueClass
+    def noValueClass = classOf[Any] // This is the value of m.erasure if no type is specified for T in CmdOption[T].
     /** Attempt to match and process command-line option at position 'index' in 'args'.  
         Return the index of the next position to be processed. */
     def parse(args:Seq[String], index:Int): Int = {
-      if (valueClass == classOf[Nothing] && args(index) == "--"+name || args(index) == "-"+shortName) {
+      if (valueClass == noValueClass && args(index) == "--"+name || args(index) == "-"+shortName) {
         // support --help or -h (i.e. no arguments to option)
         invoke
         invokedCount += 1
@@ -185,7 +188,7 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
     // TODO Format long help messages more nicely.
     def helpString: String = {
       val defaultValueString = defaultValue match { case d:Seq[_] => d.mkString(","); case _ => defaultValue.toString }
-      if (valueClass != classOf[Nothing]) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
+      if (valueClass != noValueClass) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
       else "--%-15s %s\n".format(name, helpMsg)
     }
   }
@@ -201,7 +204,7 @@ trait DefaultCmdOptions extends CmdOptions {
   }
   new CmdOption("version", "Print version numbers.") {
     override def invoke = {
-      println("FACTORIE version "+cc.factorie.factorieVersionString)
+      println("FACTORIE version "+factorieVersionString)
       // TODO How do I print the Scala and JVM version numbers?
       System.exit(0)
     }

@@ -30,7 +30,7 @@ object LabeledTokenSeqs {
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
   @DomainInSubclasses
   abstract class Token[L<:Label[This,L], This>:Null<:Token[L,This] with VarInSeq[This]](val word:String, features:Seq[String] = Nil)
-  extends BinaryVectorVariable[String] with VarInSeq[This] with Entity[This] with TokenInSeq[This] {
+  extends BinaryVectorVariable[String](features) with VarInSeq[This] with Entity[This] with TokenInSeq[This] {
     this: This =>
     //def this(word:String) = this(word, Nil)
     type GetterType <: TokenGetter[L,This]
@@ -56,7 +56,6 @@ object LabeledTokenSeqs {
       result ++= this.values.filter(s => s.matches(regex))
       result
     }
-    throw new Error // this ++= features
   }
   
   /** Implementation of the entity-relationship language we can use with Token objects. */
