@@ -44,7 +44,7 @@ trait AbstractDirichlet[O<:DiscreteValue] extends  ProportionDistribution[O] wit
     // m.pr(i) will be calculated from its counts, smoothed with the alphas here, in equal proportions (thanks to norm /= alphaSum below)
     // So we double the variance of random sample in order to make up for it.
     val varianceScaling = 1.0 // TODO Fix this!!! if (m.source != null && classOf[DirichletMultinomial[O]].isAssignableFrom(m.getClass)) 2.0 else 1.0
-    for (val i <- 0 until c.length) {
+    for (i <- 0 until c.length) {
       //println("sampleInto alpha(i)="+alpha(i))
       c(i) = Maths.nextGamma((alpha(i)+counts(i))/varianceScaling, 1)(Global.random)
       if (c(i) <= 0.0) c(i) = 0.0001

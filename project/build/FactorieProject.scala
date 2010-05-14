@@ -9,8 +9,8 @@ class FactorieProject(info: ProjectInfo) extends DefaultProject(info) {
   override def libraryDependencies = Set(
     "fastutil" % "fastutil" % "5.1.5" from "http://obsearch.net/fastutil-5.1.5.jar",
     "junit" % "junit" % "4.4",
-    "org.scalanlp" % "scalala" % "0.3.0",
-    "org.scala-tools.testing" % "specs" % "1.6.1-2.8.0.Beta1-RC6"
+    "org.scalanlp" % "scalala" % "0.3.1-SNAPSHOT",
+    "org.scala-tools.testing" % "specs" % "2.8.0.Beta1-1.6.2"
     // "org.scalatest" % "scalatest" % "1.0.1-for-scala-2.8.0.Beta1-with-test-interfaces-0.3-SNAPSHOT" % "test"
   ) ++ super.libraryDependencies
 }

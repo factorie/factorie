@@ -18,33 +18,63 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 import cc.factorie.util.{Log}
 
 /**A variable whose value is a set of other variables */
-abstract class SetVariable[X]() extends Variable with TypedValues {
-  type ValueType = X
-  type VariableType <: SetVariable[X];
-  private val _members = new HashSet[X];
-  def members: scala.collection.Set[X] = _members
+abstract class SetVariable[A]() extends Variable with TypedValues {
+  type ValueType = A
+  type VariableType <: SetVariable[A];
+  private val _members = new HashSet[A];
+  def members: scala.collection.Set[A] = _members
   def size = _members.size
-  def contains(x:X) = _members.contains(x)
-  def add(x: X)(implicit d: DiffList): Unit = if (!_members.contains(x)) {
+  def contains(x:A) = _members.contains(x)
+  def add(x:A)(implicit d: DiffList): Unit = if (!_members.contains(x)) {
     if (d != null) d += new SetVariableAddDiff(x)
     _members += x
   }
-  def remove(x: X)(implicit d: DiffList): Unit = if (_members.contains(x)) {
+  def remove(x: A)(implicit d: DiffList): Unit = if (_members.contains(x)) {
     if (d != null) d += new SetVariableRemoveDiff(x)
     _members -= x
   }
-  case class SetVariableAddDiff(added: X) extends Diff {
+  case class SetVariableAddDiff(added: A) extends Diff {
     // Console.println ("new SetVariableAddDiff added="+added)
-    def variable: SetVariable[X] = SetVariable.this
+    def variable: SetVariable[A] = SetVariable.this
     def redo = _members += added //if (_members.contains(added)) throw new Error else
     def undo = _members -= added
   }
-  case class SetVariableRemoveDiff(removed: X) extends Diff {
+  case class SetVariableRemoveDiff(removed: A) extends Diff {
     //        Console.println ("new SetVariableRemoveDiff removed="+removed)
-    def variable: SetVariable[X] = SetVariable.this
+    def variable: SetVariable[A] = SetVariable.this
     def redo = _members -= removed
     def undo = _members += removed //if (_members.contains(removed)) throw new Error else
     override def toString = "SetVariableRemoveDiff of " + removed + " from " + SetVariable.this
   }
 }
 
+abstract class WeakSetVariable[A<:{def present:Boolean}] extends Variable with TypedValues {
+  type ValueType = A
+  type VariableType <: WeakSetVariable[A];
+  private val _members = new cc.factorie.util.WeakHashSet[A];
+  //def members: scala.collection.Set[A] = _members
+  def iterator = _members.iterator.filter(_.present)
+  //def size = _members.size
+  def contains(x: A) = _members.contains(x) && x.present
+  def add(x: A)(implicit d: DiffList): Unit = if (!_members.contains(x)) {
+    if (d != null) d += new WeakSetVariableAddDiff(x)
+    _members += x
+  }
+  def remove(x: A)(implicit d: DiffList): Unit = if (_members.contains(x)) {
+    if (d != null) d += new WeakSetVariableRemoveDiff(x)
+    _members -= x
+  }
+  case class WeakSetVariableAddDiff(added: A) extends Diff {
+    // Console.println ("new WeakSetVariableAddDiff added="+added)
+    def variable: WeakSetVariable[A] = WeakSetVariable.this
+    def redo = _members += added //if (_members.contains(added)) throw new Error else
+    def undo = _members -= added
+  }
+  case class WeakSetVariableRemoveDiff(removed: A) extends Diff {
+    //        Console.println ("new WeakSetVariableRemoveDiff removed="+removed)
+    def variable: WeakSetVariable[A] = WeakSetVariable.this
+    def redo = _members -= removed
+    def undo = _members += removed //if (_members.contains(removed)) throw new Error else
+    override def toString = "WeakSetVariableRemoveDiff of " + removed + " from " + WeakSetVariable.this
+  }
+}

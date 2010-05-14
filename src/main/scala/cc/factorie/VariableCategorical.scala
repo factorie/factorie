@@ -28,7 +28,8 @@ import cc.factorie.util.{Log}
 // ItemizedVariable => ItemizedValue
 
 /** For use with variables whose values are mapped to densely-packed integers from 0 and higher, using a CategoricalDomain.
-    It can apply to a single int value (as in CategoricalValue) or a collection of indices (as in BinaryVectorVariable) 
+    It can apply to a single Int value (as in CategoricalValue) or a collection of indices (as in BinaryVectorVariable).
+    All instances of such a subclass share the same domain. 
     @author Andrew McCallum */
 // Semantically "Values" are not really "Variables", but we must inherit from cc.factorie.Variable in order to handle Domain properly
 @DomainInSubclasses

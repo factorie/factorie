@@ -6,7 +6,7 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie.example
-import scala.collection.mutable.{ArrayBuffer,HashMap,ListBuffer}
+import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap,ListBuffer}
 import cc.factorie._
 import cc.factorie.application.TokenSeqs
 import scala.io.Source
@@ -42,7 +42,7 @@ object SpanNER1 {
     def isCorrect = this.forall(token => token.trueLabelValue == label.value) &&
       (!hasPredecessor(1) || predecessor(1).trueLabelValue != label.value) && 
       (!hasSuccessor(1) || successor(1).trueLabelValue != label.value)
-    // Does this span contains the words of argument span in order?
+    // Does this span contain the words of argument span in order?
     def contains(span:Span): Boolean = {
       for (i <- 0 until length) {
         if (length - i < span.length) return false
@@ -83,8 +83,8 @@ object SpanNER1 {
         lb += span
       }
     }
-    def spansContaining(span:Span): Seq[Span] = {
-      val result = new ArrayBuffer[Span]
+    def spansContaining(span:Span): Traversable[Span] = {
+      val result = new HashSet[Span]
       for (token <- span) {
         val lb = this.apply(token.word)
         lb.foreach(span2 => if (span2.contains(span)) result += span2)

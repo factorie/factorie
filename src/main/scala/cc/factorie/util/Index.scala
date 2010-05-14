@@ -81,7 +81,7 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
 
   def apply(index:Int) = get(index)
 
-  def unapply(pos: Int): Option[T] = if (pos < size0) Some(get(pos)) else None
+  //def unapply(entry:T): Option[Int] = if (_indices.contains(entry)) Some(_indices(entry)) else None
 
   /**Return an object at the given position or throws an exception if it's not found. */
   def get(pos: Int): T = _objects(pos)
@@ -120,12 +120,12 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
 
   def indexValues[K](c: scala.collection.Map[K, T]) = Map[K, T]() ++ c.map {case (a, b) => (a, index(b))}
 
-  def getAll(c: Iterator[Int]) = c map unapply;
-  def getAll(c: Iterable[Int]) = c map unapply;
-  def getAll(c: Collection[Int]) = c map unapply;
-  def getAll(c: List[Int]) = c map unapply;
-  def getAll(c: Array[Int]) = c map unapply;
-  def getAll(c: Set[Int]) = c map unapply;
+  def getAll(c: Iterator[Int]) = c map get;
+  def getAll(c: Iterable[Int]) = c map get;
+  def getAll(c: Collection[Int]) = c map get;
+  def getAll(c: List[Int]) = c map get;
+  def getAll(c: Array[Int]) = c map get;
+  def getAll(c: Set[Int]) = c map get;
 
   // Index views.
 

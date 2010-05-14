@@ -33,9 +33,9 @@ abstract class RefObservation[A<:AnyRef](theValue:A) extends Variable with RefVa
 
 /**A variable with a single mutable (unindexed) value which is of Scala type A. */
 // TODO A candidate for Scala 2.8 @specialized
-@DomainInSubclasses
-abstract class RefVariable[A<:AnyRef] extends Variable with RefValue[A] {
+class RefVariable[A<:AnyRef] extends Variable with RefValue[A] {
   type VariableType <: RefVariable[A]
+  // TODO  Consider: def this(initval:A)(implicit d:DiffList = null)
   def this(initval:A) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
   private var _value: A = _
   @inline final def value: A = _value

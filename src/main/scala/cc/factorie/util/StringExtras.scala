@@ -7,8 +7,6 @@
 
 package cc.factorie.util;
 
-import scala.util.Random
-
 /** New functionality on Traversable instances, available by implicit conversion in the cc.factorie.factorie package object. */
 trait StringExtras {
   val s: String

@@ -31,13 +31,14 @@ import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWri
     template packaged with a set of variables neighboring the
     factor.  Factor inherits from Iterable[Factor] so that we can
     return a single Factor when an Iterable[Factor] is required. 
+    To get the current score of a Factor use factor.statistic.score.
     @author Andrew McCallum */
 trait Factor extends Product with Ordered[Factor] {
   //type TemplateType <: Template
   def template : Template
   def numVariables: Int 
   def variable(index: Int): Variable
-  def variables: Iterable[Variable] = for (i <- 0 until numVariables) yield variable(i)
+  def variables: Iterable[Variable] = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
   def statistic : Statistic
   def randomVariable(implicit random:Random): Variable = variable(random.nextInt(numVariables))
   //def score: Double
@@ -63,7 +64,10 @@ trait Factor extends Product with Ordered[Factor] {
            this.variable(i) == fother.variable(i)))
   }
   var _hashCode = -1
-  override def hashCode: Int = {if (_hashCode == -1) _hashCode = variables.sumInts(_ hashCode); _hashCode}
+  override def hashCode: Int = {
+  	if (_hashCode == -1) for (i <- 0 until numVariables) _hashCode += variable(i).hashCode + 31*i; 
+  	_hashCode
+  }
   def factorName = template.factorName
   override def toString = { // TODO change to mkString
     val sb = new StringBuilder; sb append factorName; sb append '(';
@@ -91,6 +95,13 @@ trait Stat {
 
 trait Statistic extends Iterable[Stat] {
   def score : Double
+}
+
+/** A container for "var-args"-like arbitrary number of Variables neighboring a Factor.
+    @see Template1  */
+trait Vars[V<:Variable] extends Traversable[V]
+object Vars {
+	def apply[V<:Variable](vs:V*): Vars[V] = new ArrayBuffer[V] with Vars[V] ++= vs.iterator // TODO Should this be a HashSet instead of ArrayBuffer?
 }
 
 trait IterableSingle[T] extends Iterable[T] {
@@ -257,7 +268,7 @@ trait DotTemplate extends VectorTemplate {
   lazy val weights: Vector = { freezeDomains; new DenseVector(statsize) } // Dense by default, may be override in sub-traits
   def score(s:StatType) = weights match {
     case w:DenseVector => w dot s.vector
-    case w:SparseHashVector => w dot s.vector
+    //case w:SparseHashVector => w dot s.vector // TODO Uncomment this.  It was only commented because latest version of scalala didn't seem to have this class any more
     case w:SparseVector => w dot s.vector
   }
   override def save(dirname:String): Unit = {
@@ -296,15 +307,16 @@ trait SparseWeights extends DotTemplate {
   override lazy val weights: Vector = { new SparseVector(statsize) } // Dense by default, here overridden to be sparse
 }
 
+// TODO Uncomment this.  It was only commented because the latest version of scalala didn't seem to have this class anymore.
 /** A DotTemplate that stores its parameters in a Scalala SparseHashVector instead of a DenseVector 
     @author Sameer Singh */
-trait SparseHashWeights extends DotTemplate {
+/*trait SparseHashWeights extends DotTemplate {
   override lazy val weights: Vector = { freezeDomains; new SparseHashVector(statsize) } // Dense by default, override to be sparseHashed
-}
+}*/
 
 
 abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
-  val nc1 = nm1.erasure
+  val nc1 = nm1.erasure // "Neighbor class"
   // TODO create methods like this for all Templates and put abstract version in Template
   def respondsTo[NN](implicit m:Manifest[NN]) = nc1.isAssignableFrom(m.erasure)
   def factors(v:Variable): Iterable[Factor] = {
@@ -323,6 +335,27 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
     def statistics : Iterable[StatType] = _statistics(this)
   } 
 }
+// This provides a kind of "vararg" functionality for templates.
+abstract class Template1s[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
+  val nc1 = nm1.erasure // "Neighbor class"
+  // TODO create methods like this for all Templates and put abstract version in Template
+  def respondsTo[NN](implicit m:Manifest[NN]) = nc1.isAssignableFrom(m.erasure)
+  def factors(v:Variable): Iterable[Factor] = {
+    // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
+    // When I substituted "isAssignable" for HashMap caching in GenericSampler I got 42.8 versus 44.4 seconds ~ 3.7%  Perhaps worth considering?
+    if (nc1.isAssignableFrom(v.getClass)) unroll1(v.asInstanceOf[N1]) 
+    else Nil
+  }
+  def unroll1(v:N1): Iterable[Factor]
+  def _statistics(f:Factor) : Iterable[StatType] = statistics(f.ns)
+  def statistics(vs:Vars[N1]) : Iterable[StatType]
+  def stats(v:Variable) = factors(v).flatMap(_statistics(_))
+  case class Factor(ns:Vars[N1]) extends super.Factor with IterableSingle[Factor] {
+    def numVariables = ns.size
+    def variable(i:Int) = ns.toSeq.apply(i) // TODO Something more efficient?
+    def statistics : Iterable[StatType] = _statistics(this)
+  } 
+}
 trait Statistics1[S1<:Variable] extends Template {
   case class Stat(s1:S1) extends super.Stat with IterableSingle[Stat]
   type StatType = Stat
@@ -334,7 +367,9 @@ trait VectorStatistics1[S1<:DiscreteValues] extends VectorTemplate {
   } 
   def init(implicit m1:Manifest[S1]) : this.type = { statClasses += m1.erasure.asInstanceOf[Class[DiscreteValues]]; statClasses.freeze; this }  
 }
-trait DotStatistics1[S1<:DiscreteValues] extends VectorStatistics1[S1] with DotTemplate
+trait DotStatistics1[S1<:DiscreteValues] extends VectorStatistics1[S1] with DotTemplate {
+	// TODO it would be nice to have something like this for hand-set weights def weight(entry:S1, w:Double)_=: Unit = weights()
+}
 abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1] {
   def statistics(v1:N1): Iterable[Stat] = Stat(v1)
 }

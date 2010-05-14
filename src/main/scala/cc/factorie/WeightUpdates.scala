@@ -18,7 +18,7 @@ trait WeightUpdates {
   var updateCount : Int = 0
   /** Call this method to use the current gradient to change the weight parameters.  When you override it, you must call super.updateWeights. */
   def updateWeights : Unit = updateCount += 1
-  /** Abstract method to be provided elsewhere. */
+  /** Adds a gradient (calculated by the recipient) to the accumulator.  Abstract method to be provided elsewhere. */
   def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit
 }
 

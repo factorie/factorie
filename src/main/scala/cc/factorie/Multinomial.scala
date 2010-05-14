@@ -8,7 +8,7 @@
 package cc.factorie
 
 import scala.reflect.Manifest
-import scala.collection.mutable.{HashSet,IndexedSeq}
+import scala.collection.mutable.{HashSet,HashMap,IndexedSeq}
 import cc.factorie.util.SeqAsVector
 import scalala.Scalala._
 import scalala.tensor.Vector
@@ -190,9 +190,9 @@ trait SparseVectorIncrementableCounts extends IncrementableCounts {
 
 trait HashIncrementableCounts extends IncrementableCounts {
   protected val _counts = new {
-    private val h = new it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap
-    def length: Int = length
-    def apply(key:Int) = h.get(key)
+    private val h = new HashMap[Int,Double] // new it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap
+    def length: Int = h.size
+    def apply(key:Int): Double = h(key)
     def update(key:Int, value:Double): Unit = h.put(key, value)
   }
 }

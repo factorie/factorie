@@ -67,15 +67,19 @@ abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(imp
   var present = true
   /** If true, this SpanVariable will be scored by a difflist, even if it is in its deleted non-"present" state. */
   def diffIfNotPresent = false
-  def delete(implicit d: DiffList) = {
+  def preChange(implicit d:DiffList): Unit = {}
+  def postChange(implicit d:DiffList): Unit = {}
+  def delete(implicit d: DiffList): Unit = {
+    preChange
     new DeleteSpanVariable()(d)
     seq match { case s:VariableSeqWithSpans[T,SpanVariable[T]] => s.removeSpan(this) }
+    postChange
   }
-  def setLength(l: Int)(implicit d: DiffList) = new SetLength(_length, l)
-  def trimStart(n: Int)(implicit d: DiffList) = if (n >= length) this.delete else new TrimStart(n)
-  def trimEnd(n: Int)(implicit d: DiffList) = if (n >= length) this.delete else new TrimEnd(n)
-  def prepend(n: Int)(implicit d: DiffList) = new Prepend(n)
-  def append(n: Int)(implicit d: DiffList) = new Append(n)
+  def setLength(l: Int)(implicit d: DiffList): Unit = if (l != length) { preChange; new SetLength(_length, l); postChange }
+  def trimStart(n: Int)(implicit d: DiffList): Unit = if (n >= length) this.delete else if (n > 0) { preChange; new TrimStart(n); postChange }
+  def trimEnd(n: Int)(implicit d: DiffList): Unit = if (n >= length) this.delete else if (n > 0) { preChange; new TrimEnd(n); postChange }
+  def prepend(n: Int)(implicit d: DiffList): Unit = if (n > 0) { preChange; new Prepend(n); postChange }
+  def append(n: Int)(implicit d: DiffList): Unit = if (n > 0) { preChange; new Append(n); postChange }
   def canPrepend(n: Int) = _start >= n
   def canAppend(n: Int) = _start + _length + n <= seq.length
   case class NewSpanVariable(implicit d: DiffList) extends Diff {
