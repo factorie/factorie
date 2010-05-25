@@ -77,12 +77,12 @@ trait TraversableExtras[A] {
   }
 
   /** Sorts with minimum first. */
-  @deprecated // use SeqLike sort instead?
+  //@deprecated // use SeqLike sort instead?
   def sortForward(extractor: A => Double): Seq[A] =
     t.toSeq.sortWith((x1:A, x2:A) => extractor(x1) < extractor(x2))
 
   /** Sorts with maximum first.*/
-  @deprecated // use SeqLike sort instead?
+  //@deprecated // use SeqLike sort instead?
   def sortReverse(extractor: A => Double): Seq[A] =
     t.toSeq.sortWith((x1:A, x2:A) => extractor(x1) > extractor(x2))
 
@@ -112,7 +112,7 @@ trait TraversableExtras[A] {
 
   def sample(implicit random: Random = defaultRandom): A = {
     val s2 = t.toSeq
-    if (s2.size == 1) s2.first
+    if (s2.size == 1) s2.head
     else s2(random.nextInt(s2.size))
   }
 
