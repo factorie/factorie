@@ -135,8 +135,7 @@ object Maths {
       result;
     }
 
-  //broken don't use...
-  @deprecated
+  @deprecated("Broken, don't use.")
   def poly(coeff: Seq[Double], x:Double): Double =
     coeff.foldLeft(0.0)((result, v) => result * x + v)
 

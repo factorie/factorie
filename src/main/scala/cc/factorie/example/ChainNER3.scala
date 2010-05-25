@@ -51,17 +51,20 @@ object ChainNER3 {
     // Read in the data
     val trainSentences = load(args(0))
     val testSentences = load(args(1))
-    val allTokens : Seq[Token] = trainSentences.flatMap(x=>x) ++ testSentences.flatMap(x=>x)
+
+    // Get the variables to be inferred
+    val trainLabels = trainSentences.flatMap(_.map(_.label)).take(10000)
+    val testLabels = testSentences.flatMap(_.map(_.label)).take(2000)
+    val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
+
     // Add features from next and previous tokens 
+    println("Adding offset features...")
     allTokens.foreach(t => {
       if (t.hasPrev) t ++= t.prev.values.filter(!_.contains('@')).map(_+"@-1")
       if (t.hasNext) t ++= t.next.values.filter(!_.contains('@')).map(_+"@+1")
     })
     println("Using "+Domain[Token].size+" observable features.")
     
-    // Get the variables to be inferred
-    val trainLabels = trainSentences.flatMap(_.map(_.label)).take(7000)
-    val testLabels = testSentences.flatMap(_.map(_.label)).take(2000)
     
     // Sample and Learn!
     (trainLabels ++ testLabels).foreach(_.setRandomly)
