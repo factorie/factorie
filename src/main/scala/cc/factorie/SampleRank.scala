@@ -11,7 +11,7 @@ import scalala.Scalala._
 import scalala.tensor.Vector
 
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
-trait SampleRank extends ProposalSampler0 with SamplerOverSettings0 {
+trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
   this: ProposalSampler[_] =>
   //type TemplatesToUpdate = DotTemplate  // was type TemplatesToUpdate <: DotTemplate, but this no longer provides a Manifest on Scala 2.8
   type TemplatesToUpdate <: DotTemplate

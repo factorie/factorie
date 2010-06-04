@@ -51,8 +51,8 @@ object LogicDemo1 {
     //Friends(amy,bob); Friends(bob,amy)
     //Friends(cas,don); Friends(don,cas)
     
-    // Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
-    val inferencer = new VariableSamplingInferencer(new GibbsSampler1[BooleanVariable](model))
+    // Do 2000 iterations of sampling, gathering sample counts every 20 iterations
+    val inferencer = new VariableSamplingInferencer(new VariableSettingsSampler[BooleanVariable](model))
     inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
     val marginals = inferencer.infer(List(don.cancer, don.smokes))
     println("p(don.smokes == true) = "+marginals(don.smokes).pr(1))

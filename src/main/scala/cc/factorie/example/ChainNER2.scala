@@ -96,8 +96,8 @@ object ChainNER2 {
 
     // Train
     (trainLabels ++ testLabels).foreach(_.setRandomly)
-    val predictor = new GibbsSampler1[Label](model) { temperature = 0.01 }
-    val learner = new GibbsSampler1[Label](model) with SampleRank with ConfidenceWeightedUpdates {
+    val predictor = new GibbsSampler[Label](model) { temperature = 0.01 }
+    val learner = new VariableSettingsSampler[Label](model) with SampleRank with ConfidenceWeightedUpdates {
       temperature = 0.01
       // Speed training by sometimes skipping inference of lowercase training words that are already correct
       override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && Global.random.nextDouble > 0.5) null else label

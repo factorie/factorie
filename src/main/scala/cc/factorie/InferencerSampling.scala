@@ -46,8 +46,8 @@ class SamplingInferencer[V<:DiscreteVariable,C](val sampler:Sampler[C]) extends 
 }
 
 class VariableSamplingInferencer[V<:DiscreteVariable](sampler:Sampler[V]) extends SamplingInferencer[V,V](sampler) with VariableInferencer[V] {
-  def this() = this(new GibbsSampler1[V])
-  def this(model:Model) = this(new GibbsSampler1[V](model))
+  def this() = this(new GibbsSampler[V])
+  def this(model:Model) = this(new GibbsSampler[V](model))
 }
 
 
@@ -65,7 +65,7 @@ class SamplingMaximizerLattice(val diff:DiffList, val diffScore:Double) extends 
  */
 // TODO Update this for the new separated "modelScore" and "acceptScore" in Proposal.
 class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends Maximizer[V] with VariableInferencer[V] {
-  def this(model:Model) = this(new GibbsSampler1[V](model))
+  def this(model:Model) = this(new GibbsSampler[V](model))
   type LatticeType = SamplingMaximizerLattice
   var iterations = 50 // TODO What should these be by default?
   var rounds = 3

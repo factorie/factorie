@@ -13,33 +13,27 @@ import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
-/** Base of the Dirichlet class hierarchy, needing only methods 'length' and 'mean'. 
-    @author Andrew McCallum
-*/
-// TODO was GeneratedDiscreteValue
+/** Dirichlet distribution.
+    @author Andrew McCallum */
 //trait AbstractDirichlet[O<:GeneratedDiscreteValue[O]] extends  ProportionDistribution[O] with RandomAccessSeq[Double] 
-trait AbstractDirichlet[O<:DiscreteValue] extends  ProportionDistribution[O] with RandomAccessSeq[Double] {
-  //type OutcomeType = GeneratedProportionValue[O] // Multinomial[O]
+class Dirichlet[O<:DiscreteValue](val mean:Multinomial[O], var alphaSum:Double = 1.0)(implicit m:Manifest[O]) extends ProportionDistribution[O] with IndexedSeq[Double] {
+  type VariableType <: Dirichlet[O];
   final def length: Int = mean.length
   final def alpha(index:Int): Double = mean(index) * alphaSum
   def alphas: Seq[Double] = this
-  var alphaSum: Double = 1.0 // TODO Is this a reasonable value?
   def alphaVector: Vector = throw new Error // mean.prVector * alphaSum
-  def mean: Multinomial[O]
-  //def mean(index:Int) : Double
   def apply(index:Int) = alpha(index)
-  def outcomeDomain: O#DomainType
+  def outcomeDomain: O#DomainType = Domain[O](m)
   // Was sampleOutcome: OutcomeType
   def sampleMultinomial: Multinomial[O] = throw new Error // TODO { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this)(null); /*throw new Error;*/ mul }
   def sampleOutcome: OutcomeType = sampleMultinomial
-  def estimate: Unit = throw new Error("Method estimate is not implemented in this class.  You must add a trait for estimation.")
+  def maximize(s:SourceType)(implicit d:DiffList): Unit = throw new Error("Method estimate is not implemented in this class.  You must add a trait for estimation.")
   def sampleOutcomes(n:Int) : Seq[OutcomeType] = for (i <- 0 until n) yield sampleOutcome
-  //def sampleInto(m:OutcomeType): Unit = sampleInto(m:OutcomeType, SparseVector(size)(0.0)) // Waiting Scala 2.8 default args 
-  //def sampleInto(m:OutcomeType, counts:{def apply(i:Int):Double; def size:Int}): Unit = m.set(sampleProportionsWithCounts(counts))
   def sampleProportionsWithCounts(counts:{def apply(i:Int):Double; def length:Int}): Seq[Double] = {
     //println("sampleInto")
     var norm = 0.0
-    val c = new Array[Double](counts.length)
+    assert(counts.length == length)
+    val c = new Array[Double](length)
     // If m is a DirichletMultinomial, account for the fact that the m.pr(i) estimate will include m.source.alpha(i): 
     // m.pr(i) will be calculated from its counts, smoothed with the alphas here, in equal proportions (thanks to norm /= alphaSum below)
     // So we double the variance of random sample in order to make up for it.
@@ -71,28 +65,14 @@ trait AbstractDirichlet[O<:DiscreteValue] extends  ProportionDistribution[O] wit
 /** Immutable Dirichlet with equal alpha for all dimensions. 
     @author Andrew McCallum */
 @DomainInSubclasses
-class SymmetricDirichlet[O<:GeneratedDiscreteValue[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] {
-  type VariableType <: Dirichlet[O];
+class SymmetricDirichlet[O<:GeneratedDiscreteValue[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends Dirichlet[O](new UniformMultinomial[O]()(m), initialAlpha * Domain[O](m).length) {
+  type VariableType <: SymmetricDirichlet[O]
   type OutcomeDomainType = O
-  val outcomeDomain = Domain[O](m)
-  val mean = new UniformMultinomial[O]()(m)
-  alphaSum = length
   override def keepGeneratedSamples = false
 }
 
 class UniformDirichlet[O<:GeneratedDiscreteValue[O]](implicit m:Manifest[O]) extends SymmetricDirichlet[O](1.0)
 
-/** Default Dirichlet, with densely-represented mean, and estimation by moment-matching.
-    @author Andrew McCallum */
-@DomainInSubclasses
-class Dirichlet[O<:GeneratedDiscreteValue[O]](val mean:Multinomial[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with DirichletMomentMatchingEstimator[O] {
-  //println("Dirichlet")
-  def this(initialAlpha:Double)(implicit m:Manifest[O]) = this(new DenseCountsMultinomial[O](Domain[O](m).size), initialAlpha*Domain[O](m).size)
-  def this(initialAlphas:Seq[Double])(implicit m:Manifest[O]) = this(new DenseCountsMultinomial[O](initialAlphas), initialAlphas.foldLeft(0.0)(_+_))
-  type VariableType <: Dirichlet[O];
-  val outcomeDomain = Domain[O](m)
-  alphaSum = sum
-}
 
 /** A Dirichlet whose mean is integrated out with distribution 'meanSource', 
     and whose 'alphaSum' is not integrated out, but re-estimated with calls to 'estimate'. */
@@ -144,14 +124,14 @@ object Dirichlet {
     @author Andrew McCallum */
 // TODO was GeneratedDiscreteValue
 //trait DirichletMomentMatchingEstimator[O<:GeneratedDiscreteValue[O]] extends AbstractDirichlet[O] 
-trait DirichletMomentMatchingEstimator[O<:GeneratedDiscreteValue[O]] extends AbstractDirichlet[O] {
+trait DirichletMomentMatchingEstimator[O<:DiscreteValue[O]] {
   this : Dirichlet[O] =>
   private def setUniform: Unit = 
     mean.set(new RandomAccessSeq[Double] { def apply(i:Int) = uniformPseudoEvidence/length; def length = size})
   def minSamplesForVarianceEstimate = 10
   /** Add a uniform pseudo-multinomial to estimation, with this weight relative to real multinomials */
   def uniformPseudoEvidence = 0.1 // Set to non-zero to avoid logGamma(0.0), leading to NaN
-  override def estimate : Unit = {
+  def estimate : Unit = {
     if (generatedSamples.size == 0) { setUniform; alphaSum = 1.0; return }
     val smoothing = uniformPseudoEvidence / length
     val m = new Array[Double](length)

@@ -29,7 +29,7 @@ trait Sampler[C] {
     processCount += 1
     postProcessHook(c, d)
     diffHook(d)
-    if (d != null && d.size > 0) changeCount += 1
+    if (d ne null && d.size > 0) changeCount += 1
     d
   }
   /** If true, calls to "newDiffList" will create a new DiffList to describe the changes they made, otherwise "newDiffList" will return null. */
@@ -77,9 +77,11 @@ trait ProposalSampler0 {
   def proposalHook(proposal:Proposal): Unit
 }
 
-/** Samplers that generate a list of Proposal objects, and select one log-proportionally to their modelScore. */
+/** Samplers that generate a list of Proposal objects, and select one log-proportionally to their modelScore.
+    Proposal objects come from abstract method "proposals". 
+    @author Andrew McCallum */
 trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
-  var temperature = 1.0 // Not used here, but used in subclasses; here for uniformity
+  var temperature = 1.0 // Not used here, but used in subclasses; here for uniformity // TODO Consider moving use from SettingsSampler to this.process1
   def proposals(context:C): Seq[Proposal]
   def skipEmptyProposals = true
   def process1(context:C): DiffList = {
@@ -103,13 +105,14 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
 
 // Not intended for users.  Here just so that SampleRank can override it.
 // TODO is there a better way to do this?
-trait SamplerOverSettings0 {
+trait SettingsSampler0 {
   def objective: Model
 }
 
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(C), 
-    scores each, builds a distribution from the scores, and samples from it. */
-abstract class SamplerOverSettings[C](theModel:Model, theObjective:Model) extends ProposalSampler[C] with SamplerOverSettings0 {
+    scores each, builds a distribution from the scores, and samples from it.
+    @author Andrew McCallum */
+abstract class SettingsSampler[C](theModel:Model, theObjective:Model) extends ProposalSampler[C] with SamplerOverSettings0 {
   def this(m:Model) = this(m, null)
   def model = theModel
   def objective = theObjective 
@@ -120,9 +123,20 @@ abstract class SamplerOverSettings[C](theModel:Model, theObjective:Model) extend
     // 'map's call to 'next' is actually what causes the change in state to happen
     // TODO some more efficient alternative to 'toList'?  But we have to be careful to make the collection 'strict'
     val s = settings(context).map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m, o, m/temperature)}).toList
-    //if (s.exists(p=>p.modelScore > 0.0)) { s.foreach(p => println(p.modelScore+" "+model)); println("SamplerOverSettings^") }
+    //if (s.exists(p=>p.modelScore > 0.0)) { s.foreach(p => println(p.modelScore+" "+model)); println("SettingsSampler^") }
     s
   } 
+}
+
+/** Tries each one of the settings of the given variable, 
+    scores each, builds a distribution from the scores, and samples from it.
+    This is exactly Gibbs sampling over a finite number of possible values of the variable.
+    Note:  This differs from cc.factorie.GibbsSampler in that GibbsSampler may not iterate over settings, but instead sample from a closed-form distribution.
+    Because SampleRank requires Proposal objects, we use this intsead of GibbsSampler.
+    @see GibbsSampling
+    @author Andrew McCallum */
+class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model = Global.defaultModel, objective:Model = null) extends SettingsSampler[V](model, objective) {
+  def settings(v:V): SettingIterator = v.settings
 }
 
 
@@ -177,3 +191,5 @@ trait AlternativeFactorQueue extends Sampler[C forSome {type C <: Variable}] {
   }
 }
 */
+
+

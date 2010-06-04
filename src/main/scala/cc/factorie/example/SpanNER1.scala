@@ -157,7 +157,7 @@ object SpanNER1 {
   )
   
   // The sampler
-  class TokenSpanSampler(model:Model, objective:Model) extends SamplerOverSettings[Token](model, objective) {
+  class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Token](model, objective) {
     // The proposer for changes to Spans touching this Token
     def settings(token:Token) = new SettingIterator {
       val seq = token.seq

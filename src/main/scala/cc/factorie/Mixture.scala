@@ -22,13 +22,13 @@ import scala.util.Random
     @author Andrew McCallum
 */
 trait MixtureComponent extends Catalog {
-	//this: GenerativeDistribution[GeneratedVariable[_]] with Catalog =>
-  this: GenerativeDistribution[_] with Catalog =>
+	//this: Distribution[GeneratedVariable[_]] with Catalog =>
+  this: Distribution[_] with Catalog =>
   type O = OutcomeType
   def mixtureIndex = Catalog.indexOf(this)
   /** Gather together the generated samples from all the MixtureComponents, returning each with its weight associated with this MixtureChoice's MixtureComponent. */
   /*override def weightedGeneratedSamples: Iterator[(O,Double)] = new Iterator[(O,Double)] {
-    val components = Catalog.get[GenerativeDistribution[GeneratedVariable[_]] with MixtureComponent](this.getClass).iterator
+    val components = Catalog.get[Distribution[GeneratedVariable[_]] with MixtureComponent](this.getClass).iterator
     var currentComponent = components.next // TODO perhaps check to make sure that components hasNext
     var elts = currentComponent.generatedSamples.iterator
     var nextElt: O = if (elts.hasNext) elts.next else null.asInstanceOf[O]
@@ -59,7 +59,7 @@ trait AbstractMixtureComponentRef extends AbstractGatedRefVariable {
 }
 
 /** The generativeSource of a mixture outcome. */
-class MixtureComponentRef[A<:GenerativeDistribution[O] with MixtureComponent,O<:Variable](o:O)(implicit m:Manifest[A]) extends SourceRefVariable[A,O](o) with AbstractMixtureComponentRef with GatedRefVariable[A] {
+class MixtureComponentRef[A<:Distribution[O] with MixtureComponent,O<:Variable](o:O)(implicit m:Manifest[A]) extends SourceRefVariable[A,O](o) with AbstractMixtureComponentRef with GatedRefVariable[A] {
   Catalog.alias(m.erasure, this.getClass) // So that we don't have to use memory to remember 'm'
   def value(index:Int): A = Catalog.get[A](this.getClass, index)
   def domainSize = Catalog.size(this.getClass)
@@ -74,52 +74,18 @@ class MixtureComponentRef[A<:GenerativeDistribution[O] with MixtureComponent,O<:
     The "Z" in Latent Dirichlet Allocation is an example. 
     @author Andrew McCallum
  */  
-// Example usage, in LDA: 
-// class Topic extends Multinomial[Word] with MixtureComponent
-// class Z extends MixtureChoice[Topic,Z]; Domain.alias[Z,Topic]
-// class Theta extends Multinomial[Z];
-// TODO Can I make this:
-// MixtureChoice[M<:MixtureComponent[M,_],This<:MixtureChoice[M,M#O,This]]
 @DomainInSubclasses
-class MixtureChoice[This<:MixtureChoice[This]] extends DiscreteVariable with GeneratedDiscreteVariable[This] with Gate[AbstractMixtureComponentRef] {
+abstract class MixtureChoice[This<:MixtureChoice[This]](initialValue:Int = Global.random.nextInt(Domain[This].size) extends GeneratedDiscreteVariable[This](initialValue) with Gate[AbstractMixtureComponentRef] {
   this: This =>
   type VariableType = This
-  //type ContentType <: AbstractMixtureComponentRef //[GenerativeDistribution[Variable],Variable] // forSome {A<:Variable}
+  //type ContentType <: AbstractMixtureComponentRef //[Distribution[Variable],Variable] // forSome {A<:Variable}
   // TODO The value of this gate needs to be initialized some time, but not yet?
-  super.setByIndex(Global.random.nextInt(domain.size))(null) // TODO is this how _index should be initialized?
-  def temperature = 1.0
-  override def sample(implicit d:DiffList): Unit = {
-    val src = generativeSource.value
-    // Unregister the mixture outcomes whose generativeSource this controls, to remove their sufficient statistics from the model
-    // Each 'ref' here is a MixtureComponentRef, inheriting from SourceRefVariable, which calls GenerativeDistribution._unregisterSample as necessary.
-    src.preChange(this)
-    for (ref <- contents) ref.setToNull()
-    val dom = domain // Avoid 'domain' HashMap lookup in inner loop
-    val size = dom.size
-    val distribution = new Array[Double](size)
-    var sum = 0.0
-    var i = 0
-    while (i < size) { 
-      distribution(i) = src.pr(i)
-      for (ref <- contents) distribution(i) *= ref.asInstanceOf[MixtureComponentRef[_,_]].outcomePr(i)
-      if (temperature != 1.0) distribution(i) = Math.pow(distribution(i), 1.0/temperature)
-      sum += distribution(i)
-      i += 1
-    }
-    assert(sum > 0.0) // This can happen is the temperature is too low
-    // If we are actually a MultinomialDiscrete distribution (integrating out our discrete value) then save the distribution
-    this match { case md:MultinomialDiscrete[This] => md.multinomial.set(distribution); case _ => {} }
-    // Sample a value from this distribution
-    i = 0; val r = Global.random.nextDouble * sum; var s = 0.0
-    while (s < r && i < size) { s += distribution(i); i += 1 }; i -= 1
-    this.setByIndex(i) // change the value of choice, this will also correspondingly set each of the gate contents values
-    src.postChange(this) // tell the GenerativeDistribution responsible for this about our new value
-  }
+  //super.setByIndex(Global.random.nextInt(domain.size))(null) // TODO is this how _index should be initialized?
 }
 
-class MarginalizedMixtureChoice[This<:MarginalizedMixtureChoice[This]] extends MixtureChoice[This] with MultinomialDiscrete[This] {
+/*class MarginalizedMixtureChoice[This<:MarginalizedMixtureChoice[This]] extends MixtureChoice[This] with MultinomialDiscrete[This] {
   this: This =>
-}
+}*/
 
 /*
 class MarginalizedMixtureChoice[M<:MixtureComponent[M,O],O<:GeneratedVariable[O],This<:MarginalizedMixtureChoice[M,O,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends MixtureChoice[M,O,This] with MultinomialCategorical[This] {
@@ -136,7 +102,7 @@ class MarginalizedMixtureChoice[M<:MixtureComponent[M,O],O<:GeneratedVariable[O]
 //  def disabled_unregisterSample(o:O)(implicit d:DiffList): Unit = {
 //    if (o.generativeSource != this) throw new Error("Trying to remove a sample from a MixtureComponent of which is was not a part.")
 //    // Do nothing.  The degree of membership of an 'o' in each mixture component is determined by this.multinomial.
-//    // TODO Note that this does not allow us to change the generativeSource to a GenerativeDistribution outside the mixture once it has been set in the mixture!
+//    // TODO Note that this does not allow us to change the generativeSource to a Distribution outside the mixture once it has been set in the mixture!
 //  }
   // TODO !!! I'm not sure the next method is correct.
   override def setByIndex(newIndex:Int)(implicit d:DiffList) = {
@@ -182,16 +148,18 @@ class MarginalizedMixtureChoice[M<:MixtureComponent[M,O],O<:GeneratedVariable[O]
 }
 */
 
-//@DomainInSubclasses class MultinomialMixtureChoice[M<:MixtureComponent[Multinomial[O],O],O<:DiscreteOutcome[O],This<:MixtureChoice[M,O,This]](implicit mm:Manifest[M], mt:Manifest[This]) extends MixtureChoice[M,O,This] { this: This => }
-//class DirichletMixtureChoice
-//class GaussianMixtureChoice
-
 
   
 /** A Template for scoring changes to a MixtureChoice. */ 
-object MixtureChoiceTemplate extends TemplateWithStatistics1[GenericMixtureChoice] {
-  def score(s:Stat) = { throw new Error; val mc = s.s1; mc.logpr /* + mc.contents.reduceLeft((sum,ref) => sum + mc.value.logpr(outcome))*/ }
+class MixtureChoiceTemplate extends TemplateWithStatistics1[MixtureChoice[MixtureChoice]] {
+  def score(s:Stat) = { val mc = s.s1; mc.gateContents.reduceLeft((sum,ref) => sum + mc.value.logpr(ref.outcome)) }
+  // mc.logpr will be handled by GeneratedVariableTemplate
 }
+
+
+/*object MixtureChoiceTemplate extends TemplateWithStatistics1[GenericMixtureChoice] {
+  def score(s:Stat) = { val mc = s.s1; mc.gateContents.foldLeft(mc.logpr)((sum,ref) => sum + mcr.value.logpr(mcr.outcome)) }
+}*/
 abstract class GenericGeneratedDiscreteValue extends GeneratedDiscreteValue[GenericGeneratedDiscreteValue] { def intValue = -1 }
 // The "2" below is arbitrary, but since this constructor is never called, it shouldn't make any difference
 abstract class GenericMixtureComponent extends DenseCountsMultinomial[GenericGeneratedDiscreteValue](2) with MixtureComponent //[GenericMixtureComponent,GenericGeneratedDiscreteValue]

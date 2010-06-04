@@ -17,24 +17,29 @@ import scala.collection.mutable.{ListBuffer,HashSet,ArrayBuffer}
     @see MixtureChoice */
 trait Gate[A<:AbstractGatedRefVariable] extends DiscreteVariable {
   /** The collection of variable references controlled by the gate. */
-  var contents: List[A] = Nil
+  var gateContents: List[A] = Nil
   def +=(v:A): this.type = { 
     require(v.domainSize == domainSize)
-    contents = v :: contents
+    gateContents = v :: gateContents
     v.gate = this
     v.setByIndex(this.intValue)(null)
     this
   }
   override def setByIndex(newIndex:Int)(implicit d:DiffList): Unit = {
     super.setByIndex(newIndex)
-    for (ref <- contents) ref.setByIndex(newIndex)
+    for (ref <- gateContents) ref.setByIndex(newIndex)
+  }
+  def setToNull(implicit d:DiffList): Unit = {
+    super.setByIndex(-1)
+    for (ref <- gateContents) ref.setToNull
   }
 }
 
 //trait Gate extends GenericGate[AbstractGatedRefVariable]
 
 /** Abstract stand-in for GatedRefVariable that doesn't take type parameters.  
-    Exists to avoid dealing with contravariant typing in MixtureComponentRef. */
+    Exists to avoid dealing with contravariant typing in MixtureComponentRef. 
+    @author Andrew McCallum */
 trait AbstractGatedRefVariable {
   def gate: Gate[_]
   def gate_=(g:Gate[_]): Unit
@@ -43,6 +48,8 @@ trait AbstractGatedRefVariable {
   def setByIndex(newIndex:Int)(implicit d:DiffList): Unit
 }
 
+/** A RefVariable whose value is controled by a Gate.  This is used as a reference to the Distribution of samples generated from a Mixture.
+    @author Andrew McCallum */
 trait GatedRefVariable[A<:AnyRef] extends RefVariable[A] with AbstractGatedRefVariable {
   //this : RefVariable[A] =>
   type VariableType <: GatedRefVariable[A]
@@ -54,7 +61,7 @@ trait GatedRefVariable[A<:AnyRef] extends RefVariable[A] with AbstractGatedRefVa
   // The gate uses this to call grf.set(grf.value(this.intValue)). 
   def value(index:Int): A
   def setByIndex(index:Int)(implicit d:DiffList): Unit = set(value(index))
-  def setToNull: Unit = set(null.asInstanceOf[A])(null)
+  def setToNull(implicit d:DiffList): Unit = set(null.asInstanceOf[A])
   def domainSize: Int
 }
 

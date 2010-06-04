@@ -11,7 +11,7 @@ import scala.collection.mutable.HashMap
 
 
 class MeanFieldInferencer[A<:Variable with QDistribution](model:Model, variables:Iterable[A]) {
-  private val _q = new HashMap[Variable,Variable] // 2nd is actually a GenerativeDistribution[_]
+  private val _q = new HashMap[Variable,Variable] // 2nd is actually a Distribution[_]
   variables.foreach(v => _q(v) = v.newQ)
   def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
   def updateQ(v:A): Unit = {
@@ -38,7 +38,7 @@ class MeanFieldInferencer[A<:Variable with QDistribution](model:Model, variables
 /*
 class MeanFieldInferencer1[A<:Variable with IterableSettings](model:Model, variables:Iterable[Variable with QDistribution]) {
   type VQ = Variable with QDistribution
-  private val _q = new HashMap[Variable,GenerativeDistribution[_]]
+  private val _q = new HashMap[Variable,Distribution[_]]
   variables.foreach(v => _q(v) = v.newQ)
   def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
   

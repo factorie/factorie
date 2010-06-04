@@ -323,8 +323,8 @@ object ChainNER2b {
     println("Tag Domain size = " + trainLabels.first.token.tags.domain.size)
 
     // Set-up learner and predictor
-    val predictor = new GibbsSampler1[Label](model) { temperature = 0.001 }
-    val learner = new GibbsSampler1[Label](model) with SampleRank
+    val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.001 }
+    val learner = new VariableSettingsSampler[Label](model) with SampleRank
     //with GradientAscentUpdates with ParameterAveraging
     with ConfidenceWeightedUpdates
     //with MIRAUpdates

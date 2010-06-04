@@ -18,7 +18,7 @@ import cc.factorie.util.{Log}
 // DiscreteVariable (has a finite number of integer values from 0 ... N) { def domainSize: Int }
 // CategoricalVariable (its integer values are mapped to categorical values) (was called "IndexedVariable")
 
-// Considering additional Variable naming conventions:
+// Considering adding these Variable naming conventions:
 //  akm 31/12/09
 // DiscreteVariable is a trait
 // Discrete is a class with a constructor argument giving initial value
@@ -60,21 +60,21 @@ trait IntegerValue extends IntegerValues {
 class IntegerVariable extends Variable with IntegerValue {
   type VariableType <: IntegerVariable
   def this(initialValue:Int) = { this(); setByInt(initialValue)(null) }
-  private var _index = -1
-  @inline final def intValue = _index
+  private var _value = -1 // This should be a impossible value so that initialization with this(0) will still result in a call to "setByInt"
+  @inline final def intValue = _value
   def setByInt(newValue: Int)(implicit d: DiffList): Unit = {
-    if (newValue != _index) {
-      if (d != null) d += new IntegerVariableDiff(_index, newValue)
-      _index = newValue
+    if (newValue != _value) {
+      if (d != null) d += new IntegerVariableDiff(_value, newValue)
+      _value = newValue
     }
   }
   def :=(newIndex:Int) = setByInt(newIndex)(null)
   case class IntegerVariableDiff(oldIndex: Int, newIndex: Int) extends Diff {
     @inline final def variable: IntegerVariable = IntegerVariable.this
-    @inline final def redo = _index = newIndex
-    @inline final def undo = _index = oldIndex
+    @inline final def redo = _value = newIndex
+    @inline final def undo = _value = oldIndex
     override def toString = variable match { 
-      //case cv:CategoricalVariable if (oldIndex != -1) => "IntegerVariableDiff("+cv.domain.get(oldIndex)+","+cv.domain.get(newIndex)+")"
+      case cv:CategoricalVariable if (oldIndex >= 0) => "IntegerVariableDiff("+cv.domain.get(oldIndex)+"="+oldIndex+","+cv.domain.get(newIndex)+"="+newIndex+")"
       case _ => "IntegerVariableDiff("+oldIndex+","+newIndex+")"
     }
   }

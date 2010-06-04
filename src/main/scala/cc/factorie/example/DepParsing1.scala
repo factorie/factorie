@@ -135,8 +135,8 @@ object DepParsing1 {
     
     val nodes = sentences.flatMap(_.map(_.parent))
     nodes.foreach(_.setRandomly)
-    val learner = new GibbsSampler1[Node](model, objective) with SampleRank with GradientAscentUpdates {
-      //val learner = new GibbsSampler1[Node](objective)
+    val learner = new VariableSettingsSampler[Node](model, objective) with SampleRank with GradientAscentUpdates {
+      //val learner = new VariableSettingsSampler[Node](objective)
       temperature = 0.01
       override def postIterationHook(): Boolean = {
         for (sentence <- sentences.take(20)) printSentence(sentence)

@@ -501,7 +501,7 @@ object Maths {
    * The mean of this distribution is (b-a)/2.  The variance is (b-a)^2/12 */
   //def nextUniform(a:Double, b:Double)(implicit r:Random) : Double = a + (b-a)*nextUniform(r)
 
-  /** Draw a single sample from multinomial "a". */
+  /** Draw a single sample from multinomial "a".  Assumes that the elements of "a" already sum to 1.0. */
   def nextDiscrete (a:Array[Double])(implicit rd:Random): Int = {
     var b = 0.0; val r = nextUniform(rd); var i = 0
     while (b < r && i < a.length) { b += a(i); i += 1 }

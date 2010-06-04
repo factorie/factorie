@@ -25,20 +25,20 @@ class RealObservation(val doubleValue:Double) extends RealValue with ConstantVal
 /** A variable class for mutable real (double) values. */
 class RealVariable(initialValue: Double = 0.0) extends RealValue {
   type VariableType <: RealVariable
-  private var _value: Double = initialValue
+  private var _value: Double = math.NaN_DOUBLE // This should be set to some "impossible" value so that the "set" call below
+  set(initialValue)(null)
   @inline final def doubleValue = _value
   def +=(x:Double) = set(_value + x)(null)
   def -=(x:Double) = set(_value - x)(null)
   def *=(x:Double) = set(_value * x)(null)
   def /=(x:Double) = set(_value / x)(null)
-  // TODO Consider implementing 'def update' for syntax like val x = RealVariable; x = 3 ???
+  // TODO Consider implementing 'def update' for syntax like val x = RealVariable; x = 3 ???  No.  We have := instead.
   def set(newValue: Double)(implicit d: DiffList): Unit =
     if (newValue != _value) {
       if (d != null) d += new RealDiff(_value, newValue)
       _value = newValue
     }
-  def :=(newValue:Double) = set(newValue)(null) // Go through 'set' so we can do coordination in subclasses.
-  //@inline override def :=(x:Double) = _value = x // TODO Do we really want to preclude useful overrides to 'set'? 
+  def :=(newValue:Double)(implicit d:DiffList = null) = set(newValue) // Go through 'set' so we can do coordination in subclasses.
   case class RealDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: RealVariable = RealVariable.this
     def redo = _value = newValue

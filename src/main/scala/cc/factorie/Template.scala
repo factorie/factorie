@@ -149,7 +149,7 @@ trait Template {
     //difflist.foreach(diff => result ++= factors(diff))
     result.toList // TODO is this necessary?
   }
-  def factors(variables:Iterable[Variable]) : Iterable[Factor] = {
+  def factors(variables:Iterable[Variable]) : List[Factor] = {
     //var result = new LinkedHashSet[Factor]()
     var result = new HashSet[Factor]()
     for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("unroll returned null Factor") else result += factor }  //variables.foreach(v => result ++= factors(v))

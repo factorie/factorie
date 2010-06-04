@@ -8,13 +8,13 @@
 package cc.factorie
 
 // TODO Consider renaming Real -> PositiveRealValue ??
-// TODO Consider Real.value -> Real.toDouble and/or Real.doubleValue GenerativeDistribution[PositiveReal]
+// TODO Consider Real.value -> Real.toDouble and/or Real.doubleValue Distribution[PositiveReal]
 
 // TODO Consider creating PostiveReal, and then Gamma extends 
 
 /** The Gamma distribution generating real values with parameters alpha and beta. 
     @author Andrew McCallum. */
-class Gamma(alpha:Real, beta:Real) extends GenerativeDistribution[Real] {
+class Gamma(alpha:Real, beta:Real) extends Distribution[Real] {
   def this(alpha:Double, beta:Double) = this(new Real(alpha), new Real(beta))
   // Note that there is an implicit conversion from RealValue to Double, which we leverage below
   def pr(x:Double) = {
@@ -30,4 +30,4 @@ class Gamma(alpha:Real, beta:Real) extends GenerativeDistribution[Real] {
 }
 
 // TODO Finish this.
-abstract class GammaGamma(alphaGamma:Gamma, betaGamma:Gamma) extends GenerativeDistribution[Real]
+abstract class GammaGamma(alphaGamma:Gamma, betaGamma:Gamma) extends Distribution[Real]

@@ -65,10 +65,6 @@ trait Variable /* extends AnyRef */ {
   override def toString = printName + "(_)"
   //def factors(model:Model): Iterable[Factor] = model.factors(this) // TODO Remove this?  Why have two different short ways of doing this?
   def isConstant = false
-  // Generic handling of GenerativeObservation knowledge of its 'source' parent // TODO Consider if we really want to do this.
-  def _setSource(source:AnyRef)(implicit difflist:DiffList): Unit = {}
-  //type SourceType <: AnyRef
-  //def source:AnyRef = null //.asInstanceOf[SourceType]
 }
 
 /** For variables that support representating of their uncertainty with a distribution Q over their values, 
@@ -77,16 +73,7 @@ trait Variable /* extends AnyRef */ {
 trait QDistribution {
   this: Variable =>
   type QType
-  def newQ: GenerativeDistribution[VariableType]
-}
-
-/** For variables that support integrating out their uncertainty with a distribution Q over their values, 
-    for variational inference with an approximate distribution Q.
-    @author Andrew McCallum */
-trait MarginalDistribution {
-  this: Variable =>
-  type MarginalType
-  def newMarginal: VariableType
+  def newQ: Distribution[VariableType]
 }
 
 /*import cc.factorie.er
@@ -114,7 +101,7 @@ trait TypedValues {
     Other variables, such as CategoricalVariable, have both an Int value and a ValueType value. */
 trait TypedValue extends TypedValues {
   this: Variable =>
-  type VariableType <: TypedValue
+  type VariableType <: Variable with TypedValue
   def value: ValueType
 }
 // TODO think about whether to get rid of intValue, doubleValue, proportionValue, etc.
@@ -169,7 +156,6 @@ trait SettingIterator extends Iterator[DiffList] {
   /** If true, calls to "next" will create a new DiffList to describe the changes they made, otherwise "next" will not track the changes, and will return null. */
   var makeNewDiffList = true
   def noDiffList: this.type = { makeNewDiffList = false; this }
-  //def noDiffList: SettingIterator = { makeNewDiffList = false; this }
   /** In your implementation of "next" use this method to optionally create a new DiffList, obeying "makeNewDiffList". */
   def newDiffList = if (makeNewDiffList) new DiffList else null
 }
@@ -178,9 +164,7 @@ trait SettingIterator extends Iterator[DiffList] {
     @author Andrew McCallum */
 trait IterableSettings {
   this: Variable =>
-  //protected def _iterableSettingsVariable : This = this // TODO Is there a better way to do this?
   trait SettingIterator extends cc.factorie.SettingIterator {
-    //def variable : IterableSettings2.this.type = IterableSettings2.this
     def variable: Variable = IterableSettings.this
   }
   def settings: SettingIterator

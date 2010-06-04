@@ -68,8 +68,8 @@ object ChainNER3 {
     
     // Sample and Learn!
     (trainLabels ++ testLabels).foreach(_.setRandomly)
-    val learner = new GibbsSampler(model, objective) with SampleRank with ConfidenceWeightedUpdates { temperature = 0.01 }
-    val predictor = new GibbsSampler(model) { temperature = 0.01 }
+    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with ConfidenceWeightedUpdates { temperature = 0.01 }
+    val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.01 }
     for (i <- 1 to 3) {
       println("Iteration "+i) 
       learner.process(trainLabels, 1)

@@ -99,8 +99,8 @@ object WordSegmenterDemo {
     }
 
     // Sample and Learn!
-    var learner = new GibbsSampler(model, objective) with SampleRank with GradientAscentUpdates
-    var sampler = new GibbsSampler(model)
+    var learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
+    var sampler = new VariableSettingsSampler[Label](model)
     learner.learningRate = 1.0
     for (i <- 0 until 7) {
       learner.process(trainVariables, 2)

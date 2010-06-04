@@ -15,54 +15,112 @@ import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
-/* Several examples of varibles collapsed by marginalization. */
 
-/** DiscreteValue integrated out by a Multinomial distribution.
+/** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.
     @author Andrew McCallum */
-class MultinomialDiscrete2[A<:DiscreteVariable](val variable:A) {
-  val distribution = new DenseCountsMultinomial[A](variable.domainSize)
-  // TODO What about "parent"?
-  def pr(i:Int): Double = distribution.pr(i)
-  def pr: Double = distribution.pr(variable.intValue)
-  // Manage sufficient statistics
-  def increment(i:Int, incr:Double = 1.0)(implicit d:DiffList): Unit = distribution.increment(i, incr)
-  def decrement(i:Int, incr:Double = 1.0)(implicit d:DiffList): Unit = distribution.increment(i, incr)
-  /*def update(model:Model): Unit = {
-    val distribution = new Array[Double](variable.domainSize)
-    for (i <- 0 until variable.domainSize) {
-      val d = new DiffList
-      variable.setByIndex(i)(d)
-      distribution(i) = d.scoreAndUndo(model)
-    }
-    Maths.normalize(distribution)
-    distribution.set(distribution)
-  }*/
-  def mode: Int = distribution.maxPrIndex
-  def setToMode(implicit d:DiffList): Unit = variable.setByIndex(this.mode)
+trait CollapsibleVariable extends Variable {
+  this: GeneratedVariable[_] =>
+  type CollapsedType <: CollapsedVariable
+  def newCollapsed: CollapsedType
 }
 
-class GaussianReal2[A<:RealVariable](val variable:A) {
-  val parent: Gaussian1[A] = 
-    variable match { case v:GeneratedRealVariable[A] => { v.generativeSource.value match { case p:Gaussian1[A] => p; case _ => null }}; case _ => null }
-  val distribution = new Gaussian1[A]
-  def pr(x:Double) = distribution.pr(x)
-  private var evidenceSum = 0.0
-  private var evidenceNormalizer = 0.0
-  // Manage sufficient statistics
-  def increment(e:Double): Unit = { evidenceSum += e; evidenceNormalizer += 1.0 }
-  def decrement(e:Double): Unit = { evidenceSum -= e; evidenceNormalizer -= 1.0 }
-  def update(model:Model): Unit = distribution.mean = evidenceSum / evidenceNormalizer
+/** A Distribution that can be marginalized out (collapsed).
+    @see DirichletMultinomial
+    @author Andrew McCallum */
+trait CollapsibleDistribution[O<:Variable] extends CollapsibleVariable {
+  this: Distribution[O] with GeneratedVariable[_] =>
+  type CollapsedType <: CollapsedDistribution[O]
+  def newCollapsed: CollapsedType
 }
 
 
-/*class DirichletMultinomial2[A<:DiscreteValue](val variable:Multinomial[A]) extends DiscreteDistribution[A] {
+/* Several examples of marginal distributions representing collapsed variables. */
+
+/** The distribution representing the marginal distribution of a variable. */
+/*trait CollapsedDistribution[A<:Variable] {
+  this: Distribution[A] =>
+  def samplePreChange(o:A)(implicit d:DiffList): Unit
+  def samplePostChange(o:A)(implicit d:DiffList): Unit
+}
+trait CollapsedGeneratedVariable {
+  this: GeneratedVariable[_] =>
+  def sourcePreChange(s:SourceType)(implicit d:DiffList): Unit
+  def sourcePostChange(s:SourceType)(implicit d:DiffList): Unit
+}*/
+
+/** Something that represents the collapsing of an existing GeneratedVariable. */
+trait CollapsedVariable extends Variable {
+  this: GeneratedVariable[_] =>
+  // TODO  What should go here?
+  //def parentPreChange(s:SourceType)(implicit d:DiffList): Unit
+  //def parentPostChange(s:SourceType)(implicit d:DiffList): Unit
+}
+
+trait CollapsedDistribution[O<:Variable] extends CollapsedVariable {
+  this: Distribution[O] with GeneratedVariable[_] =>
+  def addSample(o:O)(implicit d:DiffList): Unit
+  def removeSample(o:O)(implicit d:DiffList): Unit
+}
+
+
+// /** DiscreteValue integrated out by a Multinomial distribution.
+//     @author Andrew McCallum */
+// class MultinomialDiscrete[A<:DiscreteVariable](val variable:A) {
+//   val distribution = new DenseCountsMultinomial[A](variable.domainSize)
+//   // TODO What about "parent"?
+//   def pr(i:Int): Double = distribution.pr(i) // TODO This should account for the generativeSource?
+//   def pr: Double = distribution.pr(variable.intValue)
+//   // Manage sufficient statistics
+//   def increment(i:Int, incr:Double = 1.0)(implicit d:DiffList): Unit = distribution.increment(i, incr)
+//   def decrement(i:Int, incr:Double = 1.0)(implicit d:DiffList): Unit = distribution.increment(i, incr)
+//   /*def update(model:Model): Unit = {
+//     val distribution = new Array[Double](variable.domainSize)
+//     for (i <- 0 until variable.domainSize) {
+//       val d = new DiffList
+//       variable.setByIndex(i)(d)
+//       distribution(i) = d.scoreAndUndo(model)
+//     }
+//     Maths.normalize(distribution)
+//     distribution.set(distribution)
+//   }*/
+//   def mode: Int = distribution.maxPrIndex
+//   def setToMode(implicit d:DiffList): Unit = variable.setByIndex(this.mode)
+// }
+
+// class GaussianReal[A<:RealVariable](val variable:A) extends CollapsedVariable {
+//   val parent: Gaussian1[A] = 
+//     variable match { case v:GeneratedRealVariable[A] => { v.generativeSource.value match { case p:Gaussian1[A] => p; case _ => null }}; case _ => null }
+//   val distribution = new Gaussian1[A]
+//   def pr(x:Double) = distribution.pr(x)
+//   private var evidenceSum = 0.0
+//   private var evidenceNormalizer = 0.0
+//   // Manage sufficient statistics
+//   def increment(e:Double): Unit = { evidenceSum += e; evidenceNormalizer += 1.0 }
+//   def decrement(e:Double): Unit = { evidenceSum -= e; evidenceNormalizer -= 1.0 }
+//   def update(model:Model): Unit = distribution.mean = evidenceSum / evidenceNormalizer
+// }
+
+/** Marginalizes (collapses) a Multinomial, integrating out uncertainty with a Dirichlet.
+    This is a DiscreteDistribution, but not a Multinomial. */
+class DirichletMultinomial[A<:DiscreteValue](val variable:Multinomial[A]) extends DiscreteDistribution[A] with CollapsedDistribution[A] {
   type VariableType <: DirichletMultinomial[A]
   val parent: Dirichlet[A] = variable.generativeSource.value match { case p:Dirichlet[A] => p; case _ => null }
   val counts = new Array[Double](variable.length)
   var countsTotal = 0.0
+  variable.samples.foreach(this.increment(_.index, 1.0)) // Initialize our sufficient statistics with the state of our children
   def size = variable.length
+  def sampleIndex: Int = {
+    val s = Global.random.nextDouble; sum = 0.0; var i = 0; val size = this.size
+    while (i < size) {
+      sum += pr(i)
+      if (sum >= s) return i
+      i += 1
+    }
+    return size - 1
+  }
   def proportion: Seq[Double] = Array.tabulate(size)(pr(_))
-  def maxPrIndex = Maths.maxIndex(proportion.toArray)
+  def maxPrIndex = throw new Error // TODO Implement this; Maths.maxIndex(proportion.toArray)
+  // TODO These should have difflist arguments!!
   def increment(index:Int, incr:Double): Unit = { counts(index) += incr; countsTotal += incr }
   def decrement(index:Int, incr:Double): Unit = { counts(index) -= incr; countsTotal -= incr }
   def pr(index:Int) : Double = {
@@ -85,10 +143,12 @@ class GaussianReal2[A<:RealVariable](val variable:A) {
     normalizer1 * normalizer2 * ratio
   }
   def logpr(obsCounts:Vector): Double = Math.log(pr(obsCounts)) //indices.foldLeft(0.0)(_+logpr(_))
-  override def preChange(o:A)(implicit d:DiffList) = increment(o.index, -1.0)
-  override def postChange(o:A)(implicit d:DiffList) = increment(o.index, 1.0)
+  def addSample(o:A)(implicit d:DiffList) = increment(o.index, -1.0)
+  def removeSample(o:A)(implicit d:DiffList) = increment(o.index, 1.0)
+  //def sourcePreChange(s:SourceType)(implicit d:DiffList): Unit = {}
+  //def sourcePostChange(s:SourceType)(implicit d:DiffList): Unit = {}
   override def estimate: Unit = {} // Nothing to do because estimated on the fly
-}*/
+}
 
 /*object DirichletMultinomialDiscreteTemplate extends Template2[DirichletMultinomial2[_],DiscreteVariable] {
   def unroll1(dm:DirichletMultinomial2[_]) = 

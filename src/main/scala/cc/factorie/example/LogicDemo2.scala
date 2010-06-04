@@ -114,9 +114,9 @@ import scala.collection.mutable.ArrayBuffer
 //     printFactors(template4.factors(amy.smokes))
 //     //System.exit(0)
     
-//     // Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
+//     // Do 2000 iterations of sampling, gathering sample counts every 20 iterations
 //     println("\ninference don.smokes="+don.smokes+" cas.smokes="+cas.smokes)
-//     val inferencer = new VariableSamplingInferencer(new GibbsSampler1[BooleanVariable](model))
+//     val inferencer = new VariableSamplingInferencer(new VariableSettingsSampler[BooleanVariable](model))
 //     inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
 //     val marginals = inferencer.infer(List(don.cancer, friend(don,cas), friend(cas,don)))
 //     println("p(don.cancer == true) = "+marginals(don.cancer).pr(1))
@@ -193,8 +193,8 @@ object LogicDemo1b {
     // Just for fun, print the factors that touch the variables indicating Don's friendships
     println(model.factors(Friends(person("Don"))))
 
-    // Do 2000 iterations of Gibbs sampling, gathering sample counts every 20 iterations
-    val inferencer = new VariableSamplingInferencer(new GibbsSampler1[Bool](model))
+    // Do 2000 iterations of sampling, gathering sample counts every 20 iterations
+    val inferencer = new VariableSamplingInferencer(new VariableSettingsSampler[Bool](model))
     inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
     val marginals = inferencer.infer(people.map(_.cancer), people.map(_.cancer)) //+ Friends
     for (p <- people)

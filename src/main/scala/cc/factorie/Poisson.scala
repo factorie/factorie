@@ -8,7 +8,7 @@
 package cc.factorie
 
 /** The Poisson distribution generating integer values with parameter lambda. */
-class Poisson(var lambda:Double) extends GenerativeDistribution[IntegerValue] {
+class Poisson(var lambda:Double) extends Distribution[IntegerValue] {
   def mean: Double = lambda
   def variable: Double = lambda
   def pr(k:Int) = Math.pow(lambda, k) * Math.exp(-lambda) / Maths.factorial(k)
@@ -22,7 +22,7 @@ class Poisson(var lambda:Double) extends GenerativeDistribution[IntegerValue] {
   }
 }
 
-abstract class GammaPoisson(gamma:Gamma) extends GenerativeDistribution[IntegerValue] {
+abstract class GammaPoisson(gamma:Gamma) extends Distribution[IntegerValue] {
   throw new Error("Not yet implemented")
 }
 

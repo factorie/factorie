@@ -39,17 +39,16 @@ trait DiscreteValue extends DiscreteValues with OrdinalValue {
 @DomainInSubclasses
 abstract class DiscreteVariable extends OrdinalVariable with DiscreteValue with IterableSettings {
   type VariableType <: DiscreteVariable
-  def this(initialValue:Int) = { this(); assert(initialValue >= 0 && initialValue < domain.size); setByIndex(initialValue)(null) }
+  def this(initialValue:Int) = { this(); assert(initialValue >= 0 && initialValue < domain.size); setByInt(initialValue)(null) }
   // TODO Consider doing a range check on "setByIndex", but it would slow us down, so do a speed/timing check.
   final override def setByInt(newValue: Int)(implicit d: DiffList): Unit = setByIndex(newValue)(d) 
+  // TODO Consider removing setByIndex and just having setByInt for Discretes and Categoricals.  YES!!!
   def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
     // TODO Note that we do not check that (newIndex < domain.size), but perhaps we should; this would slow us down, though!
-    if (newIndex < 0) throw new Error("DiscreteVariable setByIndex can't be negative.")
+    //if (newIndex < 0) throw new Error("DiscreteVariable setByIndex can't be negative.")
     super.setByInt(newIndex)(d)
   }
-  def setRandomly(random:Random, d:DiffList): Unit = setByIndex(random.nextInt(domainSize))(d)
-  def setRandomly(random:Random): Unit = setRandomly(random, null)
-  def setRandomly: Unit = setRandomly(cc.factorie.Global.random)
+  def setRandomly(random:Random = Global.random, d:DiffList = null): Unit = setByIndex(random.nextInt(domainSize))(d)
   def settings = new SettingIterator {
     var i = -1
     val max = domain.size - 1
@@ -57,6 +56,25 @@ abstract class DiscreteVariable extends OrdinalVariable with DiscreteValue with 
     def next(difflist:DiffList) = { i += 1; val d = newDiffList; setByIndex(i)(d); d }
     def reset = i = -1
     override def variable : DiscreteVariable.this.type = DiscreteVariable.this
+  }
+}
+
+/** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  Used for block-Gibbs-sampling.
+    @author Andrew McCallum */
+class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[DiscreteVariable] with IterableSettings {
+  private val _vars = vars.toList
+  def length = _vars.length
+  def apply(index:Int) = _vars.apply(index)
+  def iterator = _vars.iterator
+  override def foreach[U](f:(DiscreteVariable)=>U): Unit = _vars.foreach(f)
+  def settings: SettingIterator = new SettingIterator {
+    var i = -1
+    val n = _vars.length
+    val s = _vars.map(_.domain.size).toArray
+    val max = s.foldLeft(1)(_*_)
+    def hasNext = i < max
+    def next(difflist:DiffList) = throw new Error // TODO Implement this properly { i += 1; val d = newDiffList; _vars(i%n).setByIndex(i/n)(d); d }
+    def reset = i = -1
   }
 }
 
