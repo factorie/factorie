@@ -8,10 +8,11 @@
 package cc.factorie.example
 import cc.factorie._
 
+/*
 object DirichletDemo {
 
   def main(args:Array[String]) : Unit = {
-    class Word(s:String) extends CategoricalVariable(s) with GeneratedDiscreteVariable[Word]
+    class Word(s:String) extends CategoricalVariable(s) with GeneratedValue
     Domain += new StringDomain[Word] {
       List("one", "two", "three", "four", "five", "six").foreach(index(_))
     }
@@ -44,3 +45,4 @@ object DirichletDemo {
   }
   
 }
+*/

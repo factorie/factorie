@@ -8,21 +8,27 @@
 package cc.factorie
 
 /** The Poisson distribution generating integer values with parameter lambda. */
-class Poisson(var lambda:Double) extends Distribution[IntegerValue] {
-  def mean: Double = lambda
-  def variable: Double = lambda
-  def pr(k:Int) = Math.pow(lambda, k) * Math.exp(-lambda) / Maths.factorial(k)
-  def pr(o:IntegerValue): Double = pr(o.intValue)
-  def sample: Int = Maths.nextPoisson(lambda)(Global.random).toInt
+class Poisson(val mean:RealValueParameter, value:Int = 0)(implicit d:DiffList = null) extends OrdinalVariable(value) with GeneratedVariable {
+  mean.addChild(this)(d)
+  def parents = List(mean)
+  def pr: Double = pr(this.intValue)
+  def pr(k:Int): Double = Math.pow(mean.doubleValue, k) * Math.exp(-mean.doubleValue) / Maths.factorial(k)
+  def sampleFrom(mean:Double)(implicit d:DiffList): Unit =
+    setByInt(Maths.nextPoisson(mean.doubleValue)(Global.random).toInt)
+  def sample(implicit d:DiffList): Unit = sampleFrom(mean.doubleValue)
+  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
+    case Seq(mean:RealValue) => sampleFrom(mean.doubleValue)
+  }
   /** This implements the maximum likelihood estimator */
-  def estimate: Unit = {
+  /*def estimate: Unit = {
     if (generatedSamples.size == 0) throw new Error("No samles from which to estimate")
     val sum = generatedSamples.sumInts(_.intValue).toDouble
     lambda = sum/generatedSamples.size
-  }
+  }*/
 }
 
-abstract class GammaPoisson(gamma:Gamma) extends Distribution[IntegerValue] {
+/*abstract class GammaPoisson(gamma:Gamma) extends Distribution[IntegerValue] {
   throw new Error("Not yet implemented")
 }
+*/
 

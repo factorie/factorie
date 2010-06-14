@@ -68,13 +68,14 @@ class IntegerVariable extends Variable with IntegerValue {
       _value = newValue
     }
   }
-  def :=(newIndex:Int) = setByInt(newIndex)(null)
+  // TODO Consider having all := methods return this, so that we can do:  val x = Gaussian(mean, variance) := 2.3
+  def :=(newIndex:Int): this.type = { setByInt(newIndex)(null); this } // TODO Consider adding parameter (implicit d:DiffList = null)
   case class IntegerVariableDiff(oldIndex: Int, newIndex: Int) extends Diff {
     @inline final def variable: IntegerVariable = IntegerVariable.this
     @inline final def redo = _value = newIndex
     @inline final def undo = _value = oldIndex
     override def toString = variable match { 
-      case cv:CategoricalVariable if (oldIndex >= 0) => "IntegerVariableDiff("+cv.domain.get(oldIndex)+"="+oldIndex+","+cv.domain.get(newIndex)+"="+newIndex+")"
+      case cv:CategoricalVariable[AnyRef] if (oldIndex >= 0) => "IntegerVariableDiff("+cv.domain.get(oldIndex)+"="+oldIndex+","+cv.domain.get(newIndex)+"="+newIndex+")"
       case _ => "IntegerVariableDiff("+oldIndex+","+newIndex+")"
     }
   }

@@ -18,20 +18,15 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 
 /** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.
     @author Andrew McCallum */
-trait CollapsibleVariable extends Variable {
-  this: GeneratedVariable[_] =>
+trait CollapsibleVariable extends GeneratedVariable {
   type CollapsedType <: CollapsedVariable
   def newCollapsed: CollapsedType
 }
 
-/** A Distribution that can be marginalized out (collapsed).
+/** A Parameter that can be marginalized out (collapsed).
     @see DirichletMultinomial
     @author Andrew McCallum */
-trait CollapsibleDistribution[O<:Variable] extends CollapsibleVariable {
-  this: Distribution[O] with GeneratedVariable[_] =>
-  type CollapsedType <: CollapsedDistribution[O]
-  def newCollapsed: CollapsedType
-}
+trait CollapsibleParameter extends Parameter with CollapsibleVariable
 
 
 /* Several examples of marginal distributions representing collapsed variables. */
@@ -49,17 +44,12 @@ trait CollapsedGeneratedVariable {
 }*/
 
 /** Something that represents the collapsing of an existing GeneratedVariable. */
-trait CollapsedVariable extends Variable {
-  this: GeneratedVariable[_] =>
-  // TODO  What should go here?
-  //def parentPreChange(s:SourceType)(implicit d:DiffList): Unit
-  //def parentPostChange(s:SourceType)(implicit d:DiffList): Unit
-}
+trait CollapsedVariable extends GeneratedVariable 
 
-trait CollapsedDistribution[O<:Variable] extends CollapsedVariable {
-  this: Distribution[O] with GeneratedVariable[_] =>
-  def addSample(o:O)(implicit d:DiffList): Unit
-  def removeSample(o:O)(implicit d:DiffList): Unit
+trait CollapsedParameter extends CollapsedVariable {
+  // TODO What should go here?
+  //def addSample(o:Variable)(implicit d:DiffList): Unit
+  //def removeSample(o:Variable)(implicit d:DiffList): Unit
 }
 
 
@@ -102,6 +92,7 @@ trait CollapsedDistribution[O<:Variable] extends CollapsedVariable {
 
 /** Marginalizes (collapses) a Multinomial, integrating out uncertainty with a Dirichlet.
     This is a DiscreteDistribution, but not a Multinomial. */
+/*
 class DirichletMultinomial[A<:DiscreteValue](val variable:Multinomial[A]) extends DiscreteDistribution[A] with CollapsedDistribution[A] {
   type VariableType <: DirichletMultinomial[A]
   val parent: Dirichlet[A] = variable.generativeSource.value match { case p:Dirichlet[A] => p; case _ => null }
@@ -148,7 +139,7 @@ class DirichletMultinomial[A<:DiscreteValue](val variable:Multinomial[A]) extend
   //def sourcePreChange(s:SourceType)(implicit d:DiffList): Unit = {}
   //def sourcePostChange(s:SourceType)(implicit d:DiffList): Unit = {}
   override def estimate: Unit = {} // Nothing to do because estimated on the fly
-}
+}*/
 
 /*object DirichletMultinomialDiscreteTemplate extends Template2[DirichletMultinomial2[_],DiscreteVariable] {
   def unroll1(dm:DirichletMultinomial2[_]) = 

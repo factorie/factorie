@@ -10,8 +10,10 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 
 // Note that putting a [V], as in DenseCountsMultinomial[V], doesn't work here because CategoricalValues not <: MultinomialOutcome[V].  
 // But as long as we don't use any methods that require [V], I think we are OK.
-class DiscreteMarginal[V<:DiscreteValues](val variable:V) extends DenseCountsMultinomial(variable.domain.size) with Marginal {
-  override def keepGeneratedSamples = false
+class DiscreteMarginal[V<:DiscreteValues](val variable:V) extends DenseCountsProportions(variable.domain.size) with Marginal {
+  override def keepChildren = false
+  // Was: DenseCountsMultinomial instead of DirichletMultinomial above.
+  //override def keepGeneratedSamples = false
   def incrementCurrentValue : Unit = variable match {
     case v:DiscreteValue => increment(v.index, 1.0)(null)
     case v:BinaryVectorVariable[_] => { for (index <- v.indices) increment(index, 1.0)(null) } // throw new Error // TODO Put this code back in: v.incrementInto(this)
@@ -46,8 +48,8 @@ class SamplingInferencer[V<:DiscreteVariable,C](val sampler:Sampler[C]) extends 
 }
 
 class VariableSamplingInferencer[V<:DiscreteVariable](sampler:Sampler[V]) extends SamplingInferencer[V,V](sampler) with VariableInferencer[V] {
-  def this() = this(new GibbsSampler[V])
-  def this(model:Model) = this(new GibbsSampler[V](model))
+  //def this() = this(new GibbsSampler)
+  //def this(model:Model) = this(new GibbsSampler(model))
 }
 
 
@@ -65,7 +67,7 @@ class SamplingMaximizerLattice(val diff:DiffList, val diffScore:Double) extends 
  */
 // TODO Update this for the new separated "modelScore" and "acceptScore" in Proposal.
 class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends Maximizer[V] with VariableInferencer[V] {
-  def this(model:Model) = this(new GibbsSampler[V](model))
+  def this(model:Model) = this(new VariableSettingsSampler[V](model))
   type LatticeType = SamplingMaximizerLattice
   var iterations = 50 // TODO What should these be by default?
   var rounds = 3

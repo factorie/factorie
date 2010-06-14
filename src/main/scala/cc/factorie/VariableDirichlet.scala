@@ -15,6 +15,7 @@ import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryV
 
 /** Dirichlet distribution.
     @author Andrew McCallum */
+/*
 //trait AbstractDirichlet[O<:GeneratedDiscreteValue[O]] extends  ProportionDistribution[O] with RandomAccessSeq[Double] 
 class Dirichlet[O<:DiscreteValue](val mean:Multinomial[O], var alphaSum:Double = 1.0)(implicit m:Manifest[O]) extends ProportionDistribution[O] with IndexedSeq[Double] {
   type VariableType <: Dirichlet[O];
@@ -25,7 +26,7 @@ class Dirichlet[O<:DiscreteValue](val mean:Multinomial[O], var alphaSum:Double =
   def apply(index:Int) = alpha(index)
   def outcomeDomain: O#DomainType = Domain[O](m)
   // Was sampleOutcome: OutcomeType
-  def sampleMultinomial: Multinomial[O] = throw new Error // TODO { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this)(null); /*throw new Error;*/ mul }
+  def sampleMultinomial: Multinomial[O] = throw new Error // TODO { val mul = new DenseCountsMultinomial[O](size); mul.sampleFrom(this)(null); throw new Error; mul }
   def sampleOutcome: OutcomeType = sampleMultinomial
   def maximize(s:SourceType)(implicit d:DiffList): Unit = throw new Error("Method estimate is not implemented in this class.  You must add a trait for estimation.")
   def sampleOutcomes(n:Int) : Seq[OutcomeType] = for (i <- 0 until n) yield sampleOutcome
@@ -62,8 +63,7 @@ class Dirichlet[O<:DiscreteValue](val mean:Multinomial[O], var alphaSum:Double =
   }
 }
 
-/** Immutable Dirichlet with equal alpha for all dimensions. 
-    @author Andrew McCallum */
+// Immutable Dirichlet with equal alpha for all dimensions. 
 @DomainInSubclasses
 class SymmetricDirichlet[O<:GeneratedDiscreteValue[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends Dirichlet[O](new UniformMultinomial[O]()(m), initialAlpha * Domain[O](m).length) {
   type VariableType <: SymmetricDirichlet[O]
@@ -74,9 +74,9 @@ class SymmetricDirichlet[O<:GeneratedDiscreteValue[O]](initialAlpha:Double)(impl
 class UniformDirichlet[O<:GeneratedDiscreteValue[O]](implicit m:Manifest[O]) extends SymmetricDirichlet[O](1.0)
 
 
-/** A Dirichlet whose mean is integrated out with distribution 'meanSource', 
-    and whose 'alphaSum' is not integrated out, but re-estimated with calls to 'estimate'. */
-/*
+// A Dirichlet whose mean is integrated out with distribution 'meanSource', 
+//  and whose 'alphaSum' is not integrated out, but re-estimated with calls to 'estimate'.
+
 @deprecated // Not yet working or tested
 class DirichletDirichlet[O<:DiscreteOutcome[O]](val meanSource:AbstractDirichlet[O], sum:Double)(implicit m:Manifest[O]) extends AbstractDirichlet[O] with GenerativeVariable[AbstractDirichlet[O]]{
   def this(dir:AbstractDirichlet[O], initCounts:Seq[Double], as:Double)(implicit m:Manifest[O]) = { this(dir,as)(m); mean.set(initCounts) }
@@ -113,15 +113,14 @@ class DirichletDirichlet[O<:DiscreteOutcome[O]](val meanSource:AbstractDirichlet
   override def estimate: Unit = throw new Error("Not implemented")
   def sample(implicit d:DiffList):Unit = throw new Error("Not yet implemented")
 }
-*/
+
 
 object Dirichlet {
   def apply[O<:GeneratedDiscreteValue[O]](initialAlpha:Double)(implicit m:Manifest[O]) = new SymmetricDirichlet[O](initialAlpha)
   def apply[O<:GeneratedDiscreteValue[O]](implicit m:Manifest[O]) = new SymmetricDirichlet[O](1.0)
 }
   
-/** Estimate the parameters of a Dirichlet by moment-matching.
-    @author Andrew McCallum */
+// Estimate the parameters of a Dirichlet by moment-matching.
 // TODO was GeneratedDiscreteValue
 //trait DirichletMomentMatchingEstimator[O<:GeneratedDiscreteValue[O]] extends AbstractDirichlet[O] 
 trait DirichletMomentMatchingEstimator[O<:DiscreteValue[O]] {
@@ -129,7 +128,7 @@ trait DirichletMomentMatchingEstimator[O<:DiscreteValue[O]] {
   private def setUniform: Unit = 
     mean.set(new RandomAccessSeq[Double] { def apply(i:Int) = uniformPseudoEvidence/length; def length = size})
   def minSamplesForVarianceEstimate = 10
-  /** Add a uniform pseudo-multinomial to estimation, with this weight relative to real multinomials */
+  // Add a uniform pseudo-multinomial to estimation, with this weight relative to real multinomials 
   def uniformPseudoEvidence = 0.1 // Set to non-zero to avoid logGamma(0.0), leading to NaN
   def estimate : Unit = {
     if (generatedSamples.size == 0) { setUniform; alphaSum = 1.0; return }
@@ -168,3 +167,4 @@ trait DirichletMomentMatchingEstimator[O<:DiscreteValue[O]] {
   }
 }
 
+*/

@@ -72,8 +72,8 @@ trait Variable /* extends AnyRef */ {
     @author Andrew McCallum */
 trait QDistribution {
   this: Variable =>
-  type QType
-  def newQ: Distribution[VariableType]
+  type QType <: Variable
+  def newQ: QType
 }
 
 /*import cc.factorie.er
@@ -127,7 +127,7 @@ trait NoVariableCoordination {
 trait NoFactorCoordination {
   this: Variable =>
 } 
-
+// TODO.  No, create the inverse trait: FactorCoordinator
 
 
 

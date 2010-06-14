@@ -25,7 +25,7 @@ class RealObservation(val doubleValue:Double) extends RealValue with ConstantVal
 /** A variable class for mutable real (double) values. */
 class RealVariable(initialValue: Double = 0.0) extends RealValue {
   type VariableType <: RealVariable
-  private var _value: Double = math.NaN_DOUBLE // This should be set to some "impossible" value so that the "set" call below
+  private var _value: Double = java.lang.Double.NaN // This should be set to some "impossible" value so that the "set" call below will result in a Diff?  But we have 'null' there anyway.
   set(initialValue)(null)
   @inline final def doubleValue = _value
   def +=(x:Double) = set(_value + x)(null)

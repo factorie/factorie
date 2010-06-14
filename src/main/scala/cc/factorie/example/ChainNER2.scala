@@ -95,8 +95,8 @@ object ChainNER2 {
     val testLabels = testSentences.flatMap(_.labels)
 
     // Train
-    (trainLabels ++ testLabels).foreach(_.setRandomly)
-    val predictor = new GibbsSampler[Label](model) { temperature = 0.01 }
+    (trainLabels ++ testLabels).foreach(_.setRandomly())
+    val predictor = new GibbsSampler(model) { temperature = 0.01 }
     val learner = new VariableSettingsSampler[Label](model) with SampleRank with ConfidenceWeightedUpdates {
       temperature = 0.01
       // Speed training by sometimes skipping inference of lowercase training words that are already correct

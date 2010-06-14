@@ -12,6 +12,7 @@ import java.io.File
 import cc.factorie._
 import cc.factorie.util.Stopwords
 
+/*
 object LDADemo {
   // Declare different types of variables
   object Beta extends SymmetricDirichlet[Word](0.01)
@@ -63,3 +64,4 @@ object LDADemo {
   }
 }
 
+*/

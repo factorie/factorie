@@ -37,7 +37,7 @@ object ChainNER1 {
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.labels)
     val testLabels = testSentences.flatMap(_.labels)
-    (trainLabels ++ testLabels).foreach(_.setRandomly) 
+    (trainLabels ++ testLabels).foreach(_.setRandomly()) 
 
     // Train for 5 iterations
     val learner = new VariableSettingsSampler[Label](model) with SampleRank with GradientAscentUpdates 

@@ -58,7 +58,7 @@ class BooleanObservation(b:Boolean) extends CategoricalObservation(b) with Boole
 // }
 
 // Provide an alias with a shorter name
-// TODO Consider removing this for uniformity and simplicity
+// TODO Consider removing this for uniformity and simplicity.  We could make up for it by introducing an implicit convertion from scala.Boolean to BooleanObservation.
 class Bool(b:Boolean = false) extends BooleanVariable(b) {
   type VariableType <: Bool
   //def this() = this(false)

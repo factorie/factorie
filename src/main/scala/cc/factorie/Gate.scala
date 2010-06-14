@@ -14,37 +14,38 @@ import scala.collection.mutable.{ListBuffer,HashSet,ArrayBuffer}
     A discrete variable that indicates which one among a finite number relations are currently in effect.
     Here can be thought of as a collection of @ref{GatedRefVariable}s. 
     Primarily used to implement a "mixture choice" in finite mixture models.
-    @see MixtureChoice */
-trait Gate[A<:AbstractGatedRefVariable] extends DiscreteVariable {
+    @see MixtureChoice
+    @author Andrew McCallum */
+trait Gate extends DiscreteVariable {
   /** The collection of variable references controlled by the gate. */
-  var gateContents: List[A] = Nil
-  def +=(v:A): this.type = { 
+  private var _gatedRefs: List[AbstractGatedRefVariable] = Nil
+  def gatedRefs: List[AbstractGatedRefVariable] = _gatedRefs
+  def +=(v:AbstractGatedRefVariable): this.type = { 
     require(v.domainSize == domainSize)
-    gateContents = v :: gateContents
+    _gatedRefs = v :: _gatedRefs
     v.gate = this
     v.setByIndex(this.intValue)(null)
     this
   }
   override def setByIndex(newIndex:Int)(implicit d:DiffList): Unit = {
     super.setByIndex(newIndex)
-    for (ref <- gateContents) ref.setByIndex(newIndex)
+    for (ref <- _gatedRefs) ref.setByIndex(newIndex)
   }
   def setToNull(implicit d:DiffList): Unit = {
     super.setByIndex(-1)
-    for (ref <- gateContents) ref.setToNull
+    for (ref <- _gatedRefs) ref.setToNull
   }
 }
 
-//trait Gate extends GenericGate[AbstractGatedRefVariable]
 
 /** Abstract stand-in for GatedRefVariable that doesn't take type parameters.  
-    Exists to avoid dealing with contravariant typing in MixtureComponentRef. 
+    Among other things, this avoids impossible contravariant typing in MixtureComponentRef. 
     @author Andrew McCallum */
 trait AbstractGatedRefVariable {
-  def gate: Gate[_]
-  def gate_=(g:Gate[_]): Unit
+  def gate: Gate
+  def gate_=(g:Gate): Unit
   def domainSize: Int
-  def setToNull(): Unit
+  def setToNull(implicit d:DiffList): Unit
   def setByIndex(newIndex:Int)(implicit d:DiffList): Unit
 }
 
@@ -53,14 +54,14 @@ trait AbstractGatedRefVariable {
 trait GatedRefVariable[A<:AnyRef] extends RefVariable[A] with AbstractGatedRefVariable {
   //this : RefVariable[A] =>
   type VariableType <: GatedRefVariable[A]
-  private var _gate: Gate[_] = null // TODO Are we sure we need to know who our gate is?  Can we save memory by deleting this?
+  private var _gate: Gate = null // TODO Are we sure we need to know who our gate is?  Can we save memory by deleting this?
   def gate = _gate
-  def gate_=(g:Gate[_]): Unit = if (_gate == null) _gate = g else throw new Error("Gate already set.")
+  def gate_=(g:Gate): Unit = if (_gate == null) _gate = g else throw new Error("Gate already set.")
   // Not the current value of this GatedRefVariable.
   // Returns the value associated with a certain integer index value of the gate.  
   // The gate uses this to call grf.set(grf.value(this.intValue)). 
-  def value(index:Int): A
-  def setByIndex(index:Int)(implicit d:DiffList): Unit = set(value(index))
+  def valueForIndex(index:Int): A
+  def setByIndex(index:Int)(implicit d:DiffList): Unit = set(valueForIndex(index))
   def setToNull(implicit d:DiffList): Unit = set(null.asInstanceOf[A])
   def domainSize: Int
 }

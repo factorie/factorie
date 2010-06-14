@@ -16,19 +16,21 @@ object Global {
   // anticipating the time when all these definitions make go in "package object factorie"?
   
   val defaultModel = new Model
-  val defaultGenerativeModel = new Model(new GeneratedVariableTemplate, new MixtureChoiceTemplate)
+  val defaultGenerativeModel = new Model(new GeneratedValueTemplate, new MixtureChoiceTemplate)
   val defaultObjective = new Model(new TrueLabelTemplate[CoordinatedLabelVariable[AnyRef]]())
 
+  // TODO Consider removing this now that we have separate, more specific samplers.
+  // TODO Consider also removing SamplerSuite?
   val defaultSampler = new SamplerSuite
-  defaultSampler += new GenericSampler(new GeneratedVariableSampler)
-  defaultSampler += new GenericSampler(new GibbsSampler[Variable with IterableSettings](defaultModel))
+  //defaultSampler += new GenericSampler(new GeneratedVariableSampler)
+  //defaultSampler += new GenericSampler(new GibbsSampler[Variable with IterableSettings](defaultModel))
 
-  val idVariableMap = new VariableMap {
+  /*val idVariableMap = new VariableMap {
     override def apply[V<:Variable](in:V): V = in
     def get(key: Variable): Option[B] = Some(key)
     def iterator: Iterator[(Variable, Variable)] = throw new Error
-    def + [B1 >: Variable](kv: (Variable, B1)): IdVariableMap = throw new Error
+    def +[B1 >: Variable](kv: (Variable, B1)): IdVariableMap = throw new Error
     def -(key: A): IdVariableMap = throw new Error
-  }
+  }*/
 
 }

@@ -55,7 +55,7 @@ object DocumentClassifier2 {
     val (testSet, trainSet) = documents.shuffle.split(0.5)
     var trainVariables = trainSet.map(_ label)
     var testVariables = testSet.map(_ label)
-    (trainVariables ++ testVariables).foreach(_.setRandomly)
+    (trainVariables ++ testVariables).foreach(_.setRandomly())
 
     println(model)
     println(model.factors(trainVariables.first))

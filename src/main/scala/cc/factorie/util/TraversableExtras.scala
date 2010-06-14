@@ -102,7 +102,7 @@ trait TraversableExtras[A] {
   }
 
   // TODO Make these preserve their correct return types rather than backing off to Traversable.
-  def filterByType[T](implicit m: Manifest[T]): Traversable[T] = 
+  def filterByType[T<:AnyRef](implicit m: ClassManifest[T]): Traversable[T] = 
     t.filter(t1 => m.erasure.isAssignableFrom(t1.asInstanceOf[AnyRef].getClass)).asInstanceOf[Traversable[T]]
   def filterByClass[C](c: Class[C]): Traversable[C] =
     t.filter(t1 => c.isAssignableFrom(t1.asInstanceOf[AnyRef].getClass)).asInstanceOf[Traversable[C]]

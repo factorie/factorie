@@ -16,7 +16,7 @@ class MeanFieldInferencer[A<:Variable with QDistribution](model:Model, variables
   def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
   def updateQ(v:A): Unit = {
     (v, _q(v)) match {
-      case (v:DiscreteVariable, d:DenseMultinomial[_]) => {
+      case (v:DiscreteVariable, d:DenseProportions) => {
         val distribution = new Array[Double](v.domainSize)
         for (i <- 0 until v.domainSize) {
           val diff = new DiffList
@@ -28,7 +28,7 @@ class MeanFieldInferencer[A<:Variable with QDistribution](model:Model, variables
           distribution(i) = modelScore
         }
         Maths.expNormalize(distribution)
-        d.set(distribution)
+        d.set(distribution)(null)
       }
     }
   }

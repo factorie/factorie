@@ -20,10 +20,24 @@ package object factorie {
   }
   def printTime(f: =>Unit) : Unit = println(time(f)/1000.0+" seconds")
 
+  def forIndex(n:Int)(f:Int=>Any): Unit = { 
+    var i = 0
+    while (i < n) { f(i); i += 1 }
+  }
+  def mapIndex[@specialized A:ClassManifest](n:Int)(f:Int=>A): Array[A] = {
+    val result = new Array[A](n)
+    var i = 0
+    while (i < n) { result(i) = f(i); i += 1 }
+    result
+  }
 
   implicit def traversableExtras[A](x:Traversable[A]) = new cc.factorie.util.TraversableExtras[A] { val t = x }
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras { val s = x }
 
+  /** A container for "var-args"-like arbitrary number of Variables neighboring a Factor.
+    @see Template1  */
+  // TODO  Get rid of this and just use Seq?  But is Seq(v1,v2,v3) implemented as List?  Is this efficient?
+  //type Vars[V<:Variable] = scala.collection.immutable.Seq[V] // Or should this be immutable.Set?  Should order matter when de-duplicating Factors?
 
   /*
    * TODO I will add this trick when we have Scala 2.8. -akm

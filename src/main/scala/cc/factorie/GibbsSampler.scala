@@ -7,7 +7,7 @@
 
 package cc.factorie
 import scala.reflect.Manifest 
-import scala.collection.mutable.{HashMap, HashSet, PriorityQueue}
+import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 
 // How to think about Proposals and MCMC:
 // Variables know their own range of values.  This needs to be coded on a per-variable basis
@@ -30,45 +30,84 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue}
 
 /** Simple GibbsSampler.
     @author Andrew McCallum */
-class GibbsSampler(model:Model = Global.defaultModel, objective:Model = null) extends Sampler[Variable](model, objective) {
+class GibbsSampler(val model:Model = Global.defaultModel, val objective:Model = null) extends Sampler[Variable] {
+  var temperature = 1.0
+  val handlers = new ArrayBuffer[GibbsSamplerHandler]
+  def defaultHandlers = List(GeneratedVariableGibbsSamplerHandler, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler)
+  handlers ++= defaultHandlers
   // TODO Consider Either[] type checking instead of generative Sampler[Variable]
   def process1(v:Variable): DiffList = {
     // Get factors, in sorted order of the their classname
     val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.getClass.getName < f2.getClass.getName)
+    var done = false
+    val handlerIterator = handlers.iterator
+    val d = newDiffList
+    while (!done && handlerIterator.hasNext) {
+      done = handlerIterator.next.sample(v, factors, this)(d)
+    }
+    if (!done) throw new Error("GibbsSampler: No sampling method found for "+factors)
+    d
+  }
+}
+
+trait GibbsSamplerHandler {
+  def sample(v:Variable, factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean
+}
+
+object GeneratedVariableGibbsSamplerHandler extends GibbsSamplerHandler {
+  def sample(v:Variable, factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean = {
     factors match {
-      // v's only factor is the one with its generative source
-      case List(factor:GeneratedVariableTemplate#Factor) => {
-        val d = new DiffList
-        // TODO Consider doing factor.v1.generativeSource.set(null) and then resetting
-        factor.v1.sampleFrom(factor.v1.generativeSource.value)(d)
-        d
+      case List(factor:GeneratedValueTemplate#Factor) => {
+        // TODO Consider doing factor.v1.generativeSource.set(null) and then resetting??
+        v match {
+          case v:GeneratedVariable => v.sample(d)
+        }
+        true
       }
-      // v is a MixtureChoice
-      case List(factor1:GeneratedVariableTemplate#Factor, factor2:MixtureChoiceTemplate#Factor) => {
-        val mc: MixtureChoice[MixtureChoice] = factor2.v1
+      case _ => false
+    }
+  }
+}
+
+object MixtureChoiceGibbsSamplerHandler extends GibbsSamplerHandler {
+  def sample(v:Variable, factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean = {
+    factors match {
+      case List(factor1:GeneratedValueTemplate#Factor, factor2:MixtureChoiceTemplate#Factor) => {
+        val mc: MixtureChoice = factor2.n1
+        // TODO Make sure that 'mc' doesn't do any extra factor coordination
+        val outcomes: Seq[MixtureOutcome] = mc.gatedRefs.map(_ match { 
+          case pr:GatedParameterRef[Parameter,MixtureOutcome] => pr.child
+          case _ => throw new Error("MixtureChoice is controlling non-MixtureOutcome") 
+        }).toSet.toList // In order to check for duplicates in 'outcomes' // TODO Try to speed this up for the common cases
         val domainSize = mc.domain.size
         val distribution = new Array[Double](domainSize)
         var sum = 0.0
-        mc.gateContents.foreach(_.setToNull(d))
+        //mc.gateRefs.foreach(_.setToNull(d))
         for (i <- 0 until domainSize) {
-          distribution(i) = mc.generativeSource.value.pr(i) * mc.gateContents.foldLeft(_+_.outcomePr(i))
-          sum += distribution
+          distribution(i) = mc.proportions.pr(i) * outcomes.foldLeft(1.0)((prod:Double, outcome:MixtureOutcome) => prod * outcome.prFromMixtureComponent(i))
+          sum += distribution(i)
         }
-        mc.setByIndex(Maths.nextDiscrete(distribution, sum))
+        mc.setByIndex(Maths.nextDiscrete(distribution, sum)(Global.random))(d)
+        true
       }
-      // None of the factor patterns match, so...
-      case _ => v match {
-        case v2: Variable with IterableSettings => processBySettings(v2)
-        case _: => throw new Error("GibbsSampler: No sampling method found for "+factors)
-      }
+      case _ => false
     }
   }
-  private def processBySettings(v:Variable with IterableSettings): DiffList = {
-    // Iterate over all settings of the variable 'v', score each change, and sample from those scores
-    val proposals = v2.settings.map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m, o, m/temperature)}).toList
-    val proposal = proposals.sampleExpProportionally((p:Proposal) => p.acceptanceScore)
-    proposal.diff.redo
-    proposal.diff
+}
+
+object IterableSettingsGibbsSamplerHandler extends GibbsSamplerHandler {
+  def sample(v:Variable, factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean = {
+    v match {
+      case v2: Variable with IterableSettings => {
+        // Iterate over all settings of the variable 'v', score each change, and sample from those scores
+        val proposals = v2.settings.map(d => {val (m,o) = d.scoreAndUndo(sampler.model, sampler.objective); new Proposal(d, m, o, m/sampler.temperature)}).toList
+        val proposal = proposals.sampleExpProportionally((p:Proposal) => p.acceptanceScore)
+        proposal.diff.redo
+        if (d ne null) d ++= proposal.diff
+        true
+      }
+      case _ =>  false
+    }
   }
 }
 
@@ -76,10 +115,12 @@ class GibbsSampler(model:Model = Global.defaultModel, objective:Model = null) ex
 
 
 /** A GibbsSampler that can also collapse some GenverativeDistribution variables. */
+/*
 class CollapsedGibbsSampler(collapsibleVars:Iterable[CollapsibleVariable]) extends Sampler[GeneratedVariable[_]] {
   val _collapsed = new HashMap[Variable,Variable] // with VariableMap
   def isCollapsed(v:Variable) = _collapsed.contains(v)
   def collapsed[V<:CollapsibleVariable](v:V): V#CollapsedType = _collapsed.getOrElse(v, null).asInstanceOf[V#CollapsedType]
+
   //def collapsedDistribution[V<:CollapsibleDistribution[O],O](v:V): V#CollapsedType = _collapsed.getOrElse(v, null).asInstanceOf[V#CollapsedType]
   def map[V<:Variable](v:V): V = _collapsed.getOrElse(v, v).asInstanceOf[V]
   def collapse[V<:CollapsibleVariable](v:CollapsibleVariable): V#CollapsedType = {
@@ -91,6 +132,11 @@ class CollapsedGibbsSampler(collapsibleVars:Iterable[CollapsibleVariable]) exten
 
   // Initialize
   collapsibleVars.foreach(collapse(_))
+
+  def logpr(v:GeneratedVariable): Double = {
+    // pr given collapsing
+    0.0
+  }
 
   def process1(v:GeneratedVariable[_]): DiffList = {
     assert(!v.isInstanceOf[CollapsedVariable]) // We should never be sampling a CollapsedVariable
@@ -125,14 +171,14 @@ class CollapsedGibbsSampler(collapsibleVars:Iterable[CollapsibleVariable]) exten
           val collapsedChoiceSrc = collapsed(choiceSrc.asInstanceOf[DiscreteDistribution[choice.type] with CollapsibleDistribution[choice.type]])
           // Remove variables' sufficient statistics from collapsed distributions
           collapsedChoiceSrc.removeSample(choice)(d)
-          for (ref <- choice.gateContents; if (isCollapsed(ref.value))) {
+          for (ref <- choice.gateRefs; if (isCollapsed(ref.value))) {
             val collapsedMixtureComponent = collapsed(ref.value.asInstanceOf[CollapsibleDistribution[ref.outcome.type]])
             collapsedMixtureComponent.removeSample(choice.outcome)(d)
           }
           // Build the distribution from which we will sample
           for (i <- 0 until domainSize) {
             proportions(i) = collapsedChoiceSrc.pr(i)
-            for (ref <- choice.gateContents) {
+            for (ref <- choice.gateRefs) {
               if (isCollapsed(ref.value)) proportions(i) *= collapsed(ref.value(i).asInstanceOf[CollapsibleDistribution[ref.outcome.type]]).pr(ref.outcome)
               else proportions(i) *= ref.outcomePr(i)
             }
@@ -144,21 +190,21 @@ class CollapsedGibbsSampler(collapsibleVars:Iterable[CollapsibleVariable]) exten
           choice.setByIndex(newValue)(d)
           // Add variable' sufficient statistics to collapsed distributions
           collapsedChoiceSrc.addSample(choice)(d)
-          for (ref <- choice.gateContents; if (isCollapsed(ref.value))) {
+          for (ref <- choice.gateRefs; if (isCollapsed(ref.value))) {
             val collapsedMixtureComponent = collapsed(ref.value.asInstanceOf[CollapsibleDistribution[ref.outcome.type]])
             collapsedMixtureComponent.addSample(choice.outcome)(d)
           }
         } else {
           // choiceSrc is not collapsed, but the mixture components may be
           // Remove variables' sufficient statistics from collapsed distributions
-          for (ref <- choice.gateContents; if (isCollapsed(ref.value))) {
+          for (ref <- choice.gateRefs; if (isCollapsed(ref.value))) {
             val collapsedMixtureComponent = collapsed(ref.value.asInstanceOf[CollapsibleDistribution[ref.outcome.type]])
             collapsedMixtureComponent.removeSample(choice.outcome)(d)
           }
           // Build the distribution from which we will sample
           for (i <- 0 until domainSize) {
             proportions(i) = choiceSrc.pr(i)
-            for (ref <- choice.gateContents) {
+            for (ref <- choice.gateRefs) {
               if (isCollapsed(ref.value)) proportions(i) *= collapsed(ref.value(i).asInstanceOf[CollapsibleDistribution[ref.outcome.type]]).pr(ref.outcome)
               else proportions(i) *= ref.outcomePr(i)
             }
@@ -169,7 +215,7 @@ class CollapsedGibbsSampler(collapsibleVars:Iterable[CollapsibleVariable]) exten
           // Set the new value
           choice.setByIndex(newValue)(d)
           // Add variable' sufficient statistics to collapsed distributions
-          for (ref <- choice.gateContents; if (isCollapsed(ref.value))) {
+          for (ref <- choice.gateRefs; if (isCollapsed(ref.value))) {
             val collapsedMixtureComponent = collapsed(ref.value.asInstanceOf[CollapsibleDistribution[ref.outcome.type]])
             collapsedMixtureComponent.addSample(choice.outcome)(d)
           }
@@ -182,6 +228,49 @@ class CollapsedGibbsSampler(collapsibleVars:Iterable[CollapsibleVariable]) exten
   }
 
 }
+
+trait CollapsedGibbsSamplerHandler {
+  def sample(v:Variable, factors:List[Factor], sampler:CollapsedGibbsSampler)(implicit d:DiffList): Boolean
+}
+
+object DiscreteWithCollapsedParentGibbsSamplerHandler extends GibbsSamplerHandler {
+  def sample(v:Variable, factors:List[Factor], sampler:CollapsedGibbsSampler)(implicit d:DiffList): Boolean = {
+    v match {
+      v: Discrete => {
+        factors match {
+          case List(factor:GeneratedVariableTemplate#Factor) => {
+            val parent = v.proportions
+            if (sampler.isCollapsed(parent)) {
+              // parent has been collapsed, notify it before and after the sampling change
+              val collapsedParent = collapsed(parent.asInstanceOf[CollapsibleProportions])
+          assert(src != collapsedSrc)
+          collapsedSrc.removeSample(v)(d)
+          v.sampleFrom(collapsedSrc)(d) // Note that v.generativeSource is still the original uncollapsed distribution
+          collapsedSrc.addSample(v)(d)
+            } else {
+            }
+        val parents = factor.v1.parents
+        val src = v.generativeSource.value
+        if (isCollapsed(src)) {
+        } else {
+          // src has not been collapsed, just sample normally.
+          v.sampleFrom(src)(d)
+        }
+        d
+      }
+
+      case List(factor:GeneratedVariableTemplate#Factor) => {
+        // TODO Consider doing factor.v1.generativeSource.set(null) and then resetting
+        factor.v1.sample(d)
+        true
+      }
+      case _ => false
+    }
+  }
+}
+*/
+
+
 
 
 /** Defines a substitution mapping from variable to variable.  

@@ -12,24 +12,28 @@ package cc.factorie
 
 /** A one-dimensional Gaussian distribution, generating Real (valued) variables.  Default estimation by moment-matching. 
     @author Andrew McCallum */
-class Gaussian1[R<:RealValue](var mean:Double, var variance:Double) extends RealDistribution[R] {
-  def this() = this(0.0, 1.0)
-  //def this(initMean:Double, initVariance:Double) = this(new Real(initMean), new Real(initVariance))
-  // TODO Consider sampleInto(o:R with RealVariable)
-  def sampleInto(o:RealVariable) : Unit = o.set(sampleDouble)(null) // TODO should we put a difflist here?
-  def logpr(x:Double) : Double = {
+class Gaussian(val mean:RealValueParameter, val variance:RealValueParameter = new RealVariableParameter(1.0)) extends RealVariable with GeneratedVariable {
+  mean.addChild(this)(null)
+  variance.addChild(this)(null)
+  def parents = List(mean, variance)
+  override def logpr: Double = {
+    val x = this.doubleValue
     val diff = x - mean.doubleValue
-    return - diff * diff / (2 * variance) - 0.5 * Math.log(2 * Math.Pi * variance)
+    return - diff * diff / (2 * variance.doubleValue) - 0.5 * Math.log(2 * Math.Pi * variance.doubleValue)
   }
-  override def logpr(o:R):Double = logpr(o.doubleValue)
-  def pr(x:Double):Double = Math.exp(logpr(x))
-  def pr(o:R):Double = pr(o.doubleValue)
-  def sampleDouble: Double = Maths.nextGaussian(mean, variance)(Global.random)
+  def pr: Double = Math.exp(logpr)
+  def sampleFrom(mean:RealValue, variance:RealValue)(implicit d:DiffList) = 
+    set(Maths.nextGaussian(mean.doubleValue, variance.doubleValue)(Global.random))
+  def sample(implicit d:DiffList): Unit = sampleFrom(mean, variance)
+  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
+    case Seq(mean:RealValue, variance:RealValue) => sampleFrom(mean, variance)
+  }
+
   def minSamplesForVarianceEstimate = 5
   /** This implements a moment-matching estimator. */
-  def estimate : Unit = {
+  /*def estimate: Unit = {
   	throw new Error
-    /*if (generatedSamples.size == 0) { mean = 0.0; variance = 1.0; return }
+    if (generatedSamples.size == 0) { mean = 0.0; variance = 1.0; return }
     mean = 0.0
     var weightSum = 0.0
     for ((s,w) <- weightedGeneratedSamples) { mean += s.doubleValue * w; weightSum += w }
@@ -41,9 +45,9 @@ class Gaussian1[R<:RealValue](var mean:Double, var variance:Double) extends Real
       variance += diff * diff * w
     }
     variance = Math.sqrt(variance / (weightSum - 1))
-    */
   }
-  override def toString = "Gaussian1("+mean.doubleValue+","+variance.doubleValue+")"
+    */
+  override def toString = "Gaussian("+mean.doubleValue+","+variance.doubleValue+")"
 }
 
 // /** A real value, integrated out with a Gaussian prior. */

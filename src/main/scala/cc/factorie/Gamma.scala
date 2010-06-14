@@ -9,25 +9,27 @@ package cc.factorie
 
 // TODO Consider renaming Real -> PositiveRealValue ??
 // TODO Consider Real.value -> Real.toDouble and/or Real.doubleValue Distribution[PositiveReal]
-
 // TODO Consider creating PostiveReal, and then Gamma extends 
 
 /** The Gamma distribution generating real values with parameters alpha and beta. 
     @author Andrew McCallum. */
-class Gamma(alpha:Real, beta:Real) extends Distribution[Real] {
-  def this(alpha:Double, beta:Double) = this(new Real(alpha), new Real(beta))
-  // Note that there is an implicit conversion from RealValue to Double, which we leverage below
-  def pr(x:Double) = {
+class Gamma(val alpha:RealValueParameter, val beta:RealValueParameter, value:Double = 0) extends RealVariable(value) with GeneratedVariable {
+  alpha.addChild(this)(null)
+  beta.addChild(this)(null)
+  def parents = List(alpha, beta)
+  def pr = {
+    val x = doubleValue
     assert (x > 0)
     Math.pow(beta.doubleValue, alpha.doubleValue) / Maths.gamma(alpha.doubleValue) * Math.pow(x, alpha.doubleValue - 1) * Math.exp(- beta.doubleValue * x)
   }
-  def pr(o:Real): Double = pr(o.doubleValue)
   // TODO def logpr(x:Double) = 
-  def sample: Double = Maths.nextGamma(alpha.doubleValue, beta.doubleValue)(Global.random)
-  def estimate: Unit = {
-    throw new Error("Not yet implemented")
+  def sampleFrom(alpha:RealValue, beta:RealValue)(implicit d:DiffList): Unit = 
+    set(Maths.nextGamma(alpha.doubleValue, beta.doubleValue)(Global.random))
+  def sample(implicit d:DiffList): Unit = sampleFrom(alpha, beta)
+  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
+    case Seq(alpha:RealValue, beta:RealValue) => sampleFrom(alpha, beta)
   }
 }
 
 // TODO Finish this.
-abstract class GammaGamma(alphaGamma:Gamma, betaGamma:Gamma) extends Distribution[Real]
+//class GammaGamma(alphaGamma:Gamma, betaGamma:Gamma, value:Double = 0) extends Gamma(alphaGamma, betaGamma, value)

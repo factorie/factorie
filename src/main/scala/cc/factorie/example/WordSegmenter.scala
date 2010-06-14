@@ -83,7 +83,7 @@ object WordSegmenterDemo {
     var trainVariables = trainSet.flatMap(_.map(_.label))
     var testVariables = testSet.flatMap(_.map(_.label))
 
-    testVariables.foreach(_.setRandomly)
+    testVariables.foreach(_.setRandomly())
     println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
     println ("Initial test accuracy = "+ objective.aveScore(testVariables))

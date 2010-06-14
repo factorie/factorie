@@ -29,7 +29,7 @@ trait Sampler[C] {
     processCount += 1
     postProcessHook(c, d)
     diffHook(d)
-    if (d ne null && d.size > 0) changeCount += 1
+    if (null != d && d.size > 0) changeCount += 1
     d
   }
   /** If true, calls to "newDiffList" will create a new DiffList to describe the changes they made, otherwise "newDiffList" will return null. */
@@ -112,7 +112,7 @@ trait SettingsSampler0 {
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(C), 
     scores each, builds a distribution from the scores, and samples from it.
     @author Andrew McCallum */
-abstract class SettingsSampler[C](theModel:Model, theObjective:Model) extends ProposalSampler[C] with SamplerOverSettings0 {
+abstract class SettingsSampler[C](theModel:Model, theObjective:Model) extends ProposalSampler[C] with SettingsSampler0 {
   def this(m:Model) = this(m, null)
   def model = theModel
   def objective = theObjective 
