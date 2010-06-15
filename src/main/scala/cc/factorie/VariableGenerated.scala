@@ -55,6 +55,26 @@ trait Parameter extends Variable {
   }
 }
 
+trait Estimation[This<:Parameter] {
+  this: This =>
+  def estimate(model:Model = Global.defaultModel)(implicit e:Estimator[This]): Unit = e.estimate(this, model)
+}
+
+trait Estimator[P<:Parameter] {
+  def estimate(parameter:P, model:Model): Unit
+}
+
+object MultinomialMaximumLikelihoodEstimator {
+  implicit val multinomialMaximumLikelihoodEstimator = new Estimator[DenseProportions] {
+    def estimate(p:DenseProportions, model:Model): Unit = {
+      val counts = new Array[Double](p.length)
+      for (child <- p.children) child match { case child:DiscreteValue => counts(child.intValue) = counts(child.intValue) + 1.0 }
+      for (i <- 0 until p.length) counts(i) /= p.children.size
+      p.set(counts)(null) // TODO Should we have a DiffList here?
+    }
+  }
+}
+
 trait DeterministicFunction extends Parameter
 trait RealFunction extends DeterministicFunction with RealValue
 abstract class RealOpConstant(val real:RealValueParameter) extends RealFunction with GeneratedValue {
@@ -117,9 +137,11 @@ trait Proportions extends Parameter with IndexedSeq[Double] with DiscreteGenerat
   def pr(index:Int) = apply(index)
   def logpr(index:Int) = math.log(apply(index))
   def maxPrIndex: Int = { var maxIndex = 0; var i = 1; while (i < size) { if (this(i) > this(maxIndex)) maxIndex =i; i += 1 }; maxIndex }
+  override def toString = mkString(printName+"(", ",", ")")
 }
 trait TypedProportions[A<:DiscreteValue] extends Proportions
-class DenseProportions(p:Seq[Double]) extends Proportions {
+class DenseProportions(p:Seq[Double]) extends Proportions with Estimation[DenseProportions] {
+  //def this(ps:Double*) = this(ps)
   private var _p = new Array[Double](p.size)
   if (p != Nil) this := p else setUniform(null)
   @inline final def length = _p.size
