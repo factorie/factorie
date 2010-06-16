@@ -109,6 +109,10 @@
                   <jvmArgs><jvmArg>-Xmx1024m</jvmArg></jvmArgs>
                   <args><arg>-explaintypes</arg></args>
                   <launchers>
+		     <launcher>
+		       <id>Multinomial</id>
+		       <mainClass>cc.factorie.example.MultinomialDemo</mainClass>
+		     </launcher>
                      <launcher>
                         <id>Dexa1</id>
                         <mainClass>cc.factorie.example.Dexa1</mainClass>
