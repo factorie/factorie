@@ -4,6 +4,11 @@
 default:
 	echo To compile FACTORIE use Maven2, "mvn compile"
 
+# CLASSPATH
+CP=`echo $$HOME/workspace/factorie/target $$HOME/workspace/lib/* $$CLASSPATH | sed -e 's/ /:/g'`
+fsc:
+	echo $(SCALA_HOME)/bin/fsc JAVA_OPTS="-Xmx512M -Xms16M -Xss16M" -cp $(CP) `find src -name '*.scala' 
+
 # Use emacs' default indenter to fix indentation on all *.scala files in src.
 # Not yet working!
 # TODO: This could be made more efficient by having emacs loop through the files instead of the shell
