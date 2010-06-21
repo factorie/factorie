@@ -46,6 +46,7 @@ abstract class DiscreteVariable extends OrdinalVariable with DiscreteValue with 
   def setByIndex(newIndex: Int)(implicit d: DiffList): Unit = {
     // TODO Note that we do not check that (newIndex < domain.size), but perhaps we should; this would slow us down, though!
     //if (newIndex < 0) throw new Error("DiscreteVariable setByIndex can't be negative.")
+    //val dom = domain; if (!dom.frozen && dom.size < newIndex+1) dom.setSize(newIndex+1) // Do this, even though it will make things slower?
     super.setByInt(newIndex)(d)
   }
   def setRandomly(random:Random = Global.random, d:DiffList = null): Unit = setByIndex(random.nextInt(domainSize))(d)

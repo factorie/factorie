@@ -26,7 +26,9 @@ trait CollapsibleVariable extends GeneratedVariable {
 /** A Parameter that can be marginalized out (collapsed).
     @see DirichletMultinomial
     @author Andrew McCallum */
-trait CollapsibleParameter extends Parameter with CollapsibleVariable
+trait CollapsibleParameter extends Parameter with CollapsibleVariable {
+  type CollapsedType <: CollapsedParameter
+}
 
 
 /* Several examples of marginal distributions representing collapsed variables. */
@@ -46,7 +48,7 @@ trait CollapsedGeneratedVariable {
 /** Something that represents the collapsing of an existing GeneratedVariable. */
 trait CollapsedVariable extends GeneratedVariable 
 
-trait CollapsedParameter extends CollapsedVariable {
+trait CollapsedParameter extends CollapsedVariable with Parameter {
   // TODO What should go here?
   //def addSample(o:Variable)(implicit d:DiffList): Unit
   //def removeSample(o:Variable)(implicit d:DiffList): Unit

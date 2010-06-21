@@ -11,8 +11,9 @@ import java.lang.annotation.*;
 /** Annotate the size of a Variable's DiscreteDomain.
  *  @author Andrew McCallum
  */ 
-@Retention(RetentionPolicy.RUNTIME)
+/*@Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface DomainSize {
   public int value();
-}
+  }*/
+ 

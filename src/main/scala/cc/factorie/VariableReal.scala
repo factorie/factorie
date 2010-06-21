@@ -18,6 +18,7 @@ trait RealValue extends Variable {
 }
 
 /** A variable class for immutable real (double) values. */
+// TODO Consider changing name to RealConstant?  See RealConstantParameter.
 class RealObservation(val doubleValue:Double) extends RealValue with ConstantValue {
   type VariableType <: RealObservation
 }

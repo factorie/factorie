@@ -5,7 +5,7 @@
     <version>0.9.0-SNAPSHOT</version>
     <inceptionYear>2009</inceptionYear>
     <properties>
-        <scala.version>2.8.0.RC5</scala.version>
+        <scala.version>2.8.0.RC2</scala.version>
     </properties>
     <url>http://factorie.googlecode.com</url>
     <scm>
@@ -32,7 +32,7 @@
         <repository>
             <id>scalanlp.org</id>
             <name>ScalaNLP repository</name>
-            <url>http://repo.scalanlp.org/repo/org/scalanlp/scalala_2.8.0.RC5</url>
+            <url>http://repo.scalanlp.org/repo/org/scalanlp/scalala_2.8.0.RC2</url>
         </repository>
     </repositories>
 
@@ -109,6 +109,10 @@
                   <jvmArgs><jvmArg>-Xmx1024m</jvmArg></jvmArgs>
                   <args><arg>-explaintypes</arg></args>
                   <launchers>
+		     <launcher>
+		       <id>WordSegmenter</id>
+		       <mainClass>cc.factorie.example.WordSegmenterDemo</mainClass>
+		     </launcher>
 		     <launcher>
 		       <id>Multinomial</id>
 		       <mainClass>cc.factorie.example.MultinomialDemo</mainClass>

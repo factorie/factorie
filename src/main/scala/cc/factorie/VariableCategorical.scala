@@ -12,7 +12,6 @@ import scalala.Scalala._
 import scalala.tensor.Vector
 import scalala.tensor.dense.DenseVector
 import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log}
 
 // Categorical variables are Discrete variables in which the integers 0...N have each been mapped to some other objects of type ValueType.
 
@@ -31,14 +30,14 @@ import cc.factorie.util.{Log}
     It can apply to a single Int value (as in CategoricalValue) or a collection of indices (as in BinaryVectorVariable).
     All instances of such a subclass share the same domain. 
     @author Andrew McCallum */
-// Semantically "Values" are not really "Variables", but we must inherit from cc.factorie.Variable in order to handle Domain properly
 @DomainInSubclasses
 trait CategoricalValues[T] extends Variable with DiscreteValues with TypedValues with AbstractCategoricalValues {
+  // We must inherit from cc.factorie.Variable here in order to handle Domain properly
   type VariableType <: CategoricalValues[T]
   type ValueType = T
   type DomainType <: CategoricalDomain[VariableType]
   class DomainClass extends CategoricalDomain[VariableType]()(null)
-  override def domainSize = domain.allocSize
+  override def domainSize = domain.allocSize // TODO Why is this 'allocSize' and not 'size'? -akm
 }
 
 /** A CategoricalValues that does not take a type parameter, for use in the definition of CategoricalDomain. */
@@ -54,7 +53,6 @@ trait AbstractCategoricalValues extends Variable with DiscreteValues with TypedV
     @author Andrew McCallum */
 @DomainInSubclasses
 abstract trait CategoricalValue[T] extends CategoricalValues[T] with DiscreteValue with TypedValue {
-  this: Variable =>
   type VariableType <: CategoricalValue[T]
   def value: ValueType = domain.get(intValue) // TODO I wanted to define this here, but Scala cannot resolve the right type.
   override def toString = printName + "(" + (if (value == this) "this" else value.toString) + "=" + intValue + ")"
@@ -66,7 +64,7 @@ abstract trait CategoricalValue[T] extends CategoricalValues[T] with DiscreteVal
 abstract class CategoricalVariable[T] extends DiscreteVariable with CategoricalValue[T] {
   type VariableType <: CategoricalVariable[T]
   def this(initialValue:T) = { this(); set(initialValue)(null) }
-  final def set(newValue: ValueType)(implicit d: DiffList) = setByIndex(domain.index(newValue))
+  final def set(newValue:ValueType)(implicit d: DiffList) = setByIndex(domain.index(newValue))
   final def :=(newValue:ValueType) = set(newValue)(null)
   final def value_=(newValue:ValueType) = set(newValue)(null)
 }

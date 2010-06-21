@@ -37,20 +37,25 @@ class Domain[V<:Variable](implicit m:Manifest[V]) {
 // TODO Consider if it would be helpful to have a RealDomain or PositiveRealDomain
 
 /** A Domain that has a positive integer size.  
-    Set its size by Domain[MyDiscrete].size = 9; or Domain[MyDiscrete].size = Domain[MyOther].size. */
+    Set its size by Domain[MyDiscrete].size = 9; or Domain[MyDiscrete].size = Domain[MyOther].size. 
+    @author Andrew McCallum */
 class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V]()(m) {
+  private var _frozen = false
   private var _size: Int = -1
   private var _sizeFunction: ()=>Int = null
+  // def frozen = _frozen // TODO Enable this, and uncomment code in DiscreteVariable.setByIndex.  Consider folding all util.Index into CategoricalDomain
+  def size_=(size:Int): Unit = size_=(() => size)
   def size_=(sizeFunction: ()=>Int): Unit = {
     if (_size == -1) _sizeFunction = sizeFunction
     else throw new Error("DiscreteDomain["+m.erasure.getName+"].size already accessed; cannot re-set size.")
   }
-  /** Actually call the sizeFunction to */
+  /** Actually call the sizeFunction to set the size. */
   private def setSize(): Unit = 
-    if (_sizeFunction != null) { _size = _sizeFunction.apply; require(_size > 0) }
-    else throw new Error("DiscreteDomain size must be set; e.g. Domain[MyDiscrete].size = 10")
+    if (_sizeFunction != null) { val s = _sizeFunction.apply; require(s > 0); require(s >= _size); _size = s; _frozen = true }
+    else throw new Error(getClass.getName+": DiscreteDomain size must be set; e.g. Domain[MyDiscrete].size = 10")
+  def setSize(s:Int): Unit = if (!_frozen) _size = s else throw new Error(getClass.getName+": DiscreteDomain size is already frozen and cannot be set.")
   def size: Int = { if (_size == -1) setSize(); _size }
-  def freeze: Unit = setSize()
+  def freeze: Unit = { setSize(); _frozen = true }
   def allocSize = size
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)
@@ -309,6 +314,14 @@ class StringDomain[V<:CategoricalValues[_] {type ValueType = String}](implicit m
 }
 
 
+/** Marks classes that should not get their own domain.  
+    This is examined by domainInSubclasses from Domain.getDomainForClass.
+    @author Andrew McCallum */
+//class DomainInSubclasses extends ClassfileAnnotation 
+// TODO Not yet working.  WARNING from compiler:
+// warning: implementation restriction: subclassing Classfile does not make your annotation visible at runtime.  
+// If that is what you want, you must write the annotation class in Java.
+
 
 /** A static map from a Variable class to its Domain. */
 object Domain {
@@ -362,7 +375,7 @@ object Domain {
   }
   /** Return a Domain instance for Variables of class c, constructing one if necessary.  Also put it in the _domains map. */
   private def getDomainForClass(c:Class[_]) : Domain[_] = {
-    if (domainInSubclassesByAnnotation(c)) throw new Error("Cannot get a Domain for "+c+" because it declares DomainInSubclasses, and should be considered abstract.")
+    if (domainInSubclasses(c)) throw new Error("Cannot get a Domain for "+c+" because it declares DomainInSubclasses, and should be considered abstract.")
     var dvc = getDomainVariableClass(c)
     if (debug) println("getDomainForClass c="+c+" dvc="+dvc)
     if (dvc == null) dvc = c
@@ -408,17 +421,17 @@ object Domain {
     } else
       null
   }
-  private def domainInSubclasses(c:Class[_]) : Boolean = c.getDeclaredClasses.findIndexOf(c=>c.getName.endsWith("$DomainInSubclasses")) != -1
 
-  def domainInSubclassesByAnnotation(c:Class[_]) : Boolean = c.isAnnotationPresent(classOf[DomainInSubclasses])
-
+  def domainInSubclasses(c:Class[_]) : Boolean = 
+    //c.getDeclaredClasses.findIndexOf(c=>c.getName.endsWith("$DomainInSubclasses")) != -1 // by searching for a member class whose sole purpose is to flag this class
+    c.isAnnotationPresent(classOf[DomainInSubclasses]) // by annotation
 
   /** Find a potential substitute for c as the key into _domains. */
   private def getDomainVariableClass(c:Class[_]) : Class[_] = {
     if (debug) println("getDomainVariableClass c "+c+" classes.length="+c.getDeclaredClasses.length)
-    if (domainInSubclassesByAnnotation(c)) throw new Error("Cannot create Domain["+c+"] because it is annotated with DomainInSubclasses.")
+    if (domainInSubclasses(c)) throw new Error("Cannot create Domain["+c+"] because it is annotated with DomainInSubclasses.")
     else if (c.getSuperclass == null || c.getSuperclass == classOf[java.lang.Object]) c 
-    else if (domainInSubclassesByAnnotation(c.getSuperclass)) c 
+    else if (domainInSubclasses(c.getSuperclass)) c 
     else getDomainVariableClass(c.getSuperclass)
   }
 }

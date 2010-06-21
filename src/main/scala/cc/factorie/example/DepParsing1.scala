@@ -58,9 +58,10 @@ object DepParsing1 {
     }
   }
   class Direction(right:Boolean) extends Bool(right)
-  @DomainSize(6) class Distance(d:Int) extends DiscreteVariable {
+  class Distance(d:Int) extends DiscreteVariable {
     if (d < domain.size-1) setByInt(d)(null) else setByInt(domain.size-1)(null)
   }
+  Domain[Distance].size = 6
   class POS(posString:String) extends CategoricalVariable(posString) 
   class Label(trueString:String) extends LabelVariable(trueString)
   class Sentence extends VariableSeq[Token] {

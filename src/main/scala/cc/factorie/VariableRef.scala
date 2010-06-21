@@ -24,7 +24,6 @@ trait RefValue[A<:AnyRef] extends TypedValue {
   def !==(other: RefValue[A]) = value != other.value
 }
 
-@DomainInSubclasses
 abstract class RefObservation[A<:AnyRef](theValue:A) extends Variable with RefValue[A] {
   type VariableType <: RefObservation[A];
   final val value: A = theValue
@@ -64,13 +63,5 @@ trait RefTrueValue[A>:Null<:AnyRef] extends TrueSetting {
   def valueIsTruth: Boolean = trueValue == value
 }
 
-@DomainInSubclasses
 abstract class RefLabel[A>:Null<:AnyRef](var trueValue:A) extends RefVariable[A] with RefTrueValue[A]
-
-// TODO Who put this here?  This doesn't make sense, and isn't a good name.
-/**A variable class for string values. */
-/*@DomainInSubclasses
-abstract class StringVariable(str: String) extends RefVariable(str) {
-  type VariableType = StringVariable
-}*/
 

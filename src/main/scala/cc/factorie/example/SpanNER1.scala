@@ -61,9 +61,10 @@ object SpanNER1 {
   class Sentence extends TokenSeqs.TokenSeq[Token,Sentence] with VariableSeqWithSpans[Token,Span] {
     var filename:String = null
   }
-  @DomainSize(5) class SpanLength(x:Int) extends DiscreteVariable {
+  class SpanLength(x:Int) extends DiscreteVariable {
     if (x < domain.size) setByInt(x)(null) else setByInt(domain.size-1)(null)
   }
+  Domain[SpanLength].size = 6
   class Lexicon(filename:String) extends TokenSeqs.Lexicon(filename) {
     def name = filename.substring(filename.lastIndexOf('/')+1).toUpperCase
   }

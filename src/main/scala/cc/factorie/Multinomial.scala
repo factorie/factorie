@@ -196,7 +196,6 @@ trait HashIncrementableCounts extends IncrementableCounts {
 
 // A Multinomial that stores its parameters as a collection of "outcome counts" and their total. 
 //  Only the methods '_counts' and 'length' are abstract in this class.
-@DomainInSubclasses
 trait CountsMultinomial[O<:DiscreteValue] extends Multinomial[O] with IncrementableCounts {
   type VariableType <: CountsMultinomial[O]
   def pr(index:Int) = counts(index) / countsTotal
@@ -205,7 +204,6 @@ trait CountsMultinomial[O<:DiscreteValue] extends Multinomial[O] with Incrementa
 }
 
 // A Multinomial that stores its counts in a Scalala SparseVector. 
-@DomainInSubclasses
 class SparseCountsMultinomial[O<:DiscreteValue](val length:Int) extends SparseMultinomial[O] with CountsMultinomial[O] with SparseVectorIncrementableCounts {
   type Variabletype <: SparseCountsMultinomial[O]
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
@@ -241,7 +239,6 @@ abstract class SortedSparseCountsMultinomial[O<:DiscreteValue](dim:Int) extends 
 }
 
 // A Multinomial that stores its counts in a Scalala DenseVector.
-@DomainInSubclasses
 class DenseCountsMultinomial[O<:DiscreteValue](val length:Int) extends CountsMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: DenseCountsMultinomial[O]
@@ -259,7 +256,6 @@ class DenseCountsMultinomial[O<:DiscreteValue](val length:Int) extends CountsMul
 // // TODO Figure out how to use intead [O<:GeneratedDiscreteValue[O]], but still get O#VariableType#ValueType in "top" below
 // // TODO class DirichletMultinomial[O<:DiscreteValue](val dirichlet:Dirichlet[O]) extends DiscreteDistribution[O] with MarginalizingDistribution
 // // TODO trait MarginalizingDistribution { val target: Variable }
-// @DomainInSubclasses
 // class DirichletMultinomial[O<:GeneratedDiscreteValue[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
 //   def this()(implicit m:Manifest[O]) = this(null.asInstanceOf[AbstractDirichlet[O]])(m)
 //   def this(dirichlet:AbstractDirichlet[O], initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(dirichlet)(m); set(initCounts) }

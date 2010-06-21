@@ -7,7 +7,7 @@
 
 package cc.factorie.example
 import cc.factorie._
-import cc.factorie.MultinomialMaximumLikelihoodEstimator._
+import cc.factorie.DenseProportionsMaximumLikelihoodEstimator._
 
 object MultinomialDemo {
 
