@@ -115,7 +115,7 @@ class GrowableDenseCountsProportions extends DenseCountsProportions(32) {
 
 
 object DenseProportions {
-  implicit val mlEstimator = new Estimator[DenseProportions] {
+  implicit val denseProportionsEstimator = new Estimator[DenseProportions] {
     def estimate(p:DenseProportions, model:Model): Unit = {
       val counts = new Array[Double](p.length)
       for (child <- p.children) child match { case child:DiscreteValue => counts(child.intValue) = counts(child.intValue) + 1.0 }
@@ -127,7 +127,7 @@ object DenseProportions {
 
 
 object DenseCountsProportions {
-  implicit val mlEstimator = new Estimator[DenseCountsProportions] {
+  implicit val denseCountsProportionsEstimator = new Estimator[DenseCountsProportions] {
     def estimate(p:DenseCountsProportions, model:Model): Unit = {
       p.zero
       for (child <- p.children) child match { case child:DiscreteValue => p.increment(child.intValue, 1.0)(null) }

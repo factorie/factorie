@@ -61,7 +61,8 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
   def mean: Proportions
   def precision: RealValueParameter
   def parents = List(mean, precision)
-  mean.addChild(this)(null); precision.addChild(this)(null)
+  mean.addChild(this)(null)
+  precision.addChild(this)(null)
   def increment(index:Int, incr:Double)(implicit d:DiffList): Unit
   def counts(index:Int): Double
   def countsTotal: Double
@@ -90,8 +91,8 @@ class DenseDirichletMultinomial(val mean:Proportions, val precision:RealValuePar
 }
 
 class GrowableDenseDirichletMultinomial(val alpha:Double) extends GrowableDenseCountsProportions with DirichletMultinomial {
-  val mean = new GrowableUniformProportions(this)
-  val precision = new RealFunction {
+  lazy val mean = new GrowableUniformProportions(this)
+  lazy val precision = new RealFunction {
     def doubleValue = alpha * GrowableDenseDirichletMultinomial.this.length
     def pr = 1.0
     def parents = List(GrowableDenseDirichletMultinomial.this) // TODO But note that GrowableDenseDirichletMultinomial doesn't have this as a child.

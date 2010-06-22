@@ -15,37 +15,30 @@ import cc.factorie.util.Stopwords
 
 object LDADemo {
   val numTopics = 10
-  class Z(p:Proportions) extends MixtureChoice(p); Domain[Z].size = numTopics
+  class Z(p:Proportions, value:Int) extends MixtureChoice(p, value); Domain[Z].size = numTopics
   class Word(ps:Seq[Proportions], z:MixtureChoice, value:String) extends CategoricalMixture[String](ps, z, value)
   class Document(val file:String) extends ArrayBuffer[Word] { var theta:Proportions = _ }
 
   def main(args: Array[String]) : Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips05")
     val lexer = new Regex("[a-zA-Z]+")
-    // Read observed data and create Documents
+
+    // Read data and create generative variables
+    val phis = for (i <- 1 to numTopics) yield new GrowableDenseDirichletMultinomial(0.01) with TypedProportions[Word]
     val documents = new ArrayBuffer[Document];
     for (directory <- directories) {
       for (file <- new File(directory).listFiles; if (file.isFile)) {
-        val d = new Document(file.toString)
-        d ++= lexer.findAllIn(Source.fromFile(file).toString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_)).map(new Word(Nil, null, _))
-        documents += d
+        val doc = new Document(file.toString)
+        doc.theta = new DenseDirichletMultinomial(numTopics, 0.01)
+        for (word <- lexer.findAllIn(Source.fromFile(file).toString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_))) {
+          val z = new Z(doc.theta, doc.theta.sampleInt)
+          doc += new Word(phis, z, word)
+        }
+        documents += doc
       }
     }
     println("Read "+documents.size+" documents with "+documents.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
   
-    // Create random variables and tell generative storyline
-    //val betaMean = new UniformProportions(numTopics)
-    //val betaPrecision = new RealVariableParameter(numTopics * 0.01)
-    //val alphaMean = new UniformProportions(Domain[Word].size)
-    val phis = for (i <- 1 to numTopics) yield new DenseDirichletMultinomial(Domain[Word].size, 0.01) with TypedProportions[Word]
-    for (document <- documents) {
-      document.theta = new DenseDirichletMultinomial(numTopics, 0.01)  // new DenseDirichlet(...)
-      for (i <- 0 until document.length) {
-        val z = new Z(document.theta)
-        document(i) = new Word(phis, z, document(i).value)
-      }
-    }
-    
     // Fit model
     val zs = documents.flatMap(document => document.map(word => word.choice))
     val sampler = new CollapsedGibbsSampler

@@ -70,12 +70,14 @@ trait Factor extends Product with Ordered[Factor] {
   	_hashCode
   }
   def factorName = template.factorName
-  override def toString = { // TODO change to mkString
-    val sb = new StringBuilder; sb append factorName; sb append '(';
-    val iter = variables.iterator
-    while (iter.hasNext) { sb append iter.next.toString; if (iter.hasNext) sb append "," } 
-    sb append ")"
-    sb.toString
+  override def toString: String = { // TODO change to mkString
+    "Factor"
+    //val sb = new StringBuilder; sb append factorName; sb append '(';
+    // TODO Put this back, but need to find the infinite loop
+    //val iter = variables.iterator
+    //while (iter.hasNext) { sb append iter.next.toString; if (iter.hasNext) sb append "," } 
+    //sb append ")"
+    //sb.toString
   }
 }
 
@@ -114,6 +116,7 @@ object Vars {
 trait IterableSingle[T] extends Iterable[T] {
   this: T =>
   def iterator: Iterator[T] = Iterator.single(this)
+  override def toString: String = "cc.factorie.IterableSingle"
 }
 
 /** The template for many factors.  Manages its connections to neighboring variables.

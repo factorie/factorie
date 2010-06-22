@@ -9,7 +9,7 @@ package cc.factorie
 
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap,IndexedSeq}
-import cc.factorie.util.SeqAsVector
+//import cc.factorie.util.SeqAsVector
 //import scalala.Scalala._
 //import scalala.tensor.Vector
 //import scalala.tensor.dense.DenseVector

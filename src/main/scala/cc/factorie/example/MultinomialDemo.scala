@@ -7,19 +7,19 @@
 
 package cc.factorie.example
 import cc.factorie._
-import cc.factorie.DenseProportionsMaximumLikelihoodEstimator._
+//import cc.factorie.DenseProportionsMaximumLikelihoodEstimator._
+import cc.factorie.DenseProportions._
+import cc.factorie.DenseCountsProportions._
 
 object MultinomialDemo {
+  val numSides = 6
+  class Roll(die:Proportions, value:Int) extends Discrete(die, value)
+  Domain[Roll].size = () => numSides // TODO Make this unnecessary
 
   def main(args:Array[String]) : Unit = {
-    //val r = new scala.util.Random
-    val numSides = 6
-    class Roll(die:Proportions, value:Int = die.sampleInt) extends Discrete(die, value)
-    Domain[Roll].size = () => numSides // TODO Make this unnecessary
-
     val die = new DenseProportions(List(.1, .2, .3, .2, .2))
     println("True distribution "+die)
-    val rolls = for (i <- 1 to 1000) yield new Roll(die, 0)
+    val rolls = for (i <- 1 to 1000) yield new Roll(die, die.sampleInt)
     rolls.foreach(_.sample(null))
     die.estimate()
     println("Est  distribution "+die)
