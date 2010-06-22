@@ -68,9 +68,11 @@ class ParameterRef[P<:Parameter,C<:GeneratedValue](p:P, override val child:C) ex
     if (value ne null) value.addChild(child)
   }
 }
-class GatedParameterRef[P<:Parameter,C<:MixtureOutcome](val parameters:Seq[P], val gate:Gate, child:C) extends ParameterRef[P,C](parameters.apply(gate.intValue), child) with GatedRefVariable[P] {
-  gate += this
-  assert(parameters.length == gate.domainSize)
+class GatedParameterRef[P<:Parameter,C<:MixtureOutcome](val parameters:Seq[P], val gate:Gate, child:C) extends ParameterRef[P,C](if (gate ne null) parameters.apply(gate.intValue) else null.asInstanceOf[P], child) with GatedRefVariable[P] {
+  if (gate ne null) {
+    gate += this
+    assert(parameters.length == gate.domainSize)
+  }
   def valueForIndex(index:Int) = parameters(index)
   def domainSize = parameters.length
 }

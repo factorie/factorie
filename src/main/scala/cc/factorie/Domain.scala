@@ -11,9 +11,10 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, Flat
 import scala.reflect.Manifest
 import scala.util.Random
 import scala.util.Sorting
-import scalala.tensor.Vector
-import scalala.tensor.dense.DenseVector
-import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+//import scalala.tensor.Vector
+//import scalala.tensor.dense.DenseVector
+//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+import cc.factorie.la._
 import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
 

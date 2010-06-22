@@ -6,9 +6,9 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
-import scala.reflect.Manifest
-import scalala.Scalala._
-import scalala.tensor.Vector
+//import scalala.Scalala._
+//import scalala.tensor.Vector
+import cc.factorie.la._
 
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
 trait SampleRank extends ProposalSampler0 with SettingsSampler0 {

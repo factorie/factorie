@@ -10,10 +10,10 @@ package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap,IndexedSeq}
 import cc.factorie.util.SeqAsVector
-import scalala.Scalala._
-import scalala.tensor.Vector
-import scalala.tensor.dense.DenseVector
-import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+//import scalala.Scalala._
+//import scalala.tensor.Vector
+//import scalala.tensor.dense.DenseVector
+//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
 /*
 /// Base of the Multinomial class hierarchy, abstract, needing only methods length, pr, and set. 

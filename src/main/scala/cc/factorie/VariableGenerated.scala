@@ -7,6 +7,7 @@
 
 package cc.factorie
 import scala.collection.mutable.HashSet
+import cc.factorie.la._
 
 // A collection of abstract Variables (and a generic Template) for generative models (directed Bayesian networks, 
 // as opposed to undirected in which there is not a DAG-shaped generative storyline).
@@ -108,7 +109,7 @@ class ObservedDiscretes(val proportions:Proportions, values:Traversable[Int] = N
   private val _values = values.toArray
   override def logpr: Double = { var result = 0.0; forIndex(_values.size)(index => result += math.log(proportions(index))); result }
   def pr: Double = math.exp(logpr)
-  def vector: scalala.tensor.Vector = throw new Error
+  def vector: Vector = throw new Error
 }
 
 

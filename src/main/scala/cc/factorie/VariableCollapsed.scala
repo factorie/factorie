@@ -10,10 +10,10 @@ package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.HashSet
 import cc.factorie.util.SeqAsVector
-import scalala.Scalala._
-import scalala.tensor.Vector
-import scalala.tensor.dense.DenseVector
-import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+//import scalala.Scalala._
+//import scalala.tensor.Vector
+//import scalala.tensor.dense.DenseVector
+//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
 
 /** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.

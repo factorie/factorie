@@ -19,10 +19,16 @@ object MultinomialDemo {
 
     val die = new DenseProportions(List(.1, .2, .3, .2, .2))
     println("True distribution "+die)
-    val rolls = for (i <- 1 to 100) yield new Roll(die, 0)
+    val rolls = for (i <- 1 to 1000) yield new Roll(die, 0)
     rolls.foreach(_.sample(null))
     die.estimate()
     println("Est  distribution "+die)
+
+    val r = new scala.util.Random
+    val die2 = new GrowableDenseCountsProportions
+    val rolls2 = for (i <- 1 to 1000) yield new Roll(die2, r.nextInt(6))
+    die2.estimate()
+    println("Die2 "+die2)
   }
 
 }

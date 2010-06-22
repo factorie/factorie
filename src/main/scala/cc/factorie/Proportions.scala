@@ -21,7 +21,7 @@ trait Proportions extends Parameter with IndexedSeq[Double] with DiscreteGenerat
   def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
 }
 
-// TODO Unused.  Remove this?
+// TODO try to fold this automatically into a CategoricalProportions?
 trait TypedProportions[A<:DiscreteValue] extends Proportions {
   class DiscretePr(override val index:Int, override val pr:Double, val value:String) extends super.DiscretePr(index, pr)
   def top(n:Int)(implicit m:Manifest[A]): Seq[DiscretePr] = {
@@ -34,11 +34,15 @@ trait TypedProportions[A<:DiscreteValue] extends Proportions {
   def topValues(n:Int)(implicit m:Manifest[A]) = top(n).toList.map(_.value)
 }
 
-class DenseProportions(p:Seq[Double]) extends Proportions with Estimation[DenseProportions] {
+trait MutableProportions extends Proportions {
+  def set(p:Seq[Double])(implicit d:DiffList): Unit 
+}
+
+class DenseProportions(p:Seq[Double]) extends MutableProportions with Estimation[DenseProportions] {
   //def this(ps:Double*) = this(ps)
-  private var _p = new Array[Double](p.size)
+  val length = p.size
+  private var _p = new Array[Double](length)
   if (p != Nil) this := p else setUniform(null)
-  @inline final def length = _p.size
   @inline final def apply(index:Int) = _p(index)
   def set(p:Seq[Double])(implicit d:DiffList): Unit = {
     assert(p.size == _p.size)
@@ -55,6 +59,10 @@ class DenseProportions(p:Seq[Double]) extends Proportions with Estimation[DenseP
   }
 }
 
+class DiracProportions(val length:Int, val peak:Int) extends Proportions {
+  @inline final def apply(index:Int) = if (index == peak) 1.0 else 0.0
+}
+
 class UniformProportions(val length:Int) extends Proportions {
   @inline final def apply(index:Int) = 1.0 / length
 }
@@ -64,7 +72,7 @@ class GrowableUniformProportions(val sizeProxy:{def size:Int}) extends Proportio
   @inline final def apply(index:Int) = 1.0 / length
 }
 
-class DenseCountsProportions(len:Int) extends Proportions {
+class DenseCountsProportions(len:Int) extends Proportions with Estimation[DenseCountsProportions] {
   protected var _counts = new Array[Double](len)
   protected var _countsTotal = 0.0
   def length = _counts.size
@@ -78,6 +86,7 @@ class DenseCountsProportions(len:Int) extends Proportions {
     if (_countsTotal == 0) 1.0 / length
     else _counts(index) / _countsTotal
   }
+  def zero: Unit = { java.util.Arrays.fill(_counts, 0.0); _countsTotal = 0.0 }
   //class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
   //override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i))}).filter(_.pr > 0.0)
   case class DenseCountsProportionsDiff(index:Int, incr:Double) extends Diff {
@@ -105,8 +114,8 @@ class GrowableDenseCountsProportions extends DenseCountsProportions(32) {
 }
 
 
-object DenseProportionsMaximumLikelihoodEstimator {
-  implicit val multinomialMaximumLikelihoodEstimator = new Estimator[DenseProportions] {
+object DenseProportions {
+  implicit val mlEstimator = new Estimator[DenseProportions] {
     def estimate(p:DenseProportions, model:Model): Unit = {
       val counts = new Array[Double](p.length)
       for (child <- p.children) child match { case child:DiscreteValue => counts(child.intValue) = counts(child.intValue) + 1.0 }
@@ -117,3 +126,11 @@ object DenseProportionsMaximumLikelihoodEstimator {
 }
 
 
+object DenseCountsProportions {
+  implicit val mlEstimator = new Estimator[DenseCountsProportions] {
+    def estimate(p:DenseCountsProportions, model:Model): Unit = {
+      p.zero
+      for (child <- p.children) child match { case child:DiscreteValue => p.increment(child.intValue, 1.0)(null) }
+    }
+  }
+}

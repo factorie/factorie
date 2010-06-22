@@ -7,10 +7,10 @@
 
 package cc.factorie
 import scala.util.Random
-import scalala.Scalala._
-import scalala.tensor.Vector
-import scalala.tensor.dense.DenseVector
-import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+//import scalala.Scalala._
+//import scalala.tensor.Vector
+//import scalala.tensor.dense.DenseVector
+//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import cc.factorie.util.{Log}
   
 // IntVariable (has integer value)
@@ -32,7 +32,7 @@ import cc.factorie.util.{Log}
 // PositiveReal
   
 /** A Variable with one or more Int values.  It encompasses single integer values, 
-    as well as vector collections of many (weighted) int values.  Either way you can get a scalala.tensor.Vector from it. 
+    as well as vector collections of many (weighted) int values.  
     @author Andrew McCallum */
 // A "Value" is not really a "Variable", but it turns out to be more convenient shorthand inherit directly instead of insisting with "this:Variable=>"
 trait IntegerValues extends Variable {
@@ -40,6 +40,7 @@ trait IntegerValues extends Variable {
   def maxIntValue = Math.MAX_INT
   def minIntValue = Math.MIN_INT
   // TODO Consider a def maxValue: Double = Math.POS_INF_DOUBLE ??
+  // TODO Implement a method def vector?
 }
 
 /** A Variable with one Int value.  

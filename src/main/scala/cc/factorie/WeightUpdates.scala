@@ -6,8 +6,9 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
-import scalala.Scalala._
-import scalala.tensor.Vector
+//import scalala.Scalala._
+//import scalala.tensor.Vector
+import cc.factorie.la._
 
 /** For parameter estimation methods that use a gradient to update weight parameters. 
     @author Andrew McCallum */

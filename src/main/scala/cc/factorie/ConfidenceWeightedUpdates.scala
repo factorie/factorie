@@ -6,11 +6,12 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
-import scala.reflect.Manifest
 import scala.collection.mutable.HashMap
-import scalala.tensor.dense.DenseVector
-import scalala.tensor.Vector
-import scalala.tensor.sparse.SparseVector
+//import scalala.tensor.dense.DenseVector
+//import scalala.tensor.Vector
+//import scalala.tensor.sparse.SparseVector
+import cc.factorie.la._
+
 
 //TODO: think about splitting this file up, and reorganize the inheritance hierarchy. implement second order gradient ascent, and have confidence weighting extend this. Optionally have a per-feature learning rate above this.
 

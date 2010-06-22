@@ -6,8 +6,9 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
-import scalala.Scalala._
-import scalala.tensor.Vector
+//import scalala.Scalala._
+//import scalala.tensor.Vector
+import cc.factorie.la._
 
 /** Implements Geoff Hinton's Constrastive Divergence, obtaining a gradient after one step away from the true configuration.
     This implementation assumes that the initial configuration is the truth. 
@@ -26,8 +27,8 @@ abstract class ContrastiveDivergence[C](model:Model) extends MHSampler[C](model)
   }
 
   def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit = {
-    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector * -rate)
+    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += (f.statistic.vector * -rate))
     difflist.undo
-    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistic.vector *  rate)
+    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += (f.statistic.vector *  rate))
   }  
 }

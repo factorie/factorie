@@ -8,7 +8,7 @@
 package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.{ListBuffer,ArrayBuffer,HashMap,PriorityQueue}
-import scalala.tensor.Vector
+//import scalala.tensor.Vector
 import cc.factorie.util.{Hooks0,Hooks1}
 
 /** Samplers that key off of particular contexts.  Subclasses implement "process1(context:C)" */

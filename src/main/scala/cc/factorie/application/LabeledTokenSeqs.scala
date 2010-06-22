@@ -10,9 +10,9 @@ import scala.reflect.Manifest
 import cc.factorie._
 import cc.factorie.er._
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap}
-import scalala.tensor.Vector
-import scalala.tensor.dense.DenseVector
-import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+//import scalala.tensor.Vector
+//import scalala.tensor.dense.DenseVector
+//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import scala.util.Sorting
 
 /** Predefined variables and factor templates for applying FACTORIE to sequences of Tokens, each paired with a categorical Label.

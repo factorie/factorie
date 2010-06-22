@@ -8,12 +8,11 @@
 package cc.factorie
 
 
+/*
 import org.specs.runner.{JUnit4, JUnit}
 import org.specs.Specification
 
-/**
- * @author Sebastian Riedel
- */
+// @author Sebastian Riedel
 class DomainTest extends JUnit4(DomainSpec)
 object DomainSpec extends Specification with JUnit {
 
@@ -46,3 +45,4 @@ object DomainSpec extends Specification with JUnit {
   }
 
 }
+*/

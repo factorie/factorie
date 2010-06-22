@@ -20,10 +20,11 @@ object LDADemo {
   class Document(val file:String) extends ArrayBuffer[Word] { var theta:Proportions = _ }
 
   def main(args: Array[String]) : Unit = {
+    val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips05")
+    val lexer = new Regex("[a-zA-Z]+")
     // Read observed data and create Documents
     val documents = new ArrayBuffer[Document];
-    val lexer = new Regex("[a-zA-Z]+")
-    for (directory <- if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips05")) {
+    for (directory <- directories) {
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         val d = new Document(file.toString)
         d ++= lexer.findAllIn(Source.fromFile(file).toString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_)).map(new Word(Nil, null, _))

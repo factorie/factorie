@@ -20,8 +20,9 @@ trait Gate extends DiscreteVariable {
   /** The collection of variable references controlled by the gate. */
   private var _gatedRefs: List[AbstractGatedRefVariable] = Nil
   def gatedRefs: List[AbstractGatedRefVariable] = _gatedRefs
-  def +=(v:AbstractGatedRefVariable): this.type = { 
-    require(v.domainSize == domainSize)
+  def +=(v:AbstractGatedRefVariable): this.type = {
+    //println("Gate.+= "+v)
+    assert(v.domainSize == domainSize)
     _gatedRefs = v :: _gatedRefs
     assert(v.gate == this)
     v.setByIndex(this.intValue)(null)
@@ -29,7 +30,11 @@ trait Gate extends DiscreteVariable {
   }
   override def setByIndex(newIndex:Int)(implicit d:DiffList): Unit = {
     super.setByIndex(newIndex)
-    for (ref <- _gatedRefs) ref.setByIndex(newIndex)
+    //println("Gate.setByIndex _gatedRefs="+_gatedRefs)
+    if (_gatedRefs ne null) for (ref <- _gatedRefs) {
+      //println("Gate.setByIndex ref="+ref)
+      ref.setByIndex(newIndex)
+    }
   }
   def setToNull(implicit d:DiffList): Unit = {
     super.setByIndex(-1)

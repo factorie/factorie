@@ -7,8 +7,9 @@
 
 package cc.factorie
 import scala.reflect.Manifest
-import scalala.Scalala._
-import scalala.tensor.Vector
+//import scalala.Scalala._
+//import scala.reflect.Manifest
+import cc.factorie.la._
 
 /** Collins' structured-perceptron */
 abstract class StructuredPerceptron[V<:Variable with TrueSetting](model:Model) extends GradientAscentUpdates {

@@ -12,9 +12,10 @@ import scala.reflect.Manifest
 import scala.util.Random
 import scala.Math
 import scala.util.Sorting
-import scalala.tensor.Vector
-import scalala.tensor.dense.DenseVector
-import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+//import scalala.tensor.Vector
+//import scalala.tensor.dense.DenseVector
+//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+//import cc.factorie.la._
 import cc.factorie.util.{Log}
 
 /** A Model in FACTORIE consists of a collection of factor Templates and methods that operate on the collection.

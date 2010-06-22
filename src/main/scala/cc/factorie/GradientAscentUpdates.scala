@@ -7,10 +7,10 @@
 
 package cc.factorie
 
-import scalala.Scalala._
-import scalala.tensor.dense.DenseVector
-import scalala.tensor.sparse.SparseVector
-import scalala.tensor.Vector
+//import scalala.Scalala._
+//import scalala.tensor.dense.DenseVector
+//import scalala.tensor.sparse.SparseVector
+//import scalala.tensor.Vector
 import scala.reflect.Manifest
 import scala.collection.mutable.HashMap
 

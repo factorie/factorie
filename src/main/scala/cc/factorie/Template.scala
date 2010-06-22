@@ -12,11 +12,12 @@ import scala.reflect.Manifest
 import scala.util.Random
 import scala.Math
 import scala.util.Sorting
-import scalala.tensor.Vector
-import scalala.tensor.dense.DenseVector
-import cc.factorie.util.{Log}
-import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector, SingletonBinaryVector}
+//import scalala.tensor.Vector
+//import scalala.tensor.dense.DenseVector
+//import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector, SingletonBinaryVector}
+import cc.factorie.la._
 import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
+import cc.factorie.util.{Log}
 
 // Factor Templates, which create factors in a factor graph on-the-fly as necessary.
 // A factor template specifies
@@ -282,7 +283,8 @@ trait DotTemplate extends VectorTemplate {
     if (f.exists) return // Already exists, don't write it again
     for (d <- statDomains) d.save(dirname)
     val s = new PrintWriter(new FileWriter(f))
-    for (weight <- weights.iterator) {
+    // TODO Do we also need to save the weights.default?
+    for (weight <- weights.activeElements) { // before June 21 2010, used too be weights.iterator -akm
       s.print(weight._1)
       s.print(" ")
       s.println(weight._2)
@@ -292,7 +294,7 @@ trait DotTemplate extends VectorTemplate {
   override def load(dirname:String): Unit = {
     //println("Loading "+this.getClass.getName+" from directory "+dirname)
     for (d <- statDomains) d.load(dirname)
-    if (statsize <= 0 || scalala.Scalala.norm(weights,1) != 0.0) return // Already have non-zero weights, must already be read.
+    if (statsize <= 0 || weights.activeElements.exists({case(i,v) => v != 0})) return // Already have non-zero weights, must already be read.
     val f = new File(dirname+"/"+filename)
     val s = new BufferedReader(new FileReader(f))
     var line = ""

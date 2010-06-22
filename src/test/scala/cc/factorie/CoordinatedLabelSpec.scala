@@ -7,13 +7,11 @@
 
 package cc.factorie
 
-
+/*
 import org.specs.runner.{JUnit, JUnit4}
 import org.specs.Specification
 
-/**
- * @author Sebastian Riedel
- */
+// @author Sebastian Riedel
 class CoordinatedLabelTest extends JUnit4(CoordinatedLabelSpec)
 object CoordinatedLabelSpec extends Specification with JUnit {
 
@@ -36,3 +34,4 @@ object CoordinatedLabelSpec extends Specification with JUnit {
   }
 
 }
+*/

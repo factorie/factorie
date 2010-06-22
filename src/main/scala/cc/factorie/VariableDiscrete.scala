@@ -7,10 +7,11 @@
 
 package cc.factorie
 import scala.util.Random
-import scalala.Scalala._
-import scalala.tensor.Vector
-import scalala.tensor.dense.DenseVector
-import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+//import scalala.Scalala._
+//import scalala.tensor.Vector
+//import scalala.tensor.dense.DenseVector
+//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+import cc.factorie.la._
 import cc.factorie.util.{Log}
 
 /** An OrdinalValue with finite range 0...N.  

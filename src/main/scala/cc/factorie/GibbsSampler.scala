@@ -24,7 +24,7 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 
 /** Simple GibbsSampler.
     @author Andrew McCallum */
-class GibbsSampler(val model:Model = Global.defaultModel) extends Sampler[Variable] {
+class GibbsSampler(val model:Model = Global.defaultGenerativeModel) extends Sampler[Variable] {
   var temperature = 1.0
   val handlers = new ArrayBuffer[GibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVariableGibbsSamplerHandler, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler)
@@ -109,7 +109,7 @@ object IterableSettingsGibbsSamplerHandler extends GibbsSamplerHandler {
 
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(val model:Model = Global.defaultModel, collapsibleVars:Iterable[CollapsibleParameter] = Nil) extends Sampler[GeneratedVariable] {
+class CollapsedGibbsSampler(val model:Model = Global.defaultGenerativeModel, collapsibleVars:Iterable[CollapsibleParameter] = Nil) extends Sampler[GeneratedVariable] {
   var temperature = 1.0
   val handlers = new ArrayBuffer[CollapsedGibbsSamplerHandler]
   def defaultHandlers = List(DiscreteCollapsedGibbsSamplerHandler, MixtureChoiceCollapsedGibbsSamplerHandler)
