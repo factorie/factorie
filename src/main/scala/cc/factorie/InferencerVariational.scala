@@ -32,8 +32,70 @@ class MeanFieldInferencer[A<:Variable with QDistribution](model:Model, variables
       }
     }
   }
-
 }
+
+/*
+class CollapsedVariationalBayes[A<:Variable with QDistribution](model:Model, variables:Iterable[A]) {
+  private val _q = new HashMap[Variable,Variable]
+  variables.foreach(v => _q(v) = v.newQ)
+  def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
+  def setMaxMarginals(implicit d:DiffList = null): Unit = {
+    _q.
+  }
+  def process(v:A): Unit = {
+    val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.template.getClass.getName < f2.template.getClass.getName)
+    factors match {
+      case List(factor1:GeneratedValueTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) {
+        // Variational Bayes order 0 approximation
+        val parent = v.proportions
+        val domainSize = v.domain.size
+        val distribution = new Array[Double](domainSize)
+        var sum = 0.0
+        val vq = q(factor2.v1)
+
+        // If collapsed, decrement counts.  
+        parent match {
+          case collapsedParent:DirichletMultinomial => forIndex(vq.size)(i => collapsedParent.increment(i, -vq(i)))
+          case _ => new Error // TODO Change this to just do nothing?
+        }
+        // The next line calls ParameterRef.set, which calls Parameter.removeChild, which decrements counts
+        v.setToNull
+
+        // Build the distribution from which we will sample
+        if (v.gatedRefs.size == 1) {
+          val outcome: MixtureOutcome = v.gatedRefs.first.asInstanceOf[GatedParameterRef[Proportions,MixtureOutcome]].child
+          for (i <- 0 until domainSize) {
+            distribution(i) = parent.pr(i) * outcome.prFromMixtureComponent(i)
+            sum += distribution(i)
+          }
+        } else {
+          val refs = v.gatedRefs.map(_ match { case gpr:GatedParameterRef[Proportions,MixtureOutcome] => gpr })
+          val outcomes: Seq[MixtureOutcome] = refs.map(_.child)
+          for (i <- 0 until domainSize) {
+            distribution(i) = parent.pr(i) * outcomes.foldLeft(1.0)((prod,o) => prod * o.prFromMixtureComponent(i))
+            sum += distribution(i)
+          }
+        }
+
+        forIndex(distribution.size)(i => distribution(i) /= sum)
+        vq := distribution
+        
+          // Sample
+          //println("MixtureChoiceCollapsedGibbsSamplerHandler distribution = "+(distribution.toList.map(_ / sum)))
+          val newValue = Maths.nextDiscrete(distribution, sum)(Global.random)
+          //println("MixtureChoiceCollapsedGibbsSamplerHandler newValue="+newValue)
+
+          // Set the new value; this will change ref.value, calling Parameter.addChild, which increments counts; it is paired with setToNull
+          v.setByIndex(newValue)
+          // If collapsed, increment counts
+          parent match {
+            case collapsedParent:DirichletMultinomial => forIndex(vp.size)(i => collapsedParent.increment(i, vq(i)))
+            case _ => new Error // TODO Change this to just do nothing?
+          }
+      }
+    }
+}
+*/
 
 /*
 class MeanFieldInferencer1[A<:Variable with IterableSettings](model:Model, variables:Iterable[Variable with QDistribution]) {

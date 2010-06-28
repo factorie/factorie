@@ -176,7 +176,6 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
     v match {
       case v: MixtureChoiceVariable => factors match {
         case List(factor1:GeneratedValueTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
-          assert(v.gatedRefs.length == 1) // TODO To be relaxed later
           //println("MixtureChoiceCollapsedGibbsSamplerHandler v="+v+" value="+v.intValue)
           val parent = v.proportions
           val domainSize = v.domain.size
@@ -185,7 +184,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
 
           // If collapsed, decrement counts.  
           parent match {
-            case collapsedParent:DenseDirichletMultinomial => collapsedParent.increment(v.intValue, -1.0)
+            case collapsedParent:DirichletMultinomial => collapsedParent.increment(v.intValue, -1.0)
             case _ => new Error // TODO Change this to just do nothing?
           }
           // The next line calls ParameterRef.set, which calls Parameter.removeChild, which decrements counts
@@ -212,11 +211,11 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           val newValue = Maths.nextDiscrete(distribution, sum)(Global.random)
           //println("MixtureChoiceCollapsedGibbsSamplerHandler newValue="+newValue)
 
-          // Set the new value; this will change ref.value, calling Parameter.addChild, which increments counts
+          // Set the new value; this will change ref.value, calling Parameter.addChild, which increments counts; it is paired with setToNull
           v.setByIndex(newValue)
           // If collapsed, increment counts
           parent match {
-            case collapsedParent:DenseDirichletMultinomial => collapsedParent.increment(v.intValue, 1.0)
+            case collapsedParent:DirichletMultinomial => collapsedParent.increment(v.intValue, 1.0)
             case _ => new Error // TODO Change this to just do nothing?
           }
 

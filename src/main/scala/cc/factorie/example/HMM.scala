@@ -8,57 +8,56 @@
 package cc.factorie.example
 import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.matching.Regex
+import scala.io.Source
 import java.io.File
 import cc.factorie._
 import cc.factorie.util.Stopwords
 
-/*
 object HMMDemo {
   val numStates = 10
-  class Z(ps:Seq[Proportions], c:MixtureChoice) extends MixtureChoiceMixture(ps, c); Domain[Z].size = numStates
-  class Word(ps:Seq[Proportions], z:MixtureChoice, value:String) extends CategoricalMixture(ps, z, value)
-  class Sentence(val file:String) extends VariableSequence[Word]
+  class Z(ps:Seq[Proportions], c:MixtureChoiceVariable, i:Int) extends MixtureChoiceMixture(ps, c, i); Domain[Z].size = numStates
+  class Zi(p:Proportions, i:Int) extends MixtureChoice(p, i); Domain[Zi].size = numStates
+  class Word(ps:Seq[Proportions], z:Z, value:String) extends CategoricalMixture(ps, z, value) with VarInTypedSeq[Word,Sentence]
+  class Sentence(val file:String, val startState:Zi) extends VariableSeq[Word]
 
   def main(args: Array[String]) : Unit = {
-    // Read observed data and create Documents
-    val documents = new ArrayBuffer[Document];
+    val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
     val lexer = new Regex("[a-zA-Z]+")
-    for (directory <- if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips05")) {
+
+    // Read data and create generative variables
+    val transitions = for (i <- 1 to numStates) yield new DenseDirichletMultinomial(numStates, 1.0)
+    val emissions = for (i <- 1 to numStates) yield new GrowableDenseDirichletMultinomial(0.01) with TypedProportions[Word]
+    val sentences = new ArrayBuffer[Sentence];
+    val pi = new DenseDirichletMultinomial(numStates, 1.0)
+    for (directory <- directories) {
       for (file <- new File(directory).listFiles; if (file.isFile)) {
-        val d = new Document(file.toString)
-        d ++= lexer.findAllIn(file.contentsAsString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_)).map(new Word(_))
-        documents += d
+        val sentence = new Sentence(file.toString, new Zi(pi, Global.random.nextInt(numStates)))
+        for (word <- lexer.findAllIn(Source.fromFile(file).mkString).map(_ toLowerCase)) {
+          val z = new Z(transitions, if (sentence.length > 0) sentence.last.choice else sentence.startState, Global.random.nextInt(numStates))
+          sentence += new Word(emissions, z, word)
+        }
+        sentences += sentence
       }
     }
-    println("Read "+documents.size+" documents with "+documents.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
-  
-    // Create random variables and tell generative storyline
-    //val betaMean = new UniformProportions(numTopics)
-    //val betaPrecision = new RealVariableParameter(numTopics * 0.01)
-    //val alphaMean = new UniformProportions(Domain[Word].size)
-    val od = Array.tabulate(numState)(i => new DenseDirichlet(Domain[Word].size, 0.01)
-    val td = Array.tabulate(numState)(i => new DenseDirichlet(numStates, 0.01)
-    val pi = new DenseDirichlet(numStates, 0.01)
-    var z: Z = new Z(pi, null)
-    for (sentence <- sentences; word <- sentence) {
-      z = new Z(td, z)
-      val word = new Word(od, z, string)
-    }
-    
+    println("Read "+sentences.size+" sentences with "+sentences.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
+
     // Fit model
-    val zs = documents.flatMap(document => document.map(word => word.choice))
+    val zs = sentences.flatMap(sentence => sentence.map(word => word.choice)) ++ sentences.map(_.startState)
     val sampler = new CollapsedGibbsSampler
+    //val sampler = new CollapsedVariationalBayes(zs)
     val startTime = System.currentTimeMillis
-    for (i <- 1 to 100) {
+    for (i <- 1 to 50) {
       sampler.process(zs, 1)
       print("."); Console.flush
-      if (i % 3 == 0) {
+      if (i % 5 == 0) {
         println ("Iteration "+i)
-        topics.foreach(t => println("Topic "+t.mixtureIndex+"  "+t.top(20).map(_.value))); println
+        emissions.foreach(t => println("Emissions   "+emissions.indexOf(t)+"  "+t.top(15).map(_.value)))
+        transitions.foreach(t => println("Transitions "+transitions.indexOf(t)+"  "+t.top(numStates).map(d => "%d %-5f".format(d.index,d.pr))))
+        println
       }
     } 
-    topics.foreach(t => {println("\nTopic "+t.mixtureIndex); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
     println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
   }
+
 }
-*/
+

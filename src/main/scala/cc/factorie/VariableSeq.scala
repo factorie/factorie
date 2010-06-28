@@ -96,6 +96,7 @@ import cc.factorie.util.{Log}
   
   /** For use with variables that have immutable-valued .next and .prev in a sequence. 
       @author Andrew McCallum */
+  // TODO Reverse the order of type arguments V and S to match other places in which the "This" type comes last.
   trait VarInTypedSeq[V >: Null <: VarInTypedSeq[V,S] with Variable, S<:Seq[V]] {
     this: V =>
     private var _seq: S = _

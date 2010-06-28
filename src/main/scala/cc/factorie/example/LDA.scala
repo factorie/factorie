@@ -16,7 +16,7 @@ import cc.factorie.util.Stopwords
 object LDADemo {
   val numTopics = 10
   class Z(p:Proportions, value:Int) extends MixtureChoice(p, value); Domain[Z].size = numTopics
-  class Word(ps:Seq[Proportions], z:MixtureChoice, value:String) extends CategoricalMixture[String](ps, z, value)
+  class Word(ps:Seq[Proportions], z:MixtureChoiceVariable, value:String) extends CategoricalMixture[String](ps, z, value)
   class Document(val file:String) extends ArrayBuffer[Word] { var theta:Proportions = _ }
 
   def main(args: Array[String]) : Unit = {
@@ -57,3 +57,4 @@ object LDADemo {
     println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
   }
 }
+

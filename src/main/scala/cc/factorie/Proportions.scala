@@ -40,6 +40,7 @@ trait MutableProportions extends Proportions {
 
 class DenseProportions(p:Seq[Double]) extends MutableProportions with Estimation[DenseProportions] {
   //def this(ps:Double*) = this(ps)
+  def this(dim:Int) = this(Seq.fill(dim)(1.0/dim))
   val length = p.size
   private var _p = new Array[Double](length)
   if (p != Nil) this := p else setUniform(null)

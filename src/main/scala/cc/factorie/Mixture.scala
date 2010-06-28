@@ -11,8 +11,8 @@ import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
 trait MixtureChoiceVariable extends GeneratedDiscreteVariable with Gate
-class MixtureChoice(p:Proportions, value:Int = 0) extends Discrete(p, value) with MixtureChoiceVariable
-class MixtureChoiceMixture(ps:Seq[Proportions], choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteMixture(ps, choice, value) with MixtureChoiceVariable
+abstract class MixtureChoice(p:Proportions, value:Int = 0) extends Discrete(p, value) with MixtureChoiceVariable
+abstract class MixtureChoiceMixture(ps:Seq[Proportions], choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteMixture(ps, choice, value) with MixtureChoiceVariable
 
 trait MixtureOutcome extends GeneratedValue {
   def prFromMixtureComponent(index:Int): Double
@@ -24,17 +24,18 @@ trait DiscreteMixtureVariable extends GeneratedDiscreteVariable with MixtureOutc
   private val proportionsRef: GatedParameterRef[Proportions,DiscreteMixtureVariable] = new GatedParameterRef(components, choice, this)
   def proportions = proportionsRef.value
   def proportions_=(p2:Proportions)(implicit d:DiffList = null) = { assert(p2 == null || p2.length <= domainSize); proportionsRef.set(p2) }
-  // proportions.addChild(this)(null) // This is done in GatedParameterRef initialization
-  //def parents = List(proportions) // Note that 'choice' is not included here because it is not a Parameter
-  override def parentRefs = List(proportionsRef, null)
-  //def pr: Double = proportions.pr(this.intValue)
+  override def parentRefs = List(proportionsRef)
   def prFromMixtureComponent(index:Int): Double = components(index).pr(intValue)
-  //def sampleFrom(p:Proportions)(implicit d:DiffList) = setByIndex(p.sampleInt)
-  //def sample(implicit d:DiffList): Unit = sampleFrom(proportions)
-  //def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match { case Seq(p:Proportions) => sampleFrom(p) }
 }
 class DiscreteMixture(val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteVariable(value) with DiscreteMixtureVariable
 class CategoricalMixture[A](val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] with DiscreteMixtureVariable
+
+/*class DenseDirichletMixture(val components:Seq[Proportions], prec:RealValueParameter, val choice:MixtureChoiceVariable, p:Seq[Double] = Nil)
+extends DenseDirichlet(components(choice.intValue), prec, p) with MixtureOutcome {
+  override protected val meanRef: ParameterRef[Proportions,Dirichlet with MixtureOutcome] = new GatedParameterRef(components, choice, this)
+  override def mean_=(p2:Proportions)(implicit d:DiffList = null) = throw new Error
+  def prFromMixtureComponent(index:Int): Double = math.exp(logpr(components(index), precision))
+}*/
 
 
 

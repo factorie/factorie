@@ -38,7 +38,7 @@ trait DiscreteValue extends DiscreteValues with OrdinalValue {
 }
 
 @DomainInSubclasses
-abstract class DiscreteVariable(initialValue:Int = 0) extends OrdinalVariable(initialValue) with DiscreteValue with IterableSettings {
+abstract class DiscreteVariable(initialValue:Int = 0) extends OrdinalVariable(initialValue) with DiscreteValue with IterableSettings with QDistribution {
   type VariableType <: DiscreteVariable
   /*def this(initialValue:Int) = {
     this()
@@ -63,6 +63,8 @@ abstract class DiscreteVariable(initialValue:Int = 0) extends OrdinalVariable(in
     def reset = i = -1
     override def variable : DiscreteVariable.this.type = DiscreteVariable.this
   }
+  type QType = Proportions
+  def newQ = new DenseProportions(domainSize)
 }
 
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  Used for block-Gibbs-sampling.

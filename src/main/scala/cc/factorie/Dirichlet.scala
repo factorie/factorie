@@ -16,7 +16,8 @@ trait Dirichlet extends Proportions with GeneratedVariable with CollapsibleParam
   def mean: Proportions
   def precision: RealValueParameter
   def pr = math.exp(logpr)
-  override def logpr: Double = {
+  override def logpr: Double = logpr(mean, precision)
+  def logpr(mean:Proportions, precision:RealValue): Double = {
     var result = Maths.logGamma(precision.doubleValue)
     forIndex(length)((i:Int) => result -= Maths.logGamma(alpha(i)))
     forIndex(length)((i:Int) => result += alpha(i) * math.log(pr(i)))
@@ -30,13 +31,14 @@ trait Dirichlet extends Proportions with GeneratedVariable with CollapsibleParam
 
 class DenseDirichlet(initialMean:Proportions, initialPrecision:RealValueParameter, p:Seq[Double] = Nil) extends DenseProportions(p) with Dirichlet {
   def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealConstantParameter(alpha * size), Nil)
-  private val meanRef = new ParameterRef(initialMean, this)
-  private val precisionRef = new ParameterRef(initialPrecision, this)
+  protected val meanRef: ParameterRef[Proportions,Dirichlet] = new ParameterRef(initialMean, this)
+  protected val precisionRef = new ParameterRef(initialPrecision, this)
   def mean = meanRef.value
   def mean_=(newMean:Proportions)(implicit d:DiffList): Unit = meanRef.set(newMean)
   def precision = precisionRef.value
   def precision_=(newPrecision:RealValueParameter)(implicit d:DiffList): Unit = precisionRef.set(newPrecision)
   def parents = List(mean, precision)
+  override def parentRefs = List(meanRef, precisionRef)
   def ~(mean:Proportions, precision:RealValueParameter): this.type = { mean_=(mean)(null); precision_=(precision)(null); this }
   def sampleFrom(mean:Proportions, precision:RealValue, children:Iterable[DiscreteValue] = Nil)(implicit d:DiffList): Unit = {
     var norm = 0.0
