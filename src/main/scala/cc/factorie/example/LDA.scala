@@ -32,7 +32,7 @@ object LDADemo {
         print("."); Console.flush
         val doc = new Document(file.toString)
         doc.theta = new DenseDirichletMultinomial(numTopics, 0.01)
-        for (word <- lexer.findAllIn(Source.fromFile(file).mkString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_))) {
+        for (word <- lexer.findAllIn(Source.fromFile(file).mkString).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
           val z = new Z(doc.theta, Global.random.nextInt(numTopics))
           doc += new Word(phis, z, word)
         }

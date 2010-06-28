@@ -182,41 +182,44 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           val domainSize = v.domain.size
           val distribution = new Array[Double](domainSize)
           var sum = 0.0
-          val ref = v.gatedRefs.first match { case gpr:GatedParameterRef[Proportions,DiscreteMixture] => gpr }
-          val outcome: DiscreteMixtureVariable = ref.child
+
           // If collapsed, decrement counts.  
-          // The next line calls GeneratedDiscreteValue.proportions_=, which calls ParameterRef.set, which calls Parameter.removeChild, which decrements counts
-          outcome.proportions = null
           parent match {
             case collapsedParent:DenseDirichletMultinomial => collapsedParent.increment(v.intValue, -1.0)
-            case _ => new Error
+            case _ => new Error // TODO Change this to just do nothing?
           }
-          /*ref.value match {
-            case collapsedOutcomeParent:DenseDirichletMultinomial => collapsedOutcomeParent.increment(outcome.intValue, -1.0)
-            case _ => new Error
-          }*/
+          // The next line calls ParameterRef.set, which calls Parameter.removeChild, which decrements counts
+          v.setToNull
+
           // Build the distribution from which we will sample
-          for (i <- 0 until domainSize) {
-            distribution(i) = parent.pr(i) * ref.valueForIndex(i).pr(outcome.intValue)
-            sum += distribution(i)
+          if (v.gatedRefs.size == 1) {
+            val outcome: MixtureOutcome = v.gatedRefs.first.asInstanceOf[GatedParameterRef[Proportions,MixtureOutcome]].child
+            for (i <- 0 until domainSize) {
+              distribution(i) = parent.pr(i) * outcome.prFromMixtureComponent(i)
+              sum += distribution(i)
+            }
+          } else {
+            val refs = v.gatedRefs.map(_ match { case gpr:GatedParameterRef[Proportions,MixtureOutcome] => gpr })
+            val outcomes: Seq[MixtureOutcome] = refs.map(_.child)
+            for (i <- 0 until domainSize) {
+              distribution(i) = parent.pr(i) * outcomes.foldLeft(1.0)((prod,o) => prod * o.prFromMixtureComponent(i))
+              sum += distribution(i)
+            }
           }
+
           // Sample
           //println("MixtureChoiceCollapsedGibbsSamplerHandler distribution = "+(distribution.toList.map(_ / sum)))
           val newValue = Maths.nextDiscrete(distribution, sum)(Global.random)
           //println("MixtureChoiceCollapsedGibbsSamplerHandler newValue="+newValue)
+
           // Set the new value; this will change ref.value, calling Parameter.addChild, which increments counts
-          //println("MixtureChoiceCollapsedGibbsSamplerHandler old pr(outcome)="+outcome.components(newValue).pr(outcome.intValue))
           v.setByIndex(newValue)
-          //println("MixtureChoiceCollapsedGibbsSamplerHandler new pr(outcome)="+outcome.components(newValue).pr(outcome.intValue))
-          // If collapsed, increment counts (now done above)
+          // If collapsed, increment counts
           parent match {
             case collapsedParent:DenseDirichletMultinomial => collapsedParent.increment(v.intValue, 1.0)
-            case _ => new Error
+            case _ => new Error // TODO Change this to just do nothing?
           }
-          /*ref.value match {
-            case collapsedOutcomeParent:DenseDirichletMultinomial => collapsedOutcomeParent.increment(outcome.intValue, -1.0)
-            case _ => new Error
-          }*/
+
           true
         }
         case _ => false
