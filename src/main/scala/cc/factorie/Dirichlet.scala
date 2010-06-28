@@ -58,6 +58,7 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealValueParamete
 }
 
 trait DirichletMultinomial extends Proportions with CollapsedParameter with GeneratedValue {
+  override def keepChildren = false
   def mean: Proportions
   def precision: RealValueParameter
   def parents = List(mean, precision)
@@ -73,11 +74,14 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
     (counts(index) + mean(index) * alphaSum) / (countsTotal + alphaSum)
   }
   override def addChild(c:GeneratedValue)(implicit d:DiffList): Unit = {
-    c match { case v:DiscreteValue => increment(v.intValue, 1.0) }
+    c match { case v:DiscreteValue => increment(v.intValue, 1.0); case _ => throw new Error } // xxx This seems to be the slowness culprit
+    // xxx increment(c.asInstanceOf[DiscreteValue].intValue, 1.0)
+    //increment(Global.random.nextInt(5), 1.0)
     super.addChild(c)(d)
   }
   override def removeChild(c:GeneratedValue)(implicit d:DiffList): Unit = {
-    c match { case v:DiscreteValue => increment(v.intValue, -1.0) }
+    //println("DirichletMultinomial.removeChild "+c)
+    c match { case v:DiscreteValue => increment(v.intValue, -1.0); case _ => throw new Error }
     super.removeChild(c)(d)
   }
   // Perhaps DirichletMultinomial should not be a GeneratedVariable?  But it does have parents and children.

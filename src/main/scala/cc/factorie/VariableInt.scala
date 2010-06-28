@@ -58,10 +58,10 @@ trait IntegerValue extends IntegerValues {
 
 /** A Variable with a mutable Int value.
     @author Andrew McCallum */ 
-class IntegerVariable extends Variable with IntegerValue {
+class IntegerVariable(initialValue:Int = 0) extends Variable with IntegerValue {
   type VariableType <: IntegerVariable
-  def this(initialValue:Int) = { this(); setByInt(initialValue)(null) }
-  private var _value = -1 // This should be a impossible value so that initialization with this(0) will still result in a call to "setByInt"
+  //def this(initialValue:Int) = { this(); setByInt(initialValue)(null) }
+  private var _value = initialValue // This was -1 so that initialization with this(0) will still result in a call to "setByInt"
   @inline final def intValue = _value
   def setByInt(newValue: Int)(implicit d: DiffList): Unit = {
     if (newValue != _value) {
@@ -102,12 +102,12 @@ trait OrdinalValue extends OrdinalValues with IntegerValue {
   type VariableType <: OrdinalValue
 }
 
-abstract class OrdinalVariable extends IntegerVariable with OrdinalValue {
+class OrdinalVariable(initialValue:Int = 0) extends IntegerVariable(initialValue) with OrdinalValue {
   type VariableType <: OrdinalVariable
-  def this(initialValue:Int) = { this(); setByInt(initialValue)(null) }
+  //def this(initialValue:Int) = { this(); setByInt(initialValue)(null) }
 }
 
-abstract class OrdinalObservation(theValue:Int) extends IntegerObservation(theValue) with OrdinalValue {
+class OrdinalObservation(theValue:Int) extends IntegerObservation(theValue) with OrdinalValue {
   type VariableType <: OrdinalObservation
 }
 

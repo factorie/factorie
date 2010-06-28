@@ -38,9 +38,13 @@ trait DiscreteValue extends DiscreteValues with OrdinalValue {
 }
 
 @DomainInSubclasses
-abstract class DiscreteVariable extends OrdinalVariable with DiscreteValue with IterableSettings {
+abstract class DiscreteVariable(initialValue:Int = 0) extends OrdinalVariable(initialValue) with DiscreteValue with IterableSettings {
   type VariableType <: DiscreteVariable
-  def this(initialValue:Int) = { this(); assert(initialValue >= 0 && initialValue < domain.size); setByInt(initialValue)(null) }
+  /*def this(initialValue:Int) = {
+    this()
+    //assert(initialValue >= 0 && initialValue < domain.size) // TODO Consider adding this back if it isn't too slow
+    setByInt(initialValue)(null)
+  }*/
   // TODO Consider doing a range check on "setByIndex", but it would slow us down, so do a speed/timing check.
   final override def setByInt(newValue: Int)(implicit d: DiffList): Unit = setByIndex(newValue)(d) 
   // TODO Consider removing setByIndex and just having setByInt for Discretes and Categoricals.  YES!!!

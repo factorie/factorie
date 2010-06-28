@@ -21,8 +21,9 @@ trait MixtureOutcome extends GeneratedValue {
 trait DiscreteMixtureVariable extends GeneratedDiscreteVariable with MixtureOutcome {
   def choice: MixtureChoiceVariable
   def components: Seq[Proportions]
-  private val proportionsRef = new GatedParameterRef(components, choice, this)
+  private val proportionsRef: GatedParameterRef[Proportions,DiscreteMixtureVariable] = new GatedParameterRef(components, choice, this)
   def proportions = proportionsRef.value
+  def proportions_=(p2:Proportions)(implicit d:DiffList = null) = { assert(p2 == null || p2.length <= domainSize); proportionsRef.set(p2) }
   // proportions.addChild(this)(null) // This is done in GatedParameterRef initialization
   //def parents = List(proportions) // Note that 'choice' is not included here because it is not a Parameter
   override def parentRefs = List(proportionsRef, null)

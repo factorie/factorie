@@ -22,15 +22,18 @@ trait Gate extends DiscreteVariable {
   def gatedRefs: List[AbstractGatedRefVariable] = _gatedRefs
   def +=(v:AbstractGatedRefVariable): this.type = {
     //println("Gate.+= "+v)
+    assert(_gatedRefs ne null)
     assert(v.domainSize == domainSize)
     _gatedRefs = v :: _gatedRefs
     assert(v.gate == this)
-    v.setByIndex(this.intValue)(null)
+    //println("Gate.+= setByIndex="+this.intValue) // xxx
+    v.setByIndex(this.intValue)(null) // xxx // commenting out make initialization fast
     this
   }
   override def setByIndex(newIndex:Int)(implicit d:DiffList): Unit = {
     super.setByIndex(newIndex)
-    //println("Gate.setByIndex _gatedRefs="+_gatedRefs)
+    //println("Gate.setByIndex _gatedRefs="+_gatedRefs) // xxx
+    //new Exception().printStackTrace()
     if (_gatedRefs ne null) for (ref <- _gatedRefs) {
       //println("Gate.setByIndex ref="+ref)
       ref.setByIndex(newIndex)

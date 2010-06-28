@@ -131,14 +131,14 @@ class CollapsedGibbsSampler(val model:Model = Global.defaultGenerativeModel, col
   def process1(v:GeneratedVariable): DiffList = {
     assert(!v.isInstanceOf[CollapsedVariable]) // We should never be sampling a CollapsedVariable
     // Get factors, in sorted order of the their classname
-    val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.getClass.getName < f2.getClass.getName)
+    val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.template.getClass.getName < f2.template.getClass.getName)
     var done = false
     val handlerIterator = handlers.iterator
     val d = newDiffList
     while (!done && handlerIterator.hasNext) {
       done = handlerIterator.next.sample(v, factors, this)(d)
     }
-    if (!done) throw new Error("GibbsSampler: No sampling method found for "+factors)
+    if (!done) throw new Error("GibbsSampler: No sampling method found for "+factors.map(_.template.getClass.getName).mkString("List(",",",")"))
     d
   }
 }
@@ -177,39 +177,46 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
       case v: MixtureChoiceVariable => factors match {
         case List(factor1:GeneratedValueTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
           assert(v.gatedRefs.length == 1) // TODO To be relaxed later
+          //println("MixtureChoiceCollapsedGibbsSamplerHandler v="+v+" value="+v.intValue)
           val parent = v.proportions
           val domainSize = v.domain.size
           val distribution = new Array[Double](domainSize)
           var sum = 0.0
           val ref = v.gatedRefs.first match { case gpr:GatedParameterRef[Proportions,DiscreteMixture] => gpr }
-          val outcome: DiscreteValue = ref.child
-          // If collapsed, decrement counts
+          val outcome: DiscreteMixtureVariable = ref.child
+          // If collapsed, decrement counts.  
+          // The next line calls GeneratedDiscreteValue.proportions_=, which calls ParameterRef.set, which calls Parameter.removeChild, which decrements counts
+          outcome.proportions = null
           parent match {
             case collapsedParent:DenseDirichletMultinomial => collapsedParent.increment(v.intValue, -1.0)
             case _ => new Error
           }
-          ref.value match {
+          /*ref.value match {
             case collapsedOutcomeParent:DenseDirichletMultinomial => collapsedOutcomeParent.increment(outcome.intValue, -1.0)
             case _ => new Error
-          }
+          }*/
           // Build the distribution from which we will sample
           for (i <- 0 until domainSize) {
             distribution(i) = parent.pr(i) * ref.valueForIndex(i).pr(outcome.intValue)
             sum += distribution(i)
           }
           // Sample
+          //println("MixtureChoiceCollapsedGibbsSamplerHandler distribution = "+(distribution.toList.map(_ / sum)))
           val newValue = Maths.nextDiscrete(distribution, sum)(Global.random)
-          // Set the new value; this will change ref.value
+          //println("MixtureChoiceCollapsedGibbsSamplerHandler newValue="+newValue)
+          // Set the new value; this will change ref.value, calling Parameter.addChild, which increments counts
+          //println("MixtureChoiceCollapsedGibbsSamplerHandler old pr(outcome)="+outcome.components(newValue).pr(outcome.intValue))
           v.setByIndex(newValue)
-          // If collapsed, increment counts
+          //println("MixtureChoiceCollapsedGibbsSamplerHandler new pr(outcome)="+outcome.components(newValue).pr(outcome.intValue))
+          // If collapsed, increment counts (now done above)
           parent match {
-            case collapsedParent:DenseDirichletMultinomial => collapsedParent.increment(v.intValue, -1.0)
+            case collapsedParent:DenseDirichletMultinomial => collapsedParent.increment(v.intValue, 1.0)
             case _ => new Error
           }
-          ref.value match {
+          /*ref.value match {
             case collapsedOutcomeParent:DenseDirichletMultinomial => collapsedOutcomeParent.increment(outcome.intValue, -1.0)
             case _ => new Error
-          }
+          }*/
           true
         }
         case _ => false

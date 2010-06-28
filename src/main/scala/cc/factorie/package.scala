@@ -33,6 +33,8 @@ package object factorie {
 
   implicit def traversableExtras[A](x:Traversable[A]) = new cc.factorie.util.TraversableExtras[A] { val t = x }
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras { val s = x }
+  implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new Iterable[F] { def iterator = Iterator.single(f) }
+  implicit def singleStatIterable[S<:Stat](s:S): Iterable[S] = new Iterable[S] { def iterator = Iterator.single(s) }
 
   /** A container for "var-args"-like arbitrary number of Variables neighboring a Factor.
     @see Template1  */

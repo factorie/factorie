@@ -65,7 +65,6 @@ trait GeneratedDiscreteValue extends GeneratedValue with DiscreteValue {
   def parents = List(proportions)
   def pr: Double = proportions(this.intValue)
   // override def setByIndex(i:Int)(implicit d:DiffList): Unit = proportions match { case m:DenseDirichletMultinomial => { m.increment(i, -1.0); super.setByIndex(i); m.increment(i, ,1.0) }; case _ => super.setByIndex(i) } // TODO This would be too slow, right?
-
   //def ~(proportions:Proportions): this.type = { proportions_=(proportions)(null); this }
 }
 trait GeneratedDiscreteVariable extends DiscreteVariable with GeneratedVariable with GeneratedDiscreteValue {
@@ -77,16 +76,16 @@ trait GeneratedDiscreteVariable extends DiscreteVariable with GeneratedVariable 
 }
 // A Discrete ~ Multinomial(Proportions), in which we can change the parent
 class Discrete(p:Proportions, value:Int = 0) extends DiscreteVariable(value) with GeneratedDiscreteVariable {
-  assert(p.length <= domainSize)
+  //assert(p.length <= domainSize)
   private val proportionsRef = new ParameterRef(p, this)
   def proportions = proportionsRef.value
-  def proportions_=(p2:Proportions)(implicit d:DiffList) = { assert(p2.length <= domainSize); proportionsRef.set(p2) }
+  def proportions_=(p2:Proportions)(implicit d:DiffList = null) = { assert(p2.length <= domainSize); proportionsRef.set(p2) }
   override def parentRefs = List(proportionsRef)
 }
 trait GeneratedCategoricalValue[A] extends GeneratedDiscreteValue with CategoricalValue[A]
 trait GeneratedCategoricalVariable[A] extends CategoricalVariable[A] with GeneratedDiscreteVariable with GeneratedCategoricalValue[A]
 class Categorical[A](p:Proportions, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] {
-  assert(p.length <= domainSize)
+  //assert(p.length <= domainSize)
   private val proportionsRef = new ParameterRef(p, this)
   def proportions = proportionsRef.value
   def proportions_=(p2:Proportions)(implicit d:DiffList) = { assert(p2.length <= domainSize); proportionsRef.set(p2) }
@@ -94,7 +93,7 @@ class Categorical[A](p:Proportions, value:A) extends CategoricalVariable(value) 
 }
 class ObservedDiscrete(p:Proportions, value:Int) extends DiscreteObservation(value) with GeneratedValue {
   // TODO Rename "DiscreteConstant"?
-  assert(p.length <= domainSize)
+  //assert(p.length <= domainSize)
   private val proportionsRef = new ParameterRef(p, this)
   def proportions = proportionsRef.value
   def proportions_=(p2:Proportions)(implicit d:DiffList) = { assert(p2.length <= domainSize); proportionsRef.set(p2) }

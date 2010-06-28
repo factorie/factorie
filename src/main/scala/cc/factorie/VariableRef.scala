@@ -37,7 +37,7 @@ class RefVariable[A<:AnyRef](initialValue:A = null) extends Variable with RefVal
   // TODO  Consider: def this(initval:A)(implicit d:DiffList = null)
   //def this(initval:A) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
   private var _value: A = _
-  set(initialValue)(null) // Initialize by calling set because set may do additional work in subclasses
+  set(initialValue)(null) // Initialize by calling set because set may do additional work in subclasses, e.g. ParameterRef.
   @inline final def value: A = _value
   def set(newValue:A)(implicit d: DiffList): Unit = if (newValue != _value) {
     if (d ne null) d += new RefDiff(_value, newValue)

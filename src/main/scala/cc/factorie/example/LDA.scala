@@ -20,35 +20,37 @@ object LDADemo {
   class Document(val file:String) extends ArrayBuffer[Word] { var theta:Proportions = _ }
 
   def main(args: Array[String]) : Unit = {
-    val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips05")
+    val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
     val lexer = new Regex("[a-zA-Z]+")
 
     // Read data and create generative variables
     val phis = for (i <- 1 to numTopics) yield new GrowableDenseDirichletMultinomial(0.01) with TypedProportions[Word]
     val documents = new ArrayBuffer[Document];
     for (directory <- directories) {
+      println("Reading files from directory "+directory)
       for (file <- new File(directory).listFiles; if (file.isFile)) {
+        print("."); Console.flush
         val doc = new Document(file.toString)
         doc.theta = new DenseDirichletMultinomial(numTopics, 0.01)
-        for (word <- lexer.findAllIn(Source.fromFile(file).toString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_))) {
-          val z = new Z(doc.theta, doc.theta.sampleInt)
+        for (word <- lexer.findAllIn(Source.fromFile(file).mkString).toList.map(_ toLowerCase).filter(!Stopwords.contains(_))) {
+          val z = new Z(doc.theta, Global.random.nextInt(numTopics))
           doc += new Word(phis, z, word)
         }
         documents += doc
       }
     }
-    println("Read "+documents.size+" documents with "+documents.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
+    println("\nRead "+documents.size+" documents with "+documents.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
   
     // Fit model
     val zs = documents.flatMap(document => document.map(word => word.choice))
     val sampler = new CollapsedGibbsSampler
     val startTime = System.currentTimeMillis
-    for (i <- 1 to 100) {
+    for (i <- 1 to 20) {
       sampler.process(zs, 1)
       print("."); Console.flush
-      if (i % 3 == 0) {
+      if (i % 5 == 0) {
         println ("Iteration "+i)
-        phis.foreach(t => println("Topic "+phis.indexOf(t)+"  "+t.top(20).map(_.value))); println
+        phis.foreach(t => println("Topic "+phis.indexOf(t)+"  "+t.top(10).map(_.value))); println
       }
     } 
     phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})

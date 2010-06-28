@@ -504,21 +504,21 @@ object Maths {
   /** Draw a single sample from multinomial "a".  Assumes that the elements of "a" already sum to 1.0. */
   def nextDiscrete (a:Array[Double])(implicit r:Random): Int = {
     var b = 0.0; val s = nextUniform(r); var i = 0
-    while (b < s && i < a.length) { b += a(i); i += 1 }
+    while (b <= s && i < a.length) { assert (a(i) >= 0.0); b += a(i); i += 1 }
     i - 1
   }
 
   /** Draw a single sample from multinomial "a".  Assumes that the elements of "a" already sum to 1.0. */
   def nextDiscrete (a:IndexedSeq[Double])(implicit r:Random): Int = {
     var b = 0.0; val s = nextUniform(r); var i = 0
-    while (b < s && i < a.length) { b += a(i); i += 1 }
+    while (b <= s && i < a.length) { b += a(i); i += 1 }
     i - 1
   }
 
   /** draw a single sample from (unnormalized) multinomial "a", with normalizing factor "sum". */
   def nextDiscrete (a:Array[Double], sum:Double)(implicit r:Random): Int = {
     var b = 0.0; val s = nextUniform(r) * sum; var i = 0
-    while (b < s && i < a.length) { b += a(i); i += 1 }
+    while (b <= s && i < a.length) { assert(a(i) >= 0.0); b += a(i); i += 1 }
     i - 1
   }
 

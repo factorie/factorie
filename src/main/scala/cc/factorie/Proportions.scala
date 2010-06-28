@@ -67,7 +67,8 @@ class UniformProportions(val length:Int) extends Proportions {
   @inline final def apply(index:Int) = 1.0 / length
 }
 
-class GrowableUniformProportions(val sizeProxy:{def size:Int}) extends Proportions {
+class GrowableUniformProportions(val sizeProxy:Iterable[_]) extends Proportions {
+  // I used to have GrowableUniformProportions(val sizeProxy:{def size:Int}), but this results in java.lang.reflect.Method.invoke at runtime
   def length = sizeProxy.size
   @inline final def apply(index:Int) = 1.0 / length
 }
@@ -80,6 +81,8 @@ class DenseCountsProportions(len:Int) extends Proportions with Estimation[DenseC
   def countsTotal  = _countsTotal
   def increment(index:Int, incr:Double)(implicit d:DiffList): Unit = { 
     _counts(index) += incr; _countsTotal += incr
+    assert(_counts(index) >= 0, "counts("+index+")="+_counts(index)+" after incr="+incr)
+    assert(_countsTotal >= 0, "countsTotal="+_countsTotal+" after incr="+incr)
     if (d ne null) d += DenseCountsProportionsDiff(index, incr)
   }
   def apply(index:Int): Double = {
@@ -96,20 +99,25 @@ class DenseCountsProportions(len:Int) extends Proportions with Estimation[DenseC
   }
 }
 
-class GrowableDenseCountsProportions extends DenseCountsProportions(32) {
+class GrowableDenseCountsProportions(initialCapacity:Int = 32) extends DenseCountsProportions(initialCapacity) {
   private var _size = 0
-  override def length = _size
+  override def length = _size // new Exception().printStackTrace()
   override def counts(index:Int):Double = if (index < _counts.size) _counts(index) else 0.0
   protected def ensureCapacity(size:Int): Unit = if (_counts.size < size) {
     val newSize = math.max(_counts.size * 2, size)
+    //println("GrowableDenseCountsProportions "+this.hashCode+" growing from "+_counts.size+" to capacity "+size+".  New size="+newSize)
     val newCounts = new Array[Double](newSize)
     Array.copy(_counts, 0, newCounts, 0, _counts.size)
     _counts = newCounts
+    //println("GrowableDenseCountsProportions "+this.hashCode+" done growing.")
   }
   override def increment(index:Int, incr:Double)(implicit d:DiffList): Unit = {
     ensureCapacity(index+1)
-    if (index >= _size) _size = index + 1
+    //if (index >= _size) { println("GrowableDenseCountsProportions.increment growing index="+index); _size = index + 1 }
+    if (index >= _size) { _size = index + 1 }
+    //if (index >= _size) { _size = 100000 }
     super.increment(index, incr)
+    //super.increment(_size, incr)
   }
 }
 
