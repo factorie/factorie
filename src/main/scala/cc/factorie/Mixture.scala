@@ -27,8 +27,8 @@ trait DiscreteMixtureVariable extends GeneratedDiscreteVariable with MixtureOutc
   override def parentRefs = List(proportionsRef)
   def prFromMixtureComponent(index:Int): Double = components(index).pr(intValue)
 }
-class DiscreteMixture(val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteVariable(value) with DiscreteMixtureVariable
-class CategoricalMixture[A](val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] with DiscreteMixtureVariable
+class DiscreteMixture(val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteVariable(value) with DiscreteMixtureVariable 
+class CategoricalMixture[A](val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] with DiscreteMixtureVariable 
 
 /*class DenseDirichletMixture(val components:Seq[Proportions], prec:RealValueParameter, val choice:MixtureChoiceVariable, p:Seq[Double] = Nil)
 extends DenseDirichlet(components(choice.intValue), prec, p) with MixtureOutcome {
@@ -48,10 +48,11 @@ class MixtureChoiceVariableTemplate extends TemplateWithStatistics1[MixtureChoic
 
 /*
 trait MixtureComponent extends Parameter {
-  var parent: MixtureComponents
+  def parent: MixtureComponents[P]
   override def addChild(v:GeneratedValue)(implicit d:DiffList): Unit = parent.addChild(v)
   override def removeChild(v:GeneratedValue)(implicit d:DiffList): Unit = parent.removeChild(v)
   override def children: Iterable[GeneratedValue] = parent.childrenOf(this)
+  def weightedChildren: Iterable[(MixtureOutcome,Double)]
 }
 trait MixtureComponents[P<:Parameter] extends Seq[P] with Parameter
 class FiniteMixture[P<:Parameter](val components:Seq[P]) extends MixtureComponents[P] {
@@ -62,6 +63,9 @@ class FiniteMixture[P<:Parameter](val components:Seq[P]) extends MixtureComponen
     val index = components.indexOf(p)
     children.filter(_.isInstanceOf[MixtureOutcome]).asInstanceOf[Iterable[MixtureOutcome]].filter(_.choice.intValue == index)
   }
+}
+object FiniteMixture {
+  def apply[P<:Parameter](n:Int)(constructor: =>P): FiniteMixture[P] = new FiniteMixture[P](for (i <- 1 to n) yield constructor())
 }
 class DiscreteMixture(val components:FiniteMixture[Proportions], val choice:MixtureChoice, value:Int = 0) extends DiscreteVariable(value) with GeneratedDiscreteVariable with MixtureOutcome {
   choice.addChild(this)

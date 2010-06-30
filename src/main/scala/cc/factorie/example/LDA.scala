@@ -17,7 +17,7 @@ object LDADemo {
   val numTopics = 10
   class Z(p:Proportions, value:Int) extends MixtureChoice(p, value); Domain[Z].size = numTopics
   class Word(ps:Seq[Proportions], z:MixtureChoiceVariable, value:String) extends CategoricalMixture[String](ps, z, value)
-  class Document(val file:String) extends ArrayBuffer[Word] { var theta:Proportions = _ }
+  class Document(val file:String) extends ArrayBuffer[Word] { var theta:DirichletMultinomial = _ }
 
   def main(args: Array[String]) : Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
@@ -43,7 +43,11 @@ object LDADemo {
   
     // Fit model
     val zs = documents.flatMap(document => document.map(word => word.choice))
-    val sampler = new CollapsedGibbsSampler
+
+    val collapsed = new ArrayBuffer[CollapsedParameter]; collapsed ++= phis; collapsed ++= documents.map(_.theta)
+    for (c <- collapsed) println("LDA collapsed parent="+c.getClass.getName+"@"+c.hashCode+" #children="+c.children.size)
+
+    val sampler = new CollapsedGibbsSampler(collapsedVariables = (phis ++ documents.map(_.theta)))
     val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
       sampler.process(zs, 1)

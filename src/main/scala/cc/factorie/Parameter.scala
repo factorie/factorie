@@ -13,7 +13,8 @@ trait Parameter extends Variable {
   def keepChildren = true
   def children: Iterable[GeneratedValue] = _children
   def addChild(v:GeneratedValue)(implicit d:DiffList): Unit = if (keepChildren) {
-    if (_children.contains(v)) throw new Error("Parameter "+this+" already has child "+v)
+    //println("Parameter.addChild"); new Exception().printStackTrace()
+    if (_children.contains(v)) throw new Error("Parameter "+this+" already has child "+v+" with hashCode="+v.hashCode)
     _children += v 
     if (d ne null) d += ParameterAddChildDiff(v)
   }
@@ -56,12 +57,13 @@ trait Estimator[P<:Parameter] {
 
 
 trait AbstractParameterRef extends Variable {
-  def abstractValue: Parameter
+  def abstractValue: AnyRef //Parameter
   def child: GeneratedValue
 }
 class ParameterRef[P<:Parameter,C<:GeneratedValue](p:P, override val child:C) extends RefVariable(p) with AbstractParameterRef {
-  def abstractValue = this.value
-  // This 'set' method will be called in initialization of RefVariable
+  p.addChild(child)(null)
+  //println("ParameterRef.init parent="+p.getClass.getName+"@"+p.hashCode+" child="+child)
+  // This 'set' method is no longer called in initialization of RefVariable, hence line above
   override def set(newValue:P)(implicit d:DiffList): Unit = if (newValue ne value) { 
     // Above, if this is != instead of ne, then entire Proportion contents will be examined!  Slow!!!
     if (value ne null) value.removeChild(child)

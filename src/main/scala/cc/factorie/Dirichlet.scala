@@ -60,13 +60,13 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealValueParamete
 }
 
 trait DirichletMultinomial extends Proportions with CollapsedParameter with GeneratedValue {
-  override def keepChildren = false
   def mean: Proportions
   def precision: RealValueParameter
   def parents = List(mean, precision)
   mean.addChild(this)(null)
   precision.addChild(this)(null)
   def increment(index:Int, incr:Double)(implicit d:DiffList): Unit
+  def zero: Unit
   def counts(index:Int): Double
   def countsTotal: Double
   def pr = 1.0 // TODO implement.  Since this is collapsed, what should it be?  1.0?
@@ -75,16 +75,19 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
     val alphaSum = precision.doubleValue
     (counts(index) + mean(index) * alphaSum) / (countsTotal + alphaSum)
   }
-  override def addChild(c:GeneratedValue)(implicit d:DiffList): Unit = {
-    c match { case v:DiscreteValue => increment(v.intValue, 1.0); case _ => throw new Error } // xxx This seems to be the slowness culprit
-    // xxx increment(c.asInstanceOf[DiscreteValue].intValue, 1.0)
-    //increment(Global.random.nextInt(5), 1.0)
+  /*override def addChild(c:GeneratedValue)(implicit d:DiffList): Unit = {
+    // xxx c match { case v:DiscreteValue => increment(v.intValue, 1.0); case _ => throw new Error } // xxx This seems to be the slowness culprit
     super.addChild(c)(d)
   }
   override def removeChild(c:GeneratedValue)(implicit d:DiffList): Unit = {
     //println("DirichletMultinomial.removeChild "+c)
-    c match { case v:DiscreteValue => increment(v.intValue, -1.0); case _ => throw new Error }
+    // xxx c match { case v:DiscreteValue => increment(v.intValue, -1.0); case _ => throw new Error } 
     super.removeChild(c)(d)
+  }*/
+  def clearChildStats: Unit = this.zero
+  def updateChildStats(child:Variable, weight:Double): Unit = child match {
+    case d:DiscreteValue => increment(d.intValue, weight)(null)
+    case p:Proportions if (p.length == length) => forIndex(length)(i => increment(i, p(i) * weight)(null))
   }
   // Perhaps DirichletMultinomial should not be a GeneratedVariable?  But it does have parents and children.
   def sample(implicit d:DiffList): Unit = new Error

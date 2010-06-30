@@ -16,6 +16,7 @@ import cc.factorie._
 object CorefMentionsDemo {
   /** A random variable for a mention */
   class Mention(val name:String, val trueEntity:Int, initialEntity:Entity) extends RefVariable(initialEntity) {
+    initialEntity.add(this)(null)
     // When this mention is assigned to an entity, update the mention
     override def set(e:Entity)(implicit d:DiffList) : Unit = {
       if (e != entity) {

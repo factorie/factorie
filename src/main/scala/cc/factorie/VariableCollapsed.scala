@@ -49,9 +49,9 @@ trait CollapsedGeneratedVariable {
 trait CollapsedVariable extends GeneratedVariable 
 
 trait CollapsedParameter extends CollapsedVariable with Parameter {
-  // TODO What should go here?
-  //def addSample(o:Variable)(implicit d:DiffList): Unit
-  //def removeSample(o:Variable)(implicit d:DiffList): Unit
+  /** Negative weight indicates removal of stats. */
+  def updateChildStats(child:Variable, weight:Double): Unit 
+  def clearChildStats: Unit
 }
 
 

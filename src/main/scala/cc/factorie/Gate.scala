@@ -55,6 +55,7 @@ trait AbstractGatedRefVariable {
   def domainSize: Int
   def setToNull(implicit d:DiffList): Unit
   def setByIndex(newIndex:Int)(implicit d:DiffList): Unit
+  def abstractValue: AnyRef
 }
 
 /** A RefVariable whose value is controled by a Gate.  This is used as a reference to the Distribution of samples generated from a Mixture.
