@@ -113,6 +113,11 @@ trait TypedValue extends TypedValues {
 // I considered whether RefValue and TypedValue should be merged, but then I see that we need to 
 // distinguish a _Value that stores its value as x:T and one that doesn't (like CategoricalVariable[T])
 
+trait NumericValue { this: Variable =>
+  def intValue: Int
+  def doubleValue: Double
+}
+
 
 
 // The two traits below may enable efficiencies for sampling, scoring and learning

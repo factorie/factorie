@@ -28,7 +28,7 @@ trait DiscreteMixtureVariable extends GeneratedDiscreteVariable with MixtureOutc
   def prFromMixtureComponent(index:Int): Double = components(index).pr(intValue)
 }
 class DiscreteMixture(val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteVariable(value) with DiscreteMixtureVariable 
-class CategoricalMixture[A](val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] with DiscreteMixtureVariable 
+class CategoricalMixture[A<:AnyRef](val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] with DiscreteMixtureVariable 
 
 /*class DenseDirichletMixture(val components:Seq[Proportions], prec:RealValueParameter, val choice:MixtureChoiceVariable, p:Seq[Double] = Nil)
 extends DenseDirichlet(components(choice.intValue), prec, p) with MixtureOutcome {

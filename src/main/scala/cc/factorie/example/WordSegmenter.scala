@@ -14,11 +14,11 @@ import cc.factorie._
 object WordSegmenterDemo { 
   
   // The variable types:
-  class Label(b:Boolean, val token:Token) extends LabelVariable(b) 
+  class Label(b:String, val token:Token) extends LabelVariable(b) 
   class Token(val char:Char, isWordStart:Boolean) extends BinaryVectorVariable[String] with VarInSeq[Token] {
     this += char.toString
     if ("aeiou".contains(char)) this += "VOWEL"
-    val label = new Label(isWordStart, this)
+    val label = new Label(if (isWordStart) "B" else "I", this)
   }
 
   // The factor templates that define the model

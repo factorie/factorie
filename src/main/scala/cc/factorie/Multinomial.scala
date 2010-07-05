@@ -373,7 +373,7 @@ class DenseCountsMultinomial[O<:DiscreteValue](val length:Int) extends CountsMul
 // The binary special case, for convenience
 
 /** The outcome of a coin flip, with boolean value.  */
-class Flip(coin:Coin, value:Boolean = false) extends BooleanVariable(value) with GeneratedCategoricalVariable[Boolean] {
+class Flip(coin:Coin, value:Boolean = false) extends BooleanVariable(value) with GeneratedDiscreteVariable {
   def proportions = coin
   coin.addChild(this)(null)
 }

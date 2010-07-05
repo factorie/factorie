@@ -61,10 +61,11 @@ abstract trait CategoricalValue[T] extends CategoricalValues[T] with DiscreteVal
 /** A DiscreteVariable whose integers 0...N are associated with an object of type ValueType. 
     @author Andrew McCallum */
 @DomainInSubclasses
-abstract class CategoricalVariable[T] extends DiscreteVariable with CategoricalValue[T] {
+abstract class CategoricalVariable[T<:AnyRef] extends DiscreteVariable with CategoricalValue[T] {
   type VariableType <: CategoricalVariable[T]
   def this(initialValue:T) = { this(); set(initialValue)(null) }
   final def set(newValue:ValueType)(implicit d: DiffList) = setByIndex(domain.index(newValue))
+  def set(newValue:Int)(implicit d: DiffList) = setByIndex(newValue)
   final def :=(newValue:ValueType) = set(newValue)(null)
   final def value_=(newValue:ValueType) = set(newValue)(null)
 }

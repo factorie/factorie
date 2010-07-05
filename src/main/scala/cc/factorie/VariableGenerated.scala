@@ -83,8 +83,8 @@ class Discrete(p:Proportions, value:Int = 0) extends DiscreteVariable(value) wit
   override def parentRefs = List(proportionsRef)
 }
 trait GeneratedCategoricalValue[A] extends GeneratedDiscreteValue with CategoricalValue[A]
-trait GeneratedCategoricalVariable[A] extends CategoricalVariable[A] with GeneratedDiscreteVariable with GeneratedCategoricalValue[A]
-class Categorical[A](p:Proportions, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] {
+trait GeneratedCategoricalVariable[A<:AnyRef] extends CategoricalVariable[A] with GeneratedDiscreteVariable with GeneratedCategoricalValue[A]
+class Categorical[A<:AnyRef](p:Proportions, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] {
   //assert(p.length <= domainSize)
   private val proportionsRef = new ParameterRef(p, this)
   def proportions = proportionsRef.value

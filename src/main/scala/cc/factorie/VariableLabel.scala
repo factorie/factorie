@@ -21,7 +21,7 @@ import scala.reflect.Manifest
 /** A variable of finite enumerated values that has a true "labeled" value, separate from its current value. 
     @author Andrew McCallum */
 // TODO We could make version of this for OrdinalValue: TrueOrdinalValue
-trait TrueCategoricalValue[T] extends TrueSetting {
+trait TrueCategoricalValue[T<:AnyRef] extends TrueSetting {
   this : CategoricalVariable[T] =>
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
   var trueIndex: Int
@@ -48,7 +48,7 @@ class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest]/*(implicit m:Ma
     @see LabelVariable
 */
 @DomainInSubclasses
-abstract class CoordinatedLabelVariable[T](trueval:T) extends CategoricalVariable[T](trueval) with TrueCategoricalValue[T] {
+abstract class CoordinatedLabelVariable[T<:AnyRef](trueval:T) extends CategoricalVariable[T](trueval) with TrueCategoricalValue[T] {
   type VariableType <: CoordinatedLabelVariable[T]
   var trueIndex = domain.index(trueval)
 }
@@ -60,7 +60,7 @@ abstract class CoordinatedLabelVariable[T](trueval:T) extends CategoricalVariabl
     @see CoordinatedLabelVariable
  */
 @DomainInSubclasses
-class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with NoVariableCoordination {
+class LabelVariable[T<:AnyRef](trueval:T) extends CoordinatedLabelVariable(trueval) with NoVariableCoordination {
   type VariableType <: LabelVariable[T]
   // TODO Does this ext line really provide the protection we want from creating variable-value coordination?
   override final def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
