@@ -61,7 +61,7 @@ trait IntegerValue extends IntegerValues {
 class IntegerVariable(initialValue:Int = 0) extends Variable with IntegerValue {
   type VariableType <: IntegerVariable
   //def this(initialValue:Int) = { this(); setByInt(initialValue)(null) }
-  private var _value = initialValue // This was -1 so that initialization with this(0) will still result in a call to "setByInt"
+  private var _value = initialValue // This was previously -1 so that initialization with this(0) will still result in a call to "setByInt"
   @inline final def intValue = _value
   def setByInt(newValue: Int)(implicit d: DiffList): Unit = {
     if (newValue != _value) {

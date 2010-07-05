@@ -89,6 +89,10 @@ trait ConstantValue extends Variable {
   override final def isConstant = true
 }
 
+trait ConstantTypedValue extends ConstantValue with TypedValue {
+  // override final def set(newValue:ValueType)(d:DiffList): Unit = throw new Error("Cannot set the value of a constant.")
+}
+
 /** For variables whose value has a type, indicated in type ValueType */
 trait TypedValues {
   this: Variable =>

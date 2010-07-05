@@ -63,7 +63,7 @@ abstract class DiscreteVariable(initialValue:Int = 0) extends OrdinalVariable(in
     def reset = i = -1
     override def variable : DiscreteVariable.this.type = DiscreteVariable.this
   }
-  type QType = Proportions
+  type QType = MutableProportions
   def newQ = new DenseProportions(domainSize)
 }
 

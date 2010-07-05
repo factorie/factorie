@@ -17,7 +17,7 @@ object LDADemo {
   val numTopics = 10
   class Z(p:Proportions, value:Int) extends MixtureChoice(p, value); Domain[Z].size = numTopics
   class Word(ps:Seq[Proportions], z:MixtureChoiceVariable, value:String) extends CategoricalMixture[String](ps, z, value)
-  class Document(val file:String) extends ArrayBuffer[Word] { var theta:DirichletMultinomial = _ }
+  class Document(val file:String) extends ArrayBuffer[Word] { var theta:DirichletMultinomial = null }
 
   def main(args: Array[String]) : Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
@@ -57,7 +57,7 @@ object LDADemo {
         phis.foreach(t => println("Topic "+phis.indexOf(t)+"  "+t.top(10).map(_.value))); println
       }
     } 
-    phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
+    //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
     println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
   }
 }
