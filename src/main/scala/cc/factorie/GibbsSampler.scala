@@ -51,7 +51,7 @@ trait GibbsSamplerHandler {
 object GeneratedVariableGibbsSamplerHandler extends GibbsSamplerHandler {
   def sample(v:Variable, factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean = {
     factors match {
-      case List(factor:GeneratedValueTemplate#Factor) => {
+      case List(factor:GeneratedVarTemplate#Factor) => {
         v match {
           case v:GeneratedVariable => v.sample(d)
         }
@@ -65,7 +65,7 @@ object GeneratedVariableGibbsSamplerHandler extends GibbsSamplerHandler {
 object MixtureChoiceGibbsSamplerHandler extends GibbsSamplerHandler {
   def sample(v:Variable, factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean = {
     factors match {
-      case List(factor1:GeneratedValueTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
+      case List(factor1:GeneratedVarTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
         val mc: MixtureChoiceVariable = factor2.n1
         // TODO Make sure that 'mc' doesn't do any extra factor coordination
         val outcomes: Seq[MixtureOutcome] = mc.gatedRefs.map(_ match { 
@@ -80,7 +80,7 @@ object MixtureChoiceGibbsSamplerHandler extends GibbsSamplerHandler {
           distribution(i) = mc.proportions.pr(i) * outcomes.foldLeft(1.0)((prod:Double, outcome:MixtureOutcome) => prod * outcome.prFromMixtureComponent(i))
           sum += distribution(i)
         }
-        mc.setByIndex(Maths.nextDiscrete(distribution, sum)(Global.random))(d)
+        mc.set(Maths.nextDiscrete(distribution, sum)(Global.random))(d)
         true
       }
       case _ => false
@@ -161,7 +161,7 @@ object GeneratedVariableCollapsedGibbsSamplerHandler extends CollapsedGibbsSampl
   def sample(v:Variable, factors:List[Factor], sampler:CollapsedGibbsSampler)(implicit d:DiffList): Boolean = {
     factors match {
       // TODO We could try to gain some speed by handling specially the case in which there is only one parent
-      case List(factor:GeneratedValueTemplate#Factor) => {
+      case List(factor:GeneratedVarTemplate#Factor) => {
         for (parent <- factor.n3; if (sampler.collapsed.contains(parent))) parent match {
           case p:CollapsedParameter => p.updateChildStats(v, -1.0)
           // TODO What about collapsed children?
@@ -185,7 +185,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
   def sample(v:Variable, factors:List[Factor], sampler:CollapsedGibbsSampler)(implicit d:DiffList): Boolean = {
     v match {
       case v: MixtureChoiceVariable => factors match {
-        case List(factor1:GeneratedValueTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
+        case List(factor1:GeneratedVarTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
           // This is the case for LDA's "z" variables
           //println("MixtureChoiceCollapsedGibbsSamplerHandler v="+v+" value="+v.intValue)
           val parent = v.proportions
@@ -211,7 +211,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
             })
             // Sample
             //println("MixtureChoiceCollapsedGibbsSamplerHandler distribution = "+(distribution.toList.map(_ / sum)))
-            v.setByIndex(Maths.nextDiscrete(distribution, sum)(Global.random))
+            v.set(Maths.nextDiscrete(distribution, sum)(Global.random))
             //println("MixtureChoiceCollapsedGibbsSamplerHandler "+v+"@"+v.hashCode+" newValue="+v.intValue)
             // If parent of outcome is collapsed, increment counts
             if (sampler.collapsed.contains(ref.value)) ref.value match { case p:CollapsedParameter => p.updateChildStats(ref.child, 1.0) }
@@ -226,7 +226,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
               sum += distribution(i)
             }
             // Sample
-            v.setByIndex(Maths.nextDiscrete(distribution, sum)(Global.random))
+            v.set(Maths.nextDiscrete(distribution, sum)(Global.random))
             // If parents of outcomes are collapsed, decrement counts
             for (ref <- refs; if sampler.collapsed.contains(ref.value)) ref.value match { case p:CollapsedParameter => p.updateChildStats(ref.child, 1.0) }
           }

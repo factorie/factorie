@@ -62,7 +62,7 @@ object SpanNER1 {
     var filename:String = null
   }
   class SpanLength(x:Int) extends DiscreteVariable {
-    if (x < domain.size) setByInt(x)(null) else setByInt(domain.size-1)(null)
+    if (x < domain.size) set(x)(null) else set(domain.size-1)(null)
   }
   Domain[SpanLength].size = 6
   class Lexicon(filename:String) extends TokenSeqs.Lexicon(filename) {

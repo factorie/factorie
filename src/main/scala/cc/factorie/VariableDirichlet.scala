@@ -16,8 +16,8 @@ import scala.collection.mutable.HashSet
 /** Dirichlet distribution.
     @author Andrew McCallum */
 /*
-//trait AbstractDirichlet[O<:GeneratedDiscreteValue[O]] extends  ProportionDistribution[O] with RandomAccessSeq[Double] 
-class Dirichlet[O<:DiscreteValue](val mean:Multinomial[O], var alphaSum:Double = 1.0)(implicit m:Manifest[O]) extends ProportionDistribution[O] with IndexedSeq[Double] {
+//trait AbstractDirichlet[O<:GeneratedDiscreteVar[O]] extends  ProportionDistribution[O] with RandomAccessSeq[Double] 
+class Dirichlet[O<:DiscreteVar](val mean:Multinomial[O], var alphaSum:Double = 1.0)(implicit m:Manifest[O]) extends ProportionDistribution[O] with IndexedSeq[Double] {
   type VariableType <: Dirichlet[O];
   final def length: Int = mean.length
   final def alpha(index:Int): Double = mean(index) * alphaSum
@@ -65,13 +65,13 @@ class Dirichlet[O<:DiscreteValue](val mean:Multinomial[O], var alphaSum:Double =
 
 // Immutable Dirichlet with equal alpha for all dimensions. 
 @DomainInSubclasses
-class SymmetricDirichlet[O<:GeneratedDiscreteValue[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends Dirichlet[O](new UniformMultinomial[O]()(m), initialAlpha * Domain[O](m).length) {
+class SymmetricDirichlet[O<:GeneratedDiscreteVar[O]](initialAlpha:Double)(implicit m:Manifest[O]) extends Dirichlet[O](new UniformMultinomial[O]()(m), initialAlpha * Domain[O](m).length) {
   type VariableType <: SymmetricDirichlet[O]
   type OutcomeDomainType = O
   override def keepGeneratedSamples = false
 }
 
-class UniformDirichlet[O<:GeneratedDiscreteValue[O]](implicit m:Manifest[O]) extends SymmetricDirichlet[O](1.0)
+class UniformDirichlet[O<:GeneratedDiscreteVar[O]](implicit m:Manifest[O]) extends SymmetricDirichlet[O](1.0)
 
 
 // A Dirichlet whose mean is integrated out with distribution 'meanSource', 
@@ -116,14 +116,14 @@ class DirichletDirichlet[O<:DiscreteOutcome[O]](val meanSource:AbstractDirichlet
 
 
 object Dirichlet {
-  def apply[O<:GeneratedDiscreteValue[O]](initialAlpha:Double)(implicit m:Manifest[O]) = new SymmetricDirichlet[O](initialAlpha)
-  def apply[O<:GeneratedDiscreteValue[O]](implicit m:Manifest[O]) = new SymmetricDirichlet[O](1.0)
+  def apply[O<:GeneratedDiscreteVar[O]](initialAlpha:Double)(implicit m:Manifest[O]) = new SymmetricDirichlet[O](initialAlpha)
+  def apply[O<:GeneratedDiscreteVar[O]](implicit m:Manifest[O]) = new SymmetricDirichlet[O](1.0)
 }
   
 // Estimate the parameters of a Dirichlet by moment-matching.
-// TODO was GeneratedDiscreteValue
-//trait DirichletMomentMatchingEstimator[O<:GeneratedDiscreteValue[O]] extends AbstractDirichlet[O] 
-trait DirichletMomentMatchingEstimator[O<:DiscreteValue[O]] {
+// TODO was GeneratedDiscreteVar
+//trait DirichletMomentMatchingEstimator[O<:GeneratedDiscreteVar[O]] extends AbstractDirichlet[O] 
+trait DirichletMomentMatchingEstimator[O<:DiscreteVar[O]] {
   this : Dirichlet[O] =>
   private def setUniform: Unit = 
     mean.set(new RandomAccessSeq[Double] { def apply(i:Int) = uniformPseudoEvidence/length; def length = size})

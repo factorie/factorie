@@ -55,7 +55,7 @@ trait CollapsedParameter extends CollapsedVariable with Parameter {
 }
 
 
-// /** DiscreteValue integrated out by a Multinomial distribution.
+// /** DiscreteVar integrated out by a Multinomial distribution.
 //     @author Andrew McCallum */
 // class MultinomialDiscrete[A<:DiscreteVariable](val variable:A) {
 //   val distribution = new DenseCountsMultinomial[A](variable.domainSize)
@@ -95,7 +95,7 @@ trait CollapsedParameter extends CollapsedVariable with Parameter {
 /** Marginalizes (collapses) a Multinomial, integrating out uncertainty with a Dirichlet.
     This is a DiscreteDistribution, but not a Multinomial. */
 /*
-class DirichletMultinomial[A<:DiscreteValue](val variable:Multinomial[A]) extends DiscreteDistribution[A] with CollapsedDistribution[A] {
+class DirichletMultinomial[A<:DiscreteVar](val variable:Multinomial[A]) extends DiscreteDistribution[A] with CollapsedDistribution[A] {
   type VariableType <: DirichletMultinomial[A]
   val parent: Dirichlet[A] = variable.generativeSource.value match { case p:Dirichlet[A] => p; case _ => null }
   val counts = new Array[Double](variable.length)

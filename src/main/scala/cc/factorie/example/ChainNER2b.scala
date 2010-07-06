@@ -448,7 +448,7 @@ object ChainNER2b {
   }
 
   def printDiagnostic(labels:Seq[Label]): Unit = {
-    for (label <- labels; if (label.index != label.domain.index("O"))) {
+    for (label <- labels; if (label.intValue != label.domain.index("O"))) {
       if (!label.hasPrev || label.value != label.prev.value)
         print("%-7s %-7s ".format((if (label.value != label.trueValue) label.trueValue else " "), label.value))
       print(label.token.word+" ")

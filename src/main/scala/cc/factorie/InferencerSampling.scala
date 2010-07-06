@@ -10,18 +10,18 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 
 // Note that putting a [V], as in DenseCountsMultinomial[V], doesn't work here because CategoricalValues not <: MultinomialOutcome[V].  
 // But as long as we don't use any methods that require [V], I think we are OK.
-class DiscreteMarginal[V<:DiscreteValues](val variable:V) extends DenseCountsProportions(variable.domain.size) with Marginal {
+class DiscreteMarginal[V<:DiscreteVars](val variable:V) extends DenseCountsProportions(variable.domain.size) with Marginal {
   override def keepChildren = false
   // Was: DenseCountsMultinomial instead of DirichletMultinomial above.
   //override def keepGeneratedSamples = false
   def incrementCurrentValue : Unit = variable match {
-    case v:DiscreteValue => increment(v.index, 1.0)(null)
+    case v:DiscreteVar => increment(v.intValue, 1.0)(null)
     case v:BinaryVectorVariable[_] => { for (index <- v.indices) increment(index, 1.0)(null) } // throw new Error // TODO Put this code back in: v.incrementInto(this)
   }
 }
 
 // TODO This is over variables.  We want something over Factors... and perhaps also something separate over Variables
-class SamplingLattice[V<:DiscreteValues](variables:Collection[V]) extends Lattice {
+class SamplingLattice[V<:DiscreteVars](variables:Collection[V]) extends Lattice {
   val map = new HashMap[V,DiscreteMarginal[V]]
   variables.foreach(v => map(v) = new DiscreteMarginal(v))
   def marginal(v:V) = map(v)

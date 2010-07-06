@@ -20,7 +20,7 @@ class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A],
         val distribution = new Array[Double](v.domainSize)
         for (i <- 0 until v.domainSize) {
           val diff = new DiffList
-          v.setByIndex(i)(diff)
+          v.set(i)(diff)
           val factors = diff.factorsOf[Template](model)
           val neighbors = factors.flatMap(_.variables).filter(_ != v).toSet
           if (neighbors.exists(_.isInstanceOf[Variable with QDistribution])) throw new Error("Not yet implemented neighboring mean fields.")
@@ -53,7 +53,7 @@ class CollapsedVariationalBayes[A<:Variable with QDistribution](collapse:Iterabl
   def process(v:A): Unit = {
     val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.template.getClass.getName < f2.template.getClass.getName)
     factors match {
-      case List(factor1:GeneratedValueTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
+      case List(factor1:GeneratedVarTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
         val v = factor2.n1.asInstanceOf[MixtureChoiceVariable]
         // Variational Bayes order 0 approximation
         assert(v.isInstanceOf[MixtureChoiceVariable])

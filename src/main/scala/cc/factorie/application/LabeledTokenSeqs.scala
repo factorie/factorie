@@ -343,8 +343,8 @@ object LabeledTokenSeqs {
       def +=(seq:LabeledTokenSeq[T,L]): Unit = +=(seq.map(_.label))
       def +=(labels: Seq[L])(implicit m:Manifest[L]): Unit = {
         for (l <- labels) {
-          val trueIndex = l.trueIndex
-          val predIndex = l.index
+          val trueIndex = l.trueIntValue
+          val predIndex = l.intValue
           if (targetIndex == trueIndex) {
             if (trueIndex == predIndex)
               tp += 1

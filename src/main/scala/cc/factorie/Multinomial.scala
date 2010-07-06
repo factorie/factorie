@@ -17,7 +17,7 @@ import scala.collection.mutable.{HashSet,HashMap,IndexedSeq}
 
 /*
 /// Base of the Multinomial class hierarchy, abstract, needing only methods length, pr, and set. 
-class Multinomial[O<:DiscreteValue] extends DiscreteDistribution[O] with GeneratedProportionValue[O] with IndexedSeq[Double] with CollapsibleDistribution[O] with QDistribution {
+class Multinomial[O<:DiscreteVar] extends DiscreteDistribution[O] with GeneratedProportionValue[O] with IndexedSeq[Double] with CollapsibleDistribution[O] with QDistribution {
   type VariableType <: Multinomial[O]
   type SourceType <: ProportionDistribution[O]
   type CollapsedType = DirichletMultinomial[O]
@@ -81,7 +81,7 @@ class Multinomial[O<:DiscreteValue] extends DiscreteDistribution[O] with Generat
 }
 
 // Compact representation of immutable Multinomial with equal probability for all outcomes. 
-class UniformMultinomial[O<:DiscreteValue](val length:Int) extends Multinomial[O] {
+class UniformMultinomial[O<:DiscreteVar](val length:Int) extends Multinomial[O] {
   type VariableType <: UniformMultinomial[O]
   def this()(implicit m:Manifest[O]) = this(Domain[O](m).size)
   private val pr1 = 1.0/length
@@ -90,7 +90,7 @@ class UniformMultinomial[O<:DiscreteValue](val length:Int) extends Multinomial[O
 }
 
 // A mixture of a fixed set of Multinomials, i.e. you cannot add or remove Multinomials from the mixture. 
-class MultinomialMixture[M<:Multinomial[O]:ClassManifest,O<:DiscreteValue](ms:Seq[M], ps:Seq[Double]) extends Multinomial[O] {
+class MultinomialMixture[M<:Multinomial[O]:ClassManifest,O<:DiscreteVar](ms:Seq[M], ps:Seq[Double]) extends Multinomial[O] {
   type VariableType <: MultinomialMixture[M,O]
   // TODO How can I avoid needing both M and O as type parameters.  I think M should automatically specify O.
   //type SourceType = ProportionDistribution[O];
@@ -106,7 +106,7 @@ class MultinomialMixture[M<:Multinomial[O]:ClassManifest,O<:DiscreteValue](ms:Se
 }
 
 // Simple Multinomial that stores p(x) directly in a Scalala DenseVector. 
-class DenseMultinomial[O<:DiscreteValue](proportions:Seq[Double]) extends Multinomial[O] {
+class DenseMultinomial[O<:DiscreteVar](proportions:Seq[Double]) extends Multinomial[O] {
   //type SourceType = ProportionDistribution[O];
   def this(dim:Int) = this(Array.make(dim, 1.0/dim))
   def this()(implicit m:Manifest[O]) = this(Array.make(Domain[O](m).size, 1.0/Domain[O](m).size))
@@ -128,7 +128,7 @@ class DenseMultinomial[O<:DiscreteValue](proportions:Seq[Double]) extends Multin
   }
 }
 
-trait SparseMultinomial[O<:DiscreteValue] extends Multinomial[O] {
+trait SparseMultinomial[O<:DiscreteVar] extends Multinomial[O] {
   def activeIndices: scala.collection.Set[Int];
   //def sampleIndexProduct(m2:SparseMultinomial[O]): Int // TODO
 }
@@ -196,7 +196,7 @@ trait HashIncrementableCounts extends IncrementableCounts {
 
 // A Multinomial that stores its parameters as a collection of "outcome counts" and their total. 
 //  Only the methods '_counts' and 'length' are abstract in this class.
-trait CountsMultinomial[O<:DiscreteValue] extends Multinomial[O] with IncrementableCounts {
+trait CountsMultinomial[O<:DiscreteVar] extends Multinomial[O] with IncrementableCounts {
   type VariableType <: CountsMultinomial[O]
   def pr(index:Int) = counts(index) / countsTotal
   class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
@@ -204,7 +204,7 @@ trait CountsMultinomial[O<:DiscreteValue] extends Multinomial[O] with Incrementa
 }
 
 // A Multinomial that stores its counts in a Scalala SparseVector. 
-class SparseCountsMultinomial[O<:DiscreteValue](val length:Int) extends SparseMultinomial[O] with CountsMultinomial[O] with SparseVectorIncrementableCounts {
+class SparseCountsMultinomial[O<:DiscreteVar](val length:Int) extends SparseMultinomial[O] with CountsMultinomial[O] with SparseVectorIncrementableCounts {
   type Variabletype <: SparseCountsMultinomial[O]
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   def this()(implicit m:Manifest[O]) = this(Domain[O](m).size)
@@ -222,7 +222,7 @@ class SparseCountsMultinomial[O<:DiscreteValue](val length:Int) extends SparseMu
 // Multinomial for which sampling is efficient because outcomes are considered in order of highest-count first.
 //  This implementation is not yet finished.
 @deprecated // Not finished
-abstract class SortedSparseCountsMultinomial[O<:DiscreteValue](dim:Int) extends Multinomial[O] with SparseMultinomial[O] {
+abstract class SortedSparseCountsMultinomial[O<:DiscreteVar](dim:Int) extends Multinomial[O] with SparseMultinomial[O] {
   def length: Int = pos.length
   private var total: Int = 0 // total of all counts in buf
   // Make sure we have enough bits to represent the dimension of the multinomial
@@ -239,7 +239,7 @@ abstract class SortedSparseCountsMultinomial[O<:DiscreteValue](dim:Int) extends 
 }
 
 // A Multinomial that stores its counts in a Scalala DenseVector.
-class DenseCountsMultinomial[O<:DiscreteValue](val length:Int) extends CountsMultinomial[O] {
+class DenseCountsMultinomial[O<:DiscreteVar](val length:Int) extends CountsMultinomial[O] {
   def this(initCounts:Seq[Double]) = { this(initCounts.size); set(initCounts) }
   type VariableType <: DenseCountsMultinomial[O]
   protected val _counts = new DenseVector(length) { def length = size }
@@ -253,10 +253,10 @@ class DenseCountsMultinomial[O<:DiscreteValue](val length:Int) extends CountsMul
 
 //  A Multinomial with parameters integrated out with a Dirichlet prior.  Also known as a Multivariate Polya distribution.
 //     @author Andrew McCallum 
-// // TODO Figure out how to use intead [O<:GeneratedDiscreteValue[O]], but still get O#VariableType#ValueType in "top" below
-// // TODO class DirichletMultinomial[O<:DiscreteValue](val dirichlet:Dirichlet[O]) extends DiscreteDistribution[O] with MarginalizingDistribution
+// // TODO Figure out how to use intead [O<:GeneratedDiscreteVar[O]], but still get O#VariableType#ValueType in "top" below
+// // TODO class DirichletMultinomial[O<:DiscreteVar](val dirichlet:Dirichlet[O]) extends DiscreteDistribution[O] with MarginalizingDistribution
 // // TODO trait MarginalizingDistribution { val target: Variable }
-// class DirichletMultinomial[O<:GeneratedDiscreteValue[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
+// class DirichletMultinomial[O<:GeneratedDiscreteVar[O]](dirichlet:AbstractDirichlet[O])(implicit m:Manifest[O]) extends DenseCountsMultinomial[O](Domain[O](m).size) {
 //   def this()(implicit m:Manifest[O]) = this(null.asInstanceOf[AbstractDirichlet[O]])(m)
 //   def this(dirichlet:AbstractDirichlet[O], initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(dirichlet)(m); set(initCounts) }
 //   def this(initCounts:Seq[Double])(implicit m:Manifest[O]) = { this(null.asInstanceOf[AbstractDirichlet[O]])(m); set(initCounts) }
@@ -338,7 +338,7 @@ class DenseCountsMultinomial[O<:DiscreteValue](val length:Int) extends CountsMul
 //   override def toString = "DirichletMultinomial="+countsTotal+")"
 // }
 
-// DiscreteValue integrated out over a Multinomial prior distribution.
+// DiscreteVar integrated out over a Multinomial prior distribution.
 //     @author Andrew McCallum 
 // // TODO turn this into Variational representation supporting mean-field
 // trait MultinomialDiscrete[This<:MultinomialDiscrete[This]] extends DiscreteVariable with GeneratedDiscreteVariable[This] {
@@ -381,7 +381,7 @@ class Flip(coin:Coin, value:Boolean = false) extends BooleanVariable(value) with
 class Coin(p:Double) extends DenseProportions(Seq(1.0-p, p)) {
   def this() = this(0.5)
   assert (p >= 0.0 && p <= 1.0)
-  def flip: Flip = { val f = new Flip(this); f.setByIndex(this.sampleInt)(null); f }
+  def flip: Flip = { val f = new Flip(this); f.set(this.sampleInt)(null); f }
   def flip(n:Int) : Seq[Flip] = for (i <- 0 until n) yield flip
 }
 object Coin { 

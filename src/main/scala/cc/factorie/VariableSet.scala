@@ -12,10 +12,6 @@ import scala.reflect.Manifest
 import scala.util.Random
 import scala.Math
 import scala.util.Sorting
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log}
 
 /**A variable whose value is a set of other variables */
 abstract class SetVariable[A]() extends Variable with TypedValues {

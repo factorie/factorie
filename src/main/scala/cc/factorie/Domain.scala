@@ -40,7 +40,7 @@ class Domain[V<:Variable](implicit m:Manifest[V]) {
 /** A Domain that has a positive integer size.  
     Set its size by Domain[MyDiscrete].size = 9; or Domain[MyDiscrete].size = Domain[MyOther].size. 
     @author Andrew McCallum */
-class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V]()(m) {
+class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends Domain[V]()(m) {
   private var _frozen = false
   private var _size: Int = -1
   private var _sizeFunction: ()=>Int = null
@@ -75,21 +75,21 @@ class DiscreteDomain[V<:DiscreteValues](implicit m:Manifest[V]) extends Domain[V
 
 // TODO Also make a randomized-representation CategoricalDomain, with hashes.
 
-class CategoricalDomain[V<:AbstractCategoricalValues](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with util.Index[V#ValueType] /*with DomainEntryCounter[V]*/ {
+class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with util.Index[V#CategoryType] /*with DomainEntryCounter[V]*/ {
   override def freeze = freeze0
   override def allocSize = allocSize0
   override def size = size0
   override def size_=(sizeFunction: ()=>Int): Unit = throw new Error("CategoricalDomain.size cannot be set directly; only DiscreteDomains' can.")
-  def randomValue : V#ValueType = randomValue(Global.random)
-  def randomValue(random:Random): V#ValueType = get(random.nextInt(size))
-  def +=(x:V#ValueType) : Unit = this.index(x)
-  def ++=(xs:Traversable[V#ValueType]) : Unit = xs.foreach(this.index(_))
+  def randomValue : V#CategoryType = randomValue(Global.random)
+  def randomValue(random:Random): V#CategoryType = get(random.nextInt(size))
+  def +=(x:V#CategoryType) : Unit = this.index(x)
+  def ++=(xs:Traversable[V#CategoryType]) : Unit = xs.foreach(this.index(_))
  
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)
     if (f.exists) return // Already exists, don't write it again
     val s = new PrintWriter(new FileWriter(f))
-    //if (elements.next.asInstanceOf[AnyVal].getClass != classOf[String]) throw new Error("Only know how to save ValueType String.")
+    //if (elements.next.asInstanceOf[AnyVal].getClass != classOf[String]) throw new Error("Only know how to save CategoryType String.")
     if (frozen) s.println("#frozen = true") else s.println("#frozen = false")
     for (e <- elements) {
       if (e.toString.contains("\n")) throw new Error("Cannot save Domain with entry containing newline.")
@@ -106,7 +106,7 @@ class CategoricalDomain[V<:AbstractCategoricalValues](implicit m:Manifest[V]) ex
     if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
     while ({line = s.readLine; line != null}) {
       //println("Domain load got "+line)
-      this.index(line.asInstanceOf[V#ValueType])
+      this.index(line.asInstanceOf[V#CategoryType])
     }
     if (willFreeze) freeze
     s.close
@@ -115,7 +115,7 @@ class CategoricalDomain[V<:AbstractCategoricalValues](implicit m:Manifest[V]) ex
 
   // Code that used to be in DomainEntryCounter[V], but when separate was causing compiler to crash.
   /*
-  type T = V#ValueType
+  type T = V#CategoryType
   var gatherCounts = false
   private val _countsInitialSize = 64
   private var _counts = new Array[Int](_countsInitialSize)
@@ -200,9 +200,9 @@ object CategoricalDomain {
     </pre>
     But this typical usage was so awkward, that for now DomainEntryCounter is mixed in to CategoricalDomain by default.
     */
-trait DomainEntryCounter[V<:CategoricalValues[_]] extends util.Index[V#ValueType] {
+trait DomainEntryCounter[V<:CategoricalVars[_]] extends util.Index[V#CategoryType] {
   this: CategoricalDomain[V] =>
-  type T = V#ValueType
+  type T = V#CategoryType
   var gatherCounts = true
   private val _countsInitialSize = 64
   private var _counts = new Array[Int](_countsInitialSize)
@@ -280,12 +280,12 @@ trait DomainEntryCounter[V<:CategoricalValues[_]] extends util.Index[V#ValueType
 // class Token extends CategoricalVariable[String] with CountingCategoricalDomain[Token]
 // CountingCategoricalDomain is defined in VariableCategorical.scala
   
-class CategoricalDomainWithCounter[V<:CategoricalValues[_]](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) with DomainEntryCounter[V]
+class CategoricalDomainWithCounter[V<:CategoricalVars[_]](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) with DomainEntryCounter[V]
 
 /** A Categorical domain with string values.  Provides convenient intialization to known values, 
     with value members holding those known values.  For example:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
-class StringDomain[V<:CategoricalValues[_] {type ValueType = String}](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) {
+class StringDomain[V<:CategoricalVars[_] {type CategoryType = String}](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) {
   /* For all member variables, if its type is String and its name is all upper case or digits,
     set its value to its name, and intern in the Domain.  Usage:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
@@ -429,7 +429,7 @@ object Domain {
 
   /** Find a potential substitute for c as the key into _domains. */
   private def getDomainVariableClass(c:Class[_]) : Class[_] = {
-    if (debug) println("getDomainVariableClass c "+c+" classes.length="+c.getDeclaredClasses.length)
+    if (debug) { println("getDomainVariableClass c "+c+" classes.length="+c.getDeclaredClasses.length); /*new Exception().printStackTrace()*/ }
     if (domainInSubclasses(c)) throw new Error("Cannot create Domain["+c+"] because it is annotated with DomainInSubclasses.")
     else if (c.getSuperclass == null || c.getSuperclass == classOf[java.lang.Object]) c 
     else if (domainInSubclasses(c.getSuperclass)) c 

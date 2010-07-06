@@ -37,7 +37,7 @@ trait Proportions extends Parameter with DiscreteGenerating with Iterable[Double
 }
 
 // TODO try to fold this automatically into a CategoricalProportions?
-trait TypedProportions[A<:DiscreteValue] extends Proportions {
+trait TypedProportions[A<:DiscreteVar] extends Proportions {
   class DiscretePr(override val index:Int, override val pr:Double, val value:String) extends super.DiscretePr(index, pr)
   def top(n:Int)(implicit m:Manifest[A]): Seq[DiscretePr] = {
     val entries = this.asSeq.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList
@@ -142,7 +142,7 @@ object DenseProportions {
   implicit val denseProportionsEstimator = new Estimator[DenseProportions] {
     def estimate(p:DenseProportions, model:Model): Unit = {
       val counts = new Array[Double](p.length)
-      for (child <- p.children) child match { case child:DiscreteValue => counts(child.intValue) = counts(child.intValue) + 1.0 }
+      for (child <- p.children) child match { case child:DiscreteVar => counts(child.intValue) = counts(child.intValue) + 1.0 }
       for (i <- 0 until p.length) counts(i) /= p.children.size
       p.set(counts)(null) // TODO Should we have a DiffList here?
     }
@@ -154,7 +154,7 @@ object DenseCountsProportions {
   implicit val denseCountsProportionsEstimator = new Estimator[DenseCountsProportions] {
     def estimate(p:DenseCountsProportions, model:Model): Unit = {
       p.zero
-      for (child <- p.children) child match { case child:DiscreteValue => p.increment(child.intValue, 1.0)(null) }
+      for (child <- p.children) child match { case child:DiscreteVar => p.increment(child.intValue, 1.0)(null) }
     }
   }
 }

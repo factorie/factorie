@@ -11,13 +11,14 @@ package cc.factorie
     @see BooleanVariable
     @see BooleanObservation
     @author Andrew McCallum */
-trait BooleanValue extends DiscreteValue {
-  type VariableType <: BooleanValue
-  def value = (intValue == 1) // Efficiently avoid a lookup in the domain 
-  def booleanValue: Boolean = (intValue == 1)
-  def ^(other:BooleanValue):Boolean = value && other.value
-  def v(other:BooleanValue):Boolean = value || other.value
-  def ==>(other:BooleanValue):Boolean = !value || other.value
+trait BooleanVar extends CategoricalVar[Boolean] {
+  type VariableType <: BooleanVar
+  override def value = (intValue == 1) // Efficiently avoid a lookup in the domain 
+  def booleanValue = (intValue == 1) // Alias for the above method
+  //def booleanValue: Boolean = (intValue == 1)
+  def ^(other:BooleanVar):Boolean = value && other.value
+  def v(other:BooleanVar):Boolean = value || other.value
+  def ==>(other:BooleanVar):Boolean = !value || other.value
   def unary_!(): Boolean = !value
   override def toString = if (intValue == 0) printName+"(false)" else printName+"(true)"
   type DomainType <: BooleanDomain[VariableType]
@@ -27,17 +28,15 @@ trait BooleanValue extends DiscreteValue {
 
 /** A trait for mutable Boolean variables. 
     @author Andrew McCallum */
-class BooleanVariable(initialValue:Boolean = false) extends DiscreteVariable(if (initialValue) 0 else 1) with BooleanValue { 
+class BooleanVariable(initialValue:Boolean = false) extends CategoricalVariable(initialValue) with BooleanVar { 
   type VariableType <: BooleanVariable
-  final def set(newValue:Boolean)(implicit d: DiffList) = setByInt(domain.index(newValue))
-  def set(newValue:Int)(implicit d: DiffList) = setByInt(newValue)
-  final def :=(newValue:Boolean) = set(newValue)(null)
-  final def value_=(newValue:Boolean) = set(newValue)(null)
+  // Avoid CategoricalVariable's HashMap lookup
+  override final def set(newValue:Boolean)(implicit d: DiffList): Unit = set(if (newValue) 1 else 0)
 }
 
 /** A trait for variables with immutable Boolean values.
     @author Andrew McCallum */
-class BooleanObservation(b:Boolean) extends DiscreteObservation(if (b) 1 else 0) with BooleanValue {
+class BooleanObservation(theValue:Boolean) extends CategoricalObservation(theValue) with BooleanVar {
   type VariableType <: BooleanObservation
 }
 
@@ -72,15 +71,17 @@ class Bool(b:Boolean = false) extends BooleanVariable(b) {
 // }
 
 
-class BooleanDomain[V<:BooleanValue](implicit m:Manifest[V]) extends DiscreteDomain[V] {
-  setSize(2)
+class BooleanDomain[V<:BooleanVar](implicit m:Manifest[V]) extends CategoricalDomain[V] {
+  this += false
+  this += true
   freeze
-  def apply(index:Int) = index == 1
-  def get(index:Int) = index == 1
-  def index(entry:Boolean) = if (entry) 1 else 0
-  def getIndex(entry:Boolean) = if (entry) 1 else 0
+  override def apply(index:Int) = index == 1
+  override def get(index:Int) = index == 1
+  override def index(entry:Boolean) = if (entry) 1 else 0
+  override def getIndex(entry:Boolean) = if (entry) 1 else 0
 }
 
+// TODO Consider renaming this 'object BooleanObservation'
 object Bool {
   val t = new BooleanObservation(true) // TODO This should be BoolObservation!  Because we wouldn't want t.set(false)!!!
   val f = new BooleanObservation(false)

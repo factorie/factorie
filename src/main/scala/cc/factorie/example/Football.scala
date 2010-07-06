@@ -52,13 +52,13 @@ object Football {
         //if (perLex) println("PERLEX "+token.word+"  "+token.window(2).map(_.word).toList)
         //if (orgLex) println("ORGLEX "+token.word+"  "+token.window(2).map(_.word).toList)
         //if (perLes) println("PERLES "+token.word)
-        if (label.index == perIndex) { if (perLex) result += 1.0 else if (token.isCapitalized && token.word.length > 1 && perLes) result += 0.3 else result -= 1.0 }
+        if (label.intValue == perIndex) { if (perLex) result += 1.0 else if (token.isCapitalized && token.word.length > 1 && perLes) result += 0.3 else result -= 1.0 }
         //if (label.index == perIndex) { if (perLex) result += 1.0 else if (token.isCapitalized && token.word.length > 1 && perLes) result += 0.3 }
-        if (label.index == orgIndex) { if (orgLex) result += 1.0 else if (token.isCapitalized && token.word.length > 1 && orgLes) result += 0.3 else result -= 1.0 }
-        if (label.index == orgIndex) { if (orgLex) result += 1.0 else if (token.isCapitalized && token.word.length > 1 && orgLes) result += 0.3 }
-        if (label.index == oIndex) { if (orgLex || perLex) result -= 1.0 }
-        if (!token.isCapitalized || token.isPunctuation || token.isDigits) if (label.index == oIndex) result += 0.5 else result -= 1.5
-        if (token.isCapitalized && label.index != oIndex && token.hasPrev && token.prev.word == ".") result -= 0.5
+        if (label.intValue == orgIndex) { if (orgLex) result += 1.0 else if (token.isCapitalized && token.word.length > 1 && orgLes) result += 0.3 else result -= 1.0 }
+        if (label.intValue == orgIndex) { if (orgLex) result += 1.0 else if (token.isCapitalized && token.word.length > 1 && orgLes) result += 0.3 }
+        if (label.intValue == oIndex) { if (orgLex || perLex) result -= 1.0 }
+        if (!token.isCapitalized || token.isPunctuation || token.isDigits) if (label.intValue == oIndex) result += 0.5 else result -= 1.5
+        if (token.isCapitalized && label.intValue != oIndex && token.hasPrev && token.prev.word == ".") result -= 0.5
         //if (token.isCapitalized && label.index == orgIndex && orgLes) result += 0.3
         //if (token.isCapitalized && label.index == perIndex && perLes) result += 0.3
         result

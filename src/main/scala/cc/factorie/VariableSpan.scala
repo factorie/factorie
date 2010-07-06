@@ -19,7 +19,7 @@ import cc.factorie.util.{Log}
 
 // Variables for dealing with spans of sequences
 
-abstract class SpanValue[T](val seq: Seq[T], initStart: Int, initLength: Int) extends Variable with TypedValues with RandomAccessSeq[T] {
+abstract class SpanVar[T](val seq: Seq[T], initStart: Int, initLength: Int) extends Variable with TypedValues with RandomAccessSeq[T] {
   type ValueType = T
   type VariableType <: SpanVariable[T];
   assert(initStart >= 0)
@@ -38,7 +38,7 @@ abstract class SpanValue[T](val seq: Seq[T], initStart: Int, initLength: Int) ex
   def length = _length
   def isAtStart = _start == 0
 
-  def overlaps(that: SpanValue[T]) =
+  def overlaps(that: SpanVar[T]) =
     (that.start <= this.start && that.end >= this.start) ||
     (this.start <= that.start && this.end >= that.start)
 
@@ -56,7 +56,7 @@ abstract class SpanValue[T](val seq: Seq[T], initStart: Int, initLength: Int) ex
 }
 
   
-abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(implicit d: DiffList) extends SpanValue(seq, initStart, initLength) {
+abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(implicit d: DiffList) extends SpanVar(seq, initStart, initLength) {
   //println("Model.this.SpanVariable constructor d.length="+d.length)
   if (d != null) new NewSpanVariable()(d)
   seq match { case s:VariableSeqWithSpans[T,SpanVariable[T]] => s.addSpan(this) }

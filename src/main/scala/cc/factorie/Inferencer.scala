@@ -129,7 +129,7 @@ class BruteForce[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
     val settings = new Array[Int](variables.size)
     for ((v,i) <- variables.toList.zipWithIndex) { settings(i) = v.intValue }
     // set the values of each variable to that in this configuration
-    def load = for ((v,k) <- variables.toList.zip(settings.toList)) v.setByIndex(k)(null)
+    def load = for ((v,k) <- variables.toList.zip(settings.toList)) v.set(k)(null)
     override def toString = ("Config(" + settings.toList.toString + ")")
   }
 

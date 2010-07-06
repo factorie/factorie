@@ -14,7 +14,7 @@ trait MixtureChoiceVariable extends GeneratedDiscreteVariable with Gate
 abstract class MixtureChoice(p:Proportions, value:Int = 0) extends Discrete(p, value) with MixtureChoiceVariable
 abstract class MixtureChoiceMixture(ps:Seq[Proportions], choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteMixture(ps, choice, value) with MixtureChoiceVariable
 
-trait MixtureOutcome extends GeneratedValue {
+trait MixtureOutcome extends GeneratedVar {
   def prFromMixtureComponent(index:Int): Double
 }
 //class MixtureComponentRef[P<:Parameter,C<:MixtureOutcome](p:P, override val child:C) extends ParameterRef(p, child)

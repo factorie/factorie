@@ -16,22 +16,23 @@ import scala.reflect.Manifest
 // Categorical variables that have true values are referred to as 'Labels'
 
 // TODO Consider using the word "Target" for variables that we are trying to predict at training and/or test time.
-// The word "Hidden" should perhaps also be used somewhere.
+// The word "Hidden" should perhaps also be used somewhere?
 
 /** A variable of finite enumerated values that has a true "labeled" value, separate from its current value. 
     @author Andrew McCallum */
-// TODO We could make version of this for OrdinalValue: TrueOrdinalValue
-trait TrueCategoricalValue[T<:AnyRef] extends TrueSetting {
-  this : CategoricalVariable[T] =>
+// TODO We could make version of this for IntVar: TrueIntVar
+trait TrueCategoricalVar[A] extends TrueSetting {
+  this: CategoricalVariable[A] =>
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
-  var trueIndex: Int
-  def trueValue: VariableType#VariableType#ValueType = if (trueIndex >= 0) domain.get(trueIndex) else null.asInstanceOf[VariableType#VariableType#ValueType]
-  def trueValue_=(x: T) = if (x == null) trueIndex = -1 else trueIndex = domain.index(x)
-  def setToTruth(implicit d:DiffList): Unit = setByIndex(trueIndex)
-  def valueIsTruth: Boolean = trueIndex == index
-  def isUnlabeled = trueIndex < 0
-  def unlabel = if (trueIndex >= 0) trueIndex = -trueIndex - 1 else throw new Error("Already unlabeled.")
-  def relabel = if (trueIndex < 0) trueIndex = -(trueIndex+1) else throw new Error("Already labeled.")
+  def trueIntValue: Int
+  def trueIntValue_=(newValue:Int): Unit
+  def trueValue: VariableType#VariableType#CategoryType = if (trueIntValue >= 0) domain.get(trueIntValue) else null.asInstanceOf[VariableType#VariableType#CategoryType]
+  def trueValue_=(x:A) = if (x == null) trueIntValue = -1 else trueIntValue = domain.index(x)
+  def setToTruth(implicit d:DiffList): Unit = set(trueIntValue)
+  def valueIsTruth: Boolean = trueIntValue == intValue
+  def isUnlabeled = trueIntValue < 0
+  def unlabel = if (trueIntValue >= 0) trueIntValue = -trueIntValue - 1 else throw new Error("Already unlabeled.")
+  def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
 }
 
 abstract class TrueDiscreteTemplate[V<:DiscreteVariable with TrueSetting](implicit m:Manifest[V]) extends TemplateWithVectorStatistics1[V] {
@@ -43,27 +44,27 @@ class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest]/*(implicit m:Ma
 
 
 /** A variable with a single index and a true value.
-    Subclasses are allowed to override setByIndex to coordinate the value of other variables with this one.
+    Subclasses are allowed to override 'set' to coordinate the value of other variables with this one.
     @author Andrew McCallum
     @see LabelVariable
 */
 @DomainInSubclasses
-abstract class CoordinatedLabelVariable[T<:AnyRef](trueval:T) extends CategoricalVariable[T](trueval) with TrueCategoricalValue[T] {
-  type VariableType <: CoordinatedLabelVariable[T]
-  var trueIndex = domain.index(trueval)
+abstract class CoordinatedLabelVariable[A](trueval:A) extends CategoricalVariable[A](trueval) with TrueCategoricalVar[A] {
+  type VariableType <: CoordinatedLabelVariable[A]
+  var trueIntValue = domain.index(trueval)
 }
 
 /** A CategoricalVariable with a single value and a true value.
-    Subclasses cannot override setByIndex to coordinate the value of other variables with this one;
+    Subclasses cannot override 'set' to coordinate the value of other variables with this one;
     hence belief propagation can be used with these variables.
     @author Andrew McCallum
     @see CoordinatedLabelVariable
  */
 @DomainInSubclasses
-class LabelVariable[T<:AnyRef](trueval:T) extends CoordinatedLabelVariable(trueval) with NoVariableCoordination {
+class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with NoVariableCoordination {
   type VariableType <: LabelVariable[T]
-  // TODO Does this ext line really provide the protection we want from creating variable-value coordination?
-  override final def setByIndex(index: Int)(implicit d: DiffList) = super.setByIndex(index)(d)
+  // TODO Does this ext line really provide the protection we want from creating variable-value coordination?  No.  But it does catch some errors.
+  override final def set(index: Int)(implicit d: DiffList) = super.set(index)(d)
 }
 
 /** A Label with a StringDomain.  StringDomains can be conveniently initialized, as in
@@ -75,5 +76,4 @@ class StringLabelVariable(trueval:String) extends LabelVariable[String](trueval)
   type VariableType <: StringLabelVariable
   type DomainType <: StringDomain[VariableType]
   class DomainClass extends StringDomain[VariableType]()(null)
-  
 }

@@ -66,14 +66,14 @@ abstract class BPFactor(val factor:Factor) {
       - normalize messages if option is set.
       - returns reference to `this` */
     final def update: this.type = {
-      val origIndex = v.index
+      val origIndex = v.intValue
       // update2 will change msg, update2 might look at previous message so don't change it, so save it in a copy.
       val b4 = new Array[Double](msg.size); msg.copyToArray(b4, 0)
       update2
       if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
       b4.copyToArray(previous_msg, 0)  // copy previous msg
       BeliefPropagation.maxdiff = BeliefPropagation.maxdiff.max(msgDiff)  // track largest change in a message
-      v.setByIndex(origIndex)(null)    // restore orginal value, just in case someone cares
+      v.set(origIndex)(null)    // restore orginal value, just in case someone cares
       this   // Returns reference to `this` so we can say messageTo(v).update.message
     }
     protected def update2: Unit
@@ -111,7 +111,7 @@ abstract class BPFactor(val factor:Factor) {
     /** Do one step of belief propagation for the message from this BPFactor to variable 'v' */
     def update2 = {
       for (i <- 0 until v.domain.size) {   // Consider reversing the nested ordering of this loop and the inner one
-        v.setByIndex(i)(null)              // Note: this is changing the value of this Variable
+        v.set(i)(null)              // Note: this is changing the value of this Variable
         if (neighborSettings.size == 0) {  // This factor has only one variable neighbor, v itself
           msg(i) = factor.statistic.score
         } else {                           // This factor has variable neighbors in addition to v itself
@@ -130,7 +130,7 @@ abstract class BPFactor(val factor:Factor) {
     /*lazy protected val maxIndex = new Array[Int](v.domain.size) */ // Holds how many nextValues calls it takes to get to max value
     def update2 = {
       for (i <- 0 until v.domain.size) {  // Consider reversing the nested ordering of this loop and the inner one
-        v.setByIndex(i)(null)             // Note: that this is changing the Variable value
+        v.set(i)(null)             // Note: that this is changing the Variable value
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
           msg(i) = factor.statistic.score
           //maxIndex(i) = -1
@@ -213,7 +213,7 @@ trait DiscreteMarginalN {
 }
 // TODO: This should really inherit from Multinomial, but first I have to make it not require an "Outcome" variable.
 // I should also make a multi-dimensional multinomial.
-class DiscreteMarginal1[V<:DiscreteValue](val variable:V) extends RandomAccessSeq[Double] with DiscreteMarginalN {
+class DiscreteMarginal1[V<:DiscreteVar](val variable:V) extends RandomAccessSeq[Double] with DiscreteMarginalN {
   def this(v:V, messages:Iterable[Array[Double]]) = {
     this(v);
     for (message <- messages) {
@@ -291,8 +291,8 @@ class BPLattice(val variables:Collection[BeliefPropagation.BPVariable]) extends 
   def marginal(v:V): DiscreteMarginal1[V] = new DiscreteMarginal1(v, bpFactorsOf(v).map(_.messageTo(v).message))
   /* def sample(v:UncoordinatedCategoricalVariable): DiffList  // TODO: implement this */
   /* def sample: Unit   // TODO: implement this */
-  def setVariablesToMarginalMax: Unit = variables.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
-  def setVariablesToMarginalMax(vs:Iterable[V]): Unit = vs.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
-  def setVariablesToMax: Unit = variables.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
-  def setVariablesToMax(vs:Iterable[V]): Unit = vs.foreach(v => v.setByIndex(marginal(v).maxIndex)(null))
+  def setVariablesToMarginalMax: Unit = variables.foreach(v => v.set(marginal(v).maxIndex)(null))
+  def setVariablesToMarginalMax(vs:Iterable[V]): Unit = vs.foreach(v => v.set(marginal(v).maxIndex)(null))
+  def setVariablesToMax: Unit = variables.foreach(v => v.set(marginal(v).maxIndex)(null))
+  def setVariablesToMax(vs:Iterable[V]): Unit = vs.foreach(v => v.set(marginal(v).maxIndex)(null))
 }

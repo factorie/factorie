@@ -14,11 +14,11 @@ import cc.factorie._
 object WordSegmenterDemo { 
   
   // The variable types:
-  class Label(b:String, val token:Token) extends LabelVariable(b) 
+  class Label(b:Boolean, val token:Token) extends LabelVariable(b) 
   class Token(val char:Char, isWordStart:Boolean) extends BinaryVectorVariable[String] with VarInSeq[Token] {
     this += char.toString
     if ("aeiou".contains(char)) this += "VOWEL"
-    val label = new Label(if (isWordStart) "B" else "I", this)
+    val label = new Label(isWordStart, this)
   }
 
   // The factor templates that define the model
@@ -42,7 +42,7 @@ object WordSegmenterDemo {
     def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
   }
   /** Skip edge */
-  val skipTemplate = new Template2[Label,Label] with DotStatistics1[BooleanValue] {
+  val skipTemplate = new Template2[Label,Label] with DotStatistics1[BooleanVar] {
     def unroll1 (label:Label) =  
       // could cache this search in label.similarSeq for speed
       for (other <- label.token.seq; if label.token.char == other.char) yield 

@@ -8,16 +8,16 @@
 package cc.factorie
 
 /** The Poisson distribution generating integer values with parameter lambda. */
-class Poisson(val mean:RealValueParameter, value:Int = 0)(implicit d:DiffList = null) extends OrdinalVariable(value) with GeneratedVariable {
+class Poisson(val mean:RealVarParameter, value:Int = 0)(implicit d:DiffList = null) extends IntegerVariable(value) with GeneratedVariable {
   mean.addChild(this)(d)
   def parents = List(mean)
   def pr: Double = pr(this.intValue)
   def pr(k:Int): Double = Math.pow(mean.doubleValue, k) * Math.exp(-mean.doubleValue) / Maths.factorial(k)
   def sampleFrom(mean:Double)(implicit d:DiffList): Unit =
-    setByInt(Maths.nextPoisson(mean.doubleValue)(Global.random).toInt)
+    set(Maths.nextPoisson(mean.doubleValue)(Global.random).toInt)
   def sample(implicit d:DiffList): Unit = sampleFrom(mean.doubleValue)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
-    case Seq(mean:RealValue) => sampleFrom(mean.doubleValue)
+    case Seq(mean:RealVar) => sampleFrom(mean.doubleValue)
   }
   /** This implements the maximum likelihood estimator */
   /*def estimate: Unit = {
@@ -27,7 +27,7 @@ class Poisson(val mean:RealValueParameter, value:Int = 0)(implicit d:DiffList = 
   }*/
 }
 
-/*abstract class GammaPoisson(gamma:Gamma) extends Distribution[IntegerValue] {
+/*abstract class GammaPoisson(gamma:Gamma) extends Distribution[IntegerVar] {
   throw new Error("Not yet implemented")
 }
 */

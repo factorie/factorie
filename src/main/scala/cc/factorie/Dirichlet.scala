@@ -14,10 +14,10 @@ trait Dirichlet extends Proportions with GeneratedVariable with CollapsibleParam
       Note that the returned object may be a temporary one generated for the return value, 
       and may not have this Proportions as a child. */
   def mean: Proportions
-  def precision: RealValueParameter
+  def precision: RealVarParameter
   def pr = math.exp(logpr)
   override def logpr: Double = logpr(mean, precision)
-  def logpr(mean:Proportions, precision:RealValue): Double = {
+  def logpr(mean:Proportions, precision:RealVar): Double = {
     var result = Maths.logGamma(precision.doubleValue)
     forIndex(length)((i:Int) => result -= Maths.logGamma(alpha(i)))
     forIndex(length)((i:Int) => result += alpha(i) * math.log(pr(i)))
@@ -29,18 +29,18 @@ trait Dirichlet extends Proportions with GeneratedVariable with CollapsibleParam
   def newCollapsed = new DenseDirichletMultinomial(mean, precision)
 }
 
-class DenseDirichlet(initialMean:Proportions, initialPrecision:RealValueParameter, p:Seq[Double] = Nil) extends DenseProportions(p) with Dirichlet {
+class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter, p:Seq[Double] = Nil) extends DenseProportions(p) with Dirichlet {
   def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealConstantParameter(alpha * size), Nil)
   protected val meanRef: ParameterRef[Proportions,Dirichlet] = new ParameterRef(initialMean, this)
   protected val precisionRef = new ParameterRef(initialPrecision, this)
   def mean = meanRef.value
   def mean_=(newMean:Proportions)(implicit d:DiffList): Unit = meanRef.set(newMean)
   def precision = precisionRef.value
-  def precision_=(newPrecision:RealValueParameter)(implicit d:DiffList): Unit = precisionRef.set(newPrecision)
+  def precision_=(newPrecision:RealVarParameter)(implicit d:DiffList): Unit = precisionRef.set(newPrecision)
   def parents = List(mean, precision)
   override def parentRefs = List(meanRef, precisionRef)
-  def ~(mean:Proportions, precision:RealValueParameter): this.type = { mean_=(mean)(null); precision_=(precision)(null); this }
-  def sampleFrom(mean:Proportions, precision:RealValue, children:Iterable[DiscreteValue] = Nil)(implicit d:DiffList): Unit = {
+  def ~(mean:Proportions, precision:RealVarParameter): this.type = { mean_=(mean)(null); precision_=(precision)(null); this }
+  def sampleFrom(mean:Proportions, precision:RealVar, children:Iterable[DiscreteVar] = Nil)(implicit d:DiffList): Unit = {
     var norm = 0.0
     val p = new Array[Double](length)
     val c = new Array[Double](length)
@@ -55,13 +55,13 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealValueParamete
   }
   def sample(implicit d:DiffList): Unit = sampleFrom(mean, precision)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList) = parents match {
-    case Seq(mean:Proportions, precision:RealValueParameter) => sampleFrom(mean, precision)
+    case Seq(mean:Proportions, precision:RealVarParameter) => sampleFrom(mean, precision)
   }
 }
 
-trait DirichletMultinomial extends Proportions with CollapsedParameter with GeneratedValue {
+trait DirichletMultinomial extends Proportions with CollapsedParameter with GeneratedVar {
   def mean: Proportions
-  def precision: RealValueParameter
+  def precision: RealVarParameter
   def parents = List(mean, precision)
   mean.addChild(this)(null)
   precision.addChild(this)(null)
@@ -75,18 +75,18 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
     val alphaSum = precision.doubleValue
     (counts(index) + mean(index) * alphaSum) / (countsTotal + alphaSum)
   }
-  /*override def addChild(c:GeneratedValue)(implicit d:DiffList): Unit = {
-    // xxx c match { case v:DiscreteValue => increment(v.intValue, 1.0); case _ => throw new Error } // xxx This seems to be the slowness culprit
+  /*override def addChild(c:GeneratedVar)(implicit d:DiffList): Unit = {
+    // xxx c match { case v:DiscreteVar => increment(v.intValue, 1.0); case _ => throw new Error } // xxx This seems to be the slowness culprit
     super.addChild(c)(d)
   }
-  override def removeChild(c:GeneratedValue)(implicit d:DiffList): Unit = {
+  override def removeChild(c:GeneratedVar)(implicit d:DiffList): Unit = {
     //println("DirichletMultinomial.removeChild "+c)
-    // xxx c match { case v:DiscreteValue => increment(v.intValue, -1.0); case _ => throw new Error } 
+    // xxx c match { case v:DiscreteVar => increment(v.intValue, -1.0); case _ => throw new Error } 
     super.removeChild(c)(d)
   }*/
   def clearChildStats: Unit = this.zero
   def updateChildStats(child:Variable, weight:Double): Unit = child match {
-    case d:DiscreteValue => increment(d.intValue, weight)(null)
+    case d:DiscreteVar => increment(d.intValue, weight)(null)
     case p:Proportions if (p.length == length) => forIndex(length)(i => increment(i, p(i) * weight)(null))
   }
   // Perhaps DirichletMultinomial should not be a GeneratedVariable?  But it does have parents and children.
@@ -94,7 +94,7 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = new Error
 }
 
-class DenseDirichletMultinomial(val mean:Proportions, val precision:RealValueParameter) extends DenseCountsProportions(mean.length) with DirichletMultinomial {
+class DenseDirichletMultinomial(val mean:Proportions, val precision:RealVarParameter) extends DenseCountsProportions(mean.length) with DirichletMultinomial {
   def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealVariableParameter(alpha*size))
   //def this(dirichlet:Dirichlet) = this(dirichlet.mean, dirichlet.precision)
 }

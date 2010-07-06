@@ -9,26 +9,26 @@ package cc.factorie
 import scala.collection.mutable.HashSet
 
 trait Parameter extends Variable {
-  private lazy val _children = new HashSet[GeneratedValue]
+  private lazy val _children = new HashSet[GeneratedVar]
   def keepChildren = true
-  def children: Iterable[GeneratedValue] = _children
-  def addChild(v:GeneratedValue)(implicit d:DiffList): Unit = if (keepChildren) {
+  def children: Iterable[GeneratedVar] = _children
+  def addChild(v:GeneratedVar)(implicit d:DiffList): Unit = if (keepChildren) {
     //println("Parameter.addChild"); new Exception().printStackTrace()
     if (_children.contains(v)) throw new Error("Parameter "+this+" already has child "+v+" with hashCode="+v.hashCode)
     _children += v 
     if (d ne null) d += ParameterAddChildDiff(v)
   }
-  def removeChild(v:GeneratedValue)(implicit d:DiffList): Unit = if (keepChildren) {
+  def removeChild(v:GeneratedVar)(implicit d:DiffList): Unit = if (keepChildren) {
     _children -= v
     if (d ne null) d += ParameterRemoveChildDiff(v)
   }
-  //def weightedChildren: Iterable[(GeneratedValue,Double)]
-  case class ParameterAddChildDiff(v:GeneratedValue) extends Diff {
+  //def weightedChildren: Iterable[(GeneratedVar,Double)]
+  case class ParameterAddChildDiff(v:GeneratedVar) extends Diff {
     def variable: Parameter = Parameter.this
     def redo = { assert(!_children.contains(v)); _children += v }
     def undo = { _children -= v }
   }
-  case class ParameterRemoveChildDiff(v:GeneratedValue) extends Diff {
+  case class ParameterRemoveChildDiff(v:GeneratedVar) extends Diff {
     def variable: Parameter = Parameter.this
     def redo = { _children -= v }
     def undo = { assert(!_children.contains(v)); _children += v }
@@ -37,12 +37,12 @@ trait Parameter extends Variable {
 
 
 
-trait RealValueParameter extends RealValue with Parameter
-class RealVariableParameter(value:Double) extends RealVariable(value) with RealValueParameter
-class RealConstantParameter(value:Double) extends RealObservation(value) with RealValueParameter
+trait RealVarParameter extends RealVar with Parameter
+class RealVariableParameter(value:Double) extends RealVariable(value) with RealVarParameter
+class RealConstantParameter(value:Double) extends RealObservation(value) with RealVarParameter
 
-trait IntegerValueParameter extends IntegerValue with Parameter
-class IntegerVariableParameter(value:Int) extends IntegerVariable(value) with IntegerValueParameter
+trait IntegerVarParameter extends IntegerVar with Parameter
+class IntegerVariableParameter(value:Int) extends IntegerVariable(value) with IntegerVarParameter
 
 
 
@@ -58,9 +58,9 @@ trait Estimator[P<:Parameter] {
 
 trait AbstractParameterRef extends Variable {
   def abstractValue: AnyRef //Parameter
-  def child: GeneratedValue
+  def child: GeneratedVar
 }
-class ParameterRef[P<:Parameter,C<:GeneratedValue](p:P, override val child:C) extends RefVariable(p) with AbstractParameterRef {
+class ParameterRef[P<:Parameter,C<:GeneratedVar](p:P, override val child:C) extends RefVariable(p) with AbstractParameterRef {
   p.addChild(child)(null)
   //println("ParameterRef.init parent="+p.getClass.getName+"@"+p.hashCode+" child="+child)
   // This 'set' method is no longer called in initialization of RefVariable, hence line above
@@ -82,16 +82,16 @@ class GatedParameterRef[P<:Parameter,C<:MixtureOutcome](val parameters:Seq[P], v
 
 
 trait DeterministicFunction extends Parameter
-trait RealFunction extends DeterministicFunction with RealValueParameter
-abstract class RealOpConstant(val real:RealValueParameter) extends RealFunction with GeneratedValue {
+trait RealFunction extends DeterministicFunction with RealVarParameter
+abstract class RealOpConstant(val real:RealVarParameter) extends RealFunction with GeneratedVar {
   real.addChild(this)(null) // But now might not garbage collect this when we want to
   def parents = List(real)
   def pr = 1.0 // Deterministic value given parent
 }
-class RealPlusConstant(override val real:RealValueParameter, val constant:Double) extends RealOpConstant(real) {
+class RealPlusConstant(override val real:RealVarParameter, val constant:Double) extends RealOpConstant(real) {
   def doubleValue = real.doubleValue + constant
 }
-class RealTimesConstant(override val real:RealValueParameter, val constant:Double) extends RealOpConstant(real) {
+class RealTimesConstant(override val real:RealVarParameter, val constant:Double) extends RealOpConstant(real) {
   def doubleValue = real.doubleValue * constant
 }
 

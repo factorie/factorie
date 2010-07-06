@@ -7,7 +7,6 @@
 
 
 package cc.factorie
-import scala.reflect.Manifest
 import scala.collection.mutable.{ListBuffer,HashSet,ArrayBuffer}
 
 /** Similar to the definition of "gate" from Tom Minka and Jon Winn.
@@ -27,11 +26,11 @@ trait Gate extends DiscreteVariable {
     _gatedRefs = v :: _gatedRefs
     assert(v.gate == this)
     //println("Gate.+= setByIndex="+this.intValue) // xxx
-    v.setByIndex(this.intValue)(null) // xxx // commenting out make initialization fast
+    v.setByIndex(this.intValue)(null)
     this
   }
-  override def setByIndex(newIndex:Int)(implicit d:DiffList): Unit = {
-    super.setByIndex(newIndex)
+  override def set(newIndex:Int)(implicit d:DiffList): Unit = {
+    super.set(newIndex)
     //println("Gate.setByIndex _gatedRefs="+_gatedRefs) // xxx
     //new Exception().printStackTrace()
     if (_gatedRefs ne null) for (ref <- _gatedRefs) {
@@ -40,7 +39,7 @@ trait Gate extends DiscreteVariable {
     }
   }
   def setToNull(implicit d:DiffList): Unit = {
-    super.setByIndex(-1)
+    super.set(-1)
     for (ref <- _gatedRefs) ref.setToNull
   }
 }

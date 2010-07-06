@@ -13,14 +13,14 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie.la._
 import scala.util.Sorting
 
-trait VectorValue extends DiscreteValues {
+trait VectorVar extends DiscreteVars {
   this: Variable =>
-  // TODO Remember that DiscreteValues Domains currently need special initialization
+  // TODO Remember that DiscreteVars Domains currently need special initialization
   def vector : Vector
   def indices: Collection[Int]
 }
 
-trait CategoricalVectorValue[T] extends Variable with VectorValue with CategoricalValues[T] {
+trait CategoricalVectorVar[T] extends Variable with VectorVar with CategoricalVars[T] {
   // TODO Anything to put here?
 }
 
@@ -33,11 +33,11 @@ trait CategoricalVectorValue[T] extends Variable with VectorValue with Categoric
 // TODO Consider renaming BinaryFeatureVector (where "Feature") refers to being Categorical?
 // or perhaps BinaryCategoricalVector?  But that is a weird name.
 @DomainInSubclasses
-abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends CategoricalVectorValue[T] {
+abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends CategoricalVectorVar[T] {
   //def this(iv:T*) = this(iv:Seq[T])
   def this() = this(null)
   //def this(initVals:Iterable[T]) = this(initVals, false)
-  type VariableType <: BinaryVectorVariable[T];
+  type VariableType <: BinaryVectorVariable[T]
   def skipNonCategories = false
   //private val _indices = new it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet
   private val _indices: ArrayBuffer[Int] = new ArrayBuffer[Int]()
@@ -55,6 +55,7 @@ abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends Cat
     }
     _vector
   }
+  // TODO I think this kind of "duck-typing" below involves reflection and is slow.  Try to replace it.
   def incrementInto(x:{def increment(i:Int,x:Double)(implicit d:DiffList):Unit}): Unit = _indices.foreach(i => x.increment(i,1.0)(null))
   // TODO when we have Scala 2.8, add to the method below difflist argument with default value null
   // But will a += b syntax with with default arguments?
@@ -91,7 +92,7 @@ abstract class BinaryVectorVariable[T<:AnyRef](initVals:Iterable[T]) extends Cat
 
 /** A vector of Real values */
 @DomainInSubclasses
-abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends CategoricalVectorValue[T] {
+abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends CategoricalVectorVar[T] {
   def this() = this(null)
   type VariableType <: RealVectorVariable[T]
   lazy val vector: Vector = new SparseVector(domain.allocSize)

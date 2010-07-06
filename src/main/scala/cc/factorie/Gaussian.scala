@@ -12,7 +12,7 @@ package cc.factorie
 
 /** A one-dimensional Gaussian distribution, generating Real (valued) variables.  Default estimation by moment-matching. 
     @author Andrew McCallum */
-class Gaussian(val mean:RealValueParameter, val variance:RealValueParameter = new RealVariableParameter(1.0)) extends RealVariable with GeneratedVariable {
+class Gaussian(val mean:RealVarParameter, val variance:RealVarParameter = new RealVariableParameter(1.0)) extends RealVariable with GeneratedVariable {
   mean.addChild(this)(null)
   variance.addChild(this)(null)
   def parents = List(mean, variance)
@@ -22,11 +22,11 @@ class Gaussian(val mean:RealValueParameter, val variance:RealValueParameter = ne
     return - diff * diff / (2 * variance.doubleValue) - 0.5 * Math.log(2 * Math.Pi * variance.doubleValue)
   }
   def pr: Double = Math.exp(logpr)
-  def sampleFrom(mean:RealValue, variance:RealValue)(implicit d:DiffList) = 
+  def sampleFrom(mean:RealVar, variance:RealVar)(implicit d:DiffList) = 
     set(Maths.nextGaussian(mean.doubleValue, variance.doubleValue)(Global.random))
   def sample(implicit d:DiffList): Unit = sampleFrom(mean, variance)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
-    case Seq(mean:RealValue, variance:RealValue) => sampleFrom(mean, variance)
+    case Seq(mean:RealVar, variance:RealVar) => sampleFrom(mean, variance)
   }
 
   def minSamplesForVarianceEstimate = 5
@@ -60,7 +60,7 @@ class Gaussian(val mean:RealValueParameter, val variance:RealValueParameter = ne
 
 // // TODO Make WishartGaussian also.
 // /** A one-dimensional Gaussian, with integrated out mean, having a Gaussian prior. */
-// class GaussianGaussian1[R<:GeneratedRealValue[R]](override val variance:RealVariable) extends Gaussian1[R](new Real(0.0), variance) {
+// class GaussianGaussian1[R<:GeneratedRealVar[R]](override val variance:RealVariable) extends Gaussian1[R](new Real(0.0), variance) {
 //   // The evidence
 //   private val meanSum: Double = 0.0
 //   private val meanTotal: Double = 0.0

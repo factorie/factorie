@@ -105,17 +105,36 @@ trait TypedValues {
     Other variables, such as CategoricalVariable, have both an Int value and a ValueType value. */
 trait TypedValue extends TypedValues {
   this: Variable =>
-  type VariableType <: Variable with TypedValue
   def value: ValueType
 }
+trait MutableTypedValue extends TypedValue {
+  this: Variable =>
+  def set(newValue:ValueType)(implicit d: DiffList): Unit
+  final def value_=(newValue:ValueType)(implicit d:DiffList = null): Unit = set(newValue)(null)
+  // Returning 'this' is convenient so that we can do:  val x = Gaussian(mean, variance) := 2.3
+  // TODO No, but the syntax is confusing, and we can instead do Gaussian(mean, variance, 2.3)
+  final def :=(newValue:ValueType)(implicit d:DiffList = null): this.type = { set(newValue)(null); this }
+}
+
 // TODO think about whether to get rid of intValue, doubleValue, proportionValue, etc.
-//  No, I don't think so.  DiscreteValue.intValue is convenient, and I would like CategoricalVariable.value to still have type T.
+//  No, I don't think so.  DiscreteVar.intValue is convenient, and I would like CategoricalVariable.value to still have type T.
 // I considered whether RefValue and TypedValue should be merged, but then I see that we need to 
 // distinguish a _Value that stores its value as x:T and one that doesn't (like CategoricalVariable[T])
 
-trait NumericValue { this: Variable =>
+trait NumericValue {
+  this: Variable =>
   def intValue: Int
   def doubleValue: Double
+}
+trait MutableIntValue extends NumericValue {
+  this: Variable =>
+  def set(newValue:Int)(implicit d:DiffList): Unit
+  def intValue_=(newValue:Int)(implicit d:DiffList): Unit = set(newValue)
+}
+trait MutableDoubleValue extends NumericValue {
+  this: Variable =>
+  def set(newValue:Double)(implicit d:DiffList): Unit
+  def doubleValue_=(newValue:Double)(implicit d:DiffList): Unit = set(newValue)
 }
 
 
@@ -136,7 +155,7 @@ trait NoVariableCoordination {
 trait NoFactorCoordination {
   this: Variable =>
 } 
-// TODO.  No, create the inverse trait: FactorCoordinator
+// TODO.  No, create the inverse trait: FactorCoordinator?
 
 
 

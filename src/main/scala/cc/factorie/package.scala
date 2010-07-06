@@ -44,10 +44,10 @@ package object factorie {
   /*
    * TODO I will add this trick when we have Scala 2.8. -akm
   implicit def template2initialized(t:Template): InitializedTemplate = new InitializedTemplate(t)
-  implicit def template2initialized1[S1<:DiscreteValues](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedVectorTemplate1[S1](t)
-  implicit def template2initialized2[S1<:DiscreteValues,S2<:DiscreteValues](t:VectorStatistics2[S1,S2])(implicit m1:Manifest[S1], m2:Manifest[S2]): InitializedTemplate = new InitializedVectorTemplate2[S1,S2](t)
-  implicit def template2initialized3[S1<:DiscreteValues,S2<:DiscreteValues,S3<:DiscreteValues](t:VectorStatistics3[S1,S2,S3])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]): InitializedTemplate = new InitializedVectorTemplate3[S1,S2,S3](t)
-  implicit def template2initialized4[S1<:DiscreteValues,S2<:DiscreteValues,S3<:DiscreteValues,S4<:DiscreteValues](t:VectorStatistics4[S1,S2,S3,S4])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]): InitializedTemplate = new InitializedVectorTemplate4[S1,S2,S3,S4](t)
+  implicit def template2initialized1[S1<:DiscreteVars](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedVectorTemplate1[S1](t)
+  implicit def template2initialized2[S1<:DiscreteVars,S2<:DiscreteVars](t:VectorStatistics2[S1,S2])(implicit m1:Manifest[S1], m2:Manifest[S2]): InitializedTemplate = new InitializedVectorTemplate2[S1,S2](t)
+  implicit def template2initialized3[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars](t:VectorStatistics3[S1,S2,S3])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]): InitializedTemplate = new InitializedVectorTemplate3[S1,S2,S3](t)
+  implicit def template2initialized4[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars,S4<:DiscreteVars](t:VectorStatistics4[S1,S2,S3,S4])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]): InitializedTemplate = new InitializedVectorTemplate4[S1,S2,S3,S4](t)
   */
 
 

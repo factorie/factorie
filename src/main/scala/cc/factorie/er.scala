@@ -119,15 +119,15 @@ object er {
     // be very careful to create a mechanism to preserve attributes of the removed relationships, or alternatively make the user
     // aware that relationship attributes will not be preserved once purged, and note that the DiffList must handle this case correctly.
     def size = ab2r.size
-    def iterator = ab2r.valuesIterator.filter(_.value)
+    def iterator = ab2r.valuesIterator.filter(_.booleanValue)
     def asIterable = new Iterable[RelationshipType] {
       override def size = Relation.this.size
       def iterator = Relation.this.iterator
     }
     /** Return the Relationship between a and b, creating as necessary.  If it is created, its initial value will be false. */
     def get(a:A,b:B): RelationshipType = ab2r.getOrElse((a,b), addEntry((a,b))) // TODO verify in the newly-created case that r.value is false
-    def getFromSrc(a:A): Iterable[RelationshipType] = a2rs.getOrElse(a, noRelationships).filter(r => r.value)
-    def getFromDst(b:B): Iterable[RelationshipType] = b2rs.getOrElse(b, noRelationships).filter(r => r.value)
+    def getFromSrc(a:A): Iterable[RelationshipType] = a2rs.getOrElse(a, noRelationships).filter(r => r.booleanValue)
+    def getFromDst(b:B): Iterable[RelationshipType] = b2rs.getOrElse(b, noRelationships).filter(r => r.booleanValue)
     //def forward: A=>Iterable[B] = (a:A) => get2(a).map(_.dst)
     //def reverse: B=>Iterable[A] = (b:B) => get1(b).map(_.src)
     /** Set the value of the relationship from a to b to true.  If not already present, create it. */
@@ -140,12 +140,12 @@ object er {
     def contains(a:A,b:B) = ab2r.contains((a,b))
     protected def stringPrefix ="Relation"
     case class RelationAddDiff(r:RelationshipType) extends Diff {
-      def variable = if (r.value) r else null
+      def variable = if (r.booleanValue) r else null
       def redo = addRelationship(r)
       def undo = removeRelationship(r)
     } 
     case class RelationRemoveDiff(r:RelationshipType) extends Diff {
-      def variable = if (r.value) r else null
+      def variable = if (r.booleanValue) r else null
       def redo = removeRelationship(r)
       def undo = addRelationship(r)
     } 
@@ -215,7 +215,7 @@ object er {
     private var reverse1m: C=>Iterable[B] = null
     // Sometimes the neighbors of a Template that results from a Getter must include not only the final C, 
     // but also some intermediate Variables.  The next three lines provide a place to put that information  
-    type ExtraNeighborType = BooleanValue // really Relationship[_,C]
+    type ExtraNeighborType = BooleanVar // really Relationship[_,C]
     var extraManifest: Manifest[ExtraNeighborType] = null
     var extraGetter: Getter[ExtraNeighborType] = null
     private lazy val _forward: A=>Iterable[C] = { // the ways of combining prefix with different forward1* to append a link to the chain
@@ -494,8 +494,8 @@ object er {
   // Example usage:  Forany[Token] { t => Score(t, t.label) }
     
     
-  type ScorableValues[X] = DiscreteValues // CategoricalValues //with GetterType[X]
-  type ScorableValues0 = DiscreteValues // CategoricalValues //with GetterType[CategoricalValues]
+  type ScorableValues[X] = DiscreteVars // CategoricalValues //with GetterType[X]
+  type ScorableValues0 = DiscreteVars // CategoricalValues //with GetterType[CategoricalValues]
   
   // TODO!!! Put this back for 2.8.0.Beta2
   // See http://old.nabble.com/Re:--scala-internals--RC8-candidate-for-the-first-2.8.0-beta-td27262766.html
@@ -595,11 +595,11 @@ object er {
     
     
   /** The values of leaves of the formula tree.  
-      For the common case of a BooleanTerm it is a BooleanValue (which inherits from DiscreteValue). */
-  type FormulaArg = DiscreteValue //with GetterType[BooleanValue]
+      For the common case of a BooleanTerm it is a BooleanValue (which inherits from DiscreteVar). */
+  type FormulaArg = DiscreteVar //with GetterType[BooleanValue]
   //type FormulaValue[A] = BooleanValue //with GetterType[A];
   /** The collection of arguments to the boolean expression; the variables neighboring the factor.  
-      Using DiscreteValue instead of BooleanValue enables mixed use of BooleanValue and other DiscreteValues, as in IntExpression. */
+      Using DiscreteValue instead of BooleanValue enables mixed use of BooleanValue and other DiscreteVars, as in IntExpression. */
   type FormulaArgs = ArrayStack[FormulaArg]
 
     
@@ -634,7 +634,7 @@ object er {
     }
     def eval(x:FormulaArgs): Boolean = {
       if (extraNeighborCount != 0) for (i <- 0 until extraNeighborCount) x.pop
-      x.pop.asInstanceOf[BooleanValue].value
+      x.pop.asInstanceOf[BooleanVar].booleanValue
     }
   }
 
@@ -655,7 +655,7 @@ object er {
     }
   }*/
 
-  implicit def getter2formula[X<:Variable,Y<:BooleanValue/* with GetterType[A]*/](g:Getter[Y] {type A = X})(implicit ma:Manifest[Y]): Formula[X] = new BooleanTerm(g)(ma)
+  implicit def getter2formula[X<:Variable,Y<:BooleanVar/* with GetterType[A]*/](g:Getter[Y] {type A = X})(implicit ma:Manifest[Y]): Formula[X] = new BooleanTerm(g)(ma)
   
   abstract class Formula1[X<:Variable](c1:Formula[X]) extends Formula[X] {
     def manifests = c1.manifests
@@ -749,7 +749,7 @@ object er {
   
   
   /** The form of Template statistics used by a logical Formula. */
-  trait LogicStatistics extends DotStatistics1[BooleanValue] {
+  trait LogicStatistics extends DotStatistics1[BooleanVar] {
     // Should a non-zero weight instead be spread across each of the two possibilities?
     def *(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
   }
