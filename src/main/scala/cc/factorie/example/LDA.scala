@@ -16,7 +16,7 @@ import cc.factorie.util.Stopwords
 object LDADemo {
   val numTopics = 10
   class Z(p:Proportions, value:Int) extends MixtureChoice(p, value); Domain[Z].size = numTopics
-  class Word(ps:Seq[Proportions], z:MixtureChoiceVariable, value:String) extends CategoricalMixture[String](ps, z, value)
+  class Word(ps:FiniteMixture[Proportions], z:MixtureChoiceVariable, value:String) extends CategoricalMixture[String](ps, z, value)
   class Document(val file:String) extends ArrayBuffer[Word] { var theta:DirichletMultinomial = null }
 
   def main(args: Array[String]) : Unit = {
@@ -24,8 +24,8 @@ object LDADemo {
     val lexer = new Regex("[a-zA-Z]+")
 
     // Read data and create generative variables
-    val phis = for (i <- 1 to numTopics) yield new GrowableDenseDirichletMultinomial(0.01) with TypedProportions[Word]
-    val documents = new ArrayBuffer[Document];
+    val phis = FiniteMixture(numTopics)(new GrowableDenseDirichletMultinomial(0.01) with TypedProportions[Word] { override def toString = "Phi("+countsSeq.toList+")" })
+    val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
       println("Reading files from directory "+directory)
       for (file <- new File(directory).listFiles; if (file.isFile)) {
@@ -44,8 +44,8 @@ object LDADemo {
     // Fit model
     val zs = documents.flatMap(document => document.map(word => word.choice))
 
-    val collapsed = new ArrayBuffer[CollapsedParameter]; collapsed ++= phis; collapsed ++= documents.map(_.theta)
-    for (c <- collapsed) println("LDA collapsed parent="+c.getClass.getName+"@"+c.hashCode+" #children="+c.children.size)
+    //val collapsed = new ArrayBuffer[CollapsedParameter]; collapsed ++= phis; collapsed ++= documents.map(_.theta)
+    //for (c <- collapsed) println("LDA collapsed parent="+c.getClass.getName+"@"+c.hashCode+" #children="+c.children.size)
 
     val sampler = new CollapsedGibbsSampler(collapsedVariables = (phis ++ documents.map(_.theta)))
     val startTime = System.currentTimeMillis

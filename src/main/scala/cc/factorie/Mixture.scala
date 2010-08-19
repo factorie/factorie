@@ -10,6 +10,7 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
+/*
 trait MixtureChoiceVariable extends GeneratedDiscreteVariable with Gate
 abstract class MixtureChoice(p:Proportions, value:Int = 0) extends Discrete(p, value) with MixtureChoiceVariable
 abstract class MixtureChoiceMixture(ps:Seq[Proportions], choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteMixture(ps, choice, value) with MixtureChoiceVariable
@@ -29,6 +30,7 @@ trait DiscreteMixtureVariable extends GeneratedDiscreteVariable with MixtureOutc
 }
 class DiscreteMixture(val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteVariable(value) with DiscreteMixtureVariable 
 class CategoricalMixture[A<:AnyRef](val components:Seq[Proportions], val choice:MixtureChoiceVariable, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] with DiscreteMixtureVariable 
+*/
 
 /*class DenseDirichletMixture(val components:Seq[Proportions], prec:RealValueParameter, val choice:MixtureChoiceVariable, p:Seq[Double] = Nil)
 extends DenseDirichlet(components(choice.intValue), prec, p) with MixtureOutcome {
@@ -39,52 +41,104 @@ extends DenseDirichlet(components(choice.intValue), prec, p) with MixtureOutcome
 
 
 
-class MixtureChoiceVariableTemplate extends TemplateWithStatistics1[MixtureChoiceVariable] {
+/*class MixtureChoiceVariableTemplate extends TemplateWithStatistics1[MixtureChoiceVariable] {
   def score(s:Stat) = 0 // s.s1.logpr comes from GeneratedVariableTemplate; gateRefs similarly
   //def score(s:Stat) = { val mc = s.s1; mc.gateRefs.reduceLeft((sum,ref) => sum + mc.value.logpr(ref.outcome)) }
 }
+*/
 
 
 
-/*
-trait MixtureComponent extends Parameter {
-  def parent: MixtureComponents[P]
-  override def addChild(v:GeneratedValue)(implicit d:DiffList): Unit = parent.addChild(v)
-  override def removeChild(v:GeneratedValue)(implicit d:DiffList): Unit = parent.removeChild(v)
-  override def children: Iterable[GeneratedValue] = parent.childrenOf(this)
-  def weightedChildren: Iterable[(MixtureOutcome,Double)]
-}
-trait MixtureComponents[P<:Parameter] extends Seq[P] with Parameter
-class FiniteMixture[P<:Parameter](val components:Seq[P]) extends MixtureComponents[P] {
-  components.foreach(_.addChild(this))
-  def length = components.length
-  def apply(index:Int) = components(index)
-  def childrenOf(p:P): Iterable[GeneratedValue] = {
-    val index = components.indexOf(p)
-    children.filter(_.isInstanceOf[MixtureOutcome]).asInstanceOf[Iterable[MixtureOutcome]].filter(_.choice.intValue == index)
+trait MixtureChoiceVariable extends GeneratedDiscreteVariable {
+  // 'outcomes' are a more efficient alternative to 'children' for small sets of outcomes.
+  private var _outcomes: List[MixtureOutcome] = Nil
+  def outcomes = _outcomes
+  def addOutcome(o:MixtureOutcome): Unit = {
+    assert(o.mixtureSize == domainSize)
+    _outcomes = o :: _outcomes
   }
 }
-object FiniteMixture {
-  def apply[P<:Parameter](n:Int)(constructor: =>P): FiniteMixture[P] = new FiniteMixture[P](for (i <- 1 to n) yield constructor())
-}
-class DiscreteMixture(val components:FiniteMixture[Proportions], val choice:MixtureChoice, value:Int = 0) extends DiscreteVariable(value) with GeneratedDiscreteVariable with MixtureOutcome {
-  choice.addChild(this)
-  def proportions = components(choice.intValue)
-  def prFromMixtureComponent(index:Int) = components(index).pr(intValue)
-}
+abstract class MixtureChoice(p:Proportions, value:Int = 0) extends Discrete(p, value) with MixtureChoiceVariable
+abstract class MixtureChoiceMixture(ps:FiniteMixture[Proportions], choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteMixture(ps, choice, value) with MixtureChoiceVariable
 
-class MixtureChoice(p:Proportions, value:Int = 0) extends Discrete(p, value) with IntegerValueParameter
-
-trait MixtureOutcome extends GeneratedValue {
-  def choice: MixtureChoice
+// TODO Consider renaming this "MixtureVar".  Yes!
+// Note that this restricts us to having just one MixtureChoice per MixtureOutcome; but this handles the common cases I can think of.
+trait MixtureOutcome extends GeneratedVar {
+  //def components: Seq[MixtureComponents[_]]
+  def choice: MixtureChoiceVariable
+  // Just those parents whose selection is controled by 'choice'
+  def chosenParents: Seq[Parameter]
+  def mixtureSize: Int
   def prFromMixtureComponent(index:Int): Double
 }
 
-class MixtureChoiceTemplate extends TemplateWithStatistics3s[GeneratedValue,MixtureChoice,Parameter] { 
-  def unroll1(v:GeneratedValue) = Factor(v, v match { case v:MixtureOutcome => v.choice; case _ => null }, v.parents)
-  def unroll2(c:MixtureChoice) = c.children.map(v => Factor(v, c, v.parents))
-  def unroll3(p:Parameter) = p.children.map(v => Factor(v, v match { case v:MixtureOutcome => v.choice; case _ => null }, v.parents))
-  def score(s:Stat) = 0.0 // s.s1.logpr comes from GeneratedVariableTemplate; gateRefs similarly
+/** Revert equals/hashCode behavior of Seq[A] to the default Object.
+    WARNING: This doesn't actually satisfy commutativity with a Seq[A]. :-( */
+trait SeqEqualsEq[+A] extends scala.collection.Seq[A] {
+  override def equals(that:Any): Boolean = that match {
+    case that:Seq[A] => this eq that
+    case _ => false
+  }
+  override def hashCode: Int = java.lang.System.identityHashCode(this)
+}
+trait MixtureComponents[+P<:Parameter] extends scala.collection.immutable.IndexedSeq[P] with SeqEqualsEq[P] with Parameter {
+  def childrenOf[P2>:P](p:P2): Iterable[GeneratedVar]
+  /*def iterator: Iterator[P] = new Iterator[P] {
+    var i = -1
+    def hasNext = i < length
+    def next = { i += 1; apply(i) }
+  }*/
+}
+class FiniteMixture[+P<:Parameter](components:Seq[P]) extends MixtureComponents[P] with GeneratedVar {
+  private val _components = components.toIndexedSeq
+  _components.foreach(_.addChild(this)(null))
+  def parents = _components
+  def pr = 1.0 // TODO something else?
+  def length = _components.length
+  def apply(index:Int) = _components(index)
+  def childrenOf[P2>:P](p:P2): Iterable[GeneratedVar] = {
+    val index = _components.indexOf(p)
+    children.filter(_.isInstanceOf[MixtureOutcome]).asInstanceOf[Iterable[MixtureOutcome]].filter(_.choice.intValue == index)
+  }
+  override def isDeterministic = true
+}
+object FiniteMixture {
+  def apply[P<:Parameter](n:Int)(constructor: =>P): FiniteMixture[P] = new FiniteMixture[P](for (i <- 1 to n) yield constructor)
+}
+//class InfiniteMixture[P<:Parameter](val constructor: =>P) extends MixtureComponents[P]
+
+trait DiscreteMixtureVar extends GeneratedDiscreteVariable with MixtureOutcome {
+  choice.addOutcome(this)
+  components.addChild(this)(null)
+  def choice: MixtureChoiceVariable
+  def components: FiniteMixture[Proportions]
+  def proportions = components(choice.intValue)
+  def prFromMixtureComponent(index:Int): Double = components(index).pr(intValue)
+  def chosenParents = List(components(choice.intValue))
+  override def parents = super.parents match { case list:List[Parameter] => components :: list; case seq:Seq[Parameter] => components +: seq }
+  def mixtureSize = components.length
+}
+
+class DiscreteMixture(val components:FiniteMixture[Proportions], val choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteVariable(value) with GeneratedDiscreteVariable with MixtureOutcome with DiscreteMixtureVar
+class CategoricalMixture[A](val components:FiniteMixture[Proportions], val choice:MixtureChoiceVariable, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] with DiscreteMixtureVar
+
+// Outcome, MixtureChoice, Parents
+// Common pattern:  mean -> MixtureComponents -> Gaussian
+class GeneratedVarTemplate extends TemplateWithStatistics3s[GeneratedVar,MixtureChoiceVariable,Parameter] {
+  protected def factorOfGeneratedVar(v:GeneratedVar) = v match {
+    case v:MixtureOutcome => Factor(v, v.choice, v.parents)
+    case _ => Factor(v, null, v.parents)
+  }
+  def unroll1(v:GeneratedVar) = factorOfGeneratedVar(v)
+  def unroll2(c:MixtureChoiceVariable) = c.outcomes.map(v => Factor(v, c, v.parents))
+  def unroll3(p:Parameter) = p match { 
+    case m:MixtureComponents[Parameter] => m.children.map(factorOfGeneratedVar(_))
+    case p:Parameter => p.children.flatMap(_ match {
+      case m:MixtureComponents[Parameter] => m.childrenOf(p).map(factorOfGeneratedVar(_))
+      case v:GeneratedVar => List(factorOfGeneratedVar(v))
+    })
+  }
+  def score(s:Stat) = s.s1.logpr // s.s1.logpr comes from GeneratedVariableTemplate; gateRefs similarly
   //def score(s:Stat) = { val mc = s.s1; mc.gateRefs.reduceLeft((sum,ref) => sum + mc.value.logpr(ref.outcome)) }
 }
-*/
+

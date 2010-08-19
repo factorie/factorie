@@ -88,6 +88,7 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
   def updateChildStats(child:Variable, weight:Double): Unit = child match {
     case d:DiscreteVar => increment(d.intValue, weight)(null)
     case p:Proportions if (p.length == length) => forIndex(length)(i => increment(i, p(i) * weight)(null))
+    case _ => {} // TODO Should we really not throw an error here?
   }
   // Perhaps DirichletMultinomial should not be a GeneratedVariable?  But it does have parents and children.
   def sample(implicit d:DiffList): Unit = new Error

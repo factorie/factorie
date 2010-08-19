@@ -6,12 +6,36 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
-import scala.collection.mutable.HashSet
+import scala.collection.mutable.{HashSet,ArrayBuffer}
 
 trait Parameter extends Variable {
   private lazy val _children = new HashSet[GeneratedVar]
   def keepChildren = true
+  /** A collection of variables whose value depends directly on this variable. */
   def children: Iterable[GeneratedVar] = _children
+  /** A collection of variables whose value depends on the value of this variable, 
+      either directly or via a sequence of deterministic variables.  If this variable's
+      value changes, all of these extended children variables' .pr will change. */
+  def extendedChildren: Iterable[GeneratedVar] = {
+    val result = new ArrayBuffer[GeneratedVar]
+    for (child <- children) {
+      child match { 
+        case dp:DeterministicParameter => { result += dp; result ++= dp.extendedChildren }
+        case gv:GeneratedVar => result += gv
+      }
+    }
+    result
+  }
+  // TODO Remove this?  Then implement this pulling of MixtureComponents.children in each of the parameter estimation inference routines.
+  // Yes, I think this above method is better.
+  def generatedChildren: Iterable[GeneratedVar] = {
+    val result = new ArrayBuffer[GeneratedVar]
+    for (child <- children) child match {
+      case mcs:MixtureComponents[_] => result ++= mcs.children
+      case _ => result += child
+    }
+    result
+  }
   def addChild(v:GeneratedVar)(implicit d:DiffList): Unit = if (keepChildren) {
     //println("Parameter.addChild"); new Exception().printStackTrace()
     if (_children.contains(v)) throw new Error("Parameter "+this+" already has child "+v+" with hashCode="+v.hashCode)
@@ -35,6 +59,9 @@ trait Parameter extends Variable {
   }
 }
 
+trait DeterministicParameter extends GeneratedVar with Parameter {
+  override final def isDeterministic = true
+}
 
 
 trait RealVarParameter extends RealVar with Parameter

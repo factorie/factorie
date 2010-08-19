@@ -49,6 +49,14 @@ trait Variable /* extends AnyRef */ {
       If library users create their own new Variable classes, which will be subclassed, and wants each
       subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
   final def domain: VariableType#DomainType = Domain.get[VariableType](this.getClass)
+
+  //type ContainedVariableType <: ContainedVariable
+
+  /** Return a collection of other variables that should be unrolled in Templates whenever this variable is unrolled.
+      For example, a Span may be part of a Event; when the Span changes the Event should be considered as having changed also, and Template1[Event] will be relevant.
+      This mechanism is also used for implementing "var-args" to Templates, as in GeneratedVarTemplate[GeneratedVar, MixtureChoice, Vars[Parameters]].
+      See also PyMC's "Containers"? */
+  def unrollCascade: Iterable[Variable] = Nil
   
   private def shortClassName = {
     var fields = this.getClass.getName.split('$')
@@ -64,8 +72,11 @@ trait Variable /* extends AnyRef */ {
   def printName = shortClassName
   override def toString = printName + "(_)"
   //def factors(model:Model): Iterable[Factor] = model.factors(this) // TODO Remove this?  Why have two different short ways of doing this?
+  // TODO Consider renaming this to "isObserved" to better match the "Observation" variable class names.
   def isConstant = false
 }
+
+//trait ContainedVariable extends Variable { def containerVariables: Seq[Variable] = Nil }
 
 /** For variables that support representating of their uncertainty with a distribution Q over their values, 
     for variational inference with an approximate distribution Q.
@@ -93,7 +104,9 @@ trait ConstantTypedValue extends ConstantValue with TypedValue {
   // override final def set(newValue:ValueType)(d:DiffList): Unit = throw new Error("Cannot set the value of a constant.")
 }
 
-/** For variables whose value has a type, indicated in type ValueType */
+/** For variables whose value has a type, indicated in type ValueType.  
+    Instead of a single value, this variable might represent many values.
+    Related to PyMC's "Containers". */
 trait TypedValues {
   this: Variable =>
   type ValueType

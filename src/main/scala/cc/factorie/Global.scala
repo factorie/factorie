@@ -16,7 +16,7 @@ object Global {
   // anticipating the time when all these definitions make go in "package object factorie"?
   
   val defaultModel = new Model
-  val defaultGenerativeModel = new Model(new GeneratedVarTemplate, new MixtureChoiceVariableTemplate)
+  val defaultGenerativeModel = new Model(new GeneratedVarTemplate)
   val defaultObjective = new Model(new TrueLabelTemplate[CoordinatedLabelVariable[AnyRef]]())
 
   // TODO Consider removing this now that we have separate, more specific samplers.

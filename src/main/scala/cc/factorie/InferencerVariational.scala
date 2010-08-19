@@ -50,9 +50,11 @@ class CollapsedVariationalBayes[A<:Variable with QDistribution](collapse:Iterabl
   def setMaxMarginals(implicit d:DiffList = null): Unit = {
     throw new Error("Not yet implemented")
   }
+  def children(p:Parameter): Iterable[GeneratedVar] = throw new Error
+
   def process(v:A): Unit = {
     val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.template.getClass.getName < f2.template.getClass.getName)
-    factors match {
+    /*factors match {
       case List(factor1:GeneratedVarTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
         val v = factor2.n1.asInstanceOf[MixtureChoiceVariable]
         // Variational Bayes order 0 approximation
@@ -125,7 +127,7 @@ class CollapsedVariationalBayes[A<:Variable with QDistribution](collapse:Iterabl
         
         true
       }
-    }
+    } */
   }
 }
 

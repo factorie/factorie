@@ -64,18 +64,15 @@ object GeneratedVariableGibbsSamplerHandler extends GibbsSamplerHandler {
 
 object MixtureChoiceGibbsSamplerHandler extends GibbsSamplerHandler {
   def sample(v:Variable, factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean = {
-    factors match {
-      case List(factor1:GeneratedVarTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
-        val mc: MixtureChoiceVariable = factor2.n1
-        // TODO Make sure that 'mc' doesn't do any extra factor coordination
-        val outcomes: Seq[MixtureOutcome] = mc.gatedRefs.map(_ match { 
-          case pr:GatedParameterRef[Parameter,MixtureOutcome] => pr.child
-          case _ => throw new Error("MixtureChoice is controlling non-MixtureOutcome") 
-        }).toSet.toList // In order to check for duplicates in 'outcomes' // TODO Try to speed this up for the common cases
+    return false
+    v match {
+      case mc:MixtureChoiceVariable => {
+        // TODO We really should have a more careful check like this
+        //if (!(factors.forall(_ match { case f:GeneratedVarTemplate#Factor => f.n1 == v || f.n2 == v; case _ => false }))) return false
+        val outcomes: Seq[MixtureOutcome] = mc.outcomes
         val domainSize = mc.domainSize
         val distribution = new Array[Double](domainSize)
         var sum = 0.0
-        //mc.gateRefs.foreach(_.setToNull(d))
         for (i <- 0 until domainSize) {
           distribution(i) = mc.proportions.pr(i) * outcomes.foldLeft(1.0)((prod:Double, outcome:MixtureOutcome) => prod * outcome.prFromMixtureComponent(i))
           sum += distribution(i)
@@ -83,7 +80,6 @@ object MixtureChoiceGibbsSamplerHandler extends GibbsSamplerHandler {
         mc.set(Maths.nextDiscrete(distribution, sum)(Global.random))(d)
         true
       }
-      case _ => false
     }
   }
 }
@@ -133,7 +129,14 @@ class CollapsedGibbsSampler(val model:Model = Global.defaultGenerativeModel, col
   // Initialization of the collapsed variables
   for (cv <- collapsedVariables) {
     cv.clearChildStats
-    for (child <- cv.children) cv.updateChildStats(child, 1.0)
+    for (child <- cv.children) child match {
+      case mcs:MixtureComponents[_] => { 
+        mcs.childrenOf(cv).foreach(cv.updateChildStats(_, 1.0))
+        //println("CollapsedGibbsSampler init MixtureComponents child "+child+" count="+mcs.childrenOf(cv).size)
+      }
+      case v:GeneratedVar => cv.updateChildStats(v, 1.0)
+    }
+    //println("CollapsedGibbsSampler init cv: "+cv)
     // TODO This should look at model factors to make sure that we aren't improperly ignoring some other factors/variables
   }
 
@@ -147,7 +150,7 @@ class CollapsedGibbsSampler(val model:Model = Global.defaultGenerativeModel, col
     while (!done && handlerIterator.hasNext) {
       done = handlerIterator.next.sample(v, factors, this)(d)
     }
-    if (!done) throw new Error("GibbsSampler: No sampling method found for "+factors.map(_.template.getClass.getName).mkString("List(",",",")"))
+    if (!done) throw new Error("CollapsedGibbsSampler: No sampling method found for variable "+v+" with factors "+factors.map(_.template.getClass.getName).mkString("List(",",",")"))
     d
   }
 }
@@ -163,6 +166,7 @@ object GeneratedVariableCollapsedGibbsSamplerHandler extends CollapsedGibbsSampl
       // TODO We could try to gain some speed by handling specially the case in which there is only one parent
       case List(factor:GeneratedVarTemplate#Factor) => {
         for (parent <- factor.n3; if (sampler.collapsed.contains(parent))) parent match {
+          // When we are mapping from v to collapsed representation, do instead: sampler.collapsed(p).updateChildStats(v, -1.0)
           case p:CollapsedParameter => p.updateChildStats(v, -1.0)
           // TODO What about collapsed children?
         }
@@ -184,62 +188,63 @@ object GeneratedVariableCollapsedGibbsSamplerHandler extends CollapsedGibbsSampl
 object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
   def sample(v:Variable, factors:List[Factor], sampler:CollapsedGibbsSampler)(implicit d:DiffList): Boolean = {
     v match {
-      case v: MixtureChoiceVariable => factors match {
-        case List(factor1:GeneratedVarTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
-          // This is the case for LDA's "z" variables
-          //println("MixtureChoiceCollapsedGibbsSamplerHandler v="+v+" value="+v.intValue)
-          val parent = v.proportions
-          val domainSize = v.domain.size
-          val distribution = new Array[Double](domainSize)
-          var sum = 0.0
+      case v: MixtureChoiceVariable => {
+        // TODO We really should have a more careful check like this
+        //if (!(factors.forall(_ match { case f:GeneratedVarTemplate#Factor => f.n1 == v || f.n2 == v; case _ => false }))) return false
+        // This is the case for LDA's "z" variables
+        //println("MixtureChoiceCollapsedGibbsSamplerHandler v="+v+" value="+v.intValue)
+        val parent = v.proportions
+        val domainSize = v.domain.size
+        val distribution = new Array[Double](domainSize)
+        var sum = 0.0
 
-          // If parent of v is collapsed, decrement counts.  
-          if (sampler.collapsed.contains(parent)) parent match {
-            case collapsedParent:DirichletMultinomial => collapsedParent.updateChildStats(v, -1.0)
-            case _ => new Error // TODO Change this to just do nothing?
-          }
-
-          if (v.gatedRefs.size == 1) {
-            // MixtureChoice v controls only one GatedRefVariable
-            val ref = v.gatedRefs.first.asInstanceOf[GatedParameterRef[Proportions,MixtureOutcome]]
-            // If parent of outcome is collapsed, decrement counts
-            if (sampler.collapsed.contains(ref.value)) ref.value match { case p:CollapsedParameter => p.updateChildStats(ref.child, -1.0) }
-            val outcome: MixtureOutcome = ref.child
-            forIndex(domainSize)(i => {
-              distribution(i) = parent.pr(i) * outcome.prFromMixtureComponent(i)
-              sum += distribution(i)
-            })
-            // Sample
-            //println("MixtureChoiceCollapsedGibbsSamplerHandler distribution = "+(distribution.toList.map(_ / sum)))
-            v.set(Maths.nextDiscrete(distribution, sum)(Global.random))
-            //println("MixtureChoiceCollapsedGibbsSamplerHandler "+v+"@"+v.hashCode+" newValue="+v.intValue)
-            // If parent of outcome is collapsed, increment counts
-            if (sampler.collapsed.contains(ref.value)) ref.value match { case p:CollapsedParameter => p.updateChildStats(ref.child, 1.0) }
-          } else {
-            // MixtureChoice v controls multiple GatedRefVariables
-            val refs = v.gatedRefs.map(_ match { case gpr:GatedParameterRef[Proportions,MixtureOutcome] => gpr })
-            // If parents of outcomes are collapsed, decrement counts
-            for (ref <- refs; if sampler.collapsed.contains(ref.value)) ref.value match { case p:CollapsedParameter => p.updateChildStats(ref.child, -1.0) }
-            val outcomes: Seq[MixtureOutcome] = refs.map(_.child).toSet.toList // TODO Faster way to unique the list?
-            for (i <- 0 until domainSize) {
-              distribution(i) = parent.pr(i) * outcomes.foldLeft(1.0)((prod,o) => prod * o.prFromMixtureComponent(i))
-              sum += distribution(i)
-            }
-            // Sample
-            v.set(Maths.nextDiscrete(distribution, sum)(Global.random))
-            // If parents of outcomes are collapsed, decrement counts
-            for (ref <- refs; if sampler.collapsed.contains(ref.value)) ref.value match { case p:CollapsedParameter => p.updateChildStats(ref.child, 1.0) }
-          }
-
-          // If parent of v is collapsed, increment counts
-          if (sampler.collapsed.contains(parent)) parent match {
-            case collapsedParent:DirichletMultinomial => collapsedParent.updateChildStats(v, 1.0)
-            case _ => new Error // TODO Change this to just do nothing?
-          }
-
-          true
+        // If parent of v is collapsed, decrement counts.  
+        if (sampler.collapsed.contains(parent)) parent match {
+          case collapsedParent:DirichletMultinomial => collapsedParent.updateChildStats(v, -1.0)
+          case _ => new Error // TODO Change this to just do nothing?
         }
-        case _ => false
+
+        if (v.outcomes.size == 1) {
+          // MixtureChoice v controls only one MixtureOutcome
+          val outcome = v.outcomes.first
+          // If parents of outcomes are collapsed, decrement counts
+          for (chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
+            chosenParent match { case p:CollapsedParameter => { /*println("CollapsedGibbsSampler -1.0 p="+p);*/ p.updateChildStats(outcome, -1.0) } }
+          forIndex(domainSize)(i => {
+            distribution(i) = parent.pr(i) * outcome.prFromMixtureComponent(i)
+            sum += distribution(i)
+          })
+          // Sample
+          //println("MixtureChoiceCollapsedGibbsSamplerHandler distribution = "+(distribution.toList.map(_ / sum)))
+          v.set(Maths.nextDiscrete(distribution, sum)(Global.random))
+          //println("MixtureChoiceCollapsedGibbsSamplerHandler "+v+"@"+v.hashCode+" newValue="+v.intValue)
+          // If parent of outcome is collapsed, increment counts
+          for (chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
+            chosenParent match { case p:CollapsedParameter => p.updateChildStats(outcome, 1.0) }
+        } else {
+          // MixtureChoice v controls multiple MixtureOutcomes
+          val outcomes = v.outcomes
+          // If parents of outcomes are collapsed, decrement counts
+          for (outcome <- outcomes; chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
+            chosenParent match { case p:CollapsedParameter => p.updateChildStats(outcome, -1.0) }
+          for (i <- 0 until domainSize) {
+            distribution(i) = parent.pr(i) * outcomes.foldLeft(1.0)((prod,o) => prod * o.prFromMixtureComponent(i))
+            sum += distribution(i)
+          }
+          // Sample
+          v.set(Maths.nextDiscrete(distribution, sum)(Global.random))
+          // If parents of outcomes are collapsed, decrement counts
+          for (outcome <- outcomes; chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
+            chosenParent match { case p:CollapsedParameter => p.updateChildStats(outcome, -1.0) }
+        }
+
+        // If parent of v is collapsed, increment counts
+        if (sampler.collapsed.contains(parent)) parent match {
+          case collapsedParent:DirichletMultinomial => collapsedParent.updateChildStats(v, 1.0)
+          case _ => new Error // TODO Change this to just do nothing?
+        }
+
+        true
       }
       case _ => false
     }

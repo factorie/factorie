@@ -7,6 +7,7 @@ default:
 # CLASSPATH
 CP=`echo $$HOME/workspace/factorie/target $$HOME/workspace/lib/* $$CLASSPATH | sed -e 's/ /:/g'`
 fsc:
+	mkdir -p target/classes
 	javac -d target/classes `find ./src -name '*.java' -print`
 	JAVA_OPTS="-Xmx1024M -Xms16M -Xss16M" $(SCALA_HOME)/bin/fsc -d target/classes `find src -name '*.scala'` `find src -name '*.java'`
 
@@ -14,6 +15,8 @@ lda:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.LDADemo
 hmm:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.HMMDemo
+chainner3:
+	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.ChainNER3 ~/research/data/ie/ner2003/eng.train ~/research/data/ie/ner2003/eng.testa
 
 # Use emacs' default indenter to fix indentation on all *.scala files in src.
 # Not yet working!

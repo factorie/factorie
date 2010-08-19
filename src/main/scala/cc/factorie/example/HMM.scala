@@ -13,7 +13,7 @@ import java.io.File
 import cc.factorie._
 import cc.factorie.util.Stopwords
 
-object HMMDemo {
+/*object HMMDemo {
   val numStates = 10
   class Z(ps:Seq[Proportions], c:MixtureChoiceVariable, i:Int) extends MixtureChoiceMixture(ps, c, i); Domain[Z].size = numStates
   class Zi(p:Proportions, i:Int) extends MixtureChoice(p, i); Domain[Zi].size = numStates
@@ -61,3 +61,4 @@ object HMMDemo {
 
 }
 
+*/

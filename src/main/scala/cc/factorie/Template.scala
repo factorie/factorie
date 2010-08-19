@@ -112,6 +112,10 @@ object Vars {
 }
 */
 
+/*trait Vars[A<:Variable] extends Iterable[A] with Variable {
+  type ContainedVariableType = A
+}*/
+
 
 /** The template for many factors.  Manages its connections to neighboring variables.
     @Andrew McCallum
@@ -158,6 +162,12 @@ trait Template {
     var result = new HashSet[Factor]()
     for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("unroll returned null Factor") else result += factor }  //variables.foreach(v => result ++= factors(v))
     result.toList // TODO is this necessary?
+  }
+  var unrollCascadeRecursively = false
+  def unrollCascade(v:Variable): Iterable[Variable] = if (!unrollCascadeRecursively) v.unrollCascade else {
+    val result = new ListBuffer[Variable]
+    for (v2 <- v.unrollCascade) if (!result.contains(v2)) { result += v2; result ++= unrollCascade(v2) }
+    result
   }
   def stats(v:Variable): Iterable[Stat]; // TODO make this Iterable[StatType]
   def score(s:StatType) : Double
@@ -325,15 +335,20 @@ trait SparseHashWeights extends DotTemplate {
 
 abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
   val nc1 = nm1.erasure // "Neighbor class"
+  //val nc1a: Manifest[_] = { val ta = nm1.typeArguments; if (class[ContainerVariable].isAssignableFrom(nc1) && ta.length == 1) ta.first else null }
   // TODO create methods like this for all Templates and put abstract version in Template
   def respondsTo[NN](implicit m:Manifest[NN]) = nc1.isAssignableFrom(m.erasure)
   def factors(v:Variable): Iterable[Factor] = {
     // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
     // When I substituted "isAssignable" for HashMap caching in GenericSampler I got 42.8 versus 44.4 seconds ~ 3.7%  Perhaps worth considering?
-    if (nc1.isAssignableFrom(v.getClass)) unroll1(v.asInstanceOf[N1]) 
-    else Nil
+    var ret = new ListBuffer[Factor]
+    if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1])
+    ret ++= unrollCascade(v).flatMap(factors(_))
+    //if (nc1a.isAssignableFrom(v.getClass)) ret ++= v.containerVariables.flatMap(factors(_))
+    ret
   }
   def unroll1(v:N1): Iterable[Factor] = new Factor(v)
+  //def unroll1a(v:N1#ContainedVariableType) = unroll1(v.xb)
   def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1)
   def statistics(v1:N1) : Iterable[StatType]
   def stats(v:Variable) = factors(v).flatMap(_statistics(_))
@@ -485,6 +500,29 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
     def statistics : Iterable[StatType] = _statistics(this)
   } 
 }
+abstract class Template3s[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template {
+  val nc1 = nm1.erasure
+  val nc2 = nm2.erasure
+  val nc3 = nm3.erasure
+  override def factors(v: Variable): Iterable[Factor] = {
+    var ret = new ListBuffer[Factor]
+    if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1])
+    if (nc2.isAssignableFrom(v.getClass)) ret ++= unroll2(v.asInstanceOf[N2])
+    if (nc3.isAssignableFrom(v.getClass)) ret ++= unroll3(v.asInstanceOf[N3])
+    ret
+  }
+  def unroll1(v:N1): Iterable[Factor]
+  def unroll2(v:N2): Iterable[Factor]
+  def unroll3(v:N3): Iterable[Factor]
+  def _statistics(f:Factor) : Iterable[StatType] = statistics(f.n1, f.n2, f.n3)
+  def statistics(v1:N1, v2:N2, v3:Seq[N3]) : Iterable[StatType]
+  def stats(v:Variable) = factors(v).flatMap(_statistics(_))
+  case class Factor(n1:N1, n2:N2, n3:Seq[N3]) extends super.Factor {
+    def numVariables = 2 + n3.size
+    def variable(i:Int) = if (i == 0) n1 else if (i == 2) n2 else n3(i-2)
+    def statistics : Iterable[StatType] = _statistics(this)
+  } 
+}
 abstract class Template3ss[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template {
   val nc1 = nm1.erasure
   val nc2 = nm2.erasure
@@ -522,6 +560,9 @@ trait VectorStatistics3[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars] exte
 trait DotStatistics3[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars] extends VectorStatistics3[S1,S2,S3] with DotTemplate
 abstract class TemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template2[N1,N2]()(nm1,nm2) with Statistics3[N1,N2,N3] {
   def statistics(v1:N1, v2:N2, v3:N3): Iterable[Stat] = Stat(v1, v2, v3)
+}
+abstract class TemplateWithStatistics3s[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3s[N1,N2,N3]()(nm1,nm2,nm3) with Statistics3[N1,N2,Seq[N3]] {
+  def statistics(v1:N1, v2:N2, v3:Seq[N3]): Iterable[Stat] = Stat(v1, v2, v3)
 }
 abstract class TemplateWithStatistics3ss[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3ss[N1,N2,N3]()(nm1,nm2,nm3) with Statistics3[N1,Seq[N2],Seq[N3]] {
   def statistics(v1:N1, v2:Seq[N2], v3:Seq[N3]): Iterable[Stat] = Stat(v1, v2, v3)

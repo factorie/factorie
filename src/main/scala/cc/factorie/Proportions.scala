@@ -93,6 +93,7 @@ class DenseCountsProportions(len:Int) extends Proportions with Estimation[DenseC
   protected var _counts = new Array[Double](len)
   protected var _countsTotal = 0.0
   def length = _counts.size
+  def countsSeq: Seq[Double] = _counts.toSeq
   def counts(index:Int) = _counts(index)
   def countsTotal  = _countsTotal
   def increment(index:Int, incr:Double)(implicit d:DiffList): Unit = { 
