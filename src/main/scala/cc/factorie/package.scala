@@ -24,6 +24,11 @@ package object factorie {
     var i = 0
     while (i < n) { f(i); i += 1 }
   }
+  def forallIndex(n:Int)(f:Int=>Boolean): Boolean = { 
+    var i = 0
+    while (i < n) { if (!f(i)) return false; i += 1 }
+    true
+  }
   def mapIndex[@specialized A:ClassManifest](n:Int)(f:Int=>A): Array[A] = {
     val result = new Array[A](n)
     var i = 0
@@ -35,6 +40,7 @@ package object factorie {
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras { val s = x }
   implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new Iterable[F] { def iterator = Iterator.single(f) }
   implicit def singleStatIterable[S<:Stat](s:S): Iterable[S] = new Iterable[S] { def iterator = Iterator.single(s) }
+  //implicit def seq2Vars[V<:Variable](seq:Seq[V]): Vars[V] = new SeqVars(seq) // Causing Scala 2.8.0 compiler to crash
 
   /** A container for "var-args"-like arbitrary number of Variables neighboring a Factor.
     @see Template1  */

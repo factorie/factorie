@@ -20,10 +20,7 @@ import cc.factorie.util.{Log}
 // Notes on class names for Variables:
 // Except for cc.factorie.Variable, "*Variable" means mutable
 // "*Observation" always means immutable, and mixes in trait ConstantValue
-// "*Value" is agnostic about whether it is mutable or not.  Hence "IntValue"
-//  Note that in the language of probability theory "value" refers not to the "random variable", but the values it takes on.
-//  The way to think about this is that FACTORIE "*Values" are never instantiated on their own;
-//  The instantiation reads something like "Variable with IntValue"
+// "*Var" is agnostic about whether it is mutable or not.  Hence "IntegerVar"
 
 
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
@@ -50,7 +47,7 @@ trait Variable /* extends AnyRef */ {
       subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
   final def domain: VariableType#DomainType = Domain.get[VariableType](this.getClass)
 
-  //type ContainedVariableType <: ContainedVariable
+  type ContainedVariableType <: Variable //ContainedVariable
 
   /** Return a collection of other variables that should be unrolled in Templates whenever this variable is unrolled.
       For example, a Span may be part of a Event; when the Span changes the Event should be considered as having changed also, and Template1[Event] will be relevant.
@@ -71,12 +68,41 @@ trait Variable /* extends AnyRef */ {
   }
   def printName = shortClassName
   override def toString = printName + "(_)"
-  //def factors(model:Model): Iterable[Factor] = model.factors(this) // TODO Remove this?  Why have two different short ways of doing this?
   // TODO Consider renaming this to "isObserved" to better match the "Observation" variable class names.
   def isConstant = false
 }
 
-//trait ContainedVariable extends Variable { def containerVariables: Seq[Variable] = Nil }
+/** A variable that is a container for other variables (of type ContainedVariableType), 
+    A Template that neighbors a ContainerVariable subclass, will also unroll for a Factor
+    for changes to any Variables of type ContainedVariableType.
+    This mechanism is used for implementing var-args in Template arguments; 
+    for example see GeneratedVarTemplate. */
+trait ContainerVariable[A<:Variable] extends Variable {
+  type ContainedVariableType = A
+  def containedVariableManifest(implicit m:Manifest[A]) = m
+}
+// NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.
+trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] {
+  override def toString = mkString("Vars(", ",",")")
+}
+class ArrayVars[V<:Variable](val toArray:Array[V]) extends Vars[V] {
+  //def this(vs:Seq[V]) = this(vs.toArray)
+  def length = toArray.length
+  def apply(index:Int) = toArray(index)
+  def iterator = toArray.iterator
+}
+class SeqVars[V<:Variable](override val toSeq:Seq[V]) extends Vars[V] {
+  def length = toSeq.length
+  def apply(index:Int) = toSeq(index)
+  def iterator = toSeq.iterator
+}
+class ArrayBufferVars[V<:Variable] extends ArrayBuffer[V] with Vars[V]
+object Vars {
+  def apply[V<:Variable](vs:V*): Vars[V] = new SeqVars(vs) // TODO Should this be a HashSet instead of ArrayBuffer?
+  //def apply[V<:Variable](vs:Seq[V]): Vars[V] = new SeqVars(vs)
+  def fromSeq[V<:Variable](vs:Seq[V]) = new SeqVars(vs)
+}
+
 
 /** For variables that support representating of their uncertainty with a distribution Q over their values, 
     for variational inference with an approximate distribution Q.

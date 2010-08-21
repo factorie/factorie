@@ -124,21 +124,4 @@ class CategoricalMixture[A](val components:FiniteMixture[Proportions], val choic
 
 // Outcome, MixtureChoice, Parents
 // Common pattern:  mean -> MixtureComponents -> Gaussian
-class GeneratedVarTemplate extends TemplateWithStatistics3s[GeneratedVar,MixtureChoiceVariable,Parameter] {
-  protected def factorOfGeneratedVar(v:GeneratedVar) = v match {
-    case v:MixtureOutcome => Factor(v, v.choice, v.parents)
-    case _ => Factor(v, null, v.parents)
-  }
-  def unroll1(v:GeneratedVar) = factorOfGeneratedVar(v)
-  def unroll2(c:MixtureChoiceVariable) = c.outcomes.map(v => Factor(v, c, v.parents))
-  def unroll3(p:Parameter) = p match { 
-    case m:MixtureComponents[Parameter] => m.children.map(factorOfGeneratedVar(_))
-    case p:Parameter => p.children.flatMap(_ match {
-      case m:MixtureComponents[Parameter] => m.childrenOf(p).map(factorOfGeneratedVar(_))
-      case v:GeneratedVar => List(factorOfGeneratedVar(v))
-    })
-  }
-  def score(s:Stat) = s.s1.logpr // s.s1.logpr comes from GeneratedVariableTemplate; gateRefs similarly
-  //def score(s:Stat) = { val mc = s.s1; mc.gateRefs.reduceLeft((sum,ref) => sum + mc.value.logpr(ref.outcome)) }
-}
 

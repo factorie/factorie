@@ -19,6 +19,20 @@ object LDADemo {
   class Word(ps:FiniteMixture[Proportions], z:MixtureChoiceVariable, value:String) extends CategoricalMixture[String](ps, z, value)
   class Document(val file:String) extends ArrayBuffer[Word] { var theta:DirichletMultinomial = null }
 
+  class X(i:Int) extends DiscreteVariable(i) { var other: X = null }; Domain[X].size = 10
+  object TestTemplate extends Template2[Vars[X],X] with DotStatistics1[X] {
+    def unroll1(xs:Vars[X]) = throw new Error
+    def unroll2(x:X) = Factor(Vars(x, x.other), x)
+    override def unroll1s(x:X) = Factor(Vars(x, x.other), x)
+    def statistics(xs:Vars[X], x:X) = Stat(new X(xs.foldLeft(0)(_ + _.intValue)))
+    //def score(s:Stat) = 0.0
+  }
+  val x1 = new X(1); val x2 = new X(2); val x3 = new X(3); val x4 = new X(4)
+  x1.other = x2; x2.other = x1; x3.other = x4; x4.other = x3
+  TestTemplate.init
+  println(TestTemplate.factors(x1))
+  println(TestTemplate.factors(x1).first.statistic.score)
+
   def main(args: Array[String]) : Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
     val lexer = new Regex("[a-zA-Z]+")

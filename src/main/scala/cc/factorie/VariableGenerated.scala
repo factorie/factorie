@@ -29,6 +29,14 @@ trait GeneratedVar extends Variable {
     }
     result
   }
+  /** Parents, jumping over and selecting from "MixtureComponents" parents. */
+  def generativeParents: Seq[Parameter] = {
+    val p = parents
+    this match {
+      case self:MixtureOutcome => parents.map(_ match { case mc:MixtureComponents[_] => mc(self.choice.intValue); case p:Parameter => p })
+      case _ => parents
+    }
+  }
   /** Sometimes pointers to parents are kept in a ParameterRef variable; 
       if so, return them here so that we can track diffs to them; 
       if not, return Nil or null entries in sequence with ordering matching 'parents'. */
@@ -128,29 +136,21 @@ class ObservedDiscretes(val proportions:Proportions, values:Traversable[Int] = N
 
 
 // Templates
-/*class GeneratedVarTemplate extends TemplateWithStatistics3ss[GeneratedVar,AbstractParameterRef,Parameter] {
-  def unroll1(v:GeneratedVar) = Factor(v, v.parentRefs, v.parents)
-  def unroll2(r:AbstractParameterRef) = Factor(r.child, r.child.parentRefs, r.child.parents)
-  def unroll3(p:Parameter) = p.children.map(v => Factor(v, v.parentRefs, v.parents))
-  def score(s:Stat) = s.s1.logpr
-}*/
-
-
-
-// LDA, PyMC style
-/*
-class Word(s:String, ps:Seq[Proportions] = Nil, z:MixtureChoice = null) extends CategoricalMixtureObservation(ps, z, s)
-class Document extends ArrayList[Word] { val theta: Proportions }
-class Z(p:Proportions[Z]) extends MixtureChoice[Z](p)
-// Read data
-val nTopics = 10
-val topics = repeat(nTopics) new SymmetricDirichlet(Domain[Word].size)(0.01)
-for (i <- 0 until document.length) {
-  document.theta = new SymmetricDirichlet[Z](1.0)
-  for (word <- document) {
-    val z = new MixtureChoice(document.theta)
-    word ~ (topics, z) // val word = new Word(string, topics, z)
-    //word ~ new Word(string, topics, z)
+class GeneratedVarTemplate extends TemplateWithStatistics3[GeneratedVar,MixtureChoiceVariable,Vars[Parameter]] {
+  protected def factorOfGeneratedVar(v:GeneratedVar) = v match {
+    case v:MixtureOutcome => Factor(v, v.choice, Vars.fromSeq(v.parents))
+    case _ => Factor(v, null, Vars.fromSeq(v.parents))
   }
+  def unroll1(v:GeneratedVar) = factorOfGeneratedVar(v)
+  def unroll2(c:MixtureChoiceVariable) = c.outcomes.map(v => Factor(v, c, Vars.fromSeq(v.parents)))
+  def unroll3(vs:Vars[Parameter]) = throw new Error
+  override def unroll3s(p:Parameter) = p match { 
+    case m:MixtureComponents[Parameter] => m.children.map(factorOfGeneratedVar(_))
+    case p:Parameter => p.children.flatMap(_ match {
+      case m:MixtureComponents[Parameter] => m.childrenOf(p).map(factorOfGeneratedVar(_))
+      case v:GeneratedVar => List(factorOfGeneratedVar(v))
+    })
+  }
+  def score(s:Stat) = s.s1.logpr // s.s1.logpr comes from GeneratedVariableTemplate; gateRefs similarly
+  //def score(s:Stat) = { val mc = s.s1; mc.gateRefs.reduceLeft((sum,ref) => sum + mc.value.logpr(ref.outcome)) }
 }
-*/

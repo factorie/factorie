@@ -18,7 +18,7 @@ trait DiscreteVars extends Variable with IntegerVars {
   type DomainType <: DiscreteDomain[VariableType]
   // TODO Replace this mechanism with an Annotation
   class DomainClass extends DiscreteDomain[VariableType]()(null)
-  def domainSize: Int = domain.size
+  final def domainSize: Int = domain.size
   override def minIntValue = 0
   override def maxIntValue = domainSize - 1
   /** A cc.factorie.la.Vector representation of the value of this variable. */
