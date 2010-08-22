@@ -189,8 +189,10 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
   def sample(v:Variable, factors:List[Factor], sampler:CollapsedGibbsSampler)(implicit d:DiffList): Boolean = {
     v match {
       case v: MixtureChoiceVariable => {
-        // TODO We really should have a more careful check like this
+        // TODO We really should have a more careful check like this...
         //if (!(factors.forall(_ match { case f:GeneratedVarTemplate#Factor => f.n1 == v || f.n2 == v; case _ => false }))) return false
+        // ...because this MixtureChoiceVariable might possibly be connected to some other variables other than its parents and outcomes.
+
         // This is the case for LDA's "z" variables
         //println("MixtureChoiceCollapsedGibbsSamplerHandler v="+v+" value="+v.intValue)
         val parent = v.proportions
@@ -231,18 +233,18 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           for (outcome <- outcomes; chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
             chosenParent match { case p:CollapsedParameter => p.updateChildStats(outcome, -1.0) }
           for (i <- 0 until domainSize) {
-            println("parent.pr("+i+")="+parent.pr(i))
-            outcomes.foreach(o => println("mc.pr("+i+")="+o.prFromMixtureComponent(i)))
+            //println("parent.pr("+i+")="+parent.pr(i))
+            //outcomes.foreach(o => println("mc.pr("+i+")="+o.prFromMixtureComponent(i)))
             distribution(i) = parent.pr(i) * outcomes.foldLeft(1.0)((prod,o) => prod * o.prFromMixtureComponent(i))
             sum += distribution(i)
           }
           // Sample
-          println("CollapsedGibbsSampler distribution="+distribution.toList)
+          //println("CollapsedGibbsSampler distribution="+distribution.toList)
           v.set(Maths.nextDiscrete(distribution, sum)(Global.random))
-          println("CollapsedGibbsSampler choice.intValue="+v.intValue)
+          //println("CollapsedGibbsSampler choice.intValue="+v.intValue)
           // If parents of outcomes are collapsed, decrement counts
           for (outcome <- outcomes; chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
-            chosenParent match { case p:CollapsedParameter => p.updateChildStats(outcome, -1.0) }
+            chosenParent match { case p:CollapsedParameter => p.updateChildStats(outcome, 1.0) }
         }
 
         // If parent of v is collapsed, increment counts
