@@ -70,5 +70,7 @@ package object factorie {
   implicit def template2initialized4[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars,S4<:DiscreteVars](t:VectorStatistics4[S1,S2,S3,S4])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]): InitializedTemplate = new InitializedTemplate(t.init)
 
 
+  implicit def boolean2BooleanObservation(b:Boolean): BooleanObservation = new BooleanObservation(b)
+  // TODO Consider making implicit conversions for IntegerObservation and RealObservation also
 
 }

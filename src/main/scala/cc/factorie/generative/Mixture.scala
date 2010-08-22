@@ -73,15 +73,6 @@ trait MixtureOutcome extends GeneratedVar {
   def prFromMixtureComponent(index:Int): Double
 }
 
-/** Revert equals/hashCode behavior of Seq[A] to the default Object.
-    WARNING: This doesn't actually satisfy commutativity with a Seq[A]. :-( */
-trait SeqEqualsEq[+A] extends scala.collection.Seq[A] {
-  override def equals(that:Any): Boolean = that match {
-    case that:Seq[A] => this eq that
-    case _ => false
-  }
-  override def hashCode: Int = java.lang.System.identityHashCode(this)
-}
 trait MixtureComponents[+P<:Parameter] extends scala.collection.immutable.IndexedSeq[P] with SeqEqualsEq[P] with Parameter {
   def childrenOf[P2>:P](p:P2): Iterable[GeneratedVar]
   /*def iterator: Iterator[P] = new Iterator[P] {
