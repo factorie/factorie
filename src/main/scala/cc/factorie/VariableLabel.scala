@@ -36,9 +36,9 @@ trait TrueCategoricalVar[A] extends TrueSetting {
 }
 
 abstract class TrueDiscreteTemplate[V<:DiscreteVariable with TrueSetting](implicit m:Manifest[V]) extends TemplateWithVectorStatistics1[V] {
-  def score(s:Stat) = if (s.s1.valueIsTruth) 1.0 else 0.0
+  def score(s:Stat) = if (s._1.valueIsTruth) 1.0 else 0.0
 }
-class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest]/*(implicit m:Manifest[V])*/ extends TrueDiscreteTemplate[V] /*()(m)*/
+class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends TrueDiscreteTemplate[V]
 
 
 

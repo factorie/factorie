@@ -72,9 +72,13 @@ class Bool(b:Boolean = false) extends BooleanVariable(b) {
 
 
 class BooleanDomain[V<:BooleanVar](implicit m:Manifest[V]) extends CategoricalDomain[V] {
-  this += false
-  this += true
+  super.index(false)
+  super.index(true)
   freeze
+  // The above makes sure that the hashtable in the CategoricalDomain is consistent, 
+  // but the methods below will do most of the real work
+  override def size = 2
+  override def allocSize = 2
   override def apply(index:Int) = index == 1
   override def get(index:Int) = index == 1
   override def index(entry:Boolean) = if (entry) 1 else 0

@@ -505,6 +505,7 @@ object Maths {
   def nextDiscrete (a:Array[Double])(implicit r:Random): Int = {
     var b = 0.0; val s = nextUniform(r); var i = 0
     while (b <= s && i < a.length) { assert (a(i) >= 0.0); b += a(i); i += 1 }
+    assert(i > 1)
     i - 1
   }
 
@@ -512,13 +513,16 @@ object Maths {
   def nextDiscrete (a:IndexedSeq[Double])(implicit r:Random): Int = {
     var b = 0.0; val s = nextUniform(r); var i = 0
     while (b <= s && i < a.length) { b += a(i); i += 1 }
+    assert(i > 1)
     i - 1
   }
 
   /** draw a single sample from (unnormalized) multinomial "a", with normalizing factor "sum". */
   def nextDiscrete (a:Array[Double], sum:Double)(implicit r:Random): Int = {
+    assert(sum > 0.0)
     var b = 0.0; val s = nextUniform(r) * sum; var i = 0
     while (b <= s && i < a.length) { assert(a(i) >= 0.0); b += a(i); i += 1 }
+    assert(i > 0)
     i - 1
   }
 

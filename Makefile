@@ -15,8 +15,15 @@ lda:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.LDADemo
 hmm:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.HMMDemo
+coref:
+	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.CorefMentionsDemo
+seg:
+	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.WordSegmenterDemo
 chainner3:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.ChainNER3 ~/research/data/ie/ner2003/eng.train ~/research/data/ie/ner2003/eng.testa
+
+example:
+	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.$(E)
 
 # Use emacs' default indenter to fix indentation on all *.scala files in src.
 # Not yet working!

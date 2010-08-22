@@ -73,7 +73,9 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
   def detatch: Unit = { mean.removeChild(this)(null); precision.removeChild(this)(null) } // TODO Is this necessary?
   override def apply(index:Int) : Double = {
     val alphaSum = precision.doubleValue
-    (counts(index) + mean(index) * alphaSum) / (countsTotal + alphaSum)
+    val result = (counts(index) + mean(index) * alphaSum) / (countsTotal + alphaSum)
+    assert(result >= 0.0, "alphaSum="+alphaSum+" count="+counts(index)+" mean="+mean(index)+" countsTotal="+countsTotal)
+    result
   }
   /*override def addChild(c:GeneratedVar)(implicit d:DiffList): Unit = {
     // xxx c match { case v:DiscreteVar => increment(v.intValue, 1.0); case _ => throw new Error } // xxx This seems to be the slowness culprit

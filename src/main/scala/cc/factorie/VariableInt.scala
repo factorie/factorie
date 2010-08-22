@@ -6,6 +6,8 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
+
+// TODO Rename this file IntegerVariable.scala
   
 // IntVariable (has integer value) { def intValue: Int }
 // DiscreteVariable extends IntVariable (has a finite number of integer values from 0 ... N) { def domainSize: Int }
@@ -57,8 +59,13 @@ class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntVa
 
 /** A Variable with a immutable Int value.
     @author Andrew McCallum */
-class IntegerObservation(val intValue:Int) extends IntegerVar with ConstantValue {
+class IntegerObservation(theValue:Int) extends IntegerVar with ConstantValue {
+  private var observedInt = theValue
+  def intValue = observedInt
+  protected def initializeIntValue(i:Int): Unit = observedInt = i
   type VariableType <: IntegerObservation
 }
 
 
+
+// TODO Consider not distinguishing between Variable and Observation?

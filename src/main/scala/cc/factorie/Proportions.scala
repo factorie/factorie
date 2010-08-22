@@ -86,7 +86,11 @@ class UniformProportions(val length:Int) extends Proportions {
 class GrowableUniformProportions(val sizeProxy:Iterable[_]) extends Proportions {
   // I used to have GrowableUniformProportions(val sizeProxy:{def size:Int}), but this results in java.lang.reflect.Method.invoke at runtime
   def length = sizeProxy.size
-  @inline final def apply(index:Int) = 1.0 / length
+  @inline final def apply(index:Int) = {
+    val result = 1.0 / length
+    assert(length > 0, "GrowableUniformProportions domain size is zero.")
+    result
+  }
 }
 
 class DenseCountsProportions(len:Int) extends Proportions with Estimation[DenseCountsProportions] {

@@ -92,7 +92,7 @@ object CorefMentionsDemo {
           else Factor(other, mention)
         def unroll2 (mention:Mention) = Nil // symmetric
         def statistics (mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
-      }.init
+      }
 
       // Pairwise repulsion factor between Mentions in different partitions
       model += new Template2[Mention,Mention] with DotStatistics1[AffinityVector] {
@@ -107,7 +107,7 @@ object CorefMentionsDemo {
         def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entity != mention.entity)) yield Factor(mention, other);
         def unroll2 (mention:Mention) = Nil // symmetric
         def statistics(mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
-      }.init
+      }
   
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature!
       model += new Template1[Entity] with DotStatistics1[BooleanVar] {
@@ -121,12 +121,12 @@ object CorefMentionsDemo {
               Stat(Bool(false))
           }
         }
-      }.init
+      }
 
 
       val objective1 = new Model(new TemplateWithStatistics1[Mention] {
         def score(s:Stat) = {
-          val thisMention = s.s1
+          val thisMention = s._1
           mentionList.foldLeft(0.0)((total,m) => 
           if (m.trueEntity == thisMention.trueEntity) {
             if (m.entity == thisMention.entity) total + 1

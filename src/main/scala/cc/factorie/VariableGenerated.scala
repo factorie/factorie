@@ -151,6 +151,6 @@ class GeneratedVarTemplate extends TemplateWithStatistics3[GeneratedVar,MixtureC
       case v:GeneratedVar => List(factorOfGeneratedVar(v))
     })
   }
-  def score(s:Stat) = s.s1.logpr // s.s1.logpr comes from GeneratedVariableTemplate; gateRefs similarly
+  def score(s:Stat) = s._1.logpr // s.s1.logpr comes from GeneratedVariableTemplate; gateRefs similarly
   //def score(s:Stat) = { val mc = s.s1; mc.gateRefs.reduceLeft((sum,ref) => sum + mc.value.logpr(ref.outcome)) }
 }

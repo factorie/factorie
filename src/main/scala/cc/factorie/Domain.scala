@@ -354,8 +354,7 @@ object Domain {
         throw new Error("Cannot alias a Domain that has already been used (unless aliases match).")
     } else _domains.put(class1, getDomainForClass(class2))
   }
-  /** Register d as the domain for variables of type V.  Deprecated.  Use := instead. */
-  @deprecated
+  /** Register d as the domain for variables of type V.  Deprecated?  Use := instead? */
   def +=[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]) = {
     val c = vm.erasure
     if (_domains.isDefinedAt(c) && _domains(c) != d) throw new Error("Cannot add a Domain["+vm+"]="+d+" when one has already been created for ["+c+"]="+_domains(c))
@@ -406,8 +405,10 @@ object Domain {
     // Next check the superclass and interfaces/traits; choose the most specific (subclass of) Domain
     val candidateDomainClasses = new ListBuffer[Class[_]]
     val sc = c.getSuperclass
-    if (sc != null && sc != classOf[java.lang.Object]) 
-      candidateDomainClasses += getDomainClass(sc)
+    if (sc != null && sc != classOf[java.lang.Object]) {
+      val dc = getDomainClass(sc)
+      if (dc != null) candidateDomainClasses += dc // Before Aug 21 did not have this check
+    }
     val interfaces = c.getInterfaces.elements
     while (interfaces.hasNext) {
       val dc = getDomainClass(interfaces.next)
@@ -416,11 +417,12 @@ object Domain {
     if (candidateDomainClasses.size > 0) {
       // Find the most specific subclass of the first domain class found
       var dc = candidateDomainClasses.first
+      assert(dc ne null)
       candidateDomainClasses.foreach(dc2 => if (dc.isAssignableFrom(dc2)) dc = dc2)
       if (debug) println("getDomainClass "+c+" specific="+dc)
       return dc
     } else
-      null
+      null // TODO In what cases will this happen?
   }
 
   def domainInSubclasses(c:Class[_]) : Boolean = 

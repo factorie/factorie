@@ -104,7 +104,7 @@ object IterableSettingsGibbsSamplerHandler extends GibbsSamplerHandler {
 
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(val model:Model = Global.defaultGenerativeModel, collapsedVariables:Iterable[CollapsedParameter] = Nil) extends Sampler[GeneratedVariable] {
+class CollapsedGibbsSampler(collapsedVariables:Iterable[CollapsedParameter], val model:Model = Global.defaultGenerativeModel) extends Sampler[GeneratedVariable] {
   var temperature = 1.0
   val handlers = new ArrayBuffer[CollapsedGibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVariableCollapsedGibbsSamplerHandler, MixtureChoiceCollapsedGibbsSamplerHandler)
@@ -165,15 +165,15 @@ object GeneratedVariableCollapsedGibbsSamplerHandler extends CollapsedGibbsSampl
     factors match {
       // TODO We could try to gain some speed by handling specially the case in which there is only one parent
       case List(factor:GeneratedVarTemplate#Factor) => {
-        for (parent <- factor.n3; if (sampler.collapsed.contains(parent))) parent match {
+        for (parent <- factor._3; if (sampler.collapsed.contains(parent))) parent match {
           // When we are mapping from v to collapsed representation, do instead: sampler.collapsed(p).updateChildStats(v, -1.0)
           case p:CollapsedParameter => p.updateChildStats(v, -1.0)
           // TODO What about collapsed children?
         }
-        factor.n1 match {
+        factor._1 match {
           case gv: GeneratedVariable => gv.sample(d)
         }
-        for (parent <- factor.n3; if (sampler.collapsed.contains(parent))) parent match {
+        for (parent <- factor._3; if (sampler.collapsed.contains(parent))) parent match {
           case p:CollapsedParameter => p.updateChildStats(v, 1.0)
           // TODO What about collapsed children?
         }
@@ -198,6 +198,9 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
         val distribution = new Array[Double](domainSize)
         var sum = 0.0
 
+        // TODO Add a check to make sure that if a variable is a "Collapsed" one, it does appear in sampler.collapsed?
+        // Try to catch those cases in which the user forgets to put a collapsed variable in the arguments to the CollapsedGibbsSampler constructor?
+
         // If parent of v is collapsed, decrement counts.  
         if (sampler.collapsed.contains(parent)) parent match {
           case collapsedParent:DirichletMultinomial => collapsedParent.updateChildStats(v, -1.0)
@@ -209,7 +212,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           val outcome = v.outcomes.first
           // If parents of outcomes are collapsed, decrement counts
           for (chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
-            chosenParent match { case p:CollapsedParameter => { /*println("CollapsedGibbsSampler -1.0 p="+p);*/ p.updateChildStats(outcome, -1.0) } }
+            chosenParent match { case p:CollapsedParameter => { /*println("CollapsedGibbsSampler -1.0 p="+p); */ p.updateChildStats(outcome, -1.0) } }
           forIndex(domainSize)(i => {
             distribution(i) = parent.pr(i) * outcome.prFromMixtureComponent(i)
             sum += distribution(i)
@@ -228,11 +231,15 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           for (outcome <- outcomes; chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
             chosenParent match { case p:CollapsedParameter => p.updateChildStats(outcome, -1.0) }
           for (i <- 0 until domainSize) {
+            println("parent.pr("+i+")="+parent.pr(i))
+            outcomes.foreach(o => println("mc.pr("+i+")="+o.prFromMixtureComponent(i)))
             distribution(i) = parent.pr(i) * outcomes.foldLeft(1.0)((prod,o) => prod * o.prFromMixtureComponent(i))
             sum += distribution(i)
           }
           // Sample
+          println("CollapsedGibbsSampler distribution="+distribution.toList)
           v.set(Maths.nextDiscrete(distribution, sum)(Global.random))
+          println("CollapsedGibbsSampler choice.intValue="+v.intValue)
           // If parents of outcomes are collapsed, decrement counts
           for (outcome <- outcomes; chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
             chosenParent match { case p:CollapsedParameter => p.updateChildStats(outcome, -1.0) }

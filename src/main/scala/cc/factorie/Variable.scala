@@ -98,9 +98,9 @@ class SeqVars[V<:Variable](override val toSeq:Seq[V]) extends Vars[V] {
 }
 class ArrayBufferVars[V<:Variable] extends ArrayBuffer[V] with Vars[V]
 object Vars {
-  def apply[V<:Variable](vs:V*): Vars[V] = new SeqVars(vs) // TODO Should this be a HashSet instead of ArrayBuffer?
-  //def apply[V<:Variable](vs:Seq[V]): Vars[V] = new SeqVars(vs)
+  def from[V<:Variable](vs:V*): Vars[V] = new SeqVars(vs)
   def fromSeq[V<:Variable](vs:Seq[V]) = new SeqVars(vs)
+  def apply[V<:Variable](vs:Seq[V]): Vars[V] = new SeqVars(vs) // TODO Should this be Seq or V*?
 }
 
 

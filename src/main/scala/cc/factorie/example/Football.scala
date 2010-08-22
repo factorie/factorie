@@ -42,7 +42,7 @@ object Football {
       val orgIndex = Domain[Label].index("ORG")
       val perIndex = Domain[Label].index("PER")
       def score(s:Stat) = {
-        val label: Label = s.s1
+        val label: Label = s._1
         val token = label.token
         var result = 0.0
         val perLex = perLexicon.contains(token)

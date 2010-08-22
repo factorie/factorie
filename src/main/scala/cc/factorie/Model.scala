@@ -23,9 +23,19 @@ import cc.factorie.util.{Log}
     @since 0.8
     @see Template
  */
-class Model(templates:Template*) extends ArrayBuffer[Template] {
+class Model(initTemplates:InitializedTemplate*) extends Seq[Template] {
+  private val ts = new ArrayBuffer[Template]
+  def apply(i:Int) = ts.apply(i)
+  def length = ts.length
+  def iterator = ts.iterator
+
   type T = Template
-  this ++= templates
+  this ++= initTemplates
+
+  // Jumping through hoops just to call automatically call .init on templates that are added.
+  // This in turn is just a way to work-around that we can't get Manifests for traits because traits cannot take constructor arguments.
+  def ++=(iTemplates:Iterable[InitializedTemplate]) = ts ++= iTemplates.map(_.template)
+  def +=(iTemplate:InitializedTemplate) = ts += iTemplate.template
 
   def templatesOf[T2<:T](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
     val templateClass = m.erasure

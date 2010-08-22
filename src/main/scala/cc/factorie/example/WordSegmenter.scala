@@ -49,7 +49,8 @@ object WordSegmenterDemo {
         if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
     def unroll2 (label:Label) = Nil // We handle symmetric case above
     def statistics(label1:Label, label2:Label) = Stat(Bool(label1.value==label2.value))
-  }.init
+  }
+  //model += skipTemplate
 
   val objective = new Model(new TrueLabelTemplate[Label])
 

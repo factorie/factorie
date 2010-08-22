@@ -56,9 +56,10 @@ abstract class CategoricalVariable[A] extends DiscreteVariable(0) with Categoric
 /** For variables holding a single, constant indexed value which is of Scala type T. 
     @author Andrew McCallum */
 @DomainInSubclasses
-abstract class CategoricalObservation[A](theValue:A) extends DiscreteObservation(Domain.get[CategoricalVar[A]](getClass).index(theValue)) with CategoricalVar[A] {
+// TODO!!!! This doesn't work because "getClass" here returns scala.Predef!
+abstract class CategoricalObservation[A](theValue:A) extends DiscreteObservation(0) with CategoricalVar[A] {
   type VariableType <: CategoricalObservation[A]
-  //override val intValue = domain.index(theValue)
+  initializeIntValue(domain.index(theValue))
 }
 
 /** When mixed in to a CategoricalVariable or CategoricalObservation, the variable's Domain will count the number of calls to 'index'.  

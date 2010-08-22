@@ -48,7 +48,7 @@ object DepParsing1 {
       val max = token.seq.length - 1
       def hasNext = i < max // && !(i == token.position && i+1 == max)
       def next(difflist:DiffList) = { 
-        i += 1; /*if (i == token.position) i += 1;*/ 
+        i += 1; //if (i == token.position) i += 1;
         val d = newDiffList;
         //println("next seq.length="+seq.length)
         set(seq(i))(d); 
@@ -69,36 +69,36 @@ object DepParsing1 {
   }
   
   val model = new Model(
-    new Template1[Node] with DotStatistics2[Token,Token] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.parent) }.init,
-    new Template1[Node] with DotStatistics1[POS] { def statistics(n:Node) = Stat(n.token.pos) }.init,
-    new Template1[Node] with DotStatistics1[POS] { def statistics(n:Node) = Stat(n.parent.pos) }.init,
-    new Template1[Node] with DotStatistics1[Token] { def statistics(n:Node) = Stat(n.token) }.init,
-    new Template1[Node] with DotStatistics1[Token] { def statistics(n:Node) = Stat(n.parent) }.init,
-    new Template1[Node] with DotStatistics2[POS,POS] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos) }.init,
-    new Template1[Node] with DotStatistics2[POS,Token] with SparseWeights { def statistics(n:Node) = Stat(n.token.pos, n.parent) }.init,
-    new Template1[Node] with DotStatistics2[Token,POS] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.parent.pos) }.init,
-    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = for (b <- n.token.between(n.parent)) yield Stat(n.token.pos, b.pos, n.parent.pos) }.init,
-    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.token.hasPrev) Stat(n.token.prev.pos, n.token.pos, n.parent.pos) else Nil }.init,
-    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos) else Nil }.init,
-    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasPrev) Stat(n.token.pos, n.parent.prev.pos, n.parent.pos) else Nil }.init,
-    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasNext) Stat(n.token.pos, n.parent.pos, n.parent.next.pos) else Nil }.init,
-    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasNext && n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos, n.parent.next.pos) else Nil }.init,
-    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasNext && n.token.hasPrev) Stat(n.token.pos, n.token.prev.pos, n.parent.pos, n.parent.next.pos) else Nil }.init,
-    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasPrev && n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos, n.parent.prev.pos) else Nil }.init,
-    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasPrev && n.token.hasPrev) Stat(n.token.pos, n.token.prev.pos, n.parent.pos, n.parent.prev.pos) else Nil }.init,
-    new Template1[Node] with DotStatistics2[Token,Direction] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.direction) }.init,
-    new Template1[Node] with DotStatistics2[Direction,Distance] { def statistics(n:Node) = Stat(n.direction, n.distance) }.init,
-    new Template1[Node] with DotStatistics1[Direction] { def statistics(n:Node) = Stat(n.direction) }.init,
-    new Template1[Node] with DotStatistics1[Distance] { def statistics(n:Node) = Stat(n.distance) }.init,
-    new Template1[Node] with DotStatistics3[POS,Direction,Distance] { def statistics(n:Node) = Stat(n.token.pos, n.direction, n.distance) }.init,
-    new Template1[Node] with DotStatistics3[POS,POS,Direction] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos, n.direction) }.init,
-    new Template1[Node] with DotStatistics4[POS,POS,Direction,Distance] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos, n.direction, n.distance) }.init
+    new Template1[Node] with DotStatistics2[Token,Token] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.parent) },
+    new Template1[Node] with DotStatistics1[POS] { def statistics(n:Node) = Stat(n.token.pos) },
+    new Template1[Node] with DotStatistics1[POS] { def statistics(n:Node) = Stat(n.parent.pos) },
+    new Template1[Node] with DotStatistics1[Token] { def statistics(n:Node) = Stat(n.token) },
+    new Template1[Node] with DotStatistics1[Token] { def statistics(n:Node) = Stat(n.parent) },
+    new Template1[Node] with DotStatistics2[POS,POS] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos) },
+    new Template1[Node] with DotStatistics2[POS,Token] with SparseWeights { def statistics(n:Node) = Stat(n.token.pos, n.parent) },
+    new Template1[Node] with DotStatistics2[Token,POS] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.parent.pos) },
+    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = for (b <- n.token.between(n.parent)) yield Stat(n.token.pos, b.pos, n.parent.pos) },
+    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.token.hasPrev) Stat(n.token.prev.pos, n.token.pos, n.parent.pos) else Nil },
+    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos) else Nil },
+    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasPrev) Stat(n.token.pos, n.parent.prev.pos, n.parent.pos) else Nil },
+    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasNext) Stat(n.token.pos, n.parent.pos, n.parent.next.pos) else Nil },
+    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasNext && n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos, n.parent.next.pos) else Nil },
+    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasNext && n.token.hasPrev) Stat(n.token.pos, n.token.prev.pos, n.parent.pos, n.parent.next.pos) else Nil },
+    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasPrev && n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos, n.parent.prev.pos) else Nil },
+    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasPrev && n.token.hasPrev) Stat(n.token.pos, n.token.prev.pos, n.parent.pos, n.parent.prev.pos) else Nil },
+    new Template1[Node] with DotStatistics2[Token,Direction] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.direction) },
+    new Template1[Node] with DotStatistics2[Direction,Distance] { def statistics(n:Node) = Stat(n.direction, n.distance) },
+    new Template1[Node] with DotStatistics1[Direction] { def statistics(n:Node) = Stat(n.direction) },
+    new Template1[Node] with DotStatistics1[Distance] { def statistics(n:Node) = Stat(n.distance) },
+    new Template1[Node] with DotStatistics3[POS,Direction,Distance] { def statistics(n:Node) = Stat(n.token.pos, n.direction, n.distance) },
+    new Template1[Node] with DotStatistics3[POS,POS,Direction] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos, n.direction) },
+    new Template1[Node] with DotStatistics4[POS,POS,Direction,Distance] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos, n.direction, n.distance) }
   )
   
   val objective = new Model(
     new TemplateWithStatistics1[Node] {
       def score(s:Stat) = {
-        val node = s.s1
+        val node = s._1
         //println("objective "+node.valueIsTruth)
         if (node.valueIsTruth) 1.0 else 0.0
         //-Math.abs(node.position - node.truePosition)

@@ -11,6 +11,8 @@ package cc.factorie.util;
 trait StringExtras {
   val s: String
 
+  def tokenize(r:scala.util.matching.Regex) = r.findAllIn(s)
+
   /**Implements Levenshtein Distance, with specific operation costs to go from this to s2.  Original version was from scalanlp. */
   def editDistance(s2: String, substCost: Int = 1, deleteCost: Int = 1, insertCost: Int = 1): Int = {
     if (s.length == 0) s2.length

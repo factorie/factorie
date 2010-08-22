@@ -42,19 +42,15 @@ package object factorie {
   implicit def singleStatIterable[S<:Stat](s:S): Iterable[S] = new Iterable[S] { def iterator = Iterator.single(s) }
   //implicit def seq2Vars[V<:Variable](seq:Seq[V]): Vars[V] = new SeqVars(seq) // Causing Scala 2.8.0 compiler to crash
 
-  /** A container for "var-args"-like arbitrary number of Variables neighboring a Factor.
-    @see Template1  */
-  // TODO  Get rid of this and just use Seq?  But is Seq(v1,v2,v3) implemented as List?  Is this efficient?
-  //type Vars[V<:Variable] = scala.collection.immutable.Seq[V] // Or should this be immutable.Set?  Should order matter when de-duplicating Factors?
-
-  /*
-   * TODO I will add this trick when we have Scala 2.8. -akm
+  class InitializedTemplate(val template:Template) {
+    assert(template.isInitialized == true)
+  }
   implicit def template2initialized(t:Template): InitializedTemplate = new InitializedTemplate(t)
-  implicit def template2initialized1[S1<:DiscreteVars](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedVectorTemplate1[S1](t)
-  implicit def template2initialized2[S1<:DiscreteVars,S2<:DiscreteVars](t:VectorStatistics2[S1,S2])(implicit m1:Manifest[S1], m2:Manifest[S2]): InitializedTemplate = new InitializedVectorTemplate2[S1,S2](t)
-  implicit def template2initialized3[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars](t:VectorStatistics3[S1,S2,S3])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]): InitializedTemplate = new InitializedVectorTemplate3[S1,S2,S3](t)
-  implicit def template2initialized4[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars,S4<:DiscreteVars](t:VectorStatistics4[S1,S2,S3,S4])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]): InitializedTemplate = new InitializedVectorTemplate4[S1,S2,S3,S4](t)
-  */
+  implicit def template2initialized1[S1<:DiscreteVars](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized2[S1<:DiscreteVars,S2<:DiscreteVars](t:VectorStatistics2[S1,S2])(implicit m1:Manifest[S1], m2:Manifest[S2]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized3[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars](t:VectorStatistics3[S1,S2,S3])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized4[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars,S4<:DiscreteVars](t:VectorStatistics4[S1,S2,S3,S4])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]): InitializedTemplate = new InitializedTemplate(t.init)
+
 
 
 }
