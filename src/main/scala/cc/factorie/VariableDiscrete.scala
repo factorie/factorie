@@ -37,7 +37,7 @@ trait DiscreteVar extends DiscreteVars with IntegerVar {
 @DomainInSubclasses
 abstract class DiscreteVariable(initialValue:Int = 0) extends IntegerVariable(initialValue) with DiscreteVar with IterableSettings with QDistribution {
   type VariableType <: DiscreteVariable
-  def setRandomly(random:Random = Global.random, d:DiffList = null): Unit = set(random.nextInt(domainSize))(d)
+  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domainSize))(d)
   def settings = new SettingIterator {
     var i = -1
     val max = domainSize - 1
@@ -46,8 +46,8 @@ abstract class DiscreteVariable(initialValue:Int = 0) extends IntegerVariable(in
     def reset = i = -1
     override def variable : DiscreteVariable.this.type = DiscreteVariable.this
   }
-  type QType = MutableProportions
-  def newQ = new DenseProportions(domainSize)
+  type QType = cc.factorie.generative.MutableProportions
+  def newQ = new cc.factorie.generative.DenseProportions(domainSize)
 }
 
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  Used for block-Gibbs-sampling.

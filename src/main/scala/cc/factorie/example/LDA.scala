@@ -11,6 +11,7 @@ import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
+import cc.factorie.generative._
 import cc.factorie.util.Stopwords
 
 object LDADemo {
@@ -33,7 +34,7 @@ object LDADemo {
         val doc = new Document(file.toString)
         doc.theta = new DenseDirichletMultinomial(numTopics, 0.01)
         for (word <- lexer.findAllIn(Source.fromFile(file).mkString).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
-          val z = new Z(doc.theta, Global.random.nextInt(numTopics))
+          val z = new Z(doc.theta, cc.factorie.random.nextInt(numTopics))
           doc += new Word(phis, z, word)
         }
         documents += doc

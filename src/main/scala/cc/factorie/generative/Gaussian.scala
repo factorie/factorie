@@ -5,7 +5,8 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
+package cc.factorie.generative
+import cc.factorie._
 
 // TODO I am now storing the mean and variance as Real variables, so that they can, in turn, be generated from other distributions.
 // Perhaps we need to do this for all other Distributions also?
@@ -23,7 +24,7 @@ class Gaussian(val mean:RealVarParameter, val variance:RealVarParameter = new Re
   }
   def pr: Double = Math.exp(logpr)
   def sampleFrom(mean:RealVar, variance:RealVar)(implicit d:DiffList) = 
-    set(Maths.nextGaussian(mean.doubleValue, variance.doubleValue)(Global.random))
+    set(Maths.nextGaussian(mean.doubleValue, variance.doubleValue)(cc.factorie.random))
   def sample(implicit d:DiffList): Unit = sampleFrom(mean, variance)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
     case Seq(mean:RealVar, variance:RealVar) => sampleFrom(mean, variance)

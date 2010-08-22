@@ -13,7 +13,7 @@ import scala.util.Sorting
 /** New functionality on Traversable instances, available by implicit conversion in the cc.factorie package object in cc/factorie/package.scala. */
 trait TraversableExtras[A] {
   val t: Traversable[A]
-  implicit val defaultRandom = cc.factorie.Global.random
+  implicit val defaultRandom = cc.factorie.random
 
   def sumDoubles(extractor: A => Double): Double = t.foldLeft(0.0)((sum, x:A) => sum + extractor(x))
   def sumInts(extractor: A => Int): Int = t.foldLeft(0)((sum, x:A) => sum + extractor(x))

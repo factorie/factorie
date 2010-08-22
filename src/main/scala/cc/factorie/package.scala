@@ -6,10 +6,28 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc
+import scala.util.Random
 
 package object factorie {
 
+  // TODO Should we have this?  Is there a more Java-standard way to provide this?
+  // TODO If we keep it, find a way to automatically maintain this string value
   def factorieVersionString = "0.9.0.SNAPSHOT"
+
+  var randomSeed = 0
+  implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
+  // TODO Consider renaming this "defaultRandom", 
+  // anticipating the time when all these definitions make go in "package object factorie"?
+  
+  val defaultModel = new Model
+  val defaultObjective = new Model(new InitializedTemplate(new TrueLabelTemplate[CoordinatedLabelVariable[AnyRef]]()))
+
+  // TODO Consider removing this now that we have separate, more specific samplers.
+  // TODO Consider also removing SamplerSuite?
+  val defaultSampler = new SamplerSuite
+  //defaultSampler += new GenericSampler(new GeneratedVariableSampler)
+  //defaultSampler += new GenericSampler(new GibbsSampler[Variable with IterableSettings](defaultModel))
+
 
   def repeat[T](n:Int)(f: =>T) : Iterable[T] = for (i <- 0 until n) yield f
   def repeat(n:Int)(f: =>Unit) : Unit = for (i <- 0 until n) f

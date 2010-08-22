@@ -5,7 +5,8 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
+package cc.factorie.generative
+import cc.factorie._
 
 // TODO Consider creating PostiveReal, and then Gamma extends 
 
@@ -22,7 +23,7 @@ class Gamma(val alpha:RealVarParameter, val beta:RealVarParameter, value:Double 
   }
   // TODO def logpr(x:Double) = 
   def sampleFrom(alpha:RealVar, beta:RealVar)(implicit d:DiffList): Unit = 
-    set(Maths.nextGamma(alpha.doubleValue, beta.doubleValue)(Global.random))
+    set(Maths.nextGamma(alpha.doubleValue, beta.doubleValue)(cc.factorie.random))
   def sample(implicit d:DiffList): Unit = sampleFrom(alpha, beta)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
     case Seq(alpha:RealVar, beta:RealVar) => sampleFrom(alpha, beta)

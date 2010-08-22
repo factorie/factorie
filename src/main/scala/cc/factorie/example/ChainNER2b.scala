@@ -334,7 +334,7 @@ object ChainNER2b {
       learningMargin = 2.0
 
       override def preProcessHook(label:Label) = {
-        if (label.valueIsTruth && !label.token.isCapitalized && Global.random.nextDouble > 0.5) null else label
+        if (label.valueIsTruth && !label.token.isCapitalized && cc.factorie.random.nextDouble > 0.5) null else label
       }
 
       override def postIterationHook(): Boolean = {

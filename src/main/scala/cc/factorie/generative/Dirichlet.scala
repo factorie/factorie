@@ -5,7 +5,8 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
+package cc.factorie.generative
+import cc.factorie._
 
 // Proportions ~ Dirichlet(Proportions, Precision)
 
@@ -46,7 +47,7 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter,
     val c = new Array[Double](length)
     for (child <- children) c(child.intValue) += 1.0
     forIndex(this.length)(i => {
-      p(i) = Maths.nextGamma(alpha(i) + c(i), 1)(Global.random)
+      p(i) = Maths.nextGamma(alpha(i) + c(i), 1)(cc.factorie.random)
       if (p(i) <= 0.0) p(i) = 0.0001
       norm += p(i)
     })

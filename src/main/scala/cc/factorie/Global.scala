@@ -7,23 +7,9 @@
 
 package cc.factorie
 
-import scala.util.Random
 
 object Global {
-  var randomSeed = 0
-  implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
-  // TODO Consider renaming this "defaultRandom", 
-  // anticipating the time when all these definitions make go in "package object factorie"?
-  
-  val defaultModel = new Model
-  val defaultGenerativeModel = new Model(new InitializedTemplate(new GeneratedVarTemplate))
-  val defaultObjective = new Model(new InitializedTemplate(new TrueLabelTemplate[CoordinatedLabelVariable[AnyRef]]()))
 
-  // TODO Consider removing this now that we have separate, more specific samplers.
-  // TODO Consider also removing SamplerSuite?
-  val defaultSampler = new SamplerSuite
-  //defaultSampler += new GenericSampler(new GeneratedVariableSampler)
-  //defaultSampler += new GenericSampler(new GibbsSampler[Variable with IterableSettings](defaultModel))
 
   /*val idVariableMap = new VariableMap {
     override def apply[V<:Variable](in:V): V = in

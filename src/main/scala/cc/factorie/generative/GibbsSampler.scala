@@ -5,7 +5,8 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
+package cc.factorie.generative
+import cc.factorie._
 import scala.reflect.Manifest 
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 
@@ -24,7 +25,7 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 
 /** Simple GibbsSampler.
     @author Andrew McCallum */
-class GibbsSampler(val model:Model = Global.defaultGenerativeModel) extends Sampler[Variable] {
+class GibbsSampler(val model:Model = cc.factorie.generative.defaultGenerativeModel) extends Sampler[Variable] {
   var temperature = 1.0
   val handlers = new ArrayBuffer[GibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVariableGibbsSamplerHandler, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler)
@@ -77,7 +78,7 @@ object MixtureChoiceGibbsSamplerHandler extends GibbsSamplerHandler {
           distribution(i) = mc.proportions.pr(i) * outcomes.foldLeft(1.0)((prod:Double, outcome:MixtureOutcome) => prod * outcome.prFromMixtureComponent(i))
           sum += distribution(i)
         }
-        mc.set(Maths.nextDiscrete(distribution, sum)(Global.random))(d)
+        mc.set(Maths.nextDiscrete(distribution, sum)(cc.factorie.random))(d)
         true
       }
     }
@@ -104,7 +105,7 @@ object IterableSettingsGibbsSamplerHandler extends GibbsSamplerHandler {
 
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(collapsedVariables:Iterable[CollapsedParameter], val model:Model = Global.defaultGenerativeModel) extends Sampler[GeneratedVariable] {
+class CollapsedGibbsSampler(collapsedVariables:Iterable[CollapsedParameter], val model:Model = cc.factorie.generative.defaultGenerativeModel) extends Sampler[GeneratedVariable] {
   var temperature = 1.0
   val handlers = new ArrayBuffer[CollapsedGibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVariableCollapsedGibbsSamplerHandler, MixtureChoiceCollapsedGibbsSamplerHandler)
@@ -221,7 +222,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           })
           // Sample
           //println("MixtureChoiceCollapsedGibbsSamplerHandler distribution = "+(distribution.toList.map(_ / sum)))
-          v.set(Maths.nextDiscrete(distribution, sum)(Global.random))
+          v.set(Maths.nextDiscrete(distribution, sum)(cc.factorie.random))
           //println("MixtureChoiceCollapsedGibbsSamplerHandler "+v+"@"+v.hashCode+" newValue="+v.intValue)
           // If parent of outcome is collapsed, increment counts
           for (chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
@@ -240,7 +241,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           }
           // Sample
           //println("CollapsedGibbsSampler distribution="+distribution.toList)
-          v.set(Maths.nextDiscrete(distribution, sum)(Global.random))
+          v.set(Maths.nextDiscrete(distribution, sum)(cc.factorie.random))
           //println("CollapsedGibbsSampler choice.intValue="+v.intValue)
           // If parents of outcomes are collapsed, decrement counts
           for (outcome <- outcomes; chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))

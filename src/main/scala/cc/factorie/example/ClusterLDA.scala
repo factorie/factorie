@@ -14,6 +14,7 @@ import scala.reflect.Manifest
 import scala.util.matching.Regex
 import java.io.File
 import cc.factorie._
+import cc.factorie.generative._
 import cc.factorie.util.Stopwords
 
 /** Implements "Cluster LDA" from Hanna Wallach's thesis.

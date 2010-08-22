@@ -17,7 +17,7 @@ Algorithm AS 241,
 */
 object Maths {
   
-  implicit val implicitRandom:Random = Global.random
+  implicit val implicitRandom:Random = cc.factorie.random
   
   object probitConstants {
     val a = Array(

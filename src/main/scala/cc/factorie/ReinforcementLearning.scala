@@ -75,7 +75,7 @@
 //  def shouldUpdate : Boolean = true
 //  var tdError : Double = 0.0
 //  def model:Model
-//  abstract override def objective = if (super.objective == null) Global.defaultObjective else super.objective
+//  abstract override def objective = if (super.objective == null) cc.factorie.defaultObjective else super.objective
 //  //
 //  //mixed in
 //  def predictedScore = currentQ

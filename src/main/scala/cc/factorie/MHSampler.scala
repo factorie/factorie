@@ -20,7 +20,7 @@ import cc.factorie.util.{Hooks0,Hooks1,Hooks2}
     @see GibbsSampler
 */
 abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
-  var random = Global.random
+  var random = cc.factorie.random
   
   // This method must be implemented in concrete subclasses
   def propose(context:C)(implicit d:DiffList) : Double
@@ -89,7 +89,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
       //System.out.println("accp: " + (proposal.modelScore/proposal.temperature+proposal.bfRatio))
       if(proposal.modelScore * proposal.objectiveScore<=0 && proposal.objectiveScore!=0)
       proposalsHook(props)
-      if(proposal.acceptanceScore >= Math.log(Global.random.nextDouble()))
+      if(proposal.acceptanceScore >= Math.log(cc.factorie.random.nextDouble()))
   {
     System.out.println("REDO")
     System.out.println("accept: " + proposal.acceptanceScore)

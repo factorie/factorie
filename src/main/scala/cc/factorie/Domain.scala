@@ -80,7 +80,7 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
   override def allocSize = allocSize0
   override def size = size0
   override def size_=(sizeFunction: ()=>Int): Unit = throw new Error("CategoricalDomain.size cannot be set directly; only DiscreteDomains' can.")
-  def randomValue : V#CategoryType = randomValue(Global.random)
+  def randomValue : V#CategoryType = randomValue(cc.factorie.random)
   def randomValue(random:Random): V#CategoryType = get(random.nextInt(size))
   def +=(x:V#CategoryType) : Unit = this.index(x)
   def ++=(xs:Traversable[V#CategoryType]) : Unit = xs.foreach(this.index(_))

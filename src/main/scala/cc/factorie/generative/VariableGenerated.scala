@@ -5,9 +5,10 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
-import scala.collection.mutable.{HashSet,ArrayBuffer}
+package cc.factorie.generative
+import cc.factorie._
 import cc.factorie.la._
+import scala.collection.mutable.{HashSet,ArrayBuffer}
 
 // A collection of abstract Variables (and a generic Template) for generative models (directed Bayesian networks, 
 // as opposed to undirected in which there is not a DAG-shaped generative storyline).

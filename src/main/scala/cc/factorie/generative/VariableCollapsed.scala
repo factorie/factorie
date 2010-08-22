@@ -5,8 +5,8 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
-
+package cc.factorie.generative
+import cc.factorie._
 import scala.reflect.Manifest
 import scala.collection.mutable.HashSet
 //import cc.factorie.util.SeqAsVector
@@ -103,7 +103,7 @@ class DirichletMultinomial[A<:DiscreteVar](val variable:Multinomial[A]) extends 
   variable.samples.foreach(this.increment(_.index, 1.0)) // Initialize our sufficient statistics with the state of our children
   def size = variable.length
   def sampleIndex: Int = {
-    val s = Global.random.nextDouble; sum = 0.0; var i = 0; val size = this.size
+    val s = cc.factorie.random.nextDouble; sum = 0.0; var i = 0; val size = this.size
     while (i < size) {
       sum += pr(i)
       if (sum >= s) return i

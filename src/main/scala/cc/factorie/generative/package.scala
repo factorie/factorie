@@ -6,6 +6,11 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
-import scala.reflect.Manifest
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.IndexedSeqLike
+import cc.factorie._
+
+package object generative {
+
+  val defaultGenerativeModel = new Model(new InitializedTemplate(new GeneratedVarTemplate))
+
+
+}

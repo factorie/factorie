@@ -11,6 +11,7 @@ import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
+import cc.factorie.generative._
 import cc.factorie.util.Stopwords
 
 object HMMDemo {
@@ -31,9 +32,9 @@ object HMMDemo {
     val pi = new DenseDirichletMultinomial(numStates, 1.0)
     for (directory <- directories) {
       for (file <- new File(directory).listFiles; if (file.isFile)) {
-        val sentence = new Sentence(file.toString, new Zi(pi, Global.random.nextInt(numStates)))
+        val sentence = new Sentence(file.toString, new Zi(pi, cc.factorie.random.nextInt(numStates)))
         for (word <- Source.fromFile(file).mkString.tokenize(new Regex("[a-zA-Z]+")).map(_ toLowerCase)) {
-          val z = new Z(transitions, if (sentence.length > 0) sentence.last.choice else sentence.startState, Global.random.nextInt(numStates))
+          val z = new Z(transitions, if (sentence.length > 0) sentence.last.choice else sentence.startState, cc.factorie.random.nextInt(numStates))
           sentence += new Word(emissions, z, word)
         }
         sentences += sentence

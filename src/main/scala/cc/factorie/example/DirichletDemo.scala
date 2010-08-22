@@ -7,6 +7,7 @@
 
 package cc.factorie.example
 import cc.factorie._
+import cc.factorie.generative._
 
 /*
 object DirichletDemo {

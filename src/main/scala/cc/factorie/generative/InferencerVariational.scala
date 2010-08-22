@@ -5,12 +5,12 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
-
+package cc.factorie.generative
+import cc.factorie._
 import scala.collection.mutable.HashMap
 
 
-class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A], model:Model = Global.defaultGenerativeModel) {
+class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A], model:Model = cc.factorie.generative.defaultGenerativeModel) {
   private val _q = new HashMap[Variable,Variable] // 2nd is actually a Distribution[_]
   variables.foreach(v => _q(v) = v.newQ)
   def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
@@ -35,7 +35,7 @@ class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A],
 }
 
 
-class CollapsedVariationalBayes[A<:Variable with QDistribution](collapse:Iterable[CollapsibleParameter], marginalize:Iterable[A], model:Model = Global.defaultGenerativeModel) {
+class CollapsedVariationalBayes[A<:Variable with QDistribution](collapse:Iterable[CollapsibleParameter], marginalize:Iterable[A], model:Model = cc.factorie.generative.defaultGenerativeModel) {
   private val _c = new HashMap[Parameter,Parameter]
   private val _q = new HashMap[Variable,Variable]
   def collapsedMap = _c

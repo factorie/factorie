@@ -5,7 +5,8 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
+package cc.factorie.generative
+import cc.factorie._
 
 /** The Poisson distribution generating integer values with parameter lambda. */
 class Poisson(val mean:RealVarParameter, value:Int = 0)(implicit d:DiffList = null) extends IntegerVariable(value) with GeneratedVariable {
@@ -14,7 +15,7 @@ class Poisson(val mean:RealVarParameter, value:Int = 0)(implicit d:DiffList = nu
   def pr: Double = pr(this.intValue)
   def pr(k:Int): Double = Math.pow(mean.doubleValue, k) * Math.exp(-mean.doubleValue) / Maths.factorial(k)
   def sampleFrom(mean:Double)(implicit d:DiffList): Unit =
-    set(Maths.nextPoisson(mean.doubleValue)(Global.random).toInt)
+    set(Maths.nextPoisson(mean.doubleValue)(cc.factorie.random).toInt)
   def sample(implicit d:DiffList): Unit = sampleFrom(mean.doubleValue)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
     case Seq(mean:RealVar) => sampleFrom(mean.doubleValue)

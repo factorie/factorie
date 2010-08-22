@@ -79,7 +79,7 @@ object ChainNER2 {
           var t2 = t
           while (t2.hasNext) {
             t2 = t2.next
-            if (t2.word == t.word) { /*println("Adding FIRSTMENTION to "+t2.word);*/ t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
+            if (t2.word == t.word) { /*println("Adding FIRSTMENTION to "+t2.word); */ t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
           }
         }
       })
@@ -96,11 +96,11 @@ object ChainNER2 {
 
     // Train
     (trainLabels ++ testLabels).foreach(_.setRandomly())
-    val predictor = new GibbsSampler(model) { temperature = 0.01 }
+    val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.01 }
     val learner = new VariableSettingsSampler[Label](model) with SampleRank with ConfidenceWeightedUpdates {
       temperature = 0.01
       // Speed training by sometimes skipping inference of lowercase training words that are already correct
-      override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && Global.random.nextDouble > 0.5) null else label
+      override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && cc.factorie.random.nextDouble > 0.5) null else label
       // At the end of each iteration, print some diagnostics
       override def postIterationHook(): Boolean = {
         predictor.process(testLabels, 1)

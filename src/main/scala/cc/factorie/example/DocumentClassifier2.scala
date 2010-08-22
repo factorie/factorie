@@ -68,8 +68,8 @@ object DocumentClassifier2 {
       learner.process (trainVariables, 1)
       learner.learningRate *= 0.9
       predictor.process (testVariables, 1)
-      println ("Train accuracy = "+ Global.defaultObjective.aveScore(trainVariables))
-      println ("Test  accuracy = "+ Global.defaultObjective.aveScore(testVariables))
+      println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
+      println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))
     }
 
   }

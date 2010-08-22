@@ -135,7 +135,7 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model) extends Pr
     Because SampleRank requires Proposal objects, we use this intsead of GibbsSampler.
     @see GibbsSampling
     @author Andrew McCallum */
-class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model = Global.defaultModel, objective:Model = null) extends SettingsSampler[V](model, objective) {
+class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 
@@ -162,7 +162,7 @@ trait FactorQueue[C] extends Sampler[C] {
           val qd = sampleFromQueue
           if (qd != null) queueDiff ++= qd
         }
-      } else if (!queue.isEmpty && Global.random.nextDouble < queueProportion) {
+      } else if (!queue.isEmpty && cc.factorie.random.nextDouble < queueProportion) {
         val qd = sampleFromQueue
         if (qd != null) queueDiff ++= qd
       }

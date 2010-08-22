@@ -7,9 +7,10 @@
 
 package cc.factorie.example
 import cc.factorie._
-//import cc.factorie.DenseProportionsMaximumLikelihoodEstimator._
-import cc.factorie.DenseProportions._
-import cc.factorie.DenseCountsProportions._
+import cc.factorie.generative._
+// Next two lines to get the implicit Estimator objects
+import cc.factorie.generative.DenseProportions._
+import cc.factorie.generative.DenseCountsProportions._
 
 object MultinomialDemo {
   val numSides = 6

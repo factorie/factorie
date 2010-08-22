@@ -5,7 +5,8 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
+package cc.factorie.generative
+import cc.factorie._
 
 // Proportions is a Seq[Double] that sums to 1.0
 // Discrete ~ Multinomial(Proportions)
@@ -26,7 +27,7 @@ trait Proportions extends Parameter with DiscreteGenerating with Iterable[Double
     def apply(i:Int) = Proportions.this.apply(i)
     def length = Proportions.this.length
   }
-  def sampleInt = Maths.nextDiscrete(this.asSeq)(Global.random) // TODO Avoid the inefficiency of asSeq
+  def sampleInt = Maths.nextDiscrete(this.asSeq)(cc.factorie.random) // TODO Avoid the inefficiency of asSeq
   def pr(index:Int) = apply(index)
   def logpr(index:Int) = math.log(apply(index))
   def maxPrIndex: Int = { var maxIndex = 0; var i = 1; while (i < length) { if (this(i) > this(maxIndex)) maxIndex =i; i += 1 }; maxIndex }
@@ -162,4 +163,23 @@ object DenseCountsProportions {
       for (child <- p.children) child match { case child:DiscreteVar => p.increment(child.intValue, 1.0)(null) }
     }
   }
+}
+
+
+// The binary special case, for convenience
+
+/** The outcome of a coin flip, with boolean value.  */
+class Flip(coin:Coin, value:Boolean = false) extends BooleanVariable(value) with GeneratedDiscreteVariable {
+  def proportions = coin
+  coin.addChild(this)(null)
+}
+/** A coin, with Multinomial distribution over outcomes, which are Flips. */
+class Coin(p:Double) extends DenseProportions(Seq(1.0-p, p)) {
+  def this() = this(0.5)
+  assert (p >= 0.0 && p <= 1.0)
+  def flip: Flip = { val f = new Flip(this); f.set(this.sampleInt)(null); f }
+  def flip(n:Int) : Seq[Flip] = for (i <- 0 until n) yield flip
+}
+object Coin { 
+  def apply(p:Double) = new Coin(p)
 }

@@ -5,7 +5,8 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
+package cc.factorie.generative
+import cc.factorie._
 import scala.collection.mutable.{HashSet,ArrayBuffer}
 
 trait Parameter extends Variable {
@@ -75,7 +76,7 @@ class IntegerVariableParameter(value:Int) extends IntegerVariable(value) with In
 
 trait Estimation[This<:Parameter] {
   this: This =>
-  def estimate(model:Model = Global.defaultModel)(implicit e:Estimator[This]): Unit = e.estimate(this, model)
+  def estimate(model:Model = cc.factorie.defaultModel)(implicit e:Estimator[This]): Unit = e.estimate(this, model)
 }
 
 trait Estimator[P<:Parameter] {

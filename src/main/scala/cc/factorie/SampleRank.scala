@@ -22,8 +22,8 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
   val amIMetropolis = this.isInstanceOf[MHSampler[Variable]] // TODO Can we find a way to avoid this special case?
   var logLevel = 0
 
-  /** If objective has not yet been set non-null, get it from the Global.defaultObjective. */
-  abstract override def objective = if (super.objective == null) Global.defaultObjective else super.objective
+  /** If objective has not yet been set non-null, get it from the cc.factorie.defaultObjective. */
+  abstract override def objective = if (super.objective == null) cc.factorie.defaultObjective else super.objective
   
   var bestModel1, bestModel2, bestObjective1, bestObjective2, changeProposal : Proposal = null
 

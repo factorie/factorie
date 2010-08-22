@@ -5,8 +5,8 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
-
+package cc.factorie.generative
+import cc.factorie._
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap,IndexedSeq}
 //import cc.factorie.util.SeqAsVector
@@ -49,7 +49,7 @@ class Multinomial[O<:DiscreteVar] extends DiscreteDistribution[O] with Generated
   // TODO Put next method in superclass
   def sampleInt: Int = sampleIndex
   def sampleIndex: Int = {
-    val s = Global.random.nextDouble; var sum = 0.0; var i = 0; val size = this.size
+    val s = cc.factorie.random.nextDouble; var sum = 0.0; var i = 0; val size = this.size
     while (i < size) {
       sum += pr(i)
       if (sum >= s) return i
@@ -275,7 +275,7 @@ class DenseCountsMultinomial[O<:DiscreteVar](val length:Int) extends CountsMulti
 //   }
 //   override def localPr(index:Int): Double = super.pr(index)
 //   override def sampleIndex: Int = { // TODO More efficient because it avoids the normalization in this.pr
-//     val s = Global.random.nextDouble * (countsTotal + actualGenerativeSource.alphaSum); var sum = 0.0; var i = 0; val size = this.size
+//     val s = cc.factorie.random.nextDouble * (countsTotal + actualGenerativeSource.alphaSum); var sum = 0.0; var i = 0; val size = this.size
 //     while (i < size) {
 //       sum += counts(i) + actualGenerativeSource.alpha(i)
 //       if (sum >= s) return i
@@ -370,20 +370,3 @@ class DenseCountsMultinomial[O<:DiscreteVar](val length:Int) extends CountsMulti
 */
 
 
-// The binary special case, for convenience
-
-/** The outcome of a coin flip, with boolean value.  */
-class Flip(coin:Coin, value:Boolean = false) extends BooleanVariable(value) with GeneratedDiscreteVariable {
-  def proportions = coin
-  coin.addChild(this)(null)
-}
-/** A coin, with Multinomial distribution over outcomes, which are Flips. */
-class Coin(p:Double) extends DenseProportions(Seq(1.0-p, p)) {
-  def this() = this(0.5)
-  assert (p >= 0.0 && p <= 1.0)
-  def flip: Flip = { val f = new Flip(this); f.set(this.sampleInt)(null); f }
-  def flip(n:Int) : Seq[Flip] = for (i <- 0 until n) yield flip
-}
-object Coin { 
-  def apply(p:Double) = new Coin(p)
-}
