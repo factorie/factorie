@@ -21,7 +21,10 @@ import scala.util.Sorting
 /** Revert equals/hashCode behavior of Seq[A] to the default Object.
     WARNING: This doesn't actually satisfy commutativity with a Seq[A]. :-( */
 trait SeqEqualsEq[+A] extends scala.collection.Seq[A] {
-  override def equals(that:Any): Boolean = this eq that
+  override def equals(that:Any): Boolean = that match {
+    case that:AnyRef => this eq that
+    case _ => false
+  }
   override def hashCode: Int = java.lang.System.identityHashCode(this)
 }
 
