@@ -26,10 +26,10 @@ object HMMDemo {
     val lexer = new Regex("[a-zA-Z]+")
 
     // Read data and create generative variables
-    val transitions = FiniteMixture(numStates)(new DenseDirichletMultinomial(numStates, 1.0))
-    val emissions = FiniteMixture(numStates)(new GrowableDenseDirichletMultinomial(0.01) with TypedProportions[Word])
-    val sentences = new ArrayBuffer[Sentence];
-    val pi = new DenseDirichletMultinomial(numStates, 1.0)
+    val transitions = FiniteMixture(numStates)(new DenseDirichlet(numStates, 1.0))
+    val emissions = FiniteMixture(numStates)(new GrowableDenseDirichlet(0.01) with TypedProportions[Word])
+    val pi = new DenseDirichlet(numStates, 1.0)
+    val sentences = new ArrayBuffer[Sentence]
     for (directory <- directories) {
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         val sentence = new Sentence(file.toString, new Zi(pi, cc.factorie.random.nextInt(numStates)))
@@ -44,7 +44,7 @@ object HMMDemo {
 
     // Fit model
     val zs = sentences.flatMap(sentence => sentence.map(word => word.choice)) ++ sentences.map(_.startState)
-    val sampler = new CollapsedGibbsSampler(transitions ++ emissions)
+    val sampler = new CollapsedGibbsSampler(transitions ++ emissions ++ List(pi))
     //val sampler = new CollapsedVariationalBayes(zs)
     val startTime = System.currentTimeMillis
     for (i <- 1 to 50) {

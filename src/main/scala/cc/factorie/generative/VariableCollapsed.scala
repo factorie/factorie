@@ -7,14 +7,6 @@
 
 package cc.factorie.generative
 import cc.factorie._
-import scala.reflect.Manifest
-import scala.collection.mutable.HashSet
-//import cc.factorie.util.SeqAsVector
-//import scalala.Scalala._
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-
 
 /** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.
     @author Andrew McCallum */
@@ -22,6 +14,8 @@ trait CollapsibleVariable extends GeneratedVariable {
   type CollapsedType <: CollapsedVariable
   def newCollapsed: CollapsedType
 }
+
+// TODO Is there a need for CollapsibleVariable; perhaps just CollapsibleParameter is enough?
 
 /** A Parameter that can be marginalized out (collapsed).
     @see DirichletMultinomial

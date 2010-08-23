@@ -69,8 +69,9 @@ trait MixtureOutcome extends GeneratedVar {
   def choice: MixtureChoiceVariable
   // Just those parents whose selection is controled by 'choice'
   def chosenParents: Seq[Parameter]
-  def mixtureSize: Int
   def prFromMixtureComponent(index:Int): Double
+  def parentsFromMixture(index:Int): Seq[Parameter]
+  def mixtureSize: Int
 }
 
 trait MixtureComponents[+P<:Parameter] extends scala.collection.immutable.IndexedSeq[P] with SeqEqualsEq[P] with Parameter {
@@ -86,6 +87,7 @@ class FiniteMixture[+P<:Parameter](components:Seq[P]) extends MixtureComponents[
   _components.foreach(_.addChild(this)(null))
   def parents = _components
   def pr = 1.0 // TODO something else?
+  def prFrom(parents:Seq[Parameter]) = 1.0 // TODO something else?
   def length = _components.length
   def apply(index:Int) = _components(index)
   def childrenOf[P2>:P](p:P2): Iterable[GeneratedVar] = {
@@ -106,6 +108,7 @@ trait DiscreteMixtureVar extends GeneratedDiscreteVariable with MixtureOutcome {
   def components: FiniteMixture[Proportions]
   def proportions = components(choice.intValue)
   def prFromMixtureComponent(index:Int): Double = components(index).pr(intValue)
+  def parentsFromMixture(index:Int) = List(components(index))
   def chosenParents = List(components(choice.intValue))
   override def parents = super.parents match { case list:List[Parameter] => components :: list; case seq:Seq[Parameter] => components +: seq }
   def mixtureSize = components.length

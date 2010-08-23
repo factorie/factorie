@@ -44,8 +44,10 @@ trait GeneratedVar extends Variable {
   def parentRefs: Seq[AbstractParameterRef] = Nil
   /** The probability of the current value given its parents. */
   def pr:Double
+  def prFrom(parents:Seq[Parameter]): Double
   /** The log-probability of the current value given its parents. */
   def logpr:Double = math.log(pr)
+  def logprFrom(parents:Seq[Parameter]): Double = math.log(prFrom(parents))
   /** Returns true if the value of this parameter is a deterministic (non-stochastic) function of its parents. */
   def isDeterministic = false
 }
@@ -56,6 +58,7 @@ trait GeneratedVariable extends GeneratedVar {
   def sample(implicit d:DiffList): Unit // TODO Consider renaming sampleFromParents to make clear that it doesn't account for children or others
   /** Sample a new value for this variable given only the specified parents, 
       ignoring its current registered parents. */
+  // TODO I think this should be Seq[Parameter] below, not Seq[Variable]
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit
 }
 
@@ -79,61 +82,6 @@ trait ProportionGenerating {
 
 
 
-
-/*class Binomial(p:RealVarParameter, trials:Int) extends OrdinalVariable with GeneratedVariable {
-  this := 0
-}*/
-trait GeneratedDiscreteVar extends GeneratedVar with DiscreteVar {
-  def proportions: Proportions
-  def parents: Seq[Parameter] = List(proportions)
-  def pr: Double = proportions(this.intValue)
-  // override def setByIndex(i:Int)(implicit d:DiffList): Unit = proportions match { case m:DenseDirichletMultinomial => { m.increment(i, -1.0); super.setByIndex(i); m.increment(i, ,1.0) }; case _ => super.setByIndex(i) } // TODO This would be too slow, right?
-  //def ~(proportions:Proportions): this.type = { proportions_=(proportions)(null); this }
-}
-trait GeneratedDiscreteVariable extends DiscreteVariable with GeneratedVariable with GeneratedDiscreteVar {
-  def sample(implicit d:DiffList): Unit = set(proportions.sampleInt)
-  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList) = parents match {
-    case Seq(p:Proportions) => set(p.sampleInt)
-  }
-  def maximize(implicit d:DiffList): Unit = set(proportions.maxPrIndex)
-}
-// A Discrete ~ Multinomial(Proportions), in which we can change the parent
-class Discrete(p:Proportions, value:Int = 0) extends DiscreteVariable(value) with GeneratedDiscreteVariable {
-  //assert(p.length <= domainSize)
-  private val proportionsRef = new ParameterRef(p, this)
-  def proportions = proportionsRef.value
-  def proportions_=(p2:Proportions)(implicit d:DiffList = null) = { assert(p2.length <= domainSize); proportionsRef.set(p2) }
-  override def parentRefs = List(proportionsRef)
-}
-trait GeneratedCategoricalVar[A] extends GeneratedDiscreteVar with CategoricalVar[A]
-trait GeneratedCategoricalVariable[A] extends CategoricalVariable[A] with GeneratedDiscreteVariable with GeneratedCategoricalVar[A]
-class Categorical[A](p:Proportions, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] {
-  //assert(p.length <= domainSize)
-  private val proportionsRef = new ParameterRef(p, this)
-  def proportions = proportionsRef.value
-  def proportions_=(p2:Proportions)(implicit d:DiffList) = { assert(p2.length <= domainSize); proportionsRef.set(p2) }
-  override def parentRefs = List(proportionsRef)
-}
-class ObservedDiscrete(p:Proportions, value:Int) extends DiscreteObservation(value) with GeneratedVar {
-  // TODO Rename "DiscreteConstant"?
-  //assert(p.length <= domainSize)
-  private val proportionsRef = new ParameterRef(p, this)
-  def proportions = proportionsRef.value
-  def proportions_=(p2:Proportions)(implicit d:DiffList) = { assert(p2.length <= domainSize); proportionsRef.set(p2) }
-  def parents = List(proportionsRef.value)
-  override def parentRefs = List(proportionsRef)
-  def pr: Double = proportions(this.intValue)
-}
-class ObservedDiscretes(val proportions:Proportions, values:Traversable[Int] = Nil) extends DiscreteVars with GeneratedVar with ConstantValue {
-  assert(proportions.length <= domainSize)
-  proportions.addChild(this)(null)
-  def parents = List(proportions)
-  private val _values = values.toArray
-  override def logpr: Double = { var result = 0.0; forIndex(_values.size)(index => result += math.log(proportions(index))); result }
-  def pr: Double = math.exp(logpr)
-  def vector: Vector = throw new Error
-  def indices: Collection[Int] = throw new Error
-}
 
 
 // Templates

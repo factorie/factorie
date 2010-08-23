@@ -12,41 +12,54 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(collapsedVariables:Iterable[CollapsedParameter], val model:Model = cc.factorie.generative.defaultGenerativeModel) extends Sampler[GeneratedVariable] {
-  var temperature = 1.0
+class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:Model = cc.factorie.generative.defaultGenerativeModel) extends Sampler[GeneratedVariable] {
+  var temperature = 1.0 // TODO Currently ignored?
   val handlers = new ArrayBuffer[CollapsedGibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVariableCollapsedGibbsSamplerHandler, MixtureChoiceCollapsedGibbsSamplerHandler)
   handlers ++= defaultHandlers
 
-  /*val _collapsed = new HashMap[Variable,Variable] // with VariableMap
-  def isCollapsed(v:Variable) = _collapsed.contains(v)
-  def collapsed[V<:CollapsibleParameter](v:V): V#CollapsedType = _collapsed.getOrElse(v, null).asInstanceOf[V#CollapsedType]
-  def collapse[V<:CollapsibleParameter](v:V): V#CollapsedType = {
-    val cv = v.newCollapsed
-    assert(! _collapsed.contains(v))
-    _collapsed(v) = cv
-    v.children.foreach(child => cv.addChild(child)(null)) // Notice that the children will not have 'cv' as a parent, though.
-    cv
-  }
-  def logpr(v:GeneratedVariable): Double = 0.0 // TODO Implement pr given collapsing
-  */
-  val collapsed = new HashSet[AnyRef]
-  //println("CollapsedGibbsSampler.init |C|="+collapsedVariables.size)
-  collapsed ++= collapsedVariables
-  //collapsibleVars.foreach(collapse(_))
-  // Initialization of the collapsed variables
-  for (cv <- collapsedVariables) {
-    cv.clearChildStats
-    for (child <- cv.children) child match {
+  private val _c = new HashMap[Parameter,Parameter]
+  def collapsedMap = _c
+  def collapsed[V<:CollapsibleParameter](v:V) = _c(v).asInstanceOf[V#CollapsedType]
+  def collapsed(p:Parameter) = _c(p).asInstanceOf[CollapsedParameter] // generic version of the above
+  def collapsedOrNull(p:Parameter): Parameter = _c.getOrElse(p, null)
+  def collapsedOrSelf(p:Parameter): Parameter = _c.getOrElse(p, p)
+  def isCollapsed(v:Parameter) = _c.contains(v)
+  // TODO Consider renaming collapseOrRegisterParameter ?
+  def collapseParameter[V<:CollapsibleParameter](p:V): Unit = {
+    println("CollapsedGibbsSampler collapseParameter "+p)
+    // If already collapsed, just clearChildStats, otherwise create a newCollapsed
+    val cp = p match { case cp:CollapsedParameter => { cp.clearChildStats; cp }; case _ => p.newCollapsed }
+    _c(p) = cp
+    //cp.clearChildStats // Is this necessary?  I don't think so because it is newly created.  If not newly created, we do it above in assignment of cp
+    for (child <- p.children) child match {
       case mcs:MixtureComponents[_] => { 
-        mcs.childrenOf(cv).foreach(cv.updateChildStats(_, 1.0))
+        mcs.childrenOf(p).foreach(cp.updateChildStats(_, 1.0))
+        println("CollapsedGibbsSampler init MixtureComponents child "+child+" count="+mcs.childrenOf(p).size)
+      }
+      case v:GeneratedVar => cp.updateChildStats(v, 1.0)
+    }
+  }
+  // To make sure that we don't account more than once for the sufficient statistics of a child-of-collapsed-parameter.
+  //private val _children = new HashSet[Variable] // TODO Consider using this, but this table could get very big :-(
+  def addChild(child:GeneratedVariable): Unit = child match {
+    case mcs:MixtureComponents[_] => {
+      for (parent <- mcs.parents; if (isCollapsed(parent))) {
+        mcs.childrenOf(parent).foreach(collapsed(parent).updateChildStats(_, 1.0))
         //println("CollapsedGibbsSampler init MixtureComponents child "+child+" count="+mcs.childrenOf(cv).size)
       }
-      case v:GeneratedVar => cv.updateChildStats(v, 1.0)
     }
-    //println("CollapsedGibbsSampler init cv: "+cv)
-    // TODO This should look at model factors to make sure that we aren't improperly ignoring some other factors/variables
-  }
+    case mo:MixtureOutcome => {
+      for (parent <- mo.chosenParents; if (isCollapsed(parent))) collapsed(parent).updateChildStats(mo, 1.0)
+    }
+    case gv:GeneratedVar => {
+      for (parent <- gv.parents; if (isCollapsed(parent))) collapsed(parent).updateChildStats(gv, 1.0)
+    }
+  }   
+
+
+  // Initialize collapsed parameters specified on command line
+  collapse.foreach(collapseParameter(_))
 
   def process1(v:GeneratedVariable): DiffList = {
     assert(!v.isInstanceOf[CollapsedVariable]) // We should never be sampling a CollapsedVariable
@@ -73,15 +86,15 @@ object GeneratedVariableCollapsedGibbsSamplerHandler extends CollapsedGibbsSampl
     factors match {
       // TODO We could try to gain some speed by handling specially the case in which there is only one parent
       case List(factor:GeneratedVarTemplate#Factor) => {
-        for (parent <- factor._3; if (sampler.collapsed.contains(parent))) parent match {
+        for (parent <- factor._3) sampler.collapsedOrNull(parent) match {
           // When we are mapping from v to collapsed representation, do instead: sampler.collapsed(p).updateChildStats(v, -1.0)
           case p:CollapsedParameter => p.updateChildStats(v, -1.0)
           // TODO What about collapsed children?
         }
-        factor._1 match {
+        factor._1 match { // Necessary because it might be a GeneratedVar, not a GeneratedVariable, in which case we should fail
           case gv: GeneratedVariable => gv.sample(d)
         }
-        for (parent <- factor._3; if (sampler.collapsed.contains(parent))) parent match {
+        for (parent <- factor._3) sampler.collapsedOrNull(parent) match {
           case p:CollapsedParameter => p.updateChildStats(v, 1.0)
           // TODO What about collapsed children?
         }
@@ -112,8 +125,9 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
         // Try to catch those cases in which the user forgets to put a collapsed variable in the arguments to the CollapsedGibbsSampler constructor?
 
         // If parent of v is collapsed, decrement counts.  
-        if (sampler.collapsed.contains(parent)) parent match {
+        sampler.collapsedOrNull(parent) match {
           case collapsedParent:DirichletMultinomial => collapsedParent.updateChildStats(v, -1.0)
+          case null => {}
           case _ => new Error // TODO Change this to just do nothing?
         }
 
@@ -121,10 +135,14 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           // MixtureChoice v controls only one MixtureOutcome
           val outcome = v.outcomes.first
           // If parents of outcomes are collapsed, decrement counts
-          for (chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
-            chosenParent match { case p:CollapsedParameter => { /*println("CollapsedGibbsSampler -1.0 p="+p); */ p.updateChildStats(outcome, -1.0) } }
+          for (chosenParent <- outcome.chosenParents) sampler.collapsedOrNull(chosenParent) match {
+            case p:CollapsedParameter => { /*println("CollapsedGibbsSampler -1.0 p="+p); */ p.updateChildStats(outcome, -1.0) }
+            case _ => {}
+          }
+          val cParent: Proportions = sampler.collapsedOrSelf(parent).asInstanceOf[Proportions]
           forIndex(domainSize)(i => {
-            distribution(i) = parent.pr(i) * outcome.prFromMixtureComponent(i)
+            val outcomeParents = outcome.parentsFromMixture(i).map(sampler.collapsedOrSelf(_))
+            distribution(i) = cParent.pr(i) * outcome.prFrom(outcomeParents) // prFromMixtureComponent(i)
             sum += distribution(i)
           })
           // Sample
@@ -132,9 +150,13 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           v.set(Maths.nextDiscrete(distribution, sum)(cc.factorie.random))
           //println("MixtureChoiceCollapsedGibbsSamplerHandler "+v+"@"+v.hashCode+" newValue="+v.intValue)
           // If parent of outcome is collapsed, increment counts
-          for (chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
-            chosenParent match { case p:CollapsedParameter => p.updateChildStats(outcome, 1.0) }
+          for (chosenParent <- outcome.chosenParents) sampler.collapsedOrNull(chosenParent) match {
+            case p:CollapsedParameter => p.updateChildStats(outcome, 1.0)
+            case _ => {}
+          }
         } else {
+          throw new Error
+          /*
           // MixtureChoice v controls multiple MixtureOutcomes
           val outcomes = v.outcomes
           // If parents of outcomes are collapsed, decrement counts
@@ -153,11 +175,13 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           // If parents of outcomes are collapsed, decrement counts
           for (outcome <- outcomes; chosenParent <- outcome.chosenParents; if (sampler.collapsed.contains(chosenParent)))
             chosenParent match { case p:CollapsedParameter => p.updateChildStats(outcome, 1.0) }
+          */
         }
 
         // If parent of v is collapsed, increment counts
-        if (sampler.collapsed.contains(parent)) parent match {
+        sampler.collapsedOrNull(parent) match {
           case collapsedParent:DirichletMultinomial => collapsedParent.updateChildStats(v, 1.0)
+          case null => {}
           case _ => new Error // TODO Change this to just do nothing?
         }
 

@@ -11,6 +11,8 @@ import cc.factorie._
 // Proportions is a Seq[Double] that sums to 1.0
 // Discrete ~ Multinomial(Proportions)
 
+// TODO Make a GeneratedProportions trait, which implements sampleFrom and prFrom, etc.
+
 // I would prefer "with Seq[Double]", but Seq implements equals/hashCode to depend on the contents,
 // and no Variable should do that since we need to know about unique variables; it also makes things
 // slow for large-length Proportions.
@@ -94,7 +96,7 @@ class GrowableUniformProportions(val sizeProxy:Iterable[_]) extends Proportions 
   }
 }
 
-class DenseCountsProportions(len:Int) extends Proportions with Estimation[DenseCountsProportions] {
+class DenseCountsProportions(len:Int) extends MutableProportions with Estimation[DenseCountsProportions] {
   protected var _counts = new Array[Double](len)
   protected var _countsTotal = 0.0
   def length = _counts.size
@@ -107,11 +109,15 @@ class DenseCountsProportions(len:Int) extends Proportions with Estimation[DenseC
     assert(_countsTotal >= 0, "countsTotal="+_countsTotal+" after incr="+incr)
     if (d ne null) d += DenseCountsProportionsDiff(index, incr)
   }
+  def increment(incrs:Seq[Double])(implicit d:DiffList): Unit = {
+    forIndex(incrs.length)(i => increment(i, incrs(i)))
+  }
+  def set(p:Seq[Double])(implicit d:DiffList): Unit = { zero(); increment(p) }
   def apply(index:Int): Double = {
     if (_countsTotal == 0) 1.0 / length
     else _counts(index) / _countsTotal
   }
-  def zero: Unit = { java.util.Arrays.fill(_counts, 0.0); _countsTotal = 0.0 }
+  def zero(): Unit = { java.util.Arrays.fill(_counts, 0.0); _countsTotal = 0.0 }
   //class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
   //override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i))}).filter(_.pr > 0.0)
   case class DenseCountsProportionsDiff(index:Int, incr:Double) extends Diff {

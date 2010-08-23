@@ -16,10 +16,14 @@ class Gamma(val alpha:RealVarParameter, val beta:RealVarParameter, value:Double 
   alpha.addChild(this)(null)
   beta.addChild(this)(null)
   def parents = List(alpha, beta)
-  def pr = {
+  def pr(alpha:Double, beta:Double) = {
     val x = doubleValue
     assert (x > 0)
-    Math.pow(beta.doubleValue, alpha.doubleValue) / Maths.gamma(alpha.doubleValue) * Math.pow(x, alpha.doubleValue - 1) * Math.exp(- beta.doubleValue * x)
+    Math.pow(beta, alpha) / Maths.gamma(alpha) * Math.pow(x, alpha - 1) * Math.exp(- beta * x)
+  }
+  def pr = pr(alpha.doubleValue, beta.doubleValue)
+  def prFrom(parents:Seq[Parameter]) = parents match {
+    case Seq(alpha:RealVar, beta:RealVar) => pr(alpha.doubleValue, beta.doubleValue)
   }
   // TODO def logpr(x:Double) = 
   def sampleFrom(alpha:RealVar, beta:RealVar)(implicit d:DiffList): Unit = 

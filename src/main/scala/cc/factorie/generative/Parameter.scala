@@ -115,6 +115,7 @@ abstract class RealOpConstant(val real:RealVarParameter) extends RealFunction wi
   real.addChild(this)(null) // But now might not garbage collect this when we want to
   def parents = List(real)
   def pr = 1.0 // Deterministic value given parent
+  def prFrom(parents:Seq[Parameter]) = 1.0
 }
 class RealPlusConstant(override val real:RealVarParameter, val constant:Double) extends RealOpConstant(real) {
   def doubleValue = real.doubleValue + constant

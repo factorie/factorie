@@ -17,12 +17,16 @@ class Gaussian(val mean:RealVarParameter, val variance:RealVarParameter = new Re
   mean.addChild(this)(null)
   variance.addChild(this)(null)
   def parents = List(mean, variance)
-  override def logpr: Double = {
-    val x = this.doubleValue
-    val diff = x - mean.doubleValue
-    return - diff * diff / (2 * variance.doubleValue) - 0.5 * Math.log(2 * Math.Pi * variance.doubleValue)
+  def logprFrom(mean:Double, variance:Double): Double = {
+    val diff = this.doubleValue - mean
+    return - diff * diff / (2 * variance) - 0.5 * Math.log(2 * Math.Pi * variance)
+  }
+  override def logpr: Double = logprFrom(mean.doubleValue, variance.doubleValue)
+  def logprFrom(parents:Seq[Variable]): Unit = parents match {
+    case Seq(mean:RealVar, variance:RealVar) => logprFrom(mean.doubleValue, variance.doubleValue)
   }
   def pr: Double = Math.exp(logpr)
+  def prFrom(parents:Seq[Parameter]): Double = logprFrom(parents)
   def sampleFrom(mean:RealVar, variance:RealVar)(implicit d:DiffList) = 
     set(Maths.nextGaussian(mean.doubleValue, variance.doubleValue)(cc.factorie.random))
   def sample(implicit d:DiffList): Unit = sampleFrom(mean, variance)
