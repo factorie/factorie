@@ -345,7 +345,7 @@ object Maths {
   }
 
   /** Returns the Jensen-Shannon divergence. */
-  def jensenShannonDivergence(p1:Seq[Double], p2:Array[Double]) = {
+  def jensenShannonDivergence(p1:Seq[Double], p2:Seq[Double]) = {
     assert(p1.length == p2.length);
     val average = new Array[Double](p1.length);
     for (i <- 0 until p1.length) average(i) += (p1(i) + p2(i)) / 2.0
@@ -519,7 +519,7 @@ object Maths {
 
   /** draw a single sample from (unnormalized) multinomial "a", with normalizing factor "sum". */
   def nextDiscrete (a:Array[Double], sum:Double)(implicit r:Random): Int = {
-    assert(sum > 0.0)
+    assert(sum > 0.0, "sum = "+sum)
     var b = 0.0; val s = nextUniform(r) * sum; var i = 0
     while (b <= s && i < a.length) { assert(a(i) >= 0.0); b += a(i); i += 1 }
     assert(i > 0)

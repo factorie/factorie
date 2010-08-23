@@ -13,6 +13,7 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 
 /** A GibbsSampler that can also collapse some Parameters. */
 class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:Model = cc.factorie.generative.defaultGenerativeModel) extends Sampler[GeneratedVariable] {
+  var debug = false
   var temperature = 1.0 // TODO Currently ignored?
   val handlers = new ArrayBuffer[CollapsedGibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVariableCollapsedGibbsSamplerHandler, MixtureChoiceCollapsedGibbsSamplerHandler)
@@ -27,7 +28,7 @@ class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:M
   def isCollapsed(v:Parameter) = _c.contains(v)
   // TODO Consider renaming collapseOrRegisterParameter ?
   def collapseParameter[V<:CollapsibleParameter](p:V): Unit = {
-    println("CollapsedGibbsSampler collapseParameter "+p)
+    //println("CollapsedGibbsSampler collapseParameter "+p)
     // If already collapsed, just clearChildStats, otherwise create a newCollapsed
     val cp = p match { case cp:CollapsedParameter => { cp.clearChildStats; cp }; case _ => p.newCollapsed }
     _c(p) = cp
@@ -35,7 +36,7 @@ class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:M
     for (child <- p.children) child match {
       case mcs:MixtureComponents[_] => { 
         mcs.childrenOf(p).foreach(cp.updateChildStats(_, 1.0))
-        println("CollapsedGibbsSampler init MixtureComponents child "+child+" count="+mcs.childrenOf(p).size)
+        //println("CollapsedGibbsSampler init MixtureComponents child "+child+" count="+mcs.childrenOf(p).size)
       }
       case v:GeneratedVar => cp.updateChildStats(v, 1.0)
     }
@@ -127,6 +128,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
         // If parent of v is collapsed, decrement counts.  
         sampler.collapsedOrNull(parent) match {
           case collapsedParent:DirichletMultinomial => collapsedParent.updateChildStats(v, -1.0)
+          // TODO DirichletMultinomial can be changed to just CollapsedParameter
           case null => {}
           case _ => new Error // TODO Change this to just do nothing?
         }
@@ -141,13 +143,18 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           }
           val cParent: Proportions = sampler.collapsedOrSelf(parent).asInstanceOf[Proportions]
           forIndex(domainSize)(i => {
-            val outcomeParents = outcome.parentsFromMixture(i).map(sampler.collapsedOrSelf(_))
-            distribution(i) = cParent.pr(i) * outcome.prFrom(outcomeParents) // prFromMixtureComponent(i)
+            distribution(i) = cParent.pr(i) * outcome.prFromMixtureComponent(sampler.collapsedMap, i)
+            //distribution(i) = cParent.pr(i) * outcome.prFrom(outcome.parentsFromMixtureComponent(i).map(sampler.collapsedOrSelf(_)))
+            //distribution(i) = cParent.pr(i) * outcome.prFromMixtureComponent(i)
             sum += distribution(i)
           })
           // Sample
-          //println("MixtureChoiceCollapsedGibbsSamplerHandler distribution = "+(distribution.toList.map(_ / sum)))
-          v.set(Maths.nextDiscrete(distribution, sum)(cc.factorie.random))
+          if (sampler.debug) println("MixtureChoiceCollapsedGibbsSamplerHandler outcome="+outcome+" sum="+sum+" distribution="+(distribution.mkString(",")))
+          if (sum == 0)
+            // This can happen for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
+            v.set(cc.factorie.random.nextInt(domainSize))
+          else
+            v.set(Maths.nextDiscrete(distribution, sum)(cc.factorie.random))
           //println("MixtureChoiceCollapsedGibbsSamplerHandler "+v+"@"+v.hashCode+" newValue="+v.intValue)
           // If parent of outcome is collapsed, increment counts
           for (chosenParent <- outcome.chosenParents) sampler.collapsedOrNull(chosenParent) match {

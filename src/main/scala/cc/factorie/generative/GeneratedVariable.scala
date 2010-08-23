@@ -48,6 +48,7 @@ trait GeneratedVar extends Variable {
   /** The log-probability of the current value given its parents. */
   def logpr:Double = math.log(pr)
   def logprFrom(parents:Seq[Parameter]): Double = math.log(prFrom(parents))
+  def prWith(map:scala.collection.Map[Parameter,Parameter]): Double = prFrom(parents.map(p => map.getOrElse(p, p)))
   /** Returns true if the value of this parameter is a deterministic (non-stochastic) function of its parents. */
   def isDeterministic = false
 }

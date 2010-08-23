@@ -62,7 +62,7 @@ object Dirichlet {
   }
 }
 
-class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter, p:Seq[Double] = Nil) extends DenseProportions(p) with MutableDirichlet {
+class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter, p:Seq[Double] = Nil) extends DenseProportions(if (p.length == 0) initialMean.asSeq else p) with MutableDirichlet {
   def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealConstantParameter(alpha * size), Nil)
   protected val meanRef: ParameterRef[Proportions,Dirichlet] = new ParameterRef(initialMean, this)
   protected val precisionRef = new ParameterRef(initialPrecision, this)

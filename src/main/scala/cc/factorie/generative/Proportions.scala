@@ -16,15 +16,15 @@ import cc.factorie._
 // I would prefer "with Seq[Double]", but Seq implements equals/hashCode to depend on the contents,
 // and no Variable should do that since we need to know about unique variables; it also makes things
 // slow for large-length Proportions.
-trait Proportions extends Parameter with DiscreteGenerating with Iterable[Double] {
-  def apply(index:Int): Double
+trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqualsEq[Double] {
+  /*def apply(index:Int): Double
   def length: Int
   override def size = length
   def iterator = new Iterator[Double] {
     var i = -1
     def hasNext = i + 1 < length
     def next: Double = { i = i+1; apply(i) }
-  }
+  }*/
   def asSeq: IndexedSeq[Double] = new IndexedSeq[Double] {
     def apply(i:Int) = Proportions.this.apply(i)
     def length = Proportions.this.length
@@ -37,6 +37,8 @@ trait Proportions extends Parameter with DiscreteGenerating with Iterable[Double
 
   class DiscretePr(val index:Int, val pr:Double)
   def top(n:Int): Seq[DiscretePr] = this.asSeq.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
+  def klDivergence(p:Proportions): Double = Maths.klDivergence(this.asSeq, p.asSeq)
+  def jsDivergence(p:Proportions): Double = Maths.jensenShannonDivergence(this.asSeq, p.asSeq)
 }
 
 // TODO try to fold this automatically into a CategoricalProportions?
@@ -64,7 +66,7 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions with Estimation
   if (p != Nil) this := p else setUniform(null)
   @inline final def apply(index:Int) = _p(index)
   def set(p:Seq[Double])(implicit d:DiffList): Unit = {
-    assert(p.size == _p.size)
+    assert(p.size == _p.size, "size mismatch: new="+p.size+", orig="+_p.size)
     val newP = p.toArray
     if (d ne null) d += ProportionsDiff(_p, newP)
     _p = newP

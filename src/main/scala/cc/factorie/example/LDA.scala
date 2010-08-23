@@ -55,7 +55,8 @@ object LDADemo {
       print("."); Console.flush
       if (i % 5 == 0) {
         println ("Iteration "+i)
-        phis.foreach(t => println("Topic "+phis.indexOf(t)+"  "+t.top(10).map(_.value))); println
+        phis.foreach(t => println("Topic "+phis.indexOf(t)+"  "+sampler.collapsed(t).top(10).map(dp => Domain[Word].get(dp.index))))
+        println
       }
     } 
     //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})

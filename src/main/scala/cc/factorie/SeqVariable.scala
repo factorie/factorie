@@ -28,6 +28,8 @@ trait SeqEqualsEq[+A] extends scala.collection.Seq[A] {
   override def hashCode: Int = java.lang.System.identityHashCode(this)
 }
 
+trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A]
+
 /** A variable containing a mutable sequence of other variables.  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
     @author Andrew McCallum */
