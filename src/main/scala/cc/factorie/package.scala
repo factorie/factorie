@@ -20,7 +20,7 @@ package object factorie {
   // anticipating the time when all these definitions make go in "package object factorie"?
   
   val defaultModel = new Model
-  val defaultObjective = new Model(new InitializedTemplate(new TrueLabelTemplate[CoordinatedLabelVariable[AnyRef]]()))
+  val defaultObjective = new Model(new InitializedTemplate(new LabelTemplate[CoordinatedLabelVariable[AnyRef]]()))
 
   // TODO Consider removing this now that we have separate, more specific samplers.
   // TODO Consider also removing SamplerSuite?
@@ -28,6 +28,9 @@ package object factorie {
   //defaultSampler += new GenericSampler(new GeneratedVariableSampler)
   //defaultSampler += new GenericSampler(new GibbsSampler[Variable with IterableSettings](defaultModel))
 
+  type Logging = cc.factorie.util.Logging
+  type FastLogging = cc.factorie.util.FastLogging
+  type GlobalLogging = cc.factorie.util.GlobalLogging
 
   def repeat[T](n:Int)(f: =>T) : Iterable[T] = for (i <- 0 until n) yield f
   def repeat(n:Int)(f: =>Unit) : Unit = for (i <- 0 until n) f

@@ -27,7 +27,7 @@ trait IntegerVars extends Variable {
 /** A Variable with one Int value.  
     @author Andrew McCallum */
 trait IntegerVar extends IntegerVars with NumericValue {
-  this: Variable =>
+  //this: Variable =>
   type VariableType <: IntegerVar
   def intValue: Int
   final def doubleValue: Double = intValue.toDouble

@@ -70,5 +70,5 @@ object FeatureVectorClassification {
      new LabelInstanceTemplate[L,I]
    )
 
- def newObjective[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L]) = new TrueLabelTemplate[L]()(lm)
+ def newObjective[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L]) = new LabelTemplate[L]()(lm)
 }

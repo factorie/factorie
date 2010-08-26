@@ -24,7 +24,7 @@ trait Sampler[C] {
   /** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
   final def process(context:C): DiffList = {
     val c = preProcessHook(context)
-    if (c == null && !processingWithoutContext) return null // TODO should we return newDiffList here instead?
+    // TODO Why was this line here? -akm 26 Aug 2010:  if (c == null && !processingWithoutContext) return null // TODO should we return newDiffList here instead?
     val d = process1(c)
     processCount += 1
     postProcessHook(c, d)
@@ -47,7 +47,7 @@ trait Sampler[C] {
     postIterationHooks
     if (!postIterationHook) return 
   }
-  def process(contexts:Iterable[C], numIterations:Int): Unit = for (i <- 0 to numIterations) processN(contexts)
+  def process(contexts:Iterable[C], numIterations:Int = 1): Unit = for (i <- 0 to numIterations) processN(contexts)
   private var processingWithoutContext = false
   def process(count:Int): Unit = {
     processingWithoutContext = true // examined in process()
@@ -91,12 +91,13 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
     val proposal = props.size match {
       case 0 => throw new Error("No proposals created.")
       case 1 => props.first 
-      case _ => props.sampleExpProportionally((p:Proposal) => p.acceptanceScore)
+      case _ => pickProposal(props)
     }
     proposal.diff.redo
     proposalHook(proposal)
     proposal.diff
   }
+  def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.sampleExpProportionally((p:Proposal) => p.acceptanceScore)
   val proposalsHooks = new Hooks1[Seq[Proposal]] // Allows non-overriders to add hooks
   def proposalsHook(proposals:Seq[Proposal]): Unit = proposalsHooks(proposals)
   val proposalHooks = new Hooks1[Proposal]
@@ -112,8 +113,8 @@ trait SettingsSampler0 {
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(C), 
     scores each, builds a distribution from the scores, and samples from it.
     @author Andrew McCallum */
-abstract class SettingsSampler[C](theModel:Model, theObjective:Model) extends ProposalSampler[C] with SettingsSampler0 {
-  def this(m:Model) = this(m, null)
+abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) extends ProposalSampler[C] with SettingsSampler0 {
+  //def this(m:Model) = this(m, null)
   def model = theModel
   def objective = theObjective 
   /** Abstract method must be implemented in sub-classes.  
@@ -128,6 +129,11 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model) extends Pr
   } 
 }
 
+/** Instead of randomly sampling according to the distribution, always pick the setting with the maximum acceptanceScore. */
+abstract class SettingsMaximizer[C](theModel:Model, theObjective:Model = null) extends SettingsSampler[C](theModel, theObjective) {
+  override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.maxByDouble(_.acceptanceScore)
+}
+
 /** Tries each one of the settings of the given variable, 
     scores each, builds a distribution from the scores, and samples from it.
     This is exactly Gibbs sampling over a finite number of possible values of the variable.
@@ -136,6 +142,10 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model) extends Pr
     @see GibbsSampling
     @author Andrew McCallum */
 class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[V](model, objective) {
+  def settings(v:V): SettingIterator = v.settings
+}
+
+class VariableSettingsMaximizer[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsMaximizer[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 

@@ -1,9 +1,14 @@
 Coding:
+Finish belief propagation message-passing 
+Re-consider type arguments in Sampler and descendants
+Get basic optimize package working
+Implement BFGS
+
+Low Priority Coding:
 Implement Forany2 in logic1
 Fix IntTerm in logic1
 Support inference over relations in er1
 Make an example for er2 and logic2
-Consider preliminary message-passing architecture
 Create simple infrastructure for non-relational generative Bayes nets
 
 Testing:

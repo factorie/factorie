@@ -15,7 +15,6 @@ import scala.util.Sorting
 //import scalala.tensor.Vector
 //import scalala.tensor.dense.DenseVector
 //import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.util.{Log}
 
 // Variables for dealing with spans of sequences
 

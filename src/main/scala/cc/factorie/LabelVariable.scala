@@ -21,13 +21,11 @@ import scala.reflect.Manifest
 /** A variable of finite enumerated values that has a true "labeled" value, separate from its current value. 
     @author Andrew McCallum */
 // TODO We could make version of this for IntVar: TrueIntVar
-trait TrueCategoricalVar[A] extends TrueSetting {
-  this: CategoricalVariable[A] =>
+trait DiscreteVariableWithTrueSetting extends DiscreteVariable with TrueSetting {
+  this: DiscreteVariable =>
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
   def trueIntValue: Int
   def trueIntValue_=(newValue:Int): Unit
-  def trueValue: VariableType#VariableType#CategoryType = if (trueIntValue >= 0) domain.get(trueIntValue) else null.asInstanceOf[VariableType#VariableType#CategoryType]
-  def trueValue_=(x:A) = if (x == null) trueIntValue = -1 else trueIntValue = domain.index(x)
   def setToTruth(implicit d:DiffList): Unit = set(trueIntValue)
   def valueIsTruth: Boolean = trueIntValue == intValue
   def isUnlabeled = trueIntValue < 0
@@ -35,10 +33,16 @@ trait TrueCategoricalVar[A] extends TrueSetting {
   def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
 }
 
-abstract class TrueDiscreteTemplate[V<:DiscreteVariable with TrueSetting](implicit m:Manifest[V]) extends TemplateWithVectorStatistics1[V] {
+trait CategoricalVariableWithTrueSetting[A] extends DiscreteVariableWithTrueSetting {
+  this: CategoricalVariable[A] =>
+  def trueValue_=(x:A) = if (x == null) trueIntValue = -1 else trueIntValue = domain.index(x)
+  def trueValue: VariableType#VariableType#CategoryType = if (trueIntValue >= 0) domain.get(trueIntValue) else null.asInstanceOf[VariableType#VariableType#CategoryType]
+}
+
+abstract class DiscreteVariableWithTrueSettingTemplate[V<:DiscreteVariable with TrueSetting](implicit m:Manifest[V]) extends TemplateWithVectorStatistics1[V] {
   def score(s:Stat) = if (s._1.valueIsTruth) 1.0 else 0.0
 }
-class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends TrueDiscreteTemplate[V]
+class LabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends DiscreteVariableWithTrueSettingTemplate[V]
 
 
 
@@ -49,7 +53,7 @@ class TrueLabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends TrueDis
     @see LabelVariable
 */
 @DomainInSubclasses
-abstract class CoordinatedLabelVariable[A](trueval:A) extends CategoricalVariable[A](trueval) with TrueCategoricalVar[A] {
+abstract class CoordinatedLabelVariable[A](trueval:A) extends CategoricalVariable[A](trueval) with CategoricalVariableWithTrueSetting[A] {
   type VariableType <: CoordinatedLabelVariable[A]
   var trueIntValue = domain.index(trueval)
 }

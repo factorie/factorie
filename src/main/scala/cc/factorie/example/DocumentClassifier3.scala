@@ -14,8 +14,10 @@ import java.io.File
 import cc.factorie._
 
 /** A raw document classifier without using any of the facilities of cc.factorie.application.DocumentClassification,
- and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */
-object DocumentClassifier2 {
+    and without using the entity-relationship language of cc.factorie.er.  
+    Furthermore, use conditional maximum likelihood training (and parameter updating with the optimize package)
+    By contrast, see example/DocumentClassifier2. */
+object DocumentClassifier3 {
   
   class Document(file:File) extends BinaryVectorVariable[String] {
     var label = new Label(file.getParentFile.getName, this)
@@ -57,20 +59,14 @@ object DocumentClassifier2 {
     var testVariables = testSet.map(_ label)
     (trainVariables ++ testVariables).foreach(_.setRandomly())
 
-    println(model)
-    println(model.factors(trainVariables.first))
-
     // Train and test
-    val learner = new VariableSettingsSampler[Label](model) with SampleRank with GradientAscentUpdates
-    val predictor = new VariableSettingsSampler[Label](model)
-    learner.learningRate = 1.0
-    for (i <- 0 until 10) {
-      learner.process (trainVariables, 1)
-      learner.learningRate *= 0.9
-      predictor.process (testVariables, 1)
-      println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
-      println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))
-    }
+    val trainer = new LogLinearMaximumLikelihood(model)
+    trainer.process(trainVariables)
+    val predictor = new VariableSettingsMaximizer[Label](model)
+    predictor.process(trainVariables)
+    predictor.process(testVariables)
+    println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
+    println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))
 
   }
 }

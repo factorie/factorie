@@ -16,7 +16,6 @@ import scala.util.Sorting
 //import scalala.tensor.dense.DenseVector
 //import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 //import cc.factorie.la._
-import cc.factorie.util.{Log}
 
 /** A Model in FACTORIE consists of a collection of factor Templates and methods that operate on the collection.
     @author Andrew McCallum
@@ -57,7 +56,7 @@ class Model(initTemplates:InitializedTemplate*) extends Seq[Template] {
   def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
   def factorsOf[T2<:T](cls:Class[T2])(d:DiffList): Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOfClass[T2](cls).flatMap(template => template.factors(d))
   def factorsOf[T2<:T](vs:Iterable[Variable])(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
-  def factorsOf[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
+  def factorsOf[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
   /** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
   def factors(v:Variable) : List[Factor] = this.flatMap(template => template.factors(v)).toList
   def factors(vs:Iterable[Variable]) : Seq[Factor] = this.flatMap(template => template.factors(vs))

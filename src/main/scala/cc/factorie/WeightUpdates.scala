@@ -6,8 +6,6 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie
-//import scalala.Scalala._
-//import scalala.tensor.Vector
 import cc.factorie.la._
 
 /** For parameter estimation methods that use a gradient to update weight parameters. 
@@ -22,5 +20,3 @@ trait WeightUpdates {
   /** Adds a gradient (calculated by the recipient) to the accumulator.  Abstract method to be provided elsewhere. */
   def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit
 }
-
-

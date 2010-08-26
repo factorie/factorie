@@ -30,8 +30,8 @@ object ChainNER3 {
     new TemplateWithDotStatistics1[Label], 
     // Transition factors between two successive labels
     new TemplateWithDotStatistics2[Label, Label] {
-      def unroll1(label: Label) = if (label.hasPrev) Factor(label.token.prev.label, label) else Nil
-      def unroll2(label: Label) = if (label.hasNext) Factor(label, label.token.next.label) else Nil
+      def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
+      def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
     },
     // Factor between label and observed token
     new TemplateWithDotStatistics2[Label, Token] {
@@ -41,7 +41,7 @@ object ChainNER3 {
   )
   
   // The training objective
-  val objective = new Model(new TrueLabelTemplate[Label])
+  val objective = new Model(new LabelTemplate[Label])
   
 
 

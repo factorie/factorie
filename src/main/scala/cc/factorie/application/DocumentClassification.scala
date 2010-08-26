@@ -67,7 +67,7 @@ object DocumentClassification {
    )
  }
 
- def newObjective[L<:Label[D,L],D<:Document[L,D]](implicit lm:Manifest[L]) = new TrueLabelTemplate[L]()(lm)
+ def newObjective[L<:Label[D,L],D<:Document[L,D]](implicit lm:Manifest[L]) = new LabelTemplate[L]()(lm)
  //def newObjective[L<:Label[_,L]](implicit lm:Manifest[L]) = new TrueLabelTemplate[L]()(lm)
 
 }

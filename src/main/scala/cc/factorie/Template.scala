@@ -17,7 +17,6 @@ import scala.util.Sorting
 //import scalala.tensor.sparse.{SparseHashVector, SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import cc.factorie.la._
 import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
-import cc.factorie.util.{Log}
 
 // Factor Templates, which create factors in a factor graph on-the-fly as necessary.
 // A factor template specifies

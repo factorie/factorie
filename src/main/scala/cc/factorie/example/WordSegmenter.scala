@@ -52,7 +52,7 @@ object WordSegmenterDemo {
   }
   //model += skipTemplate
 
-  val objective = new Model(new TrueLabelTemplate[Label])
+  val objective = new Model(new LabelTemplate[Label])
 
 
 

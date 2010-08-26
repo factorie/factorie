@@ -7,6 +7,8 @@
 
 package cc.factorie.la
 
+/** A vector, for holding a sequence of Doubles and performing various linear algebra operations.
+    @author Andrew McCallum */
 trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   def domainSize: Int
   def activeDomain: Iterable[Int]
@@ -18,6 +20,8 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   def *(scalar:Double) = new VectorTimesScalar(this, scalar)
 }
 
+/** A lazy product of a Vector and a scalar.
+    @author Andrew McCallum */
 class VectorTimesScalar(val vector:Vector, val scalar:Double) extends Vector {
   def length = vector.length
   def domainSize: Int = vector.domainSize
@@ -31,6 +35,8 @@ class VectorTimesScalar(val vector:Vector, val scalar:Double) extends Vector {
   def apply(index:Int) = vector.apply(index) * scalar
 }
 
+/** A Vector that has all zeros, except one position containing a 1.0.
+    @author Andrew McCallum */
 class SingletonBinaryVector(val length:Int, val singleIndex:Int) extends Vector {
   def domainSize = 1
   def activeDomain: Iterable[Int] = Seq(singleIndex)
@@ -39,6 +45,8 @@ class SingletonBinaryVector(val length:Int, val singleIndex:Int) extends Vector 
   def activeElements = Iterator.single((singleIndex, 1.0))
 }
 
+/** A Vector that has all zeros, except one position containing some arbitrary Double 'value'.
+    @author Andrew McCallum */
 class SingletonVector(val length:Int, val singleIndex:Int, val value:Double) extends Vector {
   var default = 0.0
   def domainSize = 1
@@ -48,6 +56,8 @@ class SingletonVector(val length:Int, val singleIndex:Int, val value:Double) ext
   def activeElements = Iterator.single((singleIndex, value))
 }
 
+/** A Vector that may contain mostly zeros, with a few 1.0's, represented compactly in memory.
+    @author Andrew McCallum */
 class SparseBinaryVector(val length:Int, indices:Array[Int]) extends Vector {
   private val ind = new Array[Int](indices.size)
   Array.copy(indices, 0, ind, 0, ind.size)
@@ -89,6 +99,8 @@ class SparseBinaryVector(val length:Int, indices:Array[Int]) extends Vector {
   }
 }
 
+/** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory.
+    @author Andrew McCallum */
 class SparseVector(size:Int) extends SparseHashVector(size) {
   //private var used = 0
   //private var capacity = 8
@@ -97,6 +109,9 @@ class SparseVector(size:Int) extends SparseHashVector(size) {
   //private def ensureCapacity(c:Int): Unit = {}
 }
 
+/** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory,
+    implemented as a HashMap from Int indices to Double values.
+    @author Andrew McCallum */
 class SparseHashVector(val length:Int) extends Vector {
   var default = 0.0
   private val h = new scala.collection.mutable.HashMap[Int,Double] { override def default(index:Int) = SparseHashVector.this.default }
@@ -130,7 +145,8 @@ class SparseHashVector(val length:Int) extends Vector {
   }
 }
 
-// TODO Consider making this inherit from collection.mutable.IndexedSeq
+/** A Vector that may contain arbitrary Double values, represented internally as an Array[Double].
+    @author Andrew McCallum */
 class DenseVector(val length:Int) extends Vector {
   private val a = new Array[Double](length)
   def domainSize = a.size
@@ -159,6 +175,8 @@ class DenseVector(val length:Int) extends Vector {
   }
 }
 
+/** Provides a convenient constructor for DenseVector objects.
+    @author Andrew McCallum */
 object DenseVector {
   def apply(size:Int)(default:Double) = { 
     val result = new DenseVector(size)
@@ -166,3 +184,16 @@ object DenseVector {
     result
   }
 }
+
+/*
+class ConcatenatedVector(val vectors:Seq[Vector]) extends Vector {
+  val domainSizes = vectors.map(_.domainSize)
+  val domainSize = vectors.reduceLeft(_+_.domainSize)
+  def activeDomain = Range(0, domainSize)
+  def dot(v:Vector): Double = throw new Error("Not yet implemented.")
+  def activeElements: Iterator[(Int,Double)] = throw new Error("Not yet implemented.")
+  def update(index:Int, value:Double): Unit = {
+    val maxLowerIndex = domainsSizes.find(_)
+  }
+}
+*/
