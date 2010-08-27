@@ -26,7 +26,7 @@ class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Opt
   def optimize(numIterations:Int = Math.MAX_INT): Boolean = {
     var value = optimizable.optimizableValue
     var gradient = optimizable.getOptimizableGradient()
-    for (iteration <- 0 to numIterations) {
+    for (iteration <- 0 until numIterations) {
       // Ensure step size not to large
       val sum = gradient.twoNorm
       if (sum > gradientNormMax) gradient *= (gradientNormMax / sum)
