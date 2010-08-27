@@ -8,6 +8,7 @@
 package cc.factorie.optimize
 
 import cc.factorie._
+import la.ArrayLA
 import scala.collection.mutable.IndexedSeq
 import cc.factorie.la.ArrayLA.Implicits._
 
@@ -34,10 +35,20 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
   val EPS = 3.0e-12
   val stpmax = 100.0
 
+  def smallAbsDiff(x: Array[Double], y: Array[Double]): Boolean = {
+    require(x.length == y.length)
+    forIndex(x.length)(i => {
+      if (Math.abs(x(i) - y(i)) > absTolx) return false
+    })
+    return true
+  }
+
   def optimize(line: Array[Double], initialStep: Double): Double = {
-    //return 0.0
-    var gradient = optimizable.getOptimizableGradient()
-    var params = optimizable.getOptimizableParameters()
+    var params: Array[Double] = optimizable.getOptimizableParameters()
+    var oldParams = new Array[Double](params.length)
+    ArrayLA.set(oldParams, params)
+    var gradient: Array[Double] = optimizable.getOptimizableGradient()
+
     var f = Math.NaN_DOUBLE
     var f2 = optimizable.optimizableValue
     var fold = f2
@@ -63,10 +74,13 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
     for (iteration <- 0 until maxIterations) {
       assert(alam != oldAlam)
       params.incr(line, alam - oldAlam) // Move parameters in direction of line
-      optimizable.setOptimizableParameters(params)
       // Check for convergence
-      val maxdiff = line.infinityNorm * Math.abs(alam - oldAlam)
-      if (alam < alamin || maxdiff < absTolx) return 0.0 // Convergence on change in params
+      if (alam < alamin || smallAbsDiff(oldParams, params)) {
+        optimizable.setOptimizableParameters(oldParams)
+        return 0.0 // Convergence on change in params
+      }
+
+      optimizable.setOptimizableParameters(params)
       oldAlam = alam
       f = optimizable.optimizableValue
       // Check for sufficient function increase (Wolf condition)
@@ -76,7 +90,10 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
       } else if (f.isInfinity || f2.isInfinity) {
         // value is infinite; we have jumped into unstable territory.  Scale down jump
         tmplam =.2 * alam
-        if (alam < alamin) return 0.0 // Exiting backtrack: jump to small; using previous parameters
+        if (alam < alamin) {
+          optimizable.setOptimizableParameters(oldParams)
+          return 0.0 // Exiting backtrack: jump to small; using previous parameters
+        }
       } else {
         // backtrack
         if (alam == 1.0) tmplam = -slope / (2.0 * (f - fold - slope)) // first time through
