@@ -18,7 +18,7 @@ trait LineOptimizer {
 }
 
 /** Maximize the Optimizable object by changing parameters only in the direction specified by 'line',
-    as specified in Numerical Recipes in C: p.385. "lnsrch". 
+    as specified in Numerical Recipes in C: p.385. "lnsrch".
     It is a simple backtracking line search. No attempt at accurately finding the true minimum is
     made. The goal is only to ensure that BackTrackLineSearch will
     return a position of higher value.
@@ -57,6 +57,7 @@ class BackTrackLineOptimizer(val optimizable:OptimizableByValueAndGradient, val 
     for (iteration <- 0 until maxIterations) {
       assert (alam != oldAlam)
       params.incr(line, alam-oldAlam) // Move parameters in direction of line
+      optimizable.setOptimizableParameters(params)
       // Check for convergence
       val maxdiff = line.infinityNorm * (alam-oldAlam)
       if (alam < alamin || maxdiff < absTolx) return 0.0 // Convergence on change in params
@@ -66,7 +67,7 @@ class BackTrackLineOptimizer(val optimizable:OptimizableByValueAndGradient, val 
       if (f >= fold+ALF*alam*slope) {
         if (f < fold) throw new Error("optimizableValue did not increase: old="+fold+" new="+f)
         return alam
-      } else if (f == Math.POS_INF_DOUBLE || f2 == Math.POS_INF_DOUBLE) {
+      } else if (f.isPosInfinity || f2.isPosInfinity) {
         // value is infinite; we have jumped into unstable territory.  Scale down jump
         tmplam = .2 * alam
         if (alam < alamin) return 0.0 // Exiting backtrack: jump to small; using previous parameters
