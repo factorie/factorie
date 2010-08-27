@@ -156,7 +156,7 @@ class DenseVector(val length:Int) extends Vector {
   def set(value:Double): Unit = java.util.Arrays.fill(a, value)
   def activeElements = new Iterator[(Int,Double)] {
     var i = -1
-    def hasNext = i < length - 1
+    def hasNext = i < DenseVector.this.length - 1
     def next = { i += 1; (i, a(i)) }
   }
   def dot(v:Vector): Double = v match {
