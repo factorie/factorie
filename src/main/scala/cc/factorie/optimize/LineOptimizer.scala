@@ -27,7 +27,7 @@ made. The goal is only to ensure that BackTrackLineSearch will
 return a position of higher value.
 @author Andrew McCallum
  */
-class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val maxIterations: Int = 100) extends LineOptimizer {
+class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val maxIterations: Int = 100) extends LineOptimizer with FastLogging {
   var gradientNormMax = 100.0
   var relTolx = 1e-7
   var absTolx = 1e-4
@@ -77,6 +77,8 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
       // Check for convergence
       if (alam < alamin || smallAbsDiff(oldParams, params)) {
         optimizable.setOptimizableParameters(oldParams)
+        f = optimizable.optimizableValue
+        logger.warn("EXITING BACKTRACK: Jump too small (alamin=" + alamin + "). Exiting and using xold. Value=" + f);
         return 0.0 // Convergence on change in params
       }
 
@@ -92,6 +94,8 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
         tmplam =.2 * alam
         if (alam < alamin) {
           optimizable.setOptimizableParameters(oldParams)
+          f = optimizable.optimizableValue
+          logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value=" + f);
           return 0.0 // Exiting backtrack: jump to small; using previous parameters
         }
       } else {

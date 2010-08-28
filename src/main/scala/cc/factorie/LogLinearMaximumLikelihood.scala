@@ -80,7 +80,6 @@ class LogLinearMaximumLikelihood(model: Model) {
         }
         // constraints.keys.foreach(t => expectations(t) += constraints(t))
         oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
-        println("objective=" + oValue)
       }
 
       def optimizableValue: Double = {

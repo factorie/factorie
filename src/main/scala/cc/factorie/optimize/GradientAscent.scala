@@ -6,12 +6,13 @@
    see the file `LICENSE.txt' included with this distribution. */
 
 package cc.factorie.optimize
+
 import cc.factorie._
 import scala.collection.mutable.IndexedSeq
 import cc.factorie.la.ArrayLA.Implicits._
 
-/** Maximizes an Optimizable object by successive linear searches in gradient directions.
-    @author Andrew McCallum */
+/**Maximizes an Optimizable object by successive linear searches in gradient directions.
+@author Andrew McCallum */
 class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Optimizer {
   var isConverged = false
   var maxStep = 1.0
@@ -23,7 +24,7 @@ class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Opt
 
   val lineMaximizer = new BackTrackLineOptimizer(optimizable)
 
-  def optimize(numIterations:Int = Math.MAX_INT): Boolean = {
+  def optimize(numIterations: Int = Math.MAX_INT): Boolean = {
     var value = optimizable.optimizableValue
     var gradient = optimizable.getOptimizableGradient()
     for (iteration <- 0 until numIterations) {
@@ -32,7 +33,8 @@ class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Opt
       if (sum > gradientNormMax) gradient *= (gradientNormMax / sum)
       step = lineMaximizer.optimize(gradient, step)
       val newValue = optimizable.optimizableValue
-      if (2.0*Math.abs(newValue-value) < tolerance * (Math.abs(newValue)+Math.abs(value)+eps)) {
+      println("objective=" + newValue)
+      if (2.0 * Math.abs(newValue - value) < tolerance * (Math.abs(newValue) + Math.abs(value) + eps)) {
         isConverged = true
         return true
       }
