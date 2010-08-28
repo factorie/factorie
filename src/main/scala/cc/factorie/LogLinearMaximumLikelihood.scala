@@ -63,10 +63,16 @@ class LogLinearMaximumLikelihood(model: Model) {
             v.set(i)(null)
             // compute score of variable with value 'i'
             distribution(i) = model.score(v)
+          })
+
+          Maths.expNormalize(distribution)
+
+          forIndex(distribution.length)(i => {
+            v.set(i)(null)
             // put negative expectations into 'expectations' StatMap
             model.factorsOf[TemplatesToUpdate](v).foreach(f => expectations(f.template) += f.statistic.vector * -distribution(i))
           })
-          Maths.expNormalize(distribution)
+
           oValue += Math.log(distribution(v.trueIntValue))
         })
         val invVariance = -1.0 / gaussianPriorVariance
@@ -89,12 +95,15 @@ class LogLinearMaximumLikelihood(model: Model) {
 
       def getOptimizableGradient(a: Array[Double] = null): Array[Double] = {
         if (oValue.isNaN) setOptimizableValueAndGradient
-        if (a == null) oGradient
+        if (a == null) {
+          var b = new Array[Double](numOptimizableParameters);
+          Array.copy(oGradient, 0, b, 0, oGradient.length); b  
+        }
         else {Array.copy(oGradient, 0, a, 0, oGradient.length); a}
       }
     }
 
-    val optimizer = new ConjugateGradient(optimizable)
+    val optimizer = new GradientAscent(optimizable)
     optimizer.optimize(numIterations)
   }
 }
