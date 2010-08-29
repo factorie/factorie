@@ -403,7 +403,7 @@ object SpanNER1 {
           var t2 = t
           while (t2.hasNext) {
             t2 = t2.next
-            if (t2.word == t.word) { /*println("Adding FIRSTMENTION to "+t2.word);*/ t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
+            if (t2.word == t.word) { /*println("Adding FIRSTMENTION to "+t2.word); */ t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
           }
         }
       })

@@ -88,6 +88,7 @@ trait ProportionGenerating {
 // Templates
 class GeneratedVarTemplate extends TemplateWithStatistics3[GeneratedVar,MixtureChoiceVariable,Vars[Parameter]] {
   protected def factorOfGeneratedVar(v:GeneratedVar) = v match {
+    // TODO Consider not bothering to fill in slots 2 and 3, just to save time and because it isn't necessary
     case v:MixtureOutcome => Factor(v, v.choice, Vars.fromSeq(v.parents))
     case _ => Factor(v, null, Vars.fromSeq(v.parents))
   }
@@ -101,6 +102,5 @@ class GeneratedVarTemplate extends TemplateWithStatistics3[GeneratedVar,MixtureC
       case v:GeneratedVar => List(factorOfGeneratedVar(v))
     })
   }
-  def score(s:Stat) = s._1.logpr // s.s1.logpr comes from GeneratedVariableTemplate; gateRefs similarly
-  //def score(s:Stat) = { val mc = s.s1; mc.gateRefs.reduceLeft((sum,ref) => sum + mc.value.logpr(ref.outcome)) }
+  def score(s:Stat) = s._1.logpr // the log-probability of this GeneratedVar given its parents
 }

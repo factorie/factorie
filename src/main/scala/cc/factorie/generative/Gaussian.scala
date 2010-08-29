@@ -11,12 +11,10 @@ import cc.factorie._
 // TODO I am now storing the mean and variance as Real variables, so that they can, in turn, be generated from other distributions.
 // Perhaps we need to do this for all other Distributions also?
 
-/** A one-dimensional Gaussian distribution, generating Real (valued) variables.  Default estimation by moment-matching. 
-    @author Andrew McCallum */
-class Gaussian(val mean:RealVarParameter, val variance:RealVarParameter = new RealVariableParameter(1.0)) extends RealVariable with GeneratedVariable {
-  mean.addChild(this)(null)
-  variance.addChild(this)(null)
-  def parents = List(mean, variance)
+trait GaussianVar extends RealVariable with GeneratedVariable {
+  def mean:RealVarParameter
+  def variance:RealVarParameter
+  def parents: Seq[Parameter] = List(mean, variance)
   def logprFrom(mean:Double, variance:Double): Double = {
     val diff = this.doubleValue - mean
     return - diff * diff / (2 * variance) - 0.5 * Math.log(2 * Math.Pi * variance)
@@ -33,7 +31,17 @@ class Gaussian(val mean:RealVarParameter, val variance:RealVarParameter = new Re
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
     case Seq(mean:RealVar, variance:RealVar) => sampleFrom(mean, variance)
   }
+  override def toString = "Gaussian(mean="+mean.doubleValue+",variance="+variance.doubleValue+")"
+}
 
+/** A one-dimensional Gaussian distribution, generating Real (valued) variables.  Default estimation by moment-matching. 
+    @author Andrew McCallum */
+class Gaussian(val mean:RealVarParameter, val variance:RealVarParameter = new RealVariableParameter(1.0), initialValue:Double = 0.0) extends RealVariable(initialValue) with GaussianVar {
+  mean.addChild(this)(null)
+  variance.addChild(this)(null)
+}
+
+object Gaussian {
   def minSamplesForVarianceEstimate = 5
   /** This implements a moment-matching estimator. */
   /*def estimate: Unit = {
@@ -52,37 +60,4 @@ class Gaussian(val mean:RealVarParameter, val variance:RealVarParameter = new Re
     variance = Math.sqrt(variance / (weightSum - 1))
   }
     */
-  override def toString = "Gaussian("+mean.doubleValue+","+variance.doubleValue+")"
 }
-
-// /** A real value, integrated out with a Gaussian prior. */
-// class GaussianReal[R<:GeneratedRealVariable[R]] extends GeneratedRealVariable[R] {
-//   private var evidenceSum = 0.0
-//   private var evidenceNormalizer = 0.0
-//   def increment(e:Double): Unit = { evidenceSum += e; evidenceNormalizer += 1.0 }
-//   def decrement(e:Double): Unit = { evidenceSum -= e; evidenceNormalizer -= 1.0 }
-// }
-
-// // TODO Make WishartGaussian also.
-// /** A one-dimensional Gaussian, with integrated out mean, having a Gaussian prior. */
-// class GaussianGaussian1[R<:GeneratedRealVar[R]](override val variance:RealVariable) extends Gaussian1[R](new Real(0.0), variance) {
-//   // The evidence
-//   private val meanSum: Double = 0.0
-//   private val meanTotal: Double = 0.0
-//   override def preChange(o:R)(implicit d:DiffList) = {
-//     o.generativeSource match {
-//       case mixture:MarginalizedMixtureChoice[_] => {
-//         val index = this.asInstanceOf[MixtureComponent].index
-//         increment(index, -mixture.multinomial(index))
-//       }
-//       case _ => increment(o.index, -1.0)
-//     }
-//   }
-//   override def postChange(o:R)(implicit d:DiffList) = {
-//     o.generativeSource match {
-//       case mixture:MarginalizedMixtureChoice[_,] =>
-//         for (i <- 0 until o.domain.size) increment(i, mixture.multinomial(i))
-//       case _ => increment(o.index, 1.0)
-//     }
-//   }
-// }

@@ -15,6 +15,21 @@ $ mvn compile
 $ mvn test
 
 
+For those with Google Code check-in privledges
+===============================
+
+Append to ~/.hgrc:
+[auth]
+factorie.prefix = https://factorie.googlecode.com/hg
+factorie.username = <<google username>>
+factorie.password = <<password indicated at https://code.google.com/hosting/settings>>
+
+hg clone https://factorie.googlecode.com/hg/ factorie
+<<make changes>>
+hg commit -m 'Descriptive message here'
+hg push
+
+
 
 Development
 ===========
