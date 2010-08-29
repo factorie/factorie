@@ -97,13 +97,14 @@ class LogLinearMaximumLikelihood(model: Model) {
         if (oValue.isNaN) setOptimizableValueAndGradient
         if (a == null) {
           var b = new Array[Double](numOptimizableParameters);
-          Array.copy(oGradient, 0, b, 0, oGradient.length); b  
+          Array.copy(oGradient, 0, b, 0, oGradient.length);
+          b
         }
         else {Array.copy(oGradient, 0, a, 0, oGradient.length); a}
       }
     }
 
-    val optimizer = new GradientAscent(optimizable)
+    val optimizer = new LimitedMemoryBFGS(optimizable)
     optimizer.optimize(numIterations)
   }
 }

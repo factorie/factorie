@@ -45,6 +45,10 @@ package object factorie {
     var i = 0
     while (i < n) { f(i); i += 1 }
   }
+  def forReverseIndex(n:Int)(f:Int=>Any): Unit = {
+    var i = n - 1
+    while (i >= 0) { f(i); i -= 1 }
+  }
   def forallIndex(n:Int)(f:Int=>Boolean): Boolean = { 
     var i = 0
     while (i < n) { if (!f(i)) return false; i += 1 }

@@ -47,6 +47,7 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
     if (isConverged) return true;
     val initialValue = optimizable.optimizableValue
     val numParams = optimizable.numOptimizableParameters
+    println("initial objective=" + initialValue)
 
     if (g == null) { // first time through
       iterations = 0
@@ -98,11 +99,14 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
     def pushArray(l: ArrayBuffer[Array[Double]], toadd: Array[Double]): Unit = {
       assert(l.size <= m)
       if (l.size == m) {
-        val last = l.remove(0)
-        ArrayLA.set(last, toadd)
-        l += last
+        val last = l(0)
+        Array.copy(toadd, 0, last, 0, toadd.length)
+        forIndex(l.size - 1)(i => {l(i) = l(i + 1)})
+        l(m - 1) = last
       } else {
-        l += toadd
+        val last = new Array[Double](toadd.length)
+        Array.copy(toadd, 0, last, 0, toadd.length)
+        l += last
       }
     }
 
@@ -115,29 +119,29 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
     // step through iterations
     forIndex(numIterations)(iterationCount => {
       val value = optimizable.optimizableValue
+      println("objective=" + value)
       // get difference between previous 2 gradients and parameters
       var sy = 0.0
       var yy = 0.0
       forIndex(params.length)(i => {
         // difference in parameters
-        if (params(i).isInfinite && oldParams(i).isInfinite && params(i) * oldParams(i) > 0) oldParams(i) = 0.0
-        else oldParams(i) = params(i) - oldParams(i)
+        oldParams(i) = {
+          if (params(i).isInfinite && oldParams(i).isInfinite && (params(i) * oldParams(i) > 0)) 0.0
+          else params(i) - oldParams(i)
+        }
         // difference in gradients
-        if (g(i).isInfinite && oldg(i).isInfinite && g(i) * oldg(i) > 0) oldg(i) = 0.0
-        else oldg(i) = g(i) - oldg(i)
+        oldg(i) = {
+          if (g(i).isInfinite && oldg(i).isInfinite && (g(i) * oldg(i) > 0)) 0.0
+          else g(i) - oldg(i)
+        }
         sy += oldParams(i) * oldg(i)
         yy += oldg(i) * oldg(i)
         direction(i) = g(i)
       })
 
-      if (sy > 0) {
-        throw new Error("sy=" + sy + "> 0")
-      }
-
+      if (sy > 0) throw new Error("sy=" + sy + "> 0")
       val gamma = sy / yy // scaling factor
-      if (gamma > 0) {
-        throw new Error("gamma=" + gamma + "> 0")
-      }
+      if (gamma > 0) throw new Error("gamma=" + gamma + "> 0")
 
       pushDbl(rho, 1.0 / sy)
       pushArray(s, oldParams)
@@ -145,8 +149,64 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
 
       // calculate new direction
       assert(s.size == y.size)
+      forReverseIndex(s.size)(i => {
+        alpha(i) = rho(i) * direction.dot(s(i))
+        direction.incr(y(i), -1.0 * alpha(i))
+      })
+      direction *= gamma
+      forIndex(s.size)(i => {
+        val beta = rho(i) * direction.dot(y(i))
+        direction.incr(s(i), alpha(i) - beta)
+      })
+
+      forIndex(oldg.length)(i => {
+        oldParams(i) = params(i)
+        oldg(i) = g(i)
+        direction(i) *= -1.0
+      })
+
+      // take step in search direction
+      step = lineMaximizer.optimize(direction, step)
+      if (step == 0.0) {
+        g = null
+        step = 1.0
+        logger.info("Line search could not step in the current direction. " +
+                "(This is not necessarily cause for alarm. Sometimes this happens close to the maximum," +
+                " where the function may be very flat.)")
+        isConverged = true
+        return true;
+      }
+      optimizable.getOptimizableParameters(params)
+      optimizable.getOptimizableGradient(g)
+
+      // after line search
+      val newValue = optimizable.optimizableValue
+      if (2.0 * Math.abs(newValue - value) <= tolerance * (Math.abs(newValue) + Math.abs(value) + eps)) {
+        logger.info("Exiting L-BFGS on termination #1:\nvalue difference below tolerance (oldValue: " + value + " newValue: " + newValue)
+        isConverged = true
+        return true;
+      }
+      val gg = g.twoNorm
+      if (gg < gradientTolerance) {
+        logger.fine("Exiting L-BFGS on termination #2: \ngradient=" + gg + " < " + gradientTolerance)
+        isConverged = true
+        return true;
+      }
+
+      if (gg == 0.0) {
+        logger.fine("Exiting L-BFGS on termination #3: \ngradient==0.0")
+        isConverged = true
+        return true;
+      }
+      logger.fine("Gradient = " + gg)
+      iterations += 1
+      if (iterations > maxIterations) {
+        System.err.println("Too many iterations in L-BFGS.java. Continuing with current parameters.")
+        isConverged = true
+        return true;
+      }
     })
 
-    return true
+    return false
   }
 }
