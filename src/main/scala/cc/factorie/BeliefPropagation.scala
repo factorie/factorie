@@ -54,13 +54,13 @@ abstract class BPFactor(val factor: Factor) {
   }
 
   // Message from this factor to Variable v.  Return this so we can say messageTo(v).update.message
-  abstract case class MessageTo(v: V) extends Message(v) {
+  abstract case class MessageTo(override val v: V) extends Message(v) {
     // IterableSettings instances for each of the variables neighboring this BPFactor, except the variable 'v'
     // TODO Don't we need to remove the variables that are not among those we are inferring?
-    protected val neighborSettings = this.variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
+    protected val neighborSettings = variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
 
-    def updateTreewiseFromLeaves: this.type = {
-      if (updateCount > 0) return this
+    def updateTreewiseFromLeaves : Unit = {
+      if (updateCount > 0) return
       updateCount += 1
       for (n <- neighborSettings) {
         BPFactor.this.messageFrom(n.variable).updateTreewiseFromLeaves
@@ -68,14 +68,16 @@ abstract class BPFactor(val factor: Factor) {
       update
     }
 
-    def updateTreewiseToLeaves: this.type = {
-      if (updateCount > 1) return this
+    def updateTreewiseToLeaves : Unit = {
+      if (updateCount > 1) return
       updateCount += 1
       update
       for (n <- neighborSettings) {
         BPFactor.this.messageFrom(n.variable).updateTreewiseToLeaves
       }
     }
+
+    def update : Unit
   }
 
   // TODO: Have "SumProductMessageTo" to normalize and avoid sumLogProb, and also "SumProductLogMessageTo" which does not normalize and uses sumLogProb
@@ -123,7 +125,7 @@ abstract class BPFactor(val factor: Factor) {
   }
 
   /**Message from Variable v to this factor. */
-  case class MessageFrom(v: V) extends Message(v) {
+  case class MessageFrom(override val v: V) extends Message(v) {
     val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
 
     def updateTreewiseFromLeaves = {
@@ -163,7 +165,7 @@ abstract class BPFactor(val factor: Factor) {
 
   def messageTo(v: V): MessageTo = messageTo(this.variables.toSeq.indexOf(v))
 
-  def messageTo(vi: Int): MessageTo = _msgTo(vi)
+  def messageTo(vi: Int): MessageTo = { println(vi); _msgTo(vi) } 
 
   def messageFrom(v: V): MessageFrom = messageFrom(this.variables.toSeq.indexOf(v))
 
@@ -172,10 +174,13 @@ abstract class BPFactor(val factor: Factor) {
   def update: Unit = {_msgFrom.foreach(_.update); _msgTo.foreach(_.update); } // TODO swap order?
 
   def updateTreewise: Unit = {
-    if (updateCount <= 1) {
+    // TODO This was causing a compile error; BPFactors don't have an updateCount.
+    // It seems like this isn't necessary, since we already check the message
+    // update count above?
+    //if (updateCount <= 1) {
       _msgFrom.foreach(_.updateTreewiseFromLeaves) // TODO msgFrom?  msgTo?
       _msgTo.foreach(_.updateTreewiseToLeaves)
-    }
+    //}
   }
 
   def resetTree: Unit = {
