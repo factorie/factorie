@@ -58,24 +58,30 @@ abstract class BPFactor(val factor: Factor) {
     // IterableSettings instances for each of the variables neighboring this BPFactor, except the variable 'v'
     // TODO Don't we need to remove the variables that are not among those we are inferring?
     protected val neighborSettings = variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
+    protected val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
 
     def updateTreewiseFromLeaves : Unit = {
+      println("WANT TO UPDATE MESSAGE FROM FACTOR=" + BPFactor.this + " TO VAR=" + v + " (FROM LEAVES) " + updateCount)
       if (updateCount > 0) return
-      updateCount += 1
       for (n <- neighborSettings) {
         BPFactor.this.messageFrom(n.variable).updateTreewiseFromLeaves
       }
       update
-      println("UPDATED MESSAGE FROM FACTOR=" + BPFactor.this.factor + " TO VAR=" + v + " (FROM LEAVES)")
+      updateCount += 1
+      println("UPDATED MESSAGE FROM FACTOR=" + BPFactor.this + " TO VAR=" + v + " (FROM LEAVES) " + updateCount)
+      println
     }
 
     def updateTreewiseToLeaves : Unit = {
-      if (updateCount > 1) return
-      updateCount += 1
+      println("WANT TO UPDATE MESSAGE FROM FACTOR=" + BPFactor.this + " TO VAR=" + v + " (TO LEAVES) " + updateCount)
+      if (updateCount > 0) return
       update
-      println("UPDATED MESSAGE FROM FACTOR=" + BPFactor.this.factor + " TO VAR=" + v + " (TO LEAVES)")
-      for (n <- neighborSettings) {
-        BPFactor.this.messageFrom(n.variable).updateTreewiseToLeaves
+      updateCount += 1
+      println("UPDATED MESSAGE FROM FACTOR=" + BPFactor.this + " TO VAR=" + v + " (TO LEAVES) " + updateCount)
+      println
+      
+      for (f <- neighborFactors) {
+        f.messageFrom(v).updateTreewiseToLeaves
       }
     }
 
@@ -129,7 +135,10 @@ abstract class BPFactor(val factor: Factor) {
   /**Message from Variable v to this factor. */
   case class MessageFrom(override val v: V) extends Message(v) {
     val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
-    def updateTreewiseFromLeaves = {
+    protected val neighborSettings = variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
+    def updateTreewiseFromLeaves : Unit = {
+      println("WANT TO UPDATE MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this + " (FROM LEAVES) " + updateCount)
+      if (updateCount > 0) return
       Arrays.fill(msg, 0.0)
       for (n <- neighborFactors) {
         val msg2 = n.messageTo(v)
@@ -137,18 +146,28 @@ abstract class BPFactor(val factor: Factor) {
         for (i <- 0 until v.domain.size) msg(i) += msg2.message(i)
       }
       if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
-      println("UPDATED MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this.factor + " (FROM LEAVES)")
+      updateCount += 1
+      println("UPDATED MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this + " (FROM LEAVES) " + updateCount)
+      println
     }
 
-    def updateTreewiseToLeaves = {
+    def updateTreewiseToLeaves : Unit = {
+      println("WANT TO UPDATE MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this + " (TO LEAVES) " + updateCount)
+      if (updateCount > 0) return
       Arrays.fill(msg, 0.0)
       for (n <- neighborFactors) {
         val msg2 = n.messageTo(v)
         for (i <- 0 until v.domain.size) msg(i) += msg2.message(i)
-        msg2.updateTreewiseToLeaves
       }
       if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
-      println("UPDATED MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this.factor + " (TO LEAVES)")
+      updateCount += 1
+
+      for (v <- neighborSettings) {
+        BPFactor.this.messageFrom(v.variable).updateTreewiseToLeaves
+      }
+
+      println("UPDATED MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this + " (TO LEAVES) " + updateCount)
+      println
     }
 
     def update = {
@@ -180,9 +199,10 @@ abstract class BPFactor(val factor: Factor) {
     // TODO This was causing a compile error; BPFactors don't have an updateCount.
     // It seems like this isn't necessary, since we already check the message
     // update count above?
-    //if (updateCount <= 1) {
-      _msgFrom.foreach(_.updateTreewiseFromLeaves) // TODO msgFrom?  msgTo?
-      _msgTo.foreach(_.updateTreewiseToLeaves)
+      _msgFrom.foreach(message => if (message.updateCount == 0) { message.updateTreewiseFromLeaves }) // TODO msgFrom?  msgTo?
+      println("Done FROM LEAVES")
+      _msgTo.foreach(message => if (message.updateCount == 0) { message.updateTreewiseToLeaves })
+      println("Done TO LEAVES")
     //}
   }
 
@@ -293,10 +313,11 @@ class BPLattice(val variables: Collection[BeliefPropagation.BPVariable]) extends
 
   /**Send each message in the lattice once, in order determined by a random tree traversal. */
   def updateTreewise(shuffle: Boolean = false): Unit = {
-    v2m.values.foreach(_.foreach(_.resetTree))
-    val marginals = if (shuffle) v2m.values.toList.shuffle else v2m.values.toList // optionally randomly permute order, ala TRP
+    marginals.values.foreach(_.resetTree)
+    val factors = if (shuffle) marginals.values.toList.shuffle else marginals.values.toList // optionally randomly permute order, ala TRP
     // If the graph is fully connected, "updateTreewise" on the first marginal will do the entire graph, and the other calls will return immediately
-    marginals.foreach(_.foreach(_.updateTreewise))
+    factors.foreach(_.updateTreewise)
+
     // check that our "randomized tree traversal" touched everything (to run change _msgTo and _msgFrom to public)
     //assert(v2m.values.toList.forall(_.forall(x =>
     //     x._msgTo.forall(_.visitedDuringThisTree) &&  x._msgFrom.forall(_.visitedDuringThisTree)
