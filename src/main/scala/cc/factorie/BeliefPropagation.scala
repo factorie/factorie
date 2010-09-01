@@ -66,12 +66,14 @@ abstract class BPFactor(val factor: Factor) {
         BPFactor.this.messageFrom(n.variable).updateTreewiseFromLeaves
       }
       update
+      println("UPDATED MESSAGE FROM FACTOR=" + BPFactor.this.factor + " TO VAR=" + v + " (FROM LEAVES)")
     }
 
     def updateTreewiseToLeaves : Unit = {
       if (updateCount > 1) return
       updateCount += 1
       update
+      println("UPDATED MESSAGE FROM FACTOR=" + BPFactor.this.factor + " TO VAR=" + v + " (TO LEAVES)")
       for (n <- neighborSettings) {
         BPFactor.this.messageFrom(n.variable).updateTreewiseToLeaves
       }
@@ -127,7 +129,6 @@ abstract class BPFactor(val factor: Factor) {
   /**Message from Variable v to this factor. */
   case class MessageFrom(override val v: V) extends Message(v) {
     val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
-
     def updateTreewiseFromLeaves = {
       Arrays.fill(msg, 0.0)
       for (n <- neighborFactors) {
@@ -136,6 +137,7 @@ abstract class BPFactor(val factor: Factor) {
         for (i <- 0 until v.domain.size) msg(i) += msg2.message(i)
       }
       if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
+      println("UPDATED MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this.factor + " (FROM LEAVES)")
     }
 
     def updateTreewiseToLeaves = {
@@ -146,6 +148,7 @@ abstract class BPFactor(val factor: Factor) {
         msg2.updateTreewiseToLeaves
       }
       if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
+      println("UPDATED MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this.factor + " (TO LEAVES)")
     }
 
     def update = {
@@ -165,7 +168,7 @@ abstract class BPFactor(val factor: Factor) {
 
   def messageTo(v: V): MessageTo = messageTo(this.variables.toSeq.indexOf(v))
 
-  def messageTo(vi: Int): MessageTo = { println(vi); _msgTo(vi) } 
+  def messageTo(vi: Int): MessageTo = _msgTo(vi) 
 
   def messageFrom(v: V): MessageFrom = messageFrom(this.variables.toSeq.indexOf(v))
 
@@ -278,7 +281,7 @@ class BPLattice(val variables: Collection[BeliefPropagation.BPVariable]) extends
   def addFactor(factor: Factor) = {
     val bpFactor = new BPFactor(factor) {def factorsOf(v: Variable) = v2m(v)}
     marginals(factor) = bpFactor
-    for (v <- this.variables) v2m(v) += bpFactor
+    for (v <- factor.variables) v2m(v) += bpFactor
     factors += factor
   }
 
