@@ -67,7 +67,7 @@ abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with TypedValue
 
 /** A variable containing a mutable (but untracked by Diff) sequence of variables; used in conjunction with VarInSeq.
     @author Andrew McCallum */
-class VariableSeq[V >: Null <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeq[V] with Variable {
+class VariableSeq[V >: Null <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeqEqualsEq[V] with Variable {
   private val seq = new ArrayBuffer[V](initialCapacity)
   def +=(v: V) = {
     if (v.seq != null) throw new Error("Trying to add VarInSeq that is already assigned to another VariableSeq")

@@ -1,19 +1,19 @@
 Coding:
 Finish belief propagation message-passing 
 Re-consider type arguments in Sampler and descendants
-Get basic optimize package working
-Implement BFGS
+Implement EM
+Implement VariationalBayes
 
 Low Priority Coding:
-Implement Forany2 in logic1
-Fix IntTerm in logic1
-Support inference over relations in er1
-Make an example for er2 and logic2
+Implement Forany2 in er
+Fix IntTerm in er
+Support inference over relations in er
 Create simple infrastructure for non-relational generative Bayes nets
 
 Testing:
 Create more unit tests!
 Why does LDA get much slower when you tell the sampler not to create DiffLists.  I expected the opposite! 
+Profile everything, especially BP and LDA.
 
 Documentation:
 Clean up all examples

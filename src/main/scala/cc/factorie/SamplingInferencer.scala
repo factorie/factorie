@@ -8,12 +8,9 @@
 package cc.factorie
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 
-// Note that putting a [V], as in DenseCountsMultinomial[V], doesn't work here because CategoricalValues not <: MultinomialOutcome[V].  
-// But as long as we don't use any methods that require [V], I think we are OK.
 class DiscreteMarginal[V<:DiscreteVars](val variable:V) extends cc.factorie.generative.DenseCountsProportions(variable.domain.size) with Marginal {
   override def keepChildren = false
-  // Was: DenseCountsMultinomial instead of DirichletMultinomial above.
-  //override def keepGeneratedSamples = false
+  //override def keepChildren = false
   def incrementCurrentValue : Unit = variable match {
     case v:DiscreteVar => increment(v.intValue, 1.0)(null)
     case v:BinaryVectorVariable[_] => { for (index <- v.indices) increment(index, 1.0)(null) } // throw new Error // TODO Put this code back in: v.incrementInto(this)

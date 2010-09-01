@@ -18,7 +18,7 @@ import scala.util.Sorting
 
 // Variables for dealing with spans of sequences
 
-abstract class SpanVar[T](val seq: Seq[T], initStart: Int, initLength: Int) extends Variable with TypedValues with RandomAccessSeq[T] {
+abstract class SpanVar[T](val seq: Seq[T], initStart: Int, initLength: Int) extends Variable with TypedValues with IndexedSeqEqualsEq[T] {
   type ValueType = T
   type VariableType <: SpanVariable[T];
   assert(initStart >= 0)

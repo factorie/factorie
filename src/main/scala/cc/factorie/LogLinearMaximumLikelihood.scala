@@ -11,10 +11,11 @@ import cc.factorie.la._
 import cc.factorie.optimize._
 import scala.collection.mutable.HashMap
 
-/**Maximum likelihood parameter estimation. */
 // TODO Very preliminary: currently only supports trivial inference on IID discrete variables
 // In the future there will be a choice of different inference methods over arbitrary graphical model structures
 
+/** Maximum likelihood parameter estimation for the weights of DotTemplate. 
+    @author Andrew McCallum, Kedar Bellare, Gregory Druck */
 class LogLinearMaximumLikelihood(model: Model) {
   type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 1.0
