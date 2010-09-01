@@ -60,7 +60,7 @@ abstract class BPFactor(val factor: Factor) {
     protected val neighborSettings = variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
     protected val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
 
-    def updateTreewiseFromLeaves : Unit = {
+    def updateTreewiseFromLeaves: Unit = {
       println("WANT TO UPDATE MESSAGE FROM FACTOR=" + BPFactor.this + " TO VAR=" + v + " (FROM LEAVES) " + updateCount)
       if (updateCount > 0) return
       for (n <- neighborSettings) {
@@ -72,20 +72,20 @@ abstract class BPFactor(val factor: Factor) {
       println
     }
 
-    def updateTreewiseToLeaves : Unit = {
+    def updateTreewiseToLeaves: Unit = {
       println("WANT TO UPDATE MESSAGE FROM FACTOR=" + BPFactor.this + " TO VAR=" + v + " (TO LEAVES) " + updateCount)
       if (updateCount > 0) return
       update
       updateCount += 1
       println("UPDATED MESSAGE FROM FACTOR=" + BPFactor.this + " TO VAR=" + v + " (TO LEAVES) " + updateCount)
       println
-      
+
       for (f <- neighborFactors) {
         f.messageFrom(v).updateTreewiseToLeaves
       }
     }
 
-    def update : Unit
+    def update: Unit
   }
 
   // TODO: Have "SumProductMessageTo" to normalize and avoid sumLogProb, and also "SumProductLogMessageTo" which does not normalize and uses sumLogProb
@@ -136,7 +136,8 @@ abstract class BPFactor(val factor: Factor) {
   case class MessageFrom(override val v: V) extends Message(v) {
     val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
     protected val neighborSettings = variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
-    def updateTreewiseFromLeaves : Unit = {
+
+    def updateTreewiseFromLeaves: Unit = {
       println("WANT TO UPDATE MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this + " (FROM LEAVES) " + updateCount)
       if (updateCount > 0) return
       Arrays.fill(msg, 0.0)
@@ -151,7 +152,7 @@ abstract class BPFactor(val factor: Factor) {
       println
     }
 
-    def updateTreewiseToLeaves : Unit = {
+    def updateTreewiseToLeaves: Unit = {
       println("WANT TO UPDATE MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this + " (TO LEAVES) " + updateCount)
       if (updateCount > 0) return
       Arrays.fill(msg, 0.0)
@@ -162,8 +163,8 @@ abstract class BPFactor(val factor: Factor) {
       if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
       updateCount += 1
 
-      for (v <- neighborSettings) {
-        BPFactor.this.messageFrom(v.variable).updateTreewiseToLeaves
+      for (n <- neighborSettings) {
+        BPFactor.this.messageTo(n.variable).updateTreewiseToLeaves
       }
 
       println("UPDATED MESSAGE FROM VAR=" + v + " TO FACTOR=" + BPFactor.this + " (TO LEAVES) " + updateCount)
@@ -187,7 +188,7 @@ abstract class BPFactor(val factor: Factor) {
 
   def messageTo(v: V): MessageTo = messageTo(this.variables.toSeq.indexOf(v))
 
-  def messageTo(vi: Int): MessageTo = _msgTo(vi) 
+  def messageTo(vi: Int): MessageTo = _msgTo(vi)
 
   def messageFrom(v: V): MessageFrom = messageFrom(this.variables.toSeq.indexOf(v))
 
@@ -199,10 +200,10 @@ abstract class BPFactor(val factor: Factor) {
     // TODO This was causing a compile error; BPFactors don't have an updateCount.
     // It seems like this isn't necessary, since we already check the message
     // update count above?
-      _msgFrom.foreach(message => if (message.updateCount == 0) { message.updateTreewiseFromLeaves }) // TODO msgFrom?  msgTo?
-      println("Done FROM LEAVES")
-      _msgTo.foreach(message => if (message.updateCount == 0) { message.updateTreewiseToLeaves })
-      println("Done TO LEAVES")
+    _msgFrom.foreach(message => if (message.updateCount == 0) {message.updateTreewiseFromLeaves}) // TODO msgFrom?  msgTo?
+    println("Done FROM LEAVES")
+    _msgTo.foreach(message => if (message.updateCount == 0) {message.updateTreewiseToLeaves})
+    println("Done TO LEAVES")
     //}
   }
 
