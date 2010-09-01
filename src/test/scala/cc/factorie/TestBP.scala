@@ -73,6 +73,24 @@ class TestBP extends TestCase {
     assertEquals(lattice.marginal(v1)(0), 0.5, 0.001)
     assertEquals(lattice.marginal(v2)(0), 0.5, 0.001)
   }
+
+  def testTwoChain = {
+    // two variables, three factors: two unary, one binary
+    val v1 = new NamedBinVar("a", 1)
+    val v2 = new NamedBinVar("b", 1)
+    var lattice: BPLattice = null
+    def newTemplate2(scoreEqual: Double, scoreUnequal: Double) =
+      new InitializedTemplate(new TemplateWithVectorStatistics2[NamedBinVar, NamedBinVar] {
+        def unroll1(v1: NamedBinVar) = if (v1.name == "a") Factor(v1, v2) else Nil
+
+        def unroll2(v2: NamedBinVar) = if (v2.name == "b") Factor(v1, v2) else Nil
+
+        def score(s: Stat) = if (s._1.intValue == s._2.intValue) scoreEqual else scoreUnequal
+      })
+    lattice = new BPLattice(new Model(newTemplate1(1, 0), newTemplate2(9, 0)), Array(v1, v2))
+    lattice.updateTreewise(false)
+    assertEquals(lattice.marginal(v1)(0), (1 + e(10)) / (2 + e(8) + e(10)), 0.001)
+  }
 }
 
 object TestBPRunner {
