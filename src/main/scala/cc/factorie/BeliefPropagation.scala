@@ -221,7 +221,7 @@ abstract class BPFactor(val factor: Factor) {
   }
 
   def marginal: Array[Double] = {
-    val dim = this.variables.multiplyInts(_.asInstanceOf[V].domain.size)
+    val dim = this.variables.filter(_.isInstanceOf[V]).multiplyInts(_.asInstanceOf[V].domain.size)
     val variableSettings = this.variables.map(v => v.asInstanceOf[V].settings).toList
     variableSettings.foreach(setting => {setting.reset; setting.next})
     val result = new Array[Double](dim)
@@ -235,9 +235,9 @@ abstract class BPFactor(val factor: Factor) {
   }
 
   def marginalMap: HashMap[List[Int], Double] = {
-    val dim = this.variables.multiplyInts(_.asInstanceOf[V].domain.size)
+    val dim = this.variables.filter(_.isInstanceOf[V]).multiplyInts(_.asInstanceOf[V].domain.size)
     val result = new Array[Double](dim)
-    val variableSettings = this.variables.map(v => v.asInstanceOf[V].settings).toList
+    val variableSettings = this.variables.filter(_.isInstanceOf[V]).map(v => v.asInstanceOf[V].settings).toList
     variableSettings.foreach(setting => {setting.reset; setting.next})
     val tmpMap = new HashMap[List[Int], Int]
     var i = 0
@@ -257,7 +257,7 @@ abstract class BPFactor(val factor: Factor) {
   }
 
   def logZ: Double = {
-    val variableSettings = this.variables.map(v => v.asInstanceOf[V].settings).toList
+    val variableSettings = this.variables.filter(_.isInstanceOf[V]).map(v => v.asInstanceOf[V].settings).toList
     variableSettings.foreach(setting => {setting.reset; setting.next})
     var result = Math.NEG_INF_DOUBLE
     do {
