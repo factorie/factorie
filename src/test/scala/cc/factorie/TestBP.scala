@@ -3,6 +3,7 @@ package cc.factorie
 import cc.factorie._
 import junit.framework._
 import Assert._
+import collection.mutable.HashMap
 
 /**
  * @author kedarb
@@ -22,6 +23,16 @@ class TestBP extends TestCase {
         // println(s._1.intValue + " true? " + (s._1.intValue == 0))
         if (s._1.intValue == 0) score0 else score1
       }
+    })
+
+  private def newTemplate2(nm1: String, nm2: String, nm2var: HashMap[String, NamedBinVar],
+                           scoreEqual: Double, scoreUnequal: Double) =
+    new InitializedTemplate(new TemplateWithVectorStatistics2[NamedBinVar, NamedBinVar] {
+      def unroll1(v1: NamedBinVar) = if (v1.name == nm1) Factor(v1, nm2var(nm2)) else Nil
+
+      def unroll2(v2: NamedBinVar) = if (v2.name == nm2) Factor(nm2var(nm1), v2) else Nil
+
+      def score(s: Stat) = if (s._1.intValue == s._2.intValue) scoreEqual else scoreUnequal
     })
 
   private def e(num: Double) = Math.exp(num)
@@ -56,19 +67,17 @@ class TestBP extends TestCase {
 
   def testV2F1 = {
     // two variables, one factor
+    val nm2var = new HashMap[String, NamedBinVar]
+
     val v1 = new NamedBinVar("a", 1)
-    val v2 = new NamedBinVar("b", 1)
+    nm2var += "a" -> v1
+
+    val v2 = new NamedBinVar("b", 1);
+    nm2var += "b" -> v2
+
     var lattice: BPLattice = null
     // create template between v1 and v2
-    def newTemplate2(scoreEqual: Double, scoreUnequal: Double) =
-      new InitializedTemplate(new TemplateWithVectorStatistics2[NamedBinVar, NamedBinVar] {
-        def unroll1(v1: NamedBinVar) = if (v1.name == "a") Factor(v1, v2) else Nil
-
-        def unroll2(v2: NamedBinVar) = if (v2.name == "b") Factor(v1, v2) else Nil
-
-        def score(s: Stat) = if (s._1.intValue == s._2.intValue) scoreEqual else scoreUnequal
-      })
-    lattice = new BPLattice(new Model(newTemplate2(1000, 0)), Array(v1, v2))
+    lattice = new BPLattice(new Model(newTemplate2("a", "b", nm2var, 1000, 0)), Array(v1, v2))
     lattice.updateTreewise(false)
     assertEquals(lattice.marginal(v1)(0), 0.5, 0.001)
     assertEquals(lattice.marginal(v2)(0), 0.5, 0.001)
@@ -76,18 +85,16 @@ class TestBP extends TestCase {
 
   def testTwoChain = {
     // two variables, three factors: two unary, one binary
+    val nm2var = new HashMap[String, NamedBinVar]
+
     val v1 = new NamedBinVar("a", 1)
+    nm2var += "a" -> v1
+
     val v2 = new NamedBinVar("b", 1)
+    nm2var += "b" -> v2
+
     var lattice: BPLattice = null
-    def newTemplate2(scoreEqual: Double, scoreUnequal: Double) =
-      new InitializedTemplate(new TemplateWithVectorStatistics2[NamedBinVar, NamedBinVar] {
-        def unroll1(v1: NamedBinVar) = if (v1.name == "a") Factor(v1, v2) else Nil
-
-        def unroll2(v2: NamedBinVar) = if (v2.name == "b") Factor(v1, v2) else Nil
-
-        def score(s: Stat) = if (s._1.intValue == s._2.intValue) scoreEqual else scoreUnequal
-      })
-    val model = new Model(newTemplate1(1, 0), newTemplate2(9, 0))
+    val model = new Model(newTemplate1(1, 0), newTemplate2("a", "b", nm2var, 9, 0))
     lattice = new BPLattice(model, Array(v1, v2))
     lattice.updateTreewise(false)
     // print factor marginal
@@ -107,6 +114,26 @@ class TestBP extends TestCase {
     }
     assertEquals(lattice.marginal(v1)(0), (1 + e(10)) / (2 + e(8) + e(10)), 0.001)
     assertEquals(lattice.sumLogZ, 11.127, 0.001)
+  }
+
+  def testThreeChain = {
+    // three variables, five factors: three unary, two binary
+    val nm2var = new HashMap[String, NamedBinVar]
+
+    val v1 = new NamedBinVar("a", 0)
+    nm2var += "a" -> v1
+
+    val v2 = new NamedBinVar("b", 1)
+    nm2var += "b" -> v2
+
+    val v3 = new NamedBinVar("c", 0)
+    nm2var += "c" -> v3
+
+    // create model
+    val model = new Model(newTemplate1(0, 1), newTemplate2("a", "b", nm2var, 2, -1), newTemplate2("b", "c", nm2var, 1, 3))
+    val lattice = new BPLattice(model, Array(v1, v2, v3))
+    lattice.updateTreewise(false)
+    assertEquals(lattice.sumLogZ, Math.log(e(1) + e(2) + 2 * e(3) + e(4) + 2 * e(6) + e(7)), 0.001)
   }
 }
 
