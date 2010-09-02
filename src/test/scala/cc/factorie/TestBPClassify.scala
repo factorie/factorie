@@ -18,6 +18,7 @@ import java.io.File
 import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.optimize._
+import scala.math
 
 
 object TestBPClassify {
@@ -73,10 +74,11 @@ object TestBPClassify {
     val inferencer = new BPInferencer[LabelVariable[String]](model)
     val lattice: BPLattice = inferencer.inferTreewise(testVariables.asInstanceOf[Seq[LabelVariable[String]]])
 
+    var trueSumLogZ = 0.0
+
     println("CHECKING BP MARGINALS")
     testVariables.foreach(v => {
       val bpMarginal = lattice.marginal(v)
-
 
       val trueMarginal = new Array[Double](v.domainSize) // TODO Are we concerned about all this garbage collection?
       forIndex(trueMarginal.length)(i => {
@@ -84,8 +86,14 @@ object TestBPClassify {
         // compute score of variable with value 'i'
         trueMarginal(i) = model.score(v)
       })
-      Maths.expNormalize(trueMarginal)
 
+      var logZ = Math.NEG_INF_DOUBLE
+      forIndex(trueMarginal.length)(i => {
+        logZ = Maths.sumLogProb(logZ,trueMarginal(i))
+      })
+      trueSumLogZ += logZ
+
+      Maths.expNormalize(trueMarginal)
 
       forIndex(trueMarginal.length)(i => {
         if (Math.abs(trueMarginal(i) - bpMarginal(i)) > 1e-6) {
@@ -94,6 +102,11 @@ object TestBPClassify {
       })
     })
     println("DONE CHECKING BP MARGINALS")
+
+    val bpSumLogZ = lattice.sumLogZ
+    if (Math.abs(trueSumLogZ - lattice.sumLogZ) > 1e-6) {
+      throw new RuntimeException("BP LOGZ INCORRECT! " + trueSumLogZ + " " + bpSumLogZ)
+    }
 
 
     val predictor = new VariableSettingsMaximizer[Label](model)
