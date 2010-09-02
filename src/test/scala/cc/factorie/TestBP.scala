@@ -87,8 +87,24 @@ class TestBP extends TestCase {
 
         def score(s: Stat) = if (s._1.intValue == s._2.intValue) scoreEqual else scoreUnequal
       })
-    lattice = new BPLattice(new Model(newTemplate1(1, 0), newTemplate2(9, 0)), Array(v1, v2))
+    val model = new Model(newTemplate1(1, 0), newTemplate2(9, 0))
+    lattice = new BPLattice(model, Array(v1, v2))
     lattice.updateTreewise(false)
+    // print factor marginal
+    model.factors(v2).foreach {
+      f =>
+        if (f.variables.size == 1) {
+          val marginals = lattice.marginalMap(f)
+          assertEquals(marginals(List(0)), (1 + e(10)) / (2 + e(8) + e(10)), 0.001)
+          assertEquals(marginals(List(1)), (1 + e(8)) / (2 + e(8) + e(10)), 0.001)
+        } else {
+          val marginals = lattice.marginalMap(f)
+          assertEquals(marginals(List(0, 0)), e(10) / (2 + e(8) + e(10)), 0.001)
+          assertEquals(marginals(List(0, 1)), 1.0 / (2 + e(8) + e(10)), 0.001)
+          assertEquals(marginals(List(1, 0)), 1.0 / (2 + e(8) + e(10)), 0.001)
+          assertEquals(marginals(List(1, 1)), e(8) / (2 + e(8) + e(10)), 0.001)
+        }
+    }
     assertEquals(lattice.marginal(v1)(0), (1 + e(10)) / (2 + e(8) + e(10)), 0.001)
   }
 }

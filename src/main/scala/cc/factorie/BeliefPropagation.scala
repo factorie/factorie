@@ -222,13 +222,32 @@ abstract class BPFactor(val factor: Factor) {
 
   def marginal: Array[Double] = {
     val dim = this.variables.multiplyInts(_.asInstanceOf[V].domain.size)
-    val m = new Array[Double](dim)
-    throw new Error("Not yet implemented")
-    //_msgFrom.foreach(m => )
-    m
+    val variableSettings = this.variables.map(v => v.asInstanceOf[V].settings).toList
+    variableSettings.foreach(setting => {setting.reset; setting.next})
+    val result = new Array[Double](dim)
+    var i = 0
+    do {
+      result(i) = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
+      i += 1
+    } while (nextValues(variableSettings))
+    Maths.expNormalize(result)
+    result
   }
-  //def neighborDistribution: Array[Double];
-  //def sufficientDistribution: Array[Double]
+
+  // TODO: optimize for speed; iterating over settings twice
+  def marginalMap: HashMap[List[Int], Double] = {
+    val result = this.marginal
+    val variableSettings = this.variables.map(v => v.asInstanceOf[V].settings).toList
+    variableSettings.foreach(setting => {setting.reset; setting.next})
+    val map = new HashMap[List[Int], Double]
+    var i = 0
+    do {
+      val varSetting = variableSettings.map(s => s.variable.asInstanceOf[V].intValue).toList
+      map += varSetting -> result(i)
+      i += 1
+    } while (nextValues(variableSettings))
+    map
+  }
 }
 
 trait DiscreteMarginalN {
@@ -327,6 +346,8 @@ class BPLattice(val variables: Collection[BeliefPropagation.BPVariable]) extends
 
   /**Provide outside access to a BPFactor given is associated Factor */
   def marginal(f: Factor): Array[Double] = marginals(f).marginal
+
+  def marginalMap(f: Factor): HashMap[List[Int], Double] = marginals(f).marginalMap
 
   def marginal(v: V): DiscreteMarginal1[V] = new DiscreteMarginal1(v, bpFactorsOf(v).map(_.messageTo(v).message))
   /* def sample(v:UncoordinatedCategoricalVariable): DiffList  // TODO: implement this */
