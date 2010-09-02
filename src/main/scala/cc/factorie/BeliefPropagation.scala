@@ -234,18 +234,25 @@ abstract class BPFactor(val factor: Factor) {
     result
   }
 
-  // TODO: optimize for speed; iterating over settings twice
   def marginalMap: HashMap[List[Int], Double] = {
-    val result = this.marginal
+    val dim = this.variables.multiplyInts(_.asInstanceOf[V].domain.size)
+    val result = new Array[Double](dim)
     val variableSettings = this.variables.map(v => v.asInstanceOf[V].settings).toList
     variableSettings.foreach(setting => {setting.reset; setting.next})
-    val map = new HashMap[List[Int], Double]
+    val tmpMap = new HashMap[List[Int], Int]
     var i = 0
     do {
       val varSetting = variableSettings.map(s => s.variable.asInstanceOf[V].intValue).toList
-      map += varSetting -> result(i)
+      // add temporary mapping
+      tmpMap += varSetting -> i
+      // compute score
+      result(i) = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
       i += 1
     } while (nextValues(variableSettings))
+    Maths.expNormalize(result)
+    // create actual map
+    val map = new HashMap[List[Int], Double]
+    for (varSetting <- tmpMap.keys) map += varSetting -> result(tmpMap(varSetting))
     map
   }
 
