@@ -248,6 +248,17 @@ abstract class BPFactor(val factor: Factor) {
     } while (nextValues(variableSettings))
     map
   }
+
+  def logZ: Double = {
+    val variableSettings = this.variables.map(v => v.asInstanceOf[V].settings).toList
+    variableSettings.foreach(setting => {setting.reset; setting.next})
+    var result = Math.NEG_INF_DOUBLE
+    do {
+      val score = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
+      result = Maths.sumLogProb(result, score)
+    } while (nextValues(variableSettings))
+    result
+  }
 }
 
 trait DiscreteMarginalN {
@@ -359,4 +370,30 @@ class BPLattice(val variables: Collection[BeliefPropagation.BPVariable]) extends
   def setVariablesToMax: Unit = variables.foreach(v => v.set(marginal(v).maxIndex)(null))
 
   def setVariablesToMax(vs: Iterable[V]): Unit = vs.foreach(v => v.set(marginal(v).maxIndex)(null))
+
+  def sumLogZ: Double = {
+    val factorsTouched = new HashSet[BPFactor]
+    val factors = marginals.values.toArray
+    var result = 0.0
+    factors.foreach {
+      f: BPFactor =>
+        if (!factorsTouched.contains(f)) {
+          result += f.logZ
+
+          // do BFS search
+          var bfsStack = new ArrayBuffer[BPFactor]
+          bfsStack += f
+          while (bfsStack.size > 0) {
+            val currf = bfsStack.remove(0)
+            factorsTouched += currf
+            currf.variables.foreach {
+              v => v2m(v).filter(!factorsTouched.contains(_)).foreach {
+                otherf => bfsStack += otherf
+              }
+            }
+          }
+        }
+    }
+    result
+  }
 }

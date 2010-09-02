@@ -106,6 +106,7 @@ class TestBP extends TestCase {
         }
     }
     assertEquals(lattice.marginal(v1)(0), (1 + e(10)) / (2 + e(8) + e(10)), 0.001)
+    assertEquals(lattice.sumLogZ, 11.127, 0.001)
   }
 }
 
