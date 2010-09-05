@@ -24,7 +24,8 @@ trait Sampler[C] {
   /** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
   final def process(context:C): DiffList = {
     val c = preProcessHook(context)
-    // TODO Why was this line here? -akm 26 Aug 2010:  if (c == null && !processingWithoutContext) return null // TODO should we return newDiffList here instead?
+    // The preProcessHook might return null to indicate it doesn't want to sample this context, so check for it:
+    if (c == null && !processingWithoutContext) return null // TODO should we return newDiffList here instead?
     val d = process1(c)
     processCount += 1
     postProcessHook(c, d)
