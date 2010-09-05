@@ -183,7 +183,7 @@ trait VectorTemplate extends Template {
   lazy val statsize : Int = {
     if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
     val ss = statClasses.multiplyInts(Domain.get[DiscreteVars](_).allocSize)
-    //println("Template.statsize "+ss)
+    //println("Template "+this.getClass.getName+"["+statClasses.mkString(",")+"] statsize="+ss+" = "+statClasses.map(Domain.get[DiscreteVars](_).allocSize).mkString("*"))
     ss
   } 
   type StatType <: Stat
@@ -274,7 +274,7 @@ trait DotTemplate extends VectorTemplate {
     for (d <- statDomains) d.save(dirname)
     val s = new PrintWriter(new FileWriter(f))
     // TODO Do we also need to save the weights.default?
-    for (weight <- weights.activeElements) { // before June 21 2010, used too be weights.iterator -akm
+    for (weight <- weights.activeElements; if (weight._2 != 0.0)) { // before June 21 2010, used too be weights.iterator -akm
       s.print(weight._1)
       s.print(" ")
       s.println(weight._2)
@@ -283,7 +283,8 @@ trait DotTemplate extends VectorTemplate {
   }
   override def load(dirname:String): Unit = {
     //println("Loading "+this.getClass.getName+" from directory "+dirname)
-    for (d <- statDomains) d.load(dirname)
+    for (d <- statDomains) { /* println(" Loading Domain["+d+"]"); */ d.load(dirname) }
+    // TODO Why would statsize be 0 or negative?
     if (statsize <= 0 || weights.activeElements.exists({case(i,v) => v != 0})) return // Already have non-zero weights, must already be read.
     val f = new File(dirname+"/"+filename)
     val s = new BufferedReader(new FileReader(f))
