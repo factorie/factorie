@@ -319,7 +319,9 @@ object SpanNER1 {
         ()=>new Sentence, 
         featureExtractor _, 
         (lab:String) => if (lab.length > 2) lab.substring(2) else lab, 
-        "-DOCSTART-".r, if (ignoreSentenceBoundaries) null else "\\A\\s*\\z".r, null)
+        "-DOCSTART-".r,
+        if (ignoreSentenceBoundaries) null else "\\A\\s*\\z".r,
+        null)
     val trainSentences = trainFiles.flatMap(newSentenceFromOWPL(_)) 
     val testSentences = newSentenceFromOWPL(devFile) 
     println("Read "+trainSentences.length+" training sentences, and "+testSentences.length+" testing ")

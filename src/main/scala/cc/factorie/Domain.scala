@@ -106,7 +106,7 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
     if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
     while ({line = s.readLine; line != null}) {
       //println("Domain load got "+line)
-      this.index(line.asInstanceOf[V#CategoryType])
+      this.index(line.asInstanceOf[V#CategoryType]) // TODO What if V#CategoryType isn't a String?  Fix this.
     }
     if (willFreeze) freeze
     s.close

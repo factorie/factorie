@@ -61,7 +61,7 @@ object DocumentClassifier2 {
     println(model.factors(trainVariables.first))
 
     // Train and test
-    val learner = new VariableSettingsSampler[Label](model) with SampleRank with GradientAscentUpdates
+    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
     val predictor = new VariableSettingsSampler[Label](model)
     learner.learningRate = 1.0
     for (i <- 0 until 10) {

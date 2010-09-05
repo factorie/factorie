@@ -26,7 +26,7 @@ abstract class SpanVar[T](val seq: Seq[T], initStart: Int, initLength: Int) exte
   assert(initStart + initLength <= seq.length)
   protected var _start = initStart
   protected var _length = initLength
-  override def elements = new Iterator[T] {
+  override def iterator = new Iterator[T] {
     var i = _start
     def hasNext = i < _start + _length
     def next: T = {i += 1; seq(i - 1)}
@@ -36,11 +36,11 @@ abstract class SpanVar[T](val seq: Seq[T], initStart: Int, initLength: Int) exte
   def end = _start + _length - 1
   def length = _length
   def isAtStart = _start == 0
-
-  def overlaps(that: SpanVar[T]) =
+  def overlaps(that: SpanVar[T]) = {
+    assert(this.seq eq that.seq)
     (that.start <= this.start && that.end >= this.start) ||
     (this.start <= that.start && this.end >= that.start)
-
+  }
   def isAtEnd = _start + _length == seq.length
   def hasSuccessor(i: Int) = (_start + _length - 1 + i) < seq.length
   def hasPredecessor(i: Int) = (_start - i) >= 0

@@ -12,7 +12,7 @@ package object factorie {
 
   // TODO Should we have this?  Is there a more Java-standard way to provide this?
   // TODO If we keep it, find a way to automatically maintain this string value
-  def factorieVersionString = "0.9.0.SNAPSHOT"
+  //def factorieVersionString = "0.9.0.SNAPSHOT"
 
   var randomSeed = 0
   implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
@@ -41,6 +41,7 @@ package object factorie {
   }
   def printTime(f: =>Unit) : Unit = println(time(f)/1000.0+" seconds")
 
+  // Faster alternatives to for (i <- 0 until n)
   def forIndex(n:Int)(f:Int=>Any): Unit = { 
     var i = 0
     while (i < n) { f(i); i += 1 }
