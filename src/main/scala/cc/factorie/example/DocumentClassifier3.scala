@@ -61,7 +61,7 @@ object DocumentClassifier3 {
 
     // Train and test
     val trainer = new LogLinearMaximumLikelihood(model)
-    trainer.process(trainVariables, 1)
+    trainer.process(trainVariables.map(List(_)), 1)
     val predictor = new VariableSettingsMaximizer[Label](model)
     predictor.process(trainVariables, 1)
     predictor.process(testVariables, 1)

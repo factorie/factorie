@@ -13,6 +13,15 @@ trait StringExtras {
 
   def tokenize(r:scala.util.matching.Regex) = r.findAllIn(s)
 
+  def skipUntil(r:scala.util.matching.Regex): String = {
+    r.findFirstMatchIn(s) match {
+      case Some(m:scala.util.matching.Regex.Match) => s.substring(m.start)
+      case None => s
+    }
+  }
+
+  def skipHeader = skipUntil("\n\n".r)
+
   /**Implements Levenshtein Distance, with specific operation costs to go from this to s2.  Original version was from scalanlp. */
   def editDistance(s2: String, substCost: Int = 1, deleteCost: Int = 1, insertCost: Int = 1): Int = {
     if (s.length == 0) s2.length

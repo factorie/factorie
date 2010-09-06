@@ -21,7 +21,7 @@ class LogLinearMaximumLikelihood(model: Model) {
   type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 1.0
 
-  def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V], numIterations: Int): Unit = process(List(variables), numIterations)
+  //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V], numIterations: Int): Unit = process(List(variables), numIterations)
   // TODO Figure out how to reinstate something like this.
   //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V]): Unit = process(List(variables), Math.MAX_INT)
   /** First argument is a collection of collections-of-variables.  The former are considered iid.  The later may have dependencies.  */
