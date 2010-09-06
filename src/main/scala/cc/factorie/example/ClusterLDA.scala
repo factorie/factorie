@@ -38,7 +38,7 @@ object ClusterLDADemo {
     // Read data and create generative variables
     val phis = FiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01) with TypedProportions[Word] { override def toString = "Phi("+countsSeq.toList+")" })
     val alphaMeans = FiniteMixture(numClusters)(new DenseProportions(numTopics))
-    val alphaPrecisions = FiniteMixture(numClusters)(new RealVariableParameter(1.0))
+    val alphaPrecisions = FiniteMixture(numClusters)(new RealVariableParameter(numTopics))
     val clusterProportions = new UniformProportions(numClusters)
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
@@ -63,7 +63,7 @@ object ClusterLDADemo {
     // Fit model
     val zs = documents.flatMap(document => document.map(word => word.choice))
 
-    val numClusteringIterations = 10
+    val numClusteringIterations = 20
     val numGibbsIterationsPerClustering = 10
     val startTime = System.currentTimeMillis
     for (j <- 1 to numClusteringIterations) {
