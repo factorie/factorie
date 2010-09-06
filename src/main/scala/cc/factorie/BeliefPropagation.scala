@@ -22,19 +22,19 @@ object BeliefPropagation {
   val normalizeMessages = false
 }
 
-/**A factor in a belief propagation lattice used for inference.
-Note that an instance of this class is not actually a Template#Factor itself;
-but it points to a Template#Factor with its 'factor' member.
-@author Andrew McCallum
-@author Tim Vieira
+/** A factor in a belief propagation lattice used for inference.
+    Note that an instance of this class is not actually a Template#Factor itself;
+    but it points to a Template#Factor with its 'factor' member.
+    @author Andrew McCallum, Kedar Bellare, Greg Druck, Tim Vieira
  */
 abstract class BPFactor(val factor: Factor) {
   type V = BeliefPropagation.BPVariable
 
-  def variables = factor.variables.toList // because factor.variables is not very efficient
+  def variables = factor.variables.toList.asInstanceOf[List[V]] // because factor.variables is not very efficient
+  // TODO Consider alternative to toList?  Note that we do use list in variableSettings
 
   /**Given a variable, return the BPFactors touching it.  This method must be provided by subclasses. */
-  def factorsOf(v: Variable): Seq[BPFactor];
+  def factorsOf(v: Variable): Seq[BPFactor]
 
   /**Iterate through all combinations of values in Variables given their `SettingIterators */
   private def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
@@ -43,6 +43,16 @@ abstract class BPFactor(val factor: Factor) {
     else if (vs.tail != Nil) {vs.first.reset; vs.first.next; nextValues(vs.tail)}
     else false
   }
+
+  /** Get an Iterator" over all the settings of the neighbors of this factor. 
+      The order of the integers matches the order from the 'variables' method. */
+  def variableSettings: Iterator[List[Int]] = new Iterator[List[Int]] {
+    val settings = BPFactor.this.variables.map(v => v.asInstanceOf[V].settings).toList
+    var hasNext = true
+    def reset = settings.foreach(setting => {setting.reset; setting.next})
+    def next = { hasNext = nextValues(settings); BPFactor.this.variables.map(_.intValue).toList }
+  }
+
 
   abstract class Message(val v: V) {
     lazy protected val msg = new Array[Double](v.domain.size) // Holds unnormalized log-probabilities
@@ -212,7 +222,7 @@ abstract class BPFactor(val factor: Factor) {
     _msgFrom.foreach(_.updateCount = 0)
   }
 
-  /**Not the overall marginal over the variable; just this factor's marginal over the variable */
+  /** Not the overall marginal over the variable, just this factor's marginal over the variable */
   def marginal(v: V): Array[Double] = {
     val result = new Array[Double](v.domain.size)
     Array.copy(messageTo(v).message, 0, result, 0, result.length)
@@ -220,6 +230,8 @@ abstract class BPFactor(val factor: Factor) {
     result
   }
 
+  /** The marginal probability distribution over all settings of the neighbor variables of this factor.
+      If you want access to the entries by indicies of individual neighbors' values, @see marginalMap.  */
   def marginal: Array[Double] = {
     val dim = this.variables.filter(_.isInstanceOf[V]).multiplyInts(_.asInstanceOf[V].domain.size)
     val variableSettings = this.variables.map(v => v.asInstanceOf[V].settings).toList
@@ -318,54 +330,42 @@ class DiscreteMarginal1[V <: DiscreteVar](val variable: V) extends RandomAccessS
 }
 
 // TODO Rename "SumProductLattice" and "MaxProductLattice"
-class BPLattice(val variables: Collection[BeliefPropagation.BPVariable]) extends Lattice {
+class BPLattice(val variables: Collection[BeliefPropagation.BPVariable], model:Model) extends Lattice {
   type V = BeliefPropagation.BPVariable
-
-  // Find all the factors touching the 'variables'
-  val factors = new HashSet[Factor]
-
-  def this(model: Model, variables: Collection[BeliefPropagation.BPVariable]) {
-    this (variables)
-    for (factor <- model.factorsOf[Template](variables)) addFactor(factor)
-  }
-
-  def bpFactorsOf(v: V) = v2m(v)
-
   // Data structure for holding mapping from Variable to the collection of BPFactors that touch it
   private val v2m = new HashMap[Variable, ArrayBuffer[BPFactor]] {override def default(v: Variable) = {this(v) = new ArrayBuffer[BPFactor]; this(v)}}
-  // Create a BPFactor for each factor
-  val marginals = new HashMap[Factor, BPFactor]
-
-  def addFactor(factor: Factor) = {
+  // We have a BPFactor for each factor
+  val bpFactors = new HashMap[Factor, BPFactor]
+  // Holds all factors touching any of the 'variables'
+  val factors = new HashSet[Factor]
+  // Initialize bpFactors
+  for (factor <- model.factorsOf[Template](variables)) {
     val bpFactor = new BPFactor(factor) {def factorsOf(v: Variable) = v2m(v)}
-    marginals(factor) = bpFactor
+    bpFactors(factor) = bpFactor
     for (v <- factor.variables) v2m(v) += bpFactor
     factors += factor
   }
 
-  /**Perform one iteration of belief propagation. */
-  def update: Unit = marginals.values.foreach(_.update)
+  /** The BPFactors touching variable v. */
+  def bpFactorsOf(v: V): Iterable[BPFactor] = v2m(v)
 
+  /**Perform one iteration of belief propagation. */
+  def update: Unit = bpFactors.values.foreach(_.update)
   /**Perform N iterations of belief propagation */
   def update(iterations: Int): Unit = for (i <- 1 to iterations) update
-
   /**Send each message in the lattice once, in order determined by a random tree traversal. */
   def updateTreewise(shuffle: Boolean = false): Unit = {
-    marginals.values.foreach(_.resetTree)
-    val factors = if (shuffle) marginals.values.toList.shuffle else marginals.values.toList // optionally randomly permute order, ala TRP
-    // If the graph is fully connected, "updateTreewise" on the first marginal will do the entire graph, and the other calls will return immediately
+    bpFactors.values.foreach(_.resetTree)
+    val factors = if (shuffle) bpFactors.values.toList.shuffle else bpFactors.values.toList // optionally randomly permute order, ala TRP
+    // Call updateTreewise on all factors, but note that, if the graph is fully connected,
+    // "updateTreewise" on the first marginal will do the entire graph, and the other calls will return immediately
     factors.foreach(_.updateTreewise)
-
-    // check that our "randomized tree traversal" touched everything (to run change _msgTo and _msgFrom to public)
-    //assert(v2m.values.toList.forall(_.forall(x =>
-    //     x._msgTo.forall(_.visitedDuringThisTree) &&  x._msgFrom.forall(_.visitedDuringThisTree)
-    //)))
   }
 
-  /**Provide outside access to a BPFactor given is associated Factor */
-  def marginal(f: Factor): Array[Double] = marginals(f).marginal
+  /** Provide outside access to a BPFactor given is associated Factor */
+  def marginal(f: Factor): Array[Double] = bpFactors(f).marginal
 
-  def marginalMap(f: Factor): HashMap[List[Int], Double] = marginals(f).marginalMap
+  def marginalMap(f: Factor): HashMap[List[Int], Double] = bpFactors(f).marginalMap
 
   def marginal(v: V): DiscreteMarginal1[V] = new DiscreteMarginal1(v, bpFactorsOf(v).map(_.messageTo(v).message))
   /* def sample(v:UncoordinatedCategoricalVariable): DiffList  // TODO: implement this */
@@ -374,13 +374,17 @@ class BPLattice(val variables: Collection[BeliefPropagation.BPVariable]) extends
 
   def setVariablesToMarginalMax(vs: Iterable[V]): Unit = vs.foreach(v => v.set(marginal(v).maxIndex)(null))
 
+  // TODO Is this correct? -akm
   def setVariablesToMax: Unit = variables.foreach(v => v.set(marginal(v).maxIndex)(null))
 
+  // TODO Can this be done reliably?  Consider removing this method -akm
   def setVariablesToMax(vs: Iterable[V]): Unit = vs.foreach(v => v.set(marginal(v).maxIndex)(null))
 
+  // TODO Why is this called "sumLogZ" instead of just "logZ"? -akm
   def sumLogZ: Double = {
+    // TODO Rather than re-traversing the tree, can't we just store during treewise BP a representative factor for each disconnected subgraph?
     val factorsTouched = new HashSet[BPFactor]
-    val factors = marginals.values.toArray
+    val factors = bpFactors.values.toArray
     var result = 0.0
     factors.foreach {
       f: BPFactor =>

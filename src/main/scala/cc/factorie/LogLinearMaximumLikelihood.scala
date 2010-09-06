@@ -11,7 +11,8 @@ import cc.factorie.la._
 import cc.factorie.optimize._
 import scala.collection.mutable.HashMap
 
-// TODO Very preliminary: currently only supports trivial inference on IID discrete variables
+// TODO preliminary: currently only supports trivial inference on IID discrete variables
+// and inference on tree-shaped graphs of discrete variables.
 // In the future there will be a choice of different inference methods over arbitrary graphical model structures
 
 /** Maximum likelihood parameter estimation for the weights of DotTemplate. 
@@ -20,7 +21,11 @@ class LogLinearMaximumLikelihood(model: Model) {
   type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 1.0
 
-  def process[V <: DiscreteVariableWithTrueSetting](variables: Seq[V], numIterations: Int = Math.MAX_INT): Unit = {
+  def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V], numIterations: Int): Unit = process(List(variables), numIterations)
+  // TODO Figure out how to reinstate something like this.
+  //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V]): Unit = process(List(variables), Math.MAX_INT)
+  /** First argument is a collection of collections-of-variables.  The former are considered iid.  The later may have dependencies.  */
+  def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Math.MAX_INT): Unit = {
     // Data structure for holding per-template constraints and expectations
     class SuffStats extends HashMap[TemplatesToUpdate, Vector] {
       override def default(template: TemplatesToUpdate) = {
@@ -37,10 +42,10 @@ class LogLinearMaximumLikelihood(model: Model) {
     }
     val constraints = new SuffStats
     // Add all model dot templates to constraints
-    model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t))
+    model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
     // Gather constraints
-    variables.foreach(_.setToTruth(null))
-    model.factorsOf[TemplatesToUpdate](variables).foreach(f => constraints(f.template) += f.statistic.vector)
+    variableSets.foreach(_.foreach(_.setToTruth(null)))
+    variableSets.foreach(vars => model.factorsOf[TemplatesToUpdate](vars).foreach(f => constraints(f.template) += f.statistic.vector))
 
     def templates = constraints.sortedKeys
 
@@ -55,10 +60,50 @@ class LogLinearMaximumLikelihood(model: Model) {
       override def optimizableParameter_=(index: Int, d: Double): Unit = {oValue = Math.NaN_DOUBLE; super.optimizableParameter_=(index, d)}
       // Calculation of value and gradient
       def setOptimizableValueAndGradient: Unit = {
+        if (variableSets.forall(_.size == 1)) setOptimizableValueAndGradientIID
+        else setOptimizableValueAndGradientBP
+      }
+      def setOptimizableValueAndGradientBP: Unit = {
         val expectations = new SuffStats
         oValue = 0.0
         java.util.Arrays.fill(oGradient, 0.0)
-        variables.foreach(v => {
+        variableSets.foreach(variables => {
+          val lattice = new BPLattice(variables, model)
+          // Do inference on the tree
+          lattice.updateTreewise()
+          // For all factors
+          for (bpfactor <- lattice.bpFactors.values; if (bpfactor.factor.isInstanceOf[TemplatesToUpdate])) {
+            val factor = bpfactor.factor.asInstanceOf[TemplatesToUpdate#Factor]
+            val marginalMap = bpfactor.marginalMap
+            // For all value settings of neighbors of that factor
+            for ((values,prob) <- marginalMap) {
+              // Set to those values
+              bpfactor.variables.zip(values).foreach({ case(variable,intValue) => variable.set(intValue)(null) })
+             // put negative expectations into 'expectations' StatMap
+             expectations(factor.template.asInstanceOf[TemplatesToUpdate]) += factor.statistic.vector * -prob
+            }
+          }
+          // TODO Note that this will only work for variables with TrueSetting.  Where to enforceme this?
+          variables.foreach(_.asInstanceOf[TrueSetting].setToTruth(null))
+          oValue += Math.log(model.score(variables)) - lattice.sumLogZ
+        })
+        val invVariance = -1.0 / gaussianPriorVariance
+        model.templatesOf[TemplatesToUpdate].foreach {
+          t =>
+            oValue += 0.5 * t.weights.dot(t.weights) * invVariance
+            // sum positive constraints into (previously negated) expectations
+            expectations(t) += constraints(t)
+            // subtract weights due to regularization
+            expectations(t) += t.weights * invVariance
+        }
+        // constraints.keys.foreach(t => expectations(t) += constraints(t))
+        oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
+      }
+      def setOptimizableValueAndGradientIID: Unit = {
+        val expectations = new SuffStats
+        oValue = 0.0
+        java.util.Arrays.fill(oGradient, 0.0)
+        variableSets.foreach(_.foreach(v => {
           val distribution = new Array[Double](v.domainSize) // TODO Are we concerned about all this garbage collection?
           forIndex(distribution.length)(i => {
             v.set(i)(null)
@@ -75,7 +120,7 @@ class LogLinearMaximumLikelihood(model: Model) {
           })
 
           oValue += Math.log(distribution(v.trueIntValue))
-        })
+        }))
         val invVariance = -1.0 / gaussianPriorVariance
         model.templatesOf[TemplatesToUpdate].foreach {
           t =>
@@ -106,6 +151,8 @@ class LogLinearMaximumLikelihood(model: Model) {
     }
 
     val optimizer = new LimitedMemoryBFGS(optimizable)
+
+    // Do the gradient-climbing optimization!
     optimizer.optimize(numIterations)
   }
 }

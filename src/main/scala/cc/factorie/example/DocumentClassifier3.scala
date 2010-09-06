@@ -61,10 +61,10 @@ object DocumentClassifier3 {
 
     // Train and test
     val trainer = new LogLinearMaximumLikelihood(model)
-    trainer.process(trainVariables)
+    trainer.process(trainVariables, 1)
     val predictor = new VariableSettingsMaximizer[Label](model)
-    predictor.process(trainVariables)
-    predictor.process(testVariables)
+    predictor.process(trainVariables, 1)
+    predictor.process(testVariables, 1)
     println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
     println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))
 

@@ -42,11 +42,11 @@ class TestBP extends TestCase {
     val v = new BinVar(0)
     var lattice: BPLattice = null
     // 1) equal potentials
-    lattice = new BPLattice(new Model(newTemplate1(1, 1)), Array(v))
+    lattice = new BPLattice(Array(v), new Model(newTemplate1(1, 1)))
     lattice.updateTreewise(false)
     assertEquals(lattice.marginal(v)(0), 0.5, 0.001)
     // 2) unequal potentials
-    lattice = new BPLattice(new Model(newTemplate1(2, 1)), Array(v))
+    lattice = new BPLattice(Array(v), new Model(newTemplate1(2, 1)))
     lattice.updateTreewise(false)
     assertEquals(lattice.marginal(v)(0), e(1) / (1 + e(1)), 0.001)
   }
@@ -56,11 +56,11 @@ class TestBP extends TestCase {
     val v = new BinVar(0)
     var lattice: BPLattice = null
     // 1) f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}
-    lattice = new BPLattice(new Model(newTemplate1(2, 1), newTemplate1(1, 2)), Array(v))
+    lattice = new BPLattice(Array(v), new Model(newTemplate1(2, 1), newTemplate1(1, 2)))
     lattice.updateTreewise(false)
     assertEquals(lattice.marginal(v)(0), 0.5, 0.001)
     // 2) f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}
-    lattice = new BPLattice(new Model(newTemplate1(0, 1), newTemplate1(0, 1)), Array(v))
+    lattice = new BPLattice(Array(v), new Model(newTemplate1(0, 1), newTemplate1(0, 1)))
     lattice.updateTreewise(false)
     assertEquals(lattice.marginal(v)(0), 1.0 / (1 + e(2)), 0.001)
   }
@@ -77,7 +77,7 @@ class TestBP extends TestCase {
 
     var lattice: BPLattice = null
     // create template between v1 and v2
-    lattice = new BPLattice(new Model(newTemplate2("a", "b", nm2var, 1000, 0)), Array(v1, v2))
+    lattice = new BPLattice(Array(v1, v2), new Model(newTemplate2("a", "b", nm2var, 1000, 0)))
     lattice.updateTreewise(false)
     assertEquals(lattice.marginal(v1)(0), 0.5, 0.001)
     assertEquals(lattice.marginal(v2)(0), 0.5, 0.001)
@@ -95,7 +95,7 @@ class TestBP extends TestCase {
 
     var lattice: BPLattice = null
     val model = new Model(newTemplate1(1, 0), newTemplate2("a", "b", nm2var, 9, 0))
-    lattice = new BPLattice(model, Array(v1, v2))
+    lattice = new BPLattice(Array(v1, v2), model)
     lattice.updateTreewise(false)
     // print factor marginal
     model.factors(v2).foreach {
@@ -131,7 +131,7 @@ class TestBP extends TestCase {
 
     // create model
     val model = new Model(newTemplate1(0, 1), newTemplate2("a", "b", nm2var, 2, -1), newTemplate2("b", "c", nm2var, 1, 3))
-    val lattice = new BPLattice(model, Array(v1, v2, v3))
+    val lattice = new BPLattice(Array(v1, v2, v3), model)
     lattice.updateTreewise(false)
     assertEquals(lattice.sumLogZ, Math.log(e(1) + e(2) + 2 * e(3) + e(4) + 2 * e(6) + e(7)), 0.001)
   }
