@@ -127,8 +127,8 @@ class TestBPClassify extends TestCase {
 
 
     val predictor = new VariableSettingsMaximizer[Label](model)
-    predictor.process(trainVariables)
-    predictor.process(testVariables)
+    predictor.processAll(trainVariables)
+    predictor.processAll(testVariables)
     println("Train accuracy = " + cc.factorie.defaultObjective.aveScore(trainVariables))
     println("Test  accuracy = " + cc.factorie.defaultObjective.aveScore(testVariables))
 

@@ -103,7 +103,7 @@ object ChainNER2 {
       override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && cc.factorie.random.nextDouble > 0.5) null else label
       // At the end of each iteration, print some diagnostics
       override def postIterationHook(): Boolean = {
-        predictor.process(testLabels, 1)
+        predictor.processAll(testLabels)
         println("Train errors")
         printErrors(trainLabels, 200)
         println("Test errors")
@@ -117,11 +117,11 @@ object ChainNER2 {
 
     // Train for 10 iterations
     val startTime = System.currentTimeMillis
-    learner.process(trainLabels, 10)
+    learner.processAll(trainLabels, 10)
     println("Finished training in "+(System.currentTimeMillis-startTime)/60000.0+" minutes.")
     
     // Predict, also by sampling, visiting each variable 4 times.
-    List(1.0, 0.1, 0.01, 0.001).foreach(temp => { predictor.temperature = temp; predictor.process(testLabels, 1) })
+    List(1.0, 0.1, 0.01, 0.001).foreach(temp => { predictor.temperature = temp; predictor.processAll(testLabels) })
     println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
     println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
 

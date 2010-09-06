@@ -35,9 +35,9 @@ class SamplingInferencer[V<:DiscreteVariable,C](val sampler:Sampler[C]) extends 
   var iterations = 500
   def infer(targets:Collection[V], contexts:Collection[C]): SamplingLattice[V] = {
     val lat = new SamplingLattice(targets)
-    sampler.process(contexts, burnIn)
+    sampler.processAll(contexts, burnIn)
     for (i <- 0 until iterations/thinning) {
-      sampler.process(contexts, thinning)
+      sampler.processAll(contexts, thinning)
       targets.foreach(v => lat.marginal(v).incrementCurrentValue)
     }
     lat
@@ -105,7 +105,7 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
     if (iterationsRemaining == 1) sampler.temperature = finalTemperature
     while (iterationsRemaining > 0) {
       val iterationsNow = Math.min(iterationsPerRound, iterationsRemaining)
-      sampler.process(varying, iterationsNow)
+      sampler.processAll(varying, iterationsNow)
       iterationsRemaining -= iterationsNow
       sampler.temperature += (finalTemperature-initialTemperature)/rounds // Adding a negative number
       //println("Reducing temperature to "+sampler.temperature)

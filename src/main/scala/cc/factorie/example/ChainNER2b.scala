@@ -344,7 +344,7 @@ object ChainNER2b {
         if (this.isInstanceOf[ParameterAveraging]) this.asInstanceOf[ParameterAveraging].setWeightsToAverage
         println("processing testing examples...")
         resetLabels(testLabels)
-        //predictor.process(testLabels, 1)
+        //predictor.processAll(testLabels)
         runViterbiInference(/*trainSentences ++ */ testSentences)
         evaluatePerformance()
         if (this.isInstanceOf[ParameterAveraging]) this.asInstanceOf[ParameterAveraging].unsetWeightsToAverage
@@ -360,8 +360,8 @@ object ChainNER2b {
     // Train for serveral iterations
     printred("Training...")
     val startTime = System.currentTimeMillis
-    learner.process(trainLabels, 10)
-    //learner.process(trainLabels, 1)
+    learner.processAll(trainLabels, 10)
+    //learner.processAll(trainLabels)
     println("Finished training in " + (System.currentTimeMillis - startTime) / 60000.0 + " minutes.")
     if (learner.isInstanceOf[ParameterAveraging]) learner.asInstanceOf[ParameterAveraging].setWeightsToAverage
 
@@ -369,9 +369,9 @@ object ChainNER2b {
     println("==========================================")
     println("GibbsSampling inference")
     println("processing training examples...")
-    predictor.process(trainLabels, 1)
+    predictor.processAll(trainLabels)
     println("processing testing examples...")
-    predictor.process(testLabels, 5)
+    predictor.processAll(testLabels, 5)
     evaluatePerformance()
 
     println("==========================================")

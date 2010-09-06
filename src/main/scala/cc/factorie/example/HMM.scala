@@ -48,7 +48,7 @@ object HMMDemo {
     //val sampler = new CollapsedVariationalBayes(zs)
     val startTime = System.currentTimeMillis
     for (i <- 1 to 50) {
-      sampler.process(zs, 1)
+      sampler.processAll(zs)
       print("."); Console.flush
       if (i % 5 == 0) {
         println ("Iteration "+i)

@@ -41,14 +41,14 @@ trait Sampler[C] {
   def newDiffList = if (makeNewDiffList) new DiffList else null
   /** The underlying protected method that actually does the work.  Use this.newDiffList to optionally create returned DiffList.
       Needs to be defined in subclasses. */
-  def process1(context:C): DiffList // TODO Why isn't this 'protected'?  It should be.  -akm.
+  def process1(context:C): DiffList // TODO Why isn't this 'protected'?  It should be... Oh, I see, GenericSampler needs to call this, but perhaps it should be removed.
   protected final def processN(contexts:Iterable[C]): Unit = { 
     contexts.foreach(process(_))
     iterationCount += 1
     postIterationHooks
     if (!postIterationHook) return 
   }
-  def process(contexts:Iterable[C], numIterations:Int = 1): Unit = for (i <- 0 to numIterations) processN(contexts)
+  def processAll(contexts:Iterable[C], numIterations:Int = 1): Unit = for (i <- 0 to numIterations) processN(contexts)
   private var processingWithoutContext = false
   def process(count:Int): Unit = {
     processingWithoutContext = true // examined in process()

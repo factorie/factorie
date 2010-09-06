@@ -305,7 +305,7 @@ object SpanNER1 {
     println("Have "+testTokens.length+" tokens")
     println("Domain[Token] size="+Domain[Token].size)
     println("Domain[Label] "+Domain[Label].toList)
-    predictor.process(testTokens, 2)
+    predictor.processAll(testTokens, 2)
     documents.foreach(s => { println("FILE "+s.filename); printSentence(s) })
   }
   
@@ -358,9 +358,9 @@ object SpanNER1 {
       println("Iteration "+i) 
       // Every third iteration remove all the predictions
       if (i % 3 == 0) { if (verbose) println("Removing all spans"); (trainSentences ++ testSentences).foreach(_.clearSpans) }
-      learner.process(trainTokens, 1)
+      learner.processAll(trainTokens)
       //learner.learningRate *= 0.9
-      predictor.process(testTokens, 1)
+      predictor.processAll(testTokens)
       println("*** TRAIN OUTPUT *** Iteration "+i); if (verbose) { trainSentences.foreach(printSentence _); println; println }
       println("*** TEST OUTPUT *** Iteration "+i); if (verbose) { testSentences.foreach(printSentence _); println; println }
       println ("Iteration %2d TRAIN EVAL ".format(i)+evalString(trainSentences))

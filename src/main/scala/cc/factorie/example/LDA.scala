@@ -51,7 +51,7 @@ object LDADemo {
     val sampler = new CollapsedGibbsSampler(phis ++ documents.map(_.theta))
     val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
-      sampler.process(zs, 1)
+      sampler.processAll(zs)
       print("."); Console.flush
       if (i % 5 == 0) {
         println ("Iteration "+i)

@@ -104,9 +104,9 @@ object WordSegmenterDemo {
     var sampler = new VariableSettingsSampler[Label](model)
     learner.learningRate = 1.0
     for (i <- 0 until 7) {
-      learner.process(trainVariables, 2)
+      learner.processAll(trainVariables, 2)
       learner.learningRate *= 0.8
-      sampler.process(testVariables, 2)
+      sampler.processAll(testVariables, 2)
       sampler.temperature *= 0.8
       println("Train accuracy = "+ objective.aveScore(trainVariables))
       println("Test  accuracy = "+ objective.aveScore(testVariables))

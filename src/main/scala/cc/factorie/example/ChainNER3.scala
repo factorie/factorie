@@ -72,16 +72,16 @@ object ChainNER3 {
     val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.01 }
     for (i <- 1 to 3) {
       println("Iteration "+i) 
-      learner.process(trainLabels, 1)
+      learner.processAll(trainLabels)
       trainLabels.take(50).foreach(printLabel _); println; println
       printDiagnostic(trainLabels.take(400))
-      predictor.process(testLabels, 1)
+      predictor.processAll(testLabels)
       println ("Train accuracy = "+ objective.aveScore(trainLabels))
       println ("Test  accuracy = "+ objective.aveScore(testLabels))
     }
     //learner.setWeightsToAverage
     predictor.temperature *= 0.1
-    predictor.process(testLabels, 2)
+    predictor.processAll(testLabels, 2)
     println ("Final Test  accuracy = "+ objective.aveScore(testLabels))
   }
 

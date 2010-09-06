@@ -65,9 +65,9 @@ object DocumentClassifier2 {
     val predictor = new VariableSettingsSampler[Label](model)
     learner.learningRate = 1.0
     for (i <- 0 until 10) {
-      learner.process (trainVariables, 1)
+      learner.processAll(trainVariables)
       learner.learningRate *= 0.9
-      predictor.process (testVariables, 1)
+      predictor.processAll(testVariables)
       println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
       println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))
     }

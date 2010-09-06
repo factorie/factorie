@@ -161,7 +161,7 @@ object DepParsing1 {
         super.postProcessHook(n,d)
       }
     }
-    learner.process(nodes, 10)
+    learner.processAll(nodes, 10)
     
   }
   

@@ -130,7 +130,7 @@ object Football {
         true
       }
     }
-    learner.process(labels, 40)
+    learner.processAll(labels, 40)
   }
   
   
