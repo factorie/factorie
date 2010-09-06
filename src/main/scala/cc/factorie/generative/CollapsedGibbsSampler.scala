@@ -75,6 +75,12 @@ class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:M
     if (!done) throw new Error("CollapsedGibbsSampler: No sampling method found for variable "+v+" with factors "+factors.map(_.template.getClass.getName).mkString("List(",",",")"))
     d
   }
+
+  /** Set variables' values to the mean of their collapsed representation */
+  def export(implicit d:DiffList = null): Unit = {
+    throw new Error("Not yet implemented.")
+  }
+
 }
 
 

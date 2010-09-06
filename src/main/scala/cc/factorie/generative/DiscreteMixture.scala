@@ -11,6 +11,7 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
+@DomainInSubclasses
 trait DiscreteMixtureVar extends GeneratedDiscreteVariable with MixtureOutcome {
   choice.addOutcome(this)
   components.addChild(this)(null)
@@ -24,7 +25,10 @@ trait DiscreteMixtureVar extends GeneratedDiscreteVariable with MixtureOutcome {
   override def parents = super.parents match { case list:List[Parameter] => components :: list; case seq:Seq[Parameter] => components +: seq }
 }
 
+@DomainInSubclasses
 class DiscreteMixture(val components:FiniteMixture[Proportions], val choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteVariable(value) with GeneratedDiscreteVariable with MixtureOutcome with DiscreteMixtureVar
+
+@DomainInSubclasses
 class CategoricalMixture[A](val components:FiniteMixture[Proportions], val choice:MixtureChoiceVariable, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] with DiscreteMixtureVar
 
 // Outcome, MixtureChoice, Parents

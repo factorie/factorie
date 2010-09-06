@@ -65,7 +65,7 @@ object GeneratedVariableGibbsSamplerHandler extends GibbsSamplerHandler {
 
 object MixtureChoiceGibbsSamplerHandler extends GibbsSamplerHandler {
   def sample(v:Variable, factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean = {
-    return false
+    //return false
     v match {
       case mc:MixtureChoiceVariable => {
         // TODO We really should have a more careful check like this

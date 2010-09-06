@@ -9,6 +9,7 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,Stack}
 
+@DomainInSubclasses
 trait MixtureChoiceVariable extends GeneratedDiscreteVariable {
   // 'outcomes' are a more efficient alternative to 'children' for small sets of outcomes.
   private var _outcomes: List[MixtureOutcome] = Nil
@@ -19,8 +20,14 @@ trait MixtureChoiceVariable extends GeneratedDiscreteVariable {
   }
 }
 /** A mixture indicator discrete variable, with value generated from Proportions */
+@DomainInSubclasses
 abstract class MixtureChoice(p:Proportions, value:Int = 0) extends Discrete(p, value) with MixtureChoiceVariable
+// TODO Consider instead:  With the two arg lists we can use the arguments of the first in the second.  Consider doing this for all initial values of GenerativeVariables
+// No, because this would require syntax new MixtureChoice(proportions)().  Yuck.
+//abstract class MixtureChoice(p:Proportions)(value:Int = p.sampleInt) extends Discrete(p, value) with MixtureChoiceVariable
+
 /** A mixture indicator discrete variable, with value generated from a mixture of Proportions with component selected by 'choice' */
+@DomainInSubclasses
 abstract class MixtureChoiceMixture(ps:FiniteMixture[Proportions], choice:MixtureChoiceVariable, initialValue:Int = 0) extends DiscreteMixture(ps, choice, initialValue) with MixtureChoiceVariable
 
 

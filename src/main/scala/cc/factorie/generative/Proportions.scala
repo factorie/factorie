@@ -11,7 +11,7 @@ import cc.factorie._
 // Proportions is a Seq[Double] that sums to 1.0
 // Discrete ~ Multinomial(Proportions)
 
-// TODO Make a GeneratedProportions trait, which implements sampleFrom and prFrom, etc.
+// TODO Make a GeneratedProportions trait, which implements sampleFrom and prFrom, etc.  No.  Isn't this what Dirichlet is? -akm
 
 // I would prefer "with Seq[Double]", but Seq implements equals/hashCode to depend on the contents,
 // and no Variable should do that since we need to know about unique variables; it also makes things
@@ -25,7 +25,8 @@ trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqual
     def hasNext = i + 1 < length
     def next: Double = { i = i+1; apply(i) }
   }*/
-  def asSeq: IndexedSeq[Double] = new IndexedSeq[Double] {
+  // TODO Remove this, now that we have IndexedSeqEqualsEq
+  @deprecated def asSeq: IndexedSeq[Double] = new IndexedSeq[Double] {
     def apply(i:Int) = Proportions.this.apply(i)
     def length = Proportions.this.length
   }
@@ -61,9 +62,9 @@ trait MutableProportions extends Proportions {
 class DenseProportions(p:Seq[Double]) extends MutableProportions with Estimation[DenseProportions] {
   //def this(ps:Double*) = this(ps)
   def this(dim:Int) = this(Seq.fill(dim)(1.0/dim))
-  val length = p.size
-  private var _p = new Array[Double](length)
+  private var _p = new Array[Double](p.length)
   if (p != Nil) this := p else setUniform(null)
+  @inline final def length: Int = _p.size
   @inline final def apply(index:Int) = _p(index)
   def set(p:Seq[Double])(implicit d:DiffList): Unit = {
     assert(p.size == _p.size, "size mismatch: new="+p.size+", orig="+_p.size)
@@ -99,6 +100,7 @@ class GrowableUniformProportions(val sizeProxy:Iterable[_]) extends Proportions 
 }
 
 class DenseCountsProportions(len:Int) extends MutableProportions with Estimation[DenseCountsProportions] {
+  def this(p:Seq[Double]) = { this(p.length); this.set(p)(null) }
   protected var _counts = new Array[Double](len)
   protected var _countsTotal = 0.0
   def length = _counts.size

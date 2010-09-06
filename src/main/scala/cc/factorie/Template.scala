@@ -49,8 +49,9 @@ trait Factor extends Product with Ordered[Factor] {
   // Implement equality based on class assignability and Variable contents equality
   override def canEqual(other: Any) = (null != other) && other.isInstanceOf[Factor];
   override def equals(other: Any): Boolean = other match {
-    case other:Factor => (this.numVariables == other.numVariables
-                          && forallIndex(numVariables)(i => this.variable(i).hashCode == other.variable(i).hashCode && this.variable(i) == other.variable(i)))
+    case other:Factor => ((this.template eq other.template)
+                          && this.numVariables == other.numVariables
+                          && forallIndex(numVariables)(i => this.variable(i).hashCode == other.variable(i).hashCode && this.variable(i) == other.variable(i))) // TODO Consider changing last == to eq
     case _ => false
     //if (super.equals(other)) return true
     //if (null == other) return false
@@ -61,7 +62,10 @@ trait Factor extends Product with Ordered[Factor] {
   }
   var _hashCode = -1
   override def hashCode: Int = {
-    if (_hashCode == -1) forIndex(numVariables)(i => _hashCode += variable(i).hashCode + 31*i)
+    if (_hashCode == -1) {
+      _hashCode = getClass.hashCode
+      forIndex(numVariables)(i => { val v = variable(i); _hashCode += 31*i + (if (v eq null) 0 else v.hashCode) })
+    }
     _hashCode
   }
   def factorName = template.factorName

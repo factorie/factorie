@@ -13,6 +13,8 @@ fsc:
 
 lda:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.LDADemo
+clda:
+	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.ClusterLDADemo
 hmm:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.HMMDemo
 coref:

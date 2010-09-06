@@ -28,11 +28,12 @@ trait Parameter extends Variable {
     result
   }
   // TODO Remove this?  Then implement this pulling of MixtureComponents.children in each of the parameter estimation inference routines.
-  // Yes, I think this above method is better.
+  // Yes, I think this above method is better. -akm
+  // No, I now think it is better for this to stay here.  This functionality is needed by each parameter's estimation method!
   def generatedChildren: Iterable[GeneratedVar] = {
     val result = new ArrayBuffer[GeneratedVar]
     for (child <- children) child match {
-      case mcs:MixtureComponents[_] => result ++= mcs.children
+      case mcs:MixtureComponents[_] => result ++= mcs.childrenOf(this)
       case _ => result += child
     }
     result
