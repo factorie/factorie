@@ -131,9 +131,15 @@ class TestBP extends TestCase {
 
     // create model
     val model = new Model(newTemplate1(0, 1), newTemplate2("a", "b", nm2var, 2, -1), newTemplate2("b", "c", nm2var, 1, 3))
-    val lattice = new BPLattice(Array(v1, v2, v3), model)
-    lattice.updateTreewise(false)
-    assertEquals(lattice.sumLogZ, Math.log(e(1) + e(2) + 2 * e(3) + e(4) + 2 * e(6) + e(7)), 0.001)
+    val latticeSum = new BPLattice(Array(v1, v2, v3), model)
+    latticeSum.updateTreewise()
+    assertEquals(latticeSum.sumLogZ, Math.log(e(1) + e(2) + 2 * e(3) + e(4) + 2 * e(6) + e(7)), 0.001)
+    val latticeMax = new BPLattice(Array(v1, v2, v3), model)
+    latticeMax.updateTreewiseMax()
+    latticeMax.setVariablesToMarginalMax
+    assertTrue(v1.intValue == 1)
+    assertTrue(v2.intValue == 1)
+    assertTrue(v3.intValue == 0)
   }
 }
 
