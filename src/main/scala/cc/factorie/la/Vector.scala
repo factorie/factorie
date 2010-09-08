@@ -163,7 +163,7 @@ class DenseVector(val length:Int) extends Vector {
     case v:DenseVector => {
       var result = 0.0
       var i = 0
-      while (i < a.size) { result += v(i); i += 1 }
+      while (i < a.size) { result += a(i)*v(i); i += 1 }
       result
     }
     case _ => v dot this
