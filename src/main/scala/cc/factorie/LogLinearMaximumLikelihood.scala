@@ -150,9 +150,11 @@ class LogLinearMaximumLikelihood(model: Model) {
       }
     }
 
-    val optimizer = new LimitedMemoryBFGS(optimizable)
-
     // Do the gradient-climbing optimization!
+    var optimizer = new LimitedMemoryBFGS(optimizable)
+    optimizer.optimize(numIterations)
+    // Resetting and running again sometimes helps
+    optimizer = new LimitedMemoryBFGS(optimizable)
     optimizer.optimize(numIterations)
   }
 }
