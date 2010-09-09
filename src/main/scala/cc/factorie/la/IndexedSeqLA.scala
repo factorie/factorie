@@ -19,7 +19,8 @@ object IndexedSeqLA {
   type IS = scala.collection.mutable.IndexedSeq[Double]
 
   def oneNorm(s:IS): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i)); result }
-  def twoNorm(s:IS): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); result }
+  def twoNorm(s:IS): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); Math.sqrt(result) }
+  def twoNormSquared(s:IS): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); result }
   def infinityNorm(s:IS): Double = { var result = s(0); forIndex(s.length)(i => if (Math.abs(s(i)) > result) result = Math.abs(s(i))); result }
   def +=(s:IS, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) + d)
   def -=(s:IS, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) - d)
@@ -45,6 +46,7 @@ object IndexedSeqLA {
       def update(i:Int, d:Double): Unit = s(i) = d
       def oneNorm: Double = IndexedSeqLA.oneNorm(s)
       def twoNorm: Double = IndexedSeqLA.twoNorm(s)
+      def twoNormSquared: Double = IndexedSeqLA.twoNormSquared(s)
       def infinityNorm: Double = IndexedSeqLA.infinityNorm(s)
       def +=(d:Double): Unit = IndexedSeqLA.+=(s, d)
       def -=(d:Double): Unit = IndexedSeqLA.-=(s, d)

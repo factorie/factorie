@@ -18,7 +18,8 @@ object ArrayLA {
   type A = Array[Double]
   def absNorm(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += Math.abs(s(i))); result }
   def oneNorm(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i)); result }
-  def twoNorm(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); result }
+  def twoNorm(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); Math.sqrt(result) }
+  def twoNormSquared(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); result }
   def infinityNorm(s:A): Double = { var result = s(0); forIndex(s.length)(i => if (Math.abs(s(i)) > result) result = Math.abs(s(i))); result }
   def +=(s:A, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) + d)
   def -=(s:A, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) - d)
@@ -31,6 +32,7 @@ object ArrayLA {
   def normalize(s:A): Double = { val sum = oneNorm(s); forIndex(s.length)(i => s(i) /= sum); sum }
   def oneNormalize(s:A): Double = normalize(s)
   def twoNormalize(s:A): Double = { val norm = twoNorm(s); forIndex(s.length)(i => s(i) /= norm); norm }
+  def twoSquaredNormalize(s:A): Double = { val norm = twoNormSquared(s); forIndex(s.length)(i => s(i) /= norm); norm }
   def absNormalize(s:A): Double = { val norm = absNorm(s); forIndex(s.length)(i => s(i) /= norm); norm }
   def contains(s:A, d:Double): Boolean = { forIndex(s.length)(i => if (s(i) == d) return true); false }
   def isNaN(s:A): Boolean = contains(s, Math.NaN_DOUBLE)
@@ -50,6 +52,7 @@ object ArrayLA {
       def update(i:Int, d:Double): Unit = s(i) = d
       def oneNorm: Double = ArrayLA.oneNorm(s)
       def twoNorm: Double = ArrayLA.twoNorm(s)
+      def twoNormSquared: Double = ArrayLA.twoNormSquared(s)
       def infinityNorm: Double = ArrayLA.infinityNorm(s)
       def +=(d:Double): Unit = ArrayLA.+=(s, d)
       def -=(d:Double): Unit = ArrayLA.-=(s, d)
@@ -61,6 +64,7 @@ object ArrayLA {
       def normalize(): Double = ArrayLA.normalize(s)
       def oneNormalize(): Double = ArrayLA.oneNormalize(s)
       def twoNormalize(): Double = ArrayLA.twoNormalize(s)
+      def twoSquaredNormalize(): Double = ArrayLA.twoSquaredNormalize(s)
       def absNormalize(): Double = ArrayLA.absNormalize(s)
       def contains(d:Double): Boolean = ArrayLA.contains(s, d)
       def isNaN: Boolean = ArrayLA.isNaN(s)
