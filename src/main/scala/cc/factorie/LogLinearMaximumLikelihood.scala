@@ -19,7 +19,7 @@ import scala.collection.mutable.HashMap
     @author Andrew McCallum, Kedar Bellare, Gregory Druck */
 class LogLinearMaximumLikelihood(model: Model) {
   type TemplatesToUpdate = DotTemplate
-  var gaussianPriorVariance = 1.0
+  var gaussianPriorVariance = 10.0
 
   //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V], numIterations: Int): Unit = process(List(variables), numIterations)
   // TODO Figure out how to reinstate something like this.
@@ -68,11 +68,12 @@ class LogLinearMaximumLikelihood(model: Model) {
         oValue = 0.0
         java.util.Arrays.fill(oGradient, 0.0)
         variableSets.foreach(variables => {
+          if (variables.size > 0) {
           val lattice = new BPLattice(variables, model)
           // Do inference on the tree
           lattice.updateTreewise()
           // For all factors
-          for (bpfactor <- lattice.bpFactors.values; if (bpfactor.factor.isInstanceOf[TemplatesToUpdate])) {
+          for (bpfactor <- lattice.bpFactors.values; if (bpfactor.factor.template.isInstanceOf[TemplatesToUpdate])) {
             val factor = bpfactor.factor.asInstanceOf[TemplatesToUpdate#Factor]
             val marginalMap = bpfactor.marginalMap
             // For all value settings of neighbors of that factor
@@ -85,7 +86,8 @@ class LogLinearMaximumLikelihood(model: Model) {
           }
           // TODO Note that this will only work for variables with TrueSetting.  Where to enforceme this?
           variables.foreach(_.asInstanceOf[TrueSetting].setToTruth(null))
-          oValue += math.log(model.score(variables)) - lattice.sumLogZ
+          oValue += model.score(variables) - lattice.sumLogZ
+          }
         })
         val invVariance = -1.0 / gaussianPriorVariance
         model.templatesOf[TemplatesToUpdate].foreach {
