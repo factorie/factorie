@@ -37,3 +37,6 @@ project/plugins/src_managed/
 # Intellij IDEA files
 .idea/*
 *.iml
+
+# ensime (emacs scala mode)
+.ensime

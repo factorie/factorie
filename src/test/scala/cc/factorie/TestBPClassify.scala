@@ -21,14 +21,13 @@ import cc.factorie.la._
 import cc.factorie.optimize._
 import scala.math
 
-
 object TestBPClassify {
   def main(args: Array[String]): Unit = {
     val t = new TestBPClassify
     t.main(args)
   }
-
 }
+
 
 class TestBPClassify extends TestCase {
   class Document(contents: String, labelStr:String) extends BinaryVectorVariable[String] {
