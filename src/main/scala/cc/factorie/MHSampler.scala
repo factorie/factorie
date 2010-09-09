@@ -34,7 +34,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   var numNegativeMoves = 0
   var proposalAccepted = false
   // To track best configuration
-  var maxModelScore = Math.MIN_DOUBLE
+  var maxModelScore = Double.MinValue
   var currentModelScore = 0.0
 
   // Hooks
@@ -71,13 +71,13 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     val (modelScore, objectiveScore) = difflist.scoreAndUndo(model, objective)
     //val goProposal = new Proposal(difflist, modelScore/temperature + bfRatio, objectiveScore, bfRatio)x
 //    val goProposal = new Proposal(difflist,modelScore/temperature+bfRatio,objectiveScore,bfRatio,modelScore)
-    //val stayProposal = new Proposal(new DiffList, 0.0, 0.0, Math.NaN_DOUBLE,0.0)
+    //val stayProposal = new Proposal(new DiffList, 0.0, 0.0, Double.NaN,0.0)
     //List(goProposal,stayProposal)
     //System.out.println("MODEL: " + modelScore+" objSCORE:" + objectiveScore)
     val logAcceptanceScore = modelScore/temperature+bfRatio
-    val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0) Math.NEG_INF_DOUBLE else Math.log(1-Math.exp(logAcceptanceScore))
+    val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0) Double.NegativeInfinity else math.log(1-math.exp(logAcceptanceScore))
     val goProposal = new Proposal(difflist,modelScore,objectiveScore,logAcceptanceScore,bfRatio,temperature)
-    val stayProposal = new Proposal(new DiffList,0.0,0.0,mirrorLogAcceptanceScore,Math.NaN_DOUBLE,0)
+    val stayProposal = new Proposal(new DiffList,0.0,0.0,mirrorLogAcceptanceScore,Double.NaN,0)
     List(goProposal,stayProposal)
   }
   
@@ -85,11 +85,11 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   override def process1(context:C) : DiffList =
     {
       val props = proposals(context)
-      val proposal = props.first
+      val proposal = props.head
       //System.out.println("accp: " + (proposal.modelScore/proposal.temperature+proposal.bfRatio))
       if(proposal.modelScore * proposal.objectiveScore<=0 && proposal.objectiveScore!=0)
       proposalsHook(props)
-      if(proposal.acceptanceScore >= Math.log(cc.factorie.random.nextDouble()))
+      if(proposal.acceptanceScore >= math.log(cc.factorie.random.nextDouble()))
   {
     System.out.println("REDO")
     System.out.println("accept: " + proposal.acceptanceScore)
@@ -104,7 +104,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
 
   override def proposalHook(proposal:cc.factorie.Proposal): Unit = {
     val p = proposal.asInstanceOf[Proposal]
-    //if (p.bfRatio != Math.NaN_DOUBLE) {
+    //if (p.bfRatio != Double.NaN) {
     if(!p.bfRatio.isNaN) {
       numAcceptedMoves += 1
       proposalAccepted = true
@@ -158,7 +158,7 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     System.out.println("log acc: " + logAcceptanceProb)
     postUndoHook(logAcceptanceProb, difflist)
     // TODO Change this to actually sample, but test to make sure that the commented code is correct !!!
-    if (logAcceptanceProb > Math.log(random.nextDouble)) {
+    if (logAcceptanceProb > math.log(random.nextDouble)) {
       // Proposal accepted!  (Re)make the change.
       difflist.redo
       // Update diagnostics

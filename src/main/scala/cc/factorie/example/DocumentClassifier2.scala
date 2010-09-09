@@ -58,7 +58,7 @@ object DocumentClassifier2 {
     (trainVariables ++ testVariables).foreach(_.setRandomly())
 
     println(model)
-    println(model.factors(trainVariables.first))
+    println(model.factors(trainVariables.head))
 
     // Train and test
     val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates

@@ -38,7 +38,7 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
   def smallAbsDiff(x: Array[Double], y: Array[Double]): Boolean = {
     require(x.length == y.length)
     forIndex(x.length)(i => {
-      if (Math.abs(x(i) - y(i)) > absTolx) return false
+      if (math.abs(x(i) - y(i)) > absTolx) return false
     })
     return true
   }
@@ -49,7 +49,7 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
     ArrayLA.set(oldParams, params)
     var gradient: Array[Double] = optimizable.getOptimizableGradient()
 
-    var f = Math.NaN_DOUBLE
+    var f = Double.NaN
     var f2 = optimizable.optimizableValue
     var fold = f2
 
@@ -63,7 +63,7 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
     var test = 0.0;
     var temp = 0.0
     forIndex(gradient.length)(i => {
-      temp = Math.abs(line(i)) / Math.max(Math.abs(params(i)), 1.0)
+      temp = math.abs(line(i)) / math.max(math.abs(params(i)), 1.0)
       if (temp > test) test = temp
     })
     var alamin = relTolx / test
@@ -111,15 +111,15 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
           else {
             val disc = b * b - 3.0 * a * slope
             if (disc < 0.0) tmplam =.5 * alam
-            else if (b <= 0.0) tmplam = (-b + Math.sqrt(disc)) / (3.0 * a)
-            else tmplam = -slope / (b + Math.sqrt(disc))
+            else if (b <= 0.0) tmplam = (-b + math.sqrt(disc)) / (3.0 * a)
+            else tmplam = -slope / (b + math.sqrt(disc))
             if (tmplam > .5 * alam) tmplam =.5 * alam
           }
         }
       }
       alam2 = alam
       f2 = f
-      alam = Math.max(tmplam,.1 * alam)
+      alam = math.max(tmplam,.1 * alam)
     }
     throw new Error("Too many iterations.")
   }

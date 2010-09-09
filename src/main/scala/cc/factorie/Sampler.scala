@@ -91,7 +91,7 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
     proposalsHook(props)
     val proposal = props.size match {
       case 0 => throw new Error("No proposals created.")
-      case 1 => props.first 
+      case 1 => props.head 
       case _ => pickProposal(props)
     }
     proposal.diff.redo

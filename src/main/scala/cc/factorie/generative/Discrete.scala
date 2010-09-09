@@ -85,6 +85,6 @@ class ObservedDiscretes(val proportions:Proportions, values:Traversable[Int] = N
   def prFrom(parents:Seq[Parameter]): Double = prFrom(parents)
   def pr: Double = math.exp(logpr)
   def vector: Vector = throw new Error
-  def indices: Collection[Int] = throw new Error
+  def indices: Iterable[Int] = throw new Error
 }
 

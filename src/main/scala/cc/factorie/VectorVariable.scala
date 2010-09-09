@@ -17,7 +17,7 @@ trait VectorVar extends DiscreteVars {
   this: Variable =>
   // TODO Remember that DiscreteVars Domains currently need special initialization
   def vector : Vector
-  def indices: Collection[Int]
+  def indices: Iterable[Int]
 }
 
 trait CategoricalVectorVar[T] extends Variable with VectorVar with CategoricalVars[T] {
@@ -97,7 +97,7 @@ abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends Cate
   type VariableType <: RealVectorVariable[T]
   lazy val vector: Vector = new SparseVector(domain.allocSize)
   if (initVals ne null) this ++= initVals
-  def indices : Collection[Int] = if (vector == null) Nil else vector.activeDomain
+  def indices : Iterable[Int] = if (vector == null) Nil else vector.activeDomain
   def +=(pair:(T,Double)) = vector((domain.index(pair._1))) = pair._2
   def ++=(pairs:Iterable[(T,Double)]) = pairs.foreach(pair => this += pair)
 }

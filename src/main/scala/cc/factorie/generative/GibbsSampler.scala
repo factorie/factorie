@@ -90,7 +90,7 @@ object IterableSettingsGibbsSamplerHandler extends GibbsSamplerHandler {
     v match {
       case v2: Variable with IterableSettings => {
         // Iterate over all settings of the variable 'v', score each change, and sample from those scores
-        val proposals = v2.settings.map(d => {val m = d.scoreAndUndo(sampler.model); new Proposal(d, m, Math.NaN_DOUBLE, m/sampler.temperature)}).toList
+        val proposals = v2.settings.map(d => {val m = d.scoreAndUndo(sampler.model); new Proposal(d, m, Double.NaN, m/sampler.temperature)}).toList
         val proposal = proposals.sampleExpProportionally((p:Proposal) => p.acceptanceScore)
         proposal.diff.redo
         if (d ne null) d ++= proposal.diff

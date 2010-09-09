@@ -19,15 +19,15 @@ object IndexedSeqLA {
   type IS = scala.collection.mutable.IndexedSeq[Double]
 
   def oneNorm(s:IS): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i)); result }
-  def twoNorm(s:IS): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); Math.sqrt(result) }
+  def twoNorm(s:IS): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); math.sqrt(result) }
   def twoNormSquared(s:IS): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); result }
-  def infinityNorm(s:IS): Double = { var result = s(0); forIndex(s.length)(i => if (Math.abs(s(i)) > result) result = Math.abs(s(i))); result }
+  def infinityNorm(s:IS): Double = { var result = s(0); forIndex(s.length)(i => if (math.abs(s(i)) > result) result = math.abs(s(i))); result }
   def +=(s:IS, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) + d)
   def -=(s:IS, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) - d)
   def *=(s:IS, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) * d)
   def /=(s:IS, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) / d)
   def incr(s:IS, t:IS, factor:Double): Unit = { require(s.length == t.length); forIndex(s.length)(i => s(i) += t(i) * factor) }
-  def different(s:IS, t:IS, threshold:Double): Boolean = { require(s.length == t.length); forIndex(s.length)(i => if (Math.abs(s(i) - t(i)) > threshold) return true); return false }
+  def different(s:IS, t:IS, threshold:Double): Boolean = { require(s.length == t.length); forIndex(s.length)(i => if (math.abs(s(i) - t(i)) > threshold) return true); return false }
   def dot(s:IS, t:IS): Double = { assert(s.length == t.length); var result = 0.0; forIndex(s.length)(i => result += s(i) * t(i)); result }
 
   // Lazy operations

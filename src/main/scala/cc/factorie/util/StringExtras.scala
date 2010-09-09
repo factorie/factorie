@@ -34,7 +34,7 @@ trait StringExtras {
         d(0)(i) = i * insertCost
       for (i <- 1 to s.length; j <- 1 to s2.length) {
         val cost = if (s(i - 1) == s2(j - 1)) 0 else substCost
-        d(i)(j) = Math.min(d(i - 1)(j) + deleteCost, Math.min(d(i)(j - 1) + insertCost, d(i - 1)(j - 1) + cost))
+        d(i)(j) = math.min(d(i - 1)(j) + deleteCost, math.min(d(i)(j - 1) + insertCost, d(i - 1)(j - 1) + cost))
       }
       d(s.length)(s2.length)
     }

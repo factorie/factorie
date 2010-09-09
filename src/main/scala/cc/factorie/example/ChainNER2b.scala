@@ -201,8 +201,8 @@ object ChainNER2b {
   // cycle thru all combinations of a List of Variables
   def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
     if (vs == Nil) false
-    else if (vs.first.hasNext) {vs.first.next; true}
-    else if (vs.tail != Nil) {vs.first.reset; vs.first.next; nextValues(vs.tail)}
+    else if (vs.head.hasNext) {vs.head.next; true}
+    else if (vs.tail != Nil) {vs.head.reset; vs.head.next; nextValues(vs.tail)}
     else false
   }
 
@@ -229,7 +229,7 @@ object ChainNER2b {
       for (y <- S) {
         instance(i).label := y //<< might need to loop over more variables, e.g. order-2 or semi-markov
 
-        var max = Math.NEG_INF_DOUBLE
+        var max = Double.NegativeInfinity
         var argmax = null_PathType
         var neighbors = List(instance(i-1).label)
         val neighborSettings = neighbors.map(_.settings); neighborSettings.foreach(setting => {setting.reset; setting.next})
@@ -246,7 +246,7 @@ object ChainNER2b {
     }
 
     // y* = argmax_{y in S} V[N,y]
-    var max = Math.NEG_INF_DOUBLE
+    var max = Double.NegativeInfinity
     var argmax = null_PathType
     for (y <- S) {
       var (score, path) = V(y)
@@ -320,7 +320,7 @@ object ChainNER2b {
     println("Testing  on " + testSentences.size + " sentences, " + testSentences.foldLeft(0)(_+_.size) + " tokens.")
     println("Labels: " + Domain[Label].toList)
     println("Domain size = " + Domain[Token].size)
-    println("Tag Domain size = " + trainLabels.first.token.tags.domain.size)
+    println("Tag Domain size = " + trainLabels.head.token.tags.domain.size)
 
     // Set-up learner and predictor
     val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.001 }
@@ -400,10 +400,10 @@ object ChainNER2b {
       /*
       println("BP sentence")
       labels.foreach(l => print(l.token.word+"="+l+"  ")); println
-      if (labels.size >0) { labels.first.token.seq.foreach(t => print(t.word+"="+t.label+"  ")); println }
+      if (labels.size >0) { labels.head.token.seq.foreach(t => print(t.word+"="+t.label+"  ")); println }
       s.foreach(t => print(t.word+"="+t.label+"  ")); println
       if (s.size > 0) {
-        var t = s.first
+        var t = s.head
         while (t != null) { print(t.word+"="+t.label); t = t.next }; println
       }
       */
@@ -464,7 +464,7 @@ object ChainNER2b {
     while (i < labels.length && count < maxErrors) {
       val label = labels(i)
       if (!label.valueIsTruth && label.hasPrev && label.hasNext && count < maxErrors) {
-        var j = Math.max(i-contextSize, 0); var numTruthsAfter = -contextSize
+        var j = math.max(i-contextSize, 0); var numTruthsAfter = -contextSize
         do {
           val l = labels(j)
           println("%s %-6s %-6s %-18s %s".format((if (l.valueIsTruth) " " else "*"), l.trueValue, l.value, l.token.word, l.token.toString))

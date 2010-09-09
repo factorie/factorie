@@ -19,7 +19,7 @@ class Gamma(val alpha:RealVarParameter, val beta:RealVarParameter, value:Double 
   def pr(alpha:Double, beta:Double) = {
     val x = doubleValue
     assert (x > 0)
-    Math.pow(beta, alpha) / Maths.gamma(alpha) * Math.pow(x, alpha - 1) * Math.exp(- beta * x)
+    math.pow(beta, alpha) / Maths.gamma(alpha) * math.pow(x, alpha - 1) * math.exp(- beta * x)
   }
   def pr = pr(alpha.doubleValue, beta.doubleValue)
   def prFrom(parents:Seq[Parameter]) = parents match {

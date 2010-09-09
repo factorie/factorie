@@ -104,13 +104,13 @@ extends DenseCountsProportions(meanComponents(choice.intValue)) with MutableDiri
   def mean = meanComponents(choice.intValue)
   def precision = precisionComponents(choice.intValue)
   def logprFromMixtureComponent(index:Int): Double = logprFrom(meanComponents(index), precisionComponents(index))
-  def prFromMixtureComponent(index:Int) = Math.exp(logprFromMixtureComponent(index))
+  def prFromMixtureComponent(index:Int) = math.exp(logprFromMixtureComponent(index))
   def logprFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int): Double = {
     val mean = meanComponents(index)
     val precision = precisionComponents(index)
     logprFrom(map.getOrElse(mean, mean).asInstanceOf[Proportions], map.getOrElse(precision, precision).asInstanceOf[RealVar])
   }
-  def prFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int) = Math.exp(logprFromMixtureComponent(map, index))
+  def prFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int) = math.exp(logprFromMixtureComponent(map, index))
   def parentsFromMixtureComponent(index:Int) = List(meanComponents(index), precisionComponents(index))
   def chosenParents = parentsFromMixtureComponent(choice.intValue)
   override def parents = List[Parameter](meanComponents, precisionComponents) ++ super.parents
@@ -144,7 +144,7 @@ object DirichletMomentMatching {
     //println("variance2="+variance.toList)
     var alphaSum = 0.0
     forIndex(mean.length)(i => if (m(i) != 0.0) alphaSum += math.log((m(i) * (1.0 - m(i)) / variance(i)) - 1.0))
-    precision := Math.exp(alphaSum / (mean.length - 1))
+    precision := math.exp(alphaSum / (mean.length - 1))
     assert(precision.doubleValue == precision.doubleValue, "alphaSum="+alphaSum+" variance="+variance.toList+" mean="+m.toList) // Check for NaN
   }
 }

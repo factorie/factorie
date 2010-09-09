@@ -43,7 +43,7 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
   var step = 1.0
   var iterations: Int = 0
 
-  def optimize(numIterations: Int = Math.MAX_INT): Boolean = {
+  def optimize(numIterations: Int = Int.MaxValue): Boolean = {
     if (isConverged) return true;
     val initialValue = optimizable.optimizableValue
     val numParams = optimizable.numOptimizableParameters
@@ -181,7 +181,7 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
 
       // after line search
       val newValue = optimizable.optimizableValue
-      if (2.0 * Math.abs(newValue - value) <= tolerance * (Math.abs(newValue) + Math.abs(value) + eps)) {
+      if (2.0 * math.abs(newValue - value) <= tolerance * (math.abs(newValue) + math.abs(value) + eps)) {
         logger.info("Exiting L-BFGS on termination #1:\nvalue difference below tolerance (oldValue: " + value + " newValue: " + newValue)
         isConverged = true
         return true;

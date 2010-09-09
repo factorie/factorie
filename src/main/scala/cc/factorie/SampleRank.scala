@@ -65,7 +65,7 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
       (bestObjective1.objectiveScore > bestObjective2.objectiveScore || bestObjective1.objectiveScore > bestModel1.objectiveScore) &&
       // the model got it wrong, or isn't confident enough about being right
       // TODO should this be based on acceptanceScore instead of modelScore?
-      ((bestModel1 ne bestObjective1) || Math.abs(bestModel1.modelScore - bestModel2.modelScore) < learningMargin)
+      ((bestModel1 ne bestObjective1) || math.abs(bestModel1.modelScore - bestModel2.modelScore) < learningMargin)
     }
   }
  

@@ -89,13 +89,13 @@ object Maths {
   def probit(p: Double): Double = {
     import probitConstants._
     if (p <= 0)
-      return Math.NEG_INF_DOUBLE;
+      return Double.NegativeInfinity
     if (p >= 1)
-      return Math.POS_INF_DOUBLE;
+      return Double.PositiveInfinity
     val q = p - 0.5;
     var r: Double = 0;
     var g: Double = 0;
-    if (Math.abs(q) <= split1) {
+    if (math.abs(q) <= split1) {
       //System.out.println("CASE 1" );
       r = const1 - q * q;
       g = q * poly(a, r) / poly(b, r);
@@ -106,7 +106,7 @@ object Maths {
       if (r <= 0) g = -1;
       else {
         //System.out.println("  (b)");
-        r = Math.sqrt(-Math.log(r));
+        r = math.sqrt(-math.log(r));
         if (r <= split2) {
           //System.out.println("   (i)");
           r = r - const2
@@ -202,7 +202,7 @@ object Maths {
 
     if((x <= 0.5) || ((x > a) && (x <= 1.5))) {
       if(x <= 0.5) {
-        result = -Math.log(x);
+        result = -math.log(x);
         /*  Test whether X < machine epsilon. */
         if(x+1 == 1) {
           return result;
@@ -222,7 +222,7 @@ object Maths {
     }
     else if((x <= a) || ((x > 1.5) && (x <= 4))) {
       if(x <= a) {
-        result = -Math.log(x);
+        result = -math.log(x);
         x = (x - 0.5) - 0.5;
       }
       else {
@@ -249,7 +249,7 @@ object Maths {
     }
     /*  X > 12  */
     else {
-      y = Math.log(x);
+      y = math.log(x);
       result = x*(y - 1) - y*0.5 + .9189385332046727417803297;
       x = 1/x;
       y = x*x;
@@ -262,8 +262,8 @@ object Maths {
   }
   
   def logBeta(a:Double , b:Double) = logGamma(a)+logGamma(b)-logGamma(a+b)
-  def beta(a:Double, b:Double) = Math.exp(logBeta(a,b))
-  def gamma (x:Double) = Math.exp(logGamma(x))
+  def beta(a:Double, b:Double) = math.exp(logBeta(a,b))
+  def gamma (x:Double) = math.exp(logGamma(x))
   
   object factorialCache {
     val size = 13 // 12! = 479 001 600, 13! = 6 227 020 800, java.Integer.MAX_INT = (2^31) - 1 = 2 147 483 647
@@ -271,7 +271,7 @@ object Maths {
     cache(0) = 1; for (i <- 1 until size) cache(i) = i * cache(i-1)
     def factorial(n:Int): Int = cache(n)
   }
-  def factorial(n:Int): Double = if (n < factorialCache.size) factorialCache.factorial(n) else Math.exp(logGamma(n+1))
+  def factorial(n:Int): Double = if (n < factorialCache.size) factorialCache.factorial(n) else math.exp(logGamma(n+1))
   def logFactorial(n:Int): Double = logGamma(n+1)
 
   /**
@@ -282,28 +282,28 @@ object Maths {
   //   2001.  (This is not the fast and accurate version.)
   def logBinom(x:Int, n:Int, p:Double) = {
     logFactorial (n) - logFactorial (x) - logFactorial (n - x)
-      + (x*Math.log (p)) + ((n-x)*Math.log (1-p))
+      + (x*math.log (p)) + ((n-x)*math.log (1-p))
    }
 
   /** Vastly inefficient O(x) method to compute cdf of B(n,p)  */
   def pbinom (x:Int, n:Int, p:Double) = {
-    var sum = Math.NEG_INF_DOUBLE;
+    var sum = Double.NegativeInfinity;
     for (i <- 0 to x) sum = sumLogProb (sum, logBinom (i, n, p));
-    Math.exp (sum)
+    math.exp (sum)
   }
 
-  def sigmod(beta:Double) = 1.0/(1.0+Math.exp(-beta))
-  def sigmod_rev(sig:Double) = Math.log(sig/(1-sig))
-  def logit(p:Double) = Math.log (p / (1 - p))
-  def numCombinations(n:Int, r:Int) = Math.exp (logFactorial(n)-logFactorial(r)-logFactorial(n-r))
-  def numPermutations (n:Int, r:Int) = Math.exp (logFactorial(n)-logFactorial(r))
-  def cosh (a:Double) = if (a < 0) 0.5 * (Math.exp(-a) + Math.exp(a)) else 0.5 * (Math.exp(a) + Math.exp(-a))
-  def tanh (a:Double) = (Math.exp(a) - Math.exp(-a)) / (Math.exp(a) + Math.exp(-a))
+  def sigmod(beta:Double) = 1.0/(1.0+math.exp(-beta))
+  def sigmod_rev(sig:Double) = math.log(sig/(1-sig))
+  def logit(p:Double) = math.log (p / (1 - p))
+  def numCombinations(n:Int, r:Int) = math.exp (logFactorial(n)-logFactorial(r)-logFactorial(n-r))
+  def numPermutations (n:Int, r:Int) = math.exp (logFactorial(n)-logFactorial(r))
+  def cosh (a:Double) = if (a < 0) 0.5 * (math.exp(-a) + math.exp(a)) else 0.5 * (math.exp(a) + math.exp(-a))
+  def tanh (a:Double) = (math.exp(a) - math.exp(-a)) / (math.exp(a) + math.exp(-a))
 
   /** Numbers that are closer than this are considered equal */
   val EPSILON = 0.000001;
   def almostEquals (d1:Double, d2:Double) : Boolean = almostEquals (d1, d2, EPSILON)
-  def almostEquals (d1:Double, d2:Double, epsilon:Double) : Boolean = Math.abs (d1 - d2) < epsilon
+  def almostEquals (d1:Double, d2:Double, epsilon:Double) : Boolean = math.abs (d1 - d2) < epsilon
 
   def almostEquals (d1:Array[Double], d2:Array[Double], eps:Double) : Boolean = {
     for (i <- 0 until d1.length) if (!almostEquals(d1(i), d2(i))) return false
@@ -315,7 +315,7 @@ object Maths {
     assert(a.size == b.size)
     var sum = 0.0
     for (i <- 0 until a.size) sum += (a(i)-b(i))*(a(i)-b(i))
-    Math.sqrt(sum)
+    math.sqrt(sum)
   }
 
   // gsc
@@ -326,7 +326,7 @@ object Maths {
     (value > min || almostEquals(value, min, EPSILON)) &&
     (value < max || almostEquals(value, max, EPSILON));
 
-  val log2 = Math.log(2);
+  val log2 = math.log(2);
 
   /**
    * Returns the KL divergence, K(p1 || p2).
@@ -339,7 +339,7 @@ object Maths {
     var klDiv = 0.0;
     for (i <- 0 until p1.length) {
       if (p1(i) != 0.0)
-        klDiv += p1(i) * Math.log(p1(i) / p2(i))
+        klDiv += p1(i) * math.log(p1(i) / p2(i))
     }
     klDiv / log2
   }
@@ -370,14 +370,14 @@ object Maths {
    *   except that the logs aren't negated.
    */
   def sumLogProb (a:Double, b:Double) =   {
-    if (a == Math.NEG_INF_DOUBLE) 
+    if (a == Double.NegativeInfinity) 
       b
-    else if (b == Math.NEG_INF_DOUBLE)
+    else if (b == Double.NegativeInfinity)
       a
     else if (b < a)
-      a + Math.log (1 + Math.exp(b-a))
+      a + math.log (1 + math.exp(b-a))
     else
-      b + Math.log (1 + Math.exp(a-b))
+      b + math.log (1 + math.exp(a-b))
   }
 
   // Below adapted from Stanford NLP package, SloppyMath.java
@@ -398,15 +398,15 @@ object Maths {
   {
     val LOGTOLERANCE = 30.0;
     val len = vals.length;
-    var max = Math.NEG_INF_DOUBLE;
+    var max = Double.NegativeInfinity;
     var maxidx = 0;
     for (i <- 0 until len) if (vals(i) > max) { max = vals(i); maxidx = i; }
     var anyAdded = false;
     var intermediate = 0.0;
     val cutoff = max - LOGTOLERANCE;
-    for (i <- 0 until maxidx) if (vals(i) >= cutoff) { anyAdded = true; intermediate += Math.exp(vals(i) - max) }
-    for (i <- maxidx + 1 until len) if (vals(i) >= cutoff) { anyAdded = true; intermediate += Math.exp(vals(i) - max) }
-    if (anyAdded) max + Math.log(1.0 + intermediate) else max
+    for (i <- 0 until maxidx) if (vals(i) >= cutoff) { anyAdded = true; intermediate += math.exp(vals(i) - max) }
+    for (i <- maxidx + 1 until len) if (vals(i) >= cutoff) { anyAdded = true; intermediate += math.exp(vals(i) - max) }
+    if (anyAdded) max + math.log(1.0 + intermediate) else max
   }
 
   /**
@@ -424,7 +424,7 @@ object Maths {
    * Returns <tt>NaN</tt> if b > a (so that log(e^a - e^b) is undefined).
    */
   def subtractLogProb (a:Double, b:Double) = 
-    if (b == Math.NEG_INF_DOUBLE) a else a + Math.log (1 - Math.exp(b-a))
+    if (b == Double.NegativeInfinity) a else a + math.log (1 - math.exp(b-a))
 
   def maxIndex(a:Array[Double]): Int = {
     var i = 0; var j = 0
@@ -442,11 +442,11 @@ object Maths {
   
   /** Exponentiate the elements of the array, and then normalize them to sum to one. */
   def expNormalize(a:Array[Double]): Unit = {
-    var max = Math.MIN_DOUBLE
+    var max = Double.MinValue
     for (i <- 0 until a.length) if (max < a(i)) max = a(i)
     var sum = 0.0
     for (i <- 0 until a.length) {
-      a(i) = Math.exp(a(i) - max)
+      a(i) = math.exp(a(i) - max)
       sum += a(i)
     }
     for (i <- 0 until a.length) a(i) /= sum
@@ -456,7 +456,7 @@ object Maths {
     // normalizeLogProb: [log(a), log(b), log(c)] --> [log(a/Z), log(b/Z), log(c/Z)] where Z = a+b+c
     // expNormalize: [log(a), log(b), log(c)] --> [a/Z, b/Z, c/Z] where Z=a+b+c
     expNormalize(a)
-    for (i <- 0 until a.length) a(i) = Math.log(a(i))
+    for (i <- 0 until a.length) a(i) = math.log(a(i))
   }
 
   // Random number helpers 
@@ -465,7 +465,7 @@ object Maths {
    * The mean of this distribution is lambda.  The variance is lambda. */
   def nextPoisson(lambda:Double)(implicit r:Random) : Double = {
     var v = -1
-    val l=Math.exp(-lambda)
+    val l=math.exp(-lambda)
     var p=1.0;
     while (p>=l) { p *= nextUniform(r); v += 1 }
     v
@@ -533,8 +533,8 @@ object Maths {
   def nextGaussian(implicit r:Random) : Double = {
     if (!haveNextGaussianValue) {
       val v1 = nextUniform(r); val v2 = nextUniform(r)
-      val x1 = Math.sqrt(-2*Math.log(v1))*Math.cos(2*Math.Pi*v2);
-      val x2 = Math.sqrt(-2*Math.log(v1))*Math.sin(2*Math.Pi*v2);
+      val x1 = math.sqrt(-2*math.log(v1))*math.cos(2*math.Pi*v2);
+      val x2 = math.sqrt(-2*math.log(v1))*math.sin(2*math.Pi*v2);
       nextGaussianValue = x2;
       haveNextGaussianValue = true;
       x1
@@ -545,7 +545,7 @@ object Maths {
   }
 
   /** Return a random double drawn from a Gaussian distribution with mean m and variance s2. */
-  def nextGaussian(mean:Double, s2:Double)(implicit r:Random) :Double = nextGaussian(r) * Math.sqrt(s2)+mean
+  def nextGaussian(mean:Double, s2:Double)(implicit r:Random) :Double = nextGaussian(r) * math.sqrt(s2)+mean
 
   // generate Gamma(1,1)
   // E(X)=1 ; Var(X)=1
@@ -565,23 +565,23 @@ object Maths {
     if (alpha < 1.0) {
       var p = 0.0
       var flag = false;
-      val b = 1+alpha*Math.exp(-1)
+      val b = 1+alpha*math.exp(-1)
       while (!flag) {
         p = b*nextUniform(r)
         if (p>1) {
-          gamma = -Math.log((b-p)/alpha);
-          if (nextUniform(r) <= Math.pow(gamma,alpha-1)) flag = true
+          gamma = -math.log((b-p)/alpha);
+          if (nextUniform(r) <= math.pow(gamma,alpha-1)) flag = true
         } else {
-          gamma = Math.pow(p,1/alpha);
-          if (nextUniform(r) <= Math.exp(-gamma)) flag = true
+          gamma = math.pow(p,1/alpha);
+          if (nextUniform(r) <= math.exp(-gamma)) flag = true
         }
       }
     } else if (alpha == 1) {
-      gamma = -Math.log (nextUniform(r))
+      gamma = -math.log (nextUniform(r))
     } else {
-      var y = -Math.log (nextUniform(r))
-      while (nextUniform(r) > Math.pow (y * Math.exp (1 - y), alpha - 1))
-        y = -Math.log (nextUniform(r))
+      var y = -math.log (nextUniform(r))
+      while (nextUniform(r) > math.pow (y * math.exp (1 - y), alpha - 1))
+        y = -math.log (nextUniform(r))
       gamma = alpha * y
     }
     beta * gamma + lambda;
@@ -615,14 +615,14 @@ object Maths {
       val A = alpha - 1
       val B = beta - 1
       val C = A + B
-      val L = C * Math.log (C)
+      val L = C * math.log (C)
       val mu = A / C
-      val sigma = 0.5 / Math.sqrt (C)
+      val sigma = 0.5 / math.sqrt (C)
       var y = nextGaussian(r)
       var x = sigma * y + mu
       while (x < 0 || x > 1) { y = nextGaussian(r); x = sigma * y + mu }
       var u = nextUniform(r)
-      while (Math.log (u) >= A * Math.log (x / A) + B * Math.log ((1 - x) / B) + L + 0.5 * y * y) {
+      while (math.log (u) >= A * math.log (x / A) + B * math.log ((1 - x) / B) + L + 0.5 * y * y) {
         y = nextGaussian(r)
         x = sigma * y + mu
         while (x < 0 || x > 1) { y = nextGaussian(r); x = sigma * y + mu }
@@ -630,11 +630,11 @@ object Maths {
       }
       return x
     } else {
-      var v1 = Math.pow (nextUniform(r), 1 / alpha)
-      var v2 = Math.pow (nextUniform(r), 1 / beta)
+      var v1 = math.pow (nextUniform(r), 1 / alpha)
+      var v2 = math.pow (nextUniform(r), 1 / beta)
       while (v1 + v2 > 1) {
-        v1 = Math.pow (nextUniform(r), 1 / alpha)
-        v2 = Math.pow (nextUniform(r), 1 / beta)
+        v1 = math.pow (nextUniform(r), 1 / alpha)
+        v2 = math.pow (nextUniform(r), 1 / beta)
       }
       return v1 / (v1 + v2)
     }

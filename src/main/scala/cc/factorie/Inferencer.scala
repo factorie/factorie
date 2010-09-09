@@ -27,8 +27,8 @@ trait Inferencer[V<:Variable,C] {
       @author Andrew McCallum
       @since 0.8
    */
-  def infer(variables:Collection[V], varying:Collection[C]): LatticeType
-  //def infer(factors:TemplateList[VectorTemplate], variables:Collection[V]): LatticeType
+  def infer(variables:Iterable[V], varying:Iterable[C]): LatticeType
+  //def infer(factors:TemplateList[VectorTemplate], variables:Iterable[V]): LatticeType
 }
 
 /** An Inferencer in which the context arguments are Variables.
@@ -37,9 +37,9 @@ trait Inferencer[V<:Variable,C] {
  */
 trait VariableInferencer[V<:Variable] extends Inferencer[V,V] {
   /** Infer the 'variables', changing their values, but not other variables' (except perhaps through variable-value coordination). */
-  def infer(variables:Collection[V]): LatticeType = infer(variables, variables)
+  def infer(variables:Iterable[V]): LatticeType = infer(variables, variables)
   /** Infer the 'targets' variables, considering not only changes their their values, but also changes to the 'marginalizing' variables. */
-  def inferMarginalizing(targets:Collection[V], marginalizing:Collection[V]) = infer(targets, { val a = new ArrayBuffer[V]; a ++= targets; a ++= marginalizing; a})
+  def inferMarginalizing(targets:Iterable[V], marginalizing:Iterable[V]) = infer(targets, { val a = new ArrayBuffer[V]; a ++= targets; a ++= marginalizing; a})
 }
 
 trait Maximizer[V<:Variable] extends Inferencer[V,V] // Include something like this?
@@ -62,18 +62,18 @@ trait Optimizer {
  */
 class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
   override type LatticeType = BPLattice
-  def infer(variables:Collection[V], varying:Collection[V]): LatticeType = infer(variables, varying, 4) // TODO Make a more sensible default
-  def infer(variables:Collection[V], varying:Collection[V], numIterations:Int): LatticeType = {
+  def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = infer(variables, varying, 4) // TODO Make a more sensible default
+  def infer(variables:Iterable[V], varying:Iterable[V], numIterations:Int): LatticeType = {
     val result = new BPLattice(varying, model)
     result.update(numIterations) // TODO Of course make this smarter later
     result.setVariablesToMax(variables) // For now, just inference my marginal maximization
     // NOTE the above line requires that 'variables' is a subset of varying, of course!
     result
   }
-  def infer(variables:Collection[V], numIterations:Int): LatticeType = infer(variables, variables, numIterations)
+  def infer(variables:Iterable[V], numIterations:Int): LatticeType = infer(variables, variables, numIterations)
   // waiting for Scala 2.8 default parameters...
-  def inferTreewise(variables:Collection[V], varying:Collection[V]): LatticeType = inferTreewise(variables, varying, 1)
-  def inferTreewise(variables:Collection[V], varying:Collection[V], maxiterations:Int): LatticeType = {
+  def inferTreewise(variables:Iterable[V], varying:Iterable[V]): LatticeType = inferTreewise(variables, varying, 1)
+  def inferTreewise(variables:Iterable[V], varying:Iterable[V], maxiterations:Int): LatticeType = {
     // NOTE: 'variables' must be a subset of varying, of course!
     val result = new BPLattice(varying, model)
 
@@ -93,8 +93,8 @@ class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends Variabl
     result.setVariablesToMax(variables)
     result
   }
-  def inferTreewise(variables:Collection[V]): LatticeType = inferTreewise(variables, variables, 1)
-  def inferTreewise(variables:Collection[V], maxiterations:Int): LatticeType = inferTreewise(variables, variables, maxiterations)
+  def inferTreewise(variables:Iterable[V]): LatticeType = inferTreewise(variables, variables, 1)
+  def inferTreewise(variables:Iterable[V], maxiterations:Int): LatticeType = inferTreewise(variables, variables, maxiterations)
 }
 
 
@@ -115,7 +115,7 @@ class BruteForce[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
     val iterators = variables.map(v2 => v2.asInstanceOf[V].settings).toList
     iterators.foreach(setting => {setting.reset; setting.next}) // reset each iterator and advance to first setting.
     var score = 0.0
-    var best_score = Math.NEG_INF_DOUBLE
+    var best_score = Double.NegativeInfinity
     var best = null.asInstanceOf[Config]
     do {
       score = model.score(variables)
@@ -139,8 +139,8 @@ class BruteForce[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
   /** Iterate through all combinations of values in Variables given their `SettingIterators */
   private def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
     if (vs == Nil) false
-    else if (vs.first.hasNext) {vs.first.next; true}
-    else if (vs.tail != Nil) {vs.first.reset; vs.first.next; nextValues(vs.tail)}
+    else if (vs.head.hasNext) {vs.head.next; true}
+    else if (vs.tail != Nil) {vs.head.reset; vs.head.next; nextValues(vs.tail)}
     else false
   }
 }

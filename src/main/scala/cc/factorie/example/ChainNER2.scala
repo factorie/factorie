@@ -137,7 +137,7 @@ object ChainNER2 {
     while (i < labels.length && count < maxErrors) {
       val label = labels(i)
       if (!label.valueIsTruth && label.hasPrev && label.hasNext && count < maxErrors) {
-        var j = Math.max(i-contextSize, 0); var numTruthsAfter = -contextSize
+        var j = math.max(i-contextSize, 0); var numTruthsAfter = -contextSize
         do {
           val l = labels(j)
           println("%s %-6s %-6s %-18s %s".format((if (l.valueIsTruth) " " else "*"), l.trueValue, l.value, l.token.word, l.token.toString))

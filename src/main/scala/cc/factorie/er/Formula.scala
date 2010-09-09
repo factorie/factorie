@@ -159,7 +159,7 @@ case class LessThan[X<:Variable](c1:IntExpression[X], c2:IntExpression[X]) exten
 /** The form of Template statistics used by a logical Formula. */
 trait LogicStatistics extends DotStatistics1[BooleanVar] {
   // Should a non-zero weight instead be spread across each of the two possibilities?
-  def *(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = Math.log(w); this }
+  def *(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = math.log(w); this }
 }
 
 

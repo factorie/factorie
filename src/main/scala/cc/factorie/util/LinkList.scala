@@ -27,7 +27,7 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
   def lengthToLast  : Int = if (next eq null) 0 else 1 + next.lengthToLast
   def length: Int = 1 + first.lengthToLast
   override def size: Int = length
-  override def first: This = if (prev eq null) this else prev.first
+  override def first: This = if (prev eq null) this else prev.head
   override def last: This = if (next eq null) this else next.last
   def apply(i:Int): This = first.nextBy(i)
   
@@ -53,7 +53,7 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
 
   /** Return an Iterator over all links in the sequence of which this is a member. */
   override def iterator: Iterator[This] = new Iterator[This] {
-    var elems = LinkList.this.first
+    var elems = LinkList.this.head
     def hasNext = (elems ne null)
     def next = { val res = elems; elems = elems.next; res }
   }
@@ -110,15 +110,15 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
   /** Insert list "that" before this link */
   def preInsert(that:This): Unit = if (prev ne null) prev.postInsert(that) else prepend(that)
  
-  /** Returning this.first permits usage such as: val token = null; token = new Token() prepend token; */
-  def prepend(that:This): This = if (that eq null) this.first else {
+  /** Returning this.head permits usage such as: val token = null; token = new Token() prepend token; */
+  def prepend(that:This): This = if (that eq null) this.head else {
     if (that.prev != null) throw new IllegalArgumentException("Trying to prepend the middle of another LinkList")
     if (prev eq null) {
       val last = that.last
       prev = last
       that.last.next = this
     } else prev.prepend(that)
-    this.first
+    this.head
   }
 
   def remove() : This = {
@@ -154,7 +154,7 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
   // TODO consider prepending all method names that operate on individual links with "link" ??
   /** Swap the single link "this" with the single link "that" */
   def swapWith(that:This): Unit = if (that ne this) {
-    val origLength = this.first.length 
+    val origLength = this.head.length 
     val thisNext = next
     val thisPrev = prev
     if (this.next eq that) { // Neighbors: this, that
@@ -181,7 +181,7 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
       that.next = thisNext
       that.prev = thisPrev
     }
-    assert(origLength == this.first.length && origLength == that.first.length)
+    assert(origLength == this.head.length && origLength == that.head.length)
   }
  
   def swapWithNext: Unit =

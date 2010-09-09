@@ -31,7 +31,7 @@ class Multinomial[O<:DiscreteVar] extends DiscreteDistribution[O] with Generated
   final def pr(o:O): Double = pr(o.index)
   def proportion: Seq[Double] = this
   def prs: Seq[Double] = this //new RandomAccessSeq[Double] { def apply(i:Int) = pr(i); def length = count.size } // TODO Remove this method?
-  def logpr(index:Int) = Math.log(pr(index))
+  def logpr(index:Int) = math.log(pr(index))
   def logprIndices(indices:Seq[Int]) : Double = indices.foldLeft(0.0)(_+logpr(_))
   def prIndices(indices:Seq[Int]) : Double = indices.foldLeft(1.0)(_*pr(_))
   def pr(outcomes:Seq[O]) : Double = prIndices(outcomes.map(_.index))
@@ -95,7 +95,7 @@ class MultinomialMixture[M<:Multinomial[O]:ClassManifest,O<:DiscreteVar](ms:Seq[
   // TODO How can I avoid needing both M and O as type parameters.  I think M should automatically specify O.
   //type SourceType = ProportionDistribution[O];
   val components = ms.toArray
-  val length: Int = components.first.length
+  val length: Int = components.head.length
   val proportions = new DenseCountsMultinomial(ps)
   def pr(index:Int) = {
     var p = 0.0
@@ -231,7 +231,7 @@ abstract class SortedSparseCountsMultinomial[O<:DiscreteVar](dim:Int) extends Mu
   private var bufsize = 32
   private var siz = 0 // current size of buf 
   private val buf = new Array[Int](bufsize) // stores both count and topic packed into a single Int, indexed by pos
-  assert (dim < Math.MAX_SHORT)
+  assert (dim < Short.MaxValue)
   private val pos = new Array[Short](dim); for (i <- 0 until dim) pos(i) = -1 // mapping from index to pos in count 
   private def ti(pos:Int) = buf(pos) & topicMask // topic at position 
   private def co(pos:Int) = buf(pos) >> topicBits // count at position
@@ -294,9 +294,9 @@ class DenseCountsMultinomial[O<:DiscreteVar](val length:Int) extends CountsMulti
 //     val ratio = ocounts.elements.foldLeft(1.0)((p,e) => p * g(e._2+actualGenerativeSource.alpha(e._1)/g(actualGenerativeSource.alpha(e._1))))
 //     normalizer1 * normalizer2 * ratio
 //   }
-//   def logpr(obsCounts:Vector): Double = Math.log(pr(obsCounts)) //indices.foldLeft(0.0)(_+logpr(_))
+//   def logpr(obsCounts:Vector): Double = math.log(pr(obsCounts)) //indices.foldLeft(0.0)(_+logpr(_))
 //   override def prIndices(indices:Seq[Int]): Double = pr({val v = new SparseVector(length); indices.foreach(i => v(i) += 1.0); v})
-//   override def logprIndices(indices:Seq[Int]): Double = Math.log(prIndices(indices))
+//   override def logprIndices(indices:Seq[Int]): Double = math.log(prIndices(indices))
 //   override def _registerSample(o:O)(implicit d:DiffList) = { 
 //     super._registerSample(o) // Consider not calling super: Don't keep the outcomes in a HashMap; we have what we need in 'counts'  How much time would this save?  I tried; very little.
 //     postChange(o)

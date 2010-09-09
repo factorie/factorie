@@ -11,7 +11,7 @@ import cc.factorie._
 /** A method of iterative, numeric function maximization, given a function provided as an Optimizable object. */
 trait Optimizer {
   /** Returns true if converged. */
-  def optimize(numIterations:Int = Math.MAX_INT): Boolean
+  def optimize(numIterations:Int = Int.MaxValue): Boolean
   def isConverged: Boolean
   def optimizable: Optimizable
 }

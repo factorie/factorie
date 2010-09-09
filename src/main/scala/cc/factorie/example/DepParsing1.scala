@@ -29,13 +29,13 @@ object DepParsing1 {
     def parent = value
     /** Bool with value true if parent is to the right, false if parent is to the left. */
     def direction: Direction = if (parent.position > token.position) new Direction(true) else new Direction(false)
-    def distance: Distance = new Distance(Math.abs(parent.position - token.position))
+    def distance: Distance = new Distance(math.abs(parent.position - token.position))
     def position = value.position
     // Preserve projectivity when setting a new parent.  Not yet implemented.
     /*override def set(newParent:Token)(implicit d:DiffList): Unit = {
       super.set(newParent)
-      val min = Math.min(token.position, parent.position)
-      val max = Math.max(token.position, parent.position)
+      val min = math.min(token.position, parent.position)
+      val max = math.max(token.position, parent.position)
       for (b <- token.between(newParent)) {
         val bparent = b.parent
         if (bparent.value != null && (bparent.position < min || bparent.position > max))
@@ -101,7 +101,7 @@ object DepParsing1 {
         val node = s._1
         //println("objective "+node.valueIsTruth)
         if (node.valueIsTruth) 1.0 else 0.0
-        //-Math.abs(node.position - node.truePosition)
+        //-math.abs(node.position - node.truePosition)
       }
     }
   )
@@ -123,7 +123,7 @@ object DepParsing1 {
           val parentPosition = Integer.parseInt(fields(2))
           val token = new Token(word, pos, parentPosition, fields(3))
           val w = simplify(word)
-          token += w //.substring(0, Math.min(w.length, 6))
+          token += w //.substring(0, math.min(w.length, 6))
           //token += "POS="+pos
           sentence += token
         }

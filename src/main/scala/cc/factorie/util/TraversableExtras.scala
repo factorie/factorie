@@ -131,9 +131,9 @@ trait TraversableExtras[A] {
   }
 
   def sampleExpProportionally(extractor: A => Double)(implicit random:Random  = defaultRandom): A = {
-    val maxValue : Double = t.foldLeft(Math.NEG_INF_DOUBLE)((max,t) => {val x = extractor(t); assert(x==x); if (x>max) x else max})
-    if (maxValue == Math.NEG_INF_DOUBLE) throw new Error("Cannot sample from an empty list.")
-    sampleProportionally(t1 => if (extractor(t1) == Math.NEG_INF_DOUBLE) Math.NEG_INF_DOUBLE else Math.exp(extractor(t1) - maxValue))(random)
+    val maxValue : Double = t.foldLeft(Double.NegativeInfinity)((max,t) => {val x = extractor(t); assert(x==x); if (x>max) x else max})
+    if (maxValue == Double.NegativeInfinity) throw new Error("Cannot sample from an empty list.")
+    sampleProportionally(t1 => if (extractor(t1) == Double.NegativeInfinity) Double.NegativeInfinity else math.exp(extractor(t1) - maxValue))(random)
   }
 
 

@@ -35,7 +35,7 @@ class TestBP extends TestCase {
       def score(s: Stat) = if (s._1.intValue == s._2.intValue) scoreEqual else scoreUnequal
     })
 
-  private def e(num: Double) = Math.exp(num)
+  private def e(num: Double) = math.exp(num)
 
   def testV1F1 = {
     // one variable, one factor
@@ -133,7 +133,7 @@ class TestBP extends TestCase {
     val model = new Model(newTemplate1(0, 1), newTemplate2("a", "b", nm2var, 2, -1), newTemplate2("b", "c", nm2var, 1, 3))
     val latticeSum = new BPLattice(Array(v1, v2, v3), model)
     latticeSum.updateTreewise()
-    assertEquals(latticeSum.sumLogZ, Math.log(e(1) + e(2) + 2 * e(3) + e(4) + 2 * e(6) + e(7)), 0.001)
+    assertEquals(latticeSum.sumLogZ, math.log(e(1) + e(2) + 2 * e(3) + e(4) + 2 * e(6) + e(7)), 0.001)
     val latticeMax = new BPLattice(Array(v1, v2, v3), model)
     latticeMax.updateTreewiseMax()
     latticeMax.setVariablesToMarginalMax

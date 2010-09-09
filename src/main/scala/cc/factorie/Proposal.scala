@@ -23,7 +23,7 @@ import scala.util.Sorting
     "modelScore" is the difference in score after-before, according to the model.
     "objectiveScore" is the difference in score after-before, according to the objective function.
     "acceptanceScore" is the score that will be used to accept/rank/select among multiple proposals.  It is typically the modelScore multiplied by a temperature.
-    Note that objectiveScore may not be truly set, in which case it will have value Math.NaN_DOUBLE. */
+    Note that objectiveScore may not be truly set, in which case it will have value Double.NaN. */
 case class Proposal(diff:DiffList, modelScore:Double, objectiveScore:Double,  acceptanceScore:Double)
 
 

@@ -24,7 +24,7 @@ class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Opt
 
   val lineMaximizer = new BackTrackLineOptimizer(optimizable)
 
-  def optimize(numIterations: Int = Math.MAX_INT): Boolean = {
+  def optimize(numIterations: Int = Int.MaxValue): Boolean = {
     var value = optimizable.optimizableValue
     var gradient = optimizable.getOptimizableGradient()
     for (iteration <- 0 until numIterations) {
@@ -34,7 +34,7 @@ class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Opt
       step = lineMaximizer.optimize(gradient, step)
       val newValue = optimizable.optimizableValue
       println("objective=" + newValue)
-      if (2.0 * Math.abs(newValue - value) < tolerance * (Math.abs(newValue) + Math.abs(value) + eps)) {
+      if (2.0 * math.abs(newValue - value) < tolerance * (math.abs(newValue) + math.abs(value) + eps)) {
         isConverged = true
         return true
       }

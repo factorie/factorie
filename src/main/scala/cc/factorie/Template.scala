@@ -319,7 +319,7 @@ trait SparseHashWeights extends DotTemplate {
 
 abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
   val nc1 = nm1.erasure // "Neighbor class"
-  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.first.erasure } else null }
+  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
   // TODO create methods like this for all Templates and put abstract version in Template
   def hasNeighbor[NN](implicit m:Manifest[NN]) = nc1.isAssignableFrom(m.erasure)
   def factors(v:Variable): Iterable[Factor] = {
@@ -392,8 +392,8 @@ class TemplateWithDotStatistics1[N1<:DiscreteVars](implicit nm1:Manifest[N1]) ex
 abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template {
   val nc1 = nm1.erasure
   val nc2 = nm2.erasure
-  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.first.erasure } else null }
-  val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.first.erasure } else null }
+  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
+  val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.head.erasure } else null }
   override def factors(v: Variable): Iterable[Factor] = {
     var ret = new ListBuffer[Factor]
     if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1]) 
@@ -452,9 +452,9 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
   val nc1 = nm1.erasure
   val nc2 = nm2.erasure
   val nc3 = nm3.erasure
-  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.first.erasure } else null }
-  val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.first.erasure } else null }
-  val nc3a = { val ta = nm3.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc3)) { assert(ta.length == 1); ta.first.erasure } else null }
+  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
+  val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.head.erasure } else null }
+  val nc3a = { val ta = nm3.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc3)) { assert(ta.length == 1); ta.head.erasure } else null }
   override def factors(v: Variable): Iterable[Factor] = {
     var ret = new ListBuffer[Factor]
     if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1])
@@ -518,10 +518,10 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
   val nc2 = nm2.erasure
   val nc3 = nm3.erasure
   val nc4 = nm4.erasure
-  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.first.erasure } else null }
-  val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.first.erasure } else null }
-  val nc3a = { val ta = nm3.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc3)) { assert(ta.length == 1); ta.first.erasure } else null }
-  val nc4a = { val ta = nm4.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc4)) { assert(ta.length == 1); ta.first.erasure } else null }
+  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
+  val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.head.erasure } else null }
+  val nc3a = { val ta = nm3.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc3)) { assert(ta.length == 1); ta.head.erasure } else null }
+  val nc4a = { val ta = nm4.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc4)) { assert(ta.length == 1); ta.head.erasure } else null }
   override def factors(v: Variable): Iterable[Factor] = {
     var ret = new ListBuffer[Factor]
     if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1])

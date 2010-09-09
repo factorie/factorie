@@ -75,7 +75,7 @@ protected[er] def getGetterClass(c:Class[_]) : Class[_] = {
   }
   if (candidateGetterClasses.size > 0) {
     // Find the most specific subclass of the first domain class found
-    var dc = candidateGetterClasses.first
+    var dc = candidateGetterClasses.head
     candidateGetterClasses.foreach(dc2 => if (dc.isAssignableFrom(dc2)) dc = dc2)
     if (debug) println("getGetterClass "+c+" specific="+dc)
     return dc

@@ -158,7 +158,7 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
   def sizeAtCount(c:Int): Int = {
     if (!someCountsGathered) throw new Error("No counts gathered.")
     var ret = 0
-    val min = Math.min(size, _counts.size)
+    val min = math.min(size, _counts.size)
     for (i <- 0 until min) if (_counts(i) == c) ret += 1
     ret
   }
@@ -167,7 +167,7 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
   def sizeAtOrAboveCount(threshold:Int): Int = {
     if (!someCountsGathered) throw new Error("No counts gathered.")
     var ret = 0
-    val min = Math.min(size, _counts.size)
+    val min = math.min(size, _counts.size)
     for (i <- 0 until min) if (_counts(i) >= threshold) ret += 1
     ret
   }
@@ -245,7 +245,7 @@ trait DomainEntryCounter[V<:CategoricalVars[_]] extends util.Index[V#CategoryTyp
   def sizeAtCount(c:Int): Int = {
     if (!someCountsGathered) throw new Error("No counts gathered.")
     var ret = 0
-    val min = Math.min(size, _counts.size)
+    val min = math.min(size, _counts.size)
     for (i <- 0 until min) if (_counts(i) == c) ret += 1
     ret
   }
@@ -254,7 +254,7 @@ trait DomainEntryCounter[V<:CategoricalVars[_]] extends util.Index[V#CategoryTyp
   def sizeAtOrAboveCount(threshold:Int): Int = {
     if (!someCountsGathered) throw new Error("No counts gathered.")
     var ret = 0
-    val min = Math.min(size, _counts.size)
+    val min = math.min(size, _counts.size)
     for (i <- 0 until min) if (_counts(i) >= threshold) ret += 1
     ret
   }
@@ -416,7 +416,7 @@ object Domain {
     }
     if (candidateDomainClasses.size > 0) {
       // Find the most specific subclass of the first domain class found
-      var dc = candidateDomainClasses.first
+      var dc = candidateDomainClasses.head
       assert(dc ne null)
       candidateDomainClasses.foreach(dc2 => if (dc.isAssignableFrom(dc2)) dc = dc2)
       if (debug) println("getDomainClass "+c+" specific="+dc)

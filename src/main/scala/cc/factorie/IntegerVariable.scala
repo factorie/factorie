@@ -18,8 +18,8 @@ package cc.factorie
     @author Andrew McCallum */
 trait IntegerVars extends Variable {
   type VariableType <: IntegerVars
-  def maxIntValue = Math.MAX_INT
-  def minIntValue = Math.MIN_INT
+  def maxIntValue = Int.MaxValue
+  def minIntValue = Int.MinValue
   // TODO Consider a def maxValue: Double = Math.POS_INF_DOUBLE ??
   // TODO Implement a method def vector?
 }

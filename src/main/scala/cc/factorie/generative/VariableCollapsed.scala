@@ -129,7 +129,7 @@ class DirichletMultinomial[A<:DiscreteVar](val variable:Multinomial[A]) extends 
     val ratio = ocounts.elements.foldLeft(1.0)((p,e) => p * g(e._2 + parent.alpha(e._1)/g(parent.alpha(e._1))))
     normalizer1 * normalizer2 * ratio
   }
-  def logpr(obsCounts:Vector): Double = Math.log(pr(obsCounts)) //indices.foldLeft(0.0)(_+logpr(_))
+  def logpr(obsCounts:Vector): Double = math.log(pr(obsCounts)) //indices.foldLeft(0.0)(_+logpr(_))
   def addSample(o:A)(implicit d:DiffList) = increment(o.index, -1.0)
   def removeSample(o:A)(implicit d:DiffList) = increment(o.index, 1.0)
   //def sourcePreChange(s:SourceType)(implicit d:DiffList): Unit = {}

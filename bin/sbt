@@ -1,4 +1,4 @@
 #!/bin/bash
 
-java -XX:MaxPermSize=512M -Xmx1g -jar `dirname $0`/sbt-launch-0.7.3.jar "$@"
+java -XX:MaxPermSize=512M -Xmx1g -jar `dirname $0`/sbt-launch-0.7.4.jar "$@"
 

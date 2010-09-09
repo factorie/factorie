@@ -68,7 +68,7 @@ class Model(initTemplates:InitializedTemplate*) extends Seq[Template] {
       it forces the Iterable interpretation and avoids the single variable interpretation of score(Variable). */
   def scoreAll(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistic.score)
   /** Returns the average score, that is scoreAll of vars, normalized by the size of the collections vars. */
-  def aveScore(vars:Collection[Variable]): Double = scoreAll(vars) / vars.size
+  def aveScore(vars:Iterable[Variable]): Double = scoreAll(vars) / vars.size
 
   
   def save(dirname:String): Unit = {

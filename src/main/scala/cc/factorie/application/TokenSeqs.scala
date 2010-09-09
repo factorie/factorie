@@ -91,7 +91,7 @@ object TokenSeqs {
         If you want such a feature, you should += it to the Token (BinaryVectorVariable) */
     def isCapitalized = getOneToOne[BooleanObservationWithGetter](
       // TODO Consider making this more efficient by looking up an already-constructed instance, as in "object Bool"
-      token => if (java.lang.Character.isUpperCase(token.word.first)) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
+      token => if (java.lang.Character.isUpperCase(token.word.head)) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
       bool => throw new Error("Constant bool shouldn't change"))
   }
 
@@ -128,7 +128,7 @@ object TokenSeqs {
     // 't' is the Token to which we are adding features; 'existing' is the list of features already added; 'offsets' is the list of offsets yet to be added
     private def appendConjunctions(regex:String, t:T, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
       val result = new ArrayBuffer[List[(String,Int)]];
-      val offset: Int = offsets.first
+      val offset: Int = offsets.head
       val t2 = t.next(offset)
       val adding: Seq[String] = 
         if (t2 == null) { if (t.position + offset < 0) List("<START>") else List("<END>") }
@@ -311,8 +311,8 @@ object TokenSeqs {
   }
   def charNGrams(word:String, min:Int, max:Int): Seq[String] = {
     val w = "<"+word+">"
-    val prefixes = for (e <- min+1 to Math.min(max+1, word.length)) yield w.substring(0, e)
-    val suffices = for (b <- Math.max(w.length-1-max, 0) to w.length-1-min) yield w.substring(b, w.length)
+    val prefixes = for (e <- min+1 to math.min(max+1, word.length)) yield w.substring(0, e)
+    val suffices = for (b <- math.max(w.length-1-max, 0) to w.length-1-min) yield w.substring(b, w.length)
     prefixes ++ suffices
     //for (i <- 0 until w.length; j <- min to max; if (i+j < w.length)) yield w.substring(i,i+j)
   }

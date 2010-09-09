@@ -105,22 +105,22 @@ object SpanNER1 {
     // Token-Label within Span
     new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = for (token <- span) yield Stat(token, label) },
     // First Token of Span
-    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = Stat(span.first, span.label) },
+    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = Stat(span.head, span.label) },
     // Last Token of Span
     new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = Stat(span.last, span.label) },
     // Token before Span
-    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.first.hasPrev) Stat(span.first.prev, span.label) else Nil },
-    //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.first.hasPrev && span.first.prev.hasPrev) Stat(span.first.prev.prev, span.label) else Nil },
+    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.head.hasPrev) Stat(span.head.prev, span.label) else Nil },
+    //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.head.hasPrev && span.head.prev.hasPrev) Stat(span.head.prev.prev, span.label) else Nil },
     // Token after Span
     new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext) Stat(span.last.next, span.label) else Nil },
     // Single Token Span
-    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.length == 1) Stat(span.first, span.label) else Nil }
+    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.length == 1) Stat(span.head, span.label) else Nil }
     //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil },
     // Span Length with Label
     //new SpanLabelTemplate with DotStatistics2[SpanLength,Label] { def statistics(span:Span, label:Label) = Stat(span.spanLength, span.label) },
     // Label of span that preceeds or follows this one
     /*new Template2[Span,Span] with Statistics2[Label,Label] {
-      def unroll1(span:Span) = { val result = Nil; var t = span.first; while (t.hasPrev) { if } }
+      def unroll1(span:Span) = { val result = Nil; var t = span.head; while (t.hasPrev) { if } }
     }*/
   )
   
@@ -189,7 +189,7 @@ object SpanNER1 {
         // Add a new word to beginning, and change label
         if (span.canPrepend(1)) {
           for (labelValue <- Domain[Label]; if (labelValue != "O"))
-            changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.prepend(1)(d); span.first.spans.filter(_ != span).foreach(_.trimEnd(1)(d)) } }
+            changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.prepend(1)(d); span.head.spans.filter(_ != span).foreach(_.trimEnd(1)(d)) } }
         }
         // Add a new word to the end, and change label
         if (span.canAppend(1)) {

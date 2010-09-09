@@ -23,9 +23,9 @@ class LogLinearMaximumLikelihood(model: Model) {
 
   //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V], numIterations: Int): Unit = process(List(variables), numIterations)
   // TODO Figure out how to reinstate something like this.
-  //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V]): Unit = process(List(variables), Math.MAX_INT)
+  //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V]): Unit = process(List(variables), Int.MaxValue)
   /** First argument is a collection of collections-of-variables.  The former are considered iid.  The later may have dependencies.  */
-  def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Math.MAX_INT): Unit = {
+  def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Int.MaxValue): Unit = {
     // Data structure for holding per-template constraints and expectations
     class SuffStats extends HashMap[TemplatesToUpdate, Vector] {
       override def default(template: TemplatesToUpdate) = {
@@ -52,12 +52,12 @@ class LogLinearMaximumLikelihood(model: Model) {
     // Currently only supports iid single DiscreteVariables
     val optimizable = new OptimizableTemplates(templates) with OptimizableByValueAndGradient {
       // Cached values
-      private var oValue = Math.NaN_DOUBLE
+      private var oValue = Double.NaN
       private var oGradient: Array[Double] = new Array[Double](numOptimizableParameters)
       // Flush cache when parameters change
-      override def setOptimizableParameters(a: Array[Double]): Unit = {oValue = Math.NaN_DOUBLE; super.setOptimizableParameters(a)}
+      override def setOptimizableParameters(a: Array[Double]): Unit = {oValue = Double.NaN; super.setOptimizableParameters(a)}
 
-      override def optimizableParameter_=(index: Int, d: Double): Unit = {oValue = Math.NaN_DOUBLE; super.optimizableParameter_=(index, d)}
+      override def optimizableParameter_=(index: Int, d: Double): Unit = {oValue = Double.NaN; super.optimizableParameter_=(index, d)}
       // Calculation of value and gradient
       def setOptimizableValueAndGradient: Unit = {
         if (variableSets.forall(_.size == 1)) setOptimizableValueAndGradientIID
@@ -85,7 +85,7 @@ class LogLinearMaximumLikelihood(model: Model) {
           }
           // TODO Note that this will only work for variables with TrueSetting.  Where to enforceme this?
           variables.foreach(_.asInstanceOf[TrueSetting].setToTruth(null))
-          oValue += Math.log(model.score(variables)) - lattice.sumLogZ
+          oValue += math.log(model.score(variables)) - lattice.sumLogZ
         })
         val invVariance = -1.0 / gaussianPriorVariance
         model.templatesOf[TemplatesToUpdate].foreach {
@@ -119,7 +119,7 @@ class LogLinearMaximumLikelihood(model: Model) {
             model.factorsOf[TemplatesToUpdate](v).foreach(f => expectations(f.template) += f.statistic.vector * -distribution(i))
           })
 
-          oValue += Math.log(distribution(v.trueIntValue))
+          oValue += math.log(distribution(v.trueIntValue))
         }))
         val invVariance = -1.0 / gaussianPriorVariance
         model.templatesOf[TemplatesToUpdate].foreach {

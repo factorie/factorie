@@ -141,7 +141,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
 
         if (v.outcomes.size == 1) {
           // MixtureChoice v controls only one MixtureOutcome
-          val outcome = v.outcomes.first
+          val outcome = v.outcomes.head
           // If parents of outcomes are collapsed, decrement counts
           for (chosenParent <- outcome.chosenParents) sampler.collapsedOrNull(chosenParent) match {
             case p:CollapsedParameter => { /*println("CollapsedGibbsSampler -1.0 p="+p); */ p.updateChildStats(outcome, -1.0) }

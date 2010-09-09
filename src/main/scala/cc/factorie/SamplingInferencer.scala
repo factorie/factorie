@@ -18,7 +18,7 @@ class DiscreteMarginal[V<:DiscreteVars](val variable:V) extends cc.factorie.gene
 }
 
 // TODO This is over variables.  We want something over Factors... and perhaps also something separate over Variables
-class SamplingLattice[V<:DiscreteVars](variables:Collection[V]) extends Lattice {
+class SamplingLattice[V<:DiscreteVars](variables:Iterable[V]) extends Lattice {
   val map = new HashMap[V,DiscreteMarginal[V]]
   variables.foreach(v => map(v) = new DiscreteMarginal(v))
   def marginal(v:V) = map(v)
@@ -33,7 +33,7 @@ class SamplingInferencer[V<:DiscreteVariable,C](val sampler:Sampler[C]) extends 
   var burnIn = 100 // I really want these to be  the default-values for parameters to infer, in Scala 2.8.
   var thinning = 20
   var iterations = 500
-  def infer(targets:Collection[V], contexts:Collection[C]): SamplingLattice[V] = {
+  def infer(targets:Iterable[V], contexts:Iterable[C]): SamplingLattice[V] = {
     val lat = new SamplingLattice(targets)
     sampler.processAll(contexts, burnIn)
     for (i <- 0 until iterations/thinning) {
@@ -70,15 +70,15 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
   var rounds = 3
   var initialTemperature = 1.0
   var finalTemperature = 0.01
-  def infer(variables:Collection[V], numIterations:Int): LatticeType = {
+  def infer(variables:Iterable[V], numIterations:Int): LatticeType = {
     val origIterations = iterations; iterations = numIterations
     val result = inferd(variables, variables)(null)
     iterations = origIterations
     result
   }
-  def infer(variables:Collection[V], varying:Collection[V]): LatticeType = inferd(variables, varying)(null)
+  def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = inferd(variables, varying)(null)
   // TODO I really want Scala 2.8 default parameters: (implicit diff:DiffList = null)  !!!
-  def inferd(variables:Collection[V], varying:Collection[V])(implicit diff:DiffList): LatticeType = {
+  def inferd(variables:Iterable[V], varying:Iterable[V])(implicit diff:DiffList): LatticeType = {
     var currentScore = 0.0
     var maxScore = currentScore
     val maxdiff = new DiffList
@@ -104,7 +104,7 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
     var iterationsRemaining = iterations
     if (iterationsRemaining == 1) sampler.temperature = finalTemperature
     while (iterationsRemaining > 0) {
-      val iterationsNow = Math.min(iterationsPerRound, iterationsRemaining)
+      val iterationsNow = math.min(iterationsPerRound, iterationsRemaining)
       sampler.processAll(varying, iterationsNow)
       iterationsRemaining -= iterationsNow
       sampler.temperature += (finalTemperature-initialTemperature)/rounds // Adding a negative number

@@ -291,9 +291,9 @@
 //      }
 //      if(includeNoOpAction)
 //	{
-//	  val mirrorLogAcceptanceScore = Math.NEG_INF_DOUBLE //TODO: compute this properly taking into account all actions, requires sumLogProbs
-//	  //val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0) Math.NEG_INF_DOUBLE else Math.log(1-Math.exp(logAcceptanceScore))
-//	  candidateActions += new Proposal(new DiffList,0.0,0.0,mirrorLogAcceptanceScore,Math.NaN_DOUBLE,0)
+//	  val mirrorLogAcceptanceScore = Double.NegativeInfinity //TODO: compute this properly taking into account all actions, requires sumLogProbs
+//	  //val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0) Double.NegativeInfinity else math.log(1-math.exp(logAcceptanceScore))
+//	  candidateActions += new Proposal(new DiffList,0.0,0.0,mirrorLogAcceptanceScore,Double.NaN,0)
 //	}
 //      return candidateActions
 //    }

@@ -16,18 +16,18 @@ import cc.factorie._
     @author Andrew McCallum */
 object ArrayLA {
   type A = Array[Double]
-  def absNorm(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += Math.abs(s(i))); result }
+  def absNorm(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += math.abs(s(i))); result }
   def oneNorm(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i)); result }
-  def twoNorm(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); Math.sqrt(result) }
+  def twoNorm(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); math.sqrt(result) }
   def twoNormSquared(s:A): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); result }
-  def infinityNorm(s:A): Double = { var result = s(0); forIndex(s.length)(i => if (Math.abs(s(i)) > result) result = Math.abs(s(i))); result }
+  def infinityNorm(s:A): Double = { var result = s(0); forIndex(s.length)(i => if (math.abs(s(i)) > result) result = math.abs(s(i))); result }
   def +=(s:A, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) + d)
   def -=(s:A, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) - d)
   def *=(s:A, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) * d)
   def /=(s:A, d:Double): Unit = forIndex(s.length)(i => s(i) = s(i) / d)
   def incr(s:A, t:A): Unit = { require(s.length == t.length); forIndex(s.length)(i => s(i) += t(i)) }
   def incr(s:A, t:A, factor:Double): Unit = { require(s.length == t.length); forIndex(s.length)(i => s(i) += t(i) * factor) }
-  def different(s:A, t:A, threshold:Double): Boolean = { require(s.length == t.length); forIndex(s.length)(i => if (Math.abs(s(i) - t(i)) > threshold) return true); return false }
+  def different(s:A, t:A, threshold:Double): Boolean = { require(s.length == t.length); forIndex(s.length)(i => if (math.abs(s(i) - t(i)) > threshold) return true); return false }
   def dot(s:A, t:A): Double = { assert(s.length == t.length); var result = 0.0; forIndex(s.length)(i => result += s(i) * t(i)); result }
   def normalize(s:A): Double = { val sum = oneNorm(s); forIndex(s.length)(i => s(i) /= sum); sum }
   def oneNormalize(s:A): Double = normalize(s)
@@ -35,7 +35,7 @@ object ArrayLA {
   def twoSquaredNormalize(s:A): Double = { val norm = twoNormSquared(s); forIndex(s.length)(i => s(i) /= norm); norm }
   def absNormalize(s:A): Double = { val norm = absNorm(s); forIndex(s.length)(i => s(i) /= norm); norm }
   def contains(s:A, d:Double): Boolean = { forIndex(s.length)(i => if (s(i) == d) return true); false }
-  def isNaN(s:A): Boolean = contains(s, Math.NaN_DOUBLE)
+  def isNaN(s:A): Boolean = contains(s, Double.NaN)
   def substitute(s:A, oldValue:Double, newValue:Double): Unit = forIndex(s.length)(i => if (s(i) == oldValue) s(i) = newValue)
   def copy(s:A): Array[Double] = { val result = new Array[Double](s.length); set(result, s); result }
   def set(s:A, t:A): Unit = {

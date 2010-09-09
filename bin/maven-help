@@ -1,0 +1,41 @@
+#!/bin/bash
+
+echo "Get help via maven on:"
+echo "0: active-profiles"
+echo "1: all-profiles"
+echo "2: describe"
+echo "3: effective-pom"
+echo "4: effective-settings"
+echo "5: evaluate"
+echo "6: expressions"
+echo "7: system"
+echo "8: help"
+echo
+echo -n "?> "
+
+
+read Keypress
+
+#   [[:lower:]]   ) echo "Lowercase letter";;
+#   [[:upper:]]   ) echo "Uppercase letter";;
+#   [0-9]         ) echo "Digit";;
+
+
+HELP="help:"
+PR=""
+case "$Keypress" in
+   0  ) PR="active-profiles";;
+   1  ) PR="all-profiles";;
+   2  ) PR="describe";;
+   3  ) PR="effective-pom";;
+   4  ) PR="effective-settings";;
+   5  ) PR="evaluate";;
+   6  ) PR="expressions";;
+   7  ) PR="system";;
+   8  ) PR="help";;
+   *  ) echo "not an option";;
+esac
+
+mvn help:$PR
+
+

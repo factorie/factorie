@@ -53,7 +53,7 @@ class Logger(val name:String, outputStream: => OutputStream = System.err, @volat
 object Logger {
   val loggerMap = new scala.collection.mutable.HashMap[String,Logger]
   val globalLogger = new Logger("cc.factorie", System.err, WARN)
-  val neverLogger = new Logger("null", System.err, Math.MIN_INT) {
+  val neverLogger = new Logger("null", System.err, Int.MinValue) {
     override def log(theLevel: Int)(x: => Any): Unit = {}
   }
   def logger(name:String) = loggerMap.getOrElseUpdate(name, new Logger(name, System.err, WARN))

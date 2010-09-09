@@ -38,7 +38,7 @@ abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with TypedValue
   type ValueType = X
   type VariableType <: SeqVariable[X]
   //class XList[X](var elem:X, var prev:XList[X], var next:XList[X]) extends DoubleLinkedList[X,XList[X]] {
-  //this(xs:Seq[X]) = this(xs.first, null, new XList(xs.drop(1)))
+  //this(xs:Seq[X]) = this(xs.head, null, new XList(xs.drop(1)))
   //def prepend(x:X) : XList[X] = { val first = new XList(x, null, this); this.prev = first; first }
   //}
   private val seq = { val a = new ArrayBuffer[X](); a ++= sequence; a }
@@ -135,10 +135,10 @@ trait VarInTypedSeq[V >: Null <: VarInTypedSeq[V,S] with Variable, S<:Seq[V]] {
     val i = _position - n
     if (i >= 0 && i < seq.length) seq(i) else null
   }
-  def prevWindow(n:Int): Seq[V] = for (i <- Math.max(_position-n, 0) to Math.max(_position-1,0)) yield seq(i)
-  def nextWindow(n:Int): Seq[V] = for (i <- Math.min(_position+1, seq.length-1) to Math.min(_position+n, seq.length-1)) yield seq(i)
-  def window(n:Int): Seq[V] = for (i <- Math.max(_position-n,0) to Math.min(_position+n,seq.length-1)) yield seq(i)
-  def windowWithoutSelf(n:Int): Seq[V] = for (i <- Math.max(_position-n,0) to Math.min(_position+n,seq.length-1); if (i != _position)) yield seq(i)
+  def prevWindow(n:Int): Seq[V] = for (i <- math.max(_position-n, 0) to math.max(_position-1,0)) yield seq(i)
+  def nextWindow(n:Int): Seq[V] = for (i <- math.min(_position+1, seq.length-1) to math.min(_position+n, seq.length-1)) yield seq(i)
+  def window(n:Int): Seq[V] = for (i <- math.max(_position-n,0) to math.min(_position+n,seq.length-1)) yield seq(i)
+  def windowWithoutSelf(n:Int): Seq[V] = for (i <- math.max(_position-n,0) to math.min(_position+n,seq.length-1); if (i != _position)) yield seq(i)
   def between(other:V): Seq[V] = {
     assert (other.seq == seq)
     if (other.position > _position)

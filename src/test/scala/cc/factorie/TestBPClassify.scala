@@ -104,7 +104,7 @@ class TestBPClassify extends TestCase {
         trueMarginal(i) = model.score(v)
       })
 
-      var logZ = Math.NEG_INF_DOUBLE
+      var logZ = Double.NegativeInfinity
       forIndex(trueMarginal.length)(i => {
         logZ = Maths.sumLogProb(logZ,trueMarginal(i))
       })
@@ -113,7 +113,7 @@ class TestBPClassify extends TestCase {
       Maths.expNormalize(trueMarginal)
 
       forIndex(trueMarginal.length)(i => {
-        if (Math.abs(trueMarginal(i) - bpMarginal(i)) > 1e-6) {
+        if (math.abs(trueMarginal(i) - bpMarginal(i)) > 1e-6) {
           throw new RuntimeException("BP MARGINALS INCORRECT! " + trueMarginal(i) + " " + bpMarginal(i))
         }
       })
@@ -121,7 +121,7 @@ class TestBPClassify extends TestCase {
     println("DONE CHECKING BP MARGINALS")
 
     val bpSumLogZ = lattice.sumLogZ
-    if (Math.abs(trueSumLogZ - lattice.sumLogZ) > 1e-6) {
+    if (math.abs(trueSumLogZ - lattice.sumLogZ) > 1e-6) {
       throw new RuntimeException("BP LOGZ INCORRECT! " + trueSumLogZ + " " + bpSumLogZ)
     }
 
@@ -254,7 +254,7 @@ class SimpleMaxEntTrainer(model: Model) {
   type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 1.0
 
-  def process[V <: DiscreteVariableWithTrueSetting](variables: Seq[V], numIterations: Int = Math.MAX_INT): Unit = {
+  def process[V <: DiscreteVariableWithTrueSetting](variables: Seq[V], numIterations: Int = Int.MaxValue): Unit = {
     // Data structure for holding per-template constraints and expectations
     class SuffStats extends HashMap[TemplatesToUpdate, Vector] {
       override def default(template: TemplatesToUpdate) = {
@@ -281,12 +281,12 @@ class SimpleMaxEntTrainer(model: Model) {
     // Currently only supports iid single DiscreteVariables
     val optimizable = new OptimizableTemplates(templates) with OptimizableByValueAndGradient {
       // Cached values
-      private var oValue = Math.NaN_DOUBLE
+      private var oValue = Double.NaN
       private var oGradient: Array[Double] = new Array[Double](numOptimizableParameters)
       // Flush cache when parameters change
-      override def setOptimizableParameters(a: Array[Double]): Unit = {oValue = Math.NaN_DOUBLE; super.setOptimizableParameters(a)}
+      override def setOptimizableParameters(a: Array[Double]): Unit = {oValue = Double.NaN; super.setOptimizableParameters(a)}
 
-      override def optimizableParameter_=(index: Int, d: Double): Unit = {oValue = Math.NaN_DOUBLE; super.optimizableParameter_=(index, d)}
+      override def optimizableParameter_=(index: Int, d: Double): Unit = {oValue = Double.NaN; super.optimizableParameter_=(index, d)}
       // Calculation of value and gradient
       def setOptimizableValueAndGradient: Unit = {
         val expectations = new SuffStats
@@ -308,7 +308,7 @@ class SimpleMaxEntTrainer(model: Model) {
             model.factorsOf[TemplatesToUpdate](v).foreach(f => expectations(f.template) += f.statistic.vector * -distribution(i))
           })
 
-          oValue += Math.log(distribution(v.trueIntValue))
+          oValue += math.log(distribution(v.trueIntValue))
         })
         val invVariance = -1.0 / gaussianPriorVariance
         model.templatesOf[TemplatesToUpdate].foreach {

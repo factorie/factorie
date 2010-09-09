@@ -75,7 +75,7 @@ class CollapsedVariationalBayes[A<:Variable with QDistribution](collapse:Iterabl
 
         if (v.gatedRefs.size == 1) {
           // MixtureChoice v controls only one GatedRefVariable
-          val ref = v.gatedRefs.first.asInstanceOf[GatedParameterRef[Proportions,MixtureOutcome]]
+          val ref = v.gatedRefs.head.asInstanceOf[GatedParameterRef[Proportions,MixtureOutcome]]
           val refchild = ref.child.asInstanceOf[MixtureOutcome]
           val refchildq = qp(refchild).asInstanceOf[MixtureOutcome]
           assert(refchild == refchildq) // We don't yet know how to handle marginzalized 'z' and marginalized 'w'
@@ -151,7 +151,7 @@ class MeanFieldInferencer1[A<:Variable with IterableSettings](model:Model, varia
     proposals = for (diff <- v.settings) yield {
       val factors = diff.factorsOf[Template](model)
       val modelScore = diff.scoreAndUndo(model)
-      new Proposal(diff, modelScore, Math.NaN_DOUBLE, modelScore)
+      new Proposal(diff, modelScore, Double.NaN, modelScore)
     }
     val proposal = sampleExpProportionally(proposals, _.acceptanceScore)
     proposal.diff.redo

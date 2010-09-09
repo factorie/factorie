@@ -41,8 +41,8 @@ abstract class BPFactor(val factor: Factor) {
   /**Iterate through all combinations of values in Variables given their `SettingIterators */
   private def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
     if (vs == Nil) false
-    else if (vs.first.hasNext) {vs.first.next; true}
-    else if (vs.tail != Nil) {vs.first.reset; vs.first.next; nextValues(vs.tail)}
+    else if (vs.head.hasNext) {vs.head.next; true}
+    else if (vs.tail != Nil) {vs.head.reset; vs.head.next; nextValues(vs.tail)}
     else false
   }
 
@@ -106,7 +106,7 @@ abstract class BPFactor(val factor: Factor) {
         } else { // This factor has variable neighbors in addition to v itself
           // Sum over all combinations of values in neighboring variables with v's value fixed to i.
           neighborSettings.foreach(setting => {setting.reset; setting.next}) // reset iterator and advance to first setting.
-          msg(i) = Math.NEG_INF_DOUBLE // i.e. log(0)
+          msg(i) = Double.NegativeInfinity // i.e. log(0)
           do {
             msg(i) = Maths.sumLogProb(msg(i), factor.statistic.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
           } while (nextValues(neighborSettings))
@@ -126,7 +126,7 @@ abstract class BPFactor(val factor: Factor) {
           //maxIndex(i) = -1
         } else { // This factor has variable neighbors in addition to v itself
           neighborSettings.foreach(setting => {setting.reset; setting.next})
-          msg(i) = Math.NEG_INF_DOUBLE
+          msg(i) = Double.NegativeInfinity
           //maxIndex(i) = -1
           //var settingCount = 0
           do {
@@ -262,7 +262,7 @@ abstract class BPFactor(val factor: Factor) {
   def logZ: Double = {
     val variableSettings = this.variables.filter(_.isInstanceOf[V]).map(v => v.asInstanceOf[V].settings).toList
     variableSettings.foreach(setting => {setting.reset; setting.next})
-    var result = Math.NEG_INF_DOUBLE
+    var result = Double.NegativeInfinity
     do {
       val score = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
       result = Maths.sumLogProb(result, score)
@@ -321,7 +321,7 @@ class DiscreteMarginal1[V <: DiscreteVar](val variable: V) extends RandomAccessS
 }
 
 // TODO Rename "SumProductLattice" and "MaxProductLattice"
-class BPLattice(val variables: Collection[BeliefPropagation.BPVariable], model: Model) extends Lattice {
+class BPLattice(val variables: Iterable[BeliefPropagation.BPVariable], model: Model) extends Lattice {
   type V = BeliefPropagation.BPVariable
   // Data structure for holding mapping from Variable to the collection of BPFactors that touch it
   private val v2m = new HashMap[Variable, ArrayBuffer[BPFactor]] {override def default(v: Variable) = {this(v) = new ArrayBuffer[BPFactor]; this(v)}}

@@ -15,7 +15,7 @@ class Poisson(val mean:RealVarParameter, value:Int = 0)(implicit d:DiffList = nu
   def pr: Double = prFrom(mean.doubleValue)
   def prFrom(mean:Double): Double = {
     val k = this.intValue
-    Math.pow(mean, k) * Math.exp(-mean) / Maths.factorial(k)
+    math.pow(mean, k) * math.exp(-mean) / Maths.factorial(k)
   }
   def prFrom(parents:Seq[Parameter]): Double = parents match {
     case Seq(mean:RealVar) => prFrom(mean.doubleValue)

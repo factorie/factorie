@@ -17,13 +17,13 @@ trait GaussianVar extends RealVariable with GeneratedVariable {
   def parents: Seq[Parameter] = List(mean, variance)
   def logprFrom(mean:Double, variance:Double): Double = {
     val diff = this.doubleValue - mean
-    return - diff * diff / (2 * variance) - 0.5 * Math.log(2 * Math.Pi * variance)
+    return - diff * diff / (2 * variance) - 0.5 * math.log(2 * math.Pi * variance)
   }
   override def logpr: Double = logprFrom(mean.doubleValue, variance.doubleValue)
   def logprFrom(parents:Seq[Variable]): Unit = parents match {
     case Seq(mean:RealVar, variance:RealVar) => logprFrom(mean.doubleValue, variance.doubleValue)
   }
-  def pr: Double = Math.exp(logpr)
+  def pr: Double = math.exp(logpr)
   def prFrom(parents:Seq[Parameter]): Double = logprFrom(parents)
   def sampleFrom(mean:RealVar, variance:RealVar)(implicit d:DiffList) = 
     set(Maths.nextGaussian(mean.doubleValue, variance.doubleValue)(cc.factorie.random))
@@ -57,7 +57,7 @@ object Gaussian {
       val diff = mean - s.doubleValue
       variance += diff * diff * w
     }
-    variance = Math.sqrt(variance / (weightSum - 1))
+    variance = math.sqrt(variance / (weightSum - 1))
   }
     */
 }

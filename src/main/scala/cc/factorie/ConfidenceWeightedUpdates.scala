@@ -100,8 +100,8 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
      if(marginMean >= gaussDeviate * marginVar)
        return 0.0
       if(marginVar > zeroEpsilon || marginVar < -zeroEpsilon)
-  lambda = (-v + Math.sqrt(v*v - 8*gaussDeviate*(marginMean - gaussDeviate*marginVar))) / (4*gaussDeviate*marginVar);
-      Math.max(0, lambda);
+  lambda = (-v + math.sqrt(v*v - 8*gaussDeviate*(marginMean - gaussDeviate*marginVar))) / (4*gaussDeviate*marginVar);
+      math.max(0, lambda);
     }
 
 
@@ -200,7 +200,7 @@ trait AROWUpdates extends ConfidenceWeightedUpdates
   //helpful misc vars/members
   var _beta : Double = -1.0 //always must be positive
   def r : Double = 2*lambda //for convenience
-  def alpha(modelScore:Double,gradient:HashMap[DotTemplate,SparseVector]) : Double = Math.max(0,1-modelScore) * beta(gradient)
+  def alpha(modelScore:Double,gradient:HashMap[DotTemplate,SparseVector]) : Double = math.max(0,1-modelScore) * beta(gradient)
   def beta(gradient:HashMap[DotTemplate,SparseVector]) : Double = {if(_beta == -1.0)_beta = 1/(marginVariance(gradient) + r);_beta}
   
   override def updateWeights : Unit =

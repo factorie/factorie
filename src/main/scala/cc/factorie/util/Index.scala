@@ -110,8 +110,6 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
 
   // These accessors are kept separate to preserve collection subtype
   def indexAll(c: Iterator[T]) = c map index;
-  def indexAll(c: Iterable[T]) = c map index;
-  def indexAll(c: Collection[T]) = c map index;
   def indexAll(c: List[T]) = c map index;
   def indexAll(c: Array[T]) = c map index;
   def indexAll(c: Set[T]) = c map index;
@@ -121,8 +119,6 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
   def indexValues[K](c: scala.collection.Map[K, T]) = Map[K, T]() ++ c.map {case (a, b) => (a, index(b))}
 
   def getAll(c: Iterator[Int]) = c map get;
-  def getAll(c: Iterable[Int]) = c map get;
-  def getAll(c: Collection[Int]) = c map get;
   def getAll(c: List[Int]) = c map get;
   def getAll(c: Array[Int]) = c map get;
   def getAll(c: Set[Int]) = c map get;

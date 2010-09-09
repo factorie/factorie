@@ -21,13 +21,13 @@ trait GaussianMixtureVar extends GaussianVar with MixtureOutcome {
   def mean = meanComponents(choice.intValue)
   def variance = varianceComponents(choice.intValue)
   def logprFromMixtureComponent(index:Int): Double = logprFrom(meanComponents(index).doubleValue, varianceComponents(index).doubleValue)
-  def prFromMixtureComponent(index:Int) = Math.exp(logprFromMixtureComponent(index))
+  def prFromMixtureComponent(index:Int) = math.exp(logprFromMixtureComponent(index))
   def logprFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int): Double = {
     val mean = meanComponents(index)
     val variance = varianceComponents(index)
     logprFrom(map.getOrElse(mean, mean).asInstanceOf[RealVar].doubleValue, map.getOrElse(variance, variance).asInstanceOf[RealVar].doubleValue)
   }
-  def prFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int) = Math.exp(logprFromMixtureComponent(map, index))
+  def prFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int) = math.exp(logprFromMixtureComponent(map, index))
   def parentsFromMixtureComponent(index:Int) = List(meanComponents(index), varianceComponents(index))
   def chosenParents = List(meanComponents(choice.intValue), varianceComponents(choice.intValue))
   override def parents = List[Parameter](meanComponents, varianceComponents) ++ super.parents

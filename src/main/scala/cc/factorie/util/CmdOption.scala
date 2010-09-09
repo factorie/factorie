@@ -113,7 +113,7 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
       this.defaultValue = defaultValue
     }
     def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
-      this(name, { val fields = m.erasure.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.first }, defaultValue, helpMsg)
+      this(name, { val fields = m.erasure.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.head }, defaultValue, helpMsg)
     }
     def this(name:String, shortName:Char, valueName:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
       this(name, valueName, defaultValue, helpMsg)
