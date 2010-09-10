@@ -76,25 +76,20 @@ class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends Variabl
   def inferTreewise(variables:Iterable[V], varying:Iterable[V], maxiterations:Int): LatticeType = {
     // NOTE: 'variables' must be a subset of varying, of course!
     val result = new BPLattice(varying, model)
-
-    result.updateTreewise(false)
-    //var i = 0
-
-    //do {
-      //BeliefPropagation.maxdiff = 0
-
-      //result.update
-      //println("iteration %s: max-message-diff %s".format(i,BeliefPropagation.maxdiff))
-    //  i += 1
-    //} while (BeliefPropagation.maxdiff > 0.00000001 && i < maxiterations)
-    //if (i >= maxiterations && maxiterations > 1) {
-    //    println("\n\033[31mWARNING\033[0m: loopy BP did not converge in <= %s iterations".format(i))
-    //}
+    result.updateTreewise()
     result.setVariablesToMax(variables)
     result
   }
   def inferTreewise(variables:Iterable[V]): LatticeType = inferTreewise(variables, variables, 1)
   def inferTreewise(variables:Iterable[V], maxiterations:Int): LatticeType = inferTreewise(variables, variables, maxiterations)
+  def inferTreewiseMax(variables: Iterable[V], varying: Iterable[V], maxiterations: Int): LatticeType = {
+    val result = new BPLattice(varying, model)
+    result.updateTreewiseMax()
+    result.setVariablesToMax(variables)
+    result
+  }
+  def inferTreewiseMax(variables: Iterable[V]): LatticeType = inferTreewiseMax(variables, variables, 1)
+  def inferTreewiseMax(variables: Iterable[V], maxIterations: Int): LatticeType = inferTreewiseMax(variables, variables, maxIterations)
 }
 
 
