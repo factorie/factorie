@@ -18,12 +18,13 @@ import scala.util.Sorting
 
 // Variables for dealing with spans of sequences
 
-abstract class SpanVar[T](val seq: Seq[T], initStart: Int, initLength: Int) extends Variable with TypedValues with IndexedSeqEqualsEq[T] {
+abstract class SpanVar[T](theSeq: Seq[T], initStart: Int, initLength: Int) extends Variable with TypedValues with IndexedSeqEqualsEq[T] {
   type ValueType = T
   type VariableType <: SpanVariable[T];
   assert(initStart >= 0)
   assert(initLength > 0)
   assert(initStart + initLength <= seq.length)
+  def seq = theSeq // Use "def" instead of "val seq" in constructor so that subclasses can override this
   protected var _start = initStart
   protected var _length = initLength
   override def iterator = new Iterator[T] {
@@ -55,7 +56,7 @@ abstract class SpanVar[T](val seq: Seq[T], initStart: Int, initLength: Int) exte
 }
 
   
-abstract class SpanVariable[T](seq: Seq[T], initStart: Int, initLength: Int)(implicit d: DiffList) extends SpanVar(seq, initStart, initLength) {
+abstract class SpanVariable[T](theSeq: Seq[T], initStart: Int, initLength: Int)(implicit d: DiffList) extends SpanVar(theSeq, initStart, initLength) {
   //println("Model.this.SpanVariable constructor d.length="+d.length)
   if (d != null) new NewSpanVariable()(d)
   seq match { case s:VariableSeqWithSpans[T,SpanVariable[T]] => s.addSpan(this) }
@@ -150,7 +151,7 @@ trait VariableSeqWithSpans[T >:Null <: Variable with VarInTypedSeq[T,_],S<:SpanV
   /** Add the span to the list of spans maintained by this VariableSeqWithSpans.
       Typically you would not call this yourself; it is called automatically from the SpanVariable constructor. */
   def addSpan(s:S)(implicit d:DiffList): Unit = {
-    require(s.seq == this)
+    require(s.seq == this, "VariableSeqWithSpans.addSpan: span.seq="+s.seq+" != this="+this)
     AddSpanVariable(s)
   }
   /** Remove the span from the list of spans maintained by this VariableSeqWithSpans.
