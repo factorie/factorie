@@ -9,6 +9,8 @@ package cc.factorie.util
 import scala.collection.mutable.WeakHashMap
 
 // TODO This is ugly.  Implement this properly, instead of using silly inner WeakHashMap
+/** A set with weak references.
+    @author Andrew McCallum */
 class WeakHashSet[A] extends scala.collection.mutable.Set[A] {
   val _contents = new WeakHashMap[A,AnyRef]
   def contains(key: A): Boolean = _contents.contains(key)

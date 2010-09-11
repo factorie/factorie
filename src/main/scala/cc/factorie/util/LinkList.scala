@@ -9,6 +9,8 @@ package cc.factorie.util
 
 /** A Seq represented as a doubly-linked list of This.  
     Any one element represents the Seq of all the links of its sequence.  
+    WARNING: It can be confusing that the "the sequence" and 
+    "individual elements of the sequence" are represented by the same object.
     @author Andrew McCallum
     @see VarInMutableSeq
  */

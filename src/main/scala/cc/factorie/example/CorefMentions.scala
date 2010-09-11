@@ -148,7 +148,7 @@ object CorefMentionsDemo {
         override val objective = objective1
         def propose(context:Null)(implicit difflist:DiffList) : Double = {
           // Pick a random mention
-          val m = mentionList.sample(cc.factorie.random)
+          val m = mentionList.sampleUniformly(cc.factorie.random)
           //println("CorefMentions MHPerceptronLearner mention="+m)
           // Pick a random place to move it, either an existing Entity or a newly created one
           var e: Entity = null

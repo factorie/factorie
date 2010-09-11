@@ -20,9 +20,11 @@ trait StringExtras {
     }
   }
 
+  /** Return a new string that removes everything before a double newline.
+      Useful for skipping newsgroup headers or email headers in plain text documents. */
   def skipHeader = skipUntil("\n\n".r)
 
-  /**Implements Levenshtein Distance, with specific operation costs to go from this to s2.  Original version was from scalanlp. */
+  /** Implements Levenshtein Distance, with specific operation costs to go from this String to String s2. */
   def editDistance(s2: String, substCost: Int = 1, deleteCost: Int = 1, insertCost: Int = 1): Int = {
     if (s.length == 0) s2.length
     else if (s2.length == 0) s.length

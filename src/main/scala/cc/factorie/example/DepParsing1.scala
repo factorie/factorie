@@ -42,7 +42,7 @@ object DepParsing1 {
           bparent.set(seq(Global.random.nextInt(max-min+1)+min))
       }
     }*/
-    def setRandomly: Unit = { value = seq.sample }
+    def setRandomly: Unit = { value = seq.sampleUniformly }
     def settings = new SettingIterator {
       var i = -1
       val max = token.seq.length - 1

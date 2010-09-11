@@ -11,6 +11,7 @@ package cc.factorie.util
  * Data structure that represents a tree
  *
  **/
+// TODO Who wrote this?
 
 import scala.collection.mutable.{ArrayBuffer, HashSet, Set}
 

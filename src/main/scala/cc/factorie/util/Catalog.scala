@@ -5,11 +5,9 @@
    as published by http://www.opensource.org.  For further information,
    see the file `LICENSE.txt' included with this distribution. */
 
-package cc.factorie
+package cc.factorie.util
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-import scala.reflect.Manifest
-
 
 
 /** Classes that mix in the trait "Catalog" have available a IndexedSeq list of all instances ever created. 

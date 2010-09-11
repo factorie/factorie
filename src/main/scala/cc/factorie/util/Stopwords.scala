@@ -24,7 +24,7 @@ object Stopwords {
   } 
   
   val asArray = Array(
-      "a",
+  "a",
   "able",
   "about",
   "above",
@@ -548,6 +548,5 @@ object Stopwords {
   "yourselves",
   "z",
   "zero")
-
 
 }

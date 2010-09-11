@@ -110,7 +110,7 @@ trait TraversableExtras[A] {
 
 
 
-  def sample(implicit random: Random = defaultRandom): A = {
+  def sampleUniformly(implicit random: Random = defaultRandom): A = {
     val s2 = t.toSeq
     if (s2.size == 1) s2.head
     else s2(random.nextInt(s2.size))
