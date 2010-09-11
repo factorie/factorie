@@ -114,7 +114,7 @@ object TokenSeqs {
         val thisTokenNewFeatures = newFeatures(i)
         for (offsets <- offsetConjunctions) 
           thisTokenNewFeatures ++= appendConjunctions(regex, token, null, offsets).
-            map(list => list.sortBy({case(f,o)=>f+o}).map({case(f,o)=>f+"@"+o}).mkString("_&_")) // TODO "f+o" is doing string concatenation, consider something faster
+            map(list => list.sortBy({case(f,o)=>o+f}).map({case(f,o) => if (o == 0) f else f+"@"+o}).mkString("_&_")) // TODO "f+o" is doing string concatenation, consider something faster
       }
       // ... then add them to each Token
       for (i <- 0 until size) {

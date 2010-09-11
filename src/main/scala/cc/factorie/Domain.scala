@@ -85,6 +85,7 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
   def +=(x:V#CategoryType) : Unit = this.index(x)
   def ++=(xs:Traversable[V#CategoryType]) : Unit = xs.foreach(this.index(_))
  
+  override def toString = "CategoricalDomain["+m.erasure+"]("+size+")"
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)
     if (f.exists) return // Already exists, don't write it again

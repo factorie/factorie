@@ -12,8 +12,9 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
   def mean: Proportions
   def precision: RealVarParameter
   def parents = List(mean, precision)
-  mean.addChild(this)(null)
-  precision.addChild(this)(null)
+  // TODO xxx Just commented out the next two lines on 6 Sep 2010 -akm
+  //mean.addChild(this)(null)
+  //precision.addChild(this)(null) // TODO When do we detach these?!
   def increment(index:Int, incr:Double)(implicit d:DiffList): Unit
   def zero: Unit
   def counts(index:Int): Double
