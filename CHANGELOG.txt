@@ -1,0 +1,28 @@
+New in Version 0.9.0:
+
+Rudimentary optimize package includes ConjugateGradient and
+LimitedMemoryBFGS.
+
+LogLinearMaximumLikelihood sets parameters by BFGS on likelihood
+gradient calculated by belief propagation on trees.  Additional
+inference methods to come soon.
+
+Belief propagation now works.
+
+Variables no longer use their own "set" method to initialize their
+values.  This means that if you are relying on "override def set" to
+do some coordination during object initialization, you must separately
+set up this coordination in your own constructors.
+
+Rename Factor neighbor variables from "n1" to "_1" to better match
+Scala's Tuples.
+
+Support for generative models has been completely overhauled, and is
+now in its own separate package: cc.factorie.generative.
+
+Many variables have been renamed to better match standard names in
+statistics, including EnumVariable => CategoricalVariable.  
+
+
+New in Version 0.8.1:
+
