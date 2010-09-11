@@ -71,7 +71,7 @@ class LogLinearMaximumLikelihood(model: Model) {
           val lattice = new BPLattice(variables, model)
           // Do inference on the tree
           lattice.updateTreewise()
-          // For all factors
+          // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
           for (bpfactor <- lattice.bpFactors.values; if (bpfactor.factor.isInstanceOf[TemplatesToUpdate])) {
             val factor = bpfactor.factor.asInstanceOf[TemplatesToUpdate#Factor]
             val marginalMap = bpfactor.marginalMap
