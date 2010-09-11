@@ -99,6 +99,67 @@ class GrowableUniformProportions(val sizeProxy:Iterable[_]) extends Proportions 
   }
 }
 
+// Maintains an array of non-negative Double-valued counts which can be incremented.
+//  Useful for Proportions and Dirichlets.  The counts themselves are stored in '_counts',
+//  which is abstract.  The method 'length' is also abstract. 
+trait IncrementableCounts extends Variable {
+  protected val _counts: { def apply(i:Int):Double; def update(i:Int, x:Double):Unit; def length:Int } // Does this mean subclasses will use reflection to call these methods?
+  def length: Int = _counts.length
+  protected var _countsTotal: Double = 0.0
+  def counts: { def apply(i:Int):Double; def update(i:Int, x:Double):Unit; def length:Int } = _counts
+  def countsTotal = _countsTotal
+  def count(index:Int): Double = _counts(index)
+  def increment(index:Int, incr:Double)(implicit d:DiffList): Unit = {
+    _counts(index) += incr; _countsTotal += incr
+    if (d ne null) d += IncrementableCountsDiff(index, incr)
+    assert(_counts(index) >= 0, "counts("+index+")="+_counts(index)+" after incr="+incr)
+    assert(_countsTotal >= 0, "countsTotal="+_countsTotal+" after incr="+incr)
+  }
+  def increment(cs: Seq[Double])(implicit d:DiffList): Unit = {
+    for (i <- 0 until cs.length) { 
+      _counts(i) += cs(i); _countsTotal += cs(i)
+      assert(_counts(i) >= 0, "counts("+i+")="+_counts(i)+" after incr="+cs(i))
+      assert(_countsTotal >= 0, "countsTotal="+_countsTotal+" after incr="+cs(i))
+    }
+    if (d ne null) d += IncrementableCountsSeqDiff(cs)
+  }
+  def zero(implicit d:DiffList = null): Unit = 
+    for (i <- 0 until length) if (_counts(i) > 0.0) increment(i, -_counts(i))
+  def set(cs:Seq[Double], normalize:Boolean = true): Unit = {
+    // TODO normalize is currently ignored.
+    zero(null); increment(cs)(null)
+  }
+  case class IncrementableCountsDiff(index:Int, incr:Double) extends Diff {
+    def variable = IncrementableCounts.this
+    def undo = { _counts(index) -= incr; _countsTotal -= incr; assert(_counts(index) >= 0.0); assert(_countsTotal >= 0.0) }
+    def redo = { _counts(index) += incr; _countsTotal += incr }
+  }
+  case class IncrementableCountsSeqDiff(cs: { def apply(i:Int):Double; def length:Int }) extends Diff {
+    def variable = IncrementableCounts.this
+    def undo = { for (i <- 0 until cs.length) { _counts(i) -= cs(i); _countsTotal -= cs(i) } }
+    def redo = { for (i <- 0 until cs.length) { _counts(i) += cs(i); _countsTotal += cs(i) } }
+  }
+}
+
+trait ArrayIncrementableCounts extends IncrementableCounts {
+  protected val _counts = new scala.collection.mutable.WrappedArray.ofDouble(Array[Double](this.length))
+}
+
+trait HashIncrementableCounts extends IncrementableCounts {
+  protected val _counts = new IndexedSeq[Double] {
+    private val h = new scala.collection.mutable.HashMap[Int,Double] // new it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap
+    def length: Int = h.size
+    def apply(key:Int): Double = h(key)
+    def update(key:Int, value:Double): Unit = h.put(key, value)
+    def zero = h.clear
+  }
+  override def zero(implicit d:DiffList = null): Unit = {
+    if (d ne null) d += IncrementableCountsSeqDiff(_counts.map(d => -d))
+    _counts.zero
+  }
+}
+
+
 class DenseCountsProportions(len:Int) extends MutableProportions with Estimation[DenseCountsProportions] {
   def this(p:Seq[Double]) = { this(p.length); this.set(p)(null) }
   protected var _counts = new Array[Double](len)
@@ -174,6 +235,36 @@ object DenseCountsProportions {
     }
   }
 }
+
+
+
+//trait SparseVectorIncrementableCounts extends IncrementableCounts {
+//  protected val _counts = new SparseVector(this.length) { def length = size }
+//}
+
+
+
+// Multinomial for which sampling is efficient because outcomes are considered in order of highest-count first.
+//  This implementation is not yet finished.
+/*@deprecated // Not finished
+abstract class SortedSparseCountsProportions(dim:Int) extends CountsProportions {
+  def length: Int = pos.length
+  private var total: Int = 0 // total of all counts in buf
+  // Make sure we have enough bits to represent the dimension of the multinomial
+  private val topicMask = if (Integer.bitCount(dim) == 1) dim-1 else Integer.highestOneBit(dim) * 2 - 1
+  private val topicBits = Integer.bitCount(topicMask)
+  private var bufsize = 32
+  private var siz = 0 // current size of buf 
+  private val buf = new Array[Int](bufsize) // stores both count and topic packed into a single Int, indexed by pos
+  assert (dim < Math.MAX_SHORT)
+  private val pos = new Array[Short](dim); for (i <- 0 until dim) pos(i) = -1 // mapping from index to pos in count 
+  private def ti(pos:Int) = buf(pos) & topicMask // topic at position 
+  private def co(pos:Int) = buf(pos) >> topicBits // count at position
+  def incrementCount(index:Int, incr:Int): Unit = { val p:Int = pos(index); buf(p) = (co(p) + incr) }
+}*/
+
+
+
 
 
 // The binary special case, for convenience
