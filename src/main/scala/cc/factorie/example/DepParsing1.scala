@@ -169,18 +169,18 @@ object DepParsing1 {
   def eisner(model:Model, sentence:Seq[Node]): Unit = {
     val length = sentence.length
     // Score of setting i's parent to j.
-    val score = Array.fromFunction((i,j) => {
+    val score = Array.tabulate(length-1, length-1)((i,j) => {
       val d = new DiffList
       sentence(i).set(null)(null) // just to make sure that we populate the DiffList
       sentence(i).set(sentence(j).token)(d)
       d.score(model)
-    })(length-1, length-1)
+    })
     // Chart of incomplete items, right and left
-    val ir = new Array[Array[Entry]](length,length)
-    val il = new Array[Array[Entry]](length,length)
+    val ir = Array.ofDim[Entry](length,length)
+    val il = Array.ofDim[Entry](length,length)
     // Chart of complete items, right and left
-    val cr = new Array[Array[Entry]](length,length)
-    val cl = new Array[Array[Entry]](length,length)
+    val cr = Array.ofDim[Entry](length,length)
+    val cl = Array.ofDim[Entry](length,length)
     // Initialize the chart
     for (s <- 0 until length) {
       il(s)(s) = Entry(0.0, s)

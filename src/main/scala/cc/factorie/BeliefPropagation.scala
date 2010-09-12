@@ -67,7 +67,7 @@ abstract class BPFactor(val factor: Factor) {
   }
 
   // Message from this factor to Variable v.  Return this so we can say messageTo(v).update.message
-  abstract case class MessageTo(override val v: V) extends Message(v) {
+  abstract class MessageTo(override val v: V) extends Message(v) {
     // IterableSettings instances for each of the variables neighboring this BPFactor, except the variable 'v'
     // TODO Don't we need to remove the variables that are not among those we are inferring?
     protected val neighborSettings = variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
@@ -276,7 +276,7 @@ trait DiscreteMarginalN {
   def maxEntry: Array[Int]
 }
 // TODO: This should really inherit from Proportions
-class DiscreteMarginal1[V <: DiscreteVar](val variable: V) extends RandomAccessSeq[Double] with DiscreteMarginalN {
+class DiscreteMarginal1[V <: DiscreteVar](val variable: V) extends IndexedSeqEqualsEq[Double] with DiscreteMarginalN {
   def this(v: V, messages: Iterable[Array[Double]]) = {
     this (v);
     for (message <- messages) {

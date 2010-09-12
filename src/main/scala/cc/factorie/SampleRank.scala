@@ -19,7 +19,7 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
   def model: Model
   var learningMargin = 1.0
   def updateWeights: Unit
-  val amIMetropolis = this.isInstanceOf[MHSampler[Variable]] // TODO Can we find a way to avoid this special case?
+  val amIMetropolis = this.isInstanceOf[MHSampler[_/*Variable*/]] // TODO Can we find a way to avoid this special case?
   var logLevel = 0
 
   /** If objective has not yet been set non-null, get it from the cc.factorie.defaultObjective. */

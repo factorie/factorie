@@ -647,12 +647,12 @@ object Maths {
     {
       val lst = List(1.0, 2.0, 3.0);
       val arr = lst.toArray;
-      System.out.println("POLY: " + poly(lst, 0.1));
-      System.out.println("POLY: " + poly(lst, 1));
-      System.out.println("POLY: " + poly(lst, 0.25));
+      //System.out.println("POLY: " + poly(lst, 0.1));
+      //System.out.println("POLY: " + poly(lst, 1));
+      //System.out.println("POLY: " + poly(lst, 0.25));
 
-      System.out.println("POLY: " + poly(probitConstants.a, 0.25));
-      System.out.println("POLY: " + poly(probitConstants.a.toArray, 0.25));
+      //System.out.println("POLY: " + poly(probitConstants.a, 0.25));
+      //System.out.println("POLY: " + poly(probitConstants.a.toArray, 0.25));
 
       System.out.println("probit(0.025)=" + probit(0.025));
       System.out.println("probit(0.975)=" + probit(0.975));

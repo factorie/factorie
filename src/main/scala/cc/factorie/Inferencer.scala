@@ -105,7 +105,6 @@ class BruteForce[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
   // extends VariableInferencer[V]?
 
   def infer(variables:Seq[V]): Unit = {
-    assert(variables.forall(_.isInstanceOf[V]))
     // Argmax over all combinations of variable values
     val iterators = variables.map(v2 => v2.asInstanceOf[V].settings).toList
     iterators.foreach(setting => {setting.reset; setting.next}) // reset each iterator and advance to first setting.

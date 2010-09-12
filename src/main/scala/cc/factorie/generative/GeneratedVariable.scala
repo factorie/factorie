@@ -96,9 +96,9 @@ class GeneratedVarTemplate extends TemplateWithStatistics3[GeneratedVar,MixtureC
   def unroll2(c:MixtureChoiceVariable) = c.outcomes.map(v => Factor(v, c, Vars.fromSeq(v.parents)))
   def unroll3(vs:Vars[Parameter]) = throw new Error
   override def unroll3s(p:Parameter) = p match { 
-    case m:MixtureComponents[Parameter] => m.children.map(factorOfGeneratedVar(_))
+    case m:MixtureComponents[_] => m.children.map(factorOfGeneratedVar(_))
     case p:Parameter => p.children.flatMap(_ match {
-      case m:MixtureComponents[Parameter] => m.childrenOf(p).map(factorOfGeneratedVar(_))
+      case m:MixtureComponents[_] => m.childrenOf(p).map(factorOfGeneratedVar(_))
       case v:GeneratedVar => List(factorOfGeneratedVar(v))
     })
   }

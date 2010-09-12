@@ -152,7 +152,7 @@ object TokenSeqs {
         but for the simple case, this one is easier to call. */
     def addNeighboringFeatures(preOffset:Int, postOffset:Int): Unit = {
       // First gather all the extra features here, then add them to each Token
-      val extraFeatures = Array.fromFunction(i => new ArrayBuffer[String])(this.size)
+      val extraFeatures = Array.tabulate(this.size)(i => new ArrayBuffer[String])
       assert(preOffset < 1)
       val preSize = -preOffset; val postSize = postOffset
       for (i <- 0 until size) {

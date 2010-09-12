@@ -16,10 +16,13 @@ import scala.collection.mutable.{ArrayStack,HashSet,HashMap,ListBuffer}
 
 // TODO!!! Put this back for 2.8.0.Beta2
 // See http://old.nabble.com/Re:--scala-internals--RC8-candidate-for-the-first-2.8.0-beta-td27262766.html
-case class Score[X<:Variable](sns:ScoreNeighbor0[X]*) {
+class Score[X<:Variable](val sns:ScoreNeighbor0[X]*) {
   def manifests : Seq[Manifest[_<:Variable]] = sns.flatMap(_.manifests)
   //def getters : Seq[GetterHead[X,ScorableValues0]] = sns.flatMap(_.getters)
   def getters : Seq[Getter[ScorableValues0] {type A = X}] = sns.flatMap(_.getters)
+}
+object Score {
+  def apply[X<:Variable](sns:ScoreNeighbor0[X]*) = new Score[X](sns:_*)
 }
 //  case class Score[X<:Variable](sns:ScoreNeighbor0[X]) {
 //    def manifests : Seq[Manifest[_<:Variable]] = List(sns).flatMap(_.manifests)

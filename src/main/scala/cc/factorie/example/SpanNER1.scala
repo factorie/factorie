@@ -35,7 +35,7 @@ object SpanNER1 {
     override def skipNonCategories = true
   }
   class Label(labelName:String, val span: Span) extends LabelVariable(labelName)
-  class Span(labelString:String, seq:Sentence, start:Int, len:Int)(implicit d:DiffList) extends SpanVariable(seq, start, len) {
+  class Span(labelString:String, seq:Sentence, start:Int, len:Int)(implicit d:DiffList) extends SpanVariableInSeq[Token,Span](seq, start, len) {
     val label = new Label(labelString, this)
     def spanLength = new SpanLength(len)
     override def phrase = this.map(_.word).mkString(" ")

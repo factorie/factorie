@@ -51,7 +51,7 @@ class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntVa
     @inline final def redo = _value = newIndex
     @inline final def undo = _value = oldIndex
     override def toString = variable match { 
-      case cv:CategoricalVar[AnyRef] if (oldIndex >= 0) => "IntegerVariableDiff("+cv.domain.get(oldIndex)+"="+oldIndex+","+cv.domain.get(newIndex)+"="+newIndex+")"
+      case cv:CategoricalVar[_/*AnyRef*/] if (oldIndex >= 0) => "IntegerVariableDiff("+cv.domain.get(oldIndex)+"="+oldIndex+","+cv.domain.get(newIndex)+"="+newIndex+")"
       case _ => "IntegerVariableDiff("+oldIndex+","+newIndex+")"
     }
   }

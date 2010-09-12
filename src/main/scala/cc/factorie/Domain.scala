@@ -25,7 +25,7 @@ import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWri
 class Domain[V<:Variable](implicit m:Manifest[V]) {
   /** Return the classes that have this Domain. */
   def variableClasses: Seq[Class[V]] =
-    Domain.domains.elements.filter({case (key,value) => value == this}).map({case (key,value) => key.asInstanceOf[Class[V]]}).toList
+    Domain.domains.iterator.filter({case (key,value) => value == this}).map({case (key,value) => key.asInstanceOf[Class[V]]}).toList
   def save(dirname:String): Unit = {}
   def load(dirname:String): Unit = {}
   //made this public in order to check from outside whether the file to load from exists
@@ -92,7 +92,7 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
     val s = new PrintWriter(new FileWriter(f))
     //if (elements.next.asInstanceOf[AnyVal].getClass != classOf[String]) throw new Error("Only know how to save CategoryType String.")
     if (frozen) s.println("#frozen = true") else s.println("#frozen = false")
-    for (e <- elements) {
+    for (e <- iterator) {
       if (e.toString.contains("\n")) throw new Error("Cannot save Domain with entry containing newline.")
       s.println(e.toString)
     }
@@ -410,7 +410,7 @@ object Domain {
       val dc = getDomainClass(sc)
       if (dc != null) candidateDomainClasses += dc // Before Aug 21 did not have this check
     }
-    val interfaces = c.getInterfaces.elements
+    val interfaces = c.getInterfaces.iterator
     while (interfaces.hasNext) {
       val dc = getDomainClass(interfaces.next)
       if (dc != null) candidateDomainClasses += dc

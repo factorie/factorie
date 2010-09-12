@@ -144,7 +144,7 @@ object LabeledTokenSeqs {
     /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
     def addNeighboringFeatureConjunctions(regex:String, offsetConjunctions:Seq[Int]*): Unit = {
       // First gather all the extra features here,...
-      val newFeatures = Array.fromFunction(i => new ArrayBuffer[String])(this.size)
+      val newFeatures = Array.tabulate(this.size)(i => new ArrayBuffer[String])
       for (i <- 0 until size) {
         val token = this(i)
         val thisTokenNewFeatures = newFeatures(i)
@@ -188,7 +188,7 @@ object LabeledTokenSeqs {
         but for the simple case, this one is easier to call. */
     def addNeighboringFeatures(preOffset:Int, postOffset:Int): Unit = {
       // First gather all the extra features here, then add them to each Token
-      val extraFeatures = Array.fromFunction(i => new ArrayBuffer[String])(this.size)
+      val extraFeatures = Array.tabulate(this.size)(i => new ArrayBuffer[String])
       assert(preOffset < 1)
       val preSize = -preOffset; val postSize = postOffset
       for (i <- 0 until size) {
@@ -213,7 +213,7 @@ object LabeledTokenSeqs {
     
     def entities(background:String): Seq[(L,Seq[T])] = {
       val result = new ArrayBuffer[(L,Seq[T])]
-      var label = first.label
+      var label = head.label
       var entity: List[T] = Nil
       for (token <- this) {
         if (token.label.value != background) {

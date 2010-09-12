@@ -26,27 +26,28 @@ trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqual
     def next: Double = { i = i+1; apply(i) }
   }*/
   // TODO Remove this, now that we have IndexedSeqEqualsEq
-  @deprecated def asSeq: IndexedSeq[Double] = new IndexedSeq[Double] {
+  @deprecated("No longer necessary since Proportions is a IndexedSeq itself.")
+  def asSeq: IndexedSeq[Double] = new IndexedSeq[Double] {
     def apply(i:Int) = Proportions.this.apply(i)
     def length = Proportions.this.length
   }
-  def sampleInt = Maths.nextDiscrete(this.asSeq)(cc.factorie.random) // TODO Avoid the inefficiency of asSeq
+  def sampleInt = Maths.nextDiscrete(this)(cc.factorie.random) // TODO Avoid the inefficiency of asSeq
   def pr(index:Int) = apply(index)
   def logpr(index:Int) = math.log(apply(index))
   def maxPrIndex: Int = { var maxIndex = 0; var i = 1; while (i < length) { if (this(i) > this(maxIndex)) maxIndex =i; i += 1 }; maxIndex }
-  override def toString = asSeq.mkString(printName+"(", ",", ")")
+  override def toString = this.mkString(printName+"(", ",", ")")
 
   class DiscretePr(val index:Int, val pr:Double)
-  def top(n:Int): Seq[DiscretePr] = this.asSeq.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
-  def klDivergence(p:Proportions): Double = Maths.klDivergence(this.asSeq, p.asSeq)
-  def jsDivergence(p:Proportions): Double = Maths.jensenShannonDivergence(this.asSeq, p.asSeq)
+  def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
+  def klDivergence(p:Proportions): Double = Maths.klDivergence(this, p)
+  def jsDivergence(p:Proportions): Double = Maths.jensenShannonDivergence(this, p)
 }
 
 // TODO try to fold this automatically into a CategoricalProportions?
 trait TypedProportions[A<:DiscreteVar] extends Proportions {
   class DiscretePr(override val index:Int, override val pr:Double, val value:String) extends super.DiscretePr(index, pr)
   def top(n:Int)(implicit m:Manifest[A]): Seq[DiscretePr] = {
-    val entries = this.asSeq.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList
+    val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList
     Domain.get[A](m.erasure) match {
       case d:CategoricalDomain[_] => entries.map({case (p,i)=>new DiscretePr(i, p, d.get(i).toString)})
       case d:Any => entries.map({case (p,i)=>new DiscretePr(i, p, "")})
@@ -73,7 +74,7 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions with Estimation
     _p = newP
   }
   def :=(p:Seq[Double]) = set(p)(null)
-  def setUniform(implicit d:DiffList): Unit = set(new UniformProportions(length).asSeq)
+  def setUniform(implicit d:DiffList): Unit = set(new UniformProportions(length))
   case class ProportionsDiff(oldP:Array[Double], newP:Array[Double]) extends Diff {
     def variable = DenseProportions.this
     def undo = _p = oldP

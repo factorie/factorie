@@ -29,7 +29,7 @@ trait StringExtras {
     if (s.length == 0) s2.length
     else if (s2.length == 0) s.length
     else {
-      val d = new Array[Array[Int]](s.length + 1, s2.length + 1)
+      val d = Array.ofDim[Int](s.length + 1, s2.length + 1)
       for (i <- 0 to s.length)
         d(i)(0) = i * deleteCost
       for (i <- 0 to s2.length)

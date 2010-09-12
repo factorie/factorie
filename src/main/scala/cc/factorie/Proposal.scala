@@ -8,13 +8,9 @@
 package cc.factorie
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.reflect.Manifest
 import scala.util.Random
 import scala.Math
 import scala.util.Sorting
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
 // Proposals
 
@@ -24,7 +20,10 @@ import scala.util.Sorting
     "objectiveScore" is the difference in score after-before, according to the objective function.
     "acceptanceScore" is the score that will be used to accept/rank/select among multiple proposals.  It is typically the modelScore multiplied by a temperature.
     Note that objectiveScore may not be truly set, in which case it will have value Double.NaN. */
-case class Proposal(diff:DiffList, modelScore:Double, objectiveScore:Double,  acceptanceScore:Double)
+class Proposal(val diff:DiffList, val modelScore:Double, val objectiveScore:Double,  val acceptanceScore:Double) {
+  override def toString = "Proposal("+diff+", "+modelScore+", "+objectiveScore+", "+acceptanceScore+")"
+}
+
 
 
 // TODO The following trait is currently unused.  Remove it?

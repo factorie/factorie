@@ -48,7 +48,7 @@ class SamplerSuite extends ArrayBuffer[GenericSampler[_]] with Sampler[AnyRef] w
   this ++= ss*/
   
   def process1(context:AnyRef) : DiffList = {
-    val samplers = this.elements
+    val samplers = this.iterator
     while (samplers.hasNext) {
       //|**("SamplerSuite")
       val sampler = samplers.next

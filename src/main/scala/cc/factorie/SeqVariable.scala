@@ -86,7 +86,7 @@ class VariableSeq[V >: Null <: Variable with VarInTypedSeq[V,_]](initialCapacity
 /** For use with variables that have immutable-valued .next and .prev in a sequence. 
     This tries to avoid the need for the self-type in VarInSeq, but I don't think it will work.
     Deprecated.  Use VarInSeq instead. */
-@deprecated
+@deprecated("Use VarInSeq or VarInTypedSeq instead.")
 trait VarInSeq2 {
   this: Variable =>
     private var _seq: Seq[this.type] = null

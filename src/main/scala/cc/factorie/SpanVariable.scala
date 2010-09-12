@@ -20,11 +20,11 @@ import scala.util.Sorting
 
 abstract class SpanVar[T](theSeq: Seq[T], initStart: Int, initLength: Int) extends Variable with TypedValues with IndexedSeqEqualsEq[T] {
   type ValueType = T
-  type VariableType <: SpanVariable[T];
+  type VariableType <: SpanVar[T] //SpanVariable[T];
   assert(initStart >= 0)
   assert(initLength > 0)
   assert(initStart + initLength <= seq.length)
-  def seq = theSeq // Use "def" instead of "val seq" in constructor so that subclasses can override this
+  def seq: Seq[T] = theSeq // Use "def" instead of "val seq" in constructor so that subclasses can override this
   protected var _start = initStart
   protected var _length = initLength
   override def iterator = new Iterator[T] {
@@ -56,10 +56,11 @@ abstract class SpanVar[T](theSeq: Seq[T], initStart: Int, initLength: Int) exten
 }
 
   
-abstract class SpanVariable[T](theSeq: Seq[T], initStart: Int, initLength: Int)(implicit d: DiffList) extends SpanVar(theSeq, initStart, initLength) {
+abstract class SpanVariable[T<:Variable](theSeq: Seq[T], initStart: Int, initLength: Int)(implicit d: DiffList) extends SpanVar(theSeq, initStart, initLength) {
   //println("Model.this.SpanVariable constructor d.length="+d.length)
   if (d != null) new NewSpanVariable()(d)
-  seq match { case s:VariableSeqWithSpans[T,SpanVariable[T]] => s.addSpan(this) }
+  //seq match { case s:VariableSeqWithSpans[T,SpanVariable[T]] => s.addSpan(this) }
+  // TODO Consider changing type of theSeq in the constructor
   //val nsv : NewSpanVariable = new NewSpanVariable()(d)
   //println("NewSpanVariable "+nsv)
   //println("NewSpanVariable.variable "+nsv.variable)
@@ -72,7 +73,8 @@ abstract class SpanVariable[T](theSeq: Seq[T], initStart: Int, initLength: Int)(
   def delete(implicit d: DiffList): Unit = {
     preChange
     new DeleteSpanVariable()(d)
-    seq match { case s:VariableSeqWithSpans[T,SpanVariable[T]] => s.removeSpan(this) }
+    //seq match { case s:VariableSeqWithSpans[T,SpanVariable[T]] => s.removeSpan(this) }
+    //seq.asInstanceOf[VariableSeqWithSpans[T,SpanVariable[T]]].removeSpan(this)
     postChange
   }
   def setLength(l: Int)(implicit d: DiffList): Unit = if (l != length) { preChange; new SetLength(_length, l); postChange }
@@ -140,11 +142,23 @@ abstract class SpanVariable[T](theSeq: Seq[T], initStart: Int, initLength: Int)(
   }
 }
 
+/** A SpanVariable that describes a subsequence of a VariableSeqWithSpans, which in turn stores a pointer to this object. */
+class SpanVariableInSeq[T >:Null <: Variable with VarInTypedSeq[T,_],S<:SpanVariableInSeq[T,S]](theSeq: VariableSeqWithSpans[T,S], initStart: Int, initLength: Int)(implicit d: DiffList) 
+extends SpanVariable[T](theSeq, initStart, initLength) {
+  this: S =>
+  seq.addSpan(this)
+  override def seq: VariableSeqWithSpans[T,S] = theSeq
+  override def delete(implicit d: DiffList): Unit = {
+    super.delete
+    seq.removeSpan(this)
+  }
+}
 
-trait VariableSeqWithSpans[T >:Null <: Variable with VarInTypedSeq[T,_],S<:SpanVariable[T]] extends VariableSeq[T] {
+
+trait VariableSeqWithSpans[T >:Null <: Variable with VarInTypedSeq[T,_],S<:SpanVariableInSeq[T,S]] extends VariableSeq[T] {
   private val _spans = new ListBuffer[S];
   def spans: Seq[S] = _spans
-  def orderedSpans: Seq[S] = _spans.toList.sort((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
+  def orderedSpans: Seq[S] = _spans.toList.sortWith((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
   def spansContaining(position: Int): Iterable[S] = _spans.filter(s => s.start <= position && position < (s.start + s.length))
   def spansStartingAt(position: Int): Iterable[S] = _spans.filter(s => s.start == position)
   def spansEndingAt(position: Int): Iterable[S] = _spans.filter(s => s.start + s.length - 1 == position)
