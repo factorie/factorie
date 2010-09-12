@@ -113,9 +113,9 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
                             <!-- <executable>path/to/javac</executable> -->
-                            <!-- <fork>true</fork> -->
-                            <!-- <meminitial>128m</meminitial> -->
-                            <!-- <maxmem>512m</maxmem> -->
+                            <fork>true</fork>
+                            <meminitial>512m</meminitial>
+                            <maxmem>1024m</maxmem>
                             <!-- <compilerArgument>-verbose -bootclasspath ${java.home}\lib\rt.jar</compilerArgument> -->
                             <source>1.5</source> 
                             <target>1.5</target> 
