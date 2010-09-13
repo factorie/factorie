@@ -15,8 +15,6 @@
 
 
 package cc.factorie
-//import scalala.Scalala._
-//import scalala.tensor.Vector
 import cc.factorie.la._
 
 /** Implements Geoff Hinton's Constrastive Divergence, obtaining a gradient after one step away from the true configuration.

@@ -26,16 +26,15 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 trait Marginal
 trait Lattice
 
+/** Generic infrastructure for inference, both for calculating various marginals and maxima.
+    @author Andrew McCallum
+    @since 0.8 */
 trait Inferencer[V<:Variable,C] {
   type LatticeType <: Lattice
   /** Infer the target 'variables' using 'varying' to drive the exploration of changes to the configuration.
       For example, in SamplingInference, 'varying' are Sampler 'contexts' which do not necessarily have to be Variables;
       they are arbitrary keys to the sampler that may drive exploration, which will eventually result in changes to the 'target' variables.
-      If for you this separation of target variables and sampling contexts is unnecessary or confusing, consider VariableInferencer instead.
-
-      @author Andrew McCallum
-      @since 0.8
-   */
+      If for you this separation of target variables and sampling contexts is unnecessary or confusing, consider VariableInferencer instead.  */
   def infer(variables:Iterable[V], varying:Iterable[C]): LatticeType
   //def infer(factors:TemplateList[VectorTemplate], variables:Iterable[V]): LatticeType
 }
@@ -48,25 +47,17 @@ trait VariableInferencer[V<:Variable] extends Inferencer[V,V] {
   /** Infer the 'variables', changing their values, but not other variables' (except perhaps through variable-value coordination). */
   def infer(variables:Iterable[V]): LatticeType = infer(variables, variables)
   /** Infer the 'targets' variables, considering not only changes their their values, but also changes to the 'marginalizing' variables. */
-  def inferMarginalizing(targets:Iterable[V], marginalizing:Iterable[V]) = infer(targets, { val a = new ArrayBuffer[V]; a ++= targets; a ++= marginalizing; a})
+  def inferMarginalizing(targets:Iterable[V], marginalizing:Iterable[V]) = infer(targets, targets ++ marginalizing)
 }
 
-trait Maximizer[V<:Variable] extends Inferencer[V,V] // Include something like this?
+//trait Maximizer[V<:Variable] extends Inferencer[V,V] // Include something like this?
 // 'infer' here would actually change state to the maximum found
-// 'infer' in Inferencer would leave it in some random state, with the results really in the Marginal objects?
-
-// TODO Something like this also??  Where will optimizers like CongugateGradient and BFGS go?
-trait Optimizer {
-  def optimize: Unit
-  def optimize(numIterations:Int): Unit
-}
+// 'infer' in Inferencer would leave it in some random state, with the results really in the Marginal objects
 
 
 
 /** Perform inference according to belief propagation.
-
-    @author Andrew McCallum
-    @author Tim Vieira
+    @author Andrew McCallum, Kedar Bellare, Tim Vieira
     @since 0.8
  */
 class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
@@ -105,9 +96,8 @@ class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends Variabl
 
 /** BruteForce searches for the optimal configuration of a Collection of Variables
     by doing exhaustive enumeration or all possible configurations.
-
-  @author Tim Vieira
-*/
+    @author Tim Vieira */
+@deprecated("This class is not yet integrated into the general Inference framework.")
 class BruteForce[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
 
   // TODO: make this conform to some of the existing Inferencer interfaces.

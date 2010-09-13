@@ -18,9 +18,9 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.HashMap
 
-
+@deprecated("Just a temporary placeholder.  Very much unfinished.")
 class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A], model:Model = cc.factorie.generative.defaultGenerativeModel) {
-  private val _q = new HashMap[Variable,Variable] // 2nd is actually a Distribution[_]
+  private val _q = new HashMap[Variable,Variable] // 2nd is actually the Q distribution
   variables.foreach(v => _q(v) = v.newQ)
   def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
   def updateQ(v:A): Unit = {
@@ -39,107 +39,10 @@ class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A],
         Maths.expNormalize(distribution)
         d.set(distribution)(null)
       }
+      case _ => throw new Error("MeanField does not know how to handle a variable of type "+v.getClass)
     }
   }
 }
-
-
-class CollapsedVariationalBayes[A<:Variable with QDistribution](collapse:Iterable[CollapsibleParameter], marginalize:Iterable[A], model:Model = cc.factorie.generative.defaultGenerativeModel) {
-  private val _c = new HashMap[Parameter,Parameter]
-  private val _q = new HashMap[Variable,Variable]
-  def collapsedMap = _c
-  def qMap = _q
-  collapse.foreach(v => _c(v) = v.newCollapsed)
-  marginalize.foreach(v => _q(v) = v.newQ)
-  def collapsed[V<:CollapsibleParameter](v:V) = _c(v).asInstanceOf[V#CollapsedType]
-  def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
-  def collapsedp(v:Parameter): Parameter = _c.getOrElse(v, v)
-  def collapsedp2[P<:Parameter](v:P): P = _c.getOrElse(v, v).asInstanceOf[P]
-  def qp(v:Variable) = _q.getOrElse(v, v)
-  def setMaxMarginals(implicit d:DiffList = null): Unit = {
-    throw new Error("Not yet implemented")
-  }
-  def children(p:Parameter): Iterable[GeneratedVar] = throw new Error
-
-  def process(v:A): Unit = {
-    val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.template.getClass.getName < f2.template.getClass.getName)
-    /*factors match {
-      case List(factor1:GeneratedVarTemplate#Factor, factor2:MixtureChoiceVariableTemplate#Factor) => {
-        val v = factor2.n1.asInstanceOf[MixtureChoiceVariable]
-        // Variational Bayes order 0 approximation
-        assert(v.isInstanceOf[MixtureChoiceVariable])
-        val parent = v.proportions
-        val collapsedParent = collapsedp2[Proportions](parent) // possibly collapsed
-        val vq:MutableProportions = q(v) // This will throw error if 'v' is not in our _q map.  // TODO Is this the behavior we want?
-        val domainSize = v.domainSize
-        val distribution = new Array[Double](domainSize)
-        var sum = 0.0
-
-        // If parent of v is collapsed, decrement counts.  
-        collapsedParent match {
-          case collapsedParent:DirichletMultinomial => collapsedParent.updateChildStats(vq, -1.0) // Here 'vq' is a Proportions, so updates all dimensions
-          case collapsedParent:CollapsedParameter => throw new Error("Do not know how to handle this CollapsedParameter type.")
-          case _ => {} // Do nothing
-        }
-
-        if (v.gatedRefs.size == 1) {
-          // MixtureChoice v controls only one GatedRefVariable
-          val ref = v.gatedRefs.head.asInstanceOf[GatedParameterRef[Proportions,MixtureOutcome]]
-          val refchild = ref.child.asInstanceOf[MixtureOutcome]
-          val refchildq = qp(refchild).asInstanceOf[MixtureOutcome]
-          assert(refchild == refchildq) // We don't yet know how to handle marginzalized 'z' and marginalized 'w'
-          // If parent of outcome 'refchild' is collapsed, decrement counts
-          forIndex(domainSize)(i => {
-            val refparent = ref.valueForIndex(i)
-            val refparentc = collapsedp(refparent)
-            if (refparent ne refparentc) refparentc match { case p:CollapsedParameter => p.updateChildStats(refchildq, -vq(i)) }
-          })
-          // Calculate the marginal distribution vq
-          forIndex(domainSize)(i => {
-            distribution(i) = collapsedParent.pr(i) * refchild.prFromMixtureComponent(i)
-            sum += distribution(i)
-          })
-          // Update distribution in vq
-          vq.set(distribution)(null)
-          // If parent of outcome is collapsed, increment counts
-          forIndex(domainSize)(i => {
-            val refparent = ref.valueForIndex(i)
-            val refparentc = collapsedp(refparent)
-            if (refparent ne refparentc) refparentc match { case p:CollapsedParameter => p.updateChildStats(refchildq, vq(i)) }
-          })
-        } else {
-          // MixtureChoice v controls multiple GatedRefVariables
-          throw new Error("multi-choice not yet implemented")
-          val refs = v.gatedRefs.map(_ match { case gpr:GatedParameterRef[Proportions,MixtureOutcome] => gpr })
-          val refparents = refs.map((r:GatedParameterRef[Proportions,MixtureOutcome]) => collapsedp(r.value))
-          val refchildren = refs.map((r:GatedParameterRef[Proportions,MixtureOutcome]) => qp(r.child).asInstanceOf[MixtureOutcome])
-          // If parents of outcomes are collapsed, decrement counts
-          for (ref <- refs; val refparent = collapsedp(ref.value); if (refparent ne ref.value))
-            refparent match { case p:CollapsedParameter => p.updateChildStats(qp(ref.child).asInstanceOf[MixtureOutcome], -1.0) }
-          for (i <- 0 until domainSize) {
-            distribution(i) = collapsedParent.pr(i) * refchildren.foldLeft(1.0)((prod,o) => prod * o.prFromMixtureComponent(i))
-            sum += distribution(i)
-          }
-          // Update distribution in vq
-          vq.set(distribution)(null)
-          // If parent of outcome is collapsed, increment counts
-          for (ref <- refs; val refparent = collapsedp(ref.value); if (refparent ne ref.value))
-            refparent match { case p:CollapsedParameter => p.updateChildStats(qp(ref.child).asInstanceOf[MixtureOutcome], 1.0) }
-        }
-
-        // If parent of v is collapsed, increment counts
-        collapsedParent match {
-          case collapsedParent:DirichletMultinomial => collapsedParent.updateChildStats(vq, 1.0) // Here 'vq' is a Proportions, so updates all dimensions
-          case collapsedParent:CollapsedParameter => throw new Error("Do not know how to handle this CollapsedParameter type.")
-          case _ => {} // Do nothing
-        }
-        
-        true
-      }
-    } */
-  }
-}
-
 
 
 /*

@@ -78,7 +78,7 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions with Estimation
   @inline final def apply(index:Int) = _p(index)
   def set(p:Seq[Double])(implicit d:DiffList): Unit = {
     assert(p.size == _p.size, "size mismatch: new="+p.size+", orig="+_p.size)
-    val newP = p.toArray
+    val newP = p.toArray // TODO Make a copy, just in case it was already an array?
     if (d ne null) d += ProportionsDiff(_p, newP)
     _p = newP
   }

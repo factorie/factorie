@@ -36,7 +36,6 @@ class SamplingLattice[V<:DiscreteVars](variables:Iterable[V]) extends Lattice {
 }
 
 // A simple special case, to be generalized later
-// TODO Could be "DiscreteVariable" instead of "CategoricalVariable"?
 class SamplingInferencer[V<:DiscreteVariable,C](val sampler:Sampler[C]) extends Inferencer[V,C] {
   type LatticeType = SamplingLattice[V]
   var burnIn = 100 // I really want these to be  the default-values for parameters to infer, in Scala 2.8.
@@ -67,12 +66,11 @@ class VariableSamplingInferencer[V<:DiscreteVariable](sampler:Sampler[V]) extend
 class SamplingMaximizerLattice(val diff:DiffList, val diffScore:Double) extends Lattice
 
 /** Provide 'infer' method that uses the 'sampler' to search for the best-scoring configuration.
- 
-    @author Andrew McCallum
+     @author Andrew McCallum
     @since 0.8
  */
 // TODO Update this for the new separated "modelScore" and "acceptScore" in Proposal.
-class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends Maximizer[V] with VariableInferencer[V] {
+class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends VariableInferencer[V] {
   def this(model:Model) = this(new VariableSettingsSampler[V](model))
   type LatticeType = SamplingMaximizerLattice
   var iterations = 50 // TODO What should these be by default?
