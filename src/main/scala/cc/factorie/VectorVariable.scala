@@ -12,102 +12,102 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 import scala.collection.mutable.ArrayBuffer
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-import cc.factorie.la._
+import cc.factorie.la.Vector
+import cc.factorie.la.SparseVector
 import scala.util.Sorting
 
-trait VectorVar extends DiscreteVars {
-  this: Variable =>
-  // TODO Remember that DiscreteVars Domains currently need special initialization
-  def vector : Vector
-  def indices: Iterable[Int]
+/** Each "dimension" (i.e. the intValues) is a discrete value.  The
+    value at that index is a "weight" representing (partial)
+    repetitions of the discrete value.  So one way to think of these
+    instances is as a variable number of discrete variables, each with
+    a weight.  Note, however, that only binary weights could be
+    inherit from cc.factorie.DiscreteVars, because with real-valued
+    weights it would be unclear what to return for the 'intValues'
+    method.  
+    @author Andrew McCallum */
+trait VectorVar extends Variable {
+  /** A cc.factorie.la.Vector representation of the value of this variable. */
+  def vector: Vector // NOTE: Also defined in DiscreteVars
 }
 
-trait CategoricalVectorVar[T] extends Variable with VectorVar with CategoricalVars[T] {
-  // TODO Anything to put here?
+
+// Real (floating point) Vector Variables
+
+trait RealVectorVar extends VectorVar
+/** A vector of Real values */
+abstract class RealVectorVariable(theLength:Int) extends RealVectorVar /*with SeqEqualsEq[Double]*/ {
+  type VariableType <: RealVectorVariable
+  def this(theLength:Int, initVals:Iterable[(Int,Double)]) = { this(theLength); this.++=(initVals) }
+  val vector = new SparseVector(theLength)
+  //override def length = domain.allocSize
+  def incr(index:Int, incr:Double): Unit
+  def +=(elt:(Int,Double)) : Unit = vector.update(elt._1, vector(elt._1) + elt._2)
+  def ++=(elts:Iterable[(Int,Double)]): Unit = elts.foreach(this.+=(_))
+  throw new Error("Not yet implemented")
 }
 
-/** A variable whose value is a SparseBinaryVector; immutable.  
-    If the second constructor is false, then attempting to += a category 
-    for which the CategoryDomain returns CategoryDomain.NULL_INDEX == -1 will result in a throw exception.
-    If not specified, it defaults to false. */
-// I considered renaming this VectorObservation, but then I realized that methods such as += change its value. -akm
-// TODO Rename to BinaryVectorVariable?
-// TODO Consider renaming BinaryFeatureVector (where "Feature") refers to being Categorical?
-// or perhaps BinaryCategoricalVector?  But that is a weird name.
 @DomainInSubclasses
-abstract class BinaryVectorVariable[T](initVals:Iterable[T]) extends CategoricalVectorVar[T] {
-  //def this(iv:T*) = this(iv:Seq[T])
-  def this() = this(null)
-  //def this(initVals:Iterable[T]) = this(initVals, false)
-  type VariableType <: BinaryVectorVariable[T]
+abstract class CategoricalRealVectorVariable[T] extends RealVectorVariable(-1) with CategoricalVars[T] {
+  type VariableType <: CategoricalRealVectorVariable[T]
+  //def this(initVals:Iterable[(T,Double)]) = { this(); this.++=(initVals) }
+  //def +=(elt:(T,Double)): Unit
+  //def ++=(elt:Iterable[(T,Double)]): Unit
+  throw new Error("Not yet implemented")
+}
+
+@DomainInSubclasses
+abstract class FeatureVectorVariable[T] extends CategoricalRealVectorVariable[T]
+
+
+// Binary Vector Variables
+
+@DomainInSubclasses
+trait BinaryVectorVar extends DiscreteVars with VectorVar
+
+@DomainInSubclasses
+class SparseBinaryVectorVariable extends BinaryVectorVar /*with SeqEqualsEq[Double]*/ {
+  val vector = new cc.factorie.la.SparseBinaryVector(-1) { override def length = domain.allocSize }
+  def length = domain.allocSize
+  //def apply(i:Int) = vector.apply(i)
+  def intValues = vector.activeDomain
+  def zero: Unit = vector.zero
+  def +=(i:Int): Unit = vector.+=(i)
+  //def ++=(is:Iterable[Int]): Unit = is.foreach(i => vector.+=(i)) // Conflicts with ++=(Iterable[T])
+}
+
+@DomainInSubclasses
+trait CategoricalBinaryVectorVariable[T] extends BinaryVectorVar with CategoricalVars[T] {
+  def +=(value:T): Unit 
+  def ++=(values:Iterable[T]): Unit
+}
+
+@DomainInSubclasses
+class SparseCategoricalBinaryVectorVariable[T] extends SparseBinaryVectorVariable with CategoricalBinaryVectorVariable[T] {
+  type VariableType <: SparseCategoricalBinaryVectorVariable[T]
+  def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
+  def values: Seq[T] = { val d = this.domain; val result = new ArrayBuffer[T](domainSize); this.intValues.foreach(result += d.get(_)); result }
+  /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
+      If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
   def skipNonCategories = false
-  //private val _indices = new it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet
-  private val _indices: ArrayBuffer[Int] = new ArrayBuffer[Int]()
-  private var _vector: Vector = null // TODO Can we make this more memory efficient?  Avoid having both Vector and ArrayBuffer?;
-  if (initVals ne null) this ++= initVals
-  def indices: Seq[Int] = _indices // TODO project to ensure no changes, even with casting?  But this would involve allocating the Projection
-  def values: Seq[T] = { val d = this.domain; val result = new ArrayBuffer[T](_indices.size); _indices.foreach(result += d.get(_)); result }
-  //{ val indxs = _indices.toIntArray.asInstanceOf[Array[Int]]; val d = this.domain; val result = new ArrayBuffer[T](indxs.length) ++= indxs.map(d.get(_)); result }
-  def zero: Unit = { _indices.clear; _vector = null }
-  override def vector = {
-    if (_vector == null || _vector.size != domain.allocSize) {
-      val indices = _indices.toArray
-      Sorting.quickSort(indices)
-      _vector = new SparseBinaryVector(domain.allocSize, indices)
-    }
-    _vector
-  }
-  // TODO I think this kind of "duck-typing" below involves reflection and is slow.  Try to replace it.
-  def incrementInto(x:{def increment(i:Int,x:Double)(implicit d:DiffList):Unit}): Unit = _indices.foreach(i => x.increment(i,1.0)(null))
-  // TODO when we have Scala 2.8, add to the method below difflist argument with default value null
-  // But will a += b syntax with with default arguments?
-  def +=(value: T) : Unit = {
+  def +=(value:T): Unit = {
     val idx = domain.index(value);
     if (idx == CategoricalDomain.NULL_INDEX) {
       if (!skipNonCategories)
         throw new Error("BinaryVectorVariable += value " + value + " not found in domain " + domain)
-      else
-        return
+    } else {
+      this.+=(idx)
     }
-    if (!_indices.contains(idx)) _indices += idx
-    _vector = null
   }
-  def +=(index:Int): Unit = {
-    if (!_indices.contains(index)) _indices += index
-    _vector = null
-  }
-  //def +(value: T) = {this += value; this} // TODO Shouldn't this method actually return a new VectorVariable, leaving old one unchanged?  Yes.
-  def ++=(vals: Iterable[T]) : Unit = vals.foreach(v => this += v)
-  //def ++(vals: Iterable[T]) = {this ++= vals; this} // TODO this method should return a new Vector
-  override def toString = {
-    val s = new StringBuilder(printName + "(")
-    val iter = vector.activeDomain.iterator
-    if (iter.hasNext) { val i:Int = iter.next ; s ++= (domain.get(i).toString + "=" + i) }
-    while (iter.hasNext) {
-      val i:Int = iter.next
-      s ++= ("," + domain.get(i).toString + "=" + i)
-    }
-    s ++= ")"
-    s.toString
-  }
+  def ++=(values:Iterable[T]): Unit = values.foreach(this.+=(_))
+  override def toString = vector.activeDomain.map(i => domain.get(i).toString+"="+i).mkString(printName+"(", ",", ")")
 }
 
-/** A vector of Real values */
+/** A shorter, more intuitive alias for SparseCategoricalBinaryVectorVariable */
 @DomainInSubclasses
-abstract class RealVectorVariable[T](initVals:Iterable[(T,Double)]) extends CategoricalVectorVar[T] {
-  def this() = this(null)
-  type VariableType <: RealVectorVariable[T]
-  lazy val vector: Vector = new SparseVector(domain.allocSize)
-  if (initVals ne null) this ++= initVals
-  def indices : Iterable[Int] = if (vector == null) Nil else vector.activeDomain
-  def +=(pair:(T,Double)) = vector((domain.index(pair._1))) = pair._2
-  def ++=(pairs:Iterable[(T,Double)]) = pairs.foreach(pair => this += pair)
+class BinaryFeatureVectorVariable[T] extends SparseCategoricalBinaryVectorVariable[T] {
+  type VariableType <: BinaryFeatureVectorVariable[T]
+  def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
 }
 

@@ -46,7 +46,7 @@ object ChainNER2b {
     type GetterType = TokenGetter; class GetterClass extends TokenGetter
     val label = new Label(labelString, this)
     val wordtype = new Type(simplify(word)); class Type(s:String) extends CategoricalVariable(s)
-    val tags = new Tags; class Tags extends BinaryVectorVariable[String]
+    val tags = new Tags; class Tags extends BinaryFeatureVectorVariable[String]
     override def +=(feature:String): Unit = {
       //if (feature.matches("(POS|PHRASE)=[-A-Z]+|W=(and|or|of|the|for|de|del)")) tags += feature
       if (feature.matches("POS=[-A-Z]+")) tags += feature

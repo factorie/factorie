@@ -45,7 +45,7 @@ object DocumentClassification {
    def this(file:File) = this(file, defaultLexer)
    /* By default take the directory name to be the label string. */
    //def this(file:File) = this(file, file.getParentFile.getName)
-   def size = 3 // TODO implement this
+   //def size = 3 // TODO implement this
  }
  
  abstract class Label[D<:Document[This,D],This<:Label[D,This]](labelString:String, override val instance:D) extends FeatureVectorClassification.Label[D,This](labelString, instance) {
@@ -58,7 +58,7 @@ object DocumentClassification {
  class DocumentGetter[L<:Label[ThisDocument,L],ThisDocument<:Document[L,ThisDocument]] extends InstanceGetter[L,ThisDocument] {
    override def newLabelGetter = new LabelGetter[ThisDocument,L]
    //def label = initOneToOne[L](newLabelGetter, instance => instance.label, label => label.instance)
-   def size = getOneWay(document => new IntegerObservation(document.size))
+   def size = getOneWay(document => new IntegerObservation(document.vector.activeDomainSize))
  }
  
  class LabelGetter[D<:Document[ThisLabel,D],ThisLabel<:Label[D,ThisLabel]] extends FeatureVectorClassification.LabelGetter[D,ThisLabel] {

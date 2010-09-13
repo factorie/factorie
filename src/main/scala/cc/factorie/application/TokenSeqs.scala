@@ -19,15 +19,12 @@ import scala.reflect.Manifest
 import cc.factorie._
 import cc.factorie.er._
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap}
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import scala.util.Sorting
 
 // application.LabeledTokenSeqs should be changed to re-use functionality here 
 
 /** Predefined variables and factor templates for applying FACTORIE to sequences of Tokens.
-    The Token remembers its String 'word', but its variable 'value' is as a BinaryVectorVariable.
+    The Token remembers its String 'word', but its variable 'value' is as a BinaryFeatureVectorVariable.
     This package also provides Getters for Tokens, enabling template building with the tools in cc.factorie.er.
     For example usage see cc.factorie.example.SpanNER1
  
@@ -37,11 +34,11 @@ import scala.util.Sorting
 object TokenSeqs {
 
   /** A word token in a linear sequence of tokens.  It is a constituent of a TokenSeq.
-      Its value is a BinaryVectorVariable, its feature vector.
+      Its value is a BinaryFeatureVectorVariable, its feature vector.
       It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
   @DomainInSubclasses
   abstract class Token[S<:VariableSeq[This], This>:Null<:Token[S,This] with VarInTypedSeq[This,S]](val wordForm:String, features:Seq[String] = Nil)
-  extends BinaryVectorVariable[String](features) with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
+  extends BinaryFeatureVectorVariable[String](features) with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] {
     this: This =>
     //this ++= features
     //def this(word:String) = this(word, Nil)
@@ -90,14 +87,14 @@ object TokenSeqs {
       (token:T) => token.seq)
     /** Return a BooleanObservation with value true if the word of this Token is equal to 'w'.  
         Intended for use in tests in er.Formula, not as a feature itself.  
-        If you want such a feature, you should += it to the Token (BinaryVectorVariable) */
+        If you want such a feature, you should += it to the Token (BinaryFeatureVectorVariable) */
     def isWord(w:String) = getOneToOne[BooleanObservationWithGetter](
       // TODO Consider making this more efficient by looking up an already-constructed instance, as in "object Bool"
       token => if (token.word == w) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
       bool => throw new Error("Constant bool shouldn't change"))
     /** Return a BooleanObservation with value true if the word of this Token is capitalized.  
         Intended for use in tests in er.Formula, not as a feature itself.  
-        If you want such a feature, you should += it to the Token (BinaryVectorVariable) */
+        If you want such a feature, you should += it to the Token (BinaryFeatureVectorVariable) */
     def isCapitalized = getOneToOne[BooleanObservationWithGetter](
       // TODO Consider making this more efficient by looking up an already-constructed instance, as in "object Bool"
       token => if (java.lang.Character.isUpperCase(token.word.head)) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
@@ -239,7 +236,7 @@ object TokenSeqs {
         The CoNLL 2003 NER Shared Task is an example of such a format.
         Token.word will be set to the first element.
         All elements but the last will be passed to to 'featureFunction', 
-        and its returned strings will be added as features to the BinaryVectorVariable.
+        and its returned strings will be added as features to the BinaryFeatureVectorVariable.
         The initial and trueValue of the Label will be set from the last element.
         If ignoreLines is non-null, we skip any lines containing this pattern, for example pass "-DOCSTART-" for CoNLL 2003.
         */

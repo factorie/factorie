@@ -31,6 +31,7 @@ trait IntegerVars extends Variable {
   def minIntValue = Int.MinValue
   // TODO Consider a def maxValue: Double = Math.POS_INF_DOUBLE ??
   // TODO Implement a method def vector?
+  // TODO Consider moving intValues from DiscreteVars to here -akm
 }
 
 /** A Variable with one Int value.  

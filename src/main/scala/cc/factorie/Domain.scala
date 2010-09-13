@@ -385,7 +385,7 @@ object Domain {
   }
   /** Return a Domain instance for Variables of class c, constructing one if necessary.  Also put it in the _domains map. */
   private def getDomainForClass(c:Class[_]) : Domain[_] = {
-    if (domainInSubclasses(c)) throw new Error("Cannot get a Domain for "+c+" because it declares DomainInSubclasses, and should be considered abstract.")
+    if (domainInSubclasses(c)) throw new Error("Cannot get a Domain for "+c+" because it declares DomainInSubclasses, and should be considered abstract.  You should subclass "+c)
     var dvc = getDomainVariableClass(c)
     if (debug) println("getDomainForClass c="+c+" dvc="+dvc)
     if (dvc == null) dvc = c

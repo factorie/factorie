@@ -21,7 +21,7 @@ import java.io.File
 object ChainNER3 {
 
   // The variable classes
-  class Token(val word:String, features:Seq[String], labelString:String) extends BinaryVectorVariable[String] with VarInSeq[Token] {
+  class Token(val word:String, features:Seq[String], labelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
     val label: Label = new Label(labelString, this)
     this ++= features
   }
@@ -143,7 +143,7 @@ object ChainNER3 {
         val word = fields(0)
         val pos = fields(1)
         val label = fields(3).stripLineEnd
-        sentence += new Token(word, wordToFeatures(word,pos), label)
+        sentence += new Token(word, wordToFeatures(word,"POS="+pos), label)
         wordCount += 1
       }
     }

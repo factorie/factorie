@@ -46,7 +46,7 @@ object TestBPClassify {
 
 
 class TestBPClassify extends TestCase {
-  class Document(contents: String, labelStr:String) extends BinaryVectorVariable[String] {
+  class Document(contents: String, labelStr:String) extends BinaryFeatureVectorVariable[String] {
     def this(file:File) = this(Source.fromFile(file).mkString, file.getParentFile.getName) // Could also append ".skipHeader"
     var label = new Label(labelStr, this)
     // Read file, tokenize with word regular expression, and add all matches to this BinaryVectorVariable
@@ -275,8 +275,8 @@ class SimpleMaxEntTrainer(model: Model) {
       override def default(template: TemplatesToUpdate) = {
         template.freezeDomains
         val vector: Vector = template.weights match {
-          case w: SparseVector => new SparseVector(w.domainSize)
-          case w: DenseVector => new DenseVector(w.domainSize)
+          case w: SparseVector => new SparseVector(w.length)
+          case w: DenseVector => new DenseVector(w.length)
         }
         this(template) = vector
         vector

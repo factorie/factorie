@@ -31,7 +31,7 @@ trait Gate extends DiscreteVariable {
   def +=(v:AbstractGatedRefVariable): this.type = {
     //println("Gate.+= "+v)
     assert(_gatedRefs ne null)
-    assert(v.domainSize == domainSize)
+    assert(v.domainSize == domain.size)
     _gatedRefs = v :: _gatedRefs
     assert(v.gate == this)
     //println("Gate.+= setByIndex="+this.intValue) // xxx

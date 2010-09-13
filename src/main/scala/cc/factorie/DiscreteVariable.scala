@@ -25,38 +25,38 @@ import cc.factorie.la._
 trait DiscreteVars extends Variable with IntegerVars {
   type VariableType <: DiscreteVars
   type DomainType <: DiscreteDomain[VariableType]
-  // TODO Replace this mechanism with an Annotation
+  // TODO Replace this mechanism with an Annotation? -akm
   class DomainClass extends DiscreteDomain[VariableType]()(null)
   final def domainSize: Int = domain.size
   override def minIntValue = 0
-  override def maxIntValue = domainSize - 1
+  override def maxIntValue = domain.size - 1
   /** A cc.factorie.la.Vector representation of the value of this variable. */
   def vector: Vector
-  def indices: Iterable[Int]
+  def intValues: Iterable[Int]
 }
 
 @DomainInSubclasses
 trait DiscreteVar extends DiscreteVars with IntegerVar {
   this: Variable =>
   type VariableType <: DiscreteVar
-  def vector = new SingletonBinaryVector(domainSize, intValue)
-  def indices = List(intValue)
+  def vector = new SingletonBinaryVector(domain.size, intValue)
+  def intValues = List(intValue)
 }
 
 @DomainInSubclasses
 abstract class DiscreteVariable(initialValue:Int = 0) extends IntegerVariable(initialValue) with DiscreteVar with IterableSettings with QDistribution {
   type VariableType <: DiscreteVariable
-  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domainSize))(d)
+  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
   def settings = new SettingIterator {
     var i = -1
-    val max = domainSize - 1
+    val max = domain.size - 1
     def hasNext = i < max
     def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(i)(d); d }
     def reset = i = -1
     override def variable : DiscreteVariable.this.type = DiscreteVariable.this
   }
   type QType = cc.factorie.generative.MutableProportions
-  def newQ = new cc.factorie.generative.DenseProportions(domainSize)
+  def newQ = new cc.factorie.generative.DenseProportions(domain.size)
 }
 
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  Used for block-Gibbs-sampling.

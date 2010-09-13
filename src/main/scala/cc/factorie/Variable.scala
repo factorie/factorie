@@ -163,8 +163,8 @@ trait MutableTypedValue extends TypedValue {
   final def :=(newValue:ValueType)(implicit d:DiffList = null): this.type = { set(newValue)(null); this }
 }
 
-// TODO think about whether to get rid of intValue, doubleValue, proportionValue, etc.
-//  No, I don't think so.  DiscreteVar.intValue is convenient, and I would like CategoricalVariable.value to still have type T.
+// I thought about whether to get rid of intValue, doubleValue, proportionValue, etc.
+// But then decided against it.  DiscreteVar.intValue is convenient, and I would like CategoricalVariable.value to still have type T.
 // I considered whether RefValue and TypedValue should be merged, but then I see that we need to 
 // distinguish a _Value that stores its value as x:T and one that doesn't (like CategoricalVariable[T])
 

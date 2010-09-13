@@ -36,7 +36,7 @@ trait CategoricalVars[T] extends DiscreteVars with AbstractCategoricalVars with 
   type CategoryType = ValueType // Just a redundant name for ValueType, in case later I want to use ValueType for something else
   //type DomainType <: CategoricalDomain[VariableType]
   //class DomainClass extends CategoricalDomain[VariableType]()(null)
-  //override def domainSize = domain.size // TODO Why was this 'allocSize' and not 'size'? -akm 5 July 2010
+  //override def domainSize = domain.size // TODO Why was this 'allocSize' and not 'size'? -akm 5 July 2010 // WARNING domainSize in la.Vector means something different than domainSize meant here.
 }
 
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.

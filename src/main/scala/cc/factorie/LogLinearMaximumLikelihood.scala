@@ -40,8 +40,8 @@ class LogLinearMaximumLikelihood(model: Model) {
       override def default(template: TemplatesToUpdate) = {
         template.freezeDomains
         val vector: Vector = template.weights match {
-          case w: SparseVector => new SparseVector(w.domainSize)
-          case w: DenseVector => new DenseVector(w.domainSize)
+          case w: SparseVector => new SparseVector(w.length)
+          case w: DenseVector => new DenseVector(w.length)
         }
         this(template) = vector
         vector

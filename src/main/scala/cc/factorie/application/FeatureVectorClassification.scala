@@ -27,7 +27,7 @@ import cc.factorie.DomainInSubclasses
  */
 object FeatureVectorClassification {
  @DomainInSubclasses
- abstract class Instance[L<:Label[This,L],This<:Instance[L,This]](val name:String) extends BinaryVectorVariable[String] {
+ abstract class Instance[L<:Label[This,L],This<:Instance[L,This]](val name:String) extends BinaryFeatureVectorVariable[String] {
    this: This =>
    type VariableType <: Instance[L,This]
    type GetterType <: InstanceGetter[L,This]
@@ -64,13 +64,13 @@ object FeatureVectorClassification {
  /**Factor between label and observed instance vector */
  class LabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) {
    def unroll1(label: L) = Factor(label,label.instance)
-   def unroll2(instance: I) = throw new Error("Instance BinaryVectorVariable shouldn't change")
+   def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
  }
 
  /**Factor between label and observed instance vector */
  class SparseLabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) with SparseWeights {
    def unroll1(label: L) = Factor(label,label.instance)
-   def unroll2(instance: I) = throw new Error("Instance BinaryVectorVariable shouldn't change")
+   def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
  }
  
  def newModel[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) =

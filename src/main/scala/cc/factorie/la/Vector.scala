@@ -19,7 +19,8 @@ package cc.factorie.la
 /** A vector, for holding a sequence of Doubles and performing various linear algebra operations.
     @author Andrew McCallum */
 trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
-  def domainSize: Int
+  def length: Int
+  def activeDomainSize: Int
   def activeDomain: Iterable[Int]
   def dot(v:Vector): Double
   def activeElements: Iterator[(Int,Double)]
@@ -33,7 +34,7 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
     @author Andrew McCallum */
 class VectorTimesScalar(val vector:Vector, val scalar:Double) extends Vector {
   def length = vector.length
-  def domainSize: Int = vector.domainSize
+  def activeDomainSize: Int = vector.activeDomainSize
   def activeDomain: Iterable[Int] = vector.activeDomain
   def dot(v:Vector): Double = vector.dot(v) * scalar
   def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] {
@@ -46,8 +47,9 @@ class VectorTimesScalar(val vector:Vector, val scalar:Double) extends Vector {
 
 /** A Vector that has all zeros, except one position containing a 1.0.
     @author Andrew McCallum */
-class SingletonBinaryVector(val length:Int, val singleIndex:Int) extends Vector {
-  def domainSize = 1
+class SingletonBinaryVector(theLength:Int, val singleIndex:Int) extends Vector {
+  def length = theLength
+  def activeDomainSize = 1
   def activeDomain: Iterable[Int] = Seq(singleIndex)
   def apply(index:Int): Double = if (index == singleIndex) 1.0 else 0.0
   def dot(v:Vector) = v(singleIndex)
@@ -56,9 +58,10 @@ class SingletonBinaryVector(val length:Int, val singleIndex:Int) extends Vector 
 
 /** A Vector that has all zeros, except one position containing some arbitrary Double 'value'.
     @author Andrew McCallum */
-class SingletonVector(val length:Int, val singleIndex:Int, val value:Double) extends Vector {
+class SingletonVector(theLength:Int, val singleIndex:Int, val value:Double) extends Vector {
   var default = 0.0
-  def domainSize = 1
+  def length = theLength
+  def activeDomainSize = 1
   def activeDomain: Iterable[Int] = Seq(singleIndex)
   def apply(index:Int): Double = if (index == singleIndex) value else default
   def dot(v:Vector) = v(singleIndex) * value
@@ -67,17 +70,53 @@ class SingletonVector(val length:Int, val singleIndex:Int, val value:Double) ext
 
 /** A Vector that may contain mostly zeros, with a few 1.0's, represented compactly in memory.
     @author Andrew McCallum */
-class SparseBinaryVector(val length:Int, indices:Array[Int]) extends Vector {
-  private val ind = new Array[Int](indices.size)
-  Array.copy(indices, 0, ind, 0, ind.size)
-  scala.util.Sorting.quickSort(ind)
-  def domainSize = ind.size
-  def activeDomain: Iterable[Int] = new IndexedSeq[Int] { def apply(i:Int) = ind(i); def length = ind.size }
+class SparseBinaryVector(theLength:Int, indices:Array[Int] = null) extends Vector {
+  def length = theLength
+  def defaultInitialCapacity = 4
+  private var ind = new Array[Int](if (indices ne null) indices.size else defaultInitialCapacity)
+  private var _size: Int = if (indices eq null) 0 else indices.size
+  if (indices ne null) {
+    Array.copy(indices, 0, ind, 0, ind.size)
+    scala.util.Sorting.quickSort(ind)
+  }
+  def activeDomainSize = _size
+  def activeDomain: Iterable[Int] = new IndexedSeq[Int] { def apply(i:Int) = ind(i); def length = _size }
+  /** Ensure that the array "ind" is big enough to allow ind(n). */
+  private def ensureCapacity(n:Int): Unit = {
+    if (ind.length - 1 < n) {
+      var newsize = ind.length * 2
+      while (newsize < n) { newsize *= 2; /*println("newsize "+newsize)*/ }
+      //println("newsize = "+newsize+" ind.length="+ind.length+" n="+n+" _size="+_size)
+      val new_indices = new Array[Int](newsize)
+      Array.copy(ind, 0, new_indices, 0, ind.size)
+      ind = new_indices
+    }
+  }
+  /** Search the array 'ind' for the index at which value x could be inserted in sorted order.
+      @param start the lowest index to consider
+      @parm end one plus the highest index that already contains data
+      Return the index into 'ind' such that ind(index) == x, 
+      or ind(index-1) < x < ind(index)
+      or index == end.
+      */
+  private def _positionLte(x:Int, start:Int, end:Int): Int = {
+    val diff = end - start
+    //println("SparseBinaryVector._positionLte "+x+" "+start+" "+end+" diff="+diff)
+    if (diff == 0) return start
+    if (diff == 1) return if (ind(start) >= x /* || ((end < ind.length) && (ind(end)) > x)*/ ) start else end
+    //if (diff == 2) return if (ind(start) == x) start else if (ind(end-1) <= x) end-1 else start
+    val middle = start + (diff / 2)
+    val midindex = ind(middle)
+    if (midindex == x) return midindex
+    else if (x < midindex) _positionLte(x, start, middle)
+    else _positionLte(x, middle+1, end)
+  }
+  /** Return true iff the integer 'index' is contains in ind.  */
   private def _contains(index:Int, start:Int, end:Int): Boolean = {
     val diff = end - start
     // // println("SparseBinaryVector._contains "+index+" "+start+" "+end+" diff="+diff)
-    if (diff < 2)
-      return if (ind(start) == index) true else false
+    if (diff == 0) return false
+    else if (diff < 2) return if (ind(start) == index) true else false
     val middle = start + (diff / 2)
     val midindex = ind(middle)
     if (midindex == index) return true
@@ -85,20 +124,45 @@ class SparseBinaryVector(val length:Int, indices:Array[Int]) extends Vector {
     else _contains(index, middle+1, end)
   }
   //private var lastPosition = 0 // TODO Implement this speed-up, also used in scalala
-  def apply(index:Int): Double = if (_contains(index, 0, ind.size)) 1.0 else 0.0
+  def apply(index:Int): Double = if (_contains(index, 0, _size)) 1.0 else 0.0
+  def zero(): Unit = { _size = 0 }
+  override def iterator = new Iterator[Double] {
+    var i = -1
+    var position = 0
+    def hasNext = i < SparseBinaryVector.this.length
+    def next = {
+      i += 1
+      if (ind(position) < i) position += 1
+      if (ind(position) == i) 1.0 else 0.0
+    }
+  }
   def activeElements = new Iterator[(Int,Double)] {
     var i = -1
-    def hasNext = i < ind.size - 1
+    def hasNext = i < _size - 1
     def next = { i += 1; (ind(i), 1.0) }
   }
+  /** Add a value, (while keeping the content Array[Int] sorted). */
+  def +=(theValue:Int): Unit = {
+    val i = _positionLte(theValue, 0, _size)
+    //println("Vector.+= x="+theValue+" i="+i+" ind="+ind.toString)
+    if (i >= ind.length || ind(i) != theValue) {
+      ensureCapacity(_size)
+      //println("ind.length="+ind.length+" _size="+_size+" i="+i)
+      System.arraycopy(ind, i, ind, i+1, _size-i) // Shift later part of the array one position to make space
+      ind(i) = theValue
+      _size += 1
+    } else if (i == _size) _size += 1 // Efficiently handle _size==0, theValue==0
+  }
+  // Removed because conflicts with cc.factorie.CategoricalBinaryVector.++=(Iterable[T])
+  //def ++=(theValues:Iterable[Int]): Unit = theValues.foreach(this.+=(_))
   def dot(v:Vector): Double = v match {
     case v:DenseVector => {
       var i = 0; var result = 0.0
-      while (i < ind.size) { result += v(ind(i)); i += 1 }; result
+      while (i < _size) { result += v(ind(i)); i += 1 }; result
     }
     case v:SparseHashVector => {
       var i = 0; var result = 0.0
-      while (i < ind.size) { result += v(ind(i)); i += 1 }; result
+      while (i < _size) { result += v(ind(i)); i += 1 }; result
     }
     case v:SingletonBinaryVector => v dot this
     case v:SingletonVector => v dot this
@@ -126,7 +190,7 @@ class SparseHashVector(val length:Int) extends Vector {
   private val h = new scala.collection.mutable.HashMap[Int,Double] { override def default(index:Int) = SparseHashVector.this.default }
   def apply(index:Int) = h(index)
   def activeElements = h.iterator
-  def domainSize = h.size
+  def activeDomainSize = h.size
   def activeDomain: Iterable[Int] = h.keys
   override def update(index:Int, value:Double) = h(index) = value
   def dot(v:Vector): Double = v match {
@@ -158,7 +222,7 @@ class SparseHashVector(val length:Int) extends Vector {
     @author Andrew McCallum */
 class DenseVector(val length:Int) extends Vector {
   private val a = new Array[Double](length)
-  def domainSize = a.size
+  def activeDomainSize = a.size
   def activeDomain = new Range(0, length, 1)
   def apply(index:Int): Double = a(index)
   override def update(index:Int, value:Double): Unit = a(index) = value
@@ -196,9 +260,9 @@ object DenseVector {
 
 /*
 class ConcatenatedVector(val vectors:Seq[Vector]) extends Vector {
-  val domainSizes = vectors.map(_.domainSize)
-  val domainSize = vectors.reduceLeft(_+_.domainSize)
-  def activeDomain = Range(0, domainSize)
+  val activeDomainSizes = vectors.map(_.activeDomainSize)
+  val activeDomainSize = vectors.reduceLeft(_+_.activeDomainSize)
+  def activeDomain = Range(0, activeDomainSize)
   def dot(v:Vector): Double = throw new Error("Not yet implemented.")
   def activeElements: Iterator[(Int,Double)] = throw new Error("Not yet implemented.")
   def update(index:Int, value:Double): Unit = {

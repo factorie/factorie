@@ -26,9 +26,9 @@ import cc.factorie._
  and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */
 object DocumentClassifier2 {
   
-  class Document(file:File) extends BinaryVectorVariable[String] {
+  class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     var label = new Label(file.getParentFile.getName, this)
-    // Read file, tokenize with word regular expression, and add all matches to this BinaryVectorVariable
+    // Read file, tokenize with word regular expression, and add all matches to this BinaryFeatureVectorVariable
     "\\w+".r.findAllIn(Source.fromFile(file).mkString).foreach(regexMatch => this += regexMatch.toString)
   }
   class Label(name:String, val document:Document) extends LabelVariable(name) 

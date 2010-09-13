@@ -24,7 +24,7 @@ import java.io.File
 
 object DepParsing1 {
   
-  class Token(val word:String, posString:String, trueParentPosition:Int, trueLabelString:String) extends BinaryVectorVariable[String] with VarInSeq[Token] {
+  class Token(val word:String, posString:String, trueParentPosition:Int, trueLabelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
     val parent = new Node(this, trueParentPosition, trueLabelString)
     val pos = new POS(posString)
     override def toString = "Token("+word+":"+position+")"

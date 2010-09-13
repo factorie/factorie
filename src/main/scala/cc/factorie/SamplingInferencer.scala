@@ -22,7 +22,7 @@ class DiscreteMarginal[V<:DiscreteVars](val variable:V) extends cc.factorie.gene
   //override def keepChildren = false
   def incrementCurrentValue : Unit = variable match {
     case v:DiscreteVar => increment(v.intValue, 1.0)(null)
-    case v:BinaryVectorVariable[_] => { for (index <- v.indices) increment(index, 1.0)(null) } // throw new Error // TODO Put this code back in: v.incrementInto(this)
+    case v:BinaryFeatureVectorVariable[_] => { for (index <- v.intValues) increment(index, 1.0)(null) } // throw new Error // TODO Put this code back in: v.incrementInto(this)
   }
 }
 

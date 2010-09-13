@@ -50,7 +50,7 @@ object CorefMentionsDemo {
     freeze
   }
   Domain += AffinityDomain
-  class AffinityVector(s1:String, s2:String) extends BinaryVectorVariable[String] {
+  class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
     import AffinityDomain._
     type VariableType = AffinityVector
     if (s1 equals s2) this += streq else this += nstreq
