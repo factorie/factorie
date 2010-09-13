@@ -64,7 +64,11 @@ abstract class FeatureVectorVariable[T] extends CategoricalRealVectorVariable[T]
 // Binary Vector Variables
 
 @DomainInSubclasses
-trait BinaryVectorVar extends DiscreteVars with VectorVar
+trait BinaryVectorVar extends DiscreteVars with VectorVar {
+  def contains(value:Int): Boolean = vector.apply(value) != 0.0
+  // def domainSize: Int
+  // def intValues: Iterable[Int]
+}
 
 @DomainInSubclasses
 class SparseBinaryVectorVariable extends BinaryVectorVar /*with SeqEqualsEq[Double]*/ {

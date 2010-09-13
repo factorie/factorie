@@ -13,18 +13,47 @@
    limitations under the License. */
 
 package cc.factorie
+import cc.factorie.generative.Proportions
+import cc.factorie.generative.DenseCountsProportions
 
 /** Statistics for factors who scores are the log-probability of 
     label S1 given feature vector S2, according to a decision tree.
     @author Arti Ramesh */
-trait DecisionTreeStatistics2[S1<:DiscreteVar,S2<:DiscreteVars]
+trait DecisionTreeStatistics2[S1<:DiscreteVar,S2<:BinaryVectorVar]
 extends VectorStatistics2[S1,S2] {
-  class DTNode(parent:DTNode, index:Int)
-  def scoreScaling = 1.0
-  def score(s:StatType): Double = 0.0 // TODO Return the log-probability of s1._1 * scoreScaling
-  def train(stats:Iterable[StatType], maxDepth:Int = Int.MaxValue): Unit = {
-    throw new Error("Not yet implemented")
+  // Number of different values taken on by s._1
+  val numOutcomes: Int = statDomains(0).size
+  case class DTNode(parent:DTNode, var yesChild:DTNode = null, var noChild:DTNode = null, var index:Int = -1, var p:Proportions = null) {
+    def isLeaf = ((yesChild eq null) || (noChild eq null))
   }
+  var root: DTNode = null
+  def scoreScaling = 1.0
+  // val s: StatType;  s._1:DiscreteVar; s._2:BinaryVectorVar
+  // Number of different values of s._1 == s._1.domainSize
+  def score(s:StatType): Double = score(s, root)
+  protected def score(s:StatType, node:DTNode): Double = 
+    if (node.isLeaf) math.log(node.p(s._1.intValue)) 
+    else score(s, if (s._2.contains(node.index)) node.yesChild else node.noChild)
+  def train(stats:Iterable[StatType], maxDepth:Int = Int.MaxValue): Unit = {
+    root = train(stats, maxDepth, null)
+  }
+  protected def train(stats:Iterable[StatType], maxDepth:Int, parent:DTNode): DTNode = {
+    val dtree = new DTNode(parent)
+    if (stats.size < 5) {  // TODO Have a more sophisticated stopping criterion
+      // We will make this dtree a leaf
+      val p = new DenseCountsProportions(numOutcomes)
+      stats.foreach(stat => p.increment(stat._1.intValue, 1.0)(null))
+      dtree.p = p
+      return dtree
+    }
+    // This dtree will not be a leaf
+    dtree.index = bestInfoGain(stats)
+    val (yesStats, noStats) = stats.partition(_._2.contains(dtree.index))
+    dtree.yesChild = train(yesStats, maxDepth-1, dtree)
+    dtree.noChild = train(noStats, maxDepth-1, dtree)
+    dtree
+  }
+  protected def  bestInfoGain(stats:Iterable[StatType]): Int = throw new Error("Implement me.") // Be clever to make this efficient
   override def save(dirname:String): Unit = {
     super.save(dirname)
     throw new Error("Not yet implemented")
@@ -38,10 +67,8 @@ extends VectorStatistics2[S1,S2] {
 /** A template for factors who scores are the log-probability of 
     label S1 given feature vector S2, according to a decision tree.
     @author Andrew McCallum */
-abstract class DecisionTreeTemplateWithStatistics2[S1<:DiscreteVar,S2<:DiscreteVars](label2features:(S1)=>S2)(implicit m1:Manifest[S1], m2:Manifest[S2])
+abstract class DecisionTreeTemplateWithStatistics2[S1<:DiscreteVar,S2<:BinaryVectorVar](implicit m1:Manifest[S1], m2:Manifest[S2])
 extends Template2[S1,S2] with DecisionTreeStatistics2[S1,S2] {
-  def unroll1(s1:S1) = new Factor(s1, label2features(s1))
-  def unroll2(s2:S2) = throw new Error("Decision tree feature vectors of class "+s2.getClass+" are not expected to change.")
   def statistics(s1:S1, s2:S2): Iterable[Stat] = Stat(s1, s2)
   def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.flatMap(_statistics(_)))
 }
