@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.la
 import cc.factorie._
 
@@ -55,10 +53,10 @@ object ArrayLA {
   /** Import the contents of this object, and you can call these methods directly on arrays, 
       e.g. val a = new Array[Double](2); a(0) = 1.0; a(1) = 2.0; val n = a.twoNorm */
   object Implicits {
-    implicit def array2ArrayLA(s:Array[Double]) = new scala.collection.mutable.IndexedSeq[Double] {
-      def length = s.length
-      def apply(i:Int) = s(i)
-      def update(i:Int, d:Double): Unit = s(i) = d
+    implicit def array2ArrayLA(s:Array[Double]) = new {
+      //def length = s.length
+      //def apply(i:Int) = s(i)
+      //def update(i:Int, d:Double): Unit = s(i) = d
       def oneNorm: Double = ArrayLA.oneNorm(s)
       def twoNorm: Double = ArrayLA.twoNorm(s)
       def twoNormSquared: Double = ArrayLA.twoNormSquared(s)
