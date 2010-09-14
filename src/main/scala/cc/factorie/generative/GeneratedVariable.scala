@@ -99,10 +99,10 @@ class GeneratedVarTemplate extends TemplateWithStatistics3[GeneratedVar,MixtureC
   protected def factorOfGeneratedVar(v:GeneratedVar) = v match {
     // TODO Consider not bothering to fill in slots 2 and 3, just to save time and because it isn't necessary
     case v:MixtureOutcome => Factor(v, v.choice, Vars.fromSeq(v.parents))
-    case _ => Factor(v, null, Vars.fromSeq(v.parents))
+    case _ => Factor(v, null, Vars.fromSeq(v.parents)) // TODO Consider just Factor(v, null, null) for efficiency
   }
   def unroll1(v:GeneratedVar) = factorOfGeneratedVar(v)
-  def unroll2(c:MixtureChoiceVariable) = c.outcomes.map(v => Factor(v, c, Vars.fromSeq(v.parents)))
+  def unroll2(c:MixtureChoiceVariable) = c.outcomes.map(factorOfGeneratedVar(_)) //v => Factor(v, c, Vars.fromSeq(v.parents))
   def unroll3(vs:Vars[Parameter]) = throw new Error
   override def unroll3s(p:Parameter) = p match { 
     case m:MixtureComponents[_] => m.children.map(factorOfGeneratedVar(_))

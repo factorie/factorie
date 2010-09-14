@@ -12,31 +12,32 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 
 // Preliminary steps toward generic interfaces to inference
-// Eventually we will have marginals over factors instead of variables
 
-
-// Generic over sampling-based inference and variational inference
 // TODO Not yet sure what general interfaces should go here.
 trait Marginal
-trait Lattice
+trait Lattice[V<:Variable] {
+  type VariableMarginalType <: Marginal
+  type FactorMarginalType <: Marginal
+  def marginal(v:V): Option[VariableMarginalType]
+  def marginal(f:Factor): Option[FactorMarginalType]
+}
 
-/** Generic infrastructure for inference, both for calculating various marginals and maxima.
+/** Generic infrastructure for inference, both for calculating marginals and maxima.
     @author Andrew McCallum
     @since 0.8 */
 trait Inferencer[V<:Variable,C] {
-  type LatticeType <: Lattice
+  type LatticeType <: Lattice[V]
   /** Infer the target 'variables' using 'varying' to drive the exploration of changes to the configuration.
       For example, in SamplingInference, 'varying' are Sampler 'contexts' which do not necessarily have to be Variables;
       they are arbitrary keys to the sampler that may drive exploration, which will eventually result in changes to the 'target' variables.
       If for you this separation of target variables and sampling contexts is unnecessary or confusing, consider VariableInferencer instead.  */
   def infer(variables:Iterable[V], varying:Iterable[C]): LatticeType
-  //def infer(factors:TemplateList[VectorTemplate], variables:Iterable[V]): LatticeType
+  //def infer(templates:Seq[VectorTemplate], variables:Iterable[V]): LatticeType
+  //def infer(factors:Seq[VectorTemplate#Factor], variables:Iterable[V]): LatticeType
 }
 
 /** An Inferencer in which the context arguments are Variables.
@@ -50,47 +51,29 @@ trait VariableInferencer[V<:Variable] extends Inferencer[V,V] {
   def inferMarginalizing(targets:Iterable[V], marginalizing:Iterable[V]) = infer(targets, targets ++ marginalizing)
 }
 
-//trait Maximizer[V<:Variable] extends Inferencer[V,V] // Include something like this?
+class DiscreteMarginal[V<:DiscreteVars](val variable:V, proportions:Seq[Double] = Nil) extends cc.factorie.generative.DenseCountsProportions(variable.domain.size) with Marginal {
+  // TODO Consider also including "val inferencer:Inferencer" in constructor arguments
+  if (proportions != Nil) this.set(proportions)(null)
+  override def keepChildren = false
+  def incrementCurrentValue : Unit = variable match {
+    case v:DiscreteVar => increment(v.intValue, 1.0)(null)
+    case v:BinaryFeatureVectorVariable[_] => { for (index <- v.intValues) increment(index, 1.0)(null) } // throw new Error // TODO Put this code back in: v.incrementInto(this)
+  }
+}
+// TODO Not yet in its final form
+class DiscreteFactorMarginal(val factor:Factor, val value:Array[Double]) extends Marginal {
+  def length = value.length
+  def apply(i:Int) = value(i)
+  /**The settings of each of the N variables that together yield the highest probability. */
+  def maxEntry: Array[Int] = throw new Error("Not yet implemented")
+}
+
+
+//trait Maximizer[V<:Variable] extends Inferencer[V,V] // Include something like this?  No.  Regular Inferencer can also do Maximization, or a mixture of Marginalization and Maximization.
 // 'infer' here would actually change state to the maximum found
 // 'infer' in Inferencer would leave it in some random state, with the results really in the Marginal objects
 
 
-
-/** Perform inference according to belief propagation.
-    @author Andrew McCallum, Kedar Bellare, Tim Vieira
-    @since 0.8
- */
-class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
-  override type LatticeType = BPLattice
-  def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = infer(variables, varying, 4) // TODO Make a more sensible default
-  def infer(variables:Iterable[V], varying:Iterable[V], numIterations:Int): LatticeType = {
-    val result = new BPLattice(varying, model)
-    result.update(numIterations) // TODO Of course make this smarter later
-    result.setVariablesToMax(variables) // For now, just inference my marginal maximization
-    // NOTE the above line requires that 'variables' is a subset of varying, of course!
-    result
-  }
-  def infer(variables:Iterable[V], numIterations:Int): LatticeType = infer(variables, variables, numIterations)
-  // waiting for Scala 2.8 default parameters...
-  def inferTreewise(variables:Iterable[V], varying:Iterable[V]): LatticeType = inferTreewise(variables, varying, 1)
-  def inferTreewise(variables:Iterable[V], varying:Iterable[V], maxiterations:Int): LatticeType = {
-    // NOTE: 'variables' must be a subset of varying, of course!
-    val result = new BPLattice(varying, model)
-    result.updateTreewise()
-    result.setVariablesToMax(variables)
-    result
-  }
-  def inferTreewise(variables:Iterable[V]): LatticeType = inferTreewise(variables, variables, 1)
-  def inferTreewise(variables:Iterable[V], maxiterations:Int): LatticeType = inferTreewise(variables, variables, maxiterations)
-  def inferTreewiseMax(variables: Iterable[V], varying: Iterable[V], maxiterations: Int): LatticeType = {
-    val result = new BPLattice(varying, model)
-    result.updateTreewiseMax()
-    result.setVariablesToMax(variables)
-    result
-  }
-  def inferTreewiseMax(variables: Iterable[V]): LatticeType = inferTreewiseMax(variables, variables, 1)
-  def inferTreewiseMax(variables: Iterable[V], maxIterations: Int): LatticeType = inferTreewiseMax(variables, variables, maxIterations)
-}
 
 
 
@@ -98,7 +81,7 @@ class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends Variabl
     by doing exhaustive enumeration or all possible configurations.
     @author Tim Vieira */
 @deprecated("This class is not yet integrated into the general Inference framework.")
-class BruteForce[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
+class BruteForceInferencer[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
 
   // TODO: make this conform to some of the existing Inferencer interfaces.
   // extends VariableInferencer[V]?

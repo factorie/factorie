@@ -25,18 +25,19 @@ import cc.factorie._
 // Not yet finished, and certainly not yet optimized for speed at all.
 // This is here mostly to get some idea of what the interfaces might look like.
 
-/**Holds some global definitions for BP.  */
+/** Holds some global definitions for BP.  */
+// Many of these things should not be global!  Remove them. -akm
 object BeliefPropagation {
   type BPVariable = DiscreteVariable with NoVariableCoordination // Our BP implementation currently only handles these types of Variables
   val normalizeMessages = false
   var useSumMessages = true // If true messages from factors to variables are sum-product else max-product
 }
 
-/**A factor in a belief propagation lattice used for inference.
-Note that an instance of this class is not actually a Template#Factor itself;
-but it points to a Template#Factor with its 'factor' member.
-@author Andrew McCallum, Kedar Bellare, Greg Druck, Tim Vieira
- */
+/** A factor in a belief propagation lattice used for inference.
+    Note that an instance of this class is not actually a Template#Factor itself;
+    but it points to a Template#Factor with its 'factor' member.
+    @author Andrew McCallum, Kedar Bellare, Greg Druck, Tim Vieira
+*/
 abstract class BPFactor(val factor: Factor) {
   type V = BeliefPropagation.BPVariable
 
@@ -59,19 +60,14 @@ abstract class BPFactor(val factor: Factor) {
   def variableSettings: Iterator[List[Int]] = new Iterator[List[Int]] {
     val settings = BPFactor.this.variables.map(v => v.asInstanceOf[V].settings).toList
     var hasNext = true
-
     def reset = settings.foreach(setting => {setting.reset; setting.next})
-
     def next = {hasNext = nextValues(settings); BPFactor.this.variables.map(_.intValue).toList}
   }
-
 
   abstract class Message(val v: V) {
     lazy protected val msg = new Array[Double](v.domain.size) // Holds unnormalized log-probabilities
     def message: Array[Double] = msg
-
     def messageCurrentValue: Double = msg(v.intValue)
-
     var updateCount = 0
   }
 
@@ -280,58 +276,13 @@ abstract class BPFactor(val factor: Factor) {
   }
 }
 
-trait DiscreteMarginalN {
-  /**The settings of each of the N variables that together yield the highest probability. */
-  def maxEntry: Array[Int]
-}
-// TODO: This should really inherit from Proportions
-class DiscreteMarginal1[V <: DiscreteVar](val variable: V) extends IndexedSeqEqualsEq[Double] with DiscreteMarginalN {
-  def this(v: V, messages: Iterable[Array[Double]]) = {
-    this (v);
-    for (message <- messages) {
-      assert(message.length == m.length)
-      for (i <- 0 until m.length) {m(i) += message(i); sum += message(i)}
-    }
-    assert(length == v.domain.size)
-    Maths.expNormalize(m)
-  }
+/** A Lattice representing the result of belief propagation inference.  Results can be further updated by calls to various "update" methods. 
+    @author Andrew McCallum, Kedar Bellare, Greg Druck */
+class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], model: Model) extends Lattice[V] {
+  //type V = BeliefPropagation.BPVariable
+  type VariableMarginalType = DiscreteMarginal[V]
+  type FactorMarginalType = DiscreteFactorMarginal
 
-  private val m = new Array[Double](variable.domain.size)
-  private var sum = 0.0
-
-  def length = m.length
-
-  def apply(i: Int) = m(i)
-
-  def maxEntry = {
-    var i = 0;
-    var mv = m(i);
-    var mi = i
-    while (i < m.length) {if (mv < m(i)) {mv = m(i); mi = i}; i += 1}
-    val result = new Array[Int](1);
-    result(0) = mi;
-    result
-  }
-
-  def maxIndex = {
-    var i = 0;
-    var mv = m(i);
-    var mi = i
-    while (i < m.length) {if (mv < m(i)) {mv = m(i); mi = i}; i += 1}
-    mi
-  }
-
-  override def toString: String = {
-    val sb = new StringBuffer
-    for (i <- 0 until length) sb.append("%d=%-6f ".format(i, m(i)))
-    // TODO: Make DiscreteDomain have index and lookup, with Int values, so that the above line will work nicely for CategoricalDomains also
-    sb.toString
-  }
-}
-
-// TODO Rename "SumProductLattice" and "MaxProductLattice"
-class BPLattice(val variables: Iterable[BeliefPropagation.BPVariable], model: Model) extends Lattice {
-  type V = BeliefPropagation.BPVariable
   // Data structure for holding mapping from Variable to the collection of BPFactors that touch it
   private val v2m = new HashMap[Variable, ArrayBuffer[BPFactor]] {override def default(v: Variable) = {this(v) = new ArrayBuffer[BPFactor]; this(v)}}
   // We have a BPFactor for each factor
@@ -348,49 +299,53 @@ class BPLattice(val variables: Iterable[BeliefPropagation.BPVariable], model: Mo
 
   /**The BPFactors touching variable v. */
   def bpFactorsOf(v: V): Iterable[BPFactor] = v2m(v)
-
   /**Perform one iteration of belief propagation. */
   def update: Unit = bpFactors.values.foreach(_.update)
-
   /**Perform N iterations of belief propagation */
   def update(iterations: Int): Unit = for (i <- 1 to iterations) update
-
   /**Send each message in the lattice once, in order determined by a random tree traversal. */
   def updateTreewise(shuffle: Boolean = false): Unit = {
     bpFactors.values.foreach(_.resetTree)
     val factors = if (shuffle) bpFactors.values.toList.shuffle else bpFactors.values.toList // optionally randomly permute order, ala TRP
     // Call updateTreewise on all factors, but note that, if the graph is fully connected,
     // "updateTreewise" on the first marginal will do the entire graph, and the other calls will return immediately
-    BeliefPropagation.useSumMessages = true
+    BeliefPropagation.useSumMessages = true // TODO This won't work multithreaded!  Fix this. -akm
     factors.foreach(_.updateTreewise)
   }
-
-  /**Performs max-product inference. */
+  /** Performs max-product inference. */
   def updateTreewiseMax(shuffle: Boolean = false): Unit = {
     bpFactors.values.foreach(_.resetTree)
     val factors = if (shuffle) bpFactors.values.toList.shuffle else bpFactors.values.toList // optionally randomly permute order, ala TRP
     BeliefPropagation.useSumMessages = false
     factors.foreach(_.updateTreewise)
   }
-
-  /**Provide outside access to a BPFactor given is associated Factor */
-  def marginal(f: Factor): Array[Double] = bpFactors(f).marginal
-
+  /** Provide outside access to a BPFactor marginal given is associated Factor */
+  def marginal(f: Factor): Option[DiscreteFactorMarginal] = {
+    val bpFactor = bpFactors(f)
+    if (bpFactor ne null)
+      Some(new DiscreteFactorMarginal(f, bpFactors(f).marginal))
+    else
+      None
+  }
   def marginalMap(f: Factor): HashMap[List[Int], Double] = bpFactors(f).marginalMap
-
-  def marginal(v: V): DiscreteMarginal1[V] = new DiscreteMarginal1(v, bpFactorsOf(v).map(_.messageTo(v).message))
+  def marginal(v: V): Option[DiscreteMarginal[V]] = { // TODO Consider caching these?
+    val factors = bpFactorsOf(v)
+    if ((factors ne null) && factors.size > 0) {
+      val m = new Array[Double](v.domain.size)
+      var sum = 0.0
+      for (message <- factors.map(_.messageTo(v).message)) {
+        assert(message.length == m.length)
+        for (i <- 0 until m.length) { m(i) += message(i); sum += message(i) }
+      }
+      Maths.expNormalize(m)
+      Some(new DiscreteMarginal(v, m))
+    } else
+      None
+  }
   /* def sample(v:UncoordinatedCategoricalVariable): DiffList  // TODO: implement this */
   /* def sample: Unit   // TODO: implement this */
-  def setVariablesToMarginalMax: Unit = variables.foreach(v => v.set(marginal(v).maxIndex)(null))
-
-  def setVariablesToMarginalMax(vs: Iterable[V]): Unit = vs.foreach(v => v.set(marginal(v).maxIndex)(null))
-
-  // TODO Is this correct? -akm
-  def setVariablesToMax: Unit = variables.foreach(v => v.set(marginal(v).maxIndex)(null))
-
-  // TODO Can this be done reliably?  Consider removing this method -akm
-  def setVariablesToMax(vs: Iterable[V]): Unit = vs.foreach(v => v.set(marginal(v).maxIndex)(null))
-
+  //def setVariablesToMarginalMax(vs:Iterable[V] = variables)(implicit d:DiffList = null): Unit = vs.foreach(v => v.set(marginal(v).get.maxIndex)(d))
+  def setVariablesToMax(vs:Iterable[V] = variables)(implicit d:DiffList = null): Unit = vs.foreach(v => v.set(marginal(v).get.maxPrIndex)(d))
   // TODO Why is this called "sumLogZ" instead of just "logZ"? -akm
   def sumLogZ: Double = {
     // TODO Rather than re-traversing the tree, can't we just store during treewise BP a representative factor for each disconnected subgraph?
@@ -419,3 +374,41 @@ class BPLattice(val variables: Iterable[BeliefPropagation.BPVariable], model: Mo
     result
   }
 }
+
+
+/** Perform inference according to belief propagation.
+    @author Andrew McCallum, Kedar Bellare, Tim Vieira
+    @since 0.8
+ */
+class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
+  override type LatticeType = BPLattice[V]
+  def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = infer(variables, varying, 4) // TODO Make a more sensible default
+  def infer(variables:Iterable[V], varying:Iterable[V], numIterations:Int): LatticeType = {
+    val result = new BPLattice(varying, model)
+    result.update(numIterations) // TODO Of course make this smarter later
+    result.setVariablesToMax(variables) // For now, just inference my marginal maximization
+    // NOTE the above line requires that 'variables' is a subset of varying, of course!
+    result
+  }
+  def infer(variables:Iterable[V], numIterations:Int): LatticeType = infer(variables, variables, numIterations)
+  // waiting for Scala 2.8 default parameters...
+  def inferTreewise(variables:Iterable[V], varying:Iterable[V]): LatticeType = inferTreewise(variables, varying, 1)
+  def inferTreewise(variables:Iterable[V], varying:Iterable[V], maxiterations:Int): LatticeType = {
+    // NOTE: 'variables' must be a subset of varying, of course!
+    val result = new BPLattice(varying, model)
+    result.updateTreewise()
+    result.setVariablesToMax(variables)
+    result
+  }
+  def inferTreewise(variables:Iterable[V]): LatticeType = inferTreewise(variables, variables, 1)
+  def inferTreewise(variables:Iterable[V], maxiterations:Int): LatticeType = inferTreewise(variables, variables, maxiterations)
+  def inferTreewiseMax(variables: Iterable[V], varying: Iterable[V], maxiterations: Int): LatticeType = {
+    val result = new BPLattice(varying, model)
+    result.updateTreewiseMax()
+    result.setVariablesToMax(variables)
+    result
+  }
+  def inferTreewiseMax(variables: Iterable[V]): LatticeType = inferTreewiseMax(variables, variables, 1)
+  def inferTreewiseMax(variables: Iterable[V], maxIterations: Int): LatticeType = inferTreewiseMax(variables, variables, maxIterations)
+}
+

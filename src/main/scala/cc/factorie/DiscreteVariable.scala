@@ -55,7 +55,7 @@ abstract class DiscreteVariable(initialValue:Int = 0) extends IntegerVariable(in
     def reset = i = -1
     override def variable : DiscreteVariable.this.type = DiscreteVariable.this
   }
-  type QType = cc.factorie.generative.MutableProportions
+  type QType = cc.factorie.generative.MutableProportions // TODO But then this choice cannot be changed by subclasses :-(  Consider some implicit configuration instead.
   def newQ = new cc.factorie.generative.DenseProportions(domain.size)
 }
 

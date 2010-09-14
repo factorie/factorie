@@ -17,20 +17,13 @@
 package cc.factorie
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 
-class DiscreteMarginal[V<:DiscreteVars](val variable:V) extends cc.factorie.generative.DenseCountsProportions(variable.domain.size) with Marginal {
-  override def keepChildren = false
-  //override def keepChildren = false
-  def incrementCurrentValue : Unit = variable match {
-    case v:DiscreteVar => increment(v.intValue, 1.0)(null)
-    case v:BinaryFeatureVectorVariable[_] => { for (index <- v.intValues) increment(index, 1.0)(null) } // throw new Error // TODO Put this code back in: v.incrementInto(this)
-  }
-}
-
 // TODO This is over variables.  We want something over Factors... and perhaps also something separate over Variables
-class SamplingLattice[V<:DiscreteVars](variables:Iterable[V]) extends Lattice {
+class SamplingLattice[V<:DiscreteVars](variables:Iterable[V]) extends Lattice[V] {
+  type VariableMarginalType = DiscreteMarginal[V]
   val map = new HashMap[V,DiscreteMarginal[V]]
   variables.foreach(v => map(v) = new DiscreteMarginal(v))
-  def marginal(v:V) = map(v)
+  def marginal(v:V) = map.get(v)
+  def marginal(f:Factor) = throw new Error("Not yet implemented") // TODO
   def apply(v:V) = map(v)
   def marginals: Iterator[DiscreteMarginal[V]] = map.valuesIterator
 }
@@ -46,7 +39,7 @@ class SamplingInferencer[V<:DiscreteVariable,C](val sampler:Sampler[C]) extends 
     sampler.processAll(contexts, burnIn)
     for (i <- 0 until iterations/thinning) {
       sampler.processAll(contexts, thinning)
-      targets.foreach(v => lat.marginal(v).incrementCurrentValue)
+      targets.foreach(v => lat.marginal(v).get.incrementCurrentValue)
     }
     lat
   }
@@ -63,7 +56,12 @@ class VariableSamplingInferencer[V<:DiscreteVariable](sampler:Sampler[V]) extend
 /** The result of inference by a SamplingMaximizer.  
     'diff' is the list the changes from the initial configuration.  It may be null if no DiffList is provided to 'infer'.
     'diffScore' is the relative change in model score from the initial configuration. */
-class SamplingMaximizerLattice(val diff:DiffList, val diffScore:Double) extends Lattice
+class SamplingMaximizerLattice[V<:Variable](val diff:DiffList, val diffScore:Double) extends Lattice[V] {
+  type VariableMarginalType = Marginal
+  type FactorMarginalType = Marginal
+  def marginal(v:V): Option[Marginal] = throw new Error // TODO
+  def marginal(f:Factor): Option[Marginal] = throw new Error // TODO
+}
 
 /** Provide 'infer' method that uses the 'sampler' to search for the best-scoring configuration.
      @author Andrew McCallum
@@ -72,7 +70,7 @@ class SamplingMaximizerLattice(val diff:DiffList, val diffScore:Double) extends 
 // TODO Update this for the new separated "modelScore" and "acceptScore" in Proposal.
 class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends VariableInferencer[V] {
   def this(model:Model) = this(new VariableSettingsSampler[V](model))
-  type LatticeType = SamplingMaximizerLattice
+  type LatticeType = SamplingMaximizerLattice[V]
   var iterations = 50 // TODO What should these be by default?
   var rounds = 3
   var initialTemperature = 1.0
@@ -120,6 +118,6 @@ class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalS
     maxdiff.undo // Go back to maximum scoring configuration so we return having changed the config to the best
     sampler.proposalHooks -= updateHook // Remove our temporary hook
     sampler.temperature = origSamplerTemperature // Put back the sampler's temperature where we found it
-    new SamplingMaximizerLattice(diff, maxScore)
+    new SamplingMaximizerLattice[V](diff, maxScore)
   }
 }

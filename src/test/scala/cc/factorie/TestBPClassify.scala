@@ -104,7 +104,7 @@ class TestBPClassify extends TestCase {
     trainer.process(trainVariables)
 
     val inferencer = new BPInferencer[LabelVariable[String]](model)
-    val lattice: BPLattice = inferencer.inferTreewise(testVariables.asInstanceOf[Seq[LabelVariable[String]]])
+    val lattice = inferencer.inferTreewise(testVariables.asInstanceOf[Seq[LabelVariable[String]]])
 
     var trueSumLogZ = 0.0
 
@@ -128,8 +128,8 @@ class TestBPClassify extends TestCase {
       Maths.expNormalize(trueMarginal)
 
       forIndex(trueMarginal.length)(i => {
-        if (math.abs(trueMarginal(i) - bpMarginal(i)) > 1e-6) {
-          throw new RuntimeException("BP MARGINALS INCORRECT! " + trueMarginal(i) + " " + bpMarginal(i))
+        if (math.abs(trueMarginal(i) - bpMarginal.get(i)) > 1e-6) {
+          throw new RuntimeException("BP MARGINALS INCORRECT! " + trueMarginal(i) + " " + bpMarginal.get(i))
         }
       })
     })

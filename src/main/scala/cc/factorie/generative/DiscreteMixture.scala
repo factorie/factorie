@@ -40,18 +40,3 @@ class DiscreteMixture(val components:FiniteMixture[Proportions], val choice:Mixt
 @DomainInSubclasses
 class CategoricalMixture[A](val components:FiniteMixture[Proportions], val choice:MixtureChoiceVariable, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] with DiscreteMixtureVar
 
-// Outcome, MixtureChoice, Parents
-// Common pattern:  mean -> MixtureComponents -> Gaussian
-
-
-
-
-// Old-style
-
-/*class DenseDirichletMixture(val components:Seq[Proportions], prec:RealValueParameter, val choice:MixtureChoiceVariable, p:Seq[Double] = Nil)
-extends DenseDirichlet(components(choice.intValue), prec, p) with MixtureOutcome {
-  override protected val meanRef: ParameterRef[Proportions,Dirichlet with MixtureOutcome] = new GatedParameterRef(components, choice, this)
-  override def mean_=(p2:Proportions)(implicit d:DiffList = null) = throw new Error
-  def prFromMixtureComponent(index:Int): Double = math.exp(logpr(components(index), precision))
-}*/
-

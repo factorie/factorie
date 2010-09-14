@@ -41,7 +41,7 @@ class Model(initTemplates:InitializedTemplate*) extends Seq[Template] {
   this ++= initTemplates
 
   // Jumping through hoops just to call automatically call .init on templates that are added.
-  // This in turn is just a way to work-around that we can't get Manifests for traits because traits cannot take constructor arguments.
+  // This in turn is just a work-around for the fact that we can't get Manifests for traits because traits cannot take constructor arguments.
   def ++=(iTemplates:Iterable[InitializedTemplate]) = ts ++= iTemplates.map(_.template)
   def +=(iTemplate:InitializedTemplate) = ts += iTemplate.template
 

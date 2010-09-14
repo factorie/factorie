@@ -56,29 +56,29 @@ class TestBP extends TestCase {
   def testV1F1 = {
     // one variable, one factor
     val v = new BinVar(0)
-    var lattice: BPLattice = null
+    var lattice: BPLattice[BinVar] = null
     // 1) equal potentials
-    lattice = new BPLattice(Array(v), new Model(newTemplate1(1, 1)))
+    lattice = new BPLattice[BinVar](Array(v), new Model(newTemplate1(1, 1)))
     lattice.updateTreewise(false)
-    assertEquals(lattice.marginal(v)(0), 0.5, 0.001)
+    assertEquals(lattice.marginal(v).get(0), 0.5, 0.001)
     // 2) unequal potentials
     lattice = new BPLattice(Array(v), new Model(newTemplate1(2, 1)))
     lattice.updateTreewise(false)
-    assertEquals(lattice.marginal(v)(0), e(1) / (1 + e(1)), 0.001)
+    assertEquals(lattice.marginal(v).get(0), e(1) / (1 + e(1)), 0.001)
   }
 
   def testV1F2 = {
     // one variable, two factors
     val v = new BinVar(0)
-    var lattice: BPLattice = null
+    var lattice: BPLattice[BinVar] = null
     // 1) f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}
-    lattice = new BPLattice(Array(v), new Model(newTemplate1(2, 1), newTemplate1(1, 2)))
+    lattice = new BPLattice[BinVar](Array(v), new Model(newTemplate1(2, 1), newTemplate1(1, 2)))
     lattice.updateTreewise(false)
-    assertEquals(lattice.marginal(v)(0), 0.5, 0.001)
+    assertEquals(lattice.marginal(v).get(0), 0.5, 0.001)
     // 2) f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}
     lattice = new BPLattice(Array(v), new Model(newTemplate1(0, 1), newTemplate1(0, 1)))
     lattice.updateTreewise(false)
-    assertEquals(lattice.marginal(v)(0), 1.0 / (1 + e(2)), 0.001)
+    assertEquals(lattice.marginal(v).get(0), 1.0 / (1 + e(2)), 0.001)
   }
 
   def testV2F1 = {
@@ -91,12 +91,12 @@ class TestBP extends TestCase {
     val v2 = new NamedBinVar("b", 1);
     nm2var += "b" -> v2
 
-    var lattice: BPLattice = null
+    var lattice: BPLattice[BinVar] = null
     // create template between v1 and v2
     lattice = new BPLattice(Array(v1, v2), new Model(newTemplate2("a", "b", nm2var, 1000, 0)))
     lattice.updateTreewise(false)
-    assertEquals(lattice.marginal(v1)(0), 0.5, 0.001)
-    assertEquals(lattice.marginal(v2)(0), 0.5, 0.001)
+    assertEquals(lattice.marginal(v1).get(0), 0.5, 0.001)
+    assertEquals(lattice.marginal(v2).get(0), 0.5, 0.001)
   }
 
   def testTwoChain = {
@@ -109,7 +109,7 @@ class TestBP extends TestCase {
     val v2 = new NamedBinVar("b", 1)
     nm2var += "b" -> v2
 
-    var lattice: BPLattice = null
+    var lattice: BPLattice[BinVar] = null
     val model = new Model(newTemplate1(1, 0), newTemplate2("a", "b", nm2var, 9, 0))
     lattice = new BPLattice(Array(v1, v2), model)
     lattice.updateTreewise(false)
@@ -128,7 +128,7 @@ class TestBP extends TestCase {
           assertEquals(marginals(List(1, 1)), e(8) / (2 + e(8) + e(10)), 0.001)
         }
     }
-    assertEquals(lattice.marginal(v1)(0), (1 + e(10)) / (2 + e(8) + e(10)), 0.001)
+    assertEquals(lattice.marginal(v1).get(0), (1 + e(10)) / (2 + e(8) + e(10)), 0.001)
     assertEquals(lattice.sumLogZ, 11.127, 0.001)
   }
 
@@ -152,7 +152,7 @@ class TestBP extends TestCase {
     assertEquals(latticeSum.sumLogZ, math.log(e(1) + e(2) + 2 * e(3) + e(4) + 2 * e(6) + e(7)), 0.001)
     val latticeMax = new BPLattice(Array(v1, v2, v3), model)
     latticeMax.updateTreewiseMax()
-    latticeMax.setVariablesToMarginalMax
+    latticeMax.setVariablesToMax()
     assertTrue(v1.intValue == 1)
     assertTrue(v2.intValue == 1)
     assertTrue(v3.intValue == 0)

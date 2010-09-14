@@ -86,9 +86,20 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter,
   def ~(mean:Proportions, precision:RealVarParameter): this.type = { mean_=(mean)(null); precision_=(precision)(null); this }
   type CollapsedType = DenseDirichletMultinomial
   def newCollapsed = new DenseDirichletMultinomial(mean, precision)
+  //def estimate(model:Model = cc.factorie.generative.defaultGenerativeModel)(implicit e:DenseDirichletEstimator): Unit = {}
 }
 
-// TODO Perhaps all Dirichlet* classes should be re-implemented in terms of "alpha" instead of "precision" in order to avoid some of this awkwardness.
+/*class DirichletEstimator {
+  def estimate(d:DenseDirichlet, model:Model): Unit = {
+    val a = new Array[Double](d.length)
+    val factors = model.factors(d)
+    factors.foreach(_ match {
+      case f:GeneratedVarTemplate#Factor => throw new Error
+    })
+  }
+}*/
+
+// TODO Perhaps all Dirichlet* classes should be re-implemented in terms of "alpha:Masses" instead of "precision" in order to avoid some of this awkwardness.
 
 class GrowableDenseDirichlet(val alpha:Double, p:Seq[Double] = Nil) extends GrowableDenseCountsProportions with MutableDirichlet {
   //def this(alpha:Double) = this(new GrowableUniformProportions(this), new RealVariableParameter(alpha))
@@ -102,6 +113,8 @@ class GrowableDenseDirichlet(val alpha:Double, p:Seq[Double] = Nil) extends Grow
   def newCollapsed = new GrowableDenseDirichletMultinomial(alpha)
 }
 
+/** A Proportions generated from a Mixture of Dirichlet(mean,precision). 
+    @author Andrew McCallum */
 class DenseDirichletMixture(val meanComponents:FiniteMixture[Proportions], 
                             val precisionComponents:FiniteMixture[RealVarParameter],
                             val choice:MixtureChoiceVariable, 
