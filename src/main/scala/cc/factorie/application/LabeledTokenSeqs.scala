@@ -534,7 +534,7 @@ object LabeledTokenSeqs {
       private val evals = new HashMap[String,PerSegmentEvaluation[T,L]]
       private var labelCount = 0
       private var labelCorrectCount = 0
-      evals ++ baseLabelStrings.map(s => (s, new PerSegmentEvaluation[T,L](s, (startPrefix+s).r, (continuePrefix+s).r)))
+      evals ++= baseLabelStrings.map(s => (s, new PerSegmentEvaluation[T,L](s, (startPrefix+s).r, (continuePrefix+s).r)))
       /** Return the LabelEvaluation specific to labelString. */
       def apply(labelString:String) = evals(labelString)
       def +=(labels: Seq[L]): Unit = {
