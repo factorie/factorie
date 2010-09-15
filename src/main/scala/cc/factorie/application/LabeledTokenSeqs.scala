@@ -322,6 +322,11 @@ object LabeledTokenSeqs {
           tokenCount += 1
         }
       }
+      // gdruck: This is necessary because a file
+      // might not end with a sentence boundary.
+      if (seq.length > 0){
+        seqs += seq
+      }
       //println("Loaded "+seqs.length+" sentences with "+wordCount+" words total from file "+filename)
       seqs
     }
