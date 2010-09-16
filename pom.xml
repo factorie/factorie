@@ -106,6 +106,12 @@
                                 </goals>
                             </execution>
                         </executions>
+                        <configuration>
+                            <jvmArgs>
+                                <jvmArg>-Xms64m</jvmArg>
+                                <jvmArg>-Xmx1800m</jvmArg>
+                            </jvmArgs>
+                        </configuration>
                     </plugin>
 
                     <plugin>

@@ -22,6 +22,7 @@ import cc.factorie._
 import cc.factorie.er._
 import cc.factorie.application.LabeledTokenSeqs
 import cc.factorie.application.LabeledTokenSeqs.LabeledTokenSeq
+import collection.mutable.ArrayBuffer
 
 object ChainNER1ML {
 
@@ -38,11 +39,21 @@ object ChainNER1ML {
     )
 
   def main(args: Array[String]): Unit = {
+    val start = System.currentTimeMillis
+
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
 
+     def featureFunction(inFeatures:Seq[String]): Seq[String] = {
+      val result = new ArrayBuffer[String]
+      // Assume the first feature is the word
+      result += inFeatures(0)
+      result ++= inFeatures.drop(1)
+      result
+    }
+
     // Read training and testing data.
-    val trainSentences = LabeledTokenSeq.fromOWPL[Token, Label](Source.fromFile(new File(args(0))), (word, lab) => new Token(word, lab), "-DOCSTART-")
-    val testSentences = LabeledTokenSeq.fromOWPL[Token, Label](Source.fromFile(new File(args(1))), (word, lab) => new Token(word, lab), "-DOCSTART-")
+    val trainSentences = LabeledTokenSeq.fromOWPL[Token, Label](Source.fromFile(new File(args(0))), (word, lab) => new Token(word, lab), featureFunction _, "-DOCSTART-".r)
+    val testSentences = LabeledTokenSeq.fromOWPL[Token, Label](Source.fromFile(new File(args(1))), (word, lab) => new Token(word, lab), featureFunction _, "-DOCSTART-".r)
 
     // Get the variables to be inferred
     val trainVariables = trainSentences.map(_.labels)
@@ -59,5 +70,7 @@ object ChainNER1ML {
     println("*** Starting inference (#sentences=%d)".format(testSentences.size))
     testVariables.foreach {variables => new BPInferencer(model).inferTreewiseMax(variables)}
     println("test token accuracy=" + objective.aveScore(allTestVariables))
+
+    println("took " + (System.currentTimeMillis - start)/ 1000.0 + " seconds")
   }
 }
