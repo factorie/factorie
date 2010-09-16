@@ -92,6 +92,7 @@ class SparseBinaryVector(theLength:Int, indices:Array[Int] = null) extends Vecto
       ind = new_indices
     }
   }
+
   /** Search the array 'ind' for the index at which value x could be inserted in sorted order.
       @param start the lowest index to consider
       @parm end one plus the highest index that already contains data
@@ -100,28 +101,28 @@ class SparseBinaryVector(theLength:Int, indices:Array[Int] = null) extends Vecto
       or index == end.
       */
   private def _positionLte(x:Int, start:Int, end:Int): Int = {
-    val diff = end - start
     //println("SparseBinaryVector._positionLte "+x+" "+start+" "+end+" diff="+diff)
+    val diff = end - start
     if (diff == 0) return start
-    if (diff == 1) return if (ind(start) >= x /* || ((end < ind.length) && (ind(end)) > x)*/ ) start else end
-    //if (diff == 2) return if (ind(start) == x) start else if (ind(end-1) <= x) end-1 else start
+    if (diff == 1) return if (ind(start) >= x) start else end
     val middle = start + (diff / 2)
-    val midindex = ind(middle)
-    if (midindex == x) return midindex
-    else if (x < midindex) _positionLte(x, start, middle)
+    val midval = ind(middle)
+    if (midval == x) return middle
+    else if (x < midval) _positionLte(x, start, middle)
     else _positionLte(x, middle+1, end)
   }
+
   /** Return true iff the integer 'index' is contains in ind.  */
-  private def _contains(index:Int, start:Int, end:Int): Boolean = {
+  private def _contains(x:Int, start:Int, end:Int): Boolean = {
+    // /println("SparseBinaryVector._contains "x+" "+start+" "+end+" diff="+diff)
     val diff = end - start
-    // // println("SparseBinaryVector._contains "+index+" "+start+" "+end+" diff="+diff)
     if (diff == 0) return false
-    else if (diff < 2) return if (ind(start) == index) true else false
+    if (diff == 1) return ind(start) == x
     val middle = start + (diff / 2)
-    val midindex = ind(middle)
-    if (midindex == index) return true
-    else if (index < midindex) _contains(index, start, middle)
-    else _contains(index, middle+1, end)
+    val midval = ind(middle)
+    if (midval == x) return true
+    else if (x < midval) _contains(x, start, middle)
+    else _contains(x, middle+1, end)
   }
   //private var lastPosition = 0 // TODO Implement this speed-up, also used in scalala
   def apply(index:Int): Double = if (_contains(index, 0, _size)) 1.0 else 0.0
@@ -144,10 +145,14 @@ class SparseBinaryVector(theLength:Int, indices:Array[Int] = null) extends Vecto
   /** Add a value, (while keeping the content Array[Int] sorted). */
   def +=(theValue:Int): Unit = {
     val i = _positionLte(theValue, 0, _size)
-    //println("Vector.+= x="+theValue+" i="+i+" ind="+ind.toString)
+    //println
+    //println("  In Vector+=")
+    //println("    > insert value: " + theValue)
+    //println("    > indices:      " + ind.toList)
+    //println("    > |indices|:    " + _size)
     if (i >= ind.length || ind(i) != theValue) {
+      //println("    ===> inserting at index: " + i)
       ensureCapacity(_size)
-      //println("ind.length="+ind.length+" _size="+_size+" i="+i)
       System.arraycopy(ind, i, ind, i+1, _size-i) // Shift later part of the array one position to make space
       ind(i) = theValue
       _size += 1
