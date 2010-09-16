@@ -25,8 +25,8 @@ trait GaussianMixtureVar extends GaussianVar with MixtureOutcome {
   meanComponents.addChild(this)(null)
   varianceComponents.addChild(this)(null)
   def choice: MixtureChoiceVariable
-  def meanComponents: FiniteMixture[RealVarParameter]
-  def varianceComponents: FiniteMixture[RealVarParameter]
+  def meanComponents: MixtureComponents[RealVarParameter]
+  def varianceComponents: MixtureComponents[RealVarParameter]
   def mean = meanComponents(choice.intValue)
   def variance = varianceComponents(choice.intValue)
   def logprFromMixtureComponent(index:Int): Double = logprFrom(meanComponents(index).doubleValue, varianceComponents(index).doubleValue)
@@ -39,16 +39,19 @@ trait GaussianMixtureVar extends GaussianVar with MixtureOutcome {
   def prFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int) = math.exp(logprFromMixtureComponent(map, index))
   def parentsFromMixtureComponent(index:Int) = List(meanComponents(index), varianceComponents(index))
   def chosenParents = List(meanComponents(choice.intValue), varianceComponents(choice.intValue))
-  override def parents = List[Parameter](meanComponents, varianceComponents) ++ super.parents
+  override def parents = List[Parameter](meanComponents, varianceComponents)
+  // Above also used to include: ++ super.parents
 }
 
-class GaussianMixture(val meanComponents:FiniteMixture[RealVarParameter], 
-                      val varianceComponents:FiniteMixture[RealVarParameter], 
+class GaussianMixture(val meanComponents:MixtureComponents[RealVarParameter], 
+                      val varianceComponents:MixtureComponents[RealVarParameter], 
                       val choice:MixtureChoiceVariable, 
                       initialValue:Double = 0.0)
 extends RealVariable(initialValue) with MixtureOutcome with GaussianMixtureVar {
-  meanComponents.addChild(this)(null)
-  varianceComponents.addChild(this)(null)
+  //println("new GaussianMixture hashCode="+System.identityHashCode(this))
+  //println("meanComponents.children: "+meanComponents.children.mkString(", "))
+  //meanComponents.addChild(this)(null)
+  //varianceComponents.addChild(this)(null)
 }
 
 

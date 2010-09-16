@@ -18,12 +18,13 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 // Preliminary steps toward generic interfaces to inference
 
 // TODO Not yet sure what general interfaces should go here.
-trait Marginal
+trait Marginal extends Variable
 trait Lattice[V<:Variable] {
   type VariableMarginalType <: Marginal
   type FactorMarginalType <: Marginal
-  def marginal(v:V): Option[VariableMarginalType]
-  def marginal(f:Factor): Option[FactorMarginalType]
+  def marginal(v:V): Option[VariableMarginalType] = None
+  //def marginal(v:V*): Option[MarginalType] = None // ??
+  def marginal(f:Factor): Option[FactorMarginalType] = None
 }
 
 /** Generic infrastructure for inference, both for calculating marginals and maxima.
@@ -50,6 +51,28 @@ trait VariableInferencer[V<:Variable] extends Inferencer[V,V] {
   /** Infer the 'targets' variables, considering not only changes their their values, but also changes to the 'marginalizing' variables. */
   def inferMarginalizing(targets:Iterable[V], marginalizing:Iterable[V]) = infer(targets, targets ++ marginalizing)
 }
+
+class IIDDiscreteInferencer[V<:DiscreteVariable](model:Model) extends VariableInferencer[V] {
+  type LatticeType = IIDDiscreteLattice
+  class IIDDiscreteLattice extends HashMap[V,DiscreteMarginal[V]] with Lattice[V] {
+    type VariableMarginalType = DiscreteMarginal[V]
+    override def marginal(v:V) = this.get(v)
+  }
+  def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = {
+    val lattice = new IIDDiscreteLattice
+    for (v <- variables) {
+      val a = new Array[Double](v.domain.size)
+      forIndex(a.length)(i => {
+        v.set(i)(null)
+        a(i) = model.score(v)
+      })
+      Maths.expNormalize(a)
+      lattice(v) = new DiscreteMarginal[V](v, a)
+    }
+    lattice
+  }
+}
+
 
 class DiscreteMarginal[V<:DiscreteVars](val variable:V, proportions:Seq[Double] = Nil) extends cc.factorie.generative.DenseCountsProportions(variable.domain.size) with Marginal {
   // TODO Consider also including "val inferencer:Inferencer" in constructor arguments

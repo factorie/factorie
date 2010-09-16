@@ -31,6 +31,12 @@ import scala.util.Sorting
 // "*Var" is agnostic about whether it is mutable or not.  Hence "IntegerVar"
 
 
+class Foo {
+  def frob(implicit p:cc.factorie.generative.Proportions) = p.getClass
+  def frob(implicit p:cc.factorie.generative.DenseProportions) = p.getClass
+  def frob(implicit p:cc.factorie.generative.DenseDirichlet) = p.getClass
+}
+
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
    The trait is abstract because you should not instantiate this trait directly, only subclasses.
    <p>

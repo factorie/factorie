@@ -65,11 +65,12 @@ trait TypedProportions[A<:DiscreteVar] extends Proportions {
   def topValues(n:Int)(implicit m:Manifest[A]) = top(n).toList.map(_.value)
 }
 
-trait MutableProportions extends Proportions {
-  def set(p:Seq[Double])(implicit d:DiffList): Unit 
+trait MutableProportions extends Proportions with Estimation[MutableProportions] {
+  def set(p:Seq[Double])(implicit d:DiffList): Unit
+  def defaultEstimator: Estimator[MutableProportions] = MutableProportionsEstimator
 }
 
-class DenseProportions(p:Seq[Double]) extends MutableProportions with Estimation[DenseProportions] {
+class DenseProportions(p:Seq[Double]) extends MutableProportions {
   //def this(ps:Double*) = this(ps)
   def this(dim:Int) = this(Seq.fill(dim)(1.0/dim))
   private var _p = new Array[Double](p.length)
@@ -90,6 +91,18 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions with Estimation
     def redo = _p = newP
   }
 }
+
+object MutableProportionsEstimator extends Estimator[MutableProportions] {
+  def estimate(d:MutableProportions, map:scala.collection.Map[Variable,Variable]): Unit = {
+    val e = new DenseCountsProportions(d.length)
+    for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
+      case x:DiscreteVar => e.increment(x.intValue, weight)(null)
+      case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
+    }
+    d.set(e)(null)
+  }
+}
+
 
 class DiracProportions(val length:Int, val peak:Int) extends Proportions {
   @inline final def apply(index:Int) = if (index == peak) 1.0 else 0.0
@@ -170,7 +183,7 @@ trait HashIncrementableCounts extends IncrementableCounts {
 }
 
 
-class DenseCountsProportions(len:Int) extends MutableProportions with Estimation[DenseCountsProportions] {
+class DenseCountsProportions(len:Int) extends MutableProportions {
   def this(p:Seq[Double]) = { this(p.length); this.set(p)(null) }
   protected var _counts = new Array[Double](len)
   protected var _countsTotal = 0.0
@@ -225,7 +238,7 @@ class GrowableDenseCountsProportions(initialCapacity:Int = 32) extends DenseCoun
 }
 
 
-object DenseProportions {
+/*object DenseProportions {
   implicit val denseProportionsEstimator = new Estimator[DenseProportions] {
     def estimate(p:DenseProportions, model:Model): Unit = {
       val counts = new Array[Double](p.length)
@@ -234,17 +247,18 @@ object DenseProportions {
       p.set(counts)(null) // TODO Should we have a DiffList here?
     }
   }
-}
+}*/
 
 
-object DenseCountsProportions {
+/*object DenseCountsProportions {
   implicit val denseCountsProportionsEstimator = new Estimator[DenseCountsProportions] {
     def estimate(p:DenseCountsProportions, model:Model): Unit = {
       p.zero
       for (child <- p.children) child match { case child:DiscreteVar => p.increment(child.intValue, 1.0)(null) }
     }
   }
-}
+}*/
+
 
 
 

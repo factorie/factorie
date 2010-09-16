@@ -33,8 +33,8 @@ trait GeneratedDiscreteVar extends GeneratedVar with DiscreteVar {
 
 @DomainInSubclasses
 trait GeneratedDiscreteVariable extends DiscreteVariable with GeneratedVariable with GeneratedDiscreteVar {
-  def sample(implicit d:DiffList): Unit = set(proportions.sampleInt)
-  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList) = parents match {
+  def sampleFromParents(implicit d:DiffList = null): Unit = set(proportions.sampleInt)
+  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList = null) = parents match {
     case Seq(p:Proportions) => set(p.sampleInt)
   }
   def maximize(implicit d:DiffList): Unit = set(proportions.maxPrIndex)

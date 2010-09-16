@@ -52,14 +52,15 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
     case _ => {} // TODO Should we really not throw an error here?
   }
   // Perhaps DirichletMultinomial should not be a GeneratedVariable?  But it does have parents and children.
-  def sample(implicit d:DiffList): Unit = throw new Error
-  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = throw new Error
+  def sampleFromParents(implicit d:DiffList = null): Unit = throw new Error
+  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList = null): Unit = throw new Error
   def prFrom(parents:Seq[Parameter]): Double = throw new Error
 }
 
 class DenseDirichletMultinomial(val mean:Proportions, val precision:RealVarParameter) extends DenseCountsProportions(mean.length) with DirichletMultinomial {
   def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealVariableParameter(alpha*size))
   //def this(dirichlet:Dirichlet) = this(dirichlet.mean, dirichlet.precision)
+  //def estimate(map:Map[Variable,Variable]): Unit = throw new Error
 }
 
 class GrowableDenseDirichletMultinomial(val alpha:Double) extends GrowableDenseCountsProportions with DirichletMultinomial {
@@ -69,5 +70,6 @@ class GrowableDenseDirichletMultinomial(val alpha:Double) extends GrowableDenseC
     def pr = 1.0
     def parents = List(GrowableDenseDirichletMultinomial.this) // TODO But note that GrowableDenseDirichletMultinomial doesn't have this as a child.
   }
+  //def estimate(map:Map[Variable,Variable]): Unit = throw new Error
 }
 

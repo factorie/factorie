@@ -38,7 +38,7 @@ trait Parameter extends Variable {
   }
   // TODO Remove this?  Then implement this pulling of MixtureComponents.children in each of the parameter estimation inference routines.
   // Yes, I think this above method is better. -akm
-  // No, I now think it is better for this to stay here.  This functionality is needed by each parameter's estimation method!
+  // No, I now think it is better for this to stay here.  This functionality is needed by each parameter's estimation method! -akm
   def generatedChildren: Iterable[GeneratedVar] = {
     val result = new ArrayBuffer[GeneratedVar]
     for (child <- children) child match {
@@ -47,9 +47,25 @@ trait Parameter extends Variable {
     }
     result
   }
+  def weightedGeneratedChildren(map:scala.collection.Map[Variable,Variable]): Iterable[(GeneratedVar,Double)] = {
+    val result = new ArrayBuffer[(GeneratedVar,Double)]
+    for (child <- children) map.getOrElse(child,child) match {
+      case mcs:MixtureComponents[_] => {
+        val mci = mcs.components.indexOf(this); assert(mci >= 0)
+        for (c <- mcs.children) map.getOrElse(c,c) match {
+          case mv:MixtureOutcome => map.getOrElse(mv.choice, mv.choice) match {
+            case mc:MixtureChoice => if (mc.intValue == mci) result += ((c, 1.0))
+            case pr:Proportions => { assert(pr.length == mcs.components.length); if (pr(mci) > 0.0) result += ((c, pr(mci))) }
+          }
+        }
+      }
+      case gv:GeneratedVar => result += ((child, 1.0))
+    }
+    result
+  }
   def addChild(v:GeneratedVar)(implicit d:DiffList): Unit = if (keepChildren) {
     //println("Parameter.addChild"); new Exception().printStackTrace()
-    if (_children.contains(v)) throw new Error("Parameter "+this+" already has child "+v+" with hashCode="+v.hashCode)
+    if (_children.contains(v)) throw new Error("Parameter "+this+" already has child "+v+" with hashCode="+v.hashCode+"\nContents:\n"+_children.mkString("\n"))
     _children += v 
     if (d ne null) d += ParameterAddChildDiff(v)
   }
@@ -84,14 +100,40 @@ class IntegerVariableParameter(value:Int) extends IntegerVariable(value) with In
 
 
 
-trait Estimation[This<:Parameter] {
+// TODO I'm not yet convinced that this "Estimation" interface is a good idea.
+// It is a "short-cut" that bypasses the model, like GenerativeVariable.sampleFromParents.
+// But it leads to passing around odd "mapping" arguments, etc.
+// Perhaps parameter estimation should really just be handled by proper Inferencer's
+// with all the proper checks for the model's factors. 
+// On the other hand, when considering where to put "variable-class-specific functionality"
+// a balance needs be struck between "in the variables" and "in the general inference";
+// perhaps this is not a bad balance?
+// -akm
+
+trait Estimation[This<:Estimation[This] with Parameter] {
   this: This =>
-  def estimate(model:Model = cc.factorie.defaultModel)(implicit e:Estimator[This]): Unit = e.estimate(this, model)
+  def defaultEstimator: Estimator[This]
+  def estimate(estimator:Estimator[This] = defaultEstimator, mapping:scala.collection.Map[Variable,Variable] = Map[Variable,Variable]()): Unit = defaultEstimator.estimate(this, mapping)
 }
 
 trait Estimator[P<:Parameter] {
-  def estimate(parameter:P, model:Model): Unit
+  /** Estimate a parameter conditioned only on its parents and children, 
+      using the optional 'map' to make substitutions. 
+      This does not do full general inference of many dependent variables/parameters;
+      in that respect it is somewhat analagous to GeneratedVariable.sampleFromParents(). */
+  // TODO Consider renaming estimateFromParentsAndChildren ?
+  def estimate(parameter:P, mapping:scala.collection.Map[Variable,Variable] = Map[Variable,Variable]()): Unit
 }
+
+class IIDEstimationInferencer[P<:Parameter with Estimation[P]] extends VariableInferencer[P] {
+  type LatticeType = Lattice[P]
+  def infer(variables:Iterable[P], varying:Iterable[P]): LatticeType = infer(variables, varying, Map[Variable,Variable]())
+  def infer(variables:Iterable[P], varying:Iterable[P], mapping:scala.collection.Map[Variable,Variable]): LatticeType = {
+    variables.foreach(v => v.estimate(v.defaultEstimator, mapping))
+    new Lattice[P] {}
+  }
+}
+
 
 
 trait AbstractParameterRef extends Variable {
@@ -103,7 +145,7 @@ class ParameterRef[P<:Parameter,C<:GeneratedVar](p:P, override val child:C) exte
   //println("ParameterRef.init parent="+p.getClass.getName+"@"+p.hashCode+" child="+child)
   // This 'set' method is no longer called in initialization of RefVariable, hence line above
   override def set(newValue:P)(implicit d:DiffList): Unit = if (newValue ne value) { 
-    // Above, if this is != instead of ne, then entire Proportion contents will be examined!  Slow!!!
+    // Above, if this is != instead of ne, then entire Proportion contents would be examined (if not for IndexedSeqEqualsEq)!  Slow!!!
     if (value ne null) value.removeChild(child)
     super.set(newValue)
     if (value ne null) value.addChild(child)

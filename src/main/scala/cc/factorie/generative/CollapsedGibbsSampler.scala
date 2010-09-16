@@ -108,7 +108,7 @@ object GeneratedVariableCollapsedGibbsSamplerHandler extends CollapsedGibbsSampl
           // TODO What about collapsed children?
         }
         factor._1 match { // Necessary because it might be a GeneratedVar, not a GeneratedVariable, in which case we should fail
-          case gv: GeneratedVariable => gv.sample(d)
+          case gv: GeneratedVariable => gv.sampleFromParents(d)
         }
         for (parent <- factor._3) sampler.collapsedOrNull(parent) match {
           case p:CollapsedParameter => p.updateChildStats(v, 1.0)

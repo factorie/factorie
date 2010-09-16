@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,Stack}
 
 @DomainInSubclasses
-trait MixtureChoiceVariable extends GeneratedDiscreteVariable {
+trait MixtureChoiceVariable extends GeneratedDiscreteVariable with NoVariableCoordination {
   // 'outcomes' are a more efficient alternative to 'children' for small sets of outcomes.
   private var _outcomes: List[MixtureOutcome] = Nil
   def outcomes = _outcomes
@@ -25,6 +25,11 @@ trait MixtureChoiceVariable extends GeneratedDiscreteVariable {
     //assert(o.mixtureSize == domainSize)
     _outcomes = o :: _outcomes
   }
+  // To ensure that no subclassers attempt variable-value coordination
+  // NOTE: Even though a MixtureChoiceVariable obviously effects the choice of parents of another variable
+  // changes to the value of a MixtureChoiceVariable do not actually change the factor structure of the model.
+  // @see GeneratedVarTemplate
+  @inline final override def set(i:Int)(implicit d:DiffList): Unit = super.set(i)(d)
 }
 /** A mixture indicator discrete variable, with value generated from Proportions */
 @DomainInSubclasses
@@ -80,6 +85,7 @@ object FiniteMixture {
 
 /** An arbitrary-sized set of mixture components that is actually the same component "repeated".
     Use, for example, when the mixture of Gaussians have different means, but should all share the same variance. */
+// TODO Consider renaming UniformMixture
 class UnaryMixture[+P<:Parameter](repeatedComponent:P) extends MixtureComponents[P] {
   val components = List(repeatedComponent)
   override def apply(index:Int) = repeatedComponent

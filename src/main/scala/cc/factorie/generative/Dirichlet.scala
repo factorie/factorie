@@ -50,10 +50,11 @@ trait MutableDirichlet extends MutableProportions with Dirichlet {
   def sampleFrom(mean:Proportions, precision:RealVar, children:Iterable[DiscreteVar] = Nil)(implicit d:DiffList): Unit = {
     set(Dirichlet.sampleFrom(mean, precision, children))
   }
-  def sample(implicit d:DiffList): Unit = sampleFrom(mean, precision)
+  def sampleFromParents(implicit d:DiffList = null): Unit = sampleFrom(mean, precision)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList) = parents match {
     case Seq(mean:Proportions, precision:RealVarParameter) => sampleFrom(mean, precision)
   }
+  override def defaultEstimator = MutableDirichletEstimator
 }
 
 object Dirichlet {
@@ -74,7 +75,7 @@ object Dirichlet {
 }
 
 /** Proportions, Dirichlet-distributed, with dense separate values for all dimensions. */
-class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter, p:Seq[Double] = Nil) extends DenseProportions(if (p.length == 0) initialMean else p) with MutableDirichlet {
+class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter, p:Seq[Double] = Nil) extends DenseProportions(if (p.length == 0) initialMean else p) with MutableDirichlet  {
   def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealConstantParameter(alpha * size), Nil)
   protected val meanRef: ParameterRef[Proportions,Dirichlet] = new ParameterRef(initialMean, this)
   protected val precisionRef = new ParameterRef(initialPrecision, this)
@@ -86,18 +87,26 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter,
   def ~(mean:Proportions, precision:RealVarParameter): this.type = { mean_=(mean)(null); precision_=(precision)(null); this }
   type CollapsedType = DenseDirichletMultinomial
   def newCollapsed = new DenseDirichletMultinomial(mean, precision)
-  //def estimate(model:Model = cc.factorie.generative.defaultGenerativeModel)(implicit e:DenseDirichletEstimator): Unit = {}
 }
 
-/*class DirichletEstimator {
-  def estimate(d:DenseDirichlet, model:Model): Unit = {
-    val a = new Array[Double](d.length)
-    val factors = model.factors(d)
-    factors.foreach(_ match {
-      case f:GeneratedVarTemplate#Factor => throw new Error
-    })
+object MutableDirichletEstimator extends Estimator[MutableProportions] {
+  def estimate(d:MutableProportions, map:scala.collection.Map[Variable,Variable]): Unit = d match {
+    case d:MutableDirichlet => {
+      val e = new DenseCountsProportions(d.length)
+      // Make sure parents (mean and precision) are not influenced by the map
+      assert(map(d.mean) == null); assert(map(d.precision) == null)
+      // Sum in influence of parents
+      e.increment(d.mean.map(_ * d.precision.doubleValue))(null)
+      // Sum in influence of children
+      for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
+        case x:DiscreteVar => e.increment(x.intValue, weight)(null)
+        case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
+      }
+      // Set the DenseDirichlet to the newly estimated value
+      d.set(e)(null)
+    }
   }
-}*/
+}
 
 // TODO Perhaps all Dirichlet* classes should be re-implemented in terms of "alpha:Masses" instead of "precision" in order to avoid some of this awkwardness.
 

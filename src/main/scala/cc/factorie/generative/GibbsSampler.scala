@@ -63,7 +63,7 @@ object GeneratedVariableGibbsSamplerHandler extends GibbsSamplerHandler {
     factors match {
       case List(factor:GeneratedVarTemplate#Factor) => {
         v match {
-          case v:GeneratedVariable => v.sample(d)
+          case v:GeneratedVariable => v.sampleFromParents(d)
         }
         true
       }

@@ -320,7 +320,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
     factors.foreach(_.updateTreewise)
   }
   /** Provide outside access to a BPFactor marginal given is associated Factor */
-  def marginal(f: Factor): Option[DiscreteFactorMarginal] = {
+  override def marginal(f: Factor): Option[DiscreteFactorMarginal] = {
     val bpFactor = bpFactors(f)
     if (bpFactor ne null)
       Some(new DiscreteFactorMarginal(f, bpFactors(f).marginal))
@@ -328,7 +328,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
       None
   }
   def marginalMap(f: Factor): HashMap[List[Int], Double] = bpFactors(f).marginalMap
-  def marginal(v: V): Option[DiscreteMarginal[V]] = { // TODO Consider caching these?
+  override def marginal(v: V): Option[DiscreteMarginal[V]] = { // TODO Consider caching these?
     val factors = bpFactorsOf(v)
     if ((factors ne null) && factors.size > 0) {
       val m = new Array[Double](v.domain.size)
@@ -382,7 +382,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
  */
 class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
   override type LatticeType = BPLattice[V]
-  def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = infer(variables, varying, 4) // TODO Make a more sensible default
+  def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = inferTreewise(variables, varying) // TODO Make a more sensible default
   def infer(variables:Iterable[V], varying:Iterable[V], numIterations:Int): LatticeType = {
     val result = new BPLattice(varying, model)
     result.update(numIterations) // TODO Of course make this smarter later

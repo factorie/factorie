@@ -36,7 +36,7 @@ trait GaussianVar extends RealVariable with GeneratedVariable {
   def prFrom(parents:Seq[Parameter]): Double = logprFrom(parents)
   def sampleFrom(mean:RealVar, variance:RealVar)(implicit d:DiffList) = 
     set(Maths.nextGaussian(mean.doubleValue, variance.doubleValue)(cc.factorie.random))
-  def sample(implicit d:DiffList): Unit = sampleFrom(mean, variance)
+  def sampleFromParents(implicit d:DiffList = null): Unit = sampleFrom(mean, variance)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
     case Seq(mean:RealVar, variance:RealVar) => sampleFrom(mean, variance)
   }
@@ -48,6 +48,27 @@ trait GaussianVar extends RealVariable with GeneratedVariable {
 class Gaussian(val mean:RealVarParameter, val variance:RealVarParameter = new RealVariableParameter(1.0), initialValue:Double = 0.0) extends RealVariable(initialValue) with GaussianVar {
   mean.addChild(this)(null)
   variance.addChild(this)(null)
+}
+
+class GaussianMeanVariable(x:Double) extends RealVariableParameter(x) with Estimation[GaussianMeanVariable] {
+  def defaultEstimator = GaussianMeanEstimator
+}
+// TODO or consider instead the following, so that the same RealVar can be used as
+// multiple different parameter types?
+/*class GaussianMeanVariable(x:RealVar) extends RealFunction {
+  def doubleValue = x.doubleValue
+}*/
+
+object GaussianMeanEstimator extends Estimator[GaussianMeanVariable] {
+  def estimate(g:GaussianMeanVariable, map:scala.collection.Map[Variable,Variable]): Unit = {
+    var m = 0.0
+    var sum = 0.0
+    for ((child, weight) <- g.weightedGeneratedChildren(map)) child match {
+      case x:RealVar => { m += x.doubleValue * weight; sum += weight }
+      //case g:GaussianDistribution...
+    }
+    g.set(m/sum)(null)
+  }
 }
 
 object Gaussian {

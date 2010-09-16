@@ -18,8 +18,8 @@ package cc.factorie.example
 import cc.factorie._
 import cc.factorie.generative._
 // Next two lines to get the implicit Estimator objects
-import cc.factorie.generative.DenseProportions._
-import cc.factorie.generative.DenseCountsProportions._
+//import cc.factorie.generative.DenseProportions._
+//import cc.factorie.generative.DenseCountsProportions._
 
 object MultinomialDemo {
   val numSides = 6
@@ -30,7 +30,7 @@ object MultinomialDemo {
     val die = new DenseProportions(List(.1, .2, .3, .2, .2))
     println("True distribution "+die)
     val rolls = for (i <- 1 to 1000) yield new Roll(die, die.sampleInt)
-    rolls.foreach(_.sample(null))
+    rolls.foreach(_.sampleFromParents(null))
     die.estimate()
     println("Est  distribution "+die)
 

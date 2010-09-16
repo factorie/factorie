@@ -22,8 +22,8 @@ class SamplingLattice[V<:DiscreteVars](variables:Iterable[V]) extends Lattice[V]
   type VariableMarginalType = DiscreteMarginal[V]
   val map = new HashMap[V,DiscreteMarginal[V]]
   variables.foreach(v => map(v) = new DiscreteMarginal(v))
-  def marginal(v:V) = map.get(v)
-  def marginal(f:Factor) = throw new Error("Not yet implemented") // TODO
+  override def marginal(v:V) = map.get(v)
+  override def marginal(f:Factor) = throw new Error("Not yet implemented") // TODO
   def apply(v:V) = map(v)
   def marginals: Iterator[DiscreteMarginal[V]] = map.valuesIterator
 }
@@ -59,8 +59,8 @@ class VariableSamplingInferencer[V<:DiscreteVariable](sampler:Sampler[V]) extend
 class SamplingMaximizerLattice[V<:Variable](val diff:DiffList, val diffScore:Double) extends Lattice[V] {
   type VariableMarginalType = Marginal
   type FactorMarginalType = Marginal
-  def marginal(v:V): Option[Marginal] = throw new Error // TODO
-  def marginal(f:Factor): Option[Marginal] = throw new Error // TODO
+  override def marginal(v:V): Option[Marginal] = throw new Error // TODO
+  override def marginal(f:Factor): Option[Marginal] = throw new Error // TODO
 }
 
 /** Provide 'infer' method that uses the 'sampler' to search for the best-scoring configuration.
