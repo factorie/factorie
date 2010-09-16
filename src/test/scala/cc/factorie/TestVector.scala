@@ -11,29 +11,21 @@ import Assert._
 
 class TestSparseBinaryVector extends TestCase {
 
-  def test = {
-    val v = new SparseBinaryVector(1000)
+  def testBasics = {
+    val v = new SparseBinaryVector(10000)
 
     // initial size should be zero
     assertEquals(v.activeDomain.size, 0)
 
-    val a = 0
-    val b = 1
-    val c = v.length-1
+    val x = List(100,300,1000,500,2,100)
+    x.foreach(v+=_)
 
-    // add in unsorted order
-    v += b
-    v += a
-    v += b
-    v += c
-    v += a
-    v += c
+    val expect = x.toSet.toList.sortWith(_<_)
+    assertEquals(v.activeDomain.toList, expect)
+    assertEquals(v.activeDomainSize, expect.size)
 
-    assertEquals(v.activeDomain, List(a,b,c))
-    assertEquals(v.activeDomainSize, 3)
-
-    // activeDomain's size is *not* the length!
-    assertEquals(v.length, 1000)
+    // the contains test
+    x.forall(v(_)==1.0)
   }
 
   def test_suspicious_indices = {
@@ -102,4 +94,3 @@ object TestSparseBinaryVector extends TestSuite {
     junit.textui.TestRunner.run(this)
   }
 }
-
