@@ -311,12 +311,10 @@ object LabeledTokenSeqs {
           // Skip this line
         } else {
           val fields = line.split(' ')
-          assert(fields.length == 4)
           val word = fields(0)
-          val inFeatures = fields.slice(0, fields.length-1) // Used to also have here ".force"
-          val pos = fields(1)
-          val label = fields.last.stripLineEnd
+          val label = fields.last.stripLineEnd  // label is the last feature
           val token = newToken(word, label)
+          val inFeatures = fields.slice(0, fields.length-1) // Used to also have here ".force"
           token ++= featureFunction(inFeatures)
           seq += token
           tokenCount += 1
@@ -324,10 +322,9 @@ object LabeledTokenSeqs {
       }
       // gdruck: This is necessary because a file
       // might not end with a sentence boundary.
-      if (seq.length > 0){
+      if (seq.length > 0) {
         seqs += seq
       }
-      //println("Loaded "+seqs.length+" sentences with "+wordCount+" words total from file "+filename)
       seqs
     }
     // TODO Waiting for Scala 2.8 default parameter values
