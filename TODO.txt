@@ -1,7 +1,6 @@
 Coding:
 Finish belief propagation message-passing 
 Re-consider type arguments in Sampler and descendants
-Implement EM
 Implement VariationalBayes
 
 Low Priority Coding:
