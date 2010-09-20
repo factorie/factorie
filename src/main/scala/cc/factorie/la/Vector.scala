@@ -17,6 +17,7 @@
 package cc.factorie.la
 
 /** A vector, for holding a sequence of Doubles and performing various linear algebra operations.
+    See also @see cc.factorie.generative.Counts
     @author Andrew McCallum */
 trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   def length: Int
@@ -24,10 +25,12 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   def activeDomain: Iterable[Int]
   def dot(v:Vector): Double
   def activeElements: Iterator[(Int,Double)]
+  def oneNorm: Double = activeElements.foldLeft(0.0)(_ + _._2)
   def update(index:Int, value:Double): Unit = throw new Error("Method update not defined on class "+getClass.getName)
   def +=(v:Vector): Unit = throw new Error("Method +=(Vector) not defined on class "+getClass.getName)
   def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
   def *(scalar:Double) = new VectorTimesScalar(this, scalar)
+  //def toString = this.take(15).mkString(printName+"(", ",", if (length > 15) "...)" else ")")
 }
 
 /** A lazy product of a Vector and a scalar.
@@ -180,6 +183,7 @@ class SparseBinaryVector(theLength:Int, indices:Array[Int] = null) extends Vecto
 /** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory.
     @author Andrew McCallum */
 class SparseVector(size:Int) extends SparseHashVector(size) {
+  def this(size:Int, occurrences:Seq[Int]) = { this(size); occurrences.foreach(increment(_, 1.0)) }
   //private var used = 0
   //private var capacity = 8
   //private val indices = new Array[Int](capacity)
@@ -198,6 +202,7 @@ class SparseHashVector(val length:Int) extends Vector {
   def activeDomainSize = h.size
   def activeDomain: Iterable[Int] = h.keys
   override def update(index:Int, value:Double) = h(index) = value
+  def increment(index:Int, incr:Double): Unit = h(index) = h(index) + incr
   def dot(v:Vector): Double = v match {
     case dv:DenseVector => {
       var result = 0.0

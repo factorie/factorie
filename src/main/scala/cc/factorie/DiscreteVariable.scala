@@ -32,7 +32,7 @@ trait DiscreteVars extends Variable with IntegerVars {
   override def maxIntValue = domain.size - 1
   /** A cc.factorie.la.Vector representation of the value of this variable. */
   def vector: Vector
-  def intValues: Iterable[Int]
+  def intValues: Iterable[Int] // TODO Rename this 'def activeDomain: Iterable[Int]'?
 }
 
 @DomainInSubclasses
@@ -59,7 +59,7 @@ abstract class DiscreteVariable(initialValue:Int = 0) extends IntegerVariable(in
   def newQ = new cc.factorie.generative.DenseProportions(domain.size)
 }
 
-/** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  Used for block-Gibbs-sampling.
+/** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  May be useful in the future for block-Gibbs-sampling?
     @author Andrew McCallum */
 class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[DiscreteVariable] with IterableSettings {
   private val _vars = vars.toList

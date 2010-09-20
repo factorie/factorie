@@ -71,7 +71,7 @@ object DocumentClassifier3 {
     // Train and test
     val trainer = new LogLinearMaximumLikelihood(model)
     trainer.process(trainVariables.map(List(_)))
-    val predictor = new VariableSettingsMaximizer[Label](model)
+    val predictor = new VariableSettingsGreedyMaximizer[Label](model)
     predictor.processAll(trainVariables)
     predictor.processAll(testVariables)
     println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))

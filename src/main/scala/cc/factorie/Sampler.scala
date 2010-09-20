@@ -140,22 +140,22 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) ext
 }
 
 /** Instead of randomly sampling according to the distribution, always pick the setting with the maximum acceptanceScore. */
-abstract class SettingsMaximizer[C](theModel:Model, theObjective:Model = null) extends SettingsSampler[C](theModel, theObjective) {
+abstract class SettingsGreedyMaximizer[C](theModel:Model, theObjective:Model = null) extends SettingsSampler[C](theModel, theObjective) {
   override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.maxByDouble(_.acceptanceScore)
 }
 
 /** Tries each one of the settings of the given variable, 
     scores each, builds a distribution from the scores, and samples from it.
     This is exactly Gibbs sampling over a finite number of possible values of the variable.
-    Note:  This differs from cc.factorie.GibbsSampler in that GibbsSampler may not iterate over settings, but instead sample from a closed-form distribution.
+    Note:  This differs from cc.factorie.generative.GibbsSampler in that GibbsSampler may not iterate over settings, but instead sample from a closed-form distribution.
     Because SampleRank requires Proposal objects, we use this intsead of GibbsSampler.
-    @see GibbsSampling
+    @see generative.GibbsSampler
     @author Andrew McCallum */
 class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 
-class VariableSettingsMaximizer[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsMaximizer[V](model, objective) {
+class VariableSettingsGreedyMaximizer[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsGreedyMaximizer[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 

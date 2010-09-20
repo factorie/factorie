@@ -65,7 +65,7 @@ object DocumentClassifier4 {
     dtree.train(trainVariables)
 
     // Test decision tree
-    val predictor = new VariableSettingsMaximizer[Label](model)
+    val predictor = new VariableSettingsGreedyMaximizer[Label](model)
     predictor.processAll(trainVariables)
     predictor.processAll(testVariables)
     println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))

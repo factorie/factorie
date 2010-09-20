@@ -70,6 +70,10 @@ trait BinaryVectorVar extends DiscreteVars with VectorVar {
   // def intValues: Iterable[Int]
 }
 
+/** A SparseBinaryVector as a cc.factorie.Variable.
+    Note that Variables must always define "equals" as pointer equality,
+    but cc.factorie.la.Vector define "equals" by content equality. 
+    Thus a Variable can never inherit from a Vector; here it contains a Vector instead. */
 @DomainInSubclasses
 class SparseBinaryVectorVariable extends BinaryVectorVar /*with SeqEqualsEq[Double]*/ {
   val vector = new cc.factorie.la.SparseBinaryVector(-1) { override def length = domain.allocSize }
