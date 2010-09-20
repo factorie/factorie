@@ -79,7 +79,7 @@ object ClusterLDADemo {
       // Sample z's
       val sampler = new CollapsedGibbsSampler(phis ++ documents.map(_.theta))
       for (i <- 1 to numGibbsIterationsPerClustering) {
-        sampler.processAll(zs)
+        zs.foreach(sampler.process(_))
         print("."); Console.flush
         if (i % 5 == 0) {
           println ("Iteration "+i)
@@ -95,7 +95,7 @@ object ClusterLDADemo {
         println("Cluster "+i+" "+alphaMeans(i).mkString(" "))
       }
       val ySampler = new GibbsSampler()
-      ySampler.processAll(documents.map(_.y))
+      documents.map(_.y).foreach(ySampler.process(_))
       // Then we must re-collapse the sampler for z's above, because it isn't yet smart enough to work with mixtures of Dirichlet's
     }
     //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})

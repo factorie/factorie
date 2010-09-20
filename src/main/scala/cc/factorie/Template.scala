@@ -143,7 +143,8 @@ trait Template {
     //difflist.foreach(diff => result ++= factors(diff))
     result.toList // TODO is this necessary?
   }
-  def factors(variables:Iterable[Variable]) : List[Factor] = { // TODO Why is this List, and not Iterable?  Do the GibbsSampling cases depend on this?
+  def factors(variables:Iterable[Variable]) : Iterable[Factor] = { // TODO Why is this List, and not Iterable?  Do the GibbsSampling cases depend on this?
+    if (variables.size == 1) return factors(variables.head) // Efficiently avoids the HashSet.
     //var result = new LinkedHashSet[Factor]()
     var result = new HashSet[Factor]()
     for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("unroll returned null Factor") else result += factor }
