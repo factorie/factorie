@@ -87,7 +87,8 @@ class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:M
 
   /** Set variables' values to the mean of their collapsed representation */
   def export(implicit d:DiffList = null): Unit = {
-    throw new Error("Not yet implemented.")
+    collapsedMap.foreach({case(p:CollapsibleParameter,cp:CollapsedParameter) => p.setFromCollapsed(cp.asInstanceOf[p.CollapsedType])})
+    //throw new Error("Not yet implemented.")
   }
 
   /** Convenience for sampling single variable */
@@ -205,7 +206,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
           //println("CollapsedGibbsSampler choice.intValue="+v.intValue)
           // If parents of outcomes are collapsed, decrement counts
           for (outcome <- outcomes; chosenParent <- outcome.chosenParents) sampler.collapsedOrNull(chosenParent) match {
-            case p:CollapsedParameter => { /*println("CollapsedGibbsSampler -1.0 p="+p); */ p.updateChildStats(outcome, 1.0) }
+            case p:CollapsedParameter => { p.updateChildStats(outcome, 1.0); /* println("CollapsedGibbsSampler +1.0 p(o)="+outcome.prWith(sampler.collapsedMap)) */ }
             case _ => {}
           }
         }

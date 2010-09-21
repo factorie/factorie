@@ -87,6 +87,7 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter,
   def ~(mean:Proportions, precision:RealVarParameter): this.type = { mean_=(mean)(null); precision_=(precision)(null); this }
   type CollapsedType = DenseDirichletMultinomial
   def newCollapsed = new DenseDirichletMultinomial(mean, precision)
+  def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit = set(c)(d)
 }
 
 object MutableDirichletEstimator extends Estimator[MutableProportions] {
@@ -120,6 +121,7 @@ class GrowableDenseDirichlet(val alpha:Double, p:Seq[Double] = Nil) extends Grow
   }
   type CollapsedType = GrowableDenseDirichletMultinomial
   def newCollapsed = new GrowableDenseDirichletMultinomial(alpha)
+  def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit = set(c)(d)
 }
 
 /** A Proportions generated from a Mixture of Dirichlet(mean,precision). 
@@ -151,6 +153,7 @@ extends DenseCountsProportions(meanComponents(choice.intValue)) with MutableDiri
     //println("DenseDirichletMixture.newCollapsed mean.size="+mean.size)
     new DenseDirichletMultinomial(mean, precision)
   }
+  def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit = set(c)(d)
 }
 
 

@@ -31,18 +31,19 @@ object HMMDemo {
   class Sentence(val file:String, val startState:Zi) extends VariableSeq[Word]
 
   def main(args: Array[String]) : Unit = {
+    val keepStopwords = true
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
     val lexer = new Regex("[a-zA-Z]+")
 
     // Read data and create generative variables
     val transitions = FiniteMixture(numStates)(new DenseDirichlet(numStates, 1.0))
-    val emissions = FiniteMixture(numStates)(new GrowableDenseDirichlet(0.01) with TypedProportions[Word])
+    val emissions = FiniteMixture(numStates)(new GrowableDenseDirichlet(0.1) with TypedProportions[Word])
     val pi = new DenseDirichlet(numStates, 1.0)
-    val sentences = new ArrayBuffer[Sentence]
+    var sentences = new ArrayBuffer[Sentence]
     for (directory <- directories) {
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         val sentence = new Sentence(file.toString, new Zi(pi, cc.factorie.random.nextInt(numStates)))
-        for (word <- Source.fromFile(file).mkString.tokenize(new Regex("[a-zA-Z]+")).map(_ toLowerCase)) {
+        for (word <- Source.fromFile(file).mkString.tokenize(new Regex("[a-zA-Z]+")).map(_ toLowerCase).filter(keepStopwords || !Stopwords.contains(_))) {
           val z = new Z(transitions, if (sentence.length > 0) sentence.last.choice else sentence.startState, cc.factorie.random.nextInt(numStates))
           sentence += new Word(emissions, z, word)
         }
@@ -50,17 +51,19 @@ object HMMDemo {
       }
     }
     println("Read "+sentences.size+" sentences with "+sentences.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
+    //sentences = sentences.take(10)
 
     // Fit model
     val zs = sentences.flatMap(sentence => sentence.map(word => word.choice)) ++ sentences.map(_.startState)
     val sampler = new CollapsedGibbsSampler(transitions ++ emissions ++ List(pi))
     //val sampler = new CollapsedVariationalBayes(zs)
     val startTime = System.currentTimeMillis
-    for (i <- 1 to 50) {
+    for (i <- 1 to 100) {
       zs.foreach(sampler.process(_))
       print("."); Console.flush
       if (i % 5 == 0) {
         println ("Iteration "+i)
+        sampler.export()
         emissions.foreach(t => println("Emissions   "+emissions.indexOf(t)+"  "+t.top(15).map(_.value)))
         transitions.foreach(t => println("Transitions "+transitions.indexOf(t)+"  "+t.top(numStates).map(d => "%d %-5f".format(d.index,d.pr))))
         println

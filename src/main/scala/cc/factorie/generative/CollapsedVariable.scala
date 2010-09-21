@@ -22,6 +22,7 @@ import cc.factorie._
 trait CollapsibleVariable extends GeneratedVariable {
   type CollapsedType <: CollapsedVariable
   def newCollapsed: CollapsedType
+  def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit
 }
 
 // TODO Is there a need for CollapsibleVariable; perhaps just CollapsibleParameter is enough?
