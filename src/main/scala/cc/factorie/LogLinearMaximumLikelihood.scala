@@ -122,7 +122,7 @@ class LogLinearMaximumLikelihood(model: Model) {
             distribution(i) = model.score(v)
           })
 
-          Maths.expNormalize(distribution)
+          maths.expNormalize(distribution)
 
           forIndex(distribution.length)(i => {
             v.set(i)(null)

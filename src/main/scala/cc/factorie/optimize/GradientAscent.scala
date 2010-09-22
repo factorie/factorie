@@ -18,7 +18,7 @@ package cc.factorie.optimize
 
 import cc.factorie._
 import scala.collection.mutable.IndexedSeq
-import cc.factorie.la.ArrayLA.Implicits._
+import cc.factorie.maths._
 
 /**Maximizes an Optimizable object by successive linear searches in gradient directions.
 @author Andrew McCallum */

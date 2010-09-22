@@ -66,7 +66,7 @@ class IIDDiscreteInferencer[V<:DiscreteVariable](model:Model) extends VariableIn
         v.set(i)(null)
         a(i) = model.score(v)
       })
-      Maths.expNormalize(a)
+      maths.expNormalize(a)
       lattice(v) = new DiscreteMarginal[V](v, a)
     }
     lattice

@@ -17,8 +17,7 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import cc.factorie.la.ArrayLA.Implicits._
-import cc.factorie.la.ArrayLA
+import cc.factorie.maths._
 import collection.mutable.{ArrayBuffer, LinkedList, IndexedSeq}
 
 /**Maximize an Optimizable object by Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, "Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods" */
@@ -73,12 +72,12 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
 
       // get the parameters
       optimizable.getOptimizableParameters(params)
-      ArrayLA.set(oldParams, params)
+      maths.set(oldParams, params)
 
       // get the gradient
       optimizable.getOptimizableGradient(g)
-      ArrayLA.set(oldg, g)
-      ArrayLA.set(direction, g)
+      maths.set(oldg, g)
+      maths.set(direction, g)
 
       if (direction.absNormalize == 0) {
         logger.info("L-BFGS initial gradient is zero; saying converged");

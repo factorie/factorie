@@ -18,8 +18,7 @@ package cc.factorie.optimize
 
 import cc.factorie._
 import scala.collection.mutable.IndexedSeq
-import cc.factorie.la.ArrayLA
-import cc.factorie.la.ArrayLA.Implicits._
+import cc.factorie.maths._
 
 /**Maximize the Optimizable object by line search on successive conjugate gradients,
 in the Polak and Ribiere version,
@@ -49,8 +48,8 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
       def partialReset() {
       fp = optimizable.optimizableValue
       xi = optimizable.getOptimizableGradient()
-      g = ArrayLA.copy(xi)
-      h = ArrayLA.copy(xi)
+      g = maths.copy(xi)
+      h = maths.copy(xi)
       step = initialStepSize
       iterations = 0
     }
@@ -82,11 +81,11 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
       if (step == 0.0) {
         if (searchingGradient) {
           logger.info("ConjugateGradient converged: Line maximizer got step 0 in gradient direction.  "
-                  + "Gradient absNorm=" + ArrayLA.absNorm(xi))
+                  + "Gradient absNorm=" + maths.absNorm(xi))
           isConverged = true
           return true
         } else
-          logger.info("Line maximizer got step 0; gradient (absNorm=" + ArrayLA.absNorm(xi) + ") probably pointing up hill.  Resetting gradient.")
+          logger.info("Line maximizer got step 0; gradient (absNorm=" + maths.absNorm(xi) + ") probably pointing up hill.  Resetting gradient.")
         partialReset()
         step = prevStepSize
         searchingGradient = true
@@ -105,10 +104,10 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
         fp = fret;
         xi = optimizable.getOptimizableGradient()
 
-        logger.info("Gradient infinityNorm = " + ArrayLA.infinityNorm(xi));
+        logger.info("Gradient infinityNorm = " + maths.infinityNorm(xi));
         // This termination provided by McCallum
-        if (ArrayLA.infinityNorm(xi) < tolerance) {
-          logger.info("ConjugateGradient converged: maximum gradient component " + ArrayLA.infinityNorm(xi) + ", less than " + tolerance)
+        if (maths.infinityNorm(xi) < tolerance) {
+          logger.info("ConjugateGradient converged: maximum gradient component " + maths.infinityNorm(xi) + ", less than " + tolerance)
           isConverged = true;
           return true;
         }
@@ -138,9 +137,9 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
           hj = xj + gam * hj
           h(j) = hj
         })
-        assert(!ArrayLA.isNaN(h))
+        assert(!maths.isNaN(h))
 
-        ArrayLA.set(xi, h)
+        maths.set(xi, h)
         searchingGradient = false
 
         iterations += 1

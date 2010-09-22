@@ -121,11 +121,11 @@ class TestBPClassify extends TestCase {
 
       var logZ = Double.NegativeInfinity
       forIndex(trueMarginal.length)(i => {
-        logZ = Maths.sumLogProb(logZ,trueMarginal(i))
+        logZ = maths.sumLogProb(logZ,trueMarginal(i))
       })
       trueSumLogZ += logZ
 
-      Maths.expNormalize(trueMarginal)
+      maths.expNormalize(trueMarginal)
 
       forIndex(trueMarginal.length)(i => {
         if (math.abs(trueMarginal(i) - bpMarginal.get(i)) > 1e-6) {
@@ -315,7 +315,7 @@ class SimpleMaxEntTrainer(model: Model) {
             distribution(i) = model.score(v)
           })
 
-          Maths.expNormalize(distribution)
+          maths.expNormalize(distribution)
 
           forIndex(distribution.length)(i => {
             v.set(i)(null)

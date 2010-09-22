@@ -32,6 +32,7 @@ trait DiscreteVars extends Variable with IntegerVars {
   override def maxIntValue = domain.size - 1
   /** A cc.factorie.la.Vector representation of the value of this variable. */
   def vector: Vector
+  /** A more efficient alternative to this.vector.activeDomain */
   def intValues: Iterable[Int] // TODO Rename this 'def activeDomain: Iterable[Int]'?
 }
 

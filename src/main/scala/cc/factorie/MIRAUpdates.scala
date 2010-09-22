@@ -17,13 +17,7 @@
 package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.HashMap
-//import scalala.Scalala._
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.SparseVector
 import cc.factorie.la._
-//import scalala.tensor.operators.TensorOp
-//import scalala.tensor.operators.OperatorImplicits
 
 // TODO Generalized this so that it doesn't require SampleRank
 

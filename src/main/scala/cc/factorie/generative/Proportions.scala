@@ -40,7 +40,7 @@ trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqual
     def apply(i:Int) = Proportions.this.apply(i)
     def length = Proportions.this.length
   }
-  def sampleInt = Maths.nextDiscrete(this)(cc.factorie.random) // TODO Avoid the inefficiency of asSeq
+  def sampleInt = maths.nextDiscrete(this)(cc.factorie.random) // TODO Avoid the inefficiency of asSeq
   def pr(index:Int) = apply(index)
   def logpr(index:Int) = math.log(apply(index))
   def maxPrIndex: Int = { var maxIndex = 0; var i = 1; while (i < length) { if (this(i) > this(maxIndex)) maxIndex =i; i += 1 }; maxIndex }
@@ -48,8 +48,8 @@ trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqual
 
   class DiscretePr(val index:Int, val pr:Double)
   def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
-  def klDivergence(p:Proportions): Double = Maths.klDivergence(this, p)
-  def jsDivergence(p:Proportions): Double = Maths.jensenShannonDivergence(this, p)
+  def klDivergence(p:Proportions): Double = maths.klDivergence(this, p)
+  def jsDivergence(p:Proportions): Double = maths.jensenShannonDivergence(this, p)
 }
 
 // TODO try to fold this automatically into a CategoricalProportions?

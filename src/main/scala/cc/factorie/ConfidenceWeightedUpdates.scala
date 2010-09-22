@@ -58,13 +58,13 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
   var eta = 0.98; //condifidence value, make sure eta>0.5 because probit(0.5)=0 and probit(x<0.5)<0
     
   /**Function of the confidence (it is more intuitive to express eta than the gaussian deviate directly). */
-  var gaussDeviate = Maths.probit(eta);
+  var gaussDeviate = maths.probit(eta);
 
   def setConfidence(aeta:Double) : Unit = 
     {
       assert(aeta>0.5 && aeta<1.0)
       eta=aeta
-      gaussDeviate = Maths.probit(eta)
+      gaussDeviate = maths.probit(eta)
     }
 
   /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */

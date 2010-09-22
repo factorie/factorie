@@ -17,9 +17,9 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import la.ArrayLA
 import scala.collection.mutable.IndexedSeq
-import cc.factorie.la.ArrayLA.Implicits._
+import cc.factorie.maths
+import cc.factorie.maths._
 
 /**Maximize the Optimizable object by changing parameters only in the direction specified by 'line'.
 @author Andrew McCallum */
@@ -55,7 +55,7 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
   def optimize(line: Array[Double], initialStep: Double): Double = {
     var params: Array[Double] = optimizable.getOptimizableParameters()
     var oldParams = new Array[Double](params.length)
-    ArrayLA.set(oldParams, params)
+    maths.set(oldParams, params)
     var gradient: Array[Double] = optimizable.getOptimizableGradient()
 
     var f = Double.NaN

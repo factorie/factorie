@@ -113,11 +113,11 @@ abstract class BPFactor(val factor: Factor) {
           neighborSettings.foreach(setting => {setting.reset; setting.next}) // reset iterator and advance to first setting.
           msg(i) = Double.NegativeInfinity // i.e. log(0)
           do {
-            msg(i) = Maths.sumLogProb(msg(i), factor.statistic.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
+            msg(i) = maths.sumLogProb(msg(i), factor.statistic.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
           } while (nextValues(neighborSettings))
         }
       })
-      if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
+      if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
     }
   }
 
@@ -157,7 +157,7 @@ abstract class BPFactor(val factor: Factor) {
         msg2.updateTreewiseFromLeaves
         for (i <- 0 until v.domain.size) msg(i) += msg2.message(i)
       }
-      if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
+      if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
       updateCount += 1
     }
 
@@ -168,7 +168,7 @@ abstract class BPFactor(val factor: Factor) {
         val msg2 = n.messageTo(v)
         for (i <- 0 until v.domain.size) msg(i) += msg2.message(i)
       }
-      if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
+      if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
       updateCount += 1
 
       for (n <- neighborSettings) {
@@ -181,7 +181,7 @@ abstract class BPFactor(val factor: Factor) {
         for (i <- 0 until v.domain.size) {
           msg(i) = neighborFactors.sumDoubles(_.messageTo(v).message(i))
         }
-      if (BeliefPropagation.normalizeMessages) Maths.normalizeLogProb(msg)
+      if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
     }
   }
 
@@ -222,7 +222,7 @@ abstract class BPFactor(val factor: Factor) {
   def marginal(v: V): Array[Double] = {
     val result = new Array[Double](v.domain.size)
     Array.copy(messageTo(v).message, 0, result, 0, result.length)
-    Maths.expNormalize(result)
+    maths.expNormalize(result)
     result
   }
 
@@ -238,7 +238,7 @@ abstract class BPFactor(val factor: Factor) {
       result(i) = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
       i += 1
     } while (nextValues(variableSettings))
-    Maths.expNormalize(result)
+    maths.expNormalize(result)
     result
   }
 
@@ -257,7 +257,7 @@ abstract class BPFactor(val factor: Factor) {
       result(i) = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
       i += 1
     } while (nextValues(variableSettings))
-    Maths.expNormalize(result)
+    maths.expNormalize(result)
     // create actual map
     val map = new HashMap[List[Int], Double]
     for (varSetting <- tmpMap.keys) map += varSetting -> result(tmpMap(varSetting))
@@ -270,7 +270,7 @@ abstract class BPFactor(val factor: Factor) {
     var result = Double.NegativeInfinity
     do {
       val score = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
-      result = Maths.sumLogProb(result, score)
+      result = maths.sumLogProb(result, score)
     } while (nextValues(variableSettings))
     result
   }
@@ -337,7 +337,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
         assert(message.length == m.length)
         for (i <- 0 until m.length) { m(i) += message(i); sum += message(i) }
       }
-      Maths.expNormalize(m)
+      maths.expNormalize(m)
       Some(new DiscreteMarginal(v, m))
     } else
       None

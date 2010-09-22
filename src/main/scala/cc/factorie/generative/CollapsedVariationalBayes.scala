@@ -90,7 +90,7 @@ object GeneratedVariableCollapsedVariationalBayesHandler extends CollapsedVariat
               // This can happen for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
               vq.set(new UniformProportions(distribution.length))(d)
             else {
-              cc.factorie.la.ArrayLA./=(distribution,sum) // Normalize the array, using ArrayLA.Implicits
+              cc.factorie.maths./=(distribution,sum) // Normalize the array, using ArrayLA.Implicits
               vq.set(distribution)(d)
             }
 
@@ -161,7 +161,7 @@ object MixtureChoiceCollapsedVariationalBayesHandler extends CollapsedVariationa
                 // This can happen for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
                 vq.set(new UniformProportions(distribution.length))(d)
               else {
-                cc.factorie.la.ArrayLA./=(distribution,sum) // Normalize the array, using ArrayLA.Implicits
+                cc.factorie.maths./=(distribution,sum) // Normalize the array, using ArrayLA.Implicits
                 vq.set((distribution.toSeq))(d)
               }
 

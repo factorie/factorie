@@ -47,7 +47,7 @@ class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A],
           val modelScore = diff.scoreAndUndo(model)
           distribution(i) = modelScore
         }
-        Maths.expNormalize(distribution)
+        maths.expNormalize(distribution)
         d.set(distribution)(null)
       }
       case _ => throw new Error("MeanField does not know how to handle a variable of type "+v.getClass)

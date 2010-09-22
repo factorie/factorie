@@ -24,13 +24,13 @@ class Poisson(val mean:RealVarParameter, value:Int = 0)(implicit d:DiffList = nu
   def pr: Double = prFrom(mean.doubleValue)
   def prFrom(mean:Double): Double = {
     val k = this.intValue
-    math.pow(mean, k) * math.exp(-mean) / Maths.factorial(k)
+    math.pow(mean, k) * math.exp(-mean) / maths.factorial(k)
   }
   def prFrom(parents:Seq[Parameter]): Double = parents match {
     case Seq(mean:RealVar) => prFrom(mean.doubleValue)
   }
   def sampleFrom(mean:Double)(implicit d:DiffList): Unit =
-    set(Maths.nextPoisson(mean.doubleValue)(cc.factorie.random).toInt)
+    set(maths.nextPoisson(mean.doubleValue)(cc.factorie.random).toInt)
   def sampleFromParents(implicit d:DiffList = null): Unit = sampleFrom(mean.doubleValue)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
     case Seq(mean:RealVar) => sampleFrom(mean.doubleValue)

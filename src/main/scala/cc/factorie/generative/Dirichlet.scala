@@ -31,8 +31,8 @@ trait Dirichlet extends Proportions with GeneratedVariable with CollapsibleParam
   def logprFrom(mean:Proportions, precision:RealVar): Double = {
     def alpha(index:Int): Double = mean(index) * precision.doubleValue
     require(mean.length == this.length)
-    var result = Maths.logGamma(precision.doubleValue)
-    forIndex(length)((i:Int) => result -= Maths.logGamma(alpha(i)))
+    var result = maths.logGamma(precision.doubleValue)
+    forIndex(length)((i:Int) => result -= maths.logGamma(alpha(i)))
     forIndex(length)((i:Int) => result += (alpha(i) - 1.0) * math.log(pr(i)))
     assert(result == result, "mean="+mean.toList+" precision="+precision.doubleValue+" alpha="+alphas.toList+" p="+this.toList) // check for NaN
     result
@@ -65,7 +65,7 @@ object Dirichlet {
     val c = new Array[Double](mean.length)
     for (child <- children) c(child.intValue) += 1.0
     forIndex(mean.length)(i => {
-      p(i) = Maths.nextGamma(alpha(i) + c(i), 1)(cc.factorie.random)
+      p(i) = maths.nextGamma(alpha(i) + c(i), 1)(cc.factorie.random)
       if (p(i) <= 0.0) p(i) = 0.0001
       norm += p(i)
     })

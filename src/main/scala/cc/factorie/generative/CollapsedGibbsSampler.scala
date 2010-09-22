@@ -174,7 +174,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
             // This can happen for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
             v.set(cc.factorie.random.nextInt(domainSize))
           else
-            v.set(Maths.nextDiscrete(distribution, sum)(cc.factorie.random))
+            v.set(maths.nextDiscrete(distribution, sum)(cc.factorie.random))
           //println("MixtureChoiceCollapsedGibbsSamplerHandler "+v+"@"+v.hashCode+" newValue="+v.intValue)
           // If parent of outcome is collapsed, increment counts
           for (chosenParent <- outcome.chosenParents) sampler.collapsedOrNull(chosenParent) match {
@@ -200,7 +200,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
             // This can happen for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
             v.set(cc.factorie.random.nextInt(domainSize))
           else
-            v.set(Maths.nextDiscrete(distribution, sum)(cc.factorie.random))
+            v.set(maths.nextDiscrete(distribution, sum)(cc.factorie.random))
           //println("MixtureChoiceCollapsedGibbsSamplerHandler "+v+"@"+v.hashCode+" newValue="+v.intValue)
           //println("CollapsedGibbsSampler distribution="+distribution.toList)
           //println("CollapsedGibbsSampler choice.intValue="+v.intValue)

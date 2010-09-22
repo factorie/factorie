@@ -89,7 +89,7 @@ object MixtureChoiceGibbsSamplerHandler extends GibbsSamplerHandler {
           distribution(i) = mc.proportions.pr(i) * outcomes.foldLeft(1.0)((prod:Double, outcome:MixtureOutcome) => prod * outcome.prFromMixtureComponent(i))
           sum += distribution(i)
         }
-        mc.set(Maths.nextDiscrete(distribution, sum)(cc.factorie.random))(d)
+        mc.set(maths.nextDiscrete(distribution, sum)(cc.factorie.random))(d)
         true
       }
     }

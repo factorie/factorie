@@ -35,7 +35,7 @@ trait GaussianVar extends RealVariable with GeneratedVariable {
   def pr: Double = math.exp(logpr)
   def prFrom(parents:Seq[Parameter]): Double = logprFrom(parents)
   def sampleFrom(mean:RealVar, variance:RealVar)(implicit d:DiffList) = 
-    set(Maths.nextGaussian(mean.doubleValue, variance.doubleValue)(cc.factorie.random))
+    set(maths.nextGaussian(mean.doubleValue, variance.doubleValue)(cc.factorie.random))
   def sampleFromParents(implicit d:DiffList = null): Unit = sampleFrom(mean, variance)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
     case Seq(mean:RealVar, variance:RealVar) => sampleFrom(mean, variance)

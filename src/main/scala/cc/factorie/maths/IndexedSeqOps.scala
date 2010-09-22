@@ -12,20 +12,12 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
-package cc.factorie.la
+package cc.factorie.maths
 import cc.factorie._
 
-// Some classes to help manage IndexedSeq[Double] as simple vectors
-// Used, for example, in cc.factorie.optimize
+trait IndexedSeqOps {
 
-/** Various simple linear algebra functions that can operate on a IndexedSeq[Double]
-    hence the name "IndexedSeq Linear Algebra" == "IndexedSeqLA".
-    @author Andrew McCallum */
-// TODO This class is not as complete as ArrayLA; the additional functions from there should be implemented here too
-object IndexedSeqLA {
-  type IS = scala.collection.mutable.IndexedSeq[Double]
+  private type IS = scala.collection.mutable.IndexedSeq[Double]
 
   def oneNorm(s:IS): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i)); result }
   def twoNorm(s:IS): Double = { var result = 0.0; forIndex(s.length)(i => result += s(i) * s(i)); math.sqrt(result) }
@@ -46,28 +38,30 @@ object IndexedSeqLA {
     def apply(i:Int) = s(i) * d
   }
 
-  /** Import the contents of this object, and you can call these methods directly on IndexedSeq's, 
-      e.g. val a = new ArrayBuffer[Double](2); a(0) = 1.0; a(1) = 2.0; val n = a.twoNorm */
-  object Implicits {
-    implicit def indexedSeq2IndexedSeqVector(s:IS) = new scala.collection.mutable.IndexedSeq[Double] {
-      def length = s.length
-      def apply(i:Int) = s(i)
-      def update(i:Int, d:Double): Unit = s(i) = d
-      def oneNorm: Double = IndexedSeqLA.oneNorm(s)
-      def twoNorm: Double = IndexedSeqLA.twoNorm(s)
-      def twoNormSquared: Double = IndexedSeqLA.twoNormSquared(s)
-      def infinityNorm: Double = IndexedSeqLA.infinityNorm(s)
-      def +=(d:Double): Unit = IndexedSeqLA.+=(s, d)
-      def -=(d:Double): Unit = IndexedSeqLA.-=(s, d)
-      def *=(d:Double): Unit = IndexedSeqLA.*=(s, d)
-      def /=(d:Double): Unit = IndexedSeqLA./=(s, d)
-      def *(d:Double): IS = IndexedSeqLA.timesEqualed(s, d)
-      def incr(t:IS, factor:Double): Unit = IndexedSeqLA.incr(s, t, factor)
-      def different(t:IS, threshold:Double): Boolean = IndexedSeqLA.different(s, t, threshold)
-      def dot(t:IS): Double = IndexedSeqLA.dot(s, t)
-    }
-  }
-
 }
 
+object IndexedSeqOps extends IndexedSeqOps
 
+/** Import the contents of this object, 
+    and you can call these methods directly on IndexedSeq's, 
+    e.g. val a = new ArrayBuffer[Double](2); a(0) = 1.0; a(1) = 2.0; val n = a.twoNorm */
+trait IndexedSeqImplicits {
+  implicit def indexedSeq2IndexedSeqOps(s:scala.collection.mutable.IndexedSeq[Double]) = new scala.collection.mutable.IndexedSeq[Double] {
+    type IS = scala.collection.mutable.IndexedSeq[Double]
+    def length = s.length
+    def apply(i:Int) = s(i)
+    def update(i:Int, d:Double): Unit = s(i) = d
+    def oneNorm: Double = IndexedSeqOps.oneNorm(s)
+    def twoNorm: Double = IndexedSeqOps.twoNorm(s)
+    def twoNormSquared: Double = IndexedSeqOps.twoNormSquared(s)
+    def infinityNorm: Double = IndexedSeqOps.infinityNorm(s)
+    def +=(d:Double): Unit = IndexedSeqOps.+=(s, d)
+    def -=(d:Double): Unit = IndexedSeqOps.-=(s, d)
+    def *=(d:Double): Unit = IndexedSeqOps.*=(s, d)
+    def /=(d:Double): Unit = IndexedSeqOps./=(s, d)
+    def *(d:Double): IS = IndexedSeqOps.timesEqualed(s, d)
+    def incr(t:IS, factor:Double): Unit = IndexedSeqOps.incr(s, t, factor)
+    def different(t:IS, threshold:Double): Boolean = IndexedSeqOps.different(s, t, threshold)
+    def dot(t:IS): Double = IndexedSeqOps.dot(s, t)
+  }
+}

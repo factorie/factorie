@@ -28,7 +28,7 @@ class Gamma(val alpha:RealVarParameter, val beta:RealVarParameter, value:Double 
   def pr(alpha:Double, beta:Double) = {
     val x = doubleValue
     assert (x > 0)
-    math.pow(beta, alpha) / Maths.gamma(alpha) * math.pow(x, alpha - 1) * math.exp(- beta * x)
+    math.pow(beta, alpha) / maths.gamma(alpha) * math.pow(x, alpha - 1) * math.exp(- beta * x)
   }
   def pr = pr(alpha.doubleValue, beta.doubleValue)
   def prFrom(parents:Seq[Parameter]) = parents match {
@@ -36,7 +36,7 @@ class Gamma(val alpha:RealVarParameter, val beta:RealVarParameter, value:Double 
   }
   // TODO def logpr(x:Double) = 
   def sampleFrom(alpha:RealVar, beta:RealVar)(implicit d:DiffList): Unit = 
-    set(Maths.nextGamma(alpha.doubleValue, beta.doubleValue)(cc.factorie.random))
+    set(maths.nextGamma(alpha.doubleValue, beta.doubleValue)(cc.factorie.random))
   def sampleFromParents(implicit d:DiffList = null): Unit = sampleFrom(alpha, beta)
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match {
     case Seq(alpha:RealVar, beta:RealVar) => sampleFrom(alpha, beta)
