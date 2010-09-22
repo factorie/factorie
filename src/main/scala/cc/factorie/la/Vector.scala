@@ -50,7 +50,7 @@ class VectorTimesScalar(val vector:Vector, val scalar:Double) extends Vector {
 
 /** A Vector that has all zeros, except one position containing a 1.0.
     @author Andrew McCallum */
-class SingletonBinaryVector(theLength:Int, val singleIndex:Int) extends Vector {
+class SingletonBinaryVector(val theLength:Int, val singleIndex:Int) extends Vector {
   def length = theLength
   def activeDomainSize = 1
   def activeDomain: Iterable[Int] = Seq(singleIndex)
@@ -61,7 +61,7 @@ class SingletonBinaryVector(theLength:Int, val singleIndex:Int) extends Vector {
 
 /** A Vector that has all zeros, except one position containing some arbitrary Double 'value'.
     @author Andrew McCallum */
-class SingletonVector(theLength:Int, val singleIndex:Int, val value:Double) extends Vector {
+class SingletonVector(val theLength:Int, val singleIndex:Int, val value:Double) extends Vector {
   var default = 0.0
   def length = theLength
   def activeDomainSize = 1
@@ -73,7 +73,7 @@ class SingletonVector(theLength:Int, val singleIndex:Int, val value:Double) exte
 
 /** A Vector that may contain mostly zeros, with a few 1.0's, represented compactly in memory.
     @author Andrew McCallum */
-class SparseBinaryVector(theLength:Int, indices:Array[Int] = null) extends Vector {
+class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null) extends Vector {
   def length = theLength
   def defaultInitialCapacity = 4
   private var ind = new Array[Int](if (indices ne null) indices.size else defaultInitialCapacity)

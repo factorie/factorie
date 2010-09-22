@@ -42,7 +42,7 @@ abstract class BPFactor(val factor: Factor) {
   type V = BeliefPropagation.BPVariable
 
   // TODO should filter by lattice's list of variables to infer
-  def variables = factor.variables.filter(_.isInstanceOf[V]).toList.asInstanceOf[List[V]] // because factor.variables is not very efficient
+  val variables = factor.variables.filter(_.isInstanceOf[V]).toList.asInstanceOf[List[V]] // because factor.variables is not very efficient // TODO Make this toSeq instead?  scala.collection.immutable.Vector
   // TODO Consider alternative to toList?  Note that we do use list in variableSettings
 
   /**Given a variable, return the BPFactors touching it.  This method must be provided by subclasses. */
