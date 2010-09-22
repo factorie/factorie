@@ -12,14 +12,11 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.example
 import scala.io.Source
 import cc.factorie._
 import cc.factorie.er._
-import cc.factorie.application.LabeledTokenSeqs
-import cc.factorie.application.LabeledTokenSeqs.LabeledTokenSeq
+import cc.factorie.application.tokenseq.labeled
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
 
@@ -42,7 +39,7 @@ object ChainNER2b {
 
 
   // Define the variable classes
-  class Token(word:String, labelString:String) extends LabeledTokenSeqs.Token[Label,Token](word) {
+  class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
     type GetterType = TokenGetter; class GetterClass extends TokenGetter
     val label = new Label(labelString, this)
     val wordtype = new Type(simplify(word)); class Type(s:String) extends CategoricalVariable(s)
@@ -55,27 +52,27 @@ object ChainNER2b {
     override def toString: String = "Token("+word+")@"+position
   }
 
-  class Label(labelString:String, token:Token) extends LabeledTokenSeqs.Label[Token,Label](labelString, token) {
+  class Label(labelString:String, token:Token) extends labeled.Label[Sentence,Token,Label](labelString, token) {
     type GetterType = LabelGetter; class GetterClass extends LabelGetter
     override def toString: String = "Label("+value+")@"+token.position
   }
 
-  class TokenGetter extends LabeledTokenSeqs.TokenGetter[Label,Token] {
+  class TokenGetter extends labeled.TokenGetter[Sentence,Label,Token] {
     override def newTokenGetter = new TokenGetter
     override def newLabelGetter = new LabelGetter
     def tags = getOneWay(_.tags)
     def wordtype = getOneWay(_.wordtype)
   }
 
-  class LabelGetter extends LabeledTokenSeqs.LabelGetter[Token,Label] {
+  class LabelGetter extends labeled.LabelGetter[Sentence,Token,Label] {
     override def newTokenGetter = new TokenGetter
     override def newLabelGetter = new LabelGetter
   }
 
+  class Sentence extends labeled.TokenSeq[Token,Label,Sentence]
+  type InstanceType = Sentence
 
-  type InstanceType = LabeledTokenSeq[Token,Label]
-
-  // Variable classes Token, Label and LabeledTokenSeq are already defined in cc.factorie.application.LabeledTokenSeqs
+  // Variable classes Token, Label and TokenSeq are already defined in cc.factorie.application.tokenseq.labeled
   // Use them to define model:
   val model = new Model(
     //Foreach[Label] { label => Score(label.prev, label, label.token) } %"LabelLabelToken",
@@ -282,8 +279,8 @@ object ChainNER2b {
 
     printred("Reading training and testing data...")
     // Read training and testing data.  The function 'featureExtractor' function is defined below
-    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(0))), (word,lab) => new Token(word, lab), featureExtractor _, "-DOCSTART-".r) //.take(100)
-    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(1))), (word,lab) => new Token(word, lab), featureExtractor _, "-DOCSTART-".r) //.take(50)
+    val trainSentences = labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(0))), () => new Sentence, (word,lab) => new Token(word, lab), featureExtractor _) //.take(100)
+    val testSentences =  labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(1))), () => new Sentence, (word,lab) => new Token(word, lab), featureExtractor _) //.take(50)
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.labels)
@@ -293,8 +290,8 @@ object ChainNER2b {
     def evaluatePerformance() = {
       // NOTE: the evaluation procedures are for the BIO encoding so we need to switch back to it temporarily.
       bilou2bio(testLabels ++ trainLabels)
-      println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
-      println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
+      println("TRAIN\n"+labeled.segmentEvaluation(trainLabels))
+      println("TEST\n"+labeled.segmentEvaluation(testLabels))
       bio2bilou(testLabels ++ trainLabels)
     }
 
@@ -499,7 +496,7 @@ object ChainNER2b {
     import scala.collection.mutable.ArrayBuffer
     val f = new ArrayBuffer[String]
     val word = initialFeatures(0)
-    f += "SHAPE="+LabeledTokenSeqs.wordShape(word, 2)
+    f += "SHAPE="+cc.factorie.application.tokenseq.wordShape(word, 2)
     //f ++= wordNGrams(word, 2,5)
     f += "W="+simplify(word)
     f += "POS="+initialFeatures(1)

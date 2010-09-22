@@ -18,8 +18,7 @@ package cc.factorie.example
 import scala.io.Source
 import cc.factorie._ 
 import cc.factorie.er._
-import cc.factorie.application.LabeledTokenSeqs
-import cc.factorie.application.LabeledTokenSeqs.LabeledTokenSeq
+import cc.factorie.application.tokenseq.labeled
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
 
@@ -27,10 +26,11 @@ import java.io.File
 object ChainNER2 {
 
   // Define the variable classes
-  class Token(word:String, labelString:String) extends LabeledTokenSeqs.Token[Label,Token](word) {
+  class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
     val label = new Label(labelString, this)
   }
-  class Label(labelString:String, token:Token) extends LabeledTokenSeqs.Label[Token,Label](labelString, token)
+  class Label(labelString:String, token:Token) extends labeled.Label[Sentence,Token,Label](labelString, token)
+  class Sentence extends labeled.TokenSeq[Token,Label,Sentence]
 
   // Define the model
   val model = new Model(
@@ -46,10 +46,8 @@ object ChainNER2 {
     if (args.length != 2) throw new Error("Usage: ChainNER2 trainfile testfile")
 
     // Read training and testing data.  The function 'featureExtractor' function is defined below
-    val trainSentences = 
-      LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(0))), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)
-    val testSentences = 
-      LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(1))), (word,lab)=>new Token(word,lab), featureExtractor _, "-DOCSTART-".r)
+    val trainSentences = labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(0))), () => new Sentence, (word,lab)=>new Token(word,lab), featureExtractor _)
+    val testSentences =  labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(1))), () => new Sentence, (word,lab)=>new Token(word,lab), featureExtractor _)
 
     // Change from CoNLL's IOB notation to to BIO notation
     (trainSentences ++ testSentences).foreach(s => { 
@@ -118,8 +116,8 @@ object ChainNER2 {
         println("Test errors")
         printErrors(testLabels, 200)
         println("Iteration "+iterationCount)
-        println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
-        println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
+        println("TRAIN\n"+labeled.segmentEvaluation(trainLabels))
+        println("TEST\n"+labeled.segmentEvaluation(testLabels))
         true
       }
     }
@@ -131,8 +129,8 @@ object ChainNER2 {
     
     // Predict, also by sampling, visiting each variable 4 times.
     List(1.0, 0.1, 0.01, 0.001).foreach(temp => { predictor.temperature = temp; predictor.processAll(testLabels) })
-    println("TRAIN\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](trainLabels))
-    println("TEST\n"+LabeledTokenSeq.segmentEvaluation[Token,Label](testLabels))
+    println("TRAIN\n"+labeled.segmentEvaluation(trainLabels))
+    println("TEST\n"+labeled.segmentEvaluation(testLabels))
 
     model.save("chainner2.factorie")
   }
@@ -173,7 +171,7 @@ object ChainNER2 {
     import scala.collection.mutable.ArrayBuffer
     val f = new ArrayBuffer[String]
     val word = initialFeatures(0)
-    f += "SHAPE="+LabeledTokenSeqs.wordShape(word, 2)
+    f += "SHAPE="+cc.factorie.application.tokenseq.wordShape(word, 2)
     f += "W="+simplify(word)
     f += "POS="+initialFeatures(1)
     f += "PHRASE="+initialFeatures(2)

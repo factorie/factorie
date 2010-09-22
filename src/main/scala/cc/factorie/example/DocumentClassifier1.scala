@@ -18,19 +18,18 @@ package cc.factorie.example
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
-import cc.factorie.application.DocumentClassification
-import cc.factorie.application.FeatureVectorClassification
+import cc.factorie.application.classify
 
 object DocumentClassifier1 {
   
  // Define variable classes
- class Document(file:File) extends DocumentClassification.Document[Label,Document](file) {
+ class Document(file:File) extends classify.document.Document[Label,Document](file) {
    val label = new Label(file.getParentFile.getName, this)
  }
- class Label(labelString:String, document:Document) extends DocumentClassification.Label[Document,Label](labelString, document)
+ class Label(labelString:String, document:Document) extends classify.Label[Document,Label](labelString, document)
  
  // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
- val model = DocumentClassification.newModel[Label,Document]
+ val model = classify.newModel[Label,Document]
 
  def main(args:Array[String]): Unit = {
    if (args.length < 2) 

@@ -20,17 +20,19 @@ import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import cc.factorie._
-import cc.factorie.application.LabeledTokenSeqs
+import cc.factorie.application.tokenseq._
+import cc.factorie.application.tokenseq.labeled
 import cc.factorie.er._
 
 object Football {
   val printLexiconsOnly = false
 
   // Define the variable classes
-  class Token(word:String, labelString:String) extends LabeledTokenSeqs.Token[Label,Token](word) {
+  class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
     val label = new Label(labelString, this)
   }
-  class Label(tag:String, token:Token) extends LabeledTokenSeqs.Label[Token,Label](tag, token)
+  class Label(tag:String, token:Token) extends labeled.Label[Sentence,Token,Label](tag, token)
+  class Sentence extends labeled.TokenSeq[Token,Label,Sentence]
 
   // Define the model
   val model = new Model(
@@ -42,9 +44,9 @@ object Football {
   
   // Define the objective function
   val lexiconDir = "/Users/mccallum/research/projects/football/lexicons/"
-  val perLexicon = new LabeledTokenSeqs.Lexicon(lexiconDir+"people")
-  val orgLexicon = new LabeledTokenSeqs.Lexicon(lexiconDir+"orgs")
-  //val positionLexicon = new LabeledTokenSeqs.Lexicon(lexiconDir+"positions")
+  val perLexicon = new Lexicon(lexiconDir+"people")
+  val orgLexicon = new Lexicon(lexiconDir+"orgs")
+  //val positionLexicon = new Lexicon(lexiconDir+"positions")
   val objective = new Model(
     new TemplateWithVectorStatistics1[Label] {
       val oIndex = Domain[Label].index("O")
@@ -101,7 +103,7 @@ object Football {
     Domain[Label].index("PER")
     Domain[Label].index("ORG")
     // Read in the data
-    val documents = new ArrayBuffer[LabeledTokenSeqs.LabeledTokenSeq[Token,Label]]
+    val documents = new ArrayBuffer[Sentence]
     for (dirname <- directories) {
       for (file <- files(new File(dirname))) {
         val article = XML.loadFile(file)
@@ -112,7 +114,7 @@ object Football {
         else {
           print("Reading ***"+(article\\"head"\\"title").text+"***")
           documents +=
-            LabeledTokenSeqs.LabeledTokenSeq.fromPlainText(Source.fromString((article \\ "body" \\ "body.content").text), (word,lab)=>new Token(word,lab), "O", 
+            labeled.TokenSeq.fromPlainText[Sentence,Token,Label](Source.fromString((article \\ "body" \\ "body.content").text), () => new Sentence, (word,lab)=>new Token(word,lab), "O", 
                 featureFunction, "[A-Za-z0-9]+|\\p{Punct}".r)
           println("  "+documents.last.size)
           documents.last.foreach(t=> print(t.word+" ")); println
@@ -121,7 +123,7 @@ object Football {
     }
     if (printLexiconsOnly) System.exit(0)
     documents.foreach(d => d.addNeighboringFeatureConjunctions(List(-1), List(-1,0), List(0), List(1)))
-    documents.foreach(d => d.foreach(t => t ++= LabeledTokenSeqs.charNGrams(t.word, 2,5).map(g => "NGRAMS="+g)))
+    documents.foreach(d => d.foreach(t => t ++= charNGrams(t.word, 2,5).map(g => "NGRAMS="+g)))
     
     // Train and print diagnostics
     val labels = documents.flatMap(seq => seq.map(_.label))
@@ -145,10 +147,11 @@ object Football {
   
   // Helper functions
   
-  def featureFunction(word:String): Seq[String] = {
+  def featureFunction(in:Seq[String]): Seq[String] = {
+    val word = in.head
     val result = new ArrayBuffer[String]
     if (!word.matches("\\d+")) result += "W="+word
-    result += "SHAPE="+LabeledTokenSeqs.wordShape(word, 2)
+    result += "SHAPE="+wordShape(word, 2)
     result
   }
   def printLexicons(content:NodeSeq): Unit = {

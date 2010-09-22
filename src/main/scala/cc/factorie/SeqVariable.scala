@@ -76,7 +76,7 @@ abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with TypedValue
 
 /** A variable containing a mutable (but untracked by Diff) sequence of variables; used in conjunction with VarInSeq.
     @author Andrew McCallum */
-class VariableSeq[V >: Null <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeqEqualsEq[V] with Variable {
+class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeqEqualsEq[V] with Variable {
   private val seq = new ArrayBuffer[V](initialCapacity)
   def +=(v: V) = {
     if (v.seq != null) throw new Error("Trying to add VarInSeq that is already assigned to another VariableSeq")
@@ -113,11 +113,17 @@ trait VarInSeq2 {
   def prev: this.type = if (_position > 0) _seq(_position - 1) else null
 }
 
+trait AbstractVarInSeq[This <: AbstractVarInSeq[This]] {
+  def hasNext: Boolean
+  def hasPrev: Boolean
+  def next: This
+  def prev: This
+}
 
 /** For use with variables that have immutable-valued .next and .prev in a sequence. 
 @author Andrew McCallum */
 // TODO Reverse the order of type arguments V and S to match other places in which the "This" type comes last.
-trait VarInTypedSeq[V >: Null <: VarInTypedSeq[V,S] with Variable, S<:Seq[V]] {
+trait VarInTypedSeq[V /*>: Null*/ <: VarInTypedSeq[V,S] with Variable, S<:Seq[V]] extends AbstractVarInSeq[V] {
   this: V =>
   private var _seq: S = _
   var _position = -1
@@ -131,18 +137,18 @@ trait VarInTypedSeq[V >: Null <: VarInTypedSeq[V,S] with Variable, S<:Seq[V]] {
     _position = p
   }
   def hasNext = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else seq != null && _position + 1 < seq.length
-  def next: V = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (_position + 1 < seq.length) seq(_position + 1) else null
+  def next: V = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (_position + 1 < seq.length) seq(_position + 1) else null.asInstanceOf[V]
   def hasPrev = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else seq != null && _position > 0
-  def prev: V = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (_position > 0) seq(_position - 1) else null
+  def prev: V = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (_position > 0) seq(_position - 1) else null.asInstanceOf[V]
   def next(n:Int): V = { 
     if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set")
     val i = _position + n
-    if (i >= 0 && i < seq.length) seq(i) else null
+    if (i >= 0 && i < seq.length) seq(i) else null.asInstanceOf[V]
   }
   def prev(n:Int): V = {
     if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") 
     val i = _position - n
-    if (i >= 0 && i < seq.length) seq(i) else null
+    if (i >= 0 && i < seq.length) seq(i) else null.asInstanceOf[V]
   }
   def prevWindow(n:Int): Seq[V] = for (i <- math.max(_position-n, 0) to math.max(_position-1,0)) yield seq(i)
   def nextWindow(n:Int): Seq[V] = for (i <- math.min(_position+1, seq.length-1) to math.min(_position+n, seq.length-1)) yield seq(i)
@@ -158,8 +164,8 @@ trait VarInTypedSeq[V >: Null <: VarInTypedSeq[V,S] with Variable, S<:Seq[V]] {
   def firstInSeq = seq(0)
 }
 
-trait VarInSeq[V >: Null <: VarInSeq[V] with Variable] extends VarInTypedSeq[V,Seq[V]] {
-  this: V =>
+trait VarInSeq[This <: VarInSeq[This] with Variable] extends VarInTypedSeq[This,Seq[This]] {
+  this: This =>
 }
 
 /*trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This]] extends cc.factorie.util.DLinkedList[VarInMutableSeq[This]] {
@@ -201,7 +207,7 @@ trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This] with cc.factorie.uti
     if (d ne null) d += this
     var done = false
     redo
-    def variable: This = if (!done) VarInMutableSeq.this else null
+    def variable: This = if (!done) VarInMutableSeq.this else null.asInstanceOf[This]
     def redo = { assert(!done); done = true; remove }
     def undo = { assert(done); done = false; if (prevElt ne null) prevElt.postInsert(variable) else nextElt.preInsert(variable) }
   }
@@ -209,7 +215,7 @@ trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This] with cc.factorie.uti
     if (d ne null) d += this
     var done = false
     redo
-    def variable: This = if (done) VarInMutableSeq.this else null
+    def variable: This = if (done) VarInMutableSeq.this else null.asInstanceOf[This]
     def redo = { assert(!done); done = true; preInsert(that) }
     def undo = { assert(done); done = false; that.remove }
     override def toString = "VarInMutableSeqDeleteDiff(prev="+VarInMutableSeq.this+",insert="+that+")"

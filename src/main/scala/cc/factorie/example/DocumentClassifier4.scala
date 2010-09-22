@@ -22,8 +22,8 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 
-/** A raw document classifier without using any of the facilities of cc.factorie.application.DocumentClassification,
- and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */
+/** A document classifier that will use Decision Trees (once they are actually implemented).
+    Note that it also does not use any of the facilities of cc.factorie.application.classify.document */
 object DocumentClassifier4 {
   
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {

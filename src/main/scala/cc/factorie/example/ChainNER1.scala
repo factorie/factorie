@@ -12,23 +12,21 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.example
 import scala.io.Source
 import java.io.File
 import cc.factorie._ 
 import cc.factorie.er._
-import cc.factorie.application.LabeledTokenSeqs
-import cc.factorie.application.LabeledTokenSeqs.LabeledTokenSeq
+import cc.factorie.application.tokenseq.labeled
 
 object ChainNER1 {
   
   // Define the variable classes
-  class Token(word:String, labelString:String) extends LabeledTokenSeqs.Token[Label,Token](word) {
+  class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
     val label = new Label(labelString, this)
   }
-  class Label(tag:String, token:Token) extends LabeledTokenSeqs.Label[Token,Label](tag, token)
+  class Label(tag:String, token:Token) extends labeled.Label[Sentence,Token,Label](tag, token)
+  class Sentence extends labeled.TokenSeq[Token,Label,Sentence]
 
   // Define the model:
   val model = new Model(
@@ -40,8 +38,8 @@ object ChainNER1 {
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
     
     // Read training and testing data.
-    val trainSentences = LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(0))), (word,lab)=>new Token(word,lab), "-DOCSTART-")
-    val testSentences =  LabeledTokenSeq.fromOWPL[Token,Label](Source.fromFile(new File(args(1))), (word,lab)=>new Token(word,lab), "-DOCSTART-")
+    val trainSentences = labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(0))), () => new Sentence, (word,lab)=>new Token(word,lab))
+    val testSentences =  labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(1))), () => new Sentence, (word,lab)=>new Token(word,lab))
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.labels)
@@ -57,8 +55,8 @@ object ChainNER1 {
     predictor.processAll(testLabels, 3)
     
     // Evaluate
-    println("TRAIN "+LabeledTokenSeq.labelEvaluation[Token,Label](trainLabels).accuracy)
-    println("TEST  "+LabeledTokenSeq.labelEvaluation[Token,Label](testLabels).accuracy)
+    println("TRAIN "+labeled.labelEvaluation(trainLabels).accuracy)
+    println("TEST  "+labeled.labelEvaluation(testLabels).accuracy)
   }
 
 }

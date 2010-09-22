@@ -17,7 +17,7 @@
 package cc.factorie.example
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap,ListBuffer}
 import cc.factorie._
-import cc.factorie.application.TokenSeqs
+import cc.factorie.application.tokenseq
 import scala.io.Source
 import java.io.File
 import cc.factorie.util.DefaultCmdOptions
@@ -34,7 +34,7 @@ object SpanNER1 {
   var verbose = false
 
   // The variable classes
-  class Token(word:String, trueLabelString:String) extends TokenSeqs.Token[Sentence,Token](word) {
+  class Token(word:String, trueLabelString:String) extends tokenseq.Token[Sentence,Token](word) {
     // TODO Consider instead implementing truth with true spans in VariableSeqWithSpans. 
     def trueLabelValue = trueLabelString
     val trueLabelIndex = Domain[Label].index(trueLabelValue)
@@ -67,14 +67,14 @@ object SpanNER1 {
     }
     override def toString = "Span("+length+","+label.value+":"+this.phrase+")"
   }
-  class Sentence extends TokenSeqs.TokenSeq[Token,Sentence] with VariableSeqWithSpans[Token,Span] {
+  class Sentence extends tokenseq.TokenSeq[Token,Sentence] with VariableSeqWithSpans[Token,Span] {
     var filename:String = null
   }
   class SpanLength(x:Int) extends DiscreteVariable {
     if (x < domain.size) set(x)(null) else set(domain.size-1)(null)
   }
   Domain[SpanLength].size = 6
-  class Lexicon(filename:String) extends TokenSeqs.Lexicon(filename) {
+  class Lexicon(filename:String) extends tokenseq.Lexicon(filename) {
     def name = filename.substring(filename.lastIndexOf('/')+1).toUpperCase
   }
   val lexicons = new ArrayBuffer[Lexicon]
@@ -298,12 +298,13 @@ object SpanNER1 {
         //println("  charcount "+ (article \\ "body" \\ "body.content").text.length)
         val content = article \ "head" \ "docdata" \ "identified-content"
         print("Reading ***"+(article\"head"\"title").text+"***")
-        documents += TokenSeqs.TokenSeq.fromPlainText(
+        documents += tokenseq.TokenSeq.fromPlainText[Sentence,Token](
           scala.io.Source.fromString((article \ "body" \ "body.content").text), 
-          (word,lab)=>new Token(word,lab),
           ()=>new Sentence,
+          (word,lab)=>new Token(word,lab),
           "O", 
-          (str)=>featureExtractor(List(str)), "'s|n't|a\\.m\\.|p\\.m\\.|Inc\\.|Corp\\.|St\\.|Mr\\.|Mrs\\.|Dr\\.|([A-Z]\\.)+|vs\\.|[-0-9,\\.]+|$|[-A-Za-z0-9\\+$]+|\\p{Punct}".r)
+          (strs)=>featureExtractor(strs), 
+          "'s|n't|a\\.m\\.|p\\.m\\.|Inc\\.|Corp\\.|St\\.|Mr\\.|Mrs\\.|Dr\\.|([A-Z]\\.)+|vs\\.|[-0-9,\\.]+|$|[-A-Za-z0-9\\+$]+|\\p{Punct}".r)
         documents.last.filename = file.toString
         println("  "+documents.last.size)
         documents.last.foreach(t=> print(t.word+" ")); println
@@ -322,10 +323,10 @@ object SpanNER1 {
   def train(trainFiles:Seq[String], devFile:String, ignoreSentenceBoundaries:Boolean): Unit = {
     // Read training and testing data.  The function 'featureExtractor' function is defined below.  Now training on seq == whole doc, not seq == sentece
     def newSentenceFromOWPL(filename:String) = if (filename.length == 0) List[Sentence]() else 
-      TokenSeqs.TokenSeq.fromOWPL[Token,Sentence](
+      tokenseq.TokenSeq.fromOWPL[Sentence,Token](
         Source.fromFile(new File(filename)), 
-        (word,lab)=>new Token(word,lab), 
         ()=>new Sentence, 
+        (word,lab)=>new Token(word,lab), 
         featureExtractor _, 
         (lab:String) => if (lab.length > 2) lab.substring(2) else lab, 
         "-DOCSTART-".r,
@@ -492,7 +493,7 @@ object SpanNER1 {
     import scala.collection.mutable.ArrayBuffer
     val f = new ArrayBuffer[String]
     val word = initialFeatures(0)
-    f += "SHAPE="+TokenSeqs.wordShape(word, 2)
+    f += "SHAPE="+tokenseq.wordShape(word, 2)
     f += "W="+simplify(word)
     //if (initialFeatures.length > 1) f += "POS="+initialFeatures(1)
     //if (initialFeatures.length > 2) f += "PHRASE="+initialFeatures(2)
