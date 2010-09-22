@@ -24,8 +24,10 @@ import scala.collection.mutable.HashMap
 // and inference on tree-shaped graphs of discrete variables.
 // In the future there will be a choice of different inference methods over arbitrary graphical model structures
 
-/** Maximum likelihood parameter estimation for the weights of DotTemplate. 
-    @author Andrew McCallum, Kedar Bellare, Gregory Druck */
+/**
+ * Maximum likelihood parameter estimation for the weights of DotTemplate.
+ * @author Andrew McCallum, Kedar Bellare, Gregory Druck
+ */
 class LogLinearMaximumLikelihood(model: Model) {
   type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 10.0
@@ -33,7 +35,8 @@ class LogLinearMaximumLikelihood(model: Model) {
   //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V], numIterations: Int): Unit = process(List(variables), numIterations)
   // TODO Figure out how to reinstate something like this.
   //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V]): Unit = process(List(variables), Int.MaxValue)
-  /** First argument is a collection of collections-of-variables.  The former are considered iid.  The later may have dependencies.  */
+
+  /**First argument is a collection of collections-of-variables.  The former are considered iid.  The later may have dependencies.  */
   def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Int.MaxValue): Unit = {
     // Data structure for holding per-template constraints and expectations
     class SuffStats extends HashMap[TemplatesToUpdate, Vector] {
@@ -72,30 +75,35 @@ class LogLinearMaximumLikelihood(model: Model) {
         if (variableSets.forall(_.size == 1)) setOptimizableValueAndGradientIID
         else setOptimizableValueAndGradientBP
       }
+
       def setOptimizableValueAndGradientBP: Unit = {
         val expectations = new SuffStats
         oValue = 0.0
         java.util.Arrays.fill(oGradient, 0.0)
         variableSets.foreach(variables => {
           if (variables.size > 0) {
-          val lattice = new BPLattice(variables, model)
-          // Do inference on the tree
-          lattice.updateTreewise()
-          // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
-          for (bpfactor <- lattice.bpFactors.values; if (bpfactor.factor.template.isInstanceOf[TemplatesToUpdate])) {
-            val factor = bpfactor.factor.asInstanceOf[TemplatesToUpdate#Factor]
-            val marginalMap = bpfactor.marginalMap
-            // For all value settings of neighbors of that factor
-            for ((values,prob) <- marginalMap) {
-              // Set to those values
-              bpfactor.variables.zip(values).foreach({ case(variable,intValue) => variable.set(intValue)(null) })
-             // put negative expectations into 'expectations' StatMap
-             expectations(factor.template.asInstanceOf[TemplatesToUpdate]) += factor.statistic.vector * -prob
+            val lattice = new BPLattice(variables, model)
+            // Do inference on the tree
+            lattice.updateTreewise()
+            val logZ = lattice.sumLogZ
+            // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
+            for (bpfactor <- lattice.bpFactors.values) {
+              bpfactor.incrementStats(expectations, logZ, -1.0)
             }
-          }
-          // TODO Note that this will only work for variables with TrueSetting.  Where to enforceme this?
-          variables.foreach(_.asInstanceOf[TrueSetting].setToTruth(null))
-          oValue += model.score(variables) - lattice.sumLogZ
+            //            for (bpfactor <- lattice.bpFactors.values; if (bpfactor.factor.template.isInstanceOf[TemplatesToUpdate])) {
+            //              val factor = bpfactor.factor.asInstanceOf[TemplatesToUpdate#Factor]
+            //              val marginalMap = bpfactor.marginalMap
+            //              // For all value settings of neighbors of that factor
+            //              for ((values, prob) <- marginalMap) {
+            //                // Set to those values
+            //                bpfactor.variables.zip(values).foreach({case (variable, intValue) => variable.set(intValue)(null)})
+            //                // put negative expectations into 'expectations' StatMap
+            //                expectations(factor.template.asInstanceOf[TemplatesToUpdate]) += factor.statistic.vector * -prob
+            //              }
+            //            }
+            // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
+            variables.foreach(_.asInstanceOf[TrueSetting].setToTruth(null))
+            oValue += model.score(variables) - logZ
           }
         })
         val invVariance = -1.0 / gaussianPriorVariance
@@ -110,6 +118,7 @@ class LogLinearMaximumLikelihood(model: Model) {
         // constraints.keys.foreach(t => expectations(t) += constraints(t))
         oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
       }
+
       def setOptimizableValueAndGradientIID: Unit = {
         val expectations = new SuffStats
         oValue = 0.0

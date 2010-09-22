@@ -20,6 +20,7 @@ import scala.collection.mutable.{HashSet, HashMap, ArrayBuffer}
 import scala.collection.SeqLike
 import java.util.Arrays
 import cc.factorie._
+import cc.factorie.la._
 
 // Very preliminary explorations in inference by belief propagation among discrete variables.
 // Not yet finished, and certainly not yet optimized for speed at all.
@@ -58,7 +59,7 @@ abstract class BPFactor(val factor: Factor) {
 
   /**Get an Iterator" over all the settings of the neighbors of this factor. The order of the integers matches the order from the 'variables' method. */
   def variableSettings: Iterator[List[Int]] = new Iterator[List[Int]] {
-    val settings = BPFactor.this.variables.map(v => v.asInstanceOf[V].settings).toList
+    val settings = BPFactor.this.variables.map(_.settings).toList
     var hasNext = true
     def reset = settings.foreach(setting => {setting.reset; setting.next})
     def next = {hasNext = nextValues(settings); BPFactor.this.variables.map(_.intValue).toList}
@@ -75,22 +76,22 @@ abstract class BPFactor(val factor: Factor) {
   abstract class MessageTo(override val v: V) extends Message(v) {
     // IterableSettings instances for each of the variables neighboring this BPFactor, except the variable 'v'
     // TODO Don't we need to remove the variables that are not among those we are inferring?
-    protected val neighborSettings = variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
+    protected val neighborSettings = variables.filter(_.!=(v)).map(_.settings).toList
     protected val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
 
     def updateTreewiseFromLeaves: Unit = {
-      if (updateCount > 0) return
+      if (updateCount > 0) throw new Error("Either tree not reset or lattice has cycle")
+      updateCount += 1
       for (n <- neighborSettings) {
         BPFactor.this.messageFrom(n.variable).updateTreewiseFromLeaves
       }
       update
-      updateCount += 1
     }
 
     def updateTreewiseToLeaves: Unit = {
-      if (updateCount > 0) return
-      update
+      if (updateCount > 0) throw new Error("Either tree not reset or lattice has cycle")
       updateCount += 1
+      update
 
       for (f <- neighborFactors) {
         f.messageFrom(v).updateTreewiseToLeaves
@@ -147,10 +148,11 @@ abstract class BPFactor(val factor: Factor) {
   /**Message from Variable v to this factor. */
   case class MessageFrom(override val v: V) extends Message(v) {
     val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
-    protected val neighborSettings = variables.filter(v2 => v2 != v && v2.isInstanceOf[V]).map(v2 => v2.asInstanceOf[V].settings).toList
+    protected val neighborSettings = variables.filter(_.!=(v)).map(_.settings).toList
 
     def updateTreewiseFromLeaves: Unit = {
-      if (updateCount > 0) return
+      if (updateCount > 0) throw new Error("Either tree not reset or lattice has cycle")
+      updateCount += 1
       Arrays.fill(msg, 0.0)
       for (n <- neighborFactors) {
         val msg2 = n.messageTo(v)
@@ -158,18 +160,17 @@ abstract class BPFactor(val factor: Factor) {
         for (i <- 0 until v.domain.size) msg(i) += msg2.message(i)
       }
       if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
-      updateCount += 1
     }
 
     def updateTreewiseToLeaves: Unit = {
-      if (updateCount > 0) return
+      if (updateCount > 0) throw new Error("Either tree not reset or lattice has cycle")
+      updateCount += 1
       Arrays.fill(msg, 0.0)
       for (n <- neighborFactors) {
         val msg2 = n.messageTo(v)
         for (i <- 0 until v.domain.size) msg(i) += msg2.message(i)
       }
       if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
-      updateCount += 1
 
       for (n <- neighborSettings) {
         BPFactor.this.messageTo(n.variable).updateTreewiseToLeaves
@@ -187,10 +188,10 @@ abstract class BPFactor(val factor: Factor) {
 
   /* For Sum-Product and Max-Product: */
   lazy private val _msgTo: Seq[MessageTo] = {
-    if (BeliefPropagation.useSumMessages) this.variables.filter(_.isInstanceOf[V]).map(v => SumProductMessageTo(v.asInstanceOf[V])).toSeq
-    else this.variables.filter(_.isInstanceOf[V]).map(v => MaxProductMessageTo(v.asInstanceOf[V])).toSeq
+    if (BeliefPropagation.useSumMessages) this.variables.map(SumProductMessageTo(_)).toSeq
+    else this.variables.map(MaxProductMessageTo(_)).toSeq
   }
-  lazy private val _msgFrom: Seq[MessageFrom] = this.variables.filter(_.isInstanceOf[V]).map(v => MessageFrom(v.asInstanceOf[V])).toSeq
+  lazy private val _msgFrom: Seq[MessageFrom] = this.variables.map(MessageFrom(_)).toSeq
 
   def messageTo(v: V): MessageTo = messageTo(this.variables.toSeq.indexOf(v))
 
@@ -203,14 +204,8 @@ abstract class BPFactor(val factor: Factor) {
   def update: Unit = {_msgFrom.foreach(_.update); _msgTo.foreach(_.update); } // TODO swap order?
 
   def updateTreewise: Unit = {
-    // TODO This was causing a compile error; BPFactors don't have an updateCount.
-    // It seems like this isn't necessary, since we already check the message
-    // update count above?
-    _msgFrom.foreach(message => if (message.updateCount == 0) {message.updateTreewiseFromLeaves}) // TODO msgFrom?  msgTo?
-    // println("Done FROM LEAVES")
+    _msgFrom.foreach(message => if (message.updateCount == 0) {message.updateTreewiseFromLeaves})
     _msgTo.foreach(message => if (message.updateCount == 0) {message.updateTreewiseToLeaves})
-    // println("Done TO LEAVES")
-    //}
   }
 
   def resetTree: Unit = {
@@ -229,8 +224,8 @@ abstract class BPFactor(val factor: Factor) {
   /**The marginal probability distribution over all settings of the neighbor variables of this factor.
   If you want access to the entries by indicies of individual neighbors' values, @see marginalMap.  */
   def marginal: Array[Double] = {
-    val dim = this.variables.filter(_.isInstanceOf[V]).multiplyInts(_.asInstanceOf[V].domain.size)
-    val variableSettings = this.variables.map(v => v.asInstanceOf[V].settings).toList
+    val dim = this.variables.multiplyInts(_.domain.size)
+    val variableSettings = this.variables.map(_.settings).toList
     variableSettings.foreach(setting => {setting.reset; setting.next})
     val result = new Array[Double](dim)
     var i = 0
@@ -243,9 +238,9 @@ abstract class BPFactor(val factor: Factor) {
   }
 
   def marginalMap: HashMap[List[Int], Double] = {
-    val dim = this.variables.filter(_.isInstanceOf[V]).multiplyInts(_.asInstanceOf[V].domain.size)
+    val dim = this.variables.multiplyInts(_.domain.size)
     val result = new Array[Double](dim)
-    val variableSettings = this.variables.filter(_.isInstanceOf[V]).map(v => v.asInstanceOf[V].settings).toList
+    val variableSettings = this.variables.map(_.settings).toList
     variableSettings.foreach(setting => {setting.reset; setting.next})
     val tmpMap = new HashMap[List[Int], Int]
     var i = 0
@@ -265,7 +260,7 @@ abstract class BPFactor(val factor: Factor) {
   }
 
   def logZ: Double = {
-    val variableSettings = this.variables.filter(_.isInstanceOf[V]).map(v => v.asInstanceOf[V].settings).toList
+    val variableSettings = this.variables.map(_.settings).toList
     variableSettings.foreach(setting => {setting.reset; setting.next})
     var result = Double.NegativeInfinity
     do {
@@ -274,9 +269,28 @@ abstract class BPFactor(val factor: Factor) {
     } while (nextValues(variableSettings))
     result
   }
+
+  // optimized for incrementing sufficient statistics
+  def vecPlusEq(v1: Vector, v2: Vector, scale: Double): Unit = v2.activeDomain.foreach {i: Int => v1(i) += v2(i) * scale}
+
+  def incrementStats(stats: HashMap[DotTemplate, Vector], logZ: Double, scale: Double): Unit = {
+    // only update for factors that have weights
+    if (!factor.template.isInstanceOf[DotTemplate]) return
+
+    // convert factor so that we can get the statistic's vector
+    val statFactor = factor.asInstanceOf[DotTemplate#Factor]
+    val statVec = stats(factor.template.asInstanceOf[DotTemplate])
+    val variableSettings = this.variables.map(_.settings).toList
+    variableSettings.foreach(setting => {setting.reset; setting.next})
+    do {
+      val score = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
+      val multiplier = scale * Math.exp(score - logZ)
+      vecPlusEq(statVec, statFactor.statistic.vector, multiplier)
+    } while (nextValues(variableSettings))
+  }
 }
 
-/** A Lattice representing the result of belief propagation inference.  Results can be further updated by calls to various "update" methods. 
+/** A Lattice representing the result of belief propagation inference.  Results can be further updated by calls to various "update" methods.
     @author Andrew McCallum, Kedar Bellare, Greg Druck */
 class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], model: Model) extends Lattice[V] {
   //type V = BeliefPropagation.BPVariable
