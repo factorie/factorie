@@ -49,8 +49,9 @@ abstract class BPFactor(val factor: Factor) {
   /**Given a variable, return the BPFactors touching it.  This method must be provided by subclasses. */
   def factorsOf(v: Variable): Seq[BPFactor]
 
+  // TODO this method should be in a utility class or package
   /**Iterate through all combinations of values in Variables given their `SettingIterators */
-  private def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
+  def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
     if (vs == Nil) false
     else if (vs.head.hasNext) {vs.head.next; true}
     else if (vs.tail != Nil) {vs.head.reset; vs.head.next; nextValues(vs.tail)}
@@ -259,6 +260,8 @@ abstract class BPFactor(val factor: Factor) {
     map
   }
 
+  def factorCurrentScore: Double = factor.statistic.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
+
   def logZ: Double = {
     val variableSettings = this.variables.map(_.settings).toList
     variableSettings.foreach(setting => {setting.reset; setting.next})
@@ -268,25 +271,6 @@ abstract class BPFactor(val factor: Factor) {
       result = maths.sumLogProb(result, score)
     } while (nextValues(variableSettings))
     result
-  }
-
-  // optimized for incrementing sufficient statistics
-  def vecPlusEq(v1: Vector, v2: Vector, scale: Double): Unit = v2.activeDomain.foreach {i: Int => v1(i) += v2(i) * scale}
-
-  def incrementStats(stats: HashMap[DotTemplate, Vector], logZ: Double, scale: Double): Unit = {
-    // only update for factors that have weights
-    if (!factor.template.isInstanceOf[DotTemplate]) return
-
-    // convert factor so that we can get the statistic's vector
-    val statFactor = factor.asInstanceOf[DotTemplate#Factor]
-    val statVec = stats(factor.template.asInstanceOf[DotTemplate])
-    val variableSettings = this.variables.map(_.settings).toList
-    variableSettings.foreach(setting => {setting.reset; setting.next})
-    do {
-      val score = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
-      val multiplier = scale * Math.exp(score - logZ)
-      vecPlusEq(statVec, statFactor.statistic.vector, multiplier)
-    } while (nextValues(variableSettings))
   }
 }
 

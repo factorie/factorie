@@ -85,22 +85,19 @@ class LogLinearMaximumLikelihood(model: Model) {
             val lattice = new BPLattice(variables, model)
             // Do inference on the tree
             lattice.updateTreewise()
+            // compute log-partition function
             val logZ = lattice.sumLogZ
             // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
-            for (bpfactor <- lattice.bpFactors.values) {
-              bpfactor.incrementStats(expectations, logZ, -1.0)
+            for (bpfactor <- lattice.bpFactors.values; if (bpfactor.factor.template.isInstanceOf[TemplatesToUpdate])) {
+              val factor = bpfactor.factor.asInstanceOf[TemplatesToUpdate#Factor]
+              val statVector = expectations(factor.template.asInstanceOf[TemplatesToUpdate])
+              // iterate over variable settings
+              val settingsIter = bpfactor.variables.map(_.settings).toList
+              settingsIter.foreach(setting => {setting.reset; setting.next})
+              do {
+                statVector += factor.statistic.vector * -Math.exp(bpfactor.factorCurrentScore - logZ)
+              } while (bpfactor.nextValues(settingsIter))
             }
-            //            for (bpfactor <- lattice.bpFactors.values; if (bpfactor.factor.template.isInstanceOf[TemplatesToUpdate])) {
-            //              val factor = bpfactor.factor.asInstanceOf[TemplatesToUpdate#Factor]
-            //              val marginalMap = bpfactor.marginalMap
-            //              // For all value settings of neighbors of that factor
-            //              for ((values, prob) <- marginalMap) {
-            //                // Set to those values
-            //                bpfactor.variables.zip(values).foreach({case (variable, intValue) => variable.set(intValue)(null)})
-            //                // put negative expectations into 'expectations' StatMap
-            //                expectations(factor.template.asInstanceOf[TemplatesToUpdate]) += factor.statistic.vector * -prob
-            //              }
-            //            }
             // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
             variables.foreach(_.asInstanceOf[TrueSetting].setToTruth(null))
             oValue += model.score(variables) - logZ
