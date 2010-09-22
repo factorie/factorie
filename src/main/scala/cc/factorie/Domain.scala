@@ -38,18 +38,32 @@ class Domain[V<:Variable](implicit m:Manifest[V]) {
   def save(dirname:String): Unit = {}
   def load(dirname:String): Unit = {}
   //made this public in order to check from outside whether the file to load from exists
-  def filename:String = this.getClass.getName+"["+variableClasses.apply(0).getName+"]"
+  def filename:String = this.getClass.getName+"["+variableClasses.head.getName+"]"
   // Automatically register ourselves.  
   // This enables pairing a Domain with its variable V by simply: "val MyDomain = new FooDomain[MyVariable]"
+  // It also ensures that we throw an Error if someone tries to create two Domains for the same Variable class.
   Domain.+=[V](this)(m)
 }
 
 // TODO Consider if it would be helpful to have a RealDomain or PositiveRealDomain
 
+/** A Domain for variables that respond to the "vector" method */
+class VectorDomain[V<:VectorVar](implicit m:Manifest[V]) extends Domain[V] {
+  def maxVectorSize: Int = 1 // TODO We should somehow force subclasses to override this, but VectorVar needs VectorDomain to be non-abstract
+  def freeze: Unit = {}
+}
+
+class RealDomain[V<:RealVar](implicit m:Manifest[V]) extends VectorDomain[V] {
+  override def maxVectorSize = 1
+}
+
+//trait RealVectorDomain[V<:RealVars] extends Domain[V] with VectorDomain[V]
+// TODO Still needs a definition for "maxVectorSize"
+
 /** A Domain that has a positive integer size.  
     Set its size by Domain[MyDiscrete].size = 9; or Domain[MyDiscrete].size = Domain[MyOther].size. 
     @author Andrew McCallum */
-class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends Domain[V]()(m) {
+class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends VectorDomain[V] {
   private var _frozen = false
   private var _size: Int = -1
   private var _sizeFunction: ()=>Int = null
@@ -65,8 +79,9 @@ class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends Domain[V](
     else throw new Error(getClass.getName+": DiscreteDomain size must be set; e.g. Domain[MyDiscrete].size = 10")
   def setSize(s:Int): Unit = if (!_frozen) _size = s else throw new Error(getClass.getName+": DiscreteDomain size is already frozen and cannot be set.")
   def size: Int = { if (_size == -1) setSize(); _size }
-  def freeze: Unit = { setSize(); _frozen = true }
+  override def freeze: Unit = { setSize(); _frozen = true }
   def allocSize = size
+  override def maxVectorSize = allocSize
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)
     val s = new PrintWriter(new FileWriter(f))
@@ -299,7 +314,7 @@ class StringDomain[V<:CategoricalVars[_] {type CategoryType = String}](implicit 
   /* For all member variables, if its type is String and its name is all upper case or digits,
     set its value to its name, and intern in the Domain.  Usage:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
-  private def stringFields = this.getClass.getDeclaredFields.filter(f => { /*println(f);*/ f.getType == classOf[String] })
+  private def stringFields = this.getClass.getDeclaredFields.filter(f => { /*println(f); */ f.getType == classOf[String] })
   private var stringFieldsIterator: Iterator[java.lang.reflect.Field] = _
   def Value: String = {
     if (stringFieldsIterator == null) stringFieldsIterator = stringFields.iterator

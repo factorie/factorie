@@ -17,14 +17,19 @@
 package cc.factorie
 
 /** A Variable with a real (double) value. */
-trait RealVar extends Variable with TypedValue with NumericValue {
+trait RealVar extends Variable with TypedValue with NumericValue with VectorVar {
   type VariableType <: RealVar
   type ValueType = Double
+  type DomainType <: RealDomain[VariableType]
+  // TODO Replace this mechanism with an Annotation? -akm
+  class DomainClass extends RealDomain[VariableType]()(null)
   @inline final def value: Double = doubleValue
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
   def ===(other: RealVar) = doubleValue == other.doubleValue
   def !==(other: RealVar) = doubleValue != other.doubleValue
+  /** A Vector representation of this Variable's value. */
+  def vector: cc.factorie.la.Vector = new cc.factorie.la.SingletonVector(1, 0, doubleValue)
   override def toString = printName + "(" + doubleValue.toString + ")"
   // TODO Consider making a RealDomain class
 }

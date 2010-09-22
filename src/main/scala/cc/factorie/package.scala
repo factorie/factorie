@@ -81,10 +81,10 @@ package object factorie {
     assert(template.isInitialized == true)
   }
   implicit def template2initialized(t:Template): InitializedTemplate = new InitializedTemplate(t)
-  implicit def template2initialized1[S1<:DiscreteVars](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedTemplate(t.init)
-  implicit def template2initialized2[S1<:DiscreteVars,S2<:DiscreteVars](t:VectorStatistics2[S1,S2])(implicit m1:Manifest[S1], m2:Manifest[S2]): InitializedTemplate = new InitializedTemplate(t.init)
-  implicit def template2initialized3[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars](t:VectorStatistics3[S1,S2,S3])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]): InitializedTemplate = new InitializedTemplate(t.init)
-  implicit def template2initialized4[S1<:DiscreteVars,S2<:DiscreteVars,S3<:DiscreteVars,S4<:DiscreteVars](t:VectorStatistics4[S1,S2,S3,S4])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized1[S1<:VectorVar](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized2[S1<:VectorVar,S2<:VectorVar](t:VectorStatistics2[S1,S2])(implicit m1:Manifest[S1], m2:Manifest[S2]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized3[S1<:VectorVar,S2<:VectorVar,S3<:VectorVar](t:VectorStatistics3[S1,S2,S3])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized4[S1<:VectorVar,S2<:VectorVar,S3<:VectorVar,S4<:VectorVar](t:VectorStatistics4[S1,S2,S3,S4])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]): InitializedTemplate = new InitializedTemplate(t.init)
 
 
   implicit def boolean2BooleanObservation(b:Boolean): BooleanObservation = new BooleanObservation(b)

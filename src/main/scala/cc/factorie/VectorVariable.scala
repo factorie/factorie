@@ -18,18 +18,21 @@ import cc.factorie.la.Vector
 import cc.factorie.la.SparseVector
 import scala.util.Sorting
 
-/** Each "dimension" (i.e. the intValues) is a discrete value.  The
-    value at that index is a "weight" representing (partial)
+/** A variable whose value can be described by a vector.
+    For example, each "dimension" (e.g. the integers in activeDomain) may be a discrete value.
+    The value at that index is a "weight" representing (partial)
     repetitions of the discrete value.  So one way to think of these
-    instances is as a variable number of discrete variables, each with
-    a weight.  Note, however, that only binary weights could be
-    inherit from cc.factorie.DiscreteVars, because with real-valued
-    weights it would be unclear what to return for the 'intValues'
-    method.  
+    instances is as some number of discrete variables, each with
+    a weight.  
     @author Andrew McCallum */
 trait VectorVar extends Variable {
+  type VariableType <: VectorVar
+  type DomainType <: VectorDomain[VariableType]
+  class DomainClass extends VectorDomain[VariableType]()(null)
+
   /** A cc.factorie.la.Vector representation of the value of this variable. */
-  def vector: Vector // NOTE: Also defined in DiscreteVars
+  def vector: Vector
+  //def dimensionSize: Int // ????
 }
 
 
@@ -79,7 +82,7 @@ class SparseBinaryVectorVariable extends BinaryVectorVar /*with SeqEqualsEq[Doub
   val vector = new cc.factorie.la.SparseBinaryVector(-1) { override def length = domain.allocSize }
   def length = domain.allocSize
   //def apply(i:Int) = vector.apply(i)
-  def intValues = vector.activeDomain
+  def activeDomain = vector.activeDomain
   def zero: Unit = vector.zero
   def +=(i:Int): Unit = vector.+=(i)
   //def ++=(is:Iterable[Int]): Unit = is.foreach(i => vector.+=(i)) // Conflicts with ++=(Iterable[T])
@@ -95,7 +98,7 @@ trait CategoricalBinaryVectorVariable[T] extends BinaryVectorVar with Categorica
 class SparseCategoricalBinaryVectorVariable[T] extends SparseBinaryVectorVariable with CategoricalBinaryVectorVariable[T] {
   type VariableType <: SparseCategoricalBinaryVectorVariable[T]
   def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
-  def values: Seq[T] = { val d = this.domain; val result = new ArrayBuffer[T](domainSize); this.intValues.foreach(result += d.get(_)); result }
+  def values: Seq[T] = { val d = this.domain; val result = new ArrayBuffer[T](domainSize); this.activeDomain.foreach(result += d.get(_)); result }
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
   def skipNonCategories = false

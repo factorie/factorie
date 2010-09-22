@@ -22,7 +22,7 @@ import cc.factorie.la._
     For your own subclass MyDiscreteVar, you can set N=9 with Domain[MyDiscreteValue].size = 9.
     @author Andrew McCallum */
 @DomainInSubclasses
-trait DiscreteVars extends Variable with IntegerVars {
+trait DiscreteVars extends Variable with IntegerVars with VectorVar {
   type VariableType <: DiscreteVars
   type DomainType <: DiscreteDomain[VariableType]
   // TODO Replace this mechanism with an Annotation? -akm
@@ -33,7 +33,7 @@ trait DiscreteVars extends Variable with IntegerVars {
   /** A cc.factorie.la.Vector representation of the value of this variable. */
   def vector: Vector
   /** A more efficient alternative to this.vector.activeDomain */
-  def intValues: Iterable[Int] // TODO Rename this 'def activeDomain: Iterable[Int]'?
+  def activeDomain: Iterable[Int]  // TODO Consider removing this?
 }
 
 @DomainInSubclasses
@@ -41,7 +41,7 @@ trait DiscreteVar extends DiscreteVars with IntegerVar {
   this: Variable =>
   type VariableType <: DiscreteVar
   def vector = new SingletonBinaryVector(domain.size, intValue)
-  def intValues = List(intValue)
+  def activeDomain = List(intValue)
 }
 
 @DomainInSubclasses
