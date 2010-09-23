@@ -76,6 +76,8 @@ class LogLinearMaximumLikelihood(model: Model) {
         else setOptimizableValueAndGradientBP
       }
 
+      def vecPlusEq(v1: Vector, v2: Vector, scale: Double): Unit = v2.activeDomain.foreach {i: Int => v1(i) += v2(i) * scale}
+
       def setOptimizableValueAndGradientBP: Unit = {
         val expectations = new SuffStats
         oValue = 0.0
@@ -95,7 +97,8 @@ class LogLinearMaximumLikelihood(model: Model) {
               val settingsIter = bpfactor.variables.map(_.settings).toList
               settingsIter.foreach(setting => {setting.reset; setting.next})
               do {
-                statVector += factor.statistic.vector * -Math.exp(bpfactor.factorCurrentScore - logZ)
+                // statVector += factor.statistic.vector * -Math.exp(bpfactor.factorCurrentScore - logZ)
+                vecPlusEq(statVector, factor.statistic.vector, -Math.exp(bpfactor.factorCurrentScore - logZ))
               } while (bpfactor.nextValues(settingsIter))
             }
             // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
@@ -108,9 +111,11 @@ class LogLinearMaximumLikelihood(model: Model) {
           t =>
             oValue += 0.5 * t.weights.dot(t.weights) * invVariance
             // sum positive constraints into (previously negated) expectations
-            expectations(t) += constraints(t)
+            // expectations(t) += constraints(t)
+            vecPlusEq(expectations(t), constraints(t), 1.0)
             // subtract weights due to regularization
-            expectations(t) += t.weights * invVariance
+            // expectations(t) += t.weights * invVariance
+            vecPlusEq(expectations(t), t.weights, invVariance)
         }
         // constraints.keys.foreach(t => expectations(t) += constraints(t))
         oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)

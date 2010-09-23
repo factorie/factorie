@@ -179,10 +179,23 @@ abstract class BPFactor(val factor: Factor) {
     }
 
     def update = {
-      if (neighborFactors.size > 0)
-        for (i <- 0 until v.domain.size) {
-          msg(i) = neighborFactors.sumDoubles(_.messageTo(v).message(i))
+//      if (neighborFactors.size > 0)
+//        for (i <- 0 until v.domain.size) {
+//          msg(i) = neighborFactors.sumDoubles(_.messageTo(v).message(i))
+//        }
+      if (neighborFactors.size == 1) {
+        val nbrmsg = neighborFactors.head.messageTo(v).message
+        Array.copy(nbrmsg, 0, msg, 0, msg.length)
+      } else if (neighborFactors.size > 1) {
+        Arrays.fill(msg, 0.0)
+        for (nf <- neighborFactors) {
+          val nbrmsg = nf.messageTo(v).message
+          var i = 0
+          while (i < msg.length) {
+            msg(i) += nbrmsg(i); i += 1
+          }
         }
+      }
       if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
     }
   }
@@ -231,7 +244,7 @@ abstract class BPFactor(val factor: Factor) {
     val result = new Array[Double](dim)
     var i = 0
     do {
-      result(i) = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
+      result(i) = factorCurrentScore
       i += 1
     } while (nextValues(variableSettings))
     maths.expNormalize(result)
@@ -250,7 +263,7 @@ abstract class BPFactor(val factor: Factor) {
       // add temporary mapping
       tmpMap += varSetting -> i
       // compute score
-      result(i) = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
+      result(i) = factorCurrentScore
       i += 1
     } while (nextValues(variableSettings))
     maths.expNormalize(result)
@@ -267,7 +280,7 @@ abstract class BPFactor(val factor: Factor) {
     variableSettings.foreach(setting => {setting.reset; setting.next})
     var result = Double.NegativeInfinity
     do {
-      val score = factor.statistic.score + variableSettings.sumDoubles(s => BPFactor.this.messageFrom(s.variable).messageCurrentValue)
+      val score = factorCurrentScore
       result = maths.sumLogProb(result, score)
     } while (nextValues(variableSettings))
     result
