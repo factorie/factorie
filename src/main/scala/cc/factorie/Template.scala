@@ -225,49 +225,6 @@ trait VectorTemplate extends Template {
     }
   }
   override def statistic(ss:Iterable[StatType]) : StatisticType = new Statistic(ss)
-  /** Perform the outer-product of two vectors, to yield */
-  protected def flatOuter(vector1: Vector, vector2: Vector) : Vector = vector1 match {
-    case v1: SingletonBinaryVector => vector2 match {
-      case v2: SingletonBinaryVector =>
-        new SingletonBinaryVector(v1.size * v2.size, v1.singleIndex * v2.size + v2.singleIndex)
-      case v2: SparseBinaryVector =>
-        new SparseBinaryVector(v1.size * v2.size,
-                               {
-                                 val arr = new Array[Int](v2.activeDomain.size);
-                                 var i = 0;
-                                 for (i2 <- v2.activeDomain) {
-                                   arr(i) = v1.singleIndex * v2.size + i2;
-                                   i += 1;
-                                 };
-                                 arr
-                               })
-    }
-    case v1: SparseBinaryVector => vector2 match {
-      case v2: SingletonBinaryVector =>
-        new SparseBinaryVector(v1.size * v2.size,
-                               {
-                                 val arr = new Array[Int](v1.activeDomain.size);
-                                 var i = 0;
-                                 for (i1 <- v1.activeDomain) {
-                                   arr(i) = i1 * v2.size + v2.singleIndex;
-                                   i += 1;
-                                 };
-                                 arr
-                               })
-      case v2: SparseBinaryVector =>
-        new SparseBinaryVector(v1.size * v2.size,
-                               {
-                                 val arr = new Array[Int](v1.activeDomain.size * v2.activeDomain.size);
-                                 var i = 0;
-                                 for (i1 <- v1.activeDomain; i2 <- v2.activeDomain) {
-                                   arr(i) = i1 * v2.size + i2;
-                                   i += 1;
-                                 };
-                                 arr
-                               })
-    }
-  }
-  
   // TODO implement this!
   private def unflattenOuter(weightIndex:Int, dimensions:Int*) : Array[Int] = new Array[Int](2) 
 } // end of VectorTemplate
@@ -431,7 +388,7 @@ trait Statistics2[S1,S2] extends Template {
 }
 trait VectorStatistics2[S1<:VectorVar,S2<:VectorVar] extends VectorTemplate {
   case class Stat(_1:S1, _2:S2) extends super.Stat {
-    lazy val vector : Vector = flatOuter(_1.vector, _2.vector)
+    lazy val vector : Vector = _1.vector flatOuter _2.vector
   } 
   type StatType = Stat
   isInitialized = false
@@ -496,7 +453,7 @@ trait Statistics3[S1,S2,S3] extends Template {
 }
 trait VectorStatistics3[S1<:VectorVar,S2<:VectorVar,S3<:VectorVar] extends VectorTemplate {
   case class Stat(_1:S1, _2:S2, _3:S3) extends super.Stat {
-    lazy val vector : Vector = flatOuter(_1.vector, flatOuter(_2.vector, _3.vector))
+    lazy val vector : Vector = _1.vector flatOuter (_2.vector flatOuter _3.vector)
   } 
   type StatType = Stat
   isInitialized = false
@@ -567,7 +524,7 @@ trait Statistics4[S1<:Variable,S2<:Variable,S3<:Variable,S4<:Variable] extends T
 }
 trait VectorStatistics4[S1<:VectorVar,S2<:VectorVar,S3<:VectorVar,S4<:VectorVar] extends VectorTemplate {
   case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends super.Stat {
-    lazy val vector : Vector = flatOuter(_1.vector, flatOuter(_2.vector, flatOuter(_3.vector, _4.vector))) // TODO Really?  There isn't a risk of a bad cached value here?
+    lazy val vector : Vector = _1.vector flatOuter (_2.vector flatOuter (_3.vector flatOuter _4.vector))
   } 
   type StatType = Stat
   isInitialized = false

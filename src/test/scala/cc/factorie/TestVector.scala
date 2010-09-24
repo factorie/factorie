@@ -11,24 +11,8 @@ import Assert._
 
 class TestSparseBinaryVector extends TestCase {
 
-  def testBasics = {
-    val v = new SparseBinaryVector(10000)
-
-    // initial size should be zero
-    assertEquals(v.activeDomain.size, 0)
-
-    val x = List(100,300,1000,500,2,100)
-    x.foreach(v+=_)
-
-    val expect = x.toSet.toList.sortWith(_<_)
-    assertEquals(v.activeDomain.toList, expect)
-    assertEquals(v.activeDomainSize, expect.size)
-
-    // the contains test
-    x.forall(v(_)==1.0)
-  }
-
-  def test_suspicious_indices = {
+  def test_suspicious_indices:Unit = {
+    println("susp")
     val v = new SparseBinaryVector(1000)
     // check the boundaries
     v += 0
@@ -37,9 +21,33 @@ class TestSparseBinaryVector extends TestCase {
     v += v.length
     v += v.length+100
     v += -1
+    assertTrue(true)
   }
 
-  def test_zero = {
+  def test_whatever:Unit = {
+    println("whatev")
+  }
+
+  def test_advanced:Unit = {
+    println("basics")
+    val v = new SparseBinaryVector(10000)
+     
+    // initial size should be zero
+    assertEquals(v.activeDomain.size, 0)
+    
+    val x = List(100,300,1000,500,2,100)
+    x.foreach(v+=_)
+
+    val expect = x.toSet.toList.sortWith(_<_)
+    assertEquals(v.activeDomain.toList, expect)
+    assertEquals(v.activeDomainSize, expect.size)
+
+    // the contains test
+    assertTrue(x.forall(v(_)==1.0))
+  }
+
+  def test_zero:Unit = {
+    println("zero")
     val v = new SparseBinaryVector(1000)
 
     def doesNotAlterLength = assertEquals(v.length, 1000)

@@ -16,6 +16,11 @@
 
 package cc.factorie.la
 
+
+// For the java version of compute matrix:
+// import cc.factorie.OuterProduct.{computeMatrix => matrix}
+import OuterProductMath.{computeMatrix => matrix}
+
 /** A vector, for holding a sequence of Doubles and performing various linear algebra operations.
     See also @see cc.factorie.generative.Counts
     @author Andrew McCallum */
@@ -31,6 +36,7 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
   def *(scalar:Double) = new VectorTimesScalar(this, scalar)
   //def toString = this.take(15).mkString(printName+"(", ",", if (length > 15) "...)" else ")")
+  def flatOuter(that:Vector): Vector = throw new Error("Method flatOuter(Vector) not defined on class "+getClass.getName)
 }
 
 /** A lazy product of a Vector and a scalar.
@@ -48,15 +54,23 @@ class VectorTimesScalar(val vector:Vector, val scalar:Double) extends Vector {
   def apply(index:Int) = vector.apply(index) * scalar
 }
 
+
 /** A Vector that has all zeros, except one position containing a 1.0.
     @author Andrew McCallum */
-class SingletonBinaryVector(val theLength:Int, val singleIndex:Int) extends Vector {
+class SingletonBinaryVector(theLength:Int, val singleIndex:Int) extends Vector {
   def length = theLength
   def activeDomainSize = 1
   def activeDomain: Iterable[Int] = Seq(singleIndex)
   def apply(index:Int): Double = if (index == singleIndex) 1.0 else 0.0
   def dot(v:Vector) = v(singleIndex)
   def activeElements = Iterator.single((singleIndex, 1.0))
+
+  override def flatOuter(v:Vector):Vector = v match {
+    case that:SparseBinaryVector => 
+      SparseBinaryVector.fromSortedIndices(this.size * that.size, matrix(this.singleIndex, that.ind, that.activeDomainSize, that.size)) 
+    case that:SingletonBinaryVector => 
+      new SingletonBinaryVector(this.size * that.size, this.singleIndex * that.size + that.singleIndex)
+  }
 }
 
 /** A Vector that has all zeros, except one position containing some arbitrary Double 'value'.
@@ -71,17 +85,33 @@ class SingletonVector(val theLength:Int, val singleIndex:Int, val value:Double) 
   def activeElements = Iterator.single((singleIndex, value))
 }
 
+object SparseBinaryVector {
+  /* Constructor that assumes a properly sorted input array */
+  protected[la] def fromSortedIndices(theLength:Int, indices:Array[Int]):SparseBinaryVector = {
+    val v = new SparseBinaryVector(theLength, null)
+    if (indices ne null) {
+      v.ind = indices
+      v._size = indices.size
+    }
+    v
+  }
+}
+
 /** A Vector that may contain mostly zeros, with a few 1.0's, represented compactly in memory.
-    @author Andrew McCallum */
-class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null) extends Vector {
+ @author Andrew McCallum */
+class SparseBinaryVector(theLength:Int, indices:Array[Int] = null) extends Vector {
   def length = theLength
   def defaultInitialCapacity = 4
-  private var ind = new Array[Int](if (indices ne null) indices.size else defaultInitialCapacity)
-  private var _size: Int = if (indices eq null) 0 else indices.size
+  protected[la] var ind: Array[Int] = new Array[Int](defaultInitialCapacity)
+  protected[la] var _size: Int = 0
+
   if (indices ne null) {
-    Array.copy(indices, 0, ind, 0, ind.size)
-    scala.util.Sorting.quickSort(ind)
+    ensureCapacity(indices.size)
+    scala.util.Sorting.quickSort(indices)
+    Array.copy(indices, 0, ind, 0, indices.size)
+    _size = indices.size
   }
+
   def activeDomainSize = _size
   def activeDomain: Iterable[Int] = new IndexedSeq[Int] { def apply(i:Int) = ind(i); def length = _size }
   /** Ensure that the array "ind" is big enough to allow ind(n). */
@@ -178,6 +208,69 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null) extends V
     case v:SparseBinaryVector => throw new Error("Not yet implemented.")
     case _ => throw new Error("SparseBinaryVector.dot does not handle "+v.getClass.getName)
   }
+
+  override def flatOuter(v:Vector):Vector = v match {
+    case that:SparseBinaryVector => 
+      SparseBinaryVector.fromSortedIndices(this.size * that.size, matrix(this.ind, this.activeDomainSize, that.ind, that.activeDomainSize, that.size))
+    case that:SingletonBinaryVector => 
+      SparseBinaryVector.fromSortedIndices(this.size * that.size, matrix(this.ind, this.activeDomainSize, that.singleIndex, that.size))
+  }
+}
+
+object OuterProductMath {
+
+  def computeMatrix(a1: Array[Int], s1:Int, a2: Array[Int], s2:Int, a2width:Int) = {
+    val arr = new Array[Int](s1 * s2)
+    var i = 0; var n = 0
+    while (i<s1) {
+      var j = 0
+      val m = a1(i) * a2width
+      while (j<s2) {
+        arr(n) = m + a2(j)
+        j +=1
+        n += 1
+      }
+      i += 1
+    }
+    arr
+  }
+
+  // def computeMatrix(a1: Array[Int], a2: Array[Int], a2width:Int) = {
+  //   val arr = new Array[Int](a1.size * a2.size)
+  //   var i = 0; var n = 0
+  //   while (i<a1.size) {
+  //     var j = 0
+  //     while (j<a2.size) {
+  //       arr(i) = a1(i) * a2width + a2(j)
+  //       j +=1
+  //       n += 1
+  //     }
+  //     i += 1
+  //   }
+  //   arr
+  // }
+
+  def computeMatrix(i1: Int, a2: Array[Int], s2:Int, a2width:Int) = {
+    // val arr = new Array[Int](a2.size)
+    val arr = new Array[Int](s2)
+    var i = 0
+    while (i<s2) {
+      arr(i) = i1 * a2width + a2(i)
+      i +=1
+    }
+    arr
+  }
+
+  def computeMatrix(a1: Array[Int], s1:Int, i2: Int, a2width:Int) = {
+    val arr = new Array[Int](s1)
+    var i = 0
+    while (i<s1) {
+      arr(i) = a1(i) * a2width + i2
+      i +=1
+    }
+    arr
+  }
+
 }
 
 /** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory.
