@@ -98,7 +98,7 @@ class LogLinearMaximumLikelihood(model: Model) {
               settingsIter.foreach(setting => {setting.reset; setting.next})
               do {
                 // statVector += factor.statistic.vector * -Math.exp(bpfactor.factorCurrentScore - logZ)
-                vecPlusEq(statVector, factor.statistic.vector, -Math.exp(bpfactor.factorCurrentScore - logZ))
+                vecPlusEq(statVector, factor.statistic.vector, -math.exp(bpfactor.factorCurrentScore - logZ))
               } while (bpfactor.nextValues(settingsIter))
             }
             // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?

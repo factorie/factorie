@@ -25,7 +25,7 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 import cc.factorie.generative._
-import cc.factorie.util.Stopwords
+import cc.factorie.application.strings.Stopwords
 
 /** Implements "Cluster LDA" from Hanna Wallach's thesis.
     Runs, but would benefit from a DirichletMultinomial implementation. */

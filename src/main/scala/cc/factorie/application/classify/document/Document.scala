@@ -16,6 +16,7 @@ package cc.factorie.application.classify.document
 import cc.factorie._
 import cc.factorie.er._
 import cc.factorie.application.classify.Label
+import cc.factorie.application.strings._
 import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
@@ -25,10 +26,9 @@ abstract class Document[L<:Label[This,L],This<:Document[L,This]](override val na
   //type GetterType <: DocumentGetter[L,This];
   //class GetterClass extends DocumentGetter[L,This]
   /** Populate the document from the words in the file. */
-  def this(file:File, lexer:Regex = "\\w+".r) = {
+  def this(file:File, segmenter:StringSegmenter = alphaSegmenter) = {
     this(file.toString)
-    val source = Source.fromFile(file)
-    lexer.findAllIn(source.mkString).foreach(m => this += m.toString)
+    segmenter(file).foreach(m => this += m.toString)
   }
   /* By default take the directory name to be the label string. */
   //def this(file:File) = this(file, file.getParentFile.getName)

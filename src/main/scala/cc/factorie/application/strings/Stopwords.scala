@@ -14,7 +14,7 @@
 
 
 
-package cc.factorie.util
+package cc.factorie.application.strings
 
 /** A collection of standard English "stop words"---common words often left out of processing. 
     @author Andrew McCallum

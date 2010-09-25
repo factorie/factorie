@@ -21,7 +21,8 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 import cc.factorie.generative._
-import cc.factorie.util.Stopwords
+import cc.factorie.application.strings.Stopwords
+import cc.factorie.application.strings.alphaSegmenter
 
 object LDADemo {
   val numTopics = 10
@@ -44,7 +45,7 @@ object LDADemo {
         print("."); Console.flush
         val doc = new Document(file.toString)
         doc.theta = new DenseDirichlet(alphaMean, alphaPrecision) //(numTopics, 0.01) // Shouldn't this have been 1.0 instead of 0.01 anyway?
-        for (word <- lexer.findAllIn(Source.fromFile(file).mkString).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
+        for (word <- alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
           val z = new Z(doc.theta, cc.factorie.random.nextInt(numTopics))
           doc += new Word(phis, z, word)
         }

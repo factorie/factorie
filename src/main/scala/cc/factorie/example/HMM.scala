@@ -21,7 +21,7 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 import cc.factorie.generative._
-import cc.factorie.util.Stopwords
+import cc.factorie.application.strings.Stopwords
 
 object HMMDemo {
   val numStates = 10
