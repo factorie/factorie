@@ -109,7 +109,13 @@ abstract class BPFactor(val factor: Factor) {
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
           //println("SumProductMessageTo factor.cachedStatistics")
           msg(i) = factor.cachedStatistics.score
-        //} else if (neighborSettings.size == 1) {
+        } else if (neighborSettings.size == 1) {
+          val neighbor = neighborSettings.head.variable
+          msg(i) = Double.NegativeInfinity // i.e. log(0)
+          forIndex(neighbor.domain.size)(j => {
+            neighbor.set(j)(null)
+            msg(i) = maths.sumLogProb(msg(i), factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue)
+          })
         } else { // This factor has variable neighbors in addition to v itself
           // Sum over all combinations of values in neighboring variables with v's value fixed to i.
           // TODO Consider special purpose code for when there is one other neighbor
@@ -132,6 +138,7 @@ abstract class BPFactor(val factor: Factor) {
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
           msg(i) = factor.cachedStatistics.score
           //maxIndex(i) = -1
+        // } else if (neighborSettings.size == 1) { // TODO Needs to be implemented, to gain the same efficiencies we got above.
         } else { // This factor has variable neighbors in addition to v itself
           neighborSettings.foreach(setting => {setting.reset; setting.next})
           msg(i) = Double.NegativeInfinity
