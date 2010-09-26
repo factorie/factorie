@@ -191,7 +191,7 @@ object ChainNER2b {
       _.variables.forall(x => !x.isInstanceOf[Label] || (x == Y) || local_labels.contains(x))
     )
     // add-up factor scores
-    factors.foldLeft(0.0)((acc,f) => acc + f.statistic.score)
+    factors.foldLeft(0.0)((acc,f) => acc + f.statistics.score)
   }
 
 
@@ -201,7 +201,7 @@ object ChainNER2b {
       _.variables.forall(x => !x.isInstanceOf[Label] || (x == Y) || local_labels.contains(x))
     )
     // add-up factor scores
-    factors.foldLeft(0.0)((acc,f) => acc + f.statistic.score)
+    factors.foldLeft(0.0)((acc,f) => acc + f.statistics.score)
   }
 
   // cycle thru all combinations of a List of Variables

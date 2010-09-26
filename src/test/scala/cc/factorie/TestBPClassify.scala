@@ -289,7 +289,7 @@ class SimpleMaxEntTrainer(model: Model) {
     model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t))
     // Gather constraints
     variables.foreach(_.setToTruth(null))
-    model.factorsOf[TemplatesToUpdate](variables).foreach(f => constraints(f.template) += f.statistic.vector)
+    model.factorsOf[TemplatesToUpdate](variables).foreach(f => constraints(f.template) += f.statistics.vector)
 
     def templates = constraints.sortedKeys
 
@@ -320,7 +320,7 @@ class SimpleMaxEntTrainer(model: Model) {
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // put negative expectations into 'expectations' StatMap
-            model.factorsOf[TemplatesToUpdate](v).foreach(f => expectations(f.template) += f.statistic.vector * -distribution(i))
+            model.factorsOf[TemplatesToUpdate](v).foreach(f => expectations(f.template) += f.statistics.vector * -distribution(i))
           })
 
           oValue += math.log(distribution(v.trueIntValue))

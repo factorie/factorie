@@ -143,10 +143,10 @@
 //      //System.out.println("COR: " + correctionMagnitude+" rate="+rate+" tog="+(correctionMagnitude*rate))
 //      currentAction.diff.redo
 //      currentAction.diff.factorsOf[TemplatesToUpdate](model)
-//	.foreach(f => accumulator(f.template) += f.statistic.vector * (correctionMagnitude*rate))
+//	.foreach(f => accumulator(f.template) += f.statistics.vector * (correctionMagnitude*rate))
 //      currentAction.diff.undo
 //      currentAction.diff.factorsOf[TemplatesToUpdate](model)
-//	.foreach(f => accumulator(f.template) -= f.statistic.vector * (correctionMagnitude*rate))
+//	.foreach(f => accumulator(f.template) -= f.statistics.vector * (correctionMagnitude*rate))
 //    }
 //}
 //

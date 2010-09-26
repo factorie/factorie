@@ -109,13 +109,13 @@ abstract class BPFactor(val factor: Factor) {
       forIndex(v.domain.size)(i => { // Consider reversing the nested ordering of this loop and the inner one
         v.set(i)(null) // Note: this is changing the value of this Variable
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
-          msg(i) = factor.statistic.score
+          msg(i) = factor.score
         } else { // This factor has variable neighbors in addition to v itself
           // Sum over all combinations of values in neighboring variables with v's value fixed to i.
           neighborSettings.foreach(setting => {setting.reset; setting.next}) // reset iterator and advance to first setting.
           msg(i) = Double.NegativeInfinity // i.e. log(0)
           do {
-            msg(i) = maths.sumLogProb(msg(i), factor.statistic.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
+            msg(i) = maths.sumLogProb(msg(i), factor.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
           } while (nextValues(neighborSettings))
         }
       })
@@ -129,7 +129,7 @@ abstract class BPFactor(val factor: Factor) {
       forIndex(v.domain.size)(i => { // Consider reversing the nested ordering of this loop and the inner one
         v.set(i)(null) // Note: that this is changing the Variable value
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
-          msg(i) = factor.statistic.score
+          msg(i) = factor.score
           //maxIndex(i) = -1
         } else { // This factor has variable neighbors in addition to v itself
           neighborSettings.foreach(setting => {setting.reset; setting.next})
@@ -137,7 +137,7 @@ abstract class BPFactor(val factor: Factor) {
           //maxIndex(i) = -1
           //var settingCount = 0
           do {
-            val score = factor.statistic.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
+            val score = factor.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
             if (score > msg(i)) {msg(i) = score; /*maxIndex(i) = settingCount*/ }
             //settingCount += 1
           } while (nextValues(neighborSettings))
@@ -273,10 +273,10 @@ abstract class BPFactor(val factor: Factor) {
     map
   }
 
-  def factorCurrentScore: Double = factor.statistic.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
-  def factorCurrentScore(statistic:Template#Statistic): Double = {
-    assert(statistic.template eq factor.template)
-    statistic.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
+  def factorCurrentScore: Double = factor.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
+  def factorCurrentScore(statistics:Template#Statistics): Double = {
+    assert(statistics.template eq factor.template)
+    statistics.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
   }
 
   def logZ: Double = {

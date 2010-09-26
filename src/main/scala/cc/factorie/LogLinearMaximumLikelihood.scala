@@ -57,7 +57,7 @@ class LogLinearMaximumLikelihood(model: Model) {
     model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
     // Gather constraints
     variableSets.foreach(_.foreach(_.setToTruth(null)))
-    variableSets.foreach(vars => model.factorsOf[TemplatesToUpdate](vars).foreach(f => constraints(f.template) += f.statistic.vector))
+    variableSets.foreach(vars => model.factorsOf[TemplatesToUpdate](vars).foreach(f => constraints(f.template) += f.statistics.vector))
 
     def templates = constraints.sortedKeys
 
@@ -97,9 +97,9 @@ class LogLinearMaximumLikelihood(model: Model) {
               val settingsIter = bpfactor.variables.map(_.settings).toList
               settingsIter.foreach(setting => {setting.reset; setting.next})
               do {
-                // statVector += factor.statistic.vector * -Math.exp(bpfactor.factorCurrentScore - logZ)
-                var statistic = factor.statistic
-                vecPlusEq(statVector, statistic.vector, -math.exp(bpfactor.factorCurrentScore(statistic) - logZ))
+                // statVector += factor.statistics.vector * -Math.exp(bpfactor.factorCurrentScore - logZ)
+                var statistics = factor.statistics
+                vecPlusEq(statVector, statistics.vector, -math.exp(bpfactor.factorCurrentScore(statistics) - logZ))
               } while (bpfactor.nextValues(settingsIter))
             }
             // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
@@ -139,7 +139,7 @@ class LogLinearMaximumLikelihood(model: Model) {
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // put negative expectations into 'expectations' StatMap
-            model.factorsOf[TemplatesToUpdate](v).foreach(f => expectations(f.template) += f.statistic.vector * -distribution(i))
+            model.factorsOf[TemplatesToUpdate](v).foreach(f => expectations(f.template) += f.statistics.vector * -distribution(i))
           })
 
           oValue += math.log(distribution(v.trueIntValue))

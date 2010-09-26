@@ -69,6 +69,7 @@ extends VectorStatistics2[S1,S2] {
     @author Andrew McCallum */
 abstract class DecisionTreeTemplateWithStatistics2[S1<:DiscreteVar,S2<:BinaryVectorVar](implicit m1:Manifest[S1], m2:Manifest[S2])
 extends Template2[S1,S2] with DecisionTreeStatistics2[S1,S2] {
-  def statistics(s1:S1, s2:S2): Iterable[Stat] = Stat(s1, s2)
-  def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.flatMap(_statistics(_)))
+  def statistics(s1:S1, s2:S2) = Stat(s1, s2)
+  def train(labels: Iterable[S1]): Unit = throw new Error
+    //train(labels.map(unroll1(_)).flatten.map(_statistics(_)))
 }

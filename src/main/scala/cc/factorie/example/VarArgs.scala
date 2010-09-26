@@ -68,6 +68,6 @@ object VarArgsDemo {
 
     println(model.factors(x1))
     println(model.factors(List(x1,x2,x3,x4)))
-    println(model.factors(x1).head.statistic.score)
+    println(model.factors(x1).head.statistics.score)
   }
 }
