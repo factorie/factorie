@@ -12,13 +12,13 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.tokenseq.labeled
+package cc.factorie.app.tokenseq.labeled
 import cc.factorie._
 import cc.factorie.er._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
-class TokenSeq[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]] extends cc.factorie.application.tokenseq.TokenSeq[T,This] {
+class TokenSeq[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]] extends cc.factorie.app.tokenseq.TokenSeq[T,This] {
   this: This =>
   /** Return the collection of Label instances attached to these tokens. */
   def labels = this.map(_.label)
@@ -65,7 +65,7 @@ object TokenSeq {
                                                                          backgroundLabelString:String = "O", 
                                                                          featureFunction: Seq[String]=>Seq[String], 
                                                                          labelFunction:String=>String = (s:String) => s,                                                                          wordSegmenter:Regex): 
-  S = cc.factorie.application.tokenseq.TokenSeq.fromSGML[S,T](source, newTokenSeq, newToken, backgroundLabelString, featureFunction, labelFunction, wordSegmenter)
+  S = cc.factorie.app.tokenseq.TokenSeq.fromSGML[S,T](source, newTokenSeq, newToken, backgroundLabelString, featureFunction, labelFunction, wordSegmenter)
 
   /** Construct and return a new LabeledTokenSeq (and its constituent Tokens and Labels) 
       from a source containing plain text.  Since the labels are unknown, all Labels
@@ -76,7 +76,7 @@ object TokenSeq {
                                                                                defaultLabelString:String = "O", 
                                                                                featureFunction: Seq[String]=>Seq[String], 
                                                                                wordSegmenter:Regex): 
-  S = cc.factorie.application.tokenseq.TokenSeq.fromPlainText[S,T](source, newTokenSeq, newToken, defaultLabelString, featureFunction, wordSegmenter)
+  S = cc.factorie.app.tokenseq.TokenSeq.fromPlainText[S,T](source, newTokenSeq, newToken, defaultLabelString, featureFunction, wordSegmenter)
 
   /** Create a LabeledTokenSeq from a source of characters that has "one word per line", 
       each line consisting of information about one token: a whitespace-separated list of elements, 
@@ -91,12 +91,12 @@ object TokenSeq {
   def fromOWPL[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](source:Source, 
                                                                    newTokenSeq:()=>S,
                                                                    newToken:(String,String)=>T, 
-                                                                   featureFunction:Seq[String]=>Seq[String] = cc.factorie.application.tokenseq.standardFeatureFunction,
+                                                                   featureFunction:Seq[String]=>Seq[String] = cc.factorie.app.tokenseq.standardFeatureFunction,
                                                                    labelFunction:String=>String = (s:String) => s, 
                                                                    sentenceBoundary:Regex = "\\A\\s*\\z".r, 
                                                                    documentBoundary:Regex = "-DOCSTART-".r, 
                                                                    ignoreLines:Regex = null): 
-  Seq[S] = cc.factorie.application.tokenseq.TokenSeq.fromOWPL[S,T](source, newTokenSeq, newToken, featureFunction, labelFunction, sentenceBoundary, documentBoundary, ignoreLines)
+  Seq[S] = cc.factorie.app.tokenseq.TokenSeq.fromOWPL[S,T](source, newTokenSeq, newToken, featureFunction, labelFunction, sentenceBoundary, documentBoundary, ignoreLines)
 
 
 }

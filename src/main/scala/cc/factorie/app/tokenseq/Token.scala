@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.tokenseq
+package cc.factorie.app.tokenseq
 import cc.factorie._
 import cc.factorie.er._
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap}
@@ -25,7 +25,7 @@ import scala.util.Sorting
 abstract class Token[S<:TokenSeq[This,S], This<:Token[S,This] with VarInTypedSeq[This,S]](theWord:String, features:Seq[String] = Nil)
 extends BinaryFeatureVectorVariable[String](features) with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] 
 {
-  // TODO Consider unifying this with cc.factorie.application.classify.Instance
+  // TODO Consider unifying this with cc.factorie.app.classify.Instance
   this: This =>
   //this ++= features
   //def this(word:String) = this(word, Nil)
@@ -44,8 +44,8 @@ extends BinaryFeatureVectorVariable[String](features) with VarInTypedSeq[This,S]
   /** Return a string that captures the generic "shape" of the original word, 
    mapping lowercase alphabetics to 'a', uppercase to 'A', digits to '1', whitespace to ' '.
    Skip more than 'maxRepetitions' of the same character class. */
-  def wordShape(maxRepetitions:Int) = cc.factorie.application.tokenseq.wordShape(word, maxRepetitions)
-  def charNGrams(min:Int, max:Int): Seq[String] = cc.factorie.application.tokenseq.charNGrams(word, min, max)
+  def wordShape(maxRepetitions:Int) = cc.factorie.app.tokenseq.wordShape(word, maxRepetitions)
+  def charNGrams(min:Int, max:Int): Seq[String] = cc.factorie.app.tokenseq.charNGrams(word, min, max)
   private lazy val svmap = new HashMap[String,BinaryFeatureVectorVariable[String]]
   def subVector(regex:String): BinaryFeatureVectorVariable[String] = svmap.getOrElseUpdate(regex, newSubVector(regex))
   private def newSubVector(regex:String): BinaryFeatureVectorVariable[String] = {

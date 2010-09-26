@@ -73,7 +73,7 @@ package object factorie {
 
   implicit def traversableExtras[A](x:Traversable[A]) = new cc.factorie.util.TraversableExtras[A] { val t = x }
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras { val s = x }
-  implicit def regexToStringIterator(r:scala.util.matching.Regex) = new cc.factorie.application.strings.RegexSegmenter(r)
+  implicit def regexToStringIterator(r:scala.util.matching.Regex) = new cc.factorie.app.strings.RegexSegmenter(r)
   implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new Iterable[F] { def iterator = Iterator.single(f) }
   implicit def singleStatIterable[S<:Stat](s:S): Iterable[S] = new Iterable[S] { def iterator = Iterator.single(s) }
   //implicit def seq2Vars[V<:Variable](seq:Seq[V]): Vars[V] = new SeqVars(seq) // Causing Scala 2.8.0 compiler to crash

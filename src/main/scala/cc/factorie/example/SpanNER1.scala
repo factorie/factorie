@@ -17,7 +17,7 @@
 package cc.factorie.example
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap,ListBuffer}
 import cc.factorie._
-import cc.factorie.application.tokenseq
+import cc.factorie.app.tokenseq
 import scala.io.Source
 import java.io.File
 import cc.factorie.util.DefaultCmdOptions

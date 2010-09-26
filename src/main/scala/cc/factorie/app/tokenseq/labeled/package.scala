@@ -12,27 +12,20 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.classify
+package cc.factorie.app.tokenseq
 import cc.factorie._
-import cc.factorie.er._
 
-/** Variables and factors for independent classification of feature vectors with String-valued features. 
+/** Predefined variables and factor templates for applying FACTORIE to sequences of Tokens, each paired with a categorical Label.
+    The Token remembers its String 'word', but its variable 'value' is as a BinaryFeatureVectorVariable.
+    This package also provides Getters for Tokens and Labels, enabling template building with the tools in cc.factorie.er.
+    For example usage see cc.factorie.example.ChainNER1
     @author Andrew McCallum
     @since 0.8
  */
+package object labeled {
 
-@DomainInSubclasses
-abstract class Instance[L<:Label[This,L],This<:Instance[L,This]](val name:String) extends BinaryFeatureVectorVariable[String] {
-  this: This =>
-  type VariableType <: Instance[L,This]
-  type GetterType <: InstanceGetter[L,This]
-  class GetterClass extends InstanceGetter[L,This]
-  def newGetter = new InstanceGetter[L,This]
-  def label: L 
+  def labelEvaluation[L<:LabelVariable[String] with AbstractVarInSeq[L]](labels:Seq[L])(implicit m:Manifest[L]) = new LabelEvaluation[L](labels)
+  def segmentEvaluation[L<:LabelVariable[String]](labels:Seq[L])(implicit m:Manifest[L]) = new SegmentEvaluation[L](labels)
+
 }
 
-class InstanceGetter[L<:Label[ThisInstance,L],ThisInstance<:Instance[L,ThisInstance]] extends Getter[ThisInstance] {
-  def newLabelGetter = new LabelGetter[ThisInstance,L]
-  def label = initOneToOne[L](newLabelGetter, instance => instance.label, (label:L) => label.instance)
-}
- 

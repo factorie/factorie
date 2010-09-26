@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.tokenseq
+package cc.factorie.app.tokenseq
 import cc.factorie._
 import cc.factorie.er._
 import scala.collection.mutable.{ArrayBuffer,HashSet,HashMap}

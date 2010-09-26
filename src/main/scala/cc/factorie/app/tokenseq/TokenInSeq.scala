@@ -12,18 +12,20 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application
+package cc.factorie.app.tokenseq
 import cc.factorie._
 
-package object classify {
-
-  def newModel[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) =
-    new Model(
-      new LabelTemplate[L],
-      new LabelInstanceTemplate[L,I]
-    )
-
-  def newObjective[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L]) = new LabelTemplate[L]()(lm)
-
+trait TokenInSeq[This<:TokenInSeq[This]] {
+  def word: String
+  def next: This
+  def prev: This
+  def hasNext: Boolean
+  def hasPrev: Boolean
+  def firstInSeq: This
+  def tokensInSeq: Iterator[This] = new Iterator[This] {
+    var t: This = firstInSeq
+    def hasNext: Boolean = t != null
+    def next: This = { val result = t; if (t.hasNext) t = t.next else t = null.asInstanceOf[This]; result }
+  }
 }
 

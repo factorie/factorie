@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.strings
+package cc.factorie.app.strings
 import java.text.BreakIterator
 import java.io.Reader
 import java.io.InputStream

@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.tokenseq.labeled
+package cc.factorie.app.tokenseq.labeled
 import cc.factorie._
 import cc.factorie.er._
 
@@ -21,7 +21,7 @@ import cc.factorie.er._
  It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
 @DomainInSubclasses
 abstract class Token[S<:TokenSeq[This,L,S],L<:Label[S,This,L], This<:Token[S,L,This] /*with VarInSeq[This]*/ ](theWord:String, features:Seq[String] = Nil)
-extends cc.factorie.application.tokenseq.Token[S,This](theWord, features) {
+extends cc.factorie.app.tokenseq.Token[S,This](theWord, features) {
   this: This =>
   type GetterType <: TokenGetter[S,L,This]
   class GetterClass extends TokenGetter[S,L,This]
@@ -29,7 +29,7 @@ extends cc.factorie.application.tokenseq.Token[S,This](theWord, features) {
 }
   
 /** Implementation of the entity-relationship language we can use with Token objects. */
-class TokenGetter[S<:TokenSeq[T,L,S],L<:Label[S,T,L],T<:Token[S,L,T]] extends cc.factorie.application.tokenseq.TokenGetter[S,T] {
+class TokenGetter[S<:TokenSeq[T,L,S],L<:Label[S,T,L],T<:Token[S,L,T]] extends cc.factorie.app.tokenseq.TokenGetter[S,T] {
   def newLabelGetter = new LabelGetter[S,T,L]
   /** Go from a token to its label. */
   def label = initOneToOne[L](newLabelGetter,

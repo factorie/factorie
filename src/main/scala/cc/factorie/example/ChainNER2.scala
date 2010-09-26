@@ -18,7 +18,7 @@ package cc.factorie.example
 import scala.io.Source
 import cc.factorie._ 
 import cc.factorie.er._
-import cc.factorie.application.tokenseq.labeled
+import cc.factorie.app.tokenseq.labeled
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
 
@@ -171,7 +171,7 @@ object ChainNER2 {
     import scala.collection.mutable.ArrayBuffer
     val f = new ArrayBuffer[String]
     val word = initialFeatures(0)
-    f += "SHAPE="+cc.factorie.application.tokenseq.wordShape(word, 2)
+    f += "SHAPE="+cc.factorie.app.tokenseq.wordShape(word, 2)
     f += "W="+simplify(word)
     f += "POS="+initialFeatures(1)
     f += "PHRASE="+initialFeatures(2)

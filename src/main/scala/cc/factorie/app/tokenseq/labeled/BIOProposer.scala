@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.tokenseq.labeled
+package cc.factorie.app.tokenseq.labeled
 import cc.factorie._
 
 /** A proposer that enforces BIO constraints 

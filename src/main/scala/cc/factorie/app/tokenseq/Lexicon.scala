@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.tokenseq
+package cc.factorie.app.tokenseq
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
@@ -23,7 +23,7 @@ class Lexicon(val caseSensitive:Boolean) {
   import java.io.File
   /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */
   def this(filename:String) = { this(false); this.++=(Source.fromFile(new File(filename))(scala.io.Codec.UTF8)) }
-  var lexer = cc.factorie.application.tokenseq.nonWhitespaceClasses // TODO Make this a choice
+  var lexer = cc.factorie.app.tokenseq.nonWhitespaceClasses // TODO Make this a choice
   private class LexiconToken(val word:String) extends TokenInSeq[LexiconToken] {
     var next: LexiconToken = null
     var prev: LexiconToken = null

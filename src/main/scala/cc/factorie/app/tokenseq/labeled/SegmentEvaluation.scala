@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.tokenseq.labeled
+package cc.factorie.app.tokenseq.labeled
 import cc.factorie._
 import scala.util.matching.Regex
 import scala.collection.mutable.{HashSet,HashMap}

@@ -20,8 +20,8 @@ import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import cc.factorie._
-import cc.factorie.application.tokenseq._
-import cc.factorie.application.tokenseq.labeled
+import cc.factorie.app.tokenseq._
+import cc.factorie.app.tokenseq.labeled
 import cc.factorie.er._
 
 object Football {

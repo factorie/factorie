@@ -12,21 +12,18 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.classify
+package cc.factorie.app
 import cc.factorie._
-import cc.factorie.er._
 
-@DomainInSubclasses
-abstract class Label[I<:Instance[This,I],This<:Label[I,This]](labelString:String, val _instance:I) extends cc.factorie.LabelVariable(labelString) {
-  this: This =>
-  type GetterType <: LabelGetter[I,This];
-  class GetterClass extends LabelGetter[I,This]
-  type VariableType <: Label[I,This]
-  def newGetter = new LabelGetter[I,This]
-  def instance: I = _instance // Why was this necessary?  Why didn't simply (val instance:I) above work?
+package object classify {
+
+  def newModel[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) =
+    new Model(
+      new LabelTemplate[L],
+      new LabelInstanceTemplate[L,I]
+    )
+
+  def newObjective[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L]) = new LabelTemplate[L]()(lm)
+
 }
 
-class LabelGetter[I<:Instance[ThisLabel,I],ThisLabel<:Label[I,ThisLabel]] extends Getter[ThisLabel] {
-  def newInstanceGetter = new InstanceGetter[ThisLabel,I]
-  def instance = initOneToOne[I](newInstanceGetter, label => label.instance, (instance:I) => instance.label)
-}

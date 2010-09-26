@@ -12,16 +12,16 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.classify.document
+package cc.factorie.app.classify.document
 import cc.factorie._
 import cc.factorie.er._
-import cc.factorie.application.classify.Label
-import cc.factorie.application.strings._
+import cc.factorie.app.classify.Label
+import cc.factorie.app.strings._
 import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 
-abstract class Document[L<:Label[This,L],This<:Document[L,This]](override val name:String) extends cc.factorie.application.classify.Instance[L,This](name) {
+abstract class Document[L<:Label[This,L],This<:Document[L,This]](override val name:String) extends cc.factorie.app.classify.Instance[L,This](name) {
   this: This =>
   //type GetterType <: DocumentGetter[L,This];
   //class GetterClass extends DocumentGetter[L,This]
@@ -35,7 +35,7 @@ abstract class Document[L<:Label[This,L],This<:Document[L,This]](override val na
   //def size = 3 // TODO implement this
 }
  
-class DocumentGetter[L<:Label[ThisDocument,L],ThisDocument<:Document[L,ThisDocument]] extends cc.factorie.application.classify.InstanceGetter[L,ThisDocument] {
+class DocumentGetter[L<:Label[ThisDocument,L],ThisDocument<:Document[L,ThisDocument]] extends cc.factorie.app.classify.InstanceGetter[L,ThisDocument] {
   //override def newLabelGetter = new LabelGetter[ThisDocument,L]
   //def label = initOneToOne[L](newLabelGetter, instance => instance.label, label => label.instance)
   def size = getOneWay(document => new IntegerObservation(document.vector.activeDomainSize))

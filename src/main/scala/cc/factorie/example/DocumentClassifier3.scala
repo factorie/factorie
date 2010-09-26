@@ -22,7 +22,7 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 
-/** A raw document classifier without using any of the facilities of cc.factorie.application.DocumentClassification,
+/** A raw document classifier without using any of the facilities of cc.factorie.app.DocumentClassification,
     and without using the entity-relationship language of cc.factorie.er.  
     Furthermore, use conditional maximum likelihood training (and parameter updating with the optimize package)
     By contrast, see example/DocumentClassifier2. */

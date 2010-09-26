@@ -21,8 +21,8 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 import cc.factorie.generative._
-import cc.factorie.application.strings.Stopwords
-import cc.factorie.application.strings.alphaSegmenter
+import cc.factorie.app.strings.Stopwords
+import cc.factorie.app.strings.alphaSegmenter
 
 object LDADemo {
   val numTopics = 10

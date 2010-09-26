@@ -12,20 +12,19 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.tokenseq
+package cc.factorie.app.classify
 import cc.factorie._
+import cc.factorie.er._
 
-/** Predefined variables and factor templates for applying FACTORIE to sequences of Tokens, each paired with a categorical Label.
-    The Token remembers its String 'word', but its variable 'value' is as a BinaryFeatureVectorVariable.
-    This package also provides Getters for Tokens and Labels, enabling template building with the tools in cc.factorie.er.
-    For example usage see cc.factorie.example.ChainNER1
-    @author Andrew McCallum
-    @since 0.8
- */
-package object labeled {
-
-  def labelEvaluation[L<:LabelVariable[String] with AbstractVarInSeq[L]](labels:Seq[L])(implicit m:Manifest[L]) = new LabelEvaluation[L](labels)
-  def segmentEvaluation[L<:LabelVariable[String]](labels:Seq[L])(implicit m:Manifest[L]) = new SegmentEvaluation[L](labels)
-
+/**Factor between label and observed instance vector */
+class LabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) {
+  def unroll1(label: L) = Factor(label,label.instance)
+  def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
 }
 
+/**Factor between label and observed instance vector */
+class SparseLabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) with SparseWeights {
+  def unroll1(label: L) = Factor(label,label.instance)
+  def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
+}
+ 

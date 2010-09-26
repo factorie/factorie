@@ -12,19 +12,27 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.classify
+package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.er._
 
-/**Factor between label and observed instance vector */
-class LabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) {
-  def unroll1(label: L) = Factor(label,label.instance)
-  def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
+/** Variables and factors for independent classification of feature vectors with String-valued features. 
+    @author Andrew McCallum
+    @since 0.8
+ */
+
+@DomainInSubclasses
+abstract class Instance[L<:Label[This,L],This<:Instance[L,This]](val name:String) extends BinaryFeatureVectorVariable[String] {
+  this: This =>
+  type VariableType <: Instance[L,This]
+  type GetterType <: InstanceGetter[L,This]
+  class GetterClass extends InstanceGetter[L,This]
+  def newGetter = new InstanceGetter[L,This]
+  def label: L 
 }
 
-/**Factor between label and observed instance vector */
-class SparseLabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) with SparseWeights {
-  def unroll1(label: L) = Factor(label,label.instance)
-  def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
+class InstanceGetter[L<:Label[ThisInstance,L],ThisInstance<:Instance[L,ThisInstance]] extends Getter[ThisInstance] {
+  def newLabelGetter = new LabelGetter[ThisInstance,L]
+  def label = initOneToOne[L](newLabelGetter, instance => instance.label, (label:L) => label.instance)
 }
  

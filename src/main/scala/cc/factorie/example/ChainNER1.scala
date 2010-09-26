@@ -17,7 +17,7 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._ 
 import cc.factorie.er._
-import cc.factorie.application.tokenseq.labeled
+import cc.factorie.app.tokenseq.labeled
 
 object ChainNER1 {
   

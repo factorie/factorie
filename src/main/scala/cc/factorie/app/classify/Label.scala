@@ -12,20 +12,21 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.application.tokenseq
+package cc.factorie.app.classify
 import cc.factorie._
+import cc.factorie.er._
 
-trait TokenInSeq[This<:TokenInSeq[This]] {
-  def word: String
-  def next: This
-  def prev: This
-  def hasNext: Boolean
-  def hasPrev: Boolean
-  def firstInSeq: This
-  def tokensInSeq: Iterator[This] = new Iterator[This] {
-    var t: This = firstInSeq
-    def hasNext: Boolean = t != null
-    def next: This = { val result = t; if (t.hasNext) t = t.next else t = null.asInstanceOf[This]; result }
-  }
+@DomainInSubclasses
+abstract class Label[I<:Instance[This,I],This<:Label[I,This]](labelString:String, val _instance:I) extends cc.factorie.LabelVariable(labelString) {
+  this: This =>
+  type GetterType <: LabelGetter[I,This];
+  class GetterClass extends LabelGetter[I,This]
+  type VariableType <: Label[I,This]
+  def newGetter = new LabelGetter[I,This]
+  def instance: I = _instance // Why was this necessary?  Why didn't simply (val instance:I) above work?
 }
 
+class LabelGetter[I<:Instance[ThisLabel,I],ThisLabel<:Label[I,ThisLabel]] extends Getter[ThisLabel] {
+  def newInstanceGetter = new InstanceGetter[ThisLabel,I]
+  def instance = initOneToOne[I](newInstanceGetter, label => label.instance, (instance:I) => instance.label)
+}
