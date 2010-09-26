@@ -274,6 +274,10 @@ abstract class BPFactor(val factor: Factor) {
   }
 
   def factorCurrentScore: Double = factor.statistic.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
+  def factorCurrentScore(statistic:Template#Statistic): Double = {
+    assert(statistic.template eq factor.template)
+    statistic.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
+  }
 
   def logZ: Double = {
     val variableSettings = this.variables.map(_.settings).toList
