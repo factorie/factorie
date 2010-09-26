@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 
 import scala.collection.mutable.{HashSet, HashMap, ArrayBuffer}
@@ -53,17 +51,17 @@ abstract class BPFactor(val factor: Factor) {
   /**Iterate through all combinations of values in Variables given their `SettingIterators */
   def nextValues(vs: List[IterableSettings#SettingIterator]): Boolean = {
     if (vs == Nil) false
-    else if (vs.head.hasNext) {vs.head.next; true}
-    else if (vs.tail != Nil) {vs.head.reset; vs.head.next; nextValues(vs.tail)}
+    else if (vs.head.hasNext) { vs.head.next; true }
+    else if (vs.tail != Nil) { vs.head.reset; vs.head.next; nextValues(vs.tail) }
     else false
   }
 
-  /**Get an Iterator" over all the settings of the neighbors of this factor. The order of the integers matches the order from the 'variables' method. */
-  def variableSettings: Iterator[List[Int]] = new Iterator[List[Int]] {
+  /** Get an Iterator" over all the settings of the neighbors of this factor. The order of the integers matches the order from the 'variables' method. */
+  def variableSettings: Iterator[Boolean] = new Iterator[Boolean] {
     val settings = BPFactor.this.variables.map(_.settings).toList
     var hasNext = true
     def reset = settings.foreach(setting => {setting.reset; setting.next})
-    def next = {hasNext = nextValues(settings); BPFactor.this.variables.map(_.intValue).toList}
+    def next = { hasNext = nextValues(settings); hasNext }
   }
 
   abstract class Message(val v: V) {
@@ -106,16 +104,19 @@ abstract class BPFactor(val factor: Factor) {
   case class SumProductMessageTo(override val v: V) extends MessageTo(v) {
     /**Do one step of belief propagation for the message from this BPFactor to variable 'v' */
     def update = {
-      forIndex(v.domain.size)(i => { // Consider reversing the nested ordering of this loop and the inner one
+      forIndex(msg.length)(i => { // Consider reversing the nested ordering of this loop and the inner one
         v.set(i)(null) // Note: this is changing the value of this Variable
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
-          msg(i) = factor.score
+          //println("SumProductMessageTo factor.cachedStatistics")
+          msg(i) = factor.cachedStatistics.score
+        //} else if (neighborSettings.size == 1) {
         } else { // This factor has variable neighbors in addition to v itself
           // Sum over all combinations of values in neighboring variables with v's value fixed to i.
+          // TODO Consider special purpose code for when there is one other neighbor
           neighborSettings.foreach(setting => {setting.reset; setting.next}) // reset iterator and advance to first setting.
           msg(i) = Double.NegativeInfinity // i.e. log(0)
           do {
-            msg(i) = maths.sumLogProb(msg(i), factor.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
+            msg(i) = maths.sumLogProb(msg(i), factor.cachedStatistics.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
           } while (nextValues(neighborSettings))
         }
       })
@@ -129,7 +130,7 @@ abstract class BPFactor(val factor: Factor) {
       forIndex(v.domain.size)(i => { // Consider reversing the nested ordering of this loop and the inner one
         v.set(i)(null) // Note: that this is changing the Variable value
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
-          msg(i) = factor.score
+          msg(i) = factor.cachedStatistics.score
           //maxIndex(i) = -1
         } else { // This factor has variable neighbors in addition to v itself
           neighborSettings.foreach(setting => {setting.reset; setting.next})
@@ -137,7 +138,7 @@ abstract class BPFactor(val factor: Factor) {
           //maxIndex(i) = -1
           //var settingCount = 0
           do {
-            val score = factor.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
+            val score = factor.cachedStatistics.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
             if (score > msg(i)) {msg(i) = score; /*maxIndex(i) = settingCount*/ }
             //settingCount += 1
           } while (nextValues(neighborSettings))
@@ -273,7 +274,7 @@ abstract class BPFactor(val factor: Factor) {
     map
   }
 
-  def factorCurrentScore: Double = factor.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
+  def factorCurrentScore: Double = factor.cachedStatistics.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
   def factorCurrentScore(statistics:Template#Statistics): Double = {
     assert(statistics.template eq factor.template)
     statistics.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
@@ -297,6 +298,9 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
   //type V = BeliefPropagation.BPVariable
   type VariableMarginalType = DiscreteMarginal[V]
   type FactorMarginalType = DiscreteFactorMarginal
+
+  // TODO Consider moving this further out, for even more efficiency
+  model.foreach(_.clearCachedStatistics)
 
   // Data structure for holding mapping from Variable to the collection of BPFactors that touch it
   private val v2m = new HashMap[Variable, ArrayBuffer[BPFactor]] {override def default(v: Variable) = {this(v) = new ArrayBuffer[BPFactor]; this(v)}}

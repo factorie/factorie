@@ -21,6 +21,10 @@ import scala.util.Sorting
 import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 import cc.factorie.la._
 
+object Template {
+  var enableCachedStatistics: Boolean = false
+}
+
 // Factor Templates, which create factors in a factor graph on-the-fly as necessary.
 // A factor template specifies
 // (1) a description of the arbitrary relationship among its variable neighbors
@@ -39,8 +43,10 @@ trait Factor extends Ordered[Factor] {
   def numVariables: Int 
   def variable(index: Int): Variable
   def statistics: Statistics
+  /** Optionally return pre-calculated Statistics.  By default not actually cached, but may be overridden in subclasses. */
+  def cachedStatistics: Statistics
   def score: Double = statistics.score
-  def variables: Iterable[Variable] = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
+  def variables: IndexedSeq[Variable] = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
   def randomVariable(implicit random:Random): Variable = variable(random.nextInt(numVariables))
   // Implement Ordered, such that worst (lowest) scores are considered "high"
   def compare(that: Factor) = {val d = that.score - this.score; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
@@ -92,8 +98,8 @@ trait Template {
   trait Factor extends cc.factorie.Factor { 
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
     override def statistics: StatisticsType
+    override def cachedStatistics: StatisticsType
     //def stats: Iterable[StatType]
-    //def statistic: StatisticType = Template.this.statistic(this.statistics) // TODO verify that this gets override definitions of statistics()
   }
   trait Stat extends cc.factorie.Stat with Statistics {
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
@@ -106,6 +112,9 @@ trait Template {
   }
   def score(s:StatType): Double
   def statistics(ss:Iterable[StatType]): StatisticsType = new Stats(ss)
+  /** May be overridden in subclasses to actually cache. */
+  def cachedStatistics(f:FactorType): StatisticsType = f.statistics
+  def clearCachedStatistics: Unit = {}
   //def statistics(v:Variable): StatisticsType = new Stats(factors(v).map(_.stats).flatten)
   /** To allow users' "def statistics(v1)" to return an Iterator[Stat] */
   implicit def iterableStatToStatistics[S<:StatType](ss:Iterable[S]): StatisticsType = statistics(ss)
@@ -279,10 +288,27 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   @inline final def _statistics(f:Factor): StatisticsType = statistics(f._1)
   def statistics(v1:N1): StatisticsType
   def stats(v:Variable): Iterable[StatisticsType] = factors(v).map(_statistics(_))
+  private var cachedStatisticsArray: Array[StatisticsType] = null
+  override def cachedStatistics(f:FactorType): StatisticsType = if (Template.enableCachedStatistics) {
+    //println("Template1.cachedStatistics")
+    f._1 match {
+    case v:DiscreteVar => {
+      if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v.domain.size).asInstanceOf[Array[StatisticsType]]
+      val i = v.intValue
+      if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = f.statistics
+      cachedStatisticsArray(i)
+    }
+    case _ => f.statistics
+  }} else f.statistics
+  /** You must clear cache the cache if DotTemplate.weights change! */
+  override def clearCachedStatistics: Unit =  cachedStatisticsArray = null
+  type FactorType = Factor
   case class Factor(_1:N1) extends super.Factor {
     def numVariables = 1
     def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
+    override lazy val variables: IndexedSeq[Variable] = IndexedSeq(_1)
     def statistics: StatisticsType = _statistics(this)
+    override def cachedStatistics: StatisticsType = Template1.this.cachedStatistics(this)
     //def stats: Iterable[StatType] = statistics match { case ss:Iterable[Stats] => ss; case s:Stat => Seq(s) }
   } 
 }
@@ -331,6 +357,8 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
   val nc2 = nm2.erasure
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.head.erasure } else null }
+  val nd1 = Domain.get[Variable](nc1)
+  val nd2 = Domain.get[Variable](nc2)
   override def factors(v: Variable): Iterable[Factor] = {
     var ret = new ListBuffer[Factor]
     if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1]) 
@@ -347,10 +375,47 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
   @inline final def _statistics(f:Factor): StatisticsType = statistics(f._1, f._2)
   def statistics(v1:N1, v2:N2): StatisticsType
   //def stats(v:Variable) = factors(v).flatMap(_statistics(_))
+  private var cachedStatisticsArray: Array[StatisticsType] = null
+  private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null
+  /** It is callers responsibility to clearCachedStatistics if weights or other relevant state changes. */
+  override def cachedStatistics(f:FactorType): StatisticsType = if (Template.enableCachedStatistics) f._1 match {
+    case v1:DiscreteVar => { 
+      f._2 match {
+        case v2:DiscreteVar => {
+          //println("Template2.cachedStatistics")
+          if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v1.domain.size * v2.domain.size).asInstanceOf[Array[StatisticsType]]
+          val i = v1.intValue * nd2.asInstanceOf[VectorDomain[_]].maxVectorSize + v2.intValue
+          if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = f.statistics
+          cachedStatisticsArray(i)
+        }
+        case v2:VectorVar if (v2.isConstant) => {
+          //println("Template2.cachedStatistics")
+          if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
+          val i = ((v1.intValue,v2))
+          cachedStatisticsHash.getOrElseUpdate(i, f.statistics)
+        }
+        case _ => f.statistics
+      }
+    }
+    case v1:VectorVar if (v1.isConstant) => { 
+      f._1 match {
+        case v2:DiscreteVar => {
+          if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
+          val i = ((v2.intValue,v1))
+          cachedStatisticsHash.getOrElseUpdate(i, f.statistics)
+        }
+        case _ => f.statistics
+      }
+    }
+    case _ => f.statistics
+  } else f.statistics
+  override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
+  type FactorType = Factor
   case class Factor(_1:N1, _2:N2) extends super.Factor {
     def numVariables = 2
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case _ => throw new IndexOutOfBoundsException(i.toString) }
     def statistics: StatisticsType = _statistics(this)
+    override def cachedStatistics: StatisticsType = Template2.this.cachedStatistics(this)
   } 
 }
 trait Statistics2[S1,S2] extends Template {
@@ -413,10 +478,30 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
   @inline final def _statistics(f:Factor): StatisticsType = statistics(f._1, f._2, f._3)
   def statistics(v1:N1, v2:N2, v3:N3): StatisticsType
   //def stats(v:Variable) = factors(v).flatMap(_statistics(_))
+  private var cachedStatisticsArray: Array[StatisticsType] = null
+  private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null
+  /** It is callers responsibility to clearCachedStatistics if weights or other relevant state changes. */
+  override def cachedStatistics(f:FactorType): StatisticsType = if (Template.enableCachedStatistics) {
+    //println("Template3.cachedStatistics")
+    if (f._1.isInstanceOf[DiscreteVar] && f._2.isInstanceOf[DiscreteVar] && f._3.isInstanceOf[VectorVar] && f._3.isConstant) {
+      val v1 = f._1.asInstanceOf[DiscreteVar]
+      val v2 = f._2.asInstanceOf[DiscreteVar]
+      val v3 = f._3.asInstanceOf[VectorVar]
+      if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
+      val i = ((v1.intValue, v2.intValue, v3))
+      //print(" "+((v1.intValue, v2.intValue))); if (cachedStatisticsHash.contains(i)) println("*") else println(".")
+      cachedStatisticsHash.getOrElseUpdate(i, f.statistics)
+    } else {
+      f.statistics
+    }
+  } else f.statistics
+  override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
+  type FactorType = Factor
   case class Factor(_1:N1, _2:N2, _3:N3) extends super.Factor {
     def numVariables = 3
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case _ => throw new IndexOutOfBoundsException(i.toString) }
     def statistics: StatisticsType = _statistics(this)
+    override def cachedStatistics: StatisticsType = Template3.this.cachedStatistics(this)
   } 
 }
 trait Statistics3[S1,S2,S3] extends Template {
@@ -485,10 +570,12 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
   @inline final def _statistics(f:Factor): StatisticsType = statistics(f._1, f._2, f._3, f._4)
   def statistics(v1:N1, v2:N2, v3:N3, v4:N4): StatisticsType
   //def stats(v:Variable) = factors(v).flatMap(_statistics(_))
+  type FactorType = Factor
   case class Factor(_1:N1, _2:N2, _3:N3, _4:N4) extends super.Factor {
     def numVariables = 4
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case 3 => _4; case _ => throw new IndexOutOfBoundsException(i.toString) }
     def statistics: StatisticsType = _statistics(this)
+    override def cachedStatistics: StatisticsType = Template4.this.cachedStatistics(this)
   } 
 }
 trait Statistics4[S1<:Variable,S2<:Variable,S3<:Variable,S4<:Variable] extends Template {

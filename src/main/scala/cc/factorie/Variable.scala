@@ -82,7 +82,7 @@ trait Variable /* extends AnyRef */ {
   }
   def printName = shortClassName
   override def toString = printName + "(_)"
-  // TODO Consider renaming this to "isObserved" to better match the "Observation" variable class names.
+  // TODO Consider renaming this to "isObserved" to better match the "Observation" variable class names.  No.  I don't think so. -akm
   def isConstant = false
 }
 

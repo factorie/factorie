@@ -67,7 +67,11 @@ class LogLinearMaximumLikelihood(model: Model) {
       private var oValue = Double.NaN
       private var oGradient: Array[Double] = new Array[Double](numOptimizableParameters)
       // Flush cache when parameters change
-      override def setOptimizableParameters(a: Array[Double]): Unit = {oValue = Double.NaN; super.setOptimizableParameters(a)}
+      override def setOptimizableParameters(a: Array[Double]): Unit = {
+        oValue = Double.NaN
+        model.foreach(_.clearCachedStatistics) // Parameter changing, so cache no longer valid
+        super.setOptimizableParameters(a)
+      }
 
       override def optimizableParameter_=(index: Int, d: Double): Unit = {oValue = Double.NaN; super.optimizableParameter_=(index, d)}
       // Calculation of value and gradient

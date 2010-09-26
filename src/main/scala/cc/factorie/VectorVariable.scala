@@ -84,8 +84,11 @@ class SparseBinaryVectorVariable extends BinaryVectorVar /*with SeqEqualsEq[Doub
   //def apply(i:Int) = vector.apply(i)
   def activeDomain = vector.activeDomain
   def zero: Unit = vector.zero
-  def +=(i:Int): Unit = vector.+=(i)
+  def +=(i:Int): Unit = { if (frozen) throw new Error("Cannot append to frozen SparseBinaryVectorVariable."); vector.+=(i) }
   //def ++=(is:Iterable[Int]): Unit = is.foreach(i => vector.+=(i)) // Conflicts with ++=(Iterable[T])
+  var frozen = false
+  def freeze = frozen = true
+  override def isConstant = frozen
 }
 
 @DomainInSubclasses

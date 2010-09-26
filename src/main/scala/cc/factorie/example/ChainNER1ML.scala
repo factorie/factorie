@@ -39,7 +39,6 @@ object ChainNER1ML {
     )
 
   def main(args: Array[String]): Unit = {
-    val start = System.currentTimeMillis
 
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
 
@@ -59,11 +58,18 @@ object ChainNER1ML {
     val trainVariables = trainSentences.map(_.labels)
     val testVariables = testSentences.map(_.labels)
     val allTestVariables = testVariables.flatMap(l => l)
+    val allTokens: Seq[Token] = (trainSentences ++ testSentences).flatten
+    allTokens.foreach(_.freeze) // To enable Template.cachedStatistics
 
     // Train and test
     println("*** Starting training (#sentences=%d)".format(trainSentences.size))
+    val start = System.currentTimeMillis
     val trainer = new LogLinearMaximumLikelihood(model)
-    trainer.process(trainVariables)
+    trainer.process(trainVariables, 1) // Do just one iteration for initial timing
+    println("One iteration took " + (System.currentTimeMillis - start)/ 1000.0 + " seconds")
+    System.exit(0)
+
+    trainer.process(trainVariables) // Keep training to convergence
 
     val objective = new Model(new LabelTemplate[Label])
     // slightly more memory efficient - kedarb
@@ -71,6 +77,6 @@ object ChainNER1ML {
     testVariables.foreach {variables => new BPInferencer(model).inferTreewiseMax(variables)}
     println("test token accuracy=" + objective.aveScore(allTestVariables))
 
-    println("took " + (System.currentTimeMillis - start)/ 1000.0 + " seconds")
+    println("Total training took " + (System.currentTimeMillis - start)/ 1000.0 + " seconds")
   }
 }

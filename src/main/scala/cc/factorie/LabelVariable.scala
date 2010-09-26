@@ -65,6 +65,8 @@ class LabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends DiscreteVar
 abstract class CoordinatedLabelVariable[A](trueval:A) extends CategoricalVariable[A](trueval) with CategoricalVariableWithTrueSetting[A] {
   type VariableType <: CoordinatedLabelVariable[A]
   var trueIntValue = domain.index(trueval)
+  //lazy val _domain = super.domain
+  //override def domain: VariableType#DomainType = _domain
 }
 
 /** A CategoricalVariable with a single value and a true value.
