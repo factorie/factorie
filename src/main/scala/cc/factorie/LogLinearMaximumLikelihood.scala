@@ -57,7 +57,7 @@ class LogLinearMaximumLikelihood(model: Model) {
     model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
     // Gather constraints
     variableSets.foreach(_.foreach(_.setToTruth(null)))
-    variableSets.foreach(vars => model.factorsOf[TemplatesToUpdate](vars).foreach(f => constraints(f.template) += f.statistics.vector))
+    variableSets.foreach(vars => model.factorsOf[TemplatesToUpdate](vars).foreach(f => constraints(f.template) += f.cachedStatistics.vector))
 
     def templates = constraints.sortedKeys
 
@@ -80,7 +80,7 @@ class LogLinearMaximumLikelihood(model: Model) {
         else setOptimizableValueAndGradientBP
       }
 
-      def vecPlusEq(v1: Vector, v2: Vector, scale: Double): Unit = v2.activeDomain.foreach {i: Int => v1(i) += v2(i) * scale}
+      def vecPlusEq(v1: Vector, v2: Vector, scale: Double): Unit = v2.forActiveDomain(i => v1(i) += v2(i) * scale)
 
       def setOptimizableValueAndGradientBP: Unit = {
         val expectations = new SuffStats
@@ -90,7 +90,7 @@ class LogLinearMaximumLikelihood(model: Model) {
           if (variables.size > 0) {
             val lattice = new BPLattice(variables, model)
             // Do inference on the tree
-            lattice.updateTreewise()
+            lattice.updateTreewise() // TODO Change to lattice.updateTreewise(expectations), which will also increment expectations
             // compute log-partition function
             val logZ = lattice.sumLogZ
             // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
@@ -98,17 +98,18 @@ class LogLinearMaximumLikelihood(model: Model) {
               val factor = bpfactor.factor.asInstanceOf[TemplatesToUpdate#Factor]
               val statVector = expectations(factor.template.asInstanceOf[TemplatesToUpdate])
               // iterate over variable settings
+              // TODO Special case 1 and 2 neighbors!
               val settingsIter = bpfactor.variables.map(_.settings).toList
               settingsIter.foreach(setting => {setting.reset; setting.next})
               do {
                 // statVector += factor.statistics.vector * -Math.exp(bpfactor.factorCurrentScore - logZ)
-                var statistics = factor.statistics
+                var statistics = factor.cachedStatistics
                 vecPlusEq(statVector, statistics.vector, -math.exp(bpfactor.factorCurrentScore(statistics) - logZ))
               } while (bpfactor.nextValues(settingsIter))
             }
             // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
             variables.foreach(_.asInstanceOf[TrueSetting].setToTruth(null))
-            oValue += model.score(variables) - logZ
+            oValue += model.factors(variables).foldLeft(0.0)(_+_.cachedStatistics.score) - logZ
           }
         })
         val invVariance = -1.0 / gaussianPriorVariance

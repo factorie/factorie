@@ -59,11 +59,11 @@ class TestBP extends TestCase {
     var lattice: BPLattice[BinVar] = null
     // 1) equal potentials
     lattice = new BPLattice[BinVar](Array(v), new Model(newTemplate1(1, 1)))
-    lattice.updateTreewise(false)
+    lattice.updateTreewise(shuffle = false)
     assertEquals(lattice.marginal(v).get(0), 0.5, 0.001)
     // 2) unequal potentials
     lattice = new BPLattice(Array(v), new Model(newTemplate1(2, 1)))
-    lattice.updateTreewise(false)
+    lattice.updateTreewise(shuffle = false)
     assertEquals(lattice.marginal(v).get(0), e(1) / (1 + e(1)), 0.001)
   }
 
@@ -73,11 +73,11 @@ class TestBP extends TestCase {
     var lattice: BPLattice[BinVar] = null
     // 1) f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}
     lattice = new BPLattice[BinVar](Array(v), new Model(newTemplate1(2, 1), newTemplate1(1, 2)))
-    lattice.updateTreewise(false)
+    lattice.updateTreewise(shuffle = false)
     assertEquals(lattice.marginal(v).get(0), 0.5, 0.001)
     // 2) f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}
     lattice = new BPLattice(Array(v), new Model(newTemplate1(0, 1), newTemplate1(0, 1)))
-    lattice.updateTreewise(false)
+    lattice.updateTreewise(shuffle = false)
     assertEquals(lattice.marginal(v).get(0), 1.0 / (1 + e(2)), 0.001)
   }
 
@@ -94,7 +94,7 @@ class TestBP extends TestCase {
     var lattice: BPLattice[BinVar] = null
     // create template between v1 and v2
     lattice = new BPLattice(Array(v1, v2), new Model(newTemplate2("a", "b", nm2var, 1000, 0)))
-    lattice.updateTreewise(false)
+    lattice.updateTreewise(shuffle = false)
     assertEquals(lattice.marginal(v1).get(0), 0.5, 0.001)
     assertEquals(lattice.marginal(v2).get(0), 0.5, 0.001)
   }
@@ -112,7 +112,7 @@ class TestBP extends TestCase {
     var lattice: BPLattice[BinVar] = null
     val model = new Model(newTemplate1(1, 0), newTemplate2("a", "b", nm2var, 9, 0))
     lattice = new BPLattice(Array(v1, v2), model)
-    lattice.updateTreewise(false)
+    lattice.updateTreewise(shuffle = false)
     // print factor marginal
     model.factors(v2).foreach {
       f =>

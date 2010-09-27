@@ -306,7 +306,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
   type VariableMarginalType = DiscreteMarginal[V]
   type FactorMarginalType = DiscreteFactorMarginal
 
-  // TODO Consider moving this further out, for even more efficiency
+  // TODO Consider moving this further out, for even more efficiency?  But then the cache could get very big.
   model.foreach(_.clearCachedStatistics)
 
   // Data structure for holding mapping from Variable to the collection of BPFactors that touch it
@@ -330,9 +330,10 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
   /**Perform N iterations of belief propagation */
   def update(iterations: Int): Unit = for (i <- 1 to iterations) update
   /**Send each message in the lattice once, in order determined by a random tree traversal. */
-  def updateTreewise(shuffle: Boolean = false): Unit = {
+  def updateTreewise(expectations:Map[Template,Vector] = null, shuffle: Boolean = false): Unit = {
+    if (expectations ne null) throw new Error("Not yet implemented")
     bpFactors.values.foreach(_.resetTree)
-    val factors = if (shuffle) bpFactors.values.toList.shuffle else bpFactors.values.toList // optionally randomly permute order, ala TRP
+    val factors = if (shuffle) bpFactors.values.toSeq.shuffle else bpFactors.values.toSeq // optionally randomly permute order, ala TRP
     // Call updateTreewise on all factors, but note that, if the graph is fully connected,
     // "updateTreewise" on the first marginal will do the entire graph, and the other calls will return immediately
     BeliefPropagation.useSumMessages = true // TODO This won't work multithreaded!  Fix this. -akm

@@ -13,6 +13,7 @@
    limitations under the License. */
 
 package cc.factorie.la
+import cc.factorie._
 
 // For the java version of compute matrix:
 // import cc.factorie.OuterProduct.{computeMatrix => outerProductArray}
@@ -25,6 +26,7 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   def length: Int
   def activeDomainSize: Int
   def activeDomain: Iterable[Int]
+  def forActiveDomain(f: (Int)=>Unit): Unit = activeDomain.foreach(f(_))
   def dot(v:Vector): Double
   def activeElements: Iterator[(Int,Double)]
   def oneNorm: Double = activeElements.foldLeft(0.0)(_ + _._2)
@@ -58,6 +60,7 @@ class SingletonBinaryVector(val theLength:Int, val singleIndex:Int) extends Vect
   def length = theLength
   def activeDomainSize = 1
   def activeDomain: Iterable[Int] = Seq(singleIndex)
+  override def forActiveDomain(f: (Int)=>Unit): Unit = f(singleIndex)
   def apply(index:Int): Double = if (index == singleIndex) 1.0 else 0.0
   def dot(v:Vector) = v(singleIndex)
   def activeElements = Iterator.single((singleIndex, 1.0))
@@ -77,6 +80,7 @@ class SingletonVector(val theLength:Int, val singleIndex:Int, val value:Double) 
   def length = theLength
   def activeDomainSize = 1
   def activeDomain: Iterable[Int] = Seq(singleIndex)
+  override def forActiveDomain(f: (Int)=>Unit): Unit = f(singleIndex)
   def apply(index:Int): Double = if (index == singleIndex) value else default
   def dot(v:Vector) = v(singleIndex) * value
   def activeElements = Iterator.single((singleIndex, value))
@@ -108,6 +112,7 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
 
   def activeDomainSize = _size
   def activeDomain: Iterable[Int] = new IndexedSeq[Int] { def apply(i:Int) = ind(i); def length = _size }
+  override def forActiveDomain(f: (Int)=>Unit): Unit = forIndex(_size)((i:Int) => f(ind(i)))
   /** Ensure that the array "ind" is big enough to allow ind(n). */
   private def ensureCapacity(n:Int): Unit = {
     if (ind.length - 1 < n) {
@@ -271,6 +276,7 @@ class SparseHashVector(val length:Int) extends Vector {
   def activeElements = h.iterator
   def activeDomainSize = h.size
   def activeDomain: Iterable[Int] = h.keys
+  override def forActiveDomain(f: (Int)=>Unit): Unit = h.keys.foreach(f(_))
   override def update(index:Int, value:Double) = h(index) = value
   def increment(index:Int, incr:Double): Unit = h(index) = h(index) + incr
   def dot(v:Vector): Double = v match {
@@ -304,6 +310,7 @@ class DenseVector(val length:Int) extends Vector {
   private val a = new Array[Double](length)
   def activeDomainSize = a.size
   def activeDomain = new Range(0, length, 1)
+  override def forActiveDomain(f: (Int)=>Unit): Unit = forIndex(length)(f(_))
   def apply(index:Int): Double = a(index)
   override def update(index:Int, value:Double): Unit = a(index) = value
   def set(value:Double): Unit = java.util.Arrays.fill(a, value)

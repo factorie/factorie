@@ -67,7 +67,7 @@ object ChainNER1ML {
     val trainer = new LogLinearMaximumLikelihood(model)
     trainer.process(trainVariables, 1) // Do just one iteration for initial timing
     println("One iteration took " + (System.currentTimeMillis - start)/ 1000.0 + " seconds")
-    System.exit(0)
+    //System.exit(0)
 
     trainer.process(trainVariables) // Keep training to convergence
 

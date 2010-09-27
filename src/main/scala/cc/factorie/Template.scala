@@ -22,7 +22,7 @@ import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWri
 import cc.factorie.la._
 
 object Template {
-  var enableCachedStatistics: Boolean = false
+  var enableCachedStatistics: Boolean = true
 }
 
 // Factor Templates, which create factors in a factor graph on-the-fly as necessary.
@@ -390,7 +390,7 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
         }
         case v2:VectorVar if (v2.isConstant) => {
           //println("Template2.cachedStatistics")
-          if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
+          if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType] { override protected def initialSize = 512 }
           val i = ((v1.intValue,v2))
           cachedStatisticsHash.getOrElseUpdate(i, f.statistics)
         }
