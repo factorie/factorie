@@ -47,14 +47,16 @@ class Logger(val name:String, outputStream: => OutputStream = System.err, @volat
       out.flush()
     }
   }
+  def log(theLevel:Int, msg: => Any): Unit = log(theLevel)(msg) // For similarity to log4j
   def fatal(msg: =>Any): Unit = log(Logger.FATAL)(msg)
   def error(msg: =>Any): Unit = log(Logger.ERROR)(msg)
   def warn(msg: =>Any): Unit = log(Logger.WARN)(msg)
   def info(msg: =>Any): Unit = log(Logger.INFO)(msg)
-  def config(msg: =>Any): Unit = log(Logger.CONFIG)(msg)
-  def fine(msg: =>Any): Unit = log(Logger.FINE)(msg)
-  def finer(msg: =>Any): Unit = log(Logger.FINER)(msg)
-  def finest(msg: =>Any): Unit = log(Logger.FINEST)(msg)
+  // Remove these because they are not in log4j
+  //def config(msg: =>Any): Unit = log(Logger.CONFIG)(msg)
+  //def fine(msg: =>Any): Unit = log(Logger.FINE)(msg)
+  //def finer(msg: =>Any): Unit = log(Logger.FINER)(msg)
+  //def finest(msg: =>Any): Unit = log(Logger.FINEST)(msg)
   def debug(msg: =>Any): Unit = log(Logger.DEBUG)(msg)
   def trace(msg: =>Any): Unit = log(Logger.TRACE)(msg)
 }
@@ -66,6 +68,8 @@ object Logger {
     override def log(theLevel: Int)(x: => Any): Unit = {}
   }
   def logger(name:String) = loggerMap.getOrElseUpdate(name, new Logger(name, System.err, WARN))
+  def getLogger(name:String) = logger(name) // Alias for similarity to log4j
+  def getRootLogger = globalLogger // for similarity to log4j
   val NEVER = -1
   val FATAL = 10
   val ERROR = 20

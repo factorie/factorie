@@ -196,17 +196,17 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
       }
       val gg = g.twoNorm
       if (gg < gradientTolerance) {
-        logger.fine("Exiting L-BFGS on termination #2: \ngradient=" + gg + " < " + gradientTolerance)
+        logger.trace("Exiting L-BFGS on termination #2: \ngradient=" + gg + " < " + gradientTolerance)
         isConverged = true
         return true;
       }
 
       if (gg == 0.0) {
-        logger.fine("Exiting L-BFGS on termination #3: \ngradient==0.0")
+        logger.trace("Exiting L-BFGS on termination #3: \ngradient==0.0")
         isConverged = true
         return true;
       }
-      logger.fine("Gradient = " + gg)
+      logger.trace("Gradient = " + gg)
       iterations += 1
       if (iterations > maxIterations) {
         System.err.println("Too many iterations in L-BFGS.java. Continuing with current parameters.")
