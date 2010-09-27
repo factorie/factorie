@@ -43,7 +43,7 @@ object HMMDemo {
     for (directory <- directories) {
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         val sentence = new Sentence(file.toString, new Zi(pi, cc.factorie.random.nextInt(numStates)))
-        for (word <- Source.fromFile(file).mkString.tokenize(new Regex("[a-zA-Z]+")).map(_ toLowerCase).filter(keepStopwords || !Stopwords.contains(_))) {
+        for (word <- cc.factorie.app.strings.alphaSegmenter(file).map(_ toLowerCase).filter(keepStopwords || !Stopwords.contains(_))) {
           val z = new Z(transitions, if (sentence.length > 0) sentence.last.choice else sentence.startState, cc.factorie.random.nextInt(numStates))
           sentence += new Word(emissions, z, word)
         }

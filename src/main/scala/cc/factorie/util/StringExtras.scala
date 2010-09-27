@@ -20,8 +20,6 @@ package cc.factorie.util;
 trait StringExtras {
   val s: String
 
-  def tokenize(r:scala.util.matching.Regex) = r.findAllIn(s)
-
   def skipUntil(r:scala.util.matching.Regex): String = {
     r.findFirstMatchIn(s) match {
       case Some(m:scala.util.matching.Regex.Match) => s.substring(m.start)
