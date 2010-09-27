@@ -90,26 +90,13 @@ class LogLinearMaximumLikelihood(model: Model) {
           if (variables.size > 0) {
             val lattice = new BPLattice(variables, model)
             // Do inference on the tree
-            lattice.updateTreewise() // TODO Change to lattice.updateTreewise(expectations), which will also increment expectations
-            // compute log-partition function
-            val logZ = lattice.sumLogZ
+            lattice.updateTreewise(expectations)
             // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
-            for (bpfactor <- lattice.bpFactors.values; if (bpfactor.factor.template.isInstanceOf[TemplatesToUpdate])) {
-              val factor = bpfactor.factor.asInstanceOf[TemplatesToUpdate#Factor]
-              val statVector = expectations(factor.template.asInstanceOf[TemplatesToUpdate])
-              // iterate over variable settings
-              // TODO Special case 1 and 2 neighbors!
-              val settingsIter = bpfactor.variables.map(_.settings).toList
-              settingsIter.foreach(setting => {setting.reset; setting.next})
-              do {
-                // statVector += factor.statistics.vector * -Math.exp(bpfactor.factorCurrentScore - logZ)
-                var statistics = factor.cachedStatistics
-                vecPlusEq(statVector, statistics.vector, -math.exp(bpfactor.factorCurrentScore(statistics) - logZ))
-              } while (bpfactor.nextValues(settingsIter))
-            }
             // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
             variables.foreach(_.asInstanceOf[TrueSetting].setToTruth(null))
-            oValue += model.factors(variables).foldLeft(0.0)(_+_.cachedStatistics.score) - logZ
+            // oValue += model.factors(variables).foldLeft(0.0)(_+_.cachedStatistics.score) - logZ
+            for (bpfactor <- lattice.bpFactors.values) oValue += bpfactor.factor.cachedStatistics.score
+            oValue -= lattice.sumLogZ
           }
         })
         val invVariance = -1.0 / gaussianPriorVariance
@@ -144,7 +131,7 @@ class LogLinearMaximumLikelihood(model: Model) {
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // put negative expectations into 'expectations' StatMap
-            model.factorsOf[TemplatesToUpdate](v).foreach(f => expectations(f.template) += f.statistics.vector * -distribution(i))
+            model.factorsOf[TemplatesToUpdate](v).foreach(f => vecPlusEq(expectations(f.template), f.statistics.vector, -distribution(i)))
           })
 
           oValue += math.log(distribution(v.trueIntValue))
@@ -154,9 +141,11 @@ class LogLinearMaximumLikelihood(model: Model) {
           t =>
             oValue += 0.5 * t.weights.dot(t.weights) * invVariance
             // sum positive constraints into (previously negated) expectations
-            expectations(t) += constraints(t)
+            // expectations(t) += constraints(t)
+            vecPlusEq(expectations(t), constraints(t), 1.0)
             // subtract weights due to regularization
-            expectations(t) += t.weights * invVariance
+            // expectations(t) += t.weights * invVariance
+            vecPlusEq(expectations(t), t.weights, invVariance)          
         }
         // constraints.keys.foreach(t => expectations(t) += constraints(t))
         oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
