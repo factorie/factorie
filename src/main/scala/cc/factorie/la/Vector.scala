@@ -34,8 +34,10 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   def +=(v:Vector): Unit = throw new Error("Method +=(Vector) not defined on class "+getClass.getName)
   def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
   def *(scalar:Double) = new VectorTimesScalar(this, scalar)
-  //def toString = this.take(15).mkString(printName+"(", ",", if (length > 15) "...)" else ")")
+  // def toString = this.take(15).mkString(printName+"(", ",", if (length > 15) "...)" else ")")
+  // override def toString = this.take(math.min(5, length)).mkString(getClass.getName+"(", ",", if (length > 5) "...)" else ")")
   def flatOuter(that:Vector): Vector = throw new Error("Method flatOuter(Vector) not defined on class "+getClass.getName)
+  def flatOuter(v1:Vector, v2:Vector):Vector = throw new Error("Method flatOuter(Vector, Vector) not defined on class "+getClass.getName)
 }
 
 /** A lazy product of a Vector and a scalar.
@@ -67,9 +69,18 @@ class SingletonBinaryVector(val theLength:Int, val singleIndex:Int) extends Vect
 
   override def flatOuter(v:Vector):Vector = v match {
     case that:SparseBinaryVector => 
-      new SparseBinaryVector(that, this)
+      new SparseBinaryVector(this, that)
     case that:SingletonBinaryVector => 
       new SingletonBinaryVector(this.size * that.size, this.singleIndex * that.size + that.singleIndex)
+  }
+
+  override def flatOuter(v1:Vector, v2:Vector):Vector = (v1,v2) match {
+    case (v1:SparseBinaryVector    ,v2:SparseBinaryVector)    => new SparseBinaryVector(this, v1, v2)
+    case (v1:SparseBinaryVector    ,v2:SingletonBinaryVector) => new SparseBinaryVector(this, v1, v2)
+    case (v1:SingletonBinaryVector ,v2:SparseBinaryVector)    => new SparseBinaryVector(this, v1, v2)
+    case (v1:SingletonBinaryVector ,v2:SingletonBinaryVector) => 
+      new SingletonBinaryVector(this.size * v1.size * v2.size,
+                                (this.singleIndex * v1.size + v1.singleIndex) * v2.size + v2.singleIndex)
   }
 }
 
@@ -95,12 +106,66 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
          outerProductArray(v1.ind, v1.activeDomainSize, v2.singleIndex, v2.size),
          copyArray = false, 
          preSorted = true)
+
+  def this(v1:SingletonBinaryVector, v2:SparseBinaryVector) = 
+    this(v1.size * v2.size, 
+         outerProductArray(v1.singleIndex, v2.ind, v2.activeDomainSize, v2.size),
+         copyArray = false, 
+         preSorted = true)
+
   /** Initialize as the flat outer-product of two SparseBinaryVectors */
   def this(v1:SparseBinaryVector, v2:SparseBinaryVector) = 
     this(v1.size * v2.size, 
          outerProductArray(v1.ind, v1.activeDomainSize, v2.ind, v2.activeDomainSize, v2.size), 
          copyArray = false, 
          preSorted = true)
+
+  /** Initialize as the flat outer-product of two SparseBinaryVectors */
+  def this(v1:SparseBinaryVector, v2:SparseBinaryVector, v3:SparseBinaryVector) = 
+    this(v1.size * v2.size * v3.size, 
+         outerProductArray(v1.ind, v1.activeDomainSize, v2.ind, v2.activeDomainSize, v2.size, v3.ind, v3.activeDomainSize, v3.size), 
+         copyArray = false, 
+         preSorted = true)
+
+  /** Initialize as the flat outer-product of two SparseBinaryVectors */
+  def this(v1:SparseBinaryVector, v2:SparseBinaryVector, v3:SingletonBinaryVector) = 
+    this(v1.size * v2.size * v3.size, 
+         outerProductArray(v1.ind, v1.activeDomainSize, v2.ind, v2.activeDomainSize, v2.size, v3.singleIndex, v3.size), 
+         copyArray = false, 
+         preSorted = true)
+
+  /** Initialize as the flat outer-product of two SparseBinaryVectors */
+  def this(v1:SparseBinaryVector, v2:SingletonBinaryVector, v3:SparseBinaryVector) = 
+    this(v1.size * v2.size * v3.size, 
+         outerProductArray(v1.ind, v1.activeDomainSize, v2.singleIndex, v2.size, v3.ind, v3.activeDomainSize, v3.size), 
+         copyArray = false, 
+         preSorted = true)
+
+  /** Initialize as the flat outer-product of two SparseBinaryVectors */
+  def this(v1:SparseBinaryVector, v2:SingletonBinaryVector, v3:SingletonBinaryVector) = 
+    this(v1.size * v2.size * v3.size, 
+         outerProductArray(v1.ind, v1.activeDomainSize, v2.singleIndex, v2.size, v3.singleIndex,  v3.size), 
+         copyArray = false, 
+         preSorted = true)
+
+  def this(v1:SingletonBinaryVector, v2:SparseBinaryVector, v3:SparseBinaryVector) = 
+    this(v1.size * v2.size * v3.size, 
+         outerProductArray(v1.singleIndex, v2.ind, v2.activeDomainSize, v2.size, v3.ind, v3.activeDomainSize, v3.size), 
+         copyArray = false, 
+         preSorted = true)
+
+  def this(v1:SingletonBinaryVector, v2:SparseBinaryVector, v3:SingletonBinaryVector) = 
+    this(v1.size * v2.size * v3.size, 
+         outerProductArray(v1.singleIndex, v2.ind, v2.activeDomainSize, v2.size, v3.singleIndex,  v3.size), 
+         copyArray = false, 
+         preSorted = true)
+
+  def this(v1:SingletonBinaryVector, v2:SingletonBinaryVector, v3:SparseBinaryVector) = 
+    this(v1.size * v2.size * v3.size, 
+         outerProductArray(v1.singleIndex, v2.singleIndex, v2.size, v3.ind, v3.activeDomainSize, v3.size), 
+         copyArray = false, 
+         preSorted = true)
+
   def length = theLength
   def defaultInitialCapacity = 4
   protected[la] var ind: Array[Int] = null
@@ -208,6 +273,15 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
     case _ => throw new Error("SparseBinaryVector.dot does not handle "+v.getClass.getName)
   }
 
+  override def toString = getClass.getName+"("+"len="+length+" 1s=("+ind.view(0, _size).mkString("[", ", ", "]")+")"
+
+  override def flatOuter(v1:Vector, v2:Vector):Vector = (v1,v2) match {
+    case (v1:SparseBinaryVector    ,v2:SparseBinaryVector)    => new SparseBinaryVector(this, v1, v2)
+    case (v1:SparseBinaryVector    ,v2:SingletonBinaryVector) => new SparseBinaryVector(this, v1, v2)
+    case (v1:SingletonBinaryVector ,v2:SparseBinaryVector)    => new SparseBinaryVector(this, v1, v2)
+    case (v1:SingletonBinaryVector ,v2:SingletonBinaryVector) => new SparseBinaryVector(this, v1, v2)
+  }
+
   override def flatOuter(v:Vector):Vector = v match {
     case that:SparseBinaryVector => new SparseBinaryVector(this, that)
     case that:SingletonBinaryVector => new SparseBinaryVector(this, that)
@@ -215,7 +289,10 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
 }
 
 object OuterProductMath {
-  /** For two SparseBinaryVectors */
+  /** All pairwise computations for SingletonBinaryVector and SparseBinaryVectors */
+  /* note: singleton * singleton is done inline in flatOuter() */
+
+  /* sparse * sparse*/
   def computeMatrix(a1: Array[Int], s1:Int, a2: Array[Int], s2:Int, a2width:Int) = {
     val arr = new Array[Int](s1 * s2)
     var i = 0; var n = 0
@@ -231,18 +308,19 @@ object OuterProductMath {
     }
     arr
   }
-  /** For a SparseBinaryVector and a SingletonBinaryVector */
+
+  /* singleton * sparse */
   def computeMatrix(i1: Int, a2: Array[Int], s2:Int, a2width:Int) = {
-    // val arr = new Array[Int](a2.size)
     val arr = new Array[Int](s2)
     var i = 0
     while (i<s2) {
       arr(i) = i1 * a2width + a2(i)
-      i +=1
+      i += 1
     }
     arr
   }
 
+  /* sparse * singleton */
   def computeMatrix(a1: Array[Int], s1:Int, i2: Int, a2width:Int) = {
     val arr = new Array[Int](s1)
     var i = 0
@@ -253,6 +331,82 @@ object OuterProductMath {
     arr
   }
 
+  /** All three-way computations for SingletonBinaryVector and SparseBinaryVector combinations */
+  /* note: singleton * singleton * singleton is done inline in flatOuter() */
+
+  /* sparse * sparse * singleton */
+  def computeMatrix(a1: Array[Int], s1: Int,              // sparse
+                    a2: Array[Int], s2: Int, a2width:Int, // sparse
+                    i3: Int, i3width:Int): Array[Int]     // singleton
+  = computeMatrix(a1, s1,
+                  a2, s2, a2width, 
+                  Array(i3), 1, i3width)
+
+  /* sparse * singleton * sparse */
+  def computeMatrix(a1: Array[Int], s1: Int,                          //sparse
+                    i2: Int, i2width:Int,                             //singleton
+                    a3: Array[Int], s3: Int, a3width:Int): Array[Int] //sparse
+  = computeMatrix(a1, s1,
+                  Array(i2), 1, i2width,
+                  a3, s3, a3width)
+
+  /* sparse * singleton * singleton */
+  def computeMatrix(a1: Array[Int], s1: Int,          // sparse
+                    i2: Int, i2width:Int,             // singleton
+                    i3: Int, i3width:Int): Array[Int] // singleton
+  = computeMatrix(a1, s1,
+                  Array(i2), 1, i2width,
+                  Array(i3), 1, i3width)
+
+  /* singleton * sparse * sparse */
+  def computeMatrix(i1: Int,                                           // singleton
+                    a2: Array[Int], s2: Int, a2width:Int,             //sparse
+                    a3: Array[Int], s3: Int, a3width:Int): Array[Int] //sparse
+  = computeMatrix(Array(i1), 1,
+                  a2, s2, a2width,
+                  a3, s3, a3width)
+
+  /* singleton * sparse * singleton  */
+  def computeMatrix(i1: Int,                               // singleton
+                    a2: Array[Int], s2: Int, a2width:Int, //sparse
+                    i3: Int, i3width:Int): Array[Int]     // singleton
+  = computeMatrix(Array(i1), 1,
+                  a2, s2, a2width,
+                  Array(i3), 1, i3width)
+
+  /* singleton * singleton * sparse */
+  def computeMatrix(i1: Int,                                           // singleton
+                    i2: Int, i2width:Int,                             // singleton
+                    a3: Array[Int], s3: Int, a3width:Int): Array[Int] //sparse
+  = computeMatrix(Array(i1), 1,
+                  Array(i2), 1, i2width,
+                  a3, s3, a3width)
+
+
+  /* sparse * sparse * sparse */
+  def computeMatrix(a1: Array[Int], s1:Int,                          // sparse
+                    a2: Array[Int], s2:Int, a2width:Int,             // sparse
+                    a3: Array[Int], s3:Int, a3width:Int): Array[Int] // sparse
+  = {
+    val arr = new Array[Int](s1 * s2 * s3)
+    var i1 = 0; var n = 0
+    while (i1<s1) {
+      var i2 = 0
+      val m1 = a1(i1) * a2width
+      while (i2<s2) {
+        var i3 = 0
+        val m2 = (m1 + a2(i2)) * a3width
+        while (i3<s3) {
+          arr(n) = m2 + a3(i3)
+          i3 += 1
+          n += 1
+        }
+        i2 += 1
+      }
+      i1 += 1
+    }
+    arr
+  }
 }
 
 /** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory.

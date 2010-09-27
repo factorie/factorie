@@ -1,13 +1,22 @@
 package cc.factorie
 
 import cc.factorie.la._
-import junit.framework._
-import Assert._
 
-class TestVectorOuterProduct extends TestCase {
+import org.junit.Assert._
+import org.junit.Before
+import org.junit.Test
+import org.scalatest.junit.JUnitSuite
 
+import cc.factorie.OuterProduct.{computeMatrix => outerProductArrayJava}
+
+class TestVectorOuterProduct extends JUnitSuite {
+
+  // def equalDomains(v1:Vector, v2:Vector): Boolean = v1.activeDomain.zip(v2.activeDomain).forall {case (a,b) => a==b}
+  def equalDomains(v1:Vector, v2:Vector): Boolean = equalDomains(v1.activeDomain.toArray, v1.activeDomain.toArray)
+  def equalDomains(a1:Array[Int], a2:Array[Int]): Boolean = a1.zip(a2).forall {case (a,b) => a==b}
+
+  @Test
   def test_flatOuter():Unit = {
-
     val sva = new SparseBinaryVector(4, Array(1,3))
     val svb = new SparseBinaryVector(4, Array(2,3))
 
@@ -19,8 +28,6 @@ class TestVectorOuterProduct extends TestCase {
     val siv1 = new SingletonBinaryVector(1000, 42)
     val siv2 = new SingletonBinaryVector(1000, 42)
     val siv3 = new SingletonBinaryVector(1000, 43)
-
-    def equalDomains(v1:Vector, v2:Vector): Boolean = v1.activeDomain.zip(v2.activeDomain).forall {case (a,b) => a==b}
 
 
     // test equality of flatOuter implementations run on pairs of sparse/singleton binary vectors
@@ -44,6 +51,57 @@ class TestVectorOuterProduct extends TestCase {
           assertTrue("domains are not equal", equalDomains(r1,r2))
           assertTrue("result vector domain size does not equal product of input vectors domain sizes", r1.length == v1.length * v2.length)
         }
+      }
+    }
+  }
+
+  @Test
+  def test_flatOuter3():Unit = {
+    val vectors = 
+      List(List(new SparseBinaryVector(3, Array(0,1)),
+                new SparseBinaryVector(3, Array(0,2))),
+           List(new SingletonBinaryVector(2, 0),
+                new SingletonBinaryVector(2, 1)
+              ))
+
+    def combos3():Seq[Tuple3[Int,Int,Int]] = {
+      var list = List[Tuple3[Int,Int,Int]]()
+      val b = List(0,1);
+      for {b1 <- b
+           b2 <- b
+           b3 <- b} list = list ::: List((b1, b2, b3))
+      list
+    }
+
+    // test that v1.flatOuter(v2).flatOuter(v3) is the same as
+    //           v1.flatOuter(v2, v3) for all v1/2/3 types:
+    for (c  <- combos3) c match {
+      case (i1:Int, i2:Int, i3:Int) => {
+        for {j1 <- 0 to vectors(i1).size-1
+             j2 <- 0 to vectors(i2).size-1
+             j3 <- 0 to vectors(i3).size-1} {
+               val v1 = vectors(i1)(j1)
+               val v2 = vectors(i2)(j2)
+               val v3 = vectors(i3)(j3)
+
+               val ov1 = OriginalFlatOuter.flatOuter(v1, v2)
+               val r0 = OriginalFlatOuter.flatOuter(ov1, v3)
+               val r1 = v1.flatOuter(v2).flatOuter(v3)
+               val r2 = v1.flatOuter(v2, v3)
+
+               val opj12 = outerProductArrayJava(v1.activeDomain.toArray, v2.activeDomain.toArray, v2.size)
+               val r3 = outerProductArrayJava(opj12, v3.activeDomain.toArray, v3.size)
+
+               assertTrue("orig/pairwise domains are not equal for " + ((i1, j1), (i2, j2), (i3, j3)) + "\n" + 
+                          List(v1, v2, v3),
+                          equalDomains(r0,r1))
+               assertTrue("orig/3-way domains are not equal for " + ((i1, j1), (i2, j2), (i3, j3)) + "\n" + 
+                          List(v1, v2, v3),
+                          equalDomains(r0,r2))
+               assertTrue("orig/java-pairwise domains are not equal for " + ((i1, j1), (i2, j2), (i3, j3)) + "\n" + 
+                          List(v1, v2, v3),
+                          equalDomains(r0.activeDomain.toArray, r3))
+             }
       }
     }
   }
@@ -95,9 +153,9 @@ object OriginalFlatOuter {
   }
 }
 
-object TestVectorOuterProduct extends TestSuite {
-  addTestSuite(classOf[TestVectorOuterProduct])
-  def main(args: Array[String]) {
-    junit.textui.TestRunner.run(this)
-  }
-}
+// object TestVectorOuterProduct extends TestSuite {
+//   addTestSuite(classOf[TestVectorOuterProduct])
+//   def main(args: Array[String]) {
+//     junit.textui.TestRunner.run(this)
+//   }
+// }
