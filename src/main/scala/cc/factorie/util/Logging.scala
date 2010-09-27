@@ -28,13 +28,14 @@ class Logger(val name:String, outputStream: => OutputStream = System.err, @volat
   def this(name:String, s:String) = this (name, new File(s))
   /**  Try to parse the level string into an Int from System.getenv, but if it fails to parse, do nothing.  
        Return true if level was set, false otherwise. */
+  setLevelFromEnv
   def setLevelFromEnv: Boolean = {
     val envLevelString = java.lang.System.getenv(name+".level")
     if (envLevelString != null) try { level = envLevelString.toInt } catch { case _ => return false }
     else return false
     return true
   }
-  setLevelFromEnv
+  def setLevel(theLevel:Int): Unit = level = theLevel
   if (Logger.loggerMap.contains(name)) throw new Error("There is already a logger named "+name)
   Logger.loggerMap(name) = this
   private val out = new PrintWriter(outputStream);
@@ -47,7 +48,7 @@ class Logger(val name:String, outputStream: => OutputStream = System.err, @volat
       out.flush()
     }
   }
-  def log(theLevel:Int, msg: => Any): Unit = log(theLevel)(msg) // For similarity to log4j
+  //def log(theLevel:Int, msg: => Any): Unit = log(theLevel)(msg) // For similarity to log4j
   def fatal(msg: =>Any): Unit = log(Logger.FATAL)(msg)
   def error(msg: =>Any): Unit = log(Logger.ERROR)(msg)
   def warn(msg: =>Any): Unit = log(Logger.WARN)(msg)
