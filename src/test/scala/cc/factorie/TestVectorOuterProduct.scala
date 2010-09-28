@@ -55,6 +55,56 @@ class TestVectorOuterProduct extends JUnitSuite {
     }
   }
 
+  import OuterProductMath.outerProductArray
+
+  @Test
+  def outerProductArrayTests = {    
+    for {i1 <- List(0, 1)
+         i2 <- List(0, 1)
+         i3 <- List(0, 1)} 
+    {
+      // sparse sparse sparse
+      val op1 = outerProductArray(Array(i1), 1,
+                                  Array(i2), 1, 4,
+                                  Array(i3), 1, 4)
+
+      // sparse sparse singleton
+      val op2 = outerProductArray(Array(i1), 1,
+                                  Array(i2), 1, 4,
+                                  i3, 4)
+      // sparse singleton singleton
+      val op3 = outerProductArray(Array(i1), 1,
+                                  i2, 4,
+                                  i3, 4)
+
+      val str = """
+      | i1 = %s
+      | i2 = %s
+      | i3 = %s
+      | op1  = %s
+      | op2  = %s
+      | op3  = %s
+      """.stripMargin.format(i1, i2, i3,
+                             op1.mkString("[", ", ", "]"), 
+                             op2.mkString("[", ", ", "]"), 
+                             op3.mkString("[", ", ", "]"))
+
+      // println(str)
+      assertTrue("outer prod are not equal", equalDomains(op1, op2))
+      assertTrue("outer prod are not equal", equalDomains(op1, op3))
+
+    }
+  }
+
+  def combos3():Seq[Tuple3[Int,Int,Int]] = {
+    var list = List[Tuple3[Int,Int,Int]]()
+    val b = List(0,1);
+    for {b1 <- b
+         b2 <- b
+         b3 <- b} list = list ::: List((b1, b2, b3))
+    list
+  }
+
   @Test
   def test_flatOuter3():Unit = {
     val vectors = 
@@ -63,15 +113,6 @@ class TestVectorOuterProduct extends JUnitSuite {
            List(new SingletonBinaryVector(2, 0),
                 new SingletonBinaryVector(2, 1)
               ))
-
-    def combos3():Seq[Tuple3[Int,Int,Int]] = {
-      var list = List[Tuple3[Int,Int,Int]]()
-      val b = List(0,1);
-      for {b1 <- b
-           b2 <- b
-           b3 <- b} list = list ::: List((b1, b2, b3))
-      list
-    }
 
     // test that v1.flatOuter(v2).flatOuter(v3) is the same as
     //           v1.flatOuter(v2, v3) for all v1/2/3 types:
