@@ -69,10 +69,10 @@ class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntVa
 
 /** A Variable with a immutable Int value.
     @author Andrew McCallum */
-class IntegerObservation(theValue:Int) extends IntegerVar with ConstantValue {
-  private var observedInt = theValue
-  def intValue = observedInt
-  protected def initializeIntValue(i:Int): Unit = observedInt = i
+class IntegerObservation(val intValue:Int) extends IntegerVar with ConstantValue {
+  //private var observedInt = theValue
+  //def intValue = observedInt
+  //protected def initializeIntValue(i:Int): Unit = observedInt = i
   type VariableType <: IntegerObservation
 }
 
