@@ -18,30 +18,57 @@ class TestVectorOuterProduct extends JUnitSuite {
   import scala.collection.Seq
 
   // get rid of zip index!!
-  def chooseN[T](n:Int, seq:Seq[T]):Seq[Seq[(T, Int)]] = n match {
-    case 0 => Nil
-    case 1 => seq.zipWithIndex.map(_ :: Nil)
-    case i => choose(n, seq.zipWithIndex)
-  }
+  // def chooseN[T](n:Int, seq:Seq[T]):Seq[Seq[(T, Int)]] = n match {
+  //   case 0 => Nil
+  //   case 1 => seq.zipWithIndex.map(_ :: Nil)
+  //   case i => choose(n, seq.zipWithIndex)
+  // }
 
-  def tailIndex[T](s:Seq[(T, Int)]):Int = s.last._2
-  def remainingElems[T](s:Seq[(T, Int)], seq:Seq[(T, Int)]): Seq[(T, Int)] = seq.view(tailIndex(s)+1, seq.length)
+  // def removeIndex[T](ss:Seq[(T, Int)]) = ss.unzip._1
+  // 
+  // def chooseN[T](n:Int, seq:Seq[T]):Seq[Seq[T]] = choose(n, seq.zipWithIndex) map removeIndex _
+  // 
+  // def tailIndex[T](s:Seq[(T, Int)]):Int = s.last._2
+  // def remainingElems[T](s:Seq[(T, Int)], seq:Seq[(T, Int)]): Seq[(T, Int)] = seq.view(tailIndex(s)+1, seq.length)
+  // 
+  // def choose[T](n:Int, seq:Seq[(T, Int)]):Seq[Seq[(T, Int)]] = n match {
+  //   case 0 => Nil
+  //   case 1 => seq.map(_ :: Nil)
+  //   case i:Int => {
+  //     val prev = choose(i-1, seq)
+  //     println("prev: " + prev)
+  // 
+  //     / lls.flatMap { ll => z.map { ze => ll :+ ze } }
+  //     val curr = prev.flatMap { ll => remainingElems(ll, seq).map { ze => ll :+ ze } }
+  //     / val curr = prev.map { case Seq(s) => { }}
+  //     println("curr: " + curr)
+  //     / val curr = prev.map { case (a:T, n:Int) => seq.takeRight(seq.length-n) flatMap { p => List((a,n), p) }}
+  //     curr
+  //   }
+  // }
 
-  def choose[T](n:Int, seq:Seq[(T, Int)]):Seq[Seq[(T, Int)]] = n match {
-    case 0 => Nil
-    case 1 => seq.map(_ :: Nil)
-    case i:Int => {
-      val prev = choose(i-1, seq)
-      println("prev: " + prev)
 
-      // lls.flatMap { ll => z.map { ze => ll :+ ze } }
-      val curr = prev.flatMap { ll => remainingElems(ll, seq).map { ze => ll :+ ze } }
-      // val curr = prev.map { case Seq(s) => { }}
-      println("curr: " + curr)
-      // val curr = prev.map { case (a:T, n:Int) => seq.takeRight(seq.length-n) flatMap { p => List((a,n), p) }}
-      curr
+  def chooseN[T](n:Int, seq:Seq[T]):Seq[Seq[T]] = { 
+    // Helpers: 
+    //   [(a, 1), (b, 2), ...] -> [a, b, ..]
+    def removeZipIndex[T](ss:Seq[(T, Int)]) = ss.unzip._1
+    //   [(a, 0), (b, 3), (c, 23)] -> 23
+    def lastElemZipIndex[T](s:Seq[(T, Int)]) = s.last._2
+    //   [(a, 0), (b, 1)] -> [a, b, c, d] -> [c, d]
+    def remainingSeq[T](s:Seq[(T, Int)], seq:Seq[(T, Int)]) = seq.view(lastElemZipIndex(s)+1, seq.length)
+
+    def choose[T](n:Int, seq:Seq[(T, Int)]):Seq[Seq[(T, Int)]] = n match {
+      case 0 => Nil
+      case 1 => seq.map(_ :: Nil)
+      case i:Int => {
+        val prev = choose(i-1, seq)
+        prev.flatMap { ll => remainingSeq(ll, seq).map { e => ll :+ e } }
+      }
     }
+    choose(n, seq.zipWithIndex) map removeZipIndex _
   }
+
+
   
   @Test def chooseNTest():Unit = {
     println("chooseN: " + chooseN(3, 12 to 15))
