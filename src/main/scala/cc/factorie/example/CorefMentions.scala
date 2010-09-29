@@ -121,13 +121,13 @@ object CorefMentionsDemo {
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature!
       model += new Template1[Entity] with DotStatistics1[BooleanVar] {
         def statistics(entity:Entity) = {
-          if (entity.mentions.isEmpty) Stat(Bool(true))
+          if (entity.mentions.isEmpty) Stat(BooleanObservation(true))
           else {
             val prefix1 = entity.mentions.iterator.next.name.substring(0,1)
             if (entity.mentions.forall(m => prefix1 equals m.name.substring(0,1)))
-              Stat(Bool(true))
+              Stat(true)
             else
-              Stat(Bool(false))
+              Stat(false)
           }
         }
       }

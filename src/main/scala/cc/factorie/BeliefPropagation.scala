@@ -20,9 +20,14 @@ import cc.factorie._
 import cc.factorie.la._
 import collection.mutable.{Map, HashMap, HashSet, ArrayBuffer}
 
-// Very preliminary explorations in inference by belief propagation among discrete variables.
-// Not yet finished, and certainly not yet optimized for speed at all.
-// This is here mostly to get some idea of what the interfaces might look like.
+// Belief propagation, both exact in trees, and loopy.
+// Notably, this implementation on linear-chains is actually faster than MALLET's fst package.
+// TODO: 
+//  TRP implementation
+//  Some trival forms of junction tree
+//  Generate clean-up for better thread safety (avoid global variables)
+//  Enable multi-threading
+//  Option to visit only configurations supported by labeled training data
 
 /** Holds some global definitions for BP.  */
 // Many of these things should not be global!  Remove them. -akm

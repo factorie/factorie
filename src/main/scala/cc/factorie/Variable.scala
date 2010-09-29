@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
@@ -31,23 +29,19 @@ import scala.util.Sorting
 // "*Var" is agnostic about whether it is mutable or not.  Hence "IntegerVar"
 
 
-class Foo {
-  def frob(implicit p:cc.factorie.generative.Proportions) = p.getClass
-  def frob(implicit p:cc.factorie.generative.DenseProportions) = p.getClass
-  def frob(implicit p:cc.factorie.generative.DenseDirichlet) = p.getClass
-}
-
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
    The trait is abstract because you should not instantiate this trait directly, only subclasses.
    <p>
-   You should never make a Variable a Scala 'case class' because then it will get hashCode and equals methods
-   dependent on its constructor arguments; but the FACTORIE library depends on being able to distinguish individual
-   Variable instances based on their address. 
+   You should never make a Variable a Scala 'case class' because then
+   it will get hashCode and equals methods dependent on its
+   constructor arguments; but the FACTORIE library depends on being
+   able to distinguish individual Variable instances based on their
+   address.
    @author Andrew McCallum */
-// TODO Consider adding "extends AnyRef"??
 @DomainInSubclasses
-trait Variable /* extends AnyRef */ {
-  /** The type of this variable, especially used by this Variable's Domain.  Often you can treat this as an approximation to a self-type */
+trait Variable {
+  /** The type of this variable, especially used by this Variable's Domain.  
+      Often you can treat this as an approximation to a self-type */
   type VariableType <: Variable
  
   // Domain handling
@@ -60,8 +54,11 @@ trait Variable /* extends AnyRef */ {
       If library users create their own new Variable classes, which will be subclassed, and wants each
       subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
   final def domain: VariableType#DomainType = Domain.get[VariableType](this.getClass)
-
-  type ContainedVariableType <: Variable //ContainedVariable
+  
+  /** The type of the variable contained inside this variable.
+      Used for handling var-args. 
+      @see ContainerVariable */
+  type ContainedVariableType <: Variable
 
   /** Return a collection of other variables that should be unrolled in Templates whenever this variable is unrolled.
       For example, a Span may be part of a Event; when the Span changes the Event should be considered as having changed also, and Template1[Event] will be relevant.
@@ -127,39 +124,34 @@ trait QDistribution {
   def newQ: QType
 }
 
-/*import cc.factorie.er
-class VariableGetter[This<:Variable] extends er.Getter[This] {
-  def isConstant = getOneWay(v => Bool(v.isConstant))
-}*/
-
 /** Used as a marker for Variables whose value does not change once created.  
     Be  careful to only use this in class definitions that cannot become mutable in subclasses. */
-// TODO Consider renaming to ConstantValues
 // Semantically a "Value" is not really a "Variable", but we must inherit in order to override
 trait ConstantValue extends Variable {
   override final def isConstant = true
 }
 
-trait ConstantTypedValue extends ConstantValue with TypedValue {
-  // override final def set(newValue:ValueType)(d:DiffList): Unit = throw new Error("Cannot set the value of a constant.")
-}
-
 /** For variables whose value has a type, indicated in type ValueType.  
     Instead of a single value, this variable might represent many values.
-    Related to PyMC's "Containers". */
+    Related to PyMC's "Containers".
+    @author Andrew McCallum */
 trait TypedValues {
   this: Variable =>
   type ValueType
 }
 
-/** For A Variable whose value has type ValueType.  
+/** For a Variable whose value has type ValueType.  
     Typically this is not used to for Values with simple numeric types such as Int and Double.
     Rather, those values are obtained through methods such as intValue and doubleValue. 
-    Other variables, such as CategoricalVariable, have both an Int value and a ValueType value. */
+    Other variables, such as CategoricalVariable, have both an Int value and a ValueType value. 
+    @author Andrew McCallum */
 trait TypedValue extends TypedValues {
   this: Variable =>
   def value: ValueType
 }
+
+/** For a Variable with TypedValue that can change.
+    @author Andrew McCallum */
 trait MutableTypedValue extends TypedValue {
   this: Variable =>
   def set(newValue:ValueType)(implicit d: DiffList): Unit
@@ -193,8 +185,6 @@ trait MutableDoubleValue extends NumericValue {
 
 
 // The two traits below may enable efficiencies for sampling, scoring and learning
-// But they are currently unused?
-// TODO: consider removing them?
 
 /** A marker for Variables that declare themselves not to automatically change other Variables' values when they are changed */
 trait NoVariableCoordination {
@@ -212,11 +202,6 @@ trait NoFactorCoordination {
 
 
 
-
-// TODO Remove this?  It could be useful, though.
-/*trait Setting {
-  def set(d:DiffList) : Unit
-}*/
 
 /** An iterator over changes to the possible world.  
     Could be implemented as changes to one variable, as in IterableSettings, or more complex changes.   
@@ -250,6 +235,12 @@ trait IterableSettings {
   }
   def settings: SettingIterator
 }
+
+// TODO Remove this?  It could be useful, though.
+/*trait Setting {
+  def set(d:DiffList) : Unit
+}*/
+
 
 /** A variable for which the true, correct value is known.  Often used for target variables inferred at training time. 
     @author Andrew McCallum */

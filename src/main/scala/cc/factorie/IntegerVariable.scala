@@ -51,6 +51,7 @@ trait IntegerVar extends IntegerVars with NumericValue {
 class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntValue {
   type VariableType <: IntegerVariable
   private var _value = initialValue
+  protected def _set(newValue:Int): Unit = _value = newValue
   @inline final def intValue = _value
   def set(newValue: Int)(implicit d: DiffList): Unit = if (newValue != _value) {
     if (d ne null) d += new IntegerVariableDiff(_value, newValue)
@@ -70,9 +71,6 @@ class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntVa
 /** A Variable with a immutable Int value.
     @author Andrew McCallum */
 class IntegerObservation(val intValue:Int) extends IntegerVar with ConstantValue {
-  //private var observedInt = theValue
-  //def intValue = observedInt
-  //protected def initializeIntValue(i:Int): Unit = observedInt = i
   type VariableType <: IntegerObservation
 }
 

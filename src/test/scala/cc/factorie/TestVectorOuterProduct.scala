@@ -5,6 +5,10 @@ import cc.factorie.la._
 import org.junit.Assert._
 import org.junit.Before
 import org.junit.Test
+
+// Only use junit, not scalatest. -akm
+
+/*
 import org.scalatest.junit.JUnitSuite
 
 import cc.factorie.OuterProduct.{computeMatrix => outerProductArrayJava}
@@ -200,3 +204,4 @@ object OriginalFlatOuter {
 //     junit.textui.TestRunner.run(this)
 //   }
 // }
+*/

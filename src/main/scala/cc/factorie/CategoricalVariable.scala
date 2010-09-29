@@ -34,9 +34,6 @@ trait CategoricalVars[T] extends DiscreteVars with AbstractCategoricalVars with 
   type VariableType <: CategoricalVars[T]
   type ValueType = T
   type CategoryType = ValueType // Just a redundant name for ValueType, in case later I want to use ValueType for something else
-  //type DomainType <: CategoricalDomain[VariableType]
-  //class DomainClass extends CategoricalDomain[VariableType]()(null)
-  //override def domainSize = domain.size // TODO Why was this 'allocSize' and not 'size'? -akm 5 July 2010 // WARNING domainSize in la.Vector means something different than domainSize meant here.
 }
 
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.
@@ -52,12 +49,13 @@ abstract trait CategoricalVar[A] extends CategoricalVars[A] with DiscreteVar wit
 
 /** A DiscreteVariable whose integers 0...N are associated with an object of type A. 
     @author Andrew McCallum */
-// TODO try to pass something like this to DiscreteVariable constructor: Domain.get[CategoricalVar[A]](this.getClass).index(initialValue)
 @DomainInSubclasses
 abstract class CategoricalVariable[A] extends DiscreteVariable(0) with CategoricalVar[A] with MutableTypedValue {
+  // What I want to do is "extends DiscreteVariable(Domain[A].index(initialValue))
+  // but there is no way to obtain this.getClass obtain the Domain for the constructor above, so we initialize with dummy 0
+  // and then set to proper value in this(initialValue:A) constructor below.
   type VariableType <: CategoricalVariable[A]
-  //def this(initialValue:A) = this(Domain.get[CategoricalVariable[A]](this.getClass).index(initialValue))
-  def this(initialValue:A) = { this(); set(initialValue)(null) }
+  def this(initialValue:A) = { this(); _set(domain.index(initialValue)) }
   def set(newValue:A)(implicit d: DiffList): Unit = set(domain.index(newValue))
   //final def category_=(newValue:A)(implicit d:DiffList = null) = set(newValue)
 }
@@ -65,11 +63,9 @@ abstract class CategoricalVariable[A] extends DiscreteVariable(0) with Categoric
 /** For variables holding a single, constant indexed value which is of Scala type T. 
     @author Andrew McCallum */
 @DomainInSubclasses
-// TODO!!!! This doesn't work because "getClass" here returns scala.Predef!
 abstract class CategoricalObservation[A](theValue:A) extends DiscreteObservation(-1) with CategoricalVar[A] {
   override val intValue = domain.index(theValue)
   type VariableType <: CategoricalObservation[A]
-  //initializeIntValue(domain.index(theValue))
 }
 
 /** When mixed in to a CategoricalVariable or CategoricalObservation, the variable's Domain will count the number of calls to 'index'.  
@@ -77,6 +73,7 @@ abstract class CategoricalObservation[A](theValue:A) extends DiscreteObservation
     which will recreate the new mapping from categories to densely-packed non-negative integers. 
     In typical usage you would (1) read in the data, (2) trim the domain, (3) re-read the data with the new mapping, creating variables. 
     @author Andrew McCallum */
+@deprecated("This interface will likely change in the future.")
 trait CountingCategoricalDomain[This<:CountingCategoricalDomain[This] with CategoricalVars[_]] {
   this: This =>
   type VariableType = This

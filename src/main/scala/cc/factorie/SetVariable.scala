@@ -15,12 +15,7 @@
 
 
 package cc.factorie
-
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.reflect.Manifest
-import scala.util.Random
-import scala.Math
-import scala.util.Sorting
+import scala.collection.mutable.HashSet
 
 /**A variable whose value is a set of other variables */
 abstract class SetVariable[A]() extends Variable with TypedValues {

@@ -66,7 +66,7 @@ object DepParsing1 {
       override def variable : Node = Node.this
     }
   }
-  class Direction(right:Boolean) extends Bool(right)
+  class Direction(right:Boolean) extends BooleanObservation(right)
   class Distance(d:Int) extends DiscreteVariable {
     if (d < domain.size-1) set(d)(null) else set(domain.size-1)(null)
   }
