@@ -1,26 +1,101 @@
-package cc.factorie
+package cc.factorie.la
 
-import cc.factorie.la._
+/// import cc.factorie.la._
 
 import org.junit.Assert._
 import org.junit.Before
 import org.junit.Test
-
-// Only use junit, not scalatest. -akm
-
-/*
 import org.scalatest.junit.JUnitSuite
 
-import cc.factorie.OuterProduct.{computeMatrix => outerProductArrayJava}
+import cc.factorie.la.OuterProduct.{computeMatrix => outerProductArrayJava}
 
 class TestVectorOuterProduct extends JUnitSuite {
 
-  // def equalDomains(v1:Vector, v2:Vector): Boolean = v1.activeDomain.zip(v2.activeDomain).forall {case (a,b) => a==b}
-  def equalDomains(v1:Vector, v2:Vector): Boolean = equalDomains(v1.activeDomain.toArray, v1.activeDomain.toArray)
-  def equalDomains(a1:Array[Int], a2:Array[Int]): Boolean = a1.zip(a2).forall {case (a,b) => a==b}
+  def arrayEqual(a1:Array[Int], a2:Array[Int]): Boolean = (a1 zip a2).forall {case (a,b) => a==b}
+  def domainEqual(v1:Vector, v2:Vector): Boolean = arrayEqual(v1.activeDomain.toArray, v1.activeDomain.toArray)
 
-  @Test
-  def test_flatOuter():Unit = {
+
+  import scala.collection.Seq
+
+  // get rid of zip index!!
+  def chooseN[T](n:Int, seq:Seq[T]):Seq[Seq[(T, Int)]] = n match {
+    case 0 => Nil
+    case 1 => seq.zipWithIndex.map(_ :: Nil)
+    case i => choose(n, seq.zipWithIndex)
+  }
+
+  def tailIndex[T](s:Seq[(T, Int)]):Int = s.last._2
+  def remainingElems[T](s:Seq[(T, Int)], seq:Seq[(T, Int)]): Seq[(T, Int)] = seq.view(tailIndex(s)+1, seq.length)
+
+  def choose[T](n:Int, seq:Seq[(T, Int)]):Seq[Seq[(T, Int)]] = n match {
+    case 0 => Nil
+    case 1 => seq.map(_ :: Nil)
+    case i:Int => {
+      val prev = choose(i-1, seq)
+      println("prev: " + prev)
+
+      // lls.flatMap { ll => z.map { ze => ll :+ ze } }
+      val curr = prev.flatMap { ll => remainingElems(ll, seq).map { ze => ll :+ ze } }
+      // val curr = prev.map { case Seq(s) => { }}
+      println("curr: " + curr)
+      // val curr = prev.map { case (a:T, n:Int) => seq.takeRight(seq.length-n) flatMap { p => List((a,n), p) }}
+      curr
+    }
+  }
+  
+  @Test def chooseNTest():Unit = {
+    println("chooseN: " + chooseN(3, 12 to 15))
+  }
+
+
+
+  @Test def flatOuterImproved():Unit = {
+    // generate all sparse binary vectors of length a w/b indices
+    // generate all singleton binary vectors of length a
+    // generate all sparse vectors of length a w/b indices
+    // generate all singleton vectors of length a
+
+    val svb = new SparseBinaryVector(4, Array(2,3))
+
+    val sv1 = new SparseBinaryVector(3000, 1 to 10 by 2 toArray)
+    val sv2 = new SparseBinaryVector(3000, 1 to 10 by 2 toArray)
+    val sv3 = new SparseBinaryVector(3000, 1 to 10 by 3 toArray)
+    val sv4 = new SparseBinaryVector(1000, Array(42))
+
+    val siv1 = new SingletonBinaryVector(1000, 42)
+    val siv2 = new SingletonBinaryVector(1000, 42)
+    val siv3 = new SingletonBinaryVector(1000, 43)
+
+
+    // test equality of flatOuter implementations run on pairs of sparse/singleton binary vectors
+    val tests = List(
+      (sv1, sv1),
+      (sv1, sv2),
+      (sv2, sv3),
+      (sv4, siv1),
+      (siv1, siv2),
+      (siv1, siv3)
+    )
+    for (test <- tests) {
+      test match {
+        case (v1, v2) => {
+          //println("v1: " + sv1.activeDomain)
+          //println("v2: " + sv2.activeDomain)
+          val r1 = v1 flatOuter v2
+          val r2 = OriginalFlatOuter.flatOuter(v1, v2)
+          //println("new v.flatOuter.v " + r1.activeDomain)
+          //println("old flatOuter(v,v)" + r2.activeDomain)
+          assertTrue("domains are not equal", domainEqual(r1,r2))
+          assertTrue("result vector domain size does not equal product of input vectors domain sizes", r1.length == v1.length * v2.length)
+        }
+      }
+    }
+  }
+
+
+  // def flatOuter(that:Vector): Vector = throw new Error("Method flatOuter(Vector) not defined on class "+getClass.getName)
+  // def flatOuter(v1:Vector, v2:Vector):Vector = throw new Error("Method flatOuter(Vector, Vector) not defined on class "+getClass.getName)
+  @Test def flatOuter():Unit = {
     val sva = new SparseBinaryVector(4, Array(1,3))
     val svb = new SparseBinaryVector(4, Array(2,3))
 
@@ -52,7 +127,7 @@ class TestVectorOuterProduct extends JUnitSuite {
           val r2 = OriginalFlatOuter.flatOuter(v1, v2)
           //println("new v.flatOuter.v " + r1.activeDomain)
           //println("old flatOuter(v,v)" + r2.activeDomain)
-          assertTrue("domains are not equal", equalDomains(r1,r2))
+          assertTrue("domains are not equal", domainEqual(r1,r2))
           assertTrue("result vector domain size does not equal product of input vectors domain sizes", r1.length == v1.length * v2.length)
         }
       }
@@ -94,8 +169,8 @@ class TestVectorOuterProduct extends JUnitSuite {
                              op3.mkString("[", ", ", "]"))
 
       // println(str)
-      assertTrue("outer prod are not equal", equalDomains(op1, op2))
-      assertTrue("outer prod are not equal", equalDomains(op1, op3))
+      assertTrue("outer prod are not equal", arrayEqual(op1, op2))
+      assertTrue("outer prod are not equal", arrayEqual(op1, op3))
 
     }
   }
@@ -139,69 +214,33 @@ class TestVectorOuterProduct extends JUnitSuite {
 
                assertTrue("orig/pairwise domains are not equal for " + ((i1, j1), (i2, j2), (i3, j3)) + "\n" + 
                           List(v1, v2, v3),
-                          equalDomains(r0,r1))
+                          domainEqual(r0,r1))
                assertTrue("orig/3-way domains are not equal for " + ((i1, j1), (i2, j2), (i3, j3)) + "\n" + 
                           List(v1, v2, v3),
-                          equalDomains(r0,r2))
+                          domainEqual(r0,r2))
                assertTrue("orig/java-pairwise domains are not equal for " + ((i1, j1), (i2, j2), (i3, j3)) + "\n" + 
                           List(v1, v2, v3),
-                          equalDomains(r0.activeDomain.toArray, r3))
+                          arrayEqual(r0.activeDomain.toArray, r3))
              }
       }
     }
   }
+
+
+  // def dot(v:Vector): Double
+  @Test def dotProduct { }
+
+  
+  // def update(index:Int, value:Double): Unit = throw new Error("Method update not defined on class "+getClass.getName)
+  @Test def update { }
+
+  // def +=(v:Vector): Unit = throw new Error("Method +=(Vector) not defined on class "+getClass.getName)
+  // def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
+  @Test def += { }
+
+  // def *(scalar:Double) = new VectorTimesScalar(this, scalar)
+  @Test def * { }
+
+
 }
 
-// This code was moved from Template.scala - the implementation of flatOuter has changed, this is used as
-//   a reference implementation to catch any errors in the new version
-object OriginalFlatOuter {
-  def flatOuter(vector1: Vector, vector2: Vector) : Vector = vector1 match {
-    case v1: SingletonBinaryVector => vector2 match {
-      case v2: SingletonBinaryVector =>
-        new SingletonBinaryVector(v1.size * v2.size, v1.singleIndex * v2.size + v2.singleIndex)
-      case v2: SparseBinaryVector =>
-        new SparseBinaryVector(v1.size * v2.size,
-                               {
-                                 val arr = new Array[Int](v2.activeDomain.size);
-                                 var i = 0;
-                                 for (i2 <- v2.activeDomain) {
-                                   arr(i) = v1.singleIndex * v2.size + i2;
-                                   i += 1;
-                                 };
-                                 arr
-                               })
-    }
-    case v1: SparseBinaryVector => vector2 match {
-      case v2: SingletonBinaryVector =>
-        new SparseBinaryVector(v1.size * v2.size,
-                               {
-                                 val arr = new Array[Int](v1.activeDomain.size);
-                                 var i = 0;
-                                 for (i1 <- v1.activeDomain) {
-                                   arr(i) = i1 * v2.size + v2.singleIndex;
-                                   i += 1;
-                                 };
-                                 arr
-                               })
-      case v2: SparseBinaryVector =>
-        new SparseBinaryVector(v1.size * v2.size,
-                               {
-                                 val arr = new Array[Int](v1.activeDomain.size * v2.activeDomain.size);
-                                 var i = 0;
-                                 for (i1 <- v1.activeDomain; i2 <- v2.activeDomain) {
-                                   arr(i) = i1 * v2.size + i2;
-                                   i += 1;
-                                 };
-                                 arr
-                               })
-    }
-  }
-}
-
-// object TestVectorOuterProduct extends TestSuite {
-//   addTestSuite(classOf[TestVectorOuterProduct])
-//   def main(args: Array[String]) {
-//     junit.textui.TestRunner.run(this)
-//   }
-// }
-*/
