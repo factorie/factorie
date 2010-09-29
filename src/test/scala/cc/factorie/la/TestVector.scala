@@ -26,7 +26,6 @@ import Assert._
 class TestSparseBinaryVector extends TestCase {
 
   def test_suspicious_indices:Unit = {
-    println("susp")
     val v = new SparseBinaryVector(1000)
     // check the boundaries
     v += 0
@@ -38,12 +37,7 @@ class TestSparseBinaryVector extends TestCase {
     assertTrue(true)
   }
 
-  def test_whatever:Unit = {
-    println("whatev")
-  }
-
   def test_advanced:Unit = {
-    println("basics")
     val v = new SparseBinaryVector(10000)
      
     // initial size should be zero
@@ -61,7 +55,6 @@ class TestSparseBinaryVector extends TestCase {
   }
 
   def test_zero:Unit = {
-    println("zero")
     val v = new SparseBinaryVector(1000)
 
     def doesNotAlterLength = assertEquals(v.length, 1000)

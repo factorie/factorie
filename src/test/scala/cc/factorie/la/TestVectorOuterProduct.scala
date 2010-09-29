@@ -18,10 +18,10 @@ import org.junit.Assert._
 import org.junit.Before
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
+import cc.factorie.TestUtils
 
-class TestVectorOuterProduct extends JUnitSuite {
+class TestVectorOuterProduct extends JUnitSuite with TestUtils {
   import cc.factorie.la.OuterProduct.{computeMatrix => outerProductArrayJava}
-  import cc.factorie.TestUtils.chooseN
   import OuterProductMath.outerProductArray
 
   object HelperFunctions {
@@ -59,22 +59,34 @@ class TestVectorOuterProduct extends JUnitSuite {
       new SingletonBinaryVector(4, i) }
   }
 
-  @Test 
-  def sparseBinaryVectors_flatOuter():Unit = {
-    // test out 3 different version of flatOuter on pairs of vectors, making sure they return same value
+  // SparseBinaryVector.flatOuter
+  @Test def sparseBinaryVectors_flatOuter():Unit = {
+    // test out 3 different version of flatOuter on 
+    //    pairs of vectors, making sure they all return same value
     for (vvs <- chooseN(V.sparsev2s, 2)) vvs match {
       case Seq(v1, v2) => {
         val r1 = v1 flatOuter v2   
         val r2 = OriginalFlatOuter.flatOuter(v1, v2)
         val r3 = outerProductArrayJava(v1.activeDomain.toArray, v2.activeDomain.toArray, v2.size)
         assertVectorEquality("sparse * sparse", classOf[SparseBinaryVector], r1, r2)
-        assertTrue("domains are not equal", arrayEqual(r1.activeDomain.toArray, r3))
+        assertTrue("domains should be equal", arrayEqual(r1.activeDomain.toArray, r3))
+      }
+    }
+  }
+  
+  // 3-vector version of flatOuter
+  @Test def sparseBinaryVectors_flatOuter3():Unit = {
+    for (vvs <- chooseN(V.sparsev2s, 3)) vvs match {
+      case Seq(v1, v2, v3) => {
+        val r1 = v1 flatOuter v2 flatOuter v3
+        val r2 = OriginalFlatOuter.flatOuter(OriginalFlatOuter.flatOuter(v1, v2), v3)
+        assertVectorEquality("sparse * sparse", classOf[SparseBinaryVector], r1, r2)
       }
     }
   }
 
-  @Test
-  def singletonBinaryVectors_flatOuter():Unit = {
+  // SingletonBinaryVector.flatOuter
+  @Test def singletonBinaryVectors_flatOuter():Unit = {
     // test out 3 different version of flatOuter on pairs of vectors
     for (vvs <- chooseN(V.singletonvs, 2)) vvs match {
       case Seq(v1, v2) => {
@@ -82,7 +94,18 @@ class TestVectorOuterProduct extends JUnitSuite {
         val r2 = OriginalFlatOuter.flatOuter(v1, v2)
         val r3 = outerProductArrayJava(v1.activeDomain.toArray, v2.activeDomain.toArray, v2.size)
         assertVectorEquality("singleton * singleton", classOf[SingletonBinaryVector], r1, r2)
-        assertTrue("domains are not equal", arrayEqual(r1.activeDomain.toArray, r3))
+        assertTrue("domains should be equal", arrayEqual(r1.activeDomain.toArray, r3))
+      }
+    }
+  }
+
+  // 3-vector version of flatOuter
+  @Test def singletonBinaryVectors_flatOuter3():Unit = {
+    for (vvs <- chooseN(V.singletonvs, 3)) vvs match {
+      case Seq(v1, v2, v3) => {
+        val r1 = v1 flatOuter v2 flatOuter v3
+        val r2 = OriginalFlatOuter.flatOuter(OriginalFlatOuter.flatOuter(v1, v2), v3)
+        assertVectorEquality("sparse * sparse", classOf[SingletonBinaryVector], r1, r2)
       }
     }
   }
@@ -94,26 +117,17 @@ class TestVectorOuterProduct extends JUnitSuite {
         val r1 = v1 flatOuter v2
         val r2 = OriginalFlatOuter.flatOuter(v1, v2)
         assertVectorEquality("singleton * sparse", classOf[SparseBinaryVector], r1, r2)
-        assertTrue("domains are not equal", domainEqual(r1,r2))
+        assertTrue("domains should be equal", domainEqual(r1,r2))
       }
     }
   }
 
-
-  // def dot(v:Vector): Double
   @Test def dotProduct { }
-
   
-  // def update(index:Int, value:Double): Unit = throw new Error("Method update not defined on class "+getClass.getName)
   @Test def update { }
 
-  // def +=(v:Vector): Unit = throw new Error("Method +=(Vector) not defined on class "+getClass.getName)
-  // def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
   @Test def += { }
 
-  // def *(scalar:Double) = new VectorTimesScalar(this, scalar)
   @Test def * { }
-
-
 }
 
