@@ -33,8 +33,6 @@ import collection.mutable.{Map, HashMap, HashSet, ArrayBuffer}
 // Many of these things should not be global!  Remove them. -akm
 object BeliefPropagation {
   type BPVariable = DiscreteVariable with NoVariableCoordination // Our BP implementation currently only handles these types of Variables
-  val normalizeMessages = false
-  var useSumMessages = true // If true messages from factors to variables are sum-product else max-product
 }
 
 /** A factor in a belief propagation lattice used for inference.
@@ -45,9 +43,12 @@ object BeliefPropagation {
 abstract class BPFactor(val factor: Factor) {
   type V = BeliefPropagation.BPVariable
 
-  // TODO should filter by lattice's list of variables to infer
-  val variables = factor.variables.filter(_.isInstanceOf[V]).toList.asInstanceOf[List[V]] // because factor.variables is not very efficient // TODO Make this toSeq instead?  scala.collection.immutable.Vector
+  // filtering by lattice's list of variables to infer done in BPLattice during initialization
+  var variables: List[V] = Nil // TODO Make this toSeq instead?  scala.collection.immutable.Vector
   // TODO Consider alternative to toList?  Note that we do use list in variableSettings
+
+  var normalizeMessages = false // Normalizes messages after update
+  var useSumMessages = true // If true messages from factors to variables are sum-product else max-product
 
   // flag for whether expectations have been incremented
   var _expectationsIncremented = false
@@ -85,7 +86,7 @@ abstract class BPFactor(val factor: Factor) {
     protected val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
 
     def updateTreewiseFromLeaves: Unit = {
-      if (updateCount > 0) throw new Error("Either tree not reset or lattice has cycle")
+      if (updateCount > 0) throw new Exception("Either tree not reset or lattice has cycle")
       updateCount += 1
       for (n <- neighborSettings) {
         BPFactor.this.messageFrom(n.variable).updateTreewiseFromLeaves
@@ -94,7 +95,7 @@ abstract class BPFactor(val factor: Factor) {
     }
 
     def updateTreewiseToLeaves(expectations:Map[DotTemplate,Vector] = null, cachedLogZ: Double = Double.NaN): Unit = {
-      if (updateCount > 0) throw new Error("Either tree not reset or lattice has cycle")
+      if (updateCount > 0) throw new Exception("Either tree not reset or lattice has cycle")
       updateCount += 1
       _logZ = if (cachedLogZ.isNaN) BPFactor.this.logZ else cachedLogZ
       if ((expectations ne null) && !_expectationsIncremented)
@@ -136,7 +137,7 @@ abstract class BPFactor(val factor: Factor) {
           } while (nextValues(neighborSettings))
         }
       })
-      if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
+      if (normalizeMessages) maths.normalizeLogProb(msg)
     }
 
     def updateWithCounts(expectations: Map[DotTemplate, Vector], _logZ: Double) = {
@@ -175,7 +176,7 @@ abstract class BPFactor(val factor: Factor) {
         }
       })
       _expectationsIncremented = true
-      if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
+      if (normalizeMessages) maths.normalizeLogProb(msg)
     }
   }
 
@@ -202,7 +203,7 @@ abstract class BPFactor(val factor: Factor) {
       })
     }
 
-    def updateWithCounts(expectations: Map[DotTemplate, Vector], _logZ: Double) = throw new Error("Not yet implemented for max-product inference!")
+    def updateWithCounts(expectations: Map[DotTemplate, Vector], _logZ: Double) = throw new Exception("Not yet implemented for max-product inference!")
   }
 
   /**Message from Variable v to this factor. */
@@ -211,7 +212,7 @@ abstract class BPFactor(val factor: Factor) {
     protected val neighborSettings = variables.filter(_.!=(v)).map(_.settings).toList
 
     def updateTreewiseFromLeaves: Unit = {
-      if (updateCount > 0) throw new Error("Either tree not reset or lattice has cycle")
+      if (updateCount > 0) throw new Exception("Either tree not reset or lattice has cycle")
       updateCount += 1
       Arrays.fill(msg, 0.0)
       for (n <- neighborFactors) {
@@ -219,18 +220,18 @@ abstract class BPFactor(val factor: Factor) {
         msg2.updateTreewiseFromLeaves
         for (i <- 0 until v.domain.size) msg(i) += msg2.message(i)
       }
-      if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
+      if (normalizeMessages) maths.normalizeLogProb(msg)
     }
 
     def updateTreewiseToLeaves(expectations:Map[DotTemplate,Vector] = null, cachedLogZ: Double = Double.NaN): Unit = {
-      if (updateCount > 0) throw new Error("Either tree not reset or lattice has cycle")
+      if (updateCount > 0) throw new Exception("Either tree not reset or lattice has cycle")
       updateCount += 1
       Arrays.fill(msg, 0.0)
       for (n <- neighborFactors) {
         val msg2 = n.messageTo(v)
         for (i <- 0 until v.domain.size) msg(i) += msg2.message(i)
       }
-      if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
+      if (normalizeMessages) maths.normalizeLogProb(msg)
 
       if (neighborSettings.size == 0 && (expectations ne null) && !_expectationsIncremented) {
         // special case for leaves
@@ -269,13 +270,13 @@ abstract class BPFactor(val factor: Factor) {
           }
         }
       }
-      if (BeliefPropagation.normalizeMessages) maths.normalizeLogProb(msg)
+      if (normalizeMessages) maths.normalizeLogProb(msg)
     }
   }
 
   /* For Sum-Product and Max-Product: */
   lazy private val _msgTo: Seq[MessageTo] = {
-    if (BeliefPropagation.useSumMessages) this.variables.map(SumProductMessageTo(_)).toSeq
+    if (useSumMessages) this.variables.map(SumProductMessageTo(_)).toSeq
     else this.variables.map(MaxProductMessageTo(_)).toSeq
   }
   lazy private val _msgFrom: Seq[MessageFrom] = this.variables.map(MessageFrom(_)).toSeq
@@ -384,35 +385,55 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
   val bpFactors = new HashMap[Factor, BPFactor]
   // Holds all factors touching any of the 'variables'
   val factors = new HashSet[Factor]
-  // Initialize bpFactors
-  for (factor <- model.factorsOf[Template](variables)) {
-    val bpFactor = new BPFactor(factor) {def factorsOf(v: Variable) = v2m(v)}
-    bpFactors(factor) = bpFactor
-    for (v <- factor.variables) v2m(v) += bpFactor
-    factors += factor
+
+  def initFactors: Unit = {
+    val inferenceVariables = new HashSet[V]
+    variables.foreach {v: V => inferenceVariables += v}
+    for (factor <- model.factorsOf[Template](variables)) {
+      val bpFactor = new BPFactor(factor) {def factorsOf(v: Variable) = v2m(v)}
+      bpFactors(factor) = bpFactor
+      for (v <- factor.variables) {
+        v2m(v) += bpFactor
+        if (v.isInstanceOf[V] && inferenceVariables.contains(v.asInstanceOf[V])) bpFactor.variables ::= v.asInstanceOf[V]
+      }
+      factors += factor
+    }
   }
+  // Initialize bpFactors
+  initFactors
 
   /**The BPFactors touching variable v. */
   def bpFactorsOf(v: V): Iterable[BPFactor] = v2m(v)
   /**Perform one iteration of belief propagation. */
-  def update: Unit = bpFactors.values.foreach(_.update)
+  def update: Unit = {
+    // initialize to use sum messages and normalize them
+    bpFactors.values.foreach {f: BPFactor => f.useSumMessages = true; f.normalizeMessages = true}
+    bpFactors.values.foreach(_.update)
+  }
   /**Perform N iterations of belief propagation */
   def update(iterations: Int): Unit = for (i <- 1 to iterations) update
+  /**Perform one iteration of max-product belief propagation.*/
+  def updateMax: Unit = {
+    bpFactors.values.foreach {f: BPFactor => f.useSumMessages = false; f.normalizeMessages = true}
+    bpFactors.values.foreach(_.update)
+  }
+  /**Perform N iterations of max-product BP.*/
+  def updateMax(iterations: Int): Unit = for (i <- 1 to iterations) updateMax
   /**Send each message in the lattice once, in order determined by a random tree traversal. */
   def updateTreewise(expectations:Map[DotTemplate,Vector] = null, shuffle: Boolean = false): Unit = {
-    // if (expectations ne null) throw new Error("Not yet implemented")
+    bpFactors.values.foreach {f: BPFactor => f.useSumMessages = true}
     bpFactors.values.foreach(_.resetTree)
     val factors = if (shuffle) bpFactors.values.toSeq.shuffle else bpFactors.values.toSeq // optionally randomly permute order, ala TRP
     // Call updateTreewise on all factors, but note that, if the graph is fully connected,
     // "updateTreewise" on the first marginal will do the entire graph, and the other calls will return immediately
-    BeliefPropagation.useSumMessages = true // TODO This won't work multithreaded!  Fix this. -akm
+    factors.foreach {f: BPFactor => f.useSumMessages = true}
     factors.foreach(_.updateTreewise(expectations))
   }
   /** Performs max-product inference. */
   def updateTreewiseMax(shuffle: Boolean = false): Unit = {
+    bpFactors.values.foreach {f: BPFactor => f.useSumMessages = false}
     bpFactors.values.foreach(_.resetTree)
     val factors = if (shuffle) bpFactors.values.toList.shuffle else bpFactors.values.toList // optionally randomly permute order, ala TRP
-    BeliefPropagation.useSumMessages = false
     factors.foreach(_.updateTreewise())
   }
   /** Provide outside access to a BPFactor marginal given is associated Factor */
@@ -445,9 +466,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
   // TODO Why is this called "sumLogZ" instead of just "logZ"? -akm
   def sumLogZ: Double = {
     var result = 0.0
-    bpFactors.values.toArray.foreach {
-      f: BPFactor => if (f._isFactorRoot) result += f.logZ
-    }
+    bpFactors.values.toArray.foreach { f: BPFactor => if (f._isFactorRoot) result += f.logZ }
     result
   }
 }
