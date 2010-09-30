@@ -141,13 +141,13 @@ class SampleRankTest extends AssertionsForJUnit {
 	{
 	  decodeConfiguration(i,bools)
 	  val modelScoreI = model.scoreAll(bools)
-	  val truthScoreI = model.scoreAll(bools)
+	  val truthScoreI = trainingSignal.scoreAll(bools)
 
 	  for(j<-i+1 until Math.pow(2,bools.length).toInt)
 	    {
 	      decodeConfiguration(j,bools)
 	      val modelScoreJ = model.scoreAll(bools)
-	      val truthScoreJ = model.scoreAll(bools)
+	      val truthScoreJ = trainingSignal.scoreAll(bools)
  
 	      if(truthScoreI>truthScoreJ)
 		if(modelScoreI<=modelScoreJ)
@@ -208,6 +208,61 @@ class SampleRankTest extends AssertionsForJUnit {
       checkAllPairs
     }
 
+/*
+  def assignMAP(bools:Seq[MyBool])=
+    {
+      var maxScore = Double.NEG_INF
+      for(i<-0 until Math.pow(2,bools.length).toInt)
+	{
+	  decodeConfiguration(i,bools)
+	  val modelScoreI = model.scoreAll(bools)
+	  val truthScoreI = model.scoreAll(bools)
+	  
+	 
+	}
+    }
+
+  def checkAllPairs =
+    {
+      //
+      //Test extremes
+      var fpErrors = 0
+      var fnErrors = 0
+      for(i<-0 until Math.pow(2,bools.length).toInt)
+	{
+	  decodeConfiguration(i,bools)
+	  val modelScoreI = model.scoreAll(bools)
+	  val truthScoreI = model.scoreAll(bools)
+
+	 
+	}
+
+ for(j<-i+1 until Math.pow(2,bools.length).toInt)
+	    {
+	      decodeConfiguration(j,bools)
+	      val modelScoreJ = model.scoreAll(bools)
+	      val truthScoreJ = model.scoreAll(bools)
+ 
+	      if(truthScoreI>truthScoreJ)
+		if(modelScoreI<=modelScoreJ)
+		  fpErrors += 1
+		//assert(modelScoreI>modelScoreJ)
+	      if(truthScoreI<truthScoreJ)
+		if(modelScoreI>=modelScoreJ)
+		  fnErrors += 1
+		//assert(modelScoreI<modelScoreJ)
+	    }
+      println("NUMBER OF ERRORS(FP,FN) = ("+fpErrors+","+fnErrors+")")
+      assert(fpErrors+fnErrors==0)
+    }
+  
+  
+  */
+  
+  @Test def verifyCD1 =
+    {
+      
+    }
 
 
 
