@@ -90,6 +90,16 @@ class SampleRankTest extends AssertionsForJUnit {
       }
   }
 
+
+  abstract class AllPairsCD1Proposer(model:Model) extends ContrastiveDivergence[Null](model)
+  {
+    def propose(context:Null)(implicit delta:DiffList):Double =
+      {
+	for(b<-bools)b.set(random.nextBoolean)(delta)
+	0.0
+      }
+  }
+
   @Before def initialize() =
   {
     println("TESTING LEARNING FRAMEWORK")
@@ -113,6 +123,7 @@ class SampleRankTest extends AssertionsForJUnit {
       )
     )
   }
+
   
   def decodeConfiguration(v:Int, configuration:Seq[MyBool]) : Unit =
   {
@@ -174,6 +185,21 @@ class SampleRankTest extends AssertionsForJUnit {
       trainer.process(numProposals)
       checkAllPairs
     }
+
+  @Test def verifySampleRankParameterAveraging =
+    {
+      val trainer = new AllPairsProposer(model) with SampleRank
+	with GradientAscentUpdates with ParameterAveraging
+      {
+	override def objective=trainingSignal
+	temperature = 1000.0
+      }
+      trainer.process(numProposals)
+      trainer.setWeightsToAverage
+      checkAllPairs
+    }
+
+
   @Test def verifySampleRankMIRA =
     {
       val trainer = new AllPairsProposer(model) with SampleRank
@@ -207,97 +233,52 @@ class SampleRankTest extends AssertionsForJUnit {
       trainer.process(numProposals)
       checkAllPairs
     }
-
 /*
-  def assignMAP(bools:Seq[MyBool])=
+
+  def assignMAP(bools:Seq[MyBool], model:Model) : Int =
     {
-      var maxScore = Double.NEG_INF
+      var maxScore = Math.NEG_INF_DOUBLE
+      var maxConfig:Int = 0
       for(i<-0 until Math.pow(2,bools.length).toInt)
 	{
 	  decodeConfiguration(i,bools)
-	  val modelScoreI = model.scoreAll(bools)
-	  val truthScoreI = model.scoreAll(bools)
-	  
-	 
+	  val modelScore = model.scoreAll(bools)
+	  if (modelScore > maxScore) {
+	    maxScore = modelScore
+	    maxConfig = i
+	  }
 	}
+      decodeConfiguration(maxConfig, bools)
+      maxConfig
     }
 
-  def checkAllPairs =
+  def checkAllAgainstTruth =
     {
-      //
-      //Test extremes
-      var fpErrors = 0
-      var fnErrors = 0
+      assignMAP(bools,trainingSignal)
+      val mapScore = model.scoreAll(bools)
+      var errors = 0
       for(i<-0 until Math.pow(2,bools.length).toInt)
 	{
 	  decodeConfiguration(i,bools)
-	  val modelScoreI = model.scoreAll(bools)
-	  val truthScoreI = model.scoreAll(bools)
-
-	 
+	  val configScore = model.scoreAll(bools)
+	  if(configScore>mapScore)
+	    errors +=1
 	}
-
- for(j<-i+1 until Math.pow(2,bools.length).toInt)
-	    {
-	      decodeConfiguration(j,bools)
-	      val modelScoreJ = model.scoreAll(bools)
-	      val truthScoreJ = model.scoreAll(bools)
- 
-	      if(truthScoreI>truthScoreJ)
-		if(modelScoreI<=modelScoreJ)
-		  fpErrors += 1
-		//assert(modelScoreI>modelScoreJ)
-	      if(truthScoreI<truthScoreJ)
-		if(modelScoreI>=modelScoreJ)
-		  fnErrors += 1
-		//assert(modelScoreI<modelScoreJ)
-	    }
-      println("NUMBER OF ERRORS(FP,FN) = ("+fpErrors+","+fnErrors+")")
-      assert(fpErrors+fnErrors==0)
+      println("NUM CD ERRORS: " + errors)
+      assert(errors==0)
     }
-  
-  
-  */
   
   @Test def verifyCD1 =
     {
-      
-    }
-
-
-
-
-/*
-  var sb: StringBuilder = _
-  var lb: ListBuffer[String] = _
-
-  @Before def initialize() {
-    sb = new StringBuilder("ScalaTest is ")
-    lb = new ListBuffer[String]
-  }
-
-  @Test def verifyEasy() { // Uses JUnit-style assertions
-    sb.append("easy!")
-    assertEquals("ScalaTest is easy!", sb.toString)
-    assertTrue(lb.isEmpty)
-    lb += "sweet"
-    try {
-      "verbose".charAt(-1)
-      fail()
-    }
-    catch {
-      case e: StringIndexOutOfBoundsException => // Expected
-    }
-  }
-
-  @Test def verifyFun() { // Uses ScalaTest assertions
-    sb.append("fun!")
-    assert(sb.toString === "ScalaTest is fun!")
-    assert(lb.isEmpty)
-    lb += "sweeter"
-    intercept[StringIndexOutOfBoundsException] {
-      "concise".charAt(-1)
-    }
-  }
-*/
+      val trainer = new AllPairsCD1Proposer(model) with GradientAscentUpdates
+      val mapConfig = assignMAP(bools,trainingSignal)
+      for(i<-0 until numProposals)
+	{
+	  //
+	  //initialize to MAP
+	  decodeConfiguration(mapConfig,bools)
+	  trainer.process(1)
+	}
+      checkAllAgainstTruth
+    }*/
 }
