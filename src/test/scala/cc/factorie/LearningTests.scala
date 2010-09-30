@@ -47,6 +47,8 @@ test if model ranking agrees with training signal (randomly created?)
 
 //extends JUnitSuite with TestUtils{
 class SampleRankTest extends AssertionsForJUnit {
+  val numVariables = 4
+  val numProposals = 1000
 
   class MyBool extends BooleanVariable(false)
   {
@@ -91,7 +93,7 @@ class SampleRankTest extends AssertionsForJUnit {
   @Before def initialize() =
   {
     println("TESTING LEARNING FRAMEWORK")
-    bools = (for(i<-0 until 4) yield new MyBool).toSeq
+    bools = (for(i<-0 until numVariables) yield new MyBool).toSeq
     for(i<-0 until bools.length-1)
       {
 	bools(i).next=bools(i+1)
@@ -169,7 +171,7 @@ class SampleRankTest extends AssertionsForJUnit {
 	override def objective=trainingSignal
 	temperature = 1000.0
       }
-      trainer.process(1000)
+      trainer.process(numProposals)
       checkAllPairs
     }
   @Test def verifySampleRankMIRA =
@@ -180,7 +182,7 @@ class SampleRankTest extends AssertionsForJUnit {
 	override def objective=trainingSignal
 	temperature = 1000.0
       }
-      trainer.process(1000)
+      trainer.process(numProposals)
       checkAllPairs
     }
   @Test def verifySampleRankCW =
@@ -191,7 +193,7 @@ class SampleRankTest extends AssertionsForJUnit {
 	override def objective=trainingSignal
 	temperature = 1000.0
       }
-      trainer.process(1000)
+      trainer.process(numProposals)
       checkAllPairs
     }  
   @Test def verifySampleRankAROW =
@@ -202,9 +204,10 @@ class SampleRankTest extends AssertionsForJUnit {
 	override def objective=trainingSignal
 	temperature = 1000.0
       }
-      trainer.process(1000)
+      trainer.process(numProposals)
       checkAllPairs
     }
+
 
 
 
