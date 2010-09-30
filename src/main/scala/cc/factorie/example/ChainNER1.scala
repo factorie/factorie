@@ -38,8 +38,8 @@ object ChainNER1 {
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
     
     // Read training and testing data.
-    val trainSentences = labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(0))), () => new Sentence, (word,lab)=>new Token(word,lab))
-    val testSentences =  labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(1))), () => new Sentence, (word,lab)=>new Token(word,lab))
+    val trainSentences = labeled.TokenSeq.fromOWPL(Source.fromFile(new File(args(0))), ()=>new Sentence, (word,lab)=>new Token(word,lab))
+    val testSentences =  labeled.TokenSeq.fromOWPL(Source.fromFile(new File(args(1))), ()=>new Sentence, (word,lab)=>new Token(word,lab))
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.labels)

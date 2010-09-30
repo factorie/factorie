@@ -88,7 +88,7 @@ object TokenSeq {
       The initial and trueValue of the Label will be set from the last element.
       If ignoreLines is non-null, we skip any lines containing this pattern, for example pass "-DOCSTART-" for CoNLL 2003.
       */
-  def fromOWPL[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](source:Source, 
+  def fromOWPL[S<:TokenSeq[T,_,S],T<:Token[S,_,T]](source:Source, 
                                                                    newTokenSeq:()=>S,
                                                                    newToken:(String,String)=>T, 
                                                                    featureFunction:Seq[String]=>Seq[String] = cc.factorie.app.tokenseq.standardFeatureFunction,

@@ -51,8 +51,8 @@ object ChainNER1ML {
     }
 
     // Read training and testing data.
-    val trainSentences = labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(0))), () => new Sentence, (word, lab) => new Token(word, lab), featureFunction _)
-    val testSentences = labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(1))), () => new Sentence, (word, lab) => new Token(word, lab), featureFunction _)
+    val trainSentences = labeled.TokenSeq.fromOWPL[Sentence,Token](Source.fromFile(new File(args(0))), () => new Sentence, (word, lab) => new Token(word, lab), featureFunction _)
+    val testSentences = labeled.TokenSeq.fromOWPL[Sentence,Token](Source.fromFile(new File(args(1))), () => new Sentence, (word, lab) => new Token(word, lab), featureFunction _)
 
     // Get the variables to be inferred
     val trainVariables = trainSentences.map(_.labels)

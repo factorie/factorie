@@ -279,8 +279,8 @@ object ChainNER2b {
 
     printred("Reading training and testing data...")
     // Read training and testing data.  The function 'featureExtractor' function is defined below
-    val trainSentences = labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(0))), () => new Sentence, (word,lab) => new Token(word, lab), featureExtractor _) //.take(100)
-    val testSentences =  labeled.TokenSeq.fromOWPL[Sentence,Token,Label](Source.fromFile(new File(args(1))), () => new Sentence, (word,lab) => new Token(word, lab), featureExtractor _) //.take(50)
+    val trainSentences = labeled.TokenSeq.fromOWPL[Sentence,Token](Source.fromFile(new File(args(0))), () => new Sentence, (word,lab) => new Token(word, lab), featureExtractor _) //.take(100)
+    val testSentences =  labeled.TokenSeq.fromOWPL[Sentence,Token](Source.fromFile(new File(args(1))), () => new Sentence, (word,lab) => new Token(word, lab), featureExtractor _) //.take(50)
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.labels)
