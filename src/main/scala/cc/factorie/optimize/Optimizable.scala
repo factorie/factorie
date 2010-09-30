@@ -25,7 +25,7 @@ import scala.collection.mutable.IndexedSeq
 trait Optimizable {
   def numOptimizableParameters: Int
   /** If argument is null, an array will be allocated for you and returned. */
-  def getOptimizableParameters(a:Array[Double] = null): Array[Double]
+  def getOptimizableParameters(a:Array[Double])
   def setOptimizableParameters(a:Array[Double])
   def optimizableParameter(index:Int): Double
   def optimizableParameter_=(index:Int, d:Double): Unit
@@ -41,15 +41,9 @@ trait OptimizableByValue extends Optimizable {
     @author Andrew McCallum */
 trait OptimizableByGradient extends Optimizable {
   /** If argument is null, an array will be allocated for you and returned. */
-  def getOptimizableGradient(a:Array[Double] = null): Array[Double]
+  def getOptimizableGradient(a:Array[Double])
 }
 
 /** An Optimizable object that can provide both the value and the gradient of the function being optimized. 
     @author Andrew McCallum */
 trait OptimizableByValueAndGradient extends OptimizableByValue with OptimizableByGradient
-
-// Used for online per-instance methods, like voted perceptron.
-// TODO Design still under consideration
-/*trait OptimizableByGradientIterator extends Optimizable {
-  def optimizableGradientIterator: Iterator[Array[Double]]
-}*/

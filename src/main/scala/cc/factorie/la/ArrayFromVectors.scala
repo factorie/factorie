@@ -31,11 +31,10 @@ class ArrayFromVectors(theVectors:Seq[Vector]) {
   //templates.foreach(_.freeze)
 
   val vectorsArraySize = vectors.foldLeft(0)(_+_.activeDomain.size)
-  def getVectorsInArray(a:Array[Double] = null): Array[Double] = {
-    val result = if (a != null) a else new Array[Double](vectorsArraySize)
+  def getVectorsInArray(a:Array[Double]) = {
     var i = 0
-    vectors.foreach(v => for (j <- v.activeDomain) { result(i) = v(j); i += 1 })
-    result
+    vectors.foreach(v => for (j <- v.activeDomain) { a(i) = v(j); i += 1 })
+    a
   }
   def setVectorsFromArray(a:Array[Double]): Unit = {
     var i = 0

@@ -53,10 +53,12 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
   }
 
   def optimize(line: Array[Double], initialStep: Double): Double = {
-    var params: Array[Double] = optimizable.getOptimizableParameters()
+    var params: Array[Double] = new Array[Double](optimizable.numOptimizableParameters)
+    optimizable.getOptimizableParameters(params)
     var oldParams = new Array[Double](params.length)
     maths.set(oldParams, params)
-    var gradient: Array[Double] = optimizable.getOptimizableGradient()
+    var gradient: Array[Double] = new Array[Double](optimizable.numOptimizableParameters)
+    optimizable.getOptimizableGradient(gradient)
 
     var f = Double.NaN
     var f2 = optimizable.optimizableValue
