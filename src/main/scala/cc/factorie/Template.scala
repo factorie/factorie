@@ -55,7 +55,9 @@ trait Factor extends Ordered[Factor] {
   override def equals(other: Any): Boolean = other match {
     case other:Factor => 
       (this eq other) || ((this.template eq other.template)
-                          && forallIndex(numVariables)(i => this.variable(i) eq other.variable(i)))
+                          && forallIndex(numVariables)(i =>
+        (this.variable(i) eq other.variable(i)) ||
+                (this.variable(i).isInstanceOf[Vars[_]] && this.variable(i) == other.variable(i))))
     case _ => false
   }
   var _hashCode = -1
@@ -87,7 +89,8 @@ trait Stats extends Statistics with Iterable[Stat]
 /** The template for many factors.  Manages its connections to neighboring variables.
     @Andrew McCallum
 */
-trait Template {
+trait
+Template {
   type TemplateType <: Template // like a self-type
   type FactorType <: Factor
   type StatType <: Stat
