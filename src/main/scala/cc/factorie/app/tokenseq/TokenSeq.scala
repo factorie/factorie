@@ -181,11 +181,10 @@ object TokenSeq {
       } else if (line.length < 2 || (ignoreLines != null && ignoreLines.findAllIn(line).hasNext)) {
         // Skip this line
       } else {
-        val fields = line.split(' ')
-        assert(fields.length == 4)
+        val fields = line.split("\\s+")
+        assert(fields.length >= 2, "line \"%s\" must have a word and a label." format line)
         val word = fields(0)
-        val inFeatures = fields.slice(0, fields.length-1) // This used to be with ".force"
-        val pos = fields(1)
+        val inFeatures = fields.slice(0, fields.length-1)   // This used to be with ".force"
         val label = labelFunction(fields.last.stripLineEnd)
         val token = newToken(word, label)
         token ++= featureFunction(inFeatures)
