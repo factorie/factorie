@@ -16,7 +16,7 @@ package cc.factorie.app.tokenseq.labeled
 import cc.factorie._
 
 /** A proposer that enforces BIO constraints 
-    @author Tim Viera */
+    @author Mike Wick */
 abstract class BIOProposer[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](model:Model) extends MHSampler[L](model)
 {
   def labelSpace : Array[String]
