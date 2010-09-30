@@ -150,11 +150,11 @@ class SampleRankTest extends AssertionsForJUnit {
 	      val truthScoreJ = model.scoreAll(bools)
  
 	      if(truthScoreI>truthScoreJ)
-		if(modelScoreI<modelScoreJ)
+		if(modelScoreI<=modelScoreJ)
 		  fpErrors += 1
 		//assert(modelScoreI>modelScoreJ)
 	      if(truthScoreI<truthScoreJ)
-		if(modelScoreI>modelScoreJ)
+		if(modelScoreI>=modelScoreJ)
 		  fnErrors += 1
 		//assert(modelScoreI<modelScoreJ)
 	    }
