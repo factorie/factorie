@@ -72,14 +72,7 @@ abstract class CategoricalObservation[A](theValue:A) extends DiscreteObservation
     Then you can reduce the size of the Domain by calling 'trimBelowCount' or 'trimBelowSize', 
     which will recreate the new mapping from categories to densely-packed non-negative integers. 
     In typical usage you would (1) read in the data, (2) trim the domain, (3) re-read the data with the new mapping, creating variables. 
-    @author Andrew McCallum */
-@deprecated("This interface will likely change in the future.")
-trait CountingCategoricalDomain[This<:CountingCategoricalDomain[This] with CategoricalVars[_]] {
-  this: This =>
-  type VariableType = This
-  type DomainType = CategoricalDomainWithCounter[VariableType]
-  class DomainClass extends CategoricalDomainWithCounter[VariableType]()(null)
-}
+ */
 
 
 

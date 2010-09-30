@@ -12,32 +12,30 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
-
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.reflect.Manifest
+import scala.collection.mutable.{ArrayBuffer, HashMap, ListBuffer}
 import scala.util.Random
-import scala.util.Sorting
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 import cc.factorie.la._
-import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
+import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
+import scala.reflect.Manifest
 
-
-/** The "domain" of a variable---also essentially serving as the variables' "type".
+/** The "domain" of a variable---also essentially serving as the Variable's "type".
+    This most generic superclass of all Domains does not provide much functionality.
+    Key functionality of subclasses: 
+    DiscreteDomain provides a size.  
+    VectorDomain provides the maximum dimensionality of its vectors.
+    CategoricalDomain provides a densely-packed mapping between category values and integers.
     @author Andrew McCallum
-    @since 0.8
-*/
+    @since 0.8 */
 class Domain[V<:Variable](implicit m:Manifest[V]) {
-  /** Return the classes that have this Domain. */
+  /** Return the collection of all classes that have this Domain. */
   def variableClasses: Seq[Class[V]] =
     Domain.domains.iterator.filter({case (key,value) => value == this}).map({case (key,value) => key.asInstanceOf[Class[V]]}).toList
+  /** Serialize this domain to disk in the given directory. */
   def save(dirname:String): Unit = {}
+  /** Deserialize this domain from disk in the given directory. */
   def load(dirname:String): Unit = {}
-  //made this public in order to check from outside whether the file to load from exists
+  /** The name of the file (in directory specified in "save" and "load") to which this Domain is saved. */
   def filename:String = this.getClass.getName+"["+variableClasses.head.getName+"]"
   // Automatically register ourselves.  
   // This enables pairing a Domain with its variable V by simply: "val MyDomain = new FooDomain[MyVariable]"
@@ -50,6 +48,7 @@ class Domain[V<:Variable](implicit m:Manifest[V]) {
 /** A Domain for variables that respond to the "vector" method */
 class VectorDomain[V<:VectorVar](implicit m:Manifest[V]) extends Domain[V] {
   def maxVectorSize: Int = 1 // TODO We should somehow force subclasses to override this, but VectorVar needs VectorDomain to be non-abstract
+  def vectorDimensionName(i:Int): String = i.toString
   def freeze: Unit = {}
 }
 
@@ -99,20 +98,116 @@ class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends VectorDoma
 
 // TODO Also make a randomized-representation CategoricalDomain, with hashes.
 
-class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with util.Index[V#CategoryType] /*with DomainEntryCounter[V]*/ {
-  override def freeze = freeze0
-  override def allocSize = allocSize0
-  override def size = size0
+/** A domain for categorical variables.  It stores not only a size,
+    but also the mapping from category values (of type V#CategoryType)
+    to densely packed integers suitable for indices into parameter
+    vectors.
+
+    Furthermore if domain.gatherCounts = true, this domain will count
+    the number of calls to 'index'.  Then you can reduce the size of
+    the Domain by calling 'trimBelowCount' or 'trimBelowSize', which
+    will recreate the new mapping from categories to densely-packed
+    non-negative integers.  In typical usage you would (1) read in the
+    data, (2) trim the domain, (3) re-read the data with the new
+    mapping, creating variables.
+
+    @author Andrew McCallum
+    */
+class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with IndexedSeqEqualsEq[V#CategoryType] {
+  import scala.collection.mutable.Map
+  type T = V#CategoryType
+
+  override def freeze = _frozen = true
+  /** The size others might want to allocate to hold data relevant to this Index.  
+      If maxSize is set can be bigger than size. 
+      @see maxSize */
+  override def allocSize = if (maxSize < 0) size else maxSize
+  override def size = _indices.size
   override def size_=(sizeFunction: ()=>Int): Unit = throw new Error("CategoricalDomain.size cannot be set directly; only DiscreteDomains' can.")
+  def length = _indices.size
+  /** If true, do not allow this Index to change. */
+  private var _frozen = false
+  /** Can new category values be added to this Domain? */
+  def frozen = _frozen
+
+  /**Forward map from int to object */
+  private var _objects = new ArrayBuffer[T]
+  /**Map from object back to int index */
+  private var _indices = Map[T, Int]()
+  /** Wipe the Index clean */
+  def reset: Unit = {
+    _frozen = false
+    _objects = new ArrayBuffer[T]
+    _indices = Map[T,Int]()
+  }
+  /** Allow subclasses to access the list objects.  Useful for subclasses calling reset and then re-entering a filtered subset of the old objects. */
+  protected def _entries: IndexedSeq[T] = _objects
+  /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
+      override this method with the largest you think your growable domain will get. */
+  var maxSize = -1
+  // TODO consider putting the following method back in later -akm
+  //override def maxSize_=(s:Int) : Unit = if (maxSize >= size) maxSize = s else throw new Error("Trying to set maxSize smaller than size.")
+
+  override def iterator = _objects.iterator
+  override def contains(entry: Any) = _indices.contains(entry.asInstanceOf[T])
+  /* entry match { case e:T => _indices.contains(e); case _ => false } */
+
+  def apply(index:Int) = get(index)
+  def unapply(entry:T): Option[Int] = if (_indices.contains(entry)) Some(_indices(entry)) else None
+
+  /** Return an object at the given position or throws an exception if it's not found. */
+  def get(pos: Int): T = _objects(pos)
+
+  /** Return a densely-packed positive integer index for the given object.  
+      By default, allocate a new index (at the end) if the object was not found, 
+      but if immutable may return -1 */
+  def indexOnly(entry: T): Int = {
+    def nextMax = {
+      val m = _objects.size
+      if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
+      _objects += entry;
+      m
+    }
+    if (_frozen) _indices.getOrElse(entry, -1) else _indices.getOrElseUpdate(entry, nextMax)
+  }
+  def index(entry: T): Int = {
+    val i = indexOnly(entry)
+    if (gatherCounts && i != -1) incrementCount(i)
+    i
+  }
+
+ 
+  /** Like index, but throw an exception if the entry is not already there. */
+  def getIndex(entry:T) : Int = _indices.getOrElse(entry, throw new Error("Entry not present; use index() to cause a lookup."))
+
+  /** Override indexOf's slow, deprecated behavior. */
+  override def indexOf[B >: T](elem: B): Int = index(elem.asInstanceOf[T]);
+
+  /** Clears the index. */
+  def clear() = { _indices.clear(); _objects.clear() }
+
+  // Separate argument types preserves return collection type
+  def indexAll(c: Iterator[T]) = c map index;
+  def indexAll(c: List[T]) = c map index;
+  def indexAll(c: Array[T]) = c map index;
+  def indexAll(c: Set[T]) = c map index;
+  def getAll(c: Iterator[Int]) = c map get;
+  def getAll(c: List[Int]) = c map get;
+  def getAll(c: Array[Int]) = c map get;
+  def getAll(c: Set[Int]) = c map get;
+  def indexKeys[V](c: scala.collection.Map[T, V]) = Map[T, V]() ++ c.map {case (a, b) => (index(a), b)}
+  def indexValues[K](c: scala.collection.Map[K, T]) = Map[K, T]() ++ c.map {case (a, b) => (a, index(b))}
+
   def randomValue : V#CategoryType = randomValue(cc.factorie.random)
   def randomValue(random:Random): V#CategoryType = get(random.nextInt(size))
   def +=(x:V#CategoryType) : Unit = this.index(x)
   def ++=(xs:Traversable[V#CategoryType]) : Unit = xs.foreach(this.index(_))
  
   override def toString = "CategoricalDomain["+m.erasure+"]("+size+")"
+  override def vectorDimensionName(i:Int): String = get(i).toString
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)
-    if (f.exists) return // Already exists, don't write it again
+    if (f.exists) return // Already exists, don't write it again.  // TODO Careful about trying to re-write to the same location, though.
     val s = new PrintWriter(new FileWriter(f))
     //if (elements.next.asInstanceOf[AnyVal].getClass != classOf[String]) throw new Error("Only know how to save CategoryType String.")
     if (frozen) s.println("#frozen = true") else s.println("#frozen = false")
@@ -137,10 +232,8 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
     s.close
     //println("Loading Domain["+filename+"].size="+size)
   }
-
-  // Code that used to be in DomainEntryCounter[V], but when separate was causing compiler to crash.
-  /*
-  type T = V#CategoryType
+  
+  // Code for managing occurrence counts
   var gatherCounts = false
   private val _countsInitialSize = 64
   private var _counts = new Array[Int](_countsInitialSize)
@@ -158,14 +251,6 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
   def incrementCount(i:Int): Unit = { ensureSize(i); _counts(i) += 1 }
   def incrementCount(entry:T): Unit = incrementCount(indexOnly(entry))
   private def someCountsGathered: Boolean = { for (i <- 0 until _counts.size) if (_counts(i) > 0) return true; return false }
-  /** Return the index associated with this entry, without incrementing its count, even if 'gatherCounts' is true. */
-  def indexOnly(entry:T): Int = super.index(entry)
-  /** Return the index associated with entry, and also, if 'gatherCounts' is true, increment +1 the count associated with this entry. */
-  override def index(entry:T): Int = {
-    val i = super.index(entry)
-    if (gatherCounts) incrementCount(i)
-    i
-  }
   /** Returns the number of unique elements trimmed */
   def trimBelowCount(threshold:Int): Int = {
     assert(!frozen)
@@ -206,7 +291,6 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
     trimBelowCount(threshold)
     threshold
   }
-  */
 }
 
 object CategoricalDomain {
@@ -214,98 +298,24 @@ object CategoricalDomain {
 }
 
 
-/** Mixin for CategoricalDomain that facilitates counting occurreces of entries, and trimming the Domain size.
-    WARNING: Any indices that you use and store before trimming will not be valid after trimming!
-    Typical usage:
-    <pre>
-    Domain[Token] := new CategoricalDomain[Token] with DomainEntryCounter[Token]
-    data.readAndIndex
-    Domain[Token].trimBelowSize(100000) // this also automatically turns off counting
-    data.readIndexAndCreateVariables // again
-    </pre>
-    But this typical usage was so awkward, that for now DomainEntryCounter is mixed in to CategoricalDomain by default.
-    */
-trait DomainEntryCounter[V<:CategoricalVars[_]] extends util.Index[V#CategoryType] {
-  this: CategoricalDomain[V] =>
-  type T = V#CategoryType
-  var gatherCounts = true
-  private val _countsInitialSize = 64
-  private var _counts = new Array[Int](_countsInitialSize)
-  protected def ensureSize(n:Int): Unit = {
-    if (_counts.length - 1 < n) {
-      var newsize = _counts.length * 2
-      while (newsize < n) newsize *= 2
-      val new_counts = new Array[Int](newsize)
-      Array.copy(_counts, 0, new_counts, 0, _counts.size)
-      _counts = new_counts
-    }
-  }
-  def count(i:Int): Int = _counts(i)
-  def count(entry:T): Int = _counts(indexOnly(entry))
-  def incrementCount(i:Int): Unit = { ensureSize(i); _counts(i) += 1 }
-  def incrementCount(entry:T): Unit = incrementCount(indexOnly(entry))
-  private def someCountsGathered: Boolean = { for (i <- 0 until _counts.size) if (_counts(i) > 0) return true; return false }
-  /** Return the index associated with this entry, without incrementing its count, even if 'gatherCounts' is true. */
-  def indexOnly(entry:T): Int = super.index(entry)
-  /** Return the index associated with entry, and also, if 'gatherCounts' is true, increment +1 the count associated with this entry. */
-  override def index(entry:T): Int = {
-    val i = super.index(entry)
-    if (gatherCounts) incrementCount(i)
-    i
-  }
-  /** Returns the number of unique elements trimmed */
-  def trimBelowCount(threshold:Int): Int = {
-    assert(!frozen)
-    if (!someCountsGathered) throw new Error("Can't trim without first gathering any counts.")
-    val origEntries = _entries
-    reset // TODO Should we override reset to also set gatherCounts = true?  I don't think so.
-    gatherCounts = false
-    for (i <- 0 until origEntries.size)
-      if (_counts(i) >= threshold) indexOnly(origEntries(i))
-    _counts = null // We don't need counts any more; allow it to be garbage collected.  Note that if
-    freeze
-    origEntries.size - size
-  }
-  /** Return the number of unique entries with count equal to 'c'. */
-  def sizeAtCount(c:Int): Int = {
-    if (!someCountsGathered) throw new Error("No counts gathered.")
-    var ret = 0
-    val min = math.min(size, _counts.size)
-    for (i <- 0 until min) if (_counts(i) == c) ret += 1
-    ret
-  }
-  /** Return the number of unique entries with count greater than or equal to 'threshold'. 
-      This returned value will be the size of the Domain after a call to trimBelowCount(threshold). */
-  def sizeAtOrAboveCount(threshold:Int): Int = {
-    if (!someCountsGathered) throw new Error("No counts gathered.")
-    var ret = 0
-    val min = math.min(size, _counts.size)
-    for (i <- 0 until min) if (_counts(i) >= threshold) ret += 1
-    ret
-  }
-  /** Return the number of unique entries with count below 'threshold'. */
-  def sizeBelowCount(threshold:Int): Int = size - sizeAtOrAboveCount(threshold)  
-  /** Returns the count threshold below which entries were discarded. */
-  def trimBelowSize(target:Int): Int = {
-    assert(!frozen)
-    var threshold = 2
-    while (sizeAtOrAboveCount(threshold) >= target) threshold += 1
-    trimBelowCount(threshold)
-    threshold
-  }
+/* CategoricalDomain also facilitates counting occurences of entries, and trimming the Domain size.
+   WARNING: Any indices that you use and store before trimming will not be valid after trimming!
+   Typical usage:
+   <pre>
+   class Token(s:String) extends CategoricalVariable(s)
+   data.readAndIndex
+   Domain[Token].trimBelowSize(100000) // this also automatically turns off counting
+   data.readIndexAndCreateVariables // again
+   </pre>
+   */
+
+/** To be used to avoid re-reading the data, as described in above comment, 
+    but not yet implemented. */
+trait CategoricalRemapping {
+  def remapCategories(fn:(Int)=>Int)
 }
-// An example of old real-world usage:
-/*  class Token(val word:String, features:Seq[String]) extends BinaryVectorVariable(features, true) with VarInSeq {
-      type VariableType <: Token
-      type DomainType <: CategoricalDomain[VariableType] with DomainEntryCounter[VariableType]
-    }
-    Domain += new CategoricalDomain[Token] with DomainEntryCounter[Token] 
-*/
-// But now much easier to use class below, simply like this:
-// class Token extends CategoricalVariable[String] with CountingCategoricalDomain[Token]
-// CountingCategoricalDomain is defined in VariableCategorical.scala
-  
-class CategoricalDomainWithCounter[V<:CategoricalVars[_]](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) with DomainEntryCounter[V]
+
+
 
 /** A Categorical domain with string values.  Provides convenient intialization to known values, 
     with value members holding those known values.  For example:
@@ -338,15 +348,6 @@ class StringDomain[V<:CategoricalVars[_] {type CategoryType = String}](implicit 
     }
   }
 }
-
-
-/** Marks classes that should not get their own domain.  
-    This is examined by domainInSubclasses from Domain.getDomainForClass.
-    @author Andrew McCallum */
-//class DomainInSubclasses extends ClassfileAnnotation 
-// TODO Not yet working.  WARNING from compiler:
-// warning: implementation restriction: subclassing Classfile does not make your annotation visible at runtime.  
-// If that is what you want, you must write the annotation class in Java.
 
 
 /** A static map from a Variable class to its Domain. */
