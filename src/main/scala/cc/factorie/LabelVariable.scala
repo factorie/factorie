@@ -12,24 +12,13 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
-import scala.util.Random
-import scala.reflect.Manifest
-//import scalala.Scalala._
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
 // Categorical variables that have true values are referred to as 'Labels'
 
-// TODO Consider using the word "Target" for variables that we are trying to predict at training and/or test time.
-// The word "Hidden" should perhaps also be used somewhere?
-
 /** A variable of finite enumerated values that has a true "labeled" value, separate from its current value. 
     @author Andrew McCallum */
-// TODO We could make version of this for IntVar: TrueIntVar
+// TODO We could make version of this for IntegerVar: TrueIntegerVar
 trait DiscreteVariableWithTrueSetting extends DiscreteVariable with TrueSetting {
   this: DiscreteVariable =>
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
@@ -48,13 +37,6 @@ trait CategoricalVariableWithTrueSetting[A] extends DiscreteVariableWithTrueSett
   def trueValue: VariableType#VariableType#CategoryType = if (trueIntValue >= 0) domain.get(trueIntValue) else null.asInstanceOf[VariableType#VariableType#CategoryType]
 }
 
-abstract class DiscreteVariableWithTrueSettingTemplate[V<:DiscreteVariable with TrueSetting](implicit m:Manifest[V]) extends TemplateWithVectorStatistics1[V] {
-  def score(s:Stat) = if (s._1.valueIsTruth) 1.0 else 0.0
-}
-class LabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends DiscreteVariableWithTrueSettingTemplate[V]
-
-
-
 
 /** A variable with a single index and a true value.
     Subclasses are allowed to override 'set' to coordinate the value of other variables with this one.
@@ -65,7 +47,7 @@ class LabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends DiscreteVar
 abstract class CoordinatedLabelVariable[A](trueval:A) extends CategoricalVariable[A](trueval) with CategoricalVariableWithTrueSetting[A] {
   type VariableType <: CoordinatedLabelVariable[A]
   var trueIntValue = domain.index(trueval)
-  //lazy val _domain = super.domain
+  //lazy val _domain = super.domain // Considering this to speed BeliefPropagation, but making Variable.domain not "final" also costs.
   //override def domain: VariableType#DomainType = _domain
 }
 
@@ -92,3 +74,12 @@ class StringLabelVariable(trueval:String) extends LabelVariable[String](trueval)
   type DomainType <: StringDomain[VariableType]
   class DomainClass extends StringDomain[VariableType]()(null)
 }
+
+
+// Templates
+
+abstract class DiscreteVariableWithTrueSettingTemplate[V<:DiscreteVariable with TrueSetting](implicit m:Manifest[V]) extends TemplateWithVectorStatistics1[V] {
+  def score(s:Stat) = if (s._1.valueIsTruth) 1.0 else 0.0
+}
+
+class LabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends DiscreteVariableWithTrueSettingTemplate[V]

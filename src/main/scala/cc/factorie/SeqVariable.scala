@@ -12,18 +12,10 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable, DoubleLinkedList}
-import scala.reflect.Manifest
-import scala.util.Random
-import scala.Math
-import scala.util.Sorting
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
+import scala.math
 
 // Variables for dealing with sequences
 

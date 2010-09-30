@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 import scala.util.Random
 import cc.factorie.la._
@@ -33,7 +31,7 @@ trait DiscreteVars extends Variable with IntegerVars with VectorVar {
   /** A cc.factorie.la.Vector representation of the value of this variable. */
   def vector: Vector
   /** A more efficient alternative to this.vector.activeDomain */
-  def activeDomain: Iterable[Int]  // TODO Consider removing this?
+  def activeDomain: Iterable[Int]  // TODO Consider removing this? -akm
 }
 
 @DomainInSubclasses
@@ -56,12 +54,14 @@ abstract class DiscreteVariable(initialValue:Int = 0) extends IntegerVariable(in
     def reset = i = -1
     override def variable : DiscreteVariable.this.type = DiscreteVariable.this
   }
-  type QType = cc.factorie.generative.MutableProportions // TODO But then this choice cannot be changed by subclasses :-(  Consider some implicit configuration instead.
+  // TODO But then this choice cannot be changed by subclasses :-(  Consider some implicit configuration instead.
+  type QType = cc.factorie.generative.MutableProportions
   def newQ = new cc.factorie.generative.DenseProportions(domain.size)
 }
 
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  May be useful in the future for block-Gibbs-sampling?
     @author Andrew McCallum */
+@deprecated("This will likely be removed in a future version.")
 class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[DiscreteVariable] with IterableSettings {
   private val _vars = vars.toList
   def length = _vars.length
@@ -74,7 +74,7 @@ class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[Di
     val s = _vars.map(_.domain.size).toArray
     val max = s.foldLeft(1)(_*_)
     def hasNext = i < max
-    def next(difflist:DiffList) = throw new Error // TODO Implement this properly { i += 1; val d = newDiffList; _vars(i%n).setByIndex(i/n)(d); d }
+    def next(difflist:DiffList) = throw new Error // TODO Implement this properly { i += 1; val d = newDiffList; _vars(i%n).set(i/n)(d); d }
     def reset = i = -1
   }
 }

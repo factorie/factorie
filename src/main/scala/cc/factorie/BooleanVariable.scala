@@ -47,13 +47,15 @@ class BooleanObservation(theValue:Boolean) extends CategoricalObservation(theVal
   type VariableType <: BooleanObservation
 }
 
+/** You can efficiently get a pre-allocated BooleanObservation instance with this object
+    by BooleanObservation(true) and BooleanObservation(false.) */
 object BooleanObservation {
   val f = new BooleanObservation(false)
   val t = new BooleanObservation(true)
   def apply(x:Boolean): BooleanObservation = if (x) t else f
 }
 
-
+/** The Domain for BooleanVars, of size two, containing false == 0 and true == 1. */
 class BooleanDomain[V<:BooleanVar](implicit m:Manifest[V]) extends CategoricalDomain[V] {
   super.index(false)
   super.index(true)

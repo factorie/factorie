@@ -103,7 +103,7 @@ class DiscreteFactorMarginal(val factor:Factor, val value:Array[Double]) extends
 /** BruteForce searches for the optimal configuration of a Collection of Variables
     by doing exhaustive enumeration or all possible configurations.
     @author Tim Vieira */
-@deprecated("This class is not yet integrated into the general Inference framework.")
+@deprecated("This class is not yet integrated into the general Inference framework, and may be removed in the future.")
 class BruteForceInferencer[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
 
   // TODO: make this conform to some of the existing Inferencer interfaces.

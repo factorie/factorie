@@ -12,10 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
-
 
 /** A Variable whose value has type indicated by the type parameter, which must be a scala.AnyRef.
     Scala primitive types such as Int and Double should be stored in specialized variables, 

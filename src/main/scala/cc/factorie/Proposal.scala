@@ -12,16 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
-
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.util.Random
-import scala.Math
-import scala.util.Sorting
-
-// Proposals
 
 /** For storing one of the proposals considered.
     "diff" is the list of changes represented by this Proposal.
@@ -33,11 +24,10 @@ class Proposal(val diff:DiffList, val modelScore:Double, val objectiveScore:Doub
   override def toString = "Proposal("+diff+", "+modelScore+", "+objectiveScore+", "+acceptanceScore+")"
 }
 
-
-
 // TODO The following trait is currently unused.  Remove it?
 /** An object (typically a variable or a world) that can propose changes to itself, 
     and possibly also other variables through variable value coordination. */
+@deprecated("May be removed in a future version of the library.")
 trait Proposer {
   /** Make a random proposal.  Return Metropolis-Hastings' log(q(old|new)/q(new|old)) */
   def propose(model:Model, d:DiffList): Double

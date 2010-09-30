@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 
 /** A CategoricalVars that does not take a type parameter, for use in the definition of CategoricalDomain. */
@@ -64,8 +62,8 @@ abstract class CategoricalVariable[A] extends DiscreteVariable(0) with Categoric
     @author Andrew McCallum */
 @DomainInSubclasses
 abstract class CategoricalObservation[A](theValue:A) extends DiscreteObservation(-1) with CategoricalVar[A] {
-  override val intValue = domain.index(theValue)
   type VariableType <: CategoricalObservation[A]
+  _initializeValue(domain.index(theValue))
 }
 
 /** When mixed in to a CategoricalVariable or CategoricalObservation, the variable's Domain will count the number of calls to 'index'.  

@@ -66,7 +66,6 @@ class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends VectorDoma
   private var _frozen = false
   private var _size: Int = -1
   private var _sizeFunction: ()=>Int = null
-  // def frozen = _frozen // TODO Enable this, and uncomment code in DiscreteVariable.setByIndex.  Consider folding all util.Index into CategoricalDomain
   def size_=(size:Int): Unit = size_=(() => size)
   def size_=(sizeFunction: ()=>Int): Unit = {
     if (_size == -1) _sizeFunction = sizeFunction

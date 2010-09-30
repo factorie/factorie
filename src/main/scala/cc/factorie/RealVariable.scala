@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 
 /** A Variable with a real (double) value. */
@@ -58,12 +56,3 @@ class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableTyped
 class RealObservation(val doubleValue:Double) extends RealVar with ConstantValue {
   type VariableType <: RealObservation
 }
-
-
-// TODO, I should create corresponding classes for Integer, Discrete, Ordinal, Categorical and Proportion
-// Alternatively, consider removing this class.
-/** A RealVariable with a shorter name. */
-/*class Real(initialValue:Double) extends RealVariable(initialValue) {
-  type VariableType <: Real
-}*/
-

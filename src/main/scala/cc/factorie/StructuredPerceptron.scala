@@ -12,12 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
-import scala.reflect.Manifest
-//import scalala.Scalala._
-//import scala.reflect.Manifest
 import cc.factorie.la._
 
 /** Collins' structured-perceptron */

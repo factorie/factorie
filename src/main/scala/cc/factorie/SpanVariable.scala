@@ -208,37 +208,3 @@ trait VariableSeqWithSpans[T >:Null <: Variable with VarInTypedSeq[T,_],S<:SpanV
     override def toString = "RemoveSpanVariable("+span+")"
   }
 }
-
-/*
-@deprecated
-class VariableSeqWithSpansOld[X <: Variable with VarInSeq[X]] extends VariableSeq[X] {
-  type SpanType >: Null <: SpanVariable[X];
-  private val _spans = new ListBuffer[SpanType];
-  def spans: Seq[SpanType] = _spans
-  def spansContaining(index: Int): Iterable[SpanType] = _spans.filter(s => s.start <= index && index < (s.start + s.length))
-  def spansStartingAt(index: Int): Iterable[SpanType] = _spans.filter(s => s.start == index)
-  abstract class SpanVariableInSeq(initStart: Int, initLength: Int)(implicit d: DiffList) extends SpanVariable[X](VariableSeqWithSpansOld.this, initStart, initLength)(d) {
-    //this : SpanType =>
-    protected def thisSpan: SpanType = this.asInstanceOf[SpanType] // TODO is there some cleaner way to get SpanVariable.this inside the Diff classes below?
-    if (d != null) AddSpanVariable()(d)
-    override def delete(implicit d: DiffList) = {RemoveSpanVariable()(d); val a = super.delete; a}
-    case class AddSpanVariable(implicit d: DiffList) extends AutoDiff {
-      var done = false
-      def variable = {if (done) thisSpan else null} // or VariableSeqWithSpans[X].this?
-      def redo = {_spans.prepend(thisSpan); assert(!done); done = true}
-      def undo = {_spans.-=(thisSpan); assert(done); done = false}
-      override def toString = "AddSpanVariable("+variable.toString+")"
-    }
-    case class RemoveSpanVariable(implicit d: DiffList) extends AutoDiff {
-      var done = false
-      def variable = if (done) null else thisSpan // or VariableSeqWithSpans[X].this?
-      def redo = {_spans.-=(thisSpan); assert(!done); done = true}
-      def undo = {_spans.prepend(thisSpan); assert(done); done = false}
-      override def toString = "RemoveSpanVariable("+variable.toString+")"
-    }
-  }
-}
-*/
-
-//class LabelSeqWithSpans[T<:Variable { def label:Label }]
-

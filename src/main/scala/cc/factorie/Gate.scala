@@ -12,9 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
-
 package cc.factorie
 import scala.collection.mutable.{ListBuffer,HashSet,ArrayBuffer}
 
@@ -40,10 +37,7 @@ trait Gate extends DiscreteVariable {
   }
   override def set(newIndex:Int)(implicit d:DiffList): Unit = {
     super.set(newIndex)
-    //println("Gate.setByIndex _gatedRefs="+_gatedRefs) // xxx
-    //new Exception().printStackTrace()
     if (_gatedRefs ne null) for (ref <- _gatedRefs) {
-      //println("Gate.setByIndex ref="+ref)
       ref.setByIndex(newIndex)
     }
   }
@@ -55,7 +49,8 @@ trait Gate extends DiscreteVariable {
 
 
 /** Abstract stand-in for GatedRefVariable that doesn't take type parameters.  
-    Among other things, this avoids impossible contravariant typing in MixtureComponentRef. 
+    Among other things, this avoids impossible contravariant typing in MixtureComponentRef
+    (which no longer exists, but may have an analogue in the future).
     @author Andrew McCallum */
 trait AbstractGatedRefVariable {
   def gate: Gate
@@ -70,12 +65,10 @@ trait AbstractGatedRefVariable {
     @author Andrew McCallum */
 trait GatedRefVariable[A<:AnyRef] extends RefVariable[A] with AbstractGatedRefVariable {
   type VariableType <: GatedRefVariable[A]
-  //private var _gate: Gate = null 
   def gate: Gate // TODO Are we sure we need to know who our gate is?  Can we save memory by deleting this?
-  //def gate_=(g:Gate): Unit = if (_gate == null) _gate = g else throw new Error("Gate already set.")
-  // Not the current value of this GatedRefVariable.
-  // Returns the value associated with a certain integer index value of the gate.  
-  // The gate uses this to call grf.set(grf.value(this.intValue)). 
+  /** Not the current value of this GatedRefVariable.
+      Returns the value associated with a certain integer index value of the gate.  
+      The gate uses this to call grf.set(grf.valueForIndex(this.intValue)).  */
   def valueForIndex(index:Int): A
   def setByIndex(index:Int)(implicit d:DiffList): Unit = set(valueForIndex(index))
   def setToNull(implicit d:DiffList): Unit = set(null.asInstanceOf[A])

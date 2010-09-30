@@ -12,16 +12,8 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
 
-// TODO Rename this file IntegerVariable.scala
-  
-// IntVariable (has integer value) { def intValue: Int }
-// DiscreteVariable extends IntVariable (has a finite number of integer values from 0 ... N) { def domainSize: Int }
-// CategoricalVariable[A] extends DiscreteVariable (its integer values are mapped to categorical values) { def value:A }
-  
 /** A Variable with one or more Int values.  It encompasses single integer values, 
     as well as vector collections of many (weighted) int values.  
     @author Andrew McCallum */
@@ -70,10 +62,11 @@ class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntVa
 
 /** A Variable with a immutable Int value.
     @author Andrew McCallum */
-class IntegerObservation(val intValue:Int) extends IntegerVar with ConstantValue {
+class IntegerObservation(theValue:Int) extends IntegerVar with ConstantValue {
   type VariableType <: IntegerObservation
+  private var _intValue: Int = theValue
+  protected def _initializeValue(x:Int): Unit = _intValue = x
+  def intValue = _intValue
 }
-
-
 
 // TODO Consider not distinguishing between Variable and Observation?
