@@ -18,17 +18,25 @@ $ mvn test
 For those with Google Code check-in privledges
 ===============================
 
-Append to ~/.hgrc:
+Please set your "username", for example in ~/.hgrc:
+[ui]
+username = Andrew McCallum <mccallum@cs.umass.edu>
+
+To be able to check in you must also add to ~/.hgrc:
 [auth]
 factorie.prefix = https://factorie.googlecode.com/hg
 factorie.username = <<google username>>
 factorie.password = <<password indicated at https://code.google.com/hosting/settings>>
 
 hg clone https://factorie.googlecode.com/hg/ factorie
+cd factorie
 <<make changes>>
 hg commit -m 'Descriptive message here'
 hg push
 
+To get changes:
+hg pull
+hg update
 
 
 Development
@@ -36,46 +44,30 @@ Development
 
 For Eclipse 
 
-For factorie branch "0.8.x", using Scala 2.7.7, the following will work:
-Install Eclipse Maven plugin
-Install Eclipse Scala plugin
-Menu > File > Import 
- General > Maven Projects
-  factorie
-Properties of "factorie"
- Java build path
-  source
-  Add folder
-  src/main/scala
-
-For factorie branch "default", using Scala 2.8, the following will work:
-1.
-Install Eclipse plugin from at http://www.scala-lang.org/scala-eclipse-plugin-rc
-Menu > Help > Install New Software
-Paste URL above, click "Add", click "Finish"
-2.
-Menu > File > New > Scala Project
-name it "factorie"
-move all files from a separate hg clone into this directory
-right click on "factorie" project, Menu > Build Path
-"Source" tab: 
-  remove "src", add "src/main/scala", "src/main/java", "src/test/scala".
-"Libraries" tab:
-  "Add External Jars", adding the followig jars
-   fastutil-5.1.5.jar
-   itext-2.1.5.jar
-   jcommon-1.0.12.jar
-   jfreechart-1.0.9.jar
-   junit-4.5.jar
-   mtj-0.9.9.jar
-   scalala_2.8.0.RC2-0.3.1-SNAPSHOT.jar (available from mccallum)
-   specs_2.8.0.Beta1-1.6.2.jar
-   xmlgraphics-commons-1.3.1.jar
-Menu > Project > Clean
+Factorie branch "0.9" and higher uses Scala 2.8
+Install Eclipse Maven plugin:
+ Within Eclipse, select menu "Help" -> "Install New Software"
+ Enter this URL:  http://m2eclipse.sonatype.org/sites/m2e
+ Click check box and install
+ Relaunch Eclipse
+Install Eclipse Scala plugin:
+ Within Eclipse, select menu "Help" -> "Install New Software"
+ Enter this URL: http://download.scala-ide.org/update-current-35
+ Click both check boxes and install
+ Relaunch Eclipse
+Inport Factorie, (assuming that it has already been checked out to "~/workspace/factorie"):
+ Within Eclipse, select menu "File" -> "New" -> "Scala Project"
+ In dialog box, select "Create project from existing source"
+ Browse to enter your factorie directory (e.g. "~/workspace/factorie")
+ Click "Next"
+ Right click on "factorie" in "Package explorer" to left, 
+  select menu "M2 Maven" -> "Enable Dependency Management"
+Wait for it to compile
 
 
-IntelliJ
-As of this writing, works with scala 2.7.7, but not with 2.8
+For IntelliJ
+
+Works with IntelliJ "community edition" out of the box.
 
 
 
@@ -83,3 +75,5 @@ Coding standards
 ================
 
 Two spaces indentation.  No tabs!
+Generally following coding standards at 
+http://davetron5000.github.com/scala-style/index.html
