@@ -20,6 +20,10 @@ import scala.util.matching.Regex
 
 class TokenSeq[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]] extends cc.factorie.app.tokenseq.TokenSeq[T,This] {
   this: This =>
+
+  type TokenType = T
+  type LabelType = L
+
   /** Return the collection of Label instances attached to these tokens. */
   def labels = this.map(_.label)
   /** Return the proportion of Labels whose current value is their trueValue. */
@@ -70,7 +74,9 @@ object TokenSeq {
   /** Construct and return a new LabeledTokenSeq (and its constituent Tokens and Labels) 
       from a source containing plain text.  Since the labels are unknown, all Labels
       will be given the initial and true value 'defaultLabelString'. */
-  def fromPlainText[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](source:Source, 
+//  def fromPlainText[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](source:Source, 
+  def fromPlainText[S<:TokenSeq[T,_,S],T<:Token[S,_,T]](source:Source, 
+
                                                                                newTokenSeq:()=>S,
                                                                                newToken:(String,String)=>T, 
                                                                                defaultLabelString:String = "O", 

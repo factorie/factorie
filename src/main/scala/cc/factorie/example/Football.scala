@@ -114,7 +114,7 @@ object Football {
         else {
           print("Reading ***"+(article\\"head"\\"title").text+"***")
           documents +=
-            labeled.TokenSeq.fromPlainText[Sentence,Token,Label](Source.fromString((article \\ "body" \\ "body.content").text), () => new Sentence, (word,lab)=>new Token(word,lab), "O", 
+            labeled.TokenSeq.fromPlainText(Source.fromString((article \\ "body" \\ "body.content").text), () => new Sentence, (word,lab)=>new Token(word,lab), "O", 
                 featureFunction, "[A-Za-z0-9]+|\\p{Punct}".r)
           println("  "+documents.last.size)
           documents.last.foreach(t=> print(t.word+" ")); println
