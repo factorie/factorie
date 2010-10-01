@@ -177,41 +177,41 @@ trait Getter[C1/*<:HasGetterType[C1]*/] {
     ret.reverse1s = (d:D) => fwd1(d.asInstanceOf[ret.B]).value.asInstanceOf[ret.B]
     ret
   }
-  //     /** Create a new Getter, starting from this one as the 'src' of a relation, and appending a Getter for the 'dst' of the relation. */
-  //     def getRelationSrc[R<:Relation[D,C],D<:Entity[D]{type GetterType<:Getter[D]}](r:R)(implicit m:Manifest[D], mr:Manifest[R#RelationshipType]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
-  //      type ThisA = A
-  //      type ThisC = C
-  //      val ret = newGetter[D](m).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
-  //      ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
-  //      ret.forward1m = (c:C) => r.getFromDst(c).map(_.src)
-  //      ret.reverse1m = (d:D) => r.getFromSrc(d).map(_.dst)
-  //      type ExtraD = R#RelationshipType
-  //      //val myExtraGetter = new Getter[ExtraD] with GetterHead[A,ExtraD] with GetterMiddle[C,ExtraD] {}
-  //      val myExtraGetter = new Getter[ExtraD] { type A = ThisA; type B = ThisC }
-  //      myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
-  //      myExtraGetter.forward1m = (c:C) => r.getFromDst(c)
-  //      myExtraGetter.reverse1m = (d:ExtraD) => if (d.value) List(d.dst) else Nil //{ val dst = d.dst; if (dst.asInstanceOf[BooleanValue].value) List(dst) else Nil } // If the Relationship is false, don't follow the link
-  //      ret.extraManifest = mr.asInstanceOf[Manifest[ExtraNeighborType]]
-  //      ret.extraGetter = myExtraGetter.asInstanceOf[Getter[ExtraNeighborType]]
-  //      ret
-  //    }
-  //    /** Create a new Getter, starting from this one as the 'dst' of a relation, and appending a Getter for the 'src' of the relation. */
-  //    def getRelationDst[R<:Relation[C,D],D<:Entity[D]{type GetterType<:Getter[D]}](r:R)(implicit m:Manifest[D], mr:Manifest[R#RelationshipType]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
-  //      type ThisA = A
-  //      type ThisC = C
-  //      val ret = newGetter[D](m).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
-  //      ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
-  //      ret.forward1m = (c:C) => r.getFromSrc(c).map(_.dst)
-  //      ret.reverse1m = (d:D) => r.getFromDst(d).map(_.src)
-  //      type ExtraD = R#RelationshipType
-  //      val myExtraGetter = new Getter[ExtraD] { type A = ThisA; type B = ThisC }
-  //      myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
-  //      myExtraGetter.forward1m = (c:C) => r.getFromSrc(c)
-  //      myExtraGetter.reverse1m = (d:ExtraD) => if (d.value) List(d.src) else Nil //{ val src = d.src; if (src.asInstanceOf[BooleanValue].value) List(src) else Nil } // If the Relationship is false, don't follow the link
-  //      ret.extraManifest = mr.asInstanceOf[Manifest[ExtraNeighborType]]
-  //      ret.extraGetter = myExtraGetter.asInstanceOf[Getter[ExtraNeighborType]]
-  //      ret
-  //    }
+  /** Create a new Getter, starting from this one as the 'src' of a relation, and appending a Getter for the 'dst' of the relation. */
+  def getRelationSrc[R<:Relation[D,C2],D<:Entity[D]{type GetterType<:Getter[D]},C2<:C with Entity[C2]](r:R)(implicit m:Manifest[D], mr:Manifest[R#RelationshipType]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+    type ThisA = A
+    type ThisC = C
+    val ret = newGetter[D](m.erasure).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
+    ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
+    ret.forward1m = (c:C) => r.getFromDst(c.asInstanceOf[C2]).map(_.src)
+    ret.reverse1m = (d:D) => r.getFromSrc(d).map(_.dst)
+    type ExtraD = R#RelationshipType
+    //val myExtraGetter = new Getter[ExtraD] with GetterHead[A,ExtraD] with GetterMiddle[C,ExtraD] {}
+    val myExtraGetter = new Getter[ExtraD] { type A = ThisA; type B = ThisC }
+    myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
+    myExtraGetter.forward1m = (c:C) => r.getFromDst(c.asInstanceOf[C2])
+    myExtraGetter.reverse1m = (d:ExtraD) => if (d.value) List(d.dst) else Nil //{ val dst = d.dst; if (dst.asInstanceOf[BooleanValue].value) List(dst) else Nil } // If the Relationship is false, don't follow the link
+    ret.extraManifest = mr.asInstanceOf[Manifest[ExtraNeighborType]]
+    ret.extraGetter = myExtraGetter.asInstanceOf[Getter[ExtraNeighborType]]
+    ret
+  }
+     /** Create a new Getter, starting from this one as the 'dst' of a relation, and appending a Getter for the 'src' of the relation. */
+  def getRelationDst[R<:Relation[C2,D],C2<:C with Entity[C2],D<:Entity[D]{type GetterType<:Getter[D]}](r:R)(implicit m:Manifest[D], mr:Manifest[R#RelationshipType]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+    type ThisA = A
+    type ThisC = C
+    val ret = newGetter[D](m.erasure).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
+    ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
+    ret.forward1m = (c:C) => r.getFromSrc(c.asInstanceOf[C2]).map(_.dst)
+    ret.reverse1m = (d:D) => r.getFromDst(d).map(_.src)
+    type ExtraD = R#RelationshipType
+    val myExtraGetter = new Getter[ExtraD] { type A = ThisA; type B = ThisC }
+    myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
+    myExtraGetter.forward1m = (c:C) => r.getFromSrc(c.asInstanceOf[C2])
+    myExtraGetter.reverse1m = (d:ExtraD) => if (d.value) List(d.src) else Nil //{ val src = d.src; if (src.asInstanceOf[BooleanValue].value) List(src) else Nil } // If the Relationship is false, don't follow the link
+    ret.extraManifest = mr.asInstanceOf[Manifest[ExtraNeighborType]]
+    ret.extraGetter = myExtraGetter.asInstanceOf[Getter[ExtraNeighborType]]
+    ret
+  }
   /*
    def getRelationshipFromDst[R<:Relation[D,C],D<:GetterType[D]](r:R)(implicit m:Manifest[R#RelationshipType#GetterClass]): Getter[R] with GetterHead[A,R] with GetterMiddle[C,R] = {
    val ret = newGetter[R#RelationshipType](m).asInstanceOf[R#RelationshipType#GetterClass with GetterHead[A,R] with GetterMiddle[C,R]]
