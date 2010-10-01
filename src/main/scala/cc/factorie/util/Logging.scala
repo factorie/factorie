@@ -38,7 +38,8 @@ class Logger(val name:String, outputStream: => OutputStream = System.err, @volat
   def setLevel(theLevel:Int): Unit = level = theLevel
   if (Logger.loggerMap.contains(name)) throw new Error("There is already a logger named "+name)
   Logger.loggerMap(name) = this
-  private val out = new PrintWriter(outputStream);
+  var printWriter = new PrintWriter(outputStream);
+  protected def out = printWriter
   def close() = out.close()
   def verbosePrefix(theLevel: Int): String = "["+theLevel+"] ("+Logger.sourceDescription(2)+") "
   def prefix(theLevel: Int): String = ""
