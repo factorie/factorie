@@ -47,7 +47,8 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
 
       def partialReset() {
       fp = optimizable.optimizableValue
-      xi = optimizable.getOptimizableGradient()
+      xi = new Array[Double](optimizable.numOptimizableParameters)
+      optimizable.getOptimizableGradient(xi)
       g = maths.copy(xi)
       h = maths.copy(xi)
       step = initialStepSize
@@ -102,7 +103,7 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
           return true;
         }
         fp = fret;
-        xi = optimizable.getOptimizableGradient()
+        optimizable.getOptimizableGradient(xi)
 
         logger.info("Gradient infinityNorm = " + maths.infinityNorm(xi));
         // This termination provided by McCallum

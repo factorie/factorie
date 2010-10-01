@@ -35,20 +35,23 @@ class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Opt
 
   def optimize(numIterations: Int = Int.MaxValue): Boolean = {
     var value = optimizable.optimizableValue
-    var gradient = optimizable.getOptimizableGradient()
+    var gradient = new Array[Double](optimizable.numOptimizableParameters)
+    optimizable.getOptimizableGradient(gradient)
     for (iteration <- 0 until numIterations) {
       // Ensure step size not to large
       val sum = gradient.twoNorm
       if (sum > gradientNormMax) gradient *= (gradientNormMax / sum)
       step = lineMaximizer.optimize(gradient, step)
       val newValue = optimizable.optimizableValue
+      optimizable.getOptimizableGradient(gradient)
       println("objective=" + newValue)
-      if (2.0 * math.abs(newValue - value) < tolerance * (math.abs(newValue) + math.abs(value) + eps)) {
+      if (2.0 * math.abs(newValue - value) < tolerance * (math.abs(newValue) + math.abs(value) + eps) ||
+        ArrayOps.twoNorm(gradient) == 0) {
         isConverged = true
         return true
       }
       value = newValue
-      gradient = optimizable.getOptimizableGradient()
+
     }
     return false
   }

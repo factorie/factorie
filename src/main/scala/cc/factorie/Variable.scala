@@ -106,6 +106,7 @@ class SeqVars[V<:Variable](override val toSeq:Seq[V]) extends Vars[V] {
   def length = toSeq.length
   def apply(index:Int) = toSeq(index)
   def iterator = toSeq.iterator
+
 }
 class ArrayBufferVars[V<:Variable] extends ArrayBuffer[V] with Vars[V]
 object Vars {

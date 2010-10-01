@@ -156,14 +156,9 @@ class LogLinearMaximumLikelihood(model: Model) {
         oValue
       }
 
-      def getOptimizableGradient(a: Array[Double] = null): Array[Double] = {
+      def getOptimizableGradient(a: Array[Double]) = {
         if (oValue.isNaN) setOptimizableValueAndGradient
-        if (a == null) {
-          var b = new Array[Double](numOptimizableParameters);
-          Array.copy(oGradient, 0, b, 0, oGradient.length);
-          b
-        }
-        else {Array.copy(oGradient, 0, a, 0, oGradient.length); a}
+        Array.copy(oGradient, 0, a, 0, oGradient.length)
       }
     }
 
