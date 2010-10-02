@@ -168,10 +168,10 @@ trait Getter[C1/*<:HasGetterType[C1]*/] {
    This differs from getSymmetricOneToOne in that it represents a mutable one-to-one relation, whereas getSymmetricOneToOne represents an immutable relation. */
   //def getSymmetricFunction[D<:Entity[C]#SymmetricFunction](fwd1:C=>D)(implicit m:Manifest[D#EntityType#GetterClass]): Getter[C] with GetterHead[A,C] with GetterMiddle[C,C] 
   // TODO I really want to say that D == C here.  I thought the above solution would work, but I get error "EntityType" does not have member "GetterClass", when it clearly does! 
-  def getSymmetricFunction[D<:{type GetterType<:Getter[D]}](fwd1:C=>RefVariable[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
+  def getSymmetricFunction[D<:{type GetterType<:Getter[D]}](fwd1:C=>RefVariable[D])(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = {
     type ThisA = A
     type ThisC = C
-    val ret = newGetter[D](this.getClass).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
+    val ret = newGetter[D](m.erasure).asInstanceOf[D#GetterType { type A = ThisA; type B = ThisC }]
     ret.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
     ret.forward1s = (c:C) => fwd1(c).value
     ret.reverse1s = (d:D) => fwd1(d.asInstanceOf[ret.B]).value.asInstanceOf[ret.B]
