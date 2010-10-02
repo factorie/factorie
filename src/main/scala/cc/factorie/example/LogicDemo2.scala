@@ -42,7 +42,12 @@ object LogicDemo2 {
     def cancer = getAttribute(_.cancer)
     def mother = getManyToOne[Person](_.mother, _.children)
     def children = getOneToMany[Person](_.children, _.mother)
-    def siblings = getSymmetricManyToMany[Person](p => p.mother.children.filter(p2=>p2 ne p))
+    def siblings = getSymmetricManyToMany[Person](p => {
+      println("PersonGetter.siblings.p="+p)
+      println("PersonGetter.siblings.p.mother="+p.mother)
+      println("PersonGetter.siblings.p.mother.children="+p.mother.children)
+      p.mother.children.filter(p2=>p2 ne p)
+    })
     def friends = getRelationDst[friend.type,Person,Person](friend) // the people whom this Person considers friends
     def friendly = getRelationSrc[friend.type,Person,Person](friend) // the people who consider this Person a friend
   } 

@@ -64,7 +64,7 @@ class TestBPClassify extends TestCase {
     })
   )
 
-  val objective = new Model(new InitializedTemplate(new LabelTemplate[Label]))
+  val objective = new Model(new InitializedTemplate(new Label01LossTemplate[Label]))
   
   def testMain: Unit = main(new Array[String](0))
 

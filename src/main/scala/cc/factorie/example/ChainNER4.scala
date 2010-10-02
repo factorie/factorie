@@ -12,27 +12,26 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+
+
 package cc.factorie.example
 import cc.factorie._
 import java.io.File
 
-/** Simple, introductory linear-chain CRF for named-entity recognition,
-    using FACTORIE's low-level "imperative" language to define model structure.
-
-    Demonstrates model creation, training and testing.
-    Overly simple features to not, however, provide very high accuracy.
-    See ChainNER3 for a related example with better features.
-
-    @author Andrew McCallum 
-*/
-object ChainNER2 {
+object ChainNER4 {
 
   // The variable classes
-  class Token(val word:String, val label:Label) extends BinaryFeatureVectorVariable[String]
-  class Label(labelName: String, word: String) extends LabelVariable(labelName) with VarInSeq[Label] {
-    val token = new Token(word, this)
+  class Token(val word:String, features:Seq[String], labelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
+    val label: Label = new Label(labelString, this)
+    this ++= features
   }
-  class Sentence extends VariableSeq[Label]
+  class Label(labelname: String, val token: Token) extends LabelVariable(labelname) {
+    def hasNext = token.hasNext && token.next.label != null
+    def hasPrev = token.hasPrev && token.prev.label != null
+    def next = token.next.label
+    def prev = token.prev.label
+  }
+  class Sentence extends VariableSeq[Token]
   
   // The model
   val model = new Model(
@@ -54,31 +53,33 @@ object ChainNER2 {
   val objective = new Model(new Label01LossTemplate[Label])
   
 
+
   def main(args: Array[String]): Unit = {
-    if (args.length != 2) throw new Error("Usage: ChainNER2 trainfile testfile\n where files are in CoNLL Shared Task 2003 format.")
+    if (args.length != 2) throw new Error("Usage: ChainNER3 trainfile testfile")
 
     // Read in the data
     val trainSentences = load(args(0))
     val testSentences = load(args(1))
 
     // Get the variables to be inferred
-    val trainLabels = trainSentences.flatten.take(10000)
-    val testLabels = testSentences.flatten.take(2000)
+    val trainLabels = trainSentences.flatMap(_.map(_.label)).take(10000)
+    val testLabels = testSentences.flatMap(_.map(_.label)).take(2000)
     val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
 
-    // Add features from next and previous tokens
+    // Add features from next and previous tokens 
     println("Adding offset features...")
     allTokens.foreach(t => {
-      if (t.label.hasPrev) t ++= t.label.prev.token.values.filter(!_.contains('@')).map(_+"@-1")
-      if (t.label.hasNext) t ++= t.label.next.token.values.filter(!_.contains('@')).map(_+"@+1")
+      if (t.hasPrev) t ++= t.prev.values.filter(!_.contains('@')).map(_+"@-1")
+      if (t.hasNext) t ++= t.next.values.filter(!_.contains('@')).map(_+"@+1")
     })
     println("Using "+Domain[Token].size+" observable features.")
     
-    // Train and test
+    
+    // Sample and Learn!
     (trainLabels ++ testLabels).foreach(_.setRandomly())
-    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
-    val predictor = new VariableSettingsSampler[Label](model)
-    for (i <- 1 to 4) {
+    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with ConfidenceWeightedUpdates { temperature = 0.01 }
+    val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.01 }
+    for (i <- 1 to 3) {
       println("Iteration "+i) 
       learner.processAll(trainLabels)
       trainLabels.take(50).foreach(printLabel _); println; println
@@ -87,17 +88,29 @@ object ChainNER2 {
       println ("Train accuracy = "+ objective.aveScore(trainLabels))
       println ("Test  accuracy = "+ objective.aveScore(testLabels))
     }
-    predictor.temperature *= 0.1 // Be more greedy in inference
-    repeat(2) { 
-      predictor.processAll(trainLabels) 
-      predictor.processAll(testLabels)
-    }
-    println ("Final Train accuracy = "+ objective.aveScore(trainLabels))
+    //learner.setWeightsToAverage
+    predictor.temperature *= 0.1
+    predictor.processAll(testLabels, 2)
     println ("Final Test  accuracy = "+ objective.aveScore(testLabels))
   }
 
+  // Feature extraction
+  def wordToFeatures(word:String, initialFeatures:String*) : Seq[String] = {
+    import scala.collection.mutable.ArrayBuffer
+    val f = new ArrayBuffer[String]
+    f += "W="+word
+    f ++= initialFeatures
+    if (word.length > 3) f += "PRE="+word.substring(0,3)
+    if (Capitalized.findFirstMatchIn(word) != None) f += "CAPITALIZED"
+    if (Numeric.findFirstMatchIn(word) != None) f += "NUMERIC"
+    if (Punctuation.findFirstMatchIn(word) != None) f += "PUNCTUATION"
+    f
+  }
+  val Capitalized = "^[A-Z].*".r
+  val Numeric = "^[0-9]+$".r
+  val Punctuation = "[-,\\.;:?!()]+".r
 
-
+  
   def printLabel(label:Label) : Unit = {
     println("%-16s TRUE=%-8s PRED=%-8s %s".format(label.token.word, label.trueValue, label.value, label.token.toString))
   }
@@ -114,10 +127,6 @@ object ChainNER2 {
   def load(filename:String) : Seq[Sentence] = {
     import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
-    val Capitalized = "^[A-Z].*".r
-    val Numeric = "^[0-9]+$".r
-    val Punctuation = "[-,\\.;:?!()]+".r
-
     var wordCount = 0
     var sentences = new ArrayBuffer[Sentence]
     val source = Source.fromFile(new File(filename))
@@ -132,19 +141,9 @@ object ChainNER2 {
         val fields = line.split(' ')
         assert(fields.length == 4)
         val word = fields(0)
-        val partOfSpeech = fields(1)
-        val labelString = fields(3).stripLineEnd
-        val label = new Label(labelString, word)
-        // Add features to Token
-        label.token += "W="+word
-        //label.token += "SUFFIX3="+word.takeRight(3)
-        //label.token += "PREFIX3="+word.take(3)
-        label.token += "POS="+partOfSpeech
-        if (Character.isUpperCase(word.head)) label.token += "CAPITALIZED"
-        if (Capitalized.findFirstMatchIn(word) != None) label.token += "CAPITALIZED"
-        if (Numeric.findFirstMatchIn(word) != None) label.token += "NUMERIC"
-        if (Punctuation.findFirstMatchIn(word) != None) label.token += "PUNCTUATION"
-        sentence += label
+        val pos = fields(1)
+        val label = fields(3).stripLineEnd
+        sentence += new Token(word, wordToFeatures(word,"POS="+pos), label)
         wordCount += 1
       }
     }

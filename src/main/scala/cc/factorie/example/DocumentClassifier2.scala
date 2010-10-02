@@ -43,7 +43,7 @@ object DocumentClassifier2 {
     }
   )
 
-  val objective = new Model(new LabelTemplate[Label])
+  val objective = new Model(new Label01LossTemplate[Label])
 
   def main(args: Array[String]) : Unit = {
     if (args.length < 2) 

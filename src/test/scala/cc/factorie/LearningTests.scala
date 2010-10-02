@@ -148,13 +148,13 @@ class SampleRankTest extends AssertionsForJUnit {
       //Test extremes
       var fpErrors = 0
       var fnErrors = 0
-      for(i<-0 until Math.pow(2,bools.length).toInt)
+      for(i<-0 until math.pow(2,bools.length).toInt)
 	{
 	  decodeConfiguration(i,bools)
 	  val modelScoreI = model.scoreAll(bools)
 	  val truthScoreI = trainingSignal.scoreAll(bools)
 
-	  for(j<-i+1 until Math.pow(2,bools.length).toInt)
+	  for(j<-i+1 until math.pow(2,bools.length).toInt)
 	    {
 	      decodeConfiguration(j,bools)
 	      val modelScoreJ = model.scoreAll(bools)

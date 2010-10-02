@@ -394,7 +394,8 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
       bpFactors(factor) = bpFactor
       for (v <- factor.variables) {
         v2m(v) += bpFactor
-        if (v.isInstanceOf[V] && inferenceVariables.contains(v.asInstanceOf[V])) bpFactor.variables ::= v.asInstanceOf[V]
+        // TODO Note that this is filtering based on BeliefPropagation.BPVariable, not V.  Consider some fix.
+        if (v.isInstanceOf[BeliefPropagation.BPVariable] && inferenceVariables.contains(v.asInstanceOf[V])) bpFactor.variables ::= v.asInstanceOf[V]
       }
       factors += factor
     }

@@ -28,10 +28,12 @@ seg:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.WordSegmenterDemo
 gm:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.GaussianMixtureDemo
-chainner3:
-	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.ChainNER3 ~/research/data/ie/ner2003/eng.train ~/research/data/ie/ner2003/eng.testa
 chainner1:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.ChainNER1 ~/research/data/ie/ner2003/eng.train ~/research/data/ie/ner2003/eng.testa
+chainner2:
+	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.ChainNER2 ~/research/data/ie/ner2003/eng.train ~/research/data/ie/ner2003/eng.testa
+chainner4:
+	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.ChainNER4 ~/research/data/ie/ner2003/eng.train ~/research/data/ie/ner2003/eng.testa
 chainner1ml:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.ChainNER1ML ~/research/data/ie/ner2003/eng.train ~/research/data/ie/ner2003/eng.testa
 

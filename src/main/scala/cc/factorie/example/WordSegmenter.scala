@@ -61,7 +61,7 @@ object WordSegmenterDemo {
   }
   //model += skipTemplate
 
-  val objective = new Model(new LabelTemplate[Label])
+  val objective = new Model(new Label01LossTemplate[Label])
 
 
 

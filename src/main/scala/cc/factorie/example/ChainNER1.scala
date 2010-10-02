@@ -19,6 +19,13 @@ import cc.factorie._
 import cc.factorie.er._
 import cc.factorie.app.tokenseq.labeled
 
+/** Simple, introductory linear-chain CRF for named-entity recognition,
+    using FACTORIE's "entity-relationship" language to define model structure.
+
+    Demonstrates model creation, training and testing.
+    Overly simple features to not, however, provide very high accuracy.
+    See ChainNER3 for a related example with better features. 
+    @author Andrew McCallum */
 object ChainNER1 {
   
   // Define the variable classes
