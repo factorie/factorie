@@ -138,12 +138,12 @@ trait Getter[C1/*<:HasGetterType[C1]*/] {
   // TODO If I uncomment "C with" below, I get scalac error: "illegal type selection from volatile type D".  It seems I should be able to do this, though.
   /** Create a new Getter, starting from this one and appending an additional symmetric many-to-many mapping.
    For example:  getSymmetricManyToMany[Person](p => p.mother.children.filter(p2=>p2 ne p)). */
-  def getSymmetricManyToMany[D<:{type GetterType<:Getter[D]}](fwd1:C=>Iterable[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = 
-    initManyToMany[D](newGetter[D](this.getClass), fwd1, fwd1.asInstanceOf[D=>Iterable[C]])
+  def getSymmetricManyToMany[D<:{type GetterType<:Getter[D]}](fwd1:C=>Iterable[D])(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = 
+    initManyToMany[D](newGetter[D](m.erasure), fwd1, fwd1.asInstanceOf[D=>Iterable[C]])
   /** Create a new Getter, starting from this one and appending an additional symmetric one-to-one mapping. 
    For example:  getSymmetricOneToOne[Person](_.spouse)*/
-  def getSymmetricOneToOne[D<:{type GetterType<:Getter[D]}](fwd1:C=>D): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = 
-    initOneToOne[D](newGetter[D](this.getClass), fwd1, fwd1.asInstanceOf[D=>C])
+  def getSymmetricOneToOne[D<:{type GetterType<:Getter[D]}](fwd1:C=>D)(implicit m:Manifest[D]): D#GetterType { type A = Getter.this.A; type B = Getter.this.C } = 
+    initOneToOne[D](newGetter[D](m.erasure), fwd1, fwd1.asInstanceOf[D=>C])
   /** Create a new Getter, starting from this one and appending a mapping to one of its Attributes. */
   def getAttribute[D<:AttributeOf[C]](fwd1:C=>D): Getter[D] { type A = Getter.this.A; type B = Getter.this.C } = {
     type ThisA = A

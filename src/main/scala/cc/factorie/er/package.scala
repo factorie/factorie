@@ -42,6 +42,7 @@ def newGetter[V<:{type GetterType <: Getter[V]}](/*implicit*/ m:Manifest[V]): V#
 }
 def newGetter[V<:{type GetterType <: Getter[V]}](variableClass:Class[_]): V#GetterType = {
   val getterClass = getGetterClass(variableClass)
+  assert(getterClass ne null)
   val constructors = getterClass.getConstructors
   if (constructors.size != 1) throw new Error("Getters must have only one constructor; class="+getterClass+" has "+constructors.size+".  You can get this error if you failed to correctly set 'type GetterClass'.")
   val constructor = constructors.apply(0)
