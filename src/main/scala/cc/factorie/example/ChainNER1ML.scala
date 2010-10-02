@@ -71,7 +71,7 @@ object ChainNER1ML {
 
     trainer.process(trainVariables) // Keep training to convergence
 
-    val objective = new Model(new LabelTemplate[Label])
+    val objective = new Model(new Label01LossTemplate[Label])
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testSentences.size))
     testVariables.foreach {variables => new BPInferencer(model).inferTreewiseMax(variables)}

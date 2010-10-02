@@ -19,11 +19,11 @@ package object classify {
 
   def newModel[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) =
     new Model(
-      new LabelTemplate[L],
+      new Label01LossTemplate[L],
       new LabelInstanceTemplate[L,I]
     )
 
-  def newObjective[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L]) = new LabelTemplate[L]()(lm)
+  def newObjective[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L]) = new Label01LossTemplate[L]()(lm)
 
 }
 

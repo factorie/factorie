@@ -82,4 +82,4 @@ abstract class DiscreteVariableWithTrueSettingTemplate[V<:DiscreteVariable with 
   def score(s:Stat) = if (s._1.valueIsTruth) 1.0 else 0.0
 }
 
-class LabelTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends DiscreteVariableWithTrueSettingTemplate[V]
+class Label01LossTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends DiscreteVariableWithTrueSettingTemplate[V]

@@ -29,7 +29,7 @@ package object factorie {
   // anticipating the time when all these definitions make go in "package object factorie"?
   
   val defaultModel = new Model
-  val defaultObjective = new Model(new InitializedTemplate(new LabelTemplate[CoordinatedLabelVariable[AnyRef]]()))
+  val defaultObjective = new Model(new InitializedTemplate(new Label01LossTemplate[CoordinatedLabelVariable[AnyRef]]()))
 
   // TODO Consider removing this now that we have separate, more specific samplers.
   // TODO Consider also removing SamplerSuite?
