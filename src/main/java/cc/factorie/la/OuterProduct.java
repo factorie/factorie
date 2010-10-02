@@ -1,7 +1,5 @@
 package cc.factorie.la;
 
-import java.util.Iterator;
-
 class OuterProduct {
 
   public static int[] computeMatrix(int[] a, int[] b, int bsize) {
