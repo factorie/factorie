@@ -133,8 +133,8 @@ object Football {
         var docCount = 1
         for (doc <- documents) {
           println("Document "+docCount)
-          for (entity <- doc.entities("O")) { 
-            println(entity._1.value+" "+entity._2.map(t=>t.word).mkString(" "))
+          for (entity <- doc.entities) { 
+            println(entity._1+" "+entity._2.map(t=>t.word).mkString(" "))
           }
           docCount += 1
         } 

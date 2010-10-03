@@ -18,91 +18,131 @@ import cc.factorie.er._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
-class TokenSeq[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]] extends cc.factorie.app.tokenseq.TokenSeq[T,This] {
+class TokenSeq[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]]
+extends cc.factorie.app.tokenseq.TokenSeq[T,This] {
   this: This =>
-
-  type TokenType = T
-  type LabelType = L
-
+  var encoding = "default"
   /** Return the collection of Label instances attached to these tokens. */
   def labels = this.map(_.label)
   /** Return the proportion of Labels whose current value is their trueValue. */
   def accuracy: Double = this.foldLeft(0)((sum,token) => if (token.label.valueIsTruth) sum + 1 else sum) / size.toDouble
-  /** Return a collection of Seq[Token] each of which are labeled with contiguous non-"background" label values. */
-  def entities(background:String): Seq[(L,Seq[T])] = {
-    val result = new ArrayBuffer[(L,Seq[T])]
-    var label = head.label
-    var entity: List[T] = Nil
-    for (token <- this) {
-      if (token.label.value != background) {
-        if (token.label.value == label.value)
-          entity = token :: entity
-        else {
-          if (entity.length > 0) result += ((label,entity.reverse))
-          entity = token :: Nil
-          label = token.label
-        }
-      } else {
-        if (entity.length > 0) result += ((label,entity.reverse))
-        entity = Nil
-        label = token.label
-      }
-    }
-    result
+  def entities = encoding match {
+    case "BIO" => TokenSeq.extractBIOEncoding[T,L,This](this)
+    case _ => TokenSeq.extractDefaultEncoding[T,L,This](this)
   }
-
 }
 
-/** Tools for creating and evaluating LabeledTokenSeq 
+/** Tools for creating and evaluating LabeledTokenSeq
     @author Andrew McCallum
     @since 0.8 */
 object TokenSeq {
   import scala.io.Source
 
-  /** Construct and return a new LabeledTokenSeq (and its constituent Tokens and Labels) 
-      from a source containing SGML markup to indicate the labels on some tokens. 
-      Tokens not bounded by SGML will be given a Label with initial and true value 'backgroundLabelString'. 
+  /** Construct and return a new LabeledTokenSeq (and its constituent Tokens and Labels)
+      from a source containing SGML markup to indicate the labels on some tokens.
+      Tokens not bounded by SGML will be given a Label with initial and true value 'backgroundLabelString'.
       Token segmentation will be performed by the extent of regular expression matches to 'lexer'. */
-  def fromSGML[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](source:Source, 
-                                                                         newTokenSeq:()=>S,
-                                                                         newToken:(String,String)=>T, 
-                                                                         backgroundLabelString:String = "O", 
-                                                                         featureFunction: Seq[String]=>Seq[String], 
-                                                                         labelFunction:String=>String = (s:String) => s,                                                                          wordSegmenter:Regex): 
+  def fromSGML[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](source:Source,
+                                                                   newTokenSeq:()=>S,
+                                                                   newToken:(String,String)=>T,
+                                                                   backgroundLabelString:String = "O",
+                                                                   featureFunction: Seq[String]=>Seq[String],
+                                                                   labelFunction:String=>String = (s:String) => s,
+                                                                   wordSegmenter:Regex):
   S = cc.factorie.app.tokenseq.TokenSeq.fromSGML[S,T](source, newTokenSeq, newToken, backgroundLabelString, featureFunction, labelFunction, wordSegmenter)
 
-  /** Construct and return a new LabeledTokenSeq (and its constituent Tokens and Labels) 
+  /** Construct and return a new LabeledTokenSeq (and its constituent Tokens and Labels)
       from a source containing plain text.  Since the labels are unknown, all Labels
       will be given the initial and true value 'defaultLabelString'. */
-//  def fromPlainText[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](source:Source, 
-  def fromPlainText[S<:TokenSeq[T,_,S],T<:Token[S,_,T]](source:Source, 
-
-                                                                               newTokenSeq:()=>S,
-                                                                               newToken:(String,String)=>T, 
-                                                                               defaultLabelString:String = "O", 
-                                                                               featureFunction: Seq[String]=>Seq[String], 
-                                                                               wordSegmenter:Regex): 
+  def fromPlainText[S<:TokenSeq[T,_,S],T<:Token[S,_,T]](source:Source,
+                                                        newTokenSeq:()=>S,
+                                                        newToken:(String,String)=>T,
+                                                        defaultLabelString:String = "O",
+                                                        featureFunction: Seq[String]=>Seq[String],
+                                                        wordSegmenter:Regex):
   S = cc.factorie.app.tokenseq.TokenSeq.fromPlainText[S,T](source, newTokenSeq, newToken, defaultLabelString, featureFunction, wordSegmenter)
 
-  /** Create a LabeledTokenSeq from a source of characters that has "one word per line", 
-      each line consisting of information about one token: a whitespace-separated list of elements, 
+  /** Create a LabeledTokenSeq from a source of characters that has "one word per line",
+      each line consisting of information about one token: a whitespace-separated list of elements,
       in which the first element is the word itself and the last element is the true target label for the token.
       The CoNLL 2003 NER Shared Task is an example of such a format.
       Token.word will be set to the first element.
-      All elements but the last will be passed to to 'featureFunction', 
+      All elements but the last will be passed to to 'featureFunction',
       and its returned strings will be added as features to the BinaryFeatureVectorVariable.
       The initial and trueValue of the Label will be set from the last element.
       If ignoreLines is non-null, we skip any lines containing this pattern, for example pass "-DOCSTART-" for CoNLL 2003.
       */
-  def fromOWPL[S<:TokenSeq[T,_,S],T<:Token[S,_,T]](source:Source, 
-                                                                   newTokenSeq:()=>S,
-                                                                   newToken:(String,String)=>T, 
-                                                                   featureFunction:Seq[String]=>Seq[String] = cc.factorie.app.tokenseq.standardFeatureFunction,
-                                                                   labelFunction:String=>String = (s:String) => s, 
-                                                                   sentenceBoundary:Regex = "\\A\\s*\\z".r, 
-                                                                   documentBoundary:Regex = "-DOCSTART-".r, 
-                                                                   ignoreLines:Regex = null): 
+  def fromOWPL[S<:TokenSeq[T,_,S],T<:Token[S,_,T]](source:Source,
+                                                   newTokenSeq:()=>S,
+                                                   newToken:(String,String)=>T,
+                                                   featureFunction:Seq[String]=>Seq[String] = cc.factorie.app.tokenseq.standardFeatureFunction,
+                                                   labelFunction:String=>String = (s:String) => s,
+                                                   sentenceBoundary:Regex = "\\A\\s*\\z".r,
+                                                   documentBoundary:Regex = "-DOCSTART-".r,
+                                                   ignoreLines:Regex = null):
   Seq[S] = cc.factorie.app.tokenseq.TokenSeq.fromOWPL[S,T](source, newTokenSeq, newToken, featureFunction, labelFunction, sentenceBoundary, documentBoundary, ignoreLines)
 
+
+  /** Return a collection of Seq[Token] each of which are labeled with contiguous non-"background" label values. */
+  def extractDefaultEncoding[T<:Token[S,L,T],L<:Label[S,T,L],S<:TokenSeq[T,L,S]](s: S): Seq[(String,Seq[T])] = {
+    val background = "O"  
+    val result = new ArrayBuffer[(String,Seq[T])]
+    if (s.size == 0) return result
+    var labelvalue = s.head.label.value
+    var entity: List[T] = Nil
+    for (token <- s) {
+      if (token.label.value != background) {
+        if (token.label.value == labelvalue) {
+          entity = token :: entity
+        } else {
+          if (entity.length > 0) result += ((labelvalue,entity.reverse))
+          entity = token :: Nil
+          labelvalue = token.label.value
+        }
+      } else {
+        if (entity.length > 0) result += ((labelvalue,entity.reverse))
+        entity = Nil
+        labelvalue = token.label.value
+      }
+    }
+    result
+  }
+
+  /**
+   * Author: Tim Vieira
+   * Since Oct. 3rd, 2010
+   */
+  def extractBIOEncoding[T<:Token[S,L,T],L<:Label[S,T,L],S<:TokenSeq[T,L,S]](s: S): Seq[(String,Seq[T])] = {
+    val result = new ArrayBuffer[(String,Seq[T])]
+    var phrase = new ArrayBuffer[T]
+    var intag: String = null    
+    for (tk <- s) {
+      val lbl = tk.label.value
+      if (lbl startsWith "B-") {
+        if (intag != null && phrase.length > 0) {
+          result += ((intag, phrase))
+          phrase = new ArrayBuffer[T]
+        }
+        intag = lbl.substring(2)
+        phrase += tk.asInstanceOf[T]  //phrase = (intag, i)
+      } else if (lbl startsWith "I-") {
+        if (intag == lbl.substring(2)) {  // and still in the same span
+          phrase += tk
+        } else {                            // you're in a new span (hueristic correction)
+          if (phrase.length > 0) result += ((intag, phrase))
+          intag = lbl.substring(2)
+          phrase = ArrayBuffer[T](tk)
+        }
+      } else if (intag != null) {          // was in tag, now outiside ("O")
+        result += ((intag, phrase))
+        intag = null
+        phrase = new ArrayBuffer[T]
+      } else {
+        // label is not B-* I-*, must be "O", AND not intag
+      }
+    }
+    if (intag != null && phrase.length > 0) result += ((intag, phrase))  // close any lingering spans
+    result
+  }
 
 }
