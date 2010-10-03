@@ -26,7 +26,7 @@ import cc.factorie.maths._
  *
  */
 
-class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialStepSize: Double = 0.01) extends Optimizer with FastLogging {
+class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialStepSize: Double = 1.0) extends Optimizer with FastLogging {
   var isConverged = false
   var lineOptimizer = new BackTrackLineOptimizer(optimizable)
   var tolerance = 0.0001
@@ -97,7 +97,8 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
         // prev gradient
         gg += g(j) * g(j)
         // curr gradient
-        dgg += xi(j) * xi(j)
+        //dgg += xi(j) * xi(j)
+        dgg += xi(j) * (xi(j) - g(j))
       })
 
       // compute gamma
