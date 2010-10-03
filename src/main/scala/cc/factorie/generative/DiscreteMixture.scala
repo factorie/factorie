@@ -28,7 +28,7 @@ trait DiscreteMixtureVar extends GeneratedDiscreteVariable with MixtureOutcome {
   def components: FiniteMixture[Proportions]
   def proportions = components(choice.intValue)
   def prFromMixtureComponent(index:Int): Double = components(index).pr(intValue)
-  def prFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int): Double = map.getOrElse(components(index), components(index)).asInstanceOf[Proportions].pr(intValue)
+  def prFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int): Double = map.getOrElse(components(index), components(index)).asInstanceOf[Proportions].pr(intValue) // TODO make more efficient
   def parentsFromMixtureComponent(index:Int) = List(components(index))
   def chosenParents = List(components(choice.intValue))
   override def parents = List(components)

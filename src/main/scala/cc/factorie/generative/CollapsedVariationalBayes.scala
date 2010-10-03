@@ -55,13 +55,13 @@ class CollapsedVariationalBayes(collapse:Iterable[CollapsibleParameter], margina
 }
 
 trait CollapsedVariationalBayesHandler {
-  def process(v:Variable, factors:List[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean
+  def process(v:Variable, factors:Seq[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean
 }
 
 object GeneratedVariableCollapsedVariationalBayesHandler extends CollapsedVariationalBayesHandler {
-  def process(v:Variable, factors:List[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean = {
+  def process(v:Variable, factors:Seq[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean = {
     factors match {
-      case List(factor1:GeneratedVarTemplate#Factor) => { 
+      case Seq(factor1:GeneratedVarTemplate#Factor) => { 
         v match {
           case v:Discrete => {
             val parent = v.proportions
@@ -115,9 +115,9 @@ object GeneratedVariableCollapsedVariationalBayesHandler extends CollapsedVariat
 }
 
 object MixtureChoiceCollapsedVariationalBayesHandler extends CollapsedVariationalBayesHandler {
-  def process(v1:Variable, factors:List[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean = {
+  def process(v1:Variable, factors:Seq[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean = {
     factors match {
-      case List(factor1:GeneratedVarTemplate#Factor, factor2:GeneratedVarTemplate#Factor) => {
+      case Seq(factor1:GeneratedVarTemplate#Factor, factor2:GeneratedVarTemplate#Factor) => {
         v1 match {
           case v:MixtureChoiceVariable => {
             // Variational Bayes order 0 approximation

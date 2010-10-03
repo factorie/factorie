@@ -146,7 +146,7 @@ Template {
     //var result = new LinkedHashSet[Factor]()
     var result = new HashSet[Factor]()
     for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("unroll returned null Factor") else result += factor }
-    result.toList // TODO is this necessary?
+    result.toSeq // TODO is this necessary?
   }
   /** Called in implementations of factors(Variable) to give the variable a chance 
       to specify additional dependent variables on which factors(Variable) should also be called. */

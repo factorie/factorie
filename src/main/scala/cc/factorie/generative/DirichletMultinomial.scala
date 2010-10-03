@@ -28,10 +28,11 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
   def zero: Unit
   def counts(index:Int): Double
   def countsTotal: Double
-  def pr = 1.0 // TODO implement.  Since this is collapsed, what should it be?  1.0?
+  def pr = throw new Error("Collapsed variable has no probability.") // TODO implement.  Since this is collapsed, what should it be?  1.0?
   def detatch: Unit = { mean.removeChild(this)(null); precision.removeChild(this)(null) } // TODO Is this necessary?
   override def apply(index:Int) : Double = {
     val alphaSum = precision.doubleValue
+    // TODO Consider pre-baking mean and alphaSum into counts, to avoid this extra math, and make faster.
     val result = (counts(index) + mean(index) * alphaSum) / (countsTotal + alphaSum)
     assert(result >= 0.0, "alphaSum="+alphaSum+" count="+counts(index)+" mean="+mean(index)+" countsTotal="+countsTotal)
     result
@@ -70,6 +71,14 @@ class GrowableDenseDirichletMultinomial(val alpha:Double) extends GrowableDenseC
     def pr = 1.0
     def parents = List(GrowableDenseDirichletMultinomial.this) // TODO But note that GrowableDenseDirichletMultinomial doesn't have this as a child.
   }
+  // A little faster than the more generic one in its superclass
+  override def apply(index:Int) : Double = {
+    val alphaSum = alpha * this.length
+    val result = (counts(index) + alpha) / (countsTotal + alphaSum)
+    assert(result >= 0.0, "alphaSum="+alphaSum+" count="+counts(index)+" mean="+mean(index)+" countsTotal="+countsTotal)
+    result
+  }
+
   //def estimate(map:Map[Variable,Variable]): Unit = throw new Error
 }
 
