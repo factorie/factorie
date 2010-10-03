@@ -21,8 +21,11 @@ import scala.collection.mutable.IndexedSeq
 import cc.factorie.maths
 import cc.factorie.maths._
 
-/**Maximize the Optimizable object by changing parameters only in the direction specified by 'line'.
-@author Andrew McCallum */
+/**
+ * Maximize the Optimizable object by changing parameters only in the direction specified by 'line'.
+ * @author Andrew McCallum
+ * @author Gregory Druck 
+ */
 trait LineOptimizer {
   def optimize(line: Array[Double], initialStep: Double): Double
 
@@ -40,7 +43,7 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
   var gradientNormMax = 100.0
   var relTolx = 1e-7
   var absTolx = 1e-4
-  val ALF = 1e-4
+  var ALF = 1e-4
   val EPS = 3.0e-12
   val stpmax = 100.0
 

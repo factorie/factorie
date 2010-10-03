@@ -12,48 +12,57 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.optimize
 
-import cc.factorie._
-import scala.collection.mutable.IndexedSeq
 import cc.factorie.maths._
+import cc.factorie.util.FastLogging
 
-/**Maximizes an Optimizable object by successive linear searches in gradient directions.
-@author Andrew McCallum */
-class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Optimizer {
+/**
+ * Maximizes an Optimizable object by successive linear searches in gradient directions.
+ * @author Andrew McCallum
+ * @author Gregory Druck
+ *
+ */
+
+class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Optimizer with FastLogging {
   var isConverged = false
-  var maxStep = 1.0
-  var tolerance = 0.001
+  var tolerance = 0.0001
+  var gradientTolerance = 0.001
   var eps = 1.0e-10
   var gradientNormMax = 100.0
-  var initialStepSize = 0.2
+  var initialStepSize = 1.0
   var step = initialStepSize
 
-  val lineMaximizer = new BackTrackLineOptimizer(optimizable)
+  var lineOptimizer = new BackTrackLineOptimizer(optimizable)
 
   def optimize(numIterations: Int = Int.MaxValue): Boolean = {
     var value = optimizable.optimizableValue
     var gradient = new Array[Double](optimizable.numOptimizableParameters)
     optimizable.getOptimizableGradient(gradient)
     for (iteration <- 0 until numIterations) {
+      logger.info("GradientAscent: At iteration " + iteration + ", value = " + value);
       // Ensure step size not to large
       val sum = gradient.twoNorm
       if (sum > gradientNormMax) gradient *= (gradientNormMax / sum)
-      step = lineMaximizer.optimize(gradient, step)
+      step = lineOptimizer.optimize(gradient, step)
       val newValue = optimizable.optimizableValue
       optimizable.getOptimizableGradient(gradient)
-      println("objective=" + newValue)
-      if (2.0 * math.abs(newValue - value) < tolerance * (math.abs(newValue) + math.abs(value) + eps) ||
-        ArrayOps.twoNorm(gradient) == 0) {
+      if (2.0 * math.abs(newValue - value) < tolerance * (math.abs(newValue) + math.abs(value) + eps)) {
+        logger.info("GradientAscent converged: old value= " + value +
+          " new value= " + newValue + " tolerance=" + tolerance)
+
+        isConverged = true
+        return true
+      }
+      val gg = ArrayOps.twoNorm(gradient)
+      if (gg < gradientTolerance) {
+        logger.info("GradientAscent converged: gradient two norm= "
+          + gg + " tolerance=" + gradientTolerance)
         isConverged = true
         return true
       }
       value = newValue
-
     }
     return false
   }
-
 }

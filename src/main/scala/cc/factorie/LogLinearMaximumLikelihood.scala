@@ -163,11 +163,11 @@ class LogLinearMaximumLikelihood(model: Model) {
     }
 
     // Do the gradient-climbing optimization!
-    var optimizer = new LimitedMemoryBFGS(optimizable)
+    var optimizer = new ConjugateGradient(optimizable)
     optimizer.optimize(numIterations)
     // Resetting and running again sometimes helps
-    optimizer = new LimitedMemoryBFGS(optimizable)
-    optimizer.optimize(numIterations)
+    //optimizer = new LimitedMemoryBFGS(optimizable)
+    //optimizer.optimize(numIterations)
   }
 }
 

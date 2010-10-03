@@ -12,21 +12,25 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.optimize
 
 import cc.factorie._
-import scala.collection.mutable.IndexedSeq
 import cc.factorie.maths._
 
-/**Maximize the Optimizable object by line search on successive conjugate gradients,
-in the Polak and Ribiere version,
-as described in "Numeric Recipes in C", Section 10.6. @author Andrew McCallum */
+/**
+ * Maximize the Optimizable object by line search on successive conjugate gradients,
+ * in the Polak and Ribiere version,
+ * as described in "Numeric Recipes in C", Section 10.6.
+ * @author Andrew McCallum
+ * @author Gregory Druck
+ *
+ */
+
 class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialStepSize: Double = 0.01) extends Optimizer with FastLogging {
   var isConverged = false
-  val lineMaximizer = new BackTrackLineOptimizer(optimizable)
+  var lineOptimizer = new BackTrackLineOptimizer(optimizable)
   var tolerance = 0.0001
+  var gradientTolerance = 0.001
   var maxIterations = 1000
   // "eps" is a small number to recitify the special case of converging to exactly zero function value
   val eps = 1.0e-10
@@ -45,113 +49,93 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
 
   def reset(): Unit = xi = null
 
-      def partialReset() {
-      fp = optimizable.optimizableValue
-      xi = new Array[Double](optimizable.numOptimizableParameters)
-      optimizable.getOptimizableGradient(xi)
-      g = maths.copy(xi)
-      h = maths.copy(xi)
-      step = initialStepSize
-      iterations = 0
-    }
-
+  def partialReset() {
+    fp = optimizable.optimizableValue
+    xi = new Array[Double](optimizable.numOptimizableParameters)
+    optimizable.getOptimizableGradient(xi)
+    g = maths.copy(xi)
+    h = maths.copy(xi)
+    step = initialStepSize
+    iterations = 0
+  }
 
   def optimize(numIterations: Int = maxIterations): Boolean = {
     if (isConverged) return true;
-    var prevStepSize = initialStepSize
-    var searchingGradient = true
 
     if (xi == null) partialReset()
 
     for (iterationCount <- 0 until numIterations) {
       logger.info("ConjugateGradient: At iteration " + iterations + ", cost = " + fp);
-      try {
-        prevStepSize = step;
-        step = lineMaximizer.optimize(xi, step);
-      } catch {
-        case e: IllegalArgumentException => {
-          logger.error("ConjugateGradient caught " + e.toString());
-          throw new Error("Time to implement testValueAndGradientCurrentParameters")
-          //TestOptimizable.testValueAndGradientCurrentParameters(optimizable);
-          //TestOptimizable.testValueAndGradientInDirection(optimizable, xi);
-          ////System.out.println ("Trying ConjugateGradient restart.");
-          ////return this.maximize (maxable, numIterations);
-        }
+
+      // take a step in the current search direction
+      step = lineOptimizer.optimize(xi, step);
+
+      // re-compute value and gradient
+      fret = optimizable.optimizableValue
+      optimizable.getOptimizableGradient(xi)
+
+      // This termination provided by "Numeric Recipes in C".
+      if (2.0 * math.abs(fret - fp) <= tolerance * (math.abs(fret) + math.abs(fp) + eps)) {
+        logger.info("ConjugateGradient converged: old value= " + fp
+          + " new value= " + fret + " tolerance=" + tolerance);
+        isConverged = true;
+        return true;
+      }
+      fp = fret;
+
+      // This termination provided by McCallum
+      if (maths.twoNorm(xi) < gradientTolerance) {
+        logger.info("ConjugateGradient converged: maximum gradient component "
+          + maths.twoNorm(xi) + ", less than " + tolerance)
+        isConverged = true;
+        return true;
       }
 
-      if (step == 0.0) {
-        if (searchingGradient) {
-          logger.info("ConjugateGradient converged: Line maximizer got step 0 in gradient direction.  "
-                  + "Gradient absNorm=" + maths.absNorm(xi))
-          isConverged = true
-          return true
-        } else
-          logger.info("Line maximizer got step 0; gradient (absNorm=" + maths.absNorm(xi) + ") probably pointing up hill.  Resetting gradient.")
-        partialReset()
-        step = prevStepSize
-        searchingGradient = true
-        // continue  Scala doesn't have "continue", hence "else" below
-      } else {
-        fret = optimizable.optimizableValue
+      dgg = 0.0;
+      gg = 0.0
+      forIndex(xi.length)(j => {
+        // prev gradient
+        gg += g(j) * g(j)
+        // curr gradient
+        dgg += xi(j) * xi(j)
+      })
 
-        println("objective=" + fret)
+      // compute gamma
+      gam = dgg / gg
 
-        // This termination provided by "Numeric Recipes in C".
-        if (2.0 * math.abs(fret - fp) <= tolerance * (math.abs(fret) + math.abs(fp) + eps)) {
-          logger.info("ConjugateGradient converged: old value= " + fp + " new value= " + fret + " tolerance=" + tolerance);
-          isConverged = true;
-          return true;
-        }
-        fp = fret;
-        optimizable.getOptimizableGradient(xi)
+      forIndex(xi.length)(j => {
+        g(j) = xi(j)
+        // here g(j) is the current gradient
+        // and h(j) is the previous search direction
+        h(j) = g(j) + gam * h(j)
+      })
+      assert(!maths.isNaN(h))
 
-        logger.info("Gradient infinityNorm = " + maths.infinityNorm(xi));
-        // This termination provided by McCallum
-        if (maths.infinityNorm(xi) < tolerance) {
-          logger.info("ConjugateGradient converged: maximum gradient component " + maths.infinityNorm(xi) + ", less than " + tolerance)
-          isConverged = true;
-          return true;
-        }
-
-        dgg = 0.0;
-        gg = 0.0
-        var gj = 0.0;
-        var xj = 0.0
-        forIndex(xi.length)(j => {
-          gj = g(j)
-          gg += gj * gj
-          xj = -xi(j)
-          dgg = (xj + gj) * xj
-        })
-        if (gg == 0.0) {
-          logger.info("ConjugateGradient converged: gradient is exactly zero.")
-          isConverged = true
-          return true // In unlikely case that gradient is exactly zero, then we are done
-        }
-        gam = dgg / gg
-
-        var hj = 0.0
-        forIndex(xi.length)(j => {
-          xj = xi(j)
-          g(j) = xj
-          hj = h(j)
-          hj = xj + gam * hj
-          h(j) = hj
-        })
-        assert(!maths.isNaN(h))
-
+      // gdruck
+      // If using the BackTrackLineSearch, then the search stops whenever
+      // a step is found that increases the value significantly (according
+      // to a threshold from Numerical Recipes).  ConjugateGradient only
+      // actually works if the line maximization finds something close
+      // to the maximum in that direction.  In tests, sometimes the
+      // step suggested by CG was negative.  Consequently, here I am
+      // setting the search direction to the gradient if the slope is
+      // negative or 0.
+      // TODO Implement GradientBracketLineMaximizer (used in Numerical Recipes)
+      // which should avoid this problem!
+      if ((xi dot h) > 0) {
         maths.set(xi, h)
-        searchingGradient = false
+      }
+      else {
+        maths.set(h, xi)
+      }
 
-        iterations += 1
-        if (iterations > maxIterations) {
-          logger.warn("Too many iterations in ConjugateGradient.java")
-          isConverged = true
-          return true
-        }
-      } // closing "else" that would have been handled by "continue"
+      iterations += 1
+      if (iterations > maxIterations) {
+        logger.warn("Too many iterations in ConjugateGradient.java")
+        isConverged = true
+        return true
+      }
     }
     false
   }
-
 }

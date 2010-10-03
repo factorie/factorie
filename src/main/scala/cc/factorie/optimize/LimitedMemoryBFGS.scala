@@ -25,11 +25,10 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
   var isConverged = false
   var maxIterations = 1000
   var tolerance = 0.0001
-  val gradientTolerance = 0.001
+  var gradientTolerance = 0.001
+  var lineMaximizer = new BackTrackLineOptimizer(optimizable)
+
   val eps = 1.0e-5
-
-  val lineMaximizer = new BackTrackLineOptimizer(optimizable)
-
   // The number of corrections used in BFGS update
   // ideally 3 <= m <= 7. Larger m means more cpu time, memory.
   val m = 4
@@ -55,7 +54,6 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
     if (isConverged) return true;
     val initialValue = optimizable.optimizableValue
     val numParams = optimizable.numOptimizableParameters
-    println("initial objective=" + initialValue)
 
     if (g == null) { // first time through
       iterations = 0
@@ -127,7 +125,7 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
     // step through iterations
     forIndex(numIterations)(iterationCount => {
       val value = optimizable.optimizableValue
-      println("objective=" + value)
+      logger.info("LimitedMemoryBFGS: At iteration " + iterations + ", value = " + value);
       // get difference between previous 2 gradients and parameters
       var sy = 0.0
       var yy = 0.0
@@ -209,7 +207,7 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
       logger.trace("Gradient = " + gg)
       iterations += 1
       if (iterations > maxIterations) {
-        System.err.println("Too many iterations in L-BFGS.java. Continuing with current parameters.")
+        logger.warn("Too many iterations in L-BFGS.java. Continuing with current parameters.")
         isConverged = true
         return true;
       }

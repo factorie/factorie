@@ -25,8 +25,8 @@ import scala.collection.mutable.IndexedSeq
 trait Optimizable {
   def numOptimizableParameters: Int
   /** If argument is null, an array will be allocated for you and returned. */
-  def getOptimizableParameters(a:Array[Double])
-  def setOptimizableParameters(a:Array[Double])
+  def getOptimizableParameters(a:Array[Double]) : Unit
+  def setOptimizableParameters(a:Array[Double]) : Unit
   def optimizableParameter(index:Int): Double
   def optimizableParameter_=(index:Int, d:Double): Unit
 }
