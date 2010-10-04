@@ -115,10 +115,10 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
       // gdruck
       // If using the BackTrackLineSearch, then the search stops whenever
       // a step is found that increases the value significantly (according
-      // to a threshold from Numerical Recipes).  ConjugateGradient only
-      // actually works if the line maximization finds something close
+      // to a threshold from Numerical Recipes).  ConjugateGradient
+      // assumes that line maximization finds something close
       // to the maximum in that direction.  In tests, sometimes the
-      // step suggested by CG was negative.  Consequently, here I am
+      // direction suggested by CG points downhill.  Consequently, here I am
       // setting the search direction to the gradient if the slope is
       // negative or 0.
       // TODO Implement GradientBracketLineMaximizer (used in Numerical Recipes)
