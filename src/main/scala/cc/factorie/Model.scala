@@ -19,10 +19,6 @@ import scala.reflect.Manifest
 import scala.util.Random
 import scala.Math
 import scala.util.Sorting
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
-//import cc.factorie.la._
 
 /** A Model in FACTORIE consists of a collection of factor Templates and methods that operate on the collection.
     @author Andrew McCallum
@@ -65,7 +61,7 @@ class Model(initTemplates:InitializedTemplate*) extends Seq[Template] {
   def factorsOf[T2<:T](vs:Iterable[Variable])(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
   def factorsOf[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
   /** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
-  def factors(v:Variable) : List[Factor] = this.flatMap(template => template.factors(v)).toList
+  def factors(v:Variable) : Seq[Factor] = this.flatMap(template => template.factors(v)) //.toList
   def factors(vs:Iterable[Variable]) : Seq[Factor] = this.flatMap(template => template.factors(vs))
   def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.statistics.score)
   def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistics.score) // For use when the Variable is also Iterable

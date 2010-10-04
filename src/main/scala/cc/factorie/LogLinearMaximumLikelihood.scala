@@ -36,8 +36,11 @@ class LogLinearMaximumLikelihood(model: Model) {
   // TODO Figure out how to reinstate something like this.
   //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V]): Unit = process(List(variables), Int.MaxValue)
 
+  def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variableSet: Seq[V], numIterations: Int = Int.MaxValue): Unit = 
+    processAll(List(variableSet), numIterations)
+
   /**First argument is a collection of collections-of-variables.  The former are considered iid.  The later may have dependencies.  */
-  def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Int.MaxValue): Unit = {
+  def processAll[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Int.MaxValue): Unit = {
     // Data structure for holding per-template constraints and expectations
     class SuffStats extends HashMap[TemplatesToUpdate, Vector] {
       override def default(template: TemplatesToUpdate) = {

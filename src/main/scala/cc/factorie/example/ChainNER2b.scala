@@ -20,12 +20,11 @@ import java.io.File
     using FACTORIE's low-level "imperative" language to define model structure.
 
     Demonstrates model creation, training and testing.
-    Overly simple features to not, however, provide very high accuracy.
-    See ChainNER3 for a related example with better features.
+    See ChainNER2 for a related example that is simpler, with fewer features.
 
     @author Andrew McCallum 
 */
-object ChainNER2 {
+object ChainNER2b {
 
   // The variable classes
   class Token(val word:String, val label:Label) extends BinaryFeatureVectorVariable[String]
@@ -55,32 +54,62 @@ object ChainNER2 {
   
 
   def main(args: Array[String]): Unit = {
-    if (args.length != 2) throw new Error("Usage: ChainNER2 trainfile testfile.")
+    if (args.length != 2) throw new Error("Usage: ChainNER2 trainfile testfile\n where files are in CoNLL Shared Task 2003 format.")
 
     // Read in the data
     val trainSentences = load(args(0))
     val testSentences = load(args(1))
 
-    // Get the variables to be inferred (for now, just operate on a subset)
+    // Get the variables to be inferred
     val trainLabels = trainSentences.flatten.take(10000)
     val testLabels = testSentences.flatten.take(2000)
-    (trainLabels ++ testLabels).foreach(_.setRandomly())
-    
-    // Train for 5 iterations
-    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
-    learner.processAll(trainLabels, 5)
+    val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
 
-    // Predict, also by sampling, visiting each variable 3 times.
-    val predictor = new VariableSettingsSampler[Label](model)
-    predictor.processAll(testLabels, 3)
+    // Add features from next and previous tokens
+    println("Adding offset features...")
+    allTokens.foreach(t => {
+      if (t.label.hasPrev) t ++= t.label.prev.token.values.filter(!_.contains('@')).map(_+"@-1")
+      if (t.label.hasNext) t ++= t.label.next.token.values.filter(!_.contains('@')).map(_+"@+1")
+    })
+    println("Using "+Domain[Token].size+" observable features.")
     
-    // Evaluate
-    println ("Train accuracy = "+ objective.aveScore(trainLabels))
-    println ("Test  accuracy = "+ objective.aveScore(testLabels))
+    // Train and test
+    (trainLabels ++ testLabels).foreach(_.setRandomly())
+    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
+    val predictor = new VariableSettingsSampler[Label](model)
+    for (i <- 1 to 4) {
+      println("Iteration "+i) 
+      learner.processAll(trainLabels)
+      trainLabels.take(50).foreach(printLabel _); println; println
+      printDiagnostic(trainLabels.take(400))
+      predictor.processAll(testLabels)
+      println ("Train accuracy = "+ objective.aveScore(trainLabels))
+      println ("Test  accuracy = "+ objective.aveScore(testLabels))
+    }
+    predictor.temperature *= 0.1 // Be more greedy in inference
+    repeat(2) { 
+      predictor.processAll(trainLabels) 
+      predictor.processAll(testLabels)
+    }
+    println ("Final Train accuracy = "+ objective.aveScore(trainLabels))
+    println ("Final Test  accuracy = "+ objective.aveScore(testLabels))
   }
 
 
 
+  def printLabel(label:Label) : Unit = {
+    println("%-16s TRUE=%-8s PRED=%-8s %s".format(label.token.word, label.trueValue, label.value, label.token.toString))
+  }
+ 
+  def printDiagnostic(labels:Seq[Label]) : Unit = {
+    for (label <- labels; if (label.intValue != label.domain.index("O"))) {
+      if (!label.hasPrev || label.value != label.prev.value) 
+        print("%-7s %-7s ".format((if (label.value != label.trueValue) label.trueValue else " "), label.value))
+      print(label.token.word+" ")
+      if (!label.hasNext || label.value != label.next.value) println()
+    }
+  }
+ 
   def load(filename:String) : Seq[Sentence] = {
     import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
@@ -107,9 +136,10 @@ object ChainNER2 {
         val label = new Label(labelString, word)
         // Add features to Token
         label.token += "W="+word
-        label.token += "SUFFIX3="+word.takeRight(3)
-        label.token += "PREFIX3="+word.take(3)
+        //label.token += "SUFFIX3="+word.takeRight(3)
+        //label.token += "PREFIX3="+word.take(3)
         label.token += "POS="+partOfSpeech
+        if (Character.isUpperCase(word.head)) label.token += "CAPITALIZED"
         if (Capitalized.findFirstMatchIn(word) != None) label.token += "CAPITALIZED"
         if (Numeric.findFirstMatchIn(word) != None) label.token += "NUMERIC"
         if (Punctuation.findFirstMatchIn(word) != None) label.token += "PUNCTUATION"

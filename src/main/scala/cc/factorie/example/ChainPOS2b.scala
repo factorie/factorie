@@ -16,16 +16,15 @@ package cc.factorie.example
 import cc.factorie._
 import java.io.File
 
-/** Simple, introductory linear-chain CRF for named-entity recognition,
+/** Simple, introductory linear-chain CRF for part-of-speech tagging,
     using FACTORIE's low-level "imperative" language to define model structure.
 
     Demonstrates model creation, training and testing.
-    Overly simple features to not, however, provide very high accuracy.
-    See ChainNER3 for a related example with better features.
+    See ChainPOS2 for a related example that is simpler, with fewer features.
 
     @author Andrew McCallum 
 */
-object ChainNER2 {
+object ChainPOS2b {
 
   // The variable classes
   class Token(val word:String, val label:Label) extends BinaryFeatureVectorVariable[String]
@@ -35,19 +34,22 @@ object ChainNER2 {
   class Sentence extends VariableSeq[Label]
   
   // The model
+  val transitionTemplate = 
+    // Transition factors between two successive labels
+    new TemplateWithDotStatistics2[Label, Label] /* with DiscreteFactorSettings2*/ {
+      def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
+      def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
+    }
+
   val model = new Model(
     // Bias term on each individual label 
     new TemplateWithDotStatistics1[Label], 
-    // Transition factors between two successive labels
-    new TemplateWithDotStatistics2[Label, Label] {
-      def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
-      def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
-    },
     // Factor between label and observed token
     new TemplateWithDotStatistics2[Label, Token] {
       def unroll1(label: Label) = Factor(label, label.token)
       def unroll2(token: Token) = throw new Error("Token values shouldn't change")
-    }
+    },
+    transitionTemplate
   )
   
   // The training objective
@@ -55,32 +57,71 @@ object ChainNER2 {
   
 
   def main(args: Array[String]): Unit = {
-    if (args.length != 2) throw new Error("Usage: ChainNER2 trainfile testfile.")
+    if (args.length != 2) throw new Error("Usage: ChainPOS2b trainfile testfile\n where files are in CoNLL Shared Task 2003 format.")
 
     // Read in the data
-    val trainSentences = load(args(0))
-    val testSentences = load(args(1))
+    val trainSentences = load(args(0)).take(20)
+    val testSentences = load(args(1)).take(20)
 
-    // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainSentences.flatten.take(10000)
-    val testLabels = testSentences.flatten.take(2000)
+    // Get the variables to be inferred
+    val trainLabels = trainSentences.flatten
+    val testLabels = testSentences.flatten
+    val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
+
+    // Add features from next and previous tokens
+    println("Adding offset features...")
+    allTokens.foreach(t => {
+      if (t.label.hasPrev) t ++= t.label.prev.token.values.filter(!_.contains('@')).map(_+"@-1")
+      if (t.label.hasNext) t ++= t.label.next.token.values.filter(!_.contains('@')).map(_+"@+1")
+    })
+    println("Using "+Domain[Token].size+" observable features.")
+    //transitionTemplate.sparsifySettingsFor(trainLabels)
+    
+    // Train and test
+    val trainer = new LogLinearMaximumLikelihood(model)
+    trainer.processAll(trainSentences, 5) // Do just one iteration for initial timing
+    println("*** Starting inference (#sentences=%d)".format(testSentences.size))
+    testSentences.foreach(sentence => new BPInferencer(model).inferTreewiseMax(sentence))
+    println("test token accuracy=" + objective.aveScore(testLabels))
+
+    System.exit(0);
+
     (trainLabels ++ testLabels).foreach(_.setRandomly())
-    
-    // Train for 5 iterations
     val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
-    learner.processAll(trainLabels, 5)
-
-    // Predict, also by sampling, visiting each variable 3 times.
     val predictor = new VariableSettingsSampler[Label](model)
-    predictor.processAll(testLabels, 3)
-    
-    // Evaluate
-    println ("Train accuracy = "+ objective.aveScore(trainLabels))
-    println ("Test  accuracy = "+ objective.aveScore(testLabels))
+    for (i <- 1 to 4) {
+      println("Iteration "+i) 
+      learner.processAll(trainLabels)
+      trainLabels.take(50).foreach(printLabel _); println; println
+      printDiagnostic(trainLabels.take(400))
+      predictor.processAll(testLabels)
+      println ("Train accuracy = "+ objective.aveScore(trainLabels))
+      println ("Test  accuracy = "+ objective.aveScore(testLabels))
+    }
+    predictor.temperature *= 0.1 // Be more greedy in inference
+    repeat(2) { 
+      predictor.processAll(trainLabels) 
+      predictor.processAll(testLabels)
+    }
+    println ("Final Train accuracy = "+ objective.aveScore(trainLabels))
+    println ("Final Test  accuracy = "+ objective.aveScore(testLabels))
   }
 
 
 
+  def printLabel(label:Label) : Unit = {
+    println("%-16s TRUE=%-8s PRED=%-8s %s".format(label.token.word, label.trueValue, label.value, label.token.toString))
+  }
+ 
+  def printDiagnostic(labels:Seq[Label]) : Unit = {
+    for (label <- labels; if (label.intValue != label.domain.index("O"))) {
+      if (!label.hasPrev || label.value != label.prev.value) 
+        print("%-7s %-7s ".format((if (label.value != label.trueValue) label.trueValue else " "), label.value))
+      print(label.token.word+" ")
+      if (!label.hasNext || label.value != label.next.value) println()
+    }
+  }
+ 
   def load(filename:String) : Seq[Sentence] = {
     import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
@@ -103,13 +144,12 @@ object ChainNER2 {
         assert(fields.length == 4)
         val word = fields(0)
         val partOfSpeech = fields(1)
-        val labelString = fields(3).stripLineEnd
-        val label = new Label(labelString, word)
+        val label = new Label(partOfSpeech, word)
         // Add features to Token
         label.token += "W="+word
         label.token += "SUFFIX3="+word.takeRight(3)
         label.token += "PREFIX3="+word.take(3)
-        label.token += "POS="+partOfSpeech
+        if (Character.isUpperCase(word.head)) label.token += "CAPITALIZED"
         if (Capitalized.findFirstMatchIn(word) != None) label.token += "CAPITALIZED"
         if (Numeric.findFirstMatchIn(word) != None) label.token += "NUMERIC"
         if (Punctuation.findFirstMatchIn(word) != None) label.token += "PUNCTUATION"

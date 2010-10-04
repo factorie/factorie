@@ -156,8 +156,8 @@ class DenseCountsProportions(len:Int) extends MutableProportions {
 }
 
 class GrowableDenseCountsProportions(initialCapacity:Int = 32) extends DenseCountsProportions(initialCapacity) {
-  private var _size = 0
-  override def length = _size // new Exception().printStackTrace()
+  private var _size: Int = 0
+  override def length: Int = _size // new Exception().printStackTrace()
   override def counts(index:Int):Double = if (index < _counts.size) _counts(index) else 0.0
   protected def ensureCapacity(size:Int): Unit = if (_counts.size < size) {
     val newSize = math.max(_counts.size * 2, size)

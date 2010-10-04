@@ -9,7 +9,7 @@ CP=`echo $$HOME/workspace/factorie/target $$HOME/workspace/lib/* $$CLASSPATH | s
 fsc:
 	mkdir -p target/classes
 	javac -d target/classes `find ./src -name '*.java' -print`
-	JAVA_OPTS="-Xmx1800M -Xms256M -Xss16M" $(SCALA_HOME)/bin/fsc -deprecation -unchecked -cp $(CP) -d target/classes `find src -name '*.scala'` `find src -name '*.java'`
+	JAVA_OPTS="-Xmx1800M -Xms256M -Xss16M" $(SCALA_HOME)/bin/fsc -explaintypes -deprecation -unchecked -cp $(CP) -d target/classes `find src -name '*.scala'` `find src -name '*.java'`
 
 scalac:
 	mkdir -p target/classes

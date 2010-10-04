@@ -23,8 +23,9 @@ import java.io.File
 import scala.collection.mutable.HashMap
 
 /** Demo of CoNLL NER with lots of features.  Aiming for near state-of-the-art accuracy, but not yet finished.
-    Apologies for the current mess here as we explore various options. */
-object ChainNER2b {
+    Apologies for the current mess here as we explore various options. 
+    @author Tim Viera */
+object ChainNER3b {
 
   // Misc. Utils
   def printred(s:String): Unit = println("\033[31m" + s + "\033[0m" )
