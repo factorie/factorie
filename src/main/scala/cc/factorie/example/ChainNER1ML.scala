@@ -65,11 +65,11 @@ object ChainNER1ML {
     println("*** Starting training (#sentences=%d)".format(trainSentences.size))
     val start = System.currentTimeMillis
     val trainer = new LogLinearMaximumLikelihood(model)
-    trainer.process(trainVariables, 1) // Do just one iteration for initial timing
+    trainer.processAll(trainVariables, 1) // Do just one iteration for initial timing
     println("One iteration took " + (System.currentTimeMillis - start)/ 1000.0 + " seconds")
     //System.exit(0)
 
-    trainer.process(trainVariables) // Keep training to convergence
+    trainer.processAll(trainVariables) // Keep training to convergence
 
     val objective = new Model(new Label01LossTemplate[Label])
     // slightly more memory efficient - kedarb

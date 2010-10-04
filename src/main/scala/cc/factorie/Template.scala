@@ -89,8 +89,7 @@ trait Stats extends Statistics with Iterable[Stat]
 /** The template for many factors.  Manages its connections to neighboring variables.
     @Andrew McCallum
 */
-trait
-Template {
+trait Template { templateSelf =>
   type TemplateType <: Template // like a self-type
   type FactorType <: Factor
   type StatType <: Stat
@@ -102,6 +101,7 @@ Template {
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
     override def statistics: StatisticsType
     override def cachedStatistics: StatisticsType
+    def forSettingsOf(vs:Seq[Variable])(f: =>Unit): Unit = templateSelf.forSettingsOf(this.asInstanceOf[FactorType], vs)(f)
     //def stats: Iterable[StatType]
   }
   trait Stat extends cc.factorie.Stat with Statistics {
@@ -132,25 +132,30 @@ Template {
   /** Assign this Template a name which will be used later when its factors are printed. */
   def %(n:String): this.type = setName(n) // because % is the comment character in shell languages such as /bin/sh and Makefiles.
   /**A version of factors that takes the Diff object instead of just the variable */
-  def factors(d: Diff): Iterable[Factor] = if (d.variable == null) Nil else factors(d.variable)
-  def factors(v: Variable): Iterable[Factor]
-  def factors(difflist: DiffList): Iterable[Factor] = {
+  def factors(d: Diff): Iterable[FactorType] = if (d.variable == null) Nil else factors(d.variable)
+  def factors(v: Variable): Iterable[FactorType]
+  def factors(difflist: DiffList): Iterable[FactorType] = {
     //var result = new LinkedHashSet[Factor]()
-    var result = new HashSet[Factor]()
+    var result = new HashSet[FactorType]()
     for (diff <- difflist; factor <- factors(diff)) { if (factor eq null) throw new Error("unroll returned null Factor") else result += factor } 
     //difflist.foreach(diff => result ++= factors(diff))
     result.toList // TODO is this necessary?
   }
-  def factors(variables:Iterable[Variable]): Iterable[Factor] = { // TODO Why is this List, and not Iterable?  Do the GibbsSampling cases depend on this?
+  def factors(variables:Iterable[Variable]): Iterable[FactorType] = { // TODO Why is this List, and not Iterable?  Do the GibbsSampling cases depend on this?
     if (variables.size == 1) return factors(variables.head) // Efficiently avoids the HashSet.
-    //var result = new LinkedHashSet[Factor]()
-    var result = new HashSet[Factor]()
+    //var result = new LinkedHashSet[FactorType]()
+    var result = new HashSet[FactorType]()
     for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("unroll returned null Factor") else result += factor }
     result.toSeq // TODO is this necessary?
   }
   /** Called in implementations of factors(Variable) to give the variable a chance 
       to specify additional dependent variables on which factors(Variable) should also be called. */
   def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade
+  // Managing settings iteration
+  def hasSettingsIterator: Boolean = false
+  def forSettings(factor:FactorType)(f: =>Unit): Unit = throw new Error("Not supported.")
+  def forSettingsOf(factor:FactorType, vs:Seq[Variable])(f: =>Unit): Unit = throw new Error("Not supported.")
+  def sparsifySettingsFor(vs:Iterable[Variable]): Unit = throw new Error("Not supported.")
   /** The filename into which to save this factor.  If factorName is not the default, use it, otherwise use the class name. */
   protected def filename: String = if (factorName != defaultFactorName) factorName else this.getClass.getName
   def save(dirname:String): Unit = {}
@@ -272,28 +277,29 @@ trait SparseHashWeights extends DotTemplate {
 
 
 abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
+  type Neighbor1Type = N1
   val nc1 = nm1.erasure // "Neighbor class"
+  lazy val nd1 = Domain.get[Variable](nc1)
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
   // TODO create methods like this for all Templates and put abstract version in Template
   def hasNeighbor[NN](implicit m:Manifest[NN]) = nc1.isAssignableFrom(m.erasure)
-  def factors(v:Variable): Iterable[Factor] = {
+  def factors(v:Variable): Iterable[FactorType] = {
     // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
     // When I substituted "isAssignable" for HashMap caching in GenericSampler I got 42.8 versus 44.4 seconds ~ 3.7%  Perhaps worth considering?
-    var ret = new ListBuffer[Factor]
+    var ret = new ListBuffer[FactorType]
     if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1])
     if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
     // TODO It would be so easy for the user to define Variable.unrollCascade to cause infinite recursion.  Can we make better checks for this?
     val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factors(_))
     ret
   }
-  def unroll1(v:N1): Iterable[Factor] = new Factor(v)
-  def unroll1s(v:N1#ContainedVariableType): Iterable[Factor] = throw new Error("You must override unroll1s.")
+  def unroll1(v:N1): Iterable[FactorType] = new Factor(v)
+  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
   @inline final def _statistics(f:Factor): StatisticsType = statistics(f._1)
   def statistics(v1:N1): StatisticsType
   def stats(v:Variable): Iterable[StatisticsType] = factors(v).map(_statistics(_))
   private var cachedStatisticsArray: Array[StatisticsType] = null
   override def cachedStatistics(f:FactorType): StatisticsType = if (Template.enableCachedStatistics) {
-    //println("Template1.cachedStatistics")
     f._1 match {
     case v:DiscreteVar => {
       if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v.domain.size).asInstanceOf[Array[StatisticsType]]
@@ -312,7 +318,6 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
     override lazy val variables: IndexedSeq[Variable] = IndexedSeq(_1)
     def statistics: StatisticsType = _statistics(this)
     override def cachedStatistics: StatisticsType = Template1.this.cachedStatistics(this)
-    //def stats: Iterable[StatType] = statistics match { case ss:Iterable[Stats] => ss; case s:Stat => Seq(s) }
   } 
 }
 trait Statistics1[S1] extends Template {
@@ -355,15 +360,44 @@ class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) exten
   init //(nm1)
 }
 
+
+trait DiscreteFactorSettings1 extends Template {
+  this: VectorTemplate { type Neighbor1Type <: DiscreteVar; type FactorType <: { def _1:DiscreteVariable }; def nd1:Domain[Variable] } =>
+  val ndd1 = nd1.asInstanceOf[DiscreteDomain[DiscreteVar]]
+  val nds1 = ndd1.size
+  // Managing settings iteration
+  override def hasSettingsIterator: Boolean = true
+  override def forSettings(factor:FactorType)(f: =>Unit): Unit = 
+    if (settingsSparsified && (sparseSettingsValues ne null))
+      forIndex(sparseSettingsValues.length)(i => { factor._1.set(sparseSettingsValues(i))(null); f })
+    else
+      forIndex(nds1)(i => { factor._1.set(i)(null); f })
+  override def forSettingsOf(factor:FactorType, vs:Seq[Variable])(f: =>Unit): Unit = { require(vs.size == 1); require(factor._1 == vs.head) }
+  def forSettingsExcept(factor:FactorType, v:Variable)(f: =>Unit): Unit = require(factor._1 == v)
+
+  private var settingsSparsified = false
+  private var sparseSettingsValues: Array[Int] = null
+  override def sparsifySettingsFor(vs:Iterable[Variable]): Unit = {
+    val sparseInts = new HashSet[Int]
+    // Only works for DiscreteVar
+    vs.foreach(_ match { case v:DiscreteVar => sparseInts += v.intValue })
+    sparseSettingsValues = sparseInts.toArray
+    settingsSparsified = true 
+  }
+}
+
+
 abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template {
+  type Neighbor1Type = N1
+  type Neighbor2Type = N2
   val nc1 = nm1.erasure
   val nc2 = nm2.erasure
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.head.erasure } else null }
-  val nd1 = Domain.get[Variable](nc1)
-  val nd2 = Domain.get[Variable](nc2)
-  override def factors(v: Variable): Iterable[Factor] = {
-    var ret = new ListBuffer[Factor]
+  lazy val nd1: Domain[Variable] = Domain.get[Variable](nc1).asInstanceOf[Domain[Variable]]
+  lazy val nd2: Domain[Variable] = Domain.get[Variable](nc2).asInstanceOf[Domain[Variable]]
+  override def factors(v: Variable): Iterable[FactorType] = {
+    var ret = new ListBuffer[FactorType]
     if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1]) 
     if (nc2.isAssignableFrom(v.getClass)) ret ++= unroll2(v.asInstanceOf[N2]) 
     if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
@@ -371,10 +405,10 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
     val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factors(_))
     ret
   }
-  def unroll1(v:N1): Iterable[Factor] 
-  def unroll2(v:N2): Iterable[Factor]
-  def unroll1s(v:N1#ContainedVariableType): Iterable[Factor] = throw new Error("You must override unroll1s.")
-  def unroll2s(v:N2#ContainedVariableType): Iterable[Factor] = throw new Error("You must override unroll2s.")
+  def unroll1(v:N1): Iterable[FactorType] 
+  def unroll2(v:N2): Iterable[FactorType]
+  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
+  def unroll2s(v:N2#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll2s.")
   @inline final def _statistics(f:Factor): StatisticsType = statistics(f._1, f._2)
   def statistics(v1:N1, v2:N2): StatisticsType
   //def stats(v:Variable) = factors(v).flatMap(_statistics(_))
@@ -454,15 +488,106 @@ abstract class TemplateWithDotStatistics2[N1<:VectorVar,N2<:VectorVar](implicit 
   init(nm1, nm2)
 }
 
+trait DiscreteFactorSettings2 extends Template {
+  this: VectorTemplate {
+    type TemplateType <: DotTemplate
+    type Neighbor1Type <: DiscreteVar
+    type Neighbor2Type <: DiscreteVar
+    type FactorType <: { def _1:DiscreteVariable ; def _2:DiscreteVariable }
+    def nd1:Domain[Variable]
+    def nd2:Domain[Variable]
+  } =>
+  lazy val ndd1 = nd1.asInstanceOf[DiscreteDomain[DiscreteVar]]
+  lazy val ndsize1 = ndd1.size
+  lazy val ndd2 = nd2.asInstanceOf[DiscreteDomain[DiscreteVar]]
+  lazy val ndsize2 = ndd2.size
+  // Managing settings iteration
+  override def hasSettingsIterator: Boolean = true
+  override def forSettings(factor:FactorType)(f: =>Unit): Unit = {
+    if (settingsSparsified) {
+      forIndex(sparseSettings1.length)(i => {
+        factor._1.set(i)(null)
+        forIndex(sparseSettings1(i).length)(j => {
+          factor._2.set(j)(null)
+          f
+        })
+      })
+    } else {
+      var i = 0
+      while (i < ndsize1) {
+        factor._1.set(i)(null)
+        var j = 0
+        while (j < ndsize2) {
+          factor._2.set(j)(null)
+          f
+          j += 1
+        }
+      }
+    }
+  }
+  /** Call function f for each valid (possibly sparsified) variable value setting 
+      of the neighboring variables specified in 'vs'.  */
+  override def forSettingsOf(factor:FactorType, vs:Seq[Variable])(f: =>Unit): Unit = {
+    if (vs.size == 1) {
+      val v = vs.head
+      if (factor._1 eq v) {
+        // vary v1, keep v2 constant
+        val v = factor._1 // Get it with the correct type
+        if (settingsSparsified) {
+          val sparseSettings = sparseSettings2(factor._2.intValue)
+          forIndex(sparseSettings.length)(i => { v.set(sparseSettings(i))(null); f })
+        } else forIndex(ndsize1)(i => { v.set(i)(null); f })
+      } else if (factor._2 eq v) {
+        // vary v2, keep v1 constant
+        val v = factor._2 // Get it with the correct type
+        if (settingsSparsified) {
+          val sparseSettings = sparseSettings1(factor._1.intValue)
+          forIndex(sparseSettings.length)(i => { v.set(sparseSettings(i))(null); f })
+        } else forIndex(ndsize2)(i => { v.set(i)(null); f })
+      }
+    } else if (vs.size == 2) {
+      throw new Error("Not yet implemented.")
+    } else throw new Error("Asked to vary settings of too many variables.")
+  }
+
+  private var settingsSparsified = false
+  // Redundant storage of valid v1,v2 value pairs
+  private var sparseSettings1: Array[Array[Int]] = null // first index=v1, second index=v2
+  private var sparseSettings2: Array[Array[Int]] = null // first index=v2, second index=v1
+  /** Initialize sparseSettings1 and sparseSettings2 to cover all values in factors touching the variables in 'vs'. */
+  override def sparsifySettingsFor(vs:Iterable[Variable]): Unit = {
+    println("Template sparsifySettingsFor ndsize1="+ndsize1+" ndsize2="+ndsize2)
+    assert (ndsize1 > 0, "sparsifySettingsFor before Domain size properly set.")
+    assert (ndsize2 > 0, "sparsifySettingsFor before Domain size properly set.")
+    val sparse1 = new HashMap[Int,scala.collection.mutable.Set[Int]]
+    val sparse2 = new HashMap[Int,scala.collection.mutable.Set[Int]]
+    vs.foreach(v => {
+      this.factors(v).foreach(f => {
+        sparse1.getOrElseUpdate(f._1.intValue, new HashSet[Int]) += f._2.intValue
+        sparse2.getOrElseUpdate(f._2.intValue, new HashSet[Int]) += f._1.intValue
+      })
+    })
+    sparseSettings1 = new Array[Array[Int]](ndsize1)
+    sparseSettings2 = new Array[Array[Int]](ndsize2)
+    forIndex(sparseSettings1.length)(i => sparseSettings1(i) = sparse1.getOrElse(i, new HashSet[Int]).toArray)
+    forIndex(sparseSettings2.length)(i => sparseSettings2(i) = sparse2.getOrElse(i, new HashSet[Int]).toArray)
+    settingsSparsified = true 
+  }
+}
+
+
 abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template {
+  type Neighbor1Type = N1
+  type Neighbor2Type = N2
+  type Neighbor3Type = N3
   val nc1 = nm1.erasure
   val nc2 = nm2.erasure
   val nc3 = nm3.erasure
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc3a = { val ta = nm3.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc3)) { assert(ta.length == 1); ta.head.erasure } else null }
-  override def factors(v: Variable): Iterable[Factor] = {
-    var ret = new ListBuffer[Factor]
+  override def factors(v: Variable): Iterable[FactorType] = {
+    var ret = new ListBuffer[FactorType]
     if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1])
     if (nc2.isAssignableFrom(v.getClass)) ret ++= unroll2(v.asInstanceOf[N2])
     if (nc3.isAssignableFrom(v.getClass)) ret ++= unroll3(v.asInstanceOf[N3])
@@ -472,12 +597,12 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
     val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factors(_))
     ret
   }
-  def unroll1(v:N1): Iterable[Factor]
-  def unroll2(v:N2): Iterable[Factor]
-  def unroll3(v:N3): Iterable[Factor]
-  def unroll1s(v:N1#ContainedVariableType): Iterable[Factor] = throw new Error("You must override unroll1s.")
-  def unroll2s(v:N2#ContainedVariableType): Iterable[Factor] = throw new Error("You must override unroll2s.")
-  def unroll3s(v:N3#ContainedVariableType): Iterable[Factor] = throw new Error("You must override unroll3s.")
+  def unroll1(v:N1): Iterable[FactorType]
+  def unroll2(v:N2): Iterable[FactorType]
+  def unroll3(v:N3): Iterable[FactorType]
+  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
+  def unroll2s(v:N2#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll2s.")
+  def unroll3s(v:N3#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll3s.")
   @inline final def _statistics(f:Factor): StatisticsType = statistics(f._1, f._2, f._3)
   def statistics(v1:N1, v2:N2, v3:N3): StatisticsType
   //def stats(v:Variable) = factors(v).flatMap(_statistics(_))
@@ -541,6 +666,10 @@ abstract class TemplateWithDotStatistics3[N1<:VectorVar,N2<:VectorVar,N3<:Vector
 }
 
 abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template {
+  type Neighbor1Type = N1
+  type Neighbor2Type = N2
+  type Neighbor3Type = N3
+  type Neighbor4Type = N4
   val nc1 = nm1.erasure
   val nc2 = nm2.erasure
   val nc3 = nm3.erasure
@@ -549,8 +678,8 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc3a = { val ta = nm3.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc3)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc4a = { val ta = nm4.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc4)) { assert(ta.length == 1); ta.head.erasure } else null }
-  override def factors(v: Variable): Iterable[Factor] = {
-    var ret = new ListBuffer[Factor]
+  override def factors(v: Variable): Iterable[FactorType] = {
+    var ret = new ListBuffer[FactorType]
     if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1])
     if (nc2.isAssignableFrom(v.getClass)) ret ++= unroll2(v.asInstanceOf[N2])
     if (nc3.isAssignableFrom(v.getClass)) ret ++= unroll3(v.asInstanceOf[N3])
@@ -562,14 +691,14 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
     val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factors(_))
     ret
   }
-  def unroll1(v:N1): Iterable[Factor]
-  def unroll2(v:N2): Iterable[Factor]
-  def unroll3(v:N3): Iterable[Factor]
-  def unroll4(v:N4): Iterable[Factor]
-  def unroll1s(v:N1#ContainedVariableType): Iterable[Factor] = throw new Error("You must override unroll1s.")
-  def unroll2s(v:N2#ContainedVariableType): Iterable[Factor] = throw new Error("You must override unroll2s.")
-  def unroll3s(v:N3#ContainedVariableType): Iterable[Factor] = throw new Error("You must override unroll3s.")
-  def unroll4s(v:N4#ContainedVariableType): Iterable[Factor] = throw new Error("You must override unroll4s.")
+  def unroll1(v:N1): Iterable[FactorType]
+  def unroll2(v:N2): Iterable[FactorType]
+  def unroll3(v:N3): Iterable[FactorType]
+  def unroll4(v:N4): Iterable[FactorType]
+  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
+  def unroll2s(v:N2#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll2s.")
+  def unroll3s(v:N3#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll3s.")
+  def unroll4s(v:N4#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll4s.")
   @inline final def _statistics(f:Factor): StatisticsType = statistics(f._1, f._2, f._3, f._4)
   def statistics(v1:N1, v2:N2, v3:N3, v4:N4): StatisticsType
   //def stats(v:Variable) = factors(v).flatMap(_statistics(_))

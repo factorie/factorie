@@ -40,7 +40,7 @@ object BeliefPropagation {
     but it points to a Template#Factor with its 'factor' member.
     @author Andrew McCallum, Kedar Bellare, Greg Druck, Tim Vieira
 */
-abstract class BPFactor(val factor: Factor) {
+abstract class BPFactor(val factor: Template#Factor) {
   type V = BeliefPropagation.BPVariable
 
   // filtering by lattice's list of variables to infer done in BPLattice during initialization
@@ -124,11 +124,17 @@ abstract class BPFactor(val factor: Factor) {
         } else if (neighborSettings.size == 1) {
           val neighbor = neighborSettings.head.variable
           msg(i) = Double.NegativeInfinity // i.e. log(0)
-          forIndex(neighbor.domain.size)(j => {
-            neighbor.set(j)(null)
-            msg(i) = maths.sumLogProb(msg(i), factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue)
-          })
-        } else { // This factor has variable neighbors in addition to v itself
+          if (factor.template.hasSettingsIterator) {
+            factor.forSettingsOf(List(neighbor)) {
+              msg(i) = maths.sumLogProb(msg(i), factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue)
+            }
+          } else {
+            forIndex(neighbor.domain.size)(j => {
+              neighbor.set(j)(null)
+              msg(i) = maths.sumLogProb(msg(i), factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue)
+            })
+          }
+        } else {
           // Sum over all combinations of values in neighboring variables with v's value fixed to i.
           neighborSettings.foreach(setting => {setting.reset; setting.next}) // reset iterator and advance to first setting.
           msg(i) = Double.NegativeInfinity // i.e. log(0)
