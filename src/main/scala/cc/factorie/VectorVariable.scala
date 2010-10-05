@@ -38,28 +38,28 @@ trait VectorVar extends Variable {
 
 // Real (floating point) Vector Variables
 
-trait RealVectorVar extends VectorVar
-/** A vector of Real values */
-abstract class RealVectorVariable(theLength:Int) extends RealVectorVar /*with SeqEqualsEq[Double]*/ {
+trait RealVectorVar extends VectorVar 
+
+/** A vector of Double values */
+abstract class RealVectorVariable(theLength:Int) extends RealVectorVar {
   type VariableType <: RealVectorVariable
-  def this(theLength:Int, initVals:Iterable[(Int,Double)]) = { this(theLength); this.++=(initVals) }
-  val vector = new SparseVector(theLength)
-  //override def length = domain.allocSize
-  def incr(index:Int, incr:Double): Unit
-  def +=(elt:(Int,Double)) : Unit = vector.update(elt._1, vector(elt._1) + elt._2)
-  def ++=(elts:Iterable[(Int,Double)]): Unit = elts.foreach(this.+=(_))
-  throw new Error("Not yet implemented")
+  def this(sizeProxy:Iterable[_]) = this(sizeProxy.size)
+  val vector: Vector = new SparseVector(theLength)
+  def activeDomain = vector.activeDomain
+  def update(index:Int, newValue:Double): Unit = vector.update(index, newValue)
+  def increment(index:Int, incr:Double): Unit = vector.update(index, vector(index) + incr)
 }
 
+/** A vector of Double value that can also be indexed the entries in a CategoricalDomain */
 @DomainInSubclasses
 abstract class CategoricalRealVectorVariable[T] extends RealVectorVariable(-1) with CategoricalVars[T] {
   type VariableType <: CategoricalRealVectorVariable[T]
-  //def this(initVals:Iterable[(T,Double)]) = { this(); this.++=(initVals) }
-  //def +=(elt:(T,Double)): Unit
-  //def ++=(elt:Iterable[(T,Double)]): Unit
-  throw new Error("Not yet implemented")
+  override val vector: Vector = new cc.factorie.la.GrowableSparseVector(domain) // domain.size is a proxy for vector.length
+  def update(elt:T, newValue:Double): Unit = vector.update(domain.index(elt), newValue)
+  def increment(elt:T, incr:Double): Unit = { val i = domain.index(elt); vector.update(i, vector(i) + incr) }
 }
 
+/** An more traditionally-named alias for CategoricalRealVectorVariable */
 @DomainInSubclasses
 abstract class FeatureVectorVariable[T] extends CategoricalRealVectorVariable[T]
 
@@ -78,7 +78,7 @@ trait BinaryVectorVar extends DiscreteVars with VectorVar {
     but cc.factorie.la.Vector define "equals" by content equality. 
     Thus a Variable can never inherit from a Vector; here it contains a Vector instead. */
 @DomainInSubclasses
-class SparseBinaryVectorVariable extends BinaryVectorVar /*with SeqEqualsEq[Double]*/ {
+abstract class SparseBinaryVectorVariable extends BinaryVectorVar {
   val vector = new cc.factorie.la.SparseBinaryVector(-1) { override def length = domain.allocSize }
   def length = domain.allocSize
   //def apply(i:Int) = vector.apply(i)
@@ -98,7 +98,7 @@ trait CategoricalBinaryVectorVariable[T] extends BinaryVectorVar with Categorica
 }
 
 @DomainInSubclasses
-class SparseCategoricalBinaryVectorVariable[T] extends SparseBinaryVectorVariable with CategoricalBinaryVectorVariable[T] {
+abstract class SparseCategoricalBinaryVectorVariable[T] extends SparseBinaryVectorVariable with CategoricalBinaryVectorVariable[T] {
   type VariableType <: SparseCategoricalBinaryVectorVariable[T]
   def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
   def values: Seq[T] = { val d = this.domain; val result = new ArrayBuffer[T](domainSize); this.activeDomain.foreach(result += d.get(_)); result }
@@ -120,7 +120,7 @@ class SparseCategoricalBinaryVectorVariable[T] extends SparseBinaryVectorVariabl
 
 /** A shorter, more intuitive alias for SparseCategoricalBinaryVectorVariable */
 @DomainInSubclasses
-class BinaryFeatureVectorVariable[T] extends SparseCategoricalBinaryVectorVariable[T] {
+abstract class BinaryFeatureVectorVariable[T] extends SparseCategoricalBinaryVectorVariable[T] {
   type VariableType <: BinaryFeatureVectorVariable[T]
   def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
 }

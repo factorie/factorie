@@ -31,6 +31,7 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   def activeElements: Iterator[(Int,Double)]
   def oneNorm: Double = activeElements.foldLeft(0.0)(_ + _._2)
   def update(index:Int, value:Double): Unit = throw new Error("Method update not defined on class "+getClass.getName)
+  def increment(index:Int, incr:Double): Unit = throw new Error("Method update not defined on class "+getClass.getName)
   def +=(v:Vector): Unit = throw new Error("Method +=(Vector) not defined on class "+getClass.getName)
   def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
   def *(scalar:Double) = new VectorTimesScalar(this, scalar)
@@ -370,7 +371,8 @@ class SparseVector(size:Int) extends SparseHashVector(size) {
 /** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory,
     implemented as a HashMap from Int indices to Double values.
     @author Andrew McCallum */
-class SparseHashVector(val length:Int) extends Vector {
+class SparseHashVector(theLength:Int) extends Vector {
+  def length: Int = theLength
   var default = 0.0
   private val h = new scala.collection.mutable.HashMap[Int,Double] { override def default(index:Int) = SparseHashVector.this.default }
   def apply(index:Int) = h(index)
@@ -378,8 +380,8 @@ class SparseHashVector(val length:Int) extends Vector {
   def activeDomainSize = h.size
   def activeDomain: Iterable[Int] = h.keys
   override def forActiveDomain(f: (Int)=>Unit): Unit = h.keys.foreach(f(_))
-  override def update(index:Int, value:Double) = h(index) = value
-  def increment(index:Int, incr:Double): Unit = h(index) = h(index) + incr
+  override def update(index:Int, value:Double) = h(index) = value // TODO Should we assert(index < length) ?
+  override def increment(index:Int, incr:Double): Unit = h(index) = h(index) + incr // TODO Should we assert(index < length) ?
   def dot(v:Vector): Double = v match {
     case dv:DenseVector => {
       var result = 0.0
@@ -403,6 +405,10 @@ class SparseHashVector(val length:Int) extends Vector {
     default += s
     h.keys.foreach(index => h.update(index, h(index) + s))
   }
+}
+
+class GrowableSparseVector(val sizeProxy: Iterable[_]) extends SparseHashVector(-1) {
+  override def length: Int = sizeProxy.size
 }
 
 /** A Vector that may contain arbitrary Double values, represented internally as an Array[Double].
