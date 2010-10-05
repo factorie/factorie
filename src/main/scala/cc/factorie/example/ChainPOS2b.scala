@@ -75,8 +75,7 @@ object ChainPOS2b {
       if (t.label.hasNext) t ++= t.label.next.token.values.filter(!_.contains('@')).map(_+"@+1")
     })
     println("Using "+Domain[Token].size+" observable features and " + Domain[Label].size + " labels.")
-    // TODO: Will this allow transitions between sentence end label and next sentence begin label??!!
-    // transitionTemplate.sparsifySettingsFor(trainLabels)
+    transitionTemplate.sparsifySettingsFor(trainLabels)
     
     // Train and test
     val startTime = System.currentTimeMillis
