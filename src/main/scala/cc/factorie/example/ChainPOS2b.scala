@@ -36,7 +36,7 @@ object ChainPOS2b {
   // The model
   val transitionTemplate = 
     // Transition factors between two successive labels
-    new TemplateWithDotStatistics2[Label, Label] /* with DiscreteFactorSettings2*/ {
+    new TemplateWithDotStatistics2[Label, Label] with DiscreteFactorSettings2 {
       def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
       def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
     }
@@ -60,8 +60,8 @@ object ChainPOS2b {
     if (args.length != 2) throw new Error("Usage: ChainPOS2b trainfile testfile\n where files are in CoNLL Shared Task 2003 format.")
 
     // Read in the data
-    val trainSentences = load(args(0)).take(20)
-    val testSentences = load(args(1)).take(20)
+    val trainSentences = load(args(0))//.take(20)
+    val testSentences = load(args(1))//.take(20)
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatten
@@ -74,15 +74,17 @@ object ChainPOS2b {
       if (t.label.hasPrev) t ++= t.label.prev.token.values.filter(!_.contains('@')).map(_+"@-1")
       if (t.label.hasNext) t ++= t.label.next.token.values.filter(!_.contains('@')).map(_+"@+1")
     })
-    println("Using "+Domain[Token].size+" observable features.")
-    //transitionTemplate.sparsifySettingsFor(trainLabels)
+    println("Using "+Domain[Token].size+" observable features and " + Domain[Label].size + " labels.")
+    // TODO: Will this allow transitions between sentence end label and next sentence begin label??!!
+    // transitionTemplate.sparsifySettingsFor(trainLabels)
     
     // Train and test
+    val startTime = System.currentTimeMillis
     val trainer = new LogLinearMaximumLikelihood(model)
-    trainer.processAll(trainSentences, 5) // Do just one iteration for initial timing
+    trainer.processAll(trainSentences, 10) // Do just one iteration for initial timing
     println("*** Starting inference (#sentences=%d)".format(testSentences.size))
     testSentences.foreach(sentence => new BPInferencer(model).inferTreewiseMax(sentence))
-    println("test token accuracy=" + objective.aveScore(testLabels))
+    println("test token accuracy=" + objective.aveScore(testLabels) + " (time %.3f s)".format((System.currentTimeMillis - startTime)/1000.0))
 
     System.exit(0);
 

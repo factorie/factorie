@@ -91,125 +91,139 @@ abstract class BPFactor(val factor: Template#Factor) {
       for (n <- neighborSettings) {
         BPFactor.this.messageFrom(n.variable).updateTreewiseFromLeaves
       }
-      update
+      update()
     }
 
     def updateTreewiseToLeaves(expectations:Map[DotTemplate,Vector] = null, cachedLogZ: Double = Double.NaN): Unit = {
       if (updateCount > 0) throw new Exception("Either tree not reset or lattice has cycle")
       updateCount += 1
       _logZ = if (cachedLogZ.isNaN) BPFactor.this.logZ else cachedLogZ
-      if ((expectations ne null) && !_expectationsIncremented)
-        updateWithCounts(expectations, _logZ)
-      else
-        update
+      update(expectations, _logZ)
 
       for (f <- neighborFactors) {
         f.messageFrom(v).updateTreewiseToLeaves(expectations, _logZ)
       }
     }
 
-    def update: Unit
-
-    def updateWithCounts(expectations:Map[DotTemplate,Vector], _logZ: Double): Unit
+    def update(expectations:Map[DotTemplate,Vector] = null, logZ: Double = Double.NaN): Unit
   }
 
   // TODO: Have "SumProductMessageTo" to normalize and avoid sumLogProb, and also "SumProductLogMessageTo" which does not normalize and uses sumLogProb
   case class SumProductMessageTo(override val v: V) extends MessageTo(v) {
     /**Do one step of belief propagation for the message from this BPFactor to variable 'v' */
-    def update = {
-      forIndex(msg.length)(i => { // Consider reversing the nested ordering of this loop and the inner one
-        v.set(i)(null) // Note: this is changing the value of this Variable
-        if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
-          msg(i) = factor.cachedStatistics.score
-        } else if (neighborSettings.size == 1) {
-          val neighbor = neighborSettings.head.variable
-          msg(i) = Double.NegativeInfinity // i.e. log(0)
-          if (factor.template.hasSettingsIterator) {
-            factor.forSettingsOf(List(neighbor)) {
-              msg(i) = maths.sumLogProb(msg(i), factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue)
-            }
-          } else {
-            forIndex(neighbor.domain.size)(j => {
-              neighbor.set(j)(null)
-              msg(i) = maths.sumLogProb(msg(i), factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue)
-            })
-          }
-        } else {
-          // Sum over all combinations of values in neighboring variables with v's value fixed to i.
-          neighborSettings.foreach(setting => {setting.reset; setting.next}) // reset iterator and advance to first setting.
-          msg(i) = Double.NegativeInfinity // i.e. log(0)
-          do {
-            msg(i) = maths.sumLogProb(msg(i), factor.cachedStatistics.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue))
-          } while (nextValues(neighborSettings))
-        }
-      })
-      if (normalizeMessages) maths.normalizeLogProb(msg)
-    }
-
-    def updateWithCounts(expectations: Map[DotTemplate, Vector], _logZ: Double) = {
+    def update(expectations: Map[DotTemplate, Vector] = null, logZ: Double = Double.NaN) = {
       val variableMessage: Array[Double] = BPFactor.this.messageFrom(v).message
-      val statVector: Vector = expectations(factor.template.asInstanceOf[DotTemplate])
+      var statVector: Vector = null
+      // only increment expectations if not already done and vector is present
+      if (!_expectationsIncremented && (expectations ne null)) {
+        statVector = expectations(factor.template.asInstanceOf[DotTemplate])
+        _expectationsIncremented = true
+      }
+
       forIndex(msg.length)(i => { // Consider reversing the nested ordering of this loop and the inner one
         v.set(i)(null) // Note: this is changing the value of this Variable
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
           val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
           val factorMessage = cachedStats.score
-          vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - _logZ))
-          // statVector += cachedStats.vector * -math.exp(factorMessage + variableMessage(i) - _logZ) // update expectations
+          if (statVector ne null) {
+            vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
+            // statVector += cachedStats.vector * -math.exp(factorMessage + variableMessage(i) - _logZ) // update expectations
+          }
           msg(i) = factorMessage
         } else if (neighborSettings.size == 1) {
           val neighbor = neighborSettings.head.variable
           msg(i) = Double.NegativeInfinity // i.e. log(0)
-          forIndex(neighbor.domain.size)(j => {
-            neighbor.set(j)(null)
-            val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
-            val factorMessage = cachedStats.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
-            vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - _logZ))
-            // statVector += cachedStats.vector * -math.exp(factorMessage + variableMessage(i) - _logZ) // update expectations
-            msg(i) = maths.sumLogProb(msg(i), factorMessage)
-          })
+          if (factor.template.hasSettingsIterator) {
+            factor.forSettingsOf(List(neighbor)) {
+              val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
+              val factorMessage = cachedStats.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
+              if (statVector ne null) {
+                vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
+                // statVector += cachedStats.vector * -math.exp(factorMessage + variableMessage(i) - _logZ) // update expectations
+              }
+              msg(i) = maths.sumLogProb(msg(i), factorMessage)
+            }
+          } else {
+            forIndex(neighbor.domain.size)(j => {
+              neighbor.set(j)(null)
+              val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
+              val factorMessage = cachedStats.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
+              if (statVector ne null) {
+                vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
+                // statVector += cachedStats.vector * -math.exp(factorMessage + variableMessage(i) - _logZ) // update expectations
+              }
+              msg(i) = maths.sumLogProb(msg(i), factorMessage)
+            })
+          }
         } else { // This factor has variable neighbors in addition to v itself
           // Sum over all combinations of values in neighboring variables with v's value fixed to i.
           neighborSettings.foreach(setting => {setting.reset; setting.next}) // reset iterator and advance to first setting.
           msg(i) = Double.NegativeInfinity // i.e. log(0)
-          do {
-            val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
-            val factorMessage = cachedStats.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
-            vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - _logZ))
-            // statVector += cachedStats.vector * -math.exp(factorMessage + variableMessage(i) - _logZ) // update expectations
-            msg(i) = maths.sumLogProb(msg(i), factorMessage)
-          } while (nextValues(neighborSettings))
+          if (factor.template.hasSettingsIterator) {
+            factor.forSettingsOf(neighborSettings.map(n => n.variable).toList) {
+              val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
+              val factorMessage = cachedStats.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
+              if (statVector ne null) {
+                vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
+                // statVector += cachedStats.vector * -math.exp(factorMessage + variableMessage(i) - _logZ) // update expectations
+              }
+              msg(i) = maths.sumLogProb(msg(i), factorMessage)
+            }
+          } else {
+            do {
+              val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
+              val factorMessage = cachedStats.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
+              if (statVector ne null) {
+                vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
+                // statVector += cachedStats.vector * -math.exp(factorMessage + variableMessage(i) - _logZ) // update expectations
+              }
+              msg(i) = maths.sumLogProb(msg(i), factorMessage)
+            } while (nextValues(neighborSettings))
+          }
         }
       })
-      _expectationsIncremented = true
       if (normalizeMessages) maths.normalizeLogProb(msg)
     }
   }
 
   case class MaxProductMessageTo(override val v: V) extends MessageTo(v) {
-    /*lazy protected val maxIndex = new Array[Int](v.domain.size) */ // Holds how many nextValues calls it takes to get to max value
-    def update = {
+    def update(expectations: Map[DotTemplate, Vector] = null, logZ: Double = Double.NaN) = {
       forIndex(v.domain.size)(i => { // Consider reversing the nested ordering of this loop and the inner one
         v.set(i)(null) // Note: that this is changing the Variable value
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
           msg(i) = factor.cachedStatistics.score
-          //maxIndex(i) = -1
-        // } else if (neighborSettings.size == 1) { // TODO Needs to be implemented, to gain the same efficiencies we got above.
+        } else if (neighborSettings.size == 1) {
+          val neighbor = neighborSettings.head.variable
+          msg(i) = Double.NegativeInfinity
+          if (factor.template.hasSettingsIterator) {
+            factor.forSettingsOf(List(neighbor)) {
+              val score = factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
+              if (score > msg(i)) {msg(i) = score;}
+            }
+          } else {
+            forIndex(neighbor.domain.size)(j => {
+              neighbor.set(j)(null)
+              val score = factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
+              if (score > msg(i)) {msg(i) = score;}
+            })
+          }
         } else { // This factor has variable neighbors in addition to v itself
           neighborSettings.foreach(setting => {setting.reset; setting.next})
           msg(i) = Double.NegativeInfinity
-          //maxIndex(i) = -1
-          //var settingCount = 0
-          do {
-            val score = factor.cachedStatistics.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
-            if (score > msg(i)) {msg(i) = score; /*maxIndex(i) = settingCount*/ }
-            //settingCount += 1
-          } while (nextValues(neighborSettings))
+          if (factor.template.hasSettingsIterator) {
+            factor.forSettingsOf(neighborSettings.map(n => n.variable).toList) {
+              val score = factor.cachedStatistics.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
+              if (score > msg(i)) {msg(i) = score;}
+            }
+          } else {
+            do {
+              val score = factor.cachedStatistics.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
+              if (score > msg(i)) {msg(i) = score;}
+            } while (nextValues(neighborSettings))
+          }
         }
       })
     }
-
-    def updateWithCounts(expectations: Map[DotTemplate, Vector], _logZ: Double) = throw new Exception("Not yet implemented for max-product inference!")
   }
 
   /**Message from Variable v to this factor. */
@@ -259,10 +273,6 @@ abstract class BPFactor(val factor: Template#Factor) {
     }
 
     def update = {
-      //      if (neighborFactors.size > 0)
-      //        for (i <- 0 until v.domain.size) {
-      //          msg(i) = neighborFactors.sumDoubles(_.messageTo(v).message(i))
-      //        }
       if (neighborFactors.size == 1) {
         val nbrmsg = neighborFactors.head.messageTo(v).message
         Array.copy(nbrmsg, 0, msg, 0, msg.length)
@@ -295,7 +305,7 @@ abstract class BPFactor(val factor: Template#Factor) {
 
   def messageFrom(vi: Int): MessageFrom = _msgFrom(vi)
 
-  def update: Unit = {_msgFrom.foreach(_.update); _msgTo.foreach(_.update); } // TODO swap order?
+  def update: Unit = {_msgFrom.foreach(_.update); _msgTo.foreach(_.update()); } // TODO swap order?
 
   def updateTreewise(expectations:Map[DotTemplate,Vector] = null): Unit = {
     _msgFrom.foreach(message => if (message.updateCount == 0) {_isFactorRoot = true; message.updateTreewiseFromLeaves})
@@ -485,7 +495,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
  */
 class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
   override type LatticeType = BPLattice[V]
-  def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = inferTreewise(variables, varying) // TODO Make a more sensible default
+  def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = infer(variables, varying, 1) // TODO Make a more sensible default
   def infer(variables:Iterable[V], varying:Iterable[V], numIterations:Int): LatticeType = {
     val result = new BPLattice(varying, model)
     result.update(numIterations) // TODO Of course make this smarter later
@@ -494,6 +504,15 @@ class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends Variabl
     result
   }
   def infer(variables:Iterable[V], numIterations:Int): LatticeType = infer(variables, variables, numIterations)
+  // for max product
+  def inferMax(variables: Iterable[V], varying: Iterable[V]): LatticeType = inferMax(variables, varying, 1)
+  def inferMax(variables: Iterable[V], varying: Iterable[V], numIterations: Int): LatticeType = {
+    val result = new BPLattice(varying, model)
+    result.updateMax(numIterations)
+    result.setVariablesToMax(variables)
+    result
+  }
+  def inferMax(variables: Iterable[V], numIterations: Int): LatticeType = inferMax(variables, variables, numIterations)
   // waiting for Scala 2.8 default parameters...
   def inferTreewise(variables:Iterable[V], varying:Iterable[V]): LatticeType = inferTreewise(variables, varying, 1)
   def inferTreewise(variables:Iterable[V], varying:Iterable[V], maxiterations:Int): LatticeType = {
