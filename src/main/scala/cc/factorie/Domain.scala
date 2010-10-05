@@ -318,32 +318,31 @@ trait CategoricalRemapping {
 
 /** A Categorical domain with string values.  Provides convenient intialization to known values, 
     with value members holding those known values.  For example:
-    object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
+    object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value }
+    Each of the defined val will have Int type.  Their corresponding String category values 
+    will be the name of the variable (obtained through reflection). */
 class StringDomain[V<:CategoricalVars[_] {type CategoryType = String}](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) {
-  /* For all member variables, if its type is String and its name is all upper case or digits,
-    set its value to its name, and intern in the Domain.  Usage:
-    object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
-  private def stringFields = this.getClass.getDeclaredFields.filter(f => { /*println(f); */ f.getType == classOf[String] })
+  /* For all member variables, if its type is Int, set its value to its name, 
+     and intern in the Domain.  Usage: 
+     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
+  private def stringFields = this.getClass.getDeclaredFields.filter(f => { /* println("stringFields "+f); */  f.getType == classOf[Int] })
   private var stringFieldsIterator: Iterator[java.lang.reflect.Field] = _
-  def Value: String = {
+  def Value: Int = {
     if (stringFieldsIterator == null) stringFieldsIterator = stringFields.iterator
     assert(stringFieldsIterator.hasNext)
     val field = stringFieldsIterator.next
     //println("StringDomain Value got "+field.getName)
     checkFields
     index(field.getName) // Add it to the index
-    field.getName
   } 
   private def checkFields: Unit = {
     for (field <- stringFields) {
       val fieldName = field.getName
       //getClass.getMethods.foreach(m => println(m.toString))
       val fieldMethod = getClass.getMethod(fieldName) // was with ,null)
-      val fieldValue = fieldMethod.invoke(this).asInstanceOf[String]
-      // field.get(this).asInstanceOf[String] //  
-      //val fieldValue = field.get(this) // Violated access protection since in Scala "val PER" creates a private final variable.
+      val fieldValue = fieldMethod.invoke(this).asInstanceOf[Int]
       //println("Field "+fieldName+" has value "+fieldValue)
-      if (fieldValue != null && fieldValue != fieldName) throw new Error("Somehow StringDomain category "+fieldName+" got the wrong String value "+fieldValue+".")
+      if (fieldValue != 0 && this.get(fieldValue) != fieldName) throw new Error("Somehow StringDomain category "+fieldName+" got the wrong String value "+fieldValue+" ("+this.get(fieldValue)+").")
     }
   }
 }
@@ -391,9 +390,7 @@ object Domain {
   }
   /** Register d as the domain for variables of type V. */
   def :=[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]) = this.+=[V](d)(vm)
-  def update[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]): Unit = { 
-    println("In Domain.update!")
-  }
+  //def update[V<:Variable](d:Domain[V])(implicit vm:Manifest[V]): Unit = { println("In Domain.update!") }
   //todo: this should be more picky about the type parameter
   def update(c:Class[_],d:Domain[_]): Unit = { 
     _domains(c) = d     

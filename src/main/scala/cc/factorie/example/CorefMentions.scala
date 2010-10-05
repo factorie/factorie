@@ -21,9 +21,12 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
 
 /** A simple coreference engine on toy data.  
-    Demonstrates the use of RefVariable and setVariable for representing mentions and entities. */
+    Demonstrates the use of RefVariable and SetVariable for representing mentions and entities. */
 object CorefMentionsDemo {
-  /** A random variable for a mention */
+
+  // The data
+
+  /** A random variable for a mention of an entity */
   class Mention(val name:String, val trueEntity:Int, initialEntity:Entity) extends RefVariable(initialEntity) {
     initialEntity.add(this)(null)
     // When this mention is assigned to an entity, update the mention
@@ -44,12 +47,7 @@ object CorefMentionsDemo {
     override def toString = "Entity("+canonical+":"+mentions.toSeq.size+")"
   }
 
-  /** A feature vector random variable measuring affinity between two mentions */
-  object AffinityDomain extends StringDomain[AffinityVector] {
-    val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
-    freeze
-  }
-  Domain += AffinityDomain
+  /** A feature vector variable measuring affinity between two mentions */
   class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
     import AffinityDomain._
     type VariableType = AffinityVector
@@ -63,6 +61,11 @@ object CorefMentionsDemo {
     s2.split(" ").foreach(s => if (s1.contains(s)) this += containsword)
     // Also consider caching mechanisms
   }
+  object AffinityDomain extends StringDomain[AffinityVector] {
+    val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
+    freeze
+  }
+  Domain += AffinityDomain
 
 
   def main(args: Array[String]) : Unit = {
