@@ -215,10 +215,3 @@ class TestBP extends TestCase {
     assertEquals(v2.intValue, 0)
   }
 }
-
-object TestBP extends TestSuite {
-  addTestSuite(classOf[TestBP])
-  def main(args: Array[String]) {
-    junit.textui.TestRunner.run(this)
-  }
-}
