@@ -55,7 +55,7 @@ object ChainNER1 {
 
     // Train for 5 iterations
     val learner = new VariableSettingsSampler[Label](model) with SampleRank with GradientAscentUpdates 
-    repeat(5) { trainLabels.foreach(learner.process(_)) } // Train for 5 iterations through all Labels
+    learner.processAll(trainLabels, 5)  // Train for 5 iterations through all Labels
 
     // Predict, also by sampling, visiting each variable 3 times.
     val predictor = new VariableSettingsSampler[Label](model)
