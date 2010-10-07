@@ -98,19 +98,22 @@ trait CollapsedGibbsSamplerHandler {
 
 object GeneratedVariableCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
   def sample(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler)(implicit d:DiffList): Boolean = {
+    if (v.size != 1) return false
+    val gv = v.head.asInstanceOf[GeneratedVariable]
     factors match {
       // TODO We could try to gain some speed by handling specially the case in which there is only one parent
       case Seq(factor:GeneratedVarTemplate#Factor) => {
-        for (parent <- factor._3) sampler.collapsedOrNull(parent) match {
+        val parents = v.asInstanceOf[GeneratedVariable].parents
+        for (parent <- parents /*factor._3*/ ) sampler.collapsedOrNull(parent) match {
           // When we are mapping from v to collapsed representation, do instead: sampler.collapsed(p).updateChildStats(v, -1.0)
-          case p:CollapsedParameter => p.updateChildStats(factor._1, -1.0)
+          case p:CollapsedParameter => p.updateChildStats(gv /*factor._1*/ , -1.0)
           // TODO What about collapsed children?
         }
-        factor._1 match { // Necessary because it might be a GeneratedVar, not a GeneratedVariable, in which case we should fail
-          case gv: GeneratedVariable => gv.sampleFromParents(d)
+        gv match { // Necessary because it might be a GeneratedVar, not a GeneratedVariable, in which case we should fail
+          case gv: GeneratedVariable => gv.sampleFromParentsWith(sampler.collapsedMap)(d)
         }
-        for (parent <- factor._3) sampler.collapsedOrNull(parent) match {
-          case p:CollapsedParameter => p.updateChildStats(factor._1, 1.0)
+        for (parent <- parents) sampler.collapsedOrNull(parent) match {
+          case p:CollapsedParameter => p.updateChildStats(gv, 1.0)
           // TODO What about collapsed children?
         }
         true

@@ -20,8 +20,9 @@ import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import java.io.File
 
-// Not finished.  Projectivity not maintained
-
+/** Example of model for dependency parsing.
+    Not finished.  Overly simple inference (just sampling!), projectivity not maintained.
+    But interesting example of flexibility of the "Template.statistics" method. */
 object DepParsing1 {
   
   class Token(val word:String, posString:String, trueParentPosition:Int, trueLabelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
@@ -29,6 +30,7 @@ object DepParsing1 {
     val pos = new POS(posString)
     override def toString = "Token("+word+":"+position+")"
   }
+
   class Node(val token:Token, val truePosition:Int, trueLabelString:String) extends RefVariable[Token] with TrueSetting with IterableSettings {
     lazy val trueValue: Token = seq(truePosition)
     def seq = token.seq
@@ -66,11 +68,14 @@ object DepParsing1 {
       override def variable : Node = Node.this
     }
   }
+
   class Direction(right:Boolean) extends BooleanObservation(right)
+
   class Distance(d:Int) extends DiscreteVariable {
     if (d < domain.size-1) set(d)(null) else set(domain.size-1)(null)
   }
   Domain[Distance].size = 6
+
   class POS(posString:String) extends CategoricalVariable(posString) 
   class Label(trueString:String) extends LabelVariable(trueString)
   class Sentence extends VariableSeq[Token] {

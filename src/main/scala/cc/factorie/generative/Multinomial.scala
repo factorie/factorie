@@ -28,8 +28,11 @@ trait MultinomialVar extends Masses with GeneratedVariable {
   def pr: Double = math.exp(logpr)
   def prFrom(parents:Seq[Parameter]): Double = logprFrom(parents)
   def sampleFrom(proportions:Proportions)(implicit d:DiffList) = throw new Error("Not yet implemented")
-  def sampleFromParents(implicit d:DiffList = null): Unit = sampleFrom(proportions)
-  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit = parents match { case Seq(p:Proportions) => sampleFrom(p) }
+  def sampleFromParents(implicit d:DiffList = null): this.type = { sampleFrom(proportions); this }
+  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): this.type = {
+    parents match { case Seq(p:Proportions) => sampleFrom(p) }
+    this
+  }
 }
 
 /*class SparseMultinomial(theProportions:Proportions) extends SparseCounts(theProportions.size) with Multinomial {
