@@ -43,16 +43,21 @@ trait Dirichlet extends Proportions with GeneratedVariable with CollapsibleParam
   def prFrom(parents:Seq[Parameter]) = math.exp(logprFrom(parents))
   def alpha(index:Int): Double = mean(index) * precision.doubleValue
   def alphas: Seq[Double] = mean.map(_ * precision.doubleValue)
+  def sampleProportions: Proportions = new DenseProportions(mean.length) 
   type CollapsedType <: DirichletMultinomial
 }
 
 trait MutableDirichlet extends MutableProportions with Dirichlet {
-  def sampleFrom(mean:Proportions, precision:RealVar, children:Iterable[DiscreteVar] = Nil)(implicit d:DiffList): Unit = {
+  def sampleFrom(mean:Proportions, precision:RealVar, children:Iterable[DiscreteVar] = Nil)(implicit d:DiffList): this.type = {
     set(Dirichlet.sampleFrom(mean, precision, children))
+    this
   }
-  def sampleFromParents(implicit d:DiffList = null): Unit = sampleFrom(mean, precision)
-  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList) = parents match {
-    case Seq(mean:Proportions, precision:RealVarParameter) => sampleFrom(mean, precision)
+  def sampleFromParents(implicit d:DiffList = null): this.type = { sampleFrom(mean, precision); this }
+  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): this.type = {
+    parents match {
+      case Seq(mean:Proportions, precision:RealVarParameter) => sampleFrom(mean, precision)
+    }
+    this
   }
   override def defaultEstimator = MutableDirichletEstimator
 }
@@ -77,6 +82,7 @@ object Dirichlet {
 /** Proportions, Dirichlet-distributed, with dense separate values for all dimensions. */
 class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter, p:Seq[Double] = Nil) extends DenseProportions(if (p.length == 0) initialMean else p) with MutableDirichlet  {
   def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealConstantParameter(alpha * size), Nil)
+  //def this[T<:DiscreteVars](alpha:Double)(implicit m:Manifest[T]) = this(Domain.get[T](m.erasure).size, alpha)
   protected val meanRef: ParameterRef[Proportions,Dirichlet] = new ParameterRef(initialMean, this)
   protected val precisionRef = new ParameterRef(initialPrecision, this)
   def mean = meanRef.value
@@ -89,6 +95,12 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter,
   def newCollapsed = new DenseDirichletMultinomial(mean, precision)
   def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit = set(c)(d)
 }
+
+object DenseDirichlet {
+  def apply[T<:DiscreteVars](alpha:Double)(implicit m:Manifest[T]) = new DenseDirichlet(Domain.get[T](m.erasure).size, alpha)
+
+}
+
 
 object MutableDirichletEstimator extends Estimator[MutableProportions] {
   def estimate(d:MutableProportions, map:scala.collection.Map[Variable,Variable]): Unit = d match {

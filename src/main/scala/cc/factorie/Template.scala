@@ -631,6 +631,7 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
     def statistics: StatisticsType = _statistics(this)
     override def cachedStatistics: StatisticsType = Template3.this.cachedStatistics(this)
   } 
+  //object Factor { def apply(n1:N1, n2:N2, n3:N3) = new Factor(n1, n2, n3) }
 }
 trait Statistics3[S1,S2,S3] extends Template {
   case class Stat(_1:S1, _2:S2, _3:S3) extends super.Stat

@@ -332,12 +332,13 @@ class StringDomain[V<:CategoricalVars[_] {type CategoryType = String}](implicit 
     assert(stringFieldsIterator.hasNext)
     val field = stringFieldsIterator.next
     //println("StringDomain Value got "+field.getName)
-    checkFields
+    //checkFields // TODO Re-add this and make sure example/DirichletDemo works
     index(field.getName) // Add it to the index
   } 
   private def checkFields: Unit = {
     for (field <- stringFields) {
       val fieldName = field.getName
+      println("StringDomain.checkFields "+field+" fieldName="+fieldName)
       //getClass.getMethods.foreach(m => println(m.toString))
       val fieldMethod = getClass.getMethod(fieldName) // was with ,null)
       val fieldValue = fieldMethod.invoke(this).asInstanceOf[Int]

@@ -52,7 +52,7 @@ trait GeneratedVar extends Variable {
       if not, return Nil or null entries in sequence with ordering matching 'parents'. */
   def parentRefs: Seq[AbstractParameterRef] = Nil
   /** The probability of the current value given its parents. */
-  def pr:Double
+  def pr:Double // = prFrom(parents)
   def prFrom(parents:Seq[Parameter]): Double
   /** The log-probability of the current value given its parents. */
   def logpr:Double = math.log(pr)
@@ -64,12 +64,13 @@ trait GeneratedVar extends Variable {
 
 /** A GeneratedVar that is mutable and whose value may be changed by sampling. */
 trait GeneratedVariable extends GeneratedVar {
-  /** Sample a new value for this variable given only its parents */
-  def sampleFromParents(implicit d:DiffList = null): Unit // TODO Consider renaming sampleFromParents to make clear that it doesn't account for children or others
+  /** Sample a new value for this variable given only its parents. */
+  def sampleFromParents(implicit d:DiffList = null): this.type
+  def sampleFromParentsWith(m:scala.collection.Map[Parameter,Parameter])(implicit d:DiffList = null): this.type = { sampleFrom(parents.map(p => m.getOrElse(p,p))); this }
   /** Sample a new value for this variable given only the specified parents, 
       ignoring its current registered parents. */
   // TODO I think this should be Seq[Parameter] below, not Seq[Variable]
-  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): Unit
+  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): this.type
 }
 
 
@@ -96,10 +97,14 @@ trait ProportionGenerating {
 
 // Templates
 class GeneratedVarTemplate extends TemplateWithStatistics3[GeneratedVar,MixtureChoiceVariable,Vars[Parameter]] {
+  // TODO consider: override def _2: MixtureChoiceVariable = _1 match { case v:MixtureOutcome => v.choice; case _ => null }
+  // And the same for _3.
   protected def factorOfGeneratedVar(v:GeneratedVar) = v match {
-    // TODO Consider not bothering to fill in slots 2 and 3, just to save time and because it isn't necessary
-    case v:MixtureOutcome => Factor(v, v.choice, Vars.fromSeq(v.parents))
-    case _ => Factor(v, null, Vars.fromSeq(v.parents)) // TODO Consider just Factor(v, null, null) for efficiency
+    // TODO Consider not bothering to fill in slots 2 and 3, just to save time and because it isn't necessary.  Yes!
+    //case v:MixtureOutcome => Factor(v, v.choice, Vars.fromSeq(v.parents))
+    //case _ => Factor(v, null, Vars.fromSeq(v.parents)) // TODO Consider just Factor(v, null, null) for efficiency
+    case v:MixtureOutcome => Factor(v, null, null)
+    case _ => Factor(v, null, null) // TODO Consider just Factor(v, null, null) for efficiency
   }
   def unroll1(v:GeneratedVar) = factorOfGeneratedVar(v)
   def unroll2(c:MixtureChoiceVariable) = c.outcomes.map(factorOfGeneratedVar(_)) //v => Factor(v, c, Vars.fromSeq(v.parents))

@@ -26,7 +26,7 @@ import cc.factorie.app.strings.alphaSegmenter
 
 object LDADemo {
   val numTopics = 10
-  class Z(p: Proportions, value: Int) extends MixtureChoice(p, value);
+  class Z(p: Proportions, value: Int) extends MixtureChoice(p, value)
   Domain[Z].size = numTopics
   class Word(ps: FiniteMixture[Proportions], z: MixtureChoiceVariable, value: String) extends CategoricalMixture[String](ps, z, value)
   class Document(val file: String) extends ArrayBuffer[Word] {var theta: MutableDirichlet = null}

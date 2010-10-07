@@ -53,8 +53,8 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
     case _ => {} // TODO Should we really not throw an error here?
   }
   // Perhaps DirichletMultinomial should not be a GeneratedVariable?  But it does have parents and children.
-  def sampleFromParents(implicit d:DiffList = null): Unit = throw new Error
-  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList = null): Unit = throw new Error
+  def sampleFromParents(implicit d:DiffList = null): this.type = throw new Error
+  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList = null): this.type = throw new Error
   def prFrom(parents:Seq[Parameter]): Double = throw new Error
 }
 
