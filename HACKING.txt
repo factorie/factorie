@@ -42,7 +42,15 @@ hg update
 Development
 ===========
 
-For Eclipse 
+For Eclipse - Currently only working with Eclipse version 3.5.2
+
+Increase Eclipse available memory:
+ See--http://help.eclipse.org/galileo/index.jsp?topic=/org.eclipse.platform.doc.user/tasks/running_eclipse.htm
+ On Mac:
+  Close Eclipse if open
+  Right click on application icon, select "Show Package Contents"
+  Open Contents/MacOS/eclipse.ini
+  Change -Xmx256m to -Xmx1024m, save file and open Eclipse
 
 Factorie branch "0.9" and higher uses Scala 2.8
 Install Eclipse Maven plugin:
@@ -50,19 +58,21 @@ Install Eclipse Maven plugin:
  Enter this URL:  http://m2eclipse.sonatype.org/sites/m2e
  Click check box and install
  Relaunch Eclipse
+
 Install Eclipse Scala plugin:
  Within Eclipse, select menu "Help" -> "Install New Software"
  Enter this URL: http://download.scala-ide.org/update-current-35
- Click both check boxes and install
+ Click all check boxes and install
  Relaunch Eclipse
-Inport Factorie, (assuming that it has already been checked out to "~/workspace/factorie"):
+
+Import Factorie, (assuming that it has already been checked out to "~/workspace/factorie"):
  Within Eclipse, select menu "File" -> "New" -> "Scala Project"
  In dialog box, select "Create project from existing source"
  Browse to enter your factorie directory (e.g. "~/workspace/factorie")
  Click "Next"
  Right click on "factorie" in "Package explorer" to left, 
   select menu "M2 Maven" -> "Enable Dependency Management"
-Wait for it to compile
+Wait for it to compile - could take a very long time
 
 
 For IntelliJ
