@@ -216,7 +216,7 @@ class TestBP extends TestCase {
   }
 }
 
-object TestBPRunner extends TestSuite {
+object TestBP extends TestSuite {
   addTestSuite(classOf[TestBP])
   def main(args: Array[String]) {
     junit.textui.TestRunner.run(this)
