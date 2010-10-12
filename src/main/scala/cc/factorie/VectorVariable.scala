@@ -101,7 +101,7 @@ trait CategoricalBinaryVectorVariable[T] extends BinaryVectorVar with Categorica
 abstract class SparseCategoricalBinaryVectorVariable[T] extends SparseBinaryVectorVariable with CategoricalBinaryVectorVariable[T] {
   type VariableType <: SparseCategoricalBinaryVectorVariable[T]
   def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
-  def values: Seq[T] = { val d = this.domain; val result = new ArrayBuffer[T](domainSize); this.activeDomain.foreach(result += d.get(_)); result }
+  def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.get(i)); result }
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
   def skipNonCategories = false
