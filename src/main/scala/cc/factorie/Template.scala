@@ -82,7 +82,9 @@ trait Statistics {
 trait Stat extends Statistics
 
 /** A collection of Stat objects along with a method of producting a compatibility score from them. */
-trait Stats extends Statistics with Iterable[Stat]
+trait Stats extends Statistics /*with Iterable[Stat]*/ {
+  def stats: Iterable[Stat]
+}
 
 
 
@@ -108,13 +110,13 @@ trait Template { templateSelf =>
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
     val score = Template.this.score(this.asInstanceOf[StatType]) // TODO can we find a way to get rid of this cast?  Yes, use a self-type Stat[This]
   }
-  class Stats(val stats:Iterable[StatType]) extends cc.factorie.Stats with Statistics with Iterable[StatType] {
-    def iterator = stats.iterator
+  class Stats(val stats:Iterable[StatType]) extends cc.factorie.Stats with Statistics /*with Iterable[StatType]*/ {
+    //def iterator = stats.iterator
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
     val score = stats.foldLeft(0.0)(_ + Template.this.score(_))
   }
   def score(s:StatType): Double
-  def statistics(ss:Iterable[StatType]): StatisticsType = new Stats(ss)
+  def statistics(ss:Iterable[StatType]): StatisticsType = (new Stats(ss)).asInstanceOf[StatisticsType] // TODO How can we get rid of this cast?
   /** May be overridden in subclasses to actually cache. */
   def cachedStatistics(f:FactorType): StatisticsType = f.statistics
   def clearCachedStatistics: Unit = {}
@@ -213,7 +215,7 @@ trait VectorTemplate extends Template {
       }
     }
   }
-  override def statistics(ss:Iterable[StatType]): StatisticsType = new Stats(ss)
+  override def statistics(ss:Iterable[StatType]): StatisticsType = (new Stats(ss)).asInstanceOf[StatisticsType] // TODO How can we get rid of this cast?
   //override def statistics(v:Variable): StatisticsType = new Stats(factors(v).map(_.stats).flatten)
   //override def statistic(ss:Iterable[StatType]): StatisticType = new Statistic(ss)
   // TODO implement this!
