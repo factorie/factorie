@@ -21,15 +21,11 @@ import scala.util.matching.Regex
 class TokenSeq[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]]
 extends cc.factorie.app.tokenseq.TokenSeq[T,This] {
   this: This =>
-  var encoding = "default"
   /** Return the collection of Label instances attached to these tokens. */
   def labels = this.map(_.label)
   /** Return the proportion of Labels whose current value is their trueValue. */
   def accuracy: Double = this.foldLeft(0)((sum,token) => if (token.label.valueIsTruth) sum + 1 else sum) / size.toDouble
-  def entities = encoding match {
-    case "BIO" => TokenSeq.extractBIOEncoding[T,L,This](this)
-    case _ => TokenSeq.extractDefaultEncoding[T,L,This](this)
-  }
+  def entities = TokenSeq.extractContiguousEncoding[T,L,This](this)
 }
 
 /** Tools for creating and evaluating LabeledTokenSeq
@@ -84,8 +80,7 @@ object TokenSeq {
 
 
   /** Return a collection of Seq[Token] each of which are labeled with contiguous non-"background" label values. */
-  def extractDefaultEncoding[T<:Token[S,L,T],L<:Label[S,T,L],S<:TokenSeq[T,L,S]](s: S): Seq[(String,Seq[T])] = {
-    val background = "O"  
+  def extractContiguousEncoding[T<:Token[S,L,T],L<:Label[S,T,L],S<:TokenSeq[T,L,S]](s: S, background:String = "O"): Seq[(String,Seq[T])] = {
     val result = new ArrayBuffer[(String,Seq[T])]
     if (s.size == 0) return result
     var labelvalue = s.head.label.value
@@ -124,7 +119,7 @@ object TokenSeq {
           phrase = new ArrayBuffer[T]
         }
         intag = lbl.substring(2)
-        phrase += tk.asInstanceOf[T]  //phrase = (intag, i)
+        phrase += tk.asInstanceOf[T]
       } else if (lbl startsWith "I-") {
         if (intag == lbl.substring(2)) {  // and still in the same span
           phrase += tk
@@ -133,7 +128,7 @@ object TokenSeq {
           intag = lbl.substring(2)
           phrase = ArrayBuffer[T](tk)
         }
-      } else if (intag != null) {          // was in tag, now outiside ("O")
+      } else if (intag != null) {          // was in tag, now outiside
         result += ((intag, phrase))
         intag = null
         phrase = new ArrayBuffer[T]
