@@ -65,6 +65,23 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <distributionManagement>
+      <repository>
+	<id>ieslnexus</id>
+	<name>IESL Nexus repostory</name>
+	<url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/releases</url>
+      </repository>
+      <snapshotRepository>
+	<id>ieslnexus</id>
+	<name>IESL Nexus repostory</name>
+	<url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/snapshots</url>
+      </snapshotRepository>
+      <site>
+	<id>ieslwww</id>
+	<name>IESL www repository</name>
+	<url>scp://iesl.cs.umass.edu/m/iesl/data2/www/iesl/maven/factorie</url>
+      </site>
+    </distributionManagement>
 
     <profiles>
         <profile>
