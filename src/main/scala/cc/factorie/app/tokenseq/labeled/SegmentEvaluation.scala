@@ -124,6 +124,7 @@ object SegmentEvaluation {
 
 // for defaultStartPrefix = "(B|I)-" Although just "B-" would be enough for BIO, "(B|I)-" is needed for IOB
 class SegmentEvaluation[L<:LabelVariable[String]](baseLabelStrings: Seq[String], startPrefix:String = "(B|I)-", continuePrefix:String = "I-") {
+  def this(startPrefix:String, continuePrefix:String)(implicit m:Manifest[L]) = this(SegmentEvaluation.labelStringsToBase(Domain[L](m).toSeq), startPrefix, continuePrefix)
   def this()(implicit m:Manifest[L]) = this(SegmentEvaluation.labelStringsToBase(Domain[L](m).toSeq))
   def this(labels:Seq[L])(implicit m:Manifest[L]) = { this(); this.+=(labels) }
   private val evals = new HashMap[String,PerSegmentEvaluation]
