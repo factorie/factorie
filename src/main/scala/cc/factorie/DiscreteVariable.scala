@@ -59,6 +59,23 @@ abstract class DiscreteVariable(initialValue:Int = 0) extends IntegerVariable(in
   def newQ = new cc.factorie.generative.DenseProportions(domain.size)
 }
 
+// TODO Remove this class!
+case class Block(v1:BooleanVariable, v2:BooleanVariable) extends Variable with IterableSettings {
+  def settings: SettingIterator = new SettingIterator {
+    var i = -1
+    val max = 4
+    def hasNext = i < max
+    def next(difflist:DiffList): DiffList = {
+      val d = newDiffList
+      i += 1
+      if (i % 2 == 1) v2.set(true)(d) else v2.set(false)(d)
+      if (i > 1) v1.set(true)(d) else v1.set(false)(d)
+      d
+    }
+    def reset = i = -1
+  }
+}
+
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  May be useful in the future for block-Gibbs-sampling?
     @author Andrew McCallum */
 @deprecated("This will likely be removed in a future version.")

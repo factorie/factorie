@@ -147,7 +147,7 @@ abstract class SettingsGreedyMaximizer[C](theModel:Model, theObjective:Model = n
 /** Tries each one of the settings of the given variable, 
     scores each, builds a distribution from the scores, and samples from it.
     This is exactly Gibbs sampling over a finite number of possible values of the variable.
-    Note:  This differs from cc.factorie.generative.GibbsSampler in that GibbsSampler may not iterate over settings, but instead sample from a closed-form distribution.
+    Note:  This differs from cc.factorie.generative.GibbsSampler in that GibbsSampler may not iterate over settings, but instead samples from a closed-form distribution.
     Because SampleRank requires Proposal objects, we use this intsead of GibbsSampler.
     @see generative.GibbsSampler
     @author Andrew McCallum */
@@ -155,6 +155,41 @@ class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model = c
   def settings(v:V): SettingIterator = v.settings
 }
 
+class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
+  def settings(variables:Seq[V]): SettingIterator = new SettingIterator {
+    val vs = variables.map(_.settings).toList // .asInstanceOf[List[IterableSettings#SettingIterator]]
+    var initialized = false
+    println("VariablesSettingsSampler.settings "+variables)
+    var _hasNext = true
+    var prevDiffList: DiffList = null
+    /**Iterate through all combinations of values in Variables given their `SettingIterators */
+    def nextValues(vs: List[IterableSettings#SettingIterator], d:DiffList): Boolean = {
+      if (vs == Nil) false
+      else if (vs.head.hasNext) { d ++= vs.head.next(d); println("nextValues changed "+vs.map(_.variable)); true /*(vs.head.hasNext || vs.tail != Nil)*/ }
+      else if (vs.tail != Nil) { vs.head.reset; d ++= vs.head.next(d); println("nextValues changed "+vs.map(_.variable)); nextValues(vs.tail, d) }
+      else false
+    }
+    def next(d:DiffList): DiffList = {
+      // TODO Should we instead let result = d ?  But what if it is null?
+      val result = newDiffList
+      if (!initialized) {
+        vs.foreach(setting => { setting.reset; setting.next(result) })
+        initialized = true
+        _hasNext = true
+      } else {
+        //if ((prevDiffList ne null) && !prevDiffList.done) { prevDiffList.redo; prevDiffList.done = false } // TODO  Ug!  Ugly hack that will not generalize!
+        _hasNext = nextValues(vs, result)
+      }
+      println("VariablesSettingsSampler.next "+vs.map(_.variable)+" hasNext="+this.hasNext)
+      prevDiffList = result
+      result
+    }
+    def reset: Unit = { vs.foreach(_.reset); prevDiffList = null }
+    def hasNext: Boolean = vs.exists(_.hasNext)
+  }
+}
+
+/* Besag's Iterated Conditional Modes */
 class VariableSettingsGreedyMaximizer[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsGreedyMaximizer[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
