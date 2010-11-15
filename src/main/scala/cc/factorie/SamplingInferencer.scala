@@ -29,7 +29,7 @@ class SamplingLattice[V<:DiscreteVars](variables:Iterable[V]) extends Lattice[V]
 }
 
 // A simple special case, to be generalized later
-class SamplingInferencer[V<:DiscreteVariable,C](val sampler:Sampler[C]) extends Inferencer[V,C] {
+class SamplingInferencer[V<:DiscreteVar,C](val sampler:Sampler[C]) extends Inferencer[V,C] {
   type LatticeType = SamplingLattice[V]
   var burnIn = 100 // I really want these to be  the default-values for parameters to infer, in Scala 2.8.
   var thinning = 20
@@ -40,6 +40,7 @@ class SamplingInferencer[V<:DiscreteVariable,C](val sampler:Sampler[C]) extends 
     for (i <- 0 until iterations/thinning) {
       sampler.processAll(contexts, thinning)
       targets.foreach(v => lat.marginal(v).get.incrementCurrentValue)
+      //postSample(targets)
     }
     lat
   }

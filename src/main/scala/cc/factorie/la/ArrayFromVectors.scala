@@ -33,20 +33,24 @@ class ArrayFromVectors(theVectors:Seq[Vector]) {
   val vectorsArraySize = vectors.foldLeft(0)(_+_.activeDomain.size)
   def getVectorsInArray(a:Array[Double]) = {
     var i = 0
-    vectors.foreach(v => for (j <- v.activeDomain) { a(i) = v(j); i += 1 })
+    //vectors.foreach(v => for (j <- v.activeDomain) { a(i) = v(j); i += 1 })
+    vectors.foreach(v => v.forActiveDomain(j => { a(i) = v(j); i += 1 }))
     a
   }
   def setVectorsFromArray(a:Array[Double]): Unit = {
     var i = 0
-    vectors.foreach(v => for (j <- v.activeDomain) { v(j) = a(i); i += 1 })
+    //vectors.foreach(v => for (j <- v.activeDomain) { v(j) = a(i); i += 1 })
+    vectors.foreach(v => v.forActiveDomain(j => { v(j) = a(i); i += 1 }))
   }
   def incrArrayWithVectors(a:Array[Double]): Unit = {
     var i = 0
-    vectors.foreach(v => for (j <- v.activeDomain) { a(i) += v(j); i += 1 })
+    //vectors.foreach(v => for (j <- v.activeDomain) { a(i) += v(j); i += 1 })
+    vectors.foreach(v => v.forActiveDomain(j => { a(i) += v(j); i += 1 }))
   }
   def incrArrayWithVectors(a:Array[Double], factor:Double): Unit = {
     var i = 0
-    vectors.foreach(v => for (j <- v.activeDomain) { a(i) += v(j) * factor; i += 1 })
+    //vectors.foreach(v => for (j <- v.activeDomain) { a(i) += v(j) * factor; i += 1 })
+    vectors.foreach(v => v.forActiveDomain(j => { a(i) += v(j) * factor; i += 1 }))
   }
   private lazy val vectorsSizes = vectors.map(_.activeDomain.size).toArray
   private lazy val vectorsActiveDomain = vectors.map(_.activeDomain.toArray)
