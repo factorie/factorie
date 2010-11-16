@@ -489,7 +489,6 @@ trait FactorSettings2[N1<:Variable,N2<:Variable] {
   }
 }
 
-
 abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2])
 extends Template with FactorSettings2[N1,N2]
 {
