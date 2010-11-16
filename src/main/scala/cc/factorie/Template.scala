@@ -277,8 +277,10 @@ trait SparseHashWeights extends DotTemplate {
   override lazy val weights: Vector = { freezeDomains; new SparseHashVector(statsize) } // Dense by default, override to be sparseHashed
 }
 
-
-abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
+abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) 
+extends Template 
+with FactorSetting1[N1]
+{
   type Neighbor1Type = N1
   val nc1 = nm1.erasure // "Neighbor class"
   lazy val nd1 = Domain.get[Variable](nc1)
@@ -322,12 +324,14 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
     override def cachedStatistics: StatisticsType = Template1.this.cachedStatistics(this)
   } 
 }
+
 trait Statistics1[S1] extends Template {
   case class Stat(_1:S1) extends super.Stat
   type StatType = Stat
   type StatisticsType = Statistics
   //def init(implicit m1:Manifest[S1]): this.type = this
 }
+
 trait VectorStatistics1[S1<:VectorVar] extends VectorTemplate {
   type StatType = Stat
   type StatisticsType = Statistics
@@ -344,22 +348,59 @@ trait VectorStatistics1[S1<:VectorVar] extends VectorTemplate {
     this
   }
 }
+
 trait DotStatistics1[S1<:VectorVar] extends VectorStatistics1[S1] with DotTemplate {
   def setWeight(entry:S1, w:Double) = entry match {
     case d:DiscreteVar => weights(d.intValue) = w
     case ds:DiscreteVars => ds.vector.activeDomain.foreach(i => weights(i) = w)
   }
 }
+
 abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1] {
   def statistics(v1:N1): StatisticsType = Stat(v1)
 }
+
 abstract class TemplateWithVectorStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with VectorStatistics1[N1]  {
   def statistics(v1:N1): StatisticsType = Stat(v1)
   init //(nm1)
 }
+
 class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1] {
   def statistics(v1:N1): StatisticsType = Stat(v1)
   init //(nm1)
+}
+
+
+trait FactorSetting1[N1<:Variable] {
+  this: Template1[N1] =>
+  // get discrete domain
+  def ndd1 = nd1.asInstanceOf[DiscreteDomain[DiscreteVar]]
+  val nds1 = ndd1.size
+  // Managing settings iteration
+  override def hasSettingsIterator: Boolean = this.isInstanceOf[Template { type FactorType <: { def _1:DiscreteVariable } }]
+  override def forSettings(factor:FactorType)(f: =>Unit): Unit = factor._1 match {
+    case v1: DiscreteVariable => {
+      if (settingsSparsified && (sparseSettingsValues ne null)) 
+        forIndex(sparseSettingsValues.length)(i => { v1.set(sparseSettingsValues(i))(null); f })
+      else
+        forIndex(nds1)(i => { v1.set(i)(null); f })
+    }
+    case _ => throw new RuntimeException("Settings of this factor are not iterable")
+  }  
+  override def forSettingsOf(factor:FactorType, vs:Seq[Variable])(f: =>Unit): Unit = { 
+    require(vs.size == 1); require(factor._1 == vs.head) 
+    forSettings(factor)(f)
+  }
+  def forSettingsExcept(factor:FactorType, v:Variable)(f: =>Unit): Unit = require(factor._1 == v)
+  private var settingsSparsified = false
+  private var sparseSettingsValues: Array[Int] = null
+  override def sparsifySettingsFor(vs:Iterable[Variable]): Unit = {
+    val sparseInts = new HashSet[Int]
+    // Only works for DiscreteVar
+    vs.foreach(_ match { case v:DiscreteVar => sparseInts += v.intValue })
+    sparseSettingsValues = sparseInts.toArray
+    settingsSparsified = true 
+  }
 }
 
 
