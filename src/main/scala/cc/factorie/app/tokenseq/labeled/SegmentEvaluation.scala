@@ -44,10 +44,12 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
   protected def isContinue(x:String) = labelValueContinue.pattern.matcher(x).matches
 
   /** Add the given sequence of labels to the statistics for this evalution.
-      Even though you may be tempted to put all Label instances across all sentences in a single Seq[] and pass them in here,
-      note that you risk getting slightly incorrect results at document boundaries: when one document ends
-      in a mention and the next document begins with the same mention type,
-      they will be counted as only one mention, when they should have been counted as two. */
+
+      Note: Putting all Label instances across all sentences in a single Seq[]
+      may result in slightly incorrect results at document boundaries: when one
+      document ends in a mention and the next document begins with the same
+      mention type, they will be counted as only one mention, when they should
+      have been counted as two. */
   def +=(labels: Seq[LabelVariable[String]]): Unit = {
     //println("PerSegmentEvaluation += "+labels.size)
     var predictedStart, targetStart = false
