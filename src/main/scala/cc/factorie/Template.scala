@@ -368,12 +368,11 @@ class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) exten
   init //(nm1)
 }
 
-
 trait FactorSettings1[N1<:Variable] {
   this: Template1[N1] =>
   // get discrete domain
-  def ndd1 = nd1.asInstanceOf[DiscreteDomain[DiscreteVar]]
-  val nds1 = ndd1.size
+  lazy val ndd1 = nd1.asInstanceOf[DiscreteDomain[DiscreteVar]]
+  lazy val nds1 = ndd1.size
   // Managing settings iteration
   override def hasSettingsIterator: Boolean = this.isInstanceOf[Template { type FactorType <: { def _1:DiscreteVariable } }]
   override def forSettings(factor:FactorType)(f: =>Unit): Unit = factor._1 match {
@@ -403,12 +402,10 @@ trait FactorSettings1[N1<:Variable] {
 
 trait FactorSettings2[N1<:Variable,N2<:Variable] {
   this: Template2[N1,N2] =>
-
   lazy val ndd1 = nd1.asInstanceOf[DiscreteDomain[DiscreteVar]]
   lazy val ndsize1 = ndd1.size
   lazy val ndd2 = nd2.asInstanceOf[DiscreteDomain[DiscreteVar]]
   lazy val ndsize2 = ndd2.size
-
   // Managing settings iteration
   override def hasSettingsIterator: Boolean = this.isInstanceOf[Template { type FactorType <: { def _1:DiscreteVariable ; def _2:DiscreteVariable } }]
   override def forSettings(factor:FactorType)(f: =>Unit): Unit = (factor._1, factor._2) match {
@@ -435,7 +432,6 @@ trait FactorSettings2[N1<:Variable,N2<:Variable] {
       }
     case _ => throw new RuntimeException("Settings of this factor are not iterable")
   }
-
   /** Call function f for each valid (possibly sparsified) variable value setting
       of the neighboring variables specified in 'vs'.  */
   override def forSettingsOf(factor:FactorType, vs:Seq[Variable])(f: =>Unit): Unit = (factor._1, factor._2) match {
@@ -462,7 +458,6 @@ trait FactorSettings2[N1<:Variable,N2<:Variable] {
       } else throw new Error("Asked to vary settings of too many variables.")
     case _ => throw new RuntimeException("Settings of this factor are not iterable")
   }
-
   private var settingsSparsified = false
   // Redundant storage of valid v1,v2 value pairs
   private var sparseSettings1: Array[Array[Int]] = null // first index=v1, second index=v2
@@ -472,7 +467,6 @@ trait FactorSettings2[N1<:Variable,N2<:Variable] {
     if (!hasSettingsIterator) {
       throw new RuntimeException("Variables of the Template must be Discrete.")
     }
-
     println("Template sparsifySettingsFor ndsize1="+ndsize1+" ndsize2="+ndsize2)
     assert (ndsize1 > 0, "sparsifySettingsFor before Domain size properly set.")
     assert (ndsize2 > 0, "sparsifySettingsFor before Domain size properly set.")
@@ -492,7 +486,6 @@ trait FactorSettings2[N1<:Variable,N2<:Variable] {
     forIndex(sparseSettings1.length)(i => sparseSettings1(i) = sparse1.getOrElse(i, new HashSet[Int]).toArray)
     forIndex(sparseSettings2.length)(i => sparseSettings2(i) = sparse2.getOrElse(i, new HashSet[Int]).toArray)
     settingsSparsified = true
-
   }
 }
 
