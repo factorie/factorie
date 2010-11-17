@@ -13,21 +13,22 @@
    limitations under the License. */
 
 package cc.factorie.app
-import java.io.InputStream
 
 package object strings {
 
-  def inputStreamToString(is:InputStream, encoding:String = "UTF-8"): String = {
-    import java.io.InputStreamReader
+  def inputStreamToString(is:java.io.InputStream, encoding:String = "UTF-8"): String = {
+    readerToString(new java.io.InputStreamReader(is, encoding))
+  }
+
+  def readerToString(reader:java.io.Reader): String = {
     val buffer = new Array[Char](0x10000)
     val out = new StringBuilder()
-    val in = new InputStreamReader(is, encoding)
     var read = 0
     do {
-      read = in.read(buffer, 0, buffer.length)
+      read = reader.read(buffer, 0, buffer.length)
       if (read > 0)
         out.appendAll(buffer, 0, read)
-    } while (read>=0)
+    } while (read >= 0)
     out.toString
   }
 
