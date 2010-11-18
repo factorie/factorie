@@ -19,9 +19,6 @@ import scala.reflect.Manifest
 import scala.util.Random
 import scala.Math
 import scala.util.Sorting
-//import scalala.tensor.Vector
-//import scalala.tensor.dense.DenseVector
-//import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
 // Notes on class names for Variables:
 // Except for cc.factorie.Variable, "*Variable" means mutable
@@ -83,8 +80,8 @@ trait Variable {
   def isConstant = false
 }
 
-/** A variable that is a container for other variables (of type ContainedVariableType), 
-    A Template that neighbors a ContainerVariable subclass, will also unroll for a Factor
+/** A variable that is a container for other variables (whose type is ContainedVariableType), 
+    A Template that neighbors a ContainerVariable subclass, will also unroll a Factor
     for changes to any Variables of type ContainedVariableType.
     This mechanism is used for implementing var-args in Template arguments; 
     for example see GeneratedVarTemplate. */
