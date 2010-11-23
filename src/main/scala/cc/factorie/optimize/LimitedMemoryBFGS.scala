@@ -54,6 +54,7 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
     if (isConverged) return true;
     val initialValue = optimizable.optimizableValue
     val numParams = optimizable.numOptimizableParameters
+    logger.info("LimitedMemoryBFGS: Initial value = " + initialValue);
 
     if (g == null) { // first time through
       iterations = 0

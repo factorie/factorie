@@ -19,14 +19,44 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
 class TokenSeq[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]]
-extends cc.factorie.app.tokenseq.TokenSeq[T,This] {
+extends cc.factorie.app.tokenseq.TokenSeq[T,This]
+with ContiguousEncoding[T,L,This]
+{
   this: This =>
   /** Return the collection of Label instances attached to these tokens. */
   def labels = this.map(_.label)
   /** Return the proportion of Labels whose current value is their trueValue. */
   def accuracy: Double = this.foldLeft(0)((sum,token) => if (token.label.valueIsTruth) sum + 1 else sum) / size.toDouble
-  def entities = TokenSeq.extractContiguousEncoding[T,L,This](this)
 }
+
+trait Encoding[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]] {
+  this: This =>
+  def entities: Seq[(String,Seq[T])]
+  def trueEntities: Seq[(String,Seq[T])]
+  /* = {
+    // TODO: there is better ways to do this which doesn't require undos
+    val difflist = new DiffList
+    labels.foreach(_ setToTruth difflist)
+    val e = entities
+    difflist.undo
+    e
+  } */
+}
+
+trait BIOEncoding[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]]
+extends Encoding[T,L,This] {
+  this: This =>
+  override def entities: Seq[(String,Seq[T])] = TokenSeq.extractBIO[T](this, (_:T).label.value)
+  override def trueEntities: Seq[(String,Seq[T])] = TokenSeq.extractBIO[T](this, (_:T).label.trueValue)
+}
+
+trait ContiguousEncoding[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]]
+extends Encoding[T,L,This] {
+  this: This =>
+  override def entities: Seq[(String,Seq[T])] = TokenSeq.extractContiguous[T](this, (_:T).label.value)
+  override def trueEntities: Seq[(String,Seq[T])] = TokenSeq.extractContiguous[T](this, (_:T).label.trueValue)
+}
+
 
 /** Tools for creating and evaluating LabeledTokenSeq
     @author Andrew McCallum
@@ -79,40 +109,50 @@ object TokenSeq {
   Seq[S] = cc.factorie.app.tokenseq.TokenSeq.fromOWPL[S,T](source, newTokenSeq, newToken, featureFunction, labelFunction, sentenceBoundary, documentBoundary, ignoreLines)
 
 
-  /** Return a collection of Seq[Token] each of which are labeled with contiguous non-"background" label values. */
-  def extractContiguousEncoding[T<:Token[S,L,T],L<:Label[S,T,L],S<:TokenSeq[T,L,S]](s: S, background:String = "O"): Seq[(String,Seq[T])] = {
+  /**
+   * Extract a collection contiguous non-"background" labels
+   *
+   * Authors: Tim Vieira, Andrew McCallum
+   */
+  def extractContiguous[T](s:Seq[T], labeler:T=>String, background:String = "O"): Seq[(String,Seq[T])] = {
     val result = new ArrayBuffer[(String,Seq[T])]
     if (s.size == 0) return result
-    var labelvalue = s.head.label.value
-    var entity: List[T] = Nil
+    var prevLabel = background
+    var entity = new ArrayBuffer[T]
     for (token <- s) {
-      if (token.label.value != background) {
-        if (token.label.value == labelvalue) {
-          entity = token :: entity
+      val currLabel = labeler(token)
+      if (currLabel != background) {
+        if (currLabel == prevLabel) {
+          entity += token
         } else {
-          if (entity.length > 0) result += ((labelvalue,entity.reverse))
-          entity = token :: Nil
-          labelvalue = token.label.value
+          if (entity.length > 0) result += ((prevLabel, entity.reverse))
+          entity = new ArrayBuffer
+          entity += token 
         }
       } else {
-        if (entity.length > 0) result += ((labelvalue,entity.reverse))
-        entity = Nil
-        labelvalue = token.label.value
+        if (entity.length > 0) result += ((prevLabel, entity.reverse))
+        entity = new ArrayBuffer[T]
       }
+      prevLabel = currLabel
     }
+    // add any lingering bits
+    if (entity.length > 0) result += ((prevLabel, entity.reverse))
     result
   }
 
   /**
+   * Given a sequence and a labeling function extract segments encoded in the BIO or IOB scheme.
+   * Note: a hueristic correction is applied when a segment starts with "I-"
+   *
    * Author: Tim Vieira
    * Since Oct. 3rd, 2010
    */
-  def extractBIOEncoding[T<:Token[S,L,T],L<:Label[S,T,L],S<:TokenSeq[T,L,S]](s: S): Seq[(String,Seq[T])] = {
+  def extractBIO[T](s:Seq[T], labeler:T=>String): Seq[(String,Seq[T])] = {
     val result = new ArrayBuffer[(String,Seq[T])]
     var phrase = new ArrayBuffer[T]
-    var intag: String = null    
+    var intag: String = null
     for (tk <- s) {
-      val lbl = tk.label.value
+      val lbl = labeler(tk)
       if (lbl startsWith "B-") {
         if (intag != null && phrase.length > 0) {
           result += ((intag, phrase))

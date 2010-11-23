@@ -16,7 +16,6 @@
 
 package cc.factorie.example
 
-import scala.io.Source
 import java.io.File
 import cc.factorie._
 import cc.factorie.er._
@@ -26,15 +25,21 @@ import collection.mutable.ArrayBuffer
 object ChainNER1ML {
 
   // Define the variable classes
-  class Token(word: String, labelString: String) extends labeled.Token[Sentence,Label, Token](word) {
+  class Token(word: String, labelString: String) extends labeled.Token[Sentence, Label, Token](word) {
     val label = new Label(labelString, this)
   }
-  class Label(tag: String, token: Token) extends labeled.Label[Sentence,Token, Label](tag, token)
-  class Sentence extends labeled.TokenSeq[Token,Label,Sentence]
+  class Label(tag: String, token: Token) extends labeled.Label[Sentence, Token, Label](tag, token)
+  class Sentence extends labeled.TokenSeq[Token, Label, Sentence]
 
   // Define the model:
   val model = new Model(
-    Foreach[Label] {label => Score(label)},
+    new TemplateWithDotStatistics1[Label] {
+      override def unroll1(label: Label) = if (!label.hasPrev) Factor(label) else Nil
+    },
+    new TemplateWithDotStatistics1[Label] {
+      override def unroll1(label: Label) = if (!label.hasNext) Factor(label) else Nil
+    },
+    Foreach[Label] {label => Score(label, label.token)},
     Foreach[Label] {label => Score(label.prev, label, label.token)}
     )
 
@@ -42,17 +47,17 @@ object ChainNER1ML {
 
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
 
-     def featureFunction(inFeatures:Seq[String]): Seq[String] = {
+    def featureFunction(inFeatures: Seq[String]): Seq[String] = {
       val result = new ArrayBuffer[String]
       // Assume the first feature is the word
-      result += inFeatures(0)
-      result ++= inFeatures.drop(1)
+      result += "DEFAULT"
+      result ++= inFeatures
       result
     }
 
     // Read training and testing data.
-    val trainSentences = labeled.TokenSeq.fromOWPL[Sentence,Token](Source.fromFile(new File(args(0))), () => new Sentence, (word, lab) => new Token(word, lab), featureFunction _)
-    val testSentences = labeled.TokenSeq.fromOWPL[Sentence,Token](Source.fromFile(new File(args(1))), () => new Sentence, (word, lab) => new Token(word, lab), featureFunction _)
+    val trainSentences = labeled.TokenSeq.fromOWPL(new File(args(0)), () => new Sentence, (word, lab) => new Token(word, lab), featureFunction _)
+    val testSentences = labeled.TokenSeq.fromOWPL(new File(args(1)), () => new Sentence, (word, lab) => new Token(word, lab), featureFunction _)
 
     // Get the variables to be inferred
     val trainVariables = trainSentences.map(_.labels)
@@ -66,7 +71,7 @@ object ChainNER1ML {
     val start = System.currentTimeMillis
     val trainer = new LogLinearMaximumLikelihood(model)
     trainer.processAll(trainVariables, 1) // Do just one iteration for initial timing
-    println("One iteration took " + (System.currentTimeMillis - start)/ 1000.0 + " seconds")
+    println("One iteration took " + (System.currentTimeMillis - start) / 1000.0 + " seconds")
     //System.exit(0)
 
     trainer.processAll(trainVariables) // Keep training to convergence
@@ -74,9 +79,11 @@ object ChainNER1ML {
     val objective = new Model(new Label01LossTemplate[Label])
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testSentences.size))
-    testVariables.foreach {variables => new BPInferencer(model).inferTreewiseMax(variables)}
+    testVariables.foreach {
+      variables => new BPInferencer(model).inferTreewiseMax(variables)
+    }
     println("test token accuracy=" + objective.aveScore(allTestVariables))
 
-    println("Total training took " + (System.currentTimeMillis - start)/ 1000.0 + " seconds")
+    println("Total training took " + (System.currentTimeMillis - start) / 1000.0 + " seconds")
   }
 }

@@ -65,11 +65,11 @@ class Logger(val name:String, outputStream: => OutputStream = System.err, @volat
 
 object Logger {
   val loggerMap = new scala.collection.mutable.HashMap[String,Logger]
-  val globalLogger = new Logger("cc.factorie", System.err, WARN)
+  val globalLogger = new Logger("cc.factorie", System.err, INFO)
   val neverLogger = new Logger("null", System.err, Int.MinValue) {
     override def log(theLevel: Int)(x: => Any): Unit = {}
   }
-  def logger(name:String) = loggerMap.getOrElseUpdate(name, new Logger(name, System.err, WARN))
+  def logger(name:String) = loggerMap.getOrElseUpdate(name, new Logger(name, System.err, INFO))
   def getLogger(name:String) = logger(name) // Alias for similarity to log4j
   def getRootLogger = globalLogger // for similarity to log4j
   val NEVER = -1

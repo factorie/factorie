@@ -46,8 +46,8 @@ object ChainNER3 {
     if (args.length != 2) throw new Error("Usage: ChainNER2 trainfile testfile")
 
     // Read training and testing data.  The function 'featureExtractor' function is defined below
-    val trainSentences = labeled.TokenSeq.fromOWPL[Sentence,Token](Source.fromFile(new File(args(0))), () => new Sentence, (word,lab)=>new Token(word,lab), featureExtractor _)
-    val testSentences =  labeled.TokenSeq.fromOWPL[Sentence,Token](Source.fromFile(new File(args(1))), () => new Sentence, (word,lab)=>new Token(word,lab), featureExtractor _)
+    val trainSentences = labeled.TokenSeq.fromOWPL(new File(args(0)), () => new Sentence, (word,lab)=>new Token(word,lab), featureExtractor _)
+    val testSentences =  labeled.TokenSeq.fromOWPL(new File(args(1)), () => new Sentence, (word,lab)=>new Token(word,lab), featureExtractor _)
 
     // Change from CoNLL's IOB notation to to BIO notation
     (trainSentences ++ testSentences).foreach(s => { 
