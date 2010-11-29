@@ -18,7 +18,7 @@ package cc.factorie
 
 /** A variable of finite enumerated values that has a true "labeled" value, separate from its current value. 
     @author Andrew McCallum */
-// TODO We could make version of this for IntegerVar: TrueIntegerVar
+// TODO We could also make version of this for IntegerVar: TrueIntegerVar
 trait DiscreteVariableWithTrueSetting extends DiscreteVariable with TrueSetting {
   this: DiscreteVariable =>
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
@@ -26,6 +26,7 @@ trait DiscreteVariableWithTrueSetting extends DiscreteVariable with TrueSetting 
   def trueIntValue_=(newValue:Int): Unit
   def setToTruth(implicit d:DiffList): Unit = set(trueIntValue)
   def valueIsTruth: Boolean = trueIntValue == intValue
+  def trueValue: ValueType = if (trueIntValue >= 0) domain.getValue(trueIntValue) else null.asInstanceOf[ValueType]
   def isUnlabeled = trueIntValue < 0
   def unlabel = if (trueIntValue >= 0) trueIntValue = -trueIntValue - 1 else throw new Error("Already unlabeled.")
   def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
@@ -34,7 +35,7 @@ trait DiscreteVariableWithTrueSetting extends DiscreteVariable with TrueSetting 
 trait CategoricalVariableWithTrueSetting[A] extends DiscreteVariableWithTrueSetting {
   this: CategoricalVariable[A] =>
   def trueValue_=(x:A) = if (x == null) trueIntValue = -1 else trueIntValue = domain.index(x)
-  def trueValue: VariableType#VariableType#CategoryType = if (trueIntValue >= 0) domain.get(trueIntValue) else null.asInstanceOf[VariableType#VariableType#CategoryType]
+  def trueCategoryValue: VariableType#VariableType#CategoryType = if (trueIntValue >= 0) domain.getEntry(trueIntValue) else null.asInstanceOf[VariableType#VariableType#CategoryType]
 }
 
 
@@ -60,7 +61,7 @@ abstract class CoordinatedLabelVariable[A](trueval:A) extends CategoricalVariabl
 @DomainInSubclasses
 class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with NoVariableCoordination {
   type VariableType <: LabelVariable[T]
-  // TODO Does this ext line really provide the protection we want from creating variable-value coordination?  No.  But it does catch some errors.
+  // TODO Does this next line really provide the protection we want from creating variable-value coordination?  No.  But it does catch some errors.
   override final def set(index: Int)(implicit d: DiffList) = super.set(index)(d)
 }
 

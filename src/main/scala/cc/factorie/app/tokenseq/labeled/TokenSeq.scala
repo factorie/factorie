@@ -46,15 +46,15 @@ trait Encoding[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]] {
 trait BIOEncoding[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]]
 extends Encoding[T,L,This] {
   this: This =>
-  override def entities: Seq[(String,Seq[T])] = TokenSeq.extractBIO[T](this, (_:T).label.value)
-  override def trueEntities: Seq[(String,Seq[T])] = TokenSeq.extractBIO[T](this, (_:T).label.trueValue)
+  override def entities: Seq[(String,Seq[T])] = TokenSeq.extractBIO[T](this, (_:T).label.entryValue)
+  override def trueEntities: Seq[(String,Seq[T])] = TokenSeq.extractBIO[T](this, (_:T).label.trueCategoryValue)
 }
 
 trait ContiguousEncoding[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]]
 extends Encoding[T,L,This] {
   this: This =>
-  override def entities: Seq[(String,Seq[T])] = TokenSeq.extractContiguous[T](this, (_:T).label.value)
-  override def trueEntities: Seq[(String,Seq[T])] = TokenSeq.extractContiguous[T](this, (_:T).label.trueValue)
+  override def entities: Seq[(String,Seq[T])] = TokenSeq.extractContiguous[T](this, (_:T).label.entryValue)
+  override def trueEntities: Seq[(String,Seq[T])] = TokenSeq.extractContiguous[T](this, (_:T).label.trueCategoryValue)
 }
 
 

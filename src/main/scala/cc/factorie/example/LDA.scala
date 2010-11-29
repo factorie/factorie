@@ -71,7 +71,7 @@ object LDADemo {
         (phis ++ documents.map(_.theta)).foreach(p => p.set(sampler.collapsed(p))(null))
         DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + sampler.collapsed(t).top(10).map(dp => Domain[Word].get(dp.index)).mkString(" ")))
+        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + sampler.collapsed(t).top(10).map(dp => Domain[Word].getEntry(dp.index)).mkString(" ")))
         println
       }
     }

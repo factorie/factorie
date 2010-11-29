@@ -53,20 +53,20 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
     var predictedStart, targetStart = false
     for (position <- 0 until labels.length) {
       val label = labels(position)
-      val labelPrevValue: String = if (position > 0) labels(position - 1).value else null
-      val labelPrevTargetValue: String = if (position > 0) labels(position - 1).trueValue else null
+      val labelPrevValue: String = if (position > 0) labels(position - 1).entryValue else null
+      val labelPrevTargetValue: String = if (position > 0) labels(position - 1).trueCategoryValue else null
 
       //print("\n"+label.token.word+"="+label.trueValue+"/"+label.value+" ")
       predictedStart = false; targetStart = false
 
       // Find out if we are at the beginning of a segment.
-      if (isSegmentStart(label.value, labelPrevValue)) {
+      if (isSegmentStart(label.entryValue, labelPrevValue)) {
         predictedCount += 1
         predictedStart = true
         //print("ps ")
       }
 
-      if (isSegmentStart(label.trueValue, labelPrevTargetValue)) {
+      if (isSegmentStart(label.trueCategoryValue, labelPrevTargetValue)) {
         targetCount += 1
         targetStart = true
         //print("ts ")
@@ -81,8 +81,8 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
         var stopSearchForSegmentEnd = false
         while (j < labels.length && !stopSearchForSegmentEnd) {
           val label2 = labels(j)
-          predictedContinue = isContinue(label2.value)
-          targetContinue = isContinue(label2.trueValue)
+          predictedContinue = isContinue(label2.entryValue)
+          targetContinue = isContinue(label2.trueCategoryValue)
           //print("j="+j+predictedContinue+targetContinue)
           //if (predictedContinue) print("pc ")
           //if (targetContinue) print("tc ")
@@ -124,8 +124,8 @@ object SegmentEvaluation {
 
 // for defaultStartPrefix = "(B|I)-" Although just "B-" would be enough for BIO, "(B|I)-" is needed for IOB
 class SegmentEvaluation[L<:LabelVariable[String]](baseLabelStrings: Seq[String], startPrefix:String = "(B|I)-", continuePrefix:String = "I-") {
-  def this(startPrefix:String, continuePrefix:String)(implicit m:Manifest[L]) = this(SegmentEvaluation.labelStringsToBase(Domain[L](m).toSeq), startPrefix, continuePrefix)
-  def this()(implicit m:Manifest[L]) = this(SegmentEvaluation.labelStringsToBase(Domain[L](m).toSeq))
+  def this(startPrefix:String, continuePrefix:String)(implicit m:Manifest[L]) = this(SegmentEvaluation.labelStringsToBase(Domain[L](m).toSeq.map(_.entry)), startPrefix, continuePrefix)
+  def this()(implicit m:Manifest[L]) = this(SegmentEvaluation.labelStringsToBase(Domain[L](m).toSeq.map(_.entry)))
   def this(labels:Seq[L])(implicit m:Manifest[L]) = { this(); this.+=(labels) }
   private val evals = new HashMap[String,PerSegmentEvaluation]
   private var labelCount = 0

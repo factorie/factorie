@@ -25,6 +25,16 @@ import scala.util.Sorting
 // "*Observation" always means immutable, and mixes in trait ConstantValue
 // "*Var" is agnostic about whether it is mutable or not.  Hence "IntegerVar"
 
+/*
+trait ValueType[VT] {
+  type ValueType = VT
+  def value: ValueType
+}
+class DiscreteVariableLike(
+class DiscreteVariableLike[T](val value:Int) extends ValueType[T]
+class CategoricalVariable[T](val value:T) extends DiscreteVariable(23) with ValueType[T]
+val c = new CategoricalVariable("foo")
+*/
 
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
    The trait is abstract because you should not instantiate this trait directly, only subclasses.
@@ -42,7 +52,7 @@ trait Variable {
   type VariableType <: Variable
  
   // Domain handling
-  /** The type of this.domain and Domain.apply[MyVariable]*/
+  /** The type of this.domain and the return type of Domain.apply[MyVariable](). */
   type DomainType <: Domain[VariableType]
   /** When a Domain is automatically constructed for this class (in object Domain), it will be the superclass of this inner class. */
   class DomainClass extends Domain[VariableType]()(Manifest.classType[Variable](classOf[Variable]).asInstanceOf[Manifest[VariableType]])
@@ -51,6 +61,9 @@ trait Variable {
       If library users create their own new Variable classes, which will be subclassed, and wants each
       subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
   final def domain: VariableType#DomainType = Domain.get[VariableType](this.getClass)
+  // TODO Should we make this not "final" so that an arbitrary number of domains can be created at runtime?
+
+  //def value: ValueType // TODO Uncomment this!!!
   
   /** The type of the variable contained inside this variable.
       Used for handling var-args. 
@@ -152,17 +165,14 @@ trait TypedValue extends TypedValues {
     @author Andrew McCallum */
 trait MutableTypedValue extends TypedValue {
   this: Variable =>
-  def set(newValue:ValueType)(implicit d: DiffList): Unit
-  final def value_=(newValue:ValueType)(implicit d:DiffList = null): Unit = set(newValue)(null)
+  //def set(newValue:ValueType)(implicit d: DiffList): Unit // TODO Causes conflict with CategoricalVariable.set.  Consider what to do !!!
+  // TODO Remove this next method; use := instead.
+  //final def value_=(newValue:ValueType)(implicit d:DiffList = null): Unit = set(newValue)(null)
   // Returning 'this' is convenient so that we can do:  val x = Gaussian(mean, variance) := 2.3
   // TODO No, but the syntax is confusing, and we can instead do Gaussian(mean, variance, 2.3)
-  final def :=(newValue:ValueType)(implicit d:DiffList = null): this.type = { set(newValue)(null); this }
+  //final def :=(newValue:ValueType)(implicit d:DiffList = null): this.type = { set(newValue)(null); this }
 }
 
-// I thought about whether to get rid of intValue, doubleValue, proportionValue, etc.
-// But then decided against it.  DiscreteVar.intValue is convenient, and I would like CategoricalVariable.value to still have type T.
-// I considered whether RefValue and TypedValue should be merged, but then I see that we need to 
-// distinguish a _Value that stores its value as x:T and one that doesn't (like CategoricalVariable[T])
 
 trait NumericValue {
   this: Variable =>

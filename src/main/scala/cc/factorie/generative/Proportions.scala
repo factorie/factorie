@@ -58,7 +58,7 @@ trait TypedProportions[A<:DiscreteVar] extends Proportions {
   def top(n:Int)(implicit m:Manifest[A]): Seq[DiscretePr] = {
     val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList
     Domain.get[A](m.erasure) match {
-      case d:CategoricalDomain[_] => entries.map({case (p,i)=>new DiscretePr(i, p, d.get(i).toString)})
+      case d:CategoricalDomain[_] => entries.map({case (p,i)=>new DiscretePr(i, p, d.getEntry(i).toString)})
       case d:Any => entries.map({case (p,i)=>new DiscretePr(i, p, "")})
     }
   }

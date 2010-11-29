@@ -31,6 +31,8 @@ trait IntegerVars extends Variable {
 trait IntegerVar extends IntegerVars with NumericValue {
   //this: Variable =>
   type VariableType <: IntegerVar
+  type ValueType = Int
+  def value: Int
   def intValue: Int
   final def doubleValue: Double = intValue.toDouble
   override def toString = printName + "(" + intValue + ")"
@@ -44,6 +46,7 @@ class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntVa
   type VariableType <: IntegerVariable
   private var _value = initialValue
   protected def _set(newValue:Int): Unit = _value = newValue
+  @inline final def value = _value
   @inline final def intValue = _value
   def set(newValue: Int)(implicit d: DiffList): Unit = if (newValue != _value) {
     if (d ne null) d += new IntegerVariableDiff(_value, newValue)
@@ -53,10 +56,7 @@ class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntVa
     @inline final def variable: IntegerVariable = IntegerVariable.this
     @inline final def redo = _value = newIndex
     @inline final def undo = _value = oldIndex
-    override def toString = variable match { 
-      case cv:CategoricalVar[_/*AnyRef*/] if (oldIndex >= 0) => "IntegerVariableDiff("+cv.domain.get(oldIndex)+"="+oldIndex+","+cv.domain.get(newIndex)+"="+newIndex+")"
-      case _ => "IntegerVariableDiff("+oldIndex+","+newIndex+")"
-    }
+    override def toString = "IntegerVariableDiff("+oldIndex+","+newIndex+")"
   }
 }
 
@@ -67,6 +67,7 @@ class IntegerObservation(theValue:Int) extends IntegerVar with ConstantValue {
   private var _intValue: Int = theValue
   protected def _initializeValue(x:Int): Unit = _intValue = x
   def intValue = _intValue
+  def value = _intValue
 }
 
 // TODO Consider not distinguishing between Variable and Observation?

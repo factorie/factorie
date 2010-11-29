@@ -15,10 +15,10 @@
 package cc.factorie.la
 import cc.factorie._
 
-/** A Vector that has all zeros, except one position containing a 1.0.
+/** Trait for a Vector that has all zeros, except one position containing a 1.0.
     @author Andrew McCallum */
-class SingletonBinaryVector(val theLength:Int, val singleIndex:Int) extends Vector {
-  def length = theLength
+trait SingletonBinaryVec extends Vector {
+  def singleIndex: Int
   def activeDomainSize = 1
   def activeDomain: Iterable[Int] = Seq(singleIndex)
   override def forActiveDomain(f: (Int)=>Unit): Unit = f(singleIndex)
@@ -29,16 +29,22 @@ class SingletonBinaryVector(val theLength:Int, val singleIndex:Int) extends Vect
   override def flatOuter(v:Vector):Vector = v match {
     case that:SparseBinaryVector => 
       new SparseBinaryVector(that, this)
-    case that:SingletonBinaryVector => 
+    case that:SingletonBinaryVec => 
       new SingletonBinaryVector(this.size * that.size, this.singleIndex * that.size + that.singleIndex)
   }
 
   override def flatOuter(v1:Vector, v2:Vector):Vector = (v1,v2) match {
-    case (v1:SparseBinaryVector    ,v2:SparseBinaryVector)    => new SparseBinaryVector(v1, v2, this)
-    case (v1:SparseBinaryVector    ,v2:SingletonBinaryVector) => new SparseBinaryVector(v1, v2, this)
-    case (v1:SingletonBinaryVector ,v2:SparseBinaryVector)    => new SparseBinaryVector(v2, this, v1)
-    case (v1:SingletonBinaryVector ,v2:SingletonBinaryVector) => 
+    case (v1:SparseBinaryVector ,v2:SparseBinaryVector)    => new SparseBinaryVector(v1, v2, this)
+    case (v1:SparseBinaryVector ,v2:SingletonBinaryVec) => new SparseBinaryVector(v1, v2, this)
+    case (v1:SingletonBinaryVec ,v2:SparseBinaryVector)    => new SparseBinaryVector(v2, this, v1)
+    case (v1:SingletonBinaryVec ,v2:SingletonBinaryVec) => 
       new SingletonBinaryVector(this.size * v1.size * v2.size,
                                 (this.singleIndex * v1.size + v1.singleIndex) * v2.size + v2.singleIndex)
   }
+}
+
+/** A Vector that has all zeros, except one position containing a 1.0.
+    @author Andrew McCallum */
+class SingletonBinaryVector(val theLength:Int, val singleIndex:Int) extends SingletonBinaryVec {
+  def length = theLength
 }

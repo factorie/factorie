@@ -37,6 +37,8 @@ class Relationship[A<:Entity[A],B<:Entity[B]](val src:A, val dst:B) extends Bool
 class Relation[A<:Entity[A],B<:Entity[B]] extends Variable {
   type SrcType = A
   type DstType = B
+  type ValueType = Nothing
+  def value: Nothing = throw new Error("Not yet implemented")
   private val a2rs = new HashMap[A,ListBuffer[RelationshipType]] // a to collection of Relationships
   private val b2rs = new HashMap[B,ListBuffer[RelationshipType]] // b to collection of Relationships
   private val ab2r = new HashMap[(A,B),RelationshipType] // (a,b) to the corresponding Relationship
@@ -114,10 +116,10 @@ class ItemizedRelation[A<:ItemizedObservation[A] with Entity[A],B<:ItemizedObser
   def settings = new SettingIterator {
     var i = -1
     val domainb = Domain[B](mb) 
-    val a = Domain[A](ma).randomValue // randomly pick a src
+    val a = Domain[A](ma).randomEntry // randomly pick a src
     val max = domainb.size - 1 // we will iterate over all possible changes to dst's
     def hasNext = i < max
-    private def set(d:DiffList) : Unit = { val b = domainb.get(i); if (contains(a,b)) remove(a,b)(d) else add(a,b)(d) }
+    private def set(d:DiffList) : Unit = { val b = domainb.getEntry(i); if (contains(a,b)) remove(a,b)(d) else add(a,b)(d) }
     def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(d); d }
     def reset = i = -1
   }

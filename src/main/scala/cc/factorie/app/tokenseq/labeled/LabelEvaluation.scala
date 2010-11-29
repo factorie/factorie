@@ -63,7 +63,7 @@ class LabelEvaluation[L<:LabelVariable[String] with AbstractVarInSeq[L]](val bac
   //println("Evaluation Labels: "+Domain[Label].toList)
   private val labelEval: HashMap[String,PerLabelEvaluation[L]] = { 
     val h = new HashMap[String,PerLabelEvaluation[L]];
-    h ++= Domain[L](m).map(labelString => (labelString, new PerLabelEvaluation[L](labelString)))
+    h ++= Domain[L](m).map((labelValue:CategoricalValue[_,String]) => (labelValue.entry, new PerLabelEvaluation[L](labelValue.entry)))
     h
   }
   /** Return the LabelEvaluation specific to labelString. */

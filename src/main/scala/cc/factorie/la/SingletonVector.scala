@@ -17,13 +17,13 @@ import cc.factorie._
 
 /** A Vector that has all zeros, except one position containing some arbitrary Double 'value'.
     @author Andrew McCallum */
-class SingletonVector(val theLength:Int, val singleIndex:Int, val value:Double) extends Vector {
+class SingletonVector(val theLength:Int, val singleIndex:Int, val doubleValue:Double) extends Vector {
   var default = 0.0
   def length = theLength
   def activeDomainSize = 1
   def activeDomain: Iterable[Int] = Seq(singleIndex)
   override def forActiveDomain(f: (Int)=>Unit): Unit = f(singleIndex)
-  def apply(index:Int): Double = if (index == singleIndex) value else default
-  def dot(v:Vector) = v(singleIndex) * value
-  def activeElements = Iterator.single((singleIndex, value))
+  def apply(index:Int): Double = if (index == singleIndex) doubleValue else default
+  def dot(v:Vector) = v(singleIndex) * doubleValue
+  def activeElements = Iterator.single((singleIndex, doubleValue))
 }

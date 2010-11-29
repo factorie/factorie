@@ -42,14 +42,15 @@ class RefVariable[A<:AnyRef](initialValue:A = null) extends Variable with RefVar
   //set(initialValue)(null) // Used to initialize by calling set because set may do additional work in subclasses, e.g. ParameterRef.
   @inline final def value: A = _value
   def set(newValue:A)(implicit d: DiffList): Unit = if (newValue != _value) {
-    if (d ne null) d += new RefDiff(_value, newValue)
+    if (d ne null) d += new RefVariableDiff(_value, newValue)
     _value = newValue
   }
   def :=(newValue:A): this.type = { set(newValue)(null); this }
-  def value_=(newValue:A) = set(newValue)(null)
+  // TODO Remove this next line, I think.  Just use method above instead.
+  //def value_=(newValue:A) = set(newValue)(null)
   override def toString = printName + "(" + (if (value == this) "this" else value.toString) + ")"
-  case class RefDiff(oldValue:A, newValue:A) extends Diff {
-    //        Console.println ("new RefDiff old="+oldValue+" new="+newValue)
+  case class RefVariableDiff(oldValue:A, newValue:A) extends Diff {
+    //        Console.println ("new RefVariableDiff old="+oldValue+" new="+newValue)
     def variable: RefVariable[A] = RefVariable.this
     def redo = _value = newValue
     def undo = _value = oldValue

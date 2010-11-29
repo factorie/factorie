@@ -13,15 +13,16 @@
    limitations under the License. */
 
 package cc.factorie
+import cc.factorie.la.SingletonVector
 
 /** A Variable with a real (double) value. */
 trait RealVar extends Variable with TypedValue with NumericValue with VectorVar {
   type VariableType <: RealVar
-  type ValueType = Double
+  type ValueType = SingletonVector // TODO This is a reason to consider a 'statValue' method.
   type DomainType <: RealDomain[VariableType]
   // TODO Replace this mechanism with an Annotation? -akm
   class DomainClass extends RealDomain[VariableType]()(null)
-  @inline final def value: Double = doubleValue
+  @inline final def value: ValueType = new SingletonVector(1, 0, doubleValue)
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
   def ===(other: RealVar) = doubleValue == other.doubleValue
@@ -41,10 +42,12 @@ class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableTyped
   def -=(x:Double) = set(_value - x)(null)
   def *=(x:Double) = set(_value * x)(null)
   def /=(x:Double) = set(_value / x)(null)
+  def :=(x:Double) = set(x)(null)
   def set(newValue: Double)(implicit d: DiffList): Unit = if (newValue != _value) {
     if (d ne null) d += new RealDiff(_value, newValue)
     _value = newValue
   }
+  def set(newValue: ValueType)(implicit d:DiffList): Unit = set(newValue.doubleValue)
   case class RealDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: RealVariable = RealVariable.this
     def redo = _value = newValue

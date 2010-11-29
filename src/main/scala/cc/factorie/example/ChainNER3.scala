@@ -52,9 +52,9 @@ object ChainNER3 {
     // Change from CoNLL's IOB notation to to BIO notation
     (trainSentences ++ testSentences).foreach(s => { 
       s.foreach(t => {
-        if (t.label.value(0) == 'I' && (!t.hasPrev || t.prev.label.value.substring(1) != t.label.value.substring(1))) {
-          val newValue = "B"+t.label.value.substring(1) 
-          t.label.value = newValue
+        if (t.label.entryValue(0) == 'I' && (!t.hasPrev || t.prev.label.entryValue.substring(1) != t.label.entryValue.substring(1))) {
+          val newValue = "B"+t.label.entryValue.substring(1) 
+          t.label.set(newValue)(null)
           t.label.trueValue = newValue
         }
       })}) 

@@ -190,7 +190,7 @@ trait Getter[C1/*<:HasGetterType[C1]*/] {
     val myExtraGetter = new Getter[ExtraD] { type A = ThisA; type B = ThisC }
     myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
     myExtraGetter.forward1m = (c:C) => r.getFromDst(c.asInstanceOf[C2])
-    myExtraGetter.reverse1m = (d:ExtraD) => if (d.value) List(d.dst) else Nil //{ val dst = d.dst; if (dst.asInstanceOf[BooleanValue].value) List(dst) else Nil } // If the Relationship is false, don't follow the link
+    myExtraGetter.reverse1m = (d:ExtraD) => if (d.booleanValue) List(d.dst) else Nil //{ val dst = d.dst; if (dst.asInstanceOf[BooleanValue].value) List(dst) else Nil } // If the Relationship is false, don't follow the link
     ret.extraManifest = mr.asInstanceOf[Manifest[ExtraNeighborType]]
     ret.extraGetter = myExtraGetter.asInstanceOf[Getter[ExtraNeighborType]]
     ret
@@ -207,7 +207,7 @@ trait Getter[C1/*<:HasGetterType[C1]*/] {
     val myExtraGetter = new Getter[ExtraD] { type A = ThisA; type B = ThisC }
     myExtraGetter.prefix = Getter.this.asInstanceOf[Getter[C] { type A = ThisA }]
     myExtraGetter.forward1m = (c:C) => r.getFromSrc(c.asInstanceOf[C2])
-    myExtraGetter.reverse1m = (d:ExtraD) => if (d.value) List(d.src) else Nil //{ val src = d.src; if (src.asInstanceOf[BooleanValue].value) List(src) else Nil } // If the Relationship is false, don't follow the link
+    myExtraGetter.reverse1m = (d:ExtraD) => if (d.booleanValue) List(d.src) else Nil //{ val src = d.src; if (src.asInstanceOf[BooleanValue].value) List(src) else Nil } // If the Relationship is false, don't follow the link
     ret.extraManifest = mr.asInstanceOf[Manifest[ExtraNeighborType]]
     ret.extraGetter = myExtraGetter.asInstanceOf[Getter[ExtraNeighborType]]
     ret

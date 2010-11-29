@@ -29,6 +29,8 @@ trait VectorVar extends Variable {
   type VariableType <: VectorVar
   type DomainType <: VectorDomain[VariableType]
   class DomainClass extends VectorDomain[VariableType]()(null)
+  type ValueType <: Vector
+  def value: ValueType // Vector = vector
 
   /** A cc.factorie.la.Vector representation of the value of this variable. */
   def vector: Vector
@@ -45,6 +47,8 @@ abstract class RealVectorVariable(theLength:Int) extends RealVectorVar {
   type VariableType <: RealVectorVariable
   def this(sizeProxy:Iterable[_]) = this(sizeProxy.size)
   val vector: Vector = new SparseVector(theLength)
+  type ValueType = Vector
+  def value: ValueType = vector
   def activeDomain = vector.activeDomain
   def update(index:Int, newValue:Double): Unit = vector.update(index, newValue)
   def increment(index:Int, incr:Double): Unit = vector.update(index, vector(index) + incr)
@@ -68,6 +72,8 @@ abstract class FeatureVectorVariable[T] extends CategoricalRealVectorVariable[T]
 
 @DomainInSubclasses
 trait BinaryVectorVar extends DiscreteVars with VectorVar {
+  type ValueType = Vector
+  def value = vector
   def contains(value:Int): Boolean = vector.apply(value) != 0.0
   // def domainSize: Int
   // def intValues: Iterable[Int]
@@ -101,7 +107,7 @@ trait CategoricalBinaryVectorVariable[T] extends BinaryVectorVar with Categorica
 abstract class SparseCategoricalBinaryVectorVariable[T] extends SparseBinaryVectorVariable with CategoricalBinaryVectorVariable[T] {
   type VariableType <: SparseCategoricalBinaryVectorVariable[T]
   def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
-  def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.get(i)); result }
+  def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.getEntry(i)); result }
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
   def skipNonCategories = false
@@ -115,7 +121,7 @@ abstract class SparseCategoricalBinaryVectorVariable[T] extends SparseBinaryVect
     }
   }
   def ++=(values:Iterable[T]): Unit = values.foreach(this.+=(_))
-  override def toString = vector.activeDomain.map(i => domain.get(i).toString+"="+i).mkString(printName+"(", ",", ")")
+  override def toString = vector.activeDomain.map(i => domain.getEntry(i).toString+"="+i).mkString(printName+"(", ",", ")")
 }
 
 /** A shorter, more intuitive alias for SparseCategoricalBinaryVectorVariable */

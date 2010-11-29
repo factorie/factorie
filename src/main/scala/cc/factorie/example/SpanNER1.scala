@@ -33,6 +33,7 @@ import cc.factorie.util.DefaultCmdOptions
 object SpanNER1 {
   var verbose = false
 
+/*
   // The variable classes
   class Token(word:String, trueLabelString:String) extends tokenseq.Token[Sentence,Token](word) {
     // TODO Consider instead implementing truth with true spans in VariableSeqWithSpans. 
@@ -128,9 +129,7 @@ object SpanNER1 {
     // Span Length with Label
     //new SpanLabelTemplate with DotStatistics2[SpanLength,Label] { def statistics(span:Span, label:Label) = Stat(span.spanLength, span.label) },
     // Label of span that preceeds or follows this one
-    /*new Template2[Span,Span] with Statistics2[Label,Label] {
-      def unroll1(span:Span) = { val result = Nil; var t = span.head; while (t.hasPrev) { if } }
-    }*/
+    //new Template2[Span,Span] with Statistics2[Label,Label] { def unroll1(span:Span) = { val result = Nil; var t = span.head; while (t.hasPrev) { if } } }
   )
   
   // The training objective
@@ -354,7 +353,8 @@ object SpanNER1 {
         if (t.isCapitalized) { // Skip tokens that are not capitalized
           if (verbose) t.spans.foreach(s => println({if (s.isCorrect) "CORRECT " else "INCORRECT "}+s))
           // Skip this token if it has the same spans as the previous token, avoiding duplicate sampling
-          /*if (t.hasPrev && t.prev.spans.sameElements(t.spans)) null.asInstanceOf[Token] else*/ t 
+          //if (t.hasPrev && t.prev.spans.sameElements(t.spans)) null.asInstanceOf[Token] else
+          t 
         } else null.asInstanceOf[Token] 
       }
       override def proposalsHook(proposals:Seq[Proposal]): Unit = {
@@ -415,7 +415,10 @@ object SpanNER1 {
           var t2 = t
           while (t2.hasNext) {
             t2 = t2.next
-            if (t2.word == t.word) { /*println("Adding FIRSTMENTION to "+t2.word); */ t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
+            if (t2.word == t.word) { 
+              //println("Adding FIRSTMENTION to "+t2.word); 
+              t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION="+f)
+            }
           }
         }
       })
@@ -501,7 +504,7 @@ object SpanNER1 {
     f
   }
   
-  /** Recursively descend directory, returning a list of files. */
+  // Recursively descend directory, returning a list of files.
   def files(directory:File): Seq[File] = {
     if (!directory.exists) throw new Error("File "+directory+" does not exist")
     if (directory.isFile) return List(directory)
@@ -513,7 +516,7 @@ object SpanNER1 {
     result
   }
   
-
+*/
 }
 
 

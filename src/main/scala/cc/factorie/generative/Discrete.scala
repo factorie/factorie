@@ -83,6 +83,7 @@ class ObservedDiscrete(p:Proportions, value:Int) extends DiscreteObservation(val
   }
 }
 
+/*
 @DomainInSubclasses
 class ObservedDiscretes(val proportions:Proportions, values:Traversable[Int] = Nil) extends DiscreteVars with GeneratedVar with ConstantValue {
   assert(proportions.length <= domainSize)
@@ -99,4 +100,4 @@ class ObservedDiscretes(val proportions:Proportions, values:Traversable[Int] = N
   def vector: Vector = throw new Error
   def activeDomain: Iterable[Int] = throw new Error
 }
-
+*/

@@ -50,7 +50,7 @@ object CorefMentionsDemo {
   /** A feature vector variable measuring affinity between two mentions */
   class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
     import AffinityDomain._
-    type VariableType = AffinityVector
+    type VariableType <: AffinityVector
     if (s1 equals s2) this += streq else this += nstreq
     if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
     if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
@@ -110,7 +110,7 @@ object CorefMentionsDemo {
       model += new Template2[Mention,Mention] with DotStatistics1[AffinityVector] {
         override def factors(d:Diff) = d.variable match {
           case mention : Mention => d match {
-            case mention.RefDiff(oldEntity:Entity, newEntity:Entity) => 
+            case mention.RefVariableDiff(oldEntity:Entity, newEntity:Entity) => 
               for (other <- oldEntity.mentions; if (other.entity != mention.entity)) yield Factor(mention, other);
             case _ => super.factors(d)
           }
