@@ -16,8 +16,9 @@ package cc.factorie
 import scala.collection.mutable.{ArrayBuffer, HashMap, ListBuffer}
 import scala.util.Random
 import cc.factorie.la._
-import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 import scala.reflect.Manifest
+import java.io._
+import util.ClassPathUtils
 
 /** The "domain" of a variable---also essentially serving as the Variable's "type".
     This most generic superclass of all Domains does not provide much functionality.
@@ -30,7 +31,7 @@ import scala.reflect.Manifest
 class Domain[V<:Variable](implicit m:Manifest[V]) {
   /** Return the collection of all classes that have this Domain. */
   def variableClasses: Seq[Class[V]] =
-    Domain.domains.iterator.filter({case (key,value) => value == this}).map({case (key,value) => key.asInstanceOf[Class[V]]}).toList
+    Domain.domains.iterator.filter({case (key,value) => value == this}).map({case (key,value) => key.asInstanceOf[Class[V]]}).toList.sortBy(_.getName)
   /** Serialize this domain to disk in the given directory. */
   def save(dirname:String): Unit = {}
   /** Deserialize this domain from disk in the given directory. */
@@ -87,8 +88,8 @@ class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends VectorDoma
     s.close
   }
   override def load(dirname:String): Unit = {
-    val f = new File(dirname+"/"+filename)
-    val s = new BufferedReader(new FileReader(f))
+    val reader = new InputStreamReader(ClassPathUtils.getStreamFromClassPathOrFile(dirname+"/"+filename))
+    val s = new BufferedReader(reader)
     val line = s.readLine
     val readSize = Integer.parseInt(line)
     this.size_=(()=>readSize)
@@ -111,6 +112,7 @@ class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends VectorDoma
     mapping, creating variables.
 
     @author Andrew McCallum
+    @author Sebastian Riedel (domain loading from classpath)
     */
 class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with IndexedSeqEqualsEq[V#CategoryType] {
   import scala.collection.mutable.Map
@@ -218,8 +220,8 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
   }
   override def load(dirname:String): Unit = {
     if (size > 0) return // Already initialized, don't read again
-    val f = new File(dirname+"/"+filename)
-    val s = new BufferedReader(new FileReader(f))
+    val reader = new InputStreamReader(ClassPathUtils.getStreamFromClassPathOrFile(dirname+"/"+filename))
+    val s = new BufferedReader(reader)
     var line = s.readLine
     var willFreeze = false
     if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
@@ -361,7 +363,7 @@ object Domain {
     if (debug) {
       println("Domain.get "+vc+" classes.length="+vc.getDeclaredClasses.length)
       if (_domains.isDefinedAt(vc)) println("Domain.get "+vc+" already defined: "+_domains(vc).getClass.getName)
-      Console.flush
+      System.console.flush
     }
     _domains.getOrElseUpdate(vc, getDomainForClass(vc)).asInstanceOf[V#DomainType]
   }

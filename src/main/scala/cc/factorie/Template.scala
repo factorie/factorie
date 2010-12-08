@@ -18,8 +18,9 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, Flat
 import scala.util.Random
 import scala.math
 import scala.util.Sorting
-import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 import cc.factorie.la._
+import util.ClassPathUtils
+import java.io._
 
 object Template {
   var enableCachedStatistics: Boolean = true
@@ -251,8 +252,9 @@ trait DotTemplate extends VectorTemplate {
     for (d <- statDomains) { /* println(" Loading Domain["+d+"]"); */ d.load(dirname) }
     // TODO Why would statsize be 0 or negative?
     if (statsize <= 0 || weights.activeElements.exists({case(i,v) => v != 0})) return // Already have non-zero weights, must already be read.
-    val f = new File(dirname+"/"+filename)
-    val s = new BufferedReader(new FileReader(f))
+    val reader = new InputStreamReader(ClassPathUtils.getStreamFromClassPathOrFile(dirname+"/"+filename))
+    val s = new BufferedReader(reader)
+
     var line = ""
     while ({ line = s.readLine; line != null }) {
       val fields = line.split(" +")
