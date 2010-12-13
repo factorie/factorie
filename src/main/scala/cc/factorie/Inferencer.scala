@@ -84,9 +84,11 @@ class DiscreteMarginal[V<:DiscreteVars](val variable:V, proportions:Seq[Double] 
   }
 }
 // TODO Not yet in its final form
-class DiscreteFactorMarginal(val factor:Factor, val value:Array[Double]) extends Marginal {
-  def length = value.length
-  def apply(i:Int) = value(i)
+class DiscreteFactorMarginal(val factor:Factor, val values:Array[Double]) extends Marginal {
+  type ValueType = Null
+  def value = null // TODO Needs to be properly implemented
+  def length = values.length
+  def apply(i:Int) = values(i)
   /**The settings of each of the N variables that together yield the highest probability. */
   def maxEntry: Array[Int] = throw new Error("Not yet implemented")
 }

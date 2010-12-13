@@ -38,6 +38,7 @@ class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends VectorDoma
   override def freeze: Unit = { setSize(); _frozen = true }
   def allocSize = size
   override def maxVectorSize = allocSize
+  var maxRequestedInt: Int = 0
   // For Iterable[DiscreteValue]
   def iterator = _elements.iterator
 
@@ -56,6 +57,7 @@ class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends VectorDoma
   /** Maps from integer index to the DiscreteValue objects */
   protected var _elements = new scala.collection.mutable.ArrayBuffer[ValueType]
   def getValue(index:Int): ValueType = {
+    if (index > maxRequestedInt) maxRequestedInt = index
     if (index >= size) throw new IllegalArgumentException("DiscreteDomain.getValue: index "+index+" larger than size "+size)
     if (index >= _elements.size) for (i <- _elements.size to index) _elements += new DiscreteValue(i).asInstanceOf[ValueType] // Here new a DiscreteValue gets created
     _elements(index)

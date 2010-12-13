@@ -26,10 +26,17 @@ import scala.util.Sorting
 //import scalala.tensor.sparse.{SparseVector, SparseBinaryVector, SingletonBinaryVector}
 
 // Variables for dealing with spans of sequences
+trait SpanValue[T] {
+  def seq:Seq[T]
+  def start: Int
+  def length: Int
+}
 
-abstract class SpanVar[T](theSeq: Seq[T], initStart: Int, initLength: Int) extends Variable with TypedValues with IndexedSeqEqualsEq[T] {
-  type ValueType = T
+abstract class SpanVar[T](theSeq: Seq[T], initStart: Int, initLength: Int) extends Variable /*with TypedValues*/ with IndexedSeqEqualsEq[T] {
   type VariableType <: SpanVar[T] //SpanVariable[T];
+  type ValueType = cc.factorie.SpanValue[T]
+  case class SpanValue(seq:Seq[T], start:Int, length:Int) extends cc.factorie.SpanValue[T]
+  def value: ValueType = new SpanValue(seq, start, length)
   assert(initStart >= 0)
   assert(initLength > 0)
   assert(initStart + initLength <= seq.length)

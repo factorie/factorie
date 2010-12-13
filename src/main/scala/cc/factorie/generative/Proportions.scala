@@ -26,6 +26,9 @@ import cc.factorie._
 // and no Variable should do that since we need to know about unique variables; it also makes things
 // slow for large-length Proportions.
 trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqualsEq[Double] {
+  type ValueType = cc.factorie.generative.Proportions
+  def value = this // TODO Is this what we want?  Not a immutable representation of the variable value, but we want this to be efficient.
+
   /*def apply(index:Int): Double
   def length: Int
   override def size = length

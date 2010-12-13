@@ -17,8 +17,9 @@ import scala.collection.mutable.HashSet
 
 /**A variable whose value is a set of other variables */
 abstract class SetVariable[A]() extends Variable with TypedValues {
-  type ValueType = A
   type VariableType <: SetVariable[A];
+  type ValueType = scala.collection.Set[A]
+  def value = _members
   private val _members = new HashSet[A];
   def members: scala.collection.Set[A] = _members
   def size = _members.size

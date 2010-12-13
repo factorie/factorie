@@ -15,9 +15,7 @@
 package cc.factorie
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.util.Random
-import scala.math
-import scala.util.Sorting
+import scala.util.{Random,Sorting}
 import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 import cc.factorie.la._
 
@@ -32,7 +30,8 @@ object Template {
 // (3) an aggregator for multiple statistics of the same template
 // (4) a function mapping those aggregated statistics to a real-valued score
 // (5) optionally, the parameters used in the function to calculate that score;
-//     (alternatively the score may be calculated in some fixed way without learned parameters) 
+//     (alternatively the score may be calculated using parameter stored externally to the Template,
+//      or in some fixed way without learned parameters).
 
 /** A single factor in a factor graph.  In other words, a factor
     template packaged with a set of variables neighboring the
@@ -82,7 +81,7 @@ trait Statistics {
 trait Stat extends Statistics
 
 /** A collection of Stat objects along with a method of producting a compatibility score from them. */
-trait Stats extends Statistics /*with Iterable[Stat]*/ {
+trait Stats extends Statistics {
   def stats: Iterable[Stat]
 }
 
@@ -91,7 +90,7 @@ trait Stats extends Statistics /*with Iterable[Stat]*/ {
 /** The template for many factors.  Manages its connections to neighboring variables.
     @Andrew McCallum
 */
-trait Template { templateSelf =>
+trait Template { templateSelf => // TODO rename thisTemplate
   type TemplateType <: Template // like a self-type
   type FactorType <: Factor
   type StatType <: Stat
@@ -115,10 +114,12 @@ trait Template { templateSelf =>
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
     val score = stats.foldLeft(0.0)(_ + Template.this.score(_))
   }
+  /** The method responsible for mapping a Statistic object to a real-valued score.  
+      Called by the Statistic.score method; implemented here so that it can be easily overriden in user-defined subclasses of Template. */
   def score(s:StatType): Double
-  def statistics(ss:Iterable[StatType]): StatisticsType = (new Stats(ss)).asInstanceOf[StatisticsType] // TODO How can we get rid of this cast?
+  def statistics(ss:Iterable[StatType]): StatisticsType = (new Stats(ss)).asInstanceOf[StatisticsType] // TODO How can we get rid of this cast? // TODO Is this method still used?
   /** May be overridden in subclasses to actually cache. */
-  def cachedStatistics(f:FactorType): StatisticsType = f.statistics
+  def cachedStatistics(f:FactorType): StatisticsType = f.statistics // Should this method instead take arguments being the factor neighbor *values*?
   def clearCachedStatistics: Unit = {}
   //def statistics(v:Variable): StatisticsType = new Stats(factors(v).map(_.stats).flatten)
   /** To allow users' "def statistics(v1)" to return an Iterator[Stat] */
@@ -158,13 +159,15 @@ trait Template { templateSelf =>
   def forSettings(factor:FactorType)(f: =>Unit): Unit = throw new Error("Not supported.")
   def forSettingsOf(factor:FactorType, vs:Seq[Variable])(f: =>Unit): Unit = throw new Error("Not supported.")
   def sparsifySettingsFor(vs:Iterable[Variable]): Unit = throw new Error("Not supported.")
+  // New version of settings iteration
+  def forSettingStats(factor:FactorType, vs:Seq[Variable])(f: (StatisticsType)=>Unit): Unit = throw new Error("Not supported.") // TODO Also pass variable values?
   /** The filename into which to save this factor.  If factorName is not the default, use it, otherwise use the class name. */
   protected def filename: String = if (factorName != defaultFactorName) factorName else this.getClass.getName
   def save(dirname:String): Unit = {}
   def load(dirname:String): Unit = {}
 }
 
-/** A Template whose sufficient statistics are represented as a Scalala Vector. 
+/** A Template whose sufficient statistics are represented as a cc.factorie.la.Vector. 
     @author Andrew McCallum
 */
 trait VectorTemplate extends Template {
@@ -297,6 +300,8 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   }
   def unroll1(v:N1): Iterable[FactorType] = new Factor(v)
   def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
+  //@inline final def _statistics(f:Factor): StatisticsType = statistics(f._1.value)
+  //def statistics(v1:N1#ValueType): StatisticsType
   @inline final def _statistics(f:Factor): StatisticsType = statistics(f._1)
   def statistics(v1:N1): StatisticsType
   def stats(v:Variable): Iterable[StatisticsType] = factors(v).map(_statistics(_))
@@ -328,16 +333,16 @@ trait Statistics1[S1] extends Template {
   type StatisticsType = Statistics
   //def init(implicit m1:Manifest[S1]): this.type = this
 }
+//trait VectorStatistics1[S1<:Vector] extends VectorTemplate {
 trait VectorStatistics1[S1<:VectorVar] extends VectorTemplate {
   type StatType = Stat
   type StatisticsType = Statistics
   // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
-  case class Stat(_1:S1) extends { val vector: Vector = _1.vector } with super.Stat
-  //case class Stat(_1:S1) extends super.Stat { lazy val vector: Vector = _1.vector }
+  case class Stat(_1:S1) extends { val vector: Vector = _1.vector /* = _1 */ } with super.Stat
   isInitialized = false
   def init(implicit m1:Manifest[S1]): this.type = {
     if (!isInitialized) {
-      statClasses += m1.erasure.asInstanceOf[Class[VectorVar]]
+      statClasses += m1.erasure.asInstanceOf[Class[VectorVar]] //  ?????? !!! // We need to get S1.domain here.  DiscreteValue provides a domain, but not Vector.
       statClasses.freeze
       isInitialized = true
     }
@@ -350,13 +355,16 @@ trait DotStatistics1[S1<:VectorVar] extends VectorStatistics1[S1] with DotTempla
     case ds:DiscreteVars => ds.vector.activeDomain.foreach(i => weights(i) = w)
   }
 }
+//abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1#ValueType] 
 abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1] {
   def statistics(v1:N1): StatisticsType = Stat(v1)
 }
-abstract class TemplateWithVectorStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with VectorStatistics1[N1]  {
+//abstract class TemplateWithVectorStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with VectorStatistics1[N1#ValueType]  
+abstract class TemplateWithVectorStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with VectorStatistics1[N1] {
   def statistics(v1:N1): StatisticsType = Stat(v1)
   init //(nm1)
 }
+//class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1#ValueType] 
 class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1] {
   def statistics(v1:N1): StatisticsType = Stat(v1)
   init //(nm1)

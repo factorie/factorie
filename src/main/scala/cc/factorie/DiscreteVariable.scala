@@ -96,7 +96,7 @@ abstract class DiscreteVariable extends DiscreteVar with IterableSettings with Q
 // TODO Remove this class!
 case class Block(v1:BooleanVariable, v2:BooleanVariable) extends Variable with IterableSettings {
   type ValueType = (Boolean, Boolean)
-  def value = (v1.value, v2.value)
+  def value = (v1.booleanValue, v2.booleanValue)
   def settings: SettingIterator = new SettingIterator {
     var i = -1
     val max = 4
@@ -139,7 +139,7 @@ abstract class DiscreteObservation extends DiscreteVar {
   type VariableType <: DiscreteObservation
   def this(theInt:Int) = { this(); _value = domain.getValue(theInt) }
   var _value: ValueType = null.asInstanceOf[ValueType]
-  @inline final def value: ValueType = _value
+  /*@inline final*/ def value: ValueType = _value
   protected def _initializeValue(v:ValueType): Unit = {
     assert(v ne null)
     _value = v

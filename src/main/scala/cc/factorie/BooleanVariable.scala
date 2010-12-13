@@ -33,7 +33,7 @@ trait BooleanVar extends CategoricalVar[Boolean] {
   // Note that Domain is not in subclasses:  all BooleanValue variables share the same domain.
 }
 
-/** A trait for mutable Boolean variables. 
+/** A class for mutable Boolean variables. 
     @author Andrew McCallum */
 class BooleanVariable(initialValue:Boolean = false) extends CategoricalVariable(initialValue) with BooleanVar { 
   type VariableType <: BooleanVariable
@@ -43,7 +43,7 @@ class BooleanVariable(initialValue:Boolean = false) extends CategoricalVariable(
   final def :=(newBoolean:Boolean) = set(newBoolean)(null)
 }
 
-/** A trait for variables with immutable Boolean values.
+/** A class for variables with immutable Boolean values.
     @author Andrew McCallum */
 class BooleanObservation(theValue:Boolean) extends CategoricalObservation(theValue) with BooleanVar {
   type VariableType <: BooleanObservation
@@ -57,6 +57,8 @@ object BooleanObservation {
   def apply(x:Boolean): BooleanObservation = if (x) t else f
 }
 
+trait BooleanValue[V<:BooleanVar] extends CategoricalValue[V,Boolean]
+
 /** The Domain for BooleanVars, of size two, containing false == 0 and true == 1. */
 class BooleanDomain[V<:BooleanVar](implicit m:Manifest[V]) extends CategoricalDomain[V] {
   //super.index(false)
@@ -64,6 +66,11 @@ class BooleanDomain[V<:BooleanVar](implicit m:Manifest[V]) extends CategoricalDo
   val falseValue = super.getValue(false)
   val trueValue = super.getValue(true)
   freeze
+
+  type ValueType <: cc.factorie.BooleanValue[V]
+  class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with cc.factorie.BooleanValue[V]
+  override protected def newCategoricalValue(i:Int, e:T): ValueType = new BooleanValue(i, e).asInstanceOf[ValueType]
+
   // The above makes sure that the hashtable in the CategoricalDomain is consistent, 
   // but the methods below will do most of the real work
   override def size = 2

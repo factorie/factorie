@@ -36,8 +36,9 @@ trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A]
     @author Andrew McCallum */
 abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with TypedValues with SeqEqualsEq[X] {
   def this() = this(Nil)
-  type ValueType = X
   type VariableType <: SeqVariable[X]
+  type ValueType = Seq[X]
+  def value = this.toSeq
   //class XList[X](var elem:X, var prev:XList[X], var next:XList[X]) extends DoubleLinkedList[X,XList[X]] {
   //this(xs:Seq[X]) = this(xs.head, null, new XList(xs.drop(1)))
   //def prepend(x:X) : XList[X] = { val first = new XList(x, null, this); this.prev = first; first }
@@ -69,6 +70,8 @@ abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with TypedValue
 /** A variable containing a mutable (but untracked by Diff) sequence of variables; used in conjunction with VarInSeq.
     @author Andrew McCallum */
 class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeqEqualsEq[V] with Variable {
+  type ValueType = Seq[V]
+  def value = this.toSeq
   private val seq = new ArrayBuffer[V](initialCapacity)
   def +=(v: V) = {
     if (v.seq != null) throw new Error("Trying to add VarInSeq that is already assigned to another VariableSeq")

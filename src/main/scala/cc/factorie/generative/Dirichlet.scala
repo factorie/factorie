@@ -25,7 +25,7 @@ trait Dirichlet extends Proportions with GeneratedVariable with CollapsibleParam
       and may not have this Proportions as a child. */
   def mean: Proportions
   def precision: RealVarParameter
-  def parents = List(mean, precision)
+  def parents: Seq[Parameter] = List(mean, precision)
   def pr = math.exp(logpr)
   override def logpr: Double = logprFrom(mean, precision)
   def logprFrom(mean:Proportions, precision:RealVar): Double = {
@@ -158,7 +158,7 @@ extends DenseCountsProportions(meanComponents(choice.intValue)) with MutableDiri
   def prFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int) = math.exp(logprFromMixtureComponent(map, index))
   def parentsFromMixtureComponent(index:Int) = List(meanComponents(index), precisionComponents(index))
   def chosenParents = parentsFromMixtureComponent(choice.intValue)
-  override def parents = List[Parameter](meanComponents, precisionComponents) ++ super.parents
+  override def parents: Seq[Parameter] = List[Parameter](meanComponents, precisionComponents) ++ super.parents
   // TODO But note that this below will not yet support sampling of 'choice' with collapsing.
   type CollapsedType = DenseDirichletMultinomial // Make this DenseDirichletMultinomialMixture to support sampling 'choice' with collapsing
   def newCollapsed = {

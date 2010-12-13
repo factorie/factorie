@@ -20,7 +20,7 @@ package cc.factorie
 trait RefVar[A<:AnyRef] extends TypedValue {
   this: Variable =>
   type ValueType = A
-  def value:A
+  def value: A
   def abstractValue: AnyRef = value
   def ===(other: RefVar[A]) = value == other.value
   def !==(other: RefVar[A]) = value != other.value

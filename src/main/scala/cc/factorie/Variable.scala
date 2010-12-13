@@ -15,10 +15,48 @@
 package cc.factorie
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
+import scala.util.{Random,Sorting}
 import scala.reflect.Manifest
-import scala.util.Random
-import scala.Math
-import scala.util.Sorting
+
+/*
+object CoinDomain extends EnumDomain { val H, T = Value }
+class Coin(v:String) extends CategoricalVariable(v) { def domain = CoinDomain }
+
+class Count(i:Int) extends IntegerVariable(i)
+class Weight(w:Double) extends RealVariable(w)
+
+// Z, fixed domain
+object ZDomain extends DiscreteDomain[Z] { def size = 10 }
+class Z(i:Int) extends DiscreteVariable(i) { def domain = ZDomain }
+
+// Z, different domains
+object ZDomain extends DiscreteDomain[Z] { def size = 10 }
+class Z(i:Int, val domain:DiscreteDomain[Z] = ZDomain) extends DiscreteVariable(i)
+
+object WordDomain extends CategoricalDomain[Word]
+class Word(w:String) extends CategoricalVariable(w) { def domain = WordDomain }
+object T1 extends Template2[Label,Word] with DotStatistics2[Label#Value,Boolean#Value] {
+  override def statisticsDomain1 = LabelDomain
+  override def statisticsDomain2 = BooleanDomain
+  def statistics(l:Label#Value, w:Word#Value) = new Stat(l, w.contains("Mr"))
+}
+class CategoricalVariable[CategoryType](initialValue:CategoryType) {
+  def domain: CategoricalDomain[VariableType]
+  //type VariableType <: DomainType#VariableType
+}
+
+// Implicit domain objects
+// Nice that it includes a self-type
+
+implicit object ZDomain extends DiscreteDomain[Z]; ZDomain.size = 10
+class Z(i:Int) extends DiscreteVariable[Z](i)
+class DiscreteVariable[VariableType<:DiscreteVariable](initialValue:Int)(implicit domain:DiscreteDomain[VariableType])
+
+implicit object WordDomain extends CategoricalDomain[Word]
+class Word(w:String) extends CategoricalVariable[Word,String](w)
+class CategoricalVariable[VariableType<:CategoricalVariable,T](initialValue:T)(implicit domain:CategoricalDomain[VariableType])
+*/
+
 
 // Notes on class names for Variables:
 // Except for cc.factorie.Variable, "*Variable" means mutable
@@ -63,7 +101,8 @@ trait Variable {
   final def domain: VariableType#DomainType = Domain.get[VariableType](this.getClass)
   // TODO Should we make this not "final" so that an arbitrary number of domains can be created at runtime?
 
-  //def value: ValueType // TODO Uncomment this!!!
+  type ValueType
+  def value: ValueType // TODO Uncomment this!!!
   
   /** The type of the variable contained inside this variable.
       Used for handling var-args. 
@@ -104,6 +143,8 @@ trait ContainerVariable[A<:Variable] extends Variable {
 }
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.
 trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] {
+  type ValueType = scala.collection.Seq[A]
+  def value = this
   override def toString = mkString("Vars(", ",",")")
 }
 class ArrayVars[V<:Variable](val toArray:Array[V]) extends Vars[V] {
@@ -140,6 +181,11 @@ trait QDistribution {
 // Semantically a "Value" is not really a "Variable", but we must inherit in order to override
 trait ConstantValue extends Variable {
   override final def isConstant = true
+}
+
+trait NoValue extends Variable {
+  type ValueType = Null
+  final def value = null
 }
 
 /** For variables whose value has a type, indicated in type ValueType.  

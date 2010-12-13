@@ -70,7 +70,10 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
   def clear() = reset()
 
   type ValueType <: cc.factorie.CategoricalValue[V,T] // CategoricalValue
-  class CategoricalValue(override val index:Int, val entry:T) extends DiscreteValue(index) with cc.factorie.CategoricalValue[V,T]
+  class CategoricalValue(override val index:Int, val entry:T) extends DiscreteValue(index) with cc.factorie.CategoricalValue[V,T] {
+    override def toString = entry.toString
+  }
+  protected def newCategoricalValue(i:Int, e:T): ValueType = new CategoricalValue(i, e).asInstanceOf[ValueType]
 
   override def iterator = _elements.iterator
   override def contains(entry: Any) = _indices.contains(entry.asInstanceOf[T])
@@ -88,7 +91,7 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
     def nextMax: ValueType = {
       val m = _elements.size
       if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
-      val e: ValueType = new CategoricalValue(m, entry).asInstanceOf[ValueType] // Here is the place that new CategoricalValue gets created
+      val e: ValueType = newCategoricalValue(m, entry) // Here is the place that new CategoricalValue gets created
       // TODO Can we make the above cast unnecessary??
       _elements += e
       _indices(entry) = e

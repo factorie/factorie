@@ -39,7 +39,7 @@ object DomainManipulation {
 
   // Here we are declaring a new Variable class that has a special Domain subclass
   // DomainType and DomainClass should always be set in tandem
-  class Label1 extends Variable {
+  class Label1 extends Variable with NoValue {
     type VariableType <: Label1
     override type DomainType <: LabelDomain[VariableType]
     class DomainClass extends LabelDomain[VariableType]()(null)
@@ -68,7 +68,7 @@ object DomainManipulation {
   // which must share a Domain, but in the library implementation, it is actually
   // the subclasses of these Variable classes that must share Domains---we don't
   // known them statically yet; so we must ask the FACTORIE user to type this += syntax.
-  class Label4 extends Variable // Error should be thrown if extends Label
+  class Label4 extends Variable with NoValue // Error should be thrown if extends Label
   println("About to Domain += new LabelDomain[Label4]"); Console.flush
   Domain += new LabelDomain[Label4] {
     override def numLabels = 88
@@ -77,7 +77,7 @@ object DomainManipulation {
   // Here we define yet another new type of Domain,
   // and declare that Label5 uses it.
   // The Domain will automatically be constructed.
-  class Label5 extends Variable {
+  class Label5 extends Variable with NoValue {
     type VariableType <: Label5
     override type DomainType <: Label5Domain[VariableType]
     class DomainClass extends Label5Domain[VariableType]()(null)
@@ -93,7 +93,7 @@ object DomainManipulation {
   // Here is yet another way to give a Variable a new Domain subclass, but it would be
   // better to use the DomainClass declaration in Label5
   // because if someone asks for Domain[Label6] before Domain+= is called, then we get error.
-  class Label6 extends Variable {
+  class Label6 extends Variable with NoValue {
     // following two lines are optional
     //type VariableType <: Label6
     override type DomainType <: Label6Domain[VariableType]
