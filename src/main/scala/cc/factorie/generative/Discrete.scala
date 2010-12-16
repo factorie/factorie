@@ -45,11 +45,11 @@ trait GeneratedDiscreteVariable extends DiscreteVariable with GeneratedVariable 
 
 // A Discrete ~ Multinomial(Proportions), in which we can change the parent
 @DomainInSubclasses
-class Discrete(p:Proportions, value:Int = 0) extends DiscreteVariable(value) with GeneratedDiscreteVariable {
+abstract class Discrete(p:Proportions, value:Int = 0) extends DiscreteVariable(value) with GeneratedDiscreteVariable {
   //assert(p.length <= domainSize)
   private val proportionsRef = new ParameterRef(p, this)
   def proportions = proportionsRef.value
-  def proportions_=(p2:Proportions)(implicit d:DiffList = null) = { assert(p2.length <= domainSize); proportionsRef.set(p2) }
+  def proportions_=(p2:Proportions)(implicit d:DiffList = null) = { assert(p2.length <= domain.size); proportionsRef.set(p2) }
   override def parentRefs = List(proportionsRef)
 }
 
@@ -60,21 +60,21 @@ trait GeneratedCategoricalVar[A] extends GeneratedDiscreteVar with CategoricalVa
 trait GeneratedCategoricalVariable[A] extends CategoricalVariable[A] with GeneratedDiscreteVariable with GeneratedCategoricalVar[A]
 
 @DomainInSubclasses
-class Categorical[A](p:Proportions, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] {
+abstract class Categorical[A](p:Proportions, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] {
   //assert(p.length <= domainSize)
   private val proportionsRef = new ParameterRef(p, this)
   def proportions = proportionsRef.value
-  def proportions_=(p2:Proportions)(implicit d:DiffList) = { assert(p2.length <= domainSize); proportionsRef.set(p2) }
+  def proportions_=(p2:Proportions)(implicit d:DiffList) = { assert(p2.length <= domain.size); proportionsRef.set(p2) }
   override def parentRefs = List(proportionsRef)
 }
 
 @DomainInSubclasses
-class ObservedDiscrete(p:Proportions, value:Int) extends DiscreteObservation(value) with GeneratedVar {
+abstract class ObservedDiscrete(p:Proportions, value:Int) extends DiscreteObservation(value) with GeneratedVar {
   // TODO Rename "DiscreteConstant"?
   //assert(p.length <= domainSize)
   private val proportionsRef = new ParameterRef(p, this)
   def proportions = proportionsRef.value
-  def proportions_=(p2:Proportions)(implicit d:DiffList) = { assert(p2.length <= domainSize); proportionsRef.set(p2) }
+  def proportions_=(p2:Proportions)(implicit d:DiffList) = { assert(p2.length <= domain.size); proportionsRef.set(p2) }
   def parents = List(proportionsRef.value)
   override def parentRefs = List(proportionsRef)
   def pr: Double = proportions(this.intValue)

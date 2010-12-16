@@ -34,10 +34,14 @@ object ClusterLDADemo {
   val filterStopwords = false
   val numTopics = 10
   val numClusters = 3
-  class Z(p:Proportions, value:Int = random.nextInt(numTopics)) extends MixtureChoice(p, value); Domain[Z].size = numTopics
-  //println("ClusterLDADemo.Domain[Z].size="+Domain[Z].size)
-  class Y(p:Proportions, value:Int = random.nextInt(numClusters)) extends MixtureChoice(p, value); Domain[Y].size = numClusters
-  class Word(ps:FiniteMixture[Proportions], z:MixtureChoiceVariable, value:String) extends CategoricalMixture[String](ps, z, value)
+  object ZDomain extends DiscreteDomain { def size = numTopics }
+  class Z(p:Proportions, value:Int = random.nextInt(numTopics)) extends MixtureChoice(p, value) { def domain = ZDomain }
+  object YDomain extends DiscreteDomain { def size = numClusters }
+  class Y(p:Proportions, value:Int = random.nextInt(numClusters)) extends MixtureChoice(p, value) { def domain = YDomain }
+  object WordDomain extends CategoricalDomain[String]
+  class Word(ps:FiniteMixture[Proportions], z:MixtureChoiceVariable, value:String) extends CategoricalMixture[String](ps, z, value) {
+    def domain = WordDomain
+  }
   class Document(val file:String) extends ArrayBuffer[Word] { var theta:MutableDirichlet = null; var y:Y = _ }
 
   def main(args: Array[String]) : Unit = {
@@ -45,7 +49,10 @@ object ClusterLDADemo {
     val lexer = new Regex("[a-zA-Z]+")
 
     // Read data and create generative variables
-    val phis = FiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01) with TypedProportions[Word] { override def toString = "Phi("+countsSeq.toList+")" })
+    val phis = FiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01) with CategoricalProportions[String] { 
+      def categoricalDomain = WordDomain
+      override def toString = "Phi("+countsSeq.toList+")" 
+    })
     val alphaMeans = FiniteMixture(numClusters)(new DenseProportions(numTopics))
     val alphaPrecisions = FiniteMixture(numClusters)(new RealVariableParameter(numTopics))
     val clusterProportions = new UniformProportions(numClusters)
@@ -66,7 +73,7 @@ object ClusterLDADemo {
         documents += doc
       }
     }
-    println("\nRead "+documents.size+" documents with "+documents.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
+    println("\nRead "+documents.size+" documents with "+documents.foldLeft(0)(_+_.size)+" tokens and "+WordDomain.size+" types.")
     //forIndex(numTopics)(i => println("Topic x z-count = "+documents.flatMap(doc => doc.filter(word => word.choice.intValue == i)).size))
   
     // Fit model
@@ -83,7 +90,7 @@ object ClusterLDADemo {
         print("."); Console.flush
         if (i % 5 == 0) {
           println ("Iteration "+i)
-          phis.foreach(t => println("Topic "+phis.indexOf(t)+"  "+sampler.collapsed(t).top(10).map(dp => Domain[Word].getEntry(dp.index)).mkString(" ")))
+          phis.foreach(t => println("Topic "+phis.indexOf(t)+"  "+sampler.collapsed(t).top(10).map(dp => WordDomain.getEntry(dp.index)).mkString(" ")))
           println
         }
       }

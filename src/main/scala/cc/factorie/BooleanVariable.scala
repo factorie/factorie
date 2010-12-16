@@ -18,7 +18,7 @@ package cc.factorie
     @see BooleanVariable
     @see BooleanObservation
     @author Andrew McCallum */
-trait BooleanVar extends CategoricalVar[Boolean] {
+trait BooleanVar extends CategoricalVar[Boolean] with DomainType[BooleanDomain] with ValueType[BooleanValue] {
   type VariableType <: BooleanVar
   override def entryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
   override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
@@ -28,9 +28,7 @@ trait BooleanVar extends CategoricalVar[Boolean] {
   def ==>(other:BooleanVar):Boolean = !booleanValue || other.booleanValue
   def unary_!(): Boolean = !booleanValue
   override def toString = if (intValue == 0) printName+"(false)" else printName+"(true)"
-  type DomainType <: BooleanDomain[VariableType]
-  class DomainClass extends BooleanDomain
-  // Note that Domain is not in subclasses:  all BooleanValue variables share the same domain.
+  def domain = BooleanDomain
 }
 
 /** A class for mutable Boolean variables. 
@@ -51,25 +49,23 @@ class BooleanObservation(theValue:Boolean) extends CategoricalObservation(theVal
 
 /** You can efficiently get a pre-allocated BooleanObservation instance with this object
     by BooleanObservation(true) and BooleanObservation(false.) */
+// TODO Try to get rid of this, now that 'statistics' takes values instead.
 object BooleanObservation {
   val f = new BooleanObservation(false)
   val t = new BooleanObservation(true)
   def apply(x:Boolean): BooleanObservation = if (x) t else f
 }
 
-trait BooleanValue[V<:BooleanVar] extends CategoricalValue[V,Boolean]
+trait BooleanValue extends CategoricalValue[Boolean]
 
 /** The Domain for BooleanVars, of size two, containing false == 0 and true == 1. */
-class BooleanDomain[V<:BooleanVar](implicit m:Manifest[V]) extends CategoricalDomain[V] {
-  //super.index(false)
-  //super.index(true)
+class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanValue] {
   val falseValue = super.getValue(false)
   val trueValue = super.getValue(true)
   freeze
 
-  type ValueType <: cc.factorie.BooleanValue[V]
-  class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with cc.factorie.BooleanValue[V]
-  override protected def newCategoricalValue(i:Int, e:T): ValueType = new BooleanValue(i, e).asInstanceOf[ValueType]
+  class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with cc.factorie.BooleanValue
+  override protected def newCategoricalValue(i:Int, e:Boolean) = new BooleanValue(i, e)
 
   // The above makes sure that the hashtable in the CategoricalDomain is consistent, 
   // but the methods below will do most of the real work
@@ -81,3 +77,5 @@ class BooleanDomain[V<:BooleanVar](implicit m:Manifest[V]) extends CategoricalDo
   override def getIndex(entry:Boolean) = if (entry) 1 else 0
   override def getValue(entry:Boolean) = if (entry) trueValue else falseValue
 }
+
+object BooleanDomain extends BooleanDomain

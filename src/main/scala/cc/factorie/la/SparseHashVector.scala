@@ -54,6 +54,6 @@ class SparseHashVector(theLength:Int) extends Vector {
   }
 }
 
-class GrowableSparseVector(val sizeProxy: Iterable[_]) extends SparseHashVector(-1) {
+class GrowableSparseVector(val sizeProxy: { def size:Int }) extends SparseHashVector(-1) {
   override def length: Int = sizeProxy.size
 }

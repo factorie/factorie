@@ -21,7 +21,9 @@ import scala.collection.mutable.ArrayBuffer
 object LogicDemo2 {
 
   // Define entity, attribute and relation types
+  object PersonDomain extends CategoricalDomain[Person]
   class Person (val name:String, var mother:Person) extends ItemizedObservation[Person] with Entity[Person] {
+    def domain = PersonDomain
     type GetterType = PersonGetter
     class GetterClass extends PersonGetter // Person#GetterClass#super
     // When we have Scala 2.8 this next line will simply be:

@@ -49,7 +49,10 @@ extends BinaryFeatureVectorVariable[String](features) with VarInTypedSeq[This,S]
   private lazy val svmap = new HashMap[String,BinaryFeatureVectorVariable[String]]
   def subVector(regex:String): BinaryFeatureVectorVariable[String] = svmap.getOrElseUpdate(regex, newSubVector(regex))
   private def newSubVector(regex:String): BinaryFeatureVectorVariable[String] = {
-    val result = new BinaryFeatureVectorVariable[String] { override def printName = "TokenSubVector" }
+    val result = new BinaryFeatureVectorVariable[String] { 
+      def domain = Token.this.domain
+      override def printName = "TokenSubVector" 
+    }
     result ++= this.values.filter(s => s.matches(regex))
     result
   }

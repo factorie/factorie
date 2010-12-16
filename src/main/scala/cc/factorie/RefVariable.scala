@@ -17,9 +17,7 @@ package cc.factorie
 /** A Variable whose value has type indicated by the type parameter, which must be a scala.AnyRef.
     Scala primitive types such as Int and Double should be stored in specialized variables, 
     such as IntegerVar and RealVar, respectively. */
-trait RefVar[A<:AnyRef] extends TypedValue {
-  this: Variable =>
-  type ValueType = A
+trait RefVar[A<:AnyRef] extends Variable with AbstractDomain[A] with ValueType[A] {
   def value: A
   def abstractValue: AnyRef = value
   def ===(other: RefVar[A]) = value == other.value

@@ -19,13 +19,8 @@ import cc.factorie.la._
 /** An IntegerVars with finite range 0...N.  
     For your own subclass MyDiscreteVar, you can set N=9 with Domain[MyDiscreteValue].size = 9.
     @author Andrew McCallum */
-@DomainInSubclasses
-trait DiscreteVars extends Variable with VectorVar {
+trait DiscreteVars extends Variable with VectorVar with DomainType[DiscreteDomain] /* with ValueType[DiscreteValues] */ {
   type VariableType <: DiscreteVars
-  type DomainType <: DiscreteDomain[VariableType]
-  // TODO Replace this mechanism with an Annotation? -akm
-  class DomainClass extends DiscreteDomain[VariableType]()(null)
-  final def domainSize: Int = domain.size // TODO Do we really want to have this method instead of using domain.size
   def minIntValue = 0
   def maxIntValue = domain.size - 1
   /** A cc.factorie.la.Vector representation of the value of this variable. */
@@ -34,40 +29,32 @@ trait DiscreteVars extends Variable with VectorVar {
   def activeDomain: Iterable[Int]  // TODO Consider removing this? -akm
 }
 
-@DomainInSubclasses
-trait DiscreteVar extends DiscreteVars {
+trait DiscreteVar extends DiscreteVars with ValueType[DiscreteValue] {
   this: Variable =>
   type VariableType <: DiscreteVar
-  //type ValueType <: DiscreteValue[VariableType]
-  type ValueType = VariableType#DomainType#ValueType
-  //type ValueType = DomainType#ValueType // TODO Consider domain.ValueType ?? Would this work?
-  def value: ValueType //DiscreteDomain[VariableType]#DiscreteValue // ValueType
-  /*@inline final*/ def intValue = value.asInstanceOf[DiscreteValue[VariableType]].index // TODO Try to get rid of this cast
-  def vector = value // new SingletonBinaryVector(domain.size, intValue)
-  def activeDomain = List(intValue)
+  /*@inline final*/ def intValue = value.index
+  def activeDomain = List(intValue) // TODO try to make this implementation possible: = value
   def ===(other: DiscreteVar) = value == other.value
   def !==(other: DiscreteVar) = value != other.value
 }
 
-@DomainInSubclasses
 abstract class DiscreteVariable extends DiscreteVar with IterableSettings with QDistribution {
   // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
   type VariableType <: DiscreteVariable
-  def this(initialInt:Int) = { this(); _value = domain.getValue(initialInt).asInstanceOf[ValueType] } // TODO Get rid of this cast?
-  private var _value: ValueType = null.asInstanceOf[ValueType]
-  def value: ValueType = _value
-  // override def domain: DomainType = _value.domain // TODO Consider this
-  def set(newValue:ValueType)(implicit d:DiffList): Unit = if (newValue ne value) {
-    assert((newValue eq null) || (value eq null) || newValue.domain == value.domain)
+  def this(initialInt:Int) = { this(); _value = domain.getValue(initialInt).asInstanceOf[Value] } // TODO Get rid of this cast?
+  private var _value: Value = null.asInstanceOf[Value]
+  def value: Value = _value
+  def set(newValue:Value)(implicit d:DiffList): Unit = if (newValue ne value) {
+    assert((newValue eq null) || newValue.domain == domain)
     if (d ne null) d += new DiscreteVariableDiff(_value, newValue)
     _value = newValue
   }
   /** You should never call this yourself.  Only used in CategoricalVariable initialization code. */
-  protected def _set(newValue:ValueType) = {
+  protected def _set(newValue:Value) = {
     assert(newValue ne null)
     _value = newValue
   }
-  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt).asInstanceOf[ValueType])(d)
+  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt).asInstanceOf[Value])(d)
   def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
   def settings = new SettingIterator {
     // TODO Base this on a domain.iterator
@@ -78,7 +65,7 @@ abstract class DiscreteVariable extends DiscreteVar with IterableSettings with Q
     def reset = i = -1
     override def variable: DiscreteVariable.this.type = DiscreteVariable.this
   }
-  case class DiscreteVariableDiff(oldValue: ValueType, newValue: ValueType) extends Diff {
+  case class DiscreteVariableDiff(oldValue: Value, newValue: Value) extends Diff {
     @inline final def variable: DiscreteVariable = DiscreteVariable.this
     @inline final def redo = _value = newValue
     @inline final def undo = _value = oldValue
@@ -94,8 +81,8 @@ abstract class DiscreteVariable extends DiscreteVar with IterableSettings with Q
 }
 
 // TODO Remove this class!
-case class Block(v1:BooleanVariable, v2:BooleanVariable) extends Variable with IterableSettings {
-  type ValueType = (Boolean, Boolean)
+case class Block(v1:BooleanVariable, v2:BooleanVariable) extends Variable with IterableSettings with ValueType[(Boolean,Boolean)] {
+  def domain = BooleanDomain
   def value = (v1.booleanValue, v2.booleanValue)
   def settings: SettingIterator = new SettingIterator {
     var i = -1
@@ -115,8 +102,7 @@ case class Block(v1:BooleanVariable, v2:BooleanVariable) extends Variable with I
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  May be useful in the future for block-Gibbs-sampling?
     @author Andrew McCallum */
 @deprecated("This will likely be removed in a future version.")
-class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[DiscreteVariable] with IterableSettings {
-  type ValueType = List[Int]
+class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[DiscreteVariable] with IterableSettings with ValueType[List[Int]] with AbstractDomain[Int] {
   def value = _vars.map(_.intValue)
   private val _vars = vars.toList
   def length = _vars.length
@@ -134,13 +120,12 @@ class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[Di
   }
 }
 
-@DomainInSubclasses
 abstract class DiscreteObservation extends DiscreteVar {
   type VariableType <: DiscreteObservation
   def this(theInt:Int) = { this(); _value = domain.getValue(theInt) }
-  var _value: ValueType = null.asInstanceOf[ValueType]
-  /*@inline final*/ def value: ValueType = _value
-  protected def _initializeValue(v:ValueType): Unit = {
+  var _value: Value = null.asInstanceOf[Value]
+  /*@inline final*/ def value: Value = _value
+  protected def _initializeValue(v:Value): Unit = {
     assert(v ne null)
     _value = v
   }

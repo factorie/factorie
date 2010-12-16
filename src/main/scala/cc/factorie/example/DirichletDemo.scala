@@ -20,13 +20,15 @@ import cc.factorie.generative._
 object DirichletDemo {
 
   def main(args:Array[String]): Unit = {
-    class Word(p: Proportions, s:String) extends Categorical(p, s)
-    Domain += new StringDomain[Word] {
+    
+    object WordDomain extends EnumDomain {
       val one, two, three, four, five, six = Value
-      //List("one", "two", "three", "four", "five", "six").foreach(index(_))
+    }
+    class Word(p: Proportions, s:String) extends Categorical(p, s) {
+      def domain = WordDomain
     }
    
-    val dirmean = new DenseProportions(Domain[Word].size)
+    val dirmean = new DenseProportions(WordDomain.size)
     val dirprec = new RealVariableParameter(1.0)
     println("Dirichlet1 mean = "+dirmean.toSeq)
     println("Dirichlet1 prec = "+dirprec.doubleValue)

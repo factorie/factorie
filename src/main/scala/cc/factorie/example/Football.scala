@@ -28,10 +28,15 @@ object Football {
   val printLexiconsOnly = false
 
   // Define the variable classes
+  object TokenDomain extends CategoricalDomain[String]
   class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
+    def domain = TokenDomain
     val label = new Label(labelString, this)
   }
-  class Label(tag:String, token:Token) extends labeled.Label[Sentence,Token,Label](tag, token)
+  object LabelDomain extends CategoricalDomain[String]
+  class Label(tag:String, token:Token) extends labeled.Label[Sentence,Token,Label](tag, token) {
+    def domain = LabelDomain
+  }
   class Sentence extends labeled.TokenSeq[Token,Label,Sentence]
 
   // Define the model
@@ -49,9 +54,9 @@ object Football {
   //val positionLexicon = new Lexicon(lexiconDir+"positions")
   val objective = new Model(
     new TemplateWithVectorStatistics1[Label] {
-      val oIndex = Domain[Label].index("O")
-      val orgIndex = Domain[Label].index("ORG")
-      val perIndex = Domain[Label].index("PER")
+      val oIndex = LabelDomain.index("O")
+      val orgIndex = LabelDomain.index("ORG")
+      val perIndex = LabelDomain.index("PER")
       def score(s:Stat) = {
         val label: Label = s._1
         val token = label.token
@@ -100,8 +105,8 @@ object Football {
         "/Users/mccallum/research/projects/football/data/1987/12/13",
         "/Users/mccallum/research/projects/football/data/1987/12/14"
         )
-    Domain[Label].index("PER")
-    Domain[Label].index("ORG")
+    LabelDomain.index("PER")
+    LabelDomain.index("ORG")
     // Read in the data
     val documents = new ArrayBuffer[Sentence]
     for (dirname <- directories) {

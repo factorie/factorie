@@ -17,7 +17,7 @@ package cc.factorie
 /** A Variable with one or more Int values.  It encompasses single integer values, 
     as well as vector collections of many (weighted) int values.  
     @author Andrew McCallum */
-trait IntegerVars extends Variable {
+trait IntegerVars extends Variable with AbstractDomain[Int] {
   type VariableType <: IntegerVars
   def maxIntValue = Int.MaxValue
   def minIntValue = Int.MinValue
@@ -28,10 +28,8 @@ trait IntegerVars extends Variable {
 
 /** A Variable with one Int value.  
     @author Andrew McCallum */
-trait IntegerVar extends IntegerVars with NumericValue {
-  //this: Variable =>
+trait IntegerVar extends IntegerVars with NumericValue with ValueType[Int] {
   type VariableType <: IntegerVar
-  type ValueType = Int
   def value: Int
   def intValue: Int
   final def doubleValue: Double = intValue.toDouble

@@ -25,8 +25,8 @@ import cc.factorie._
 // I would prefer "with Seq[Double]", but Seq implements equals/hashCode to depend on the contents,
 // and no Variable should do that since we need to know about unique variables; it also makes things
 // slow for large-length Proportions.
-trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqualsEq[Double] {
-  type ValueType = cc.factorie.generative.Proportions
+trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqualsEq[Double] with ValueType[Proportions] with AbstractDomain[Proportions] {
+  //type ValueType = cc.factorie.generative.Proportions
   def value = this // TODO Is this what we want?  Not a immutable representation of the variable value, but we want this to be efficient.
 
   /*def apply(index:Int): Double
@@ -55,17 +55,16 @@ trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqual
   def jsDivergence(p:Proportions): Double = maths.jensenShannonDivergence(this, p)
 }
 
-// TODO try to fold this automatically into a CategoricalProportions?
-trait TypedProportions[A<:DiscreteVar] extends Proportions {
+/** Proportions for which the indicies correspond to CategoricalValues.
+    The abstract method 'categoricalDomain' must be supplied.  */
+trait CategoricalProportions[A] extends Proportions {
+  def categoricalDomain: CategoricalDomain[A]
   class DiscretePr(override val index:Int, override val pr:Double, val value:String) extends super.DiscretePr(index, pr)
-  def top(n:Int)(implicit m:Manifest[A]): Seq[DiscretePr] = {
+  override def top(n:Int): Seq[DiscretePr] = {
     val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList
-    Domain.get[A](m.erasure) match {
-      case d:CategoricalDomain[_] => entries.map({case (p,i)=>new DiscretePr(i, p, d.getEntry(i).toString)})
-      case d:Any => entries.map({case (p,i)=>new DiscretePr(i, p, "")})
-    }
+    entries.map({case (p,i)=>new DiscretePr(i, p, categoricalDomain.getEntry(i).toString)})
   }
-  def topValues(n:Int)(implicit m:Manifest[A]) = top(n).toList.map(_.value)
+  def topValues(n:Int) = top(n).toList.map(_.value)
 }
 
 trait MutableProportions extends Proportions with Estimation[MutableProportions] {

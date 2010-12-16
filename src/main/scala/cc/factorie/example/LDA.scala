@@ -26,16 +26,22 @@ import cc.factorie.app.strings.alphaSegmenter
 
 object LDADemo {
   val numTopics = 10
-  class Z(p: Proportions, value: Int) extends MixtureChoice(p, value)
-  Domain[Z].size = numTopics
-  class Word(ps: FiniteMixture[Proportions], z: MixtureChoiceVariable, value: String) extends CategoricalMixture[String](ps, z, value)
+  object ZDomain extends DiscreteDomain { def size = numTopics }
+  class Z(p: Proportions, value: Int) extends MixtureChoice(p, value) { def domain = ZDomain }
+  object WordDomain extends CategoricalDomain[String]
+  class Word(ps: FiniteMixture[Proportions], z: MixtureChoiceVariable, value: String) extends CategoricalMixture[String](ps, z, value) {
+    def domain = WordDomain
+  }
   class Document(val file: String) extends ArrayBuffer[Word] {var theta: MutableDirichlet = null}
 
   def main(args: Array[String]): Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
 
     // Read data and create generative variables
-    val phis = FiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01) with TypedProportions[Word] {override def toString = "Phi(" + countsSeq.toList + ")"})
+    val phis = FiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01) with CategoricalProportions[String] {
+      def categoricalDomain = WordDomain
+      override def toString = "Phi(" + countsSeq.toList + ")"
+    })
     val alphaMean = new DenseProportions(numTopics)
     val alphaPrecision = new RealVariableParameter(numTopics)
     val documents = new ArrayBuffer[Document]
@@ -52,7 +58,7 @@ object LDADemo {
         documents += doc
       }
     }
-    println("\nRead " + documents.size + " documents with " + documents.foldLeft(0)(_ + _.size) + " tokens and " + Domain[Word].size + " types.")
+    println("\nRead " + documents.size + " documents with " + documents.foldLeft(0)(_ + _.size) + " tokens and " + WordDomain.size + " types.")
 
     // Fit model
     val zs = documents.flatMap(document => document.map(word => word.choice))
@@ -71,7 +77,7 @@ object LDADemo {
         (phis ++ documents.map(_.theta)).foreach(p => p.set(sampler.collapsed(p))(null))
         DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + sampler.collapsed(t).top(10).map(dp => Domain[Word].getEntry(dp.index)).mkString(" ")))
+        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + sampler.collapsed(t).top(10).map(dp => WordDomain.getEntry(dp.index)).mkString(" ")))
         println
       }
     }

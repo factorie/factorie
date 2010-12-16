@@ -26,7 +26,7 @@ trait DiscreteVariableWithTrueSetting extends DiscreteVariable with TrueSetting 
   def trueIntValue_=(newValue:Int): Unit
   def setToTruth(implicit d:DiffList): Unit = set(trueIntValue)
   def valueIsTruth: Boolean = trueIntValue == intValue
-  def trueValue: ValueType = if (trueIntValue >= 0) domain.getValue(trueIntValue) else null.asInstanceOf[ValueType]
+  def trueValue: Value = if (trueIntValue >= 0) domain.getValue(trueIntValue) else null.asInstanceOf[Value]
   def isUnlabeled = trueIntValue < 0
   def unlabel = if (trueIntValue >= 0) trueIntValue = -trueIntValue - 1 else throw new Error("Already unlabeled.")
   def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
@@ -44,12 +44,9 @@ trait CategoricalVariableWithTrueSetting[A] extends DiscreteVariableWithTrueSett
     @author Andrew McCallum
     @see LabelVariable
 */
-@DomainInSubclasses
 abstract class CoordinatedLabelVariable[A](trueval:A) extends CategoricalVariable[A](trueval) with CategoricalVariableWithTrueSetting[A] {
   type VariableType <: CoordinatedLabelVariable[A]
   var trueIntValue = domain.index(trueval)
-  //lazy val _domain = super.domain // Considering this to speed BeliefPropagation, but making Variable.domain not "final" also costs.
-  //override def domain: VariableType#DomainType = _domain
 }
 
 /** A CategoricalVariable with a single value and a true value.
@@ -58,23 +55,12 @@ abstract class CoordinatedLabelVariable[A](trueval:A) extends CategoricalVariabl
     @author Andrew McCallum
     @see CoordinatedLabelVariable
  */
-@DomainInSubclasses
-class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with NoVariableCoordination {
+abstract class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with NoVariableCoordination {
   type VariableType <: LabelVariable[T]
   // TODO Does this next line really provide the protection we want from creating variable-value coordination?  No.  But it does catch some errors.
   override final def set(index: Int)(implicit d: DiffList) = super.set(index)(d)
 }
 
-/** A Label with a StringDomain.  StringDomains can be conveniently initialized, as in
-    class NerLabel extends StringDomain { val PER, ORG, LOC, MISC, O = Value; freeze } // Then Domain[NerLabel].PER == "PER" 
-    @author Andrew McCallum */
-// TODO But should this be Coordinated or Uncoordinated, or should we make both.
-@DomainInSubclasses
-class StringLabelVariable(trueval:String) extends LabelVariable[String](trueval) {
-  type VariableType <: StringLabelVariable
-  type DomainType <: StringDomain[VariableType]
-  class DomainClass extends StringDomain[VariableType]()(null)
-}
 
 
 // Templates

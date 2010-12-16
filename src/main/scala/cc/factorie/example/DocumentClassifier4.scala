@@ -26,12 +26,17 @@ import cc.factorie._
     Note that it also does not use any of the facilities of cc.factorie.app.classify.document */
 object DocumentClassifier4 {
   
+  object DocumentDomain extends CategoricalDomain[String]
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
+    def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)
     // Read file, tokenize with word regular expression, and add all matches to this BinaryFeatureVectorVariable
     "\\w+".r.findAllIn(Source.fromFile(file).mkString).foreach(regexMatch => this += regexMatch.toString)
   }
-  class Label(name:String, val document:Document) extends LabelVariable(name) 
+  object LabelDomain extends CategoricalDomain[String]
+  class Label(name:String, val document:Document) extends LabelVariable(name) {
+    def domain = LabelDomain
+  }
 
   /** Factor between label and observed document */
   val dtree = new DecisionTreeTemplateWithStatistics2[Label,Document] {

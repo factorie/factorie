@@ -22,7 +22,7 @@ import cc.factorie.generative.DenseCountsProportions
 trait DecisionTreeStatistics2[S1<:DiscreteVar,S2<:BinaryVectorVar]
 extends VectorStatistics2[S1,S2] {
   // Number of different values taken on by s._1
-  val numOutcomes: Int = statDomains(0).asInstanceOf[DiscreteDomain[_]].size
+  val numOutcomes: Int = statDomains(0).asInstanceOf[DiscreteDomain].size
   case class DTNode(parent:DTNode, var yesChild:DTNode = null, var noChild:DTNode = null, var index:Int = -1, var p:Proportions = null) {
     def isLeaf = ((yesChild eq null) || (noChild eq null))
   }

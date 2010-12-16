@@ -67,7 +67,7 @@ object GeneratedVariableCollapsedVariationalBayesHandler extends CollapsedVariat
             val parent = v.proportions
             val collapsedParent = cvb.collapsedp2[Proportions](parent) // possibly collapsed
             val vq:MutableProportions = cvb.q(v) // This will throw error if 'v' is not in our _q map.  // TODO Is this the behavior we want?
-            val domainSize = v.domainSize
+            val domainSize = v.domain.size
             val distribution = new Array[Double](domainSize)
             var sum = 0.0
             assert(!cvb.qMap.contains(parent), "Does not handle variational child with variational parent.")
@@ -124,7 +124,7 @@ object MixtureChoiceCollapsedVariationalBayesHandler extends CollapsedVariationa
             val parent = v.proportions
             val collapsedParent = cvb.collapsedOrSelf(parent).asInstanceOf[Proportions] // possibly collapsed
             val vq:MutableProportions = cvb.q(v) // This will throw error if 'v' is not in our _q map.  // TODO Is this the behavior we want?
-            val domainSize = v.domainSize
+            val domainSize = v.domain.size
             val distribution = new Array[Double](domainSize)
             var sum = 0.0
             assert(!cvb.qMap.contains(parent), "Does not handle variational child with variational parent.")
@@ -142,7 +142,7 @@ object MixtureChoiceCollapsedVariationalBayesHandler extends CollapsedVariationa
               val outcomeQ = cvb.qp(outcome) // possibly variational
 
               // If parents of outcomes are collapsed, decrement counts
-              forIndex(v.domainSize)(i => {
+              forIndex(v.domain.size)(i => {
                 v.set(i)(null)
                 for (chosenParent <- outcome.chosenParents) cvb.collapsedOrNull(chosenParent) match {
                   case p:CollapsedParameter => { /*println("CollapsedGibbsSampler -"+vq+" p="+p); */ p.updateChildStats(outcomeQ, -vq(i)) }
@@ -166,7 +166,7 @@ object MixtureChoiceCollapsedVariationalBayesHandler extends CollapsedVariationa
               }
 
               // If parents of outcomes are collapsed, increment counts
-              forIndex(v.domainSize)(i => {
+              forIndex(v.domain.size)(i => {
                 v.set(i)(null)
                 for (chosenParent <- outcome.chosenParents) cvb.collapsedOrNull(chosenParent) match {
                   case p:CollapsedParameter => { /*println("CollapsedGibbsSampler +"+vq+" p="+p); */ p.updateChildStats(outcomeQ, vq(i)) }

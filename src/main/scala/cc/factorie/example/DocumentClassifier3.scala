@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.example
 
 import scala.collection.mutable.{ArrayBuffer}
@@ -27,13 +25,18 @@ import cc.factorie._
     Furthermore, use conditional maximum likelihood training (and parameter updating with the optimize package)
     By contrast, see example/DocumentClassifier2. */
 object DocumentClassifier3 {
-  
+
+  object DocumentDomain extends CategoricalDomain[String]
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
+    def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)
     // Read file, tokenize with word regular expression, and add all matches to this BinaryFeatureVectorVariable
     "\\w+".r.findAllIn(Source.fromFile(file).mkString).foreach(regexMatch => this += regexMatch.toString)
   }
-  class Label(name:String, val document:Document) extends LabelVariable(name) 
+  object LabelDomain extends CategoricalDomain[String]
+  class Label(name:String, val document:Document) extends LabelVariable(name) {
+    def domain = LabelDomain
+  }
 
   val model = new Model(
     /** Bias term just on labels */

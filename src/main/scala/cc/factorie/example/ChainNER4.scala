@@ -21,11 +21,15 @@ import java.io.File
 object ChainNER4 {
 
   // The variable classes
+  object TokenDomain extends CategoricalDomain[String]
   class Token(val word:String, features:Seq[String], labelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
+    def domain = TokenDomain
     val label: Label = new Label(labelString, this)
     this ++= features
   }
+  object LabelDomain extends CategoricalDomain[String]
   class Label(labelname: String, val token: Token) extends LabelVariable(labelname) {
+    def domain = LabelDomain
     def hasNext = token.hasNext && token.next.label != null
     def hasPrev = token.hasPrev && token.prev.label != null
     def next = token.next.label
@@ -72,7 +76,7 @@ object ChainNER4 {
       if (t.hasPrev) t ++= t.prev.values.filter(!_.contains('@')).map(_+"@-1")
       if (t.hasNext) t ++= t.next.values.filter(!_.contains('@')).map(_+"@+1")
     })
-    println("Using "+Domain[Token].size+" observable features.")
+    println("Using "+TokenDomain.size+" observable features.")
     
     
     // Sample and Learn!

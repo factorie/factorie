@@ -15,26 +15,22 @@
 package cc.factorie
 import cc.factorie.la.SingletonVector
 
+// TODO Consider instead ValueType[Double] and making a different class for SingletonVector.
 /** A Variable with a real (double) value. */
-trait RealVar extends Variable with TypedValue with NumericValue with VectorVar {
+trait RealVar extends Variable with NumericValue with VectorVar with DomainType[RealDomain] with ValueType[SingletonVector] {
   type VariableType <: RealVar
-  type ValueType = SingletonVector // TODO This is a reason to consider a 'statValue' method.
-  type DomainType <: RealDomain[VariableType]
-  // TODO Replace this mechanism with an Annotation? -akm
-  class DomainClass extends RealDomain[VariableType]()(null)
-  @inline final def value: ValueType = new SingletonVector(1, 0, doubleValue)
+  def domain = RealDomain
+  /** A Vector representation of this Variable's value. */
+  @inline final def value: Value = new SingletonVector(1, 0, doubleValue)
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
   def ===(other: RealVar) = doubleValue == other.doubleValue
   def !==(other: RealVar) = doubleValue != other.doubleValue
-  /** A Vector representation of this Variable's value. */
-  def vector: cc.factorie.la.Vector = new cc.factorie.la.SingletonVector(1, 0, doubleValue)
   override def toString = printName + "(" + doubleValue.toString + ")"
-  // TODO Consider making a RealDomain class
 }
 
 /** A Variable with a mutable real (double) value. */
-class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableTypedValue {
+class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableValue {
   type VariableType <: RealVariable
   private var _value: Double = initialValue
   @inline final def doubleValue = _value
@@ -47,7 +43,7 @@ class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableTyped
     if (d ne null) d += new RealDiff(_value, newValue)
     _value = newValue
   }
-  def set(newValue: ValueType)(implicit d:DiffList): Unit = set(newValue.doubleValue)
+  def set(newValue: Value)(implicit d:DiffList): Unit = set(newValue.doubleValue)
   case class RealDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: RealVariable = RealVariable.this
     def redo = _value = newValue

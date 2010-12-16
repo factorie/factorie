@@ -21,7 +21,8 @@ import cc.factorie.generative._
 object GaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
     val numComponents = 5
-    class Z(p:Proportions) extends MixtureChoice(p, random.nextInt(numComponents)); Domain[Z].size = numComponents
+    object ZDomain extends DiscreteDomain { def size = numComponents }
+    class Z(p:Proportions) extends MixtureChoice(p, random.nextInt(numComponents)) { def domain = ZDomain }
     val meanComponents = FiniteMixture(numComponents)(new GaussianMeanVariable(random.nextDouble * 10))
     val varianceComponents = new UnaryMixture(new RealVariableParameter(1.0))
     val mixtureProportions = new UniformProportions(numComponents)

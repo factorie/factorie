@@ -122,7 +122,7 @@ class LogLinearMaximumLikelihood(model: Model) {
         oValue = 0.0
         java.util.Arrays.fill(oGradient, 0.0)
         variableSets.foreach(_.foreach(v => {
-          val distribution = new Array[Double](v.domainSize) // TODO Are we concerned about all this garbage collection?
+          val distribution = new Array[Double](v.domain.size) // TODO Are we concerned about all this garbage collection?
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // compute score of variable with value 'i'

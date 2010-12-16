@@ -25,10 +25,15 @@ import collection.mutable.ArrayBuffer
 object ChainNER1ML {
 
   // Define the variable classes
+  object TokenDomain extends CategoricalDomain[String]
   class Token(word: String, labelString: String) extends labeled.Token[Sentence, Label, Token](word) {
     val label = new Label(labelString, this)
+    def domain = TokenDomain
   }
-  class Label(tag: String, token: Token) extends labeled.Label[Sentence, Token, Label](tag, token)
+  object LabelDomain extends CategoricalDomain[String]
+  class Label(tag: String, token: Token) extends labeled.Label[Sentence, Token, Label](tag, token) {
+    def domain = LabelDomain
+  }
   class Sentence extends labeled.TokenSeq[Token, Label, Sentence]
 
   // Define the model:

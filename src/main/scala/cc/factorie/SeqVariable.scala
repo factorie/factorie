@@ -34,10 +34,9 @@ trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A]
 /** A variable containing a mutable sequence of other variables.  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
     @author Andrew McCallum */
-abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with TypedValues with SeqEqualsEq[X] {
+abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with SeqEqualsEq[X] with AbstractDomain[X] with ValueType[Seq[X]] {
   def this() = this(Nil)
   type VariableType <: SeqVariable[X]
-  type ValueType = Seq[X]
   def value = this.toSeq
   //class XList[X](var elem:X, var prev:XList[X], var next:XList[X]) extends DoubleLinkedList[X,XList[X]] {
   //this(xs:Seq[X]) = this(xs.head, null, new XList(xs.drop(1)))
@@ -69,8 +68,7 @@ abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with TypedValue
 
 /** A variable containing a mutable (but untracked by Diff) sequence of variables; used in conjunction with VarInSeq.
     @author Andrew McCallum */
-class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeqEqualsEq[V] with Variable {
-  type ValueType = Seq[V]
+class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeqEqualsEq[V] with Variable with AbstractDomain[V] with ValueType[Seq[V]] {
   def value = this.toSeq
   private val seq = new ArrayBuffer[V](initialCapacity)
   def +=(v: V) = {

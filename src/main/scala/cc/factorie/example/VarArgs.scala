@@ -21,13 +21,15 @@ import scala.collection.mutable.ArrayBuffer
 /** Demonstrate how to create a factor that has a varying number of neighbors. */
 object VarArgsDemo {
   def main(args:Array[String]): Unit = {
+    object XDomain extends DiscreteDomain { def size = 10 }
     class X(i:Int) extends DiscreteVariable(i) { 
+      def domain = XDomain
       val ys = new ArrayBuffer[Y]
       def addY(i:Int) = ys += new Y(i, this)
     }
-    Domain[X].size = 10
-    class Y(i:Int, val x:X) extends DiscreteVariable(i)
-    Domain[Y].size = 10
+    class Y(i:Int, val x:X) extends DiscreteVariable(i) {
+      def domain = XDomain
+    }
 
     val model = new Model(
       // "Vars[]" indicates that there can be a variable number of these neighbors

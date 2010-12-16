@@ -23,8 +23,8 @@ import cc.factorie.generative._
 
 object MultinomialDemo {
   val numSides = 6
-  class Roll(die:Proportions, value:Int) extends Discrete(die, value)
-  Domain[Roll].size = () => numSides // TODO Make this unnecessary
+  object RollDomain extends DiscreteDomain { def size = numSides }
+  class Roll(die:Proportions, value:Int) extends Discrete(die, value) { def domain = RollDomain }
 
   def main(args:Array[String]) : Unit = {
     val die = new DenseProportions(List(.1, .2, .3, .2, .2))

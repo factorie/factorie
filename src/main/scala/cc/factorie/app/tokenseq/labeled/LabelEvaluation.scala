@@ -21,7 +21,8 @@ class PerLabelEvaluation[L<:LabelVariable[String]](val labelValue: String)(impli
   var fp = 0
   var fn = 0
   var tp = 0
-  private val targetIndex = Domain[L](m).index(labelValue)
+  throw new Error("Not yet fixed for new Domain mechanism.")
+  private val targetIndex = -1 // TODO replace this: Domain[L](m).index(labelValue)
 
   def ++=(tokenseqs:Seq[Seq[{def label:LabelVariable[String]}]]) = tokenseqs.foreach(ts => this += ts.map(_.label))
   //def +=(tokens:Seq[{def label:LabelVariable[String]}]): Unit = +=(tokens.map(_.label))
@@ -62,8 +63,9 @@ class LabelEvaluation[L<:LabelVariable[String] with AbstractVarInSeq[L]](val bac
   var tp = 0
   //println("Evaluation Labels: "+Domain[Label].toList)
   private val labelEval: HashMap[String,PerLabelEvaluation[L]] = { 
-    val h = new HashMap[String,PerLabelEvaluation[L]];
-    h ++= Domain[L](m).map((labelValue:CategoricalValue[_,String]) => (labelValue.entry, new PerLabelEvaluation[L](labelValue.entry)))
+    val h = new HashMap[String,PerLabelEvaluation[L]]
+    throw new Error("Need to be updated to new Domain mechanism, replacing line below")
+    //h ++= Domain[L](m).map((labelValue:CategoricalValue[_,String]) => (labelValue.entry, new PerLabelEvaluation[L](labelValue.entry)))
     h
   }
   /** Return the LabelEvaluation specific to labelString. */

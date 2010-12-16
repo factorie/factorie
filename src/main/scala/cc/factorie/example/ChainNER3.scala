@@ -26,10 +26,15 @@ import java.io.File
 object ChainNER3 {
 
   // Define the variable classes
+  object TokenDomain extends CategoricalDomain[String]
   class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
     val label = new Label(labelString, this)
+    def domain = TokenDomain
   }
-  class Label(labelString:String, token:Token) extends labeled.Label[Sentence,Token,Label](labelString, token)
+  object LabelDomain extends CategoricalDomain[String]
+  class Label(labelString:String, token:Token) extends labeled.Label[Sentence,Token,Label](labelString, token) {
+    def domain = LabelDomain
+  }
   class Sentence extends labeled.TokenSeq[Token,Label,Sentence]
 
   // Define the model
@@ -95,7 +100,7 @@ object ChainNER3 {
     // Print data stats
     println("Training on "+trainSentences.size+" sentences, "+trainSentences.foldLeft(0)(_+_.size)+" tokens.")
     println("Testing  on "+testSentences.size+" sentences, "+testSentences.foldLeft(0)(_+_.size)+" tokens.")
-    println("Domain size = "+Domain[Token].size)
+    println("Domain size = "+TokenDomain.size)
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.labels)

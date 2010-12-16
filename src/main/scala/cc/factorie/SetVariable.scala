@@ -16,9 +16,8 @@ package cc.factorie
 import scala.collection.mutable.HashSet
 
 /**A variable whose value is a set of other variables */
-abstract class SetVariable[A]() extends Variable with TypedValues {
+abstract class SetVariable[A]() extends Variable with AbstractDomain[A] with ValueType[scala.collection.Set[A]] {
   type VariableType <: SetVariable[A];
-  type ValueType = scala.collection.Set[A]
   def value = _members
   private val _members = new HashSet[A];
   def members: scala.collection.Set[A] = _members
@@ -47,11 +46,10 @@ abstract class SetVariable[A]() extends Variable with TypedValues {
   }
 }
 
-abstract class WeakSetVariable[A<:{def present:Boolean}] extends Variable with TypedValues {
-  type ValueType = A
+abstract class WeakSetVariable[A<:{def present:Boolean}] extends Variable with AbstractDomain[A] with ValueType[scala.collection.Set[A]] {
   type VariableType <: WeakSetVariable[A];
   private val _members = new cc.factorie.util.WeakHashSet[A];
-  //def members: scala.collection.Set[A] = _members
+  def value: scala.collection.Set[A] = _members
   def iterator = _members.iterator.filter(_.present)
   //def size = _members.size
   def contains(x: A) = _members.contains(x) && x.present

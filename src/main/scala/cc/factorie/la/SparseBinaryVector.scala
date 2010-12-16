@@ -130,7 +130,8 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
     def next = { i += 1; (ind(i), 1.0) }
   }
   /** Add a value, (while keeping the content Array[Int] sorted). */
-  def +=(theValue:Int): Unit = {
+  // Renamed from '+=' to 'include' to avoid confusing auto-casting from Int=>Double for Vector.+=(Double)
+  def include(theValue:Int): Unit = {
     val i = _positionLte(theValue, 0, _size)
     //println
     //println("  In Vector+=")

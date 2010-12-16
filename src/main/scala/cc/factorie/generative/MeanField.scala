@@ -24,8 +24,8 @@ class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A],
   def updateQ(v:A): Unit = {
     (v, _q(v)) match {
       case (v:DiscreteVariable, d:DenseProportions) => {
-        val distribution = new Array[Double](v.domainSize)
-        for (i <- 0 until v.domainSize) {
+        val distribution = new Array[Double](v.domain.size)
+        for (i <- 0 until v.domain.size) {
           val diff = new DiffList
           v.set(i)(diff)
           val factors = diff.factorsOf[Template](model)

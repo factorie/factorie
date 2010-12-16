@@ -25,13 +25,18 @@ import cc.factorie._
 /** A raw document classifier without using any of the facilities of cc.factorie.app.DocumentClassification,
  and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */
 object DocumentClassifier2 {
-  
+
+  object DocumentDomain extends CategoricalDomain[String]
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
+    def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)
     // Read file, tokenize with word regular expression, and add all matches to this BinaryFeatureVectorVariable
     "\\w+".r.findAllIn(Source.fromFile(file).mkString).foreach(regexMatch => this += regexMatch.toString)
   }
-  class Label(name:String, val document:Document) extends LabelVariable(name) 
+  object LabelDomain extends CategoricalDomain[String]
+  class Label(name:String, val document:Document) extends LabelVariable(name) {
+    def domain = LabelDomain
+  }
 
   val model = new Model(
     /** Bias term just on labels */

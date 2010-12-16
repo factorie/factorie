@@ -25,9 +25,13 @@ import cc.factorie.app.strings.Stopwords
 
 object HMMDemo {
   val numStates = 10
-  class Z(ps:FiniteMixture[Proportions], c:MixtureChoiceVariable, i:Int) extends MixtureChoiceMixture(ps, c, i); Domain[Z].size = numStates
-  class Zi(p:Proportions, i:Int) extends MixtureChoice(p, i); Domain[Zi].size = numStates
-  class Word(ps:FiniteMixture[Proportions], z:Z, value:String) extends CategoricalMixture(ps, z, value) with VarInTypedSeq[Word,Sentence]
+  object ZDomain extends DiscreteDomain { def size = numStates }
+  class Z(ps:FiniteMixture[Proportions], c:MixtureChoiceVariable, i:Int) extends MixtureChoiceMixture(ps, c, i) { def domain = ZDomain }
+  class Zi(p:Proportions, i:Int) extends MixtureChoice(p, i) { def domain = ZDomain }
+  object WordDomain extends CategoricalDomain[String]
+  class Word(ps:FiniteMixture[Proportions], z:Z, value:String) extends CategoricalMixture(ps, z, value) with VarInTypedSeq[Word,Sentence] {
+    def domain = WordDomain
+  }
   class Sentence(val file:String, val startState:Zi) extends VariableSeq[Word]
 
   def main(args: Array[String]) : Unit = {
@@ -37,7 +41,7 @@ object HMMDemo {
 
     // Read data and create generative variables
     val transitions = FiniteMixture(numStates)(new DenseDirichlet(numStates, 1.0))
-    val emissions = FiniteMixture(numStates)(new GrowableDenseDirichlet(0.1) with TypedProportions[Word])
+    val emissions = FiniteMixture(numStates)(new GrowableDenseDirichlet(0.1) with CategoricalProportions[String] { def categoricalDomain = WordDomain })
     val pi = new DenseDirichlet(numStates, 1.0)
     var sentences = new ArrayBuffer[Sentence]
     for (directory <- directories) {
@@ -50,7 +54,7 @@ object HMMDemo {
         sentences += sentence
       }
     }
-    println("Read "+sentences.size+" sentences with "+sentences.foldLeft(0)(_+_.size)+" tokens and "+Domain[Word].size+" types.")
+    println("Read "+sentences.size+" sentences with "+sentences.foldLeft(0)(_+_.size)+" tokens and "+WordDomain.size+" types.")
     //sentences = sentences.take(10)
 
     // Fit model

@@ -25,6 +25,11 @@ class Coin(v:String) extends CategoricalVariable(v) { def domain = CoinDomain }
 class Count(i:Int) extends IntegerVariable(i)
 class Weight(w:Double) extends RealVariable(w)
 
+object WordDomain extends CategoricalVectorDomain[String]
+class Document(words:Seq[String]) extends BinaryFeatureVector(words) {def domain = WordDomain }
+class Word(word:String) extends CategoricalVariable(word) {def domain = WordDomain.asSingleton}
+
+
 // Z, fixed domain
 object ZDomain extends DiscreteDomain[Z] { def size = 10 }
 class Z(i:Int) extends DiscreteVariable(i) { def domain = ZDomain }
@@ -35,14 +40,13 @@ class Z(i:Int, val domain:DiscreteDomain[Z] = ZDomain) extends DiscreteVariable(
 
 object WordDomain extends CategoricalDomain[Word]
 class Word(w:String) extends CategoricalVariable(w) { def domain = WordDomain }
-object T1 extends Template2[Label,Word] with DotStatistics2[Label#Value,Boolean#Value] {
+object T1 extends Template2[Label,Word] with DotStatistics2[Label#Value,BooleanValue] {
   override def statisticsDomain1 = LabelDomain
   override def statisticsDomain2 = BooleanDomain
   def statistics(l:Label#Value, w:Word#Value) = new Stat(l, w.contains("Mr"))
 }
 class CategoricalVariable[CategoryType](initialValue:CategoryType) {
   def domain: CategoricalDomain[VariableType]
-  //type VariableType <: DomainType#VariableType
 }
 
 // Implicit domain objects
@@ -63,16 +67,14 @@ class CategoricalVariable[VariableType<:CategoricalVariable,T](initialValue:T)(i
 // "*Observation" always means immutable, and mixes in trait ConstantValue
 // "*Var" is agnostic about whether it is mutable or not.  Hence "IntegerVar"
 
-/*
-trait ValueType[VT] {
-  type ValueType = VT
-  def value: ValueType
+trait ValueType[+VT] {
+  type Value = VT
 }
-class DiscreteVariableLike(
-class DiscreteVariableLike[T](val value:Int) extends ValueType[T]
-class CategoricalVariable[T](val value:T) extends DiscreteVariable(23) with ValueType[T]
-val c = new CategoricalVariable("foo")
-*/
+
+trait DomainType[+DT<:Domain[_]] /*with ValueType[DT#Value]*/ {
+  type DomainType = DT
+}
+
 
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
    The trait is abstract because you should not instantiate this trait directly, only subclasses.
@@ -83,26 +85,16 @@ val c = new CategoricalVariable("foo")
    able to distinguish individual Variable instances based on their
    address.
    @author Andrew McCallum */
-@DomainInSubclasses
-trait Variable {
+trait Variable extends DomainType[Domain[Any]] with ValueType[Any] {
   /** The type of this variable, especially used by this Variable's Domain.  
       Often you can treat this as an approximation to a self-type */
   type VariableType <: Variable
  
-  // Domain handling
-  /** The type of this.domain and the return type of Domain.apply[MyVariable](). */
-  type DomainType <: Domain[VariableType]
-  /** When a Domain is automatically constructed for this class (in object Domain), it will be the superclass of this inner class. */
-  class DomainClass extends Domain[VariableType]()(Manifest.classType[Variable](classOf[Variable]).asInstanceOf[Manifest[VariableType]])
-  /** When DomainInSubclasses appears as an inner class of a Variable class, 
-      it simply ensures that the library will never create a Domain for this class, only its subclasses.
-      If library users create their own new Variable classes, which will be subclassed, and wants each
-      subclass to have its own Domain, then those new Variable classes must declare an inner class of this type. */
-  final def domain: VariableType#DomainType = Domain.get[VariableType](this.getClass)
-  // TODO Should we make this not "final" so that an arbitrary number of domains can be created at runtime?
+  /** Abstract method to return the domain of this variable. */
+  def domain: DomainType
 
-  type ValueType
-  def value: ValueType // TODO Uncomment this!!!
+  /** Abstract method to return the value of this variable. */
+  def value: Value
   
   /** The type of the variable contained inside this variable.
       Used for handling var-args. 
@@ -142,8 +134,7 @@ trait ContainerVariable[A<:Variable] extends Variable {
   def containedVariableManifest(implicit m:Manifest[A]) = m
 }
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.
-trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] {
-  type ValueType = scala.collection.Seq[A]
+trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] with AbstractDomain[scala.collection.Seq[A]] {
   def value = this
   override def toString = mkString("Vars(", ",",")")
 }
@@ -183,40 +174,21 @@ trait ConstantValue extends Variable {
   override final def isConstant = true
 }
 
-trait NoValue extends Variable {
-  type ValueType = Null
+trait NoValue extends Variable with ValueType[Null] {
   final def value = null
 }
 
-/** For variables whose value has a type, indicated in type ValueType.  
-    Instead of a single value, this variable might represent many values.
-    Related to PyMC's "Containers".
-    @author Andrew McCallum */
-trait TypedValues {
-  this: Variable =>
-  type ValueType
-}
-
-/** For a Variable whose value has type ValueType.  
-    Typically this is not used to for Values with simple numeric types such as Int and Double.
-    Rather, those values are obtained through methods such as intValue and doubleValue. 
-    Other variables, such as CategoricalVariable, have both an Int value and a ValueType value. 
-    @author Andrew McCallum */
-trait TypedValue extends TypedValues {
-  this: Variable =>
-  def value: ValueType
-}
 
 /** For a Variable with TypedValue that can change.
     @author Andrew McCallum */
-trait MutableTypedValue extends TypedValue {
+trait MutableValue {
   this: Variable =>
-  //def set(newValue:ValueType)(implicit d: DiffList): Unit // TODO Causes conflict with CategoricalVariable.set.  Consider what to do !!!
+  //def set(newValue:Value)(implicit d: DiffList): Unit // TODO Causes conflict with CategoricalVariable.set.  Consider what to do !!!
   // TODO Remove this next method; use := instead.
-  //final def value_=(newValue:ValueType)(implicit d:DiffList = null): Unit = set(newValue)(null)
+  //final def value_=(newValue:Value)(implicit d:DiffList = null): Unit = set(newValue)(null)
   // Returning 'this' is convenient so that we can do:  val x = Gaussian(mean, variance) := 2.3
   // TODO No, but the syntax is confusing, and we can instead do Gaussian(mean, variance, 2.3)
-  //final def :=(newValue:ValueType)(implicit d:DiffList = null): this.type = { set(newValue)(null); this }
+  //final def :=(newValue:Value)(implicit d:DiffList = null): this.type = { set(newValue)(null); this }
 }
 
 

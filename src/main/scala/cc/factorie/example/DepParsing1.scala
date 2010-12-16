@@ -24,8 +24,10 @@ import java.io.File
     Not finished.  Overly simple inference (just sampling!), projectivity not maintained.
     But interesting example of flexibility of the "Template.statistics" method. */
 object DepParsing1 {
-  
+
+  object TokenDomain extends CategoricalDomain[String]
   class Token(val word:String, posString:String, trueParentPosition:Int, trueLabelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
+    def domain = TokenDomain
     val parent = new Node(this, trueParentPosition, trueLabelString)
     val pos = new POS(posString)
     override def toString = "Token("+word+":"+position+")"
@@ -71,13 +73,16 @@ object DepParsing1 {
 
   class Direction(right:Boolean) extends BooleanObservation(right)
 
+  object DistanceDomain extends DiscreteDomain { def size = 6 }
   class Distance(d:Int) extends DiscreteVariable {
+    def domain = DistanceDomain
     if (d < domain.size-1) set(d)(null) else set(domain.size-1)(null)
   }
-  Domain[Distance].size = 6
 
-  class POS(posString:String) extends CategoricalVariable(posString) 
-  class Label(trueString:String) extends LabelVariable(trueString)
+  object POSDomain extends CategoricalDomain[String]
+  class POS(posString:String) extends CategoricalVariable(posString) { def domain = POSDomain }
+  object LabelDomain extends CategoricalDomain[String]
+  class Label(trueString:String) extends LabelVariable(trueString) { def domain = LabelDomain }
   class Sentence extends VariableSeq[Token] {
     this += new Token("<ROOT>", ".", 0, "ROOT")
   }
@@ -144,9 +149,9 @@ object DepParsing1 {
       }
     }
     println("Read "+sentences.length+" sentences, "+sentences.foldLeft(0)(_+_.length)+" words.")
-    println("Domain[Token] size = "+Domain[Token].size)
-    println("Domain[POS] size = "+Domain[POS].size)
-    println("Domain[Distance] size = "+Domain[Distance].size)
+    println("Domain[Token] size = "+TokenDomain.size)
+    println("Domain[POS] size = "+POSDomain.size)
+    println("Domain[Distance] size = "+DistanceDomain.size)
     
     val nodes = sentences.flatMap(_.map(_.parent))
     nodes.foreach(_.setRandomly)

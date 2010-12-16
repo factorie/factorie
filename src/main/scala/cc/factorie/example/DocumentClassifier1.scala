@@ -23,10 +23,15 @@ import cc.factorie.app.classify
 object DocumentClassifier1 {
   
  // Define variable classes
+ object DocumentDomain extends CategoricalDomain[String]
  class Document(file:File) extends classify.document.Document[Label,Document](file) {
+   def domain = DocumentDomain
    val label = new Label(file.getParentFile.getName, this)
  }
- class Label(labelString:String, document:Document) extends classify.Label[Document,Label](labelString, document)
+ object LabelDomain extends CategoricalDomain[String]
+ class Label(labelString:String, document:Document) extends classify.Label[Document,Label](labelString, document) {
+   def domain = LabelDomain
+ }
  
  // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
  val model = classify.newModel[Label,Document]

@@ -34,10 +34,9 @@ class Relationship[A<:Entity[A],B<:Entity[B]](val src:A, val dst:B) extends Bool
 /** Represents a many-to-many relation.
  Example usage:  object friend extends Relation[Person,Person] */
 // TODO Only binary relations for now, but it wouldn't be hard to add n-ary relations.
-class Relation[A<:Entity[A],B<:Entity[B]] extends Variable {
+class Relation[A<:Entity[A],B<:Entity[B]] extends Variable with ValueType[Nothing] with AbstractDomain[Nothing] {
   type SrcType = A
   type DstType = B
-  type ValueType = Nothing
   def value: Nothing = throw new Error("Not yet implemented")
   private val a2rs = new HashMap[A,ListBuffer[RelationshipType]] // a to collection of Relationships
   private val b2rs = new HashMap[B,ListBuffer[RelationshipType]] // b to collection of Relationships
@@ -115,8 +114,8 @@ class Relation[A<:Entity[A],B<:Entity[B]] extends Variable {
 class ItemizedRelation[A<:ItemizedObservation[A] with Entity[A],B<:ItemizedObservation[B] with Entity[B]](implicit ma:Manifest[A], mb:Manifest[B]) extends Relation[A,B] with Variable with IterableSettings {
   def settings = new SettingIterator {
     var i = -1
-    val domainb = Domain[B](mb) 
-    val a = Domain[A](ma).randomEntry // randomly pick a src
+    val domainb: CategoricalDomain[B] = throw new Error // TODO Domain[B](mb) 
+    val a: A = throw new Error // TODO Domain[A](ma).randomEntry // randomly pick a src
     val max = domainb.size - 1 // we will iterate over all possible changes to dst's
     def hasNext = i < max
     private def set(d:DiffList) : Unit = { val b = domainb.getEntry(i); if (contains(a,b)) remove(a,b)(d) else add(a,b)(d) }

@@ -96,11 +96,6 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter,
   def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit = set(c)(d)
 }
 
-object DenseDirichlet {
-  def apply[T<:DiscreteVars](alpha:Double)(implicit m:Manifest[T]) = new DenseDirichlet(Domain.get[T](m.erasure).size, alpha)
-
-}
-
 
 object MutableDirichletEstimator extends Estimator[MutableProportions] {
   def estimate(d:MutableProportions, map:scala.collection.Map[Variable,Variable]): Unit = d match {

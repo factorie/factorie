@@ -13,12 +13,19 @@
    limitations under the License. */
 
 package cc.factorie
-import scala.collection.mutable.{ArrayBuffer, HashMap, ListBuffer}
+import scala.collection.mutable.{Map,ArrayBuffer, HashMap, ListBuffer}
 import scala.util.Random
 import cc.factorie.la._
 import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
-// TODO Also make a randomized-representation CategoricalDomain, with hashes.
+// TODO Also make a randomized-representation CategoricalDomain, with hashes?
+
+trait CategoricalValues[T] extends DiscreteValues with DomainType[CategoricalDomain[T]]
+
+/** A value in a CategoricalDomain */
+trait CategoricalValue[T] extends CategoricalValues[T] with DiscreteValue {
+  def entry: T
+}
 
 /** A domain for categorical variables.  It stores not only a size,
     but also the mapping from category values (of type V#CategoryType)
@@ -35,17 +42,14 @@ import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,Buffered
 
     @author Andrew McCallum
     */
-class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) extends DiscreteDomain[V]()(m) with IndexedSeqEqualsEq[cc.factorie.CategoricalValue[V,V#CategoryType]] {
-  import scala.collection.mutable.Map
-  type T = V#CategoryType
-
+class CategoricalDomain[T] extends DiscreteDomain with ValueType[CategoricalValue[T]] {
   /** The size others might want to allocate to hold data relevant to this Index.  
       If maxSize is set can be bigger than size. 
       @see maxSize */
   override def allocSize = if (maxSize < 0) size else maxSize
-  override def size = _indices.size
-  override def size_=(sizeFunction: ()=>Int): Unit = throw new Error("CategoricalDomain.size cannot be set directly; only DiscreteDomains' can.")
-  override def length = _indices.size
+  // Note: if you want to override size method, override length instead!!
+  // TODO Consider having DiscreteDomain inherit from IndexedSeqEqualEq?
+  def size = _indices.size
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
       override this method with the largest you think your growable domain will get. */
   var maxSize = -1
@@ -59,45 +63,39 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
   override def freeze = _frozen = true
 
   /** Map from entry back to int index */
-  private var _indices = Map[T, ValueType]()
+  private var _indices = Map[T, Value]()
   /** Wipe the domain and its indices clean */
   def reset(): Unit = {
     _frozen = false
-    _elements = new ArrayBuffer[ValueType]
-    _indices = Map[T,ValueType]()
+    _elements.clear()
+    _indices = Map[T,Value]()
   }
   /** An alias for reset(). */
   def clear() = reset()
 
-  type ValueType <: cc.factorie.CategoricalValue[V,T] // CategoricalValue
-  class CategoricalValue(override val index:Int, val entry:T) extends DiscreteValue(index) with cc.factorie.CategoricalValue[V,T] {
+  class CategoricalValue(override val index:Int, val entry:T) extends DiscreteValue(index) with cc.factorie.CategoricalValue[T] {
     override def toString = entry.toString
   }
-  protected def newCategoricalValue(i:Int, e:T): ValueType = new CategoricalValue(i, e).asInstanceOf[ValueType]
+  protected def newCategoricalValue(i:Int, e:T): Value = new CategoricalValue(i, e).asInstanceOf[Value]
 
-  override def iterator = _elements.iterator
-  override def contains(entry: Any) = _indices.contains(entry.asInstanceOf[T])
+  def contains(entry: Any) = _indices.contains(entry.asInstanceOf[T])
   /* entry match { case e:T => _indices.contains(e); case _ => false } */
-
-  def apply(index:Int): ValueType  = getValue(index)
-  def unapply(value:ValueType): Option[Int] = Some(value.index)
-  //def unapply(entry:CategoricalValue): Option[Int] = if (_indices.contains(entry)) Some(_indices(entry).index) else None
 
   /** Return an object at the given position or throws an exception if it's not found. */
   def getEntry(index: Int): T = _elements(index).entry // TODO Consider changing this name to getElement or getEntry or get
-  override def getValue(index: Int): ValueType = _elements(index)
-  // _indices.getOrElse(entry, null).asInstanceOf[ValueType]
-  def getValue(entry:T): ValueType = {
-    def nextMax: ValueType = {
+  override def getValue(index: Int): Value = _elements(index)
+  // _indices.getOrElse(entry, null).asInstanceOf[Value]
+  def getValue(entry:T): Value = {
+    def nextMax: Value = {
       val m = _elements.size
       if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
-      val e: ValueType = newCategoricalValue(m, entry) // Here is the place that new CategoricalValue gets created
+      val e: Value = newCategoricalValue(m, entry) // Here is the place that new CategoricalValue gets created
       // TODO Can we make the above cast unnecessary??
       _elements += e
       _indices(entry) = e
       e
     }
-    if (_frozen) _indices.getOrElse(entry, null.asInstanceOf[ValueType])
+    if (_frozen) _indices.getOrElse(entry, null.asInstanceOf[Value])
     else _indices.getOrElseUpdate(entry, nextMax)
   }
 
@@ -119,8 +117,7 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
   /** Like index, but throw an exception if the entry is not already there. */
   def getIndex(entry:T) : Int = _indices.getOrElse(entry, throw new Error("Entry not present; use index() to cause the creation of a new entry.")).index
 
-  /** Override indexOf's slow, deprecated behavior. */
-  override def indexOf[B >: ValueType](elem: B): Int = elem.asInstanceOf[ValueType].index //index(elem.asInstanceOf[T]) // TODO Try to get rid of this cast!!!
+  def indexOf[B >: Value](elem: B): Int = elem.asInstanceOf[Value].index //index(elem.asInstanceOf[T]) // TODO Try to get rid of this cast!!!
 
   // Separate argument types preserves return collection type
   def indexAll(c: Iterator[T]) = c map index;
@@ -136,12 +133,12 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
 
   def randomEntry(random:Random): T = getEntry(random.nextInt(size))
   def randomEntry: T = randomEntry(cc.factorie.random)
-  def randomValue(random:Random): ValueType = getValue(random.nextInt(size))
-  def randomValue: ValueType = randomValue(cc.factorie.random)
+  def randomValue(random:Random): Value = getValue(random.nextInt(size))
+  def randomValue: Value = randomValue(cc.factorie.random)
   def +=(x:T) : Unit = this.index(x)
   def ++=(xs:Traversable[T]) : Unit = xs.foreach(this.index(_))
  
-  override def toString = "CategoricalDomain["+m.erasure+"]("+size+")"
+  override def toString = "CategoricalDomain[]("+size+")"
   override def vectorDimensionName(i:Int): String = getEntry(i).toString
 
   override def save(dirname:String): Unit = {
@@ -165,7 +162,7 @@ class CategoricalDomain[V<:AbstractCategoricalVars](implicit m:Manifest[V]) exte
     if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
     while ({line = s.readLine; line != null}) {
       //println("Domain load got "+line)
-      this.index(line.asInstanceOf[V#CategoryType]) // TODO What if V#CategoryType isn't a String?  Fix this.
+      this.index(line.asInstanceOf[T]) // TODO What if T isn't a String?  Fix this.
     }
     if (willFreeze) freeze
     s.close
@@ -236,10 +233,6 @@ object CategoricalDomain {
   val NULL_INDEX = -1
 }
 
-trait CategoricalValue[V<:AbstractCategoricalVars,T] extends DiscreteValue[V] {
-  def entry: T
-}
-
 
 
 /* CategoricalDomain also facilitates counting occurences of entries, and trimming the Domain size.
@@ -260,12 +253,12 @@ trait CategoricalRemapping {
 }
 
 
-/** A Categorical domain with string values.  Provides convenient intialization to known values, 
+/** A Categorical domain with enumerated values.  Provides convenient intialization to known values, 
     with value members holding those known values.  For example:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value }
     Each of the defined val will have Int type.  Their corresponding String category values 
     will be the name of the variable (obtained through reflection). */
-class StringDomain[V<:CategoricalVars[_] {type CategoryType = String}](implicit m:Manifest[V]) extends CategoricalDomain[V]()(m) {
+class EnumDomain extends CategoricalDomain[String] {
   /* For all member variables, if its type is Int, set its value to its name, 
      and intern in the Domain.  Usage: 
      object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */

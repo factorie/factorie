@@ -107,7 +107,9 @@ trait Template { templateSelf => // TODO rename thisTemplate
   }
   trait Stat extends cc.factorie.Stat with Statistics {
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
-    val score = Template.this.score(this.asInstanceOf[StatType]) // TODO can we find a way to get rid of this cast?  Yes, use a self-type Stat[This]
+    // TODO Make this non-lazy later, when statDomains can be initialized earlier
+    // Warning: if score gets called too late, might the values of the variables have been changed to something else already?
+    lazy val score = Template.this.score(this.asInstanceOf[StatType]) // TODO can we find a way to get rid of this cast?  Yes, use a self-type Stat[This]
   }
   class Stats(val stats:Iterable[StatType]) extends cc.factorie.Stats with Statistics /*with Iterable[StatType]*/ {
     //def iterator = stats.iterator
@@ -177,18 +179,16 @@ trait VectorTemplate extends Template {
     // Override to make sure that if the ArrayBuffer tries to grow when frozen, we throw an error
     override def ensureSize(s:Int) = if (frozen) throw new IllegalStateException("Template already .init'ed.") else super.ensureSize(s)
   }
-  def statDomains: Seq[VectorDomain[_]] = {
-    if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
-    statClasses.map(Domain.get[VectorVar](_))
-  } 
+  val statDomains = new ArrayBuffer[VectorDomain]
+  //{ if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use."); statClasses.map(Domain.get[VectorVar](_)) } 
   def freezeDomains: Unit = {
-    if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
-    statClasses.foreach(Domain.get[VectorVar](_).freeze)
+    if (statDomains.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
+    statDomains.foreach(_.freeze)
   }
   // TODO Consider changing name to statSize?
   lazy val statsize: Int = {
-    if (statClasses.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
-    val ss = statClasses.multiplyInts(Domain.get[VectorVar](_).maxVectorSize)
+    if (statDomains.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
+    val ss = statDomains.multiplyInts(_.maxVectorSize)
     //println("Template "+this.getClass.getName+"["+statClasses.mkString(",")+"] statsize="+ss+" = "+statClasses.map(Domain.get[VectorVar](_).maxVectorSize).mkString("*"))
     ss
   } 
@@ -284,7 +284,7 @@ trait SparseHashWeights extends DotTemplate {
 abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template {
   type Neighbor1Type = N1
   val nc1 = nm1.erasure // "Neighbor class"
-  lazy val nd1 = Domain.get[Variable](nc1)
+  lazy val nd1: Domain[N1#Value] = throw new Error("Not yet implemented") // Domain.get[Variable](nc1)
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
   // TODO create methods like this for all Templates and put abstract version in Template
   def hasNeighbor[NN](implicit m:Manifest[NN]) = nc1.isAssignableFrom(m.erasure)
@@ -301,7 +301,7 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   def unroll1(v:N1): Iterable[FactorType] = new Factor(v)
   def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
   //@inline final def _statistics(f:Factor): StatisticsType = statistics(f._1.value)
-  //def statistics(v1:N1#ValueType): StatisticsType
+  //def statistics(v1:N1#Value): StatisticsType
   @inline final def _statistics(f:Factor): StatisticsType = statistics(f._1)
   def statistics(v1:N1): StatisticsType
   def stats(v:Variable): Iterable[StatisticsType] = factors(v).map(_statistics(_))
@@ -338,7 +338,7 @@ trait VectorStatistics1[S1<:VectorVar] extends VectorTemplate {
   type StatType = Stat
   type StatisticsType = Statistics
   // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
-  case class Stat(_1:S1) extends { val vector: Vector = _1.vector /* = _1 */ } with super.Stat
+  case class Stat(_1:S1) extends { val vector: Vector = _1.vector /* = _1 */ } with super.Stat { if (statDomains.isEmpty) statDomains += _1.domain }
   isInitialized = false
   def init(implicit m1:Manifest[S1]): this.type = {
     if (!isInitialized) {
@@ -355,16 +355,16 @@ trait DotStatistics1[S1<:VectorVar] extends VectorStatistics1[S1] with DotTempla
     case ds:DiscreteVars => ds.vector.activeDomain.foreach(i => weights(i) = w)
   }
 }
-//abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1#ValueType] 
+//abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1#Value] 
 abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1] {
   def statistics(v1:N1): StatisticsType = Stat(v1)
 }
-//abstract class TemplateWithVectorStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with VectorStatistics1[N1#ValueType]  
+//abstract class TemplateWithVectorStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with VectorStatistics1[N1#Value]  
 abstract class TemplateWithVectorStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with VectorStatistics1[N1] {
   def statistics(v1:N1): StatisticsType = Stat(v1)
   init //(nm1)
 }
-//class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1#ValueType] 
+//class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1#Value] 
 class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1] {
   def statistics(v1:N1): StatisticsType = Stat(v1)
   init //(nm1)
@@ -373,7 +373,7 @@ class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) exten
 
 trait DiscreteFactorSettings1 extends Template {
   this: VectorTemplate { type Neighbor1Type <: DiscreteVar; type FactorType <: { def _1:DiscreteVariable }; def nd1:Domain[Variable] } =>
-  val ndd1 = nd1.asInstanceOf[DiscreteDomain[DiscreteVar]]
+  val ndd1: DiscreteDomain = throw new Error // TODO nd1.asInstanceOf[DiscreteDomain[DiscreteVar]]
   val nds1 = ndd1.size
   // Managing settings iteration
   override def hasSettingsIterator: Boolean = true
@@ -404,8 +404,8 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
   val nc2 = nm2.erasure
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.head.erasure } else null }
-  lazy val nd1: Domain[Variable] = Domain.get[Variable](nc1).asInstanceOf[Domain[Variable]]
-  lazy val nd2: Domain[Variable] = Domain.get[Variable](nc2).asInstanceOf[Domain[Variable]]
+  lazy val nd1: Domain[N1#Value] = throw new Error // TODO Domain.get[Variable](nc1).asInstanceOf[Domain[Variable]]
+  lazy val nd2: Domain[N1#Value] = throw new Error // TODO Domain.get[Variable](nc2).asInstanceOf[Domain[Variable]]
   override def factors(v: Variable): Iterable[FactorType] = {
     var ret = new ListBuffer[FactorType]
     if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1]) 
@@ -431,7 +431,7 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
         case v2:DiscreteVar => {
           //println("Template2.cachedStatistics")
           if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v1.domain.size * v2.domain.size).asInstanceOf[Array[StatisticsType]]
-          val i = v1.intValue * nd2.asInstanceOf[VectorDomain[_]].maxVectorSize + v2.intValue
+          val i = v1.intValue * nd2.asInstanceOf[VectorDomain].maxVectorSize + v2.intValue
           if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = f.statistics
           cachedStatisticsArray(i)
         }
@@ -472,7 +472,9 @@ trait Statistics2[S1,S2] extends Template {
 }
 trait VectorStatistics2[S1<:VectorVar,S2<:VectorVar] extends VectorTemplate {
   //case class Stat(_1:S1, _2:S2) extends super.Stat { lazy val vector: Vector = _1.vector flatOuter _2.vector } 
-  case class Stat(_1:S1, _2:S2) extends { val vector: Vector = _1.vector flatOuter _2.vector } with super.Stat
+  case class Stat(_1:S1, _2:S2) extends { val vector: Vector = _1.vector flatOuter _2.vector } with super.Stat { 
+    if (statDomains.isEmpty) { statDomains += _1.domain; statDomains += _2.domain }
+  }
   type StatType = Stat
   type StatisticsType = Statistics
   isInitialized = false
@@ -507,9 +509,9 @@ trait DiscreteFactorSettings2 extends Template {
     def nd1:Domain[Variable]
     def nd2:Domain[Variable]
   } =>
-  lazy val ndd1 = nd1.asInstanceOf[DiscreteDomain[DiscreteVar]]
+  lazy val ndd1: DiscreteDomain = throw new Error // TODO nd1.asInstanceOf[DiscreteDomain[DiscreteVar]]
   lazy val ndsize1 = ndd1.size
-  lazy val ndd2 = nd2.asInstanceOf[DiscreteDomain[DiscreteVar]]
+  lazy val ndd2: DiscreteDomain = throw new Error // TODO nd2.asInstanceOf[DiscreteDomain[DiscreteVar]]
   lazy val ndsize2 = ndd2.size
   // Managing settings iteration
   override def hasSettingsIterator: Boolean = true
@@ -650,7 +652,9 @@ trait Statistics3[S1,S2,S3] extends Template {
 }
 trait VectorStatistics3[S1<:VectorVar,S2<:VectorVar,S3<:VectorVar] extends VectorTemplate {
   //case class Stat(_1:S1, _2:S2, _3:S3) extends super.Stat { lazy val vector: Vector = _1.vector flatOuter (_2.vector flatOuter _3.vector) } 
-  case class Stat(_1:S1, _2:S2, _3:S3) extends { val vector: Vector = _1.vector flatOuter (_2.vector flatOuter _3.vector) } with super.Stat 
+  case class Stat(_1:S1, _2:S2, _3:S3) extends { val vector: Vector = _1.vector flatOuter (_2.vector flatOuter _3.vector) } with super.Stat {
+    if (statDomains.isEmpty) { statDomains += _1.domain; statDomains += _2.domain; statDomains += _3.domain }
+  }
   type StatType = Stat
   type StatisticsType = Statistics
   isInitialized = false
@@ -728,7 +732,9 @@ trait Statistics4[S1<:Variable,S2<:Variable,S3<:Variable,S4<:Variable] extends T
 }
 trait VectorStatistics4[S1<:VectorVar,S2<:VectorVar,S3<:VectorVar,S4<:VectorVar] extends VectorTemplate {
   //case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends super.Stat { lazy val vector: Vector = _1.vector flatOuter (_2.vector flatOuter (_3.vector flatOuter _4.vector)) } 
-  case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends  { val vector: Vector = _1.vector flatOuter (_2.vector flatOuter (_3.vector flatOuter _4.vector)) } with super.Stat
+  case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends  { val vector: Vector = _1.vector flatOuter (_2.vector flatOuter (_3.vector flatOuter _4.vector)) } with super.Stat {
+    if (statDomains.isEmpty) { statDomains += _1.domain; statDomains += _2.domain; statDomains += _3.domain; statDomains += _4.domain }
+  }
   type StatType = Stat
   type StatisticsType = Statistics
   isInitialized = false

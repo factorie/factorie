@@ -51,6 +51,7 @@ object CorefMentionsDemo {
   class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
     import AffinityDomain._
     type VariableType <: AffinityVector
+    def domain = AffinityDomain
     if (s1 equals s2) this += streq else this += nstreq
     if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
     if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
@@ -61,11 +62,9 @@ object CorefMentionsDemo {
     s2.split(" ").foreach(s => if (s1.contains(s)) this += containsword)
     // Also consider caching mechanisms
   }
-  object AffinityDomain extends StringDomain[AffinityVector] {
+  object AffinityDomain extends EnumDomain {
     val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
-    freeze
   }
-  Domain += AffinityDomain
 
 
   def main(args: Array[String]) : Unit = {

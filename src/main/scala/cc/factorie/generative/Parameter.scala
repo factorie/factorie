@@ -154,7 +154,7 @@ class ParameterRef[P<:Parameter,C<:GeneratedVar](p:P, override val child:C) exte
 class GatedParameterRef[P<:Parameter,C<:MixtureOutcome](val parameters:Seq[P], val gate:Gate, child:C) extends ParameterRef[P,C](parameters.apply(gate.intValue), child) with GatedRefVariable[P] {
   //println("GatedParameterRef child="+child)
   gate += this // xxx
-  assert(parameters.length == gate.domainSize)
+  assert(parameters.length == gate.domain.size)
   def valueForIndex(index:Int) = parameters(index)
   def domainSize = parameters.length
 }

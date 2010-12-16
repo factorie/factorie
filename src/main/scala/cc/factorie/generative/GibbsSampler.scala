@@ -82,7 +82,7 @@ object MixtureChoiceGibbsSamplerHandler extends GibbsSamplerHandler {
         // TODO We really should have a more careful check like this
         //if (!(factors.forall(_ match { case f:GeneratedVarTemplate#Factor => f.n1 == v || f.n2 == v; case _ => false }))) return false
         val outcomes: Seq[MixtureOutcome] = mc.outcomes
-        val domainSize = mc.domainSize
+        val domainSize = mc.domain.size
         val distribution = new Array[Double](domainSize)
         var sum = 0.0
         for (i <- 0 until domainSize) {

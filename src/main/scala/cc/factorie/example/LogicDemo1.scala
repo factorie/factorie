@@ -24,7 +24,9 @@ object LogicDemo1 {
 
   def main(args:Array[String]) : Unit = {
     // Define entity, attribute and relation types
+    object PersonDomain extends CategoricalDomain[Person]
     class Person (val name:String) extends ItemizedObservation[Person] with Entity[Person] {
+      def domain = PersonDomain
       // TODO Would it be possible to use instead: val getter = () => new PersonGetter
       type GetterType = PersonGetter
       class GetterClass extends PersonGetter

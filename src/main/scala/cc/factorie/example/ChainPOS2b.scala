@@ -26,9 +26,16 @@ import java.io.File
 */
 object ChainPOS2b {
 
+/*
+
   // The variable classes
-  class Token(val word:String, val label:Label) extends BinaryFeatureVectorVariable[String]
+  object TokenDomain extends CategoricalDomain[String]
+  class Token(val word:String, val label:Label) extends BinaryFeatureVectorVariable[String] {
+    def domain = TokenDomain
+  }
+  object LabelDomain extends CategoricalDomain[String]
   class Label(labelName: String, word: String) extends LabelVariable(labelName) with VarInSeq[Label] {
+    def domain = LabelDomain
     val token = new Token(word, this)
   }
   class Sentence extends VariableSeq[Label]
@@ -74,7 +81,7 @@ object ChainPOS2b {
       if (t.label.hasPrev) t ++= t.label.prev.token.values.filter(!_.contains('@')).map(_+"@-1")
       if (t.label.hasNext) t ++= t.label.next.token.values.filter(!_.contains('@')).map(_+"@+1")
     })
-    println("Using "+Domain[Token].size+" observable features and " + Domain[Label].size + " labels.")
+    println("Using "+TokenDomain.size+" observable features and " + LabelDomain.size + " labels.")
     transitionTemplate.sparsifySettingsFor(trainLabels)
     
     // Train and test
@@ -161,6 +168,10 @@ object ChainPOS2b {
     println("Loaded "+sentences.length+" sentences with "+wordCount+" words total from file "+filename)
     sentences
   }
+
+
+*/
+
 
 }
 

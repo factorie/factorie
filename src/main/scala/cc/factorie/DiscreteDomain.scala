@@ -15,52 +15,59 @@
 package cc.factorie
 import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
-/** A Domain that has a positive integer size.  
-    Set its size by Domain[MyDiscrete].size = 9; or Domain[MyDiscrete].size = Domain[MyOther].size. 
-    @author Andrew McCallum */
-class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends VectorDomain[V] with Iterable[cc.factorie.DiscreteValue[V]] {
+trait DiscreteValues extends cc.factorie.la.Vector with DomainType[DiscreteDomain] {
+  def domain: DomainType
+}
+
+/** A value in a DiscreteDomain. */
+trait DiscreteValue extends DiscreteValues with cc.factorie.la.SingletonBinaryVec {
+  def index: Int
+}
+
+/** A Domain for DiscreteVars, whose values are DiscreteValues (or perhaps a collection of DiscreteValues).
+    The domain has a positive integer size.  The method 'size' is abstract. */
+abstract class DiscreteDomain extends VectorDomain with ValueType[DiscreteValue] {
   thisDomain =>
   private var _frozen = false
-  private var _size: Int = -1
-  private var _sizeFunction: ()=>Int = null
-  def size_=(size:Int): Unit = size_=(() => size)
-  def size_=(sizeFunction: ()=>Int): Unit = {
-    if (_size == -1) _sizeFunction = sizeFunction
-    else throw new Error("DiscreteDomain["+m.erasure.getName+"].size already accessed; cannot re-set size.")
-  }
-  /** This method will call the sizeFunction to get the correct size. */
-  private def setSize(): Unit = 
-    if (_sizeFunction != null) { val s = _sizeFunction.apply; require(s > 0); require(s >= _size); _size = s; _frozen = true }
-    else throw new Error(getClass.getName+": DiscreteDomain size must be set; e.g. Domain[MyDiscrete].size = 10")
-  def setSize(s:Int): Unit = if (!_frozen) _size = s else throw new Error(getClass.getName+": DiscreteDomain size is already frozen and cannot be set.")
-  override def size: Int = { if (_size == -1) setSize(); _size }
-  def length: Int = size // TODO Reverse the order of this size/length dependency
-  override def freeze: Unit = { setSize(); _frozen = true }
+  def size: Int // Ensure that this method will be overridden
+  def length: Int = size // TODO Reverse the order of this size/length dependency?
+  override def freeze: Unit = { _frozen = true }
   def allocSize = size
   override def maxVectorSize = allocSize
   var maxRequestedInt: Int = 0
-  // For Iterable[DiscreteValue]
+
+  // Access sort of like a collection
+  def values: scala.collection.Seq[Value] = _elements
   def iterator = _elements.iterator
+  def apply(index:Int): Value  = getValue(index)
+  def unapply(value:Value): Option[Int] = Some(value.index)
+  //def unapply(entry:CategoricalValue): Option[Int] = if (_indices.contains(entry)) Some(_indices(entry).index) else None
 
   // 'protected' so that only the 'getValue' method should construct these objects
-  class DiscreteValue(val index:Int) extends cc.factorie.DiscreteValue[V] {
-    def singleIndex = index // needed for SingletonBainaryVec
-    def length = thisDomain.size // needed for SingletonBainaryVec
-    def intValue = index // just a convenient alias
-    def domain = thisDomain
+  class DiscreteValue(val index:Int) extends cc.factorie.DiscreteValue {
+    final def singleIndex = index // needed for SingletonBainaryVec
+    final def length = thisDomain.size // needed for SingletonBinaryVec
+    final def intValue = index // just a convenient alias
+    final def domain = thisDomain
     override def toString = index.toString
     override def equals(other:Any): Boolean = 
       other match { case other:DiscreteValue => this.index == other.index; case _ => false }
   }
-  type ValueType <: cc.factorie.DiscreteValue[V] // or DiscreteValue specific to this class
-  //type ValueType = DomainType#ValueType
   /** Maps from integer index to the DiscreteValue objects */
-  protected var _elements = new scala.collection.mutable.ArrayBuffer[ValueType]
-  def getValue(index:Int): ValueType = {
+  private val __elements = new scala.collection.mutable.ArrayBuffer[Value]
+  def _elements = __elements // Define this way so that _elements can be overridden
+
+  // TODO Consider renaming this method to something without the 'get'.  Perhaps valueAtIndex()
+  def getValue(index:Int): cc.factorie.DiscreteValue = {
     if (index > maxRequestedInt) maxRequestedInt = index
     if (index >= size) throw new IllegalArgumentException("DiscreteDomain.getValue: index "+index+" larger than size "+size)
-    if (index >= _elements.size) for (i <- _elements.size to index) _elements += new DiscreteValue(i).asInstanceOf[ValueType] // Here new a DiscreteValue gets created
+    if (index >= _elements.size) for (i <- _elements.size to index) _elements += new DiscreteValue(i).asInstanceOf[Value] // Here new a DiscreteValue gets created
     _elements(index)
+  }
+
+  def asSingleton: DiscreteDomain = new DiscreteDomain {
+    override def _elements = thisDomain._elements
+    override def size = thisDomain.size
   }
 
   // Serialization
@@ -75,11 +82,6 @@ class DiscreteDomain[V<:DiscreteVars](implicit m:Manifest[V]) extends VectorDoma
     val s = new BufferedReader(new FileReader(f))
     val line = s.readLine
     val readSize = Integer.parseInt(line)
-    this.size_=(()=>readSize)
+    require(size == readSize)
   }
-}
-
-trait DiscreteValue[V<:DiscreteVars] extends cc.factorie.la.SingletonBinaryVec {
-  def index: Int
-  def domain: DiscreteDomain[V]
 }
