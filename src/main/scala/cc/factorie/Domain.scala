@@ -19,11 +19,12 @@ import cc.factorie.la._
 import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 import scala.reflect.Manifest
 
-/** The "domain" of a variable---a container of all of its values.
+/** The "domain" of a variable---a representation of all of its values, each having type 'ValueType'.
     This most generic superclass of all Domains does not provide much functionality.
-    Key functionality of subclasses: 
-    DiscreteDomain provides a size.  
+    Key functionality of subclasses:
     VectorDomain provides the maximum dimensionality of its vectors.
+    DiscreteVectorDomain provides a size and DiscreteValue objects, with ValueType Vector.
+    DiscreteDomain extends DiscreteVectorDomain with ValueType DiscreteValue.
     CategoricalDomain provides a densely-packed mapping between category values and integers.
     @author Andrew McCallum
     @since 0.8 */
@@ -37,28 +38,14 @@ trait Domain[+VT] extends ValueType[VT] {
 }
 
 
-
-// TODO Consider if it would be helpful to have a RealDomain or PositiveRealDomain
-
-/** A Domain for variables that respond to the "vector" method */
-trait VectorDomain extends Domain[Vector] {
-  def maxVectorSize: Int = 1 // TODO We should somehow force subclasses to override this, but VectorVar needs VectorDomain to be non-abstract
-  def vectorDimensionName(i:Int): String = i.toString
-  def freeze: Unit = {}
+trait IterableDomain[+VT] extends Domain[VT] {
+  def values: Iterable[VT]
 }
 
-trait RealDomain extends VectorDomain {
-  // Anything to put here?
-}
-object RealDomain extends RealDomain {
-  override def maxVectorSize = 1
-}
 
-//trait RealVectorDomain[V<:RealVars] extends Domain[V] with VectorDomain[V]
-// TODO Still needs a definition for "maxVectorSize"
-
-
+// TODO Give this a better name, indicating that it isn't a Domain itself, but a trait for a Variable to give it a domain.
 /** The domain object for variables that don't have a meaningful domain. */  // TODO Explain this better; see Vars and SpanVariable
+// TODO Rename DefaultDomain?
 object AbstractDomain extends Domain[Any]
 
 /** Add this trait to a Variable to give it a Domain with Value type VT. */

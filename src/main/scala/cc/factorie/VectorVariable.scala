@@ -18,6 +18,17 @@ import cc.factorie.la.Vector
 import cc.factorie.la.SparseVector
 import scala.util.Sorting
 
+/** A Domain for variables whose value is a Vector. */
+trait VectorDomain extends Domain[Vector] {
+  /** The maximum size to which this domain will be allowed to grow.  
+      The 'size' method may return values smaller than this, however.
+      This method is used to pre-allocate a Template's parameter arrays and is useful for growing domains. */
+  def maxVectorLength: Int
+  def vectorDimensionName(i:Int): String = i.toString
+  def freeze(): Unit = {}
+}
+
+
 /** A variable whose value can be described by a vector.
     For example, each "dimension" (e.g. the integers in activeDomain) may be a discrete value.
     The value at that index is a "weight" representing (partial)
@@ -27,38 +38,41 @@ import scala.util.Sorting
     @author Andrew McCallum */
 trait VectorVar extends Variable with DomainType[VectorDomain] with ValueType[Vector] {
   type VariableType <: VectorVar
-  def value: Value
-
   /** A cc.factorie.la.Vector representation of the value of this variable. */
   def vector: Vector = value
   //def dimensionSize: Int // ????
 }
 
-
 // Real (floating point) Vector Variables
 
-trait RealVectorVar extends VectorVar 
-
-/** A vector of Double values */
-abstract class RealVectorVariable(theLength:Int) extends RealVectorVar {
-  type VariableType <: RealVectorVariable
-  def this(sizeProxy:Iterable[_]) = this(sizeProxy.size)
-  val value: Value = new SparseVector(theLength)
-  def activeDomain = vector.activeDomain
+/** A vector of Double values with sparse vector representation. */
+abstract class VectorVariable extends VectorVar {
+  thisVariable =>
+  type VariableType <: VectorVariable
+  val value: Value = new SparseVector(domain.maxVectorLength) { def domain = thisVariable.domain }
+  //def activeDomain = vector.activeDomain
   def update(index:Int, newValue:Double): Unit = vector.update(index, newValue)
   def increment(index:Int, incr:Double): Unit = vector.update(index, vector(index) + incr)
 }
 
 /** A vector of Double value that can also be indexed the entries in a CategoricalDomain */
-abstract class CategoricalRealVectorVariable[T] extends RealVectorVariable(-1) with CategoricalVars[T] {
-  type VariableType <: CategoricalRealVectorVariable[T]
-  override val value: Value = new cc.factorie.la.GrowableSparseVector(domain) // domain.size is a proxy for vector.length
-  def update(elt:T, newValue:Double): Unit = vector.update(domain.index(elt), newValue)
-  def increment(elt:T, incr:Double): Unit = { val i = domain.index(elt); vector.update(i, vector(i) + incr) }
+abstract class CategoricalVectorVariable[T] extends VectorVariable with CategoricalVars[T] {
+  thisVariable =>
+  type VariableType <: CategoricalVectorVariable[T]
+  // In next line domain.size is a proxy for vector.length
+  override val value: Value = new cc.factorie.la.GrowableSparseVector(domain) {
+    def domain = thisVariable.domain
+  }
+  def update(elt:T, newValue:Double): Unit = 
+    vector.update(domain.dimensionDomain.index(elt), newValue)
+  def increment(elt:T, incr:Double): Unit = {
+    val i = domain.dimensionDomain.index(elt)
+    vector.update(i, vector(i) + incr)
+  }
 }
 
 /** An more traditionally-named alias for CategoricalRealVectorVariable */
-abstract class FeatureVectorVariable[T] extends CategoricalRealVectorVariable[T]
+abstract class FeatureVectorVariable[T] extends CategoricalVectorVariable[T]
 
 
 // Binary Vector Variables
@@ -75,8 +89,12 @@ trait BinaryVectorVar extends DiscreteVars with VectorVar {
     but cc.factorie.la.Vector define "equals" by content equality. 
     Thus a Variable can never inherit from a Vector; here it contains a Vector instead. */
 abstract class SparseBinaryVectorVariable extends BinaryVectorVar {
-  val value = new cc.factorie.la.SparseBinaryVector(-1) { override def length = domain.asInstanceOf[VectorDomain].maxVectorSize }
-  def length = domain.allocSize
+  thisVariable =>
+  val value = new cc.factorie.la.SparseBinaryVector(-1) {
+    def domain = thisVariable.domain
+    override def length = domain.asInstanceOf[VectorDomain].maxVectorLength
+  }
+  def length = domain.maxVectorLength //allocSize
   //def apply(i:Int) = vector.apply(i)
   def activeDomain = vector.activeDomain
   def zero(): Unit = value.zero()
@@ -95,12 +113,12 @@ trait CategoricalBinaryVectorVariable[T] extends BinaryVectorVar with Categorica
 abstract class SparseCategoricalBinaryVectorVariable[T] extends SparseBinaryVectorVariable with CategoricalBinaryVectorVariable[T] {
   type VariableType <: SparseCategoricalBinaryVectorVariable[T]
   def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
-  def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.getEntry(i)); result }
+  def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.dimensionDomain.getEntry(i)); result }
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
   def skipNonCategories = false
   def +=(value:T): Unit = {
-    val idx = domain.index(value);
+    val idx = domain.dimensionDomain.index(value);
     if (idx == CategoricalDomain.NULL_INDEX) {
       if (!skipNonCategories)
         throw new Error("BinaryVectorVariable += value " + value + " not found in domain " + domain)
@@ -109,7 +127,7 @@ abstract class SparseCategoricalBinaryVectorVariable[T] extends SparseBinaryVect
     }
   }
   def ++=(values:Iterable[T]): Unit = values.foreach(this.+=(_))
-  override def toString = vector.activeDomain.map(i => domain.getEntry(i).toString+"="+i).mkString(printName+"(", ",", ")")
+  override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getEntry(i).toString+"="+i).mkString(printName+"(", ",", ")")
 }
 
 /** A shorter, more intuitive alias for SparseCategoricalBinaryVectorVariable */

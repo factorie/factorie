@@ -46,13 +46,18 @@ object TestBPClassify {
 
 
 class TestBPClassify extends TestCase {
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(contents: String, labelStr:String) extends BinaryFeatureVectorVariable[String] {
     def this(file:File) = this(Source.fromFile(file).mkString, file.getParentFile.getName) // Could also append ".skipHeader"
+    def domain = DocumentDomain
     var label = new Label(labelStr, this)
     // Read file, tokenize with word regular expression, and add all matches to this BinaryVectorVariable
     "[A-Za-z]+".r.findAllIn(contents).foreach(regexMatch => this += regexMatch.toString)
   }
-  class Label(name: String, val document: Document) extends LabelVariable(name)
+  object LabelDomain extends CategoricalDomain[String]
+  class Label(name: String, val document: Document) extends LabelVariable(name) {
+    def domain = LabelDomain
+  }
 
   val model = new Model (
     /**Bias term just on labels */
@@ -112,7 +117,7 @@ class TestBPClassify extends TestCase {
     testVariables.foreach(v => {
       val bpMarginal = lattice.marginal(v)
 
-      val trueMarginal = new Array[Double](v.domainSize) // TODO Are we concerned about all this garbage collection?
+      val trueMarginal = new Array[Double](v.domain.size) // TODO Are we concerned about all this garbage collection?
       forIndex(trueMarginal.length)(i => {
         v.set(i)(null)
         // compute score of variable with value 'i'
@@ -308,7 +313,7 @@ class SimpleMaxEntTrainer(model: Model) {
         oValue = 0.0
         java.util.Arrays.fill(oGradient, 0.0)
         variables.foreach(v => {
-          val distribution = new Array[Double](v.domainSize) // TODO Are we concerned about all this garbage collection?
+          val distribution = new Array[Double](v.domain.dimensionDomain.size) // TODO Are we concerned about all this garbage collection?
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // compute score of variable with value 'i'

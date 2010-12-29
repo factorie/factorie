@@ -16,10 +16,9 @@ package cc.factorie
 import scala.util.Random
 import cc.factorie.la._
 
-/** An IntegerVars with finite range 0...N.  
-    For your own subclass MyDiscreteVar, you can set N=9 with Domain[MyDiscreteValue].size = 9.
+/** A collection of weighted discrete variables, e.g. DiscreteVectorVariable.
     @author Andrew McCallum */
-trait DiscreteVars extends Variable with VectorVar with DomainType[DiscreteDomain] /* with ValueType[DiscreteValues] */ {
+trait DiscreteVars extends Variable with VectorVar with DomainType[DiscreteVectorDomain] {
   type VariableType <: DiscreteVars
   def minIntValue = 0
   def maxIntValue = domain.size - 1
@@ -29,7 +28,8 @@ trait DiscreteVars extends Variable with VectorVar with DomainType[DiscreteDomai
   def activeDomain: Iterable[Int]  // TODO Consider removing this? -akm
 }
 
-trait DiscreteVar extends DiscreteVars with ValueType[DiscreteValue] {
+/** A single discrete variable */
+trait DiscreteVar extends DiscreteVars with DomainType[DiscreteDomain] with ValueType[DiscreteValue] {
   this: Variable =>
   type VariableType <: DiscreteVar
   /*@inline final*/ def intValue = value.index
@@ -41,7 +41,7 @@ trait DiscreteVar extends DiscreteVars with ValueType[DiscreteValue] {
 abstract class DiscreteVariable extends DiscreteVar with IterableSettings with QDistribution {
   // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
   type VariableType <: DiscreteVariable
-  def this(initialInt:Int) = { this(); _value = domain.getValue(initialInt).asInstanceOf[Value] } // TODO Get rid of this cast?
+  def this(initialInt:Int) = { this(); _value = domain.getValue(initialInt) /*.asInstanceOf[Value]*/ } // TODO Get rid of this cast?
   private var _value: Value = null.asInstanceOf[Value]
   def value: Value = _value
   def set(newValue:Value)(implicit d:DiffList): Unit = if (newValue ne value) {
@@ -102,7 +102,7 @@ case class Block(v1:BooleanVariable, v2:BooleanVariable) extends Variable with I
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  May be useful in the future for block-Gibbs-sampling?
     @author Andrew McCallum */
 @deprecated("This will likely be removed in a future version.")
-class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[DiscreteVariable] with IterableSettings with ValueType[List[Int]] with AbstractDomain[Int] {
+class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[DiscreteVariable] with IterableSettings with AbstractDomain[List[Int]] {
   def value = _vars.map(_.intValue)
   private val _vars = vars.toList
   def length = _vars.length
@@ -120,6 +120,7 @@ class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[Di
   }
 }
 
+// TODO Consider removing all 'Observation' variables
 abstract class DiscreteObservation extends DiscreteVar {
   type VariableType <: DiscreteObservation
   def this(theInt:Int) = { this(); _value = domain.getValue(theInt) }

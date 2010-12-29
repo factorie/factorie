@@ -27,7 +27,10 @@ import Assert._
 
 class TestBP extends TestCase {
   // a binary variable that takes values 0 or 1
-  class BinVar(i: Int) extends LabelVariable(i) with VarInSeq[BinVar]
+  object BinDomain extends CategoricalDomain(List(0,1))
+  class BinVar(i: Int) extends LabelVariable(i) with VarInSeq[BinVar] {
+    def domain = BinDomain
+  }
   // a sequence of binary variables
   class BinVarSeq extends VariableSeq[BinVar]
 

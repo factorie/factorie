@@ -84,7 +84,7 @@ class DiscreteMarginal[V<:DiscreteVars](val variable:V, proportions:Seq[Double] 
   }
 }
 // TODO Not yet in its final form
-class DiscreteFactorMarginal(val factor:Factor, val values:Array[Double]) extends Marginal with ValueType[Null] with AbstractDomain[Null] {
+class DiscreteFactorMarginal(val factor:Factor, val values:Array[Double]) extends Marginal with AbstractDomain[Null] {
   def value = null // TODO Needs to be properly implemented
   def length = values.length
   def apply(i:Int) = values(i)

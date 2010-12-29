@@ -127,7 +127,7 @@ class SegmentEvaluation[L<:LabelVariable[String]](baseLabelStrings: Seq[String],
   def this(startPrefix:String, continuePrefix:String, labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.values.toSeq.map(_.entry)), startPrefix, continuePrefix)
   def this(labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.values.toSeq.map(_.entry)))
   // Grab the domain from the first label in the Seq; assume all the domains are the same
-  def this(labels:Seq[L]) = { this(labels.first.domain); this.+=(labels) }
+  def this(labels:Seq[L]) = { this(labels.head.domain); this.+=(labels) }
   private val evals = new HashMap[String,PerSegmentEvaluation]
   private var labelCount = 0
   private var labelCorrectCount = 0

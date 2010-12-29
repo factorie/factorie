@@ -14,10 +14,15 @@
 
 package cc.factorie
 
+trait IntegerDomain extends Domain[Int]
+object IntegerDomain extends IntegerDomain
+
 /** A Variable with one or more Int values.  It encompasses single integer values, 
     as well as vector collections of many (weighted) int values.  
     @author Andrew McCallum */
-trait IntegerVars extends Variable with AbstractDomain[Int] {
+// Removed because it was unclear how to implement domain here.
+/*
+trait IntegerVars extends Variable with DomainType[IntegerDomain] {
   type VariableType <: IntegerVars
   def maxIntValue = Int.MaxValue
   def minIntValue = Int.MinValue
@@ -25,11 +30,16 @@ trait IntegerVars extends Variable with AbstractDomain[Int] {
   // TODO Implement a method def vector?
   // TODO Consider moving activeDomain from DiscreteVars to here? -akm
 }
+*/
+
 
 /** A Variable with one Int value.  
     @author Andrew McCallum */
-trait IntegerVar extends IntegerVars with NumericValue with ValueType[Int] {
+trait IntegerVar extends Variable with NumericValue with DomainType[IntegerDomain] {
   type VariableType <: IntegerVar
+  def domain = IntegerDomain
+  def maxIntValue = Int.MaxValue
+  def minIntValue = Int.MinValue
   def value: Int
   def intValue: Int
   final def doubleValue: Double = intValue.toDouble

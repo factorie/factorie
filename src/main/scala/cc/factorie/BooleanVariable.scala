@@ -18,11 +18,12 @@ package cc.factorie
     @see BooleanVariable
     @see BooleanObservation
     @author Andrew McCallum */
-trait BooleanVar extends CategoricalVar[Boolean] with DomainType[BooleanDomain] with ValueType[BooleanValue] {
+trait BooleanVar extends CategoricalVar[Boolean] with DomainType[BooleanDomain.type] with ValueType[BooleanValue] {
   type VariableType <: BooleanVar
-  override def entryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
+  //type DomainType = BooleanDomain.type
+  override def entryValue = (value eq BooleanDomain.trueValue) // Efficiently avoid a lookup in the domain 
   override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
-  def booleanValue = (intValue == 1) // Alias for the above method
+  final def booleanValue = entryValue // Alias for the above method
   def ^(other:BooleanVar):Boolean = booleanValue && other.booleanValue
   def v(other:BooleanVar):Boolean = booleanValue || other.booleanValue
   def ==>(other:BooleanVar):Boolean = !booleanValue || other.booleanValue
@@ -39,6 +40,7 @@ class BooleanVariable(initialValue:Boolean = false) extends CategoricalVariable(
   override final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   // If you want to coordinate with changes to this variable value, override set(ValueType)
   final def :=(newBoolean:Boolean) = set(newBoolean)(null)
+  // TODO Consider final def :=(newBoolean:Boolean)(implicit d:DiffList = null) = set(newBoolean)
 }
 
 /** A class for variables with immutable Boolean values.
@@ -59,7 +61,7 @@ object BooleanObservation {
 trait BooleanValue extends CategoricalValue[Boolean]
 
 /** The Domain for BooleanVars, of size two, containing false == 0 and true == 1. */
-class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanValue] {
+object BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanValue] {
   val falseValue = super.getValue(false)
   val trueValue = super.getValue(true)
   freeze
@@ -78,4 +80,4 @@ class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanVal
   override def getValue(entry:Boolean) = if (entry) trueValue else falseValue
 }
 
-object BooleanDomain extends BooleanDomain
+//object BooleanDomain extends BooleanDomain

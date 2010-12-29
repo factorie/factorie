@@ -18,8 +18,7 @@ package cc.factorie
     It can apply to a single Int value (as in CategoricalVariable) or a collection of indices (as in BinaryVectorVariable).
     All instances of such a subclass share the same domain. 
     @author Andrew McCallum */
-trait CategoricalVars[T] extends DiscreteVars with DomainType[CategoricalDomain[T]] /* with ValueType[CategoricalValues] */ {
-  // TODO Consider removing all "VariableType" declarations, now that we don't need them for Domain
+trait CategoricalVars[T] extends DiscreteVars with DomainType[CategoricalVectorDomain[T]] {
   type VariableType <: CategoricalVars[T]
   type CategoryType = T
 }
@@ -27,9 +26,9 @@ trait CategoricalVars[T] extends DiscreteVars with DomainType[CategoricalDomain[
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.
     Concrete implementations include CategoricalVariable and CategoricalObservation. 
     @author Andrew McCallum */
-trait CategoricalVar[A] extends CategoricalVars[A] with DiscreteVar with ValueType[CategoricalValue[A]] {
+trait CategoricalVar[A] extends CategoricalVars[A] with DiscreteVar with DomainType[CategoricalDomain[A]] with ValueType[CategoricalValue[A]] {
   type VariableType <: CategoricalVar[A]
-  @deprecated("Use entryValue instead.")
+  @deprecated("Use entryValue instead.") // TODO Consider using 'categoryValue' afterall.
   def categoryValue: A = value.entry // domain.get(intValue)
   def entryValue: A = if (value ne null) value.entry else null.asInstanceOf[A]
   //final def entryValue: A = value.entry // TODO Include this too?  Nice, clear name, but two redundant methods could be confusing.
@@ -38,7 +37,7 @@ trait CategoricalVar[A] extends CategoricalVars[A] with DiscreteVar with ValueTy
 
 /** A DiscreteVariable whose integers 0...N are associated with an object of type A. 
     @author Andrew McCallum */
-abstract class CategoricalVariable[A] extends DiscreteVariable with CategoricalVar[A] with MutableValue {
+abstract class CategoricalVariable[A] extends DiscreteVariable with CategoricalVar[A] with MutableValue[A] {
   // What I want to do is "extends DiscreteVariable(Domain[A].index(initialValue))
   // but there is no way to obtain this.getClass obtain the Domain for the constructor above, so we initialize with dummy 0
   // and then set to proper value in this(initialValue:A) constructor below.
@@ -69,6 +68,9 @@ abstract class CategoricalObservation[A](theEntry:A) extends DiscreteObservation
 
 // TODO Replace this with Catalog?
 // But then we couldn't use syntax like:  Domain[Person].size
+// But this doesn't matter any more.
+
+// Can we make this ItemizedVariable
 
 /** An Observation put into an index, and whose value is the Observation variable itself.  
     For example, you can create 10 'Person extends ItemizedObservation[Person]' objects, 
@@ -82,7 +84,7 @@ trait ItemizedObservation[This <: ItemizedObservation[This]] extends Categorical
   // We could save memory by looking it up in the Domain each time, but speed is more important
   //val intValue = domain.index(this) 
   val value = domain.getValue(this)
-  override def categoryValue = this // TODO Ug.  Not a great method name here.
+  override def entryValue = this // TODO Ug.  Not a great method name here.
 }
 
 /** A variable who value is a pointer to an ItemizedObservation.  It is useful for entity-attributes whose value is another variable. 

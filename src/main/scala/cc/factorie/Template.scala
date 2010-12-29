@@ -173,6 +173,9 @@ trait Template { templateSelf => // TODO rename thisTemplate
     @author Andrew McCallum
 */
 trait VectorTemplate extends Template {
+  //def vectorLength: Int
+  //protected var _vectorLength1 = -1
+  //def vectorLength1: Int = if (_vectorLength < 0) throw new Error("Not yet set.") else _vectorLength1
   val statClasses = new ArrayBuffer[Class[VectorVar]] {
     var frozen: Boolean = false
     def freeze = frozen = true
@@ -188,8 +191,8 @@ trait VectorTemplate extends Template {
   // TODO Consider changing name to statSize?
   lazy val statsize: Int = {
     if (statDomains.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
-    val ss = statDomains.multiplyInts(_.maxVectorSize)
-    //println("Template "+this.getClass.getName+"["+statClasses.mkString(",")+"] statsize="+ss+" = "+statClasses.map(Domain.get[VectorVar](_).maxVectorSize).mkString("*"))
+    val ss = statDomains.multiplyInts(_.maxVectorLength)
+    //println("Template "+this.getClass.getName+"["+statClasses.mkString(",")+"] statsize="+ss+" = "+statClasses.map(Domain.get[VectorVar](_).maxVectorLength).mkString("*"))
     ss
   } 
   type StatisticsType <: Statistics
@@ -431,7 +434,7 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
         case v2:DiscreteVar => {
           //println("Template2.cachedStatistics")
           if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v1.domain.size * v2.domain.size).asInstanceOf[Array[StatisticsType]]
-          val i = v1.intValue * nd2.asInstanceOf[VectorDomain].maxVectorSize + v2.intValue
+          val i = v1.intValue * nd2.asInstanceOf[VectorDomain].maxVectorLength + v2.intValue
           if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = f.statistics
           cachedStatisticsArray(i)
         }

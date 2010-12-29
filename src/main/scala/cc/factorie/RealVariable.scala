@@ -15,13 +15,16 @@
 package cc.factorie
 import cc.factorie.la.SingletonVector
 
+trait RealDomain extends Domain[Double]
+object RealDomain extends RealDomain
+
 // TODO Consider instead ValueType[Double] and making a different class for SingletonVector.
 /** A Variable with a real (double) value. */
-trait RealVar extends Variable with NumericValue with VectorVar with DomainType[RealDomain] with ValueType[SingletonVector] {
+trait RealVar extends Variable with NumericValue with DomainType[RealDomain] {
   type VariableType <: RealVar
   def domain = RealDomain
   /** A Vector representation of this Variable's value. */
-  @inline final def value: Value = new SingletonVector(1, 0, doubleValue)
+  @inline final def value: Value = doubleValue
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
   def ===(other: RealVar) = doubleValue == other.doubleValue
@@ -30,7 +33,7 @@ trait RealVar extends Variable with NumericValue with VectorVar with DomainType[
 }
 
 /** A Variable with a mutable real (double) value. */
-class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableValue {
+class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableValue[Double] {
   type VariableType <: RealVariable
   private var _value: Double = initialValue
   @inline final def doubleValue = _value
@@ -43,7 +46,7 @@ class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableValue
     if (d ne null) d += new RealDiff(_value, newValue)
     _value = newValue
   }
-  def set(newValue: Value)(implicit d:DiffList): Unit = set(newValue.doubleValue)
+  //def set(newValue: Value)(implicit d:DiffList): Unit = set(newValue)
   case class RealDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: RealVariable = RealVariable.this
     def redo = _value = newValue
@@ -54,4 +57,33 @@ class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableValue
 /** A Variable with an immutable real (double) value. */
 class RealObservation(val doubleValue:Double) extends RealVar with ConstantValue {
   type VariableType <: RealObservation
+}
+
+
+
+
+
+// TODO Create an implicit conversion from Double to RealSingletonVector
+// So that we can use them as sufficient statistics in a VectorTemplate
+trait RealSingletonVectorDomain extends VectorDomain with ValueType[SingletonVector] {
+  def maxVectorLength = 1
+}
+object RealSingletonVectorDomain extends RealSingletonVectorDomain
+
+trait RealSingletonVectorVar extends Variable with NumericValue with VectorVar with DomainType[RealSingletonVectorDomain] {
+  //type VariableType <: RealVar
+  def domain = RealSingletonVectorDomain
+  /** A Vector representation of this Variable's value. */
+  @inline final def value: Value = new SingletonVector(1, 0, doubleValue)
+  // TODO Consider rewriting above line to avoid constructing new object
+  def doubleValue: Double
+  def intValue: Int = doubleValue.toInt
+  def ===(other: RealVar) = doubleValue == other.doubleValue
+  def !==(other: RealVar) = doubleValue != other.doubleValue
+  override def toString = printName + "(" + doubleValue.toString + ")"
+}
+
+class RealSingletonVectorVariable(initialValue:Double) extends RealSingletonVectorVar {
+  private var _value = initialValue
+  def doubleValue: Double = _value
 }

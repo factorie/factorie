@@ -1,3 +1,56 @@
+New in version 0.10.0:
+
+* Variable 'value' methods:
+
+All variables must now have a 'value' method with return type
+'this.Value'.  The 'Value' type comes from the variable's domain.  If
+you want to override the 'Value' type, use the ValueType trait.
+
+The canonical representation of DiscreteVariable (and
+CategoricalVariable) values used to be an Int.  Now it is a
+DiscreteValue (or CategoricalValue) object, which is a wrapper around
+an integer (and its corresponding categorical value).  These objects
+are created automatically in the DiscreteDomain, and are guaranteed to
+be unique each integer value, and thus can be compared by pointer
+equality.
+
+For example, if 'label' is a CategoricalVariable[String]
+label.value is a CategoricalValue.
+label.intValue == label.value.index, is an integer
+label.entryValue == label.value.entry, is a String
+
+
+* Domains:
+
+Previously there was a one-to-one correspondence between variable
+classes and domains; the variable looked up its domain in a global
+hashtable whose keys were the variable classes.  Furthermore Domain
+objects were often created for the user auto-magically.  This scheme
+lacked flexibility and was sometimes confusing.  The one-to-one
+correspondence has now been removed.  The 'domain' method in Variable
+is now abstract.  Some subclasses of Variable define this method,
+others still leave it abstract.  For example, in subclasses of
+DiscreteVariable and CategoricalVariable you must define the 'domain'
+method.  In these cases you must also create your domain objects
+explicitly.  Thus we have sacrificed a little
+brevity for clarity and flexibility.  Here is an example of typical
+code for creating class labels:
+
+object MyLabelDomain extends CategoricalDomain[String]
+class MyLabel(theValue:String) extends CategoricalVariable(theValue) {
+  def domain = MyLabelDomain
+}
+
+The type argument for domains used to be the variable class; now it is
+the 'Value' type of the domain (and its variables).
+
+
+* Template statistics:
+
+
+
+
+
 New in Version 0.9.0:
 
 Rudimentary optimize package includes ConjugateGradient and

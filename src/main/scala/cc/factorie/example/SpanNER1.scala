@@ -35,7 +35,9 @@ object SpanNER1 {
 
 /*
   // The variable classes
+  object TokenDomain extends CategoricalVectorDomain[String]
   class Token(word:String, trueLabelString:String) extends tokenseq.Token[Sentence,Token](word) {
+    def domain = TokenDomain
     // TODO Consider instead implementing truth with true spans in VariableSeqWithSpans. 
     def trueLabelValue = trueLabelString
     val trueLabelIndex = Domain[Label].index(trueLabelValue)

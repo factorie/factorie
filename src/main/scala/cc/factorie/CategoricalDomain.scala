@@ -20,15 +20,27 @@ import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,Buffered
 
 // TODO Also make a randomized-representation CategoricalDomain, with hashes?
 
-trait CategoricalValues[T] extends DiscreteValues with DomainType[CategoricalDomain[T]]
+/** A value in a CategoricalVectorDomain */
+trait CategoricalValues[T] extends DiscreteValues with DomainType[CategoricalVectorDomain[T]]
 
 /** A value in a CategoricalDomain */
-trait CategoricalValue[T] extends CategoricalValues[T] with DiscreteValue {
+trait CategoricalValue[T] extends CategoricalValues[T] with DiscreteValue with DomainType[CategoricalDomain[T]] {
   def entry: T
 }
 
+
+/** Domain for CategoricalVars, e.g. CategoricalVectorVariable or CategoricalBinaryVectorVariable.
+    @author Andrew McCallum */
+trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[CategoricalValues[T]] with DimensionDomainType[CategoricalDomain[T]] {
+  thisDomain =>
+  type CategoryType = T
+  lazy val dimensionDomain: CategoricalDomain[T] = new CategoricalDomain[T]
+  def size: Int = dimensionDomain.size
+}
+
+
 /** A domain for categorical variables.  It stores not only a size,
-    but also the mapping from category values (of type V#CategoryType)
+    but also the mapping from category values (of type T = this.CategoryType)
     to densely packed integers suitable for indices into parameter
     vectors.
 
@@ -42,14 +54,14 @@ trait CategoricalValue[T] extends CategoricalValues[T] with DiscreteValue {
 
     @author Andrew McCallum
     */
-class CategoricalDomain[T] extends DiscreteDomain with ValueType[CategoricalValue[T]] {
+class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T] with ValueType[CategoricalValue[T]] {
+  def this(values:Iterable[T]) = { this(); values.foreach(getValue(_)); freeze() }
+  override lazy val dimensionDomain = this
   /** The size others might want to allocate to hold data relevant to this Index.  
       If maxSize is set can be bigger than size. 
       @see maxSize */
   override def allocSize = if (maxSize < 0) size else maxSize
-  // Note: if you want to override size method, override length instead!!
-  // TODO Consider having DiscreteDomain inherit from IndexedSeqEqualEq?
-  def size = _indices.size
+  override def size = _indices.size
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
       override this method with the largest you think your growable domain will get. */
   var maxSize = -1
@@ -60,7 +72,7 @@ class CategoricalDomain[T] extends DiscreteDomain with ValueType[CategoricalValu
   private var _frozen = false
   /** Can new category values be added to this Domain? */
   def frozen = _frozen
-  override def freeze = _frozen = true
+  override def freeze() = _frozen = true
 
   /** Map from entry back to int index */
   private var _indices = Map[T, Value]()
@@ -76,7 +88,7 @@ class CategoricalDomain[T] extends DiscreteDomain with ValueType[CategoricalValu
   class CategoricalValue(override val index:Int, val entry:T) extends DiscreteValue(index) with cc.factorie.CategoricalValue[T] {
     override def toString = entry.toString
   }
-  protected def newCategoricalValue(i:Int, e:T): Value = new CategoricalValue(i, e).asInstanceOf[Value]
+  protected def newCategoricalValue(i:Int, e:T): Value = new CategoricalValue(i, e) //.asInstanceOf[Value]
 
   def contains(entry: Any) = _indices.contains(entry.asInstanceOf[T])
   /* entry match { case e:T => _indices.contains(e); case _ => false } */
@@ -117,7 +129,7 @@ class CategoricalDomain[T] extends DiscreteDomain with ValueType[CategoricalValu
   /** Like index, but throw an exception if the entry is not already there. */
   def getIndex(entry:T) : Int = _indices.getOrElse(entry, throw new Error("Entry not present; use index() to cause the creation of a new entry.")).index
 
-  def indexOf[B >: Value](elem: B): Int = elem.asInstanceOf[Value].index //index(elem.asInstanceOf[T]) // TODO Try to get rid of this cast!!!
+  //def indexOf[B >: Value](elem: B): Int = elem.index // elem.asInstanceOf[Value].index //index(elem.asInstanceOf[T]) // TODO Try to get rid of this cast!!!
 
   // Separate argument types preserves return collection type
   def indexAll(c: Iterator[T]) = c map index;
@@ -164,7 +176,7 @@ class CategoricalDomain[T] extends DiscreteDomain with ValueType[CategoricalValu
       //println("Domain load got "+line)
       this.index(line.asInstanceOf[T]) // TODO What if T isn't a String?  Fix this.
     }
-    if (willFreeze) freeze
+    if (willFreeze) freeze()
     s.close
     //println("Loading Domain["+filename+"].size="+size)
   }
@@ -197,7 +209,7 @@ class CategoricalDomain[T] extends DiscreteDomain with ValueType[CategoricalValu
     for (i <- 0 until origEntries.size)
       if (_counts(i) >= threshold) indexOnly(origEntries(i).entry)
     _counts = null // We don't need counts any more; allow it to be garbage collected.  Note that if
-    freeze
+    freeze()
     origEntries.size - size
   }
   /** Return the number of unique entries with count equal to 'c'. */
@@ -228,6 +240,8 @@ class CategoricalDomain[T] extends DiscreteDomain with ValueType[CategoricalValu
     threshold
   }
 }
+
+
 
 object CategoricalDomain {
   val NULL_INDEX = -1

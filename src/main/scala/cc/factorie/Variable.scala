@@ -18,77 +18,35 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, Flat
 import scala.util.{Random,Sorting}
 import scala.reflect.Manifest
 
-/*
-object CoinDomain extends EnumDomain { val H, T = Value }
-class Coin(v:String) extends CategoricalVariable(v) { def domain = CoinDomain }
-
-class Count(i:Int) extends IntegerVariable(i)
-class Weight(w:Double) extends RealVariable(w)
-
-object WordDomain extends CategoricalVectorDomain[String]
-class Document(words:Seq[String]) extends BinaryFeatureVector(words) {def domain = WordDomain }
-class Word(word:String) extends CategoricalVariable(word) {def domain = WordDomain.asSingleton}
-
-
-// Z, fixed domain
-object ZDomain extends DiscreteDomain[Z] { def size = 10 }
-class Z(i:Int) extends DiscreteVariable(i) { def domain = ZDomain }
-
-// Z, different domains
-object ZDomain extends DiscreteDomain[Z] { def size = 10 }
-class Z(i:Int, val domain:DiscreteDomain[Z] = ZDomain) extends DiscreteVariable(i)
-
-object WordDomain extends CategoricalDomain[Word]
-class Word(w:String) extends CategoricalVariable(w) { def domain = WordDomain }
-object T1 extends Template2[Label,Word] with DotStatistics2[Label#Value,BooleanValue] {
-  override def statisticsDomain1 = LabelDomain
-  override def statisticsDomain2 = BooleanDomain
-  def statistics(l:Label#Value, w:Word#Value) = new Stat(l, w.contains("Mr"))
-}
-class CategoricalVariable[CategoryType](initialValue:CategoryType) {
-  def domain: CategoricalDomain[VariableType]
-}
-
-// Implicit domain objects
-// Nice that it includes a self-type
-
-implicit object ZDomain extends DiscreteDomain[Z]; ZDomain.size = 10
-class Z(i:Int) extends DiscreteVariable[Z](i)
-class DiscreteVariable[VariableType<:DiscreteVariable](initialValue:Int)(implicit domain:DiscreteDomain[VariableType])
-
-implicit object WordDomain extends CategoricalDomain[Word]
-class Word(w:String) extends CategoricalVariable[Word,String](w)
-class CategoricalVariable[VariableType<:CategoricalVariable,T](initialValue:T)(implicit domain:CategoricalDomain[VariableType])
-*/
-
-
 // Notes on class names for Variables:
 // Except for cc.factorie.Variable, "*Variable" means mutable
 // "*Observation" always means immutable, and mixes in trait ConstantValue
 // "*Var" is agnostic about whether it is mutable or not.  Hence "IntegerVar"
 
+/** Provides a member type 'Value' in such a way that it can be overridden in subclasses. */
 trait ValueType[+VT] {
   type Value = VT
 }
 
-trait DomainType[+DT<:Domain[_]] /*with ValueType[DT#Value]*/ {
-  type DomainType = DT
+/** Provides a member type 'DomainType' as well as a member type 'Value' whose
+    value is obtained from DomainType#Value. */
+trait DomainType[+DT<:Domain[_]] extends ValueType[DT#Value] {
+  type DomainType = DT // TODO Consider changing this to Domain, to match ValueType
 }
 
 
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
-   The trait is abstract because you should not instantiate this trait directly, only subclasses.
    <p>
    You should never make a Variable a Scala 'case class' because then
    it will get hashCode and equals methods dependent on its
    constructor arguments; but the FACTORIE library depends on being
    able to distinguish individual Variable instances based on their
-   address.
+   machine address (i.e. System.identityHashCode).
    @author Andrew McCallum */
-trait Variable extends DomainType[Domain[Any]] with ValueType[Any] {
+trait Variable extends DomainType[Domain[Any]] {
   /** The type of this variable, especially used by this Variable's Domain.  
       Often you can treat this as an approximation to a self-type */
-  type VariableType <: Variable
+  type VariableType <: Variable // TODO Consider removing this.
  
   /** Abstract method to return the domain of this variable. */
   def domain: DomainType
@@ -174,16 +132,21 @@ trait ConstantValue extends Variable {
   override final def isConstant = true
 }
 
-trait NoValue extends Variable with ValueType[Null] {
+trait NullDomain extends Domain[Null]
+object NullDomain extends NullDomain
+/** A trait for variable that actually have no value, e.g. FiniteMixture. */
+@deprecated("May be removed in the future.")
+trait NullValue extends Variable with DomainType[NullDomain] {
+  final def domain = NullDomain
   final def value = null
 }
 
 
-/** For a Variable with TypedValue that can change.
+/** For a Variable with value (of type A) that can change.
     @author Andrew McCallum */
-trait MutableValue {
+trait MutableValue[A] {
   this: Variable =>
-  //def set(newValue:Value)(implicit d: DiffList): Unit // TODO Causes conflict with CategoricalVariable.set.  Consider what to do !!!
+  def set(newValue:A)(implicit d: DiffList): Unit // TODO Causes conflict with CategoricalVariable.set.  Consider what to do !!!
   // TODO Remove this next method; use := instead.
   //final def value_=(newValue:Value)(implicit d:DiffList = null): Unit = set(newValue)(null)
   // Returning 'this' is convenient so that we can do:  val x = Gaussian(mean, variance) := 2.3

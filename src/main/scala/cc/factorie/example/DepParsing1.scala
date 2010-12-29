@@ -25,7 +25,7 @@ import java.io.File
     But interesting example of flexibility of the "Template.statistics" method. */
 object DepParsing1 {
 
-  object TokenDomain extends CategoricalDomain[String]
+  object TokenDomain extends CategoricalVectorDomain[String]
   class Token(val word:String, posString:String, trueParentPosition:Int, trueLabelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
     def domain = TokenDomain
     val parent = new Node(this, trueParentPosition, trueLabelString)
