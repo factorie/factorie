@@ -16,13 +16,13 @@ package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.er._
 
-/**Factor between label and observed instance vector */
+/** Factor between label and observed instance vector */
 class LabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) {
-  def unroll1(label: L) = Factor(label,label.instance)
+  def unroll1(label: L) = Factor(label, label.instance)
   def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
 }
 
-/**Factor between label and observed instance vector */
+/** Factor between label and observed instance vector */
 class SparseLabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) with SparseWeights {
   def unroll1(label: L) = Factor(label,label.instance)
   def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")

@@ -16,7 +16,7 @@ package cc.factorie
 import cc.factorie.la._
 
 /** Collins' structured-perceptron */
-abstract class StructuredPerceptron[V<:Variable with TrueSetting](model:Model) extends GradientAscentUpdates {
+abstract class StructuredPerceptron[V<:VarWithTargetValue](model:Model) extends GradientAscentUpdates {
   //type TemplatesToUpdate = DotTemplate
   var learningMargin = 1.0 // TODO not currently used
   private var difflist: DiffList = null
@@ -27,7 +27,7 @@ abstract class StructuredPerceptron[V<:Variable with TrueSetting](model:Model) e
   def process(vs:Seq[V]): Unit = {
     predict(vs)
     difflist = new DiffList
-    vs.foreach(_.setToTruth(difflist))
+    vs.foreach(_.setToTarget(difflist))
     difflist.undo // TODO Consider commenting this out, but consider carefully.  Dangerous for "addGradient" to have side-effects.
     if (difflist.size > 0)
       updateWeights // This will result in a call to "addGradient"

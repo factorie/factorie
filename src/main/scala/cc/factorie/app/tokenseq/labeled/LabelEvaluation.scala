@@ -28,7 +28,7 @@ class PerLabelEvaluation[L<:LabelVariable[String]](val labelValue: String)(impli
   //def +=(tokens:Seq[{def label:LabelVariable[String]}]): Unit = +=(tokens.map(_.label))
   def +=(labels: Seq[LabelVariable[String]]): Unit = {
     for (l <- labels) {
-      val trueIndex = l.trueIntValue
+      val trueIndex = l.target.intValue
       val predIndex = l.intValue
       if (targetIndex == trueIndex) {
         if (trueIndex == predIndex)

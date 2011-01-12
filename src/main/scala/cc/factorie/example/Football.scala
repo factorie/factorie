@@ -52,8 +52,9 @@ object Football {
   val perLexicon = new Lexicon(lexiconDir+"people")
   val orgLexicon = new Lexicon(lexiconDir+"orgs")
   //val positionLexicon = new Lexicon(lexiconDir+"positions")
+  throw new Error("Objective needs to be re-implemented.")
   val objective = new Model(
-    new TemplateWithVectorStatistics1[Label] {
+    /*new TemplateWithVectorStatistics1[Label] {
       val oIndex = LabelDomain.index("O")
       val orgIndex = LabelDomain.index("ORG")
       val perIndex = LabelDomain.index("PER")
@@ -79,7 +80,7 @@ object Football {
         //if (token.isCapitalized && label.index == perIndex && perLes) result += 0.3
         result
       }
-    }
+    }*/
   )
   
   

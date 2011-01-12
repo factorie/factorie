@@ -56,7 +56,7 @@ object ChainNER2 {
   )
   
   // The training objective
-  val objective = new Model(new Label01LossTemplate[Label])
+  val objective = new Model(new ZeroOneLossTemplate[Label])
   
 
   def main(args: Array[String]): Unit = {

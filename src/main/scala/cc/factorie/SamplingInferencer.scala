@@ -18,7 +18,7 @@ package cc.factorie
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 
 // TODO This is over variables.  We want something over Factors... and perhaps also something separate over Variables
-class SamplingLattice[V<:DiscreteVars](variables:Iterable[V]) extends Lattice[V] {
+class SamplingLattice[V<:DiscretesVar](variables:Iterable[V]) extends Lattice[V] {
   type VariableMarginalType = DiscreteMarginal[V]
   val map = new HashMap[V,DiscreteMarginal[V]]
   variables.foreach(v => map(v) = new DiscreteMarginal(v))
@@ -46,7 +46,7 @@ class SamplingInferencer[V<:DiscreteVar,C](val sampler:Sampler[C]) extends Infer
   }
 }
 
-class VariableSamplingInferencer[V<:DiscreteVariable](sampler:Sampler[V]) extends SamplingInferencer[V,V](sampler) with VariableInferencer[V] {
+class VariableSamplingInferencer[V<:DiscreteVar](sampler:Sampler[V]) extends SamplingInferencer[V,V](sampler) with VariableInferencer[V] {
   //def this() = this(new GibbsSampler)
   //def this(model:Model) = this(new GibbsSampler(model))
 }

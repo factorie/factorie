@@ -3,21 +3,34 @@ New in version 0.10.0:
 * Variable 'value' methods:
 
 All variables must now have a 'value' method with return type
-'this.Value'.  The 'Value' type comes from the variable's domain.  If
-you want to override the 'Value' type, use the ValueType trait.
+'this.Value'.  The 'Value' type comes from the variable's domain type.
+If you want to override the 'Value' type, use the ValueType trait.
 
 The canonical representation of DiscreteVariable (and
 CategoricalVariable) values used to be an Int.  Now it is a
 DiscreteValue (or CategoricalValue) object, which is a wrapper around
 an integer (and its corresponding categorical value).  These objects
-are created automatically in the DiscreteDomain, and are guaranteed to
-be unique each integer value, and thus can be compared by pointer
-equality.
+are created automatically in the DiscreteDomain (or
+CategoricalDomain), and are guaranteed to be unique for each integer
+value, and thus can be compared by pointer equality.
 
 For example, if 'label' is a CategoricalVariable[String]
 label.value is a CategoricalValue.
 label.intValue == label.value.index, is an integer
 label.entryValue == label.value.entry, is a String
+label.categoryValue == label.value.category, is a String <<< Yes, do this.
+
+
+* TrueSetting renamed to TargetValue
+
+Now that all variables have a 'value', the name 'setting' is
+deprecated.  Also, "true" and "truth" were deemed confusable with
+boolean values, and are now deprecated.  The preferred alternative is
+"target".   Hence, the "TrueSetting" trait has been renamed
+"TargetValue", and various methods renamed:
+setToTruth => setToTarget
+valueIsTruth => valueIsTarget
+trueIntValue => targetIntValue
 
 
 * Domains:
@@ -40,12 +53,16 @@ object MyLabelDomain extends CategoricalDomain[String]
 class MyLabel(theValue:String) extends CategoricalVariable(theValue) {
   def domain = MyLabelDomain
 }
+or
+class MyLabel(theValue:String, val domain = MyLabelDomain) extends CategoricalVariable(theValue)
 
 The type argument for domains used to be the variable class; now it is
 the 'Value' type of the domain (and its variables).
 
 
 * Template statistics:
+
+
 
 
 

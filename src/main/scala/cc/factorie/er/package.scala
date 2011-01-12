@@ -106,6 +106,7 @@ def newGetterUnit[X<:{type GetterType <: Getter[X]}](implicit m:Manifest[X]): X#
 
 /** The values of leaves of the formula tree.  
  For the common case of a BooleanTerm it is a BooleanValue (which inherits from DiscreteVar). */
+//type FormulaArg = DiscreteVar //with GetterType[BooleanValue]
 type FormulaArg = DiscreteVar //with GetterType[BooleanValue]
 //type FormulaValue[A] = BooleanValue //with GetterType[A];
 /** The collection of arguments to the boolean expression; the variables neighboring the factor.  
@@ -118,8 +119,8 @@ implicit def getter2IntTerm[X<:Variable,A<:FormulaArg](g:GetterHead[X,A])(implic
 
 // Score support:
 
-type ScorableValues[X] = DiscreteVars // CategoricalValues //with GetterType[X]
-type ScorableValues0 = DiscreteVars // CategoricalValues //with GetterType[CategoricalValues]
+type ScorableValues[X] = DiscretesVar // CategoricalValues //with GetterType[X]
+type ScorableValues0 = DiscretesVar // CategoricalValues //with GetterType[CategoricalValues]
 
 implicit def getter2scoreneighbor[X<:Variable,Y<:ScorableValues[Y]](a:Getter[Y] { type A = X})(implicit ma:Manifest[Y]): ScoreNeighbor0[X] = { 
   //println("getter2scoreneighbor ma="+ma+" a="+a)

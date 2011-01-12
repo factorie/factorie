@@ -246,7 +246,7 @@ class RelationshipGetter[A<:Entity[A],B<:Entity[B]] extends EntityGetter[Relatio
 /** A immutable boolean observation variable that satisfies the type requirements necessary to be returned by a getter.
  Useful for implementing simple binary tests on observations.  Since its value will never change, you do not have
  to provide a rev1 function when creating a getter for it with getOneToOne. */
-class BooleanObservationWithGetter(f:Boolean) extends BooleanObservation(f) with Entity[BooleanObservationWithGetter] {
+class BooleanObservationWithGetter(f:Boolean) extends BooleanVariable(f) with Entity[BooleanObservationWithGetter] {
   type GetterType = BooleanObservationGetter
   class GetterClass extends BooleanObservationGetter
 }

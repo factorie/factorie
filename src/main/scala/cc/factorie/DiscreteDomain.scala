@@ -15,31 +15,42 @@
 package cc.factorie
 import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
-trait DiscreteValues extends cc.factorie.la.Vector with DomainType[DiscreteVectorDomain] {
+// For variables that hold one or more discrete value weights in a vector
+
+// Was DiscreteValues
+trait DiscretesValue extends cc.factorie.la.Vector with DomainType[DiscreteVectorDomain] {
   def domain: DomainType
 }
 
-/** A value in a DiscreteDomain. */
-trait DiscreteValue extends DiscreteValues with cc.factorie.la.SingletonBinaryVec with DomainType[DiscreteDomain] {
-  def index: Int
-}
 
 /** The sub-domain in a DiscreteVectorDomain that gives the dimensionality of the vectors of the DiscreteVectorDomain. */
 trait DimensionDomainType[+DDT<:DiscreteDomain] {
   type DimensionDomain = DDT
 }
 
-/** A Domain for DiscreteVars, whose values are DiscreteValues (or perhaps a collection of DiscreteValues).
-    The domain has a positive integer size.  The method 'size' is abstract. */
-trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscreteValues] with DimensionDomainType[DiscreteDomain] {
-  thisDomain =>
-  //def size: Int = dimensionDomain.size // TODO Consider removing this, or renaming length?
+/** A Domain for variables whose value is a DiscretesValue, which is a Vector that also has a pointer back to its domain.
+    This domain has a non-negative integer size.  The method 'size' is abstract. */
+trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscretesValue] with DimensionDomainType[DiscreteDomain] {
+  /** The maximum size to which this domain will be allowed to grow.  
+      The 'size' method may return values smaller than this, however.
+      This method is used to pre-allocate a Template's parameter arrays and is useful for growing domains. */
   def size: Int
-  def maxVectorLength = size
+  def maxVectorLength: Int = size  // TODO Get rid of this?
   def dimensionDomain: DimensionDomain // = new DiscreteDomain { def size = thisDomain.size }
+  def vectorDimensionName(i:Int): String = i.toString
+  def freeze(): Unit = {}
 }
 
-trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteValue] /*with ValueType[DiscreteValue]*/ {
+
+// For variables that hold a single discrete value
+
+/** A value in a DiscreteDomain. */
+trait DiscreteValue extends DiscretesValue with cc.factorie.la.SingletonBinaryVec with DomainType[DiscreteDomain] {
+  def index: Int
+  final def intValue = index // TODO Consider removing this alias?
+}
+
+trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteValue] with ValueType[DiscreteValue] {
   thisDomain =>
   private var _frozen = false
   def size: Int
@@ -55,12 +66,12 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
   def apply(index:Int): Value  = getValue(index)
   def unapply(value:Value): Option[Int] = if (value.domain == this) Some(value.index) else None
 
-  // 'protected' so that only the 'getValue' method should construct these objects
+  // TODO Make this 'protected' so that only the 'getValue' method should construct these objects?
   class DiscreteValue(val index:Int) extends cc.factorie.DiscreteValue {
+    //type DomainType = cc.factorie.DiscreteDomain
     final def singleIndex = index // needed for SingletonBainaryVec
     final def length = thisDomain.size // needed for SingletonBinaryVec
-    final def intValue = index // just a convenient alias
-    final def domain = thisDomain
+    final def domain = thisDomain.asInstanceOf[DomainType] // TODO Why is this cast necessary
     override def toString = index.toString
     override def equals(other:Any): Boolean = 
       other match { case other:DiscreteValue => this.index == other.index; case _ => false }

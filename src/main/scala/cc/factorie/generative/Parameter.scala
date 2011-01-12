@@ -93,7 +93,7 @@ trait DeterministicParameter extends GeneratedVar with Parameter {
 
 trait RealVarParameter extends RealVar with Parameter
 class RealVariableParameter(value:Double) extends RealVariable(value) with RealVarParameter
-class RealConstantParameter(value:Double) extends RealObservation(value) with RealVarParameter
+//class RealConstantParameter(value:Double) extends RealObservation(value) with RealVarParameter
 
 trait IntegerVarParameter extends IntegerVar with Parameter
 class IntegerVariableParameter(value:Int) extends IntegerVariable(value) with IntegerVarParameter

@@ -14,28 +14,110 @@
 
 package cc.factorie
 
-// Categorical variables that have true values are referred to as 'Labels'
+// Categorical variables that have target values are referred to as 'Labels'
+// TODO Consider renaming all other "setting" names to "value" also
 
-/** A variable of finite enumerated values that has a true "labeled" value, separate from its current value. 
-    @author Andrew McCallum */
-// TODO We could also make version of this for IntegerVar: TrueIntegerVar
-trait DiscreteVariableWithTrueSetting extends DiscreteVariable with TrueSetting {
-  this: DiscreteVariable =>
-  /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
-  def trueIntValue: Int
-  def trueIntValue_=(newValue:Int): Unit
-  def setToTruth(implicit d:DiffList): Unit = set(trueIntValue)
-  def valueIsTruth: Boolean = trueIntValue == intValue
-  def trueValue: Value = if (trueIntValue >= 0) domain.getValue(trueIntValue) else null.asInstanceOf[Value]
-  def isUnlabeled = trueIntValue < 0
-  def unlabel = if (trueIntValue >= 0) trueIntValue = -trueIntValue - 1 else throw new Error("Already unlabeled.")
-  def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
+/*
+// TODO Consider some support like this to enable a generic Target01LossTemplate
+trait SelfType[+A<:SelfType[A]] {
+  this: A =>
+  type SelfType = A
+}
+trait TargetType[+T<:Variable with AimerType[Variable]] {
+  type TargetType = T
+}
+// The container of another variable's target value.
+trait AimerType[+A<:Variable] {
+  type AimerType = A
+}
+trait TargetAimingTypes[+T,+A] {
+  type TargetType = T
+  type AimingType = A  
 }
 
-trait CategoricalVariableWithTrueSetting[A] extends DiscreteVariableWithTrueSetting {
-  this: CategoricalVariable[A] =>
-  def trueValue_=(x:A) = if (x == null) trueIntValue = -1 else trueIntValue = domain.index(x)
-  def trueCategoryValue: VariableType#VariableType#CategoryType = if (trueIntValue >= 0) domain.getEntry(trueIntValue) else null.asInstanceOf[VariableType#VariableType#CategoryType]
+trait TargetVariable[A<:AimerVariable[This,A],This<:TargetVariable[A,This]] extends Variable {
+  // Returns the variable that "aims" to have to have its value match this variable's as its target
+  def aimer: A
+}
+trait AimerVariable[T<:TargetVariable[T,This],This<:AimerVariable[This,T]] extends Variable {
+  this: This =>
+  def target: T
+}
+*/
+
+/** A Variable that has a desired correct "target" value, usually used for labeled training data. */
+trait VarWithTargetValue extends Variable {
+  def valueIsTarget: Boolean
+  def setToTarget(implicit d:DiffList): Unit
+}
+
+/** A Variable that has a desired correct "target" value, 
+    and also a "target" method returning the Variable that holds this target value. 
+    This "target" variable is of type TargetVar, and should have a "aimer" method that 
+    returns a pointer back to this Variable. */
+trait VarWithTarget extends VarWithTargetValue with TargetType[TargetVar] {
+  //type TargetType = TargetType with ValueType[this.Value]
+  /** Stores the intended true "target" value for this variable. */
+  def target: TargetType { type Value = VarWithTarget.this.Value }
+  def valueIsTarget: Boolean = value == target.value
+  def setToTarget(implicit d:DiffList): Unit
+}
+
+/** A trait for all variables that are containers of target values.  
+    Having this trait allows ZeroOneLossTemplate to use this type as a neighbor,
+    and, for example, avoid trying to unroll for all DiscretesVar. */
+trait TargetVar extends Variable with AimerType[Variable] {
+  /** Returns the variable that "aims" to have to have its value match this variable's as its target */
+  def aimer: AimerType
+}
+
+/** Sets the TargetType, which is the type of the container of another variable's target value,
+    doing so in a way that the type is both concrete and can be overridden in subclasses. */
+trait TargetType[+T<:Variable with AimerType[Variable]] {
+  type TargetType = T
+}
+/** Sets the AimerType, which is the type of the variable that aims to have this target value,
+    doing so in a way that the type is both concrete and can be overridden in subclasses. */
+trait AimerType[+A<:Variable] {
+  type AimerType = A
+}
+
+
+// Discrete variables with targets.
+
+/** These variables have a target value, but it may not necessarily be stored in a separate TargetVar variable. */
+trait DiscreteVarWithTargetValue extends DiscreteVar with VarWithTargetValue {
+  def targetIntValue: Int
+}
+
+/** A container of a target value for discrete variables.  */
+trait DiscreteTargetVar extends DiscreteVar with TargetVar with AimerType[DiscreteVar]
+
+/** A discrete variable that has a true, target "labeled" value, 
+    separate from its current value. 
+    @author Andrew McCallum */
+// TODO We could also make version of this for IntegerVar: IntegerTargetValue
+// TODO Rename this DiscreteVariableWithTarget because it must include DiscreteVariable
+trait DiscreteVarWithTarget extends DiscreteVarWithTargetValue with VarWithTarget with TargetType[DiscreteTargetVar] {
+  //type TargetType = DiscreteValue
+  /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
+  def targetIntValue: Int = if (target eq null) -1 else target.intValue
+  def targetIntValue_=(newValue:Int): Unit = target.set(newValue)(null)
+  def setToTarget(implicit d:DiffList): Unit = set(target.value.asInstanceOf[Value])
+  //def valueIsTarget: Boolean = value == target.value
+  def targetValue: Value = if (target eq null) null.asInstanceOf[Value] else target.value.asInstanceOf[Value]
+  def isUnlabeled = target eq null
+  //def unlabel = if (trueVariable ne null) hiddentrueIntValue = -trueIntValue - 1 else throw new Error("Already unlabeled.")
+  //def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
+}
+
+trait CategoricalTargetVar[A] extends CategoricalVar[A] with DiscreteTargetVar with AimerType[CategoricalVar[A]]
+
+trait CategoricalVarWithTarget[A] extends CategoricalVar[A] with DiscreteVarWithTarget with TargetType[CategoricalTargetVar[A]] {
+  //def targetEntryValue_=(x:A) = if (x == null) target = null else target.set(x)
+  // TODO Consider renaming all the entry* method names to category*
+  //def targetEntryValue: CategoryType = target.entryValue
+  //def targetEntryValue_=(newEntry:CategoryType): Unit = target.set(newEntry)(null)
 }
 
 
@@ -44,9 +126,13 @@ trait CategoricalVariableWithTrueSetting[A] extends DiscreteVariableWithTrueSett
     @author Andrew McCallum
     @see LabelVariable
 */
-abstract class CoordinatedLabelVariable[A](trueval:A) extends CategoricalVariable[A](trueval) with CategoricalVariableWithTrueSetting[A] {
+abstract class CoordinatedLabelVariable[A](targetVal:A) extends CategoricalVariable[A](targetVal) with CategoricalVarWithTarget[A] with TargetType[CategoricalVariable[A] with CategoricalTargetVar[A]] {
   type VariableType <: CoordinatedLabelVariable[A]
-  var trueIntValue = domain.index(trueval)
+  val target = new LabelTarget(targetVal)
+  class LabelTarget(targetVal:A) extends CategoricalVariable(targetVal) with CategoricalTargetVar[A] with AimerType[CoordinatedLabelVariable[A]] {
+    def domain = CoordinatedLabelVariable.this.domain
+    def aimer = CoordinatedLabelVariable.this
+  }
 }
 
 /** A CategoricalVariable with a single value and a true value.
@@ -55,18 +141,40 @@ abstract class CoordinatedLabelVariable[A](trueval:A) extends CategoricalVariabl
     @author Andrew McCallum
     @see CoordinatedLabelVariable
  */
-abstract class LabelVariable[T](trueval:T) extends CoordinatedLabelVariable(trueval) with NoVariableCoordination {
+abstract class LabelVariable[T](targetVal:T) extends CoordinatedLabelVariable(targetVal) with NoVariableCoordination {
   type VariableType <: LabelVariable[T]
   // TODO Does this next line really provide the protection we want from creating variable-value coordination?  No.  But it does catch some errors.
-  override final def set(index: Int)(implicit d: DiffList) = super.set(index)(d)
+  override final def set(newValue: Value)(implicit d: DiffList) = super.set(newValue)(d)
 }
 
 
 
 // Templates
 
-abstract class DiscreteVariableWithTrueSettingTemplate[V<:DiscreteVariable with TrueSetting](implicit m:Manifest[V]) extends TemplateWithVectorStatistics1[V] {
-  def score(s:Stat) = if (s._1.valueIsTruth) 1.0 else 0.0
+//class ZeroOneLossTemplate[A<:VarWithTarget[TargetVar[A,TargetVar[A,_]],A]]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends Template2[A,A#TargetType] with Statistics1[Boolean] 
+
+class ZeroOneLossTemplate[A<:VarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends Template2[A,A#TargetType] with Statistics1[Boolean] {
+  def unroll1(aimer:A) = Factor(aimer, aimer.target)
+  def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
+  //def statistics(v1:A#Value, v2:A#TargetType#Value) = Stat(v1 == v2)
+  def statistics(values:Values) = Stat(values._1 == values._2)
+  def score(s:Stat) = if (s._1) 1.0 else 0.0
 }
 
-class Label01LossTemplate[V<:CoordinatedLabelVariable[_]:Manifest] extends DiscreteVariableWithTrueSettingTemplate[V]
+/*class ZeroOneLossTemplateDisfunctional[A<:VarWithTarget[TargetVar[A,_],A]]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends Template2[A,A#TargetType] with Statistics1[Boolean] {
+  def unroll1(aimer:A) = Factor(aimer, aimer.target)
+  def unroll2(target:A#TargetType) = Factor(target.aimer, target)
+  def statistics(v1:A#Value, v2:A#TargetType#Value) = Stat(v1 == v2)
+  def score(s:Stat) = if (s._1) 1.0 else 0.0
+}*/
+
+
+
+/*
+class Label01LossTemplate extends Template2[CoordinatedLabelVariable,CoordinatedLabelVariable#LabelTarget] with Statistics1[Boolean] {
+  def unroll1(aimer:CoordinatedLabelVariable) = Factor(aimer, aimer.target)
+  def unroll2(target:CoordinatedLabelVariable#LabelTarget) = Factor(target.aimer, target)
+  def statistics(v1:CoordinatedLabelVariable#Value, v2:CoordinatedLabelVariable#LabelTarget#Value) = Stat(v1 == v2)
+  def score(s:Stat) = if (s._1) 1.0 else 0.0
+}
+*/

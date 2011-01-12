@@ -69,7 +69,7 @@ class TestBPClassify extends TestCase {
     })
   )
 
-  val objective = new Model(new InitializedTemplate(new Label01LossTemplate[Label]))
+  val objective = new Model(new InitializedTemplate(new ZeroOneLossTemplate[Label]))
   
   def testMain: Unit = main(new Array[String](0))
 
@@ -274,7 +274,7 @@ class SimpleMaxEntTrainer(model: Model) {
   type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 1.0
 
-  def process[V <: DiscreteVariableWithTrueSetting](variables: Seq[V], numIterations: Int = Int.MaxValue): Unit = {
+  def process[V <: DiscreteVarWithTargetValue](variables: Seq[V], numIterations: Int = Int.MaxValue): Unit = {
     // Data structure for holding per-template constraints and expectations
     class SuffStats extends HashMap[TemplatesToUpdate, Vector] {
       override def default(template: TemplatesToUpdate) = {
@@ -293,7 +293,7 @@ class SimpleMaxEntTrainer(model: Model) {
     // Add all model dot templates to constraints
     model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t))
     // Gather constraints
-    variables.foreach(_.setToTruth(null))
+    variables.foreach(_.setToTarget(null))
     model.factorsOf[TemplatesToUpdate](variables).foreach(f => constraints(f.template) += f.statistics.vector)
 
     def templates = constraints.sortedKeys
@@ -328,7 +328,7 @@ class SimpleMaxEntTrainer(model: Model) {
             model.factorsOf[TemplatesToUpdate](v).foreach(f => expectations(f.template) += f.statistics.vector * -distribution(i))
           })
 
-          oValue += math.log(distribution(v.trueIntValue))
+          oValue += math.log(distribution(v.targetIntValue))
         })
         val invVariance = -1.0 / gaussianPriorVariance
         model.templatesOf[TemplatesToUpdate].foreach {

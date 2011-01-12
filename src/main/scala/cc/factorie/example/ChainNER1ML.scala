@@ -81,7 +81,7 @@ object ChainNER1ML {
 
     trainer.processAll(trainVariables) // Keep training to convergence
 
-    val objective = new Model(new Label01LossTemplate[Label])
+    val objective = new Model(new ZeroOneLossTemplate[Label])
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testSentences.size))
     testVariables.foreach {

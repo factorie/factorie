@@ -25,7 +25,7 @@ import scala.collection.mutable.{ArrayStack,HashSet,HashMap,ListBuffer}
  sets its value to true, the change gets put on the DiffList. */
 // TODO Is this last sentence a bad idea?  I could avoid it by spliting 'AttributeHolding' out of Entity.
 // Note that the current state allows there to be "Relations among Relationships"... hmmm!  Might this be useful?
-class Relationship[A<:Entity[A],B<:Entity[B]](val src:A, val dst:B) extends BooleanVariable with Entity[Relationship[A,B]] {
+class Relationship[A<:Entity[A],B<:Entity[B]](val src:A, val dst:B) extends BooleanVariable() with Entity[Relationship[A,B]] {
   type GetterType <: RelationshipGetter[A,B]
   class GetterClass extends RelationshipGetter[A,B]
   override def toString = printName+"("+src+","+dst+","+value+")" // TODO For some reason this is having no effect, so I re-override below
@@ -34,7 +34,8 @@ class Relationship[A<:Entity[A],B<:Entity[B]](val src:A, val dst:B) extends Bool
 /** Represents a many-to-many relation.
  Example usage:  object friend extends Relation[Person,Person] */
 // TODO Only binary relations for now, but it wouldn't be hard to add n-ary relations.
-class Relation[A<:Entity[A],B<:Entity[B]] extends Variable with ValueType[Nothing] with AbstractDomain[Nothing] {
+class Relation[A<:Entity[A],B<:Entity[B]] extends Variable with AbstractDomain[Nothing] {
+  //type Value = Nothing
   type SrcType = A
   type DstType = B
   def value: Nothing = throw new Error("Not yet implemented")

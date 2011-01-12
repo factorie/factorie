@@ -38,5 +38,5 @@ abstract class Document[L<:Label[This,L],This<:Document[L,This]](override val na
 class DocumentGetter[L<:Label[ThisDocument,L],ThisDocument<:Document[L,ThisDocument]] extends cc.factorie.app.classify.InstanceGetter[L,ThisDocument] {
   //override def newLabelGetter = new LabelGetter[ThisDocument,L]
   //def label = initOneToOne[L](newLabelGetter, instance => instance.label, label => label.instance)
-  def size = getOneWay(document => new IntegerObservation(document.vector.activeDomainSize))
+  def size = getOneWay(document => new IntegerVariable(document.vector.activeDomainSize))
 }

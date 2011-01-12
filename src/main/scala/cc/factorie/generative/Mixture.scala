@@ -59,9 +59,12 @@ trait MixtureOutcome extends GeneratedVar {
 
 
 
-trait MixtureComponents[+P<:Parameter] extends scala.collection.IndexedSeq[P] with SeqEqualsEq[P] with Parameter with GeneratedVar with AbstractDomain[Seq[P]] {
+trait MixtureComponents[+P<:Parameter] extends scala.collection.IndexedSeq[P] with SeqEqualsEq[P] with Parameter with GeneratedVar {
+  type DomainType <: Domain[Seq[P]]
+  type Value <: Seq[P]
+  def domain = AbstractDomain.asInstanceOf[DomainType]
   override def isDeterministic = true
-  def value = components
+  def value = components.asInstanceOf[Value]
   def components: Seq[P]
   def length = components.length
   def apply(index:Int) = components(index)

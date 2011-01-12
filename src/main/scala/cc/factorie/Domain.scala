@@ -49,6 +49,8 @@ trait IterableDomain[+VT] extends Domain[VT] {
 object AbstractDomain extends Domain[Any]
 
 /** Add this trait to a Variable to give it a Domain with Value type VT. */
-trait AbstractDomain[+VT] extends Variable with DomainType[Domain[VT]] {
+trait AbstractDomain[VT] extends Variable {
+  type DomainType = Domain[VT]
+  type Value = VT
   def domain = AbstractDomain.asInstanceOf[Domain[VT]]
 }

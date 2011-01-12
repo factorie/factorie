@@ -166,7 +166,7 @@ case class LessThan[X<:Variable](c1:IntExpression[X], c2:IntExpression[X]) exten
 
 
 /** The form of Template statistics used by a logical Formula. */
-trait LogicStatistics extends DotStatistics1[BooleanVar] {
+trait LogicStatistics extends DotStatistics1[BooleanValue] {
   // Should a non-zero weight instead be spread across each of the two possibilities?
   def *(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = math.log(w); this }
 }
@@ -183,28 +183,34 @@ object Forany {
     val getters = formula.getters
     val size = manifests.length
     size match {
+      case _ => throw new Error("Not yet re-implemented.")
+      /*
       case 1 => new Template1[I]()(manifests(0)) with LogicStatistics {
         override def unroll1(n1:I) = { val roots = getters(0).reverse(n1); if (!roots.isEmpty) Factor(n1) else Nil }
-        def statistics(n1:I) = { val s = new FormulaArgs; s+=n1; Stat(BooleanObservation(formula.eval(s))) }
+        // Original version, per "statistics with values"
+        //def statistics(n1:I) = { val s = new FormulaArgs; s+=n1; Stat(formula.eval(s)) }
+        // We should re-implement formula.eval to take BooleanValue instead of BooleanVar
+        //def statistics(v:Values) = { val s = new FormulaArgs; s+=v._1; Stat(formula.eval(s)) }
       }.init
       case 2 => new Template2[I,I]()(manifests(0), manifests(1)) with LogicStatistics {
         def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root)) yield Factor(n1,n2) }
         def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root)) yield Factor(n1,n2) }
-        def statistics(n1:I, n2:I) = { val s = new ArrayStack[I]; s+=n2; s+=n1; Stat(BooleanObservation(formula.eval(s))) }
+        def statistics(n1:I, n2:I) = { val s = new ArrayStack[I]; s+=n2; s+=n1; Stat(formula.eval(s)) }
       }.init
       case 3 => new Template3[I,I,I]()(manifests(0), manifests(1), manifests(2)) with LogicStatistics {
         def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3) } 
         def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3) } 
         def unroll3(n3:I) = { val roots = getters(2).reverse(n3); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root)) yield Factor(n1,n2,n3) } 
-        def statistics(n1:I, n2:I, n3:I) = { val s = new ArrayStack[I]; s+=n3; s+=n2; s+=n1; Stat(BooleanObservation(formula.eval(s))) }
+        def statistics(n1:I, n2:I, n3:I) = { val s = new ArrayStack[I]; s+=n3; s+=n2; s+=n1; Stat(formula.eval(s)) }
       }.init
       case 4 => new Template4[I,I,I,I]()(manifests(0), manifests(1), manifests(2), manifests(3)) with LogicStatistics {
         def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root); n3 <- getters(2).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
         def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root); n3 <- getters(2).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
         def unroll3(n3:I) = { val roots = getters(2).reverse(n3); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
         def unroll4(n4:I) = { val roots = getters(3).reverse(n4); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3,n4) } 
-        def statistics(n1:I, n2:I, n3:I, n4:I) = { val s = new ArrayStack[I]; s+=n4; s+=n3; s+=n2; s+=n1; Stat(BooleanObservation(formula.eval(s))) }
+        def statistics(n1:I, n2:I, n3:I, n4:I) = { val s = new ArrayStack[I]; s+=n4; s+=n3; s+=n2; s+=n1; Stat(formula.eval(s)) }
       }.init
+*/
     }
   }
 }

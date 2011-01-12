@@ -23,13 +23,18 @@ package object factorie {
   // TODO If we keep it, find a way to automatically maintain this string value
   //def factorieVersionString = "0.9.0.SNAPSHOT"
 
+  //type CategoricalValues[T] = CategoricalVectorValue[T]
+  //type DiscreteValues = DiscreteVectorValue
+  //type DiscreteVars = DiscreteVectorVar
+  //type CategoricalVars[T] = CategoricalVectorVar[T]
+
   var randomSeed = 0
   implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
   // TODO Consider renaming this "defaultRandom", 
   // anticipating the time when all these definitions make go in "package object factorie"?
   
   val defaultModel = new Model
-  val defaultObjective = new Model(new InitializedTemplate(new Label01LossTemplate[CoordinatedLabelVariable[AnyRef]]()))
+  val defaultObjective = new Model(new InitializedTemplate(new ZeroOneLossTemplate[CoordinatedLabelVariable[AnyRef]]()))
 
   // TODO Consider removing this now that we have separate, more specific samplers.
   // TODO Consider also removing SamplerSuite?
@@ -83,17 +88,17 @@ package object factorie {
     assert(template.isInitialized == true)
   }
   implicit def template2initialized(t:Template): InitializedTemplate = new InitializedTemplate(t)
-  implicit def template2initialized1[S1<:VectorVar](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedTemplate(t.init)
-  implicit def template2initialized2[S1<:VectorVar,S2<:VectorVar](t:VectorStatistics2[S1,S2])(implicit m1:Manifest[S1], m2:Manifest[S2]): InitializedTemplate = new InitializedTemplate(t.init)
-  implicit def template2initialized3[S1<:VectorVar,S2<:VectorVar,S3<:VectorVar](t:VectorStatistics3[S1,S2,S3])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]): InitializedTemplate = new InitializedTemplate(t.init)
-  implicit def template2initialized4[S1<:VectorVar,S2<:VectorVar,S3<:VectorVar,S4<:VectorVar](t:VectorStatistics4[S1,S2,S3,S4])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized1[S1<:DiscretesValue](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized2[S1<:DiscretesValue,S2<:DiscretesValue](t:VectorStatistics2[S1,S2])(implicit m1:Manifest[S1], m2:Manifest[S2]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized3[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue](t:VectorStatistics3[S1,S2,S3])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized4[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue,S4<:DiscretesValue](t:VectorStatistics4[S1,S2,S3,S4])(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]): InitializedTemplate = new InitializedTemplate(t.init)
 
   // TODO Consider this carefully.
   // Should this be "new BooleanObservation(b)" or "BooleanObservation(b)"
   // The later might inappropriate deduplicate Factors if used as arguments to Factor construction?
   // But the former is faster for all other cases.
   // I'm not convinced the later would actually happen naturally in practice.
-  implicit def boolean2BooleanObservation(b:Boolean): BooleanObservation = BooleanObservation(b)
+  implicit def boolean2BooleanValue(b:Boolean): BooleanValue = if (b) BooleanDomain.trueValue else BooleanDomain.falseValue
   // TODO Consider making implicit conversions for IntegerObservation and RealObservation also
 
 }

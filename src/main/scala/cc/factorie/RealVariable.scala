@@ -20,8 +20,10 @@ object RealDomain extends RealDomain
 
 // TODO Consider instead ValueType[Double] and making a different class for SingletonVector.
 /** A Variable with a real (double) value. */
-trait RealVar extends Variable with NumericValue with DomainType[RealDomain] {
+trait RealVar extends Variable with NumericValue {
   type VariableType <: RealVar
+  type DomainType = RealDomain
+  type Value = Double
   def domain = RealDomain
   /** A Vector representation of this Variable's value. */
   @inline final def value: Value = doubleValue
@@ -54,27 +56,30 @@ class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableValue
   }
 }
 
-/** A Variable with an immutable real (double) value. */
-class RealObservation(val doubleValue:Double) extends RealVar with ConstantValue {
-  type VariableType <: RealObservation
-}
-
 
 
 
 
 // TODO Create an implicit conversion from Double to RealSingletonVector
 // So that we can use them as sufficient statistics in a VectorTemplate
-trait RealSingletonVectorDomain extends VectorDomain with ValueType[SingletonVector] {
-  def maxVectorLength = 1
+trait RealSingletonVectorDomain extends DiscreteVectorDomain {
+  //def maxVectorLength = 1
+  def dimensionDomain = RealSingletonDiscreteDomain
+  def size = 1
 }
+object RealSingletonDiscreteDomain extends DiscreteDomain { def size = 1 }
 object RealSingletonVectorDomain extends RealSingletonVectorDomain
 
-trait RealSingletonVectorVar extends Variable with NumericValue with VectorVar with DomainType[RealSingletonVectorDomain] {
+trait RealSingletonVectorVar extends Variable with NumericValue with DiscretesVar {
+  thisVariable =>
   //type VariableType <: RealVar
+  type DomainType = RealSingletonVectorDomain
+  type Value = SingletonVector with DiscretesValue
   def domain = RealSingletonVectorDomain
   /** A Vector representation of this Variable's value. */
-  @inline final def value: Value = new SingletonVector(1, 0, doubleValue)
+  @inline final def value: Value = new SingletonVector(1, 0, doubleValue) with DiscretesValue {
+    def domain = thisVariable.domain
+  }
   // TODO Consider rewriting above line to avoid constructing new object
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt

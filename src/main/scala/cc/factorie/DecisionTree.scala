@@ -13,13 +13,14 @@
    limitations under the License. */
 
 package cc.factorie
+import cc.factorie.la.Vector
 import cc.factorie.generative.Proportions
 import cc.factorie.generative.DenseCountsProportions
 
 /** Statistics for factors who scores are the log-probability of 
     label S1 given feature vector S2, according to a decision tree.
     @author Arti Ramesh */
-trait DecisionTreeStatistics2[S1<:DiscreteVar,S2<:BinaryVectorVar]
+trait DecisionTreeStatistics2[S1<:DiscreteValue,S2<:DiscretesValue]
 extends VectorStatistics2[S1,S2] {
   // Number of different values taken on by s._1
   val numOutcomes: Int = statDomains(0).asInstanceOf[DiscreteDomain].size
@@ -28,12 +29,12 @@ extends VectorStatistics2[S1,S2] {
   }
   var root: DTNode = null
   def scoreScaling = 1.0
-  // val s: StatType;  s._1:DiscreteVar; s._2:BinaryVectorVar
-  // Number of different values of s._1 == s._1.domainSize
+  // val s: StatType;  s._1:DiscreteValue; s._2:Vector
+  // Number of different values of s._1 == s._1.domain.size
   def score(s:StatType): Double = score(s, root)
   protected def score(s:StatType, node:DTNode): Double = 
-    if (node.isLeaf) math.log(node.p(s._1.intValue)) 
-    else score(s, if (s._2.contains(node.index)) node.yesChild else node.noChild)
+    if (node.isLeaf) math.log(node.p(s._1.intValue))
+    else score(s, if (s._2.apply(node.index) != 0.0) node.yesChild else node.noChild)
   def train(stats:Iterable[StatType], maxDepth:Int = Int.MaxValue): Unit = {
     root = train(stats, maxDepth, null)
   }
@@ -48,7 +49,7 @@ extends VectorStatistics2[S1,S2] {
     }
     // This dtree will not be a leaf
     dtree.index = bestInfoGain(stats)
-    val (yesStats, noStats) = stats.partition(_._2.contains(dtree.index))
+    val (yesStats, noStats) = stats.partition(_._2.apply(dtree.index) != 0.0)
     dtree.yesChild = train(yesStats, maxDepth-1, dtree)
     dtree.noChild = train(noStats, maxDepth-1, dtree)
     dtree
@@ -67,8 +68,9 @@ extends VectorStatistics2[S1,S2] {
 /** A template for factors who scores are the log-probability of 
     label S1 given feature vector S2, according to a decision tree.
     @author Andrew McCallum */
-abstract class DecisionTreeTemplateWithStatistics2[S1<:DiscreteVar,S2<:BinaryVectorVar](implicit m1:Manifest[S1], m2:Manifest[S2])
-extends Template2[S1,S2] with DecisionTreeStatistics2[S1,S2] {
-  def statistics(s1:S1, s2:S2) = Stat(s1, s2)
-  def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(_statistics(_).asInstanceOf[StatType]))
+abstract class DecisionTreeTemplateWithStatistics2[S1<:DiscreteVar,S2<:DiscretesVar](implicit m1:Manifest[S1], m2:Manifest[S2])
+extends Template2[S1,S2] with DecisionTreeStatistics2[S1#Value,S2#Value] {
+  //def statistics(s1:S1, s2:S2) = Stat(s1, s2)
+  def statistics(values:Values) = Stat(values._1, values._2)
+  def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(_.statistics.asInstanceOf[StatType]))
 }

@@ -60,7 +60,7 @@ object ChainNER3 {
         if (t.label.entryValue(0) == 'I' && (!t.hasPrev || t.prev.label.entryValue.substring(1) != t.label.entryValue.substring(1))) {
           val newValue = "B"+t.label.entryValue.substring(1) 
           t.label.set(newValue)(null)
-          t.label.trueValue = newValue
+          t.label.target.set(newValue)(null)
         }
       })}) 
       
@@ -112,7 +112,7 @@ object ChainNER3 {
     val learner = new VariableSettingsSampler[Label](model) with SampleRank with ConfidenceWeightedUpdates {
       temperature = 0.01
       // Speed training by sometimes skipping inference of lowercase training words that are already correct
-      override def preProcessHook(label:Label) = if (label.valueIsTruth && !label.token.isCapitalized && cc.factorie.random.nextDouble > 0.5) null else label
+      override def preProcessHook(label:Label) = if (label.valueIsTarget && !label.token.isCapitalized && cc.factorie.random.nextDouble > 0.5) null else label
       // At the end of each iteration, print some diagnostics
       override def postIterationHook(): Boolean = {
         predictor.processAll(testLabels)
@@ -148,12 +148,12 @@ object ChainNER3 {
     var i = 0
     while (i < labels.length && count < maxErrors) {
       val label = labels(i)
-      if (!label.valueIsTruth && label.hasPrev && label.hasNext && count < maxErrors) {
+      if (!label.valueIsTarget && label.hasPrev && label.hasNext && count < maxErrors) {
         var j = math.max(i-contextSize, 0); var numTruthsAfter = -contextSize
         do {
           val l = labels(j)
-          println("%s %-6s %-6s %-18s %s".format((if (l.valueIsTruth) " " else "*"), l.trueValue, l.value, l.token.word, l.token.toString))
-          if (l.valueIsTruth) numTruthsAfter += 1 else { numTruthsAfter = 0; count += 1 }
+          println("%s %-6s %-6s %-18s %s".format((if (l.valueIsTarget) " " else "*"), l.target.entryValue, l.value.entry, l.token.word, l.token.toString))
+          if (l.valueIsTarget) numTruthsAfter += 1 else { numTruthsAfter = 0; count += 1 }
           j += 1
         } while (numTruthsAfter < contextSize && j < labels.length && count < maxErrors) 
         println

@@ -22,7 +22,6 @@ import scala.collection.mutable.{HashSet,ArrayBuffer}
 /*class Binomial(p:RealVarParameter, trials:Int) extends OrdinalVariable with GeneratedVariable {
   this := 0
 }*/
-@DomainInSubclasses
 trait GeneratedDiscreteVar extends GeneratedVar with DiscreteVar {
   def proportions: Proportions
   def parents: Seq[Parameter] = List(proportions)
@@ -31,8 +30,7 @@ trait GeneratedDiscreteVar extends GeneratedVar with DiscreteVar {
   override def prWith(map:scala.collection.Map[Parameter,Parameter]): Double = map.getOrElse(proportions, proportions).asInstanceOf[Proportions](this.intValue)
 }
 
-@DomainInSubclasses
-trait GeneratedDiscreteVariable extends DiscreteVariable with GeneratedVariable with GeneratedDiscreteVar {
+trait GeneratedDiscreteVariable extends DiscreteVar with GeneratedVariable with GeneratedDiscreteVar {
   def sampleFromParents(implicit d:DiffList = null): this.type = { set(proportions.sampleInt); this }
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList = null): this.type = {
     parents match {
@@ -44,7 +42,6 @@ trait GeneratedDiscreteVariable extends DiscreteVariable with GeneratedVariable 
 }
 
 // A Discrete ~ Multinomial(Proportions), in which we can change the parent
-@DomainInSubclasses
 abstract class Discrete(p:Proportions, value:Int = 0) extends DiscreteVariable(value) with GeneratedDiscreteVariable {
   //assert(p.length <= domainSize)
   private val proportionsRef = new ParameterRef(p, this)
@@ -53,13 +50,10 @@ abstract class Discrete(p:Proportions, value:Int = 0) extends DiscreteVariable(v
   override def parentRefs = List(proportionsRef)
 }
 
-@DomainInSubclasses
 trait GeneratedCategoricalVar[A] extends GeneratedDiscreteVar with CategoricalVar[A]
 
-@DomainInSubclasses
-trait GeneratedCategoricalVariable[A] extends CategoricalVariable[A] with GeneratedDiscreteVariable with GeneratedCategoricalVar[A]
+trait GeneratedCategoricalVariable[A] extends CategoricalVar[A] with GeneratedDiscreteVariable with GeneratedCategoricalVar[A]
 
-@DomainInSubclasses
 abstract class Categorical[A](p:Proportions, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] {
   //assert(p.length <= domainSize)
   private val proportionsRef = new ParameterRef(p, this)
@@ -68,7 +62,7 @@ abstract class Categorical[A](p:Proportions, value:A) extends CategoricalVariabl
   override def parentRefs = List(proportionsRef)
 }
 
-@DomainInSubclasses
+/*
 abstract class ObservedDiscrete(p:Proportions, value:Int) extends DiscreteObservation(value) with GeneratedVar {
   // TODO Rename "DiscreteConstant"?
   //assert(p.length <= domainSize)
@@ -82,6 +76,8 @@ abstract class ObservedDiscrete(p:Proportions, value:Int) extends DiscreteObserv
     case p:Proportions => p(this.intValue)
   }
 }
+*/
+
 
 /*
 @DomainInSubclasses

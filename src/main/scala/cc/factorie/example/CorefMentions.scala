@@ -26,19 +26,29 @@ object CorefMentionsDemo {
 
   // The data
 
-  /** A random variable for a mention of an entity */
-  class Mention(val name:String, val trueEntity:Int, initialEntity:Entity) extends RefVariable(initialEntity) {
-    initialEntity.add(this)(null)
+  class EntityRef(val mention:Mention, initialEntity:Entity) extends RefVariable(initialEntity) {
+    initialEntity.add(mention)(null)
     // When this mention is assigned to an entity, update the mention
     override def set(e:Entity)(implicit d:DiffList) : Unit = {
-      if (e != entity) {
-        if (entity != null) entity.remove(this)
-        e.add(this)
+      if (e != value) {
+        if (value != null) value.remove(mention)
+        e.add(mention)
         super.set(e)
       }
     }
-    def entity = value // an alias just for readability
-    override def toString = "Mention(" + name +"=="+ entity.canonical +")"
+  }
+
+  abstract class TrueEntityIndex(i:Int) extends IntegerVariable(i) {
+    def mention: Mention
+  }
+
+  /** A random variable for a mention of an entity */
+  class Mention(val name:String, trueEntity:Int, initialEntity:Entity) extends StringVariable(name) {
+    val trueEntityIndex = new TrueEntityIndex(trueEntity) {
+      def mention = Mention.this
+    }
+    val entityRef = new EntityRef(this, initialEntity)
+    override def toString = "Mention(" + name +"=="+ entityRef.value.canonical +")"
   }
   
   /** A random variable for an entity, which is merely a set of Mentions */
@@ -50,8 +60,7 @@ object CorefMentionsDemo {
   /** A feature vector variable measuring affinity between two mentions */
   class AffinityVector(s1:String, s2:String) extends BinaryFeatureVectorVariable[String] {
     import AffinityDomain._
-    type VariableType <: AffinityVector
-    def domain = AffinityDomain
+    def domain = AffinityVectorDomain
     if (s1 equals s2) this += streq else this += nstreq
     if (s1.substring(0,1) equals s2.substring(0,1)) this += prefix1 else this += nprefix1
     if (s1.substring(0,2) equals s2.substring(0,2)) this += prefix2 else this += nprefix2
@@ -64,6 +73,9 @@ object CorefMentionsDemo {
   }
   object AffinityDomain extends EnumDomain {
     val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
+  }
+  object AffinityVectorDomain extends CategoricalVectorDomain[String] {
+    override lazy val dimensionDomain = AffinityDomain
   }
 
 
@@ -97,65 +109,73 @@ object CorefMentionsDemo {
       val model = new Model
   
       // Pairwise affinity factor between Mentions in the same partition
-      model += new Template2[Mention,Mention] with DotStatistics1[AffinityVector] {
-        def unroll1 (mention:Mention) = for (other <- mention.entity.mentions; if (other != mention)) yield 
-          if (mention.hashCode > other.hashCode) Factor(mention, other)
-          else Factor(other, mention)
-        def unroll2 (mention:Mention) = Nil // symmetric
-        def statistics (mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
+      model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#Value] {
+        def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield 
+          if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
+          else Factor(er, other.entityRef, other.entityRef.mention, er.mention)
+        def unroll2 (er:EntityRef) = Nil // symmetric
+        def unroll3 (mention:Mention) = throw new Error
+        def unroll4 (mention:Mention) = throw new Error
+        def statistics (values:Values) = Stat(new AffinityVector(values._3, values._4).value)
       }
 
       // Pairwise repulsion factor between Mentions in different partitions
-      model += new Template2[Mention,Mention] with DotStatistics1[AffinityVector] {
-        override def factors(d:Diff) = d.variable match {
-          case mention : Mention => d match {
-            case mention.RefVariableDiff(oldEntity:Entity, newEntity:Entity) => 
-              for (other <- oldEntity.mentions; if (other.entity != mention.entity)) yield Factor(mention, other);
+      model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#Value] {
+        /*override def factors(d:Diff) = d.variable match {
+          case mention: Mention => d match {
+            case mention.entityRef.RefVariableDiff(oldEntity:Entity, newEntity:Entity) => 
+              for (other <- oldEntity.mentions; if (other.entityRef.value != mention.entityRef.value)) yield Factor(mention, other);
             case _ => super.factors(d)
           }
           case _ => super.factors(d)
-        }
-        def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entity != mention.entity)) yield Factor(mention, other);
-        def unroll2 (mention:Mention) = Nil // symmetric
-        def statistics(mention1:Mention, mention2:Mention) = Stat(new AffinityVector(mention1.name, mention2.name))
+        }*/
+        def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value != er.value)) yield 
+          if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
+          else Factor(er, other.entityRef, other.entityRef.mention, er.mention)
+        def unroll2 (er:EntityRef) = Nil // symmetric
+        def unroll3 (mention:Mention) = throw new Error
+        def unroll4 (mention:Mention) = throw new Error
+        def statistics (values:Values) = Stat(new AffinityVector(values._3, values._4).value)
+        //def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entityRef.value != mention.entityRef.value)) yield Factor(mention, other);
+        //def unroll2 (mention:Mention) = Nil // symmetric
+        //def statistics(values:Values) = Stat(new AffinityVector(values._1, values._2).value)
       }
   
-      // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature!
-      model += new Template1[Entity] with DotStatistics1[BooleanVar] {
-        def statistics(entity:Entity) = {
-          if (entity.mentions.isEmpty) Stat(BooleanObservation(true))
+      // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature.
+      model += new Template1[Entity] with DotStatistics1[BooleanValue] {
+        def statistics(values:Values) = {
+          val mentions: Entity#Value = values._1
+          if (mentions.isEmpty) Stat(BooleanDomain.trueValue)
           else {
-            val prefix1 = entity.mentions.iterator.next.name.substring(0,1)
-            if (entity.mentions.forall(m => prefix1 equals m.name.substring(0,1)))
-              Stat(true)
+            val prefix1 = mentions.iterator.next.name.substring(0,1)
+            if (mentions.forall(m => prefix1 equals m.name.substring(0,1)))
+              Stat(BooleanDomain.trueValue)
             else
-              Stat(false)
+              Stat(BooleanDomain.falseValue)
           }
         }
       }
 
 
-      val objective1 = new Model(new TemplateWithStatistics1[Mention] {
+      val objective1 = new Model(new TemplateWithStatistics2[EntityRef,TrueEntityIndex] {
+        def unroll1(er:EntityRef) = Factor(er, er.mention.trueEntityIndex)
+        def unroll2(tei:TrueEntityIndex) = Factor(tei.mention.entityRef, tei)
         def score(s:Stat) = {
-          val thisMention = s._1
+          val thisMentionEntity = s._1
+          val thisMentionTrueEntityIndex = s._2
           mentionList.foldLeft(0.0)((total,m) => 
-          if (m.trueEntity == thisMention.trueEntity) {
-            if (m.entity == thisMention.entity) total + 1
+          if (m.trueEntityIndex.value == thisMentionTrueEntityIndex) {
+            if (m.entityRef.value == thisMentionEntity) total + 1
             else total - 1
           } else {
-            if (m.entity == thisMention.entity) total - 1
+            if (m.entityRef.value == thisMentionEntity) total - 1
             else total + 1
           })
         }
       })
 
-      var sampler = new MHSampler[Null](model) 
-  with SampleRank 
-  with ConfidenceWeightedUpdates
-  //with MIRAUpdates
-  //with PerceptronUpdates
- {
-  temperature = 0.001
+      var sampler = new MHSampler[Null](model) with SampleRank with ConfidenceWeightedUpdates {
+        temperature = 0.001
         override val objective = objective1
         def propose(context:Null)(implicit difflist:DiffList) : Double = {
           // Pick a random mention
@@ -164,8 +184,8 @@ object CorefMentionsDemo {
           // Pick a random place to move it, either an existing Entity or a newly created one
           var e: Entity = null
           // Pick an existing entity to move it to
-          if (m.entity.size == 1 || random.nextDouble < 0.8) {
-            val s2 = entityList.filter((e: Entity) => e.size > 0 && e != m.entity)
+          if (m.entityRef.value.size == 1 || random.nextDouble < 0.8) {
+            val s2 = entityList.filter((e: Entity) => e.size > 0 && e != m.entityRef.value)
             if (s2.size != 0) e = s2(random.nextInt(s2.size))
           }
           // Pick an empty entity to move it to (create one if it doesn't exist)
@@ -176,7 +196,7 @@ object CorefMentionsDemo {
           }
       	  // Move it
           //            Console.println ("Proposal.jump moving "+m+" to "+e)
-          m.set(e)(difflist)
+          m.entityRef.set(e)(difflist)
           // log-Q-ratio shows that forward and backward jumps are equally likely
           return 0.0
         }
@@ -188,7 +208,7 @@ object CorefMentionsDemo {
             // model.templatesOf[DotTemplate].foreach(f => println (f.toString+" weights = "+f.weights.toList)) // TODO Commented out when DenseVectors.toList stopped working, most likely due to FACTORIE using 2.8.0.RC1 and Scalala using 2.8.0.Beta1
             println ("All entities")
             entityList.filter(e=>e.size>0).foreach(e => println(e.toString +" "+ e.mentions.toList))
-            //Console.println ("All mentions"); mentionList.foreach(m => Console.println(m.toString +" "+ m.entity))
+            //Console.println ("All mentions"); mentionList.foreach(m => Console.println(m.toString +" "+ m.entityRef.value))
             println
           }
         }

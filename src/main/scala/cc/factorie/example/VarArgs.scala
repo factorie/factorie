@@ -33,7 +33,7 @@ object VarArgsDemo {
 
     val model = new Model(
       // "Vars[]" indicates that there can be a variable number of these neighbors
-      new Template2[X,Vars[Y]] with DotStatistics1[X] {
+      new Template2[X,Vars[Y]] with DotStatistics1[DiscreteValue] {
         def unroll1(x:X) = Factor(x, Vars(x.ys))
         // The "Vars" container will not change...
         def unroll2(ys:Vars[Y]) = throw new Error
@@ -41,7 +41,12 @@ object VarArgsDemo {
         // While unroll1 and unroll2 do not need the "override" modifier,
         // (unfortunately, because of Scala limitations) unroll2s does.
         override def unroll2s(y:Y) = Factor(y.x, Vars(y.x.ys))
-        def statistics(x:X, ys:Vars[Y]) = Stat(new X(x.intValue % ys.foldLeft(0)(_ + _.intValue)))
+        def statistics(values:Values) = {
+          val x: Int = values._1.intValue
+          val ys: Seq[Int] = values._2.map(_.intValue)
+          Stat(XDomain.getValue(x % ys.foldLeft(0)(_+_)))
+        }
+        //def statistics(x:DiscreteValue, ys:Seq[DiscreteValue]) = Stat(XDomain.getValue(x.index % ys.foldLeft(0)(_ + _.index)))
       }
     )
 

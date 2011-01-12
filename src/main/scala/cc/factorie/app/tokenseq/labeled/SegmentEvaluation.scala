@@ -54,7 +54,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
     for (position <- 0 until labels.length) {
       val label = labels(position)
       val labelPrevValue: String = if (position > 0) labels(position - 1).entryValue else null
-      val labelPrevTargetValue: String = if (position > 0) labels(position - 1).trueCategoryValue else null
+      val labelPrevTargetValue: String = if (position > 0) labels(position - 1).target.entryValue else null
 
       //print("\n"+label.token.word+"="+label.trueValue+"/"+label.value+" ")
       predictedStart = false; targetStart = false
@@ -66,7 +66,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
         //print("ps ")
       }
 
-      if (isSegmentStart(label.trueCategoryValue, labelPrevTargetValue)) {
+      if (isSegmentStart(label.target.entryValue, labelPrevTargetValue)) {
         targetCount += 1
         targetStart = true
         //print("ts ")
@@ -82,7 +82,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
         while (j < labels.length && !stopSearchForSegmentEnd) {
           val label2 = labels(j)
           predictedContinue = isContinue(label2.entryValue)
-          targetContinue = isContinue(label2.trueCategoryValue)
+          targetContinue = isContinue(label2.target.entryValue)
           //print("j="+j+predictedContinue+targetContinue)
           //if (predictedContinue) print("pc ")
           //if (targetContinue) print("tc ")
@@ -137,7 +137,7 @@ class SegmentEvaluation[L<:LabelVariable[String]](baseLabelStrings: Seq[String],
   def +=(labels: Seq[L]): Unit = {
     evals.values.foreach(eval => eval += labels)
     labelCount += labels.length
-    labels.foreach(label => if (label.valueIsTruth) labelCorrectCount += 1)
+    labels.foreach(label => if (label.valueIsTarget) labelCorrectCount += 1)
   }
 
   // This is a per-label measure

@@ -30,7 +30,7 @@ trait ValueType[+VT] {
 
 /** Provides a member type 'DomainType' as well as a member type 'Value' whose
     value is obtained from DomainType#Value. */
-trait DomainType[+DT<:Domain[_]] extends ValueType[DT#Value] {
+trait DomainType[+DT<:Domain[_]] {
   type DomainType = DT // TODO Consider changing this to Domain, to match ValueType
 }
 
@@ -43,10 +43,13 @@ trait DomainType[+DT<:Domain[_]] extends ValueType[DT#Value] {
    able to distinguish individual Variable instances based on their
    machine address (i.e. System.identityHashCode).
    @author Andrew McCallum */
-trait Variable extends DomainType[Domain[Any]] {
+trait Variable {
   /** The type of this variable, especially used by this Variable's Domain.  
       Often you can treat this as an approximation to a self-type */
   type VariableType <: Variable // TODO Consider removing this.
+
+  type Value <: Any
+  type DomainType <: Domain[Any] // TODO Consider Domain[Value]
  
   /** Abstract method to return the domain of this variable. */
   def domain: DomainType
@@ -92,8 +95,8 @@ trait ContainerVariable[A<:Variable] extends Variable {
   def containedVariableManifest(implicit m:Manifest[A]) = m
 }
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.
-trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] with AbstractDomain[scala.collection.Seq[A]] {
-  def value = this
+trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] with AbstractDomain[scala.collection.Seq[A#Value]] {
+  def value = this.map(_.value)
   override def toString = mkString("Vars(", ",",")")
 }
 class ArrayVars[V<:Variable](val toArray:Array[V]) extends Vars[V] {
@@ -136,7 +139,9 @@ trait NullDomain extends Domain[Null]
 object NullDomain extends NullDomain
 /** A trait for variable that actually have no value, e.g. FiniteMixture. */
 @deprecated("May be removed in the future.")
-trait NullValue extends Variable with DomainType[NullDomain] {
+trait NullValue extends Variable {
+  type DomainType = NullDomain
+  type Value = Null
   final def domain = NullDomain
   final def value = null
 }
@@ -171,6 +176,12 @@ trait MutableDoubleValue extends NumericValue {
   def doubleValue_=(newValue:Double)(implicit d:DiffList): Unit = set(newValue)
 }
 
+
+/** A Variable whose (constant) value is the Variable object itself. */
+trait SelfVariable[This<:SelfVariable[This]] extends Variable with AbstractDomain[This] {
+  this: This =>
+  def value: This = this
+}
 
 
 // The two traits below may enable efficiencies for sampling, scoring and learning
@@ -224,18 +235,6 @@ trait IterableSettings {
   }
   def settings: SettingIterator
 }
-
-// TODO Remove this?  It could be useful, though.
-/*trait Setting {
-  def set(d:DiffList) : Unit
-}*/
-
-
-/** A variable for which the true, correct value is known.  Often used for target variables inferred at training time. 
-    @author Andrew McCallum */
-trait TrueSetting {
-  this: Variable =>
-  def setToTruth(implicit d:DiffList): Unit
-  def valueIsTruth: Boolean
-}
+// TODO Keep this even though IterableDomain may be the prefered mechanism for many cases,
+// because in some cases certain variable may iterate over only a subset of the domain's values.
 

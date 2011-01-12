@@ -8,7 +8,7 @@ import org.junit.Test
  */
 class TemplateTestSuite extends JUnitSuite  {
 
-  implicit def template2initialized1[S1<:VectorVar](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedTemplate(t.init)
+  implicit def template2initialized1[S1<:DiscretesValue](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedTemplate(t.init)
   implicit def template2initialized(t:Template): InitializedTemplate = new InitializedTemplate(t)
   
   @Test
@@ -29,7 +29,7 @@ class TemplateTestSuite extends JUnitSuite  {
     val factors = template.factors(diff)
     assert(factors.head.template === template)
     assert(factors.head.variables.head == b)
-    assert(factors.head.statistics.asInstanceOf[TemplateWithDotStatistics1[BooleanVariable]#Stat]._1.value == false)
+    assert(factors.head.statistics.asInstanceOf[TemplateWithDotStatistics1[BooleanVariable]#Stat]._1 == false)
   }
 
   @Test
@@ -56,14 +56,12 @@ class TemplateTestSuite extends JUnitSuite  {
       val members = for (i <- 0 until 10) yield new Member 
     }
     val aggregate = new Aggregate
-    val template = new Template2[Aggregate,Vars[Aggregate#Member]] with DotStatistics1[RealSingletonVectorVariable] {
+    val template = new Template2[Aggregate,Vars[Aggregate#Member]] with DotStatistics1[RealSingletonVectorVariable#Value] {
       def unroll2(v: Vars[Aggregate#Member]) = error("Not needed")
       def unroll1(v: Aggregate) = Factor(v,Vars(v.members))
       override def unroll2s(v: Aggregate#Member) = Factor(v.owner,Vars(v.owner.members))
-
-      def statistics(v1: Aggregate, v2: Vars[Aggregate#Member]) = {
-        new Stat(new RealSingletonVectorVariable(v1.members.filter(_.entryValue).size))
-      }
+      def statistics(v:Values) = 
+        new Stat(new RealSingletonVectorVariable(v._2.filter(_.booleanValue).size).value)
     }
     val diff = new DiffList
     aggregate.members(0).set(true)(diff)

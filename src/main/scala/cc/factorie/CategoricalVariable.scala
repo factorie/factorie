@@ -13,48 +13,103 @@
    limitations under the License. */
 
 package cc.factorie
+import scala.collection.mutable.ArrayBuffer
 
-/** For use with variables whose values are mapped to densely-packed integers from 0 and higher, using a CategoricalDomain.
-    It can apply to a single Int value (as in CategoricalVariable) or a collection of indices (as in BinaryVectorVariable).
-    All instances of such a subclass share the same domain. 
+/** A Variable holding one or more categorical values.
+    The subclass CategoricalVariable holds a single CategoricalValue.
+    The subclass FeatureVectorVariable holds multiple CategoricalValues, each with a weight.
     @author Andrew McCallum */
-trait CategoricalVars[T] extends DiscreteVars with DomainType[CategoricalVectorDomain[T]] {
-  type VariableType <: CategoricalVars[T]
+trait CategoricalsVar[T] extends DiscretesVar {
+  type VariableType <: CategoricalsVar[T]
+  type DomainType <: CategoricalVectorDomain[T]
   type CategoryType = T
+  def update(elt:T, newValue:Double): Unit = 
+    vector.update(domain.dimensionDomain.index(elt), newValue)
+  def increment(elt:T, incr:Double): Unit = {
+    val i = domain.dimensionDomain.index(elt)
+    vector.update(i, vector(i) + incr)
+  }
 }
+
+abstract class CategoricalsVariable[T] extends CategoricalsVar[T] {
+  thisVariable =>
+  type DomainType = CategoricalVectorDomain[T]
+  type Value = CategoricalsValue[T]
+  override val value: Value = new cc.factorie.la.GrowableSparseVector(domain) with CategoricalsValue[T] {
+    def domain = thisVariable.domain
+  }
+}
+
+/** An more traditionally-named alias for CategoricalsVariable */
+abstract class FeatureVectorVariable[T] extends CategoricalsVariable[T]
+
+trait BinaryCategoricalsVar[T] extends CategoricalsVar[T] {
+  def +=(value:T): Unit 
+  def ++=(values:Iterable[T]): Unit
+}
+
+trait SparseBinaryCategoricalsVar[T] extends SparseBinaryDiscretesVar with BinaryCategoricalsVar[T] {
+  def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.dimensionDomain.getEntry(i)); result }
+  /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
+      If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
+  def skipNonCategories = false
+  def +=(value:T): Unit = {
+    val idx = domain.dimensionDomain.index(value);
+    if (idx == CategoricalDomain.NULL_INDEX) {
+      if (!skipNonCategories)
+        throw new Error("SparseBinaryCategoricalsVar += value " + value + " not found in domain " + domain)
+    } else {
+      this.+=(idx)
+    }
+  }
+  def ++=(values:Iterable[T]): Unit = values.foreach(this.+=(_))
+  override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getEntry(i).toString+"="+i).mkString(printName+"(", ",", ")")
+}
+
+abstract class BinaryFeatureVectorVariable[T] extends SparseBinaryCategoricalsVar[T] {
+  thisVariable =>
+  type DomainType = CategoricalVectorDomain[T]
+  type Value = cc.factorie.la.SparseBinaryVector with CategoricalsValue[T]
+  def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
+  override lazy val value = new cc.factorie.la.SparseBinaryVector(-1) with CategoricalsValue[T] {
+    def domain = thisVariable.domain
+    override def length = domain.maxVectorLength
+  }
+}
+
+
+
 
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.
     Concrete implementations include CategoricalVariable and CategoricalObservation. 
     @author Andrew McCallum */
-trait CategoricalVar[A] extends CategoricalVars[A] with DiscreteVar with DomainType[CategoricalDomain[A]] with ValueType[CategoricalValue[A]] {
+trait CategoricalVar[A] extends CategoricalsVar[A] with DiscreteVar {
   type VariableType <: CategoricalVar[A]
+  type DomainType <: CategoricalDomain[A]
+  type Value <: CategoricalValue[A]
   @deprecated("Use entryValue instead.") // TODO Consider using 'categoryValue' afterall.
   def categoryValue: A = value.entry // domain.get(intValue)
   def entryValue: A = if (value ne null) value.entry else null.asInstanceOf[A]
   //final def entryValue: A = value.entry // TODO Include this too?  Nice, clear name, but two redundant methods could be confusing.
+  def set(newValue:A)(implicit d: DiffList): Unit = set(domain.index(newValue))
   override def toString = printName + "(" + (if (entryValue == null) "null" else if (entryValue == this) "this" else entryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
 } 
 
 /** A DiscreteVariable whose integers 0...N are associated with an object of type A. 
     @author Andrew McCallum */
-abstract class CategoricalVariable[A] extends DiscreteVariable with CategoricalVar[A] with MutableValue[A] {
+abstract class CategoricalVariable[A] extends DiscreteVar with CategoricalVar[A] with MutableValue[A] {
   // What I want to do is "extends DiscreteVariable(Domain[A].index(initialValue))
   // but there is no way to obtain this.getClass obtain the Domain for the constructor above, so we initialize with dummy 0
   // and then set to proper value in this(initialValue:A) constructor below.
   type VariableType <: CategoricalVariable[A]
-  def this(initialEntry:A) = { this(); _set(domain.getValue(initialEntry).asInstanceOf[Value]) }
-  def set(newValue:A)(implicit d: DiffList): Unit = set(domain.index(newValue))
+  type DomainType = CategoricalDomain[A]
+  type Value = CategoricalValue[A]
+  def this(initialEntry:A) = { this(); _set(domain.getValue(initialEntry)) }
   //final def category_=(newValue:A)(implicit d:DiffList = null) = set(newValue)
 }
 
-/** For variables holding a single, constant indexed value which is of Scala type T. 
-    @author Andrew McCallum */
-abstract class CategoricalObservation[A](theEntry:A) extends DiscreteObservation with CategoricalVar[A] {
-  type VariableType <: CategoricalObservation[A]
-  _initializeValue(domain.getValue(theEntry).asInstanceOf[Value])
-}
 
-/** When mixed in to a CategoricalVariable or CategoricalObservation, the variable's Domain will count the number of calls to 'index'.  
+/** When mixed in to a CategoricalVariable, the variable's Domain will count the number of calls to 'index'.  
     Then you can reduce the size of the Domain by calling 'trimBelowCount' or 'trimBelowSize', 
     which will recreate the new mapping from categories to densely-packed non-negative integers. 
     In typical usage you would (1) read in the data, (2) trim the domain, (3) re-read the data with the new mapping, creating variables. 
@@ -80,10 +135,12 @@ abstract class CategoricalObservation[A](theEntry:A) extends DiscreteObservation
 trait ItemizedObservation[This <: ItemizedObservation[This]] extends CategoricalVar[This] with ConstantValue {
   this: This =>
   type VariableType = This
+  type DomainType = CategoricalDomain[This]
+  type Value = CategoricalValue[This]
   // Put the variable in the CategoricalDomain and remember it.
   // We could save memory by looking it up in the Domain each time, but speed is more important
   //val intValue = domain.index(this) 
-  val value = domain.getValue(this)
+  override val value = domain.getValue(this)
   override def entryValue = this // TODO Ug.  Not a great method name here.
 }
 

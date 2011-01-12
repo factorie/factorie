@@ -61,23 +61,17 @@ class SampleRankTest extends AssertionsForJUnit {
     //
     //this template unrolls a "ring" structured graphical model
     new InitializedTemplate(
-      new TemplateWithStatistics2[MyBool, MyBool]
-      {
+      new TemplateWithStatistics2[MyBool, MyBool] {
         def unroll1(b: MyBool) = Factor(b, b.next)
-
         def unroll2(b: MyBool) = Factor(b.prev, b)
-
-        def score(s: Stat): Double =
-          {
-            var v1 = s._1
-            var v2 = s._2
-            if (v1.value == v2.value)
-              -1.0
-            else
-              1.0
-          }
+        def score(s: Stat): Double = {
+          var v1 = s._1
+          var v2 = s._2
+          if (v1 == v2) -1.0
+          else 1.0
+        }
       }
-      ))
+    ))
   var model: Model = null
 
 

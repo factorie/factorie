@@ -33,12 +33,12 @@ object DepParsing1 {
     override def toString = "Token("+word+":"+position+")"
   }
 
-  class Node(val token:Token, val truePosition:Int, trueLabelString:String) extends RefVariable[Token] with TrueSetting with IterableSettings {
+  class Node(val token:Token, val truePosition:Int, trueLabelString:String) extends RefVariable[Token] with VarWithTargetValue with IterableSettings {
     lazy val trueValue: Token = seq(truePosition)
     def seq = token.seq
     val label = new Label(trueLabelString)
-    def valueIsTruth = value == trueValue
-    def setToTruth(implicit d:DiffList): Unit = set(trueValue)
+    def valueIsTarget = value == trueValue
+    def setToTarget(implicit d:DiffList): Unit = set(trueValue)
     def parent = value
     /** Bool with value true if parent is to the right, false if parent is to the left. */
     def direction: Direction = if (parent.position > token.position) new Direction(true) else new Direction(false)
@@ -71,7 +71,7 @@ object DepParsing1 {
     }
   }
 
-  class Direction(right:Boolean) extends BooleanObservation(right)
+  class Direction(right:Boolean) extends BooleanVariable(right)
 
   object DistanceDomain extends DiscreteDomain { def size = 6 }
   class Distance(d:Int) extends DiscreteVariable {
@@ -88,8 +88,47 @@ object DepParsing1 {
   }
   
   val model = new Model(
-    new Template1[Node] with DotStatistics2[Token,Token] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.parent) },
-    new Template1[Node] with DotStatistics1[POS] { def statistics(n:Node) = Stat(n.token.pos) },
+    new Template2[Node,Token] with DotStatistics2[Token#Value,Token#Value] with SparseWeights {
+      def unroll1(n:Node) = Factor(n, n.token)
+      def unroll2(t:Token) = Nil
+      // Node.value = parent.  parent.value:Token#Value
+      def statistics(values:Values) = Stat(values._1.value, values._2)
+      //def statistics(parent:Token, childVector:Token#Value) = Stat(parent.value, childVector)
+    },
+    new Template3[Node,Token,Token] with DotStatistics2[Token#Value,Token#Value] with SparseWeights {
+      def unroll1(n:Node) = Factor(n, n.parent, n.token)
+      def unroll2(t:Token) = Nil
+      def unroll3(t:Token) = Nil
+      def statistics(values:Values) = Stat(values._2, values._3)
+      //def statistics(n:Node#Value, parentVector:Token#Value, childVector:Token#Value) = Stat(parentVector, childVector)
+    },
+    /*new Template3WithDotStatistics2[Token,Token,Node] {
+      def unroll3(node:Node) = ...
+    }
+    new Template2WithDotStatistics1[DiscreteVectorVar,Node] {
+      def unroll2(n:Node) = Factor(n.parent outer n.child, n)
+    }
+    new Template2WithDotStatistics1[VectorVariables2[Token,Token],Node] {
+      def unroll2(n:Node) = Factor(VectorVariables2(n.parent, n.token), n)
+    }
+    new Template2[VectorVariables2[Token,Token], Node] with FirstObserved with StatsAreFirstArg {
+      def unroll2(node:Node) = Factor(VectorVariables2(n.parent, n.token), n)
+    }*/
+    //new Template1[Node] with DotStatistics2[Token,Token] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.parent) },
+
+    new Template2[Node,POS] with DotStatistics1[POS#Value] {
+      def unroll1(n:Node) = Factor(n, n.token.pos)
+      def unroll2(p:POS) = Nil
+      def statistics(values:Values) = Stat(values._2)
+      //def statistics(n:Node#Value, pos:POS#Value) = Stat(pos)
+    }
+    //new Template1[Node] with DotStatistics1[POS] {
+    //override def _statistics(n:Node) = Stat(token.pos)
+    //def statistics(nv:Node#Value) = new Error
+    //},
+    //new Template1[Node] with DotStatistics1[POS] { def statistics(n:Node) = Stat(token.pos) },
+
+    /*
     new Template1[Node] with DotStatistics1[POS] { def statistics(n:Node) = Stat(n.parent.pos) },
     new Template1[Node] with DotStatistics1[Token] { def statistics(n:Node) = Stat(n.token) },
     new Template1[Node] with DotStatistics1[Token] { def statistics(n:Node) = Stat(n.parent) },
@@ -112,14 +151,17 @@ object DepParsing1 {
     new Template1[Node] with DotStatistics3[POS,Direction,Distance] { def statistics(n:Node) = Stat(n.token.pos, n.direction, n.distance) },
     new Template1[Node] with DotStatistics3[POS,POS,Direction] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos, n.direction) },
     new Template1[Node] with DotStatistics4[POS,POS,Direction,Distance] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos, n.direction, n.distance) }
+    */
   )
   
   val objective = new Model(
-    new TemplateWithStatistics1[Node] {
+    new TemplateWithStatistics2[Node,BooleanVar] {
+      def unroll1(n:Node) = Factor(n, new BooleanVariable(n.valueIsTarget))
+      def unroll2(b:BooleanVar) = Nil
       def score(s:Stat) = {
-        val node = s._1
-        //println("objective "+node.valueIsTruth)
-        if (node.valueIsTruth) 1.0 else 0.0
+        val valueIsTarget = s._2
+        throw new Error("Why doesn't the following line compile?")
+        //if (valueIsTarget.booleanValue) 1.0 else 0.0
         //-math.abs(node.position - node.truePosition)
       }
     }
@@ -227,7 +269,7 @@ object DepParsing1 {
   def printSentence(sentence:Seq[Token]): Unit = {
     for (token <- sentence) println("%-3d %-20s %-3d %-3d %s".
         format(token.position, token.word, token.parent.truePosition, token.parent.position,
-        if (token.parent.valueIsTruth) " " else "*"))
+        if (token.parent.valueIsTarget) " " else "*"))
     println("#correct = "+objective.score(sentence.map(_.parent)))
     println
   }

@@ -116,7 +116,7 @@ class GeneratedVarTemplate extends TemplateWithStatistics3[GeneratedVar,MixtureC
       case v:GeneratedVar => List(factorOfGeneratedVar(v))
     })
   }
-  def score(s:Stat) = s._1.logpr // the log-probability of this GeneratedVar given its parents
+  def score(s:Stat) = throw new Error("Needs reimplementation") // s._1.logpr // the log-probability of this GeneratedVar given its parents
 }
 
 /*

@@ -21,7 +21,7 @@ import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
 @DomainInSubclasses
-trait DiscreteMixtureVar extends GeneratedDiscreteVariable with MixtureOutcome {
+trait DiscreteMixtureVar extends GeneratedDiscreteVar with MixtureOutcome {
   choice.addOutcome(this)
   components.addChild(this)(null)
   def choice: MixtureChoiceVariable

@@ -22,60 +22,51 @@ object IntegerDomain extends IntegerDomain
     @author Andrew McCallum */
 // Removed because it was unclear how to implement domain here.
 /*
-trait IntegerVars extends Variable with DomainType[IntegerDomain] {
-  type VariableType <: IntegerVars
+trait IntegersVar extends Variable {
+  type VariableType <: IntegersVar
+  type DomainType <: IntegerDomain
   def maxIntValue = Int.MaxValue
   def minIntValue = Int.MinValue
   // TODO Consider a def maxValue: Double = Math.POS_INF_DOUBLE ??
   // TODO Implement a method def vector?
-  // TODO Consider moving activeDomain from DiscreteVars to here? -akm
+  // TODO Consider moving activeDomain from DiscretesVar to here? -akm
 }
 */
 
 
 /** A Variable with one Int value.  
     @author Andrew McCallum */
-trait IntegerVar extends Variable with NumericValue with DomainType[IntegerDomain] {
+trait IntegerVar extends Variable with NumericValue {
   type VariableType <: IntegerVar
-  def domain = IntegerDomain
+  type DomainType <: IntegerDomain
+  type Value = Int
   def maxIntValue = Int.MaxValue
   def minIntValue = Int.MinValue
-  def value: Int
-  def intValue: Int
+  private var _value: Int = 0
+  protected def _set(newValue:Int) = _value = newValue
+  @inline final def value = _value
+  @inline final def intValue = _value
   final def doubleValue: Double = intValue.toDouble
   override def toString = printName + "(" + intValue + ")"
   def ===(other: IntegerVar) = intValue == other.intValue
   def !==(other: IntegerVar) = intValue != other.intValue
-}
-
-/** A Variable with a mutable Int value.
-    @author Andrew McCallum */ 
-class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntValue {
-  type VariableType <: IntegerVariable
-  private var _value = initialValue
-  protected def _set(newValue:Int): Unit = _value = newValue
-  @inline final def value = _value
-  @inline final def intValue = _value
-  def set(newValue: Int)(implicit d: DiffList): Unit = if (newValue != _value) {
+  def set(newValue: Int)(implicit d: DiffList = null): Unit = if (newValue != _value) {
     if (d ne null) d += new IntegerVariableDiff(_value, newValue)
     _value = newValue
   }
   case class IntegerVariableDiff(oldIndex: Int, newIndex: Int) extends Diff {
-    @inline final def variable: IntegerVariable = IntegerVariable.this
+    @inline final def variable: IntegerVar = IntegerVar.this
     @inline final def redo = _value = newIndex
     @inline final def undo = _value = oldIndex
     override def toString = "IntegerVariableDiff("+oldIndex+","+newIndex+")"
   }
 }
 
-/** A Variable with a immutable Int value.
-    @author Andrew McCallum */
-class IntegerObservation(theValue:Int) extends IntegerVar with ConstantValue {
-  type VariableType <: IntegerObservation
-  private var _intValue: Int = theValue
-  protected def _initializeValue(x:Int): Unit = _intValue = x
-  def intValue = _intValue
-  def value = _intValue
+/** A Variable with a mutable Int value.
+    @author Andrew McCallum */ 
+class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntValue {
+  type VariableType <: IntegerVariable
+  type DomainType = IntegerDomain
+  def domain = IntegerDomain
+  _set(initialValue)
 }
-
-// TODO Consider not distinguishing between Variable and Observation?

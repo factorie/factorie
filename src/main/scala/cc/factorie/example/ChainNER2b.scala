@@ -55,7 +55,7 @@ object ChainNER2b {
   )
   
   // The training objective
-  val objective = new Model(new Label01LossTemplate[Label])
+  val objective = new Model(new ZeroOneLossTemplate[Label])
   
 
   def main(args: Array[String]): Unit = {
@@ -103,13 +103,13 @@ object ChainNER2b {
 
 
   def printLabel(label:Label) : Unit = {
-    println("%-16s TRUE=%-8s PRED=%-8s %s".format(label.token.word, label.trueValue, label.value, label.token.toString))
+    println("%-16s TRUE=%-8s PRED=%-8s %s".format(label.token.word, label.target.entryValue, label.value, label.token.toString))
   }
  
   def printDiagnostic(labels:Seq[Label]) : Unit = {
     for (label <- labels; if (label.intValue != label.domain.index("O"))) {
       if (!label.hasPrev || label.value != label.prev.value) 
-        print("%-7s %-7s ".format((if (label.value != label.trueValue) label.trueValue else " "), label.value))
+        print("%-7s %-7s ".format((if (label.value != label.target.entryValue) label.target.value.entry else " "), label.value.entry))
       print(label.token.word+" ")
       if (!label.hasNext || label.value != label.next.value) println()
     }

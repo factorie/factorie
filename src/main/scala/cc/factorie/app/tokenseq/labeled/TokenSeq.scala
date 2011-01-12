@@ -26,7 +26,7 @@ with ContiguousEncoding[T,L,This]
   /** Return the collection of Label instances attached to these tokens. */
   def labels = this.map(_.label)
   /** Return the proportion of Labels whose current value is their trueValue. */
-  def accuracy: Double = this.foldLeft(0)((sum,token) => if (token.label.valueIsTruth) sum + 1 else sum) / size.toDouble
+  def accuracy: Double = this.foldLeft(0)((sum,token) => if (token.label.valueIsTarget) sum + 1 else sum) / size.toDouble
 }
 
 trait Encoding[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]] {
@@ -47,14 +47,15 @@ trait BIOEncoding[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]
 extends Encoding[T,L,This] {
   this: This =>
   override def entities: Seq[(String,Seq[T])] = TokenSeq.extractBIO[T](this, (_:T).label.entryValue)
-  override def trueEntities: Seq[(String,Seq[T])] = TokenSeq.extractBIO[T](this, (_:T).label.trueCategoryValue)
+  // TODO Rename to "targetEntities"
+  override def trueEntities: Seq[(String,Seq[T])] = TokenSeq.extractBIO[T](this, (_:T).label.target.entryValue)
 }
 
 trait ContiguousEncoding[T<:Token[This,L,T],L<:Label[This,T,L],This<:TokenSeq[T,L,This]]
 extends Encoding[T,L,This] {
   this: This =>
   override def entities: Seq[(String,Seq[T])] = TokenSeq.extractContiguous[T](this, (_:T).label.entryValue)
-  override def trueEntities: Seq[(String,Seq[T])] = TokenSeq.extractContiguous[T](this, (_:T).label.trueCategoryValue)
+  override def trueEntities: Seq[(String,Seq[T])] = TokenSeq.extractContiguous[T](this, (_:T).label.target.entryValue)
 }
 
 

@@ -38,7 +38,8 @@ class TestBP extends TestCase {
   private def newTemplate1(score0: Double, score1: Double) =
     new InitializedTemplate(new TemplateWithVectorStatistics1[BinVar] {
       def score(s: Stat) = {
-        if (s._1.intValue == 0) score0 else score1
+        throw new Error("Why doesn't the following line compile?")
+        //if (s._1.intValue == 0) score0 else score1
       }
     })
 
@@ -46,10 +47,8 @@ class TestBP extends TestCase {
   private def newTemplate2(scoreEqual: Double, scoreUnequal: Double) =
     new InitializedTemplate(new TemplateWithVectorStatistics2[BinVar, BinVar] {
       def unroll1(v1: BinVar) = if (v1.hasNext) Factor(v1, v1.next) else Nil
-
       def unroll2(v2: BinVar) = if (v2.hasPrev) Factor(v2.prev, v2) else Nil
-
-      def score(s: Stat) = if (s._1.intValue == s._2.intValue) scoreEqual else scoreUnequal
+      def score(s: Stat) = if (s._1 == s._2) scoreEqual else scoreUnequal
     })
 
   // short for exponential

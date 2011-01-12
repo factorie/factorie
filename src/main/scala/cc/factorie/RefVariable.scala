@@ -24,12 +24,6 @@ trait RefVar[A<:AnyRef] extends Variable with AbstractDomain[A] {
   def !==(other: RefVar[A]) = value != other.value
 }
 
-abstract class RefObservation[A<:AnyRef](theValue:A) extends Variable with RefVar[A] {
-  type VariableType <: RefObservation[A];
-  final val value: A = theValue
-  override def toString = printName + "(" + (if (value == this) "this" else value.toString) + ")"
-}
-
 /**A variable with a single mutable (unindexed) value which is of Scala type A. */
 // TODO A candidate for Scala 2.8 @specialized
 class RefVariable[A<:AnyRef](initialValue:A = null) extends Variable with RefVar[A] {
@@ -56,13 +50,13 @@ class RefVariable[A<:AnyRef](initialValue:A = null) extends Variable with RefVar
 }
 
 /** For variables that have a true value described by a Scala AnyRef type T. */
-trait RefTrueVar[A>:Null<:AnyRef] extends TrueSetting {
+trait RefVarWithTargetValue[A>:Null<:AnyRef] extends VarWithTargetValue {
   this: RefVariable[A] =>
-  def trueValue: A
-  def isUnlabeled = trueValue == null
-  def setToTruth(implicit d:DiffList): Unit = set(trueValue)
-  def valueIsTruth: Boolean = trueValue == value
+  def targetValue: A
+  def isUnlabeled = targetValue == null
+  def setToTarget(implicit d:DiffList): Unit = set(targetValue)
+  def valueIsTarget: Boolean = targetValue == value
 }
 
-abstract class RefLabel[A>:Null<:AnyRef](var trueValue:A) extends RefVariable[A] with RefTrueVar[A]
+abstract class RefLabel[A>:Null<:AnyRef](var trueValue:A) extends RefVariable[A] with RefVarWithTargetValue[A]
 

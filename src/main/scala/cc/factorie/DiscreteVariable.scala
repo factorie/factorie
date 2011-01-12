@@ -16,57 +16,81 @@ package cc.factorie
 import scala.util.Random
 import cc.factorie.la._
 
-/** A collection of weighted discrete variables, e.g. DiscreteVectorVariable.
-    @author Andrew McCallum */
-trait DiscreteVars extends Variable with VectorVar with DomainType[DiscreteVectorDomain] {
-  type VariableType <: DiscreteVars
-  def minIntValue = 0
-  def maxIntValue = domain.size - 1
-  /** A cc.factorie.la.Vector representation of the value of this variable. */
-  def vector: Vector
-  /** A more efficient alternative to this.vector.activeDomain */
-  def activeDomain: Iterable[Int]  // TODO Consider removing this? -akm
+trait DiscretesVar extends VectorVar {
+  type VariableType <: DiscretesVar
+  type DomainType <: DiscreteVectorDomain
+  type Value <: DiscretesValue
+  def contains(dimension:Int): Boolean = vector.apply(dimension) != 0.0
 }
 
+/** A vector with dimensions corresponding to a DiscreteDomain, and with Double weights for each dimension, represented by a sparse vector. */
+abstract class DiscretesVariable extends DiscretesVar {
+  thisVariable =>
+  type DomainType = DiscreteVectorDomain
+  type Value = DiscretesValue
+  val value: Value = new SparseVector(domain.maxVectorLength) with DiscretesValue { def domain = thisVariable.domain }
+  //def activeDomain = vector.activeDomain
+}
+
+/** A sparse binary vector with length determined by a DiscreteDomain */
+trait SparseBinaryDiscretesVar extends DiscretesVar {
+  type Value <: cc.factorie.la.SparseBinaryVector with DiscretesValue
+  def length = domain.maxVectorLength //allocSize // TODO Remove this?
+  //def apply(i:Int) = vector.apply(i)
+  def activeDomain = vector.activeDomain
+  def zero(): Unit = value.zero()
+  def +=(i:Int): Unit = { if (frozen) throw new Error("Cannot append to frozen SparseBinaryDiscretesVar."); value.include(i) }
+  //def ++=(is:Iterable[Int]): Unit = is.foreach(i => vector.+=(i)) // Conflicts with ++=(Iterable[T])
+  var frozen = false
+  def freeze() = frozen = true
+  override def isConstant = frozen
+}
+
+abstract class SparseBinaryDiscretesVariable extends SparseBinaryDiscretesVar {
+  thisVariable =>
+  type DomainType = DiscreteVectorDomain
+  type Value = cc.factorie.la.SparseBinaryVector with DiscretesValue
+  lazy val value = new cc.factorie.la.SparseBinaryVector(-1) with DiscretesValue {
+    def domain = thisVariable.domain
+    override def length = domain.maxVectorLength
+  }
+}
+
+
+
 /** A single discrete variable */
-trait DiscreteVar extends DiscreteVars with DomainType[DiscreteDomain] with ValueType[DiscreteValue] {
-  this: Variable =>
+trait DiscreteVar extends DiscretesVar with IterableSettings with QDistribution {
   type VariableType <: DiscreteVar
+  type DomainType <: DiscreteDomain
+  type Value <: DiscreteValue
+  private var _value: Value = null.asInstanceOf[Value]
+  def value: Value = _value
+  protected def _set(newValue:Value): Unit = _value = newValue
   /*@inline final*/ def intValue = value.index
   def activeDomain = List(intValue) // TODO try to make this implementation possible: = value
   def ===(other: DiscreteVar) = value == other.value
   def !==(other: DiscreteVar) = value != other.value
-}
-
-abstract class DiscreteVariable extends DiscreteVar with IterableSettings with QDistribution {
-  // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
-  type VariableType <: DiscreteVariable
-  def this(initialInt:Int) = { this(); _value = domain.getValue(initialInt) /*.asInstanceOf[Value]*/ } // TODO Get rid of this cast?
-  private var _value: Value = null.asInstanceOf[Value]
-  def value: Value = _value
   def set(newValue:Value)(implicit d:DiffList): Unit = if (newValue ne value) {
     assert((newValue eq null) || newValue.domain == domain)
     if (d ne null) d += new DiscreteVariableDiff(_value, newValue)
     _value = newValue
   }
   /** You should never call this yourself.  Only used in CategoricalVariable initialization code. */
-  protected def _set(newValue:Value) = {
-    assert(newValue ne null)
-    _value = newValue
-  }
+  //protected def _set(newValue:Value) = { assert(newValue ne null); _value = newValue }
+  // TODO provide default value for DiffList = null
   def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt).asInstanceOf[Value])(d)
   def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
   def settings = new SettingIterator {
-    // TODO Base this on a domain.iterator
+    // TODO Base this on a domain.iterator instead, for efficiency
     var i = -1
     val max = domain.size - 1
     def hasNext = i < max
     def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(i)(d); d }
     def reset = i = -1
-    override def variable: DiscreteVariable.this.type = DiscreteVariable.this
+    override def variable: DiscreteVar.this.type = DiscreteVar.this
   }
   case class DiscreteVariableDiff(oldValue: Value, newValue: Value) extends Diff {
-    @inline final def variable: DiscreteVariable = DiscreteVariable.this
+    @inline final def variable: DiscreteVar = DiscreteVar.this
     @inline final def redo = _value = newValue
     @inline final def undo = _value = oldValue
     override def toString = "DiscreteVariableDiff("+oldValue+","+newValue+")"
@@ -76,27 +100,17 @@ abstract class DiscreteVariable extends DiscreteVar with IterableSettings with Q
       } */
   }
   // TODO But then this choice cannot be changed by subclasses :-(  Consider some implicit configuration instead.
+  // So define a QType[+QT] trait!
   type QType = cc.factorie.generative.MutableProportions  // TODO Change this = to <:  Why wasn't this done before?
   def newQ = new cc.factorie.generative.DenseProportions(domain.size)
 }
 
-// TODO Remove this class!
-case class Block(v1:BooleanVariable, v2:BooleanVariable) extends Variable with IterableSettings with ValueType[(Boolean,Boolean)] {
-  def domain = BooleanDomain
-  def value = (v1.booleanValue, v2.booleanValue)
-  def settings: SettingIterator = new SettingIterator {
-    var i = -1
-    val max = 4
-    def hasNext = i < max
-    def next(difflist:DiffList): DiffList = {
-      val d = newDiffList
-      i += 1
-      if (i % 2 == 1) v2.set(true)(d) else v2.set(false)(d)
-      if (i > 1) v1.set(true)(d) else v1.set(false)(d)
-      d
-    }
-    def reset = i = -1
-  }
+abstract class DiscreteVariable extends DiscreteVar {
+  // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
+  type VariableType <: DiscreteVariable
+  type DomainType = DiscreteDomain
+  type Value = DiscreteValue
+  def this(initialInt:Int) = { this(); _set(domain.getValue(initialInt)) /*.asInstanceOf[Value]*/ } // TODO Get rid of this cast?
 }
 
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  May be useful in the future for block-Gibbs-sampling?
@@ -117,17 +131,5 @@ class DiscreteVariableBlock(vars:DiscreteVariable*) extends Variable with Seq[Di
     def hasNext = i < max
     def next(difflist:DiffList) = throw new Error // TODO Implement this properly { i += 1; val d = newDiffList; _vars(i%n).set(i/n)(d); d }
     def reset = i = -1
-  }
-}
-
-// TODO Consider removing all 'Observation' variables
-abstract class DiscreteObservation extends DiscreteVar {
-  type VariableType <: DiscreteObservation
-  def this(theInt:Int) = { this(); _value = domain.getValue(theInt) }
-  var _value: Value = null.asInstanceOf[Value]
-  /*@inline final*/ def value: Value = _value
-  protected def _initializeValue(v:Value): Unit = {
-    assert(v ne null)
-    _value = v
   }
 }

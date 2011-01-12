@@ -21,23 +21,27 @@ import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,Buffered
 // TODO Also make a randomized-representation CategoricalDomain, with hashes?
 
 /** A value in a CategoricalVectorDomain */
-trait CategoricalValues[T] extends DiscreteValues with DomainType[CategoricalVectorDomain[T]]
+//trait CategoricalVectorValue[T] extends DiscreteVectorValue with DomainType[CategoricalVectorDomain[T]]
 
-/** A value in a CategoricalDomain */
-trait CategoricalValue[T] extends CategoricalValues[T] with DiscreteValue with DomainType[CategoricalDomain[T]] {
-  def entry: T
-}
+trait CategoricalsValue[T] extends DiscretesValue with DomainType[CategoricalVectorDomain[T]]
 
-
-/** Domain for CategoricalVars, e.g. CategoricalVectorVariable or CategoricalBinaryVectorVariable.
+/** Domain for CategoricalsVar, e.g. FeatureVectorVariable.
     @author Andrew McCallum */
-trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[CategoricalValues[T]] with DimensionDomainType[CategoricalDomain[T]] {
+trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[CategoricalsValue[T]] with DimensionDomainType[CategoricalDomain[T]] {
   thisDomain =>
   type CategoryType = T
   lazy val dimensionDomain: CategoricalDomain[T] = new CategoricalDomain[T]
   def size: Int = dimensionDomain.size
 }
 
+
+// For single categorical values
+
+/** A value in a CategoricalDomain */
+trait CategoricalValue[T] extends CategoricalsValue[T] with DiscreteValue with DomainType[CategoricalDomain[T]] {
+  // TODO Rename this "category"
+  def entry: T
+}
 
 /** A domain for categorical variables.  It stores not only a size,
     but also the mapping from category values (of type T = this.CategoryType)
@@ -298,3 +302,5 @@ class EnumDomain extends CategoricalDomain[String] {
     }
   }
 }
+
+// TODO Create a EnumVectorDomain

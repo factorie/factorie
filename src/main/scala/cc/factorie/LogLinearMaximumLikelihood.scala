@@ -36,11 +36,11 @@ class LogLinearMaximumLikelihood(model: Model) {
   // TODO Figure out how to reinstate something like this.
   //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V]): Unit = process(List(variables), Int.MaxValue)
 
-  def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variableSet: Seq[V], numIterations: Int = Int.MaxValue): Unit = 
+  def process[V <: DiscreteVarWithTarget with NoVariableCoordination](variableSet: Seq[V], numIterations: Int = Int.MaxValue): Unit = 
     processAll(List(variableSet), numIterations)
 
   /**First argument is a collection of collections-of-variables.  The former are considered iid.  The later may have dependencies.  */
-  def processAll[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Int.MaxValue): Unit = {
+  def processAll[V <: DiscreteVarWithTarget with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Int.MaxValue): Unit = {
     // Data structure for holding per-template constraints and expectations
     class SuffStats extends HashMap[TemplatesToUpdate, Vector] {
       override def default(template: TemplatesToUpdate) = {
@@ -59,7 +59,7 @@ class LogLinearMaximumLikelihood(model: Model) {
     // Add all model dot templates to constraints
     model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
     // Gather constraints
-    variableSets.foreach(_.foreach(_.setToTruth(null)))
+    variableSets.foreach(_.foreach(_.setToTarget(null)))
     variableSets.foreach(vars => model.factorsOf[TemplatesToUpdate](vars).foreach(f => constraints(f.template) += f.cachedStatistics.vector))
 
     def templates = constraints.sortedKeys
@@ -96,7 +96,7 @@ class LogLinearMaximumLikelihood(model: Model) {
             lattice.updateTreewise(expectations)
             // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
             // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
-            variables.foreach(_.asInstanceOf[TrueSetting].setToTruth(null))
+            variables.foreach(_.asInstanceOf[VarWithTargetValue].setToTarget(null))
             // oValue += model.factors(variables).foldLeft(0.0)(_+_.cachedStatistics.score) - logZ
             for (bpfactor <- lattice.bpFactors.values) oValue += bpfactor.factor.cachedStatistics.score
             oValue -= lattice.sumLogZ
@@ -137,7 +137,7 @@ class LogLinearMaximumLikelihood(model: Model) {
             model.factorsOf[TemplatesToUpdate](v).foreach(f => vecPlusEq(expectations(f.template), f.statistics.vector, -distribution(i)))
           })
 
-          oValue += math.log(distribution(v.trueIntValue))
+          oValue += math.log(distribution(v.targetIntValue))
         }))
         val invVariance = -1.0 / gaussianPriorVariance
         model.templatesOf[TemplatesToUpdate].foreach {
