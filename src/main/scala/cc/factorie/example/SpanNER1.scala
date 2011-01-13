@@ -33,27 +33,28 @@ import cc.factorie.util.DefaultCmdOptions
 object SpanNER1 {
   var verbose = false
 
-/*
   // The variable classes
   object TokenDomain extends CategoricalVectorDomain[String]
-  class Token(word:String, trueLabelString:String) extends tokenseq.Token[Sentence,Token](word) {
+  class Token(word:String, val trueLabelString:String) extends tokenseq.Token[Sentence,Token](word) {
     def domain = TokenDomain
     // TODO Consider instead implementing truth with true spans in VariableSeqWithSpans. 
-    def trueLabelValue = trueLabelString
-    val trueLabelIndex = Domain[Label].index(trueLabelValue)
+    val trueLabelIndex = LabelDomain.index(trueLabelString)
     def spans:Seq[Span] = seq.spansContaining(position).toList
     def spanStarts: Iterable[Span] = seq.spansStartingAt(position)
     def spanEnds: Iterable[Span] = seq.spansEndingAt(position)
     override def skipNonCategories = true
   }
-  class Label(labelName:String, val span: Span) extends LabelVariable(labelName)
+  object LabelDomain extends CategoricalDomain[String]
+  class Label(labelName:String, val span: Span) extends LabelVariable(labelName) {
+    def domain = LabelDomain
+  }
   class Span(labelString:String, seq:Sentence, start:Int, len:Int)(implicit d:DiffList) extends SpanVariableInSeq[Token,Span](seq, start, len) {
     val label = new Label(labelString, this)
     def spanLength = new SpanLength(len)
     override def phrase = this.map(_.word).mkString(" ")
-    def isCorrect = this.forall(token => token.trueLabelValue == label.value) &&
-      (!hasPredecessor(1) || predecessor(1).trueLabelValue != label.value) && 
-      (!hasSuccessor(1) || successor(1).trueLabelValue != label.value)
+    def isCorrect = this.forall(token => token.trueLabelString == label.entryValue) &&
+      (!hasPredecessor(1) || predecessor(1).trueLabelString != label.entryValue) && 
+      (!hasSuccessor(1) || successor(1).trueLabelString != label.entryValue)
     // Does this span contain the words of argument span in order?
     def contains(span:Span): Boolean = {
       for (i <- 0 until length) {
@@ -73,10 +74,11 @@ object SpanNER1 {
   class Sentence extends tokenseq.TokenSeq[Token,Sentence] with VariableSeqWithSpans[Token,Span] {
     var filename:String = null
   }
+  object SpanLengthDomain extends DiscreteDomain { def size = 6 }
   class SpanLength(x:Int) extends DiscreteVariable {
+    def domain = SpanLengthDomain
     if (x < domain.size) set(x)(null) else set(domain.size-1)(null)
   }
-  Domain[SpanLength].size = 6
   class Lexicon(filename:String) extends tokenseq.Lexicon(filename) {
     def name = filename.substring(filename.lastIndexOf('/')+1).toUpperCase
   }
@@ -115,18 +117,32 @@ object SpanNER1 {
     // Bias term on each individual label 
     //new TemplateWithDotStatistics1[Label],
     // Token-Label within Span
-    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = for (token <- span) yield Stat(token, label) },
+    new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
+      def statistics(v:Values) = for (token <- v._1) yield Stat(token.value, v._2) 
+    },
     // First Token of Span
-    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = Stat(span.head, span.label) },
+    new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
+      def statistics(v:Values) = v match { case Values(span,label) => Stat(span.head.value, label) }
+    },
     // Last Token of Span
-    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = Stat(span.last, span.label) },
+    new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
+      def statistics(v:Values) = v match { case Values(span,label) => Stat(span.last.value, label) }
+    },
     // Token before Span
-    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.head.hasPrev) Stat(span.head.prev, span.label) else Nil },
-    //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.head.hasPrev && span.head.prev.hasPrev) Stat(span.head.prev.prev, span.label) else Nil },
+    new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
+      def statistics(v:Values) = v match { case Values(span,label) => if (span.head.hasPrev) Stat(span.head.prev.value, label) else Nil }
+    },
     // Token after Span
-    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext) Stat(span.last.next, span.label) else Nil },
+    new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
+      def statistics(v:Values) = v match { case Values(span,label) => if (span.last.hasNext) Stat(span.last.next.value, label) else Nil }
+    },
     // Single Token Span
-    new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.length == 1) Stat(span.head, span.label) else Nil }
+    new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
+      def statistics(v:Values) = {
+        val span = v._1; val label = v._2
+        if (span.length == 1) Stat(span.head.value, label) else Nil 
+      }
+    }
     //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil },
     // Span Length with Label
     //new SpanLabelTemplate with DotStatistics2[SpanLength,Label] { def statistics(span:Span, label:Label) = Stat(span.spanLength, span.label) },
@@ -140,16 +156,17 @@ object SpanNER1 {
       def unroll1(span:Span) = Factor(span, span.label)
       def unroll2(label:Label) = Factor(label.span, label)
       def score(s:Stat) = {
-        val span = s._1
+        val spanValue = s._1
+        val labelValue = s._2
         var result = 0.0
         var trueLabelIncrement = 10.0
         var allTokensCorrect = true
-        for (token <- span) {
+        for (token <- spanValue) {
           //if (token.trueLabelValue != "O") result += 2.0 else result -= 1.0
-          if (token.trueLabelValue == span.label.value) {
+          if (token.trueLabelString == labelValue.entry) {
             result += trueLabelIncrement
             trueLabelIncrement += 2.0 // proportionally more benefit for longer sequences to help the longer seq steal tokens from the shorter one.
-          } else if (token.trueLabelValue == "O") {
+          } else if (token.trueLabelString == "O") {
             result -= 1.0
             allTokensCorrect = false
           } else {
@@ -159,8 +176,8 @@ object SpanNER1 {
           if (token.spans.length > 1) result -= 100.0 // penalize overlapping spans
         }
         if (allTokensCorrect) {
-          if (!span.hasPredecessor(1) || span.predecessor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
-          if (!span.hasSuccessor(1) || span.successor(1).trueLabelValue != span.label.value) result += 5.0 // reward for getting starting boundary correct
+          if (!spanValue.hasPredecessor(1) || spanValue.predecessor(1).trueLabelString != labelValue.entry) result += 5.0 // reward for getting starting boundary correct
+          if (!spanValue.hasSuccessor(1) || spanValue.successor(1).trueLabelString != labelValue.entry) result += 5.0 // reward for getting starting boundary correct
         }
         result
       }
@@ -177,7 +194,7 @@ object SpanNER1 {
       //println("existing spans = "+existingSpans)
       for (span <- existingSpans) {
         // Change label without changing boundaries
-        for (labelValue <- Domain[Label]; if (labelValue != "O"))
+        for (labelValue <- LabelDomain.values; if (labelValue.entry != "O"))
           changes += {(d:DiffList) => span.label.set(labelValue)(d)}
         // Delete the span
         changes += {(d:DiffList) => span.delete(d)}
@@ -187,33 +204,33 @@ object SpanNER1 {
           // Trim first word, without changing label
           changes += {(d:DiffList) => span.trimStart(1)(d)}
           // Split off first and last word, with choices of the label of the split off portion
-          for (labelValue <- Domain[Label]; if (labelValue != "O")) {
-            changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue, seq, span.end+1, 1)(d) } }
-            changes += {(d:DiffList) => { span.trimStart(1)(d); new Span(labelValue, seq, span.start-1, 1)(d) } }
+          for (labelValue <- LabelDomain.values; if (labelValue.entry != "O")) {
+            changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue.entry, seq, span.end+1, 1)(d) } }
+            changes += {(d:DiffList) => { span.trimStart(1)(d); new Span(labelValue.entry, seq, span.start-1, 1)(d) } }
           }
         }
         if (span.length == 3) {
           // Split span, dropping word in middle, preserving label value
-          changes += {(d:DiffList) => span.delete(d); new Span(span.label.value, seq, span.start, 1)(d); new Span(span.label.value, seq, span.end, 1)(d) }
+          changes += {(d:DiffList) => span.delete(d); new Span(span.label.entryValue, seq, span.start, 1)(d); new Span(span.label.entryValue, seq, span.end, 1)(d) }
         }
         // Add a new word to beginning, and change label
         if (span.canPrepend(1)) {
-          for (labelValue <- Domain[Label]; if (labelValue != "O"))
+          for (labelValue <- LabelDomain.values; if (labelValue.entry != "O"))
             changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.prepend(1)(d); span.head.spans.filter(_ != span).foreach(_.trimEnd(1)(d)) } }
         }
         // Add a new word to the end, and change label
         if (span.canAppend(1)) {
-          for (labelValue <- Domain[Label]; if (labelValue != "O"))
+          for (labelValue <- LabelDomain.values; if (labelValue.entry != "O"))
             changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.append(1)(d); span.last.spans.filter(_ != span).foreach(_.trimStart(1)(d)) } }
         }
-        //if (span.length > 1) changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue, seq, position+1, 1)(d) } }
+        //if (span.length > 1) changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue.entry, seq, position+1, 1)(d) } }
       }
       if (existingSpans.isEmpty) {
         changes += {(d:DiffList) => {}} // The no-op action
-        for (labelValue <- Domain[Label]; if (labelValue != "O")) {
+        for (labelValue <- LabelDomain.values; if (labelValue.entry != "O")) {
           // Add new length=1 span, for each label value
-          changes += {(d:DiffList) => new Span(labelValue, seq, token.position, 1)(d)}
-          //if (position != seq.length-1) changes += {(d:DiffList) => new Span(labelValue, seq, position, 2)(d)}
+          changes += {(d:DiffList) => new Span(labelValue.entry, seq, token.position, 1)(d)}
+          //if (position != seq.length-1) changes += {(d:DiffList) => new Span(labelValue.entry, seq, position, 2)(d)}
         }
       }
       //println("Token.settings length="+changes.length)
@@ -314,8 +331,8 @@ object SpanNER1 {
     addFeatures(documents)
     val testTokens = documents.flatMap(x=>x)
     println("Have "+testTokens.length+" tokens")
-    println("Domain[Token] size="+Domain[Token].size)
-    println("Domain[Label] "+Domain[Label].toList)
+    println("TokenDomain size="+TokenDomain.size)
+    println("LabelDomain "+LabelDomain.values.toList)
     predictor.processAll(testTokens, 2)
     documents.foreach(s => { println("FILE "+s.filename); printSentence(s) })
   }
@@ -341,8 +358,8 @@ object SpanNER1 {
     val trainTokens = trainSentences.flatMap(x=>x) //.take(2000)
     val testTokens = testSentences.flatMap(x=>x)
     println("Have "+trainTokens.length+" trainTokens "+testTokens.length+" testTokens")
-    println("Domain[Token] size="+Domain[Token].size)
-    println("Domain[Label] "+Domain[Label].toList)
+    println("TokenDomain size="+TokenDomain.size)
+    println("LabelDomain "+LabelDomain.values.toList)
     
     if (verbose) trainTokens.take(500).foreach(printFeatures _)
     
@@ -435,7 +452,7 @@ object SpanNER1 {
       predictedCount += sentence.spans.length
       sentence.spans.foreach(span => if (span.isCorrect) correctCount += 1)
       for (token <- sentence)
-        if (token.trueLabelValue != "O" && (!token.hasPrev || token.prev.trueLabelValue != token.trueLabelValue))
+        if (token.trueLabelString != "O" && (!token.hasPrev || token.prev.trueLabelString != token.trueLabelString))
            trueCount += 1
     }
     def precision = if (predictedCount == 0) 1.0 else correctCount.toDouble / predictedCount
@@ -518,7 +535,7 @@ object SpanNER1 {
     result
   }
   
-*/
+
 }
 
 

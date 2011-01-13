@@ -13,10 +13,7 @@
    limitations under the License. */
 
 package cc.factorie
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.la.Vector
-import cc.factorie.la.SparseVector
-import scala.util.Sorting
 
 trait VectorDomain extends Domain[Vector]
 object VectorDomain extends VectorDomain
@@ -40,10 +37,10 @@ trait VectorVar extends Variable with VarAndValueType[VectorVar,Vector] {
   //def activeDomain: Iterable[Int]  // TODO Consider removing this? -akm
 }
 
-/** A vector of Double values with sparse vector representation. 
-    Zero-arg constructor only used by subclasses
+/** A variable whose value is a cc.factorie.la.Vector.
+    The zero-arg constructor should only be used by subclasses
     (e.g. so that CategoricalVariable can use its domain for value lookup),
-    but should never be called by users. */
+    and should never be called by users. */
 abstract class VectorVariable extends VectorVar {
   def this(initialValue:Vector) = { this(); _set(initialValue) }
   private var _value: ValueType = null.asInstanceOf[ValueType]

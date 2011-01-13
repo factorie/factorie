@@ -23,16 +23,21 @@ import scala.Math
 import scala.util.Sorting
 
 // Variables for dealing with spans of sequences
-trait SpanValue[T] {
+trait SpanValue[T] extends IndexedSeqEqualsEq[T] {
+  def apply(i:Int) = seq(start + i)
   def seq:Seq[T]
   def start: Int
   def length: Int
+  def hasSuccessor(i: Int) = (start + length - 1 + i) < seq.length
+  def hasPredecessor(i: Int) = (start - i) >= 0
+  def successor(i: Int): T = if (hasSuccessor(i)) seq(start + length - 1 + i) else null.asInstanceOf[T]
+  def predecessor(i: Int): T = if (hasPredecessor(i)) seq(start - i) else null.asInstanceOf[T]
 }
 
 abstract class SpanVar[T](theSeq: Seq[T], initStart: Int, initLength: Int) extends Variable with IndexedSeqEqualsEq[T] with VarAndValueGenericDomain[SpanVar[T],SpanValue[T]] {
   //type VariableType <: SpanVar[T] //SpanVariable[T];
   case class SpanValue(seq:Seq[T], start:Int, length:Int) extends cc.factorie.SpanValue[T]
-  def value: Value = new SpanValue(seq, start, length)
+  def value: Value = new SpanValue(seq, start, length) // TODO Consider avoiding creating a new object here.
   assert(initStart >= 0)
   assert(initLength > 0)
   assert(initStart + initLength <= seq.length)
