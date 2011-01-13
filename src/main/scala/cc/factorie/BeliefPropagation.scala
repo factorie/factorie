@@ -32,7 +32,7 @@ import collection.mutable.{Map, HashMap, HashSet, ArrayBuffer}
 /** Holds some global definitions for BP.  */
 // Many of these things should not be global!  Remove them. -akm
 object BeliefPropagation {
-  type BPVariable = DiscreteVar with NoVariableCoordination // Our BP implementation currently only handles these types of Variables
+  type BPVariable = DiscreteVariable with NoVariableCoordination // Our BP implementation currently only handles these types of Variables
 }
 
 /** A factor in a belief propagation lattice used for inference.

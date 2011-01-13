@@ -16,8 +16,8 @@ package cc.factorie
 import scala.collection.mutable.HashSet
 
 /**A variable whose value is a set of other variables */
-abstract class SetVariable[A]() extends Variable with AbstractDomain[scala.collection.Set[A]] {
-  type VariableType <: SetVariable[A];
+abstract class SetVariable[A]() extends Variable with VarAndValueGenericDomain[SetVariable[A],scala.collection.Set[A]] {
+  //type VariableType <: SetVariable[A];
   def value = _members
   private val _members = new HashSet[A];
   def members: scala.collection.Set[A] = _members
@@ -46,8 +46,8 @@ abstract class SetVariable[A]() extends Variable with AbstractDomain[scala.colle
   }
 }
 
-abstract class WeakSetVariable[A<:{def present:Boolean}] extends Variable with AbstractDomain[scala.collection.Set[A]] {
-  type VariableType <: WeakSetVariable[A];
+abstract class WeakSetVariable[A<:{def present:Boolean}] extends Variable with VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]] {
+  //type VariableType <: WeakSetVariable[A];
   private val _members = new cc.factorie.util.WeakHashSet[A];
   def value: scala.collection.Set[A] = _members
   def iterator = _members.iterator.filter(_.present)

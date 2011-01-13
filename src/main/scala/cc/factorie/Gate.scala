@@ -64,7 +64,7 @@ trait AbstractGatedRefVariable {
 /** A RefVariable whose value is controled by a Gate.  This is used as a reference to the Distribution of samples generated from a Mixture.
     @author Andrew McCallum */
 trait GatedRefVariable[A<:AnyRef] extends RefVariable[A] with AbstractGatedRefVariable {
-  type VariableType <: GatedRefVariable[A]
+  //type VariableType <: GatedRefVariable[A]
   def gate: Gate // TODO Are we sure we need to know who our gate is?  Can we save memory by deleting this?
   /** Not the current value of this GatedRefVariable.
       Returns the value associated with a certain integer index value of the gate.  

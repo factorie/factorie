@@ -17,17 +17,18 @@ package cc.factorie
 /** A Variable whose value has type indicated by the type parameter, which must be a scala.AnyRef.
     Scala primitive types such as Int and Double should be stored in specialized variables, 
     such as IntegerVar and RealVar, respectively. */
-trait RefVar[A<:AnyRef] extends Variable with AbstractDomain[A] {
-  def value: A
+trait RefVar[A<:AnyRef] extends Variable with VarAndValueGenericDomain[RefVar[A],A] {
+  //def value: A
   def abstractValue: AnyRef = value
-  def ===(other: RefVar[A]) = value == other.value
-  def !==(other: RefVar[A]) = value != other.value
+  // TODO Consider moving these method to Variable!
+  //def ===(other: RefVar[A]) = value == other.value
+  //def !==(other: RefVar[A]) = value != other.value
 }
 
 /**A variable with a single mutable (unindexed) value which is of Scala type A. */
 // TODO A candidate for Scala 2.8 @specialized
-class RefVariable[A<:AnyRef](initialValue:A = null) extends Variable with RefVar[A] {
-  type VariableType <: RefVariable[A]
+class RefVariable[A<:AnyRef](initialValue:A = null) extends RefVar[A] {
+  //type VariableType <: RefVariable[A]
   // TODO  Consider: def this(initval:A)(implicit d:DiffList = null)
   //def this(initval:A) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
   private var _value: A = initialValue // was _

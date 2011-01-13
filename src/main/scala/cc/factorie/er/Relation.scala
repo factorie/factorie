@@ -34,7 +34,7 @@ class Relationship[A<:Entity[A],B<:Entity[B]](val src:A, val dst:B) extends Bool
 /** Represents a many-to-many relation.
  Example usage:  object friend extends Relation[Person,Person] */
 // TODO Only binary relations for now, but it wouldn't be hard to add n-ary relations.
-class Relation[A<:Entity[A],B<:Entity[B]] extends Variable with AbstractDomain[Nothing] {
+class Relation[A<:Entity[A],B<:Entity[B]] extends Variable with VarAndValueGenericDomain[Relation[A,B],Nothing] {
   //type Value = Nothing
   type SrcType = A
   type DstType = B

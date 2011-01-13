@@ -24,7 +24,7 @@ import cc.factorie.er._
 @DomainInSubclasses
 abstract class Instance[L<:Label[This,L],This<:Instance[L,This]](val name:String) extends BinaryFeatureVectorVariable[String] {
   this: This =>
-  type VariableType <: Instance[L,This]
+  //type VariableType <: Instance[L,This]
   type GetterType <: InstanceGetter[L,This]
   class GetterClass extends InstanceGetter[L,This]
   def newGetter = new InstanceGetter[L,This]

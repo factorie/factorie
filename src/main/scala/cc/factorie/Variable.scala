@@ -19,20 +19,25 @@ import scala.util.{Random,Sorting}
 import scala.reflect.Manifest
 
 // Notes on class names for Variables:
-// Except for cc.factorie.Variable, "*Variable" are classes with concrete DomainType and ValueType members.
-// "*Var" traits have bounded by not invariance DomainType and ValueType members.
+// Except for cc.factorie.Variable, "*Variable" are classes.
+// "*Var" are trait counterparts, useful for creating Variables from your own pre-existing classes.
 
-/** Provides a member type 'Value' in such a way that it can be overridden in subclasses. */
+/** Provides a covariant member type 'ValueType' in such a way that it can be overridden in subclasses. */
 trait ValueType[+VT] {
   type ValueType = VT
 }
 
-/** Provides a member type 'DomainType' as well as a member type 'Value' whose
-    value is obtained from DomainType#ValueType. */
-trait DomainType[+DT<:Domain[_]] {
-  type DomainType = DT
+/** Use this trait to refine the ValueType in subclasses of Variable.
+    Do not use the ValueType trait directly, because this will not result in
+    a proper update to Variable's "Value" member type.
+    This trait provides member types "VariableType" and "ValueType" as covariant member types.
+    In Variable this supports the member type definition "Value = VariableType#ValueType",
+    which magically turns out to be (pseudo?)-invariant. */
+trait VarAndValueType[+This<:Variable,+VT] extends ValueType[VT] {
+  this: This =>
+  type VariableType = This
 }
-
+// TODO Consider renaming ValueAndVarType[+VT,+This<:Variable] to match other ordering of self-type going last.
 
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
    <p>
@@ -43,18 +48,26 @@ trait DomainType[+DT<:Domain[_]] {
    machine address (i.e. System.identityHashCode).
    @author Andrew McCallum */
 trait Variable {
-  /** The type of this variable, especially used by this Variable's Domain.  
+  /** The type of this variable, used specially in the definition
+      of the member type 'Value'.
       Often you can treat this as an approximation to a self-type */
   type VariableType <: Variable // TODO Consider removing this.
 
+  /** The type of the value of this variable, as a covariant type. */
   type ValueType <: Any
-  type DomainType <: Domain[Any] // TODO Consider Domain[Value]
+
+  /** The type of the value of this variable, as a pseudo-invariant type. */
+  type Value = VariableType#ValueType
  
   /** Abstract method to return the domain of this variable. */
-  def domain: DomainType
+  def domain: Domain[Any]
 
   /** Abstract method to return the value of this variable. */
-  def value: ValueType
+  def value: Value
+
+  /** Value comparisons (as distinct from variable pointer equality) */
+  def ===(other: VariableType) = value == other.value
+  def !==(other: VariableType) = value != other.value
   
   /** The type of the variable contained inside this variable.
       Used for handling var-args. 
@@ -94,7 +107,7 @@ trait ContainerVariable[A<:Variable] extends Variable {
   def containedVariableManifest(implicit m:Manifest[A]) = m
 }
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.
-trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] with AbstractDomain[scala.collection.Seq[A#ValueType]] {
+trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] with VarAndValueGenericDomain[Vars[A],scala.collection.Seq[A#Value]] {
   def value = this.map(_.value)
   override def toString = mkString("Vars(", ",",")")
 }
@@ -136,11 +149,8 @@ trait ConstantValue extends Variable {
 
 trait NullDomain extends Domain[Null]
 object NullDomain extends NullDomain
-/** A trait for variable that actually have no value, e.g. FiniteMixture. */
-@deprecated("May be removed in the future.")
-trait NullValue extends Variable {
-  type DomainType = NullDomain
-  type ValueType = Null
+/** A trait for a variable that actually has no value. */
+trait VarWithNullValue extends Variable with VarAndValueType[VarWithNullValue,Null] {
   final def domain = NullDomain
   final def value = null
 }
@@ -177,7 +187,7 @@ trait MutableDoubleValue extends NumericValue {
 
 
 /** A Variable whose (constant) value is the Variable object itself. */
-trait SelfVariable[This<:SelfVariable[This]] extends Variable with AbstractDomain[This] {
+trait SelfVariable[This<:SelfVariable[This]] extends Variable with VarAndValueGenericDomain[SelfVariable[This],This] {
   this: This =>
   def value: This = this
 }

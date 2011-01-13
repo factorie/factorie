@@ -20,7 +20,7 @@ import scala.math
 // Variables for dealing with sequences
 
 /** Revert equals/hashCode behavior of Seq[A] to the default Object.
-    WARNING: This doesn't actually satisfy commutativity with a Seq[A]. :-( */
+    WARNING: This doesn't actually satisfy == commutativity with a Seq[A]. :-( */
 trait SeqEqualsEq[+A] extends scala.collection.Seq[A] {
   override def equals(that:Any): Boolean = that match {
     case that:AnyRef => this eq that
@@ -34,9 +34,9 @@ trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A]
 /** A variable containing a mutable sequence of other variables.  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
     @author Andrew McCallum */
-abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with SeqEqualsEq[X] with AbstractDomain[Seq[X]] {
+abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with SeqEqualsEq[X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]] {
   def this() = this(Nil)
-  type VariableType <: SeqVariable[X]
+  //type VariableType <: SeqVariable[X]
   def value = this.toSeq
   //class XList[X](var elem:X, var prev:XList[X], var next:XList[X]) extends DoubleLinkedList[X,XList[X]] {
   //this(xs:Seq[X]) = this(xs.head, null, new XList(xs.drop(1)))
@@ -68,7 +68,7 @@ abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with SeqEqualsE
 
 /** A variable containing a mutable (but untracked by Diff) sequence of variables; used in conjunction with VarInSeq.
     @author Andrew McCallum */
-class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeqEqualsEq[V] with Variable with AbstractDomain[Seq[V]] {
+class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeqEqualsEq[V] with Variable with VarAndValueGenericDomain[VariableSeq[V],Seq[V]] {
   def value = this.toSeq
   private val seq = new ArrayBuffer[V](initialCapacity)
   def +=(v: V) = {

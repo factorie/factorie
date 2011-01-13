@@ -37,7 +37,7 @@ trait Domain[+VT] extends ValueType[VT] {
   def filename:String = this.getClass.getName
 }
 
-
+// TODO Consider instead: extends Domain[VT] with Iterable[VT], but then we run into problems with "def size"
 trait IterableDomain[+VT] extends Domain[VT] {
   def values: Iterable[VT]
 }
@@ -45,12 +45,11 @@ trait IterableDomain[+VT] extends Domain[VT] {
 
 // TODO Give this a better name, indicating that it isn't a Domain itself, but a trait for a Variable to give it a domain.
 /** The domain object for variables that don't have a meaningful domain. */  // TODO Explain this better; see Vars and SpanVariable
-// TODO Rename DefaultDomain?
-object AbstractDomain extends Domain[Any]
+object GenericDomain extends Domain[Any]
 
 /** Add this trait to a Variable to give it a Domain with Value type VT. */
-trait AbstractDomain[VT] extends Variable {
-  type DomainType = Domain[VT]
-  type ValueType = VT
-  def domain = AbstractDomain.asInstanceOf[Domain[VT]]
+trait VarAndValueGenericDomain[+This<:Variable,+VT] extends VarAndValueType[This,VT] {
+  this: This =>
+  //type ValueType = VT
+  def domain = GenericDomain.asInstanceOf[Domain[VT]]
 }

@@ -21,7 +21,7 @@ abstract class Label[I<:Instance[This,I],This<:Label[I,This]](labelString:String
   this: This =>
   type GetterType <: LabelGetter[I,This];
   class GetterClass extends LabelGetter[I,This]
-  type VariableType <: Label[I,This]
+  //type VariableType <: Label[I,This]
   def newGetter = new LabelGetter[I,This]
   def instance: I = _instance // Why was this necessary?  Why didn't simply (val instance:I) above work?
 }

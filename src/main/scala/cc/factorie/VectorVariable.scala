@@ -28,10 +28,8 @@ object VectorDomain extends VectorDomain
     instances is as some number of discrete variables, each with
     a weight.  
     @author Andrew McCallum */
-trait VectorVar extends Variable {
-  type VariableType <: VectorVar
-  type DomainType <: VectorDomain
-  type ValueType <: Vector
+trait VectorVar extends Variable with VarAndValueType[VectorVar,Vector] {
+  def domain: VectorDomain
   /** A cc.factorie.la.Vector representation of the value of this variable. */
   // TODO Consider removing this because we can just use 'value' method?
   def vector: Vector = value
@@ -42,14 +40,15 @@ trait VectorVar extends Variable {
   //def activeDomain: Iterable[Int]  // TODO Consider removing this? -akm
 }
 
-/** A vector of Double values with sparse vector representation. */
-// TODO Make separate sparse and dense versions of this
-abstract class VectorVariable(initialValue: Vector) extends VectorVar {
-  thisVariable =>
-  type VariableType <: VectorVariable
-  type DomainType = VectorDomain
-  type ValueType = Vector
-  val value: ValueType = initialValue
-  def domain = VectorDomain
+/** A vector of Double values with sparse vector representation. 
+    Zero-arg constructor only used by subclasses
+    (e.g. so that CategoricalVariable can use its domain for value lookup),
+    but should never be called by users. */
+abstract class VectorVariable extends VectorVar {
+  def this(initialValue:Vector) = { this(); _set(initialValue) }
+  private var _value: ValueType = null.asInstanceOf[ValueType]
+  def value: Value = _value
+  @inline protected final def _set(newValue:ValueType): Unit = _value = newValue
+  def domain: VectorDomain
   //def activeDomain = vector.activeDomain
 }

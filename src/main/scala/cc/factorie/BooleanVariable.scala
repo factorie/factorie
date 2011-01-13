@@ -14,16 +14,20 @@
 
 package cc.factorie
 
-trait BooleanValue extends CategoricalValue[Boolean] with DomainType[BooleanDomain] {
+trait BooleanValue extends CategoricalValue[Boolean] {
+  def domain: BooleanDomain = BooleanDomain
   def booleanValue = if (this eq BooleanDomain.trueValue) true else false
 }
 
 /** The Domain for BooleanVar, of size two, containing false == 0 and true == 1. */
 class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanValue] {
+  thisDomain =>
   val falseValue = super.getValue(false)
   val trueValue = super.getValue(true)
   freeze
-  class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with cc.factorie.BooleanValue
+  class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with cc.factorie.BooleanValue {
+    override def domain = thisDomain
+  }
   override protected def newCategoricalValue(i:Int, e:Boolean) = new BooleanValue(i, e)
   // The above makes sure that the hashtable in the CategoricalDomain is consistent, 
   // but the methods below will do most of the real work
@@ -41,18 +45,11 @@ object BooleanDomain extends BooleanDomain
     @see BooleanVariable
     @see BooleanObservation
     @author Andrew McCallum */
-trait BooleanVar extends CategoricalVar[Boolean] {
-  type VariableType <: BooleanVar
-  type DomainType = BooleanDomain
-  type ValueType <: BooleanValue
+trait BooleanVar extends CategoricalVar[Boolean] with VarAndValueType[BooleanVar,BooleanValue] {
   def domain = BooleanDomain
   override def entryValue = (value eq BooleanDomain.trueValue) // Efficiently avoid a lookup in the domain 
   override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
   final def booleanValue = entryValue // Alias for the above method
-  // Avoid CategoricalVariable's HashMap lookup
-  override final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
-  // If you want to coordinate with changes to this variable value, override set(ValueType)
-  final def :=(newBoolean:Boolean) = set(newBoolean)(null)
   // TODO Consider final def :=(newBoolean:Boolean)(implicit d:DiffList = null) = set(newBoolean)
   def ^(other:BooleanVar):Boolean = booleanValue && other.booleanValue
   def v(other:BooleanVar):Boolean = booleanValue || other.booleanValue
@@ -63,11 +60,15 @@ trait BooleanVar extends CategoricalVar[Boolean] {
 
 /** A class for mutable Boolean variables. 
     @author Andrew McCallum */
-class BooleanVariable extends BooleanVar {
-  type VariableType <: BooleanVariable
-  type ValueType = BooleanValue
-  _set(domain.falseValue)
-  def this(initialValue:Boolean = false) = { this(); _set(domain.getValue(initialValue)) }
+class BooleanVariable(initialValue:Boolean = false) extends CategoricalVariable(initialValue) with BooleanVar {
+  //type VariableType <: BooleanVariable
+  //type ValueType = BooleanValue
+  //_set(domain.falseValue)
+  //def this(initialValue:Boolean = false) = { this(); _set(domain.getValue(initialValue)) }
+  // Avoid CategoricalVariable's HashMap lookup
+  override final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
+  // If you want to coordinate with changes to this variable value, override set(ValueType)
+  final def :=(newBoolean:Boolean) = set(newBoolean)(null)
 }
 
 

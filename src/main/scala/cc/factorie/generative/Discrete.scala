@@ -30,7 +30,7 @@ trait GeneratedDiscreteVar extends GeneratedVar with DiscreteVar {
   override def prWith(map:scala.collection.Map[Parameter,Parameter]): Double = map.getOrElse(proportions, proportions).asInstanceOf[Proportions](this.intValue)
 }
 
-trait GeneratedDiscreteVariable extends DiscreteVar with GeneratedVariable with GeneratedDiscreteVar {
+trait GeneratedDiscreteVariable extends DiscreteVariable with GeneratedVariable with GeneratedDiscreteVar {
   def sampleFromParents(implicit d:DiffList = null): this.type = { set(proportions.sampleInt); this }
   def sampleFrom(parents:Seq[Variable])(implicit d:DiffList = null): this.type = {
     parents match {
@@ -50,9 +50,9 @@ abstract class Discrete(p:Proportions, value:Int = 0) extends DiscreteVariable(v
   override def parentRefs = List(proportionsRef)
 }
 
-trait GeneratedCategoricalVar[A] extends GeneratedDiscreteVar with CategoricalVar[A]
+trait GeneratedCategoricalVar[A] extends GeneratedDiscreteVariable with CategoricalVar[A]
 
-trait GeneratedCategoricalVariable[A] extends CategoricalVar[A] with GeneratedDiscreteVariable with GeneratedCategoricalVar[A]
+trait GeneratedCategoricalVariable[A] extends CategoricalVariable[A] with GeneratedDiscreteVariable with GeneratedCategoricalVar[A]
 
 abstract class Categorical[A](p:Proportions, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] {
   //assert(p.length <= domainSize)

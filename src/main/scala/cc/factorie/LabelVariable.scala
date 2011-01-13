@@ -17,33 +17,16 @@ package cc.factorie
 // Categorical variables that have target values are referred to as 'Labels'
 // TODO Consider renaming all other "setting" names to "value" also
 
-/*
-// TODO Consider some support like this to enable a generic Target01LossTemplate
-trait SelfType[+A<:SelfType[A]] {
-  this: A =>
-  type SelfType = A
-}
+/** Sets the TargetType, which is the type of the container of another variable's target value,
+    doing so in a way that the type is both concrete and can be overridden in subclasses. */
 trait TargetType[+T<:Variable with AimerType[Variable]] {
   type TargetType = T
 }
-// The container of another variable's target value.
+/** Sets the AimerType, which is the type of the variable that aims to have this target value,
+    doing so in a way that the type is both concrete and can be overridden in subclasses. */
 trait AimerType[+A<:Variable] {
   type AimerType = A
 }
-trait TargetAimingTypes[+T,+A] {
-  type TargetType = T
-  type AimingType = A  
-}
-
-trait TargetVariable[A<:AimerVariable[This,A],This<:TargetVariable[A,This]] extends Variable {
-  // Returns the variable that "aims" to have to have its value match this variable's as its target
-  def aimer: A
-}
-trait AimerVariable[T<:TargetVariable[T,This],This<:AimerVariable[This,T]] extends Variable {
-  this: This =>
-  def target: T
-}
-*/
 
 /** A Variable that has a desired correct "target" value, usually used for labeled training data. */
 trait VarWithTargetValue extends Variable {
@@ -71,27 +54,16 @@ trait TargetVar extends Variable with AimerType[Variable] {
   def aimer: AimerType
 }
 
-/** Sets the TargetType, which is the type of the container of another variable's target value,
-    doing so in a way that the type is both concrete and can be overridden in subclasses. */
-trait TargetType[+T<:Variable with AimerType[Variable]] {
-  type TargetType = T
-}
-/** Sets the AimerType, which is the type of the variable that aims to have this target value,
-    doing so in a way that the type is both concrete and can be overridden in subclasses. */
-trait AimerType[+A<:Variable] {
-  type AimerType = A
-}
-
 
 // Discrete variables with targets.
 
 /** These variables have a target value, but it may not necessarily be stored in a separate TargetVar variable. */
-trait DiscreteVarWithTargetValue extends DiscreteVar with VarWithTargetValue {
+trait DiscreteVarWithTargetValue extends DiscreteVariable with VarWithTargetValue {
   def targetIntValue: Int
 }
 
 /** A container of a target value for discrete variables.  */
-trait DiscreteTargetVar extends DiscreteVar with TargetVar with AimerType[DiscreteVar]
+trait DiscreteTargetVar extends DiscreteVariable with TargetVar with AimerType[DiscreteVar]
 
 /** A discrete variable that has a true, target "labeled" value, 
     separate from its current value. 
@@ -111,9 +83,9 @@ trait DiscreteVarWithTarget extends DiscreteVarWithTargetValue with VarWithTarge
   //def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
 }
 
-trait CategoricalTargetVar[A] extends CategoricalVar[A] with DiscreteTargetVar with AimerType[CategoricalVar[A]]
+trait CategoricalTargetVar[A] extends CategoricalVariable[A] with DiscreteTargetVar with AimerType[CategoricalVar[A]]
 
-trait CategoricalVarWithTarget[A] extends CategoricalVar[A] with DiscreteVarWithTarget with TargetType[CategoricalTargetVar[A]] {
+trait CategoricalVarWithTarget[A] extends CategoricalVariable[A] with DiscreteVarWithTarget with TargetType[CategoricalTargetVar[A]] {
   //def targetEntryValue_=(x:A) = if (x == null) target = null else target.set(x)
   // TODO Consider renaming all the entry* method names to category*
   //def targetEntryValue: CategoryType = target.entryValue
@@ -127,7 +99,7 @@ trait CategoricalVarWithTarget[A] extends CategoricalVar[A] with DiscreteVarWith
     @see LabelVariable
 */
 abstract class CoordinatedLabelVariable[A](targetVal:A) extends CategoricalVariable[A](targetVal) with CategoricalVarWithTarget[A] with TargetType[CategoricalVariable[A] with CategoricalTargetVar[A]] {
-  type VariableType <: CoordinatedLabelVariable[A]
+  //type VariableType <: CoordinatedLabelVariable[A]
   val target = new LabelTarget(targetVal)
   class LabelTarget(targetVal:A) extends CategoricalVariable(targetVal) with CategoricalTargetVar[A] with AimerType[CoordinatedLabelVariable[A]] {
     def domain = CoordinatedLabelVariable.this.domain
@@ -142,7 +114,7 @@ abstract class CoordinatedLabelVariable[A](targetVal:A) extends CategoricalVaria
     @see CoordinatedLabelVariable
  */
 abstract class LabelVariable[T](targetVal:T) extends CoordinatedLabelVariable(targetVal) with NoVariableCoordination {
-  type VariableType <: LabelVariable[T]
+  //type VariableType <: LabelVariable[T]
   // TODO Does this next line really provide the protection we want from creating variable-value coordination?  No.  But it does catch some errors.
   override final def set(newValue: ValueType)(implicit d: DiffList) = super.set(newValue)(d)
 }

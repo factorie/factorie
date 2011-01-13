@@ -20,16 +20,18 @@ import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,Buffered
 
 // TODO Also make a randomized-representation CategoricalDomain, with hashes?
 
-/** A value in a CategoricalVectorDomain */
-//trait CategoricalVectorValue[T] extends DiscreteVectorValue with DomainType[CategoricalVectorDomain[T]]
 
-trait CategoricalsValue[T] extends DiscretesValue with DomainType[CategoricalVectorDomain[T]]
+/** A value in a CategoricalVectorDomain */
+trait CategoricalsValue[T] extends DiscretesValue {
+  def domain:CategoricalVectorDomain[T]
+}
 
 /** Domain for CategoricalsVar, e.g. FeatureVectorVariable.
     @author Andrew McCallum */
-trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[CategoricalsValue[T]] with DimensionDomainType[CategoricalDomain[T]] {
+trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[CategoricalsValue[T]] {
   thisDomain =>
   type CategoryType = T
+  //def dimensionDomain: CategoricalDomain[T]
   lazy val dimensionDomain: CategoricalDomain[T] = new CategoricalDomain[T]
   def size: Int = dimensionDomain.size
 }
@@ -38,7 +40,8 @@ trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[Cat
 // For single categorical values
 
 /** A value in a CategoricalDomain */
-trait CategoricalValue[T] extends CategoricalsValue[T] with DiscreteValue with DomainType[CategoricalDomain[T]] {
+trait CategoricalValue[T] extends CategoricalsValue[T] with DiscreteValue {
+  def domain: CategoricalDomain[T]
   // TODO Rename this "category"
   def entry: T
 }
@@ -59,6 +62,7 @@ trait CategoricalValue[T] extends CategoricalsValue[T] with DiscreteValue with D
     @author Andrew McCallum
     */
 class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T] with ValueType[CategoricalValue[T]] {
+  thisDomain =>
   def this(values:Iterable[T]) = { this(); values.foreach(getValue(_)); freeze() }
   override lazy val dimensionDomain = this
   /** The size others might want to allocate to hold data relevant to this Index.  
@@ -91,6 +95,7 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
 
   class CategoricalValue(override val index:Int, val entry:T) extends DiscreteValue(index) with cc.factorie.CategoricalValue[T] {
     override def toString = entry.toString
+    override def domain = thisDomain
   }
   protected def newCategoricalValue(i:Int, e:T): ValueType = new CategoricalValue(i, e) //.asInstanceOf[Value]
 

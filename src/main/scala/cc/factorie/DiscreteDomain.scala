@@ -17,26 +17,23 @@ import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,Buffered
 
 // For variables that hold one or more discrete value weights in a vector
 
-// Was DiscreteValues
-trait DiscretesValue extends cc.factorie.la.Vector with DomainType[DiscreteVectorDomain] {
-  def domain: DomainType
+/** A value consisting of one or more discrete values, representable as a vector. 
+    Not that a single "DiscreteValue" is a subclass of this, represented as a "singleton vector",
+    with 1.0 at the value's intValue and 0.0 everywhere else. */
+trait DiscretesValue extends cc.factorie.la.Vector {
+  def domain: DiscreteVectorDomain
 }
 
-
-/** The sub-domain in a DiscreteVectorDomain that gives the dimensionality of the vectors of the DiscreteVectorDomain. */
-trait DimensionDomainType[+DDT<:DiscreteDomain] {
-  type DimensionDomain = DDT
-}
-
+// TODO Consider changing to DiscretesDomain for parallel naming?
 /** A Domain for variables whose value is a DiscretesValue, which is a Vector that also has a pointer back to its domain.
     This domain has a non-negative integer size.  The method 'size' is abstract. */
-trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscretesValue] with DimensionDomainType[DiscreteDomain] {
+trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscretesValue] {
   /** The maximum size to which this domain will be allowed to grow.  
       The 'size' method may return values smaller than this, however.
       This method is used to pre-allocate a Template's parameter arrays and is useful for growing domains. */
   def size: Int
   def maxVectorLength: Int = size  // TODO Get rid of this?
-  def dimensionDomain: DimensionDomain // = new DiscreteDomain { def size = thisDomain.size }
+  def dimensionDomain: DiscreteDomain // = new DiscreteDomain { def size = thisDomain.size }
   def vectorDimensionName(i:Int): String = i.toString
   def freeze(): Unit = {}
 }
@@ -45,7 +42,8 @@ trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscretesValue] w
 // For variables that hold a single discrete value
 
 /** A value in a DiscreteDomain. */
-trait DiscreteValue extends DiscretesValue with cc.factorie.la.SingletonBinaryVec with DomainType[DiscreteDomain] {
+trait DiscreteValue extends DiscretesValue with cc.factorie.la.SingletonBinaryVec {
+  def domain: DiscreteDomain
   def index: Int
   final def intValue = index // TODO Consider removing this alias?
 }
@@ -71,7 +69,7 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
     //type DomainType = cc.factorie.DiscreteDomain
     final def singleIndex = index // needed for SingletonBainaryVec
     final def length = thisDomain.size // needed for SingletonBinaryVec
-    final def domain = thisDomain.asInstanceOf[DomainType] // TODO Why is this cast necessary
+    def domain = thisDomain
     override def toString = index.toString
     override def equals(other:Any): Boolean = 
       other match { case other:DiscreteValue => this.index == other.index; case _ => false }
@@ -87,20 +85,6 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
     if (index >= _elements.size) for (i <- _elements.size to index) _elements += new DiscreteValue(i) //.asInstanceOf[Value] // Here new a DiscreteValue gets created
     _elements(index)
   }
-
-  /** Return a DiscreteDomain that shares the same underlying size and DiscreteValue objects.
-      For example, if you want a BinaryFeatureVector and a CategoricalVariable to share the same underlying
-      CategoricalValues (and String-Integer mapping) then you would write code something like:
-      <pre>
-      // Representing multiple rolls of a 6-sided die.
-      object RollsDomain extends DiscreteVectorDomain { def size = 6 }
-      class Rolls(i:Int) extends VectorVariable(i) { def domain = RollsDomain }
-      </pre>
-      */
-  /*def discreteDomain: DiscreteDomain = new DiscreteDomain {
-    override def _elements = thisDomain._elements
-    override def size = thisDomain.size
-  }*/
 
   // Serialization
   override def save(dirname:String): Unit = {

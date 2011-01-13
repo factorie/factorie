@@ -88,13 +88,14 @@ object DepParsing1 {
   }
   
   val model = new Model(
-    new Template2[Node,Token] with DotStatistics2[Token#ValueType,Token#ValueType] with SparseWeights {
+    /*new Template2[Node,Token] with DotStatistics2[Token#ValueType,Token#ValueType] with SparseWeights {
       def unroll1(n:Node) = Factor(n, n.token)
       def unroll2(t:Token) = Nil
       // Node.value = parent.  parent.value:Token#ValueType
       def statistics(values:Values) = Stat(values._1.value, values._2)
       //def statistics(parent:Token, childVector:Token#ValueType) = Stat(parent.value, childVector)
     },
+    */
     new Template3[Node,Token,Token] with DotStatistics2[Token#ValueType,Token#ValueType] with SparseWeights {
       def unroll1(n:Node) = Factor(n, n.parent, n.token)
       def unroll2(t:Token) = Nil

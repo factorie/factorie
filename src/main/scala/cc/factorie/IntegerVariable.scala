@@ -17,56 +17,35 @@ package cc.factorie
 trait IntegerDomain extends Domain[Int]
 object IntegerDomain extends IntegerDomain
 
-/** A Variable with one or more Int values.  It encompasses single integer values, 
-    as well as vector collections of many (weighted) int values.  
-    @author Andrew McCallum */
-// Removed because it was unclear how to implement domain here.
-/*
-trait IntegersVar extends Variable {
-  type VariableType <: IntegersVar
-  type DomainType <: IntegerDomain
-  def maxIntValue = Int.MaxValue
-  def minIntValue = Int.MinValue
-  // TODO Consider a def maxValue: Double = Math.POS_INF_DOUBLE ??
-  // TODO Implement a method def vector?
-  // TODO Consider moving activeDomain from DiscretesVar to here? -akm
-}
-*/
-
-
 /** A Variable with one Int value.  
     @author Andrew McCallum */
-trait IntegerVar extends Variable with NumericValue {
-  type VariableType <: IntegerVar
-  type DomainType <: IntegerDomain
-  type ValueType = Int
+trait IntegerVar extends Variable with VarAndValueType[IntegerVar,Int] with NumericValue {
+  def domain: IntegerDomain
   def maxIntValue = Int.MaxValue
   def minIntValue = Int.MinValue
-  private var _value: Int = 0
-  protected def _set(newValue:Int) = _value = newValue
-  @inline final def value = _value
-  @inline final def intValue = _value
+  def intValue: Int = value
   final def doubleValue: Double = intValue.toDouble
   override def toString = printName + "(" + intValue + ")"
-  def ===(other: IntegerVar) = intValue == other.intValue
-  def !==(other: IntegerVar) = intValue != other.intValue
+}
+
+/** A Variable with a mutable Int value.
+    @author Andrew McCallum */ 
+class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntValue {
+  def domain = IntegerDomain
+  private var _value: Int = initialValue
+  @inline final def value = _value
+  @inline final override def intValue = _value
+  protected def _set(newValue:Int) = _value = newValue
   def set(newValue: Int)(implicit d: DiffList = null): Unit = if (newValue != _value) {
     if (d ne null) d += new IntegerVariableDiff(_value, newValue)
     _value = newValue
   }
   case class IntegerVariableDiff(oldIndex: Int, newIndex: Int) extends Diff {
-    @inline final def variable: IntegerVar = IntegerVar.this
+    @inline final def variable: IntegerVariable = IntegerVariable.this
     @inline final def redo = _value = newIndex
     @inline final def undo = _value = oldIndex
     override def toString = "IntegerVariableDiff("+oldIndex+","+newIndex+")"
   }
 }
 
-/** A Variable with a mutable Int value.
-    @author Andrew McCallum */ 
-class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntValue {
-  type VariableType <: IntegerVariable
-  type DomainType = IntegerDomain
-  def domain = IntegerDomain
-  _set(initialValue)
-}
+// TODO Consider moving _value member variable back into IntegerVariable.

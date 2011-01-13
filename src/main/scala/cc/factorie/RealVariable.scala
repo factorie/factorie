@@ -20,23 +20,19 @@ object RealDomain extends RealDomain
 
 // TODO Consider instead ValueType[Double] and making a different class for SingletonVector.
 /** A Variable with a real (double) value. */
-trait RealVar extends Variable with NumericValue {
-  type VariableType <: RealVar
-  type DomainType = RealDomain
-  type ValueType = Double
+trait RealVar extends Variable with VarAndValueType[RealVar,Double] with NumericValue {
   def domain = RealDomain
-  /** A Vector representation of this Variable's value. */
-  @inline final def value: ValueType = doubleValue
+  @inline final def value: Value = doubleValue
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
-  def ===(other: RealVar) = doubleValue == other.doubleValue
-  def !==(other: RealVar) = doubleValue != other.doubleValue
+  //def ===(other: RealVar) = doubleValue == other.doubleValue
+  //def !==(other: RealVar) = doubleValue != other.doubleValue
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
 /** A Variable with a mutable real (double) value. */
 class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableValue[Double] {
-  type VariableType <: RealVariable
+  //type VariableType <: RealVariable
   private var _value: Double = initialValue
   @inline final def doubleValue = _value
   def +=(x:Double) = set(_value + x)(null) // Should we allow non-null DiffLists?
@@ -70,21 +66,20 @@ trait RealSingletonVectorDomain extends DiscreteVectorDomain {
 object RealSingletonDiscreteDomain extends DiscreteDomain { def size = 1 }
 object RealSingletonVectorDomain extends RealSingletonVectorDomain
 
-trait RealSingletonVectorVar extends Variable with NumericValue with DiscretesVar {
+trait RealSingletonVectorVar extends Variable with NumericValue with DiscretesVar with VarAndValueType[RealSingletonVectorVar,SingletonVector with DiscretesValue] {
   thisVariable =>
   //type VariableType <: RealVar
-  type DomainType = RealSingletonVectorDomain
-  type ValueType = SingletonVector with DiscretesValue
+  //type ValueType = SingletonVector with DiscretesValue
   def domain = RealSingletonVectorDomain
   /** A Vector representation of this Variable's value. */
-  @inline final def value: ValueType = new SingletonVector(1, 0, doubleValue) with DiscretesValue {
+  @inline final def value = new SingletonVector(1, 0, doubleValue) with DiscretesValue {
     def domain = thisVariable.domain
   }
   // TODO Consider rewriting above line to avoid constructing new object
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
-  def ===(other: RealVar) = doubleValue == other.doubleValue
-  def !==(other: RealVar) = doubleValue != other.doubleValue
+  override def ===(other: VariableType) = doubleValue == other.doubleValue
+  override def !==(other: VariableType) = doubleValue != other.doubleValue
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 

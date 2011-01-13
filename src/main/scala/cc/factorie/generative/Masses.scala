@@ -21,8 +21,8 @@ import cc.factorie._
     Proportions ~ Dirichlet(Masses)
     Masses ~ Multinomial(Proportions) */
 // TODO Note, this is currently unused, since Dirichlet is instead parameterized by mean & precision
-trait Masses extends Variable with IndexedSeqEqualsEq[Double] with AbstractDomain[Seq[Double]] {
-  def value = this // TODO Not a safe immutable value
+trait Masses extends Variable with IndexedSeqEqualsEq[Double] with VarAndValueGenericDomain[Masses,Seq[Double]] {
+  def value = this.asInstanceOf[Value] // TODO Not a safe immutable value
   override def toString = this.mkString(printName+"(", ",", ")")
   def activeDomain: Iterable[Int]
   //def vector: Vector // TODO Consider IncrementableMasses that actually store the counts in a Vector, ala BinaryVectorVariable
