@@ -51,6 +51,6 @@ object AbstractDomain extends Domain[Any]
 /** Add this trait to a Variable to give it a Domain with Value type VT. */
 trait AbstractDomain[VT] extends Variable {
   type DomainType = Domain[VT]
-  type Value = VT
+  type ValueType = VT
   def domain = AbstractDomain.asInstanceOf[Domain[VT]]
 }

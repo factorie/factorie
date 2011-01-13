@@ -19,19 +19,18 @@ import scala.util.{Random,Sorting}
 import scala.reflect.Manifest
 
 // Notes on class names for Variables:
-// Except for cc.factorie.Variable, "*Variable" means mutable
-// "*Observation" always means immutable, and mixes in trait ConstantValue
-// "*Var" is agnostic about whether it is mutable or not.  Hence "IntegerVar"
+// Except for cc.factorie.Variable, "*Variable" are classes with concrete DomainType and ValueType members.
+// "*Var" traits have bounded by not invariance DomainType and ValueType members.
 
 /** Provides a member type 'Value' in such a way that it can be overridden in subclasses. */
 trait ValueType[+VT] {
-  type Value = VT
+  type ValueType = VT
 }
 
 /** Provides a member type 'DomainType' as well as a member type 'Value' whose
-    value is obtained from DomainType#Value. */
+    value is obtained from DomainType#ValueType. */
 trait DomainType[+DT<:Domain[_]] {
-  type DomainType = DT // TODO Consider changing this to Domain, to match ValueType
+  type DomainType = DT
 }
 
 
@@ -48,14 +47,14 @@ trait Variable {
       Often you can treat this as an approximation to a self-type */
   type VariableType <: Variable // TODO Consider removing this.
 
-  type Value <: Any
+  type ValueType <: Any
   type DomainType <: Domain[Any] // TODO Consider Domain[Value]
  
   /** Abstract method to return the domain of this variable. */
   def domain: DomainType
 
   /** Abstract method to return the value of this variable. */
-  def value: Value
+  def value: ValueType
   
   /** The type of the variable contained inside this variable.
       Used for handling var-args. 
@@ -95,7 +94,7 @@ trait ContainerVariable[A<:Variable] extends Variable {
   def containedVariableManifest(implicit m:Manifest[A]) = m
 }
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.
-trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] with AbstractDomain[scala.collection.Seq[A#Value]] {
+trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] with AbstractDomain[scala.collection.Seq[A#ValueType]] {
   def value = this.map(_.value)
   override def toString = mkString("Vars(", ",",")")
 }
@@ -141,7 +140,7 @@ object NullDomain extends NullDomain
 @deprecated("May be removed in the future.")
 trait NullValue extends Variable {
   type DomainType = NullDomain
-  type Value = Null
+  type ValueType = Null
   final def domain = NullDomain
   final def value = null
 }

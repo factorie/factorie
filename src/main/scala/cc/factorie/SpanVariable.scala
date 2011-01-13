@@ -32,7 +32,7 @@ trait SpanValue[T] {
 abstract class SpanVar[T](theSeq: Seq[T], initStart: Int, initLength: Int) extends Variable with IndexedSeqEqualsEq[T] with AbstractDomain[SpanValue[T]] {
   type VariableType <: SpanVar[T] //SpanVariable[T];
   case class SpanValue(seq:Seq[T], start:Int, length:Int) extends cc.factorie.SpanValue[T]
-  def value: Value = new SpanValue(seq, start, length)
+  def value: ValueType = new SpanValue(seq, start, length)
   assert(initStart >= 0)
   assert(initLength > 0)
   assert(initStart + initLength <= seq.length)

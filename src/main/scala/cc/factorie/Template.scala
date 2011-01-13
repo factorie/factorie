@@ -299,7 +299,7 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   type Neighbor1Type = N1
   val nc1 = nm1.erasure // "Neighbor class" // TODO Give this a more explanatory name
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
-  lazy val nd1: Domain[N1#Value] = null // Can be overriden if necessary // TODO Consider removing this.
+  lazy val nd1: Domain[N1#ValueType] = null // Can be overriden if necessary // TODO Consider removing this.
   // Factors
   def factors(v:Variable): Iterable[FactorType] = {
     // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
@@ -324,7 +324,7 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   } 
   // Values
   type ValuesType = Values
-  case class Values(_1:N1#Value) extends super.Values {
+  case class Values(_1:N1#ValueType) extends super.Values {
     def statistics = Template1.this.statistics(this)
   }
   // Statistics
@@ -369,16 +369,16 @@ trait DotStatistics1[S1<:DiscretesValue] extends VectorStatistics1[S1] with DotT
     case ds:DiscretesValue => ds.activeDomain.foreach(i => weights(i) = w)
   }
 }
-abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1] with Statistics1[N1#Value] {
+abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1] with Statistics1[N1#ValueType] {
 //abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1]
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
-abstract class TemplateWithVectorStatistics1[N1<:DiscretesVar](implicit nm1:Manifest[N1]) extends Template1[N1] with VectorStatistics1[N1#Value] {
+abstract class TemplateWithVectorStatistics1[N1<:DiscretesVar](implicit nm1:Manifest[N1]) extends Template1[N1] with VectorStatistics1[N1#ValueType] {
 //abstract class TemplateWithVectorStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with VectorStatistics1[N1]
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
   //init //(nm1)
 }
-class TemplateWithDotStatistics1[N1<:DiscretesVar](implicit nm1:Manifest[N1]) extends Template1[N1] with DotStatistics1[N1#Value] {
+class TemplateWithDotStatistics1[N1<:DiscretesVar](implicit nm1:Manifest[N1]) extends Template1[N1] with DotStatistics1[N1#ValueType] {
 //class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1] 
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
   //init //(nm1)
@@ -418,8 +418,8 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
   val nc2 = nm2.erasure
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(nc2)) { assert(ta.length == 1); ta.head.erasure } else null }
-  lazy val nd1: Domain[N1#Value] = throw new Error // TODO Domain.get[Variable](nc1).asInstanceOf[Domain[Variable]]
-  lazy val nd2: Domain[N2#Value] = throw new Error // TODO Domain.get[Variable](nc2).asInstanceOf[Domain[Variable]]
+  lazy val nd1: Domain[N1#ValueType] = throw new Error // TODO Domain.get[Variable](nc1).asInstanceOf[Domain[Variable]]
+  lazy val nd2: Domain[N2#ValueType] = throw new Error // TODO Domain.get[Variable](nc2).asInstanceOf[Domain[Variable]]
   override def factors(v: Variable): Iterable[FactorType] = {
     var ret = new ListBuffer[FactorType]
     if (nc1.isAssignableFrom(v.getClass)) ret ++= unroll1(v.asInstanceOf[N1]) 
@@ -443,7 +443,7 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
   }
   // Values
   type ValuesType = Values
-  case class Values(_1:N1#Value, _2:N2#Value) extends super.Values {
+  case class Values(_1:N1#ValueType, _2:N2#ValueType) extends super.Values {
     def statistics = Template2.this.statistics(this)
   }
   // Statistics
@@ -506,14 +506,14 @@ trait VectorStatistics2[S1<:DiscretesValue,S2<:DiscretesValue] extends VectorTem
   }  
 }
 trait DotStatistics2[S1<:DiscretesValue,S2<:DiscretesValue] extends VectorStatistics2[S1,S2] with DotTemplate
-abstract class TemplateWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with Statistics2[N1#Value,N2#Value] {
+abstract class TemplateWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with Statistics2[N1#ValueType,N2#ValueType] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
 }
-abstract class TemplateWithVectorStatistics2[N1<:DiscretesVar,N2<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with VectorStatistics2[N1#Value,N2#Value] {
+abstract class TemplateWithVectorStatistics2[N1<:DiscretesVar,N2<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with VectorStatistics2[N1#ValueType,N2#ValueType] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
   //init(nm1, nm2)
 }
-abstract class TemplateWithDotStatistics2[N1<:DiscretesVar,N2<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
+abstract class TemplateWithDotStatistics2[N1<:DiscretesVar,N2<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotStatistics2[N1#ValueType,N2#ValueType] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
   //init(nm1, nm2)
 }
@@ -643,7 +643,7 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
   } 
   // Values
   type ValuesType = Values
-  case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value) extends super.Values {
+  case class Values(_1:N1#ValueType, _2:N2#ValueType, _3:N3#ValueType) extends super.Values {
     def statistics = Template3.this.statistics(this)
   }
   // Statistics
@@ -688,14 +688,14 @@ trait VectorStatistics3[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue
   }  
 }
 trait DotStatistics3[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue] extends VectorStatistics3[S1,S2,S3] with DotTemplate
-abstract class TemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
+abstract class TemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with Statistics3[N1#ValueType,N2#ValueType,N3#ValueType] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
 }
-abstract class TemplateWithVectorStatistics3[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with VectorStatistics3[N1#Value,N2#Value,N3#Value]  {
+abstract class TemplateWithVectorStatistics3[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with VectorStatistics3[N1#ValueType,N2#ValueType,N3#ValueType]  {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
   //init(nm1, nm2, nm3)
 }
-abstract class TemplateWithDotStatistics3[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with DotStatistics3[N1#Value,N2#Value,N3#Value]  {
+abstract class TemplateWithDotStatistics3[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with DotStatistics3[N1#ValueType,N2#ValueType,N3#ValueType]  {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
   //init(nm1, nm2, nm3)
 }
@@ -745,7 +745,7 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
   } 
   // Values
   type ValuesType = Values
-  case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value, _4:N4#Value) extends super.Values {
+  case class Values(_1:N1#ValueType, _2:N2#ValueType, _3:N3#ValueType, _4:N4#ValueType) extends super.Values {
     def statistics = Template4.this.statistics(this)
   }
   // Statistics
@@ -773,14 +773,14 @@ trait VectorStatistics4[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue
   }
 }
 trait DotStatistics4[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue,S4<:DiscretesValue] extends VectorStatistics4[S1,S2,S3,S4] with DotTemplate
-abstract class TemplateWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with Statistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
+abstract class TemplateWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with Statistics4[N1#ValueType,N2#ValueType,N3#ValueType,N4#ValueType] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values._4)
 }
-abstract class TemplateWithVectorStatistics4[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar,N4<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with VectorStatistics4[N1#Value,N2#Value,N3#Value,N4#Value]  {
+abstract class TemplateWithVectorStatistics4[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar,N4<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with VectorStatistics4[N1#ValueType,N2#ValueType,N3#ValueType,N4#ValueType]  {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values._4)
   //init(nm1, nm2, nm3, nm4)
 }
-abstract class TemplateWithDotStatistics4[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar,N4<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with DotStatistics4[N1#Value,N2#Value,N3#Value,N4#Value]  {
+abstract class TemplateWithDotStatistics4[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar,N4<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with DotStatistics4[N1#ValueType,N2#ValueType,N3#ValueType,N4#ValueType]  {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values._4)
   //init(nm1, nm2, nm3, nm4)
 }

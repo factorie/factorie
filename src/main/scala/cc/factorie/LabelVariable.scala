@@ -58,7 +58,7 @@ trait VarWithTargetValue extends Variable {
 trait VarWithTarget extends VarWithTargetValue with TargetType[TargetVar] {
   //type TargetType = TargetType with ValueType[this.Value]
   /** Stores the intended true "target" value for this variable. */
-  def target: TargetType { type Value = VarWithTarget.this.Value }
+  def target: TargetType { type ValueType = VarWithTarget.this.ValueType }
   def valueIsTarget: Boolean = value == target.value
   def setToTarget(implicit d:DiffList): Unit
 }
@@ -103,9 +103,9 @@ trait DiscreteVarWithTarget extends DiscreteVarWithTargetValue with VarWithTarge
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
   def targetIntValue: Int = if (target eq null) -1 else target.intValue
   def targetIntValue_=(newValue:Int): Unit = target.set(newValue)(null)
-  def setToTarget(implicit d:DiffList): Unit = set(target.value.asInstanceOf[Value])
+  def setToTarget(implicit d:DiffList): Unit = set(target.value.asInstanceOf[ValueType])
   //def valueIsTarget: Boolean = value == target.value
-  def targetValue: Value = if (target eq null) null.asInstanceOf[Value] else target.value.asInstanceOf[Value]
+  def targetValue: ValueType = if (target eq null) null.asInstanceOf[ValueType] else target.value.asInstanceOf[ValueType]
   def isUnlabeled = target eq null
   //def unlabel = if (trueVariable ne null) hiddentrueIntValue = -trueIntValue - 1 else throw new Error("Already unlabeled.")
   //def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
@@ -144,7 +144,7 @@ abstract class CoordinatedLabelVariable[A](targetVal:A) extends CategoricalVaria
 abstract class LabelVariable[T](targetVal:T) extends CoordinatedLabelVariable(targetVal) with NoVariableCoordination {
   type VariableType <: LabelVariable[T]
   // TODO Does this next line really provide the protection we want from creating variable-value coordination?  No.  But it does catch some errors.
-  override final def set(newValue: Value)(implicit d: DiffList) = super.set(newValue)(d)
+  override final def set(newValue: ValueType)(implicit d: DiffList) = super.set(newValue)(d)
 }
 
 
@@ -156,25 +156,6 @@ abstract class LabelVariable[T](targetVal:T) extends CoordinatedLabelVariable(ta
 class ZeroOneLossTemplate[A<:VarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends Template2[A,A#TargetType] with Statistics1[Boolean] {
   def unroll1(aimer:A) = Factor(aimer, aimer.target)
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
-  //def statistics(v1:A#Value, v2:A#TargetType#Value) = Stat(v1 == v2)
   def statistics(values:Values) = Stat(values._1 == values._2)
   def score(s:Stat) = if (s._1) 1.0 else 0.0
 }
-
-/*class ZeroOneLossTemplateDisfunctional[A<:VarWithTarget[TargetVar[A,_],A]]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends Template2[A,A#TargetType] with Statistics1[Boolean] {
-  def unroll1(aimer:A) = Factor(aimer, aimer.target)
-  def unroll2(target:A#TargetType) = Factor(target.aimer, target)
-  def statistics(v1:A#Value, v2:A#TargetType#Value) = Stat(v1 == v2)
-  def score(s:Stat) = if (s._1) 1.0 else 0.0
-}*/
-
-
-
-/*
-class Label01LossTemplate extends Template2[CoordinatedLabelVariable,CoordinatedLabelVariable#LabelTarget] with Statistics1[Boolean] {
-  def unroll1(aimer:CoordinatedLabelVariable) = Factor(aimer, aimer.target)
-  def unroll2(target:CoordinatedLabelVariable#LabelTarget) = Factor(target.aimer, target)
-  def statistics(v1:CoordinatedLabelVariable#Value, v2:CoordinatedLabelVariable#LabelTarget#Value) = Stat(v1 == v2)
-  def score(s:Stat) = if (s._1) 1.0 else 0.0
-}
-*/

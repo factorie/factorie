@@ -61,10 +61,10 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
   var maxRequestedInt: Int = 0
 
   // Access sort of like a collection
-  def values: scala.collection.Seq[Value] = _elements
+  def values: scala.collection.Seq[ValueType] = _elements
   def iterator = _elements.iterator
-  def apply(index:Int): Value  = getValue(index)
-  def unapply(value:Value): Option[Int] = if (value.domain == this) Some(value.index) else None
+  def apply(index:Int): ValueType  = getValue(index)
+  def unapply(value:ValueType): Option[Int] = if (value.domain == this) Some(value.index) else None
 
   // TODO Make this 'protected' so that only the 'getValue' method should construct these objects?
   class DiscreteValue(val index:Int) extends cc.factorie.DiscreteValue {
@@ -77,11 +77,11 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
       other match { case other:DiscreteValue => this.index == other.index; case _ => false }
   }
   /** Maps from integer index to the DiscreteValue objects */
-  private val __elements = new scala.collection.mutable.ArrayBuffer[Value]
+  private val __elements = new scala.collection.mutable.ArrayBuffer[ValueType]
   def _elements = __elements // Define this way so that _elements can be overridden
 
   // TODO Consider renaming this method to something without the 'get'.  Perhaps valueAtIndex()
-  def getValue(index:Int): Value = {
+  def getValue(index:Int): ValueType = {
     if (index > maxRequestedInt) maxRequestedInt = index
     if (index >= size) throw new IllegalArgumentException("DiscreteDomain.getValue: index "+index+" larger than size "+size)
     if (index >= _elements.size) for (i <- _elements.size to index) _elements += new DiscreteValue(i) //.asInstanceOf[Value] // Here new a DiscreteValue gets created

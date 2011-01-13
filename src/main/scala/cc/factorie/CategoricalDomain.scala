@@ -79,12 +79,12 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
   override def freeze() = _frozen = true
 
   /** Map from entry back to int index */
-  private var _indices = Map[T, Value]()
+  private var _indices = Map[T, ValueType]()
   /** Wipe the domain and its indices clean */
   def reset(): Unit = {
     _frozen = false
     _elements.clear()
-    _indices = Map[T,Value]()
+    _indices = Map[T,ValueType]()
   }
   /** An alias for reset(). */
   def clear() = reset()
@@ -92,26 +92,26 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
   class CategoricalValue(override val index:Int, val entry:T) extends DiscreteValue(index) with cc.factorie.CategoricalValue[T] {
     override def toString = entry.toString
   }
-  protected def newCategoricalValue(i:Int, e:T): Value = new CategoricalValue(i, e) //.asInstanceOf[Value]
+  protected def newCategoricalValue(i:Int, e:T): ValueType = new CategoricalValue(i, e) //.asInstanceOf[Value]
 
   def contains(entry: Any) = _indices.contains(entry.asInstanceOf[T])
   /* entry match { case e:T => _indices.contains(e); case _ => false } */
 
   /** Return an object at the given position or throws an exception if it's not found. */
   def getEntry(index: Int): T = _elements(index).entry // TODO Consider changing this name to getElement or getEntry or get
-  override def getValue(index: Int): Value = _elements(index)
+  override def getValue(index: Int): ValueType = _elements(index)
   // _indices.getOrElse(entry, null).asInstanceOf[Value]
-  def getValue(entry:T): Value = {
-    def nextMax: Value = {
+  def getValue(entry:T): ValueType = {
+    def nextMax: ValueType = {
       val m = _elements.size
       if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
-      val e: Value = newCategoricalValue(m, entry) // Here is the place that new CategoricalValue gets created
+      val e: ValueType = newCategoricalValue(m, entry) // Here is the place that new CategoricalValue gets created
       // TODO Can we make the above cast unnecessary??
       _elements += e
       _indices(entry) = e
       e
     }
-    if (_frozen) _indices.getOrElse(entry, null.asInstanceOf[Value])
+    if (_frozen) _indices.getOrElse(entry, null.asInstanceOf[ValueType])
     else _indices.getOrElseUpdate(entry, nextMax)
   }
 
@@ -149,8 +149,8 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
 
   def randomEntry(random:Random): T = getEntry(random.nextInt(size))
   def randomEntry: T = randomEntry(cc.factorie.random)
-  def randomValue(random:Random): Value = getValue(random.nextInt(size))
-  def randomValue: Value = randomValue(cc.factorie.random)
+  def randomValue(random:Random): ValueType = getValue(random.nextInt(size))
+  def randomValue: ValueType = randomValue(cc.factorie.random)
   def +=(x:T) : Unit = this.index(x)
   def ++=(xs:Traversable[T]) : Unit = xs.foreach(this.index(_))
  

@@ -31,7 +31,7 @@ object VectorDomain extends VectorDomain
 trait VectorVar extends Variable {
   type VariableType <: VectorVar
   type DomainType <: VectorDomain
-  type Value <: Vector
+  type ValueType <: Vector
   /** A cc.factorie.la.Vector representation of the value of this variable. */
   // TODO Consider removing this because we can just use 'value' method?
   def vector: Vector = value
@@ -48,8 +48,8 @@ abstract class VectorVariable(initialValue: Vector) extends VectorVar {
   thisVariable =>
   type VariableType <: VectorVariable
   type DomainType = VectorDomain
-  type Value = Vector
-  val value: Value = initialValue
+  type ValueType = Vector
+  val value: ValueType = initialValue
   def domain = VectorDomain
   //def activeDomain = vector.activeDomain
 }

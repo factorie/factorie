@@ -56,7 +56,7 @@ class TemplateTestSuite extends JUnitSuite  {
       val members = for (i <- 0 until 10) yield new Member 
     }
     val aggregate = new Aggregate
-    val template = new Template2[Aggregate,Vars[Aggregate#Member]] with DotStatistics1[RealSingletonVectorVariable#Value] {
+    val template = new Template2[Aggregate,Vars[Aggregate#Member]] with DotStatistics1[RealSingletonVectorVariable#ValueType] {
       def unroll2(v: Vars[Aggregate#Member]) = error("Not needed")
       def unroll1(v: Aggregate) = Factor(v,Vars(v.members))
       override def unroll2s(v: Aggregate#Member) = Factor(v.owner,Vars(v.owner.members))

@@ -44,7 +44,7 @@ object BooleanDomain extends BooleanDomain
 trait BooleanVar extends CategoricalVar[Boolean] {
   type VariableType <: BooleanVar
   type DomainType = BooleanDomain
-  type Value <: BooleanValue
+  type ValueType <: BooleanValue
   def domain = BooleanDomain
   override def entryValue = (value eq BooleanDomain.trueValue) // Efficiently avoid a lookup in the domain 
   override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
@@ -65,7 +65,7 @@ trait BooleanVar extends CategoricalVar[Boolean] {
     @author Andrew McCallum */
 class BooleanVariable extends BooleanVar {
   type VariableType <: BooleanVariable
-  type Value = BooleanValue
+  type ValueType = BooleanValue
   _set(domain.falseValue)
   def this(initialValue:Boolean = false) = { this(); _set(domain.getValue(initialValue)) }
 }
@@ -76,7 +76,7 @@ class BooleanVariable extends BooleanVar {
 //@deprecated("Will be removed in the future.")
 /*
 case class BooleanBlock(v1:BooleanVariable, v2:BooleanVariable) extends Variable with IterableSettings with AbstractDomain[(Boolean,Boolean)] {
-  //type Value = (Boolean,Boolean)
+  //type ValueType = (Boolean,Boolean)
   //def domain = BooleanDomain
   def value = (v1.booleanValue, v2.booleanValue)
   def settings: SettingIterator = new SettingIterator {

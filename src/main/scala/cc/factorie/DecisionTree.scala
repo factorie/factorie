@@ -69,7 +69,7 @@ extends VectorStatistics2[S1,S2] {
     label S1 given feature vector S2, according to a decision tree.
     @author Andrew McCallum */
 abstract class DecisionTreeTemplateWithStatistics2[S1<:DiscreteVar,S2<:DiscretesVar](implicit m1:Manifest[S1], m2:Manifest[S2])
-extends Template2[S1,S2] with DecisionTreeStatistics2[S1#Value,S2#Value] {
+extends Template2[S1,S2] with DecisionTreeStatistics2[S1#ValueType,S2#ValueType] {
   //def statistics(s1:S1, s2:S2) = Stat(s1, s2)
   def statistics(values:Values) = Stat(values._1, values._2)
   def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(_.statistics.asInstanceOf[StatType]))

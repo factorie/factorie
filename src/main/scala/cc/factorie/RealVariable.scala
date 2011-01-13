@@ -23,10 +23,10 @@ object RealDomain extends RealDomain
 trait RealVar extends Variable with NumericValue {
   type VariableType <: RealVar
   type DomainType = RealDomain
-  type Value = Double
+  type ValueType = Double
   def domain = RealDomain
   /** A Vector representation of this Variable's value. */
-  @inline final def value: Value = doubleValue
+  @inline final def value: ValueType = doubleValue
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
   def ===(other: RealVar) = doubleValue == other.doubleValue
@@ -74,10 +74,10 @@ trait RealSingletonVectorVar extends Variable with NumericValue with DiscretesVa
   thisVariable =>
   //type VariableType <: RealVar
   type DomainType = RealSingletonVectorDomain
-  type Value = SingletonVector with DiscretesValue
+  type ValueType = SingletonVector with DiscretesValue
   def domain = RealSingletonVectorDomain
   /** A Vector representation of this Variable's value. */
-  @inline final def value: Value = new SingletonVector(1, 0, doubleValue) with DiscretesValue {
+  @inline final def value: ValueType = new SingletonVector(1, 0, doubleValue) with DiscretesValue {
     def domain = thisVariable.domain
   }
   // TODO Consider rewriting above line to avoid constructing new object

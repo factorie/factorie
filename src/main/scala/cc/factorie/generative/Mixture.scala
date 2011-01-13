@@ -64,7 +64,7 @@ trait MixtureComponents[+P<:Parameter] extends scala.collection.IndexedSeq[P] wi
   type Value <: Seq[P]
   def domain = AbstractDomain.asInstanceOf[DomainType]
   override def isDeterministic = true
-  def value = components.asInstanceOf[Value]
+  def value = components.asInstanceOf[ValueType]
   def components: Seq[P]
   def length = components.length
   def apply(index:Int) = components(index)

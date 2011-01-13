@@ -88,19 +88,19 @@ object DepParsing1 {
   }
   
   val model = new Model(
-    new Template2[Node,Token] with DotStatistics2[Token#Value,Token#Value] with SparseWeights {
+    new Template2[Node,Token] with DotStatistics2[Token#ValueType,Token#ValueType] with SparseWeights {
       def unroll1(n:Node) = Factor(n, n.token)
       def unroll2(t:Token) = Nil
-      // Node.value = parent.  parent.value:Token#Value
+      // Node.value = parent.  parent.value:Token#ValueType
       def statistics(values:Values) = Stat(values._1.value, values._2)
-      //def statistics(parent:Token, childVector:Token#Value) = Stat(parent.value, childVector)
+      //def statistics(parent:Token, childVector:Token#ValueType) = Stat(parent.value, childVector)
     },
-    new Template3[Node,Token,Token] with DotStatistics2[Token#Value,Token#Value] with SparseWeights {
+    new Template3[Node,Token,Token] with DotStatistics2[Token#ValueType,Token#ValueType] with SparseWeights {
       def unroll1(n:Node) = Factor(n, n.parent, n.token)
       def unroll2(t:Token) = Nil
       def unroll3(t:Token) = Nil
       def statistics(values:Values) = Stat(values._2, values._3)
-      //def statistics(n:Node#Value, parentVector:Token#Value, childVector:Token#Value) = Stat(parentVector, childVector)
+      //def statistics(n:Node#Value, parentVector:Token#Value, childVector:Token#ValueType) = Stat(parentVector, childVector)
     },
     /*new Template3WithDotStatistics2[Token,Token,Node] {
       def unroll3(node:Node) = ...
@@ -116,15 +116,15 @@ object DepParsing1 {
     }*/
     //new Template1[Node] with DotStatistics2[Token,Token] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.parent) },
 
-    new Template2[Node,POS] with DotStatistics1[POS#Value] {
+    new Template2[Node,POS] with DotStatistics1[POS#ValueType] {
       def unroll1(n:Node) = Factor(n, n.token.pos)
       def unroll2(p:POS) = Nil
       def statistics(values:Values) = Stat(values._2)
-      //def statistics(n:Node#Value, pos:POS#Value) = Stat(pos)
+      //def statistics(n:Node#ValueType, pos:POS#ValueType) = Stat(pos)
     }
     //new Template1[Node] with DotStatistics1[POS] {
     //override def _statistics(n:Node) = Stat(token.pos)
-    //def statistics(nv:Node#Value) = new Error
+    //def statistics(nv:Node#ValueType) = new Error
     //},
     //new Template1[Node] with DotStatistics1[POS] { def statistics(n:Node) = Stat(token.pos) },
 

@@ -34,8 +34,8 @@ trait CategoricalsVar[T] extends DiscretesVar {
 abstract class CategoricalsVariable[T] extends CategoricalsVar[T] {
   thisVariable =>
   type DomainType = CategoricalVectorDomain[T]
-  type Value = CategoricalsValue[T]
-  override val value: Value = new cc.factorie.la.GrowableSparseVector(domain) with CategoricalsValue[T] {
+  type ValueType = CategoricalsValue[T]
+  override val value: ValueType = new cc.factorie.la.GrowableSparseVector(domain) with CategoricalsValue[T] {
     def domain = thisVariable.domain
   }
 }
@@ -69,7 +69,7 @@ trait SparseBinaryCategoricalsVar[T] extends SparseBinaryDiscretesVar with Binar
 abstract class BinaryFeatureVectorVariable[T] extends SparseBinaryCategoricalsVar[T] {
   thisVariable =>
   type DomainType = CategoricalVectorDomain[T]
-  type Value = cc.factorie.la.SparseBinaryVector with CategoricalsValue[T]
+  type ValueType = cc.factorie.la.SparseBinaryVector with CategoricalsValue[T]
   def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
   override lazy val value = new cc.factorie.la.SparseBinaryVector(-1) with CategoricalsValue[T] {
     def domain = thisVariable.domain
@@ -86,7 +86,7 @@ abstract class BinaryFeatureVectorVariable[T] extends SparseBinaryCategoricalsVa
 trait CategoricalVar[A] extends CategoricalsVar[A] with DiscreteVar {
   type VariableType <: CategoricalVar[A]
   type DomainType <: CategoricalDomain[A]
-  type Value <: CategoricalValue[A]
+  type ValueType <: CategoricalValue[A]
   @deprecated("Use entryValue instead.") // TODO Consider using 'categoryValue' afterall.
   def categoryValue: A = value.entry // domain.get(intValue)
   def entryValue: A = if (value ne null) value.entry else null.asInstanceOf[A]
@@ -103,7 +103,7 @@ abstract class CategoricalVariable[A] extends DiscreteVar with CategoricalVar[A]
   // and then set to proper value in this(initialValue:A) constructor below.
   type VariableType <: CategoricalVariable[A]
   type DomainType = CategoricalDomain[A]
-  type Value = CategoricalValue[A]
+  type ValueType = CategoricalValue[A]
   def this(initialEntry:A) = { this(); _set(domain.getValue(initialEntry)) }
   //final def category_=(newValue:A)(implicit d:DiffList = null) = set(newValue)
 }
@@ -136,7 +136,7 @@ trait ItemizedObservation[This <: ItemizedObservation[This]] extends Categorical
   this: This =>
   type VariableType = This
   type DomainType = CategoricalDomain[This]
-  type Value = CategoricalValue[This]
+  type ValueType = CategoricalValue[This]
   // Put the variable in the CategoricalDomain and remember it.
   // We could save memory by looking it up in the Domain each time, but speed is more important
   //val intValue = domain.index(this) 

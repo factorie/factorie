@@ -19,7 +19,7 @@ import cc.factorie.la._
 trait DiscretesVar extends VectorVar {
   type VariableType <: DiscretesVar
   type DomainType <: DiscreteVectorDomain
-  type Value <: DiscretesValue
+  type ValueType <: DiscretesValue
   def contains(dimension:Int): Boolean = vector.apply(dimension) != 0.0
 }
 
@@ -27,14 +27,14 @@ trait DiscretesVar extends VectorVar {
 abstract class DiscretesVariable extends DiscretesVar {
   thisVariable =>
   type DomainType = DiscreteVectorDomain
-  type Value = DiscretesValue
-  val value: Value = new SparseVector(domain.maxVectorLength) with DiscretesValue { def domain = thisVariable.domain }
+  type ValueType = DiscretesValue
+  val value: ValueType = new SparseVector(domain.maxVectorLength) with DiscretesValue { def domain = thisVariable.domain }
   //def activeDomain = vector.activeDomain
 }
 
 /** A sparse binary vector with length determined by a DiscreteDomain */
 trait SparseBinaryDiscretesVar extends DiscretesVar {
-  type Value <: cc.factorie.la.SparseBinaryVector with DiscretesValue
+  type ValueType <: cc.factorie.la.SparseBinaryVector with DiscretesValue
   def length = domain.maxVectorLength //allocSize // TODO Remove this?
   //def apply(i:Int) = vector.apply(i)
   def activeDomain = vector.activeDomain
@@ -49,7 +49,7 @@ trait SparseBinaryDiscretesVar extends DiscretesVar {
 abstract class SparseBinaryDiscretesVariable extends SparseBinaryDiscretesVar {
   thisVariable =>
   type DomainType = DiscreteVectorDomain
-  type Value = cc.factorie.la.SparseBinaryVector with DiscretesValue
+  type ValueType = cc.factorie.la.SparseBinaryVector with DiscretesValue
   lazy val value = new cc.factorie.la.SparseBinaryVector(-1) with DiscretesValue {
     def domain = thisVariable.domain
     override def length = domain.maxVectorLength
@@ -62,15 +62,15 @@ abstract class SparseBinaryDiscretesVariable extends SparseBinaryDiscretesVar {
 trait DiscreteVar extends DiscretesVar with IterableSettings with QDistribution {
   type VariableType <: DiscreteVar
   type DomainType <: DiscreteDomain
-  type Value <: DiscreteValue
-  private var _value: Value = null.asInstanceOf[Value]
-  def value: Value = _value
-  protected def _set(newValue:Value): Unit = _value = newValue
+  type ValueType <: DiscreteValue
+  private var _value: ValueType = null.asInstanceOf[ValueType]
+  def value: ValueType = _value
+  protected def _set(newValue:ValueType): Unit = _value = newValue
   /*@inline final*/ def intValue = value.index
   def activeDomain = List(intValue) // TODO try to make this implementation possible: = value
   def ===(other: DiscreteVar) = value == other.value
   def !==(other: DiscreteVar) = value != other.value
-  def set(newValue:Value)(implicit d:DiffList): Unit = if (newValue ne value) {
+  def set(newValue:ValueType)(implicit d:DiffList): Unit = if (newValue ne value) {
     assert((newValue eq null) || newValue.domain == domain)
     if (d ne null) d += new DiscreteVariableDiff(_value, newValue)
     _value = newValue
@@ -78,7 +78,7 @@ trait DiscreteVar extends DiscretesVar with IterableSettings with QDistribution 
   /** You should never call this yourself.  Only used in CategoricalVariable initialization code. */
   //protected def _set(newValue:Value) = { assert(newValue ne null); _value = newValue }
   // TODO provide default value for DiffList = null
-  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt).asInstanceOf[Value])(d)
+  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt).asInstanceOf[ValueType])(d)
   def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
   def settings = new SettingIterator {
     // TODO Base this on a domain.iterator instead, for efficiency
@@ -89,7 +89,7 @@ trait DiscreteVar extends DiscretesVar with IterableSettings with QDistribution 
     def reset = i = -1
     override def variable: DiscreteVar.this.type = DiscreteVar.this
   }
-  case class DiscreteVariableDiff(oldValue: Value, newValue: Value) extends Diff {
+  case class DiscreteVariableDiff(oldValue: ValueType, newValue: ValueType) extends Diff {
     @inline final def variable: DiscreteVar = DiscreteVar.this
     @inline final def redo = _value = newValue
     @inline final def undo = _value = oldValue
@@ -109,7 +109,7 @@ abstract class DiscreteVariable extends DiscreteVar {
   // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
   type VariableType <: DiscreteVariable
   type DomainType = DiscreteDomain
-  type Value = DiscreteValue
+  type ValueType = DiscreteValue
   def this(initialInt:Int) = { this(); _set(domain.getValue(initialInt)) /*.asInstanceOf[Value]*/ } // TODO Get rid of this cast?
 }
 

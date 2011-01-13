@@ -39,7 +39,7 @@ trait IntegersVar extends Variable {
 trait IntegerVar extends Variable with NumericValue {
   type VariableType <: IntegerVar
   type DomainType <: IntegerDomain
-  type Value = Int
+  type ValueType = Int
   def maxIntValue = Int.MaxValue
   def minIntValue = Int.MinValue
   private var _value: Int = 0
