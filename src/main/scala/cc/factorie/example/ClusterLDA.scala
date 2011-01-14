@@ -90,7 +90,7 @@ object ClusterLDADemo {
         print("."); Console.flush
         if (i % 5 == 0) {
           println ("Iteration "+i)
-          phis.foreach(t => println("Topic "+phis.indexOf(t)+"  "+sampler.collapsed(t).top(10).map(dp => WordDomain.getEntry(dp.index)).mkString(" ")))
+          phis.foreach(t => println("Topic "+phis.indexOf(t)+"  "+sampler.collapsed(t).top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
           println
         }
       }

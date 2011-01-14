@@ -34,10 +34,10 @@ class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanVal
   override def size = 2
   override def allocSize = 2
   //override def apply(index:Int) = index == 1
-  override def getEntry(index:Int) = index == 1
-  override def index(entry:Boolean) = if (entry) 1 else 0
-  override def getIndex(entry:Boolean) = if (entry) 1 else 0
-  override def getValue(entry:Boolean) = if (entry) trueValue else falseValue
+  override def getCategory(index:Int) = index == 1
+  override def index(bool:Boolean) = if (bool) 1 else 0
+  override def getIndex(bool:Boolean) = if (bool) 1 else 0
+  override def getValue(bool:Boolean) = if (bool) trueValue else falseValue
 }
 object BooleanDomain extends BooleanDomain
 
@@ -47,10 +47,8 @@ object BooleanDomain extends BooleanDomain
     @author Andrew McCallum */
 trait BooleanVar extends CategoricalVar[Boolean] with VarAndValueType[BooleanVar,BooleanValue] {
   def domain = BooleanDomain
-  override def entryValue = (value eq BooleanDomain.trueValue) // Efficiently avoid a lookup in the domain 
-  override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
-  final def booleanValue = entryValue // Alias for the above method
-  // TODO Consider final def :=(newBoolean:Boolean)(implicit d:DiffList = null) = set(newBoolean)
+  override def categoryValue = (value eq BooleanDomain.trueValue) // Efficiently avoid a lookup in the domain 
+  final def booleanValue = categoryValue // Alias for the above method
   def ^(other:BooleanVar):Boolean = booleanValue && other.booleanValue
   def v(other:BooleanVar):Boolean = booleanValue || other.booleanValue
   def ==>(other:BooleanVar):Boolean = !booleanValue || other.booleanValue

@@ -52,9 +52,9 @@ object SpanNER1 {
     val label = new Label(labelString, this)
     def spanLength = new SpanLength(len)
     override def phrase = this.map(_.word).mkString(" ")
-    def isCorrect = this.forall(token => token.trueLabelString == label.entryValue) &&
-      (!hasPredecessor(1) || predecessor(1).trueLabelString != label.entryValue) && 
-      (!hasSuccessor(1) || successor(1).trueLabelString != label.entryValue)
+    def isCorrect = this.forall(token => token.trueLabelString == label.categoryValue) &&
+      (!hasPredecessor(1) || predecessor(1).trueLabelString != label.categoryValue) && 
+      (!hasSuccessor(1) || successor(1).trueLabelString != label.categoryValue)
     // Does this span contain the words of argument span in order?
     def contains(span:Span): Boolean = {
       for (i <- 0 until length) {
@@ -163,7 +163,7 @@ object SpanNER1 {
         var allTokensCorrect = true
         for (token <- spanValue) {
           //if (token.trueLabelValue != "O") result += 2.0 else result -= 1.0
-          if (token.trueLabelString == labelValue.entry) {
+          if (token.trueLabelString == labelValue.category) {
             result += trueLabelIncrement
             trueLabelIncrement += 2.0 // proportionally more benefit for longer sequences to help the longer seq steal tokens from the shorter one.
           } else if (token.trueLabelString == "O") {
@@ -176,8 +176,8 @@ object SpanNER1 {
           if (token.spans.length > 1) result -= 100.0 // penalize overlapping spans
         }
         if (allTokensCorrect) {
-          if (!spanValue.hasPredecessor(1) || spanValue.predecessor(1).trueLabelString != labelValue.entry) result += 5.0 // reward for getting starting boundary correct
-          if (!spanValue.hasSuccessor(1) || spanValue.successor(1).trueLabelString != labelValue.entry) result += 5.0 // reward for getting starting boundary correct
+          if (!spanValue.hasPredecessor(1) || spanValue.predecessor(1).trueLabelString != labelValue.category) result += 5.0 // reward for getting starting boundary correct
+          if (!spanValue.hasSuccessor(1) || spanValue.successor(1).trueLabelString != labelValue.category) result += 5.0 // reward for getting starting boundary correct
         }
         result
       }
@@ -194,7 +194,7 @@ object SpanNER1 {
       //println("existing spans = "+existingSpans)
       for (span <- existingSpans) {
         // Change label without changing boundaries
-        for (labelValue <- LabelDomain.values; if (labelValue.entry != "O"))
+        for (labelValue <- LabelDomain.values; if (labelValue.category != "O"))
           changes += {(d:DiffList) => span.label.set(labelValue)(d)}
         // Delete the span
         changes += {(d:DiffList) => span.delete(d)}
@@ -204,33 +204,33 @@ object SpanNER1 {
           // Trim first word, without changing label
           changes += {(d:DiffList) => span.trimStart(1)(d)}
           // Split off first and last word, with choices of the label of the split off portion
-          for (labelValue <- LabelDomain.values; if (labelValue.entry != "O")) {
-            changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue.entry, seq, span.end+1, 1)(d) } }
-            changes += {(d:DiffList) => { span.trimStart(1)(d); new Span(labelValue.entry, seq, span.start-1, 1)(d) } }
+          for (labelValue <- LabelDomain.values; if (labelValue.category != "O")) {
+            changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue.category, seq, span.end+1, 1)(d) } }
+            changes += {(d:DiffList) => { span.trimStart(1)(d); new Span(labelValue.category, seq, span.start-1, 1)(d) } }
           }
         }
         if (span.length == 3) {
           // Split span, dropping word in middle, preserving label value
-          changes += {(d:DiffList) => span.delete(d); new Span(span.label.entryValue, seq, span.start, 1)(d); new Span(span.label.entryValue, seq, span.end, 1)(d) }
+          changes += {(d:DiffList) => span.delete(d); new Span(span.label.categoryValue, seq, span.start, 1)(d); new Span(span.label.categoryValue, seq, span.end, 1)(d) }
         }
         // Add a new word to beginning, and change label
         if (span.canPrepend(1)) {
-          for (labelValue <- LabelDomain.values; if (labelValue.entry != "O"))
+          for (labelValue <- LabelDomain.values; if (labelValue.category != "O"))
             changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.prepend(1)(d); span.head.spans.filter(_ != span).foreach(_.trimEnd(1)(d)) } }
         }
         // Add a new word to the end, and change label
         if (span.canAppend(1)) {
-          for (labelValue <- LabelDomain.values; if (labelValue.entry != "O"))
+          for (labelValue <- LabelDomain.values; if (labelValue.category != "O"))
             changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.append(1)(d); span.last.spans.filter(_ != span).foreach(_.trimStart(1)(d)) } }
         }
-        //if (span.length > 1) changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue.entry, seq, position+1, 1)(d) } }
+        //if (span.length > 1) changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue.category, seq, position+1, 1)(d) } }
       }
       if (existingSpans.isEmpty) {
         changes += {(d:DiffList) => {}} // The no-op action
-        for (labelValue <- LabelDomain.values; if (labelValue.entry != "O")) {
+        for (labelValue <- LabelDomain.values; if (labelValue.category != "O")) {
           // Add new length=1 span, for each label value
-          changes += {(d:DiffList) => new Span(labelValue.entry, seq, token.position, 1)(d)}
-          //if (position != seq.length-1) changes += {(d:DiffList) => new Span(labelValue.entry, seq, position, 2)(d)}
+          changes += {(d:DiffList) => new Span(labelValue.category, seq, token.position, 1)(d)}
+          //if (position != seq.length-1) changes += {(d:DiffList) => new Span(labelValue.category, seq, position, 2)(d)}
         }
       }
       //println("Token.settings length="+changes.length)

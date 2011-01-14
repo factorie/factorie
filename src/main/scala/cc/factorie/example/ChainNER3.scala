@@ -57,8 +57,8 @@ object ChainNER3 {
     // Change from CoNLL's IOB notation to to BIO notation
     (trainSentences ++ testSentences).foreach(s => { 
       s.foreach(t => {
-        if (t.label.entryValue(0) == 'I' && (!t.hasPrev || t.prev.label.entryValue.substring(1) != t.label.entryValue.substring(1))) {
-          val newValue = "B"+t.label.entryValue.substring(1) 
+        if (t.label.categoryValue(0) == 'I' && (!t.hasPrev || t.prev.label.categoryValue.substring(1) != t.label.categoryValue.substring(1))) {
+          val newValue = "B"+t.label.categoryValue.substring(1) 
           t.label.set(newValue)(null)
           t.label.target.set(newValue)(null)
         }
@@ -152,7 +152,7 @@ object ChainNER3 {
         var j = math.max(i-contextSize, 0); var numTruthsAfter = -contextSize
         do {
           val l = labels(j)
-          println("%s %-6s %-6s %-18s %s".format((if (l.valueIsTarget) " " else "*"), l.target.entryValue, l.value.entry, l.token.word, l.token.toString))
+          println("%s %-6s %-6s %-18s %s".format((if (l.valueIsTarget) " " else "*"), l.target.categoryValue, l.value.category, l.token.word, l.token.toString))
           if (l.valueIsTarget) numTruthsAfter += 1 else { numTruthsAfter = 0; count += 1 }
           j += 1
         } while (numTruthsAfter < contextSize && j < labels.length && count < maxErrors) 

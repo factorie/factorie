@@ -42,8 +42,7 @@ trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[Cat
 /** A value in a CategoricalDomain */
 trait CategoricalValue[T] extends CategoricalsValue[T] with DiscreteValue {
   def domain: CategoricalDomain[T]
-  // TODO Rename this "category"
-  def entry: T
+  def category: T
 }
 
 /** A domain for categorical variables.  It stores not only a size,
@@ -82,7 +81,7 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
   def frozen = _frozen
   override def freeze() = _frozen = true
 
-  /** Map from entry back to int index */
+  /** Map from category back to int index */
   private var _indices = Map[T, ValueType]()
   /** Wipe the domain and its indices clean */
   def reset(): Unit = {
@@ -93,50 +92,48 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
   /** An alias for reset(). */
   def clear() = reset()
 
-  class CategoricalValue(override val index:Int, val entry:T) extends DiscreteValue(index) with cc.factorie.CategoricalValue[T] {
-    override def toString = entry.toString
+  class CategoricalValue(override val index:Int, val category:T) extends DiscreteValue(index) with cc.factorie.CategoricalValue[T] {
+    override def toString = category.toString
     override def domain = thisDomain
   }
   protected def newCategoricalValue(i:Int, e:T): ValueType = new CategoricalValue(i, e) //.asInstanceOf[Value]
 
-  def contains(entry: Any) = _indices.contains(entry.asInstanceOf[T])
-  /* entry match { case e:T => _indices.contains(e); case _ => false } */
+  def contains(category: Any) = _indices.contains(category.asInstanceOf[T])
 
   /** Return an object at the given position or throws an exception if it's not found. */
-  def getEntry(index: Int): T = _elements(index).entry // TODO Consider changing this name to getElement or getEntry or get
+  def getCategory(index: Int): T = _elements(index).category
   override def getValue(index: Int): ValueType = _elements(index)
-  // _indices.getOrElse(entry, null).asInstanceOf[Value]
-  def getValue(entry:T): ValueType = {
+  def getValue(category:T): ValueType = {
     def nextMax: ValueType = {
       val m = _elements.size
       if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
-      val e: ValueType = newCategoricalValue(m, entry) // Here is the place that new CategoricalValue gets created
+      val e: ValueType = newCategoricalValue(m, category) // Here is the place that new CategoricalValue gets created
       // TODO Can we make the above cast unnecessary??
       _elements += e
-      _indices(entry) = e
+      _indices(category) = e
       e
     }
-    if (_frozen) _indices.getOrElse(entry, null.asInstanceOf[ValueType])
-    else _indices.getOrElseUpdate(entry, nextMax)
+    if (_frozen) _indices.getOrElse(category, null.asInstanceOf[ValueType])
+    else _indices.getOrElseUpdate(category, nextMax)
   }
 
   /** Return a densely-packed positive integer index for the given object.  
       By default, allocate a new index (at the end) if the object was not found, 
       but if immutable may return -1 */
   // TODO Is this the right interface choice for gatherCounts?  What if some code (inefficiently) indexes more than once for the same data point?
-  def indexOnly(entry: T): Int = {
-    val value = getValue(entry)
+  def indexOnly(category: T): Int = {
+    val value = getValue(category)
     if (value eq null) -1 else value.index
   }
-  def index(entry: T): Int = {
-    val i = indexOnly(entry)
+  def index(category: T): Int = {
+    val i = indexOnly(category)
     if (gatherCounts && i != -1) incrementCount(i)
     i
   }
 
  
-  /** Like index, but throw an exception if the entry is not already there. */
-  def getIndex(entry:T) : Int = _indices.getOrElse(entry, throw new Error("Entry not present; use index() to cause the creation of a new entry.")).index
+  /** Like index, but throw an exception if the category is not already there. */
+  def getIndex(category:T) : Int = _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new category.")).index
 
   //def indexOf[B >: Value](elem: B): Int = elem.index // elem.asInstanceOf[Value].index //index(elem.asInstanceOf[T]) // TODO Try to get rid of this cast!!!
 
@@ -152,15 +149,15 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
   //def indexKeys[V](c: scala.collection.Map[T, V]) = Map[T, V]() ++ c.map {case (a, b) => (index(a), b)}
   //def indexValues[K](c: scala.collection.Map[K, T]) = Map[K, T]() ++ c.map {case (a, b) => (a, index(b))}
 
-  def randomEntry(random:Random): T = getEntry(random.nextInt(size))
-  def randomEntry: T = randomEntry(cc.factorie.random)
+  def randomCategory(random:Random): T = getCategory(random.nextInt(size))
+  def randomCategory: T = randomCategory(cc.factorie.random)
   def randomValue(random:Random): ValueType = getValue(random.nextInt(size))
   def randomValue: ValueType = randomValue(cc.factorie.random)
   def +=(x:T) : Unit = this.index(x)
   def ++=(xs:Traversable[T]) : Unit = xs.foreach(this.index(_))
  
   override def toString = "CategoricalDomain[]("+size+")"
-  override def vectorDimensionName(i:Int): String = getEntry(i).toString
+  override def vectorDimensionName(i:Int): String = getCategory(i).toString
 
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)
@@ -169,7 +166,7 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
     //if (elements.next.asInstanceOf[AnyVal].getClass != classOf[String]) throw new Error("Only know how to save CategoryType String.")
     if (frozen) s.println("#frozen = true") else s.println("#frozen = false")
     for (e <- iterator) {
-      if (e.toString.contains("\n")) throw new Error("Cannot save Domain with entry containing newline.")
+      if (e.toString.contains("\n")) throw new Error("Cannot save Domain with category String containing newline.")
       s.println(e.toString)
     }
     s.close
@@ -204,9 +201,9 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
     }
   }
   def count(i:Int): Int = _counts(i)
-  def count(entry:T): Int = _counts(indexOnly(entry))
+  def count(category:T): Int = _counts(indexOnly(category))
   def incrementCount(i:Int): Unit = { ensureSize(i); _counts(i) += 1 }
-  def incrementCount(entry:T): Unit = incrementCount(indexOnly(entry))
+  def incrementCount(category:T): Unit = incrementCount(indexOnly(category))
   private def someCountsGathered: Boolean = { for (i <- 0 until _counts.size) if (_counts(i) > 0) return true; return false }
   /** Returns the number of unique entries trimmed */
   def trimBelowCount(threshold:Int): Int = {
@@ -216,7 +213,7 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
     reset() // TODO Should we override reset to also set gatherCounts = true?  I don't think so.
     gatherCounts = false
     for (i <- 0 until origEntries.size)
-      if (_counts(i) >= threshold) indexOnly(origEntries(i).entry)
+      if (_counts(i) >= threshold) indexOnly(origEntries(i).category)
     _counts = null // We don't need counts any more; allow it to be garbage collected.  Note that if
     freeze()
     origEntries.size - size
@@ -303,7 +300,7 @@ class EnumDomain extends CategoricalDomain[String] {
       val fieldMethod = getClass.getMethod(fieldName) // was with ,null)
       val fieldValue = fieldMethod.invoke(this).asInstanceOf[Int]
       //println("Field "+fieldName+" has value "+fieldValue)
-      if (fieldValue != 0 && this.getEntry(fieldValue) != fieldName) throw new Error("Somehow StringDomain category "+fieldName+" got the wrong String value "+fieldValue+" ("+this.getEntry(fieldValue)+").")
+      if (fieldValue != 0 && this.getCategory(fieldValue) != fieldName) throw new Error("Somehow StringDomain category "+fieldName+" got the wrong String value "+fieldValue+" ("+this.getCategory(fieldValue)+").")
     }
   }
 }

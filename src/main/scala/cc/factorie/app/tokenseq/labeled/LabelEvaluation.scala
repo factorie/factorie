@@ -65,7 +65,7 @@ class LabelEvaluation[L<:LabelVariable[String] with AbstractVarInSeq[L]](val bac
   private val labelEval: HashMap[String,PerLabelEvaluation[L]] = { 
     val h = new HashMap[String,PerLabelEvaluation[L]]
     throw new Error("Need to be updated to new Domain mechanism, replacing line below")
-    //h ++= Domain[L](m).map((labelValue:CategoricalValue[_,String]) => (labelValue.entry, new PerLabelEvaluation[L](labelValue.entry)))
+    //h ++= Domain[L](m).map((labelValue:CategoricalValue[_,String]) => (labelValue.category, new PerLabelEvaluation[L](labelValue.category)))
     h
   }
   /** Return the LabelEvaluation specific to labelString. */

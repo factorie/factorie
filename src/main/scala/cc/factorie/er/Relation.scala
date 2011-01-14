@@ -119,7 +119,7 @@ class ItemizedRelation[A<:ItemizedObservation[A] with Entity[A],B<:ItemizedObser
     val a: A = throw new Error // TODO Domain[A](ma).randomEntry // randomly pick a src
     val max = domainb.size - 1 // we will iterate over all possible changes to dst's
     def hasNext = i < max
-    private def set(d:DiffList) : Unit = { val b = domainb.getEntry(i); if (contains(a,b)) remove(a,b)(d) else add(a,b)(d) }
+    private def set(d:DiffList) : Unit = { val b = domainb.getCategory(i); if (contains(a,b)) remove(a,b)(d) else add(a,b)(d) }
     def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(d); d }
     def reset = i = -1
   }

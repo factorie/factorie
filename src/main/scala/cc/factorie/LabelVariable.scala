@@ -86,10 +86,9 @@ trait DiscreteVarWithTarget extends DiscreteVarWithTargetValue with VarWithTarge
 trait CategoricalTargetVar[A] extends CategoricalVariable[A] with DiscreteTargetVar with AimerType[CategoricalVar[A]]
 
 trait CategoricalVarWithTarget[A] extends CategoricalVariable[A] with DiscreteVarWithTarget with TargetType[CategoricalTargetVar[A]] {
-  //def targetEntryValue_=(x:A) = if (x == null) target = null else target.set(x)
-  // TODO Consider renaming all the entry* method names to category*
-  //def targetEntryValue: CategoryType = target.entryValue
-  //def targetEntryValue_=(newEntry:CategoryType): Unit = target.set(newEntry)(null)
+  //def targetCategoryValue_=(x:A) = if (x == null) target = null else target.set(x)
+  //def targetCategoryValue: CategoryType = target.categoryValue
+  //def targetCategoryValue_=(newCategory:CategoryType): Unit = target.set(newCategory)(null)
 }
 
 

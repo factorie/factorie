@@ -63,7 +63,7 @@ trait CategoricalProportions[A] extends Proportions {
   class DiscretePr(override val index:Int, override val pr:Double, val value:String) extends super.DiscretePr(index, pr)
   override def top(n:Int): Seq[DiscretePr] = {
     val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList
-    entries.map({case (p,i)=>new DiscretePr(i, p, categoricalDomain.getEntry(i).toString)})
+    entries.map({case (p,i)=>new DiscretePr(i, p, categoricalDomain.getCategory(i).toString)})
   }
   def topValues(n:Int) = top(n).toList.map(_.value)
 }

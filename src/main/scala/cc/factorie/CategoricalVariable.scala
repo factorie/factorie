@@ -47,7 +47,7 @@ trait BinaryCategoricalsVar[T] extends CategoricalsVar[T] {
 }
 
 trait SparseBinaryCategoricalsVar[T] extends SparseBinaryDiscretesVar with BinaryCategoricalsVar[T] with VarAndValueType[SparseBinaryCategoricalsVar[T],SparseBinaryVector with CategoricalsValue[T]] {
-  def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.dimensionDomain.getEntry(i)); result }
+  def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.dimensionDomain.getCategory(i)); result }
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
   def skipNonCategories = false
@@ -61,7 +61,7 @@ trait SparseBinaryCategoricalsVar[T] extends SparseBinaryDiscretesVar with Binar
     }
   }
   def ++=(values:Iterable[T]): Unit = values.foreach(this.+=(_))
-  override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getEntry(i).toString+"="+i).mkString(printName+"(", ",", ")")
+  override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString+"="+i).mkString(printName+"(", ",", ")")
 }
 
 abstract class BinaryFeatureVectorVariable[T] extends VectorVariable with SparseBinaryCategoricalsVar[T] {
@@ -83,11 +83,8 @@ abstract class BinaryFeatureVectorVariable[T] extends VectorVariable with Sparse
     @author Andrew McCallum */
 trait CategoricalVar[A] extends CategoricalsVar[A] with DiscreteVar with VarAndValueType[CategoricalVar[A],CategoricalValue[A]] {
   def domain: CategoricalDomain[A]
-  @deprecated("Use entryValue instead.") // TODO Consider using 'categoryValue' afterall.
-  def categoryValue: A = value.entry // domain.get(intValue)
-  def entryValue: A = if (value ne null) value.entry else null.asInstanceOf[A]
-  //final def entryValue: A = value.entry // TODO Include this too?  Nice, clear name, but two redundant methods could be confusing.
-  override def toString = printName + "(" + (if (entryValue == null) "null" else if (entryValue == this) "this" else entryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
+  def categoryValue: A = if (value ne null) value.category else null.asInstanceOf[A]
+  override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
 } 
 
 /** A DiscreteVariable whose integers 0...N are associated with an object of type A. 
@@ -96,8 +93,7 @@ abstract class CategoricalVariable[A] extends DiscreteVariable with CategoricalV
   // What I want to do is "extends DiscreteVariable(Domain[A].index(initialValue))
   // but there is no way to obtain this.getClass obtain the Domain for the constructor above, so we initialize with dummy 0
   // and then set to proper value in this(initialValue:A) constructor below.
-  def this(initialEntry:A) = { this(); _set(domain.getValue(initialEntry)) }
-  //final def category_=(newValue:A)(implicit d:DiffList = null) = set(newValue)
+  def this(initialCategory:A) = { this(); _set(domain.getValue(initialCategory)) }
   def set(newValue:A)(implicit d: DiffList): Unit = set(domain.index(newValue))
 }
 
@@ -128,14 +124,9 @@ abstract class CategoricalVariable[A] extends DiscreteVariable with CategoricalV
 trait ItemizedObservation[This <: ItemizedObservation[This]] extends CategoricalVar[This] with ConstantValue {
   this: This =>
   def domain: CategoricalDomain[This]
-  //type VariableType = This
-  //type DomainType = CategoricalDomain[This]
-  //type ValueType = CategoricalValue[This]
   // Put the variable in the CategoricalDomain and remember it.
-  // We could save memory by looking it up in the Domain each time, but speed is more important
-  //val intValue = domain.index(this) 
   override val value = domain.getValue(this)
-  override def entryValue = this // TODO Ug.  Not a great method name here.
+  override def categoryValue = this // TODO Ug.  Not a great method name here.
 }
 
 /** A variable who value is a pointer to an ItemizedObservation.  It is useful for entity-attributes whose value is another variable. 
