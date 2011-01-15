@@ -70,7 +70,7 @@ trait ParameterAveraging extends WeightUpdates {
       {
 	override def default(template:TemplatesToUpdate) = 
 	  {
-	    val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else{template.freezeDomains;new DenseVector(template.statsize)}
+	    val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else{template.freezeDomains;new DenseVector(template.statisticsVectorLength)}
 	    vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
 	    this(template) = vector
 	    vector

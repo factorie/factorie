@@ -118,7 +118,6 @@ trait Template { thisTemplate =>
   }
   /** Used by the trickery that obtains Manifests for Statistics*[] traits.  
       See template2initialized in Package.scala. */
-  var isInitialized = true
   def defaultFactorName = "Factor"
   var factorName = defaultFactorName
   /** Assign this Template a name which will be used later when its factors are printed. */
@@ -245,7 +244,7 @@ trait DotTemplate extends VectorTemplate {
   type TemplateType <: DotTemplate
   lazy val weights: Vector = { freezeDomains; new DenseVector(statisticsVectorLength) } // Dense by default, may be override in sub-traits
   def score(s:StatType) = weights match {
-    case w:DenseVector => { assert(isInitialized == true); w dot s.vector }
+    case w:DenseVector => { w dot s.vector }
     //case w:SparseHashVector => w dot s.vector // TODO Uncomment this.  It was only commented because latest version of scalala didn't seem to have this class any more
     case w:SparseVector => w dot s.vector
   }
@@ -357,14 +356,6 @@ trait VectorStatistics1[S1<:DiscretesValue] extends VectorTemplate {
       _statisticsDomains = _newStatisticsDomains
       _statisticsDomains += _1.domain
     }
-  }
-  isInitialized = false
-  // TODO Remove this method
-  def init(implicit m1:Manifest[S1]): this.type = {
-    if (!isInitialized) {
-      isInitialized = true
-    }
-    this
   }
 }
 trait DotStatistics1[S1<:DiscretesValue] extends VectorStatistics1[S1] with DotTemplate {
@@ -505,13 +496,6 @@ trait VectorStatistics2[S1<:DiscretesValue,S2<:DiscretesValue] extends VectorTem
       _statisticsDomains += _2.domain
     }
   }
-  isInitialized = false
-  def init(implicit m1:Manifest[S1], m2:Manifest[S2]): this.type = {
-    if (!isInitialized) {
-      isInitialized = true
-    }
-    this 
-  }  
 }
 trait DotStatistics2[S1<:DiscretesValue,S2<:DiscretesValue] extends VectorStatistics2[S1,S2] with DotTemplate
 abstract class TemplateWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with Statistics2[N1#Value,N2#Value] {
@@ -692,13 +676,6 @@ trait VectorStatistics3[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue
   }
   type StatType = Stat
   type StatisticsType = Statistics
-  isInitialized = false
-  def init(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3]): this.type = {
-    if (!isInitialized) {
-      isInitialized = true
-    }
-    this
-  }  
 }
 trait DotStatistics3[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue] extends VectorStatistics3[S1,S2,S3] with DotTemplate
 abstract class TemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
@@ -783,13 +760,6 @@ trait VectorStatistics4[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue
   }
   type StatType = Stat
   type StatisticsType = Statistics
-  isInitialized = false
-  def init(implicit m1:Manifest[S1], m2:Manifest[S2], m3:Manifest[S3], m4:Manifest[S4]): this.type = { 
-    if (!isInitialized) {
-      isInitialized = true
-    }
-    this
-  }
 }
 trait DotStatistics4[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue,S4<:DiscretesValue] extends VectorStatistics4[S1,S2,S3,S4] with DotTemplate
 abstract class TemplateWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with Statistics4[N1#Value,N2#Value,N3#Value,N4#Value] {

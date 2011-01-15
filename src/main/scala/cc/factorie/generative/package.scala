@@ -19,7 +19,7 @@ import cc.factorie._
 
 package object generative {
 
-  val defaultGenerativeModel = new Model(new InitializedTemplate(new GeneratedVarTemplate))
+  val defaultGenerativeModel = new Model(new GeneratedVarTemplate)
   
   //implicit val denseDirichletEstimator = new DenseDirichletEstimator
   //implicit val mutableProportionsEstimator = new MutableProportionsEstimator

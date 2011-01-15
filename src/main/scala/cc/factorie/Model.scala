@@ -25,19 +25,20 @@ import scala.util.Sorting
     @since 0.8
     @see Template
  */
-class Model(initTemplates:InitializedTemplate*) extends Seq[Template] {
+class Model(templates:Template*) extends Seq[Template] {
+  type T = Template
+
   private val ts = new ArrayBuffer[Template]
   def apply(i:Int) = ts.apply(i)
   def length = ts.length
   def iterator = ts.iterator
 
-  type T = Template
-  this ++= initTemplates
+  this ++= templates
 
   // Jumping through hoops just to call automatically call .init on templates that are added.
   // This in turn is just a work-around for the fact that we can't get Manifests for traits because traits cannot take constructor arguments.
-  def ++=(iTemplates:Iterable[InitializedTemplate]) = ts ++= iTemplates.map(_.template)
-  def +=(iTemplate:InitializedTemplate) = ts += iTemplate.template
+  def ++=(templates:Iterable[Template]) = ts ++= templates
+  def +=(template:Template) = ts += template
 
   def templatesOf[T2<:T](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
     val templateClass = m.erasure

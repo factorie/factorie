@@ -93,14 +93,11 @@ of variables, the new Template.statistics method takes a "Values"
 object, which is a simple Tuple-style case class containing variable values.
 
 For example, old code:
-
 new Template2[Label,Label] extends DotStatistics1[BooleanVariable] {
   def statistics(y1:Label, y2:Label) = 
     Stat(new BooleanVariable(y1.intValue == y2.intValue)
 }
-
 might be re-written as:
-
 new Template2[Label,Label] extends DotStatistics1[BooleanValue] {
   def statistics(values:Values) = Stat(values._1 == values._2)
 }
@@ -110,7 +107,9 @@ new Template2[Label,Label] extends DotStatistics1[BooleanValue] {
 
 VectorStatistics1, VectorStatistics2, VectorStatistics3 used to take
 VectorVar type arguments.  They now take DiscretesValue type
-arguments.
+arguments.  The method 'statsize' has been renmed
+'statisticsVectorLength' for clarity.
+
 
 
 

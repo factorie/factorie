@@ -61,15 +61,15 @@ class TestBPClassify extends TestCase {
 
   val model = new Model (
     /**Bias term just on labels */
-    new InitializedTemplate(new TemplateWithDotStatistics1[Label]),
+    new TemplateWithDotStatistics1[Label],
     /**Factor between label and observed document */
-    new InitializedTemplate(new TemplateWithDotStatistics2[Label, Document] {
+    new TemplateWithDotStatistics2[Label, Document] {
       def unroll1(label: Label) = Factor(label, label.document)
       def unroll2(token: Document) = throw new Error("Document values shouldn't change")
-    })
+    }
   )
 
-  val objective = new Model(new InitializedTemplate(new ZeroOneLossTemplate[Label]))
+  val objective = new Model(new ZeroOneLossTemplate[Label])
   
   def testMain: Unit = main(new Array[String](0))
 
