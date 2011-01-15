@@ -57,7 +57,7 @@ trait AROWUpdates extends ConfidenceWeightedUpdates {
       val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
         override def default(template:TemplatesToUpdate) = {
           template.freezeDomains
-          val vector = new SparseVector(template.statsize)
+          val vector = new SparseVector(template.statisticsVectorLength)
           this(template) = vector
           vector
         }

@@ -67,7 +67,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
     override def default(template:TemplatesToUpdate) = { 
       template.freezeDomains
       //val vector = DenseVector(template.statsize)(initialVariance)
-      val vector = if (template.isInstanceOf[SparseWeights]) { val sv = new SparseVector(template.statsize); sv.default = initialVariance; sv } else DenseVector(template.statsize)(initialVariance)
+      val vector = if (template.isInstanceOf[SparseWeights]) { val sv = new SparseVector(template.statisticsVectorLength); sv.default = initialVariance; sv } else DenseVector(template.statisticsVectorLength)(initialVariance)
       this(template) = vector
       vector
     }
@@ -80,7 +80,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
     val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
       override def default(template:TemplatesToUpdate) = {
         template.freezeDomains
-        val vector = new SparseVector(template.statsize)
+        val vector = new SparseVector(template.statisticsVectorLength)
         this(template) = vector
         vector
       }
@@ -198,7 +198,7 @@ trait SecondOrderGradientAscentUpdates extends ConfidenceWeightedUpdates
       val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
       override def default(template:TemplatesToUpdate) = {
         template.freezeDomains
-        val vector = new SparseVector(template.statsize)
+        val vector = new SparseVector(template.statisticsVectorLength)
         this(template) = vector
         vector
       }

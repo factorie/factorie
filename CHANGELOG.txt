@@ -3,8 +3,10 @@ New in version 0.10.0:
 * Variable 'value' methods:
 
 All variables must now have a 'value' method with return type
-'this.Value'.  The 'Value' type comes from the variable's domain type.
-If you want to override the 'Value' type, use the ValueType trait.
+'this.Value'.  By default this type is Any.  If you want to override
+use the VarAndValueType trait, which sets the covariant types
+'VariableType' and 'ValueType'.  'Value' is magically defined from
+these to be psuedo-invariant.
 
 The canonical representation of DiscreteVariable (and
 CategoricalVariable) values used to be an Int.  Now it is a
@@ -17,8 +19,30 @@ value, and thus can be compared by pointer equality.
 For example, if 'label' is a CategoricalVariable[String]
 label.value is a CategoricalValue.
 label.intValue == label.value.index, is an integer
-label.entryValue == label.value.entry, is a String
-label.categoryValue == label.value.category, is a String <<< Yes, do this.
+label.categoryValue == label.value.category, is a String
+
+
+* Discrete variables and vectors
+
+DiscreteValues has been renamed DiscretesValue.  Similarily there are
+now classes DiscretesVariable, CategoricalsValue and
+CategoricalsVariable.  These plural names refer to vector values and
+their variables.  For example, CategoricalsVariable is a superclass of
+the BinaryFeatureVectorVariable.
+
+The singular DiscreteValue, DiscreteVariable, CategoricalValue and
+CategoricalVariable hold single values (i.e. which could be mapped to
+single integers), but are subclasses their plural counterparts, with
+values that are singleton vectors.
+
+The domain of the plural types (i.e. vectors, not necessarily
+singleton vectors) are DiscretesDomain and CategoricalsDomain.  The
+length of these vectors are determined by an inner DiscreteDomain or
+CategoricalDomain.  Hence to create a domain for vectors of length 10:
+
+new DiscretesDomain {
+    val dimensionDomain = new DiscreteDomain { def count = 10 }
+}
 
 
 * TrueSetting renamed to TargetValue
@@ -45,9 +69,9 @@ is now abstract.  Some subclasses of Variable define this method,
 others still leave it abstract.  For example, in subclasses of
 DiscreteVariable and CategoricalVariable you must define the 'domain'
 method.  In these cases you must also create your domain objects
-explicitly.  Thus we have sacrificed a little
-brevity for clarity and flexibility.  Here is an example of typical
-code for creating class labels:
+explicitly.  Thus we have sacrificed a little brevity for clarity and
+flexibility.  Here is an example of typical code for creating class
+labels:
 
 object MyLabelDomain extends CategoricalDomain[String]
 class MyLabel(theValue:String) extends CategoricalVariable(theValue) {
@@ -57,13 +81,36 @@ or
 class MyLabel(theValue:String, val domain = MyLabelDomain) extends CategoricalVariable(theValue)
 
 The type argument for domains used to be the variable class; now it is
-the 'Value' type of the domain (and its variables).
+the 'ValueType' type of the domain (and its variables).
 
 
 * Template statistics:
 
+Previously the constructor arguments of Stat objects were Variables.
+They have now been changed to Variable *values* instead.  Furthermore,
+whereas the old Template.statistics method took as arguments a list
+of variables, the new Template.statistics method takes a "Values"
+object, which is a simple Tuple-style case class containing variable values.
+
+For example, old code:
+
+new Template2[Label,Label] extends DotStatistics1[BooleanVariable] {
+  def statistics(y1:Label, y2:Label) = 
+    Stat(new BooleanVariable(y1.intValue == y2.intValue)
+}
+
+might be re-written as:
+
+new Template2[Label,Label] extends DotStatistics1[BooleanValue] {
+  def statistics(values:Values) = Stat(values._1 == values._2)
+}
 
 
+* VectorTemplate
+
+VectorStatistics1, VectorStatistics2, VectorStatistics3 used to take
+VectorVar type arguments.  They now take DiscretesValue type
+arguments.
 
 
 

@@ -155,7 +155,7 @@ trait Template { thisTemplate =>
   }
   trait Stat extends cc.factorie.Stat with Statistics {
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
-    // TODO Make this non-lazy later, when statDomains can be initialized earlier
+    // TODO Make this non-lazy later, when _statisticsDomains can be initialized earlier
     // Warning: if score gets called too late, might the values of the variables have been changed to something else already?
     lazy val score = Template.this.score(this.asInstanceOf[StatType]) // TODO can we find a way to get rid of this cast?  Yes, use a self-type Stat[This]
   }
@@ -188,24 +188,23 @@ trait Template { thisTemplate =>
   def load(dirname:String): Unit = {}
 }
 
-/** A Template whose sufficient statistics are represented as a cc.factorie.la.Vector. 
+/** A Template whose sufficient statistics are represented as a set of DiscretesValues
+    (which inherit from cc.factorie.la.Vector, and also have a DiscreteVectorDomain).
     @author Andrew McCallum
 */
 trait VectorTemplate extends Template {
   //def vectorLength: Int
   //protected var _vectorLength1 = -1
   //def vectorLength1: Int = if (_vectorLength < 0) throw new Error("Not yet set.") else _vectorLength1
-  val statDomains = new ArrayBuffer[DiscreteVectorDomain]
-  def freezeDomains: Unit = {
-    if (statDomains.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
-    statDomains.foreach(_.freeze)
-  }
-  // TODO Consider changing name to statSize?
-  lazy val statsize: Int = {
-    if (statDomains.isEmpty) throw new IllegalStateException("You must call .init on this Template before use.")
-    val ss = statDomains.multiplyInts(_.maxVectorLength)
-    ss
-  } 
+  protected var _statisticsDomains: ArrayBuffer[DiscreteVectorDomain] = null
+  protected def _newStatisticsDomains = new ArrayBuffer[DiscreteVectorDomain]
+  def statisticsDomains: Seq[DiscreteVectorDomain] = 
+    if (_statisticsDomains eq null)
+      throw new IllegalStateException("You must override statisticsDomains if you want to access them before creating any Factor and Stat objects.")
+    else
+      _statisticsDomains
+  def freezeDomains: Unit = statisticsDomains.foreach(_.freeze)
+  lazy val statisticsVectorLength: Int = statisticsDomains.multiplyInts(_.maxVectorLength)
   type StatisticsType <: Statistics
   trait Statistics extends super.Statistics {
     def vector: Vector
@@ -228,7 +227,7 @@ trait VectorTemplate extends Template {
           vec
         } 
       } else { // an empty iterator over Suff's.  Just return a (sparse) vector of zero's.
-        new SparseVector(statsize)
+        new SparseVector(statisticsVectorLength)
       }
     }
   }
@@ -244,7 +243,7 @@ trait VectorTemplate extends Template {
     @author Andrew McCallum */
 trait DotTemplate extends VectorTemplate {
   type TemplateType <: DotTemplate
-  lazy val weights: Vector = { freezeDomains; new DenseVector(statsize) } // Dense by default, may be override in sub-traits
+  lazy val weights: Vector = { freezeDomains; new DenseVector(statisticsVectorLength) } // Dense by default, may be override in sub-traits
   def score(s:StatType) = weights match {
     case w:DenseVector => { assert(isInitialized == true); w dot s.vector }
     //case w:SparseHashVector => w dot s.vector // TODO Uncomment this.  It was only commented because latest version of scalala didn't seem to have this class any more
@@ -253,7 +252,7 @@ trait DotTemplate extends VectorTemplate {
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename) // TODO Make this work on MSWindows also
     if (f.exists) return // Already exists, don't write it again
-    for (d <- statDomains) d.save(dirname)
+    for (d <- statisticsDomains) d.save(dirname)
     val s = new PrintWriter(new FileWriter(f))
     // TODO Do we also need to save the weights.default?
     for (weight <- weights.activeElements; if (weight._2 != 0.0)) { // before June 21 2010, used too be weights.iterator -akm
@@ -265,9 +264,9 @@ trait DotTemplate extends VectorTemplate {
   }
   override def load(dirname:String): Unit = {
     //println("Loading "+this.getClass.getName+" from directory "+dirname)
-    for (d <- statDomains) { /* println(" Loading Domain["+d+"]"); */ d.load(dirname) }
-    // TODO Why would statsize be 0 or negative?
-    if (statsize <= 0 || weights.activeElements.exists({case(i,v) => v != 0})) return // Already have non-zero weights, must already be read.
+    for (d <- statisticsDomains) { /* println(" Loading Domain["+d+"]"); */ d.load(dirname) }
+    // TODO Why would statisticsVectorLength be 0 or negative?
+    if (statisticsVectorLength <= 0 || weights.activeElements.exists({case(i,v) => v != 0})) return // Already have non-zero weights, must already be read.
     val f = new File(dirname+"/"+filename)
     val s = new BufferedReader(new FileReader(f))
     var line = ""
@@ -285,13 +284,13 @@ trait DotTemplate extends VectorTemplate {
 /** A DotTemplate that stores its parameters in a Scalala SparseVector instead of a DenseVector 
     @author Andrew McCallum */
 trait SparseWeights extends DotTemplate {
-  override lazy val weights: Vector = { new SparseVector(statsize) } // Dense by default, here overridden to be sparse
+  override lazy val weights: Vector = { new SparseVector(statisticsVectorLength) } // Dense by default, here overridden to be sparse
 }
 
 /** A DotTemplate that stores its parameters in a Scalala SparseHashVector instead of a DenseVector 
     @author Sameer Singh */
 trait SparseHashWeights extends DotTemplate {
-  override lazy val weights: Vector = { freezeDomains; new SparseHashVector(statsize) } // Dense by default, override to be sparseHashed
+  override lazy val weights: Vector = { freezeDomains; new SparseHashVector(statisticsVectorLength) } // Dense by default, override to be sparseHashed
 }
 
 
@@ -353,7 +352,12 @@ trait VectorStatistics1[S1<:DiscretesValue] extends VectorTemplate {
   type StatType = Stat
   type StatisticsType = Statistics
   // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
-  case class Stat(_1:S1) extends { val vector: Vector = _1 } with super.Stat { if (statDomains.isEmpty) statDomains += _1.domain }
+  case class Stat(_1:S1) extends { val vector: Vector = _1 } with super.Stat { 
+    if (_statisticsDomains eq null) {
+      _statisticsDomains = _newStatisticsDomains
+      _statisticsDomains += _1.domain
+    }
+  }
   isInitialized = false
   // TODO Remove this method
   def init(implicit m1:Manifest[S1]): this.type = {
@@ -495,7 +499,11 @@ trait VectorStatistics2[S1<:DiscretesValue,S2<:DiscretesValue] extends VectorTem
   type StatisticsType = Statistics
   //case class Stat(_1:S1, _2:S2) extends super.Stat { lazy val vector: Vector = _1.vector flatOuter _2.vector } 
   case class Stat(_1:S1, _2:S2) extends { val vector: Vector = _1 flatOuter _2 } with super.Stat { 
-    if (statDomains.isEmpty) { statDomains += _1.domain; statDomains += _2.domain }
+    if (_statisticsDomains eq null) { 
+      _statisticsDomains = _newStatisticsDomains
+      _statisticsDomains += _1.domain
+      _statisticsDomains += _2.domain
+    }
   }
   isInitialized = false
   def init(implicit m1:Manifest[S1], m2:Manifest[S2]): this.type = {
@@ -675,7 +683,12 @@ trait Statistics3[S1,S2,S3] extends Template {
 trait VectorStatistics3[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue] extends VectorTemplate {
   //case class Stat(_1:S1, _2:S2, _3:S3) extends super.Stat { lazy val vector: Vector = _1.vector flatOuter (_2.vector flatOuter _3.vector) } 
   case class Stat(_1:S1, _2:S2, _3:S3) extends { val vector: Vector = _1 flatOuter (_2 flatOuter _3) } with super.Stat {
-    if (statDomains.isEmpty) { statDomains += _1.domain; statDomains += _2.domain; statDomains += _3.domain }
+    if (_statisticsDomains eq null) {
+      _statisticsDomains = _newStatisticsDomains
+      _statisticsDomains += _1.domain
+      _statisticsDomains += _2.domain
+      _statisticsDomains += _3.domain
+    }
   }
   type StatType = Stat
   type StatisticsType = Statistics
@@ -760,7 +773,13 @@ trait Statistics4[S1,S2,S3,S4] extends Template {
 trait VectorStatistics4[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue,S4<:DiscretesValue] extends VectorTemplate {
   //case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends super.Stat { lazy val vector: Vector = _1.vector flatOuter (_2.vector flatOuter (_3.vector flatOuter _4.vector)) } 
   case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends  { val vector: Vector = _1 flatOuter (_2 flatOuter (_3 flatOuter _4)) } with super.Stat {
-    if (statDomains.isEmpty) { statDomains += _1.domain; statDomains += _2.domain; statDomains += _3.domain; statDomains += _4.domain }
+    if (_statisticsDomains eq null) {
+      _statisticsDomains = _newStatisticsDomains
+      _statisticsDomains += _1.domain
+      _statisticsDomains += _2.domain
+      _statisticsDomains += _3.domain
+      _statisticsDomains += _4.domain
+    }
   }
   type StatType = Stat
   type StatisticsType = Statistics

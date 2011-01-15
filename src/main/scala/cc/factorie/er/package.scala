@@ -106,12 +106,12 @@ def newGetterUnit[X<:{type GetterType <: Getter[X]}](implicit m:Manifest[X]): X#
 
 /** The values of leaves of the formula tree.  
  For the common case of a BooleanTerm it is a BooleanValue (which inherits from DiscreteVar). */
-//type FormulaArg = DiscreteVar //with GetterType[BooleanValue]
 type FormulaArg = DiscreteVar //with GetterType[BooleanValue]
+type FormulaArgValue = DiscreteValue //with GetterType[BooleanValue]
 //type FormulaValue[A] = BooleanValue //with GetterType[A];
 /** The collection of arguments to the boolean expression; the variables neighboring the factor.  
  Using DiscreteValue instead of BooleanValue enables mixed use of BooleanValue and other DiscreteVars, as in IntExpression. */
-type FormulaArgs = ArrayStack[FormulaArg]
+type FormulaArgs = ArrayStack[FormulaArgValue]
 implicit def getter2formula[X<:Variable,Y<:BooleanVar/* with GetterType[A]*/](g:Getter[Y] {type A = X})(implicit ma:Manifest[Y]): Formula[X] = new BooleanTerm(g)(ma)
 implicit def getter2IntTerm[X<:Variable,A<:FormulaArg](g:GetterHead[X,A])(implicit ma:Manifest[A]): IntExpression[X] = new IntTerm(g)(ma)
 
