@@ -25,7 +25,7 @@ import java.io.File
     But interesting example of flexibility of the "Template.statistics" method. */
 object DepParsing1 {
 
-  object TokenDomain extends CategoricalVectorDomain[String]
+  object TokenDomain extends CategoricalsDomain[String]
   class Token(val word:String, posString:String, trueParentPosition:Int, trueLabelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
     def domain = TokenDomain
     val parent = new Node(this, trueParentPosition, trueLabelString)
@@ -192,7 +192,7 @@ object DepParsing1 {
       }
     }
     println("Read "+sentences.length+" sentences, "+sentences.foldLeft(0)(_+_.length)+" words.")
-    println("Domain[Token] size = "+TokenDomain.size)
+    println("Domain[Token] size = "+TokenDomain.dimensionSize)
     println("Domain[POS] size = "+POSDomain.size)
     println("Domain[Distance] size = "+DistanceDomain.size)
     

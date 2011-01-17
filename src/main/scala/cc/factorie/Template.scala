@@ -188,22 +188,22 @@ trait Template { thisTemplate =>
 }
 
 /** A Template whose sufficient statistics are represented as a set of DiscretesValues
-    (which inherit from cc.factorie.la.Vector, and also have a DiscreteVectorDomain).
+    (which inherit from cc.factorie.la.Vector, and also have a DiscretesDomain).
     @author Andrew McCallum
 */
 trait VectorTemplate extends Template {
   //def vectorLength: Int
   //protected var _vectorLength1 = -1
   //def vectorLength1: Int = if (_vectorLength < 0) throw new Error("Not yet set.") else _vectorLength1
-  protected var _statisticsDomains: ArrayBuffer[DiscreteVectorDomain] = null
-  protected def _newStatisticsDomains = new ArrayBuffer[DiscreteVectorDomain]
-  def statisticsDomains: Seq[DiscreteVectorDomain] = 
+  protected var _statisticsDomains: ArrayBuffer[DiscretesDomain] = null
+  protected def _newStatisticsDomains = new ArrayBuffer[DiscretesDomain]
+  def statisticsDomains: Seq[DiscretesDomain] = 
     if (_statisticsDomains eq null)
       throw new IllegalStateException("You must override statisticsDomains if you want to access them before creating any Factor and Stat objects.")
     else
       _statisticsDomains
   def freezeDomains: Unit = statisticsDomains.foreach(_.freeze)
-  lazy val statisticsVectorLength: Int = statisticsDomains.multiplyInts(_.maxVectorLength)
+  lazy val statisticsVectorLength: Int = statisticsDomains.multiplyInts(_.dimensionSize)
   type StatisticsType <: Statistics
   trait Statistics extends super.Statistics {
     def vector: Vector
@@ -453,7 +453,7 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
         case v2:DiscreteValue => {
           //println("Template2.cachedStatistics")
           if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v1.domain.size * v2.domain.size).asInstanceOf[Array[StatisticsType]]
-          val i = v1.intValue * nd2.asInstanceOf[DiscreteVectorDomain].maxVectorLength + v2.intValue
+          val i = v1.intValue * nd2.asInstanceOf[DiscretesDomain].dimensionSize + v2.intValue
           if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = statistics(values)
           cachedStatisticsArray(i)
         }

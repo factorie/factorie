@@ -14,24 +14,21 @@
 
 package cc.factorie
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
+import scala.collection.mutable.{ArrayBuffer}
 import scala.reflect.Manifest
-import scala.util.Random
-import scala.Math
-import scala.util.Sorting
 
 /** A Model in FACTORIE consists of a collection of factor Templates and methods that operate on the collection.
     @author Andrew McCallum
     @since 0.8
     @see Template
  */
-class Model(templates:Template*) extends Seq[Template] {
+class Model(templates:Template*) extends IndexedSeq[Template] {
   type T = Template
 
   private val ts = new ArrayBuffer[Template]
   def apply(i:Int) = ts.apply(i)
   def length = ts.length
-  def iterator = ts.iterator
+  override def iterator = ts.iterator
 
   this ++= templates
 

@@ -74,7 +74,7 @@ object CorefMentionsDemo {
   object AffinityDomain extends EnumDomain {
     val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
   }
-  object AffinityVectorDomain extends CategoricalVectorDomain[String] {
+  object AffinityVectorDomain extends CategoricalsDomain[String] {
     override lazy val dimensionDomain = AffinityDomain
   }
 

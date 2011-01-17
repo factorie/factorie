@@ -28,7 +28,7 @@ object Football {
   val printLexiconsOnly = false
 
   // Define the variable classes
-  object TokenDomain extends CategoricalVectorDomain[String]
+  object TokenDomain extends CategoricalsDomain[String]
   class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
     def domain = TokenDomain
     val label = new Label(labelString, this)

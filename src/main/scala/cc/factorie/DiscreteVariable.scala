@@ -17,20 +17,20 @@ import scala.util.Random
 import cc.factorie.la._
 
 trait DiscretesVar extends VectorVar with VarAndValueType[DiscretesVar,DiscretesValue] {
-  def domain: DiscreteVectorDomain
+  def domain: DiscretesDomain
   def contains(dimension:Int): Boolean = vector.apply(dimension) != 0.0
 }
 
 /** A vector with dimensions corresponding to a DiscreteDomain, and with Double weights for each dimension, represented by a sparse vector. */
 abstract class DiscretesVariable extends VectorVariable with DiscretesVar {
   thisVariable =>
-  _set(new SparseVector(domain.maxVectorLength) with DiscretesValue { def domain = thisVariable.domain })
+  _set(new SparseVector(domain.dimensionSize) with DiscretesValue { def domain = thisVariable.domain })
 }
 
 /** A sparse binary vector with length determined by a DiscreteDomain */
 trait SparseBinaryDiscretesVar extends DiscretesVar with VarAndValueType[SparseBinaryDiscretesVar,SparseBinaryVector with DiscretesValue] {
   //type ValueType <: cc.factorie.la.SparseBinaryVector with DiscretesValue
-  def length = domain.maxVectorLength //allocSize // TODO Remove this?
+  def length = domain.dimensionSize //allocSize // TODO Remove this?
   //def apply(i:Int) = vector.apply(i)
   def activeDomain = vector.activeDomain
   def zero(): Unit = value.zero()
@@ -43,11 +43,9 @@ trait SparseBinaryDiscretesVar extends DiscretesVar with VarAndValueType[SparseB
 
 abstract class SparseBinaryDiscretesVariable extends VectorVariable with SparseBinaryDiscretesVar {
   thisVariable =>
-  //type DomainType = DiscreteVectorDomain
-  //type ValueType = cc.factorie.la.SparseBinaryVector with DiscretesValue
   _set(new cc.factorie.la.SparseBinaryVector(-1) with DiscretesValue {
     def domain = thisVariable.domain
-    override def length = domain.maxVectorLength
+    override def length = domain.dimensionSize
   })
 }
 

@@ -28,7 +28,7 @@ import cc.factorie.app.tokenseq.labeled
 object ChainNER1 {
   
   // Define the variable classes
-  object TokenDomain extends CategoricalVectorDomain[String]
+  object TokenDomain extends CategoricalsDomain[String]
   class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
     val label = new Label(labelString, this)
     def domain = TokenDomain

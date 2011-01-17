@@ -26,7 +26,7 @@ import java.io.File
 object ChainNER3 {
 
   // Define the variable classes
-  object TokenDomain extends CategoricalVectorDomain[String]
+  object TokenDomain extends CategoricalsDomain[String]
   class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
     val label = new Label(labelString, this)
     def domain = TokenDomain
@@ -100,7 +100,7 @@ object ChainNER3 {
     // Print data stats
     println("Training on "+trainSentences.size+" sentences, "+trainSentences.foldLeft(0)(_+_.size)+" tokens.")
     println("Testing  on "+testSentences.size+" sentences, "+testSentences.foldLeft(0)(_+_.size)+" tokens.")
-    println("Domain size = "+TokenDomain.size)
+    println("Domain size = "+TokenDomain.dimensionSize)
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.labels)

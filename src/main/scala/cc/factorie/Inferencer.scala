@@ -74,7 +74,7 @@ class IIDDiscreteInferencer[V<:DiscreteVariable](model:Model) extends VariableIn
 }
 
 
-class DiscreteMarginal[V<:DiscretesVar](val variable:V, proportions:Seq[Double] = Nil) extends cc.factorie.generative.DenseCountsProportions(variable.domain.size) with Marginal {
+class DiscreteMarginal[V<:DiscretesVar](val variable:V, proportions:Seq[Double] = Nil) extends cc.factorie.generative.DenseCountsProportions(variable.domain.dimensionSize) with Marginal {
   // TODO Consider also including "val inferencer:Inferencer" in constructor arguments
   if (proportions != Nil) this.set(proportions)(null)
   override def keepChildren = false

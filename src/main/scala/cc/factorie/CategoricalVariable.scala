@@ -22,7 +22,7 @@ import cc.factorie.la.SparseBinaryVector
     @author Andrew McCallum */
 trait CategoricalsVar[T] extends DiscretesVar with VarAndValueType[CategoricalsVar[T],CategoricalsValue[T]] {
   type CategoryType = T
-  def domain: CategoricalVectorDomain[T]
+  def domain: CategoricalsDomain[T]
   def update(elt:T, newValue:Double): Unit = 
     vector.update(domain.dimensionDomain.index(elt), newValue)
   def increment(elt:T, incr:Double): Unit = {
@@ -33,7 +33,7 @@ trait CategoricalsVar[T] extends DiscretesVar with VarAndValueType[CategoricalsV
 
 abstract class CategoricalsVariable[T] extends VectorVariable with CategoricalsVar[T] {
   thisVariable =>
-  _set(new cc.factorie.la.GrowableSparseVector(domain) with CategoricalsValue[T] {
+  _set(new cc.factorie.la.GrowableSparseVector(domain.dimensionDomain) with CategoricalsValue[T] {
     def domain = thisVariable.domain
   })
 }
@@ -66,12 +66,10 @@ trait SparseBinaryCategoricalsVar[T] extends SparseBinaryDiscretesVar with Binar
 
 abstract class BinaryFeatureVectorVariable[T] extends VectorVariable with SparseBinaryCategoricalsVar[T] {
   thisVariable =>
-  //type DomainType = CategoricalVectorDomain[T]
-  //type ValueType = cc.factorie.la.SparseBinaryVector with CategoricalsValue[T]
   def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
   _set(new cc.factorie.la.SparseBinaryVector(-1) with CategoricalsValue[T] {
     def domain = thisVariable.domain
-    override def length = domain.maxVectorLength
+    override def length = domain.dimensionSize
   })
 }
 

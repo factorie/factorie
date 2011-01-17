@@ -21,19 +21,20 @@ import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,Buffered
 // TODO Also make a randomized-representation CategoricalDomain, with hashes?
 
 
-/** A value in a CategoricalVectorDomain */
+/** A value in a CategoricalsDomain */
 trait CategoricalsValue[T] extends DiscretesValue {
-  def domain:CategoricalVectorDomain[T]
+  def domain:CategoricalsDomain[T]
 }
 
 /** Domain for CategoricalsVar, e.g. FeatureVectorVariable.
     @author Andrew McCallum */
-trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[CategoricalsValue[T]] {
+trait CategoricalsDomain[T] extends DiscretesDomain with ValueType[CategoricalsValue[T]] {
   thisDomain =>
   type CategoryType = T
   //def dimensionDomain: CategoricalDomain[T]
   lazy val dimensionDomain: CategoricalDomain[T] = new CategoricalDomain[T]
-  def size: Int = dimensionDomain.size
+  // TODO Should there be a 'size' method here?
+  //def size: Int = dimensionDomain.size
 }
 
 
@@ -60,7 +61,7 @@ trait CategoricalValue[T] extends CategoricalsValue[T] with DiscreteValue {
 
     @author Andrew McCallum
     */
-class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T] with ValueType[CategoricalValue[T]] {
+class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[CategoricalValue[T]] with CategoricalsDomain[T] with ValueType[CategoricalValue[T]] {
   thisDomain =>
   def this(values:Iterable[T]) = { this(); values.foreach(getValue(_)); freeze() }
   override lazy val dimensionDomain = this
@@ -68,18 +69,13 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
       If maxSize is set can be bigger than size. 
       @see maxSize */
   override def allocSize = if (maxSize < 0) size else maxSize
-  override def size = _indices.size
+  override def length = _indices.size // TODO Necessary?
+  def size = _indices.size
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
       override this method with the largest you think your growable domain will get. */
   var maxSize = -1
   // TODO consider putting the following method back in later -akm
   //override def maxSize_=(s:Int) : Unit = if (maxSize >= size) maxSize = s else throw new Error("Trying to set maxSize smaller than size.")
-
-  /** If true, do not allow this domain to change. */
-  private var _frozen = false
-  /** Can new category values be added to this Domain? */
-  def frozen = _frozen
-  override def freeze() = _frozen = true
 
   /** Map from category back to int index */
   private var _indices = Map[T, ValueType]()
@@ -131,9 +127,8 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
     i
   }
 
- 
   /** Like index, but throw an exception if the category is not already there. */
-  def getIndex(category:T) : Int = _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new category.")).index
+  def getIndex(category:T) : Int = _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new value.")).index
 
   //def indexOf[B >: Value](elem: B): Int = elem.index // elem.asInstanceOf[Value].index //index(elem.asInstanceOf[T]) // TODO Try to get rid of this cast!!!
 
@@ -157,7 +152,7 @@ class CategoricalDomain[T] extends DiscreteDomain with CategoricalVectorDomain[T
   def ++=(xs:Traversable[T]) : Unit = xs.foreach(this.index(_))
  
   override def toString = "CategoricalDomain[]("+size+")"
-  override def vectorDimensionName(i:Int): String = getCategory(i).toString
+  override def dimensionName(i:Int): String = getCategory(i).toString
 
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename)

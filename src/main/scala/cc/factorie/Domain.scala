@@ -23,8 +23,10 @@ import scala.reflect.Manifest
     This most generic superclass of all Domains does not provide much functionality.
     Key functionality of subclasses:
     VectorDomain provides the maximum dimensionality of its vectors.
-    DiscreteVectorDomain provides a size and DiscreteValue objects, with ValueType Vector.
-    DiscreteDomain extends DiscreteVectorDomain with ValueType DiscreteValue.
+    DiscretesDomain have a dimensionDomain:DiscreteDomain,
+     providing a size and DiscreteValue objects.
+    DiscreteDomain extends DiscretesDomain, having single value members: DiscreteValue;
+     it is its own dimensionDomain.
     CategoricalDomain provides a densely-packed mapping between category values and integers.
     @author Andrew McCallum
     @since 0.8 */
@@ -37,11 +39,9 @@ trait Domain[+VT] extends ValueType[VT] {
   def filename:String = this.getClass.getName
 }
 
-// TODO Consider instead: extends Domain[VT] with Iterable[VT], but then we run into problems with "def size"
 trait IterableDomain[+VT] extends Domain[VT] {
   def values: Iterable[VT]
 }
-
 
 // TODO Give this a better name, indicating that it isn't a Domain itself, but a trait for a Variable to give it a domain.
 /** The domain object for variables that don't have a meaningful domain. */  // TODO Explain this better; see Vars and SpanVariable

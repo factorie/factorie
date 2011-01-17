@@ -34,7 +34,7 @@ object SpanNER1 {
   var verbose = false
 
   // The variable classes
-  object TokenDomain extends CategoricalVectorDomain[String]
+  object TokenDomain extends CategoricalsDomain[String]
   class Token(word:String, val trueLabelString:String) extends tokenseq.Token[Sentence,Token](word) {
     def domain = TokenDomain
     // TODO Consider instead implementing truth with true spans in VariableSeqWithSpans. 
@@ -331,7 +331,7 @@ object SpanNER1 {
     addFeatures(documents)
     val testTokens = documents.flatMap(x=>x)
     println("Have "+testTokens.length+" tokens")
-    println("TokenDomain size="+TokenDomain.size)
+    println("TokenDomain size="+TokenDomain.dimensionSize)
     println("LabelDomain "+LabelDomain.values.toList)
     predictor.processAll(testTokens, 2)
     documents.foreach(s => { println("FILE "+s.filename); printSentence(s) })
@@ -358,7 +358,7 @@ object SpanNER1 {
     val trainTokens = trainSentences.flatMap(x=>x) //.take(2000)
     val testTokens = testSentences.flatMap(x=>x)
     println("Have "+trainTokens.length+" trainTokens "+testTokens.length+" testTokens")
-    println("TokenDomain size="+TokenDomain.size)
+    println("TokenDomain size="+TokenDomain.dimensionSize)
     println("LabelDomain "+LabelDomain.values.toList)
     
     if (verbose) trainTokens.take(500).foreach(printFeatures _)

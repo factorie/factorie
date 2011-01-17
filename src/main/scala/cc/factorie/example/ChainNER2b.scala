@@ -27,7 +27,7 @@ import java.io.File
 object ChainNER2b {
 
   // The variable classes
-  object TokenDomain extends CategoricalVectorDomain[String]
+  object TokenDomain extends CategoricalsDomain[String]
   class Token(val word:String, val label:Label) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenDomain
   }
@@ -76,7 +76,7 @@ object ChainNER2b {
       if (t.label.hasPrev) t ++= t.label.prev.token.values.filter(!_.contains('@')).map(_+"@-1")
       if (t.label.hasNext) t ++= t.label.next.token.values.filter(!_.contains('@')).map(_+"@+1")
     })
-    println("Using "+TokenDomain.size+" observable features.")
+    println("Using "+TokenDomain.dimensionSize+" observable features.")
     
     // Train and test
     (trainLabels ++ testLabels).foreach(_.setRandomly())

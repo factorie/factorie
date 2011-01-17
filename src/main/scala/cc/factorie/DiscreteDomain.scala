@@ -21,20 +21,20 @@ import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,Buffered
     Not that a single "DiscreteValue" is a subclass of this, represented as a "singleton vector",
     with 1.0 at the value's intValue and 0.0 everywhere else. */
 trait DiscretesValue extends cc.factorie.la.Vector {
-  def domain: DiscreteVectorDomain
+  def domain: DiscretesDomain
 }
 
 // TODO Consider changing to DiscretesDomain for parallel naming?
 /** A Domain for variables whose value is a DiscretesValue, which is a Vector that also has a pointer back to its domain.
     This domain has a non-negative integer size.  The method 'size' is abstract. */
-trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscretesValue] {
+trait DiscretesDomain extends VectorDomain with ValueType[DiscretesValue] {
   /** The maximum size to which this domain will be allowed to grow.  
       The 'size' method may return values smaller than this, however.
       This method is used to pre-allocate a Template's parameter arrays and is useful for growing domains. */
-  def size: Int
-  def maxVectorLength: Int = size  // TODO Get rid of this?
-  def dimensionDomain: DiscreteDomain // = new DiscreteDomain { def size = thisDomain.size }
-  def vectorDimensionName(i:Int): String = i.toString
+  //def size: Int
+  def dimensionSize: Int = dimensionDomain.size  // TODO Get rid of this?
+  def dimensionDomain: DiscreteDomain
+  def dimensionName(i:Int): String = i.toString
   def freeze(): Unit = {}
 }
 
@@ -44,25 +44,36 @@ trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscretesValue] {
 /** A value in a DiscreteDomain. */
 trait DiscreteValue extends DiscretesValue with cc.factorie.la.SingletonBinaryVec {
   def domain: DiscreteDomain
-  def index: Int
-  final def intValue = index // TODO Consider removing this alias?
-}
+  def index: Int  // TODO Consider removing this alias, and just always using intValue?
+  final def intValue = index}
 
-trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteValue] with ValueType[DiscreteValue] {
+trait DiscreteDomain extends DiscretesDomain with IterableDomain[DiscreteValue] with ValueType[DiscreteValue] {
   thisDomain =>
-  private var _frozen = false
+  // Make method 'size' abstract again.
+  // Note that we are reversing the order of the traditional size/length dependency
+  // Note that this only works if DiscreteDomain is a class, not a trait.
   def size: Int
   def dimensionDomain = this
-  //def length: Int = size // TODO Reverse the order of this size/length dependency?
-  override def freeze(): Unit = { _frozen = true }
+  /** If true, do not allow this domain to change. */
+  protected var _frozen = false
+  override def freeze(): Unit = _frozen = true
+  /** Can new category values be added to this Domain? */
+  def frozen = _frozen
+
   def allocSize = size // TODO Remove this?
   var maxRequestedInt: Int = 0
 
+  /** Maps from integer index to the DiscreteValue objects */
+  private val __elements = new scala.collection.mutable.ArrayBuffer[ValueType]
+  def _elements = __elements // Define this way so that _elements can be overridden
+
+  def values: IndexedSeq[ValueType] = __elements
   // Access sort of like a collection
-  def values: scala.collection.Seq[ValueType] = _elements
-  def iterator = _elements.iterator
+  //def values: scala.collection.Seq[ValueType] = _elements
+  def length = size
   def apply(index:Int): ValueType  = getValue(index)
   def unapply(value:ValueType): Option[Int] = if (value.domain == this) Some(value.index) else None
+  def iterator = _elements.iterator
 
   // TODO Make this 'protected' so that only the 'getValue' method should construct these objects?
   class DiscreteValue(val index:Int) extends cc.factorie.DiscreteValue {
@@ -74,9 +85,6 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
     override def equals(other:Any): Boolean = 
       other match { case other:DiscreteValue => this.index == other.index; case _ => false }
   }
-  /** Maps from integer index to the DiscreteValue objects */
-  private val __elements = new scala.collection.mutable.ArrayBuffer[ValueType]
-  def _elements = __elements // Define this way so that _elements can be overridden
 
   // TODO Consider renaming this method to something without the 'get'.  Perhaps valueAtIndex()
   def getValue(index:Int): ValueType = {
