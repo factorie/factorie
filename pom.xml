@@ -10,7 +10,7 @@
     <name>Factorie</name>
     <artifactId>factorie</artifactId>
     <groupId>${factorie.group}</groupId>
-    <version>0.10.0</version>
+    <version>0.10.1-SNAPSHOT</version>
     <inceptionYear>2009</inceptionYear>
 
     <url>http://factorie.googlecode.com</url>
