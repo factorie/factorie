@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" 
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <properties>
@@ -11,7 +10,7 @@
     <name>Factorie</name>
     <artifactId>factorie</artifactId>
     <groupId>${factorie.group}</groupId>
-    <version>${factorie.version}</version>
+    <version>0.10.0</version>
     <inceptionYear>2009</inceptionYear>
 
     <url>http://factorie.googlecode.com</url>
@@ -66,21 +65,21 @@
         </dependency>
     </dependencies>
     <distributionManagement>
-      <repository>
-	<id>ieslnexus</id>
-	<name>IESL Nexus repostory</name>
-	<url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/releases</url>
-      </repository>
-      <snapshotRepository>
-	<id>ieslnexus</id>
-	<name>IESL Nexus repostory</name>
-	<url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/snapshots</url>
-      </snapshotRepository>
-      <site>
-	<id>ieslwww</id>
-	<name>IESL www repository</name>
-	<url>scp://iesl.cs.umass.edu/m/iesl/data2/www/iesl/maven/factorie</url>
-      </site>
+        <repository>
+            <id>ieslnexus</id>
+            <name>IESL Nexus repostory</name>
+            <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>ieslnexus</id>
+            <name>IESL Nexus repostory</name>
+            <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <site>
+            <id>ieslwww</id>
+            <name>IESL www repository</name>
+            <url>scp://iesl.cs.umass.edu/m/iesl/data2/www/iesl/maven/factorie</url>
+        </site>
     </distributionManagement>
 
     <profiles>
@@ -145,8 +144,8 @@
                             <meminitial>512m</meminitial>
                             <maxmem>1024m</maxmem>
                             <!-- <compilerArgument>-verbose -bootclasspath ${java.home}\lib\rt.jar</compilerArgument> -->
-                            <source>1.5</source> 
-                            <target>1.5</target> 
+                            <source>1.5</source>
+                            <target>1.5</target>
                         </configuration>
                         <executions>
                             <execution>
@@ -214,16 +213,36 @@
 
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>make-assembly</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>attached</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                         <configuration>
-                            <formats>
-                                <format>tar.gz</format>
-                            </formats>
                             <descriptorRefs>
                                 <descriptorRef>project</descriptorRef>
                             </descriptorRefs>
+                            <descriptors>
+                                <descriptor>src/main/assembly/src.xml</descriptor>
+                            </descriptors>
                         </configuration>
                     </plugin>
 
+                    <plugin>
+                        <artifactId>maven-release-plugin</artifactId>
+                        <version>2.1</version>
+                        <configuration>
+                            <!--
+                             During release:perform, enable the "release" profile
+                            -->
+                            <releaseProfiles>release</releaseProfiles>
+                            <goals>deploy package</goals>
+                        </configuration>
+                    </plugin>
 
                 </plugins>
             </build>

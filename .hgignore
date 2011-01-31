@@ -24,6 +24,10 @@ doc/usersguide/*.toc
 .distfiles
 .scala_dependencies
 
+# Intellij config file
+*.ipr
+*.iws
+
 ## sbt build directories
 lib_managed/
 src_managed/

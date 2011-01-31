@@ -16,8 +16,9 @@ package cc.factorie
 import scala.collection.mutable.{ArrayBuffer, HashMap, ListBuffer}
 import scala.util.Random
 import cc.factorie.la._
-import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 import scala.reflect.Manifest
+import java.io._
+import util.ClassPathUtils
 
 /** The "domain" of a variable---a representation of all of its values, each having type 'ValueType'.
     This most generic superclass of all Domains does not provide much functionality.

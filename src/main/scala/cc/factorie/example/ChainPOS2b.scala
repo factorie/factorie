@@ -43,7 +43,7 @@ object ChainPOS2b {
   // The model
   val transitionTemplate = 
     // Transition factors between two successive labels
-    new TemplateWithDotStatistics2[Label, Label] with DiscreteFactorSettings2 {
+    new TemplateWithDotStatistics2[Label, Label] {
       def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
       def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
     }

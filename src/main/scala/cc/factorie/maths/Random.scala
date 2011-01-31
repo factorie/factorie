@@ -65,7 +65,7 @@ trait RandomDistributions {
   def nextDiscrete (a:Array[Double])(implicit r:Random): Int = {
     var b = 0.0; val s = nextUniform(r); var i = 0
     while (b <= s && i < a.length) { assert (a(i) >= 0.0); b += a(i); i += 1 }
-    assert(i > 1)
+    assert(i > 0)
     i - 1
   }
 
@@ -73,7 +73,7 @@ trait RandomDistributions {
   def nextDiscrete (a:IndexedSeq[Double])(implicit r:Random): Int = {
     var b = 0.0; val s = nextUniform(r); var i = 0
     while (b <= s && i < a.length) { b += a(i); i += 1 }
-    assert(i > 1)
+    assert(i > 0)
     i - 1
   }
 
