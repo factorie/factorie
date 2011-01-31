@@ -18,17 +18,29 @@ package cc.factorie.generative
 import cc.factorie._
 
 // Proportions is a Seq[Double] that sums to 1.0
-// Discrete ~ Multinomial(Proportions)
+// Discrete ~ DiscreteDistribution(Proportions)
 
 // TODO Make a GeneratedProportions trait, which implements sampleFrom and prFrom, etc.  No.  Isn't this what Dirichlet is? -akm
 
-// I would prefer "with Seq[Double]", but Seq implements equals/hashCode to depend on the contents,
-// and no Variable should do that since we need to know about unique variables; it also makes things
-// slow for large-length Proportions.
-trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqualsEq[Double] /*with VarAndValueGenericDomain[Proportions,Seq[Double]]*/ {
+trait ProportionsValue extends IndexedSeq[Double] {
+  def sampleInt: Int = maths.nextDiscrete(this)
+}
+class ProportionsArrayValue(value:Array[Double]) extends ProportionsValue {
+  private val array = value
+  final def apply(i:Int) = array(i)
+  final def length = array.length
+  final def update(i:Int, v:Double) = array(i) = v
+}
+
+trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqualsEq[Double] with ProportionsValue
+with VarAndValueGenericDomain[Proportions,ProportionsValue]
+/*with VarAndValueGenericDomain[Proportions,Seq[Double]]*/ 
+{
   //type ValueType = cc.factorie.generative.Proportions
-  def domain = GenericDomain
-  def value = this.asInstanceOf[Value] // TODO Is this what we want?  Not a immutable representation of the variable value, but we want this to be efficient.
+  //def domain = GenericDomain
+  // TODO We are allowing the variable to serve as its own value; odd and not necessarily recommended
+  def value = this.asInstanceOf[Value]
+  // TODO Is this what we want?  Not a immutable representation of the variable value, but we want this to be efficient.
 
   /*def apply(index:Int): Double
   def length: Int
@@ -44,7 +56,7 @@ trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqual
     def apply(i:Int) = Proportions.this.apply(i)
     def length = Proportions.this.length
   }
-  def sampleInt = maths.nextDiscrete(this)(cc.factorie.random) // TODO Avoid the inefficiency of asSeq
+  override def sampleInt = maths.nextDiscrete(this)(cc.factorie.random) // TODO Avoid the inefficiency of asSeq
   def pr(index:Int) = apply(index)
   def logpr(index:Int) = math.log(apply(index))
   def maxPrIndex: Int = { var maxIndex = 0; var i = 1; while (i < length) { if (this(i) > this(maxIndex)) maxIndex =i; i += 1 }; maxIndex }
@@ -68,8 +80,8 @@ trait CategoricalProportions[A] extends Proportions {
   def topValues(n:Int) = top(n).toList.map(_.value)
 }
 
-trait MutableProportions extends Proportions with Estimation[MutableProportions] {
-  def set(p:Seq[Double])(implicit d:DiffList): Unit
+trait MutableProportions extends Proportions /*with MutableGeneratedVar*/ with Estimation[MutableProportions] {
+  def set(p:ProportionsValue)(implicit d:DiffList): Unit
   def defaultEstimator: Estimator[MutableProportions] = MutableProportionsEstimator
 }
 
@@ -80,6 +92,7 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions {
   if (p != Nil) this := p else setUniform(null)
   @inline final def length: Int = _p.size
   @inline final def apply(index:Int) = _p(index)
+  def set(p:ProportionsValue)(implicit d:DiffList): Unit = set(p.asInstanceOf[Seq[Double]])
   def set(p:Seq[Double])(implicit d:DiffList): Unit = {
     assert(p.size == _p.size, "size mismatch: new="+p.size+", orig="+_p.size)
     val newP = p.toArray // TODO Make a copy, just in case it was already an array?
@@ -143,6 +156,7 @@ class DenseCountsProportions(len:Int) extends MutableProportions {
   def increment(incrs:Seq[Double])(implicit d:DiffList): Unit = {
     forIndex(incrs.length)(i => increment(i, incrs(i)))
   }
+  def set(p:ProportionsValue)(implicit d:DiffList): Unit = { zero(); increment(p) }
   def set(p:Seq[Double])(implicit d:DiffList): Unit = { zero(); increment(p) }
   def apply(index:Int): Double = {
     if (_countsTotal == 0) 1.0 / length
@@ -237,7 +251,7 @@ abstract class SortedSparseCountsProportions(dim:Int) extends CountsProportions 
 // The binary special case, for convenience
 
 /** The outcome of a coin flip, with boolean value.  */
-class Flip(coin:Coin, value:Boolean = false) extends BooleanVariable(value) with GeneratedDiscreteVariable {
+class Flip(coin:Coin, value:Boolean = false) extends BooleanVariable(value) with GeneratedDiscreteVar {
   def proportions = coin
   coin.addChild(this)(null)
 }

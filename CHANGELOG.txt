@@ -83,6 +83,11 @@ class MyLabel(theValue:String, val domain = MyLabelDomain) extends CategoricalVa
 The type argument for domains used to be the variable class; now it is
 the 'ValueType' type of the domain (and its variables).
 
+Templates now automatically gather the domains of the neighbor
+variables.  VectorTemplates also gather the domains of their
+statistics values.  [TODO: Discuss the dangers of this automatic
+mechanism and consider others mechanisms.]
+
 
 * Template statistics:
 
@@ -110,6 +115,16 @@ VectorVar type arguments.  They now take DiscretesValue type
 arguments.  The method 'statsize' has been renmed
 'statisticsVectorLength' for clarity.
 
+
+* Generative modeling package
+
+The probability calculations and sampling routines are no longer
+implemented in the variable, but in templates instead.  Each
+GeneratedVar must have a value "generativeTemplate" and a method
+"generativeFactor".  Many changes have been made to the generative
+modeling package, but they are not yet finished or usable.  The code
+is being checked in now in order to facilitate others' work on the
+undirected models.
 
 
 

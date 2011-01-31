@@ -21,6 +21,7 @@ import scala.collection.mutable.{ListBuffer,HashSet,ArrayBuffer}
     Primarily used to implement a "mixture choice" in finite mixture models.
     @see MixtureChoice
     @author Andrew McCallum */
+//@deprecated("In store for significant changes in the future.")
 trait Gate extends DiscreteVariable {
   /** The collection of variable references controlled by the gate. */
   private var _gatedRefs: List[AbstractGatedRefVariable] = Nil

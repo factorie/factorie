@@ -12,38 +12,35 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.generative
 import cc.factorie._
 
 // TODO Consider creating PostiveReal, and then Gamma extends 
 
-/** The Gamma distribution generating real values with parameters alpha and beta. 
-    @author Andrew McCallum. */
-class Gamma(val alpha:RealVarParameter, val beta:RealVarParameter, value:Double = 0) extends RealVariable(value) with GeneratedVariable {
-  alpha.addChild(this)(null)
-  beta.addChild(this)(null)
-  def parents = List(alpha, beta)
-  def pr(alpha:Double, beta:Double) = {
-    val x = doubleValue
-    assert (x > 0)
+class GammaTemplate extends GenerativeTemplateWithStatistics3[Gamma,RealVarParameter,RealVarParameter] {
+  def unroll1(g:Gamma) = Factor(g, g.alpha, g.beta)
+  def unroll2(a:RealVarParameter) = for (g <- a.childrenOfClass[Gamma]; if (g.alpha == a)) yield Factor(g, a, g.beta)
+  def unroll3(b:RealVarParameter) = for (g <- b.childrenOfClass[Gamma]; if (g.beta == b)) yield Factor(g, g.alpha, b)
+  def pr(s:Stat): Double = pr(s._1, s._2, s._3)
+  def pr(x:Double, alpha:Double, beta:Double): Double = {
+    require(x > 0)
     math.pow(beta, alpha) / maths.gamma(alpha) * math.pow(x, alpha - 1) * math.exp(- beta * x)
   }
-  def pr = pr(alpha.doubleValue, beta.doubleValue)
-  def prFrom(parents:Seq[Parameter]) = parents match {
-    case Seq(alpha:RealVar, beta:RealVar) => pr(alpha.doubleValue, beta.doubleValue)
-  }
-  // TODO def logpr(x:Double) = 
-  def sampleFrom(alpha:RealVar, beta:RealVar)(implicit d:DiffList): Unit = 
-    set(maths.nextGamma(alpha.doubleValue, beta.doubleValue)(cc.factorie.random))
-  def sampleFromParents(implicit d:DiffList = null): this.type = { sampleFrom(alpha, beta); this }
-  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): this.type = {
-    parents match {
-      case Seq(alpha:RealVar, beta:RealVar) => sampleFrom(alpha, beta)
-    }
-    this
-  }
+  def logpr(s:Stat) = math.log(pr(s))
+  def sampledValue(s:Stat): Double = sampledValue(s._2, s._3)
+  def sampledValue(alpha:Double, beta:Double): Double = maths.nextGamma(alpha.doubleValue, beta.doubleValue)(cc.factorie.random)
+}
+object GammaTemplate extends GammaTemplate
+
+
+/** The Gamma distribution generating real values with parameters alpha and beta. 
+    @author Andrew McCallum. */
+class Gamma(val alpha:RealVarParameter, val beta:RealVarParameter, value:Double = 0) extends RealVariable(value) with MutableGeneratedVar {
+  val generativeTemplate = GammaTemplate
+  def generativeFactor = new GammaTemplate.Factor(this, alpha, beta)
+  alpha.addChild(this)(null)
+  beta.addChild(this)(null)
+  override def parents = List(alpha, beta)
 }
 
 // TODO Finish this.

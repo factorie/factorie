@@ -12,32 +12,26 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.generative
 import cc.factorie._
 
+class PoissonTemplate extends GenerativeTemplateWithStatistics2[Poisson,PoissonMeanVar] {
+  def unroll1(p:Poisson) = Factor(p, p.mean)
+  def unroll2(m:PoissonMeanVar) = for (p <- m.childrenOfClass[Poisson]) yield Factor(p, m)
+  def pr(s:Stat) = pr(s._1, s._2)
+  def pr(k:Int, mean:Double) = math.pow(mean, k) * math.exp(-mean) / maths.factorial(k)
+  def logpr(s:Stat) = math.log(pr(s))
+  def sampledValue(s:Stat): Int = sampledValue(s._2)
+  def sampledValue(mean:Double): Int = maths.nextPoisson(mean)(cc.factorie.random).toInt
+}
+object PoissonTemplate extends PoissonTemplate
+
 /** The Poisson distribution generating integer values with parameter lambda. */
-class Poisson(val mean:RealVarParameter, value:Int = 0)(implicit d:DiffList = null) extends IntegerVariable(value) with GeneratedVariable {
-  mean.addChild(this)(d)
-  def parents = List(mean)
-  def pr: Double = prFrom(mean.doubleValue)
-  def prFrom(mean:Double): Double = {
-    val k = this.intValue
-    math.pow(mean, k) * math.exp(-mean) / maths.factorial(k)
-  }
-  def prFrom(parents:Seq[Parameter]): Double = parents match {
-    case Seq(mean:RealVar) => prFrom(mean.doubleValue)
-  }
-  def sampleFrom(mean:Double)(implicit d:DiffList): Unit =
-    set(maths.nextPoisson(mean.doubleValue)(cc.factorie.random).toInt)
-  def sampleFromParents(implicit d:DiffList = null): this.type = { sampleFrom(mean.doubleValue); this }
-  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): this.type = {
-    parents match {
-      case Seq(mean:RealVar) => sampleFrom(mean.doubleValue)
-    }
-    this
-  }
+class Poisson(val mean:PoissonMeanVar, value:Int = 0) extends IntegerVariable(value) with MutableGeneratedVar {
+  mean.addChild(this)(null)
+  val generativeTemplate = PoissonTemplate
+  def generativeFactor = new PoissonTemplate.Factor(this, mean)
+  override def parents = List(mean)
   /** This implements the maximum likelihood estimator */
   /*def estimate: Unit = {
     if (generatedSamples.size == 0) throw new Error("No samles from which to estimate")
@@ -45,6 +39,8 @@ class Poisson(val mean:RealVarParameter, value:Int = 0)(implicit d:DiffList = nu
     lambda = sum/generatedSamples.size
   }*/
 }
+
+trait PoissonMeanVar extends RealVar with Parameter
 
 /*abstract class GammaPoisson(gamma:Gamma) extends Distribution[IntegerVar] {
   throw new Error("Not yet implemented")

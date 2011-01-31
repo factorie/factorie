@@ -24,6 +24,7 @@ import cc.factorie.generative._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 
+/*
 object LDADemo {
   val numTopics = 10
   object ZDomain extends DiscreteDomain { def size = numTopics }
@@ -86,3 +87,4 @@ object LDADemo {
   }
 }
 
+*/

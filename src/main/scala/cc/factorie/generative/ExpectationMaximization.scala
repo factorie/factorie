@@ -15,9 +15,9 @@
 package cc.factorie.generative
 import cc.factorie._
 
-class EMInferencer[M<:Parameter with Estimation[M]] extends Inferencer[M,MixtureChoiceVariable] {
+class EMInferencer[M<:Parameter with Estimation[M]] extends Inferencer[M,MixtureChoiceVar] {
   type LatticeType = EMLattice[M]
-  def infer(variables:Iterable[M], varying:Iterable[MixtureChoiceVariable]): LatticeType = {
+  def infer(variables:Iterable[M], varying:Iterable[MixtureChoiceVar]): LatticeType = {
     val em = new EMLattice[M](varying, variables)
     em.process()
     em
@@ -28,17 +28,17 @@ class EMInferencer[M<:Parameter with Estimation[M]] extends Inferencer[M,Mixture
     but in the future the selection of inference method may be more configurable. 
     @author Andrew McCallum */
 class EMLattice[M<:Parameter with Estimation[M]]
-(eVariables:Iterable[MixtureChoiceVariable], mVariables:Iterable[M],
- eInferencer: VariableInferencer[MixtureChoiceVariable] = new IIDDiscreteInferencer[MixtureChoiceVariable](cc.factorie.generative.defaultGenerativeModel))
+(eVariables:Iterable[MixtureChoiceVar], mVariables:Iterable[M],
+ eInferencer: VariableInferencer[MixtureChoiceVar] = new IIDDiscreteInferencer[MixtureChoiceVar](cc.factorie.generative.defaultGenerativeModel))
 extends Lattice[M]
 {
-  var eLattice: Lattice[MixtureChoiceVariable] = null
+  var eLattice: Lattice[MixtureChoiceVar] = null
   def eStep: Unit = eLattice = eInferencer.infer(eVariables)
   def mStep: Unit = {
     /** Map access to variable marginals. */
     val latticeMapping: scala.collection.Map[Variable,Variable] = new scala.collection.DefaultMap[Variable,Variable] {
       def get(v:Variable): Option[Variable] = v match {
-        case v:MixtureChoiceVariable => eLattice.marginal(v) //.asInstanceOf[Variable]
+        case v:MixtureChoiceVar => eLattice.marginal(v) //.asInstanceOf[Variable]
         case _ => None
       }
       def iterator: Iterator[(Variable,Variable)] = throw new Error

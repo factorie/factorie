@@ -64,7 +64,8 @@ class BooleanVariable(initialValue:Boolean = false) extends CategoricalVariable(
   //_set(domain.falseValue)
   //def this(initialValue:Boolean = false) = { this(); _set(domain.getValue(initialValue)) }
   // Avoid CategoricalVariable's HashMap lookup
-  override final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
+  final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
+  override final def setCategory(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   // If you want to coordinate with changes to this variable value, override set(ValueType)
   final def :=(newBoolean:Boolean) = set(newBoolean)(null)
 }

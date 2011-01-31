@@ -19,7 +19,8 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 
 class CollapsedVariationalBayes(collapse:Iterable[CollapsibleParameter], marginalize:Iterable[Variable with QDistribution], model:Model = cc.factorie.generative.defaultGenerativeModel) {
   val handlers = new ArrayBuffer[CollapsedVariationalBayesHandler]
-  def defaultHandlers = List(GeneratedVariableCollapsedVariationalBayesHandler, MixtureChoiceCollapsedVariationalBayesHandler)
+  //def defaultHandlers = List(GeneratedVariableCollapsedVariationalBayesHandler, MixtureChoiceCollapsedVariationalBayesHandler)
+  def defaultHandlers = throw new Error("Not yet implemented")
   handlers ++= defaultHandlers
 
   private val _c = new HashMap[Parameter,Parameter]
@@ -39,8 +40,8 @@ class CollapsedVariationalBayes(collapse:Iterable[CollapsibleParameter], margina
   }
   def children(p:Parameter): Iterable[GeneratedVar] = throw new Error
 
-  def process(v:GeneratedVariable): DiffList = {
-    assert(!v.isInstanceOf[CollapsedVariable]) // We should never be processing a CollapsedVariable
+  def process(v:MutableGeneratedVar): DiffList = {
+    assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable
     // Get factors, in sorted order of the their classname
     val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.template.getClass.getName < f2.template.getClass.getName)
     var done = false
@@ -58,6 +59,8 @@ trait CollapsedVariationalBayesHandler {
   def process(v:Variable, factors:Seq[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean
 }
 
+
+/*
 object GeneratedVariableCollapsedVariationalBayesHandler extends CollapsedVariationalBayesHandler {
   def process(v:Variable, factors:Seq[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean = {
     factors match {
@@ -145,7 +148,7 @@ object MixtureChoiceCollapsedVariationalBayesHandler extends CollapsedVariationa
               forIndex(v.domain.size)(i => {
                 v.set(i)(null)
                 for (chosenParent <- outcome.chosenParents) cvb.collapsedOrNull(chosenParent) match {
-                  case p:CollapsedParameter => { /*println("CollapsedGibbsSampler -"+vq+" p="+p); */ p.updateChildStats(outcomeQ, -vq(i)) }
+                  case p:CollapsedParameter => { p.updateChildStats(outcomeQ, -vq(i)) }
                   case _ => {}
                 }
               })
@@ -169,7 +172,7 @@ object MixtureChoiceCollapsedVariationalBayesHandler extends CollapsedVariationa
               forIndex(v.domain.size)(i => {
                 v.set(i)(null)
                 for (chosenParent <- outcome.chosenParents) cvb.collapsedOrNull(chosenParent) match {
-                  case p:CollapsedParameter => { /*println("CollapsedGibbsSampler +"+vq+" p="+p); */ p.updateChildStats(outcomeQ, vq(i)) }
+                  case p:CollapsedParameter => { p.updateChildStats(outcomeQ, vq(i)) }
                   case _ => {}
                 }
               })
@@ -197,3 +200,4 @@ object MixtureChoiceCollapsedVariationalBayesHandler extends CollapsedVariationa
   }
 }
 
+*/

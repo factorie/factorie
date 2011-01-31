@@ -31,7 +31,7 @@ trait RealVar extends Variable with VarAndValueType[RealVar,Double] with Numeric
 }
 
 /** A Variable with a mutable real (double) value. */
-class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableValue[Double] {
+class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableVar {
   //type VariableType <: RealVariable
   private var _value: Double = initialValue
   @inline final def doubleValue = _value

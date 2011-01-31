@@ -59,8 +59,8 @@ object ChainNER3 {
       s.foreach(t => {
         if (t.label.categoryValue(0) == 'I' && (!t.hasPrev || t.prev.label.categoryValue.substring(1) != t.label.categoryValue.substring(1))) {
           val newValue = "B"+t.label.categoryValue.substring(1) 
-          t.label.set(newValue)(null)
-          t.label.target.set(newValue)(null)
+          t.label.setCategory(newValue)(null)
+          t.label.target.setCategory(newValue)(null)
         }
       })}) 
       

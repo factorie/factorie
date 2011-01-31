@@ -12,32 +12,44 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.generative
 import cc.factorie._
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-@DomainInSubclasses
-trait DiscreteMixtureVar extends GeneratedDiscreteVar with MixtureOutcome {
+class DiscreteMixtureTemplate extends GenerativeTemplateWithStatistics3[DiscreteMixtureVar,MixtureComponents[Proportions],MixtureChoiceVar] with MixtureGenerativeTemplate[DiscreteMixtureVar] {
+  //class Factor(o:DiscreteMixtureVar, mc:MixtureComponents[Proportions], c:MixtureChoiceVar) extends super.Factor(o, mc, c)
+  def unroll1(d:DiscreteMixtureVar) = Factor(d, d.components, d.choice)
+  def unroll2(m:MixtureComponents[Proportions]) = for (d <- m.childrenOfClass[DiscreteMixtureVar]) yield Factor(d, m, d.choice)
+  def unroll3(g:MixtureChoiceVar) = for (d <- g.outcomesOfClass[DiscreteMixtureVar]; if (classOf[DiscreteMixtureVar].isAssignableFrom(d.getClass))) yield Factor(d, d.components, g)
+  def prChoosing(s:StatType, mixtureIndex:Int) = pr(s._1.intValue, s._2, mixtureIndex)
+  def logprChoosing(s:StatType, mixtureIndex:Int) = math.log(prChoosing(s, mixtureIndex))
+  def pr(s:StatType): Double = pr(s._1.intValue, s._2, s._3.intValue)
+  def pr(value:Int, mixture:Seq[Proportions], mixtureIndex:Int): Double = mixture(mixtureIndex).apply(value)
+  def logpr(s:StatType) = math.log(pr(s))
+  def sampledValue(s:StatType): DiscreteValue = sampledValue(s._1.domain, s._2, s._3.intValue)
+  def sampledValueChoosing(s:StatType, mixtureIndex:Int): DiscreteValue = sampledValue(s._1.domain, s._2, mixtureIndex)
+  def sampledValue(domain:DiscreteDomain, proportions:Seq[Proportions], mixtureIndex:Int): DiscreteValue = domain.getValue(proportions(mixtureIndex).sampleInt)
+}
+object DiscreteMixtureTemplate extends DiscreteMixtureTemplate
+
+trait DiscreteMixtureVar extends DiscreteVar with MixtureGeneratedVar {
+  val generativeTemplate = DiscreteMixtureTemplate
+  def generativeFactor = new DiscreteMixtureTemplate.Factor(this, components, choice)
   choice.addOutcome(this)
   components.addChild(this)(null)
-  def choice: MixtureChoiceVariable
+  def choice: MixtureChoiceVar
   def components: FiniteMixture[Proportions]
-  def proportions = components(choice.intValue)
-  def prFromMixtureComponent(index:Int): Double = components(index).pr(intValue)
-  def prFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int): Double = map.getOrElse(components(index), components(index)).asInstanceOf[Proportions].pr(intValue) // TODO make more efficient
-  def parentsFromMixtureComponent(index:Int) = List(components(index))
   def chosenParents = List(components(choice.intValue))
-  override def parents = List(components)
-    // Above was: components +: super.parents // super.parents match { case list:List[Parameter] => components :: list; case seq:Seq[Parameter] => components +: seq }
+  def proportions = components(choice.intValue)
+  // override for efficiency
+  override def prChoosing(mixtureIndex:Int) = components(choice.intValue).apply(this.intValue) 
+  override def sampledValueChoosing(mixtureIndex:Int): Value = domain.getValue(components(choice.intValue).sampleInt)
 }
 
-@DomainInSubclasses
-abstract class DiscreteMixture(val components:FiniteMixture[Proportions], val choice:MixtureChoiceVariable, value:Int = 0) extends DiscreteVariable(value) with GeneratedDiscreteVariable with MixtureOutcome with DiscreteMixtureVar
+abstract class DiscreteMixture(val components: FiniteMixture[Proportions], val choice:MixtureChoiceVar, initialValue:Int = 0) 
+         extends DiscreteVariable(initialValue) with DiscreteMixtureVar with MutableGeneratedVar
 
-@DomainInSubclasses
-abstract class CategoricalMixture[A](val components:FiniteMixture[Proportions], val choice:MixtureChoiceVariable, value:A) extends CategoricalVariable(value) with GeneratedCategoricalVariable[A] with DiscreteMixtureVar
-
+abstract class CategoricalMixture[A](val components: FiniteMixture[Proportions], val choice:MixtureChoiceVar, initialValue:A)
+         extends CategoricalVariable(initialValue) with DiscreteMixtureVar with MutableGeneratedVar

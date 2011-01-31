@@ -30,6 +30,7 @@ import cc.factorie.app.strings.Stopwords
 /** Implements "Cluster LDA" from Hanna Wallach's thesis.
     Runs, but would benefit from a DirichletMultinomial implementation. */
 
+/*
 object ClusterLDADemo {
   val filterStopwords = false
   val numTopics = 10
@@ -210,3 +211,4 @@ object ClusterLDADemo {
 "/Users/mccallum/research/data/text/reuters/reuters-parsed/modapte/zinc"
   )
 }
+*/

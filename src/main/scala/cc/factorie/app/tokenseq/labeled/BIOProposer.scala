@@ -29,7 +29,7 @@ abstract class BIOProposer[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](m
     if (newLabel.startsWith("I-")) {
       val suffix = newLabel.substring(2,newLabel.length)
       if(label.hasPrev && label.prev.categoryValue.indexOf(suffix) == -1)
-        label.prev.set("B-"+suffix)(delta)
+        label.prev.setCategory("B-"+suffix)(delta)
       if(!label.hasPrev)
         newLabel="B-"+suffix
     }
@@ -38,12 +38,12 @@ abstract class BIOProposer[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](m
       if(label.hasNext && label.next.categoryValue.indexOf("I-") != -1 && label.next.value.indexOf(suffix) == -1) {
         //TODO check if label.next.next isn't violated
         if(random.nextBoolean)
-          label.next.set("I-"+suffix)(delta)
+          label.next.setCategory("I-"+suffix)(delta)
         else 
-          label.next.set("O")(delta)
+          label.next.setCategory("O")(delta)
       }
     }
-    label.set(newLabel)(delta)
+    label.setCategory(newLabel)(delta)
     0.0 //TODO calculate this precisely
   }
 }

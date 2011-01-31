@@ -17,7 +17,7 @@ package cc.factorie.example
 import cc.factorie._
 import cc.factorie.generative._
 
-// TODO In progress.  Not yet working.
+/*
 object GaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
     val numComponents = 5
@@ -54,6 +54,8 @@ object GaussianMixtureDemo {
     origMeans.foreach(println(_))
   }
 }  
+*/
+
   
 //  // The Gaussian mixture components and their mixture weights
 //  class G(initialMean:Double) extends Gaussian1[X](initialMean, 1.0) with MixtureComponent[G,X] {

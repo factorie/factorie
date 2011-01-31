@@ -12,23 +12,15 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+package cc.factorie.util
 
-
-package cc.factorie
-import cc.factorie._
-
-package object generative {
-
-  val defaultGenerativeModel = new Model(new DiscreteTemplate, new DiscreteMixtureTemplate, new GaussianTemplate)
-
-  implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
-    val value: IndexedSeq[Double] = s.toIndexedSeq
-    def apply(i:Int) = value(i)
-    def length = value.length
-    //def sampleInt = maths.nextDiscrete(value)(cc.factorie.random)
-  }
-  
-  //implicit val denseDirichletEstimator = new DenseDirichletEstimator
-  //implicit val mutableProportionsEstimator = new MutableProportionsEstimator
-
+/** A trait for objects that can provide type-matched substitutions of one object for another.
+    @author Andrew McCallum */
+trait Substitutions {
+  /** Given an object, return a substite of the same time. 
+      The returned value may be the original argument itself.
+      It should never be null. */
+  def sub[B](a:B): B
+  /** Return true if the argument has a non-equal substitution. */
+  def changes(a:Any): Boolean = a == sub(a)
 }

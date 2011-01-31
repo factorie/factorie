@@ -23,6 +23,7 @@ trait Parameter extends Variable {
   def keepChildren = true
   /** A collection of variables whose value depends directly on this variable. */
   def children: Iterable[GeneratedVar] = _children
+  def childrenOfClass[A](implicit m:Manifest[A]) = children.filter(_.getClass == m.erasure).asInstanceOf[Iterable[A]]
   /** A collection of variables whose value depends on the value of this variable, 
       either directly or via a sequence of deterministic variables.  If this variable's
       value changes, all of these extended children variables' .pr will change. */
@@ -53,7 +54,7 @@ trait Parameter extends Variable {
       case mcs:MixtureComponents[_] => {
         val mci = mcs.components.indexOf(this); assert(mci >= 0)
         for (c <- mcs.children) map.getOrElse(c,c) match {
-          case mv:MixtureOutcome => map.getOrElse(mv.choice, mv.choice) match {
+          case mv:MixtureGeneratedVar => map.getOrElse(mv.choice, mv.choice) match {
             case mc:MixtureChoice => if (mc.intValue == mci) result += ((c, 1.0))
             case pr:Proportions => { assert(pr.length == mcs.components.length); if (pr(mci) > 0.0) result += ((c, pr(mci))) }
           }
@@ -151,7 +152,8 @@ class ParameterRef[P<:Parameter,C<:GeneratedVar](p:P, override val child:C) exte
     if (value ne null) value.addChild(child)
   }
 }
-class GatedParameterRef[P<:Parameter,C<:MixtureOutcome](val parameters:Seq[P], val gate:Gate, child:C) extends ParameterRef[P,C](parameters.apply(gate.intValue), child) with GatedRefVariable[P] {
+@deprecated("This will go away in the future.")
+class GatedParameterRef[P<:Parameter,C<:MixtureGeneratedVar](val parameters:Seq[P], val gate:Gate, child:C) extends ParameterRef[P,C](parameters.apply(gate.intValue), child) with GatedRefVariable[P] {
   //println("GatedParameterRef child="+child)
   gate += this // xxx
   assert(parameters.length == gate.domain.size)
@@ -165,14 +167,18 @@ trait DeterministicFunction extends Parameter
 trait RealFunction extends DeterministicFunction with RealVarParameter
 abstract class RealOpConstant(val real:RealVarParameter) extends RealFunction with GeneratedVar {
   real.addChild(this)(null) // But now might not garbage collect this when we want to
-  def parents = List(real)
-  def pr = 1.0 // Deterministic value given parent
-  def prFrom(parents:Seq[Parameter]) = 1.0
+  override def parents = IndexedSeq(real)
+  override def pr = 1.0 // Deterministic value given parent
+  //def prFrom(parents:Seq[Parameter]) = 1.0
 }
 class RealPlusConstant(override val real:RealVarParameter, val constant:Double) extends RealOpConstant(real) {
+  val generativeTemplate = throw new Error
+  def generativeFactor = throw new Error
   def doubleValue = real.doubleValue + constant
 }
 class RealTimesConstant(override val real:RealVarParameter, val constant:Double) extends RealOpConstant(real) {
+  val generativeTemplate = throw new Error
+  def generativeFactor = throw new Error
   def doubleValue = real.doubleValue * constant
 }
 

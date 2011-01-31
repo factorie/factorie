@@ -37,17 +37,26 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 class GibbsSampler(val model:Model = cc.factorie.generative.defaultGenerativeModel) extends Sampler[Iterable[Variable]] {
   var temperature = 1.0
   val handlers = new ArrayBuffer[GibbsSamplerHandler]
-  def defaultHandlers = List(GeneratedVariableGibbsSamplerHandler, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler)
+  def defaultHandlers = List(GeneratedVarGibbsSamplerHandler) //, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler
   handlers ++= defaultHandlers
+  val cacheClosures = true
+  def closures = new HashMap[Variable, GibbsSamplerClosure]
   // TODO Consider Either[] type checking instead of generative Sampler[Variable]
   def process1(v:Iterable[Variable]): DiffList = {
+    val d = newDiffList
+    // If we have a cached closure, just use it and return
+    if (cacheClosures && v.size == 1 && closures.contains(v.head)) { closures(v.head).sample(d); return d }
     // Get factors, in sorted order of the their classname
     val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.getClass.getName < f2.getClass.getName).toList
     var done = false
     val handlerIterator = handlers.iterator
-    val d = newDiffList
     while (!done && handlerIterator.hasNext) {
-      done = handlerIterator.next.sample(v, factors, this)(d)
+      val closure = handlerIterator.next.sampler(v, factors, this)
+      if (closure ne null) {
+        done = true
+        closure.sample(d)
+        if (cacheClosures && v.size == 1) closures(v.head) = closure
+      }
     }
     if (!done) throw new Error("GibbsSampler: No sampling method found for "+factors)
     d
@@ -57,39 +66,50 @@ class GibbsSampler(val model:Model = cc.factorie.generative.defaultGenerativeMod
 }
 
 trait GibbsSamplerHandler {
-  def sample(v:Iterable[Variable], factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean
+  def sampler(v:Iterable[Variable], factors:List[Factor], sampler:GibbsSampler): GibbsSamplerClosure
+}
+trait GibbsSamplerClosure {
+  def sample(implicit d:DiffList = null): Unit
 }
 
-object GeneratedVariableGibbsSamplerHandler extends GibbsSamplerHandler {
-  def sample(v:Iterable[Variable], factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean = {
+
+object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
+  class Closure(val variable:MutableGeneratedVar, val factor:GenerativeFactor) extends GibbsSamplerClosure {
+    def sample(implicit d:DiffList = null): Unit = variable.set(variable.sampledValue)
+  }
+  def sampler(vs:Iterable[Variable], factors:List[Factor], sampler:GibbsSampler): GibbsSamplerClosure = {
     factors match {
-      case List(factor:GeneratedVarTemplate#Factor) => {
-        v.head match {
-          case v:GeneratedVariable => v.sampleFromParents(d)
+      case List(factor:GenerativeFactor) => {
+        vs.head match {
+          case v:MutableGeneratedVar => new Closure(v, factor)
         }
-        true
       }
-      case _ => false
+      case _ => null
     }
   }
 }
 
+
+
+
+
+/*
 object MixtureChoiceGibbsSamplerHandler extends GibbsSamplerHandler {
   def sample(v:Iterable[Variable], factors:List[Factor], sampler:GibbsSampler)(implicit d:DiffList): Boolean = {
     if (v.size != 1) return false
     v.head match {
-      case mc:MixtureChoiceVariable => {
+      case mc:MixtureChoiceVar => {
         // TODO We really should have a more careful check like this
         //if (!(factors.forall(_ match { case f:GeneratedVarTemplate#Factor => f.n1 == v || f.n2 == v; case _ => false }))) return false
-        val outcomes: Seq[MixtureOutcome] = mc.outcomes
+        val outcomes: Seq[MixtureGeneratedVar] = mc.outcomes
         val domainSize = mc.domain.size
         val distribution = new Array[Double](domainSize)
         var sum = 0.0
         for (i <- 0 until domainSize) {
-          distribution(i) = mc.proportions.pr(i) * outcomes.foldLeft(1.0)((prod:Double, outcome:MixtureOutcome) => prod * outcome.prFromMixtureComponent(i))
+          distribution(i) = mc.prChoosing(i) * outcomes.foldLeft(1.0)((prod:Double, outcome:MixtureGeneratedVar) => prod * outcome.prChoosing(i))
           sum += distribution(i)
         }
-        mc.set(maths.nextDiscrete(distribution, sum)(cc.factorie.random))(d)
+        mc.set(mc.domain(maths.nextDiscrete(distribution, sum)(cc.factorie.random)))(d)
         true
       }
     }
@@ -112,3 +132,4 @@ object IterableSettingsGibbsSamplerHandler extends GibbsSamplerHandler {
     }
   }
 }
+*/

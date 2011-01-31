@@ -117,7 +117,7 @@ object DepParsing1 {
     }*/
     //new Template1[Node] with DotStatistics2[Token,Token] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.parent) },
 
-    new Template2[Node,POS] with DotStatistics1[POS#ValueType] {
+    new Template2[Node,POS] with DotStatistics1[POS#Value] {
       def unroll1(n:Node) = Factor(n, n.token.pos)
       def unroll2(p:POS) = Nil
       def statistics(values:Values) = Stat(values._2)

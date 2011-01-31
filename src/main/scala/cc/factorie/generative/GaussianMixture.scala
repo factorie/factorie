@@ -20,38 +20,40 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-trait GaussianMixtureVar extends GaussianVar with MixtureOutcome {
+class GaussianMixtureTemplate extends GenerativeTemplateWithStatistics4[GaussianMixture,MixtureComponents[GaussianMeanParameter],MixtureComponents[GaussianVarianceParameter],MixtureChoiceVar] with MixtureGenerativeTemplate[GaussianMixture] {
+  def unroll1(g:GaussianMixture) = Factor(g, g.meanComponents, g.varianceComponents, g.choice)
+  def unroll2(m:MixtureComponents[GaussianMeanParameter]) = for (g <- m.childrenOfClass[GaussianMixture]) yield Factor(g, m, g.varianceComponents, g.choice)
+  def unroll3(p:MixtureComponents[GaussianVarianceParameter]) = for (g <- p.childrenOfClass[GaussianMixture]) yield Factor(g, g.meanComponents, p, g.choice)
+  def unroll4(c:MixtureChoiceVar) = for (g <- c.outcomesOfClass[GaussianMixture]) yield Factor(g, g.meanComponents, g.varianceComponents, c)
+  def pr(s:Stat) = math.exp(logpr(s))
+  def logpr(s:Stat): Double = logpr(s._1, s._2, s._3, s._4.intValue)
+  def logpr(value:Double, meanComponents:Seq[RealVar], varianceComponents:Seq[RealVar], mixtureIndex:Int): Double = 
+    GaussianTemplate.logpr(value, meanComponents(mixtureIndex).doubleValue, varianceComponents(mixtureIndex).doubleValue)
+  def prChoosing(s:Stat, mixtureIndex:Int) = math.exp(logprChoosing(s, mixtureIndex))
+  def logprChoosing(s:Stat, mixtureIndex:Int) = logpr(s._1, s._2, s._3, mixtureIndex)
+  def sampledValue(s:Stat): Double = sampledValueChoosing(s, s._4.intValue)
+  def sampledValueChoosing(s:Stat, mixtureIndex:Int): Double = 
+    GaussianTemplate.sampledValue(s._2(mixtureIndex).doubleValue, s._3(mixtureIndex).doubleValue)
+}
+object GaussianMixtureTemplate extends GaussianMixtureTemplate
+
+
+class GaussianMixture(val meanComponents:MixtureComponents[GaussianMeanParameter], 
+                      val varianceComponents:MixtureComponents[GaussianVarianceParameter], 
+                      val choice:MixtureChoiceVar,
+                      initialValue:Double = 0.0)
+extends RealVariable(initialValue) with MixtureGeneratedVar {
   choice.addOutcome(this)
   meanComponents.addChild(this)(null)
   varianceComponents.addChild(this)(null)
-  def choice: MixtureChoiceVariable
-  def meanComponents: MixtureComponents[RealVarParameter]
-  def varianceComponents: MixtureComponents[RealVarParameter]
+  val generativeTemplate = GaussianMixtureTemplate
+  def generativeFactor = new GaussianMixtureTemplate.Factor(this, meanComponents, varianceComponents, choice)
   def mean = meanComponents(choice.intValue)
   def variance = varianceComponents(choice.intValue)
-  def logprFromMixtureComponent(index:Int): Double = logprFrom(meanComponents(index).doubleValue, varianceComponents(index).doubleValue)
-  def prFromMixtureComponent(index:Int) = math.exp(logprFromMixtureComponent(index))
-  def logprFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int): Double = {
-    val mean = meanComponents(index)
-    val variance = varianceComponents(index)
-    logprFrom(map.getOrElse(mean, mean).asInstanceOf[RealVar].doubleValue, map.getOrElse(variance, variance).asInstanceOf[RealVar].doubleValue)
-  }
-  def prFromMixtureComponent(map:scala.collection.Map[Parameter,Parameter], index:Int) = math.exp(logprFromMixtureComponent(map, index))
   def parentsFromMixtureComponent(index:Int) = List(meanComponents(index), varianceComponents(index))
   def chosenParents = List(meanComponents(choice.intValue), varianceComponents(choice.intValue))
   override def parents = List[Parameter](meanComponents, varianceComponents)
   // Above also used to include: ++ super.parents
-}
-
-class GaussianMixture(val meanComponents:MixtureComponents[RealVarParameter], 
-                      val varianceComponents:MixtureComponents[RealVarParameter], 
-                      val choice:MixtureChoiceVariable, 
-                      initialValue:Double = 0.0)
-extends RealVariable(initialValue) with MixtureOutcome with GaussianMixtureVar {
-  //println("new GaussianMixture hashCode="+System.identityHashCode(this))
-  //println("meanComponents.children: "+meanComponents.children.mkString(", "))
-  //meanComponents.addChild(this)(null)
-  //varianceComponents.addChild(this)(null)
 }
 
 

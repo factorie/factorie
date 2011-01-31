@@ -20,7 +20,9 @@ import cc.factorie._
 /** A collection of discrete counts generated according a multinomial distribution. */
 // TODO Should this also inherit from DiscreteVars?
 // Or perhaps instead of Masses should be a separate Counts variable that inherits form DiscreteVars, and then this should inherit from Counts?
-trait MultinomialVar extends Masses with GeneratedVariable {
+
+/*
+trait MultinomialVar extends Masses with GeneratedVar {
   def proportions: Proportions
   proportions.addChild(this)(null)
   def parents: Seq[Parameter] = List(proportions)
@@ -34,6 +36,7 @@ trait MultinomialVar extends Masses with GeneratedVariable {
     this
   }
 }
+*/
 
 /*class SparseMultinomial(theProportions:Proportions) extends SparseCounts(theProportions.size) with Multinomial {
   def this(p:Proportions, occurrences:Seq[Int]) = { this(p); occurrences.foreach(increment(_, 1.0)) }

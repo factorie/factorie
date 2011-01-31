@@ -23,6 +23,7 @@ import cc.factorie._
 import cc.factorie.generative._
 import cc.factorie.app.strings.Stopwords
 
+/*
 object HMMDemo {
   val numStates = 10
   object ZDomain extends DiscreteDomain { def size = numStates }
@@ -77,3 +78,4 @@ object HMMDemo {
   }
 
 }
+*/

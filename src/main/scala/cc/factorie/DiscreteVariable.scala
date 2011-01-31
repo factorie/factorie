@@ -62,7 +62,7 @@ trait DiscreteVar extends DiscretesVar with VarAndValueType[DiscreteVar,Discrete
 // TODO Note that DiscreteVariable is not a subclass of VectorVariable, due to initialization awkwardness.
 // Consider fixing this.
 /** A Variable holding a single DiscreteValue. */
-abstract class DiscreteVariable extends VectorVariable with DiscreteVar with IterableSettings with QDistribution {
+abstract class DiscreteVariable extends VectorVariable with DiscreteVar with MutableVar with IterableSettings with QDistribution {
   // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
   def this(initialInt:Int) = { this(); _set(domain.getValue(initialInt)) /*.asInstanceOf[Value]*/ } // TODO Get rid of this cast?
   //private var _value: ValueType = null.asInstanceOf[ValueType]

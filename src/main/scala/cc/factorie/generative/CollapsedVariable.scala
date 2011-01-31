@@ -19,40 +19,24 @@ import cc.factorie._
 
 /** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.
     @author Andrew McCallum */
-trait CollapsibleVariable extends GeneratedVariable {
-  type CollapsedType <: CollapsedVariable
+trait CollapsibleVar extends GeneratedVar {
+  type CollapsedType <: CollapsedVar
   def newCollapsed: CollapsedType
   def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit
 }
-
-// TODO Is there a need for CollapsibleVariable; perhaps just CollapsibleParameter is enough?
+// TODO Is there actually a need for CollapsibleVar; perhaps just CollapsibleParameter is enough?
 
 /** A Parameter that can be marginalized out (collapsed).
     @see DirichletMultinomial
     @author Andrew McCallum */
-trait CollapsibleParameter extends Parameter with CollapsibleVariable {
+trait CollapsibleParameter extends Parameter with CollapsibleVar {
   type CollapsedType <: CollapsedParameter
 }
 
-
-/* Several examples of marginal distributions representing collapsed variables. */
-
-/** The distribution representing the marginal distribution of a variable. */
-/*trait CollapsedDistribution[A<:Variable] {
-  this: Distribution[A] =>
-  def samplePreChange(o:A)(implicit d:DiffList): Unit
-  def samplePostChange(o:A)(implicit d:DiffList): Unit
-}
-trait CollapsedGeneratedVariable {
-  this: GeneratedVariable[_] =>
-  def sourcePreChange(s:SourceType)(implicit d:DiffList): Unit
-  def sourcePostChange(s:SourceType)(implicit d:DiffList): Unit
-}*/
-
 /** Something that represents the collapsing of an existing GeneratedVariable. */
-trait CollapsedVariable extends GeneratedVariable 
+trait CollapsedVar extends GeneratedVar
 
-trait CollapsedParameter extends CollapsedVariable with Parameter {
+trait CollapsedParameter extends CollapsedVar with Parameter {
   /** Negative weight indicates removal of stats. */
   def updateChildStats(child:Variable, weight:Double): Unit 
   def clearChildStats: Unit

@@ -34,7 +34,7 @@ trait ValueType[+VT] {
     In Variable this supports the member type definition "Value = VariableType#ValueType",
     which magically turns out to be (pseudo?)-invariant. */
 trait VarAndValueType[+This<:Variable,+VT] extends ValueType[VT] {
-  this: This =>
+  //this: This => // Crashes under scala-2.9.0.r24003-b20110118020144
   type VariableType = This
 }
 // TODO Consider renaming ValueAndVarType[+VT,+This<:Variable] to match other ordering of self-type going last.
@@ -51,7 +51,7 @@ trait Variable {
   /** The type of this variable, used specially in the definition
       of the member type 'Value'.
       Often you can treat this as an approximation to a self-type */
-  type VariableType <: Variable // TODO Consider removing this.
+  type VariableType <: Variable
 
   /** The type of the value of this variable, as a covariant type. */
   type ValueType <: Any
@@ -75,6 +75,7 @@ trait Variable {
   type ContainedVariableType <: Variable
 
   /** Return a collection of other variables that should be unrolled in Templates whenever this variable is unrolled.
+      This is typically used in "contained variables" to return "container variables".
       For example, a Span may be part of a Event; when the Span changes the Event should be considered as having changed also, and Template1[Event] will be relevant.
       This mechanism is also used for implementing "var-args" to Templates, as in GeneratedVarTemplate[GeneratedVar, MixtureChoice, Vars[Parameters]].
       See also PyMC's "Containers"? */
@@ -93,7 +94,6 @@ trait Variable {
   }
   def printName = shortClassName
   override def toString = printName + "(_)"
-  // TODO Consider renaming this to "isObserved" to better match the "Observation" variable class names.  No.  I don't think so. -akm
   def isConstant = false
 }
 
@@ -129,7 +129,7 @@ object Vars {
   def fromSeq[V<:Variable](vs:Seq[V]) = new SeqVars(vs)
   def apply[V<:Variable](vs:Seq[V]): Vars[V] = new SeqVars(vs) // TODO Should this be Seq or V*?
 }
-
+// TODO Consider making an implicit conversion for these.
 
 /** For variables that support representating of their uncertainty with a distribution Q over their values, 
     for variational inference with an approximate distribution Q.
@@ -155,9 +155,14 @@ trait VarWithNullValue extends Variable with VarAndValueType[VarWithNullValue,Nu
   final def value = null
 }
 
+trait MutableVar extends Variable {
+  //def set(newValue:Value): Unit = set(newValue)(null)
+  def set(newValue:Value)(implicit d:DiffList): Unit 
+}
 
 /** For a Variable with value (of type A) that can change.
     @author Andrew McCallum */
+@deprecated("Will be removed")
 trait MutableValue[A] {
   this: Variable =>
   def set(newValue:A)(implicit d: DiffList): Unit // TODO Causes conflict with CategoricalVariable.set.  Consider what to do !!!

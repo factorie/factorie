@@ -12,23 +12,21 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
-import cc.factorie._
 
-package object generative {
+trait StringVar extends Variable with VarAndValueGenericDomain[StringVar,String]
 
-  val defaultGenerativeModel = new Model(new DiscreteTemplate, new DiscreteMixtureTemplate, new GaussianTemplate)
-
-  implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
-    val value: IndexedSeq[Double] = s.toIndexedSeq
-    def apply(i:Int) = value(i)
-    def length = value.length
-    //def sampleInt = maths.nextDiscrete(value)(cc.factorie.random)
+class StringVariable(initialValue:String) extends StringVar with MutableVar {
+  private var _value: String = initialValue
+  def value: String = _value
+  def set(newValue:String)(implicit d:DiffList): Unit = {
+    if (d ne null) d += new StringVariableDiff(_value, newValue)
+    _value = newValue
   }
-  
-  //implicit val denseDirichletEstimator = new DenseDirichletEstimator
-  //implicit val mutableProportionsEstimator = new MutableProportionsEstimator
-
+  case class StringVariableDiff(oldString:String, newString:String) extends Diff {
+    @inline final def variable: StringVariable = StringVariable.this
+    @inline final def redo = _value = newString
+    @inline final def undo = _value = oldString
+    override def toString = "StringVariableDiff("+oldString+","+newString+")"
+  }
 }

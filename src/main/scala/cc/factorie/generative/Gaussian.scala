@@ -12,50 +12,48 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.generative
 import cc.factorie._
 
-// TODO I am now storing the mean and variance as Real variables, so that they can, in turn, be generated from other distributions.
-// Perhaps we need to do this for all other Distributions also?
+// TODO Consider something like this?
+//trait Distribution extends Variable
+//class GaussianDistribution(val mean:RealParameter, val variance:RealParameter) extends Distribution {
+//  mean.addCascade(this)
+//  variance.addCascade(this)
+//}
 
-trait GaussianVar extends RealVariable with GeneratedVariable {
-  def mean:RealVarParameter
-  def variance:RealVarParameter
-  def parents: Seq[Parameter] = List(mean, variance)
-  def logprFrom(mean:Double, variance:Double): Double = {
-    val diff = this.doubleValue - mean
-    return - diff * diff / (2 * variance) - 0.5 * math.log(2 * math.Pi * variance)
+class GaussianTemplate extends GenerativeTemplateWithStatistics3[Gaussian,GaussianMeanParameter,GaussianVarianceParameter] {
+  def unroll1(g:Gaussian) = Factor(g, g.mean, g.variance)
+  def unroll2(m:GaussianMeanParameter) = for (g <- m.childrenOfClass[Gaussian]) yield Factor(g, m, g.variance)
+  def unroll3(v:GaussianVarianceParameter) = for (g <- v.childrenOfClass[Gaussian]) yield Factor(g, g.mean, v)
+  def logpr(s:Stat): Double = logpr(s._1, s._2, s._3)
+  def logpr(value:Double, mean:Double, variance:Double): Double = {
+    val diff = value - mean
+    return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
   }
-  override def logpr: Double = logprFrom(mean.doubleValue, variance.doubleValue)
-  def logprFrom(parents:Seq[Variable]): Unit = parents match {
-    case Seq(mean:RealVar, variance:RealVar) => logprFrom(mean.doubleValue, variance.doubleValue)
-  }
-  def pr: Double = math.exp(logpr)
-  def prFrom(parents:Seq[Parameter]): Double = logprFrom(parents)
-  def sampleFrom(mean:RealVar, variance:RealVar)(implicit d:DiffList) = 
-    set(maths.nextGaussian(mean.doubleValue, variance.doubleValue)(cc.factorie.random))
-  def sampleFromParents(implicit d:DiffList = null): this.type = { sampleFrom(mean, variance); this }
-  def sampleFrom(parents:Seq[Variable])(implicit d:DiffList): this.type = {
-    parents match {
-      case Seq(mean:RealVar, variance:RealVar) => sampleFrom(mean, variance)
-    }
-    this
-  }
+  def pr(s:Stat) = math.exp(logpr(s))
+  def sampledValue(s:Stat): Double = sampledValue(s._2, s._3)
+  def sampledValue(mean:Double, variance:Double): Double = maths.nextGaussian(mean, variance)(cc.factorie.random)
+}
+object GaussianTemplate extends GaussianTemplate
+object GaussianVarianceConstant1 extends GaussianVarianceParameter { def doubleValue = 1.0 }
+
+class Gaussian(val mean:GaussianMeanParameter, val variance:GaussianVarianceParameter = GaussianVarianceConstant1, initialValue: Double = 0.0) extends RealVariable(initialValue) with MutableGeneratedVar {
+  mean.addChild(this)(null)
+  variance.addChild(this)(null)
+  val generativeTemplate = GaussianTemplate
+  def generativeFactor = new GaussianTemplate.Factor(this, mean, variance)
   override def toString = "Gaussian(mean="+mean.doubleValue+",variance="+variance.doubleValue+")"
 }
 
-/** A one-dimensional Gaussian distribution, generating Real (valued) variables.  Default estimation by moment-matching. 
-    @author Andrew McCallum */
-class Gaussian(val mean:RealVarParameter, val variance:RealVarParameter = new RealVariableParameter(1.0), initialValue:Double = 0.0) extends RealVariable(initialValue) with GaussianVar {
-  mean.addChild(this)(null)
-  variance.addChild(this)(null)
-}
-
-class GaussianMeanVariable(x:Double) extends RealVariableParameter(x) with Estimation[GaussianMeanVariable] {
+trait GaussianMeanParameter extends RealVarParameter
+class GaussianMeanVariable(x:Double) extends RealVariableParameter(x) with GaussianMeanParameter with Estimation[GaussianMeanVariable] {
   def defaultEstimator = GaussianMeanEstimator
 }
+
+trait GaussianVarianceParameter extends RealVarParameter
+class GaussianVarianceVariable(x:Double) extends RealVariableParameter(x) with GaussianVarianceParameter
+
 // TODO or consider instead the following, so that the same RealVar can be used as
 // multiple different parameter types?
 /*class GaussianMeanVariable(x:RealVar) extends RealFunction {
