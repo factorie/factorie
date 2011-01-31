@@ -3,14 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
     <properties>
         <scala.version>2.8.0</scala.version>
-        <factorie.version>0.10</factorie.version>
+        <factorie.version>0.10.1-SNAPSHOT</factorie.version>
         <factorie.group>cc.factorie</factorie.group>
     </properties>
 
     <name>Factorie</name>
     <artifactId>factorie</artifactId>
     <groupId>${factorie.group}</groupId>
-    <version>0.10.1-SNAPSHOT</version>
+    <version>${factorie.version}</version>
     <inceptionYear>2009</inceptionYear>
 
     <url>http://factorie.googlecode.com</url>
