@@ -16,12 +16,12 @@ package cc.factorie
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
 import scala.util.{Random,Sorting}
-import java.io.{File,PrintStream,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 import scala.util.Random
 import scala.math
 import scala.util.Sorting
 import cc.factorie.la._
 import cc.factorie.util.Substitutions
+import java.io._
 //import util.ClassPathUtils
 //import java.io._
 
@@ -262,35 +262,45 @@ trait DotTemplate extends VectorTemplate {
     //case w:SparseHashVector => w dot s.vector // TODO Uncomment this.  It was only commented because latest version of scalala didn't seem to have this class any more
     case w:SparseVector => w dot s.vector
   }
+
   override def save(dirname:String): Unit = {
     val f = new File(dirname+"/"+filename) // TODO Make this work on MSWindows also
     if (f.exists) return // Already exists, don't write it again
     for (d <- statisticsDomains) d.save(dirname)
-    val s = new PrintWriter(new FileWriter(f))
+    val writer = new PrintWriter(new FileWriter(f))
+    saveToWriter(writer)
+  }
+
+  def saveToWriter(writer:PrintWriter): Unit = {
     // TODO Do we also need to save the weights.default?
     for (weight <- weights.activeElements; if (weight._2 != 0.0)) { // before June 21 2010, used too be weights.iterator -akm
-      s.print(weight._1)
-      s.print(" ")
-      s.println(weight._2)
+      writer.print(weight._1)
+      writer.print(" ")
+      writer.println(weight._2)
     }
-    s.close
+    writer.close
   }
+
   override def load(dirname:String): Unit = {
     //println("Loading "+this.getClass.getName+" from directory "+dirname)
     for (d <- statisticsDomains) { /* println(" Loading Domain["+d+"]"); */ d.load(dirname) }
+    val f = new File(dirname+"/"+filename)
+    val reader = new BufferedReader(new FileReader(f))
+    loadFromReader(reader)
+  }
+
+  def loadFromReader(reader:BufferedReader): Unit = {
     // TODO Why would statisticsVectorLength be 0 or negative?
     if (statisticsVectorLength <= 0 || weights.activeElements.exists({case(i,v) => v != 0})) return // Already have non-zero weights, must already be read.
-    val f = new File(dirname+"/"+filename)
-    val s = new BufferedReader(new FileReader(f))
     var line = ""
-    while ({ line = s.readLine; line != null }) {
+    while ({ line = reader.readLine; line != null }) {
       val fields = line.split(" +")
       assert(fields.length == 2)
       val index = Integer.parseInt(fields(0))
       val value = java.lang.Double.parseDouble(fields(1))
       weights(index) = value
     }
-    s.close
+    reader.close
   }
 }
 
