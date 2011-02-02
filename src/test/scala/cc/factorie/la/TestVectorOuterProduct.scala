@@ -20,7 +20,7 @@ import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import cc.factorie.TestUtils
 
-class TestVectorOuterProduct extends JUnitSuite with TestUtils {
+/*class TestVectorOuterProduct extends JUnitSuite with TestUtils {
   import cc.factorie.la.OuterProduct.{computeMatrix => outerProductArrayJava}
   import OuterProductMath.outerProductArray
 
@@ -130,4 +130,5 @@ class TestVectorOuterProduct extends JUnitSuite with TestUtils {
 
   @Test def * { }
 }
+*/
 

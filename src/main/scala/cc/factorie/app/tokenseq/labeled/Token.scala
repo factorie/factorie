@@ -19,7 +19,6 @@ import cc.factorie.er._
 /** A word token in a linear sequence of tokens.  It is a constituent of a LabeledTokenSeq.
  Its value is a BinaryFeatureVectorVariable, its feature vector.
  It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
-@DomainInSubclasses
 abstract class Token[S<:TokenSeq[This,L,S],L<:Label[S,This,L], This<:Token[S,L,This] /*with VarInSeq[This]*/ ](theWord:String, features:Seq[String] = Nil)
 extends cc.factorie.app.tokenseq.Token[S,This](theWord, features) {
   this: This =>

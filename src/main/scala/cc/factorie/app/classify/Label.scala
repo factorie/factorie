@@ -16,7 +16,6 @@ package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.er._
 
-@DomainInSubclasses
 abstract class Label[I<:Instance[This,I],This<:Label[I,This]](labelString:String, val _instance:I) extends cc.factorie.LabelVariable(labelString) {
   this: This =>
   type GetterType <: LabelGetter[I,This];

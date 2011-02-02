@@ -17,7 +17,6 @@ import cc.factorie._
 import cc.factorie.er._
 
 /** A Label associated with a Token. */
-@DomainInSubclasses
 abstract class Label[S<:TokenSeq[T,This,S],T<:Token[S,This,T],This<:Label[S,T,This]](labelname: String, val token: T) extends LabelVariable(labelname) with AbstractVarInSeq[This] with Entity[This] {
   this: This =>
   type GetterType <: LabelGetter[S,T,This]

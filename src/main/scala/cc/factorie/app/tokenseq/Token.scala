@@ -21,7 +21,6 @@ import scala.util.Sorting
 /** A word token in a linear sequence of tokens.  It is a constituent of a TokenSeq.
  Its value is a BinaryFeatureVectorVariable (its feature vector).
  It provides access to its neighbors in the sequence and its label.  It also has an entity-relationship counterpart. */
-@DomainInSubclasses
 abstract class Token[S<:TokenSeq[This,S], This<:Token[S,This] with VarInTypedSeq[This,S]](theWord:String, features:Seq[String] = Nil)
 extends BinaryFeatureVectorVariable[String](features) with VarInTypedSeq[This,S] with Entity[This] with TokenInSeq[This] 
 {
