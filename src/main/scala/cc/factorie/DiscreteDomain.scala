@@ -15,6 +15,9 @@
 package cc.factorie
 import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
+// Discretes refers to vectors with weights over a domain of multiple "DiscreteValue"s.
+// Discrete refers to single a DiscreteValue, which can also be seen as a singleton vector.
+
 // For variables that hold one or more discrete value weights in a vector
 
 /** A value consisting of one or more discrete values, representable as a vector. 
@@ -44,8 +47,8 @@ trait DiscretesDomain extends VectorDomain with ValueType[DiscretesValue] {
 /** A value in a DiscreteDomain. */
 trait DiscreteValue extends DiscretesValue with cc.factorie.la.SingletonBinaryVec {
   def domain: DiscreteDomain
-  def index: Int  // TODO Consider removing this alias, and just always using intValue?
-  final def intValue = index}
+  def intValue: Int
+}
 
 trait DiscreteDomain extends DiscretesDomain with IterableDomain[DiscreteValue] with ValueType[DiscreteValue] {
   thisDomain =>
@@ -72,18 +75,18 @@ trait DiscreteDomain extends DiscretesDomain with IterableDomain[DiscreteValue] 
   //def values: scala.collection.Seq[ValueType] = _elements
   def length = size
   def apply(index:Int): ValueType  = getValue(index)
-  def unapply(value:ValueType): Option[Int] = if (value.domain == this) Some(value.index) else None
+  def unapply(value:ValueType): Option[Int] = if (value.domain == this) Some(value.intValue) else None
   def iterator = _elements.iterator
 
   // TODO Make this 'protected' so that only the 'getValue' method should construct these objects?
-  class DiscreteValue(val index:Int) extends cc.factorie.DiscreteValue {
+  class DiscreteValue(val intValue:Int) extends cc.factorie.DiscreteValue {
     //type DomainType = cc.factorie.DiscreteDomain
-    final def singleIndex = index // needed for SingletonBainaryVec
+    final def singleIndex = intValue // needed for SingletonBainaryVec
     final def length = thisDomain.size // needed for SingletonBinaryVec
     def domain = thisDomain
-    override def toString = index.toString
+    override def toString = intValue.toString
     override def equals(other:Any): Boolean = 
-      other match { case other:DiscreteValue => this.index == other.index; case _ => false }
+      other match { case other:DiscreteValue => this.intValue == other.intValue; case _ => false }
   }
 
   // TODO Consider renaming this method to something without the 'get'.  Perhaps valueAtIndex()

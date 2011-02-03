@@ -40,6 +40,7 @@ trait Domain[+VT] extends ValueType[VT] {
   def filename:String = this.getClass.getName
 }
 
+/** A domain that provides an Iterable[] over its values. */
 trait IterableDomain[+VT] extends Domain[VT] {
   def values: Iterable[VT]
 }

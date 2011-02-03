@@ -20,6 +20,8 @@ import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,Buffered
 
 // TODO Also make a randomized-representation CategoricalDomain, with hashes?
 
+// Categoricals refers to vectors with weights over a domain of multiple "CategoricalValue"s.
+// Categorical refers to single a CategoricalValue, which can also be seen as a singleton vector.
 
 /** A value in a CategoricalsDomain */
 trait CategoricalsValue[T] extends DiscretesValue {
@@ -31,10 +33,8 @@ trait CategoricalsValue[T] extends DiscretesValue {
 trait CategoricalsDomain[T] extends DiscretesDomain with ValueType[CategoricalsValue[T]] {
   thisDomain =>
   type CategoryType = T
-  //def dimensionDomain: CategoricalDomain[T]
   lazy val dimensionDomain: CategoricalDomain[T] = new CategoricalDomain[T]
-  // TODO Should there be a 'size' method here?
-  //def size: Int = dimensionDomain.size
+  // Use dimensionSize to get the "size" of the vectors belonging to this domain.
 }
 
 
@@ -88,7 +88,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   /** An alias for reset(). */
   def clear() = reset()
 
-  class CategoricalValue(override val index:Int, val category:T) extends DiscreteValue(index) with cc.factorie.CategoricalValue[T] {
+  class CategoricalValue(override val intValue:Int, val category:T) extends DiscreteValue(intValue) with cc.factorie.CategoricalValue[T] {
     override def toString = category.toString
     override def domain = thisDomain
   }
@@ -119,7 +119,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   // TODO Is this the right interface choice for gatherCounts?  What if some code (inefficiently) indexes more than once for the same data point?
   def indexOnly(category: T): Int = {
     val value = getValue(category)
-    if (value eq null) -1 else value.index
+    if (value eq null) -1 else value.intValue
   }
   def index(category: T): Int = {
     val i = indexOnly(category)
@@ -128,7 +128,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   }
 
   /** Like index, but throw an exception if the category is not already there. */
-  def getIndex(category:T) : Int = _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new value.")).index
+  def getIndex(category:T) : Int = _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue
 
   //def indexOf[B >: Value](elem: B): Int = elem.index // elem.asInstanceOf[Value].index //index(elem.asInstanceOf[T]) // TODO Try to get rid of this cast!!!
 
@@ -249,7 +249,6 @@ object CategoricalDomain {
 }
 
 
-
 /* CategoricalDomain also facilitates counting occurences of entries, and trimming the Domain size.
    WARNING: Any indices that you use and store before trimming will not be valid after trimming!
    Typical usage:
@@ -260,44 +259,3 @@ object CategoricalDomain {
    data.readIndexAndCreateVariables // again
    </pre>
    */
-
-/** To be used to avoid re-reading the data, as described in above comment, 
-    but not yet implemented. */
-trait CategoricalRemapping {
-  def remapCategories(fn:(Int)=>Int)
-}
-
-
-/** A Categorical domain with enumerated values.  Provides convenient intialization to known values, 
-    with value members holding those known values.  For example:
-    object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value }
-    Each of the defined val will have Int type.  Their corresponding String category values 
-    will be the name of the variable (obtained through reflection). */
-class EnumDomain extends CategoricalDomain[String] {
-  /* For all member variables, if its type is Int, set its value to its name, 
-     and intern in the Domain.  Usage: 
-     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
-  private def stringFields = this.getClass.getDeclaredFields.filter(f => { /* println("stringFields "+f); */  f.getType == classOf[Int] })
-  private var stringFieldsIterator: Iterator[java.lang.reflect.Field] = _
-  def Value: Int = {
-    if (stringFieldsIterator == null) stringFieldsIterator = stringFields.iterator
-    assert(stringFieldsIterator.hasNext)
-    val field = stringFieldsIterator.next
-    //println("StringDomain Value got "+field.getName)
-    //checkFields // TODO Re-add this and make sure example/DirichletDemo works
-    index(field.getName) // Add it to the index
-  } 
-  private def checkFields: Unit = {
-    for (field <- stringFields) {
-      val fieldName = field.getName
-      println("StringDomain.checkFields "+field+" fieldName="+fieldName)
-      //getClass.getMethods.foreach(m => println(m.toString))
-      val fieldMethod = getClass.getMethod(fieldName) // was with ,null)
-      val fieldValue = fieldMethod.invoke(this).asInstanceOf[Int]
-      //println("Field "+fieldName+" has value "+fieldValue)
-      if (fieldValue != 0 && this.getCategory(fieldValue) != fieldName) throw new Error("Somehow StringDomain category "+fieldName+" got the wrong String value "+fieldValue+" ("+this.getCategory(fieldValue)+").")
-    }
-  }
-}
-
-// TODO Create a EnumVectorDomain

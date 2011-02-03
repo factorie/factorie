@@ -29,8 +29,8 @@ object Template {
   var enableCachedStatistics: Boolean = true
 }
 
-// Factor Templates, which create factors in a factor graph on-the-fly as necessary.
-// A factor template specifies
+// Factor Templates are able to create factors in a factor graph on-the-fly as necessary.
+// A factor template specifies:
 // (1) a description of the arbitrary relationship among its variable neighbors
 // (2) a sufficient statistics function that maps those neighbors to the statistics necessary to return a real-valued score
 // (3) an aggregator for multiple statistics of the same template

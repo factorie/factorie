@@ -25,7 +25,7 @@ import scala.reflect.Manifest
 class Model(templates:Template*) extends IndexedSeq[Template] {
   type T = Template
 
-  private val ts = new ArrayBuffer[Template]
+  private val ts = new ArrayBuffer[T]
   def apply(i:Int) = ts.apply(i)
   def length = ts.length
   override def iterator = ts.iterator
@@ -34,8 +34,8 @@ class Model(templates:Template*) extends IndexedSeq[Template] {
 
   // Jumping through hoops just to call automatically call .init on templates that are added.
   // This in turn is just a work-around for the fact that we can't get Manifests for traits because traits cannot take constructor arguments.
-  def ++=(templates:Iterable[Template]) = ts ++= templates
-  def +=(template:Template) = ts += template
+  def ++=(templates:Iterable[T]) = ts ++= templates
+  def +=(template:T) = ts += template
 
   def templatesOf[T2<:T](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
     val templateClass = m.erasure
@@ -48,11 +48,11 @@ class Model(templates:Template*) extends IndexedSeq[Template] {
     for (t <- this) if (cls.isAssignableFrom(t.getClass)) ret += t.asInstanceOf[T2]
     ret
   }
-  /*override def filter(test:(T)=>Boolean): Seq[T2] = {
+  override def filter(test:(T)=>Boolean): Model = {
     val ret = new Model
     for (t <- this) if (test(t)) ret += t
     ret
-  }*/
+  }
   def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else this.flatMap(template => template.factors(d))
   def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
   def factorsOf[T2<:T](cls:Class[T2])(d:DiffList): Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOfClass[T2](cls).flatMap(template => template.factors(d))

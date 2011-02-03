@@ -35,7 +35,6 @@ trait SpanValue[T] extends IndexedSeqEqualsEq[T] {
 }
 
 abstract class SpanVar[T](theSeq: Seq[T], initStart: Int, initLength: Int) extends Variable with IndexedSeqEqualsEq[T] with VarAndValueGenericDomain[SpanVar[T],SpanValue[T]] {
-  //type VariableType <: SpanVar[T] //SpanVariable[T];
   case class SpanValue(seq:Seq[T], start:Int, length:Int) extends cc.factorie.SpanValue[T]
   def value: Value = new SpanValue(seq, start, length) // TODO Consider avoiding creating a new object here.
   assert(initStart >= 0)

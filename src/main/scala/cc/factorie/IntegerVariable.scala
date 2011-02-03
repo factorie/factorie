@@ -47,5 +47,3 @@ class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntVa
     override def toString = "IntegerVariableDiff("+oldIndex+","+newIndex+")"
   }
 }
-
-// TODO Consider moving _value member variable back into IntegerVariable.

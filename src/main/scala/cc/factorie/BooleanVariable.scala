@@ -14,12 +14,14 @@
 
 package cc.factorie
 
+/** The value of a BooleanDomain.  A subclass of CategoricalValue. */
 trait BooleanValue extends CategoricalValue[Boolean] {
   def domain: BooleanDomain = BooleanDomain
   def booleanValue = if (this eq BooleanDomain.trueValue) true else false
 }
 
-/** The Domain for BooleanVar, of size two, containing false == 0 and true == 1. */
+/** The Domain for BooleanVar, of size two, containing a falseValue
+    (with intValue = 0) and a trueValue (with intValue = 1). */
 class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanValue] {
   thisDomain =>
   val falseValue = super.getValue(false)
@@ -43,7 +45,6 @@ object BooleanDomain extends BooleanDomain
 
 /** A Variable containing a single Boolean value, which might be mutable or immutable.
     @see BooleanVariable
-    @see BooleanObservation
     @author Andrew McCallum */
 trait BooleanVar extends CategoricalVar[Boolean] with VarAndValueType[BooleanVar,BooleanValue] {
   def domain = BooleanDomain
@@ -59,38 +60,9 @@ trait BooleanVar extends CategoricalVar[Boolean] with VarAndValueType[BooleanVar
 /** A class for mutable Boolean variables. 
     @author Andrew McCallum */
 class BooleanVariable(initialValue:Boolean = false) extends CategoricalVariable(initialValue) with BooleanVar {
-  //type VariableType <: BooleanVariable
-  //type ValueType = BooleanValue
-  //_set(domain.falseValue)
-  //def this(initialValue:Boolean = false) = { this(); _set(domain.getValue(initialValue)) }
   // Avoid CategoricalVariable's HashMap lookup
   final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   override final def setCategory(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   // If you want to coordinate with changes to this variable value, override set(ValueType)
   final def :=(newBoolean:Boolean) = set(newBoolean)(null)
 }
-
-
-
-// TODO Remove this class!
-//@deprecated("Will be removed in the future.")
-/*
-case class BooleanBlock(v1:BooleanVariable, v2:BooleanVariable) extends Variable with IterableSettings with AbstractDomain[(Boolean,Boolean)] {
-  //type ValueType = (Boolean,Boolean)
-  //def domain = BooleanDomain
-  def value = (v1.booleanValue, v2.booleanValue)
-  def settings: SettingIterator = new SettingIterator {
-    var i = -1
-    val max = 4
-    def hasNext = i < max
-    def next(difflist:DiffList): DiffList = {
-      val d = newDiffList
-      i += 1
-      if (i % 2 == 1) v2.set(true)(d) else v2.set(false)(d)
-      if (i > 1) v1.set(true)(d) else v1.set(false)(d)
-      d
-    }
-    def reset = i = -1
-  }
-}
-*/

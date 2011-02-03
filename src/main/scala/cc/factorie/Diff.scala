@@ -34,7 +34,6 @@ trait Diff {
 abstract class AutoDiff(implicit d:DiffList) extends Diff {
   if (d != null) d += this
   redo
-  //override def toString = this.getClass.toString
 }
 
  

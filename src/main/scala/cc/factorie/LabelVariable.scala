@@ -31,7 +31,7 @@ trait AimerType[+A<:Variable] {
 /** A Variable that has a desired correct "target" value, usually used for labeled training data. */
 trait VarWithTargetValue extends Variable {
   def valueIsTarget: Boolean
-  def setToTarget(implicit d:DiffList): Unit
+  def setToTarget(implicit d:DiffList = null): Unit
 }
 
 /** A Variable that has a desired correct "target" value, 
@@ -43,7 +43,6 @@ trait VarWithTarget extends VarWithTargetValue with TargetType[TargetVar] {
   /** Stores the intended true "target" value for this variable. */
   def target: TargetType { type ValueType = VarWithTarget.this.ValueType }
   def valueIsTarget: Boolean = value == target.value
-  def setToTarget(implicit d:DiffList): Unit
 }
 
 /** A trait for all variables that are containers of target values.  
@@ -82,6 +81,8 @@ trait DiscreteVarWithTarget extends DiscreteVarWithTargetValue with VarWithTarge
   //def unlabel = if (trueVariable ne null) hiddentrueIntValue = -trueIntValue - 1 else throw new Error("Already unlabeled.")
   //def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
 }
+
+class DiscreteVariableWithTarget()
 
 trait CategoricalTargetVar[A] extends CategoricalVariable[A] with DiscreteTargetVar with AimerType[CategoricalVar[A]]
 

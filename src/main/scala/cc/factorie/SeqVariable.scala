@@ -36,12 +36,7 @@ trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A]
     @author Andrew McCallum */
 abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with SeqEqualsEq[X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]] {
   def this() = this(Nil)
-  //type VariableType <: SeqVariable[X]
   def value = this.toSeq
-  //class XList[X](var elem:X, var prev:XList[X], var next:XList[X]) extends DoubleLinkedList[X,XList[X]] {
-  //this(xs:Seq[X]) = this(xs.head, null, new XList(xs.drop(1)))
-  //def prepend(x:X) : XList[X] = { val first = new XList(x, null, this); this.prev = first; first }
-  //}
   private val seq = { val a = new ArrayBuffer[X](); a ++= sequence; a }
   def append(x:X)(implicit d:DiffList) = AppendDiff(x)
   def prepend(x:X)(implicit d:DiffList) = PrependDiff(x)
@@ -161,9 +156,6 @@ trait VarInSeq[This <: VarInSeq[This] with Variable] extends VarInTypedSeq[This,
   this: This =>
 }
 
-/*trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This]] extends cc.factorie.util.DLinkedList[VarInMutableSeq[This]] {
-  this : This =>
-}*/
 
 /** For variables that have mutable-valued .next and .prev in a sequence.  
     Currently only change operation is 'swapWithVar', but more could be added.

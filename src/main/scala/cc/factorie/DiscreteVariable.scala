@@ -54,9 +54,8 @@ abstract class SparseBinaryDiscretesVariable extends VectorVariable with SparseB
 /** A single discrete variable */
 trait DiscreteVar extends DiscretesVar with VarAndValueType[DiscreteVar,DiscreteValue] {
   def domain: DiscreteDomain
-  /*@inline final*/ def intValue = value.index
-  @deprecated("Will be removed in the future")
-  def activeDomain = List(intValue) // TODO try to make this implementation possible: = value
+  /*@inline final*/ def intValue = value.intValue
+  //def activeDomain = List(intValue) // TODO try to make this implementation possible: = value
 }
 
 // TODO Note that DiscreteVariable is not a subclass of VectorVariable, due to initialization awkwardness.
@@ -64,19 +63,16 @@ trait DiscreteVar extends DiscretesVar with VarAndValueType[DiscreteVar,Discrete
 /** A Variable holding a single DiscreteValue. */
 abstract class DiscreteVariable extends VectorVariable with DiscreteVar with MutableVar with IterableSettings with QDistribution {
   // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
-  def this(initialInt:Int) = { this(); _set(domain.getValue(initialInt)) /*.asInstanceOf[Value]*/ } // TODO Get rid of this cast?
-  //private var _value: ValueType = null.asInstanceOf[ValueType]
-  //def value: Value = _value
-  //protected def _set(newValue:ValueType): Unit = _value = newValue
+  def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue) }
+  def this(initialInt:Int) = { this(); _set(domain.getValue(initialInt)) }
+  // Method _set() is defined in VectorVariable
   def set(newValue:ValueType)(implicit d:DiffList): Unit = if (newValue ne value) {
     assert((newValue eq null) || newValue.domain == domain)
     if (d ne null) d += new DiscreteVariableDiff(value, newValue)
     _set(newValue)
   }
-  /** You should never call this yourself.  Only used in CategoricalVariable initialization code. */
-  //protected def _set(newValue:Value) = { assert(newValue ne null); _value = newValue }
   // TODO provide default value for DiffList = null
-  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt).asInstanceOf[ValueType])(d) // TODO Get rid of cast?
+  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt))(d)
   def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
   def settings = new SettingIterator {
     // TODO Base this on a domain.iterator instead, for efficiency
@@ -91,11 +87,10 @@ abstract class DiscreteVariable extends VectorVariable with DiscreteVar with Mut
     @inline final def variable: DiscreteVariable = DiscreteVariable.this
     @inline final def redo = _set(newValue)
     @inline final def undo = _set(oldValue)
-    override def toString = "DiscreteVariableDiff("+oldValue+","+newValue+")"
-      /*variable match { 
-       case cv:CategoricalVar[_] if (oldIndex >= 0) => "DiscreteVariableDiff("+cv.domain.get(oldIndex)+"="+oldIndex+","+cv.domain.get(newIndex)+"="+newIndex+")"
-       case _ => "IntegerVariableDiff("+oldIndex+","+newIndex+")"
-      } */
+    override def toString = variable match { 
+      case cv:CategoricalVar[_] if (oldValue.intValue >= 0) => "DiscreteVariableDiff("+cv.domain.getCategory(oldValue.intValue)+"="+oldValue.intValue+","+cv.domain.getCategory(newValue.intValue)+"="+newValue.intValue+")"
+      case _ => "DiscreteVariableDiff("+oldValue.intValue+","+newValue.intValue+")"
+    }
   }
   // TODO But then this choice cannot be changed by subclasses :-(  Consider some implicit configuration instead.
   // So define a QType[+QT] trait!
