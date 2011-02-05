@@ -114,16 +114,18 @@ trait GenerativeTemplate[V<:GeneratedVar] extends Template {
   //type FactorType <: GenerativeTemplate.this.Factor
   //def unrollChild(v:GeneratedVar): TemplateType#FactorType
   def logpr(s:StatType): Double
-  // TODO Can we get rid of these casts?
-  def logpr(v:ValuesType): Double = logpr(v.statistics.asInstanceOf[StatType])
-  def logpr(f:FactorType): Double = logpr(f.statistics.asInstanceOf[StatType])
+  def logpr(s:cc.factorie.Stat): Double = logpr(s.asInstanceOf[StatType])
+  //def logpr(v:ValuesType): Double = logpr(v.statistics)
+  //def logpr(f:FactorType): Double = logpr(f.statistics.asInstanceOf[StatType])
   def pr(s:StatType): Double // = math.exp(logpr(s))
-  def pr(v:ValuesType): Double = pr(v.statistics.asInstanceOf[StatType])
-  def pr(f:FactorType): Double = pr(f.statistics.asInstanceOf[StatType])
+  def pr(s:cc.factorie.Stat): Double = pr(s.asInstanceOf[StatType])
+  //def pr(v:ValuesType): Double = pr(v.statistics.asInstanceOf[StatType])
+  //def pr(f:FactorType): Double = pr(f.statistics.asInstanceOf[StatType])
   def score(s:StatType) = logpr(s)
   def sampledValue(s:StatType): V#Value
-  def sampledValue(v:ValuesType): V#Value = sampledValue(v.statistics.asInstanceOf[StatType])
-  def sampledValue(f:FactorType): V#Value = sampledValue(f.statistics.asInstanceOf[StatType])
+  def sampledValue(s:cc.factorie.Stat): V#Value = sampledValue(s.asInstanceOf[StatType])
+  //def sampledValue(v:ValuesType): V#Value = sampledValue(v.statistics.asInstanceOf[StatType])
+  //def sampledValue(f:FactorType): V#Value = sampledValue(f.statistics.asInstanceOf[StatType])
 }
 
 abstract class GenerativeTemplateWithStatistics1[C<:GeneratedVar:Manifest] extends TemplateWithStatistics1[C] with GenerativeTemplate[C] {

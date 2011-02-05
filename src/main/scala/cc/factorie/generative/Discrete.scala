@@ -33,15 +33,21 @@ class DiscreteTemplate extends GenerativeTemplateWithStatistics2[GeneratedDiscre
 object DiscreteTemplate extends DiscreteTemplate
 
 trait GeneratedDiscreteVar extends GeneratedVar with DiscreteVar {
-  def proportions: Proportions
+  private var _proportions: Proportions = null
+  def proportions: Proportions = _proportions
+  def setProportions(p:Proportions): Unit = {
+    if (_proportions ne null) _proportions.removeChild(this)(null)
+    _proportions = p
+    _proportions.addChild(this)(null)
+  }
   val generativeTemplate = DiscreteTemplate
   def generativeFactor = new DiscreteTemplate.Factor(this, proportions)
   override def parents = Seq(proportions)
   override def pr = proportions(this.intValue)
 }
 
-abstract class Discrete(var proportions:Proportions, initialValue: Int = 0) extends DiscreteVariable(initialValue) with GeneratedDiscreteVar with MutableGeneratedVar {
-  proportions.addChild(this)(null)
+abstract class Discrete(proportions:Proportions, initialValue: Int = 0) extends DiscreteVariable(initialValue) with GeneratedDiscreteVar with MutableGeneratedVar {
+  setProportions(proportions)
   def maximize(implicit d:DiffList): Unit = set(proportions.maxPrIndex)
 }
 
@@ -52,8 +58,8 @@ abstract class Discrete(var proportions:Proportions, initialValue: Int = 0) exte
 trait GeneratedCategoricalVar[A] extends GeneratedDiscreteVar with CategoricalVar[A]
 //trait GeneratedCategoricalVariable[A] extends CategoricalVariable[A] with GeneratedDiscreteVariable with GeneratedCategoricalVar[A]
 
-abstract class Categorical[A](var proportions:Proportions, initialValue:A) extends CategoricalVariable(initialValue) with GeneratedCategoricalVar[A] with MutableGeneratedVar {
-  proportions.addChild(this)(null)
+abstract class Categorical[A](proportions:Proportions, initialValue:A) extends CategoricalVariable(initialValue) with GeneratedCategoricalVar[A] with MutableGeneratedVar {
+  setProportions(proportions)
   def maximize(implicit d:DiffList): Unit = set(proportions.maxPrIndex)
 }
 

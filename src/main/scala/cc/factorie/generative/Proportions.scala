@@ -252,7 +252,7 @@ abstract class SortedSparseCountsProportions(dim:Int) extends CountsProportions 
 
 /** The outcome of a coin flip, with boolean value.  */
 class Flip(coin:Coin, value:Boolean = false) extends BooleanVariable(value) with GeneratedDiscreteVar {
-  def proportions = coin
+  setProportions(coin)
   coin.addChild(this)(null)
 }
 /** A coin, with Multinomial distribution over outcomes, which are Flips. */

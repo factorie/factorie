@@ -123,6 +123,7 @@ trait Template { thisTemplate =>
   /** The method responsible for mapping a Statistic object to a real-valued score.  
       Called by the Statistic.score method; implemented here so that it can be easily overriden in user-defined subclasses of Template. */
   def score(s:StatType): Double
+  @inline final def score(s:cc.factorie.Stat): Double = score(s.asInstanceOf[StatType])
   trait Factor extends cc.factorie.Factor { 
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
     override def statistics: StatisticsType
@@ -386,7 +387,7 @@ trait VectorStatistics1[S1<:DiscretesValue] extends VectorTemplate {
     if (_statisticsDomains eq null) {
       _statisticsDomains = _newStatisticsDomains
       _statisticsDomains += _1.domain
-    }
+    } else if (_1.domain != _statisticsDomains(0)) throw new Error("Domain doesn't match previously cached domain.")
   }
 }
 trait DotStatistics1[S1<:DiscretesValue] extends VectorStatistics1[S1] with DotTemplate {
@@ -845,3 +846,19 @@ abstract class Template3WithStatistics1[N1<:Variable:Manifest,N2<:Variable:Manif
 abstract class Template3WithStatistics2[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with Statistics2[N2#Value,N3#Value] {
   def statistics(v:Values): StatType = Stat(v._2, v._3)
 }
+
+/*
+trait FooTemplate3 {
+  def valuesIterator(value1:Option[N1#Value], value2:Option[N2#Value], value3:Option[N3#Value]): Iterator[this.type.Values]
+  def discreteValuesIterator(valueOptions: Option[DiscreteValue]*): Iterator[Values]
+  def discreteValuesIterator(factor:Factor, fixed: (Variable,Any)*): Iterator[Values]
+  def discreteValuesIterator(factor:Factor, vary:Iterable[DiscreteVar]): Iterator[Values]
+  //def argMaxMessage(f:Factor, m1:N1#MessageType, m2:N2#MessageType)
+}
+*/
+
+//class TreeTemplate extends Template1[Vars[EdgePresence]] { }
+
+//class FooTemplate {}
+//val t1 = new FooTemplate
+//t1.statistics(values:t1.Values)

@@ -43,6 +43,7 @@ object BeliefPropagation {
 abstract class BPFactor(val factor: Template#Factor) {
   type V = BeliefPropagation.BPVariable
 
+  //NEW val template: T = factor.template
   // filtering by lattice's list of variables to infer done in BPLattice during initialization
   var variables: List[V] = Nil // TODO Make this toSeq instead?  scala.collection.immutable.Vector
   // TODO Consider alternative to toList?  Note that we do use list in variableSettings
@@ -74,6 +75,7 @@ abstract class BPFactor(val factor: Template#Factor) {
     def message: Array[Double] = msg
     def messageCurrentValue: Double = msg(v.intValue)
     var updateCount = 0
+    //def valuesIterator(dv:DiscreteValue): Iterator[Values] = factor.discreteValuesIterator(v, dv)
   }
 
   def vecPlusEq(v1: Vector, v2: Vector, scale: Double): Unit = v2.forActiveDomain(i => v1(i) += v2(i) * scale)
@@ -83,6 +85,9 @@ abstract class BPFactor(val factor: Template#Factor) {
     // IterableSettings instances for each of the variables neighboring this BPFactor, except the variable 'v'
     // TODO Don't we need to remove the variables that are not among those we are inferring?
     protected val neighborSettings = variables.filter(_.!=(v)).map(_.settings).toList
+    //NEW val template:T
+    //NEW def valuesIterator: Iterator[template.Values] = template.valuesIterator()
+    //NEW def score(template:T) = template.score(values:template.Values)
     protected val neighborFactors = factorsOf(v).filter(_.!=(BPFactor.this))
 
     def updateTreewiseFromLeaves: Unit = {

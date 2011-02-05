@@ -42,7 +42,10 @@ trait MixtureChoiceVar extends DiscreteVariable with MutableVar {
   def outcomesOfClass[A<:MixtureGeneratedVar](implicit m:Manifest[A]): Iterable[A] = outcomes.filter(o => m.erasure.isAssignableFrom(o.getClass)).asInstanceOf[Iterable[A]]
   def addOutcome(o:MixtureGeneratedVar): Unit = {
     //assert(o.mixtureSize == domainSize)
-    _outcomes = o :: _outcomes
+    _outcomes = o +: _outcomes
+  }
+  def removeOutcome(o:MixtureGeneratedVar): Unit = {
+    _outcomes = _outcomes.filterNot(_ == o)
   }
   def prChoosing(value:Int): Double
   // To ensure that no subclassers attempt variable-value coordination

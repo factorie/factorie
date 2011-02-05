@@ -37,10 +37,20 @@ object DiscreteMixtureTemplate extends DiscreteMixtureTemplate
 trait DiscreteMixtureVar extends DiscreteVar with MixtureGeneratedVar {
   val generativeTemplate = DiscreteMixtureTemplate
   def generativeFactor = new DiscreteMixtureTemplate.Factor(this, components, choice)
-  choice.addOutcome(this)
-  components.addChild(this)(null)
-  def choice: MixtureChoiceVar
-  def components: FiniteMixture[Proportions]
+  private var _components: FiniteMixture[Proportions] = null
+  def components: FiniteMixture[Proportions] = _components
+  def setComponents(c:FiniteMixture[Proportions]): Unit = {
+    if (_components ne null) _components.removeChild(this)(null)
+    _components = c
+    _components.addChild(this)(null)
+  }
+  private var _choice: MixtureChoiceVar = null
+  def choice: MixtureChoiceVar = _choice
+  def setChoice(c:MixtureChoiceVar): Unit = {
+    if (_choice ne null) _choice.removeOutcome(this)
+    _choice = c
+    _choice.addOutcome(this)
+  }
   def chosenParents = List(components(choice.intValue))
   def proportions = components(choice.intValue)
   // override for efficiency
@@ -48,8 +58,16 @@ trait DiscreteMixtureVar extends DiscreteVar with MixtureGeneratedVar {
   override def sampledValueChoosing(mixtureIndex:Int): Value = domain.getValue(components(choice.intValue).sampleInt)
 }
 
-abstract class DiscreteMixture(val components: FiniteMixture[Proportions], val choice:MixtureChoiceVar, initialValue:Int = 0) 
-         extends DiscreteVariable(initialValue) with DiscreteMixtureVar with MutableGeneratedVar
+abstract class DiscreteMixture(components: FiniteMixture[Proportions], choice:MixtureChoiceVar, initialValue:Int = 0) 
+         extends DiscreteVariable(initialValue) with DiscreteMixtureVar with MutableGeneratedVar 
+{
+  setComponents(components)
+  choice.addOutcome(this)
+}
 
-abstract class CategoricalMixture[A](val components: FiniteMixture[Proportions], val choice:MixtureChoiceVar, initialValue:A)
-         extends CategoricalVariable(initialValue) with DiscreteMixtureVar with MutableGeneratedVar
+abstract class CategoricalMixture[A](components: FiniteMixture[Proportions], choice:MixtureChoiceVar, initialValue:A)
+         extends CategoricalVariable(initialValue) with DiscreteMixtureVar with MutableGeneratedVar 
+{
+  setComponents(components)
+  choice.addOutcome(this)
+}
