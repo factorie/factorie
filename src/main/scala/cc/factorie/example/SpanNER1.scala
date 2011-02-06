@@ -140,7 +140,7 @@ object SpanNER1 {
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
       def statistics(v:Values) = {
         val span = v._1; val label = v._2
-        if (span.length == 1) Stat(span.head.value, label) else Nil 
+        if (span.length == 1) Stat(span.head.value, label) else Nil //null
       }
     }
     //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil },

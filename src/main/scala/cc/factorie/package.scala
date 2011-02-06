@@ -68,7 +68,11 @@ package object factorie {
   implicit def traversableExtras[A](x:Traversable[A]) = new cc.factorie.util.TraversableExtras[A] { val t = x }
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras { val s = x }
   implicit def regexToSegmenter(r:scala.util.matching.Regex) = new cc.factorie.app.strings.RegexSegmenter(r)
-  implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new Iterable[F] { def iterator = Iterator.single(f) }
+  implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new Iterable[F] {
+    def iterator = Iterator.single(f)
+    override def size = 1
+    override def head = f
+  }
   implicit def file2Source(f:java.io.File): scala.io.Source = scala.io.Source.fromFile(f)
 
   implicit def boolean2BooleanValue(b:Boolean): BooleanValue = if (b) BooleanDomain.trueValue else BooleanDomain.falseValue

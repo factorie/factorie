@@ -16,21 +16,28 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,Stack}
 
-trait MixtureGenerativeTemplate[V<:MixtureGeneratedVar] extends GenerativeTemplate[V] {
+trait MixtureGenerativeTemplate extends GenerativeTemplate {
+  type ChildType <: MixtureGeneratedVar
   def prChoosing(s:StatType, mixtureIndex:Int): Double
+  def prChoosing(s:cc.factorie.Stat, mixtureIndex:Int): Double = 
+    prChoosing(s.asInstanceOf[StatType], mixtureIndex)
   def logprChoosing(s:StatType, mixtureIndex:Int): Double
-  def sampledValueChoosing(s:StatType, mixtureIndex:Int): V#Value
+  def logprChoosing(s:cc.factorie.Stat, mixtureIndex:Int): Double = 
+    logprChoosing(s.asInstanceOf[StatType], mixtureIndex)
+  def sampledValueChoosing(s:StatType, mixtureIndex:Int): ChildType#Value
+  def sampledValueChoosing(s:cc.factorie.Stat, mixtureIndex:Int): ChildType#Value =
+    sampledValueChoosing(s.asInstanceOf[StatType], mixtureIndex)
 }
 
 trait MixtureGeneratedVar extends GeneratedVar {
-  override val generativeTemplate: MixtureGenerativeTemplate[_<:MixtureGeneratedVar]
-  //def generativeFactor: MixtureGenerativeTemplate[MixtureGeneratedVar]#Factor
+  override val generativeTemplate: MixtureGenerativeTemplate
+  //def generativeFactor: MixtureGenerativeTemplate#Factor
   // TODO Needed?  Remove this method from subclasses?
   //def components: MixtureComponents[Parameter]
   def choice: MixtureChoiceVar
   def chosenParents: Seq[Parameter]
   // TODO Can we get rid of these casts?
-  def prChoosing(mixtureIndex:Int): Double = throw new Error //generativeTemplate.prChoosing(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatType], mixtureIndex)
+  def prChoosing(mixtureIndex:Int): Double = throw new Error // generativeTemplate.prChoosing(generativeFactor.statistics, mixtureIndex)
   def logprChoosing(mixtureIndex:Int): Double = throw new Error // generativeTemplate.logprChoosing(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatType], mixtureIndex)
   def sampledValueChoosing(mixtureIndex:Int): Value = throw new Error //generativeTemplate.sampledValueChoosing(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatType], mixtureIndex)
 }

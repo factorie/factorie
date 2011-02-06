@@ -18,7 +18,7 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-class DiscreteMixtureTemplate extends GenerativeTemplateWithStatistics3[DiscreteMixtureVar,MixtureComponents[Proportions],MixtureChoiceVar] with MixtureGenerativeTemplate[DiscreteMixtureVar] {
+class DiscreteMixtureTemplate extends GenerativeTemplateWithStatistics3[DiscreteMixtureVar,MixtureComponents[Proportions],MixtureChoiceVar] with MixtureGenerativeTemplate {
   //class Factor(o:DiscreteMixtureVar, mc:MixtureComponents[Proportions], c:MixtureChoiceVar) extends super.Factor(o, mc, c)
   def unroll1(d:DiscreteMixtureVar) = Factor(d, d.components, d.choice)
   def unroll2(m:MixtureComponents[Proportions]) = for (d <- m.childrenOfClass[DiscreteMixtureVar]) yield Factor(d, m, d.choice)

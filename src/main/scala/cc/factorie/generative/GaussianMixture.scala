@@ -20,7 +20,7 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-class GaussianMixtureTemplate extends GenerativeTemplateWithStatistics4[GaussianMixture,MixtureComponents[GaussianMeanParameter],MixtureComponents[GaussianVarianceParameter],MixtureChoiceVar] with MixtureGenerativeTemplate[GaussianMixture] {
+class GaussianMixtureTemplate extends GenerativeTemplateWithStatistics4[GaussianMixture,MixtureComponents[GaussianMeanParameter],MixtureComponents[GaussianVarianceParameter],MixtureChoiceVar] with MixtureGenerativeTemplate {
   def unroll1(g:GaussianMixture) = Factor(g, g.meanComponents, g.varianceComponents, g.choice)
   def unroll2(m:MixtureComponents[GaussianMeanParameter]) = for (g <- m.childrenOfClass[GaussianMixture]) yield Factor(g, m, g.varianceComponents, g.choice)
   def unroll3(p:MixtureComponents[GaussianVarianceParameter]) = for (g <- p.childrenOfClass[GaussianMixture]) yield Factor(g, g.meanComponents, p, g.choice)

@@ -132,7 +132,7 @@ object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHan
   def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
     if (v.size != 1) return null
     val gv = v.head.asInstanceOf[MutableGeneratedVar]
-    if (factors.size == 1 && classOf[GenerativeTemplate[GeneratedVar]#Factor].isAssignableFrom(factors.head.getClass)) {
+    if (factors.size == 1 && classOf[GenerativeTemplate#Factor].isAssignableFrom(factors.head.getClass)) {
       val factor = factors.head.asInstanceOf[GenerativeFactor]
       val cFactor = factor.copy(sampler.collapsedMap)
       new Closure(gv, cFactor, cFactor.variables.filter(v => classOf[CollapsedParameter].isAssignableFrom(v.getClass)).asInstanceOf[Seq[CollapsedParameter]])
