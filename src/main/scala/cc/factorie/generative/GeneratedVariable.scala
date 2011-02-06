@@ -32,11 +32,11 @@ trait GeneratedVar extends Variable {
     factors.head
   }*/
   //def pr = generativeTemplate.pr(generativeFactor.statistics)
-  def pr = generativeTemplate.pr(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatType])
-  //def pr = generativeFactor.template.pr(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatType])
+  def pr = generativeTemplate.pr(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatisticsType])
+  //def pr = generativeFactor.template.pr(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatisticsType])
   def logpr = math.log(pr)
   //def sampledValue: Value = generativeTemplate.sampledValue(generativeFactor.statistics)
-  def sampledValue: Value = generativeTemplate.sampledValue(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatType]).asInstanceOf[Value] // TODO How to get rid of this cast
+  def sampledValue: Value = generativeTemplate.sampledValue(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatisticsType]).asInstanceOf[Value] // TODO How to get rid of this cast
   /** The list of random variables on which the generation of this variable's value depends. 
       By convention the first variable of the generativeFactor is the child, 
       and the remainder are its parents. */
@@ -70,7 +70,7 @@ trait GeneratedVar extends Variable {
 trait MutableGeneratedVar extends GeneratedVar with MutableVar {
   /** Sample a new value for this variable given only its parents. */
   def sampleFromParents(implicit d:DiffList = null): this.type = {
-    set(generativeTemplate.sampledValue(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatType]).asInstanceOf[this.Value])(d)
+    set(generativeTemplate.sampledValue(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatisticsType]).asInstanceOf[this.Value])(d)
     this
   }
   // TODO Can we get rid of cast?
@@ -100,7 +100,7 @@ trait ProportionGenerating {
 // Templates
 
 trait GenerativeFactor extends Factor {
-  type StatType <: cc.factorie.Statistics
+  type StatisticsType <: cc.factorie.Statistics
   //type ChildType <: GenerativeVar
   override def template: GenerativeTemplate
   def sampledValue: Any
@@ -108,7 +108,7 @@ trait GenerativeFactor extends Factor {
   def logpr: Double
   def child: GeneratedVar
   //def parents: Seq[Parameter]
-  override def statistics: StatType
+  override def statistics: StatisticsType
   override def copy(s:Substitutions): GenerativeFactor
 }
 
@@ -116,23 +116,23 @@ trait GenerativeTemplate extends Template {
   type TemplateType <: GenerativeTemplate
   //type ChildType = V
   type ChildType <: GeneratedVar
-  //type StatisticsType = StatType
+  //type StatisticsType = StatisticsType
   //type FactorType <: GenerativeTemplate.this.Factor
   //def unrollChil(v:V): TemplateType#FactorType
   //def unroll1(v:ChildType): Factor // = unrollChild(v)
-  def logpr(s:StatType): Double
-  def logpr(s:cc.factorie.Stat): Double = logpr(s.asInstanceOf[StatType])
+  def logpr(s:StatisticsType): Double
+  def logpr(s:cc.factorie.Statistics): Double = logpr(s.asInstanceOf[StatisticsType])
   //def logpr(v:ValuesType): Double = logpr(v.statistics)
-  //def logpr(f:FactorType): Double = logpr(f.statistics.asInstanceOf[StatType])
-  def pr(s:StatType): Double // = math.exp(logpr(s))
-  def pr(s:cc.factorie.Stat): Double = pr(s.asInstanceOf[StatType])
-  //def pr(v:ValuesType): Double = pr(v.statistics.asInstanceOf[StatType])
-  //def pr(f:FactorType): Double = pr(f.statistics.asInstanceOf[StatType])
-  def score(s:StatType) = logpr(s)
-  def sampledValue(s:StatType): ChildType#Value
-  def sampledValue(s:cc.factorie.Stat): ChildType#Value = sampledValue(s.asInstanceOf[StatType])
-  //def sampledValue(v:ValuesType): V#Value = sampledValue(v.statistics.asInstanceOf[StatType])
-  //def sampledValue(f:FactorType): V#Value = sampledValue(f.statistics.asInstanceOf[StatType])
+  //def logpr(f:FactorType): Double = logpr(f.statistics.asInstanceOf[StatisticsType])
+  def pr(s:StatisticsType): Double // = math.exp(logpr(s))
+  def pr(s:cc.factorie.Statistics): Double = pr(s.asInstanceOf[StatisticsType])
+  //def pr(v:ValuesType): Double = pr(v.statistics.asInstanceOf[StatisticsType])
+  //def pr(f:FactorType): Double = pr(f.statistics.asInstanceOf[StatisticsType])
+  def score(s:StatisticsType) = logpr(s)
+  def sampledValue(s:StatisticsType): ChildType#Value
+  def sampledValue(s:cc.factorie.Statistics): ChildType#Value = sampledValue(s.asInstanceOf[StatisticsType])
+  //def sampledValue(v:ValuesType): V#Value = sampledValue(v.statistics.asInstanceOf[StatisticsType])
+  //def sampledValue(f:FactorType): V#Value = sampledValue(f.statistics.asInstanceOf[StatisticsType])
 }
 
 abstract class GenerativeTemplateWithStatistics1[C<:GeneratedVar:Manifest] extends TemplateWithStatistics1[C] with GenerativeTemplate {
@@ -146,7 +146,7 @@ abstract class GenerativeTemplateWithStatistics2[C<:GeneratedVar:Manifest,P1<:Va
   type TemplateType <: GenerativeTemplateWithStatistics2[C,P1]
   type ChildType = C
   /*class Factor(c:C, p1:P1) extends super.Factor(c, p1) with GenerativeFactor {
-    type StatType = thisTemplate.StatType
+    type StatisticsType = thisTemplate.StatisticsType
     def sampledValue: C#Value = thisTemplate.sampledValue(thisTemplate.statistics(this.values))
     def pr: Double = thisTemplate.pr(thisTemplate.statistics(this.values))
     def logpr: Double = thisTemplate.logpr(thisTemplate.statistics(this.values))
@@ -162,7 +162,7 @@ abstract class GenerativeTemplateWithStatistics3[C<:GeneratedVar:Manifest,P1<:Va
   type TemplateType <: GenerativeTemplateWithStatistics3[C,P1,P2]
   type ChildType = C
   /*class Factor(c:C, p1:P1, p2:P2) extends super.Factor(c, p1, p2) with GenerativeFactor {
-    type StatType = thisTemplate.StatType
+    type StatisticsType = thisTemplate.StatisticsType
     def sampledValue: C#Value = thisTemplate.sampledValue(thisTemplate.statistics(this.values))
     def pr: Double = thisTemplate.pr(thisTemplate.statistics(this.values))
     def logpr: Double = thisTemplate.logpr(thisTemplate.statistics(this.values))
@@ -178,7 +178,7 @@ abstract class GenerativeTemplateWithStatistics4[C<:GeneratedVar:Manifest,P1<:Va
   type TemplateType <: GenerativeTemplateWithStatistics4[C,P1,P2,P3]
   type ChildType = C
   /*class Factor(c:C, p1:P1, p2:P2, p3:P3) extends super.Factor(c, p1, p2, p3) with GenerativeFactor {
-    type StatType = thisTemplate.StatType
+    type StatisticsType = thisTemplate.StatisticsType
     def sampledValue: C#Value = thisTemplate.sampledValue(thisTemplate.statistics(this.values))
     def pr: Double = thisTemplate.pr(thisTemplate.statistics(this.values))
     def logpr: Double = thisTemplate.logpr(thisTemplate.statistics(this.values))

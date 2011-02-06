@@ -18,15 +18,15 @@ import scala.collection.mutable.{ArrayBuffer,Stack}
 
 trait MixtureGenerativeTemplate extends GenerativeTemplate {
   type ChildType <: MixtureGeneratedVar
-  def prChoosing(s:StatType, mixtureIndex:Int): Double
-  def prChoosing(s:cc.factorie.Stat, mixtureIndex:Int): Double = 
-    prChoosing(s.asInstanceOf[StatType], mixtureIndex)
-  def logprChoosing(s:StatType, mixtureIndex:Int): Double
-  def logprChoosing(s:cc.factorie.Stat, mixtureIndex:Int): Double = 
-    logprChoosing(s.asInstanceOf[StatType], mixtureIndex)
-  def sampledValueChoosing(s:StatType, mixtureIndex:Int): ChildType#Value
-  def sampledValueChoosing(s:cc.factorie.Stat, mixtureIndex:Int): ChildType#Value =
-    sampledValueChoosing(s.asInstanceOf[StatType], mixtureIndex)
+  def prChoosing(s:StatisticsType, mixtureIndex:Int): Double
+  def prChoosing(s:cc.factorie.Statistics, mixtureIndex:Int): Double = 
+    prChoosing(s.asInstanceOf[StatisticsType], mixtureIndex)
+  def logprChoosing(s:StatisticsType, mixtureIndex:Int): Double
+  def logprChoosing(s:cc.factorie.Statistics, mixtureIndex:Int): Double = 
+    logprChoosing(s.asInstanceOf[StatisticsType], mixtureIndex)
+  def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value
+  def sampledValueChoosing(s:cc.factorie.Statistics, mixtureIndex:Int): ChildType#Value =
+    sampledValueChoosing(s.asInstanceOf[StatisticsType], mixtureIndex)
 }
 
 trait MixtureGeneratedVar extends GeneratedVar {
@@ -84,9 +84,9 @@ abstract class MixtureChoiceMixture(ps:FiniteMixture[Proportions], choice:Mixtur
 }*/
 
 class MixtureComponentsTemplate extends GenerativeTemplateWithStatistics1[MixtureComponents[Parameter]] {
-  def logpr(s:StatType) = 0.0
-  def pr(s:StatType) = 1.0
-  def sampledValue(s:StatType) = throw new Error("Not yet implemented.")
+  def logpr(s:StatisticsType) = 0.0
+  def pr(s:StatisticsType) = 1.0
+  def sampledValue(s:StatisticsType) = throw new Error("Not yet implemented.")
 }
 
 trait MixtureComponents[+P<:Parameter] extends scala.collection.IndexedSeq[P] with SeqEqualsEq[P] with Parameter with GeneratedVar with VarAndValueGenericDomain[MixtureComponents[P],Seq[P]] {

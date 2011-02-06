@@ -117,8 +117,16 @@ object SpanNER1 {
     // Bias term on each individual label 
     //new TemplateWithDotStatistics1[Label],
     // Token-Label within Span
-    new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = for (token <- v._1) yield Stat(token.value, v._2) 
+    new SpanLabelTemplate with DotStatistics2[CategoricalsValue[String],Label#Value] { 
+      def statistics(v:Values) = {
+        // TODO Yipes, this is awkward, but more convenient infrastruture could be build.
+        var vector = new cc.factorie.la.SparseVector(v._1.head.value.length) with CategoricalsValue[String] {
+          val domain = v._1.head.value.domain
+        }
+        for (token <- v._1) 
+          vector += token.value
+        Stat(vector, v._2) 
+      }
     },
     // First Token of Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
@@ -130,17 +138,17 @@ object SpanNER1 {
     },
     // Token before Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = v match { case Values(span,label) => if (span.head.hasPrev) Stat(span.head.prev.value, label) else Nil }
+      def statistics(v:Values) = v match { case Values(span,label) => if (span.head.hasPrev) Stat(span.head.prev.value, label) else null }
     },
     // Token after Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = v match { case Values(span,label) => if (span.last.hasNext) Stat(span.last.next.value, label) else Nil }
+      def statistics(v:Values) = v match { case Values(span,label) => if (span.last.hasNext) Stat(span.last.next.value, label) else null }
     },
     // Single Token Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
       def statistics(v:Values) = {
         val span = v._1; val label = v._2
-        if (span.length == 1) Stat(span.head.value, label) else Nil //null
+        if (span.length == 1) Stat(span.head.value, label) else null
       }
     }
     //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil },

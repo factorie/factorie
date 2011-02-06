@@ -29,16 +29,16 @@ extends VectorStatistics2[S1,S2] {
   }
   var root: DTNode = null
   def scoreScaling = 1.0
-  // val s: StatType;  s._1:DiscreteValue; s._2:Vector
+  // val s: StatisticsType;  s._1:DiscreteValue; s._2:Vector
   // Number of different values of s._1 == s._1.domain.size
-  def score(s:StatType): Double = score(s, root)
-  protected def score(s:StatType, node:DTNode): Double = 
+  def score(s:StatisticsType): Double = score(s, root)
+  protected def score(s:StatisticsType, node:DTNode): Double = 
     if (node.isLeaf) math.log(node.p(s._1.intValue))
     else score(s, if (s._2.apply(node.index) != 0.0) node.yesChild else node.noChild)
-  def train(stats:Iterable[StatType], maxDepth:Int = Int.MaxValue): Unit = {
+  def train(stats:Iterable[StatisticsType], maxDepth:Int = Int.MaxValue): Unit = {
     root = train(stats, maxDepth, null)
   }
-  protected def train(stats:Iterable[StatType], maxDepth:Int, parent:DTNode): DTNode = {
+  protected def train(stats:Iterable[StatisticsType], maxDepth:Int, parent:DTNode): DTNode = {
     val dtree = new DTNode(parent)
     if (stats.size < 5) {  // TODO Have a more sophisticated stopping criterion
       // We will make this dtree a leaf
@@ -54,7 +54,7 @@ extends VectorStatistics2[S1,S2] {
     dtree.noChild = train(noStats, maxDepth-1, dtree)
     dtree
   }
-  protected def  bestInfoGain(stats:Iterable[StatType]): Int = throw new Error("Implement me.") // Be clever to make this efficient
+  protected def  bestInfoGain(stats:Iterable[StatisticsType]): Int = throw new Error("Implement me.") // Be clever to make this efficient
   override def save(dirname:String): Unit = {
     super.save(dirname)
     throw new Error("Not yet implemented")
@@ -72,5 +72,5 @@ abstract class DecisionTreeTemplateWithStatistics2[S1<:DiscreteVar,S2<:Discretes
 extends Template2[S1,S2] with DecisionTreeStatistics2[S1#ValueType,S2#ValueType] {
   //def statistics(s1:S1, s2:S2) = Stat(s1, s2)
   def statistics(values:Values) = Stat(values._1, values._2)
-  def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(_.statistics.asInstanceOf[StatType]))
+  def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(_.statistics.asInstanceOf[StatisticsType]))
 }
