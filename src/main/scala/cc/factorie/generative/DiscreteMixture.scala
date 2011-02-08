@@ -26,7 +26,10 @@ class DiscreteMixtureTemplate extends GenerativeTemplateWithStatistics3[Discrete
   def prChoosing(s:StatisticsType, mixtureIndex:Int) = pr(s._1.intValue, s._2, mixtureIndex)
   def logprChoosing(s:StatisticsType, mixtureIndex:Int) = math.log(prChoosing(s, mixtureIndex))
   def pr(s:StatisticsType): Double = pr(s._1.intValue, s._2, s._3.intValue)
-  def pr(value:Int, mixture:Seq[Proportions], mixtureIndex:Int): Double = mixture(mixtureIndex).apply(value)
+  def pr(value:Int, mixture:Seq[Proportions], mixtureIndex:Int): Double = {
+    //println("DiscreteMixtureTemplate component="+mixture(mixtureIndex).getClass+" "+mixture(mixtureIndex).getClass.getSuperclass)
+    mixture(mixtureIndex).apply(value)
+  }
   def logpr(s:StatisticsType) = math.log(pr(s))
   def sampledValue(s:StatisticsType): DiscreteValue = sampledValue(s._1.domain, s._2, s._3.intValue)
   def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): DiscreteValue = sampledValue(s._1.domain, s._2, mixtureIndex)
@@ -62,12 +65,12 @@ abstract class DiscreteMixture(components: FiniteMixture[Proportions], choice:Mi
          extends DiscreteVariable(initialValue) with DiscreteMixtureVar with MutableGeneratedVar 
 {
   setComponents(components)
-  choice.addOutcome(this)
+  setChoice(choice)
 }
 
 abstract class CategoricalMixture[A](components: FiniteMixture[Proportions], choice:MixtureChoiceVar, initialValue:A)
          extends CategoricalVariable(initialValue) with DiscreteMixtureVar with MutableGeneratedVar 
 {
   setComponents(components)
-  choice.addOutcome(this)
+  setChoice(choice)
 }

@@ -24,24 +24,28 @@ import cc.factorie.generative._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 
-/*
 object LDADemo {
   val numTopics = 10
   object ZDomain extends DiscreteDomain { def size = numTopics }
   class Z(p: Proportions, value: Int) extends MixtureChoice(p, value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
-  class Word(ps: FiniteMixture[Proportions], z: MixtureChoiceVariable, value: String) extends CategoricalMixture[String](ps, z, value) {
+  class Word(ps: CollapsibleFiniteMixture[Dirichlet], z: MixtureChoice, value: String) extends CategoricalMixture[String](ps, z, value) {
     def domain = WordDomain
   }
-  class Document(val file: String) extends ArrayBuffer[Word] {var theta: MutableDirichlet = null}
+  class Document(val file: String) extends ArrayBuffer[Word] {var theta: DenseDirichlet = null}
 
   def main(args: Array[String]): Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
 
     // Read data and create generative variables
-    val phis = FiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01) with CategoricalProportions[String] {
+    val phis = CollapsibleFiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01) with CategoricalProportions[String] {
+      override def apply(index:Int) : Double = {
+        val result = super.apply(index)
+        //println("LDA.phi.apply "+index+" "+result)
+        result
+      }
       def categoricalDomain = WordDomain
-      override def toString = "Phi(" + countsSeq.toList + ")"
+      override def toString = "Phi(" + countsSeq.take(20).toList + ")"
     })
     val alphaMean = new DenseProportions(numTopics)
     val alphaPrecision = new RealVariableParameter(numTopics)
@@ -59,15 +63,18 @@ object LDADemo {
         documents += doc
       }
     }
+    //documents.trimEnd(documents.length-10)
     println("\nRead " + documents.size + " documents with " + documents.foldLeft(0)(_ + _.size) + " tokens and " + WordDomain.size + " types.")
-
     // Fit model
     val zs = documents.flatMap(document => document.map(word => word.choice))
 
     //val collapsed = new ArrayBuffer[CollapsedParameter]; collapsed ++= phis; collapsed ++= documents.map(_.theta)
     //for (c <- collapsed) println("LDA collapsed parent="+c.getClass.getName+"@"+c.hashCode+" #children="+c.children.size)
 
-    val sampler = new CollapsedGibbsSampler(phis ++ documents.map(_.theta))
+    val collapsedVariables = new ArrayBuffer[CollapsibleParameter]
+    collapsedVariables += phis
+    collapsedVariables ++= documents.map(_.theta)
+    val sampler = new CollapsedGibbsSampler(collapsedVariables)
     val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
       zs.foreach(sampler.process(_))
@@ -75,10 +82,12 @@ object LDADemo {
       if (i % 5 == 0) {
         println("Iteration " + i)
         // (phis ++ documents.map(_.theta)).foreach(_.export)
-        (phis ++ documents.map(_.theta)).foreach(p => p.set(sampler.collapsed(p))(null))
+        sampler.export()
+        //(phis ++ documents.map(_.theta)).foreach(p => p.set(sampler.collapsed(p).value)(null))
         DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + sampler.collapsed(t).top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
+        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
+        //forIndex(numTopics)(i => println("Topic " +i+"  "+ sampler.collapsed(phis).asInstanceOf[CollapsedFiniteMixture[DirichletMultinomial]].apply(i).top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
         println
       }
     }
@@ -86,5 +95,3 @@ object LDADemo {
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
   }
 }
-
-*/

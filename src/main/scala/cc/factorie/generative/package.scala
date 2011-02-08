@@ -19,7 +19,7 @@ import cc.factorie._
 
 package object generative {
 
-  //type GenerativeFactor = GenerativeTemplate#Factor
+  type GenerativeFactor = GenerativeTemplate#Factor
 
   val defaultGenerativeModel = new Model(new DiscreteTemplate, new DiscreteMixtureTemplate, new GaussianTemplate)
 

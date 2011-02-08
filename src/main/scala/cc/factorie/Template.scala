@@ -296,7 +296,7 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
     }
     def numVariables = 1
     def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
-    override lazy val variables: IndexedSeq[Variable] = IndexedSeq(_1)
+    override def variables: IndexedSeq[Variable] = IndexedSeq(_1)
     def values: ValuesType = new Values(_1.value)
     def statistics: StatisticsType = Template1.this.statistics(values)
     override def cachedStatistics: StatisticsType = Template1.this.cachedStatistics(values)
@@ -427,6 +427,7 @@ extends Template // with FactorSettings2[N1,N2]
     }
     def numVariables = 2
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case _ => throw new IndexOutOfBoundsException(i.toString) }
+    override def variables: IndexedSeq[Variable] = IndexedSeq(_1, _2)
     def values: ValuesType = new Values(_1.value, _2.value)
     def statistics: StatisticsType = Template2.this.statistics(values)
     override def cachedStatistics: StatisticsType = Template2.this.cachedStatistics(values)
@@ -628,6 +629,7 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
     }
     def numVariables = 3
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case _ => throw new IndexOutOfBoundsException(i.toString) }
+    override def variables: IndexedSeq[Variable] = IndexedSeq(_1, _2, _3)
     def values: ValuesType = new Values(_1.value, _2.value, _3.value)
     def statistics: StatisticsType = Template3.this.statistics(values)
     override def cachedStatistics: StatisticsType = Template3.this.cachedStatistics(values)
@@ -732,6 +734,7 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
     }
     def numVariables = 4
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case 3 => _4; case _ => throw new IndexOutOfBoundsException(i.toString) }
+    override def variables: IndexedSeq[Variable] = IndexedSeq(_1, _2, _3, _4)
     def values: ValuesType = new Values(_1.value, _2.value, _3.value, _4.value)
     def statistics: StatisticsType = Template4.this.statistics(values)
     def cachedStatistics: StatisticsType = Template4.this.statistics(values)
