@@ -172,6 +172,9 @@ trait Template { thisTemplate =>
   def sparsifySettingsFor(vs:Iterable[Variable]): Unit = throw new Error("Not supported.")
   // New version of settings iteration
   def forSettingStats(factor:FactorType, vs:Seq[Variable])(f: (StatisticsType)=>Unit): Unit = throw new Error("Not supported.") // TODO Also pass variable values?
+  // New style for iterating over neighbor value combinations
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values]
+
   /** The filename into which to save this factor.  If factorName is not the default, use it, otherwise use the class name. */
   protected def filename: String = if (factorName != defaultFactorName) factorName else this.getClass.getName
   def save(dirname:String): Unit = {}
@@ -324,6 +327,12 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   }} else statistics(vals)
   /** You must clear cache the cache if DotTemplate.weights change! */
   override def clearCachedStatistics: Unit =  cachedStatisticsArray = null
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = {
+    if (fixed.contains(factor._1)) Iterator.single(Values(fixed(factor._1)))
+    else factor._1.domain match {
+      case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
+    }
+  }
 }
 
 trait Statistics1[S1] extends Template {
@@ -476,6 +485,7 @@ extends Template // with FactorSettings2[N1,N2]
     case _ => statistics(values)
   } else statistics(values)
   override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = throw new Error("Not yet implemented")
 }
 trait Statistics2[S1,S2] extends Template {
   final case class Stat(_1:S1, _2:S2) extends super.Statistics
@@ -660,6 +670,7 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
     }
   } else statistics(values)
   override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = throw new Error("Not yet implemented")
 }
 trait Statistics3[S1,S2,S3] extends Template {
   final case class Stat(_1:S1, _2:S2, _3:S3) extends super.Statistics
@@ -749,6 +760,7 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
   // Statistics
   def statistics(values:Values): StatisticsType
   //def stats(v:Variable) = factors(v).flatMap(_statistics(_))
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = throw new Error("Not yet implemented")
 }
 trait Statistics4[S1,S2,S3,S4] extends Template {
   type StatisticsType = Stat
