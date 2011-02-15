@@ -36,6 +36,7 @@ class Model(templates:Template*) extends IndexedSeq[Template] {
   // This in turn is just a work-around for the fact that we can't get Manifests for traits because traits cannot take constructor arguments.
   def ++=(templates:Iterable[Template]) = ts ++= templates
   def +=(template:Template) = ts += template
+  def clear = ts.clear
 
   def templatesOf[T2<:T](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
     val templateClass = m.erasure
