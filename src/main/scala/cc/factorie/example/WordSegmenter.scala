@@ -59,7 +59,7 @@ object WordSegmenterDemo {
   val skipTemplate = new Template2[Label,Label] with DotStatistics1[BooleanValue] {
     def unroll1 (label:Label) =  
       // could cache this search in label.similarSeq for speed
-      for (other <- label.token.seq; if label.token.char == other.char) yield 
+      for (other <- label.token.seq; if label.token.char == other.char) yield
         if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
     def unroll2 (label:Label) = Nil // We handle symmetric case above
     def statistics(values:Values) = Stat(values._1 == values._2)

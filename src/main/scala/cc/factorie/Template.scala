@@ -365,7 +365,7 @@ abstract class TemplateWithVectorStatistics1[N1<:DiscretesVar](implicit nm1:Mani
   //init //(nm1)
 }
 class TemplateWithDotStatistics1[N1<:DiscretesVar](implicit nm1:Manifest[N1]) extends Template1[N1] with DotStatistics1[N1#Value] {
-//class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1] 
+//class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1]
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
   //init //(nm1)
 }

@@ -120,8 +120,12 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
     def hasNext = i < SparseBinaryVector.this.length
     def next = {
       i += 1
-      if (ind(position) < i) position += 1
-      if (ind(position) == i) 1.0 else 0.0
+      if (position < _size) {
+        if (ind(position) < i) position += 1
+        if (ind(position) == i) 1.0 else 0.0
+      } else {
+       0.0
+      }
     }
   }
   def activeElements = new Iterator[(Int,Double)] {
