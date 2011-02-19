@@ -48,6 +48,21 @@ class MapAssignment extends MutableAssignment {
   def contains(v:Variable) = map.contains(v)
 }
 
+class Assignment1[A<:Variable](val variable:A, var value:A#Value) extends TypedAssignment[A] {
+  def variables = List(variable)
+  def apply[B<:A](v:B): B#Value = if (v eq variable) value.asInstanceOf[B#Value] else null.asInstanceOf[B#Value]
+  def get[B<:A](v:B): Option[B#Value] = if (v eq variable) Some(value.asInstanceOf[B#Value]) else None
+  def contains(v:A): Boolean = if (v eq variable) true else false
+}
+
+class Assignment2[A<:Variable,B<:Variable](val var1:A, var value1:A#Value, val var2:B, value2:B#Value) extends Assignment {
+  def variables = List(var1, var2)
+  def apply[C<:Variable](v:C): C#Value = if (v eq var1) value1.asInstanceOf[C#Value] else if (v eq var2) value2.asInstanceOf[C#Value] else null.asInstanceOf[C#Value]
+  def get[C<:Variable](v:C): Option[C#Value] = if (v eq var1) Some(value1.asInstanceOf[C#Value]) else if (v eq var2) Some(value2.asInstanceOf[C#Value]) else None
+  def contains(v:Variable): Boolean = if ((v eq var1) || (v eq var2)) true else false
+}
+
+
 /** An Assignment whose values are those stored inside the variables themselves. 
     @author Andrew McCallum */
 object GlobalAssignment extends Assignment {

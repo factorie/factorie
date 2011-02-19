@@ -327,8 +327,17 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   }} else statistics(vals)
   /** You must clear cache the cache if DotTemplate.weights change! */
   override def clearCachedStatistics: Unit =  cachedStatisticsArray = null
+  /** valuesIterator in style of specifying fixed neighbors */
   def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = {
     if (fixed.contains(factor._1)) Iterator.single(Values(fixed(factor._1)))
+    else factor._1.domain match {
+      case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
+    }
+  }
+  /** valuesIterator in style of specifying varying neighbors */
+  def valuesIterator(factor:FactorType, varying:Seq[Variable]): Iterator[Values] = {
+    if (varying.size != 1 || varying.head != factor._1)
+      throw new Error("Template1.valuesIterator cannot vary arguments.")
     else factor._1.domain match {
       case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
     }
@@ -485,7 +494,46 @@ extends Template // with FactorSettings2[N1,N2]
     case _ => statistics(values)
   } else statistics(values)
   override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
-  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = throw new Error("Not yet implemented")
+  /** valuesIterator in style of specifying fixed neighbors */
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = {
+    val fixed1 = fixed.contains(factor._1)
+    val fixed2 = fixed.contains(factor._2)
+    if (fixed1 && fixed2) 
+      Iterator.single(Values(fixed(factor._1), fixed(factor._2)))
+    else if (fixed1) {
+      val val1 = fixed(factor._1)
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      d2.values.iterator.map(value => Values(val1, value))
+    } else if (fixed2) {
+      val val2 = fixed(factor._2)
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      d1.values.iterator.map(value => Values(value, val2))
+    } else {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2)).iterator
+    }
+  }
+  /** valuesIterator in style of specifying varying neighbors */
+  def valuesIterator(factor:FactorType, varying:Seq[Variable]): Iterator[Values] = {
+    val varying1 = varying.contains(factor._1)
+    val varying2 = varying.contains(factor._2)
+    if (varying1 && varying2) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2)).iterator
+    } else if (varying1) {
+      val val2 = factor._2.value
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      d1.values.iterator.map(value => Values(value, val2))
+    } else if (varying2) {
+      val val1 = factor._1.value
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      d2.values.iterator.map(value => Values(val1, value))
+    } else {
+      Iterator.single(Values(factor._1.value, factor._2.value))
+    }
+  }
 }
 trait Statistics2[S1,S2] extends Template {
   final case class Stat(_1:S1, _2:S2) extends super.Statistics
@@ -670,7 +718,94 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
     }
   } else statistics(values)
   override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
-  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = throw new Error("Not yet implemented")
+  /** Values iterator in style of specifying fixed neighbors. */
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = {
+    val fixed1 = fixed.contains(factor._1)
+    val fixed2 = fixed.contains(factor._2)
+    val fixed3 = fixed.contains(factor._3)
+    if (fixed1 && fixed2 && fixed3) 
+      Iterator.single(Values(fixed(factor._1), fixed(factor._2), fixed(factor._3)))
+    else if (fixed1 && fixed2) {
+      val val1 = fixed(factor._1)
+      val val2 = fixed(factor._2)
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      d3.values.iterator.map(value => Values(val1, val2, value))
+    } else if (fixed2 && fixed3) {
+      val val2 = fixed(factor._2)
+      val val3 = fixed(factor._3)
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      d1.values.iterator.map(value => Values(value, val2, val3))
+    } else if (fixed1 && fixed3) {
+      val val1 = fixed(factor._1)
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val val3 = fixed(factor._3)
+      d2.values.iterator.map(value => Values(val1, value, val3))
+    } else if (fixed1) {
+      val val1 = fixed(factor._1)
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else if (fixed2) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val val2 = fixed(factor._2)
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val1 <- d1.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else if (fixed3) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val val3 = fixed(factor._3)
+      (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+    } else {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val1 <- d1.values; val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    }
+  }
+  /** valuesIterator in style of specifying varying neighbors */
+  def valuesIterator(factor:FactorType, varying:Seq[Variable]): Iterator[Values] = {
+    val varying1 = varying.contains(factor._1)
+    val varying2 = varying.contains(factor._2)
+    val varying3 = varying.contains(factor._3)
+    if (varying1 && varying2 & varying3) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val1 <- d1.values; val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying1 && varying2) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val val3 = factor._3.value
+      (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying2 && varying3) {
+      val val1 = factor._1.value
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying1 && varying3) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val val2 = factor._2.value
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val1 <- d1.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying1) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val val2 = factor._2.value
+      val val3 = factor._3.value
+      (for (val1 <- d1.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying2) {
+      val val1 = factor._1.value
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val val3 = factor._3.value
+      (for (val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying3) {
+      val val1 = factor._1.value
+      val val2 = factor._2.value
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else {
+      Iterator.single(Values(factor._1.value, factor._2.value, factor._3.value))
+    }
+  }
 }
 trait Statistics3[S1,S2,S3] extends Template {
   final case class Stat(_1:S1, _2:S2, _3:S3) extends super.Statistics
