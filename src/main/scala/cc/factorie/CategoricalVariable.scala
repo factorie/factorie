@@ -88,12 +88,9 @@ trait CategoricalVar[A] extends CategoricalsVar[A] with DiscreteVar with VarAndV
 /** A DiscreteVariable whose integers 0...N are associated with an object of type A. 
     @author Andrew McCallum */
 abstract class CategoricalVariable[A] extends DiscreteVariable with CategoricalVar[A] {
-  // What I want to do is "extends DiscreteVariable(Domain[A].index(initialValue))
-  // but there is no way to obtain this.getClass obtain the Domain for the constructor above, so we initialize with dummy 0
-  // and then set to proper value in this(initialValue:A) constructor below.
   def this(initialCategory:A) = { this(); _set(domain.getValue(initialCategory)) }
   //def this(initalValue:ValueType) = { this(); _set(initialValue) }
-  def setCategory(newValue:A)(implicit d: DiffList): Unit = set(domain.index(newValue))
+  def setCategory(newCategory:A)(implicit d: DiffList): Unit = set(domain.getValue(newCategory))
 }
 
 

@@ -64,21 +64,20 @@ abstract class Categorical[A](proportions:Proportions, initialValue:A) extends C
 }
 
 
-/* TODO The beginnings of a compact "bank of multiple Discrete" variables
-@DomainInSubclasses
-class ObservedDiscretes(val proportions:Proportions, values:Traversable[Int] = Nil) extends DiscreteVars with GeneratedVar with ConstantValue {
-  assert(proportions.length <= domainSize)
-  proportions.addChild(this)(null)
-  def parents = List(proportions)
-  private val _values = values.toArray
-  def logpr(p:Proportions): Double = { var result = 0.0; forIndex(_values.size)(index => result += math.log(p(index))); result }
-  override def logpr: Double = logpr(proportions)
-  override def logprFrom(parents:Seq[Parameter]): Double = parents match {
-    case p:Proportions => logpr(p)
+
+/** Appears as a single GeneratedDiscreteVar, but actually contains a compact array, each accessible by changing 'mux' from 0 to muxSize-1. */
+abstract class DiscreteMux(proportions:Proportions, initialIndices:Seq[Int]) extends GeneratedDiscreteVar with MutableGeneratedVar {
+  setProportions(proportions)
+  var mux: Int = 0
+  def muxSize = _values.length
+  private val _values = initialIndices.map(i => domain.getValue(i)).toArray
+  def value = _values(mux)
+  def set(newValue:ValueType)(implicit d:DiffList): Unit = {
+    require (d eq null) // DiffList not yet implemented for this change
+    _values(mux) = newValue
   }
-  def prFrom(parents:Seq[Parameter]): Double = prFrom(parents)
-  def pr: Double = math.exp(logpr)
-  def vector: Vector = throw new Error
-  def activeDomain: Iterable[Int] = throw new Error
+  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt))(d)
 }
-*/
+
+abstract class CategoricalMux[A](proportions:Proportions, initialValues:Seq[CategoricalValue[A]]) 
+extends DiscreteMux(proportions, initialValues.map(_.intValue)) with GeneratedCategoricalVar[A]

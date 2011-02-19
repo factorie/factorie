@@ -64,6 +64,7 @@ object LDADemo {
       }
     }
     //documents.trimEnd(documents.length-10)
+
     println("\nRead " + documents.size + " documents with " + documents.foldLeft(0)(_ + _.size) + " tokens and " + WordDomain.size + " types.")
     // Fit model
     val zs = documents.flatMap(document => document.map(word => word.choice))
