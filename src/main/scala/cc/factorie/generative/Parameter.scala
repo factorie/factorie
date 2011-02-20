@@ -40,6 +40,7 @@ trait Parameter extends Variable {
   // TODO Remove this?  Then implement this pulling of MixtureComponents.children in each of the parameter estimation inference routines.
   // Yes, I think this above method is better. -akm
   // No, I now think it is better for this to stay here.  This functionality is needed by each parameter's estimation method! -akm
+  // TODO This should return an Iterator[GeneratedVar] and should handle Mux variables.
   def generatedChildren: Iterable[GeneratedVar] = {
     val result = new ArrayBuffer[GeneratedVar]
     for (child <- children) child match {

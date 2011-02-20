@@ -83,14 +83,22 @@ trait CategoricalVar[A] extends CategoricalsVar[A] with DiscreteVar with VarAndV
   def domain: CategoricalDomain[A]
   def categoryValue: A = if (value ne null) value.category else null.asInstanceOf[A]
   override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
-} 
+}
+
+trait MutableCategoricalVar[A] extends CategoricalVar[A] with MutableVar {
+  def setCategory(newCategory:A)(implicit d: DiffList): Unit = set(domain.getValue(newCategory))
+}
 
 /** A DiscreteVariable whose integers 0...N are associated with an object of type A. 
     @author Andrew McCallum */
-abstract class CategoricalVariable[A] extends DiscreteVariable with CategoricalVar[A] {
+abstract class CategoricalVariable[A] extends DiscreteVariable with MutableCategoricalVar[A] {
   def this(initialCategory:A) = { this(); _set(domain.getValue(initialCategory)) }
   //def this(initalValue:ValueType) = { this(); _set(initialValue) }
-  def setCategory(newCategory:A)(implicit d: DiffList): Unit = set(domain.getValue(newCategory))
+}
+
+abstract class CategoricalMuxVariable[A](initialCategories:Seq[A]) extends DiscreteMuxVariable(Nil.asInstanceOf[Seq[Int]]) with MutableCategoricalVar[A] {
+  initialCategories.foreach(c => values += domain.getValue(c))
+  def muxAppend(category:A): Unit = muxAppend(domain.getValue(category))
 }
 
 

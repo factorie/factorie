@@ -46,6 +46,4 @@ abstract class VectorVariable extends VectorVar {
   private var _value: ValueType = null.asInstanceOf[ValueType]
   def value: Value = _value
   @inline protected final def _set(newValue:ValueType): Unit = _value = newValue
-  def domain: VectorDomain
-  //def activeDomain = vector.activeDomain
 }

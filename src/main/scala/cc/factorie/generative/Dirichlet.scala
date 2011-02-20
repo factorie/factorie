@@ -96,6 +96,7 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter,
     val dm = new DenseDirichletMultinomial(mean, precision)
     for (child <- children) child match {
       case mcs:MixtureComponents[_] => mcs.childrenOf(this).foreach(dm.updateChildStats(_, 1.0))
+      //case m:DiscreteMux => forIndex(m.muxSize)(i => dm.updateChildStats(m.muxValue(i), 1.0))
       case v:GeneratedVar => dm.updateChildStats(v, 1.0)
     }
     //println("DenseDirichletMultinomial countsTotal="+dm.countsTotal)

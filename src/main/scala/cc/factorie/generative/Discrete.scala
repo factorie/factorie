@@ -46,9 +46,12 @@ trait GeneratedDiscreteVar extends GeneratedVar with DiscreteVar {
   override def pr = proportions(this.intValue)
 }
 
-abstract class Discrete(proportions:Proportions, initialValue: Int = 0) extends DiscreteVariable(initialValue) with GeneratedDiscreteVar with MutableGeneratedVar {
-  setProportions(proportions)
+trait MutableGeneratedDiscreteVar extends GeneratedDiscreteVar with MutableGeneratedVar with MutableDiscreteVar {
   def maximize(implicit d:DiffList): Unit = set(proportions.maxPrIndex)
+}
+
+abstract class Discrete(proportions:Proportions, initialValue: Int = 0) extends DiscreteVariable(initialValue) with MutableGeneratedDiscreteVar {
+  setProportions(proportions)
 }
 
 /*class Binomial(p:RealVarParameter, trials:Int) extends OrdinalVariable with GeneratedVariable {
@@ -56,28 +59,21 @@ abstract class Discrete(proportions:Proportions, initialValue: Int = 0) extends 
 }*/
 
 trait GeneratedCategoricalVar[A] extends GeneratedDiscreteVar with CategoricalVar[A]
+trait MutableGeneratedCategoricalVar[A] extends MutableGeneratedDiscreteVar with CategoricalVar[A]
 //trait GeneratedCategoricalVariable[A] extends CategoricalVariable[A] with GeneratedDiscreteVariable with GeneratedCategoricalVar[A]
 
-abstract class Categorical[A](proportions:Proportions, initialValue:A) extends CategoricalVariable(initialValue) with GeneratedCategoricalVar[A] with MutableGeneratedVar {
+abstract class Categorical[A](proportions:Proportions, initialValue:A) extends CategoricalVariable(initialValue) with MutableGeneratedCategoricalVar[A] {
   setProportions(proportions)
-  def maximize(implicit d:DiffList): Unit = set(proportions.maxPrIndex)
 }
 
 
 
 /** Appears as a single GeneratedDiscreteVar, but actually contains a compact array, each accessible by changing 'mux' from 0 to muxSize-1. */
-abstract class DiscreteMux(proportions:Proportions, initialIndices:Seq[Int]) extends GeneratedDiscreteVar with MutableGeneratedVar {
+abstract class DiscreteMux(proportions:Proportions, initialIntValues:Seq[Int]) extends DiscreteMuxVariable(initialIntValues) with MutableGeneratedDiscreteVar {
   setProportions(proportions)
-  var mux: Int = 0
-  def muxSize = _values.length
-  private val _values = initialIndices.map(i => domain.getValue(i)).toArray
-  def value = _values(mux)
-  def set(newValue:ValueType)(implicit d:DiffList): Unit = {
-    require (d eq null) // DiffList not yet implemented for this change
-    _values(mux) = newValue
-  }
-  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt))(d)
 }
 
-abstract class CategoricalMux[A](proportions:Proportions, initialValues:Seq[CategoricalValue[A]]) 
-extends DiscreteMux(proportions, initialValues.map(_.intValue)) with GeneratedCategoricalVar[A]
+abstract class CategoricalMux[A](proportions:Proportions, initialCategories:Seq[A]) extends CategoricalMuxVariable[A](initialCategories) with MutableGeneratedCategoricalVar[A] {
+  setProportions(proportions)
+}
+

@@ -13,8 +13,9 @@
    limitations under the License. */
 
 package cc.factorie
-import scala.util.Random
 import cc.factorie.la._
+import scala.util.Random
+import scala.collection.mutable.ArrayBuffer
 
 trait DiscretesVar extends VectorVar with VarAndValueType[DiscretesVar,DiscretesValue] {
   def domain: DiscretesDomain
@@ -58,10 +59,16 @@ trait DiscreteVar extends DiscretesVar with VarAndValueType[DiscreteVar,Discrete
   //def activeDomain = List(intValue) // TODO try to make this implementation possible: = value
 }
 
+trait MutableDiscreteVar extends DiscreteVar {
+  def set(newValue:ValueType)(implicit d:DiffList): Unit
+  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt))(d)
+  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
+}
+
 // TODO Note that DiscreteVariable is not a subclass of VectorVariable, due to initialization awkwardness.
 // Consider fixing this.
 /** A Variable holding a single DiscreteValue. */
-abstract class DiscreteVariable extends VectorVariable with DiscreteVar with MutableVar with IterableSettings with QDistribution {
+abstract class DiscreteVariable extends VectorVariable with MutableDiscreteVar with MutableVar with IterableSettings with QDistribution {
   // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
   def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue) }
   def this(initialInt:Int) = { this(); _set(domain.getValue(initialInt)) }
@@ -72,8 +79,6 @@ abstract class DiscreteVariable extends VectorVariable with DiscreteVar with Mut
     _set(newValue)
   }
   // TODO provide default value for DiffList = null
-  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt))(d)
-  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
   def settings = new SettingIterator {
     // TODO Base this on a domain.iterator instead, for efficiency
     var i = -1
@@ -96,6 +101,25 @@ abstract class DiscreteVariable extends VectorVariable with DiscreteVar with Mut
   // So define a QType[+QT] trait!
   type QType = cc.factorie.generative.MutableProportions  // TODO Change this = to <:  Why wasn't this done before?
   def newQ = new cc.factorie.generative.DenseProportions(domain.size)
+}
+
+
+/** Appears as a single DiscreteVar, but actually contains a compact array, each accessible by changing 'muxIndex' from 0 to muxSize-1. */
+abstract class DiscreteMuxVariable(initialIntValues:Seq[Int]) extends MutableDiscreteVar {
+  private val _values: ArrayBuffer[Value] = 
+    new ArrayBuffer[Value](if (initialIntValues.length > 0) initialIntValues.length else 8) ++= initialIntValues.map(i => domain.getValue(i))
+  var muxIndex: Int = 0
+  @inline final def muxSize = _values.length
+  def muxAppend(v:ValueType): Unit = _values += v
+  def muxAppend(i:Int): Unit = _values += domain.getValue(i)
+  def muxNext: Unit = muxIndex += 1
+  def maxHasNext: Boolean = muxIndex < _values.length
+  def value: Value = _values(muxIndex)
+  def values: ArrayBuffer[Value] = _values
+  def set(newValue:ValueType)(implicit d:DiffList): Unit = {
+    require (d eq null) // DiffList not yet implemented for this change
+    _values(muxIndex) = newValue
+  }
 }
 
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  May be useful in the future for block-Gibbs-sampling?

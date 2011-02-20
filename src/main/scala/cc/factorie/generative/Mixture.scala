@@ -39,7 +39,7 @@ trait MixtureGeneratedVar extends GeneratedVar {
   def sampledValueChoosing(mixtureIndex:Int): Value = generativeTemplate.sampledValueChoosing(generativeFactor.statistics, mixtureIndex).asInstanceOf[Value]  // TODO Can we get rid of this cast?
 }
 
-trait MixtureChoiceVar extends DiscreteVariable with MutableGeneratedVar {
+trait MixtureChoiceVar extends MutableDiscreteVar with MutableGeneratedVar /*with MutableGeneratedDiscreteVar*/ {
   // 'outcomes' are a more efficient alternative to 'children' for small sets of outcomes.
   private var _outcomes: List[MixtureGeneratedVar] = Nil
   def outcomes = _outcomes
@@ -69,6 +69,12 @@ abstract class MixtureChoiceMixture(ps:FiniteMixture[Proportions], choice:Mixtur
   //def prChoosing(value:Int): Double = ps(choice.intValue).apply(value)
   def prChoosing(value:Int, mixtureIndex:Int): Double = ps(mixtureIndex).apply(value)
 }
+
+
+abstract class MixtureChoiceMux(p:Proportions, intValues:Seq[Int]) extends DiscreteMux(p, intValues) with MixtureChoiceVar {
+  def prChoosing(value:Int): Double = p(value)
+}
+
 
 /*class MixtureComponentsTemplate[P<:Parameter:Manifest] extends GenerativeTemplateWithStatistics2[MixtureComponents[P],Vars[P]] {
   def unroll1(m:MixtureComponents[P]) = Factor(m, Vars.fromSeq(m.components))

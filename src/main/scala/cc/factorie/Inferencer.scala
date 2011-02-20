@@ -52,7 +52,7 @@ trait VariableInferencer[V<:Variable] extends Inferencer[V,V] {
   def inferMarginalizing(targets:Iterable[V], marginalizing:Iterable[V]) = infer(targets, targets ++ marginalizing)
 }
 
-class IIDDiscreteInferencer[V<:DiscreteVariable](model:Model) extends VariableInferencer[V] {
+class IIDDiscreteInferencer[V<:MutableDiscreteVar](model:Model) extends VariableInferencer[V] {
   type LatticeType = IIDDiscreteLattice
   class IIDDiscreteLattice extends HashMap[V,DiscreteMarginal[V]] with Lattice[V] {
     type VariableMarginalType = DiscreteMarginal[V]
