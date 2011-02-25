@@ -116,8 +116,9 @@ trait TraversableExtras[A] {
   def filterByClass[C](c: Class[C]): Traversable[C] =
     t.filter(t1 => c.isAssignableFrom(t1.asInstanceOf[AnyRef].getClass)).asInstanceOf[Traversable[C]]
 
-
-
+  def subseq(prob:Double)(implicit random: Random = defaultRandom) = {
+    t.flatMap((a:A) => if(random.nextDouble < prob) List(a) else Nil)
+  }
 
   def sampleUniformly(implicit random: Random = defaultRandom): A = {
     val s2 = t.toSeq
