@@ -18,13 +18,11 @@ import cc.factorie.la._
 import scala.collection.mutable.{HashSet,ArrayBuffer}
 
 class DiscreteTemplate extends GenerativeTemplateWithStatistics2[GeneratedDiscreteVar,Proportions] {
-  //class Factor(d:Discrete, p:Proportions) extends super.Factor(d, p) with GenerativeFactor
   def unroll1(d:GeneratedDiscreteVar) = Factor(d, d.proportions)
-  def unroll2(p:Proportions) = for (d <- p.childrenOfClass[Discrete]) yield Factor(d, p)
+  def unroll2(p:Proportions) = for (d <- p.childrenOfClass[GeneratedDiscreteVar]) yield Factor(d, p)
   def logpr(s:Stat) = math.log(pr(s))
   def pr(s:Stat): Double = pr(s._1, s._2)
   def pr(d:DiscreteValue, p:IndexedSeq[Double]): Double = p(d.intValue)
-  //def sampledValue(s:Stat) = s._1.domain(maths.nextDiscrete(s._2))
   def sampledValue(s:Stat): DiscreteValue = sampledValue(s._1.domain, s._2)
   def sampledIntValue(s:Stat): Int = s._2.sampleInt
   def sampledValue(d:DiscreteDomain, p:ProportionsValue): DiscreteValue = d(p.sampleInt)
@@ -33,6 +31,8 @@ class DiscreteTemplate extends GenerativeTemplateWithStatistics2[GeneratedDiscre
 object DiscreteTemplate extends DiscreteTemplate
 
 trait GeneratedDiscreteVar extends GeneratedVar with DiscreteVar {
+  val generativeTemplate = DiscreteTemplate
+  def generativeFactor = new DiscreteTemplate.Factor(this, proportions)
   private var _proportions: Proportions = null
   def proportions: Proportions = _proportions
   def setProportions(p:Proportions): Unit = {
@@ -40,8 +40,6 @@ trait GeneratedDiscreteVar extends GeneratedVar with DiscreteVar {
     _proportions = p
     _proportions.addChild(this)(null)
   }
-  val generativeTemplate = DiscreteTemplate
-  def generativeFactor = new DiscreteTemplate.Factor(this, proportions)
   override def parents = Seq(proportions)
   override def pr = proportions(this.intValue)
 }

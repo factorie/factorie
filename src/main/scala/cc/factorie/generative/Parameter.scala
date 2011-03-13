@@ -49,6 +49,19 @@ trait Parameter extends Variable {
     }
     result
   }
+  def generatedChildrenIterator: Iterator[GeneratedVar] = new Iterator[GeneratedVar] {
+    var activeIterators = new scala.collection.mutable.Stack[Iterator[GeneratedVar]].push(children.iterator)
+    def hasNext = if (activeIterators.isEmpty) false else if (activeIterators.head.hasNext) true else { activeIterators.pop(); hasNext }
+    def next = {
+      var result = activeIterators.head.next
+      result match {
+        case mcs:MixtureComponents[_] => { activeIterators.push(mcs.childrenOf(this).iterator); next }
+        case _ => result 
+      }
+    }
+  }
+  // TODO Consider something this this method:
+  //def generatedChildValues: Iterator[Any]
   def weightedGeneratedChildren(map:scala.collection.Map[Variable,Variable]): Iterable[(GeneratedVar,Double)] = {
     val result = new ArrayBuffer[(GeneratedVar,Double)]
     for (child <- children) map.getOrElse(child,child) match {

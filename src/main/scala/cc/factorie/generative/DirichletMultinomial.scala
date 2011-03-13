@@ -75,6 +75,7 @@ class GrowableDenseDirichletMultinomial(val alpha:Double) extends GrowableDenseC
     def pr = 1.0 // TODO Remove this; no longer necessary
     def parents = List(GrowableDenseDirichletMultinomial.this) // TODO But note that GrowableDenseDirichletMultinomial doesn't have this as a child.
   }
+  //override def length: Int = 
   // A little faster than the more generic one in its superclass
   override def apply(index:Int) : Double = {
     val alphaSum = alpha * this.length

@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.generative
 import cc.factorie._
 
@@ -72,6 +70,7 @@ with VarAndValueGenericDomain[Proportions,ProportionsValue]
     The abstract method 'categoricalDomain' must be supplied.  */
 trait CategoricalProportions[A] extends Proportions {
   def categoricalDomain: CategoricalDomain[A]
+  // TODO change "value:String" to "category:A"
   class DiscretePr(override val index:Int, override val pr:Double, val value:String) extends super.DiscretePr(index, pr)
   override def top(n:Int): Seq[DiscretePr] = {
     val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList
