@@ -105,10 +105,9 @@ abstract class DiscreteVariable extends VectorVariable with MutableDiscreteVar w
 
 
 /** Appears as a single DiscreteVar, but actually contains a compact array, each accessible by changing 'muxIndex' from 0 to muxSize-1. */
-abstract class DiscreteMuxVariable(initialIntValues:Seq[Int]) extends MutableDiscreteVar {
+abstract class DiscreteMuxVariable(initialIntValues:Seq[Int]) extends MutableDiscreteVar with MuxVariable {
   private val _values: ArrayBuffer[Value] = 
     new ArrayBuffer[Value](if (initialIntValues.length > 0) initialIntValues.length else 8) ++= initialIntValues.map(i => domain.getValue(i))
-  var muxIndex: Int = 0
   @inline final def muxSize = _values.length
   def muxAppend(v:ValueType): Unit = _values += v
   def muxAppend(i:Int): Unit = _values += domain.getValue(i)
@@ -121,6 +120,15 @@ abstract class DiscreteMuxVariable(initialIntValues:Seq[Int]) extends MutableDis
     _values(muxIndex) = newValue
   }
 }
+
+abstract class DiscreteArrayVariable(initialIntValues:Seq[Int] = Nil) extends Variable with VarAndValueType[DiscreteArrayVariable,Seq[DiscreteValue]] {
+  def domain: DiscretesDomain
+  private val _values = new ArrayBuffer[DiscreteValue] ++= initialIntValues.map(i => domain.dimensionDomain.getValue(i))
+  def values: Seq[DiscreteValue] = _values
+  def valueAt(index:Int): DiscreteValue = _values(index)
+  def setAt(index:Int, newValue:DiscreteValue): Unit = _values(index) = newValue
+}
+
 
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  May be useful in the future for block-Gibbs-sampling?
     @author Andrew McCallum */
