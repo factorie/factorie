@@ -162,7 +162,8 @@ trait Template { thisTemplate =>
   }
   def statistics(values:ValuesType): StatisticsType
   /** May be overridden in subclasses to actually cache. */
-  def cachedStatistics(values:ValuesType): StatisticsType = statistics(values)
+  def cachedStatistics(values:ValuesType, stats:(ValuesType)=>StatisticsType): StatisticsType = stats(values)
+  def cachedStatistics(values:ValuesType): StatisticsType = cachedStatistics(values, statistics)
   def clearCachedStatistics: Unit = {}
   // Managing settings iteration
   // TODO Replace this with message calculation code that does the settings iteration internally
@@ -315,16 +316,17 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   def statistics(values:Values): StatisticsType
   //def stats(v:Variable): Iterable[StatisticsType] = factors(v).map(_.statistics) // TODO Do we need to consider a flatMap here?
   private var cachedStatisticsArray: Array[StatisticsType] = null
-  override def cachedStatistics(vals:Values): StatisticsType = if (Template.enableCachedStatistics) {
+  override def cachedStatistics(vals:Values, stats:(ValuesType)=>StatisticsType): StatisticsType =
+    if (Template.enableCachedStatistics) {
     vals._1 match {
     case v:DiscreteValue => {
       if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v.domain.size).asInstanceOf[Array[StatisticsType]]
       val i = v.intValue
-      if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = statistics(vals)
+      if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = stats(vals)
       cachedStatisticsArray(i)
     }
-    case _ => statistics(vals)
-  }} else statistics(vals)
+    case _ => stats(vals)
+  }} else stats(vals)
   /** You must clear cache the cache if DotTemplate.weights change! */
   override def clearCachedStatistics: Unit =  cachedStatisticsArray = null
   /** valuesIterator in style of specifying fixed neighbors */
@@ -462,37 +464,38 @@ extends Template // with FactorSettings2[N1,N2]
   private var cachedStatisticsArray: Array[StatisticsType] = null
   private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null
   /** It is callers responsibility to clearCachedStatistics if weights or other relevant state changes. */
-  override def cachedStatistics(values:Values): StatisticsType = if (Template.enableCachedStatistics) values._1 match {
+  override def cachedStatistics(values:Values, stats:(ValuesType)=>StatisticsType): StatisticsType =
+    if (Template.enableCachedStatistics) values._1 match {
     case v1:DiscreteValue => { 
       values._2 match {
         case v2:DiscreteValue => {
           //println("Template2.cachedStatistics")
           if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v1.domain.size * v2.domain.size).asInstanceOf[Array[StatisticsType]]
           val i = v1.intValue * nd2.asInstanceOf[DiscretesDomain].dimensionSize + v2.intValue
-          if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = statistics(values)
+          if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = stats(values)
           cachedStatisticsArray(i)
         }
         case v2:DiscretesValue if (true /*v2.isConstant*/) => {
           //println("Template2.cachedStatistics")
           if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType] { override protected def initialSize = 512 }
           val i = ((v1.intValue,v2))
-          cachedStatisticsHash.getOrElseUpdate(i, statistics(values))
+          cachedStatisticsHash.getOrElseUpdate(i, stats(values))
         }
-        case _ => statistics(values)
+        case _ => stats(values)
       }
     }
-    case v1:DiscretesValue if (true /*v1.isConstant*/) => { 
+    case v1:DiscretesValue if (true /*v1.isConstant*/) => {
       values._2 match {
         case v2:DiscreteValue => {
           if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
           val i = ((v2.intValue,v1))
-          cachedStatisticsHash.getOrElseUpdate(i, statistics(values))
+          cachedStatisticsHash.getOrElseUpdate(i, stats(values))
         }
-        case _ => statistics(values)
+        case _ => stats(values)
       }
     }
-    case _ => statistics(values)
-  } else statistics(values)
+    case _ => stats(values)
+  } else stats(values)
   override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
   /** valuesIterator in style of specifying fixed neighbors */
   def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = {
@@ -703,7 +706,8 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
   private var cachedStatisticsArray: Array[StatisticsType] = null
   private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null
   /** It is callers responsibility to clearCachedStatistics if weights or other relevant state changes. */
-  override def cachedStatistics(values:Values): StatisticsType = if (Template.enableCachedStatistics) {
+  override def cachedStatistics(values:Values, stats:(ValuesType)=>StatisticsType): StatisticsType =
+    if (Template.enableCachedStatistics) {
     //println("Template3.cachedStatistics")
     if (values._1.isInstanceOf[DiscreteValue] && values._2.isInstanceOf[DiscreteValue] && values._3.isInstanceOf[DiscretesValue] /*&& f._3.isConstant*/ ) {
       val v1 = values._1.asInstanceOf[DiscreteValue]
@@ -712,11 +716,11 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
       if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
       val i = ((v1.intValue, v2.intValue, v3))
       //print(" "+((v1.intValue, v2.intValue))); if (cachedStatisticsHash.contains(i)) println("*") else println(".")
-      cachedStatisticsHash.getOrElseUpdate(i, statistics(values))
+      cachedStatisticsHash.getOrElseUpdate(i, stats(values))
     } else {
-      statistics(values)
+      stats(values)
     }
-  } else statistics(values)
+  } else stats(values)
   override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
   /** Values iterator in style of specifying fixed neighbors. */
   def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = {

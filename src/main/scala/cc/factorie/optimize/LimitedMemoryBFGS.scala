@@ -146,9 +146,9 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
         direction(i) = g(i)
       })
 
-      if (sy > 0) throw new Error("sy=" + sy + "> 0")
+      if (sy > 0) throw new IllegalStateException("sy=" + sy + "> 0")
       val gamma = sy / yy // scaling factor
-      if (gamma > 0) throw new Error("gamma=" + gamma + "> 0")
+      if (gamma > 0) throw new IllegalStateException("gamma=" + gamma + "> 0")
 
       pushDbl(rho, 1.0 / sy)
       pushArray(s, oldParams)
