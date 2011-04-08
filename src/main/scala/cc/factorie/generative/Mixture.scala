@@ -71,9 +71,10 @@ abstract class MixtureChoiceMixture(ps:FiniteMixture[Proportions], choice:Mixtur
 }
 
 
-abstract class MixtureChoiceMux(p:Proportions, intValues:Seq[Int]) extends DiscreteMux(p, intValues) with MixtureChoiceVar {
+/*abstract class MixtureChoiceMux(p:Proportions, intValues:Seq[Int]) extends DiscreteMux(p, intValues) with MixtureChoiceVar {
   def prChoosing(value:Int): Double = p(value)
 }
+*/
 
 
 /*class MixtureComponentsTemplate[P<:Parameter:Manifest] extends GenerativeTemplateWithStatistics2[MixtureComponents[P],Vars[P]] {

@@ -96,10 +96,12 @@ abstract class CategoricalVariable[A] extends DiscreteVariable with MutableCateg
   //def this(initalValue:ValueType) = { this(); _set(initialValue) }
 }
 
-abstract class CategoricalMuxVariable[A](initialCategories:Seq[A]) extends DiscreteMuxVariable(Nil.asInstanceOf[Seq[Int]]) with MutableCategoricalVar[A] {
+/*abstract class CategoricalArrayVariable[A](initialCategories:Seq[A])
+         extends DiscreteArrayVariable(Nil.asInstanceOf[Seq[Int]]) with VarAndValueType[CategoricalArrayVariable[A],Seq[CategoricalValue[A]]]
+{
   initialCategories.foreach(c => values += domain.getValue(c))
-  def muxAppend(category:A): Unit = muxAppend(domain.getValue(category))
-}
+  def appendCategory(category:A): Unit = appendValue(domain.getValue(category))
+}*/
 
 
 /** When mixed in to a CategoricalVariable, the variable's Domain will count the number of calls to 'index'.  

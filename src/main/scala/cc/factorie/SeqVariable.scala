@@ -79,28 +79,7 @@ class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8
   def apply(i: Int) = seq.apply(i)
 }
 
-
-/** For use with variables that have immutable-valued .next and .prev in a sequence. 
-    This tries to avoid the need for the self-type in VarInSeq, but I don't think it will work.
-    Deprecated.  Use VarInSeq instead. */
-@deprecated("Use VarInSeq or VarInTypedSeq instead.")
-trait VarInSeq2 {
-  this: Variable =>
-    private var _seq: Seq[this.type] = null
-  def seq = _seq
-  private var _position = -1
-  def position = _position
-  def setSeqPos(s: Seq[Variable], p: Int) = {
-    if (s(p) != this) throw new Error
-    _seq = s.asInstanceOf[Seq[this.type]]
-    _position = p
-  }
-  def hasNext = _seq != null && _position + 1 < _seq.length
-  def next: this.type = if (_position + 1 < _seq.length) _seq(_position + 1) else null
-  def hasPrev = _seq != null && _position > 0
-  def prev: this.type = if (_position > 0) _seq(_position - 1) else null
-}
-
+// TODO Use trait VariableSeqType[+A] { type VariableSeqType = A } to make this unnecessary.
 trait AbstractVarInSeq[This <: AbstractVarInSeq[This]] {
   def hasNext: Boolean
   def hasPrev: Boolean

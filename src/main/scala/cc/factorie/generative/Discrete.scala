@@ -65,13 +65,3 @@ abstract class Categorical[A](proportions:Proportions, initialValue:A) extends C
 }
 
 
-
-/** Appears as a single GeneratedDiscreteVar, but actually contains a compact array, each accessible by changing 'mux' from 0 to muxSize-1. */
-abstract class DiscreteMux(proportions:Proportions, initialIntValues:Seq[Int]) extends DiscreteMuxVariable(initialIntValues) with MutableGeneratedDiscreteVar {
-  setProportions(proportions)
-}
-
-abstract class CategoricalMux[A](proportions:Proportions, initialCategories:Seq[A]) extends CategoricalMuxVariable[A](initialCategories) with MutableGeneratedCategoricalVar[A] {
-  setProportions(proportions)
-}
-

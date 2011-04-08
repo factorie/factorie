@@ -75,18 +75,3 @@ abstract class CategoricalMixture[A](components: FiniteMixture[Proportions], cho
   setChoice(choice)
 }
 
-
-abstract class DiscreteMixtureMux(components: FiniteMixture[Proportions], choice:MixtureChoiceMux, initialValues:Seq[Int]) 
-         extends DiscreteMuxVariable(initialValues) with DiscreteMixtureVar with MutableGeneratedVar 
-{
-  setComponents(components)
-  setChoice(choice)
-}
-
-abstract class CategoricalMixtureMux[A](components: FiniteMixture[Proportions], choice:MixtureChoiceVar, initialCategories:Seq[A])
-         extends CategoricalMuxVariable(initialCategories) with DiscreteMixtureVar with MutableGeneratedVar 
-{
-  setComponents(components)
-  setChoice(choice)
-}
-
