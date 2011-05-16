@@ -23,4 +23,12 @@ trait ArrayVar[A] extends Variable with VarAndValueType[ArrayVar[A],Seq[A]] {
   def value: Seq[ElementValueType]
 }
 
-
+/** Experimental thoughts about an alternative to ArrayVar. */
+/*
+trait PlatedVar[A] extends Variable with VarAndValueType[PlatedVar[A],Seq[A]] {
+  type ElementValueType = A
+  def plateIndex: Int
+  def appendValue(v:ElementValueType): Unit
+  def value: Seq[ElementValueType]
+}
+*/

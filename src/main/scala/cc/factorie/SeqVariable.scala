@@ -37,7 +37,7 @@ trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A]
 abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with SeqEqualsEq[X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]] {
   def this() = this(Nil)
   def value = this.toSeq
-  private val seq = { val a = new ArrayBuffer[X](); a ++= sequence; a }
+  private val _seq = { val a = new ArrayBuffer[X](); a ++= sequence; a }
   def append(x:X)(implicit d:DiffList) = AppendDiff(x)
   def prepend(x:X)(implicit d:DiffList) = PrependDiff(x)
   def trimStart(n:Int)(implicit d:DiffList) = TrimStartDiff(n)
@@ -46,37 +46,37 @@ abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with SeqEqualsE
   def swap(i:Int,j:Int)(implicit d:DiffList) = Swap1Diff(i,j)
   def swapLength(pivot:Int,length:Int)(implicit d:DiffList) = for (i <- pivot-length until pivot) Swap1Diff(i,i+length)
   abstract class SeqVariableDiff(implicit d:DiffList) extends AutoDiff {override def variable = SeqVariable.this}
-  case class AppendDiff(x:X)(implicit d:DiffList) extends SeqVariableDiff {def undo = seq.trimEnd(1); def redo = seq.append(x)}
-  case class PrependDiff(x:X)(implicit d:DiffList) extends SeqVariableDiff {def undo = seq.trimStart(1); def redo = seq.prepend(x)}
-  case class TrimStartDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = seq.take(n); def undo = seq prependAll (s); def redo = seq.trimStart(n)}
-  case class TrimEndDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = seq.drop(seq.length - n); def undo = seq appendAll (s); def redo = seq.trimEnd(n)}
-  case class Remove1Diff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val e = seq(n); def undo = seq.insert(n,e); def redo = seq.remove(n)}
-  case class Swap1Diff(i:Int,j:Int)(implicit d:DiffList) extends SeqVariableDiff { def undo = {val e = seq(i); seq(i) = seq(j); seq(j) = e}; def redo = undo }
+  case class AppendDiff(x:X)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimEnd(1); def redo = _seq.append(x)}
+  case class PrependDiff(x:X)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimStart(1); def redo = _seq.prepend(x)}
+  case class TrimStartDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.take(n); def undo = _seq prependAll (s); def redo = _seq.trimStart(n)}
+  case class TrimEndDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.drop(_seq.length - n); def undo = _seq appendAll (s); def redo = _seq.trimEnd(n)}
+  case class Remove1Diff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val e = seq(n); def undo = _seq.insert(n,e); def redo = _seq.remove(n)}
+  case class Swap1Diff(i:Int,j:Int)(implicit d:DiffList) extends SeqVariableDiff { def undo = {val e = seq(i); _seq(i) = _seq(j); _seq(j) = e}; def redo = undo }
   // for Seq trait
-  def length = seq.length
-  def iterator = seq.iterator
+  def length = _seq.length
+  def iterator = _seq.iterator
   def apply(index: Int) = seq(index)
   // for changes without Diff tracking
-  def +=(x:X) = seq += x
-  def ++=(xs:Iterable[X]) = seq ++= xs
+  def +=(x:X) = _seq += x
+  def ++=(xs:Iterable[X]) = _seq ++= xs
 }
 
 /** A variable containing a mutable (but untracked by Diff) sequence of variables; used in conjunction with VarInSeq.
     @author Andrew McCallum */
 class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeqEqualsEq[V] with Variable with VarAndValueGenericDomain[VariableSeq[V],Seq[V]] {
   def value = this.toSeq
-  private val seq = new ArrayBuffer[V](initialCapacity)
+  private val _seq = new ArrayBuffer[V](initialCapacity)
   def +=(v: V) = {
     if (v.seq != null) throw new Error("Trying to add VarInSeq that is already assigned to another VariableSeq")
-    seq += v
+    _seq += v
     v.setSeqPos(this, seq.size - 1)
   }
   def +(v: V) = {this += v; this} // TODO But according to Scala convension this should create a return a new sequence, right?  Remove this method?
   def ++=(vs: Iterable[V]) = vs.foreach(this += _)
   def ++(vs: Iterable[V]) = {this ++= vs; this}
-  override def iterator = seq.iterator
-  def length = seq.length
-  def apply(i: Int) = seq.apply(i)
+  override def iterator = _seq.iterator
+  def length = _seq.length
+  def apply(i: Int) = _seq.apply(i)
 }
 
 // TODO Use trait VariableSeqType[+A] { type VariableSeqType = A } to make this unnecessary.

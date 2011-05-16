@@ -35,18 +35,18 @@ trait SpanValue[T] extends IndexedSeqEqualsEq[T] {
 }
 
 abstract class SpanVar[T](theSeq: Seq[T], initStart: Int, initLength: Int) extends Variable with IndexedSeqEqualsEq[T] with VarAndValueGenericDomain[SpanVar[T],SpanValue[T]] {
-  case class SpanValue(seq:Seq[T], start:Int, length:Int) extends cc.factorie.SpanValue[T]
+  case class SpanValue(override val seq:Seq[T], start:Int, length:Int) extends cc.factorie.SpanValue[T]
   def value: Value = new SpanValue(seq, start, length) // TODO Consider avoiding creating a new object here.
   assert(initStart >= 0)
   assert(initLength > 0)
   assert(initStart + initLength <= seq.length)
-  def seq: Seq[T] = theSeq // Use "def" instead of "val seq" in constructor so that subclasses can override this
+  override def seq: Seq[T] = theSeq // Use "def" instead of "val seq" in constructor so that subclasses can override this
   protected var _start = initStart
   protected var _length = initLength
   override def iterator = new Iterator[T] {
     var i = _start
     def hasNext = i < _start + _length
-    def next: T = {i += 1; seq(i - 1)}
+    def next: T = { i += 1; SpanVar.this.seq.apply(i - 1) }
   }
   def apply(i: Int) = seq(i + _start)
   def start = _start

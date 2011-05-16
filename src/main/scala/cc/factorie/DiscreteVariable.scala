@@ -106,7 +106,7 @@ abstract class DiscreteVariable extends VectorVariable with MutableDiscreteVar w
 
 /** A compact array of DiscreteValues. */
 /*
-abstract class DiscreteArrayVariable(initialIntValues:Seq[Int]) extends VarAndValueType[DiscreteArrayVariable,Seq[DiscreteValue]] with ArrayVariable {
+abstract class DiscreteArrayVariable(initialIntValues:Seq[Int]) extends VarAndValueType[DiscreteArrayVariable,Seq[DiscreteValue]] with ArrayVar[DiscreteValue] {
   //def domain: DiscreteArrayDomain
   private val _values: ArrayBuffer[Value] = 
     new ArrayBuffer[Value](if (initialIntValues.length > 0) initialIntValues.length else 8) ++= initialIntValues.map(i => domain.getValue(i))
@@ -121,7 +121,6 @@ abstract class DiscreteArrayVariable(initialIntValues:Seq[Int]) extends VarAndVa
   }
 }
 */
-
 
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  May be useful in the future for block-Gibbs-sampling?
     @author Andrew McCallum */

@@ -196,7 +196,7 @@ object SpanNER1 {
   class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Token](model, objective) {
     // The proposer for changes to Spans touching this Token
     def settings(token:Token) = new SettingIterator {
-      val seq = token.seq
+      private val _seq = token.seq
       val changes = new ArrayBuffer[(DiffList)=>Unit];
       val existingSpans = token.spans
       //println("existing spans = "+existingSpans)
@@ -213,13 +213,13 @@ object SpanNER1 {
           changes += {(d:DiffList) => span.trimStart(1)(d)}
           // Split off first and last word, with choices of the label of the split off portion
           for (labelValue <- LabelDomain.values; if (labelValue.category != "O")) {
-            changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue.category, seq, span.end+1, 1)(d) } }
-            changes += {(d:DiffList) => { span.trimStart(1)(d); new Span(labelValue.category, seq, span.start-1, 1)(d) } }
+            changes += {(d:DiffList) => { span.trimEnd(1)(d); new Span(labelValue.category, _seq, span.end+1, 1)(d) } }
+            changes += {(d:DiffList) => { span.trimStart(1)(d); new Span(labelValue.category, _seq, span.start-1, 1)(d) } }
           }
         }
         if (span.length == 3) {
           // Split span, dropping word in middle, preserving label value
-          changes += {(d:DiffList) => span.delete(d); new Span(span.label.categoryValue, seq, span.start, 1)(d); new Span(span.label.categoryValue, seq, span.end, 1)(d) }
+          changes += {(d:DiffList) => span.delete(d); new Span(span.label.categoryValue, _seq, span.start, 1)(d); new Span(span.label.categoryValue, _seq, span.end, 1)(d) }
         }
         // Add a new word to beginning, and change label
         if (span.canPrepend(1)) {
@@ -237,8 +237,8 @@ object SpanNER1 {
         changes += {(d:DiffList) => {}} // The no-op action
         for (labelValue <- LabelDomain.values; if (labelValue.category != "O")) {
           // Add new length=1 span, for each label value
-          changes += {(d:DiffList) => new Span(labelValue.category, seq, token.position, 1)(d)}
-          //if (position != seq.length-1) changes += {(d:DiffList) => new Span(labelValue.category, seq, position, 2)(d)}
+          changes += {(d:DiffList) => new Span(labelValue.category, _seq, token.position, 1)(d)}
+          //if (position != _seq.length-1) changes += {(d:DiffList) => new Span(labelValue.category, _seq, position, 2)(d)}
         }
       }
       //println("Token.settings length="+changes.length)
