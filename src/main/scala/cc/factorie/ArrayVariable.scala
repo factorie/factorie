@@ -13,15 +13,32 @@
    limitations under the License. */
 
 package cc.factorie
+import scala.collection.mutable.ArrayBuffer
 
 /** Variable containing a compact array of values, 
     each accessible by 'index' from 0 to arraySize-1. 
     @author Andrew McCallum */
-trait ArrayVar[A] extends Variable with VarAndValueType[ArrayVar[A],Seq[A]] {
+trait ArrayVar[+A] extends Variable with VarAndValueType[ArrayVar[A],Seq[A]] {
   type ElementValueType = A
-  def appendValue(v:ElementValueType): Unit
+  def appendValue[B>:ElementValueType](v:B): Unit
   def value: Seq[ElementValueType]
 }
+
+/*
+abstract class DiscreteArrayDomain extends Domain[Seq[DiscreteValue]] {
+  def elementDomain: DiscreteDomain
+}
+
+abstract class DiscreteArrayVariable extends ArrayVar[DiscreteValue] {
+  def domain: DiscreteArrayDomain
+  private val _array = new ArrayBuffer[ElementValueType]
+  def appendValue(v:ElementValueType): Unit = _array += v
+  def value: Seq[ElementValueType] = _array
+}
+
+abstract class CategoricalArrayVariable[A] extends DiscreteArrayVariable {
+}
+*/
 
 /** Experimental thoughts about an alternative to ArrayVar. */
 /*
