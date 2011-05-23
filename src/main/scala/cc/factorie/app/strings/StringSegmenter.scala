@@ -20,8 +20,8 @@ import java.io.InputStream
 trait StringSegmenter {
   def apply(s:String): Iterator[String]
   def apply(file:java.io.File): Iterator[String] = apply(scala.io.Source.fromFile(file).mkString)
-  def apply(is:InputStream): Iterator[String] = apply(inputStreamToString(is))
-  def apply(reader:Reader): Iterator[String] = apply(readerToString(reader))
+  def apply(is:InputStream): Iterator[String] = apply(cc.factorie.app.strings.inputStreamToString(is))
+  def apply(reader:Reader): Iterator[String] = apply(cc.factorie.app.strings.readerToString(reader))
 }
 
 class RegexSegmenter(regex:scala.util.matching.Regex) extends StringSegmenter {

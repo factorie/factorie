@@ -14,7 +14,7 @@
 
 package cc.factorie
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable, DoubleLinkedList}
+import scala.collection.mutable.ArrayBuffer
 import scala.math
 
 // Variables for dealing with sequences
@@ -40,12 +40,13 @@ trait VarAndElementType[+This<:Variable,+ET] extends VarAndValueType[This,Seq[ET
 /** A variable containing a mutable sequence of other variables.  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
     @author Andrew McCallum */
-trait SeqVar[X] /*extends Variable with VarAndValueType[SeqVar[X],Seq[X]] {*/ extends Variable with VarAndElementType[SeqVar[X],X] with SeqEqualsEq[X] {
-  type ElementType <: Any
+trait SeqVar[X] extends MutableVar with VarAndElementType[SeqVar[X],X] with SeqEqualsEq[X] {
+  //type ElementType <: AnyRef
   type Element = VariableType#ElementType
-  protected def _seq: ArrayBuffer[Element] // TODO Consider using an Array[] instead so that SeqVar[Int] is efficient.
+  protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that SeqVar[Int] is efficient.
   def value = _seq.toSeq
-  def update(index:Int, x:Element)(implicit d:DiffList): Unit = UpdateDiff(index, x)
+  def set(newValue:Value)(implicit d:DiffList): Unit = { _seq.clear; _seq ++= newValue }
+  def update(seqIndex:Int, x:Element)(implicit d:DiffList): Unit = UpdateDiff(seqIndex, x)
   def append(x:Element)(implicit d:DiffList) = AppendDiff(x)
   def prepend(x:Element)(implicit d:DiffList) = PrependDiff(x)
   def trimStart(n:Int)(implicit d:DiffList) = TrimStartDiff(n)
@@ -68,27 +69,31 @@ trait SeqVar[X] /*extends Variable with VarAndValueType[SeqVar[X],Seq[X]] {*/ ex
   // for changes without Diff tracking
   def +=(x:Element) = _seq += x
   def ++=(xs:Iterable[Element]) = _seq ++= xs
-  def update(index:Int, x:Element): Unit = _seq(index) = x
+  //def update(index:Int, x:Element): Unit = _seq(index) = x
 }
 
-abstract class SeqVariable[X](sequence: Seq[X]) extends SeqVar[X] with VarAndElementType[SeqVariable[X],X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]] {
+abstract class SeqVariable[X](initialValue: Seq[X]) extends SeqVar[X] with VarAndElementType[SeqVariable[X],X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]] {
   def this() = this(Nil)
-  protected val _seq: ArrayBuffer[X] = { val a = new ArrayBuffer[X](); a ++= sequence; a }
+  _seq ++= initialValue
+  //protected val _seq: ArrayBuffer[X] = { val a = new ArrayBuffer[X](); a ++= sequence; a }
 }
 
 abstract class DiscreteSeqDomain extends Domain[Seq[DiscreteValue]] {
   def elementDomain: DiscreteDomain
 }
 abstract class DiscreteSeqVariable extends SeqVar[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] {
+  def this(initialValue:Seq[Int]) = { this(); val d = domain.elementDomain; initialValue.foreach(i => this += d.getValue(i)) }
   def domain: DiscreteSeqDomain
   def appendInt(i:Int): Unit = _seq += domain.elementDomain.getValue(i)
+  def intValue(seqIndex:Int): Int = _seq(seqIndex).intValue
 }
 
-class CategoricalSeqDomain[T] extends DiscreteSeqDomain with Domain[Seq[CategoricalValue[T]]] {
-  lazy val elementDomain: CategoricalDomain[T] = new CategoricalDomain[T]
+class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain[Seq[CategoricalValue[C]]] {
+  lazy val elementDomain: CategoricalDomain[C] = new CategoricalDomain[C]
 }
-abstract class CategoricalSeqVariable[T] extends DiscreteSeqVariable with VarAndElementType[CategoricalSeqVariable[T],CategoricalValue[T]] {
-  def domain: CategoricalSeqDomain[T]
-  def appendCategory(x:T): Unit = _seq += domain.elementDomain.getValue(x)
+abstract class CategoricalSeqVariable[C] extends DiscreteSeqVariable with VarAndElementType[CategoricalSeqVariable[C],CategoricalValue[C]] {
+  def this(initialValue:Seq[C]) = { this(); val d = domain.elementDomain; initialValue.foreach(c => this += d.getValue(c)) }
+  def domain: CategoricalSeqDomain[C]
+  def appendCategory(x:C): Unit = _seq += domain.elementDomain.getValue(x)
 }
 

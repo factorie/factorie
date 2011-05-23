@@ -167,7 +167,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
       if (false) println("MixtureChoiceCollapsedGibbsSamplerHandler outcome="+outcome+" sum="+sum+" distribution="+(distribution.mkString(",")))
       // sum can be zero for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
       if (sum == 0) choice.set(cc.factorie.random.nextInt(domainSize))
-      else choice.set(maths.nextDiscrete(distribution, sum)(cc.factorie.random))
+      else choice.set(cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random))
       // Put back sufficient statitics of collapsed dependencies
       if (collapsedChoiceParent ne null) collapsedChoiceParent.updateChildStats(choice, 1.0)
       if (collapsedOutcomeParent ne null) collapsedOutcomeParent.updateChildStats(outcome, 1.0)
@@ -175,4 +175,59 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
   }
 }
 
+object MixtureChoiceSeqCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
+  def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
+    if (v.size != 1) return null
+    v.head match {
+      case v: MixtureChoiceSeqVar => {
+        require(v.outcomes.size == 1) // TODO write code to handle more outcomes.
+        val choiceFactor = factors(1).copy(sampler.collapsedMap).asInstanceOf[DiscreteTemplate#Factor]
+        val outcomeFactor = factors(0).copy(sampler.collapsedMap).asInstanceOf[MixtureSeqGenerativeTemplate#Factor]
+        val choiceParent = choiceFactor._2
+        require(outcomeFactor.numVariables == 3)
+        require(outcomeFactor.variable(1).isInstanceOf[Parameter])
+        require(outcomeFactor.variable(2).isInstanceOf[MixtureChoiceVar])
+        val outcomeParent = outcomeFactor.variable(1)
+        new Closure(v, v.outcomes.head, choiceFactor, outcomeFactor,
+                    choiceParent match { case cp:CollapsedParameter => cp case _ => null.asInstanceOf[CollapsedParameter] },
+                    outcomeParent match { case cp:CollapsedParameter => cp case _ => null.asInstanceOf[CollapsedParameter] })
+      }
+      case _ => null
+    }
+  }
+  class Closure(val choice:MixtureChoiceSeqVar, val outcome:MixtureSeqGeneratedVar, 
+                val cFactor:DiscreteTemplate#Factor, val oFactor:MixtureSeqGenerativeTemplate#Factor,
+                val collapsedChoiceParent: CollapsedParameter, val collapsedOutcomeParent:CollapsedParameter)
+  extends CollapsedGibbsSamplerClosure
+  {
+    def sample(implicit d:DiffList = null): Unit = {
+      val choiceParent = cFactor._2
+      // Calculate distribution of new value
+      val oStat = oFactor.statistics
+      val domainSize = choice.domain.elementDomain.size
+      val seqSize = choice.length
+      val distribution = new Array[Double](domainSize)
+      forIndex(seqSize)(seqIndex => {
+        // Remove sufficient statistics from collapsed dependencies
+        if (collapsedChoiceParent ne null) collapsedChoiceParent.updateChildStats(choice, -1.0)
+        if (collapsedOutcomeParent ne null) collapsedOutcomeParent.updateChildStats(outcome, -1.0)
+        var sum = 0.0
+        forIndex(domainSize)(i => {
+          distribution(i) = choiceParent(i) * oFactor.template.prChoosing(oStat, seqIndex, i)
+          sum += distribution(i)
+        })
+        assert(sum == sum, "Distribution sum is NaN")
+        assert(sum != Double.PositiveInfinity, "Distrubtion sum is infinity.")
+        // Sample
+        if (false) println("MixtureChoiceCollapsedGibbsSamplerHandler outcome="+outcome+" sum="+sum+" distribution="+(distribution.mkString(",")))
+        // sum can be zero for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
+        if (sum == 0) choice.update(seqIndex, cc.factorie.random.nextInt(domainSize))
+        else choice.update(seqIndex, cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random))
+        // Put back sufficient statitics of collapsed dependencies
+        if (collapsedChoiceParent ne null) collapsedChoiceParent.updateChildStats(choice, 1.0)
+        if (collapsedOutcomeParent ne null) collapsedOutcomeParent.updateChildStats(outcome, 1.0)
+      }
+    )}
+  }
+}
 

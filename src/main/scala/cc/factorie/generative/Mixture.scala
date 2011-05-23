@@ -61,7 +61,7 @@ trait MixtureChoiceVar extends MutableDiscreteVar with MutableGeneratedVar /*wit
 
 /** A mixture indicator discrete variable, with value generated from Proportions */
 abstract class MixtureChoice(p:Proportions, value:Int = 0) extends Discrete(p, value) with MixtureChoiceVar {
-  def prChoosing(value:Int): Double = p(value)
+  def prChoosing(value:Int): Double = proportions(value)
 }
 
 /** A mixture indicator discrete variable, with value generated from a mixture of Proportions with component selected by 'choice' */
