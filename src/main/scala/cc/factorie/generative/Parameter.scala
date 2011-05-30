@@ -41,7 +41,7 @@ trait Parameter extends Variable {
   // Yes, I think this above method is better. -akm
   // No, I now think it is better for this to stay here.  This functionality is needed by each parameter's estimation method! -akm
   // TODO This should return an Iterator[GeneratedVar] and should handle Mux variables.
-  def generatedChildren: Iterable[GeneratedVar] = {
+  def deprecated_generatedChildren: Iterable[GeneratedVar] = {
     val result = new ArrayBuffer[GeneratedVar]
     for (child <- children) child match {
       case mcs:MixtureComponents[_] => result ++= mcs.childrenOf(this)
@@ -49,7 +49,7 @@ trait Parameter extends Variable {
     }
     result
   }
-  def generatedChildrenIterator: Iterator[GeneratedVar] = new Iterator[GeneratedVar] {
+  def deprecated_generatedChildrenIterator: Iterator[GeneratedVar] = new Iterator[GeneratedVar] {
     var activeIterators = new scala.collection.mutable.Stack[Iterator[GeneratedVar]].push(children.iterator)
     def hasNext = if (activeIterators.isEmpty) false else if (activeIterators.head.hasNext) true else { activeIterators.pop(); hasNext }
     def next = {
@@ -62,7 +62,7 @@ trait Parameter extends Variable {
   }
   // TODO Consider something this this method:
   //def generatedChildValues: Iterator[Any]
-  def weightedGeneratedChildren(map:scala.collection.Map[Variable,Variable]): Iterable[(GeneratedVar,Double)] = {
+  def deprecated_weightedGeneratedChildren(map:scala.collection.Map[Variable,Variable]): Iterable[(GeneratedVar,Double)] = {
     val result = new ArrayBuffer[(GeneratedVar,Double)]
     for (child <- children) map.getOrElse(child,child) match {
       case mcs:MixtureComponents[_] => {

@@ -21,7 +21,12 @@ package object generative {
 
   type GenerativeFactor = GenerativeTemplate#Factor
 
-  val defaultGenerativeModel = new Model(new DiscreteTemplate, new DiscreteMixtureTemplate, new GaussianTemplate)
+  val defaultGenerativeModel = new Model(
+      new DiscreteTemplate, 
+      new DiscreteMixtureTemplate,
+      new DiscreteSeqTemplate,
+      new DiscreteSeqMixtureTemplate,
+      new GaussianTemplate)
 
   implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
     val value: IndexedSeq[Double] = s.toIndexedSeq

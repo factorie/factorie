@@ -44,7 +44,7 @@ trait SeqVar[X] extends MutableVar with VarAndElementType[SeqVar[X],X] with SeqE
   //type ElementType <: AnyRef
   type Element = VariableType#ElementType
   protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that SeqVar[Int] is efficient.
-  def value = _seq.toSeq
+  final def value: Seq[Element] = _seq
   def set(newValue:Value)(implicit d:DiffList): Unit = { _seq.clear; _seq ++= newValue }
   def update(seqIndex:Int, x:Element)(implicit d:DiffList): Unit = UpdateDiff(seqIndex, x)
   def append(x:Element)(implicit d:DiffList) = AppendDiff(x)

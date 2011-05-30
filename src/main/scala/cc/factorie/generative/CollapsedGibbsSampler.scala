@@ -22,7 +22,10 @@ class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:M
   makeNewDiffList = false // override default in cc.factorie.Sampler
   var temperature = 1.0 // TODO Currently ignored?
   val handlers = new ArrayBuffer[CollapsedGibbsSamplerHandler]
-  def defaultHandlers = Seq(GeneratedVarCollapsedGibbsSamplerHandler, MixtureChoiceCollapsedGibbsSamplerHandler)
+  def defaultHandlers = Seq(
+      GeneratedVarCollapsedGibbsSamplerHandler, 
+      MixtureChoiceCollapsedGibbsSamplerHandler, 
+      MixtureChoiceSeqCollapsedDirichletGibbsSamplerHandler)
   handlers ++= defaultHandlers
   val cacheClosures = true
   val closures = new HashMap[Variable, CollapsedGibbsSamplerClosure]
@@ -59,6 +62,7 @@ class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:M
     } else {
       // Get factors, in sorted order of the their classname
       val factors: Seq[Factor] = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.template.getClass.getName < f2.template.getClass.getName)
+      //println("CollapsedGibbsSampler.process1 factors = "+factors.map(_.template.getClass).mkString)
       var done = false
       val handlerIterator = handlers.iterator
       while (!done && handlerIterator.hasNext) {
@@ -164,68 +168,74 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
       assert(sum == sum, "Distribution sum is NaN")
       assert(sum != Double.PositiveInfinity, "Distrubtion sum is infinity.")
       // Sample
-      if (false) println("MixtureChoiceCollapsedGibbsSamplerHandler outcome="+outcome+" sum="+sum+" distribution="+(distribution.mkString(",")))
+      //println("MixtureChoiceCollapsedGibbsSamplerHandler outcome="+outcome+" sum="+sum+" distribution="+(distribution.mkString(",")))
       // sum can be zero for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
       if (sum == 0) choice.set(cc.factorie.random.nextInt(domainSize))
       else choice.set(cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random))
-      // Put back sufficient statitics of collapsed dependencies
+      // Put back sufficient statistics of collapsed dependencies
       if (collapsedChoiceParent ne null) collapsedChoiceParent.updateChildStats(choice, 1.0)
       if (collapsedOutcomeParent ne null) collapsedOutcomeParent.updateChildStats(outcome, 1.0)
     }
   }
 }
 
-object MixtureChoiceSeqCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
+object MixtureChoiceSeqCollapsedDirichletGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
   def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
     if (v.size != 1) return null
     v.head match {
       case v: MixtureChoiceSeqVar => {
         require(v.outcomes.size == 1) // TODO write code to handle more outcomes.
-        val choiceFactor = factors(1).copy(sampler.collapsedMap).asInstanceOf[DiscreteTemplate#Factor]
-        val outcomeFactor = factors(0).copy(sampler.collapsedMap).asInstanceOf[MixtureSeqGenerativeTemplate#Factor]
+        if (! v.outcomes.head.isInstanceOf[DiscreteMixtureSeqVar]) return null
+        require(factors.size == 2, "factors size = "+factors.size)
+        //println(factors(0)); println(factors(1))
+        val choiceFactor = factors(1).copy(sampler.collapsedMap).asInstanceOf[DiscreteSeqTemplate#Factor]
+        val outcomeFactor = factors(0).copy(sampler.collapsedMap).asInstanceOf[DiscreteSeqMixtureTemplate#Factor]
+        if (! outcomeFactor._2.isInstanceOf[CollapsedFiniteMixture[DirichletMultinomial]]) return null
         val choiceParent = choiceFactor._2
         require(outcomeFactor.numVariables == 3)
         require(outcomeFactor.variable(1).isInstanceOf[Parameter])
-        require(outcomeFactor.variable(2).isInstanceOf[MixtureChoiceVar])
+        require(outcomeFactor.variable(2).isInstanceOf[MixtureChoiceSeqVar])
         val outcomeParent = outcomeFactor.variable(1)
-        new Closure(v, v.outcomes.head, choiceFactor, outcomeFactor,
-                    choiceParent match { case cp:CollapsedParameter => cp case _ => null.asInstanceOf[CollapsedParameter] },
-                    outcomeParent match { case cp:CollapsedParameter => cp case _ => null.asInstanceOf[CollapsedParameter] })
+        new Closure(v, v.outcomes.head.asInstanceOf[DiscreteMixtureSeqVar],
+                    choiceParent match { case cp:DirichletMultinomial => cp case _ => null.asInstanceOf[DirichletMultinomial] },
+                    outcomeParent match { case cp:CollapsedFiniteMixture[DirichletMultinomial] => cp case _ => null.asInstanceOf[CollapsedFiniteMixture[DirichletMultinomial]] })
       }
       case _ => null
     }
   }
-  class Closure(val choice:MixtureChoiceSeqVar, val outcome:MixtureSeqGeneratedVar, 
-                val cFactor:DiscreteTemplate#Factor, val oFactor:MixtureSeqGenerativeTemplate#Factor,
-                val collapsedChoiceParent: CollapsedParameter, val collapsedOutcomeParent:CollapsedParameter)
+  class Closure(val choice:MixtureChoiceSeqVar, val outcome:DiscreteMixtureSeqVar, 
+                val collapsedChoiceParent: DirichletMultinomial, val collapsedOutcomeParent:CollapsedFiniteMixture[DirichletMultinomial])
   extends CollapsedGibbsSamplerClosure
   {
+    assert(collapsedChoiceParent ne null)
+    assert(collapsedOutcomeParent ne null)
     def sample(implicit d:DiffList = null): Unit = {
-      val choiceParent = cFactor._2
+      val choiceParent = collapsedChoiceParent
       // Calculate distribution of new value
-      val oStat = oFactor.statistics
       val domainSize = choice.domain.elementDomain.size
       val seqSize = choice.length
       val distribution = new Array[Double](domainSize)
       forIndex(seqSize)(seqIndex => {
         // Remove sufficient statistics from collapsed dependencies
-        if (collapsedChoiceParent ne null) collapsedChoiceParent.updateChildStats(choice, -1.0)
-        if (collapsedOutcomeParent ne null) collapsedOutcomeParent.updateChildStats(outcome, -1.0)
+        var choiceIntValue = choice.intValue(seqIndex)
+        if (collapsedChoiceParent ne null) collapsedChoiceParent.increment(choiceIntValue, -1.0)
+        if (collapsedOutcomeParent ne null) collapsedOutcomeParent(choiceIntValue).increment(outcome.intValue(seqIndex), -1.0)
         var sum = 0.0
         forIndex(domainSize)(i => {
-          distribution(i) = choiceParent(i) * oFactor.template.prChoosing(oStat, seqIndex, i)
+          distribution(i) = collapsedChoiceParent(i) * collapsedOutcomeParent(i).pr(outcome.intValue(seqIndex))
           sum += distribution(i)
         })
         assert(sum == sum, "Distribution sum is NaN")
         assert(sum != Double.PositiveInfinity, "Distrubtion sum is infinity.")
+        // println("MixtureChoiceCollapsedDirichletGibbsSamplerHandler outcome="+outcome+" sum="+sum+" distribution="+(distribution.mkString(",")))
         // Sample
-        if (false) println("MixtureChoiceCollapsedGibbsSamplerHandler outcome="+outcome+" sum="+sum+" distribution="+(distribution.mkString(",")))
         // sum can be zero for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
-        if (sum == 0) choice.update(seqIndex, cc.factorie.random.nextInt(domainSize))
-        else choice.update(seqIndex, cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random))
+        if (sum == 0) choiceIntValue = cc.factorie.random.nextInt(domainSize)
+        else choiceIntValue = cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random)
+        choice.update(seqIndex, choiceIntValue)
         // Put back sufficient statitics of collapsed dependencies
-        if (collapsedChoiceParent ne null) collapsedChoiceParent.updateChildStats(choice, 1.0)
-        if (collapsedOutcomeParent ne null) collapsedOutcomeParent.updateChildStats(outcome, 1.0)
+        if (collapsedChoiceParent ne null) collapsedChoiceParent.increment(choiceIntValue, 1.0)
+        if (collapsedOutcomeParent ne null) collapsedOutcomeParent(choiceIntValue).increment(outcome.intValue(seqIndex), 1.0)
       }
     )}
   }

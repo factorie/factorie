@@ -110,10 +110,17 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions {
 object MutableProportionsEstimator extends Estimator[MutableProportions] {
   def estimate(d:MutableProportions, map:scala.collection.Map[Variable,Variable]): Unit = {
     val e = new DenseCountsProportions(d.length)
-    for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
+    for (child <- d.children) child match {
+      case x:DiscreteVar => e.increment(x.intValue, 1.0)(null)
+      case p:Proportions => forIndex(p.length)(i => e.increment(i, p(i))(null))
+    }
+    // TODO The above no longer works for weighted children!  
+    // This will be a problem for EM.
+    // Grep source for weightedGeneratedChildren to find all the places that may need fixing.
+    /*for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
       case x:DiscreteVar => e.increment(x.intValue, weight)(null)
       case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
-    }
+    }*/
     d.set(e)(null)
   }
 }

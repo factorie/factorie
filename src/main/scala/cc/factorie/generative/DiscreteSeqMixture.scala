@@ -23,7 +23,13 @@ class DiscreteSeqMixtureTemplate extends GenerativeTemplateWithStatistics3[Discr
   type ChildType <: DiscreteMixtureSeqVar
   def unroll1(d:DiscreteMixtureSeqVar) = Factor(d, d.components, d.choice)
   def unroll2(m:MixtureComponents[Proportions]) = for (d <- m.childrenOfClass[DiscreteMixtureSeqVar]) yield Factor(d, m, d.choice)
-  def unroll3(g:MixtureChoiceSeqVar) = for (d <- g.outcomesOfClass[DiscreteMixtureSeqVar]; if (classOf[DiscreteMixtureSeqVar].isAssignableFrom(d.getClass))) yield Factor(d, d.components, g)
+  def unroll3(g:MixtureChoiceSeqVar) = {
+    //g.outcomes.foreach(o => { println(o.getClass); println(classOf[DiscreteMixtureSeqVar].isAssignableFrom(o.getClass)) })
+    val ret =  for (d <- g.outcomesOfClass[DiscreteMixtureSeqVar]; if (classOf[DiscreteMixtureSeqVar].isAssignableFrom(d.getClass))) yield 
+      Factor(d, d.components, g)
+    //println("DiscreteSeqMixtureTemplate "+ret.size)
+    ret
+  }
   def prChoosing(s:StatisticsType, seqIndex:Int, mixtureIndex:Int) = pr(s._1(seqIndex).intValue, s._2, mixtureIndex)
   def logprChoosing(s:StatisticsType, seqIndex:Int, mixtureIndex:Int) = math.log(prChoosing(s, seqIndex, mixtureIndex))
   def pr(s:StatisticsType): Double = (0 until s._1.length).foldLeft(1.0)((p:Double,i:Int) => p * pr(s._1(i).intValue, s._2, s._3(i).intValue))
@@ -64,7 +70,7 @@ trait DiscreteMixtureSeqVar extends DiscreteSeqVariable with MixtureSeqGenerated
   //override def sampledValueChoosing(mixtureIndex:Int): Value = domain.getValue(components(choice.intValue).sampleInt)
 }
 
-abstract class DiscreteSeqMixture(components: FiniteMixture[Proportions], choice:MixtureChoiceSeqVar, initialValue:Seq[Int] = Nil) 
+abstract class DiscreteMixtureSeq(components: FiniteMixture[Proportions], choice:MixtureChoiceSeqVar, initialValue:Seq[Int] = Nil) 
          extends DiscreteSeqVariable(initialValue) with DiscreteMixtureSeqVar with GeneratedVar 
 {
   setComponents(components)

@@ -64,10 +64,15 @@ object GaussianMeanEstimator extends Estimator[GaussianMeanVariable] {
   def estimate(g:GaussianMeanVariable, map:scala.collection.Map[Variable,Variable]): Unit = {
     var m = 0.0
     var sum = 0.0
-    for ((child, weight) <- g.weightedGeneratedChildren(map)) child match {
+    for (child <- g.children) child match {
+      case x:RealVar => { m += x.doubleValue; sum += 1.0 } 
+    }
+    // TODO The above no longer works for weighted children!  
+    // This will be a problem for EM.
+    /*for ((child, weight) <- g.weightedGeneratedChildren(map)) child match {
       case x:RealVar => { m += x.doubleValue * weight; sum += weight }
       //case g:GaussianDistribution...
-    }
+    }*/
     g.set(m/sum)(null)
   }
 }
