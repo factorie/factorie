@@ -35,12 +35,12 @@ object DocumentClassifier1 {
  
   // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
   val model = classify.newModel[Label,Document];
-  val model2 = new Model(
+  /*val model2 = new Model(
       new TemplateWithDotStatistics2[Label,Document] {
         def unroll1(label:Label) = Factor(label, label.instance)
         def unroll2(instance:Document) = Factor(instance.label, instance)
       }
-  )
+  )*/
 
   def main(args:Array[String]): Unit = {
     if (args.length < 2) 
@@ -63,8 +63,8 @@ object DocumentClassifier1 {
     var testVariables = testSet.map(_ label)
     (trainVariables ++ testVariables).foreach(_.setRandomly())
 
-    println(model)
-    println(model.factors(trainVariables.head))
+    //println(model)
+    //println(model.factors(trainVariables.head))
 
     // Train and test
     val learner = new VariableSettingsSampler[Label](model) with SampleRank with GradientAscentUpdates

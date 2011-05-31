@@ -21,9 +21,6 @@ import cc.factorie.er._
     @since 0.8
  */
 
-trait InstanceType[+IT] {
-  type InstanceType = IT
-}
 trait LabelType[+LT] {
   type LabelType = LT
 }
@@ -31,25 +28,3 @@ trait LabelType[+LT] {
 abstract class InstanceVariable(val name:String) extends BinaryFeatureVectorVariable[String] with LabelType[LabelVariable[InstanceVariable]] {
   def label: LabelType
 }
-abstract class LabelVariable[+I<:InstanceVariable](labelString:String, val instance:I) extends cc.factorie.LabelVariable(labelString) {
-  type InstanceType = I
-}
-
-abstract class InstanceVariable2(val name:String, labelString:String) extends BinaryFeatureVectorVariable[String] with LabelType[LabelVariable[InstanceVariable]] {
-  def label: LabelType
-}
-
-abstract class Instance[L<:Label[This,L],This<:Instance[L,This]](val name:String) extends BinaryFeatureVectorVariable[String] {
-  this: This =>
-  //type VariableType <: Instance[L,This]
-  type GetterType <: InstanceGetter[L,This]
-  class GetterClass extends InstanceGetter[L,This]
-  def newGetter = new InstanceGetter[L,This]
-  def label: L 
-}
-
-class InstanceGetter[L<:Label[ThisInstance,L],ThisInstance<:Instance[L,ThisInstance]] extends Getter[ThisInstance] {
-  def newLabelGetter = new LabelGetter[ThisInstance,L]
-  def label = initOneToOne[L](newLabelGetter, instance => instance.label, (label:L) => label.instance)
-}
- 

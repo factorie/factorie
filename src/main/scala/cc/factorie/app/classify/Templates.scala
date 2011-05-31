@@ -17,18 +17,14 @@ import cc.factorie._
 import cc.factorie.er._
 
 /** Factor between label and observed instance vector */
-class LabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) {
-  def unroll1(label: L) = Factor(label, label.instance)
-  def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
-}
-class LabelInstanceTemplate2[L<:LabelVariable[InstanceVariable]](implicit lm:Manifest[L]) extends TemplateWithDotStatistics2[L,L#InstanceType]() {
+class LabelInstanceTemplate[L<:LabelVariable[InstanceVariable]](implicit lm:Manifest[L]) extends TemplateWithDotStatistics2[L,L#InstanceType]() {
   def unroll1(label: L) = Factor(label, label.instance)
   def unroll2(instance: L#InstanceType) = Factor(instance.label.asInstanceOf[L], instance)
 }
 
 /** Factor between label and observed instance vector */
-class SparseLabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) with SparseWeights {
+class SparseLabelInstanceTemplate[L<:LabelVariable[InstanceVariable]](implicit lm:Manifest[L]) extends TemplateWithDotStatistics2[L,L#InstanceType]() with SparseWeights {
   def unroll1(label: L) = Factor(label, label.instance)
-  def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
+  def unroll2(instance: L#InstanceType) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
 }
  

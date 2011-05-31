@@ -16,16 +16,7 @@ package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.er._
 
-abstract class Label[I<:Instance[This,I],This<:Label[I,This]](labelString:String, val _instance:I) extends cc.factorie.LabelVariable(labelString) {
-  this: This =>
-  type GetterType <: LabelGetter[I,This];
-  class GetterClass extends LabelGetter[I,This]
-  //type VariableType <: Label[I,This]
-  def newGetter = new LabelGetter[I,This]
-  def instance: I = _instance // Why was this necessary?  Why didn't simply (val instance:I) above work?
+abstract class LabelVariable[+I<:InstanceVariable](labelString:String, val instance:I) extends cc.factorie.LabelVariable(labelString) {
+  type InstanceType = I
 }
 
-class LabelGetter[I<:Instance[ThisLabel,I],ThisLabel<:Label[I,ThisLabel]] extends Getter[ThisLabel] {
-  def newInstanceGetter = new InstanceGetter[ThisLabel,I]
-  def instance = initOneToOne[I](newInstanceGetter, label => label.instance, (instance:I) => instance.label)
-}
