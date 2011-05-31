@@ -17,9 +17,9 @@ import cc.factorie._
 
 package object classify {
 
-  def newModel[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) =
+  def newModel[L<:LabelVariable[I],I<:InstanceVariable](implicit lm:Manifest[L],im:Manifest[I]) =
     new Model(
-      new LabelInstanceTemplate[L,I]
+      new LabelInstanceTemplate2[L]
     )
 
   def newObjective[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L], tm:Manifest[L#TargetType]) = 

@@ -34,9 +34,17 @@ abstract class Document[L<:Label[This,L],This<:Document[L,This]](override val na
   //def this(file:File) = this(file, file.getParentFile.getName)
   //def size = 3 // TODO implement this
 }
- 
+
 class DocumentGetter[L<:Label[ThisDocument,L],ThisDocument<:Document[L,ThisDocument]] extends cc.factorie.app.classify.InstanceGetter[L,ThisDocument] {
   //override def newLabelGetter = new LabelGetter[ThisDocument,L]
   //def label = initOneToOne[L](newLabelGetter, instance => instance.label, label => label.instance)
   def size = getOneWay(document => new IntegerVariable(document.vector.activeDomainSize))
 }
+
+abstract class DocumentVariable(name:String) extends cc.factorie.app.classify.InstanceVariable(name) {
+  def this(file:File, segmenter:StringSegmenter = alphaSegmenter) = {
+    this(file.toString)
+    segmenter(file).foreach(m => this += m.toString)
+  }
+}
+ 

@@ -22,55 +22,61 @@ import cc.factorie.app.classify
 
 object DocumentClassifier1 {
   
- // Define variable classes
- object DocumentDomain extends CategoricalsDomain[String]
- class Document(file:File) extends classify.document.Document[Label,Document](file) {
-   def domain = DocumentDomain
-   val label = new Label(file.getParentFile.getName, this)
- }
- object LabelDomain extends CategoricalDomain[String]
- class Label(labelString:String, document:Document) extends classify.Label[Document,Label](labelString, document) {
-   def domain = LabelDomain
- }
+  // Define variable classes
+  object DocumentDomain extends CategoricalsDomain[String];
+  class Document(file:File) extends classify.document.DocumentVariable(file) {
+    def domain = DocumentDomain
+    val label = new Label(file.getParentFile.getName, this)
+  }
+  object LabelDomain extends CategoricalDomain[String];
+  class Label(labelString:String, document:Document) extends classify.LabelVariable(labelString, document) {
+    def domain = LabelDomain
+  }
  
- // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
- val model = classify.newModel[Label,Document]
+  // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
+  val model = classify.newModel[Label,Document];
+  val model2 = new Model(
+      new TemplateWithDotStatistics2[Label,Document] {
+        def unroll1(label:Label) = Factor(label, label.instance)
+        def unroll2(instance:Document) = Factor(instance.label, instance)
+      }
+  )
 
- def main(args:Array[String]): Unit = {
-   if (args.length < 2) 
-     throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
+  def main(args:Array[String]): Unit = {
+    if (args.length < 2) 
+      throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 
-   // Read data and create Variables
-   var documents = new ArrayBuffer[Document];
-   for (directory <- args) {
-     val directoryFile = new File(directory)
-     if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
-     for (file <- new File(directory).listFiles; if (file.isFile)) {
-       //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
-       documents += new Document(file)
-     }
-   }
-   
-   // Make a test/train split
-   val (testSet, trainSet) = documents.shuffle.split(0.5)
-   var trainVariables = trainSet.map(_ label)
-   var testVariables = testSet.map(_ label)
-   (trainVariables ++ testVariables).foreach(_.setRandomly())
+    // Read data and create Variables
+    var documents = new ArrayBuffer[Document];
+    for (directory <- args) {
+      val directoryFile = new File(directory)
+      if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
+      for (file <- new File(directory).listFiles; if (file.isFile)) {
+        //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
+        documents += new Document(file)
+      }
+    }
 
-   println(model)
-   println(model.factors(trainVariables.head))
+    // Make a test/train split
+    val (testSet, trainSet) = documents.shuffle.split(0.5)
+    var trainVariables = trainSet.map(_ label)
+    var testVariables = testSet.map(_ label)
+    (trainVariables ++ testVariables).foreach(_.setRandomly())
 
-   // Train and test
-   val learner = new VariableSettingsSampler[Label](model) with SampleRank with GradientAscentUpdates
-   val predictor = new VariableSettingsSampler[Label](model)
-   learner.learningRate = 1.0
-   for (i <- 0 until 10) {
-     learner.processAll(trainVariables)
-     learner.learningRate *= 0.9
-     predictor.processAll(testVariables)
-     println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
-     println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))
-   }
+    println(model)
+    println(model.factors(trainVariables.head))
 
- }
+    // Train and test
+    val learner = new VariableSettingsSampler[Label](model) with SampleRank with GradientAscentUpdates
+    val predictor = new VariableSettingsSampler[Label](model)
+    learner.learningRate = 1.0
+    for (i <- 0 until 10) {
+      learner.processAll(trainVariables)
+      learner.learningRate *= 0.9
+      predictor.processAll(testVariables)
+      println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
+      println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))
+    }
+
+  }
 }

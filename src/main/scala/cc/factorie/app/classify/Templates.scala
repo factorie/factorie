@@ -21,10 +21,14 @@ class LabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest
   def unroll1(label: L) = Factor(label, label.instance)
   def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
 }
+class LabelInstanceTemplate2[L<:LabelVariable[InstanceVariable]](implicit lm:Manifest[L]) extends TemplateWithDotStatistics2[L,L#InstanceType]() {
+  def unroll1(label: L) = Factor(label, label.instance)
+  def unroll2(instance: L#InstanceType) = Factor(instance.label.asInstanceOf[L], instance)
+}
 
 /** Factor between label and observed instance vector */
 class SparseLabelInstanceTemplate[L<:Label[I,L],I<:Instance[L,I]](implicit lm:Manifest[L],im:Manifest[I]) extends TemplateWithDotStatistics2[L,I]()(lm,im) with SparseWeights {
-  def unroll1(label: L) = Factor(label,label.instance)
+  def unroll1(label: L) = Factor(label, label.instance)
   def unroll2(instance: I) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
 }
  
