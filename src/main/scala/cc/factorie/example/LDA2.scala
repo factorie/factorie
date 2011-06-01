@@ -40,7 +40,7 @@ object LDA2 {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
 
     // Read data and create generative variables
-    val phis = CollapsibleFiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01) with CategoricalProportions[String] {
+    val phis = CollapsibleFiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01, WordDomain) with CategoricalProportions[String] {
       override def apply(index:Int) : Double = {
         val result = super.apply(index)
         //println("LDA.phi.apply "+index+" "+result)

@@ -157,7 +157,7 @@ object MutableDirichletEstimator extends Estimator[MutableProportions] {
 
 // TODO Perhaps all Dirichlet* classes should be re-implemented in terms of "alpha:Masses" instead of "precision" in order to avoid some of this awkwardness.
 
-class GrowableDenseDirichlet(val alpha:Double /*, p:Seq[Double] = Nil*/ ) extends GrowableDenseCountsProportions(8) with MutableDirichlet with VarWithCollapsedType[GrowableDenseDirichletMultinomial] {
+class GrowableDenseDirichlet(val alpha:Double, val dimensionDomain: DiscreteDomain /*, p:Seq[Double] = Nil*/ ) extends GrowableDenseCountsProportions(8) with MutableDirichlet with VarWithCollapsedType[GrowableDenseDirichletMultinomial] {
   //def this(alpha:Double) = this(new GrowableUniformProportions(this), new RealVariableParameter(alpha))
   def mean = new GrowableUniformProportions(this)
   def precision = new RealFunction {
@@ -166,7 +166,7 @@ class GrowableDenseDirichlet(val alpha:Double /*, p:Seq[Double] = Nil*/ ) extend
     def parents = List(GrowableDenseDirichlet.this) // TODO But note that GrowableDenseDirichlet doesn't have this as a child.
   }
   def newCollapsed = {
-    val dm = new GrowableDenseDirichletMultinomial(alpha)
+    val dm = new GrowableDenseDirichletMultinomial(alpha, dimensionDomain)
     for (child <- children) child match {
       case mcs:MixtureComponents[_] => {
         val indexInMixture = mcs.indexOf(this)

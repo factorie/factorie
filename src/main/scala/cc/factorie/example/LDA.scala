@@ -38,7 +38,7 @@ object LDADemo {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
 
     // Read data and create generative variables
-    val phis = CollapsibleFiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01) with CategoricalProportions[String] {
+    val phis = CollapsibleFiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01, WordDomain) with CategoricalProportions[String] {
       override def apply(index:Int) : Double = {
         val result = super.apply(index)
         //println("LDA.phi.apply "+index+" "+result)
@@ -48,7 +48,7 @@ object LDADemo {
       override def toString = "Phi(" + countsSeq.take(20).toList + ")"
     })
     val alphaMean = new DenseProportions(numTopics)
-    val alphaPrecision = new RealVariableParameter(numTopics)
+    val alphaPrecision = new RealVariableParameter(50) //(numTopics)
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
       println("Reading files from directory " + directory)
@@ -77,15 +77,23 @@ object LDADemo {
     collapsedVariables ++= documents.map(_.theta)
     val sampler = new CollapsedGibbsSampler(collapsedVariables)
     val startTime = System.currentTimeMillis
-    for (i <- 1 to 20) {
-      zs.foreach(sampler.process(_))
-      print("."); Console.flush
+    for (i <- 1 to 100) {
+      var zChangeCount = 0
+      for (z <- zs) {
+        val oldValue = z.value
+        sampler.process(z)
+        val newValue = z.value
+        if (oldValue != newValue) zChangeCount += 1
+      }
+      print(zChangeCount*1.0/zs.size)
+      print(" "); Console.flush
       if (i % 5 == 0) {
         println("Iteration " + i)
         // (phis ++ documents.map(_.theta)).foreach(_.export)
         sampler.export()
         //(phis ++ documents.map(_.theta)).foreach(p => p.set(sampler.collapsed(p).value)(null))
-        DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
+        // Turned off hyperparameter optimization
+        //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
         phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
         //forIndex(numTopics)(i => println("Topic " +i+"  "+ sampler.collapsed(phis).asInstanceOf[CollapsedFiniteMixture[DirichletMultinomial]].apply(i).top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))

@@ -68,10 +68,10 @@ class DenseDirichletMultinomial(val mean:Proportions, val precision:RealVarParam
   //def estimate(map:Map[Variable,Variable]): Unit = throw new Error
 }
 
-class GrowableDenseDirichletMultinomial(val alpha:Double) extends GrowableDenseCountsProportions with DirichletMultinomial {
+class GrowableDenseDirichletMultinomial(val alpha:Double, val dimensionDomain:DiscreteDomain) extends GrowableDenseCountsProportions with DirichletMultinomial {
   lazy val mean = new GrowableUniformProportions(this)
   lazy val precision = new RealFunction {
-    def doubleValue = alpha * GrowableDenseDirichletMultinomial.this.length
+    def doubleValue = alpha * dimensionDomain.size //GrowableDenseDirichletMultinomial.this.length
     def pr = 1.0 // TODO Remove this; no longer necessary
     def parents = List(GrowableDenseDirichletMultinomial.this) // TODO But note that GrowableDenseDirichletMultinomial doesn't have this as a child.
   }
