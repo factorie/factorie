@@ -21,7 +21,7 @@ import cc.factorie.er._
     @since 0.8
  */
 
-trait LabelType[+LT] {
+trait LabelType[+LT<:LabelVariable[_]] {
   type LabelType = LT
 }
 

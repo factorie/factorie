@@ -16,7 +16,7 @@
 
 package cc.factorie.util;
 
-/** New functionality on Traversable instances, available by implicit conversion in the cc.factorie.factorie package object. */
+/** New functionality on String instances, available by implicit conversion in the cc.factorie.factorie package object. */
 trait StringExtras {
   val s: String
 

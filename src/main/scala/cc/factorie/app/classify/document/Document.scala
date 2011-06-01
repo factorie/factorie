@@ -15,7 +15,7 @@
 package cc.factorie.app.classify.document
 import cc.factorie._
 import cc.factorie.er._
-import cc.factorie.app.classify.Label
+import cc.factorie.app.classify.LabelVariable
 import cc.factorie.app.strings._
 import scala.util.matching.Regex
 import scala.io.Source

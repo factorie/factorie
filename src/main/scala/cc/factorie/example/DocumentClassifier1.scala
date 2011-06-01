@@ -56,6 +56,9 @@ object DocumentClassifier1 {
         documents += new Document(file)
       }
     }
+    
+    val infogains = new classify.InfoGain(documents)
+    println(infogains.top(20).mkString)
 
     // Make a test/train split
     val (testSet, trainSet) = documents.shuffle.split(0.5)

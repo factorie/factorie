@@ -22,6 +22,9 @@ import cc.factorie._
 
 trait ProportionsValue extends IndexedSeq[Double] {
   def sampleInt: Int = maths.nextDiscrete(this)
+  def entropy: Double = maths.entropy(this)
+  def klDivergence(p:ProportionsValue): Double = maths.klDivergence(this, p)
+  def jsDivergence(p:ProportionsValue): Double = maths.jensenShannonDivergence(this, p)
 }
 class ProportionsArrayValue(value:Array[Double]) extends ProportionsValue {
   private val array = value
@@ -62,8 +65,6 @@ with VarAndValueGenericDomain[Proportions,ProportionsValue]
 
   class DiscretePr(val index:Int, val pr:Double)
   def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
-  def klDivergence(p:Proportions): Double = maths.klDivergence(this, p)
-  def jsDivergence(p:Proportions): Double = maths.jensenShannonDivergence(this, p)
 }
 
 /** Proportions for which the indicies correspond to CategoricalValues.
@@ -73,7 +74,7 @@ trait CategoricalProportions[A] extends Proportions {
   // TODO change "value:String" to "category:A"
   class DiscretePr(override val index:Int, override val pr:Double, val value:String) extends super.DiscretePr(index, pr)
   override def top(n:Int): Seq[DiscretePr] = {
-    val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList
+    val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n) //.toList
     entries.map({case (p,i)=>new DiscretePr(i, p, categoricalDomain.getCategory(i).toString)})
   }
   def topValues(n:Int) = top(n).toList.map(_.value)
