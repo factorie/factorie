@@ -27,7 +27,7 @@ object WordSegmenterDemo {
   class Label(b:Boolean, val token:Token) extends LabelVariable(b) {
     def domain = LabelDomain
   }
-  object TokenDomain extends CategoricalsDomain[String]
+  object TokenDomain extends CategoricalVectorDomain[String]
   class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
     def domain = TokenDomain
     val label = new Label(isWordStart, this)

@@ -23,7 +23,7 @@ import cc.factorie.app.classify
 object DocumentClassifier1 {
   
   // Define variable classes
-  object DocumentDomain extends CategoricalsDomain[String];
+  object DocumentDomain extends CategoricalVectorDomain[String];
   class Document(file:File) extends classify.document.DocumentVariable(file) {
     def domain = DocumentDomain
     val label = new Label(file.getParentFile.getName, this)

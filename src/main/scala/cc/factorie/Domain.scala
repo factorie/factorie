@@ -24,9 +24,9 @@ import util.ClassPathUtils
     This most generic superclass of all Domains does not provide much functionality.
     Key functionality of subclasses:
     VectorDomain provides the maximum dimensionality of its vectors.
-    DiscretesDomain have a dimensionDomain:DiscreteDomain,
+    DiscreteVectorDomain have a dimensionDomain:DiscreteDomain,
      providing a size and DiscreteValue objects.
-    DiscreteDomain extends DiscretesDomain, having single value members: DiscreteValue;
+    DiscreteDomain extends DiscreteVectorDomain, having single value members: DiscreteValue;
      it is its own dimensionDomain.
     CategoricalDomain provides a densely-packed mapping between category values and integers.
     @author Andrew McCallum

@@ -25,7 +25,7 @@ import collection.mutable.ArrayBuffer
 object ChainNER1ML {
 
   // Define the variable classes
-  object TokenDomain extends CategoricalsDomain[String]
+  object TokenDomain extends CategoricalVectorDomain[String]
   class Token(word: String, labelString: String) extends labeled.Token[Sentence, Label, Token](word) {
     val label = new Label(labelString, this)
     def domain = TokenDomain

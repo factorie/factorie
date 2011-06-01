@@ -17,34 +17,34 @@ import cc.factorie.la._
 import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
 
-trait DiscretesVar extends VectorVar with VarAndValueType[DiscretesVar,DiscretesValue] {
-  def domain: DiscretesDomain
+trait DiscreteVectorVar extends VectorVar with VarAndValueType[DiscreteVectorVar,DiscreteVectorValue] {
+  def domain: DiscreteVectorDomain
   def contains(dimension:Int): Boolean = vector.apply(dimension) != 0.0
 }
 
 /** A vector with dimensions corresponding to a DiscreteDomain, and with Double weights for each dimension, represented by a sparse vector. */
-abstract class DiscretesVariable extends VectorVariable with DiscretesVar {
+abstract class DiscreteVectorVariable extends VectorVariable with DiscreteVectorVar {
   thisVariable =>
-  _set(new SparseVector(domain.dimensionSize) with DiscretesValue { def domain = thisVariable.domain })
+  _set(new SparseVector(domain.dimensionSize) with DiscreteVectorValue { def domain = thisVariable.domain })
 }
 
 /** A sparse binary vector with length determined by a DiscreteDomain */
-trait SparseBinaryDiscretesVar extends DiscretesVar with VarAndValueType[SparseBinaryDiscretesVar,SparseBinaryVector with DiscretesValue] {
-  //type ValueType <: cc.factorie.la.SparseBinaryVector with DiscretesValue
+trait SparseBinaryDiscreteVectorVar extends DiscreteVectorVar with VarAndValueType[SparseBinaryDiscreteVectorVar,SparseBinaryVector with DiscreteVectorValue] {
+  //type ValueType <: cc.factorie.la.SparseBinaryVector with DiscreteVectorValue
   def length = domain.dimensionSize //allocSize // TODO Remove this?
   //def apply(i:Int) = vector.apply(i)
   def activeDomain = vector.activeDomain
   def zero(): Unit = value.zero()
-  def +=(i:Int): Unit = { if (frozen) throw new Error("Cannot append to frozen SparseBinaryDiscretesVar."); value.include(i) }
+  def +=(i:Int): Unit = { if (frozen) throw new Error("Cannot append to frozen SparseBinaryDiscreteVectorVar."); value.include(i) }
   //def ++=(is:Iterable[Int]): Unit = is.foreach(i => vector.+=(i)) // Conflicts with ++=(Iterable[T])
   var frozen = false
   def freeze() = frozen = true
   override def isConstant = frozen
 }
 
-abstract class SparseBinaryDiscretesVariable extends VectorVariable with SparseBinaryDiscretesVar {
+abstract class SparseBinaryDiscreteVectorVariable extends VectorVariable with SparseBinaryDiscreteVectorVar {
   thisVariable =>
-  _set(new cc.factorie.la.SparseBinaryVector(-1) with DiscretesValue {
+  _set(new cc.factorie.la.SparseBinaryVector(-1) with DiscreteVectorValue {
     def domain = thisVariable.domain
     override def length = domain.dimensionSize
   })
@@ -53,7 +53,7 @@ abstract class SparseBinaryDiscretesVariable extends VectorVariable with SparseB
 
 
 /** A single discrete variable */
-trait DiscreteVar extends DiscretesVar with VarAndValueType[DiscreteVar,DiscreteValue] {
+trait DiscreteVar extends DiscreteVectorVar with VarAndValueType[DiscreteVar,DiscreteValue] {
   def domain: DiscreteDomain
   /*@inline final*/ def intValue = value.intValue
   //def activeDomain = List(intValue) // TODO try to make this implementation possible: = value

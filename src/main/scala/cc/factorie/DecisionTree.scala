@@ -20,7 +20,7 @@ import cc.factorie.generative.DenseCountsProportions
 /** Statistics for factors who scores are the log-probability of 
     label S1 given feature vector S2, according to a decision tree.
     @author Arti Ramesh */
-trait DecisionTreeStatistics2[S1<:DiscreteValue,S2<:DiscretesValue]
+trait DecisionTreeStatistics2[S1<:DiscreteValue,S2<:DiscreteVectorValue]
 extends VectorStatistics2[S1,S2] {
   // Number of different values taken on by s._1
   val numOutcomes: Int = statisticsDomains(0).asInstanceOf[DiscreteDomain].size
@@ -68,7 +68,7 @@ extends VectorStatistics2[S1,S2] {
 /** A template for factors who scores are the log-probability of 
     label S1 given feature vector S2, according to a decision tree.
     @author Andrew McCallum */
-abstract class DecisionTreeTemplateWithStatistics2[S1<:DiscreteVar,S2<:DiscretesVar](implicit m1:Manifest[S1], m2:Manifest[S2])
+abstract class DecisionTreeTemplateWithStatistics2[S1<:DiscreteVar,S2<:DiscreteVectorVar](implicit m1:Manifest[S1], m2:Manifest[S2])
 extends Template2[S1,S2] with DecisionTreeStatistics2[S1#ValueType,S2#ValueType] {
   //def statistics(s1:S1, s2:S2) = Stat(s1, s2)
   def statistics(values:Values) = Stat(values._1, values._2)

@@ -34,7 +34,7 @@ object SpanNER1 {
   var verbose = false
 
   // The variable classes
-  object TokenDomain extends CategoricalsDomain[String]
+  object TokenDomain extends CategoricalVectorDomain[String]
   class Token(word:String, val trueLabelString:String) extends tokenseq.Token[Sentence,Token](word) {
     def domain = TokenDomain
     // TODO Consider instead implementing truth with true spans in VariableSeqWithSpans. 
@@ -117,10 +117,10 @@ object SpanNER1 {
     // Bias term on each individual label 
     //new TemplateWithDotStatistics1[Label],
     // Token-Label within Span
-    new SpanLabelTemplate with DotStatistics2[CategoricalsValue[String],Label#Value] { 
+    new SpanLabelTemplate with DotStatistics2[CategoricalVectorValue[String],Label#Value] { 
       def statistics(v:Values) = {
         // TODO Yipes, this is awkward, but more convenient infrastruture could be build.
-        var vector = new cc.factorie.la.SparseVector(v._1.head.value.length) with CategoricalsValue[String] {
+        var vector = new cc.factorie.la.SparseVector(v._1.head.value.length) with CategoricalVectorValue[String] {
           val domain = v._1.head.value.domain
         }
         for (token <- v._1) 
