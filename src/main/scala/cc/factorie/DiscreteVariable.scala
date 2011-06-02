@@ -73,6 +73,9 @@ abstract class DiscreteVariable extends VectorVariable with MutableDiscreteVar w
   def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue) }
   def this(initialInt:Int) = { this(); _set(domain.getValue(initialInt)) }
   // Method _set() is defined in VectorVariable
+  // Without DiffList
+  protected def initialValue_=(newValue:ValueType) = _set(newValue)
+  // With DiffList
   def set(newValue:ValueType)(implicit d:DiffList): Unit = if (newValue ne value) {
     assert((newValue eq null) || newValue.domain == domain)
     if (d ne null) d += new DiscreteVariableDiff(value, newValue)

@@ -25,7 +25,7 @@ class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:M
   def defaultHandlers = Seq(
       GeneratedVarCollapsedGibbsSamplerHandler, 
       MixtureChoiceCollapsedGibbsSamplerHandler, 
-      MixtureChoiceSeqCollapsedDirichletGibbsSamplerHandler)
+      PlatedMixtureChoiceCollapsedDirichletGibbsSamplerHandler)
   handlers ++= defaultHandlers
   val cacheClosures = true
   val closures = new HashMap[Variable, CollapsedGibbsSamplerClosure]
@@ -179,31 +179,31 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
   }
 }
 
-object MixtureChoiceSeqCollapsedDirichletGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
+object PlatedMixtureChoiceCollapsedDirichletGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
   def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
     if (v.size != 1) return null
     v.head match {
-      case v: MixtureChoiceSeqVar => {
+      case v: PlatedMixtureChoiceVar => {
         require(v.outcomes.size == 1) // TODO write code to handle more outcomes.
-        if (! v.outcomes.head.isInstanceOf[DiscreteMixtureSeqVar]) return null
+        if (! v.outcomes.head.isInstanceOf[PlatedDiscreteMixtureVar]) return null
         require(factors.size == 2, "factors size = "+factors.size)
         //println(factors(0)); println(factors(1))
-        val choiceFactor = factors(1).copy(sampler.collapsedMap).asInstanceOf[DiscreteSeqTemplate#Factor]
-        val outcomeFactor = factors(0).copy(sampler.collapsedMap).asInstanceOf[DiscreteSeqMixtureTemplate#Factor]
+        val choiceFactor = factors(1).copy(sampler.collapsedMap).asInstanceOf[PlatedDiscreteTemplate#Factor]
+        val outcomeFactor = factors(0).copy(sampler.collapsedMap).asInstanceOf[PlatedDiscreteMixtureTemplate#Factor]
         if (! outcomeFactor._2.isInstanceOf[CollapsedFiniteMixture[DirichletMultinomial]]) return null
         val choiceParent = choiceFactor._2
         require(outcomeFactor.numVariables == 3)
         require(outcomeFactor.variable(1).isInstanceOf[Parameter])
-        require(outcomeFactor.variable(2).isInstanceOf[MixtureChoiceSeqVar])
+        require(outcomeFactor.variable(2).isInstanceOf[PlatedMixtureChoiceVar])
         val outcomeParent = outcomeFactor.variable(1)
-        new Closure(v, v.outcomes.head.asInstanceOf[DiscreteMixtureSeqVar],
+        new Closure(v, v.outcomes.head.asInstanceOf[PlatedDiscreteMixtureVar],
                     choiceParent match { case cp:DirichletMultinomial => cp case _ => null.asInstanceOf[DirichletMultinomial] },
                     outcomeParent match { case cp:CollapsedFiniteMixture[DirichletMultinomial] => cp case _ => null.asInstanceOf[CollapsedFiniteMixture[DirichletMultinomial]] })
       }
       case _ => null
     }
   }
-  class Closure(val choice:MixtureChoiceSeqVar, val outcome:DiscreteMixtureSeqVar, 
+  class Closure(val choice:PlatedMixtureChoiceVar, val outcome:PlatedDiscreteMixtureVar, 
                 val collapsedChoiceParent: DirichletMultinomial, val collapsedOutcomeParent:CollapsedFiniteMixture[DirichletMultinomial])
   extends CollapsedGibbsSamplerClosure
   {

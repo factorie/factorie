@@ -18,14 +18,14 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-class DiscreteSeqMixtureTemplate extends GenerativeTemplateWithStatistics3[DiscreteMixtureSeqVar,MixtureComponents[Proportions],MixtureChoiceSeqVar] with MixtureSeqGenerativeTemplate {
-  type TemplateType <: DiscreteSeqMixtureTemplate
-  type ChildType <: DiscreteMixtureSeqVar
-  def unroll1(d:DiscreteMixtureSeqVar) = Factor(d, d.components, d.choice)
-  def unroll2(m:MixtureComponents[Proportions]) = for (d <- m.childrenOfClass[DiscreteMixtureSeqVar]) yield Factor(d, m, d.choice)
-  def unroll3(g:MixtureChoiceSeqVar) = {
+class PlatedDiscreteMixtureTemplate extends GenerativeTemplateWithStatistics3[PlatedDiscreteMixtureVar,MixtureComponents[Proportions],PlatedMixtureChoiceVar] with PlatedMixtureGenerativeTemplate {
+  type TemplateType <: PlatedDiscreteMixtureTemplate
+  type ChildType <: PlatedDiscreteMixtureVar
+  def unroll1(d:PlatedDiscreteMixtureVar) = Factor(d, d.components, d.choice)
+  def unroll2(m:MixtureComponents[Proportions]) = for (d <- m.childrenOfClass[PlatedDiscreteMixtureVar]) yield Factor(d, m, d.choice)
+  def unroll3(g:PlatedMixtureChoiceVar) = {
     //g.outcomes.foreach(o => { println(o.getClass); println(classOf[DiscreteMixtureSeqVar].isAssignableFrom(o.getClass)) })
-    val ret =  for (d <- g.outcomesOfClass[DiscreteMixtureSeqVar]; if (classOf[DiscreteMixtureSeqVar].isAssignableFrom(d.getClass))) yield 
+    val ret =  for (d <- g.outcomesOfClass[PlatedDiscreteMixtureVar]; if (classOf[PlatedDiscreteMixtureVar].isAssignableFrom(d.getClass))) yield 
       Factor(d, d.components, g)
     //println("DiscreteSeqMixtureTemplate "+ret.size)
     ret
@@ -44,11 +44,11 @@ class DiscreteSeqMixtureTemplate extends GenerativeTemplateWithStatistics3[Discr
   def sampledValue(domain:DiscreteDomain, proportions:Seq[Proportions], mixtureIndices:Seq[Int]): Seq[DiscreteValue] =
     mixtureIndices.map(i => domain.getValue(proportions(i).sampleInt))
 }
-object DiscreteSeqMixtureTemplate extends DiscreteSeqMixtureTemplate
+object PlatedDiscreteMixtureTemplate extends PlatedDiscreteMixtureTemplate
 
-trait DiscreteMixtureSeqVar extends DiscreteSeqVariable with MixtureSeqGeneratedVar {
-  val generativeTemplate = DiscreteSeqMixtureTemplate
-  def generativeFactor = new DiscreteSeqMixtureTemplate.Factor(this, components, choice)
+trait PlatedDiscreteMixtureVar extends DiscreteSeqVariable with PlatedMixtureGeneratedVar {
+  val generativeTemplate = PlatedDiscreteMixtureTemplate
+  def generativeFactor = new PlatedDiscreteMixtureTemplate.Factor(this, components, choice)
   private var _components: FiniteMixture[Proportions] = null
   def components: FiniteMixture[Proportions] = _components
   def setComponents(c:FiniteMixture[Proportions]): Unit = {
@@ -56,9 +56,9 @@ trait DiscreteMixtureSeqVar extends DiscreteSeqVariable with MixtureSeqGenerated
     _components = c
     _components.addChild(this)(null)
   }
-  private var _choice: MixtureChoiceSeqVar = null
-  def choice: MixtureChoiceSeqVar = _choice
-  def setChoice(c:MixtureChoiceSeqVar): Unit = {
+  private var _choice: PlatedMixtureChoiceVar = null
+  def choice: PlatedMixtureChoiceVar = _choice
+  def setChoice(c:PlatedMixtureChoiceVar): Unit = {
     if (_choice ne null) _choice.removeOutcome(this)
     _choice = c
     _choice.addOutcome(this)
@@ -70,15 +70,15 @@ trait DiscreteMixtureSeqVar extends DiscreteSeqVariable with MixtureSeqGenerated
   //override def sampledValueChoosing(mixtureIndex:Int): Value = domain.getValue(components(choice.intValue).sampleInt)
 }
 
-abstract class DiscreteMixtureSeq(components: FiniteMixture[Proportions], choice:MixtureChoiceSeqVar, initialValue:Seq[Int] = Nil) 
-         extends DiscreteSeqVariable(initialValue) with DiscreteMixtureSeqVar with GeneratedVar 
+abstract class PlatedDiscreteMixture(components: FiniteMixture[Proportions], choice:PlatedMixtureChoiceVar, initialValue:Seq[Int] = Nil) 
+         extends DiscreteSeqVariable(initialValue) with PlatedDiscreteMixtureVar with GeneratedVar 
 {
   setComponents(components)
   setChoice(choice)
 }
 
-abstract class CategoricalMixtureSeq[A](components: FiniteMixture[Proportions], choice:MixtureChoiceSeqVar, initialValue:Seq[A] = Nil) 
-         extends CategoricalSeqVariable(initialValue) with DiscreteMixtureSeqVar with GeneratedVar 
+abstract class PlatedCategoricalMixture[A](components: FiniteMixture[Proportions], choice:PlatedMixtureChoiceVar, initialValue:Seq[A] = Nil) 
+         extends CategoricalSeqVariable(initialValue) with PlatedDiscreteMixtureVar with GeneratedVar 
 {
   setComponents(components)
   setChoice(choice)

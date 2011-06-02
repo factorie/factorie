@@ -146,7 +146,7 @@ class CollapsedFiniteMixture[+P<:CollapsedParameter](theComponents:Seq[P]) exten
         //println("CollapsedFiniteMixture.updateChildStats "+mgv+" choice="+mgv.choice)
         components(mgv.choice.intValue).updateChildStats(mgv, weight)
       }
-      case msgv:MixtureSeqGeneratedVar => throw new Error("MixtureSeqGeneratedVar not yet handled.")
+      case pmgv:PlatedMixtureGeneratedVar => throw new Error("MixtureSeqGeneratedVar not yet handled.")
       //case _ => {} // TODO Should we really not throw an error here?
     }
   }

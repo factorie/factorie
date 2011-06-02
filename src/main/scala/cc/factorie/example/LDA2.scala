@@ -27,14 +27,14 @@ object LDA2 {
   val numTopics = 10
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
-  class Zs(p: Proportions) extends MixtureChoiceSeq(p, Nil) { def domain = ZSeqDomain }
+  class Zs(p: Proportions) extends PlatedMixtureChoice(p, Nil) { def domain = ZSeqDomain }
   //object WordDomain extends CategoricalDomain[String]
   object WordSeqDomain extends CategoricalSeqDomain[String] // { def elementDomain = WordDomain }
   val WordDomain = WordSeqDomain.elementDomain
-  class Words(ps: CollapsibleFiniteMixture[Dirichlet], zs: MixtureChoiceSeq) extends CategoricalMixtureSeq[String](ps, zs, Nil) {
+  class Words(ps: CollapsibleFiniteMixture[Dirichlet], zs: PlatedMixtureChoice) extends PlatedCategoricalMixture[String](ps, zs, Nil) {
     def domain = WordSeqDomain
   }
-  class Document(val file:String, var theta: DenseDirichlet, phis:CollapsibleFiniteMixture[Dirichlet], zs:MixtureChoiceSeq) extends Words(phis, zs)
+  class Document(val file:String, var theta: DenseDirichlet, phis:CollapsibleFiniteMixture[Dirichlet], zs:PlatedMixtureChoice) extends Words(phis, zs)
 
   def main(args: Array[String]): Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
@@ -70,7 +70,7 @@ object LDA2 {
 
     println("\nRead " + documents.size + " documents with " + documents.foldLeft(0)(_ + _.size) + " tokens and " + WordDomain.size + " types.")
     // Fit model
-    val zss: Seq[MixtureChoiceSeqVar] = documents.map(document => document.choice)
+    val zss: Seq[PlatedMixtureChoiceVar] = documents.map(document => document.choice)
 
     //val collapsed = new ArrayBuffer[CollapsedParameter]; collapsed ++= phis; collapsed ++= documents.map(_.theta)
     //for (c <- collapsed) println("LDA collapsed parent="+c.getClass.getName+"@"+c.hashCode+" #children="+c.children.size)

@@ -43,6 +43,7 @@ trait VectorVar extends Variable with VarAndValueType[VectorVar,Vector] {
     and should never be called by users. */
 abstract class VectorVariable extends VectorVar {
   def this(initialValue:Vector) = { this(); _set(initialValue) }
+  def init(initialValue:Value) = { _set(initialValue) }
   private var _value: ValueType = null.asInstanceOf[ValueType]
   def value: Value = _value
   @inline protected final def _set(newValue:ValueType): Unit = _value = newValue

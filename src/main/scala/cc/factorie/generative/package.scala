@@ -24,8 +24,8 @@ package object generative {
   val defaultGenerativeModel = new Model(
       new DiscreteTemplate, 
       new DiscreteMixtureTemplate,
-      new DiscreteSeqTemplate,
-      new DiscreteSeqMixtureTemplate,
+      new PlatedDiscreteTemplate,
+      new PlatedDiscreteMixtureTemplate,
       new GaussianTemplate)
 
   implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {

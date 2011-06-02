@@ -63,8 +63,8 @@ trait Dirichlet extends Proportions with GeneratedVar with CollapsibleParameter 
         require(indexInMixture >= 0)
         for (grandchild <- mcs) grandchild match {
           case dmv:DiscreteMixtureVar => if (dmv.choice.intValue == indexInMixture) result += dmv.value
-          case dmsv:DiscreteMixtureSeqVar => forIndex(dmsv.length)(seqIndex => {
-            if (dmsv.choice.intValue(seqIndex) == indexInMixture) result += dmsv.value(seqIndex)
+          case pdmv:PlatedDiscreteMixtureVar => forIndex(pdmv.length)(seqIndex => {
+            if (pdmv.choice.intValue(seqIndex) == indexInMixture) result += pdmv.value(seqIndex)
           })
         }
       }
@@ -117,12 +117,12 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter,
           require(indexInMixture >= 0)
           for (grandchild <- mcs) grandchild match {
             case dmv:DiscreteMixtureVar => if (dmv.choice.intValue == indexInMixture) dm.increment(dmv.intValue, 1.0)(null)
-            case dmsv:DiscreteMixtureSeqVar => forIndex(dmsv.length)(seqIndex => {
-              if (dmsv.choice.intValue(seqIndex) == indexInMixture) dm.increment(dmsv.intValue(seqIndex), 1.0)(null)
+            case pdmv:PlatedDiscreteMixtureVar => forIndex(pdmv.length)(seqIndex => {
+              if (pdmv.choice.intValue(seqIndex) == indexInMixture) dm.increment(pdmv.intValue(seqIndex), 1.0)(null)
             })
           }
       }
-      case gdsv:GeneratedDiscreteSeqVar => gdsv.foreach(discreteValue => dm.increment(discreteValue.intValue, 1.0)(null))
+      case pgdv:PlatedGeneratedDiscreteVar => pgdv.foreach(discreteValue => dm.increment(discreteValue.intValue, 1.0)(null))
       case gdv:GeneratedDiscreteVar => dm.increment(gdv.intValue, 1.0)(null)
     }
     //println("DenseDirichletMultinomial countsTotal="+dm.countsTotal)
@@ -173,8 +173,8 @@ class GrowableDenseDirichlet(val alpha:Double, val dimensionDomain: DiscreteDoma
         require(indexInMixture >= 0)
         for (grandchild <- mcs.children) grandchild match {
           case dmv:DiscreteMixtureVar => if (dmv.choice.intValue == indexInMixture) dm.increment(dmv.intValue, 1.0)(null)
-          case dmsv:DiscreteMixtureSeqVar => forIndex(dmsv.length)(seqIndex => {
-            if (dmsv.choice.intValue(seqIndex) == indexInMixture) dm.increment(dmsv.intValue(seqIndex), 1.0)(null)
+          case pdmv:PlatedDiscreteMixtureVar => forIndex(pdmv.length)(seqIndex => {
+            if (pdmv.choice.intValue(seqIndex) == indexInMixture) dm.increment(pdmv.intValue(seqIndex), 1.0)(null)
           })
         }
       }

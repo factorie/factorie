@@ -17,9 +17,9 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
 
-class DiscreteSeqTemplate extends GenerativeTemplateWithStatistics2[GeneratedDiscreteSeqVar,Proportions] {
-  def unroll1(d:GeneratedDiscreteSeqVar) = Factor(d, d.proportions)
-  def unroll2(p:Proportions) = for (d <- p.childrenOfClass[GeneratedDiscreteSeqVar]) yield Factor(d, p)
+class PlatedDiscreteTemplate extends GenerativeTemplateWithStatistics2[PlatedGeneratedDiscreteVar,Proportions] {
+  def unroll1(d:PlatedGeneratedDiscreteVar) = Factor(d, d.proportions)
+  def unroll2(p:Proportions) = for (d <- p.childrenOfClass[PlatedGeneratedDiscreteVar]) yield Factor(d, p)
   def logpr(s:Stat) = math.log(pr(s))
   def pr(s:Stat): Double = pr(s._1, s._2)
   def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
@@ -30,11 +30,11 @@ class DiscreteSeqTemplate extends GenerativeTemplateWithStatistics2[GeneratedDis
   //def sampledIntValue(s:Stat): Int = s._2.sampleInt
   //def sampledIntValue(d:DiscreteSeqDomain, p:ProportionsValue): DiscreteValue = d(p.sampleInt)
 }
-object DiscreteSeqTemplate extends DiscreteSeqTemplate
+object PlatedDiscreteTemplate extends PlatedDiscreteTemplate
 
-trait GeneratedDiscreteSeqVar extends DiscreteSeqVariable with MutableGeneratedVar {
-  val generativeTemplate = DiscreteSeqTemplate
-  def generativeFactor = new DiscreteSeqTemplate.Factor(this, proportions)
+trait PlatedGeneratedDiscreteVar extends DiscreteSeqVariable with MutableGeneratedVar {
+  val generativeTemplate = PlatedDiscreteTemplate
+  def generativeFactor = new PlatedDiscreteTemplate.Factor(this, proportions)
   private var _proportions: Proportions = null
   def proportions: Proportions = _proportions
   def setProportions(p:Proportions): Unit = {
@@ -46,12 +46,12 @@ trait GeneratedDiscreteSeqVar extends DiscreteSeqVariable with MutableGeneratedV
   //override def pr = proportions(this.intValue)
 }
 
-abstract class DiscreteSeq(proportions:Proportions, initialValue:Seq[Int]) extends DiscreteSeqVariable(initialValue) with GeneratedDiscreteSeqVar {
+abstract class PlatedDiscrete(proportions:Proportions, initialValue:Seq[Int]) extends DiscreteSeqVariable(initialValue) with PlatedGeneratedDiscreteVar {
   setProportions(proportions)
 }
 
-trait GeneratedCategoricalSeqVar[A] extends CategoricalSeqVariable[A] with GeneratedDiscreteSeqVar
+trait PlatedGeneratedCategoricalVar[A] extends CategoricalSeqVariable[A] with PlatedGeneratedDiscreteVar
 
-abstract class CategoricalSeq[A](proportions:Proportions, initialValue:Seq[A]) extends CategoricalSeqVariable(initialValue) with GeneratedCategoricalSeqVar[A] {
+abstract class PlatedCategorical[A](proportions:Proportions, initialValue:Seq[A]) extends CategoricalSeqVariable(initialValue) with PlatedGeneratedCategoricalVar[A] {
   setProportions(proportions)
 }
