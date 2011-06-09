@@ -14,7 +14,7 @@
 
 package cc.factorie
 
-/** For storing one of the proposals considered.
+/** For storing one of the MCMC sampling proposals considered.
     "diff" is the list of changes represented by this Proposal.
     "modelScore" is the difference in score after-before, according to the model.
     "objectiveScore" is the difference in score after-before, according to the objective function.

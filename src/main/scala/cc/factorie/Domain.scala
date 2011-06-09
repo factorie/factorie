@@ -45,7 +45,7 @@ trait IterableDomain[+VT] extends Domain[VT] {
   def values: Iterable[VT]
 }
 
-// TODO Give this a better name, indicating that it isn't a Domain itself, but a trait for a Variable to give it a domain.
+
 /** The domain object for variables that don't have a meaningful domain. */  // TODO Explain this better; see Vars and SpanVariable
 object GenericDomain extends Domain[Any]
 

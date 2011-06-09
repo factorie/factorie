@@ -19,7 +19,7 @@ object IntegerDomain extends IntegerDomain
 
 /** A Variable with one Int value.  
     @author Andrew McCallum */
-trait IntegerVar extends Variable with VarAndValueType[IntegerVar,Int] with NumericValue {
+trait IntegerVar extends VarWithNumericValue with VarAndValueType[IntegerVar,Int] {
   def domain: IntegerDomain
   def maxIntValue = Int.MaxValue
   def minIntValue = Int.MinValue
@@ -30,7 +30,7 @@ trait IntegerVar extends Variable with VarAndValueType[IntegerVar,Int] with Nume
 
 /** A Variable with a mutable Int value.
     @author Andrew McCallum */ 
-class IntegerVariable(initialValue:Int = 0) extends IntegerVar with MutableIntValue {
+class IntegerVariable(initialValue:Int = 0) extends IntegerVar with VarWithMutableIntValue {
   def domain = IntegerDomain
   private var _value: Int = initialValue
   @inline final def value = _value

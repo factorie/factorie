@@ -28,8 +28,9 @@ class EMInferencer[M<:Parameter with Estimation[M]] extends Inferencer[M,Mixture
     but in the future the selection of inference method may be more configurable. 
     @author Andrew McCallum */
 class EMLattice[M<:Parameter with Estimation[M]]
-(eVariables:Iterable[MixtureChoiceVar], mVariables:Iterable[M],
- eInferencer: VariableInferencer[MixtureChoiceVar] = new IIDDiscreteInferencer[MixtureChoiceVar](cc.factorie.generative.defaultGenerativeModel))
+  (eVariables:Iterable[MixtureChoiceVar], 
+   mVariables:Iterable[M],
+   eInferencer: VariableInferencer[MixtureChoiceVar] = new IIDDiscreteInferencer[MixtureChoiceVar](cc.factorie.generative.defaultGenerativeModel))
 extends Lattice[M]
 {
   var eLattice: Lattice[MixtureChoiceVar] = null

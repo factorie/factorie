@@ -19,7 +19,7 @@ package cc.factorie
     such as IntegerVar and RealVar, respectively. */
 trait RefVar[A<:AnyRef] extends Variable with VarAndValueGenericDomain[RefVar[A],A] {
   //def value: A
-  def abstractValue: AnyRef = value
+  //def abstractValue: AnyRef = value
   // TODO Consider moving these method to Variable!
   //def ===(other: RefVar[A]) = value == other.value
   //def !==(other: RefVar[A]) = value != other.value

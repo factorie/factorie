@@ -51,6 +51,8 @@ class GenericSampler[C](val sampler:Sampler[C])(implicit mc:Manifest[C]) extends
     It is envisioned that the individual samplers in the suite may send variables back to the suite or coordinate among the suite. 
     @author Andrew McCallum
 */
+// TODO !! Remove this.
+@deprecated
 class SamplerSuite extends ArrayBuffer[GenericSampler[_]] with Sampler[AnyRef] with cc.factorie.util.Trackable {
   /*def this() = this(Nil)
   def this(ss:Sampler[_]*) = this(ss)

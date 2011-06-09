@@ -53,6 +53,7 @@ trait Gate extends DiscreteVariable {
     Among other things, this avoids impossible contravariant typing in MixtureComponentRef
     (which no longer exists, but may have an analogue in the future).
     @author Andrew McCallum */
+// TODO !! Remove this
 trait AbstractGatedRefVariable {
   def gate: Gate
   //def gate_=(g:Gate): Unit

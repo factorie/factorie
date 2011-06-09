@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.{HashSet,ArrayBuffer}
@@ -152,7 +150,7 @@ class IIDEstimationInferencer[P<:Parameter with Estimation[P]] extends VariableI
 
 
 trait AbstractParameterRef extends Variable {
-  def abstractValue: AnyRef //Parameter
+  //def abstractValue: AnyRef //Parameter
   def child: GeneratedVar
 }
 class ParameterRef[P<:Parameter,C<:GeneratedVar](p:P, override val child:C) extends RefVariable(p) with AbstractParameterRef {
@@ -166,6 +164,7 @@ class ParameterRef[P<:Parameter,C<:GeneratedVar](p:P, override val child:C) exte
     if (value ne null) value.addChild(child)
   }
 }
+/*
 @deprecated("This will go away in the future.")
 class GatedParameterRef[P<:Parameter,C<:MixtureGeneratedVar](val parameters:Seq[P], val gate:Gate, child:C) extends ParameterRef[P,C](parameters.apply(gate.intValue), child) with GatedRefVariable[P] {
   //println("GatedParameterRef child="+child)
@@ -174,7 +173,7 @@ class GatedParameterRef[P<:Parameter,C<:MixtureGeneratedVar](val parameters:Seq[
   def valueForIndex(index:Int) = parameters(index)
   def domainSize = parameters.length
 }
-
+*/
 
 
 trait DeterministicFunction extends Parameter

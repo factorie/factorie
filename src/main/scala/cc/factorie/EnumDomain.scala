@@ -16,9 +16,7 @@ package cc.factorie
 
 /** To be used to avoid re-reading the data, as described in above comment, 
     but not yet implemented. */
-trait CategoricalRemapping {
-  def remapCategories(fn:(Int)=>Int)
-}
+//trait CategoricalRemapping { def remapCategories(fn:(Int)=>Int) }
 
 
 /** A Categorical domain with enumerated values.  Provides convenient intialization to known values, 

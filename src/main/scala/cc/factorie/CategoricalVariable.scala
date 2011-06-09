@@ -127,7 +127,7 @@ abstract class CategoricalVariable[A] extends DiscreteVariable with MutableCateg
     and upon creation each will be mapped to a unique integer 0..9.
     p1 = new Person; p1.index == 0; p1.categoryValue == p1. 
     @author Andrew McCallum */
-trait ItemizedObservation[This <: ItemizedObservation[This]] extends CategoricalVar[This] with ConstantValue {
+trait ItemizedObservation[This <: ItemizedObservation[This]] extends CategoricalVar[This] with VarWithConstantValue {
   this: This =>
   def domain: CategoricalDomain[This]
   // Put the variable in the CategoricalDomain and remember it.

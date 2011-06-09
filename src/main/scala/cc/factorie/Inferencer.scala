@@ -18,7 +18,8 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 // Preliminary steps toward generic interfaces to inference
 
 // TODO Not yet sure what general interfaces should go here.
-trait Marginal extends Variable
+trait Marginal extends Variable // extend Variable because ExpectationMaximization depends on knowing that a Variable is returned by Lattice.marginal
+
 trait Lattice[V<:Variable] {
   type VariableMarginalType <: Marginal
   type FactorMarginalType <: Marginal

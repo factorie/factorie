@@ -20,19 +20,16 @@ object RealDomain extends RealDomain
 
 // TODO Consider instead ValueType[Double] and making a different class for SingletonVector.
 /** A Variable with a real (double) value. */
-trait RealVar extends Variable with VarAndValueType[RealVar,Double] with NumericValue {
+trait RealVar extends VarWithNumericValue with VarAndValueType[RealVar,Double] {
   def domain = RealDomain
   @inline final def value: Value = doubleValue
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
-  //def ===(other: RealVar) = doubleValue == other.doubleValue
-  //def !==(other: RealVar) = doubleValue != other.doubleValue
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
 /** A Variable with a mutable real (double) value. */
 class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableVar {
-  //type VariableType <: RealVariable
   private var _value: Double = initialValue
   @inline final def doubleValue = _value
   def +=(x:Double) = set(_value + x)(null) // Should we allow non-null DiffLists?
@@ -44,7 +41,6 @@ class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableVar {
     if (d ne null) d += new RealDiff(_value, newValue)
     _value = newValue
   }
-  //def set(newValue: Value)(implicit d:DiffList): Unit = set(newValue)
   case class RealDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: RealVariable = RealVariable.this
     def redo = _value = newValue
@@ -66,7 +62,7 @@ trait RealSingletonVectorDomain extends DiscreteVectorDomain {
 object RealSingletonDiscreteDomain extends DiscreteDomain { def size = 1 }
 object RealSingletonVectorDomain extends RealSingletonVectorDomain
 
-trait RealSingletonVectorVar extends Variable with NumericValue with DiscreteVectorVar with VarAndValueType[RealSingletonVectorVar,SingletonVector with DiscreteVectorValue] {
+trait RealSingletonVectorVar extends VarWithNumericValue with DiscreteVectorVar with VarAndValueType[RealSingletonVectorVar,SingletonVector with DiscreteVectorValue] {
   thisVariable =>
   //type VariableType <: RealVar
   //type ValueType = SingletonVector with DiscreteVectorValue
