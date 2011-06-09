@@ -116,6 +116,7 @@ trait GenerativeTemplate extends Template {
   type TemplateType <: GenerativeTemplate
   //type ChildType = V
   type ChildType <: GeneratedVar
+  matchNeighborDomains = false // There is just one Template for all variable classes, even with different domains. 
   //type StatisticsType = StatisticsType
   //type FactorType <: GenerativeTemplate.this.Factor
   //def unrollChil(v:V): TemplateType#FactorType
