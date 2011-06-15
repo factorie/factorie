@@ -12,8 +12,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.generative
 import cc.factorie._
 
@@ -24,6 +22,9 @@ import cc.factorie._
 
 trait ProportionsValue extends IndexedSeq[Double] {
   def sampleInt: Int = maths.nextDiscrete(this)
+  def entropy: Double = maths.entropy(this)
+  def klDivergence(p:ProportionsValue): Double = maths.klDivergence(this, p)
+  def jsDivergence(p:ProportionsValue): Double = maths.jensenShannonDivergence(this, p)
 }
 class ProportionsArrayValue(value:Array[Double]) extends ProportionsValue {
   private val array = value
@@ -64,17 +65,16 @@ with VarAndValueGenericDomain[Proportions,ProportionsValue]
 
   class DiscretePr(val index:Int, val pr:Double)
   def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
-  def klDivergence(p:Proportions): Double = maths.klDivergence(this, p)
-  def jsDivergence(p:Proportions): Double = maths.jensenShannonDivergence(this, p)
 }
 
 /** Proportions for which the indicies correspond to CategoricalValues.
     The abstract method 'categoricalDomain' must be supplied.  */
 trait CategoricalProportions[A] extends Proportions {
   def categoricalDomain: CategoricalDomain[A]
+  // TODO change "value:String" to "category:A"
   class DiscretePr(override val index:Int, override val pr:Double, val value:String) extends super.DiscretePr(index, pr)
   override def top(n:Int): Seq[DiscretePr] = {
-    val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList
+    val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n) //.toList
     entries.map({case (p,i)=>new DiscretePr(i, p, categoricalDomain.getCategory(i).toString)})
   }
   def topValues(n:Int) = top(n).toList.map(_.value)
@@ -111,10 +111,17 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions {
 object MutableProportionsEstimator extends Estimator[MutableProportions] {
   def estimate(d:MutableProportions, map:scala.collection.Map[Variable,Variable]): Unit = {
     val e = new DenseCountsProportions(d.length)
-    for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
+    for (child <- d.children) child match {
+      case x:DiscreteVar => e.increment(x.intValue, 1.0)(null)
+      case p:Proportions => forIndex(p.length)(i => e.increment(i, p(i))(null))
+    }
+    // TODO The above no longer works for weighted children!  
+    // This will be a problem for EM.
+    // Grep source for weightedGeneratedChildren to find all the places that may need fixing.
+    /*for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
       case x:DiscreteVar => e.increment(x.intValue, weight)(null)
       case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
-    }
+    }*/
     d.set(e)(null)
   }
 }
@@ -252,7 +259,7 @@ abstract class SortedSparseCountsProportions(dim:Int) extends CountsProportions 
 
 /** The outcome of a coin flip, with boolean value.  */
 class Flip(coin:Coin, value:Boolean = false) extends BooleanVariable(value) with GeneratedDiscreteVar {
-  def proportions = coin
+  setProportions(coin)
   coin.addChild(this)(null)
 }
 /** A coin, with Multinomial distribution over outcomes, which are Flips. */

@@ -13,37 +13,38 @@
    limitations under the License. */
 
 package cc.factorie
-import scala.util.Random
 import cc.factorie.la._
+import scala.util.Random
+import scala.collection.mutable.ArrayBuffer
 
-trait DiscretesVar extends VectorVar with VarAndValueType[DiscretesVar,DiscretesValue] {
-  def domain: DiscretesDomain
+trait DiscreteVectorVar extends VectorVar with VarAndValueType[DiscreteVectorVar,DiscreteVectorValue] {
+  def domain: DiscreteVectorDomain
   def contains(dimension:Int): Boolean = vector.apply(dimension) != 0.0
 }
 
 /** A vector with dimensions corresponding to a DiscreteDomain, and with Double weights for each dimension, represented by a sparse vector. */
-abstract class DiscretesVariable extends VectorVariable with DiscretesVar {
+abstract class DiscreteVectorVariable extends VectorVariable with DiscreteVectorVar {
   thisVariable =>
-  _set(new SparseVector(domain.dimensionSize) with DiscretesValue { def domain = thisVariable.domain })
+  _set(new SparseVector(domain.dimensionSize) with DiscreteVectorValue { def domain = thisVariable.domain })
 }
 
 /** A sparse binary vector with length determined by a DiscreteDomain */
-trait SparseBinaryDiscretesVar extends DiscretesVar with VarAndValueType[SparseBinaryDiscretesVar,SparseBinaryVector with DiscretesValue] {
-  //type ValueType <: cc.factorie.la.SparseBinaryVector with DiscretesValue
+trait SparseBinaryDiscreteVectorVar extends DiscreteVectorVar with VarAndValueType[SparseBinaryDiscreteVectorVar,SparseBinaryVector with DiscreteVectorValue] {
+  //type ValueType <: cc.factorie.la.SparseBinaryVector with DiscreteVectorValue
   def length = domain.dimensionSize //allocSize // TODO Remove this?
   //def apply(i:Int) = vector.apply(i)
   def activeDomain = vector.activeDomain
   def zero(): Unit = value.zero()
-  def +=(i:Int): Unit = { if (frozen) throw new Error("Cannot append to frozen SparseBinaryDiscretesVar."); value.include(i) }
+  def +=(i:Int): Unit = { if (frozen) throw new Error("Cannot append to frozen SparseBinaryDiscreteVectorVar."); value.include(i) }
   //def ++=(is:Iterable[Int]): Unit = is.foreach(i => vector.+=(i)) // Conflicts with ++=(Iterable[T])
   var frozen = false
   def freeze() = frozen = true
   override def isConstant = frozen
 }
 
-abstract class SparseBinaryDiscretesVariable extends VectorVariable with SparseBinaryDiscretesVar {
+abstract class SparseBinaryDiscreteVectorVariable extends VectorVariable with SparseBinaryDiscreteVectorVar {
   thisVariable =>
-  _set(new cc.factorie.la.SparseBinaryVector(-1) with DiscretesValue {
+  _set(new cc.factorie.la.SparseBinaryVector(-1) with DiscreteVectorValue {
     def domain = thisVariable.domain
     override def length = domain.dimensionSize
   })
@@ -52,16 +53,22 @@ abstract class SparseBinaryDiscretesVariable extends VectorVariable with SparseB
 
 
 /** A single discrete variable */
-trait DiscreteVar extends DiscretesVar with VarAndValueType[DiscreteVar,DiscreteValue] {
+trait DiscreteVar extends DiscreteVectorVar with VarAndValueType[DiscreteVar,DiscreteValue] {
   def domain: DiscreteDomain
   /*@inline final*/ def intValue = value.intValue
   //def activeDomain = List(intValue) // TODO try to make this implementation possible: = value
 }
 
+trait MutableDiscreteVar extends DiscreteVar {
+  def set(newValue:ValueType)(implicit d:DiffList): Unit
+  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt))(d)
+  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
+}
+
 // TODO Note that DiscreteVariable is not a subclass of VectorVariable, due to initialization awkwardness.
 // Consider fixing this.
 /** A Variable holding a single DiscreteValue. */
-abstract class DiscreteVariable extends VectorVariable with DiscreteVar with MutableVar with IterableSettings with QDistribution {
+abstract class DiscreteVariable extends VectorVariable with MutableDiscreteVar with MutableVar with IterableSettings with QDistribution {
   // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
   def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue) }
   def this(initialInt:Int) = { this(); _set(domain.getValue(initialInt)) }
@@ -72,8 +79,6 @@ abstract class DiscreteVariable extends VectorVariable with DiscreteVar with Mut
     _set(newValue)
   }
   // TODO provide default value for DiffList = null
-  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt))(d)
-  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
   def settings = new SettingIterator {
     // TODO Base this on a domain.iterator instead, for efficiency
     var i = -1
@@ -97,6 +102,25 @@ abstract class DiscreteVariable extends VectorVariable with DiscreteVar with Mut
   type QType = cc.factorie.generative.MutableProportions  // TODO Change this = to <:  Why wasn't this done before?
   def newQ = new cc.factorie.generative.DenseProportions(domain.size)
 }
+
+
+/** A compact array of DiscreteValues. */
+/*
+abstract class DiscreteArrayVariable(initialIntValues:Seq[Int]) extends VarAndValueType[DiscreteArrayVariable,Seq[DiscreteValue]] with ArrayVar[DiscreteValue] {
+  //def domain: DiscreteArrayDomain
+  private val _values: ArrayBuffer[Value] = 
+    new ArrayBuffer[Value](if (initialIntValues.length > 0) initialIntValues.length else 8) ++= initialIntValues.map(i => domain.getValue(i))
+  @inline final def arraySize = _values.length
+  def appendValue(v:ValueType): Unit = _values += v
+  def appendInt(i:Int): Unit = _values += domain.getValue(i)
+  def value: Seq[Value] = _values
+  def valueAt(index:Int): Value = _values(index)
+  def setAt(newValue:ValueType, index:Int)(implicit d:DiffList): Unit = {
+    require (d eq null) // DiffList not yet implemented for this change
+    _values(index) = newValue
+  }
+}
+*/
 
 /** A collection of DiscreteVariables that can iterate over the cross-product of all of their values.  May be useful in the future for block-Gibbs-sampling?
     @author Andrew McCallum */

@@ -16,33 +16,40 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,Stack}
 
-trait MixtureGenerativeTemplate[V<:MixtureGeneratedVar] extends GenerativeTemplate[V] {
-  def prChoosing(s:StatType, mixtureIndex:Int): Double
-  def logprChoosing(s:StatType, mixtureIndex:Int): Double
-  def sampledValueChoosing(s:StatType, mixtureIndex:Int): V#Value
+trait MixtureGenerativeTemplate extends GenerativeTemplate {
+  type TemplateType <: MixtureGenerativeTemplate
+  type ChildType <: MixtureGeneratedVar
+  def prChoosing(s:StatisticsType, mixtureIndex:Int): Double
+  def prChoosing(s:cc.factorie.Statistics, mixtureIndex:Int): Double = 
+    prChoosing(s.asInstanceOf[StatisticsType], mixtureIndex)
+  def logprChoosing(s:StatisticsType, mixtureIndex:Int): Double
+  def logprChoosing(s:cc.factorie.Statistics, mixtureIndex:Int): Double = 
+    logprChoosing(s.asInstanceOf[StatisticsType], mixtureIndex)
+  def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value
+  def sampledValueChoosing(s:cc.factorie.Statistics, mixtureIndex:Int): ChildType#Value =
+    sampledValueChoosing(s.asInstanceOf[StatisticsType], mixtureIndex)
 }
 
 trait MixtureGeneratedVar extends GeneratedVar {
-  override val generativeTemplate: MixtureGenerativeTemplate[_<:MixtureGeneratedVar]
-  //def generativeFactor: MixtureGenerativeTemplate[MixtureGeneratedVar]#Factor
-  // TODO Needed?  Remove this method from subclasses?
-  //def components: MixtureComponents[Parameter]
+  override val generativeTemplate: MixtureGenerativeTemplate
   def choice: MixtureChoiceVar
   def chosenParents: Seq[Parameter]
-  // TODO Can we get rid of these casts?
-  def prChoosing(mixtureIndex:Int): Double = throw new Error //generativeTemplate.prChoosing(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatType], mixtureIndex)
-  def logprChoosing(mixtureIndex:Int): Double = throw new Error // generativeTemplate.logprChoosing(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatType], mixtureIndex)
-  def sampledValueChoosing(mixtureIndex:Int): Value = throw new Error //generativeTemplate.sampledValueChoosing(generativeFactor.statistics.asInstanceOf[generativeTemplate.StatType], mixtureIndex)
+  def prChoosing(mixtureIndex:Int): Double = generativeTemplate.prChoosing(generativeFactor.statistics, mixtureIndex)
+  def logprChoosing(mixtureIndex:Int): Double = generativeTemplate.logprChoosing(generativeFactor.statistics, mixtureIndex)
+  def sampledValueChoosing(mixtureIndex:Int): Value = generativeTemplate.sampledValueChoosing(generativeFactor.statistics, mixtureIndex).asInstanceOf[Value]  // TODO Can we get rid of this cast?
 }
 
-trait MixtureChoiceVar extends DiscreteVariable with MutableVar {
+trait MixtureChoiceVar extends MutableDiscreteVar with MutableGeneratedVar /*with MutableGeneratedDiscreteVar*/ {
   // 'outcomes' are a more efficient alternative to 'children' for small sets of outcomes.
   private var _outcomes: List[MixtureGeneratedVar] = Nil
   def outcomes = _outcomes
   def outcomesOfClass[A<:MixtureGeneratedVar](implicit m:Manifest[A]): Iterable[A] = outcomes.filter(o => m.erasure.isAssignableFrom(o.getClass)).asInstanceOf[Iterable[A]]
   def addOutcome(o:MixtureGeneratedVar): Unit = {
     //assert(o.mixtureSize == domainSize)
-    _outcomes = o :: _outcomes
+    _outcomes = o +: _outcomes
+  }
+  def removeOutcome(o:MixtureGeneratedVar): Unit = {
+    _outcomes = _outcomes.filterNot(_ == o)
   }
   def prChoosing(value:Int): Double
   // To ensure that no subclassers attempt variable-value coordination
@@ -54,7 +61,7 @@ trait MixtureChoiceVar extends DiscreteVariable with MutableVar {
 
 /** A mixture indicator discrete variable, with value generated from Proportions */
 abstract class MixtureChoice(p:Proportions, value:Int = 0) extends Discrete(p, value) with MixtureChoiceVar {
-  def prChoosing(value:Int): Double = p(value)
+  def prChoosing(value:Int): Double = proportions(value)
 }
 
 /** A mixture indicator discrete variable, with value generated from a mixture of Proportions with component selected by 'choice' */
@@ -62,6 +69,13 @@ abstract class MixtureChoiceMixture(ps:FiniteMixture[Proportions], choice:Mixtur
   //def prChoosing(value:Int): Double = ps(choice.intValue).apply(value)
   def prChoosing(value:Int, mixtureIndex:Int): Double = ps(mixtureIndex).apply(value)
 }
+
+
+/*abstract class MixtureChoiceMux(p:Proportions, intValues:Seq[Int]) extends DiscreteMux(p, intValues) with MixtureChoiceVar {
+  def prChoosing(value:Int): Double = p(value)
+}
+*/
+
 
 /*class MixtureComponentsTemplate[P<:Parameter:Manifest] extends GenerativeTemplateWithStatistics2[MixtureComponents[P],Vars[P]] {
   def unroll1(m:MixtureComponents[P]) = Factor(m, Vars.fromSeq(m.components))
@@ -73,13 +87,17 @@ abstract class MixtureChoiceMixture(ps:FiniteMixture[Proportions], choice:Mixtur
   def sampledValue(s:StatType) = throw new Error("Not yet implemented.")
 }*/
 
-class MixtureComponentsTemplate extends GenerativeTemplateWithStatistics1[MixtureComponents[Parameter]] {
-  def logpr(s:StatType) = 0.0
-  def pr(s:StatType) = 1.0
-  def sampledValue(s:StatType) = throw new Error("Not yet implemented.")
+class MixtureComponentsTemplate extends GenerativeTemplateWithStatistics1[AbstractMixtureComponents] {
+  def logpr(s:StatisticsType) = 0.0
+  def pr(s:StatisticsType) = 1.0
+  def sampledValue(s:StatisticsType) = throw new Error("Not yet implemented.")
 }
 
-trait MixtureComponents[+P<:Parameter] extends scala.collection.IndexedSeq[P] with SeqEqualsEq[P] with Parameter with GeneratedVar with VarAndValueGenericDomain[MixtureComponents[P],Seq[P]] {
+trait AbstractMixtureComponents extends scala.collection.IndexedSeq[Parameter] with Parameter with GeneratedVar
+
+trait MixtureComponents[+P<:Parameter] extends scala.collection.IndexedSeq[P] with AbstractMixtureComponents
+with SeqEqualsEq[P] with Parameter with GeneratedVar with VarAndValueGenericDomain[MixtureComponents[P],Seq[P]] 
+{
   override def isDeterministic = true
   def components: IndexedSeq[P]
   def value = components.asInstanceOf[Value]
@@ -88,24 +106,51 @@ trait MixtureComponents[+P<:Parameter] extends scala.collection.IndexedSeq[P] wi
   override def parents = components
   override def pr = 1.0 // TODO something else?
   /** Return the MixtureGeneratedVar's whose corresponding 'choice' indicates that they were generated by component 'p' */
+  @deprecated
   def childrenOf[P2>:P](p:P2): Iterable[MixtureGeneratedVar] = {
     val index = components.indexOf(p)
-    children.filter(_.isInstanceOf[MixtureGeneratedVar]).asInstanceOf[Iterable[MixtureGeneratedVar]].filter(_.choice.intValue == index)
+    //children.filter(_.isInstanceOf[MixtureGeneratedVar]).asInstanceOf[Iterable[MixtureGeneratedVar]].filter(_.choice.intValue == index)
+    // If this cast fails, it means that some of the children are not a MixtureGeneratedVar; 
+    // for example, they might be a MixtureSeqGeneratedVar, which is allowed, but not supported by this.childrenOf method.
+    for (child <- children; if child.asInstanceOf[MixtureGeneratedVar].choice.intValue == index) yield child.asInstanceOf[MixtureGeneratedVar]
   }
 }
 
+trait CollapsedMixtureComponents[+P<:CollapsedParameter] extends MixtureComponents[P]
 
-class FiniteMixture[+P<:Parameter:Manifest](theComponents:Seq[P]) extends MixtureComponents[P] {
+class FiniteMixture[+P<:Parameter](theComponents:Seq[P]) extends MixtureComponents[P] {
   val generativeTemplate = new MixtureComponentsTemplate
   //def generativeFactor = new generativeTemplate.Factor(this, Vars.fromSeq(components))
   def generativeFactor = new generativeTemplate.Factor(this)
   val components = theComponents.toIndexedSeq
-  components.foreach(_.addChild(this)(null))
+  components.foreach(_.addChild(this)(null)) // The components have this mixture as children
 }
 object FiniteMixture {
-  def apply[P<:Parameter:Manifest](n:Int)(constructor: =>P): FiniteMixture[P] = new FiniteMixture[P](for (i <- 1 to n) yield constructor)
+  def apply[P<:Parameter](n:Int)(constructor: =>P): FiniteMixture[P] = new FiniteMixture[P](for (i <- 1 to n) yield constructor)
 }
 
+class CollapsibleFiniteMixture[+P<:CollapsibleParameter](theComponents:Seq[P]) extends FiniteMixture(theComponents) with CollapsibleParameter with VarWithCollapsedType[CollapsedFiniteMixture[P#CollapsedType]] {
+  def newCollapsed = new CollapsedFiniteMixture(components.map(_.newCollapsed))
+  def setFrom(v:Variable)(implicit d:DiffList): Unit = v match {
+    case cfm:CollapsedFiniteMixture[_] => forIndex(components.length)(i => components(i).setFrom(cfm(i)))
+  }
+}
+object CollapsibleFiniteMixture {
+  def apply[P<:CollapsibleParameter](n:Int)(constructor: =>P): CollapsibleFiniteMixture[P] = new CollapsibleFiniteMixture[P](for (i <- 1 to n) yield constructor)
+}
+class CollapsedFiniteMixture[+P<:CollapsedParameter](theComponents:Seq[P]) extends FiniteMixture(theComponents) with CollapsedParameter {
+  def clearChildStats: Unit = components.foreach(_.clearChildStats)
+  def updateChildStats(child:Variable, weight:Double): Unit = {
+    child match {
+      case mgv:MixtureGeneratedVar => {
+        //println("CollapsedFiniteMixture.updateChildStats "+mgv+" choice="+mgv.choice)
+        components(mgv.choice.intValue).updateChildStats(mgv, weight)
+      }
+      case msgv:MixtureSeqGeneratedVar => throw new Error("MixtureSeqGeneratedVar not yet handled.")
+      //case _ => {} // TODO Should we really not throw an error here?
+    }
+  }
+}
 
 /** An arbitrary-sized set of mixture components that is actually the same component "repeated".
     Use, for example, when the mixture of Gaussians have different means, but should all share the same variance. */

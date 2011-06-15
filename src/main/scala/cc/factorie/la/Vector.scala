@@ -19,6 +19,7 @@ import cc.factorie._
     See also @see cc.factorie.generative.Counts
     @author Andrew McCallum */
 trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
+  val _hashcode = random.nextInt
   def length: Int
   def activeDomainSize: Int
   def activeDomain: Iterable[Int]
@@ -35,6 +36,11 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   // override def toString = this.take(math.min(5, length)).mkString(getClass.getName+"(", ",", if (length > 5) "...)" else ")")
   def flatOuter(that:Vector): Vector = throw new Error("Method flatOuter(Vector) not defined on class "+getClass.getName)
   def flatOuter(v1:Vector, v2:Vector):Vector = throw new Error("Method flatOuter(Vector, Vector) not defined on class "+getClass.getName)
+  override def hashCode = _hashcode
+  override def equals(p1: Any) = p1 match {
+    case ref:AnyRef => eq(ref)
+    case _ => false
+  }
 }
 
 
@@ -94,7 +100,7 @@ object OuterProductMath {
       i1 += 1
     }
     arr
-  }  
+  }
 
   /* sparse * singleton * singleton */
   def outerProductArray(a1: Array[Int], s1: Int,          // sparse
@@ -110,7 +116,7 @@ object OuterProductMath {
       i1 += 1
     }
     arr
-  }  
+  }
 
   /* sparse * sparse * sparse */
   def outerProductArray(a1: Array[Int], s1:Int,                          // sparse

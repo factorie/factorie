@@ -22,8 +22,6 @@ import scala.util.Sorting
 import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
-//import util.ClassPathUtils
-//import java.io._
 
 object Template {
   var enableCachedStatistics: Boolean = true
@@ -88,18 +86,11 @@ trait Values /* extends Product with Ordered[Values] */ {
   //def canEqual(other:Any) = other match { case other:Values => }
 }
 
-/** A summary of all the statistics of a Factor */
+/** A container for sufficient statistics of a Factor.  
+    There is one of these for each Factor. */
 trait Statistics {
   def template: Template
   def score: Double
-}
-
-/** A container for sufficient statistics of a Factor.  Note that one Factor can result in more than one of these Stat objects. */
-trait Stat extends Statistics
-
-/** A collection of Stat objects along with a method of producting a compatibility score from them. */
-trait Stats extends Statistics {
-  def stats: Iterable[Stat]
 }
 
 
@@ -110,7 +101,6 @@ trait Stats extends Statistics {
 trait Template { thisTemplate =>
   type TemplateType <: Template // like a self-type
   type FactorType <: Factor
-  type StatType <: Stat
   type ValuesType <: Values
   type StatisticsType <: Statistics
   protected var _neighborDomains: ArrayBuffer[Domain[_]] = null
@@ -122,13 +112,13 @@ trait Template { thisTemplate =>
       _neighborDomains
   /** The method responsible for mapping a Statistic object to a real-valued score.  
       Called by the Statistic.score method; implemented here so that it can be easily overriden in user-defined subclasses of Template. */
-  def score(s:StatType): Double
+  def score(s:StatisticsType): Double
+  @inline final def score(s:cc.factorie.Statistics): Double = score(s.asInstanceOf[StatisticsType])
   trait Factor extends cc.factorie.Factor { 
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
     override def statistics: StatisticsType
     override def cachedStatistics: StatisticsType
     def forSettingsOf(vs:Seq[Variable])(f: =>Unit): Unit = thisTemplate.forSettingsOf(this.asInstanceOf[FactorType], vs)(f)
-    //def stats: Iterable[StatType]
   }
   /** Used by the trickery that obtains Manifests for Statistics*[] traits.  
       See template2initialized in Package.scala. */
@@ -165,28 +155,16 @@ trait Template { thisTemplate =>
   // Statistics
   trait Statistics extends cc.factorie.Statistics {
     override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
-  }
-  trait Stat extends cc.factorie.Stat with Statistics {
-    override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
     // TODO Make this non-lazy later, when _statisticsDomains can be initialized earlier
     // Warning: if score gets called too late, might the values of the variables have been changed to something else already?
-    lazy val score = Template.this.score(this.asInstanceOf[StatType]) // TODO can we find a way to get rid of this cast?  Yes, use a self-type Stat[This]
-  }
-  class Stats(val stats:Iterable[StatType]) extends cc.factorie.Stats with Statistics /*with Iterable[StatType]*/ {
-    //def iterator = stats.iterator
-    override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
-    val score = stats.foldLeft(0.0)(_ + Template.this.score(_))
+    lazy val score = Template.this.score(this.asInstanceOf[StatisticsType]) 
+    // TODO can we find a way to get rid of this cast?  Yes, use a self-type Stat[This]
   }
   def statistics(values:ValuesType): StatisticsType
-  // TODO Is this next method actually used?
-  def statistics(ss:Iterable[StatType]): StatisticsType = (new Stats(ss)).asInstanceOf[StatisticsType] // TODO How can we get rid of this cast? // TODO Is this method still used?
   /** May be overridden in subclasses to actually cache. */
-  def cachedStatistics(values:ValuesType): StatisticsType = statistics(values)
+  def cachedStatistics(values:ValuesType, stats:(ValuesType)=>StatisticsType): StatisticsType = stats(values)
+  def cachedStatistics(values:ValuesType): StatisticsType = cachedStatistics(values, statistics)
   def clearCachedStatistics: Unit = {}
-  //def statistics(v:Variable): StatisticsType = new Stats(factors(v).map(_.stats).flatten)
-  /** To allow users' "def statistics(v1)" to return an Iterator[Stat] */
-  implicit def iterableStatToStatistics[S<:StatType](ss:Iterable[S]): StatisticsType = statistics(ss)
-  //def statistic(ss:Iterable[StatType]): StatisticType = new Statistic(ss).asInstanceOf[StatisticType] // TODO is there some way to avoid this cast?
   // Managing settings iteration
   // TODO Replace this with message calculation code that does the settings iteration internally
   def hasSettingsIterator: Boolean = false
@@ -195,23 +173,26 @@ trait Template { thisTemplate =>
   def sparsifySettingsFor(vs:Iterable[Variable]): Unit = throw new Error("Not supported.")
   // New version of settings iteration
   def forSettingStats(factor:FactorType, vs:Seq[Variable])(f: (StatisticsType)=>Unit): Unit = throw new Error("Not supported.") // TODO Also pass variable values?
+  // New style for iterating over neighbor value combinations
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values]
+
   /** The filename into which to save this factor.  If factorName is not the default, use it, otherwise use the class name. */
   protected def filename: String = if (factorName != defaultFactorName) factorName else this.getClass.getName
   def save(dirname:String): Unit = {}
   def load(dirname:String): Unit = {}
 }
 
-/** A Template whose sufficient statistics are represented as a set of DiscretesValues
-    (which inherit from cc.factorie.la.Vector, and also have a DiscretesDomain).
+/** A Template whose sufficient statistics are represented as a set of DiscreteVectorValues
+    (which inherit from cc.factorie.la.Vector, and also have a DiscreteVectorDomain).
     @author Andrew McCallum
 */
 trait VectorTemplate extends Template {
   //def vectorLength: Int
   //protected var _vectorLength1 = -1
   //def vectorLength1: Int = if (_vectorLength < 0) throw new Error("Not yet set.") else _vectorLength1
-  protected var _statisticsDomains: ArrayBuffer[DiscretesDomain] = null
-  protected def _newStatisticsDomains = new ArrayBuffer[DiscretesDomain]
-  def statisticsDomains: Seq[DiscretesDomain] = 
+  protected var _statisticsDomains: ArrayBuffer[DiscreteVectorDomain] = null
+  protected def _newStatisticsDomains = new ArrayBuffer[DiscreteVectorDomain]
+  def statisticsDomains: Seq[DiscreteVectorDomain] = 
     if (_statisticsDomains eq null)
       throw new IllegalStateException("You must override statisticsDomains if you want to access them before creating any Factor and Stat objects.")
     else
@@ -222,31 +203,7 @@ trait VectorTemplate extends Template {
   trait Statistics extends super.Statistics {
     def vector: Vector
   }
-  type StatType <: Stat
-  trait Stat extends super.Stat with Statistics {
-    def vector: Vector
-  }
-  class Stats(ss:Iterable[_<:StatType]) extends super.Stats(ss) with Statistics {
-    val vector: Vector = {
-      val iter = ss.iterator
-      if (iter.hasNext) {
-        val first: Vector = iter.next.vector
-        if (!iter.hasNext) // There is only one there
-          first
-        else {
-          var vec = new SparseVector(first.size) // TODO if 'first' is SparseBinaryVector this should be Sparse also
-          vec += first
-          while (iter.hasNext) vec += iter.next.vector
-          vec
-        }
-      } else { // an empty iterator over Suff's.  Just return a (sparse) vector of zero's.
-        new SparseVector(statisticsVectorLength)
-      }
-    }
-  }
-  override def statistics(ss:Iterable[StatType]): StatisticsType = (new Stats(ss)).asInstanceOf[StatisticsType] // TODO How can we get rid of this cast?
   //override def statistics(v:Variable): StatisticsType = new Stats(factors(v).map(_.stats).flatten)
-  //override def statistic(ss:Iterable[StatType]): StatisticType = new Statistic(ss)
   // TODO implement this!
   private def unflattenOuter(weightIndex:Int, dimensions:Int*): Array[Int] = new Array[Int](2)
 } // end of VectorTemplate
@@ -257,7 +214,7 @@ trait VectorTemplate extends Template {
 trait DotTemplate extends VectorTemplate {
   type TemplateType <: DotTemplate
   lazy val weights: Vector = { freezeDomains; new DenseVector(statisticsVectorLength) } // Dense by default, may be override in sub-traits
-  def score(s:StatType) = weights match {
+  def score(s:StatisticsType) = if (s eq null) 0.0 else weights match {
     case w:DenseVector => { w dot s.vector }
     //case w:SparseHashVector => w dot s.vector // TODO Uncomment this.  It was only commented because latest version of scalala didn't seem to have this class any more
     case w:SparseVector => w dot s.vector
@@ -343,7 +300,7 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
     }
     def numVariables = 1
     def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
-    override lazy val variables: IndexedSeq[Variable] = IndexedSeq(_1)
+    override def variables: IndexedSeq[Variable] = IndexedSeq(_1)
     def values: ValuesType = new Values(_1.value)
     def statistics: StatisticsType = Template1.this.statistics(values)
     override def cachedStatistics: StatisticsType = Template1.this.cachedStatistics(values)
@@ -359,54 +316,68 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   def statistics(values:Values): StatisticsType
   //def stats(v:Variable): Iterable[StatisticsType] = factors(v).map(_.statistics) // TODO Do we need to consider a flatMap here?
   private var cachedStatisticsArray: Array[StatisticsType] = null
-  override def cachedStatistics(vals:Values): StatisticsType = if (Template.enableCachedStatistics) {
+  override def cachedStatistics(vals:Values, stats:(ValuesType)=>StatisticsType): StatisticsType =
+    if (Template.enableCachedStatistics) {
     vals._1 match {
     case v:DiscreteValue => {
       if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v.domain.size).asInstanceOf[Array[StatisticsType]]
       val i = v.intValue
-      if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = statistics(vals)
+      if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = stats(vals)
       cachedStatisticsArray(i)
     }
-    case _ => statistics(vals)
-  }} else statistics(vals)
+    case _ => stats(vals)
+  }} else stats(vals)
   /** You must clear cache the cache if DotTemplate.weights change! */
   override def clearCachedStatistics: Unit =  cachedStatisticsArray = null
-}
-
-trait Statistics1[S1] extends Template {
-  final case class Stat(_1:S1) extends super.Stat
-  type StatType = Stat
-  type StatisticsType = Statistics
-}
-trait VectorStatistics1[S1<:DiscretesValue] extends VectorTemplate {
-  type StatType = Stat
-  type StatisticsType = Statistics
-  // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
-  final case class Stat(_1:S1) extends { val vector: Vector = _1 } with super.Stat { 
-    if (_statisticsDomains eq null) {
-      _statisticsDomains = _newStatisticsDomains
-      _statisticsDomains += _1.domain
+  /** valuesIterator in style of specifying fixed neighbors */
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = {
+    if (fixed.contains(factor._1)) Iterator.single(Values(fixed(factor._1)))
+    else factor._1.domain match {
+      case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
+    }
+  }
+  /** valuesIterator in style of specifying varying neighbors */
+  def valuesIterator(factor:FactorType, varying:Seq[Variable]): Iterator[Values] = {
+    if (varying.size != 1 || varying.head != factor._1)
+      throw new Error("Template1.valuesIterator cannot vary arguments.")
+    else factor._1.domain match {
+      case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
     }
   }
 }
-trait DotStatistics1[S1<:DiscretesValue] extends VectorStatistics1[S1] with DotTemplate {
+
+trait Statistics1[S1] extends Template {
+  final case class Stat(_1:S1) extends super.Statistics
+  type StatisticsType = Stat
+}
+trait VectorStatistics1[S1<:DiscreteVectorValue] extends VectorTemplate {
+  type StatisticsType = Stat
+  // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
+  final case class Stat(_1:S1) extends { val vector: Vector = _1 } with super.Statistics { 
+    if (_statisticsDomains eq null) {
+      _statisticsDomains = _newStatisticsDomains
+      _statisticsDomains += _1.domain
+    } else if (_1.domain != _statisticsDomains(0)) throw new Error("Domain doesn't match previously cached domain.")
+  }
+}
+trait DotStatistics1[S1<:DiscreteVectorValue] extends VectorStatistics1[S1] with DotTemplate {
   def setWeight(entry:S1, w:Double) = entry match {
     case d:DiscreteValue => weights(d.intValue) = w
-    case ds:DiscretesValue => ds.activeDomain.foreach(i => weights(i) = w)
+    case ds:DiscreteVectorValue => ds.activeDomain.foreach(i => weights(i) = w)
   }
 }
 abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1] with Statistics1[N1#Value] {
 //abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with Statistics1[N1]
-  def statistics(vals:Values): StatType = Stat(vals._1)
+  def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
-abstract class TemplateWithVectorStatistics1[N1<:DiscretesVar](implicit nm1:Manifest[N1]) extends Template1[N1] with VectorStatistics1[N1#Value] {
+abstract class TemplateWithVectorStatistics1[N1<:DiscreteVectorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with VectorStatistics1[N1#Value] {
 //abstract class TemplateWithVectorStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with VectorStatistics1[N1]
-  def statistics(vals:Values): StatType = Stat(vals._1)
+  def statistics(vals:Values): StatisticsType = Stat(vals._1)
   //init //(nm1)
 }
-class TemplateWithDotStatistics1[N1<:DiscretesVar](implicit nm1:Manifest[N1]) extends Template1[N1] with DotStatistics1[N1#Value] {
-//class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1] 
-  def statistics(vals:Values): StatType = Stat(vals._1)
+class TemplateWithDotStatistics1[N1<:DiscreteVectorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with DotStatistics1[N1#Value] {
+//class TemplateWithDotStatistics1[N1<:VectorVar](implicit nm1:Manifest[N1]) extends Template1[N1]()(nm1) with DotStatistics1[N1]
+  def statistics(vals:Values): StatisticsType = Stat(vals._1)
   //init //(nm1)
 }
 
@@ -476,6 +447,7 @@ extends Template // with FactorSettings2[N1,N2]
     }
     def numVariables = 2
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case _ => throw new IndexOutOfBoundsException(i.toString) }
+    override def variables: IndexedSeq[Variable] = IndexedSeq(_1, _2)
     def values: ValuesType = new Values(_1.value, _2.value)
     def statistics: StatisticsType = Template2.this.statistics(values)
     override def cachedStatistics: StatisticsType = Template2.this.cachedStatistics(values)
@@ -492,48 +464,87 @@ extends Template // with FactorSettings2[N1,N2]
   private var cachedStatisticsArray: Array[StatisticsType] = null
   private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null
   /** It is callers responsibility to clearCachedStatistics if weights or other relevant state changes. */
-  override def cachedStatistics(values:Values): StatisticsType = if (Template.enableCachedStatistics) values._1 match {
+  override def cachedStatistics(values:Values, stats:(ValuesType)=>StatisticsType): StatisticsType =
+    if (Template.enableCachedStatistics) values._1 match {
     case v1:DiscreteValue => { 
       values._2 match {
         case v2:DiscreteValue => {
           //println("Template2.cachedStatistics")
           if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v1.domain.size * v2.domain.size).asInstanceOf[Array[StatisticsType]]
-          val i = v1.intValue * nd2.asInstanceOf[DiscretesDomain].dimensionSize + v2.intValue
-          if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = statistics(values)
+          val i = v1.intValue * nd2.asInstanceOf[DiscreteVectorDomain].dimensionSize + v2.intValue
+          if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = stats(values)
           cachedStatisticsArray(i)
         }
-        case v2:DiscretesValue if (true /*v2.isConstant*/) => {
+        case v2:DiscreteVectorValue if (true /*v2.isConstant*/) => {
           //println("Template2.cachedStatistics")
           if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType] { override protected def initialSize = 512 }
           val i = ((v1.intValue,v2))
-          cachedStatisticsHash.getOrElseUpdate(i, statistics(values))
+          cachedStatisticsHash.getOrElseUpdate(i, stats(values))
         }
-        case _ => statistics(values)
+        case _ => stats(values)
       }
     }
-    case v1:DiscretesValue if (true /*v1.isConstant*/) => { 
+    case v1:DiscreteVectorValue if (true /*v1.isConstant*/) => {
       values._2 match {
         case v2:DiscreteValue => {
           if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
           val i = ((v2.intValue,v1))
-          cachedStatisticsHash.getOrElseUpdate(i, statistics(values))
+          cachedStatisticsHash.getOrElseUpdate(i, stats(values))
         }
-        case _ => statistics(values)
+        case _ => stats(values)
       }
     }
-    case _ => statistics(values)
-  } else statistics(values)
+    case _ => stats(values)
+  } else stats(values)
   override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
+  /** valuesIterator in style of specifying fixed neighbors */
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = {
+    val fixed1 = fixed.contains(factor._1)
+    val fixed2 = fixed.contains(factor._2)
+    if (fixed1 && fixed2) 
+      Iterator.single(Values(fixed(factor._1), fixed(factor._2)))
+    else if (fixed1) {
+      val val1 = fixed(factor._1)
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      d2.values.iterator.map(value => Values(val1, value))
+    } else if (fixed2) {
+      val val2 = fixed(factor._2)
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      d1.values.iterator.map(value => Values(value, val2))
+    } else {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2)).iterator
+    }
+  }
+  /** valuesIterator in style of specifying varying neighbors */
+  def valuesIterator(factor:FactorType, varying:Seq[Variable]): Iterator[Values] = {
+    val varying1 = varying.contains(factor._1)
+    val varying2 = varying.contains(factor._2)
+    if (varying1 && varying2) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2)).iterator
+    } else if (varying1) {
+      val val2 = factor._2.value
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      d1.values.iterator.map(value => Values(value, val2))
+    } else if (varying2) {
+      val val1 = factor._1.value
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      d2.values.iterator.map(value => Values(val1, value))
+    } else {
+      Iterator.single(Values(factor._1.value, factor._2.value))
+    }
+  }
 }
 trait Statistics2[S1,S2] extends Template {
-  final case class Stat(_1:S1, _2:S2) extends super.Stat
-  type StatType = Stat
-  type StatisticsType = Statistics
+  final case class Stat(_1:S1, _2:S2) extends super.Statistics
+  type StatisticsType = Stat
 }
-trait VectorStatistics2[S1<:DiscretesValue,S2<:DiscretesValue] extends VectorTemplate {
-  type StatType = Stat
-  type StatisticsType = Statistics
-  final case class Stat(_1:S1, _2:S2) extends { val vector: Vector = _1 flatOuter _2 } with super.Stat { 
+trait VectorStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorTemplate {
+  type StatisticsType = Stat
+  final case class Stat(_1:S1, _2:S2) extends { val vector: Vector = _1 flatOuter _2 } with super.Statistics { 
     if (_statisticsDomains eq null) { 
       _statisticsDomains = _newStatisticsDomains
       _statisticsDomains += _1.domain
@@ -541,16 +552,16 @@ trait VectorStatistics2[S1<:DiscretesValue,S2<:DiscretesValue] extends VectorTem
     }
   }
 }
-trait DotStatistics2[S1<:DiscretesValue,S2<:DiscretesValue] extends VectorStatistics2[S1,S2] with DotTemplate
+trait DotStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorStatistics2[S1,S2] with DotTemplate
 abstract class TemplateWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with Statistics2[N1#Value,N2#Value] {
-  def statistics(values:Values): StatType = Stat(values._1, values._2)
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
 }
-abstract class TemplateWithVectorStatistics2[N1<:DiscretesVar,N2<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with VectorStatistics2[N1#Value,N2#Value] {
-  def statistics(values:Values): StatType = Stat(values._1, values._2)
+abstract class TemplateWithVectorStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with VectorStatistics2[N1#Value,N2#Value] {
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
   //init(nm1, nm2)
 }
-abstract class TemplateWithDotStatistics2[N1<:DiscretesVar,N2<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
-  def statistics(values:Values): StatType = Stat(values._1, values._2)
+abstract class TemplateWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
   //init(nm1, nm2)
 }
 
@@ -679,6 +690,7 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
     }
     def numVariables = 3
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case _ => throw new IndexOutOfBoundsException(i.toString) }
+    override def variables: IndexedSeq[Variable] = IndexedSeq(_1, _2, _3)
     def values: ValuesType = new Values(_1.value, _2.value, _3.value)
     def statistics: StatisticsType = Template3.this.statistics(values)
     override def cachedStatistics: StatisticsType = Template3.this.cachedStatistics(values)
@@ -694,29 +706,118 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
   private var cachedStatisticsArray: Array[StatisticsType] = null
   private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null
   /** It is callers responsibility to clearCachedStatistics if weights or other relevant state changes. */
-  override def cachedStatistics(values:Values): StatisticsType = if (Template.enableCachedStatistics) {
+  override def cachedStatistics(values:Values, stats:(ValuesType)=>StatisticsType): StatisticsType =
+    if (Template.enableCachedStatistics) {
     //println("Template3.cachedStatistics")
-    if (values._1.isInstanceOf[DiscreteValue] && values._2.isInstanceOf[DiscreteValue] && values._3.isInstanceOf[DiscretesValue] /*&& f._3.isConstant*/ ) {
+    if (values._1.isInstanceOf[DiscreteValue] && values._2.isInstanceOf[DiscreteValue] && values._3.isInstanceOf[DiscreteVectorValue] /*&& f._3.isConstant*/ ) {
       val v1 = values._1.asInstanceOf[DiscreteValue]
       val v2 = values._2.asInstanceOf[DiscreteValue]
-      val v3 = values._3.asInstanceOf[DiscretesValue]
+      val v3 = values._3.asInstanceOf[DiscreteVectorValue]
       if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
       val i = ((v1.intValue, v2.intValue, v3))
       //print(" "+((v1.intValue, v2.intValue))); if (cachedStatisticsHash.contains(i)) println("*") else println(".")
-      cachedStatisticsHash.getOrElseUpdate(i, statistics(values))
+      cachedStatisticsHash.getOrElseUpdate(i, stats(values))
     } else {
-      statistics(values)
+      stats(values)
     }
-  } else statistics(values)
+  } else stats(values)
   override def clearCachedStatistics: Unit =  { cachedStatisticsArray = null; cachedStatisticsHash = null }
+  /** Values iterator in style of specifying fixed neighbors. */
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = {
+    val fixed1 = fixed.contains(factor._1)
+    val fixed2 = fixed.contains(factor._2)
+    val fixed3 = fixed.contains(factor._3)
+    if (fixed1 && fixed2 && fixed3) 
+      Iterator.single(Values(fixed(factor._1), fixed(factor._2), fixed(factor._3)))
+    else if (fixed1 && fixed2) {
+      val val1 = fixed(factor._1)
+      val val2 = fixed(factor._2)
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      d3.values.iterator.map(value => Values(val1, val2, value))
+    } else if (fixed2 && fixed3) {
+      val val2 = fixed(factor._2)
+      val val3 = fixed(factor._3)
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      d1.values.iterator.map(value => Values(value, val2, val3))
+    } else if (fixed1 && fixed3) {
+      val val1 = fixed(factor._1)
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val val3 = fixed(factor._3)
+      d2.values.iterator.map(value => Values(val1, value, val3))
+    } else if (fixed1) {
+      val val1 = fixed(factor._1)
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else if (fixed2) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val val2 = fixed(factor._2)
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val1 <- d1.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else if (fixed3) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val val3 = fixed(factor._3)
+      (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+    } else {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val1 <- d1.values; val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    }
+  }
+  /** valuesIterator in style of specifying varying neighbors */
+  def valuesIterator(factor:FactorType, varying:Seq[Variable]): Iterator[Values] = {
+    val varying1 = varying.contains(factor._1)
+    val varying2 = varying.contains(factor._2)
+    val varying3 = varying.contains(factor._3)
+    if (varying1 && varying2 & varying3) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val1 <- d1.values; val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying1 && varying2) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val val3 = factor._3.value
+      (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying2 && varying3) {
+      val val1 = factor._1.value
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying1 && varying3) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val val2 = factor._2.value
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val1 <- d1.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying1) {
+      val d1 = factor._1.domain.asInstanceOf[IterableDomain[N1#Value]]
+      val val2 = factor._2.value
+      val val3 = factor._3.value
+      (for (val1 <- d1.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying2) {
+      val val1 = factor._1.value
+      val d2 = factor._2.domain.asInstanceOf[IterableDomain[N2#Value]]
+      val val3 = factor._3.value
+      (for (val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+    } else if (varying3) {
+      val val1 = factor._1.value
+      val val2 = factor._2.value
+      val d3 = factor._3.domain.asInstanceOf[IterableDomain[N3#Value]]
+      (for (val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    } else {
+      Iterator.single(Values(factor._1.value, factor._2.value, factor._3.value))
+    }
+  }
 }
 trait Statistics3[S1,S2,S3] extends Template {
-  final case class Stat(_1:S1, _2:S2, _3:S3) extends super.Stat
-  type StatType = Stat
-  type StatisticsType = Statistics
+  final case class Stat(_1:S1, _2:S2, _3:S3) extends super.Statistics
+  type StatisticsType = Stat
 }
-trait VectorStatistics3[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue] extends VectorTemplate {
-  final case class Stat(_1:S1, _2:S2, _3:S3) extends { val vector: Vector = _1 flatOuter (_2 flatOuter _3) } with super.Stat {
+trait VectorStatistics3[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue] extends VectorTemplate {
+  type StatisticsType = Stat
+  final case class Stat(_1:S1, _2:S2, _3:S3) extends { val vector: Vector = _1 flatOuter (_2 flatOuter _3) } with super.Statistics {
     if (_statisticsDomains eq null) {
       _statisticsDomains = _newStatisticsDomains
       _statisticsDomains += _1.domain
@@ -724,19 +825,17 @@ trait VectorStatistics3[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue
       _statisticsDomains += _3.domain
     }
   }
-  type StatType = Stat
-  type StatisticsType = Statistics
 }
-trait DotStatistics3[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue] extends VectorStatistics3[S1,S2,S3] with DotTemplate
+trait DotStatistics3[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue] extends VectorStatistics3[S1,S2,S3] with DotTemplate
 abstract class TemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
-  def statistics(values:Values): StatType = Stat(values._1, values._2, values._3)
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
 }
-abstract class TemplateWithVectorStatistics3[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with VectorStatistics3[N1#Value,N2#Value,N3#Value]  {
-  def statistics(values:Values): StatType = Stat(values._1, values._2, values._3)
+abstract class TemplateWithVectorStatistics3[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar,N3<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with VectorStatistics3[N1#Value,N2#Value,N3#Value]  {
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
   //init(nm1, nm2, nm3)
 }
-abstract class TemplateWithDotStatistics3[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with DotStatistics3[N1#Value,N2#Value,N3#Value]  {
-  def statistics(values:Values): StatType = Stat(values._1, values._2, values._3)
+abstract class TemplateWithDotStatistics3[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar,N3<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with DotStatistics3[N1#Value,N2#Value,N3#Value]  {
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
   //init(nm1, nm2, nm3)
 }
 
@@ -785,6 +884,7 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
     }
     def numVariables = 4
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case 3 => _4; case _ => throw new IndexOutOfBoundsException(i.toString) }
+    override def variables: IndexedSeq[Variable] = IndexedSeq(_1, _2, _3, _4)
     def values: ValuesType = new Values(_1.value, _2.value, _3.value, _4.value)
     def statistics: StatisticsType = Template4.this.statistics(values)
     def cachedStatistics: StatisticsType = Template4.this.statistics(values)
@@ -799,14 +899,15 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
   // Statistics
   def statistics(values:Values): StatisticsType
   //def stats(v:Variable) = factors(v).flatMap(_statistics(_))
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = throw new Error("Not yet implemented")
 }
 trait Statistics4[S1,S2,S3,S4] extends Template {
-  final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends super.Stat 
-  type StatType = Stat
-  type StatisticsType = Statistics
+  type StatisticsType = Stat
+  final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends super.Statistics
 }
-trait VectorStatistics4[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue,S4<:DiscretesValue] extends VectorTemplate {
-  final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends  { val vector: Vector = _1 flatOuter (_2 flatOuter (_3 flatOuter _4)) } with super.Stat {
+trait VectorStatistics4[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue,S4<:DiscreteVectorValue] extends VectorTemplate {
+  type StatisticsType = Stat
+  final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends  { val vector: Vector = _1 flatOuter (_2 flatOuter (_3 flatOuter _4)) } with super.Statistics {
     if (_statisticsDomains eq null) {
       _statisticsDomains = _newStatisticsDomains
       _statisticsDomains += _1.domain
@@ -815,21 +916,16 @@ trait VectorStatistics4[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue
       _statisticsDomains += _4.domain
     }
   }
-  type StatType = Stat
-  type StatisticsType = Statistics
 }
-trait DotStatistics4[S1<:DiscretesValue,S2<:DiscretesValue,S3<:DiscretesValue,S4<:DiscretesValue] extends VectorStatistics4[S1,S2,S3,S4] with DotTemplate
+trait DotStatistics4[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue,S4<:DiscreteVectorValue] extends VectorStatistics4[S1,S2,S3,S4] with DotTemplate
 abstract class TemplateWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with Statistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
-  // Returning StatType instead of StatisticsType here to declare that we are returning a singleton Stat
   def statistics(values:Values) = Stat(values._1, values._2, values._3, values._4)
 }
-abstract class TemplateWithVectorStatistics4[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar,N4<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with VectorStatistics4[N1#Value,N2#Value,N3#Value,N4#Value]  {
-  def statistics(values:Values): StatType = Stat(values._1, values._2, values._3, values._4)
-  //init(nm1, nm2, nm3, nm4)
+abstract class TemplateWithVectorStatistics4[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar,N3<:DiscreteVectorVar,N4<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with VectorStatistics4[N1#Value,N2#Value,N3#Value,N4#Value]  {
+  def statistics(values:Values) = Stat(values._1, values._2, values._3, values._4)
 }
-abstract class TemplateWithDotStatistics4[N1<:DiscretesVar,N2<:DiscretesVar,N3<:DiscretesVar,N4<:DiscretesVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with DotStatistics4[N1#Value,N2#Value,N3#Value,N4#Value]  {
-  def statistics(values:Values): StatType = Stat(values._1, values._2, values._3, values._4)
-  //init(nm1, nm2, nm3, nm4)
+abstract class TemplateWithDotStatistics4[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar,N3<:DiscreteVectorVar,N4<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with DotStatistics4[N1#Value,N2#Value,N3#Value,N4#Value]  {
+  def statistics(values:Values) = Stat(values._1, values._2, values._3, values._4)
 }
 
 
@@ -837,11 +933,27 @@ abstract class TemplateWithDotStatistics4[N1<:DiscretesVar,N2<:DiscretesVar,N3<:
 // AKM: Let me know if you think it would be more sensible to have them come from the beginning instead.
 
 abstract class Template2WithStatistics1[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with Statistics1[N2#Value] {
-  def statistics(v:Values): StatType = Stat(v._2)
+  def statistics(v:Values) = Stat(v._2)
 }
 abstract class Template3WithStatistics1[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with Statistics1[N3#Value] {
-  def statistics(v:Values): StatType = Stat(v._3)
+  def statistics(v:Values) = Stat(v._3)
 }
 abstract class Template3WithStatistics2[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with Statistics2[N2#Value,N3#Value] {
-  def statistics(v:Values): StatType = Stat(v._2, v._3)
+  def statistics(v:Values) = Stat(v._2, v._3)
 }
+
+/*
+trait FooTemplate3 {
+  def valuesIterator(value1:Option[N1#Value], value2:Option[N2#Value], value3:Option[N3#Value]): Iterator[this.type.Values]
+  def discreteValuesIterator(valueOptions: Option[DiscreteValue]*): Iterator[Values]
+  def discreteValuesIterator(factor:Factor, fixed: (Variable,Any)*): Iterator[Values]
+  def discreteValuesIterator(factor:Factor, vary:Iterable[DiscreteVar]): Iterator[Values]
+  //def argMaxMessage(f:Factor, m1:N1#MessageType, m2:N2#MessageType)
+}
+*/
+
+//class TreeTemplate extends Template1[Vars[EdgePresence]] { }
+
+//class FooTemplate {}
+//val t1 = new FooTemplate
+//t1.statistics(values:t1.Values)

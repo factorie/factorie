@@ -20,17 +20,17 @@ import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,Buffered
 
 // TODO Also make a randomized-representation CategoricalDomain, with hashes?
 
-// Categoricals refers to vectors with weights over a domain of multiple "CategoricalValue"s.
+// CategoricalVector refers to vectors with weights over a domain of multiple "CategoricalValue"s.
 // Categorical refers to single a CategoricalValue, which can also be seen as a singleton vector.
 
-/** A value in a CategoricalsDomain */
-trait CategoricalsValue[T] extends DiscretesValue {
-  def domain:CategoricalsDomain[T]
+/** A value in a CategoricalVectorDomain */
+trait CategoricalVectorValue[T] extends DiscreteVectorValue {
+  def domain:CategoricalVectorDomain[T]
 }
 
-/** Domain for CategoricalsVar, e.g. FeatureVectorVariable.
+/** Domain for CategoricalVectorVar, e.g. FeatureVectorVariable.
     @author Andrew McCallum */
-trait CategoricalsDomain[T] extends DiscretesDomain with ValueType[CategoricalsValue[T]] {
+trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[CategoricalVectorValue[T]] {
   thisDomain =>
   type CategoryType = T
   lazy val dimensionDomain: CategoricalDomain[T] = new CategoricalDomain[T]
@@ -41,7 +41,7 @@ trait CategoricalsDomain[T] extends DiscretesDomain with ValueType[CategoricalsV
 // For single categorical values
 
 /** A value in a CategoricalDomain */
-trait CategoricalValue[T] extends CategoricalsValue[T] with DiscreteValue {
+trait CategoricalValue[T] extends CategoricalVectorValue[T] with DiscreteValue {
   def domain: CategoricalDomain[T]
   def category: T
 }
@@ -61,7 +61,7 @@ trait CategoricalValue[T] extends CategoricalsValue[T] with DiscreteValue {
 
     @author Andrew McCallum
     */
-class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[CategoricalValue[T]] with CategoricalsDomain[T] with ValueType[CategoricalValue[T]] {
+class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[CategoricalValue[T]] with CategoricalVectorDomain[T] with ValueType[CategoricalValue[T]] {
   thisDomain =>
   def this(values:Iterable[T]) = { this(); values.foreach(getValue(_)); freeze() }
   override lazy val dimensionDomain = this

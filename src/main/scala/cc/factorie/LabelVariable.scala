@@ -47,7 +47,7 @@ trait VarWithTarget extends VarWithTargetValue with TargetType[TargetVar] {
 
 /** A trait for all variables that are containers of target values.  
     Having this trait allows ZeroOneLossTemplate to use this type as a neighbor,
-    and, for example, avoid trying to unroll for all DiscretesVar. */
+    and, for example, avoid trying to unroll for all DiscreteVectorVar. */
 trait TargetVar extends Variable with AimerType[Variable] {
   /** Returns the variable that "aims" to have to have its value match this variable's as its target */
   def aimer: AimerType

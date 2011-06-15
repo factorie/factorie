@@ -25,7 +25,7 @@ import java.io.File
     But interesting example of flexibility of the "Template.statistics" method. */
 object DepParsing1 {
 
-  object TokenDomain extends CategoricalsDomain[String]
+  object TokenDomain extends CategoricalVectorDomain[String]
   class Token(val word:String, posString:String, trueParentPosition:Int, trueLabelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
     def domain = TokenDomain
     val parent = new Node(this, trueParentPosition, trueLabelString)
@@ -35,7 +35,7 @@ object DepParsing1 {
 
   class Node(val token:Token, val truePosition:Int, trueLabelString:String) extends RefVariable[Token] with VarWithTargetValue with IterableSettings {
     lazy val trueValue: Token = seq(truePosition)
-    def seq = token.seq
+    def seq: Seq[Token] = token.seq
     val label = new Label(trueLabelString)
     def valueIsTarget = value == trueValue
     def setToTarget(implicit d:DiffList): Unit = set(trueValue)
@@ -64,8 +64,9 @@ object DepParsing1 {
         i += 1; //if (i == token.position) i += 1;
         val d = newDiffList;
         //println("next seq.length="+seq.length)
-        set(seq(i))(d); 
-        d }
+        set(Node.this.seq(i))(d); 
+        d 
+      }
       def reset = i = -1
       override def variable : Node = Node.this
     }

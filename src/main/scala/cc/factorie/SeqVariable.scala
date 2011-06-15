@@ -14,7 +14,7 @@
 
 package cc.factorie
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable, DoubleLinkedList}
+import scala.collection.mutable.ArrayBuffer
 import scala.math
 
 // Variables for dealing with sequences
@@ -31,190 +31,69 @@ trait SeqEqualsEq[+A] extends scala.collection.Seq[A] {
 
 trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A]
 
+trait ElementType[+ET] {
+  type ElementType = ET
+}
+
+trait VarAndElementType[+This<:Variable,+ET] extends VarAndValueType[This,Seq[ET]] with ElementType[ET]
+
 /** A variable containing a mutable sequence of other variables.  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
     @author Andrew McCallum */
-abstract class SeqVariable[X](sequence: Seq[X]) extends Variable with SeqEqualsEq[X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]] {
-  def this() = this(Nil)
-  def value = this.toSeq
-  private val seq = { val a = new ArrayBuffer[X](); a ++= sequence; a }
-  def append(x:X)(implicit d:DiffList) = AppendDiff(x)
-  def prepend(x:X)(implicit d:DiffList) = PrependDiff(x)
+trait SeqVar[X] extends MutableVar with VarAndElementType[SeqVar[X],X] with SeqEqualsEq[X] {
+  //type ElementType <: AnyRef
+  type Element = VariableType#ElementType
+  protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that SeqVar[Int] is efficient.
+  final def value: Seq[Element] = _seq
+  def set(newValue:Value)(implicit d:DiffList): Unit = { _seq.clear; _seq ++= newValue }
+  def update(seqIndex:Int, x:Element)(implicit d:DiffList): Unit = UpdateDiff(seqIndex, x)
+  def append(x:Element)(implicit d:DiffList) = AppendDiff(x)
+  def prepend(x:Element)(implicit d:DiffList) = PrependDiff(x)
   def trimStart(n:Int)(implicit d:DiffList) = TrimStartDiff(n)
   def trimEnd(n: Int)(implicit d:DiffList) = TrimEndDiff(n)
   def remove(n:Int)(implicit d:DiffList) = Remove1Diff(n)
   def swap(i:Int,j:Int)(implicit d:DiffList) = Swap1Diff(i,j)
   def swapLength(pivot:Int,length:Int)(implicit d:DiffList) = for (i <- pivot-length until pivot) Swap1Diff(i,i+length)
-  abstract class SeqVariableDiff(implicit d:DiffList) extends AutoDiff {override def variable = SeqVariable.this}
-  case class AppendDiff(x:X)(implicit d:DiffList) extends SeqVariableDiff {def undo = seq.trimEnd(1); def redo = seq.append(x)}
-  case class PrependDiff(x:X)(implicit d:DiffList) extends SeqVariableDiff {def undo = seq.trimStart(1); def redo = seq.prepend(x)}
-  case class TrimStartDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = seq.take(n); def undo = seq prependAll (s); def redo = seq.trimStart(n)}
-  case class TrimEndDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = seq.drop(seq.length - n); def undo = seq appendAll (s); def redo = seq.trimEnd(n)}
-  case class Remove1Diff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val e = seq(n); def undo = seq.insert(n,e); def redo = seq.remove(n)}
-  case class Swap1Diff(i:Int,j:Int)(implicit d:DiffList) extends SeqVariableDiff { def undo = {val e = seq(i); seq(i) = seq(j); seq(j) = e}; def redo = undo }
+  abstract class SeqVariableDiff(implicit d:DiffList) extends AutoDiff {override def variable = SeqVar.this}
+  case class UpdateDiff(i:Int, x:Element)(implicit d:DiffList) extends SeqVariableDiff {val xo = _seq(i); def undo = _seq(i) = xo; def redo = _seq(i) = x}
+  case class AppendDiff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimEnd(1); def redo = _seq.append(x)}
+  case class PrependDiff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimStart(1); def redo = _seq.prepend(x)}
+  case class TrimStartDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.take(n); def undo = _seq prependAll (s); def redo = _seq.trimStart(n)}
+  case class TrimEndDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.drop(_seq.length - n); def undo = _seq appendAll (s); def redo = _seq.trimEnd(n)}
+  case class Remove1Diff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val e = _seq(n); def undo = _seq.insert(n,e); def redo = _seq.remove(n)}
+  case class Swap1Diff(i:Int,j:Int)(implicit d:DiffList) extends SeqVariableDiff { def undo = {val e = _seq(i); _seq(i) = _seq(j); _seq(j) = e}; def redo = undo }
   // for Seq trait
-  def length = seq.length
-  def iterator = seq.iterator
-  def apply(index: Int) = seq(index)
+  def length = _seq.length
+  def iterator = _seq.iterator
+  def apply(index: Int) = _seq(index)
   // for changes without Diff tracking
-  def +=(x:X) = seq += x
-  def ++=(xs:Iterable[X]) = seq ++= xs
+  def +=(x:Element) = _seq += x
+  def ++=(xs:Iterable[Element]) = _seq ++= xs
+  //def update(index:Int, x:Element): Unit = _seq(index) = x
 }
 
-/** A variable containing a mutable (but untracked by Diff) sequence of variables; used in conjunction with VarInSeq.
-    @author Andrew McCallum */
-class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8) extends IndexedSeqEqualsEq[V] with Variable with VarAndValueGenericDomain[VariableSeq[V],Seq[V]] {
-  def value = this.toSeq
-  private val seq = new ArrayBuffer[V](initialCapacity)
-  def +=(v: V) = {
-    if (v.seq != null) throw new Error("Trying to add VarInSeq that is already assigned to another VariableSeq")
-    seq += v
-    v.setSeqPos(this, seq.size - 1)
-  }
-  def +(v: V) = {this += v; this} // TODO But according to Scala convension this should create a return a new sequence, right?  Remove this method?
-  def ++=(vs: Iterable[V]) = vs.foreach(this += _)
-  def ++(vs: Iterable[V]) = {this ++= vs; this}
-  override def iterator = seq.iterator
-  def length = seq.length
-  def apply(i: Int) = seq.apply(i)
+abstract class SeqVariable[X](initialValue: Seq[X]) extends SeqVar[X] with VarAndElementType[SeqVariable[X],X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]] {
+  def this() = this(Nil)
+  _seq ++= initialValue
+  //protected val _seq: ArrayBuffer[X] = { val a = new ArrayBuffer[X](); a ++= sequence; a }
 }
 
-
-/** For use with variables that have immutable-valued .next and .prev in a sequence. 
-    This tries to avoid the need for the self-type in VarInSeq, but I don't think it will work.
-    Deprecated.  Use VarInSeq instead. */
-@deprecated("Use VarInSeq or VarInTypedSeq instead.")
-trait VarInSeq2 {
-  this: Variable =>
-    private var _seq: Seq[this.type] = null
-  def seq = _seq
-  private var _position = -1
-  def position = _position
-  def setSeqPos(s: Seq[Variable], p: Int) = {
-    if (s(p) != this) throw new Error
-    _seq = s.asInstanceOf[Seq[this.type]]
-    _position = p
-  }
-  def hasNext = _seq != null && _position + 1 < _seq.length
-  def next: this.type = if (_position + 1 < _seq.length) _seq(_position + 1) else null
-  def hasPrev = _seq != null && _position > 0
-  def prev: this.type = if (_position > 0) _seq(_position - 1) else null
+abstract class DiscreteSeqDomain extends Domain[Seq[DiscreteValue]] {
+  def elementDomain: DiscreteDomain
+}
+abstract class DiscreteSeqVariable extends SeqVar[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] {
+  def this(initialValue:Seq[Int]) = { this(); val d = domain.elementDomain; initialValue.foreach(i => this += d.getValue(i)) }
+  def domain: DiscreteSeqDomain
+  def appendInt(i:Int): Unit = _seq += domain.elementDomain.getValue(i)
+  def intValue(seqIndex:Int): Int = _seq(seqIndex).intValue
 }
 
-trait AbstractVarInSeq[This <: AbstractVarInSeq[This]] {
-  def hasNext: Boolean
-  def hasPrev: Boolean
-  def next: This
-  def prev: This
+class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain[Seq[CategoricalValue[C]]] {
+  lazy val elementDomain: CategoricalDomain[C] = new CategoricalDomain[C]
 }
-
-/** For use with variables that have immutable-valued .next and .prev in a sequence. 
-@author Andrew McCallum */
-// TODO Reverse the order of type arguments V and S to match other places in which the "This" type comes last.
-trait VarInTypedSeq[V /*>: Null*/ <: VarInTypedSeq[V,S] with Variable, S<:Seq[V]] extends AbstractVarInSeq[V] {
-  this: V =>
-  private var _seq: S = _
-  var _position = -1
-  def seq: S = _seq
-  def position = _position
-  def seqAfter = seq.drop(_position+1)
-  def seqBefore = seq.take(_position)
-  def setSeqPos(s: Seq[V], p: Int) = {
-    if (s(p) != this) throw new Error
-    _seq = s.asInstanceOf[S]
-    _position = p
-  }
-  def hasNext = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else seq != null && _position + 1 < seq.length
-  def next: V = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (_position + 1 < seq.length) seq(_position + 1) else null.asInstanceOf[V]
-  def hasPrev = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else seq != null && _position > 0
-  def prev: V = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (_position > 0) seq(_position - 1) else null.asInstanceOf[V]
-  def next(n:Int): V = { 
-    if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set")
-    val i = _position + n
-    if (i >= 0 && i < seq.length) seq(i) else null.asInstanceOf[V]
-  }
-  def prev(n:Int): V = {
-    if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") 
-    val i = _position - n
-    if (i >= 0 && i < seq.length) seq(i) else null.asInstanceOf[V]
-  }
-  def prevWindow(n:Int): Seq[V] = for (i <- math.max(_position-n, 0) to math.max(_position-1,0)) yield seq(i)
-  def nextWindow(n:Int): Seq[V] = for (i <- math.min(_position+1, seq.length-1) to math.min(_position+n, seq.length-1)) yield seq(i)
-  def window(n:Int): Seq[V] = for (i <- math.max(_position-n,0) to math.min(_position+n,seq.length-1)) yield seq(i)
-  def windowWithoutSelf(n:Int): Seq[V] = for (i <- math.max(_position-n,0) to math.min(_position+n,seq.length-1); if (i != _position)) yield seq(i)
-  def between(other:V): Seq[V] = {
-    assert (other.seq == seq)
-    if (other.position > _position)
-      for (i <- _position until other.position) yield seq(i)
-    else
-      for (i <- other.position until _position) yield seq(i)
-  } 
-  def firstInSeq = seq(0)
-}
-
-trait VarInSeq[This <: VarInSeq[This] with Variable] extends VarInTypedSeq[This,Seq[This]] {
-  this: This =>
-}
-
-
-/** For variables that have mutable-valued .next and .prev in a sequence.  
-    Currently only change operation is 'swapWithVar', but more could be added.
-    This is an odd class because it extends LinkList in which each element of 
-    the collection represents both the element and the collection itself.
-    This class may be deprecated in the future.
-    @author Andrew McCallum */
-trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This] with cc.factorie.util.LinkList[This] with Variable] extends cc.factorie.util.LinkList[This] {
-  this : This =>
-    def swapWithVar(that:This)(implicit d:DiffList) : Unit = {
-      this.swapWith(that)
-      if (d ne null) {
-        d += new VarInMutableSeqSwapDiff(this, that)
-        d += new VarInMutableSeqOtherVar(that)
-      }
-    }
-  /** Delete "this". */
-  def deleteVar(implicit d:DiffList): Unit = {
-    if (d ne null) {
-      d += new VarInMutableSeqOtherVar(prev)
-      d += new VarInMutableSeqOtherVar(next)
-    }
-    VarInMutableSeqDeleteDiff(prev, next)
-  }
-  /** Insert "that" before "this". */
-  def insertVar(that:This)(implicit d:DiffList): Unit = {
-    VarInMutableSeqPreInsertDiff(that)
-    if (d ne null) {
-      d += new VarInMutableSeqOtherVar(that)
-      if (that.hasPrev) d += new VarInMutableSeqOtherVar(that.prev)
-    }
-  }
-  case class VarInMutableSeqDeleteDiff(prevElt:This, nextElt:This)(implicit d:DiffList) extends Diff {
-    if (d ne null) d += this
-    var done = false
-    redo
-    def variable: This = if (!done) VarInMutableSeq.this else null.asInstanceOf[This]
-    def redo = { assert(!done); done = true; remove }
-    def undo = { assert(done); done = false; if (prevElt ne null) prevElt.postInsert(variable) else nextElt.preInsert(variable) }
-  }
-  case class VarInMutableSeqPreInsertDiff(that:This)(implicit d:DiffList) extends Diff {
-    if (d ne null) d += this
-    var done = false
-    redo
-    def variable: This = if (done) VarInMutableSeq.this else null.asInstanceOf[This]
-    def redo = { assert(!done); done = true; preInsert(that) }
-    def undo = { assert(done); done = false; that.remove }
-    override def toString = "VarInMutableSeqDeleteDiff(prev="+VarInMutableSeq.this+",insert="+that+")"
-  }
-  case class VarInMutableSeqSwapDiff(ths:This, that:This) extends Diff {
-    def variable: This = VarInMutableSeq.this
-    def variables = List(ths, that) // TODO Consider handling this in the FACTORIE library
-    def redo = ths.swapWith(that)
-    def undo = redo
-  }
-  case class VarInMutableSeqOtherVar(that:This) extends Diff {
-    def variable: This = that  // Just to put another variable on the difflist
-    def redo = {}
-    def undo = {}
-  }
+abstract class CategoricalSeqVariable[C] extends DiscreteSeqVariable with VarAndElementType[CategoricalSeqVariable[C],CategoricalValue[C]] {
+  def this(initialValue:Seq[C]) = { this(); val d = domain.elementDomain; initialValue.foreach(c => this += d.getValue(c)) }
+  def domain: CategoricalSeqDomain[C]
+  def appendCategory(x:C): Unit = _seq += domain.elementDomain.getValue(x)
 }
 

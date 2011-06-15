@@ -58,7 +58,7 @@ class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableVar {
 
 // TODO Create an implicit conversion from Double to RealSingletonVector
 // So that we can use them as sufficient statistics in a VectorTemplate
-trait RealSingletonVectorDomain extends DiscretesDomain {
+trait RealSingletonVectorDomain extends DiscreteVectorDomain {
   //def maxVectorLength = 1
   def dimensionDomain = RealSingletonDiscreteDomain
   def size = 1
@@ -66,13 +66,13 @@ trait RealSingletonVectorDomain extends DiscretesDomain {
 object RealSingletonDiscreteDomain extends DiscreteDomain { def size = 1 }
 object RealSingletonVectorDomain extends RealSingletonVectorDomain
 
-trait RealSingletonVectorVar extends Variable with NumericValue with DiscretesVar with VarAndValueType[RealSingletonVectorVar,SingletonVector with DiscretesValue] {
+trait RealSingletonVectorVar extends Variable with NumericValue with DiscreteVectorVar with VarAndValueType[RealSingletonVectorVar,SingletonVector with DiscreteVectorValue] {
   thisVariable =>
   //type VariableType <: RealVar
-  //type ValueType = SingletonVector with DiscretesValue
+  //type ValueType = SingletonVector with DiscreteVectorValue
   def domain = RealSingletonVectorDomain
   /** A Vector representation of this Variable's value. */
-  @inline final def value = new SingletonVector(1, 0, doubleValue) with DiscretesValue {
+  @inline final def value = new SingletonVector(1, 0, doubleValue) with DiscreteVectorValue {
     def domain = thisVariable.domain
   }
   // TODO Consider rewriting above line to avoid constructing new object

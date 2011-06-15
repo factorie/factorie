@@ -22,7 +22,7 @@ class TestTokenSeqCreation extends JUnitSuite {
 
   // define classes for Token, Label, and Sequence, currently the base classes
   // cannot be instantiated.. they must be subclassed.
-  object MyTokenDomain extends CategoricalsDomain[String]
+  object MyTokenDomain extends CategoricalVectorDomain[String]
   class MyToken(w:String, l:String)
   extends labeled.Token[MySentence,MyLabel,MyToken](w) {
     def domain = MyTokenDomain

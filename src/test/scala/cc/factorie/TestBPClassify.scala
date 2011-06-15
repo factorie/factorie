@@ -46,7 +46,7 @@ object TestBPClassify {
 
 
 class TestBPClassify extends TestCase {
-  object DocumentDomain extends CategoricalsDomain[String]
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(contents: String, labelStr:String) extends BinaryFeatureVectorVariable[String] {
     def this(file:File) = this(Source.fromFile(file).mkString, file.getParentFile.getName) // Could also append ".skipHeader"
     def domain = DocumentDomain

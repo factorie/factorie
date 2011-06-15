@@ -26,7 +26,7 @@ import cc.factorie._
     By contrast, see example/DocumentClassifier2. */
 object DocumentClassifier3 {
 
-  object DocumentDomain extends CategoricalsDomain[String]
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)
@@ -40,9 +40,10 @@ object DocumentClassifier3 {
 
   val model = new Model(
     /** Bias term just on labels */
-    new TemplateWithDotStatistics1[Label], 
+    new TemplateWithDotStatistics1[Label] { override def statisticsDomains = Seq(LabelDomain) },
     /** Factor between label and observed document */
     new TemplateWithDotStatistics2[Label,Document] {
+      override def statisticsDomains = Seq(LabelDomain, DocumentDomain)
       def unroll1 (label:Label) = Factor(label, label.document)
       def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
     }

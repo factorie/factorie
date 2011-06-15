@@ -21,17 +21,10 @@ import cc.factorie.er._
     @since 0.8
  */
 
-abstract class Instance[L<:Label[This,L],This<:Instance[L,This]](val name:String) extends BinaryFeatureVectorVariable[String] {
-  this: This =>
-  //type VariableType <: Instance[L,This]
-  type GetterType <: InstanceGetter[L,This]
-  class GetterClass extends InstanceGetter[L,This]
-  def newGetter = new InstanceGetter[L,This]
-  def label: L 
+trait LabelType[+LT<:LabelVariable[_]] {
+  type LabelType = LT
 }
 
-class InstanceGetter[L<:Label[ThisInstance,L],ThisInstance<:Instance[L,ThisInstance]] extends Getter[ThisInstance] {
-  def newLabelGetter = new LabelGetter[ThisInstance,L]
-  def label = initOneToOne[L](newLabelGetter, instance => instance.label, (label:L) => label.instance)
+abstract class InstanceVariable(val name:String) extends BinaryFeatureVectorVariable[String] with LabelType[LabelVariable[InstanceVariable]] {
+  def label: LabelType
 }
- 

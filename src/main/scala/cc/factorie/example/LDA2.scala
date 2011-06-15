@@ -14,7 +14,6 @@
 
 
 package cc.factorie.example
-
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer}
 import scala.util.matching.Regex
 import scala.io.Source
@@ -24,15 +23,18 @@ import cc.factorie.generative._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 
-object LDADemo {
+object LDA2 {
   val numTopics = 10
   object ZDomain extends DiscreteDomain { def size = numTopics }
-  class Z(p: Proportions, value: Int) extends MixtureChoice(p, value) { def domain = ZDomain }
-  object WordDomain extends CategoricalDomain[String]
-  class Word(ps: CollapsibleFiniteMixture[Dirichlet], z: MixtureChoice, value: String) extends CategoricalMixture[String](ps, z, value) {
-    def domain = WordDomain
+  object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
+  class Zs(p: Proportions) extends MixtureChoiceSeq(p, Nil) { def domain = ZSeqDomain }
+  //object WordDomain extends CategoricalDomain[String]
+  object WordSeqDomain extends CategoricalSeqDomain[String] // { def elementDomain = WordDomain }
+  val WordDomain = WordSeqDomain.elementDomain
+  class Words(ps: CollapsibleFiniteMixture[Dirichlet], zs: MixtureChoiceSeq) extends CategoricalMixtureSeq[String](ps, zs, Nil) {
+    def domain = WordSeqDomain
   }
-  class Document(val file: String) extends ArrayBuffer[Word] {var theta: DenseDirichlet = null}
+  class Document(val file:String, var theta: DenseDirichlet, phis:CollapsibleFiniteMixture[Dirichlet], zs:MixtureChoiceSeq) extends Words(phis, zs)
 
   def main(args: Array[String]): Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
@@ -44,21 +46,22 @@ object LDADemo {
         //println("LDA.phi.apply "+index+" "+result)
         result
       }
-      def categoricalDomain = WordDomain
+      def categoricalDomain = WordSeqDomain.elementDomain
       override def toString = "Phi(" + countsSeq.take(20).toList + ")"
     })
     val alphaMean = new DenseProportions(numTopics)
-    val alphaPrecision = new RealVariableParameter(50) //(numTopics)
+    val alphaPrecision = new RealVariableParameter(numTopics)
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
       println("Reading files from directory " + directory)
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         print("."); Console.flush
-        val doc = new Document(file.toString)
-        doc.theta = new DenseDirichlet(alphaMean, alphaPrecision) //(numTopics, 0.01) // Shouldn't this have been 1.0 instead of 0.01 anyway?
+        val theta = new DenseDirichlet(alphaMean, alphaPrecision, Nil) //(numTopics, 0.01) // Shouldn't this have been 1.0 instead of 0.01 anyway?
+        val zs = new Zs(theta)
+        val doc = new Document(file.toString, theta, phis, zs)
         for (word <- alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
-          val z = new Z(doc.theta, cc.factorie.random.nextInt(numTopics))
-          doc += new Word(phis, z, word)
+          zs appendInt cc.factorie.random.nextInt(numTopics)
+          doc appendCategory word
         }
         documents += doc
       }
@@ -67,7 +70,7 @@ object LDADemo {
 
     println("\nRead " + documents.size + " documents with " + documents.foldLeft(0)(_ + _.size) + " tokens and " + WordDomain.size + " types.")
     // Fit model
-    val zs = documents.flatMap(document => document.map(word => word.choice))
+    val zss: Seq[MixtureChoiceSeqVar] = documents.map(document => document.choice)
 
     //val collapsed = new ArrayBuffer[CollapsedParameter]; collapsed ++= phis; collapsed ++= documents.map(_.theta)
     //for (c <- collapsed) println("LDA collapsed parent="+c.getClass.getName+"@"+c.hashCode+" #children="+c.children.size)
@@ -77,23 +80,15 @@ object LDADemo {
     collapsedVariables ++= documents.map(_.theta)
     val sampler = new CollapsedGibbsSampler(collapsedVariables)
     val startTime = System.currentTimeMillis
-    for (i <- 1 to 100) {
-      var zChangeCount = 0
-      for (z <- zs) {
-        val oldValue = z.value
-        sampler.process(z)
-        val newValue = z.value
-        if (oldValue != newValue) zChangeCount += 1
-      }
-      print(zChangeCount*1.0/zs.size)
-      print(" "); Console.flush
+    for (i <- 1 to 20) {
+      zss.foreach(sampler.process(_))
+      print("."); Console.flush
       if (i % 5 == 0) {
         println("Iteration " + i)
         // (phis ++ documents.map(_.theta)).foreach(_.export)
         sampler.export()
         //(phis ++ documents.map(_.theta)).foreach(p => p.set(sampler.collapsed(p).value)(null))
-        // Turned off hyperparameter optimization
-        //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
+        DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
         phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
         //forIndex(numTopics)(i => println("Topic " +i+"  "+ sampler.collapsed(phis).asInstanceOf[CollapsedFiniteMixture[DirichletMultinomial]].apply(i).top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))

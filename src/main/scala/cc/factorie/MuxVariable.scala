@@ -12,30 +12,16 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie
-import cc.factorie._
 
-package object generative {
-
-  type GenerativeFactor = GenerativeTemplate#Factor
-
-  val defaultGenerativeModel = new Model(
-      new DiscreteTemplate, 
-      new DiscreteMixtureTemplate,
-      new DiscreteSeqTemplate,
-      new DiscreteSeqMixtureTemplate,
-      new GaussianTemplate)
-
-  implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
-    val value: IndexedSeq[Double] = s.toIndexedSeq
-    def apply(i:Int) = value(i)
-    def length = value.length
-    //def sampleInt = maths.nextDiscrete(value)(cc.factorie.random)
-  }
-  
-  //implicit val denseDirichletEstimator = new DenseDirichletEstimator
-  //implicit val mutableProportionsEstimator = new MutableProportionsEstimator
-
+/** Appears as a single variable, but actually contains a compact array of values, 
+    each accessible by changing 'muxIndex' from 0 to muxSize-1. 
+    @author Andrew McCallum */
+trait MuxVariable extends Variable {
+  var muxIndex: Int = 0
+  def muxSize: Int
+  //def muxAppend(v:ValueType): Unit
+  def values: Seq[Value]
 }
+
+

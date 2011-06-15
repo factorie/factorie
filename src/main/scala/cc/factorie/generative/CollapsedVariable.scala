@@ -17,21 +17,24 @@
 package cc.factorie.generative
 import cc.factorie._
 
+trait VarWithCollapsedType[+CT<:CollapsedVar] extends GeneratedVar {
+  type CollapsedType = CT
+}
+
 /** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.
     @author Andrew McCallum */
-trait CollapsibleVar extends GeneratedVar {
-  type CollapsedType <: CollapsedVar
+trait CollapsibleVar extends GeneratedVar with VarWithCollapsedType[CollapsedVar] {
   def newCollapsed: CollapsedType
-  def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit
+  // TODO Consider putting this in cc.factorie.Variable
+  def setFrom(v:Variable)(implicit d:DiffList): Unit
+  //def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit
 }
 // TODO Is there actually a need for CollapsibleVar; perhaps just CollapsibleParameter is enough?
 
 /** A Parameter that can be marginalized out (collapsed).
     @see DirichletMultinomial
     @author Andrew McCallum */
-trait CollapsibleParameter extends Parameter with CollapsibleVar {
-  type CollapsedType <: CollapsedParameter
-}
+trait CollapsibleParameter extends Parameter with CollapsibleVar with VarWithCollapsedType[CollapsedParameter]
 
 /** Something that represents the collapsing of an existing GeneratedVariable. */
 trait CollapsedVar extends GeneratedVar

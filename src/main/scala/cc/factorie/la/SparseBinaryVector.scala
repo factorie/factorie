@@ -22,6 +22,7 @@ import OuterProductMath.outerProductArray
     @author Andrew McCallum */
 class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray:Boolean = true, preSorted:Boolean = false) extends Vector {
   /* init as flat outer product of vectors */
+  def this(aLength:Int) = this(aLength, null, true, false)
   def this(v1:SparseBinaryVector, v2:SingletonBinaryVec) = 
     this(v1.size * v2.size, 
          outerProductArray(v1.ind, v1.activeDomainSize, v2.singleIndex, v2.size),
@@ -120,8 +121,12 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
     def hasNext = i < SparseBinaryVector.this.length
     def next = {
       i += 1
-      if (ind(position) < i) position += 1
-      if (ind(position) == i) 1.0 else 0.0
+      if (position < _size) {
+        if (ind(position) < i) position += 1
+        if (ind(position) == i) 1.0 else 0.0
+      } else {
+       0.0
+      }
     }
   }
   def activeElements = new Iterator[(Int,Double)] {

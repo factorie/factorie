@@ -22,11 +22,11 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 
-/** A raw document classifier without using any of the facilities of cc.factorie.app.DocumentClassification,
+/** A raw document classifier without using any of the facilities of cc.factorie.app.classify.document,
  and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */
 object DocumentClassifier2 {
 
-  object DocumentDomain extends CategoricalsDomain[String]
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)

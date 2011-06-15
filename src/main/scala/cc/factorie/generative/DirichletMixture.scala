@@ -40,7 +40,7 @@ abstract class DirichletMixture(val meanComponents:FiniteMixture[Proportions],
                        val precisionComponents:FiniteMixture[RealVarParameter],
                        val choice:MixtureChoiceVar,
                        initialValue:ProportionsValue = Nil)
-extends DenseCountsProportions(meanComponents(choice.intValue)) with MixtureGeneratedVar with CollapsibleParameter {
+extends DenseCountsProportions(meanComponents(choice.intValue)) with MixtureGeneratedVar with CollapsibleParameter with VarWithCollapsedType[DenseDirichletMultinomial] {
   meanComponents.addChild(this)(null)
   precisionComponents.addChild(this)(null)
   choice.addOutcome(this)
@@ -52,11 +52,14 @@ extends DenseCountsProportions(meanComponents(choice.intValue)) with MixtureGene
   //def chosenParents = Seq(meanComponents(choice.intValue), precisionComponents(choice.intValue))
   override def parents: Seq[Parameter] = List[Parameter](meanComponents, precisionComponents) ++ super.parents
   // TODO But note that this below will not yet support sampling of 'choice' with collapsing.
-  type CollapsedType = DenseDirichletMultinomial // Make this DenseDirichletMultinomialMixture to support sampling 'choice' with collapsing
+  // TODO Make CollapsedType DenseDirichletMultinomialMixture to support sampling 'choice' with collapsing
   def newCollapsed = {
     //println("DenseDirichletMixture.newCollapsed mean.size="+mean.size)
     new DenseDirichletMultinomial(mean, precision)
+    throw new Error("Yet to implement childStats initialization.")
   }
-  def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit = set(c)(d)
+  def setFrom(v:Variable)(implicit d:DiffList): Unit = v match {
+    case ddm:DenseDirichletMultinomial => set(ddm)(d)
+  }
 }
 

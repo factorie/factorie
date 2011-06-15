@@ -57,7 +57,7 @@ trait Sampler[C] {
     postIterationHooks
     if (!postIterationHook) return 
   }
-  def processAll(contexts:Iterable[C], numIterations:Int = 1): Unit = for (i <- 0 to numIterations) processN(contexts)
+  def processAll(contexts:Iterable[C], numIterations:Int = 1): Unit = for (i <- 0 until numIterations) processN(contexts)
   private var processingWithoutContext = false
   def process(count:Int): Unit = {
     processingWithoutContext = true // examined in process()

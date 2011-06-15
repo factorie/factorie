@@ -42,7 +42,7 @@ class DirichletTemplate extends GenerativeTemplateWithStatistics3[Dirichlet,Prop
 }
 object DirichletTemplate extends DirichletTemplate
 
-trait Dirichlet extends Proportions with GeneratedVar with CollapsibleParameter {
+trait Dirichlet extends Proportions with GeneratedVar with CollapsibleParameter with VarWithCollapsedType[DirichletMultinomial] {
   /** Return the mean of the Dirichlet distribution from which this Proportions was generated.
       Note that the returned object may be a temporary one generated for the return value, 
       and may not have this Proportions as a child. */
@@ -54,8 +54,24 @@ trait Dirichlet extends Proportions with GeneratedVar with CollapsibleParameter 
   //override def parents: Seq[Parameter] = List(mean, precision)
   def alpha(index:Int): Double = mean(index) * precision.doubleValue
   def alphas: Seq[Double] = mean.map(_ * precision.doubleValue)
-  //def sampleProportions: Proportions = new DenseProportions(mean.length) 
-  type CollapsedType <: DirichletMultinomial
+  //def sampleProportions: Proportions = new DenseProportions(mean.length)
+  def generatedChildValues: Iterable[DiscreteValue] = {
+    val result = new scala.collection.mutable.ArrayBuffer[DiscreteValue]
+    for (child <- children) child match {
+      case mcs:MixtureComponents[_] => {
+        val indexInMixture = mcs.indexOf(this)
+        require(indexInMixture >= 0)
+        for (grandchild <- mcs) grandchild match {
+          case dmv:DiscreteMixtureVar => if (dmv.choice.intValue == indexInMixture) result += dmv.value
+          case dmsv:DiscreteMixtureSeqVar => forIndex(dmsv.length)(seqIndex => {
+            if (dmsv.choice.intValue(seqIndex) == indexInMixture) result += dmsv.value(seqIndex)
+          })
+        }
+      }
+      case gdv:GeneratedDiscreteVar => result += gdv.value
+    }
+    result
+  }
 }
 
 trait MutableDirichlet extends MutableProportions with Dirichlet with MutableGeneratedVar {
@@ -80,7 +96,7 @@ object Dirichlet {
 }
 
 /** Proportions, Dirichlet-distributed, with dense separate values for all dimensions. */
-class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter, p:Seq[Double] = Nil) extends DenseProportions(if (p.length == 0) initialMean else p) with MutableDirichlet  {
+class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter, p:Seq[Double] = Nil) extends DenseProportions(if (p.length == 0) initialMean else p) with MutableDirichlet with VarWithCollapsedType[DenseDirichletMultinomial]  {
   def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealVariableParameter(alpha * size), Nil)
   //def this[T<:DiscreteVars](alpha:Double)(implicit m:Manifest[T]) = this(Domain.get[T](m.erasure).size, alpha)
   // TODO Dispense with these meanRef and precisionRef
@@ -93,9 +109,28 @@ class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter,
   // TODO Why was this next line causing strange compile errors?
   //override def parentRefs = List(meanRef, precisionRef)
   def ~(mean:Proportions, precision:RealVarParameter): this.type = { mean_=(mean)(null); precision_=(precision)(null); this }
-  type CollapsedType = DenseDirichletMultinomial
-  def newCollapsed = new DenseDirichletMultinomial(mean, precision)
-  def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit = set(c)(d)
+  def newCollapsed = {
+    val dm = new DenseDirichletMultinomial(mean, precision)
+    for (child <- children) child match {
+      case mcs:MixtureComponents[_] => {
+          val indexInMixture = mcs.indexOf(this)
+          require(indexInMixture >= 0)
+          for (grandchild <- mcs) grandchild match {
+            case dmv:DiscreteMixtureVar => if (dmv.choice.intValue == indexInMixture) dm.increment(dmv.intValue, 1.0)(null)
+            case dmsv:DiscreteMixtureSeqVar => forIndex(dmsv.length)(seqIndex => {
+              if (dmsv.choice.intValue(seqIndex) == indexInMixture) dm.increment(dmsv.intValue(seqIndex), 1.0)(null)
+            })
+          }
+      }
+      case gdsv:GeneratedDiscreteSeqVar => gdsv.foreach(discreteValue => dm.increment(discreteValue.intValue, 1.0)(null))
+      case gdv:GeneratedDiscreteVar => dm.increment(gdv.intValue, 1.0)(null)
+    }
+    //println("DenseDirichletMultinomial countsTotal="+dm.countsTotal)
+    dm
+  }
+  def setFrom(v:Variable)(implicit d:DiffList): Unit = v match {
+    case ddm:DenseDirichletMultinomial => set(ddm)(d)
+  }
 }
 
 
@@ -108,11 +143,12 @@ object MutableDirichletEstimator extends Estimator[MutableProportions] {
       assert(map(d.mean) == null); assert(map(d.precision) == null)
       // Sum in influence of parents
       e.increment(d.mean.map(_ * d.precision.doubleValue))(null)
+      throw new Error("Implementation pending a re-visitation of Parameter.weightedGeneratedChildren implementation.")
       // Sum in influence of children
-      for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
+      /*for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
         case x:DiscreteVar => e.increment(x.intValue, weight)(null)
         case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
-      }
+      }*/
       // Set the DenseDirichlet to the newly estimated value
       d.set(e)(null)
     }
@@ -121,7 +157,7 @@ object MutableDirichletEstimator extends Estimator[MutableProportions] {
 
 // TODO Perhaps all Dirichlet* classes should be re-implemented in terms of "alpha:Masses" instead of "precision" in order to avoid some of this awkwardness.
 
-class GrowableDenseDirichlet(val alpha:Double /*, p:Seq[Double] = Nil*/ ) extends GrowableDenseCountsProportions with MutableDirichlet {
+class GrowableDenseDirichlet(val alpha:Double, val dimensionDomain: DiscreteDomain /*, p:Seq[Double] = Nil*/ ) extends GrowableDenseCountsProportions(8) with MutableDirichlet with VarWithCollapsedType[GrowableDenseDirichletMultinomial] {
   //def this(alpha:Double) = this(new GrowableUniformProportions(this), new RealVariableParameter(alpha))
   def mean = new GrowableUniformProportions(this)
   def precision = new RealFunction {
@@ -129,17 +165,35 @@ class GrowableDenseDirichlet(val alpha:Double /*, p:Seq[Double] = Nil*/ ) extend
     def pr = 1.0
     def parents = List(GrowableDenseDirichlet.this) // TODO But note that GrowableDenseDirichlet doesn't have this as a child.
   }
-  type CollapsedType = GrowableDenseDirichletMultinomial
-  def newCollapsed = new GrowableDenseDirichletMultinomial(alpha)
-  def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit = set(c)(d)
+  def newCollapsed = {
+    val dm = new GrowableDenseDirichletMultinomial(alpha, dimensionDomain)
+    for (child <- children) child match {
+      case mcs:MixtureComponents[_] => {
+        val indexInMixture = mcs.indexOf(this)
+        require(indexInMixture >= 0)
+        for (grandchild <- mcs.children) grandchild match {
+          case dmv:DiscreteMixtureVar => if (dmv.choice.intValue == indexInMixture) dm.increment(dmv.intValue, 1.0)(null)
+          case dmsv:DiscreteMixtureSeqVar => forIndex(dmsv.length)(seqIndex => {
+            if (dmsv.choice.intValue(seqIndex) == indexInMixture) dm.increment(dmsv.intValue(seqIndex), 1.0)(null)
+          })
+        }
+      }
+      case gdv:GeneratedDiscreteVar => dm.increment(gdv.intValue, 1.0)(null)
+    }
+    //println("GrowableDenseDirichlet countsTotal="+dm.countsTotal)
+    dm
+  }
+  def setFrom(v:Variable)(implicit d:DiffList): Unit = v match {
+    case gddm:GrowableDenseDirichletMultinomial => set(gddm)(d)
+  }
 }
 
 
 object DirichletMomentMatching {
   def estimate(mean:DenseProportions, precision:RealVariableParameter, model:Model = cc.factorie.generative.defaultGenerativeModel): Unit = {
-    val meanChildren = mean.generatedChildren
+    val meanChildren = mean.children //mean.generatedChildren // TODO Without "generatedChildren" this no longer works for Dirichlet mixtures.
     assert(meanChildren.size > 1)
-    assert(meanChildren.size == precision.generatedChildren.size) // TODO We are assuming that the contents are the same.
+    assert(meanChildren.size == precision.children.size) //precision.generatedChildren.size // TODO We are assuming that the contents are the same.
     //val factors = model.factors(List(mean, precision)); assert(factors.size == mean.children.size); assert(factors.size == precision.children.size)
     // Calculcate and set the mean
     val m = new ProportionsArrayValue(new Array[Double](mean.length))

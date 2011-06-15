@@ -65,13 +65,13 @@ hashtable whose keys were the variable classes.  Furthermore Domain
 objects were often created for the user auto-magically.  This scheme
 lacked flexibility and was sometimes confusing.  The one-to-one
 correspondence has now been removed.  The 'domain' method in Variable
-is now abstract.  Some subclasses of Variable define this method,
-others still leave it abstract.  For example, in subclasses of
-DiscreteVariable and CategoricalVariable you must define the 'domain'
-method.  In these cases you must also create your domain objects
-explicitly.  Thus we have sacrificed a little brevity for clarity and
-flexibility.  Here is an example of typical code for creating class
-labels:
+is now abstract.  Some subclasses of Variable define this method, such
+as RealVariable; others still leave it abstract.  For example, in
+subclasses of DiscreteVariable and CategoricalVariable you must define
+the 'domain' method.  In these cases you must also create your domain
+objects explicitly.  Thus we have sacrificed a little brevity for
+clarity and flexibility.  Here is an example of typical code for
+creating class labels:
 
 object MyLabelDomain extends CategoricalDomain[String]
 class MyLabel(theValue:String) extends CategoricalVariable(theValue) {

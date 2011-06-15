@@ -19,6 +19,22 @@ trait LogProb {
 
   val log2 = math.log(2);
 
+  /** Return the entropy of the normalized distribution p.
+      The log is w.r.t. base 2.  */
+  def entropy(p:Seq[Double]): Double = {
+    var result = 0.0
+    var i = p.length - 1
+    var pv = 0.0
+    while (i >= 0) {
+      pv = p(i)
+      require(pv >= 0.0, pv)
+      require(pv <= 1.000001)
+      if (pv > 0.0)
+        result -= pv * math.log(pv)
+      i -= 1
+    }
+    result / log2
+  }
 
   /**
    * Returns the KL divergence, K(p1 || p2).

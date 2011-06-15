@@ -20,9 +20,9 @@ import cc.factorie.la.SparseBinaryVector
     The subclass CategoricalVariable holds a single CategoricalValue.
     The subclass FeatureVectorVariable holds multiple CategoricalValues, each with a weight.
     @author Andrew McCallum */
-trait CategoricalsVar[T] extends DiscretesVar with VarAndValueType[CategoricalsVar[T],CategoricalsValue[T]] {
+trait CategoricalVectorVar[T] extends DiscreteVectorVar with VarAndValueType[CategoricalVectorVar[T],CategoricalVectorValue[T]] {
   type CategoryType = T
-  def domain: CategoricalsDomain[T]
+  def domain: CategoricalVectorDomain[T]
   def update(elt:T, newValue:Double): Unit = 
     vector.update(domain.dimensionDomain.index(elt), newValue)
   def increment(elt:T, incr:Double): Unit = {
@@ -31,22 +31,22 @@ trait CategoricalsVar[T] extends DiscretesVar with VarAndValueType[CategoricalsV
   }
 }
 
-abstract class CategoricalsVariable[T] extends VectorVariable with CategoricalsVar[T] {
+abstract class CategoricalVectorVariable[T] extends VectorVariable with CategoricalVectorVar[T] {
   thisVariable =>
-  _set(new cc.factorie.la.GrowableSparseVector(domain.dimensionDomain) with CategoricalsValue[T] {
+  _set(new cc.factorie.la.GrowableSparseVector(domain.dimensionDomain) with CategoricalVectorValue[T] {
     def domain = thisVariable.domain
   })
 }
 
-/** An more traditionally-named alias for CategoricalsVariable */
-abstract class FeatureVectorVariable[T] extends CategoricalsVariable[T]
+/** An more traditionally-named alias for CategoricalVectorVariable */
+abstract class FeatureVectorVariable[T] extends CategoricalVectorVariable[T]
 
-trait BinaryCategoricalsVar[T] extends CategoricalsVar[T] {
+trait BinaryCategoricalVectorVar[T] extends CategoricalVectorVar[T] {
   def +=(value:T): Unit 
   def ++=(values:Iterable[T]): Unit
 }
 
-trait SparseBinaryCategoricalsVar[T] extends SparseBinaryDiscretesVar with BinaryCategoricalsVar[T] with VarAndValueType[SparseBinaryCategoricalsVar[T],SparseBinaryVector with CategoricalsValue[T]] {
+trait SparseBinaryCategoricalVectorVar[T] extends SparseBinaryDiscreteVectorVar with BinaryCategoricalVectorVar[T] with VarAndValueType[SparseBinaryCategoricalVectorVar[T],SparseBinaryVector with CategoricalVectorValue[T]] {
   def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.dimensionDomain.getCategory(i)); result }
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
@@ -55,7 +55,7 @@ trait SparseBinaryCategoricalsVar[T] extends SparseBinaryDiscretesVar with Binar
     val idx = domain.dimensionDomain.index(value);
     if (idx == CategoricalDomain.NULL_INDEX) {
       if (!skipNonCategories)
-        throw new Error("SparseBinaryCategoricalsVar += value " + value + " not found in domain " + domain)
+        throw new Error("SparseBinaryCategoricalVectorVar += value " + value + " not found in domain " + domain)
     } else {
       this.+=(idx)
     }
@@ -64,10 +64,10 @@ trait SparseBinaryCategoricalsVar[T] extends SparseBinaryDiscretesVar with Binar
   override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString+"="+i).mkString(printName+"(", ",", ")")
 }
 
-abstract class BinaryFeatureVectorVariable[T] extends VectorVariable with SparseBinaryCategoricalsVar[T] {
+abstract class BinaryFeatureVectorVariable[T] extends VectorVariable with SparseBinaryCategoricalVectorVar[T] {
   thisVariable =>
   def this(initVals:Iterable[T]) = { this(); this.++=(initVals) }
-  _set(new cc.factorie.la.SparseBinaryVector(-1) with CategoricalsValue[T] {
+  _set(new cc.factorie.la.SparseBinaryVector(-1) with CategoricalVectorValue[T] {
     def domain = thisVariable.domain
     override def length = domain.dimensionSize
   })
@@ -79,22 +79,29 @@ abstract class BinaryFeatureVectorVariable[T] extends VectorVariable with Sparse
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.
     Concrete implementations include CategoricalVariable and CategoricalObservation. 
     @author Andrew McCallum */
-trait CategoricalVar[A] extends CategoricalsVar[A] with DiscreteVar with VarAndValueType[CategoricalVar[A],CategoricalValue[A]] {
+trait CategoricalVar[A] extends CategoricalVectorVar[A] with DiscreteVar with VarAndValueType[CategoricalVar[A],CategoricalValue[A]] {
   def domain: CategoricalDomain[A]
   def categoryValue: A = if (value ne null) value.category else null.asInstanceOf[A]
   override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
-} 
+}
+
+trait MutableCategoricalVar[A] extends CategoricalVar[A] with MutableVar {
+  def setCategory(newCategory:A)(implicit d: DiffList): Unit = set(domain.getValue(newCategory))
+}
 
 /** A DiscreteVariable whose integers 0...N are associated with an object of type A. 
     @author Andrew McCallum */
-abstract class CategoricalVariable[A] extends DiscreteVariable with CategoricalVar[A] {
-  // What I want to do is "extends DiscreteVariable(Domain[A].index(initialValue))
-  // but there is no way to obtain this.getClass obtain the Domain for the constructor above, so we initialize with dummy 0
-  // and then set to proper value in this(initialValue:A) constructor below.
+abstract class CategoricalVariable[A] extends DiscreteVariable with MutableCategoricalVar[A] {
   def this(initialCategory:A) = { this(); _set(domain.getValue(initialCategory)) }
   //def this(initalValue:ValueType) = { this(); _set(initialValue) }
-  def setCategory(newValue:A)(implicit d: DiffList): Unit = set(domain.index(newValue))
 }
+
+/*abstract class CategoricalArrayVariable[A](initialCategories:Seq[A])
+         extends DiscreteArrayVariable(Nil.asInstanceOf[Seq[Int]]) with VarAndValueType[CategoricalArrayVariable[A],Seq[CategoricalValue[A]]]
+{
+  initialCategories.foreach(c => values += domain.getValue(c))
+  def appendCategory(category:A): Unit = appendValue(domain.getValue(category))
+}*/
 
 
 /** When mixed in to a CategoricalVariable, the variable's Domain will count the number of calls to 'index'.  

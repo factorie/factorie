@@ -38,7 +38,7 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
     val alphaSum = precision.doubleValue
     // TODO Consider pre-baking mean and alphaSum into counts, to avoid this extra math, and make faster.
     val result = (counts(index) + mean(index) * alphaSum) / (countsTotal + alphaSum)
-    assert(result >= 0.0, "alphaSum="+alphaSum+" count="+counts(index)+" mean="+mean(index)+" countsTotal="+countsTotal)
+    assert(result >= 0.0 && result != Double.PositiveInfinity, "alphaSum="+alphaSum+" count="+counts(index)+" mean="+mean(index)+" countsTotal="+countsTotal)
     result
   }
   /*override def addChild(c:GeneratedVar)(implicit d:DiffList): Unit = {
@@ -68,18 +68,20 @@ class DenseDirichletMultinomial(val mean:Proportions, val precision:RealVarParam
   //def estimate(map:Map[Variable,Variable]): Unit = throw new Error
 }
 
-class GrowableDenseDirichletMultinomial(val alpha:Double) extends GrowableDenseCountsProportions with DirichletMultinomial {
+class GrowableDenseDirichletMultinomial(val alpha:Double, val dimensionDomain:DiscreteDomain) extends GrowableDenseCountsProportions with DirichletMultinomial {
   lazy val mean = new GrowableUniformProportions(this)
   lazy val precision = new RealFunction {
-    def doubleValue = alpha * GrowableDenseDirichletMultinomial.this.length
-    def pr = 1.0
+    def doubleValue = alpha * dimensionDomain.size //GrowableDenseDirichletMultinomial.this.length
+    def pr = 1.0 // TODO Remove this; no longer necessary
     def parents = List(GrowableDenseDirichletMultinomial.this) // TODO But note that GrowableDenseDirichletMultinomial doesn't have this as a child.
   }
+  //override def length: Int = 
   // A little faster than the more generic one in its superclass
   override def apply(index:Int) : Double = {
     val alphaSum = alpha * this.length
     val result = (counts(index) + alpha) / (countsTotal + alphaSum)
-    assert(result >= 0.0, "alphaSum="+alphaSum+" count="+counts(index)+" mean="+mean(index)+" countsTotal="+countsTotal)
+    //println("GrowableDenseDirichletMultinomial.apply "+result)
+    assert(result >= 0.0 && result != Double.PositiveInfinity, "alphaSum="+alphaSum+" count="+counts(index)+" mean="+mean(index)+" countsTotal="+countsTotal)
     result
   }
 

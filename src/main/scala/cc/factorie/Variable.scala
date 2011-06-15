@@ -39,6 +39,8 @@ trait VarAndValueType[+This<:Variable,+VT] extends ValueType[VT] {
 }
 // TODO Consider renaming ValueAndVarType[+VT,+This<:Variable] to match other ordering of self-type going last.
 
+
+
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
    <p>
    You should never make a Variable a Scala 'case class' because then
@@ -252,3 +254,4 @@ trait IterableSettings {
 // TODO Keep this even though IterableDomain may be the prefered mechanism for many cases,
 // because in some cases certain variable may iterate over only a subset of the domain's values.
 
+//NEW trait IterableValues { def possibleValues: Iterator[Value] }

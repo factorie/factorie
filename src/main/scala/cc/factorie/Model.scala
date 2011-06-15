@@ -34,8 +34,9 @@ class Model(templates:Template*) extends IndexedSeq[Template] {
 
   // Jumping through hoops just to call automatically call .init on templates that are added.
   // This in turn is just a work-around for the fact that we can't get Manifests for traits because traits cannot take constructor arguments.
-  def ++=(templates:Iterable[T]) = ts ++= templates
-  def +=(template:T) = ts += template
+  def ++=(templates:Iterable[Template]) = ts ++= templates
+  def +=(template:Template) = ts += template
+  def clear = ts.clear
 
   def templatesOf[T2<:T](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
     val templateClass = m.erasure
@@ -56,6 +57,7 @@ class Model(templates:Template*) extends IndexedSeq[Template] {
   def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else this.flatMap(template => template.factors(d))
   def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
   def factorsOf[T2<:T](cls:Class[T2])(d:DiffList): Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOfClass[T2](cls).flatMap(template => template.factors(d))
+  // TODO Rename factorsOfAll
   def factorsOf[T2<:T](vs:Iterable[Variable])(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
   def factorsOf[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
   /** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */

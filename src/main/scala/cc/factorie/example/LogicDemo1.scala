@@ -47,11 +47,11 @@ object LogicDemo1 {
     // Define model
     val model = new Model (
       // Apriori, you are 1/10 times more likely to have cancer than not
-      Forany[Person] { p => p.cancer } * 0.1, 
+      //Forany[Person] { p => p.cancer } * 0.1, 
       // If you smoke, you are 2 times more likely to have cancer
-      Forany[Person] { p => p.smokes ==> p.cancer } * 2.0
+      //Forany[Person] { p => p.smokes ==> p.cancer } * 2.0
       // For each of your friends that smoke, you are 1.5 times more likely to smoke yourself
-      //Forany[Person] { p => p.friends.smokes <==> p->Smokes } * 1.5
+      ////Forany[Person] { p => p.friends.smokes <==> p->Smokes } * 1.5
     )
 
     // Create the data

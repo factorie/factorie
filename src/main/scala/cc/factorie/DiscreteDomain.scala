@@ -15,7 +15,7 @@
 package cc.factorie
 import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
-// Discretes refers to vectors with weights over a domain of multiple "DiscreteValue"s.
+// DiscreteVector refers to vectors with weights over a domain of multiple "DiscreteValue"s.
 // Discrete refers to single a DiscreteValue, which can also be seen as a singleton vector.
 
 // For variables that hold one or more discrete value weights in a vector
@@ -23,14 +23,14 @@ import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,Buffered
 /** A value consisting of one or more discrete values, representable as a vector. 
     Not that a single "DiscreteValue" is a subclass of this, represented as a "singleton vector",
     with 1.0 at the value's intValue and 0.0 everywhere else. */
-trait DiscretesValue extends cc.factorie.la.Vector {
-  def domain: DiscretesDomain
+trait DiscreteVectorValue extends cc.factorie.la.Vector {
+  def domain: DiscreteVectorDomain
 }
 
-// TODO Consider changing to DiscretesDomain for parallel naming?
-/** A Domain for variables whose value is a DiscretesValue, which is a Vector that also has a pointer back to its domain.
+// TODO Consider changing to DiscreteVectorDomain for parallel naming?
+/** A Domain for variables whose value is a DiscreteVectorValue, which is a Vector that also has a pointer back to its domain.
     This domain has a non-negative integer size.  The method 'size' is abstract. */
-trait DiscretesDomain extends VectorDomain with ValueType[DiscretesValue] {
+trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscreteVectorValue] {
   /** The maximum size to which this domain will be allowed to grow.  
       The 'size' method may return values smaller than this, however.
       This method is used to pre-allocate a Template's parameter arrays and is useful for growing domains. */
@@ -45,12 +45,12 @@ trait DiscretesDomain extends VectorDomain with ValueType[DiscretesValue] {
 // For variables that hold a single discrete value
 
 /** A value in a DiscreteDomain. */
-trait DiscreteValue extends DiscretesValue with cc.factorie.la.SingletonBinaryVec {
+trait DiscreteValue extends DiscreteVectorValue with cc.factorie.la.SingletonBinaryVec {
   def domain: DiscreteDomain
   def intValue: Int
 }
 
-trait DiscreteDomain extends DiscretesDomain with IterableDomain[DiscreteValue] with ValueType[DiscreteValue] {
+trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteValue] with ValueType[DiscreteValue] {
   thisDomain =>
   // Make method 'size' abstract again.
   // Note that we are reversing the order of the traditional size/length dependency
