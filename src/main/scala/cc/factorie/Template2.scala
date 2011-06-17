@@ -23,6 +23,7 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
+// TODO Pull unroll methods into DynamicTemplate2 and look for VarWithFactors in Template.factors.
 abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template
 {
   type NeighborType1 = N1
@@ -50,7 +51,7 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
   def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
   def unroll2s(v:N2#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll2s.")
   type FactorType = Factor
-  final case class Factor(_1:N1, _2:N2) extends super.Factor {
+  final case class Factor(_1:N1, _2:N2, override var outer:cc.factorie.Factor = null) extends super.Factor {
     if (_neighborDomains eq null) {
       _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
       _neighborDomain2 = _2.domain.asInstanceOf[Domain[N2#Value]]

@@ -74,7 +74,7 @@ object VarArgsDemo {
     val x4 = new X(9); for (i <- 1 to 6) x1.addY(i)
 
     println(model.factors(x1))
-    println(model.factors(List(x1,x2,x3,x4)))
+    println(model.factorsAll(List(x1,x2,x3,x4)))
     println(model.factors(x1).head.statistics.score)
   }
 }

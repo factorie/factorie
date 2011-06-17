@@ -42,15 +42,27 @@ object Template {
     factor.
     @author Andrew McCallum */
 trait Factor extends Ordered[Factor] {
+  /** The factor template from which this Factor comes. */
   def template: Template
+  /** In some cases a factor "belongs" to some outer factor which uses this inner one as part of its score calculation.
+      In this case this inner factor should not also be used for score generation because it would be redundant.
+      For example, see method Template{1,2,3,4}.factors() */
+  def outer: Factor
+  def outer_=(f:Factor): Unit
+  def inner: Seq[Factor] = throw new Error("Not yet implemented") // TODO decide whether to have this.
+  /** The number of variables neighboring this factor. */
   def numVariables: Int
   def variable(index: Int): Variable
   def statistics: Statistics
   /** Optionally return pre-calculated Statistics.  By default not actually cached, but may be overridden in subclasses. */
   def cachedStatistics: Statistics
+  /** This factors contribution to the unnormalized log-probability of the current possible world. */
   def score: Double = statistics.score
+  /** Returns the collection of variables neighboring this factor. */
   def variables: IndexedSeq[Variable] = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
-  def randomVariable(implicit random:Random = cc.factorie.random): Variable = variable(random.nextInt(numVariables))
+  /** Randomly selects and returns one of this factor's neighbors. */
+  @deprecated def randomVariable(implicit random:Random = cc.factorie.random): Variable = variable(random.nextInt(numVariables))
+  /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
   def copy(s:Substitutions): Factor
   // Implement Ordered, such that worst (lowest) scores are considered "high"
   def compare(that: Factor) = {val d = that.score - this.score; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
@@ -72,7 +84,7 @@ trait Factor extends Ordered[Factor] {
     }
     _hashCode
   }
-  def factorName = template.factorName
+  def factorName = template.templateName
   override def toString: String = variables.mkString(factorName+"(", ",", ")")
 }
 
@@ -103,7 +115,7 @@ trait Template { thisTemplate =>
   type FactorType <: Factor
   type ValuesType <: Values
   type StatisticsType <: Statistics
-  /** If true, method "factors" will only create Factors for variables whose domains matche neighborDomains. */
+  /** If true, method "factors" will only create Factors for variables whose domains match neighborDomains. */
   var matchNeighborDomains = true
   protected var _neighborDomains: ArrayBuffer[Domain[_]] = null
   protected def _newNeighborDomains = new ArrayBuffer[Domain[_]]
@@ -124,27 +136,27 @@ trait Template { thisTemplate =>
   }
   /** Used by the trickery that obtains Manifests for Statistics*[] traits.  
       See template2initialized in Package.scala. */
-  def defaultFactorName = "Factor"
-  var factorName = defaultFactorName
+  def defaultTemplateName = "Factor"
+  var templateName = defaultTemplateName
   /** Assign this Template a name which will be used later when its factors are printed. */
-  def setName(n:String): this.type = { factorName = n; this }
+  def setName(n:String): this.type = { templateName = n; this }
   /** Assign this Template a name which will be used later when its factors are printed. */
   def %(n:String): this.type = setName(n) // because % is the comment character in shell languages such as /bin/sh and Makefiles.
   /**A version of factors that takes the Diff object instead of just the variable */
   def factors(d: Diff): Iterable[FactorType] = if (d.variable == null) Nil else factors(d.variable)
-  def factors(v: Variable): Iterable[FactorType]
+  def factors(v: Variable): Iterable[FactorType] // TODO Consider returning Iterable[Factor]
   def factors(difflist: DiffList): Iterable[FactorType] = {
     //var result = new LinkedHashSet[Factor]()
     var result = new HashSet[FactorType]()
-    for (diff <- difflist; factor <- factors(diff)) { if (factor eq null) throw new Error("unroll returned null Factor") else result += factor }
+    for (diff <- difflist; factor <- factors(diff)) { if (factor eq null) throw new Error("Template.factors returned null Factor") else result += factor }
     //difflist.foreach(diff => result ++= factors(diff))
-    result.toList // TODO is this necessary?
+    result.toSeq // TODO is this necessary?
   }
   def factors(variables:Iterable[Variable]): Iterable[FactorType] = {
     if (variables.size == 1) return factors(variables.head) // Efficiently avoids the HashSet.
     //var result = new LinkedHashSet[FactorType]()
     var result = new HashSet[FactorType]()
-    for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("unroll returned null Factor") else result += factor }
+    for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("Template.factors returned null Factor") else result += factor }
     result.toSeq // TODO is this necessary?
   }
   /** Called in implementations of factors(Variable) to give the variable a chance
@@ -178,8 +190,8 @@ trait Template { thisTemplate =>
   // New style for iterating over neighbor value combinations
   def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values]
 
-  /** The filename into which to save this factor.  If factorName is not the default, use it, otherwise use the class name. */
-  protected def filename: String = if (factorName != defaultFactorName) factorName else this.getClass.getName
+  /** The filename into which to save this factor.  If templateName is not the default, use it, otherwise use the class name. */
+  protected def filename: String = if (templateName != defaultTemplateName) templateName else this.getClass.getName
   def save(dirname:String): Unit = {}
   def load(dirname:String): Unit = {}
 }

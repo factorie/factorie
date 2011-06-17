@@ -47,6 +47,7 @@ class SeqVars[V<:Variable](override val toSeq:Seq[V]) extends Vars[V] {
 }
 
 class ArrayBufferVars[V<:Variable] extends ArrayBuffer[V] with Vars[V]
+
 object Vars {
   def from[V<:Variable](vs:V*): Vars[V] = new SeqVars(vs)
   def fromSeq[V<:Variable](vs:Seq[V]) = new SeqVars(vs)

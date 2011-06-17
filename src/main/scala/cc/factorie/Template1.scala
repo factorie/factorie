@@ -50,7 +50,7 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Templ
   def unroll1(v:N1): Iterable[FactorType] = new Factor(v)
   def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
   type FactorType = Factor
-  final case class Factor(_1:N1) extends super.Factor {
+  final case class Factor(_1:N1, override var outer:cc.factorie.Factor = null) extends super.Factor {
     if (_neighborDomains eq null) {
       _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
       _neighborDomains = _newNeighborDomains

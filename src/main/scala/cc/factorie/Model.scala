@@ -54,22 +54,40 @@ class Model(templates:Template*) extends IndexedSeq[Template] {
     for (t <- this) if (test(t)) ret += t
     ret
   }
-  def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else this.flatMap(template => template.factors(d))
+  def normalize(factors:Seq[Factor], outer:Factor = null): Seq[Factor] = {
+    if (factors.forall(_.outer eq null)) factors
+    else {
+      val result = new scala.collection.mutable.HashSet[Factor] {
+        override def addEntry(f:Factor): Boolean = {
+          if (f.outer eq null) super.addEntry(f)
+          else {
+            var f2 = f.outer
+            while ((f2.outer ne null) && (f2.outer ne outer)) f2 = f2.outer
+            super.addEntry(f2)
+          }
+        }
+      }
+      result.toSeq
+    }
+  }
+  def factors(d:DiffList, outer:Factor = null) : Seq[Factor] = if (d.size == 0) Nil else normalize(this.flatMap(template => template.factors(d)), outer)
   def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
   def factorsOf[T2<:T](cls:Class[T2])(d:DiffList): Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOfClass[T2](cls).flatMap(template => template.factors(d))
   // TODO Rename factorsOfAll
   def factorsOf[T2<:T](vs:Iterable[Variable])(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
   def factorsOf[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
   /** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
-  def factors(v:Variable) : Seq[Factor] = this.flatMap(template => template.factors(v)) //.toList
-  def factors(vs:Iterable[Variable]) : Seq[Factor] = this.flatMap(template => template.factors(vs))
+  def factors(v:Variable) : Seq[Factor] = normalize(this.flatMap(template => template.factors(v)), null)
+  def factors(v:Variable, outer:Factor) : Seq[Factor] = normalize(this.flatMap(template => template.factors(v)), outer)
+  def factorsAll(vs:Iterable[Variable]) : Seq[Factor] = normalize(this.flatMap(template => template.factors(vs)), null)
+  def factorsAll(vs:Iterable[Variable], outer:Factor) : Seq[Factor] = normalize(this.flatMap(template => template.factors(vs)), outer)
   def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.statistics.score)
-  def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistics.score) // For use when the Variable is also Iterable
+  //def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistics.score) // For use when the Variable is also Iterable
   def score(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistics.score)
-  def score(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistics.score)
+  //def score(vars:Iterable[Variable]) : Double = factorsAll(vars).foldLeft(0.0)(_+_.statistics.score)
   /** Score all variables in the Iterable collection.  This method is useful when a Variable is also a Iterable[Variable]; 
       it forces the Iterable interpretation and avoids the single variable interpretation of score(Variable). */
-  def scoreAll(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistics.score)
+  def scoreAll(vars:Iterable[Variable]) : Double = factorsAll(vars).foldLeft(0.0)(_+_.statistics.score)
   /** Returns the average score, that is scoreAll of vars, normalized by the size of the collections vars. */
   def aveScore(vars:Iterable[Variable]): Double = scoreAll(vars) / vars.size
 

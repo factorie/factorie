@@ -61,7 +61,7 @@ class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:M
       closures(v.head).sample(d)
     } else {
       // Get factors, in sorted order of the their classname
-      val factors: Seq[Factor] = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.template.getClass.getName < f2.template.getClass.getName)
+      val factors: Seq[Factor] = model.factorsAll(v).sortWith((f1:Factor,f2:Factor) => f1.template.getClass.getName < f2.template.getClass.getName)
       //println("CollapsedGibbsSampler.process1 factors = "+factors.map(_.template.getClass).mkString)
       var done = false
       val handlerIterator = handlers.iterator

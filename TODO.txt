@@ -61,11 +61,12 @@ Initial value is set by ":=" or "init", not in constructor arguments.
 Those variables that need initialization beyond their initial value can be classes.
 Examples:
  val b = new BooleanVariable := true
+ val b = new BooleanVariable init(true)
  class Word(s:String) extends CategoricalVariable[String] {
-   value = s
+   this.setCategory(s)
    def domain = WordDomain
  }
- 
+  
  
  4. Make Template.unroll enforce a match on variable class AND ON domain
  This would allow multiple new Templates to be put into the same model without creating new classes for them.
@@ -98,5 +99,5 @@ Put in final spanner example
 Create a Gaussian mixture example
 Write README.txt
 Write manual in package.html
-Document how to get a factorie interpretter prompt
+Document how to get a FACTORIE interpreter prompt
 

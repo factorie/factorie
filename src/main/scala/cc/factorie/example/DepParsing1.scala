@@ -272,7 +272,7 @@ object DepParsing1 {
     for (token <- sentence) println("%-3d %-20s %-3d %-3d %s".
         format(token.position, token.word, token.parent.truePosition, token.parent.position,
         if (token.parent.valueIsTarget) " " else "*"))
-    println("#correct = "+objective.score(sentence.map(_.parent)))
+    println("#correct = "+objective.scoreAll(sentence.map(_.parent)))
     println
   }
   

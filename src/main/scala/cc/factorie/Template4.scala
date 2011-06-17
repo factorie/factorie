@@ -68,7 +68,7 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
   def unroll3s(v:N3#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll3s.")
   def unroll4s(v:N4#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll4s.")
   type FactorType = Factor
-  final case class Factor(_1:N1, _2:N2, _3:N3, _4:N4) extends super.Factor {
+  final case class Factor(_1:N1, _2:N2, _3:N3, _4:N4, override var outer:cc.factorie.Factor = null) extends super.Factor {
     if (_neighborDomains eq null) {
       _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
       _neighborDomain2 = _2.domain.asInstanceOf[Domain[N2#Value]]

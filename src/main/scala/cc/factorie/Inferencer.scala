@@ -119,7 +119,7 @@ class BruteForceInferencer[V<:DiscreteVariable with NoVariableCoordination](mode
     var best_score = Double.NegativeInfinity
     var best = null.asInstanceOf[Config]
     do {
-      score = model.score(variables)
+      score = model.scoreAll(variables)
       if (score > best_score || best == null) {
         best = new Config(variables) // snapshot the variable configuration
         best_score = score
