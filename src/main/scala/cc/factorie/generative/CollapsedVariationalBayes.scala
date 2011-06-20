@@ -43,14 +43,14 @@ class CollapsedVariationalBayes(collapse:Iterable[CollapsibleParameter], margina
   def process(v:MutableGeneratedVar): DiffList = {
     assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable
     // Get factors, in sorted order of the their classname
-    val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.template.getClass.getName < f2.template.getClass.getName)
+    val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.factorName < f2.factorName)
     var done = false
     val handlerIterator = handlers.iterator
     val d = new DiffList
     while (!done && handlerIterator.hasNext) {
       done = handlerIterator.next.process(v, factors, this)(d)
     }
-    if (!done) throw new Error("CollapsedVariationalBayes: No sampling method found for variable "+v+" with factors "+factors.map(_.template.getClass.getName).mkString("List(",",",")"))
+    if (!done) throw new Error("CollapsedVariationalBayes: No sampling method found for variable "+v+" with factors "+factors.map(_.factorName).mkString("List(",",",")"))
     d
   }
 }

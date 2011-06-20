@@ -18,6 +18,12 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import scala.collection.mutable.{HashSet,ArrayBuffer}
 
+/** A variable that keeps track of some of its neighboring factors.
+    We can't be guaranteed that it will return all factors; to be sure ask the Model.factors(Variable). */
+trait VarWithFactors extends Variable {
+  def factors: Seq[Factor]
+}
+
 // A collection of abstract Variables (and a generic Template) for generative models (directed Bayesian networks, 
 // as opposed to undirected in which there is not a DAG-shaped generative storyline).
 
@@ -54,13 +60,13 @@ trait GeneratedVar extends Variable {
     result
   }
   /** Parents, jumping over and selecting from MixtureComponents's parents if necessary. */
-  def generativeParents: Seq[Parameter] = {
+  /*def generativeParents: Seq[Parameter] = {
     val p = parents
     this match {
       case self:MixtureGeneratedVar => parents.map(_ match { case mc:MixtureComponents[_] => mc(self.choice.intValue); case p:Parameter => p })
       case _ => parents
     }
-  }
+  }*/
   /** Returns true if the value of this parameter is a deterministic (non-stochastic) function of its parents. */
   def isDeterministic = false
 }

@@ -29,15 +29,15 @@ class Model(templates:Template*) extends IndexedSeq[Template] {
   def apply(i:Int) = ts.apply(i)
   def length = ts.length
   override def iterator = ts.iterator
-
+  
   this ++= templates
-
-  // Jumping through hoops just to call automatically call .init on templates that are added.
-  // This in turn is just a work-around for the fact that we can't get Manifests for traits because traits cannot take constructor arguments.
+  
   def ++=(templates:Iterable[Template]) = ts ++= templates
   def +=(template:Template) = ts += template
   def clear = ts.clear
 
+  // TODO Also add Map[Variable,Factor] for storing Factors that do not belong to an unrolling Template
+  
   def templatesOf[T2<:T](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
     val templateClass = m.erasure
     val ret = new ArrayBuffer[T2]
@@ -67,6 +67,7 @@ class Model(templates:Template*) extends IndexedSeq[Template] {
           }
         }
       }
+      result ++= factors
       result.toSeq
     }
   }
@@ -89,6 +90,7 @@ class Model(templates:Template*) extends IndexedSeq[Template] {
       it forces the Iterable interpretation and avoids the single variable interpretation of score(Variable). */
   def scoreAll(vars:Iterable[Variable]) : Double = factorsAll(vars).foldLeft(0.0)(_+_.statistics.score)
   /** Returns the average score, that is scoreAll of vars, normalized by the size of the collections vars. */
+  // TODO Rename to scoreAve
   def aveScore(vars:Iterable[Variable]): Double = scoreAll(vars) / vars.size
 
   

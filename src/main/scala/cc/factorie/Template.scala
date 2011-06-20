@@ -43,7 +43,7 @@ object Template {
     @author Andrew McCallum */
 trait Factor extends Ordered[Factor] {
   /** The factor template from which this Factor comes. */
-  def template: Template
+  // !!! ??? def template: Template
   /** In some cases a factor "belongs" to some outer factor which uses this inner one as part of its score calculation.
       In this case this inner factor should not also be used for score generation because it would be redundant.
       For example, see method Template{1,2,3,4}.factors() */
@@ -55,11 +55,11 @@ trait Factor extends Ordered[Factor] {
   def variable(index: Int): Variable
   def statistics: Statistics
   /** Optionally return pre-calculated Statistics.  By default not actually cached, but may be overridden in subclasses. */
-  def cachedStatistics: Statistics
+  def cachedStatistics: Statistics = statistics
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
   def score: Double = statistics.score
   /** Returns the collection of variables neighboring this factor. */
-  def variables: IndexedSeq[Variable] = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
+  def variables: Seq[Variable] // = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
   /** Randomly selects and returns one of this factor's neighbors. */
   @deprecated def randomVariable(implicit random:Random = cc.factorie.random): Variable = variable(random.nextInt(numVariables))
   /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
@@ -70,7 +70,7 @@ trait Factor extends Ordered[Factor] {
   //override def canEqual(other: Any) = (null != other) && other.isInstanceOf[Factor]; // TODO Consider putting this back in
   override def equals(other: Any): Boolean = other match {
     case other:Factor =>
-      (this eq other) || ((this.template eq other.template)
+      (this eq other) || ((this.getClass eq other.getClass)
                           && forallIndex(numVariables)(i =>
         (this.variable(i) eq other.variable(i)) ||
                 (this.variable(i).isInstanceOf[Vars[_]] && this.variable(i) == other.variable(i))))
@@ -84,14 +84,15 @@ trait Factor extends Ordered[Factor] {
     }
     _hashCode
   }
-  def factorName = template.templateName
+  def factorName = "Factor"
   override def toString: String = variables.mkString(factorName+"(", ",", ")")
 }
 
 /** A container for all the values of the variables neighboring a factor.
     These are necessary to construct a Statistics object. */
 trait Values /* extends Product with Ordered[Values] */ {
-  def template: Template
+  // !!! ??? def template: Template
+  // def factor: Factor // TODO Consider adding this method
   def statistics: Statistics
   def score: Double = statistics.score
   //def productArity: Int
@@ -101,7 +102,8 @@ trait Values /* extends Product with Ordered[Values] */ {
 /** A container for sufficient statistics of a Factor.  
     There is one of these for each Factor. */
 trait Statistics {
-  def template: Template
+  // !!! ??? def template: Template
+  // def factor: Factor // TODO Consider adding this method
   def score: Double
 }
 
@@ -129,15 +131,17 @@ trait Template { thisTemplate =>
   def score(s:StatisticsType): Double
   @inline final def score(s:cc.factorie.Statistics): Double = score(s.asInstanceOf[StatisticsType])
   trait Factor extends cc.factorie.Factor { 
-    override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
+    def template: TemplateType = Template.this.asInstanceOf[TemplateType];
     override def statistics: StatisticsType
-    override def cachedStatistics: StatisticsType
-    def forSettingsOf(vs:Seq[Variable])(f: =>Unit): Unit = thisTemplate.forSettingsOf(this.asInstanceOf[FactorType], vs)(f)
+    override def cachedStatistics: StatisticsType = statistics
+    override def factorName = template.factorName
+    @deprecated def forSettingsOf(vs:Seq[Variable])(f: =>Unit): Unit = thisTemplate.forSettingsOf(this.asInstanceOf[FactorType], vs)(f)
   }
   /** Used by the trickery that obtains Manifests for Statistics*[] traits.  
       See template2initialized in Package.scala. */
   def defaultTemplateName = "Factor"
-  var templateName = defaultTemplateName
+  var templateName: String = defaultTemplateName
+  def factorName: String = this.getClass.getName
   /** Assign this Template a name which will be used later when its factors are printed. */
   def setName(n:String): this.type = { templateName = n; this }
   /** Assign this Template a name which will be used later when its factors are printed. */
@@ -164,11 +168,11 @@ trait Template { thisTemplate =>
   def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade
   // Values
   trait Values extends cc.factorie.Values {
-    override def template: TemplateType = Template.this.asInstanceOf[TemplateType]
+    def template: TemplateType = Template.this.asInstanceOf[TemplateType]
   }
   // Statistics
   trait Statistics extends cc.factorie.Statistics {
-    override def template: TemplateType = Template.this.asInstanceOf[TemplateType];
+    def template: TemplateType = Template.this.asInstanceOf[TemplateType];
     // TODO Make this non-lazy later, when _statisticsDomains can be initialized earlier
     // Warning: if score gets called too late, might the values of the variables have been changed to something else already?
     lazy val score = Template.this.score(this.asInstanceOf[StatisticsType]) 

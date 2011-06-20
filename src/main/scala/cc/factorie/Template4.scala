@@ -85,7 +85,7 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
     override def variables: IndexedSeq[Variable] = IndexedSeq(_1, _2, _3, _4)
     def values: ValuesType = new Values(_1.value, _2.value, _3.value, _4.value)
     def statistics: StatisticsType = Template4.this.statistics(values)
-    def cachedStatistics: StatisticsType = Template4.this.statistics(values)
+    override def cachedStatistics: StatisticsType = Template4.this.statistics(values)
     // TODO override def cachedStatistics: StatisticsType = Template4.this.cachedStatistics(_1.value, _2.value, _3.value, _4.value)
     def copy(s:Substitutions) = Factor(s.sub(_1), s.sub(_2), s.sub(_3), s.sub(_4))
   } 
