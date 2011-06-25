@@ -53,7 +53,7 @@ trait VariableInferencer[V<:Variable] extends Inferencer[V,V] {
   def inferMarginalizing(targets:Iterable[V], marginalizing:Iterable[V]) = infer(targets, targets ++ marginalizing)
 }
 
-class IIDDiscreteInferencer[V<:MutableDiscreteVar](model:Model) extends VariableInferencer[V] {
+class IIDDiscreteInferencer[V<:MutableDiscreteVar](model:TemplateModel) extends VariableInferencer[V] {
   type LatticeType = IIDDiscreteLattice
   class IIDDiscreteLattice extends HashMap[V,DiscreteMarginal[V]] with Lattice[V] {
     type VariableMarginalType = DiscreteMarginal[V]
@@ -65,7 +65,7 @@ class IIDDiscreteInferencer[V<:MutableDiscreteVar](model:Model) extends Variable
       val a = new Array[Double](v.domain.size)
       forIndex(a.length)(i => {
         v.set(i)(null)
-        a(i) = model.score(v)
+        a(i) = model.score(Seq(v))
       })
       maths.expNormalize(a)
       lattice(v) = new DiscreteMarginal[V](v, a)
@@ -106,7 +106,7 @@ class DiscreteFactorMarginal(val factor:Factor, val values:Array[Double]) extend
     by doing exhaustive enumeration or all possible configurations.
     @author Tim Vieira */
 @deprecated("This class is not yet integrated into the general Inference framework, and may be removed in the future.")
-class BruteForceInferencer[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
+class BruteForceInferencer[V<:DiscreteVariable with NoVariableCoordination](model:TemplateModel) {
 
   // TODO: make this conform to some of the existing Inferencer interfaces.
   // extends VariableInferencer[V]?
@@ -119,7 +119,7 @@ class BruteForceInferencer[V<:DiscreteVariable with NoVariableCoordination](mode
     var best_score = Double.NegativeInfinity
     var best = null.asInstanceOf[Config]
     do {
-      score = model.scoreAll(variables)
+      score = model.score(variables)
       if (score > best_score || best == null) {
         best = new Config(variables) // snapshot the variable configuration
         best_score = score

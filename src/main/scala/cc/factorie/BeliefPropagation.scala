@@ -392,13 +392,13 @@ abstract class BPFactor(val factor: Template#Factor) {
 
 /** A Lattice representing the result of belief propagation inference.  Results can be further updated by calls to various "update" methods.
     @author Andrew McCallum, Kedar Bellare, Greg Druck */
-class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], model: Model) extends Lattice[V] {
+class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], model: TemplateModel) extends Lattice[V] {
   //type V = BeliefPropagation.BPVariable
   type VariableMarginalType = DiscreteMarginal[V]
   type FactorMarginalType = DiscreteFactorMarginal
 
   // TODO Consider moving this further out, for even more efficiency?  But then the cache could get very big.
-  model.foreach(_.clearCachedStatistics)
+  model.templates.foreach(_.clearCachedStatistics)
 
   // Data structure for holding mapping from Variable to the collection of BPFactors that touch it
   private val v2m = new HashMap[Variable, ArrayBuffer[BPFactor]] {override def default(v: Variable) = {this(v) = new ArrayBuffer[BPFactor]; this(v)}}
@@ -498,7 +498,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
     @author Andrew McCallum, Kedar Bellare, Tim Vieira
     @since 0.8
  */
-class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
+class BPInferencer[V<:BeliefPropagation.BPVariable](model:TemplateModel) extends VariableInferencer[V] {
   override type LatticeType = BPLattice[V]
   def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = infer(variables, varying, 1) // TODO Make a more sensible default
   def infer(variables:Iterable[V], varying:Iterable[V], numIterations:Int): LatticeType = {

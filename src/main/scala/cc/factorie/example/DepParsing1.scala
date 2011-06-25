@@ -88,7 +88,7 @@ object DepParsing1 {
     this += new Token("<ROOT>", ".", 0, "ROOT")
   }
   
-  val model = new Model(
+  val model = new TemplateModel(
     /*new Template2[Node,Token] with DotStatistics2[Token#ValueType,Token#ValueType] with SparseWeights {
       def unroll1(n:Node) = Factor(n, n.token)
       def unroll2(t:Token) = Nil
@@ -156,7 +156,7 @@ object DepParsing1 {
     */
   )
   
-  val objective = new Model(
+  val objective = new TemplateModel(
     new TemplateWithStatistics2[Node,BooleanVar] {
       def unroll1(n:Node) = Factor(n, new BooleanVariable(n.valueIsTarget))
       def unroll2(b:BooleanVar) = Nil
@@ -229,7 +229,7 @@ object DepParsing1 {
   }
   
   case class Entry(score:Double, r:Int)
-  def eisner(model:Model, sentence:Seq[Node]): Unit = {
+  def eisner(model:TemplateModel, sentence:Seq[Node]): Unit = {
     val length = sentence.length
     // Score of setting i's parent to j.
     val score = Array.tabulate(length-1, length-1)((i,j) => {
@@ -272,7 +272,7 @@ object DepParsing1 {
     for (token <- sentence) println("%-3d %-20s %-3d %-3d %s".
         format(token.position, token.word, token.parent.truePosition, token.parent.position,
         if (token.parent.valueIsTarget) " " else "*"))
-    println("#correct = "+objective.scoreAll(sentence.map(_.parent)))
+    println("#correct = "+objective.score(sentence.map(_.parent)))
     println
   }
   

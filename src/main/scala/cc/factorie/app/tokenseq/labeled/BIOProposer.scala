@@ -17,7 +17,7 @@ import cc.factorie._
 
 /** A proposer that enforces BIO constraints 
     @author Mike Wick */
-abstract class BIOProposer[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](model:Model) extends MHSampler[L](model)
+abstract class BIOProposer[S<:TokenSeq[T,L,S],T<:Token[S,L,T],L<:Label[S,T,L]](model:TemplateModel) extends MHSampler[L](model)
 {
   def labelSpace : Array[String]
   def labels : Seq[Label[S,T,L]] //def labels = this.map(_.label)

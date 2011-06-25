@@ -34,7 +34,7 @@ trait ParameterAveraging extends WeightUpdates {
   override type TemplatesToUpdate = DotTemplate
   // To apply this learning to just a subset of the WeightedLinearTemplates, you can define "model" to be a subset of the original model.
 
-  def model : Model
+  def model : TemplateModel
   def processCount : Int
   def perceptronIteration = updateCount //other options: updateCount, iterationCount
   val initialIteration = perceptronIteration

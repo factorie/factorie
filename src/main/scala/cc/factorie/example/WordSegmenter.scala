@@ -36,7 +36,7 @@ object WordSegmenterDemo {
   }
 
   // The factor templates that define the model
-  val model = new Model
+  val model = new TemplateModel
   /** Bias term just on labels */
   model += new TemplateWithDotStatistics1[Label] 
   /** Factor between label and observed token */
@@ -67,7 +67,7 @@ object WordSegmenterDemo {
   }
   //model += skipTemplate
 
-  val objective = new Model(new ZeroOneLossTemplate[Label])
+  val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
 
 
 

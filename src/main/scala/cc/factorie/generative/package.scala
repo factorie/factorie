@@ -21,7 +21,7 @@ package object generative {
 
   type GenerativeFactor = GenerativeTemplate#Factor
 
-  val defaultGenerativeModel = new Model(
+  val defaultGenerativeModel = new TemplateModel(
       new DiscreteTemplate, 
       new DiscreteMixtureTemplate,
       new PlatedDiscreteTemplate,

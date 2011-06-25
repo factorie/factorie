@@ -25,7 +25,7 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
   //type TemplatesToUpdate = DotTemplate  // was type TemplatesToUpdate <: DotTemplate, but this no longer provides a Manifest on Scala 2.8
   type TemplatesToUpdate <: DotTemplate
   def templateClassToUpdate: Class[DotTemplate]
-  def model: Model
+  def model: TemplateModel
   var learningMargin = 1.0
   def updateWeights: Unit
   val amIMetropolis = this.isInstanceOf[MHSampler[_/*Variable*/]] // TODO Can we find a way to avoid this special case?

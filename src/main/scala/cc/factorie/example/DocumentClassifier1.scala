@@ -35,7 +35,7 @@ object DocumentClassifier1 {
  
   // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
   val model = classify.newModel[Label,Document];
-  /*val model2 = new Model(
+  /*val model2 = new TemplateModel(
       new TemplateWithDotStatistics2[Label,Document] {
         def unroll1(label:Label) = Factor(label, label.instance)
         def unroll2(instance:Document) = Factor(instance.label, instance)

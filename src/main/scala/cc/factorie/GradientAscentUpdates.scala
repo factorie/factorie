@@ -29,7 +29,7 @@ trait GradientAscentUpdates extends WeightUpdates {
   def templateClassToUpdate = classOf[DotTemplate]
   var learningRate = 1.0
   // var learningRateDecay = 0.9 // TODO I'd like to find a way to decay the learning rate automatically without the user having to manage it.
-  def model : Model
+  def model : TemplateModel
   //def learningMargin : Double
   override def updateWeights : Unit = {
     // Add the gradient directly to each relevant Template's weight vector, with factor 'learningRate'

@@ -113,7 +113,7 @@ object SpanNER1 {
     def unroll1(span:Span) = Factor(span, span.label)
     def unroll2(label:Label) = Factor(label.span, label)
   }
-  val model = new Model(
+  val model = new TemplateModel(
     // Bias term on each individual label 
     //new TemplateWithDotStatistics1[Label],
     // Token-Label within Span
@@ -130,19 +130,19 @@ object SpanNER1 {
     },
     // First Token of Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = v match { case Values(span,label) => Stat(span.head.value, label) }
+      def statistics(v:Values) = v match { case Values(span,label,inner) => Stat(span.head.value, label) }
     },
     // Last Token of Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = v match { case Values(span,label) => Stat(span.last.value, label) }
+      def statistics(v:Values) = v match { case Values(span,label,inner) => Stat(span.last.value, label) }
     },
     // Token before Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = v match { case Values(span,label) => if (span.head.hasPrev) Stat(span.head.prev.value, label) else null }
+      def statistics(v:Values) = v match { case Values(span,label,inner) => if (span.head.hasPrev) Stat(span.head.prev.value, label) else null }
     },
     // Token after Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = v match { case Values(span,label) => if (span.last.hasNext) Stat(span.last.next.value, label) else null }
+      def statistics(v:Values) = v match { case Values(span,label,inner) => if (span.last.hasNext) Stat(span.last.next.value, label) else null }
     },
     // Single Token Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
@@ -159,7 +159,7 @@ object SpanNER1 {
   )
   
   // The training objective
-  val objective = new Model(
+  val objective = new TemplateModel(
     new TemplateWithStatistics2[Span,Label] {
       def unroll1(span:Span) = Factor(span, span.label)
       def unroll2(label:Label) = Factor(label.span, label)
@@ -193,7 +193,7 @@ object SpanNER1 {
   )
   
   // The sampler
-  class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Token](model, objective) {
+  class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends SettingsSampler[Token](model, objective) {
     // The proposer for changes to Spans touching this Token
     def settings(token:Token) = new SettingIterator {
       private val _seq = token.seq

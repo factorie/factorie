@@ -37,29 +37,60 @@ object Template {
 //     (alternatively the score may be calculated using parameter stored externally to the Template,
 //      or in some fixed way without learned parameters).
 
+/** A Factor is a Model because it can return a factor (itself) and a score.
+    A Model is not a Factor because Factors *must* be able to list all the variables they touch;
+     (this is part of how they are de-duplicated);
+     yet a model may only generate Factors on the fly in response to query variables.
+    Factors are deduplicated.  Models are not; 
+     multiple models may each contribute Factors, all of which define the factor graph.  
+    Models can have inner Models, which are used to obtain factors from each.
+     Typically all factors from all inner models are summed together.
+     But a "Case" model may exist, which simply will not return factors that are not in effect;
+     that is, factors from an inner model that are not in effect will never be seen; 
+     whereas inner factors may be seen but know to point to the outer factor that knows how to handle them.  
+    Factors can have inner factors, which are used to calculate its score; often not summed.
+     This is a special case of a Model having inner Models.
+    When you ask an inner Factor for its score, it returns the score of the outer Factor to which it contributes.
+     (Is this right?  Perhaps not.)
+    When you ask an inner Model for its score, it returns its score alone.
+    */
+/*trait AbstractFactor extends Model with Factor {
+  def touches(variable:Variable): Boolean = this.variables.contains(variable) || inner.exists(_.asInstanceOf[AbstractFactor].touches(variable))
+  def factors(variables:Iterable[Variable]): Seq[Factor] = if (variables.exists(touches(_))) Seq(this) else Nil
+  override def score: Double = 0.0
+}*/
+
 /** A single factor in a factor graph.  In other words, a factor
     template packaged with a set of variables neighboring the
     factor.
     @author Andrew McCallum */
-trait Factor extends Ordered[Factor] {
+trait Factor extends Model with Ordered[Factor] {
   /** The factor template from which this Factor comes. */
   // !!! ??? def template: Template
   /** In some cases a factor "belongs" to some outer factor which uses this inner one as part of its score calculation.
       In this case this inner factor should not also be used for score generation because it would be redundant.
       For example, see method Template{1,2,3,4}.factors() */
-  def outer: Factor
-  def outer_=(f:Factor): Unit
-  def inner: Seq[Factor] = throw new Error("Not yet implemented") // TODO decide whether to have this.
+  // TODO Change these back to def's
+  //var outer: Factor
+  //var inner: Seq[Factor]
+  def outer: Factor = null
+  def outer_=(f:Factor): Unit = throw new Error("Re-assigning Factor.outer not supported.")
+  def inner: Seq[Factor] = Nil
+  def inner_=(f:Seq[Factor]): Unit = throw new Error("Re-assigning Factor.inner not supported.")
   /** The number of variables neighboring this factor. */
   def numVariables: Int
   def variable(index: Int): Variable
   def statistics: Statistics
   /** Optionally return pre-calculated Statistics.  By default not actually cached, but may be overridden in subclasses. */
   def cachedStatistics: Statistics = statistics
+  // The next two methods implement the Model trait
+  def touches(variable:Variable): Boolean = this.variables.contains(variable) || inner.exists(_.touches(variable))
+  def factors(variables:Iterable[Variable]): Seq[Factor] = if (variables.exists(touches(_))) Seq(this) else Nil
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
-  def score: Double = statistics.score
+  override def score: Double = statistics.score
   /** Returns the collection of variables neighboring this factor. */
   def variables: Seq[Variable] // = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
+  def values: Values                   
   /** Randomly selects and returns one of this factor's neighbors. */
   @deprecated def randomVariable(implicit random:Random = cc.factorie.random): Variable = variable(random.nextInt(numVariables))
   /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
@@ -93,6 +124,8 @@ trait Factor extends Ordered[Factor] {
 trait Values /* extends Product with Ordered[Values] */ {
   // !!! ??? def template: Template
   // def factor: Factor // TODO Consider adding this method
+  def outer: Values = null
+  def inner: Seq[Values] = Nil
   def statistics: Statistics
   def score: Double = statistics.score
   //def productArity: Int
@@ -104,21 +137,77 @@ trait Values /* extends Product with Ordered[Values] */ {
 trait Statistics {
   // !!! ??? def template: Template
   // def factor: Factor // TODO Consider adding this method
+  def outer: Statistics = null
+  def inner: Seq[Statistics] = Nil
   def score: Double
 }
 
 
-
-/** The template for many factors.  Manages its connections to neighboring variables.
-    @Andrew McCallum
-*/
-trait Template { thisTemplate =>
-  type TemplateType <: Template // like a self-type
+/** Related factors may be associated with a Family.  
+    Those factors may share parameters or other attributes that may be stored in the Family. */
+trait Family {
+  type FamilyType <: Family // like a self-type
   type FactorType <: Factor
   type ValuesType <: Values
   type StatisticsType <: Statistics
-  /** If true, method "factors" will only create Factors for variables whose domains match neighborDomains. */
-  var matchNeighborDomains = true
+  /** The method responsible for mapping a Statistic object to a real-valued score.  
+      Called by the Statistic.score method; implemented here so that it can be easily overriden in user-defined subclasses of Template. */
+  def score(s:StatisticsType): Double
+  @inline final def score(s:cc.factorie.Statistics): Double = score(s.asInstanceOf[StatisticsType])
+  def defaultFactorName = this.getClass.getName
+  var factorName: String = defaultFactorName
+  /** Assign this Template a name which will be used later when its factors are printed. */
+  def setFactorName(n:String): this.type = { factorName = n; this }
+  /** Assign this Template a name which will be used later when its factors are printed. */
+  def %(n:String): this.type = setFactorName(n) // because % is the comment character in shell languages such as /bin/sh and Makefiles.
+  trait Factor extends cc.factorie.Factor { 
+    def family: FamilyType = Family.this.asInstanceOf[FamilyType];
+    def template: FamilyType = Family.this.asInstanceOf[FamilyType];
+    override def statistics: StatisticsType
+    override def cachedStatistics: StatisticsType = statistics
+    override def factorName = family.factorName
+    @deprecated def forSettingsOf(vs:Seq[Variable])(f: =>Unit): Unit = Family.this.forSettingsOf(this.asInstanceOf[FactorType], vs)(f)
+  }
+  // Values
+  trait Values extends cc.factorie.Values {
+    def family: FamilyType = Family.this.asInstanceOf[FamilyType]
+    def template: FamilyType = Family.this.asInstanceOf[FamilyType];
+  }
+  // Statistics
+  trait Statistics extends cc.factorie.Statistics {
+    def family: FamilyType = Family.this.asInstanceOf[FamilyType]
+    def template: FamilyType = Family.this.asInstanceOf[FamilyType];
+    // TODO Make this non-lazy later, when _statisticsDomains can be initialized earlier
+    // Warning: if score gets called too late, might the values of the variables have been changed to something else already?
+    lazy val score = Family.this.score(this.asInstanceOf[StatisticsType]) 
+    // TODO can we find a way to get rid of this cast?  Yes, use a self-type Stat[This], but too painful
+  }
+  def statistics(values:ValuesType): StatisticsType
+  /** May be overridden in subclasses to actually cache. */
+  def cachedStatistics(values:ValuesType, stats:(ValuesType)=>StatisticsType): StatisticsType = stats(values)
+  def cachedStatistics(values:ValuesType): StatisticsType = cachedStatistics(values, statistics)
+  def clearCachedStatistics: Unit = {}
+  
+  // Managing settings iteration
+  // TODO Replace this with message calculation code that does the settings iteration internally
+  def hasSettingsIterator: Boolean = false
+  def forSettings(factor:FactorType)(f: =>Unit): Unit = throw new Error("Not supported.")
+  def forSettingsOf(factor:FactorType, vs:Seq[Variable])(f: =>Unit): Unit = throw new Error("Not supported.")
+  def sparsifySettingsFor(vs:Iterable[Variable]): Unit = throw new Error("Not supported.")
+  // New version of settings iteration
+  def forSettingStats(factor:FactorType, vs:Seq[Variable])(f: (StatisticsType)=>Unit): Unit = throw new Error("Not supported.") // TODO Also pass variable values?
+  // New style for iterating over neighbor value combinations
+  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values]
+
+  /** The filename into which to save this factor.  If templateName is not the default, use it, otherwise use the class name. */
+  protected def filename: String = factorName
+  def save(dirname:String): Unit = {}
+  def load(dirname:String): Unit = {}
+}
+
+
+
+trait FamilyWithNeighborDomains extends Family {
   protected var _neighborDomains: ArrayBuffer[Domain[_]] = null
   protected def _newNeighborDomains = new ArrayBuffer[Domain[_]]
   def neighborDomains: Seq[Domain[_]] = 
@@ -126,29 +215,34 @@ trait Template { thisTemplate =>
       throw new IllegalStateException("You must override neighborDomains if you want to access them before creating any Factor objects.")
     else
       _neighborDomains
-  /** The method responsible for mapping a Statistic object to a real-valued score.  
-      Called by the Statistic.score method; implemented here so that it can be easily overriden in user-defined subclasses of Template. */
-  def score(s:StatisticsType): Double
-  @inline final def score(s:cc.factorie.Statistics): Double = score(s.asInstanceOf[StatisticsType])
-  trait Factor extends cc.factorie.Factor { 
+}
+
+
+/** The template for creating factors, given on of its variables, finding the other neighboring variables.
+    @Andrew McCallum
+*/
+trait Template extends FamilyWithNeighborDomains { thisTemplate =>
+  type TemplateType <: Template // like a self-type
+  type FamilyType <: Template
+  type FactorType <: Factor
+  type ValuesType <: Values
+  type StatisticsType <: Statistics
+  /** If true, method "factors" will only create Factors for variables whose domains match neighborDomains. */
+  var matchNeighborDomains = true
+  /*trait Factor extends super.Factor { 
     def template: TemplateType = Template.this.asInstanceOf[TemplateType];
-    override def statistics: StatisticsType
-    override def cachedStatistics: StatisticsType = statistics
-    override def factorName = template.factorName
-    @deprecated def forSettingsOf(vs:Seq[Variable])(f: =>Unit): Unit = thisTemplate.forSettingsOf(this.asInstanceOf[FactorType], vs)(f)
   }
-  /** Used by the trickery that obtains Manifests for Statistics*[] traits.  
-      See template2initialized in Package.scala. */
-  def defaultTemplateName = "Factor"
-  var templateName: String = defaultTemplateName
-  def factorName: String = this.getClass.getName
-  /** Assign this Template a name which will be used later when its factors are printed. */
-  def setName(n:String): this.type = { templateName = n; this }
-  /** Assign this Template a name which will be used later when its factors are printed. */
-  def %(n:String): this.type = setName(n) // because % is the comment character in shell languages such as /bin/sh and Makefiles.
+  trait Values extends super.Values {
+    def template: TemplateType = Template.this.asInstanceOf[TemplateType]
+  }
+  trait Statistics extends super.Statistics {
+    def template: TemplateType = Template.this.asInstanceOf[TemplateType];
+  }*/
+  //def defaultTemplateName = "Factor"
+  //var templateName: String = defaultTemplateName
+  def factors(v: Variable): Iterable[FactorType] // TODO Consider returning Iterable[Factor]
   /**A version of factors that takes the Diff object instead of just the variable */
   def factors(d: Diff): Iterable[FactorType] = if (d.variable == null) Nil else factors(d.variable)
-  def factors(v: Variable): Iterable[FactorType] // TODO Consider returning Iterable[Factor]
   def factors(difflist: DiffList): Iterable[FactorType] = {
     //var result = new LinkedHashSet[Factor]()
     var result = new HashSet[FactorType]()
@@ -166,38 +260,6 @@ trait Template { thisTemplate =>
   /** Called in implementations of factors(Variable) to give the variable a chance
       to specify additional dependent variables on which factors(Variable) should also be called. */
   def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade
-  // Values
-  trait Values extends cc.factorie.Values {
-    def template: TemplateType = Template.this.asInstanceOf[TemplateType]
-  }
-  // Statistics
-  trait Statistics extends cc.factorie.Statistics {
-    def template: TemplateType = Template.this.asInstanceOf[TemplateType];
-    // TODO Make this non-lazy later, when _statisticsDomains can be initialized earlier
-    // Warning: if score gets called too late, might the values of the variables have been changed to something else already?
-    lazy val score = Template.this.score(this.asInstanceOf[StatisticsType]) 
-    // TODO can we find a way to get rid of this cast?  Yes, use a self-type Stat[This]
-  }
-  def statistics(values:ValuesType): StatisticsType
-  /** May be overridden in subclasses to actually cache. */
-  def cachedStatistics(values:ValuesType, stats:(ValuesType)=>StatisticsType): StatisticsType = stats(values)
-  def cachedStatistics(values:ValuesType): StatisticsType = cachedStatistics(values, statistics)
-  def clearCachedStatistics: Unit = {}
-  // Managing settings iteration
-  // TODO Replace this with message calculation code that does the settings iteration internally
-  def hasSettingsIterator: Boolean = false
-  def forSettings(factor:FactorType)(f: =>Unit): Unit = throw new Error("Not supported.")
-  def forSettingsOf(factor:FactorType, vs:Seq[Variable])(f: =>Unit): Unit = throw new Error("Not supported.")
-  def sparsifySettingsFor(vs:Iterable[Variable]): Unit = throw new Error("Not supported.")
-  // New version of settings iteration
-  def forSettingStats(factor:FactorType, vs:Seq[Variable])(f: (StatisticsType)=>Unit): Unit = throw new Error("Not supported.") // TODO Also pass variable values?
-  // New style for iterating over neighbor value combinations
-  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values]
-
-  /** The filename into which to save this factor.  If templateName is not the default, use it, otherwise use the class name. */
-  protected def filename: String = if (templateName != defaultTemplateName) templateName else this.getClass.getName
-  def save(dirname:String): Unit = {}
-  def load(dirname:String): Unit = {}
 }
 
 /** A Template whose sufficient statistics are represented as a set of DiscreteVectorValues
@@ -231,6 +293,7 @@ trait VectorTemplate extends Template {
     @author Andrew McCallum */
 trait DotTemplate extends VectorTemplate {
   type TemplateType <: DotTemplate
+  type FamilyType <: DotTemplate
   lazy val weights: Vector = { freezeDomains; new DenseVector(statisticsVectorLength) } // Dense by default, may be override in sub-traits
   def score(s:StatisticsType) = if (s eq null) 0.0 else weights match {
     case w:DenseVector => { w dot s.vector }

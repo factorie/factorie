@@ -28,8 +28,8 @@ object LogicDemo2 {
     class GetterClass extends PersonGetter // Person#GetterClass#super
     // When we have Scala 2.8 this next line will simply be:
     // object smokes extends BooleanVariable with Attribute
-    val smokes = new Smokes; class Smokes extends BooleanVariable with Attribute
-    val cancer = new Cancer; class Cancer extends BooleanVariable with Attribute
+    val smokes = new Smokes; class Smokes extends BooleanVariable(false) with Attribute
+    val cancer = new Cancer; class Cancer extends BooleanVariable(false) with Attribute
     val children = new ArrayBuffer[Person]
     if (mother != null) mother.children += this
     override def toString = name
@@ -57,7 +57,7 @@ object LogicDemo2 {
   def main(args:Array[String]) : Unit = {
 
     // Define model
-    val model = new Model (
+    val model = new TemplateModel (
       // Apriori, you are 10 times more likely not to have cancer
       Forany[Person] { p => Not(p.cancer) } * 10 % "CancerPrior",
       
@@ -100,7 +100,7 @@ object LogicDemo2 {
     }
     
     println("\nmodel")
-    printFactors(model.factors(amy.smokes))
+    printFactors(model.factors(Seq(amy.smokes)))
 
     println("\ntemplate1")
     val template1 = (Forany[Person] { p => p.smokes ==> p.cancer }) * 2.0
@@ -177,7 +177,7 @@ object LogicDemo1b {
     object Age extends AttributeGetter[Person,Person#Age](_.age)
 
     // Define model
-    val model = new Model (
+    val model = new TemplateModel (
       "CancerPrior" =: Forany[Person] { p => p->Cancer } * 0.1, 
       "SmokingCausesCancer" =: Forany[Person] { p => p->Smokes ==> p->Cancer } * 2.0,
       "FriendsSmokingMatch" =: Forany[Person] { p => p->Friends->Smokes <==> p->Smokes } * 1.5,

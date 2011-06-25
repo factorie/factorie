@@ -23,35 +23,20 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-// TODO Pull unroll methods into DynamicTemplate2 and look for VarWithFactors in Template.factors.
-abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template
-{
+abstract class Family2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2
   val neighborClass1 = nm1.erasure
   val neighborClass2 = nm2.erasure
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass2)) { assert(ta.length == 1); ta.head.erasure } else null }
-  private var _neighborDomain1: Domain[N1#Value] = null
-  private var _neighborDomain2: Domain[N2#Value] = null
+  protected var _neighborDomain1: Domain[N1#Value] = null
+  protected var _neighborDomain2: Domain[N2#Value] = null
   def neighborDomain1: Domain[N1#Value] = if (_neighborDomain1 eq null) throw new Error("You must override neighborDomain1 if you want to access it before creating any Factor objects") else _neighborDomain1
   def neighborDomain2: Domain[N2#Value] = if (_neighborDomain2 eq null) throw new Error("You must override neighborDomain2 if you want to access it before creating any Factor objects") else _neighborDomain2
 
-  override def factors(v: Variable): Iterable[FactorType] = {
-    var ret = new ListBuffer[FactorType]
-    if (neighborClass1.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain1 eq v.domain) || (_neighborDomain1 eq null))) ret ++= unroll1(v.asInstanceOf[N1])
-    if (neighborClass2.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain2 eq v.domain) || (_neighborDomain2 eq null))) ret ++= unroll2(v.asInstanceOf[N2])
-    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
-    val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factors(_))
-    ret
-  }
-  def unroll1(v:N1): Iterable[FactorType]
-  def unroll2(v:N2): Iterable[FactorType]
-  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
-  def unroll2s(v:N2#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll2s.")
   type FactorType = Factor
-  final case class Factor(_1:N1, _2:N2, override var outer:cc.factorie.Factor = null) extends super.Factor {
+  final case class Factor(_1:N1, _2:N2, override var inner:Seq[cc.factorie.Factor] = Nil, override var outer:cc.factorie.Factor = null) extends super.Factor {
     if (_neighborDomains eq null) {
       _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
       _neighborDomain2 = _2.domain.asInstanceOf[Domain[N2#Value]]
@@ -62,15 +47,15 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
     def numVariables = 2
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case _ => throw new IndexOutOfBoundsException(i.toString) }
     override def variables: IndexedSeq[Variable] = IndexedSeq(_1, _2)
-    def values: ValuesType = new Values(_1.value, _2.value)
-    def statistics: StatisticsType = Template2.this.statistics(values)
-    override def cachedStatistics: StatisticsType = Template2.this.cachedStatistics(values)
-    def copy(s:Substitutions) = Factor(s.sub(_1), s.sub(_2))
+    def values: ValuesType = new Values(_1.value, _2.value, inner.map(_.values))
+    def statistics: StatisticsType = Family2.this.statistics(values)
+    override def cachedStatistics: StatisticsType = Family2.this.cachedStatistics(values)
+    def copy(s:Substitutions) = Factor(s.sub(_1), s.sub(_2), inner.map(_.copy(s)), outer)
   }
   // Values
   type ValuesType = Values
-  final case class Values(_1:N1#Value, _2:N2#Value) extends super.Values {
-    def statistics = Template2.this.statistics(this)
+  final case class Values(_1:N1#Value, _2:N2#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends super.Values {
+    def statistics = Family2.this.statistics(this)
   }
   // Statistics
   def statistics(values:Values): StatisticsType
@@ -151,13 +136,34 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
     }
   }
 }
+
+
+abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Family2[N1,N2] with Template
+{
+  override def factors(v: Variable): Iterable[FactorType] = {
+    var ret = new ListBuffer[FactorType]
+    if (neighborClass1.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain1 eq v.domain) || (_neighborDomain1 eq null))) ret ++= unroll1(v.asInstanceOf[N1])
+    if (neighborClass2.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain2 eq v.domain) || (_neighborDomain2 eq null))) ret ++= unroll2(v.asInstanceOf[N2])
+    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
+    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
+    val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factors(_))
+    ret
+  }
+  def unroll1(v:N1): Iterable[FactorType]
+  def unroll2(v:N2): Iterable[FactorType]
+  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
+  def unroll2s(v:N2#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll2s.")
+
+}
+
 trait Statistics2[S1,S2] extends Template {
-  final case class Stat(_1:S1, _2:S2) extends super.Statistics
+  final case class Stat(_1:S1, _2:S2, override val inner:Seq[cc.factorie.Statistics] = Nil) extends super.Statistics
   type StatisticsType = Stat
 }
+
 trait VectorStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorTemplate {
   type StatisticsType = Stat
-  final case class Stat(_1:S1, _2:S2) extends { val vector: Vector = _1 flatOuter _2 } with super.Statistics { 
+  final case class Stat(_1:S1, _2:S2, override val inner:Seq[cc.factorie.Statistics] = Nil) extends { val vector: Vector = _1 flatOuter _2 } with super.Statistics { 
     if (_statisticsDomains eq null) { 
       _statisticsDomains = _newStatisticsDomains
       _statisticsDomains += _1.domain
@@ -165,15 +171,18 @@ trait VectorStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends
     }
   }
 }
+
 trait DotStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorStatistics2[S1,S2] with DotTemplate
 abstract class TemplateWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with Statistics2[N1#Value,N2#Value] {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
 }
+
 abstract class TemplateWithVectorStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with VectorStatistics2[N1#Value,N2#Value] {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
 }
+
 abstract class TemplateWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
 }
 
 /*

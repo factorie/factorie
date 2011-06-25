@@ -38,7 +38,7 @@ object ChainNER3 {
   class Sentence extends labeled.TokenSeq[Token,Label,Sentence]
 
   // Define the model
-  val model = new Model(
+  val model = new TemplateModel(
     Foreach[Label] { label => Score(label) } % "Prior",
     Foreach[Label] { label => Score(label, label.token) } % "LabelToken",
     Foreach[Label] { label => Score(label.prev, label) } % "LabelLabel"

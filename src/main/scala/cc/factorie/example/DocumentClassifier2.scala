@@ -38,7 +38,7 @@ object DocumentClassifier2 {
     def domain = LabelDomain
   }
 
-  val model = new Model(
+  val model = new TemplateModel(
     /** Bias term just on labels */
     new TemplateWithDotStatistics1[Label], 
     /** Factor between label and observed document */
@@ -48,7 +48,7 @@ object DocumentClassifier2 {
     }
   )
 
-  val objective = new Model(new ZeroOneLossTemplate[Label])
+  val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
 
   def main(args: Array[String]) : Unit = {
     if (args.length < 2) 
@@ -72,7 +72,7 @@ object DocumentClassifier2 {
     (trainVariables ++ testVariables).foreach(_.setRandomly())
 
     println(model)
-    println(model.factors(trainVariables.head))
+    println(model.factors(Seq(trainVariables.head)))
 
     // Train and test
     val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates

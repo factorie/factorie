@@ -70,7 +70,7 @@ class SamplingMaximizerLattice[V<:Variable](val diff:DiffList, val diffScore:Dou
  */
 // TODO Update this for the new separated "modelScore" and "acceptScore" in Proposal.
 class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends VariableInferencer[V] {
-  def this(model:Model) = this(new VariableSettingsSampler[V](model))
+  def this(model:TemplateModel) = this(new VariableSettingsSampler[V](model))
   type LatticeType = SamplingMaximizerLattice[V]
   var iterations = 50 // TODO What should these be by default?
   var rounds = 3

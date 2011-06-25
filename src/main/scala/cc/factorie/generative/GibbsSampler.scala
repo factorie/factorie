@@ -47,7 +47,7 @@ class GibbsSampler(val model:Model = cc.factorie.generative.defaultGenerativeMod
     // If we have a cached closure, just use it and return
     if (cacheClosures && v.size == 1 && closures.contains(v.head)) { closures(v.head).sample(d); return d }
     // Get factors, in sorted order of the their classname
-    val factors = model.factorsAll(v).sortWith((f1:Factor,f2:Factor) => f1.getClass.getName < f2.getClass.getName).toList
+    val factors = model.factors(v).sortWith((f1:Factor,f2:Factor) => f1.getClass.getName < f2.getClass.getName).toList
     var done = false
     val handlerIterator = handlers.iterator
     while (!done && handlerIterator.hasNext) {

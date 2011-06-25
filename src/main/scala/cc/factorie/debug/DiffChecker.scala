@@ -1,6 +1,6 @@
 package cc.factorie.debug
 
-import cc.factorie.{Model, Variable, DiffList}
+import cc.factorie._
 
 /**
  * Test whether custom Diff implementations are correct
@@ -12,13 +12,13 @@ import cc.factorie.{Model, Variable, DiffList}
 object DiffChecker {
   // Scores a given difflist according to the model, and compares with exhaustively scoring previous
   // and next configurations (of the given variables)
-  def diffListScore(diffList: DiffList, variables: Iterable[Variable], model: Model): Boolean = {
+  def diffListScore(diffList: DiffList, variables: Iterable[Variable], model: TemplateModel): Boolean = {
     // TODO check variables in difflist are in variables
     diffList.redo
     val diffScore:Double = diffList.scoreAndUndo(model)
-    val prevScore:Double = model.scoreAll(variables)
+    val prevScore:Double = model.score(variables)
     diffList.redo
-    val modelScoreDiff:Double = model.scoreAll(variables)
+    val modelScoreDiff:Double = model.score(variables)
     diffScore == modelScoreDiff
   }
 

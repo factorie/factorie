@@ -30,7 +30,7 @@ trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
   //def templateClassToUpdate = classOf[DotTemplate]
   def learningRate : Double
   def learningRate_=(x:Double) : Unit
-  def model : Model
+  def model : TemplateModel
   def learningMargin : Double
   def useObjectiveDiffAsMargin : Boolean = true
   val boxConstraint : Double = 1.0//Math.POS_INF_DOUBLE

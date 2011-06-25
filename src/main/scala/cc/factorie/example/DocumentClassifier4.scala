@@ -44,7 +44,7 @@ object DocumentClassifier4 {
     def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
   }
 
-  val model = new Model(dtree)
+  val model = new TemplateModel(dtree)
 
   def main(args: Array[String]) : Unit = {
     if (args.length < 2) 

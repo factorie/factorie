@@ -30,5 +30,5 @@ class Proposal(val diff:DiffList, val modelScore:Double, val objectiveScore:Doub
 @deprecated("May be removed in a future version of the library.")
 trait Proposer {
   /** Make a random proposal.  Return Metropolis-Hastings' log(q(old|new)/q(new|old)) */
-  def propose(model:Model, d:DiffList): Double
+  def propose(model:TemplateModel, d:DiffList): Double
 }

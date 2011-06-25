@@ -23,7 +23,7 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template {
+abstract class Family3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2
   type NeighborType3 = N3
@@ -33,32 +33,15 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass2)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc3a = { val ta = nm3.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass3)) { assert(ta.length == 1); ta.head.erasure } else null }
-  private var _neighborDomain1: Domain[N1#Value] = null
-  private var _neighborDomain2: Domain[N2#Value] = null
-  private var _neighborDomain3: Domain[N3#Value] = null
+  protected var _neighborDomain1: Domain[N1#Value] = null
+  protected var _neighborDomain2: Domain[N2#Value] = null
+  protected var _neighborDomain3: Domain[N3#Value] = null
   def neighborDomain1: Domain[N1#Value] = if (_neighborDomain1 eq null) throw new Error("You must override neighborDomain1 if you want to access it before creating any Factor objects") else _neighborDomain1
   def neighborDomain2: Domain[N2#Value] = if (_neighborDomain2 eq null) throw new Error("You must override neighborDomain2 if you want to access it before creating any Factor objects") else _neighborDomain2
   def neighborDomain3: Domain[N3#Value] = if (_neighborDomain3 eq null) throw new Error("You must override neighborDomain3 if you want to access it before creating any Factor objects") else _neighborDomain3
 
-  override def factors(v: Variable): Iterable[FactorType] = {
-    var ret = new ListBuffer[FactorType]
-    if (neighborClass1.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain1 eq v.domain) || (_neighborDomain1 eq null))) ret ++= unroll1(v.asInstanceOf[N1])
-    if (neighborClass2.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain2 eq v.domain) || (_neighborDomain2 eq null))) ret ++= unroll2(v.asInstanceOf[N2])
-    if (neighborClass3.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain3 eq v.domain) || (_neighborDomain3 eq null))) ret ++= unroll3(v.asInstanceOf[N3])
-    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
-    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
-    val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factors(_))
-    ret
-  }
-  def unroll1(v:N1): Iterable[FactorType]
-  def unroll2(v:N2): Iterable[FactorType]
-  def unroll3(v:N3): Iterable[FactorType]
-  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
-  def unroll2s(v:N2#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll2s.")
-  def unroll3s(v:N3#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll3s.")
   type FactorType = Factor
-  final case class Factor(_1:N1, _2:N2, _3:N3, override var outer: cc.factorie.Factor = null) extends super.Factor {
+  final case class Factor(_1:N1, _2:N2, _3:N3, override var inner:Seq[cc.factorie.Factor] = Nil, override var outer: cc.factorie.Factor = null) extends super.Factor {
     if (_neighborDomains eq null) {
       _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
       _neighborDomain2 = _2.domain.asInstanceOf[Domain[N2#Value]]
@@ -71,15 +54,15 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
     def numVariables = 3
     def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case _ => throw new IndexOutOfBoundsException(i.toString) }
     override def variables: IndexedSeq[Variable] = IndexedSeq(_1, _2, _3)
-    def values: ValuesType = new Values(_1.value, _2.value, _3.value)
-    def statistics: StatisticsType = Template3.this.statistics(values)
-    override def cachedStatistics: StatisticsType = Template3.this.cachedStatistics(values)
-    def copy(s:Substitutions) = Factor(s.sub(_1), s.sub(_2), s.sub(_3))
+    def values: ValuesType = new Values(_1.value, _2.value, _3.value, inner.map(_.values))
+    def statistics: StatisticsType = Family3.this.statistics(values)
+    override def cachedStatistics: StatisticsType = Family3.this.cachedStatistics(values)
+    def copy(s:Substitutions) = Factor(s.sub(_1), s.sub(_2), s.sub(_3), inner.map(_.copy(s)), outer)
   } 
   // Values
   type ValuesType = Values
-  final case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value) extends super.Values {
-    def statistics = Template3.this.statistics(this)
+  final case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends super.Values {
+    def statistics = Family3.this.statistics(this)
   }
   // Statistics
   def statistics(values:Values): StatisticsType
@@ -192,14 +175,35 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
   }
 }
 
+abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Family3[N1,N2,N3] with Template {
+  override def factors(v: Variable): Iterable[FactorType] = {
+    var ret = new ListBuffer[FactorType]
+    if (neighborClass1.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain1 eq v.domain) || (_neighborDomain1 eq null))) ret ++= unroll1(v.asInstanceOf[N1])
+    if (neighborClass2.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain2 eq v.domain) || (_neighborDomain2 eq null))) ret ++= unroll2(v.asInstanceOf[N2])
+    if (neighborClass3.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain3 eq v.domain) || (_neighborDomain3 eq null))) ret ++= unroll3(v.asInstanceOf[N3])
+    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
+    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
+    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
+    val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factors(_))
+    ret
+  }
+  def unroll1(v:N1): Iterable[FactorType]
+  def unroll2(v:N2): Iterable[FactorType]
+  def unroll3(v:N3): Iterable[FactorType]
+  def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
+  def unroll2s(v:N2#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll2s.")
+  def unroll3s(v:N3#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll3s.")
+
+}
+
 trait Statistics3[S1,S2,S3] extends Template {
-  final case class Stat(_1:S1, _2:S2, _3:S3) extends super.Statistics
+  final case class Stat(_1:S1, _2:S2, _3:S3, override val inner:Seq[cc.factorie.Statistics] = Nil) extends super.Statistics
   type StatisticsType = Stat
 }
 
 trait VectorStatistics3[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue] extends VectorTemplate {
   type StatisticsType = Stat
-  final case class Stat(_1:S1, _2:S2, _3:S3) extends { val vector: Vector = _1 flatOuter (_2 flatOuter _3) } with super.Statistics {
+  final case class Stat(_1:S1, _2:S2, _3:S3, override val inner:Seq[cc.factorie.Statistics] = Nil) extends { val vector: Vector = _1 flatOuter (_2 flatOuter _3) } with super.Statistics {
     if (_statisticsDomains eq null) {
       _statisticsDomains = _newStatisticsDomains
       _statisticsDomains += _1.domain
@@ -212,13 +216,13 @@ trait VectorStatistics3[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:Disc
 trait DotStatistics3[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue] extends VectorStatistics3[S1,S2,S3] with DotTemplate
 
 abstract class TemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values.inner.map(_.statistics))
 }
 
 abstract class TemplateWithVectorStatistics3[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar,N3<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with VectorStatistics3[N1#Value,N2#Value,N3#Value]  {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values.inner.map(_.statistics))
 }
 
 abstract class TemplateWithDotStatistics3[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar,N3<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with DotStatistics3[N1#Value,N2#Value,N3#Value]  {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values.inner.map(_.statistics))
 }

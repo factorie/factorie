@@ -37,7 +37,7 @@ object ChainNER1ML {
   class Sentence extends labeled.TokenSeq[Token, Label, Sentence]
 
   // Define the model:
-  val model = new Model(
+  val model = new TemplateModel(
     new TemplateWithDotStatistics1[Label] {
       override def unroll1(label: Label) = if (!label.hasPrev) Factor(label) else Nil
     },
@@ -81,7 +81,7 @@ object ChainNER1ML {
 
     trainer.processAll(trainVariables) // Keep training to convergence
 
-    val objective = new Model(new ZeroOneLossTemplate[Label])
+    val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testSentences.size))
     testVariables.foreach {

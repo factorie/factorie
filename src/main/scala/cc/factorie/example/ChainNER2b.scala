@@ -39,7 +39,7 @@ object ChainNER2b {
   class Sentence extends VariableSeq[Label]
   
   // The model
-  val model = new Model(
+  val model = new TemplateModel(
     // Bias term on each individual label 
     new TemplateWithDotStatistics1[Label], 
     // Transition factors between two successive labels
@@ -55,7 +55,7 @@ object ChainNER2b {
   )
   
   // The training objective
-  val objective = new Model(new ZeroOneLossTemplate[Label])
+  val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
   
 
   def main(args: Array[String]): Unit = {

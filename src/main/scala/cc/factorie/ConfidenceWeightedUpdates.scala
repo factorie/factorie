@@ -39,7 +39,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
   this: ProposalSampler[_] =>
   override type TemplatesToUpdate = DotTemplate
   def templateClassToUpdate = classOf[DotTemplate]
-  def model : Model
+  def model : TemplateModel
   def learningMargin : Double
   var numUpdates : Double = 0
   def processCount : Int

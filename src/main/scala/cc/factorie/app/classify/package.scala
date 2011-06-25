@@ -18,12 +18,12 @@ import cc.factorie._
 package object classify {
 
   def newModel[L<:LabelVariable[I],I<:InstanceVariable](implicit lm:Manifest[L]) =
-    new Model(
+    new TemplateModel(
       new LabelInstanceTemplate[L]
     )
 
   def newObjective[L<:LabelVariable[I],I<:InstanceVariable](implicit lm:Manifest[L]) = 
-    new Model(
+    new TemplateModel(
       new ZeroOneLossTemplate[L] // ()(lm)
     )
 

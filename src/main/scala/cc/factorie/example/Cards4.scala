@@ -30,7 +30,7 @@ object PragBot4 {
     allLocations = locations
     allCards = cards
 
-    val model = new Model(
+    val model = new TemplateModel(
       new TemplateWithStatistics1[Card] {
         def score(s:Stat) = if (s._1 == jane) -1.0 else 0.0
       }

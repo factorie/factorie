@@ -28,7 +28,7 @@ import scala.collection.mutable.HashMap
  * Maximum likelihood parameter estimation for the weights of DotTemplate.
  * @author Andrew McCallum, Kedar Bellare, Gregory Druck
  */
-class LogLinearMaximumLikelihood(model: Model) {
+class LogLinearMaximumLikelihood(model: TemplateModel) {
   type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 10.0
 
@@ -72,7 +72,7 @@ class LogLinearMaximumLikelihood(model: Model) {
       // Flush cache when parameters change
       override def setOptimizableParameters(a: Array[Double]): Unit = {
         oValue = Double.NaN
-        model.foreach(_.clearCachedStatistics) // Parameter changing, so cache no longer valid
+        model.templates.foreach(_.clearCachedStatistics) // Parameter changing, so cache no longer valid
         super.setOptimizableParameters(a)
       }
 
@@ -126,7 +126,7 @@ class LogLinearMaximumLikelihood(model: Model) {
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // compute score of variable with value 'i'
-            distribution(i) = model.score(v)
+            distribution(i) = model.score(Seq(v))
           })
 
           maths.expNormalize(distribution)

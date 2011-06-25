@@ -48,7 +48,7 @@ object ChainPOS2b {
       def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
     }
 
-  val model = new Model(
+  val model = new TemplateModel(
     // Bias term on each individual label 
     new TemplateWithDotStatistics1[Label], 
     // Factor between label and observed token
@@ -60,7 +60,7 @@ object ChainPOS2b {
   )
   
   // The training objective
-  val objective = new Model(new Label01LossTemplate[Label])
+  val objective = new TemplateModel(new Label01LossTemplate[Label])
   
 
   def main(args: Array[String]): Unit = {

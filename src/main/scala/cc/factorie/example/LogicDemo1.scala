@@ -45,7 +45,7 @@ object LogicDemo1 {
     } 
 
     // Define model
-    val model = new Model (
+    val model = new TemplateModel (
       // Apriori, you are 1/10 times more likely to have cancer than not
       //Forany[Person] { p => p.cancer } * 0.1, 
       // If you smoke, you are 2 times more likely to have cancer

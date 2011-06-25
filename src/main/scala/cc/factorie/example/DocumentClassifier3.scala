@@ -38,7 +38,7 @@ object DocumentClassifier3 {
     def domain = LabelDomain
   }
 
-  val model = new Model(
+  val model = new TemplateModel(
     /** Bias term just on labels */
     new TemplateWithDotStatistics1[Label] { override def statisticsDomains = Seq(LabelDomain) },
     /** Factor between label and observed document */
@@ -49,7 +49,7 @@ object DocumentClassifier3 {
     }
   )
 
-  val objective = new Model(new ZeroOneLossTemplate[Label])
+  val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
 
   def main(args: Array[String]) : Unit = {
     if (args.length < 2) 

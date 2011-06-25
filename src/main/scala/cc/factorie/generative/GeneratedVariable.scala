@@ -120,6 +120,7 @@ trait ProportionGenerating {
 
 trait GenerativeTemplate extends Template {
   type TemplateType <: GenerativeTemplate
+  type FamilyType <: GenerativeTemplate
   //type ChildType = V
   type ChildType <: GeneratedVar
   matchNeighborDomains = false // There is just one Template for all variable classes, even with different domains. 
