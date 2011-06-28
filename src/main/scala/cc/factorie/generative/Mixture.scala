@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,Stack}
 
 trait MixtureGenerativeTemplate extends GenerativeTemplate {
-  type TemplateType <: MixtureGenerativeTemplate
+  //type TemplateType <: MixtureGenerativeTemplate
   type FamilyType <: MixtureGenerativeTemplate
   type ChildType <: MixtureGeneratedVar
   def prChoosing(s:StatisticsType, mixtureIndex:Int): Double
