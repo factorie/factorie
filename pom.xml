@@ -132,7 +132,14 @@
                                 <jvmArg>-Xms64m</jvmArg>
                                 <jvmArg>-Xmx1800m</jvmArg>
                             </jvmArgs>
-                        </configuration>
+			    <launchers>
+			      <launcher>
+				<id>ChainNER1ML</id>
+				<mainClass>cc.factorie.example.ChainNER1ML</mainClass>
+				<jvmArgs><jvmArg>-Xmx4g</jvmArg></jvmArgs>
+			      </launcher>
+			    </launchers>
+                          </configuration>
                     </plugin>
 
                     <plugin>

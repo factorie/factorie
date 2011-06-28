@@ -96,7 +96,7 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
   def skipEmptyProposals = true
   def process1(context:C): DiffList = {
     val props = proposals(context)
-    if (props.size == 0 && skipEmptyProposals) return new DiffList
+    if (props.size == 0 && skipEmptyProposals) return newDiffList
     proposalsHook(props)
     val proposal = props.size match {
       case 0 => throw new Error("No proposals created.")
