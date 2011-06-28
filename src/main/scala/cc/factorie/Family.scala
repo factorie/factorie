@@ -42,7 +42,6 @@ trait Family {
   def %(n:String): this.type = setFactorName(n) // because % is the comment character in shell languages such as /bin/sh and Makefiles.
   trait Factor extends cc.factorie.Factor { 
     def family: FamilyType = Family.this.asInstanceOf[FamilyType];
-    //def template: FamilyType = Family.this.asInstanceOf[FamilyType];
     override def statistics: StatisticsType
     override def cachedStatistics: StatisticsType = statistics
     override def factorName = family.factorName
@@ -52,12 +51,10 @@ trait Family {
   // Values
   trait Values extends cc.factorie.Values {
     def family: FamilyType = Family.this.asInstanceOf[FamilyType]
-    //def template: FamilyType = Family.this.asInstanceOf[FamilyType];
   }
   // Statistics
   trait Statistics extends cc.factorie.Statistics {
     def family: FamilyType = Family.this.asInstanceOf[FamilyType]
-    //def template: FamilyType = Family.this.asInstanceOf[FamilyType];
     // TODO Make this non-lazy later, when _statisticsDomains can be initialized earlier
     // Warning: if score gets called too late, might the values of the variables have been changed to something else already?
     lazy val score = Family.this.score(this.asInstanceOf[StatisticsType]) 
@@ -120,7 +117,6 @@ trait VectorFamily extends Family {
   trait Statistics extends super.Statistics {
     def vector: Vector
   }
-  //override def statistics(v:Variable): StatisticsType = new Stats(factors(v).map(_.stats).flatten)
   // TODO implement this!
   private def unflattenOuter(weightIndex:Int, dimensions:Int*): Array[Int] = new Array[Int](2)
 }

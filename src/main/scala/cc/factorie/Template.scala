@@ -42,24 +42,9 @@ object Template {
     @Andrew McCallum
 */
 trait Template extends FamilyWithNeighborDomains { thisTemplate =>
-  //type TemplateType <: Template 
   type FamilyType <: Template // like a self-type
-  //type FactorType <: Factor
-  //type ValuesType <: Values
-  //type StatisticsType <: Statistics
   /** If true, method "factors" will only create Factors for variables whose domains match neighborDomains. */
   var matchNeighborDomains = true
-  /*trait Factor extends super.Factor { 
-    def template: TemplateType = Template.this.asInstanceOf[TemplateType];
-  }
-  trait Values extends super.Values {
-    def template: TemplateType = Template.this.asInstanceOf[TemplateType]
-  }
-  trait Statistics extends super.Statistics {
-    def template: TemplateType = Template.this.asInstanceOf[TemplateType];
-  }*/
-  //def defaultTemplateName = "Factor"
-  //var templateName: String = defaultTemplateName
   def factors(v: Variable): Iterable[FactorType] // TODO Consider returning Iterable[Factor]
   /**A version of factors that takes the Diff object instead of just the variable */
   def factors(d: Diff): Iterable[FactorType] = if (d.variable == null) Nil else factors(d.variable)

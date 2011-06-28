@@ -23,36 +23,11 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-/** A Factor is a Model because it can return a factor (itself) and a score.
-    A Model is not a Factor because Factors *must* be able to list all the variables they touch;
-     (this is part of how they are de-duplicated);
-     yet a model may only generate Factors on the fly in response to query variables.
-    Factors are deduplicated.  Models are not; 
-     multiple models may each contribute Factors, all of which define the factor graph.  
-    Models can have inner Models, which are used to obtain factors from each.
-     Typically all factors from all inner models are summed together.
-     But a "Case" model may exist, which simply will not return factors that are not in effect;
-     that is, factors from an inner model that are not in effect will never be seen; 
-     whereas inner factors may be seen but know to point to the outer factor that knows how to handle them.  
-    Factors can have inner factors, which are used to calculate its score; often not summed.
-     This is a special case of a Model having inner Models.
-    When you ask an inner Factor for its score, it returns the score of the outer Factor to which it contributes.
-     (Is this right?  Perhaps not.)
-    When you ask an inner Model for its score, it returns its score alone.
-    */
-/*trait AbstractFactor extends Model with Factor {
-  def touches(variable:Variable): Boolean = this.variables.contains(variable) || inner.exists(_.asInstanceOf[AbstractFactor].touches(variable))
-  def factors(variables:Iterable[Variable]): Seq[Factor] = if (variables.exists(touches(_))) Seq(this) else Nil
-  override def score: Double = 0.0
-}*/
-
 /** A single factor in a factor graph.  In other words, a factor
     template packaged with a set of variables neighboring the
     factor.
     @author Andrew McCallum */
 trait Factor extends Model with Ordered[Factor] {
-  /** The factor template from which this Factor comes. */
-  // !!! ??? def template: Template
   /** In some cases a factor "belongs" to some outer factor which uses this inner one as part of its score calculation.
       In this case this inner factor should not also be used for score generation because it would be redundant.
       For example, see method Template{1,2,3,4}.factors() */
@@ -83,7 +58,7 @@ trait Factor extends Model with Ordered[Factor] {
   def copy(s:Substitutions): Factor
   // Implement Ordered, such that worst (lowest) scores are considered "high"
   def compare(that: Factor) = {val d = that.score - this.score; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
-  /** In order to two Factors to satisfy "equals", the value returned by this method must by "eq". */
+  /** In order to two Factors to satisfy "equals", the value returned by this method for each Factor must by "eq" . */
   def equalityPrerequisite: AnyRef = this.getClass
   // Implement equality based on class assignability and Variable contents equality
   //override def canEqual(other: Any) = (null != other) && other.isInstanceOf[Factor]; // TODO Consider putting this back in
@@ -107,10 +82,30 @@ trait Factor extends Model with Ordered[Factor] {
   override def toString: String = variables.mkString(factorName+"(", ",", ")")
 }
 
+/** A Factor is a Model because it can return a factor (itself) and a score.
+    A Model is not a Factor because Factors *must* be able to list all the variables they touch;
+     (this is part of how they are de-duplicated);
+     yet a model may only generate Factors on the fly in response to query variables.
+    Factors are deduplicated.  Models are not; 
+     multiple models may each contribute Factors, all of which define the factor graph.  
+    Models can have inner Models, which are used to obtain factors from each.
+     Typically all factors from all inner models are summed together.
+     But a "Case" model may exist, which simply will not return factors that are not in effect;
+     that is, factors from an inner model that are not in effect will never be seen; 
+     whereas inner factors may be seen but know to point to the outer factor that knows how to handle them.  
+    Factors can have inner factors, which are used to calculate its score; often not summed.
+     This is a special case of a Model having inner Models.
+    When you ask an inner Factor for its score, it returns the score of the outer Factor to which it contributes.
+     (Is this right?  Perhaps not.)
+    When you ask an inner Model for its score, it returns its score alone.
+    */
+
+
+
+
 /** A container for all the values of the variables neighboring a factor.
     These are necessary to construct a Statistics object. */
 trait Values /* extends Product with Ordered[Values] */ {
-  // !!! ??? def template: Template
   // def factor: Factor // TODO Consider adding this method
   def outer: Values = null
   def inner: Seq[Values] = Nil
@@ -123,7 +118,6 @@ trait Values /* extends Product with Ordered[Values] */ {
 /** A container for sufficient statistics of a Factor.  
     There is one of these for each Factor. */
 trait Statistics {
-  // !!! ??? def template: Template
   // def factor: Factor // TODO Consider adding this method
   def outer: Statistics = null
   def inner: Seq[Statistics] = Nil
