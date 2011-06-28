@@ -57,7 +57,7 @@ class SampleRankTest extends AssertionsForJUnit {
   //create variables with a ring graph structure
   var bools: Seq[MyBool] = null
 
-  val trainingSignal = new Model(
+  val trainingSignal = new TemplateModel(
     //
     //this template unrolls a "ring" structured graphical model
     new TemplateWithStatistics2[MyBool, MyBool] {
@@ -71,10 +71,10 @@ class SampleRankTest extends AssertionsForJUnit {
       }
     }
   )
-  var model: Model = null
+  var model: TemplateModel = null
 
 
-  class AllPairsProposer(model: Model) extends MHSampler[Null](model)
+  class AllPairsProposer(model: TemplateModel) extends MHSampler[Null](model)
   {
     def propose(context: Null)(implicit delta: DiffList): Double =
       {
@@ -84,7 +84,7 @@ class SampleRankTest extends AssertionsForJUnit {
   }
 
 
-  abstract class AllPairsCD1Proposer(model: Model) extends ContrastiveDivergence[Null](model)
+  abstract class AllPairsCD1Proposer(model: TemplateModel) extends ContrastiveDivergence[Null](model)
   {
     def propose(context: Null)(implicit delta: DiffList): Double =
       {
@@ -106,7 +106,7 @@ class SampleRankTest extends AssertionsForJUnit {
       bools(bools.length - 1).next = bools(0)
       println("NUM BOOL VARS: " + bools.size)
 
-      model = new Model(
+      model = new TemplateModel(
         new TemplateWithDotStatistics2[MyBool, MyBool]
         {
           def unroll1(b: MyBool) = Factor(b, b.next)
@@ -142,14 +142,14 @@ class SampleRankTest extends AssertionsForJUnit {
       for (i <- 0 until math.pow(2, bools.length).toInt)
         {
           decodeConfiguration(i, bools)
-          val modelScoreI = model.scoreAll(bools)
-          val truthScoreI = trainingSignal.scoreAll(bools)
+          val modelScoreI = model.score(bools)
+          val truthScoreI = trainingSignal.score(bools)
 
           for (j <- i + 1 until math.pow(2, bools.length).toInt)
             {
               decodeConfiguration(j, bools)
-              val modelScoreJ = model.scoreAll(bools)
-              val truthScoreJ = trainingSignal.scoreAll(bools)
+              val modelScoreJ = model.score(bools)
+              val truthScoreJ = trainingSignal.score(bools)
 
               if (truthScoreI > truthScoreJ)
                 if (modelScoreI <= modelScoreJ)

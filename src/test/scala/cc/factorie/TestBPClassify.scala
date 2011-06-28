@@ -46,7 +46,7 @@ object TestBPClassify {
 
 
 class TestBPClassify extends TestCase {
-  object DocumentDomain extends CategoricalsDomain[String]
+  object DocumentDomain extends CategoricalVectorDomain[String]
   class Document(contents: String, labelStr:String) extends BinaryFeatureVectorVariable[String] {
     def this(file:File) = this(Source.fromFile(file).mkString, file.getParentFile.getName) // Could also append ".skipHeader"
     def domain = DocumentDomain
@@ -59,7 +59,7 @@ class TestBPClassify extends TestCase {
     def domain = LabelDomain
   }
 
-  val model = new Model (
+  val model = new TemplateModel (
     /**Bias term just on labels */
     new TemplateWithDotStatistics1[Label],
     /**Factor between label and observed document */
@@ -69,7 +69,7 @@ class TestBPClassify extends TestCase {
     }
   )
 
-  val objective = new Model(new ZeroOneLossTemplate[Label])
+  val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
   
   def testMain: Unit = main(new Array[String](0))
 
@@ -121,7 +121,7 @@ class TestBPClassify extends TestCase {
       forIndex(trueMarginal.length)(i => {
         v.set(i)(null)
         // compute score of variable with value 'i'
-        trueMarginal(i) = model.score(v)
+        trueMarginal(i) = model.score(Seq(v))
       })
 
       var logZ = Double.NegativeInfinity
@@ -270,7 +270,7 @@ Seq(
 
 
 
-class SimpleMaxEntTrainer(model: Model) {
+class SimpleMaxEntTrainer(model: TemplateModel) {
   type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 1.0
 
@@ -294,7 +294,7 @@ class SimpleMaxEntTrainer(model: Model) {
     model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t))
     // Gather constraints
     variables.foreach(_.setToTarget(null))
-    model.factorsOf[TemplatesToUpdate](variables).foreach(f => constraints(f.template) += f.statistics.vector)
+    model.factorsOfFamilyClass[TemplatesToUpdate](variables).foreach(f => constraints(f.family) += f.statistics.vector)
 
     def templates = constraints.sortedKeys
 
@@ -317,7 +317,7 @@ class SimpleMaxEntTrainer(model: Model) {
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // compute score of variable with value 'i'
-            distribution(i) = model.score(v)
+            distribution(i) = model.score(Seq(v))
           })
 
           maths.expNormalize(distribution)
@@ -325,7 +325,7 @@ class SimpleMaxEntTrainer(model: Model) {
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // put negative expectations into 'expectations' StatMap
-            model.factorsOf[TemplatesToUpdate](v).foreach(f => expectations(f.template) += f.statistics.vector * -distribution(i))
+            model.factorsOfFamilyClass[TemplatesToUpdate](Seq(v)).foreach(f => expectations(f.family) += f.statistics.vector * -distribution(i))
           })
 
           oValue += math.log(distribution(v.targetIntValue))

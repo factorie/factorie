@@ -69,7 +69,7 @@ class TestBP extends TestCase {
     var lattice: BPLattice[BinVar] = null
     // 1) equal potentials
     //    a) sum-product
-    val model1 = new Model(newTemplate1(1, 1))
+    val model1 = new TemplateModel(newTemplate1(1, 1))
     val varying = Array(v)
     lattice = new BPLattice[BinVar](varying, model1)
     lattice.updateTreewise()
@@ -80,7 +80,7 @@ class TestBP extends TestCase {
     assertEquals(lattice.marginal(v).get(0), 0.5, eps)
     // 2) unequal potentials
     //    a) sum-product
-    val model2 = new Model(newTemplate1(2, 1))
+    val model2 = new TemplateModel(newTemplate1(2, 1))
     lattice = new BPLattice(varying, model2)
     lattice.updateTreewise()
     assertEquals(lattice.marginal(v).get(0), e(1) / (1 + e(1)), eps)
@@ -95,13 +95,13 @@ class TestBP extends TestCase {
     val v = new BinVar(0)
     var lattice: BPLattice[BinVar] = null
     // 1) f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}
-    val model1 = new Model(newTemplate1(2, 1), newTemplate1(1, 2))
+    val model1 = new TemplateModel(newTemplate1(2, 1), newTemplate1(1, 2))
     val varying = Array(v)
     lattice = new BPLattice[BinVar](varying, model1)
     lattice.updateTreewise()
     assertEquals(lattice.marginal(v).get(0), 0.5, eps)
     // 2) f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}
-    val model2 = new Model(newTemplate1(0, 1), newTemplate1(0, 1))
+    val model2 = new TemplateModel(newTemplate1(0, 1), newTemplate1(0, 1))
     lattice = new BPLattice(varying, model2)
     lattice.updateTreewise()
     assertEquals(lattice.marginal(v).get(0), 1.0 / (1 + e(2)), eps)
@@ -118,7 +118,7 @@ class TestBP extends TestCase {
     vseq += v2
 
     var lattice: BPLattice[BinVar] = null
-    val model1 = new Model(newTemplate2(1000, 0))
+    val model1 = new TemplateModel(newTemplate2(1000, 0))
     val varying = Array(v1, v2)
     // create template between v1 and v2
     lattice = new BPLattice(varying, model1)
@@ -130,7 +130,7 @@ class TestBP extends TestCase {
     lattice.updateTreewise()
     assertEquals(lattice.marginal(v2).get(0), 0.0, eps)
     // get the factor
-    val factor = model1.factors(v2).head
+    val factor = model1.factors(Seq(v2)).head
     val marginals = lattice.marginalMap(factor)
     assertEquals(marginals(List(0)), 0.0, eps)
     assertEquals(marginals(List(1)), 1.0, eps)
@@ -147,11 +147,11 @@ class TestBP extends TestCase {
     vseq += v2
 
     var lattice: BPLattice[BinVar] = null
-    val model = new Model(newTemplate1(1, 0), newTemplate2(9, 0))
+    val model = new TemplateModel(newTemplate1(1, 0), newTemplate2(9, 0))
     lattice = new BPLattice(Array(v1, v2), model)
     lattice.updateTreewise()
     // print factor marginal
-    model.factors(v2).foreach {
+    model.factors(Seq(v2)).foreach {
       f =>
         if (f.variables.size == 1) {
           val marginals = lattice.marginalMap(f)
@@ -185,7 +185,7 @@ class TestBP extends TestCase {
     val v2 = new BinVar(0)
     vseq += v2
 
-    val model = new Model(newTemplate1(1, 0), newTemplate2(1, 0), newTemplate2(3, -1))
+    val model = new TemplateModel(newTemplate1(1, 0), newTemplate2(1, 0), newTemplate2(3, -1))
     var lattice = new BPLattice(Array(v1, v2), model)
     var foundLoop = false
     try {
