@@ -97,14 +97,16 @@ trait Factor extends Model with Ordered[Factor] {
   def copy(s:Substitutions): Factor
   // Implement Ordered, such that worst (lowest) scores are considered "high"
   def compare(that: Factor) = {val d = that.score - this.score; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
+  /** In order to two Factors to satisfy "equals", the value returned by this method must by "eq". */
+  def equalityPrerequisite: AnyRef = this.getClass
   // Implement equality based on class assignability and Variable contents equality
   //override def canEqual(other: Any) = (null != other) && other.isInstanceOf[Factor]; // TODO Consider putting this back in
   override def equals(other: Any): Boolean = other match {
     case other:Factor =>
-      (this eq other) || ((this.getClass eq other.getClass)
+      (this eq other) || ((this.equalityPrerequisite eq other.equalityPrerequisite)
                           && forallIndex(numVariables)(i =>
-        (this.variable(i) eq other.variable(i)) ||
-                (this.variable(i).isInstanceOf[Vars[_]] && this.variable(i) == other.variable(i))))
+                            (this.variable(i) eq other.variable(i)) ||
+                            (this.variable(i).isInstanceOf[Vars[_]] && this.variable(i) == other.variable(i))))
     case _ => false
   }
   var _hashCode = -1
@@ -166,6 +168,7 @@ trait Family {
     override def statistics: StatisticsType
     override def cachedStatistics: StatisticsType = statistics
     override def factorName = family.factorName
+    override def equalityPrerequisite: AnyRef = Family.this
     @deprecated def forSettingsOf(vs:Seq[Variable])(f: =>Unit): Unit = Family.this.forSettingsOf(this.asInstanceOf[FactorType], vs)(f)
   }
   // Values
@@ -224,9 +227,9 @@ trait FamilyWithNeighborDomains extends Family {
 trait Template extends FamilyWithNeighborDomains { thisTemplate =>
   type TemplateType <: Template // like a self-type
   type FamilyType <: Template
-  type FactorType <: Factor
-  type ValuesType <: Values
-  type StatisticsType <: Statistics
+  //type FactorType <: Factor
+  //type ValuesType <: Values
+  //type StatisticsType <: Statistics
   /** If true, method "factors" will only create Factors for variables whose domains match neighborDomains. */
   var matchNeighborDomains = true
   /*trait Factor extends super.Factor { 
@@ -262,11 +265,11 @@ trait Template extends FamilyWithNeighborDomains { thisTemplate =>
   def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade
 }
 
-/** A Template whose sufficient statistics are represented as a set of DiscreteVectorValues
+/** A factor Family whose sufficient statistics are represented as a set of DiscreteVectorValues
     (which inherit from cc.factorie.la.Vector, and also have a DiscreteVectorDomain).
     @author Andrew McCallum
 */
-trait VectorTemplate extends Template {
+trait VectorFamily extends Family {
   //def vectorLength: Int
   //protected var _vectorLength1 = -1
   //def vectorLength1: Int = if (_vectorLength < 0) throw new Error("Not yet set.") else _vectorLength1
@@ -286,14 +289,16 @@ trait VectorTemplate extends Template {
   //override def statistics(v:Variable): StatisticsType = new Stats(factors(v).map(_.stats).flatten)
   // TODO implement this!
   private def unflattenOuter(weightIndex:Int, dimensions:Int*): Array[Int] = new Array[Int](2)
-} // end of VectorTemplate
+}
+
+trait VectorTemplate extends VectorFamily with Template
 
 
 /** A VectorTemplate that also has a vector of weights, and calculates score by a dot-product between statistics.vector and weights.
     @author Andrew McCallum */
-trait DotTemplate extends VectorTemplate {
-  type TemplateType <: DotTemplate
-  type FamilyType <: DotTemplate
+trait DotFamily extends VectorFamily {
+  type TemplateType <: DotFamily
+  type FamilyType <: DotFamily
   lazy val weights: Vector = { freezeDomains; new DenseVector(statisticsVectorLength) } // Dense by default, may be override in sub-traits
   def score(s:StatisticsType) = if (s eq null) 0.0 else weights match {
     case w:DenseVector => { w dot s.vector }
@@ -342,15 +347,20 @@ trait DotTemplate extends VectorTemplate {
   }
 }
 
+trait DotTemplate extends DotFamily with Template {
+  type TemplateType <: DotTemplate
+  type FamilyType <: DotTemplate
+}
+
 /** A DotTemplate that stores its parameters in a Scalala SparseVector instead of a DenseVector
     @author Andrew McCallum */
-trait SparseWeights extends DotTemplate {
+trait SparseWeights extends DotFamily {
   override lazy val weights: Vector = { new SparseVector(statisticsVectorLength) } // Dense by default, here overridden to be sparse
 }
 
 /** A DotTemplate that stores its parameters in a Scalala SparseHashVector instead of a DenseVector
     @author Sameer Singh */
-trait SparseHashWeights extends DotTemplate {
+trait SparseHashWeights extends DotFamily {
   override lazy val weights: Vector = { freezeDomains; new SparseHashVector(statisticsVectorLength) } // Dense by default, override to be sparseHashed
 }
 
