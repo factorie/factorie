@@ -30,19 +30,50 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet}
 // POSTagger extends TemplateModel with Inferencer[POSLabel]
 // ConcreteLinearChainPOS extends OuterFactor with BPInferencer[POSLabel]
 
-/** A FACTORIE Model is a source of factors.
+/** In FACTORIE a Model is a source of factors.
     In particular, it can return the list of factors that touch a collection of variables.
+    (Typically variables do not know directly about the factors that touch them.
+    This allows us to consider multiple different Models applied to the same set of data.)
     @author Andrew McCallum
     @since 0.11
  */
 trait Model {
   def factors(variables:Iterable[Variable]): Seq[Factor]
   def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else normalize(factors(d.map(_.variable)))
+
+  def filterByFactorClass[F<:Factor](factors:Seq[Factor], fclass:Class[F]): Seq[F] = factors.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Seq[F]]
+  def factorsOfClass[F<:Factor](variables:Iterable[Variable], fclass:Class[F]): Seq[F] = filterByFactorClass(factors(variables), fclass)
+  def factorsOfClass[F<:Factor](variables:Iterable[Variable])(implicit fm:Manifest[F]): Seq[F] = factorsOfClass(variables, fm.erasure.asInstanceOf[Class[F]])
+  def factorsOfClass[F<:Factor](d:DiffList, fclass:Class[F]): Seq[F] = filterByFactorClass(factors(d), fclass)
+  def factorsOfClass[F<:Factor](d:DiffList)(implicit fm:Manifest[F]): Seq[F] = factorsOfClass[F](d, fm.erasure.asInstanceOf[Class[F]])
+
+  def filterByFamilyClass[F<:Family](factors:Seq[Factor], fclass:Class[F]): Seq[F#Factor] =
+    factors.filter(f => f match {
+      case f:Family#Factor => fclass.isAssignableFrom(f.family.getClass)
+      case _ => false
+    }).asInstanceOf[Seq[F#Factor]]
+  def factorsOfFamilyClass[F<:Family](variables:Iterable[Variable], fclass:Class[F]): Seq[F#Factor] = filterByFamilyClass[F](factors(variables), fclass)
+  def factorsOfFamilyClass[F<:Family](variables:Iterable[Variable])(implicit fm:Manifest[F]): Seq[F#Factor] = factorsOfFamilyClass[F](variables, fm.erasure.asInstanceOf[Class[F]])
+  def factorsOfFamilyClass[F<:Family](d:DiffList, fclass:Class[F]): Seq[F#Factor] = filterByFamilyClass(factors(d), fclass)
+  def factorsOfFamilyClass[F<:Family](d:DiffList)(implicit fm:Manifest[F]): Seq[F#Factor] = filterByFamilyClass[F](factors(d), fm.erasure.asInstanceOf[Class[F]])
+
+  def filterByFamily[F<:Family](factors:Seq[Factor], family:F): Seq[F#Factor] = 
+    factors.filter(f => f match {
+      case f:Family#Factor => f.family.equals(family)
+      case _ => false
+    }).asInstanceOf[Seq[F#Factor]]
+
+  def factorsOfFamily[F<:Family](variables:Iterable[Variable], family:F): Seq[F#Factor] = filterByFamily(factors(variables), family)
+  def factorsOfFamily[F<:Family](d:DiffList, family:F): Seq[F#Factor] = filterByFamily(factors(d), family)
+
   def score(variables:Iterable[Variable]): Double = factors(variables).foldLeft(0.0)((sum, f) => sum + f.score)
   def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.statistics.score)
-  // Before returning a sequence of Factors make sure they are de-duplicated 
-  // and don't include inner factors (whose interpretation may require special handling by the outer factor)
-  //def normalize(factors:Seq[Factor]): Seq[Factor] = normalize(factors, null)
+  /** Returns the average score, that is score of variables, normalized by the size of the collections vars. */
+  def aveScore(variables:Iterable[Variable]): Double = score(variables) / variables.size  // TODO Rename to scoreAve?
+
+  /** Deduplicate a sequence of Factors while also being sure not to include inner factors 
+      (whose interpreation may require special handling by the outer factor).
+      This method should be called on all Seq[Factor] before they are returned by methods such as "factors" */
   def normalize(factors:Seq[Factor]): Seq[Factor] = {
     if (factors.forall(_.outer eq null)) factors
     else {
@@ -67,6 +98,7 @@ trait Model {
   def score: Double = factors.foldLeft(0.0)((sum, f) => sum + f.score)
 }
 
+/*
 object GenerativeModel extends Model {
   /** Only works on Iterable[GeneratedVar] */
   def factors(variables:Iterable[Variable]): Seq[Factor] = {
@@ -78,6 +110,8 @@ object GenerativeModel extends Model {
     normalize(result)
   }
 }
+*/
+
 
 /** A Model that concatenates the factors of multiple contained models.
     @author Andrew McCallum
@@ -113,44 +147,35 @@ class FactorModel(initialFactors:Factor*) extends Model {
     @see Template
  */
 class TemplateModel(initialTemplates:Template*) extends Model {
-  type T = Template
 
-  private val _templates = new ArrayBuffer[T] ++= initialTemplates
-  def templates: Seq[T] = _templates
-  //def apply(i:Int) = ts.apply(i)
-  //def length = ts.length
-  //override def iterator = ts.iterator
+  private val _templates = new ArrayBuffer[Template] ++= initialTemplates
+  def templates: Seq[Template] = _templates
   def ++=(moreTemplates:Iterable[Template]) = _templates ++= moreTemplates
   def +=(template:Template) = _templates += template
   @deprecated def clear = _templates.clear // TODO Consider removing this.
 
-  def templatesOf[T2<:T](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
+  def templatesOf[T2<:Template](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
     val templateClass = m.erasure
     val ret = new ArrayBuffer[T2]
     for (t <- templates) if (templateClass.isAssignableFrom(t.getClass)) ret += t.asInstanceOf[T2]
     ret
   }
-  def templatesOfClass[T2<:T](cls:Class[T2]): IndexedSeq[T2] = {
+  def templatesOfClass[T2<:Template](cls:Class[T2]): IndexedSeq[T2] = {
     val ret = new ArrayBuffer[T2]
     for (t <- templates) if (cls.isAssignableFrom(t.getClass)) ret += t.asInstanceOf[T2]
     ret
   }
-  /*override def filter(test:(T)=>Boolean): Model = {
-    val ret = new TemplateModel
-    for (t <- templates) if (test(t)) ret += t
-    ret
-  }*/
   
+  def factors(vs:Iterable[Variable]) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(vs)))
   override def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else normalize(templates.flatMap(template => template.factors(d)))
-  def factorsOf[T2<:T](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
-  def factorsOf[T2<:T](cls:Class[T2])(d:DiffList): Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOfClass[T2](cls).flatMap(template => template.factors(d))
-  // TODO Rename factorsOfAll
-  def factorsOf[T2<:T](vs:Iterable[Variable])(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
-  def factorsOf[T2<:T](v:Variable)(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
+  //def factorsOf[T2<:Template](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
+  //def factorsOf[T2<:Template](cls:Class[T2])(d:DiffList): Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOfClass[T2](cls).flatMap(template => template.factors(d))
+  //def factorsOf[T2<:Template](vs:Iterable[Variable])(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
+  //def factorsOfTemplate[T<:Template](vs:Iterable[Variable])(implicit m:Manifest[T]) : Seq[T#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
+  //def factorsOf[T2<:Template](v:Variable)(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
   /** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
   //def factors(v:Variable) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(v)), null)
   //def factors(v:Variable, outer:Factor) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(v)), outer)
-  def factors(vs:Iterable[Variable]) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(vs)))
   //@deprecated def factorsAll(vs:Iterable[Variable], outer:Factor) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(vs)), outer)
   //def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistics.score) // For use when the Variable is also Iterable
   //def score(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistics.score)
@@ -158,9 +183,6 @@ class TemplateModel(initialTemplates:Template*) extends Model {
   /** Score all variables in the Iterable collection.  This method is useful when a Variable is also a Iterable[Variable]; 
       it forces the Iterable interpretation and avoids the single variable interpretation of score(Variable). */
   //def score(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistics.score)
-  /** Returns the average score, that is scoreAll of vars, normalized by the size of the collections vars. */
-  // TODO Rename to scoreAve?
-  def aveScore(vars:Iterable[Variable]): Double = score(vars) / vars.size
 
   
   def save(dirname:String): Unit = {

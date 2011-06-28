@@ -114,7 +114,7 @@ object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHan
   class Closure(val variable:MutableGeneratedVar, val factor:GenerativeTemplate#Factor, val collapsedParents:Seq[CollapsedParameter]) extends CollapsedGibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = {
       for (p <- collapsedParents) p.updateChildStats(variable, -1.0)
-      variable.set(factor.template.sampledValue(factor.statistics).asInstanceOf[variable.Value])
+      variable.set(factor.family.sampledValue(factor.statistics).asInstanceOf[variable.Value])
       for (p <- collapsedParents) p.updateChildStats(variable, 1.0) 
       // TODO Consider whether we should be passing values rather than variables to updateChildStats
       // TODO What about collapsed children?
@@ -162,7 +162,7 @@ object MixtureChoiceCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHa
       val distribution = new Array[Double](domainSize)
       var sum = 0.0
       forIndex(domainSize)(i => {
-        distribution(i) = choiceParent(i) * oFactor.template.prChoosing(oStat, i)
+        distribution(i) = choiceParent(i) * oFactor.family.prChoosing(oStat, i)
         sum += distribution(i)
       })
       assert(sum == sum, "Distribution sum is NaN")

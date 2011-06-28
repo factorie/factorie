@@ -110,26 +110,34 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
         //println (" Updating bestObjective1 "+(bestObjective1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
         //println (" Updating bestModel1 "+(bestModel1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
         bestObjective1.diff.redo
-        bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistics.vector *  rate)
+        model.factorsOfFamilyClass(bestObjective1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        //bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         bestObjective1.diff.undo
-        bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistics.vector * -rate)
+        model.factorsOfFamilyClass(bestObjective1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
+        //bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel1.diff.redo
-        bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistics.vector * -rate)
+        model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
+        //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel1.diff.undo
-        bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistics.vector *  rate)
+        model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
       }
       else if (bestModel1.modelScore - bestModel2.modelScore < learningMargin) {
         // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
         //println ("SampleRank learning from margin")
         // TODO Note This is changed from previous version, where it was bestTruth.  Think again about this.
         bestObjective1.diff.redo
-        bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistics.vector *  rate)
+        model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         bestObjective1.diff.undo
-        bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistics.vector * -rate)
+        model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+        //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel2.diff.redo
-        bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistics.vector * -rate)
+        model.factorsOfFamilyClass(bestModel2.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+        //bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel2.diff.undo
-        bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.template) += f.statistics.vector *  rate)
+        model.factorsOfFamilyClass(bestModel2.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        //bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
       }
     } //else Console.println ("No preference unlabeled "+variable)
   }

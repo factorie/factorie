@@ -60,7 +60,7 @@ class LogLinearMaximumLikelihood(model: TemplateModel) {
     model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
     // Gather constraints
     variableSets.foreach(_.foreach(_.setToTarget(null)))
-    variableSets.foreach(vars => model.factorsOf[TemplatesToUpdate](vars).foreach(f => constraints(f.template) += f.cachedStatistics.vector))
+    variableSets.foreach(vars => model.factorsOfClass[TemplatesToUpdate#Factor](vars).foreach(f => constraints(f.family) += f.cachedStatistics.vector))
 
     def templates = constraints.sortedKeys
 
@@ -134,7 +134,7 @@ class LogLinearMaximumLikelihood(model: TemplateModel) {
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // put negative expectations into 'expectations' StatMap
-            model.factorsOf[TemplatesToUpdate](v).foreach(f => vecPlusEq(expectations(f.template), f.statistics.vector, -distribution(i)))
+            model.factorsOfFamilyClass[TemplatesToUpdate](Seq(v)).foreach(f => vecPlusEq(expectations(f.family), f.statistics.vector, -distribution(i)))
           })
 
           oValue += math.log(distribution(v.targetIntValue))

@@ -121,7 +121,7 @@ abstract class BPFactor(val factor: Template#Factor) {
       var statVector: Vector = null
       // only increment expectations if not already done and vector is present
       if (!_expectationsIncremented && (expectations ne null)) {
-        statVector = expectations(factor.template.asInstanceOf[DotTemplate])
+        statVector = expectations(factor.family.asInstanceOf[DotTemplate])
         _expectationsIncremented = true
       }
 
@@ -138,7 +138,7 @@ abstract class BPFactor(val factor: Template#Factor) {
         } else if (neighborSettings.size == 1) {
           val neighbor = neighborSettings.head.variable
           msg(i) = Double.NegativeInfinity // i.e. log(0)
-          if (factor.template.hasSettingsIterator) {
+          if (factor.family.hasSettingsIterator) {
             factor.forSettingsOf(List(neighbor)) {
               val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
               val factorMessage = cachedStats.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
@@ -164,7 +164,7 @@ abstract class BPFactor(val factor: Template#Factor) {
           // Sum over all combinations of values in neighboring variables with v's value fixed to i.
           neighborSettings.foreach(setting => {setting.reset; setting.next}) // reset iterator and advance to first setting.
           msg(i) = Double.NegativeInfinity // i.e. log(0)
-          if (factor.template.hasSettingsIterator) {
+          if (factor.family.hasSettingsIterator) {
             factor.forSettingsOf(neighborSettings.map(n => n.variable).toList) {
               val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
               val factorMessage = cachedStats.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
@@ -200,7 +200,7 @@ abstract class BPFactor(val factor: Template#Factor) {
         } else if (neighborSettings.size == 1) {
           val neighbor = neighborSettings.head.variable
           msg(i) = Double.NegativeInfinity
-          if (factor.template.hasSettingsIterator) {
+          if (factor.family.hasSettingsIterator) {
             factor.forSettingsOf(List(neighbor)) {
               val score = factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
               if (score > msg(i)) {msg(i) = score;}
@@ -215,7 +215,7 @@ abstract class BPFactor(val factor: Template#Factor) {
         } else { // This factor has variable neighbors in addition to v itself
           neighborSettings.foreach(setting => {setting.reset; setting.next})
           msg(i) = Double.NegativeInfinity
-          if (factor.template.hasSettingsIterator) {
+          if (factor.family.hasSettingsIterator) {
             factor.forSettingsOf(neighborSettings.map(n => n.variable).toList) {
               val score = factor.cachedStatistics.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
               if (score > msg(i)) {msg(i) = score;}
@@ -261,7 +261,7 @@ abstract class BPFactor(val factor: Template#Factor) {
       if (neighborSettings.size == 0 && (expectations ne null) && !_expectationsIncremented) {
         // special case for leaves
         _logZ = if (cachedLogZ.isNaN) BPFactor.this.logZ else cachedLogZ
-        val statVector: Vector = expectations(factor.template.asInstanceOf[DotTemplate])
+        val statVector: Vector = expectations(factor.family.asInstanceOf[DotTemplate])
         // update expectations
         forIndex(v.domain.size)(i => {
           v.set(i)(null)
@@ -373,7 +373,7 @@ abstract class BPFactor(val factor: Template#Factor) {
 
   def factorCurrentScore: Double = factor.cachedStatistics.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
   def factorCurrentScore(statistics:Template#Statistics): Double = {
-    assert(statistics.template eq factor.template)
+    assert(statistics.family eq factor.family)
     statistics.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
   }
 
@@ -410,7 +410,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
   def initFactors: Unit = {
     val inferenceVariables = new HashSet[V]
     variables.foreach {v: V => inferenceVariables += v}
-    for (factor <- model.factorsOf[Template](variables)) {
+    for (factor <- model.factorsOfFamilyClass(variables, classOf[Template])) {
       val bpFactor = new BPFactor(factor) {def factorsOf(v: Variable) = v2m(v)}
       bpFactors(factor) = bpFactor
       for (v <- factor.variables) {

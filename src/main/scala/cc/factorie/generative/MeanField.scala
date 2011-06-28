@@ -28,8 +28,8 @@ class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A],
         for (i <- 0 until v.domain.size) {
           val diff = new DiffList
           v.set(i)(diff)
-          val factors = diff.factorsOf[Template](model)
-          //val factors = diff.factors(model)
+          val factors = model.factorsOfFamilyClass[Template](diff)
+          //val factors = diff.factorsOf[Template](model)
           val neighbors = factors.flatMap(_.variables).filter(_ != v).toSet
           if (neighbors.exists(_.isInstanceOf[Variable with QDistribution])) throw new Error("Not yet implemented neighboring mean fields.")
           val modelScore = diff.scoreAndUndo(model)

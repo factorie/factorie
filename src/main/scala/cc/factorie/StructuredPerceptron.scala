@@ -35,9 +35,11 @@ abstract class StructuredPerceptron[V<:VarWithTargetValue](model:TemplateModel) 
 
   def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit = {
     if (!difflist.done) difflist.redo
-    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistics.vector *  rate)
+    model.factorsOfFamilyClass[TemplatesToUpdate](difflist).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+    //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
     difflist.undo
-    difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.template) += f.statistics.vector * -rate)
+    model.factorsOfFamilyClass[TemplatesToUpdate](difflist).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+    //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
   }
 
 }
