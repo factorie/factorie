@@ -119,7 +119,6 @@ trait ProportionGenerating {
 }*/
 
 trait GenerativeTemplate extends Template {
-  type TemplateType <: GenerativeTemplate
   type FamilyType <: GenerativeTemplate
   //type ChildType = V
   type ChildType <: GeneratedVar
@@ -145,13 +144,13 @@ trait GenerativeTemplate extends Template {
 
 abstract class GenerativeTemplateWithStatistics1[C<:GeneratedVar:Manifest] extends TemplateWithStatistics1[C] with GenerativeTemplate {
   thisTemplate =>
-  type TemplateType <: GenerativeTemplateWithStatistics1[C]
+  type FamilyType <: GenerativeTemplateWithStatistics1[C]
   type ChildType = C
 }
 
 abstract class GenerativeTemplateWithStatistics2[C<:GeneratedVar:Manifest,P1<:Variable:Manifest] extends TemplateWithStatistics2[C,P1] with GenerativeTemplate {
   thisTemplate =>
-  //type TemplateType <: GenerativeTemplateWithStatistics2[C,P1]
+  //type FamilyType <: GenerativeTemplateWithStatistics2[C,P1]
   type ChildType = C
   /*class Factor(c:C, p1:P1) extends super.Factor(c, p1) with GenerativeFactor {
     type StatisticsType = thisTemplate.StatisticsType
@@ -167,7 +166,7 @@ abstract class GenerativeTemplateWithStatistics2[C<:GeneratedVar:Manifest,P1<:Va
 
 abstract class GenerativeTemplateWithStatistics3[C<:GeneratedVar:Manifest,P1<:Variable:Manifest,P2<:Variable:Manifest] extends TemplateWithStatistics3[C,P1,P2] with GenerativeTemplate {
   thisTemplate =>
-  //type TemplateType <: GenerativeTemplateWithStatistics3[C,P1,P2]
+  //type FamilyType <: GenerativeTemplateWithStatistics3[C,P1,P2]
   type ChildType = C
   /*class Factor(c:C, p1:P1, p2:P2) extends super.Factor(c, p1, p2) with GenerativeFactor {
     type StatisticsType = thisTemplate.StatisticsType
@@ -183,7 +182,7 @@ abstract class GenerativeTemplateWithStatistics3[C<:GeneratedVar:Manifest,P1<:Va
 
 abstract class GenerativeTemplateWithStatistics4[C<:GeneratedVar:Manifest,P1<:Variable:Manifest,P2<:Variable:Manifest,P3<:Variable:Manifest] extends TemplateWithStatistics4[C,P1,P2,P3] with GenerativeTemplate {
   thisTemplate =>
-  //type TemplateType <: GenerativeTemplateWithStatistics4[C,P1,P2,P3]
+  //type FamilyType <: GenerativeTemplateWithStatistics4[C,P1,P2,P3]
   type ChildType = C
   /*class Factor(c:C, p1:P1, p2:P2, p3:P3) extends super.Factor(c, p1, p2, p3) with GenerativeFactor {
     type StatisticsType = thisTemplate.StatisticsType

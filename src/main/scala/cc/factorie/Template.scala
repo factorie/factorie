@@ -225,8 +225,8 @@ trait FamilyWithNeighborDomains extends Family {
     @Andrew McCallum
 */
 trait Template extends FamilyWithNeighborDomains { thisTemplate =>
-  type TemplateType <: Template // like a self-type
-  type FamilyType <: Template
+  //type TemplateType <: Template 
+  type FamilyType <: Template // like a self-type
   //type FactorType <: Factor
   //type ValuesType <: Values
   //type StatisticsType <: Statistics
@@ -297,7 +297,7 @@ trait VectorTemplate extends VectorFamily with Template
 /** A VectorTemplate that also has a vector of weights, and calculates score by a dot-product between statistics.vector and weights.
     @author Andrew McCallum */
 trait DotFamily extends VectorFamily {
-  type TemplateType <: DotFamily
+  //type TemplateType <: DotFamily
   type FamilyType <: DotFamily
   lazy val weights: Vector = { freezeDomains; new DenseVector(statisticsVectorLength) } // Dense by default, may be override in sub-traits
   def score(s:StatisticsType) = if (s eq null) 0.0 else weights match {
@@ -348,7 +348,7 @@ trait DotFamily extends VectorFamily {
 }
 
 trait DotTemplate extends DotFamily with Template {
-  type TemplateType <: DotTemplate
+  //type TemplateType <: DotTemplate
   type FamilyType <: DotTemplate
 }
 
