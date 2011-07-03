@@ -156,12 +156,12 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
 
 }
 
-trait Statistics2[S1,S2] extends Template {
+trait Statistics2[S1,S2] extends Family {
   final case class Stat(_1:S1, _2:S2, override val inner:Seq[cc.factorie.Statistics] = Nil) extends super.Statistics
   type StatisticsType = Stat
 }
 
-trait VectorStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorTemplate {
+trait VectorStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorFamily {
   type StatisticsType = Stat
   final case class Stat(_1:S1, _2:S2, override val inner:Seq[cc.factorie.Statistics] = Nil) extends { val vector: Vector = _1 flatOuter _2 } with super.Statistics { 
     if (_statisticsDomains eq null) { 
@@ -172,7 +172,21 @@ trait VectorStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends
   }
 }
 
-trait DotStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorStatistics2[S1,S2] with DotTemplate
+trait DotStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorStatistics2[S1,S2] with DotFamily
+
+abstract class FamilyWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Family2[N1,N2] with Statistics2[N1#Value,N2#Value] {
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
+}
+
+abstract class FamilyWithVectorStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Family2[N1,N2] with VectorStatistics2[N1#Value,N2#Value] {
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
+}
+
+abstract class FamilyWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Family2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
+}
+
+
 abstract class TemplateWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with Statistics2[N1#Value,N2#Value] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
 }
@@ -182,6 +196,7 @@ abstract class TemplateWithVectorStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteV
 }
 
 abstract class TemplateWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
+  type FamilyType <: TemplateWithDotStatistics2[N1,N2]
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
 }
 

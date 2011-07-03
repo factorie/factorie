@@ -26,14 +26,14 @@ import cc.factorie.util.{Hooks0,Hooks1,Hooks2}
     @see ProposalSampler
     @see GibbsSampler
 */
-abstract class MHSampler[C](val model:TemplateModel) extends ProposalSampler[C] {
+abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   var random = cc.factorie.random
   
   // This method must be implemented in concrete subclasses
   def propose(context:C)(implicit d:DiffList) : Double
 
   /** If you want the Proposals to actually contain the objectiveScore, override this method appropriately.  Used for training. */
-  def objective : TemplateModel = null
+  def objective : Model = null
 
   // Various diagnostics
   var numProposedMoves = 0

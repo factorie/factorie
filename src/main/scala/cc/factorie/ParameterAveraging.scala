@@ -31,15 +31,15 @@ import scala.collection.mutable.HashMap
     </code>
     @author Michael Wick */
 trait ParameterAveraging extends WeightUpdates {
-  override type TemplatesToUpdate = DotTemplate
   // To apply this learning to just a subset of the WeightedLinearTemplates, you can define "model" to be a subset of the original model.
 
-  def model : TemplateModel
-  def processCount : Int
+  def model: Model
+  def processCount: Int
+  def familiesToUpdate: Seq[DotFamily] // provided in some "*Update" trait
   def perceptronIteration = updateCount //other options: updateCount, iterationCount
   val initialIteration = perceptronIteration
-  val lastUpdateIteration = new HashMap[TemplatesToUpdate,Vector] {
-    override def default(template:TemplatesToUpdate) = { 
+  val lastUpdateIteration = new HashMap[DotFamily,Vector] {
+    override def default(template:DotFamily) = { 
       val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {
         template.freezeDomains
         new DenseVector(template.statisticsVectorLength)
@@ -49,8 +49,8 @@ trait ParameterAveraging extends WeightUpdates {
       vector
     }
   }
-  val weightsSum = new HashMap[TemplatesToUpdate,Vector] {
-    override def default(template:TemplatesToUpdate) = {
+  val weightsSum = new HashMap[DotFamily,Vector] {
+    override def default(template:DotFamily) = {
       val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {
         template.freezeDomains
         new DenseVector(template.statisticsVectorLength)
@@ -63,28 +63,25 @@ trait ParameterAveraging extends WeightUpdates {
 
 
   //Store the model weights in here before accumulated weights are injected into model, this way they can be recovered if necessary
-  var _backupWeights : HashMap[TemplatesToUpdate,Vector] = null
+  var _backupWeights : HashMap[DotFamily,Vector] = null
   def backupWeights : Unit =
     {
-      _backupWeights = new HashMap[TemplatesToUpdate,Vector] 
-      {
-	override def default(template:TemplatesToUpdate) = 
-	  {
-	    val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else{template.freezeDomains;new DenseVector(template.statisticsVectorLength)}
-	    vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
-	    this(template) = vector
-	    vector
-	  }
+      _backupWeights = new HashMap[DotFamily,Vector] {
+        override def default(template:DotFamily) = {
+          val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {template.freezeDomains; new DenseVector(template.statisticsVectorLength)}
+          vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
+          this(template) = vector
+          vector
+        }
       }
-      for(template <- model.templatesOf[TemplatesToUpdate])
-	  _backupWeights(template)
+      for(template <- familiesToUpdate) _backupWeights(template)
     }
 
   def unsetWeightsToAverage : Unit =
     {
       if(_backupWeights==null)
 	throw new Exception("Cannot 'unset' weights because 'setWeightsToAverage' has not been called")
-      for (template <- model.templatesOf[TemplatesToUpdate]) 
+      for (template <- familiesToUpdate)
 	{
 	  if(_backupWeights.contains(template))
 	    {
@@ -97,7 +94,7 @@ trait ParameterAveraging extends WeightUpdates {
 
   // Make sure that weightsSum reflects the sum of all weights up to the current iterations
   def updateWeightsSum : Unit = {
-    for (template <- model.templatesOf[TemplatesToUpdate]) {
+    for (template <- familiesToUpdate) {
       val templateLastUpdateIteration = lastUpdateIteration(template)
       val templateWeightsSum = weightsSum(template)
       val templateWeights = template.weights
@@ -119,7 +116,7 @@ trait ParameterAveraging extends WeightUpdates {
       updateWeightsSum
       var divisor : Double = perceptronIteration.asInstanceOf[Double]
 //      System.out.println("PA: " + perceptronIteration+" up: " + updateCount+" div="+divisor)
-      for (template <- model.templatesOf[TemplatesToUpdate]) 
+      for (template <- familiesToUpdate) 
   {
     if(weightsSum.contains(template))
       {
@@ -141,8 +138,8 @@ trait ParameterAveraging extends WeightUpdates {
   /**This method is agnostic to how the weights were originally updated**/
   abstract override def updateWeights: Unit = {
     //Get the gradient to identify the locations of weights changed by update
-    val metaGradient = new HashMap[TemplatesToUpdate,SparseVector] {
-      override def default(template:TemplatesToUpdate) = {
+    val metaGradient = new HashMap[UpdateFamilyType,SparseVector] {
+      override def default(template:UpdateFamilyType) = {
         //SR: is freezing necessary?
         //template.freezeDomains
         val vector = new SparseVector(template.statisticsVectorLength)
@@ -188,7 +185,7 @@ trait ParameterAveraging extends WeightUpdates {
     }  
   } 
 
-  def l2Norm(grad : HashMap[TemplatesToUpdate,SparseVector]) : Double = 
+  def l2Norm(grad : HashMap[UpdateFamilyType,SparseVector]) : Double = 
    {
       var result : Double = 0.0
       for((t,v) <- grad)

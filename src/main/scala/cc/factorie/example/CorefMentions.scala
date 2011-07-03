@@ -205,6 +205,7 @@ object CorefMentionsDemo {
           if (processCount % 500 == 0) {
             //learningRate *= .9
             // TODO put back numUpdates   System.out.println("UPS: " + numUpdates);
+
             // model.templatesOf[DotTemplate].foreach(f => println (f.toString+" weights = "+f.weights.toList)) // TODO Commented out when DenseVectors.toList stopped working, most likely due to FACTORIE using 2.8.0.RC1 and Scalala using 2.8.0.Beta1
             println ("All entities")
             entityList.filter(e=>e.size>0).foreach(e => println(e.toString +" "+ e.mentions.toList))

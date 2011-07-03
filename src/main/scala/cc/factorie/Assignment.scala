@@ -17,6 +17,7 @@ package cc.factorie
 /** Typically Variable instances hold their value internally.
     Alternatively, variable values can be stored in an Assignment: a
     mapping from variables to their values.
+    
     Note that this trait doesn't inherit directly from scala.collection.Map
     because we need a special type signature for 'apply' and 'get'.
     @author Andrew McCallum */
@@ -28,6 +29,7 @@ trait TypedAssignment[A<:Variable] {
   def getOrElse[B<:A](v:B, default: => B#Value): B#Value = if (contains(v)) apply(v) else default
   //def globalize: DiffList
 }
+
 trait Assignment extends TypedAssignment[Variable]
 
 

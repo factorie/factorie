@@ -107,12 +107,12 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Famil
   def unroll1s(v:N1#ContainedVariableType): Iterable[FactorType] = throw new Error("You must override unroll1s.")
 }
 
-trait Statistics1[S1] extends Template {
+trait Statistics1[S1] extends Family {
   final case class Stat(_1:S1, override val inner:Seq[cc.factorie.Statistics] = Nil) extends super.Statistics
   type StatisticsType = Stat
 }
 
-trait VectorStatistics1[S1<:DiscreteVectorValue] extends VectorTemplate {
+trait VectorStatistics1[S1<:DiscreteVectorValue] extends VectorFamily {
   type StatisticsType = Stat
   // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
   final case class Stat(_1:S1, override val inner:Seq[cc.factorie.Statistics] = Nil) extends { val vector: Vector = _1 } with super.Statistics { 
@@ -123,12 +123,26 @@ trait VectorStatistics1[S1<:DiscreteVectorValue] extends VectorTemplate {
   }
 }
 
-trait DotStatistics1[S1<:DiscreteVectorValue] extends VectorStatistics1[S1] with DotTemplate {
+trait DotStatistics1[S1<:DiscreteVectorValue] extends VectorStatistics1[S1] with DotFamily {
   def setWeight(entry:S1, w:Double) = entry match {
     case d:DiscreteValue => weights(d.intValue) = w
     case ds:DiscreteVectorValue => ds.activeDomain.foreach(i => weights(i) = w)
   }
 }
+
+abstract class FamilyWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Family1[N1] with Statistics1[N1#Value] {
+  def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
+}
+
+abstract class FamilyWithVectorStatistics1[N1<:DiscreteVectorVar](implicit nm1:Manifest[N1]) extends Family1[N1] with VectorStatistics1[N1#Value] {
+  def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
+}
+
+class FamilyWithDotStatistics1[N1<:DiscreteVectorVar](implicit nm1:Manifest[N1]) extends Family1[N1] with DotStatistics1[N1#Value] {
+  def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
+}
+
+
 
 abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1] with Statistics1[N1#Value] {
   def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
@@ -139,6 +153,7 @@ abstract class TemplateWithVectorStatistics1[N1<:DiscreteVectorVar](implicit nm1
 }
 
 class TemplateWithDotStatistics1[N1<:DiscreteVectorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with DotStatistics1[N1#Value] {
+  type FamilyType <: TemplateWithDotStatistics1[N1]
   def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
 }
 

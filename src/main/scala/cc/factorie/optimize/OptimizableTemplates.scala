@@ -32,3 +32,11 @@ class OptimizableTemplates(theTemplates:Seq[DotTemplate]) extends ArrayFromVecto
   def optimizableParameter_=(index:Int, d:Double): Unit = vectorValueAtArrayIndex_=(index, d)
 }
 
+class OptimizableFamilies(theFamilies:Seq[DotFamily]) extends ArrayFromVectors(theFamilies.map(_.weights)) with Optimizable {
+  def numOptimizableParameters = vectorsArraySize
+  def getOptimizableParameters(a:Array[Double]) = getVectorsInArray(a)
+  def setOptimizableParameters(a:Array[Double]): Unit = setVectorsFromArray(a)
+  def optimizableParameter(index:Int): Double = vectorValueAtArrayIndex(index)
+  def optimizableParameter_=(index:Int, d:Double): Unit = vectorValueAtArrayIndex_=(index, d)
+}
+

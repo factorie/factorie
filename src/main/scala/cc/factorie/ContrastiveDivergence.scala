@@ -22,10 +22,11 @@ import cc.factorie.la._
     @author Andrew McCallum
     @since 0.8
  */
-abstract class ContrastiveDivergence[C](model:TemplateModel) extends MHSampler[C](model) {
-  type TemplatesToUpdate = DotTemplate
+abstract class ContrastiveDivergence[C](model:Model) extends MHSampler[C](model) {
   def updateWeights: Unit
   var difflist : DiffList = null
+  
+  def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
   
   override def postProcessHook(context:C, d:DiffList) : Unit = {
     super.postProcessHook(context, d)
@@ -33,11 +34,11 @@ abstract class ContrastiveDivergence[C](model:TemplateModel) extends MHSampler[C
     updateWeights // This will result in a call to addGradient
   }
 
-  def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit = {
-    model.factorsOfFamilyClass[TemplatesToUpdate](difflist).foreach(f => accumulator(f.family) += (f.statistics.vector * -rate))
+  def addGradient(accumulator:DotFamily=>Vector, rate:Double): Unit = {
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family) += (f.statistics.vector * -rate))
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += (f.statistics.vector * -rate))
     difflist.undo
-    model.factorsOfFamilyClass[TemplatesToUpdate](difflist).foreach(f => accumulator(f.family) += (f.statistics.vector *  rate))
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family) += (f.statistics.vector *  rate))
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += (f.statistics.vector *  rate))
   }  
 }

@@ -23,9 +23,10 @@ import cc.factorie.la._
 trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
   this: ProposalSampler[_] =>
   //type TemplatesToUpdate = DotTemplate  // was type TemplatesToUpdate <: DotTemplate, but this no longer provides a Manifest on Scala 2.8
-  type TemplatesToUpdate <: DotTemplate
-  def templateClassToUpdate: Class[DotTemplate]
-  def model: TemplateModel
+  //type TemplatesToUpdate <: DotFamily
+  //def templateClassToUpdate: Class[DotFamily]
+  def model: Model
+  def familiesToUpdate: Seq[DotFamily] // provided by GradientAscentUpdates
   var learningMargin = 1.0
   def updateWeights: Unit
   val amIMetropolis = this.isInstanceOf[MHSampler[_/*Variable*/]] // TODO Can we find a way to avoid this special case?
@@ -78,7 +79,7 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
     }
   }
  
-  def addGradient(accumulator:DotTemplate=>Vector, rate:Double): Unit = {
+  def addGradient(accumulator:DotFamily=>Vector, rate:Double): Unit = {
 
     /*
     List(bestModel1, bestModel2, bestObjective1, bestObjective2).foreach(p => println(p))
@@ -101,7 +102,7 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
     // It would not have a preference if the variable in question is unlabeled
     // TODO Is this the right way to test this though?  Could there be no preference at the top, but the model is selecting something else that is worse?
     if (shouldUpdate) {
-    	val templatesToUpdate = templateClassToUpdate
+    	//val templatesToUpdate = templateClassToUpdate
       // If the model doesn't score the truth highest, then update parameters
       if (bestModel1 ne bestObjective1) { // TODO  I changed != to "ne"  OK?  Should I be comparing values here instead?
         // ...update parameters by adding sufficient stats of truth, and subtracting error
@@ -110,16 +111,20 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
         //println (" Updating bestObjective1 "+(bestObjective1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
         //println (" Updating bestModel1 "+(bestModel1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
         bestObjective1.diff.redo
-        model.factorsOfFamilyClass(bestObjective1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        //model.factorsOfFamilyClass(bestObjective1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         //bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         bestObjective1.diff.undo
-        model.factorsOfFamilyClass(bestObjective1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
+        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+        //model.factorsOfFamilyClass(bestObjective1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         //bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel1.diff.redo
-        model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+        //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel1.diff.undo
-        model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
       }
       else if (bestModel1.modelScore - bestModel2.modelScore < learningMargin) {
@@ -127,16 +132,20 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
         //println ("SampleRank learning from margin")
         // TODO Note This is changed from previous version, where it was bestTruth.  Think again about this.
         bestObjective1.diff.redo
-        model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         bestObjective1.diff.undo
-        model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+        //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
         //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel2.diff.redo
-        model.factorsOfFamilyClass(bestModel2.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+        //model.factorsOfFamilyClass(bestModel2.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
         //bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel2.diff.undo
-        model.factorsOfFamilyClass(bestModel2.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        //model.factorsOfFamilyClass(bestModel2.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         //bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
       }
     } //else Console.println ("No preference unlabeled "+variable)

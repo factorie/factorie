@@ -17,15 +17,21 @@
 package cc.factorie
 import cc.factorie.la._
 
-/** For parameter estimation methods that use a gradient to update weight parameters. 
+/** For parameter estimation methods that use a gradient to update weight parameters.
+    Subclasses will create and store a gradient.  
+    Calls to addGradient should increment this gradient.
+    Calls to updateWeights should use this gradient to change the weights. 
     @author Andrew McCallum */
 trait WeightUpdates {
-  type TemplatesToUpdate <: DotTemplate // TODO Was type TemplatesToUpdate <: DotTemplate, but this no longer works in Scala 2.8
-  def templateClassToUpdate: Class[TemplatesToUpdate]
+  type UpdateFamilyType = DotFamily
+  //def templateClassToUpdate: Class[TemplatesToUpdate]
+  /** The model's list of factor families whose weights will be updated. */
+  def familiesToUpdate: Seq[DotFamily]
   /** The number of times 'updateWeights' has been called. */
   var updateCount : Int = 0
-  /** Call this method to use the current gradient to change the weight parameters.  When you override it, you must call super.updateWeights. */
+  /** Call this method to use the current gradient to change the weight parameters.  
+      When you override it, you should call super.updateWeights, which will increment updateCount. */
   def updateWeights : Unit = updateCount += 1
-  /** Adds a gradient (calculated by the recipient) to the accumulator.  Abstract method to be provided elsewhere. */
-  def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit
+  /** Adds the current gradient (as calculated by the recipient) to the accumulator, scaled by 'rate'. */
+  def addGradient(accumulator:UpdateFamilyType=>Vector, rate:Double): Unit
 }

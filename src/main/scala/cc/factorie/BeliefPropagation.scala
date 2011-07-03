@@ -36,11 +36,11 @@ object BeliefPropagation {
 }
 
 /** A factor in a belief propagation lattice used for inference.
-    Note that an instance of this class is not actually a Template#Factor itself;
-    but it points to a Template#Factor with its 'factor' member.
+    Note that an instance of this class is not actually a Family#Factor itself;
+    but it points to a Family#Factor with its 'factor' member.
     @author Andrew McCallum, Kedar Bellare, Greg Druck, Tim Vieira
 */
-abstract class BPFactor(val factor: Template#Factor) {
+abstract class BPFactor(val factor: Family#Factor) {
   type V = BeliefPropagation.BPVariable
 
   //NEW val template: T = factor.template
@@ -99,7 +99,7 @@ abstract class BPFactor(val factor: Template#Factor) {
       update()
     }
 
-    def updateTreewiseToLeaves(expectations:Map[DotTemplate,Vector] = null, cachedLogZ: Double = Double.NaN): Unit = {
+    def updateTreewiseToLeaves(expectations:Map[DotFamily,Vector] = null, cachedLogZ: Double = Double.NaN): Unit = {
       if (updateCount > 0) throw new Exception("Either tree not reset or lattice has cycle")
       updateCount += 1
       _logZ = if (cachedLogZ.isNaN) BPFactor.this.logZ else cachedLogZ
@@ -110,25 +110,25 @@ abstract class BPFactor(val factor: Template#Factor) {
       }
     }
 
-    def update(expectations:Map[DotTemplate,Vector] = null, logZ: Double = Double.NaN): Unit
+    def update(expectations:Map[DotFamily,Vector] = null, logZ: Double = Double.NaN): Unit
   }
 
   // TODO: Have "SumProductMessageTo" to normalize and avoid sumLogProb, and also "SumProductLogMessageTo" which does not normalize and uses sumLogProb
   case class SumProductMessageTo(override val v: V) extends MessageTo(v) {
     /**Do one step of belief propagation for the message from this BPFactor to variable 'v' */
-    def update(expectations: Map[DotTemplate, Vector] = null, logZ: Double = Double.NaN) = {
+    def update(expectations: Map[DotFamily, Vector] = null, logZ: Double = Double.NaN) = {
       val variableMessage: Array[Double] = BPFactor.this.messageFrom(v).message
       var statVector: Vector = null
       // only increment expectations if not already done and vector is present
       if (!_expectationsIncremented && (expectations ne null)) {
-        statVector = expectations(factor.family.asInstanceOf[DotTemplate])
+        statVector = expectations(factor.family.asInstanceOf[DotFamily])
         _expectationsIncremented = true
       }
 
       forIndex(msg.length)(i => { // Consider reversing the nested ordering of this loop and the inner one
         v.set(i)(null) // Note: this is changing the value of this Variable
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
-          val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
+          val cachedStats = factor.cachedStatistics.asInstanceOf[DotFamily#Statistics]
           val factorMessage = cachedStats.score
           if (statVector ne null) {
             vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
@@ -140,7 +140,7 @@ abstract class BPFactor(val factor: Template#Factor) {
           msg(i) = Double.NegativeInfinity // i.e. log(0)
           if (factor.family.hasSettingsIterator) {
             factor.forSettingsOf(List(neighbor)) {
-              val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
+              val cachedStats = factor.cachedStatistics.asInstanceOf[DotFamily#Statistics]
               val factorMessage = cachedStats.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
               if (statVector ne null) {
                 vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
@@ -151,7 +151,7 @@ abstract class BPFactor(val factor: Template#Factor) {
           } else {
             forIndex(neighbor.domain.size)(j => {
               neighbor.set(j)(null)
-              val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
+              val cachedStats = factor.cachedStatistics.asInstanceOf[DotFamily#Statistics]
               val factorMessage = cachedStats.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
               if (statVector ne null) {
                 vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
@@ -166,7 +166,7 @@ abstract class BPFactor(val factor: Template#Factor) {
           msg(i) = Double.NegativeInfinity // i.e. log(0)
           if (factor.family.hasSettingsIterator) {
             factor.forSettingsOf(neighborSettings.map(n => n.variable).toList) {
-              val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
+              val cachedStats = factor.cachedStatistics.asInstanceOf[DotFamily#Statistics]
               val factorMessage = cachedStats.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
               if (statVector ne null) {
                 vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
@@ -176,7 +176,7 @@ abstract class BPFactor(val factor: Template#Factor) {
             }
           } else {
             do {
-              val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
+              val cachedStats = factor.cachedStatistics.asInstanceOf[DotFamily#Statistics]
               val factorMessage = cachedStats.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
               if (statVector ne null) {
                 vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
@@ -192,7 +192,7 @@ abstract class BPFactor(val factor: Template#Factor) {
   }
 
   case class MaxProductMessageTo(override val v: V) extends MessageTo(v) {
-    def update(expectations: Map[DotTemplate, Vector] = null, logZ: Double = Double.NaN) = {
+    def update(expectations: Map[DotFamily, Vector] = null, logZ: Double = Double.NaN) = {
       forIndex(v.domain.size)(i => { // Consider reversing the nested ordering of this loop and the inner one
         v.set(i)(null) // Note: that this is changing the Variable value
         if (neighborSettings.size == 0) { // This factor has only one variable neighbor, v itself
@@ -248,7 +248,7 @@ abstract class BPFactor(val factor: Template#Factor) {
       if (normalizeMessages) maths.normalizeLogProb(msg)
     }
 
-    def updateTreewiseToLeaves(expectations:Map[DotTemplate,Vector] = null, cachedLogZ: Double = Double.NaN): Unit = {
+    def updateTreewiseToLeaves(expectations:Map[DotFamily,Vector] = null, cachedLogZ: Double = Double.NaN): Unit = {
       if (updateCount > 0) throw new Exception("Either tree not reset or lattice has cycle")
       updateCount += 1
       Arrays.fill(msg, 0.0)
@@ -261,11 +261,11 @@ abstract class BPFactor(val factor: Template#Factor) {
       if (neighborSettings.size == 0 && (expectations ne null) && !_expectationsIncremented) {
         // special case for leaves
         _logZ = if (cachedLogZ.isNaN) BPFactor.this.logZ else cachedLogZ
-        val statVector: Vector = expectations(factor.family.asInstanceOf[DotTemplate])
+        val statVector: Vector = expectations(factor.family.asInstanceOf[DotFamily])
         // update expectations
         forIndex(v.domain.size)(i => {
           v.set(i)(null)
-          val cachedStats = factor.cachedStatistics.asInstanceOf[DotTemplate#Statistics]
+          val cachedStats = factor.cachedStatistics.asInstanceOf[DotFamily#Statistics]
           vecPlusEq(statVector, cachedStats.vector, -math.exp(cachedStats.score + msg(i) - _logZ))
           // statVector += cachedStats.vector * -math.exp(cachedStats.score + msg(i) - _logZ) // update expectations
         })
@@ -312,7 +312,7 @@ abstract class BPFactor(val factor: Template#Factor) {
 
   def update: Unit = {_msgFrom.foreach(_.update); _msgTo.foreach(_.update()); } // TODO swap order?
 
-  def updateTreewise(expectations:Map[DotTemplate,Vector] = null): Unit = {
+  def updateTreewise(expectations:Map[DotFamily,Vector] = null): Unit = {
     _msgFrom.foreach(message => if (message.updateCount == 0) {_isFactorRoot = true; message.updateTreewiseFromLeaves})
     _msgTo.foreach(message => if (message.updateCount == 0) {_isFactorRoot = true; message.updateTreewiseToLeaves(expectations)})
   }
@@ -372,7 +372,7 @@ abstract class BPFactor(val factor: Template#Factor) {
   }
 
   def factorCurrentScore: Double = factor.cachedStatistics.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
-  def factorCurrentScore(statistics:Template#Statistics): Double = {
+  def factorCurrentScore(statistics:Family#Statistics): Double = {
     assert(statistics.family eq factor.family)
     statistics.score + variables.sumDoubles(v => BPFactor.this.messageFrom(v).messageCurrentValue)
   }
@@ -392,13 +392,13 @@ abstract class BPFactor(val factor: Template#Factor) {
 
 /** A Lattice representing the result of belief propagation inference.  Results can be further updated by calls to various "update" methods.
     @author Andrew McCallum, Kedar Bellare, Greg Druck */
-class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], model: TemplateModel) extends Lattice[V] {
+class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], model: Model) extends Lattice[V] {
   //type V = BeliefPropagation.BPVariable
   type VariableMarginalType = DiscreteMarginal[V]
   type FactorMarginalType = DiscreteFactorMarginal
 
   // TODO Consider moving this further out, for even more efficiency?  But then the cache could get very big.
-  model.templates.foreach(_.clearCachedStatistics)
+  model.families.foreach(_.clearCachedStatistics)
 
   // Data structure for holding mapping from Variable to the collection of BPFactors that touch it
   private val v2m = new HashMap[Variable, ArrayBuffer[BPFactor]] {override def default(v: Variable) = {this(v) = new ArrayBuffer[BPFactor]; this(v)}}
@@ -410,7 +410,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
   def initFactors: Unit = {
     val inferenceVariables = new HashSet[V]
     variables.foreach {v: V => inferenceVariables += v}
-    for (factor <- model.factorsOfFamilyClass(variables, classOf[Template])) {
+    for (factor <- model.factorsOfFamilyClass(variables, classOf[Family])) {
       val bpFactor = new BPFactor(factor) {def factorsOf(v: Variable) = v2m(v)}
       bpFactors(factor) = bpFactor
       for (v <- factor.variables) {
@@ -442,7 +442,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
   /**Perform N iterations of max-product BP.*/
   def updateMax(iterations: Int): Unit = for (i <- 1 to iterations) updateMax
   /**Send each message in the lattice once, in order determined by a random tree traversal. */
-  def updateTreewise(expectations:Map[DotTemplate,Vector] = null, shuffle: Boolean = false): Unit = {
+  def updateTreewise(expectations:Map[DotFamily,Vector] = null, shuffle: Boolean = false): Unit = {
     bpFactors.values.foreach {f: BPFactor => f.useSumMessages = true}
     bpFactors.values.foreach(_.resetTree)
     val factors = if (shuffle) bpFactors.values.toSeq.shuffle else bpFactors.values.toSeq // optionally randomly permute order, ala TRP
@@ -498,7 +498,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
     @author Andrew McCallum, Kedar Bellare, Tim Vieira
     @since 0.8
  */
-class BPInferencer[V<:BeliefPropagation.BPVariable](model:TemplateModel) extends VariableInferencer[V] {
+class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
   override type LatticeType = BPLattice[V]
   def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = infer(variables, varying, 1) // TODO Make a more sensible default
   def infer(variables:Iterable[V], varying:Iterable[V], numIterations:Int): LatticeType = {

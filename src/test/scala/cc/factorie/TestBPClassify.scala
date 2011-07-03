@@ -271,7 +271,7 @@ Seq(
 
 
 class SimpleMaxEntTrainer(model: TemplateModel) {
-  type TemplatesToUpdate = DotTemplate
+  type TemplatesToUpdate = DotFamily
   var gaussianPriorVariance = 1.0
 
   def process[V <: DiscreteVarWithTargetValue](variables: Seq[V], numIterations: Int = Int.MaxValue): Unit = {
@@ -291,7 +291,7 @@ class SimpleMaxEntTrainer(model: TemplateModel) {
     }
     val constraints = new SuffStats
     // Add all model dot templates to constraints
-    model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t))
+    model.familiesOfClass(classOf[TemplatesToUpdate]).foreach(t => constraints(t) = constraints.default(t))
     // Gather constraints
     variables.foreach(_.setToTarget(null))
     model.factorsOfFamilyClass[TemplatesToUpdate](variables).foreach(f => constraints(f.family) += f.statistics.vector)
@@ -299,7 +299,7 @@ class SimpleMaxEntTrainer(model: TemplateModel) {
     def templates = constraints.sortedKeys
 
     // Currently only supports iid single DiscreteVariables
-    val optimizable = new OptimizableTemplates(templates) with OptimizableByValueAndGradient {
+    val optimizable = new OptimizableFamilies(templates) with OptimizableByValueAndGradient {
       // Cached values
       private var oValue = Double.NaN
       private var oGradient: Array[Double] = new Array[Double](numOptimizableParameters)
@@ -331,7 +331,7 @@ class SimpleMaxEntTrainer(model: TemplateModel) {
           oValue += math.log(distribution(v.targetIntValue))
         })
         val invVariance = -1.0 / gaussianPriorVariance
-        model.templatesOf[TemplatesToUpdate].foreach {
+        model.familiesOfClass(classOf[TemplatesToUpdate]).foreach {
           t =>
             oValue += 0.5 * t.weights.dot(t.weights) * invVariance
             // sum positive constraints into (previously negated) expectations

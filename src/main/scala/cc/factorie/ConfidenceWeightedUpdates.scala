@@ -37,9 +37,10 @@ import cc.factorie.la._
  */
 trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
   this: ProposalSampler[_] =>
-  override type TemplatesToUpdate = DotTemplate
-  def templateClassToUpdate = classOf[DotTemplate]
-  def model : TemplateModel
+  ///*override*/ type TemplatesToUpdate = DotFamily
+  //def templateClassToUpdate = classOf[TemplatesToUpdate]
+  def model : Model
+  def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
   def learningMargin : Double
   var numUpdates : Double = 0
   def processCount : Int
@@ -63,8 +64,8 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
 
   /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
   val initialVariance = 0.1;
-  lazy val sigma = new HashMap[TemplatesToUpdate,Vector] {
-    override def default(template:TemplatesToUpdate) = { 
+  lazy val sigma = new HashMap[DotFamily,Vector] {
+    override def default(template:DotFamily) = { 
       template.freezeDomains
       //val vector = DenseVector(template.statsize)(initialVariance)
       val vector = if (template.isInstanceOf[SparseWeights]) { val sv = new SparseVector(template.statisticsVectorLength); sv.default = initialVariance; sv } else DenseVector(template.statisticsVectorLength)(initialVariance)
@@ -77,8 +78,8 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
 //    val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
     //if (!shouldUpdate) return; //this should be determined outside this class
     numUpdates += 1
-    val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
-      override def default(template:TemplatesToUpdate) = {
+    val gradient = new HashMap[DotFamily,SparseVector] {
+      override def default(template:DotFamily) = {
         template.freezeDomains
         val vector = new SparseVector(template.statisticsVectorLength)
         this(template) = vector
@@ -94,7 +95,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
 
 
  
-  def kktMultiplier(gradient:HashMap[TemplatesToUpdate,SparseVector]) : Double =
+  def kktMultiplier(gradient:HashMap[DotFamily,SparseVector]) : Double =
     {
       val marginMean =predictedScore.abs
       val v = 1.0 + 2.0 * gaussDeviate * marginMean
@@ -108,7 +109,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
     }
 
 
-  def marginVariance(gradient:HashMap[TemplatesToUpdate,SparseVector]):Double =
+  def marginVariance(gradient:HashMap[DotFamily,SparseVector]):Double =
     {
       var result : Double = 0
       for((template,templateGradient)<-gradient)
@@ -120,7 +121,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
       result
     }
 
-  def updateSigma(gradient: HashMap[DotTemplate,SparseVector]) : Unit =
+  def updateSigma(gradient: HashMap[DotFamily,SparseVector]) : Unit =
     {
       for((template,templateGrad)<-gradient)
   {
@@ -132,7 +133,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
     }
 
   /**Cannot use the default 'addGradient' method because this update requires a separate learning rate for each parameter*/
-  def updateParameters(gradient:HashMap[TemplatesToUpdate,SparseVector]) : Unit =
+  def updateParameters(gradient:HashMap[DotFamily,SparseVector]) : Unit =
     {
       //TODO replace with elementwise product?
       for((template,templateGradient)<-gradient)
@@ -165,7 +166,6 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
 trait StdDevConfidenceWeightedUpdates extends ConfidenceWeightedUpdates
 {
   this: ProposalSampler[_] =>
-  override type TemplatesToUpdate = DotTemplate
 /*  
   override def kktMultiplier : Double =
     {
@@ -188,15 +188,14 @@ trait StdDevConfidenceWeightedUpdates extends ConfidenceWeightedUpdates
 trait SecondOrderGradientAscentUpdates extends ConfidenceWeightedUpdates
 {
   this: ProposalSampler[_] =>
-    override type TemplatesToUpdate = DotTemplate
   override def updateWeights : Unit =
     {
       //val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
       //if (!shouldUpdate) return;
       numUpdates += 1
       
-      val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
-      override def default(template:TemplatesToUpdate) = {
+      val gradient = new HashMap[DotFamily,SparseVector] {
+      override def default(template:DotFamily) = {
         template.freezeDomains
         val vector = new SparseVector(template.statisticsVectorLength)
         this(template) = vector

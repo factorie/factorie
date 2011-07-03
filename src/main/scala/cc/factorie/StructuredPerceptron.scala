@@ -15,7 +15,8 @@
 package cc.factorie
 import cc.factorie.la._
 
-/** Collins' structured-perceptron */
+/** Collins' structured-perceptron 
+    @author Andrew McCallum */
 abstract class StructuredPerceptron[V<:VarWithTargetValue](model:TemplateModel) extends GradientAscentUpdates {
   //type TemplatesToUpdate = DotTemplate
   var learningMargin = 1.0 // TODO not currently used
@@ -33,12 +34,12 @@ abstract class StructuredPerceptron[V<:VarWithTargetValue](model:TemplateModel) 
       updateWeights // This will result in a call to "addGradient"
   }
 
-  def addGradient(accumulator:TemplatesToUpdate=>Vector, rate:Double): Unit = {
+  def addGradient(accumulator:DotFamily=>Vector, rate:Double): Unit = {
     if (!difflist.done) difflist.redo
-    model.factorsOfFamilyClass[TemplatesToUpdate](difflist).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
     difflist.undo
-    model.factorsOfFamilyClass[TemplatesToUpdate](difflist).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
   }
 

@@ -28,9 +28,10 @@ import scala.collection.mutable.HashMap
  * Maximum likelihood parameter estimation for the weights of DotTemplate.
  * @author Andrew McCallum, Kedar Bellare, Gregory Druck
  */
-class LogLinearMaximumLikelihood(model: TemplateModel) {
-  type TemplatesToUpdate = DotTemplate
+class LogLinearMaximumLikelihood(model: Model) {
+  //type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 10.0
+  def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
 
   //def process[V <: DiscreteVariableWithTrueSetting with NoVariableCoordination](variables: Seq[V], numIterations: Int): Unit = process(List(variables), numIterations)
   // TODO Figure out how to reinstate something like this.
@@ -42,8 +43,8 @@ class LogLinearMaximumLikelihood(model: TemplateModel) {
   /**First argument is a collection of collections-of-variables.  The former are considered iid.  The later may have dependencies.  */
   def processAll[V <: DiscreteVarWithTarget with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Int.MaxValue): Unit = {
     // Data structure for holding per-template constraints and expectations
-    class SuffStats extends HashMap[TemplatesToUpdate, Vector] {
-      override def default(template: TemplatesToUpdate) = {
+    class SuffStats extends HashMap[DotFamily, Vector] {
+      override def default(template: DotFamily) = {
         template.freezeDomains
         val vector: Vector = template.weights match {
           case w: SparseVector => new SparseVector(w.length)
@@ -57,22 +58,22 @@ class LogLinearMaximumLikelihood(model: TemplateModel) {
     }
     val constraints = new SuffStats
     // Add all model dot templates to constraints
-    model.templatesOf[TemplatesToUpdate].foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
+    familiesToUpdate.foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
     // Gather constraints
     variableSets.foreach(_.foreach(_.setToTarget(null)))
-    variableSets.foreach(vars => model.factorsOfClass[TemplatesToUpdate#Factor](vars).foreach(f => constraints(f.family) += f.cachedStatistics.vector))
+    variableSets.foreach(vars => model.factorsOfFamilies(vars, familiesToUpdate).foreach(f => constraints(f.family) += f.cachedStatistics.vector))
 
     def templates = constraints.sortedKeys
 
     // Currently only supports iid single DiscreteVariables
-    val optimizable = new OptimizableTemplates(templates) with OptimizableByValueAndGradient {
+    val optimizable = new OptimizableFamilies(templates) with OptimizableByValueAndGradient {
       // Cached values
       private var oValue = Double.NaN
       private var oGradient: Array[Double] = new Array[Double](numOptimizableParameters)
       // Flush cache when parameters change
       override def setOptimizableParameters(a: Array[Double]): Unit = {
         oValue = Double.NaN
-        model.templates.foreach(_.clearCachedStatistics) // Parameter changing, so cache no longer valid
+        model.families.foreach(_.clearCachedStatistics) // Parameter changing, so cache no longer valid
         super.setOptimizableParameters(a)
       }
 
@@ -103,7 +104,7 @@ class LogLinearMaximumLikelihood(model: TemplateModel) {
           }
         })
         val invVariance = -1.0 / gaussianPriorVariance
-        model.templatesOf[TemplatesToUpdate].foreach {
+        familiesToUpdate.foreach {
           t =>
             oValue += 0.5 * t.weights.dot(t.weights) * invVariance
             // sum positive constraints into (previously negated) expectations
@@ -134,13 +135,13 @@ class LogLinearMaximumLikelihood(model: TemplateModel) {
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // put negative expectations into 'expectations' StatMap
-            model.factorsOfFamilyClass[TemplatesToUpdate](Seq(v)).foreach(f => vecPlusEq(expectations(f.family), f.statistics.vector, -distribution(i)))
+            model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => vecPlusEq(expectations(f.family), f.statistics.vector, -distribution(i)))
           })
 
           oValue += math.log(distribution(v.targetIntValue))
         }))
         val invVariance = -1.0 / gaussianPriorVariance
-        model.templatesOf[TemplatesToUpdate].foreach {
+        familiesToUpdate.foreach {
           t =>
             oValue += 0.5 * t.weights.dot(t.weights) * invVariance
             // sum positive constraints into (previously negated) expectations

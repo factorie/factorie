@@ -62,10 +62,16 @@ trait Model {
       case f:Family#Factor => f.family.equals(family)
       case _ => false
     }).asInstanceOf[Seq[F#Factor]]
-
+  def filterByFamilies[F<:Family](factors:Seq[Factor], families:Seq[F]): Seq[F#Factor] = 
+    factors.filter(f => f match {
+      case f:Family#Factor => families.contains(f.family)
+      case _ => false
+    }).asInstanceOf[Seq[F#Factor]]
   def factorsOfFamily[F<:Family](variables:Iterable[Variable], family:F): Seq[F#Factor] = filterByFamily(factors(variables), family)
   def factorsOfFamily[F<:Family](d:DiffList, family:F): Seq[F#Factor] = filterByFamily(factors(d), family)
-
+  def factorsOfFamilies[F<:Family](variables:Iterable[Variable], families:Seq[F]): Seq[F#Factor] = filterByFamilies(factors(variables), families)
+  def factorsOfFamilies[F<:Family](d:DiffList, families:Seq[F]): Seq[F#Factor] = filterByFamilies(factors(d), families)
+  
   def score(variables:Iterable[Variable]): Double = factors(variables).foldLeft(0.0)((sum, f) => sum + f.score)
   def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.statistics.score)
   /** Returns the average score, that is score of variables, normalized by the size of the collections vars. */
@@ -91,7 +97,13 @@ trait Model {
       result.toSeq
     }
   }
-  // Special Model subclasses that have a fixed set of factors and variables can override the methods below
+  
+  // Some Model subclasses have a list of Families to which all its factors belong
+  def families: Seq[Family] = Nil
+  def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = Nil
+  def familiesOfClass[F<:Family]()(implicit m:Manifest[F]): Seq[F] = familiesOfClass[F](m.erasure.asInstanceOf[Class[F]])
+
+  // Some Model subclasses that have a fixed set of factors and variables can override the methods below
   // TODO Consider making a Model trait for these methods.  Yes!
   def variables: Seq[Variable] = Nil
   def factors: Seq[Factor] = Nil
@@ -154,36 +166,25 @@ class TemplateModel(initialTemplates:Template*) extends Model {
   def +=(template:Template) = _templates += template
   @deprecated def clear = _templates.clear // TODO Consider removing this.
 
+  override def families = _templates
+  override def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = _templates.filter(t => fclass.isAssignableFrom(t.getClass)).asInstanceOf[Seq[F]]
+
+  /*@deprecated
   def templatesOf[T2<:Template](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
     val templateClass = m.erasure
     val ret = new ArrayBuffer[T2]
     for (t <- templates) if (templateClass.isAssignableFrom(t.getClass)) ret += t.asInstanceOf[T2]
     ret
   }
+  @deprecated
   def templatesOfClass[T2<:Template](cls:Class[T2]): IndexedSeq[T2] = {
     val ret = new ArrayBuffer[T2]
     for (t <- templates) if (cls.isAssignableFrom(t.getClass)) ret += t.asInstanceOf[T2]
     ret
-  }
+  }*/
   
   def factors(vs:Iterable[Variable]) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(vs)))
   override def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else normalize(templates.flatMap(template => template.factors(d)))
-  //def factorsOf[T2<:Template](d:DiffList)(implicit m:Manifest[T2]) : Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOf[T2](m).flatMap(template => template.factors(d))
-  //def factorsOf[T2<:Template](cls:Class[T2])(d:DiffList): Seq[T2#Factor] = if (d.size == 0) Nil else this.templatesOfClass[T2](cls).flatMap(template => template.factors(d))
-  //def factorsOf[T2<:Template](vs:Iterable[Variable])(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
-  //def factorsOfTemplate[T<:Template](vs:Iterable[Variable])(implicit m:Manifest[T]) : Seq[T#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(vs))
-  //def factorsOf[T2<:Template](v:Variable)(implicit m:Manifest[T2]) : Seq[T2#Factor] = this.templatesOf[T2](m).flatMap(template => template.factors(v))
-  /** Given a variable, return a collection of Factors that touch it.  Note that combining these results for multiple variables may result in duplicate Factors. */
-  //def factors(v:Variable) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(v)), null)
-  //def factors(v:Variable, outer:Factor) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(v)), outer)
-  //@deprecated def factorsAll(vs:Iterable[Variable], outer:Factor) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(vs)), outer)
-  //def score1(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistics.score) // For use when the Variable is also Iterable
-  //def score(v:Variable) : Double = factors(v).foldLeft(0.0)(_+_.statistics.score)
-  //def score(vars:Iterable[Variable]) : Double = factorsAll(vars).foldLeft(0.0)(_+_.statistics.score)
-  /** Score all variables in the Iterable collection.  This method is useful when a Variable is also a Iterable[Variable]; 
-      it forces the Iterable interpretation and avoids the single variable interpretation of score(Variable). */
-  //def score(vars:Iterable[Variable]) : Double = factors(vars).foldLeft(0.0)(_+_.statistics.score)
-
   
   def save(dirname:String): Unit = {
     import java.io.File

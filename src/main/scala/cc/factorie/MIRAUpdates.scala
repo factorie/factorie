@@ -15,7 +15,6 @@
 
 
 package cc.factorie
-import scala.reflect.Manifest
 import scala.collection.mutable.HashMap
 import cc.factorie.la._
 
@@ -26,11 +25,11 @@ import cc.factorie.la._
  */
 trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
   this: ProposalSampler[_] =>
-  override type TemplatesToUpdate = DotTemplate
+  //override type TemplatesToUpdate = DotFamily
   //def templateClassToUpdate = classOf[DotTemplate]
   def learningRate : Double
   def learningRate_=(x:Double) : Unit
-  def model : TemplateModel
+  def model : Model
   def learningMargin : Double
   def useObjectiveDiffAsMargin : Boolean = true
   val boxConstraint : Double = 1.0//Math.POS_INF_DOUBLE
@@ -41,8 +40,8 @@ trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
   // TODO  This needs a careful code review.  -akm
   abstract override def updateWeights : Unit = {
     val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
-    val gradient = new HashMap[TemplatesToUpdate,SparseVector] {
-      override def default(template:TemplatesToUpdate) = {
+    val gradient = new HashMap[DotFamily,SparseVector] {
+      override def default(template:DotFamily) = {
     template.freezeDomains
     val vector = new SparseVector(template.statisticsVectorLength)
     this(template) = vector
@@ -61,7 +60,7 @@ trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
 
   protected val epsilon: Double = 0.000000001
 
-  def kktMultiplier(changeProposal:Proposal, gradient:HashMap[TemplatesToUpdate,SparseVector]): Double = {
+  def kktMultiplier(changeProposal:Proposal, gradient:HashMap[DotFamily,SparseVector]): Double = {
     val modelScoreRatio = changeProposal.modelScore
     var margin = -(changeProposal.modelScore.abs)
     val l2sqrd : Double = computeL2Diff(gradient)
@@ -76,7 +75,7 @@ trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
     if (lambda < 0) lambda = 0 //no error (the passive part of passive-aggressive)
     lambda;
   }
-  def computeL2Diff(nabla:HashMap[DotTemplate,SparseVector]) : Double =
+  def computeL2Diff(nabla:HashMap[DotFamily,SparseVector]) : Double =
     {
       var result : Double = 0
       for(t <- nabla.keySet)

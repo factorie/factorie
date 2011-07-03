@@ -42,7 +42,7 @@ object Template {
     @Andrew McCallum
 */
 trait Template extends FamilyWithNeighborDomains { thisTemplate =>
-  type FamilyType <: Template // like a self-type
+  //type FamilyType <: Template // like a self-type
   /** If true, method "factors" will only create Factors for variables whose domains match neighborDomains. */
   var matchNeighborDomains = true
   def factors(v: Variable): Iterable[FactorType] // TODO Consider returning Iterable[Factor]
@@ -73,8 +73,7 @@ trait VectorTemplate extends VectorFamily with Template
 
 
 trait DotTemplate extends DotFamily with Template {
-  //type TemplateType <: DotTemplate
-  type FamilyType <: DotTemplate
+  //type FamilyType <: DotTemplate
 }
 
 
