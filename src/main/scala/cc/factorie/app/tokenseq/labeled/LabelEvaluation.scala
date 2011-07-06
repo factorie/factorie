@@ -15,18 +15,21 @@
 package cc.factorie.app.tokenseq.labeled
 import cc.factorie._
 
+import scala.collection.mutable.{HashMap}
+
 /** Stores the results of evaluating per-label accuracy and other measures.
     Note, this is not per-field accuracy. */
-class PerLabelEvaluation[L<:LabelVariable[String]](val labelValue: String)(implicit m:Manifest[L]) {
+class PerLabelEvaluation[L<:LabelVariable[String]](val labelValue: String, var targetIndex:Int) {
+
   var fp = 0
   var fn = 0
   var tp = 0
-  throw new Error("Not yet fixed for new Domain mechanism.")
-  private val targetIndex = -1 // TODO replace this: Domain[L](m).index(labelValue)
+
+  /*private val targetIndex = -1 // TODO replace this: Domain[L](m).index(labelValue) */
 
   def ++=(tokenseqs:Seq[Seq[{def label:LabelVariable[String]}]]) = tokenseqs.foreach(ts => this += ts.map(_.label))
   //def +=(tokens:Seq[{def label:LabelVariable[String]}]): Unit = +=(tokens.map(_.label))
-  def +=(labels: Seq[LabelVariable[String]]): Unit = {
+  def +=(labels: Seq[LabelVariable[String]]) {
     for (l <- labels) {
       val trueIndex = l.target.intValue
       val predIndex = l.intValue
@@ -50,28 +53,27 @@ class PerLabelEvaluation[L<:LabelVariable[String]](val labelValue: String)(impli
   def correctCount = tp
   def missCount = fn
   def alarmCount = fp
-  override def toString = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(labelValue, f1, precision, recall, tp, fp, fn, tp+fn, tp+fp) 
+  override def toString = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(labelValue, f1, precision, recall, tp, fp, fn, tp+fn, tp+fp)
 }
 
-class LabelEvaluation[L<:LabelVariable[String] with AbstractVarInSeq[L]](val backgroundLabelValue:String)(implicit m:Manifest[L]) {
-  import scala.collection.mutable.HashMap
-  def this(labels:Seq[L])(implicit m:Manifest[L]) = { this("O"); this += labels }
-  def this(lab:String, labels:Seq[L])(implicit m:Manifest[L]) = { this(lab); this += labels }
-  //def this(labels:Seq[LabeledTokenSeq]) = { this("O"); this.+=(labels.flatMap(_.labels)) }
+
+class LabelEvaluation[L<:LabelVariable[String]](val backgroundLabelValue:String, labelDomain:CategoricalDomain[String]) {
+
   var fp = 0
   var fn = 0
   var tp = 0
-  //println("Evaluation Labels: "+Domain[Label].toList)
-  private val labelEval: HashMap[String,PerLabelEvaluation[L]] = { 
-    val h = new HashMap[String,PerLabelEvaluation[L]]
-    throw new Error("Need to be updated to new Domain mechanism, replacing line below")
-    //h ++= Domain[L](m).map((labelValue:CategoricalValue[_,String]) => (labelValue.category, new PerLabelEvaluation[L](labelValue.category)))
+  protected val labelEval:HashMap[String,PerLabelEvaluation[L]] = {
+    val h = new HashMap[String, PerLabelEvaluation[L]]
+    h ++= labelDomain.values.map(v => {
+      val labelString = v.category
+      (labelString, new PerLabelEvaluation[L](labelString, labelDomain.indexOnly(labelString)))
+    })
     h
   }
   /** Return the LabelEvaluation specific to labelString. */
   def apply(labelString:String) = labelEval(labelString)
-  def +=(labels: Seq[L]): Unit = {
-    labelEval.values.foreach(eval => { 
+  def +=(labels:Seq[L]) {
+    labelEval.values.foreach(eval => {
       eval += labels
       if (eval.labelValue != backgroundLabelValue) {
         fp += eval.fp
@@ -80,19 +82,21 @@ class LabelEvaluation[L<:LabelVariable[String] with AbstractVarInSeq[L]](val bac
       }
     })
   }
-  def accuracy: Double = tp.toDouble / ( tp + fp)
+  //def accuracy: Double = tp.toDouble / ( tp + fp)  /* FIXME: this is NOT accuracy */
   def precision: Double = if (tp + fp == 0.0) 0.0 else tp.toDouble / (tp + fp)
   def recall: Double = if (tp + fn == 0.0) 0.0 else tp.toDouble / (tp + fn)
   def f1: Double = if (precision + recall == 0.0) 0.0 else 2.0 * precision * recall / (precision + recall)
+
   def summaryString = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format("OVERALL", f1, precision, recall, tp, fp, fn, tp+fn, tp+fp)
+
   override def toString = {
     val sb = new StringBuffer
-    sb.append("ACCURACY "+accuracy)
-    sb.append("\n")
+    //sb.append("ACCURACY "+accuracy)
+    //sb.append("\n")
     sb.append(summaryString)
     sb.append("\n")
     labelEval.values.foreach(e => { sb.append(e.toString); sb.append("\n") })
     sb.toString
-  } 
-}
+  }
 
+}
