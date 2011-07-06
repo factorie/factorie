@@ -17,8 +17,10 @@ import cc.factorie.la._
 
 /** Collins' structured-perceptron 
     @author Andrew McCallum */
-abstract class StructuredPerceptron[V<:VarWithTargetValue](model:TemplateModel) extends GradientAscentUpdates {
+abstract class StructuredPerceptron[V<:VarWithTargetValue] extends GradientAscentUpdates {
   //type TemplatesToUpdate = DotTemplate
+
+  val model: TemplateModel
   var learningMargin = 1.0 // TODO not currently used
   private var difflist: DiffList = null
   
