@@ -39,7 +39,7 @@ trait ParameterAveraging extends WeightUpdates {
   def perceptronIteration = updateCount //other options: updateCount, iterationCount
   val initialIteration = perceptronIteration
   val lastUpdateIteration = new HashMap[DotFamily,Vector] {
-    override def default(template:DotFamily) = { 
+    override def default(template:DotFamily) = {
       val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {
         template.freezeDomains
         new DenseVector(template.statisticsVectorLength)
@@ -64,34 +64,30 @@ trait ParameterAveraging extends WeightUpdates {
 
   //Store the model weights in here before accumulated weights are injected into model, this way they can be recovered if necessary
   var _backupWeights : HashMap[DotFamily,Vector] = null
-  def backupWeights : Unit =
-    {
-      _backupWeights = new HashMap[DotFamily,Vector] {
-        override def default(template:DotFamily) = {
-          val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {template.freezeDomains; new DenseVector(template.statisticsVectorLength)}
-          vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
-          this(template) = vector
-          vector
-        }
+  def backupWeights {
+    _backupWeights = new HashMap[DotFamily,Vector] {
+      override def default(template:DotFamily) = {
+        val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {template.freezeDomains; new DenseVector(template.statisticsVectorLength)}
+        vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
+        this(template) = vector
+        vector
       }
-      for(template <- familiesToUpdate) _backupWeights(template)
     }
+    for (template <- familiesToUpdate) _backupWeights(template)
+  }
 
-  def unsetWeightsToAverage : Unit =
-    {
-      if(_backupWeights==null)
-	throw new Exception("Cannot 'unset' weights because 'setWeightsToAverage' has not been called")
-      for (template <- familiesToUpdate)
-	{
-	  if(_backupWeights.contains(template))
-	    {
-              val backupWeightsTemplate = _backupWeights(template)
-              for(i <- template.weights.activeDomain)
-		template.weights(i) = backupWeightsTemplate(i)
-	    }
-	}
+  def unsetWeightsToAverage {
+    if (_backupWeights==null) throw new Exception("Cannot 'unset' weights because 'setWeightsToAverage' has not been called")
+    for (template <- familiesToUpdate) {
+        if (_backupWeights.contains(template)) {
+          val backupWeightsTemplate = _backupWeights(template)
+          for (i <- template.weights.activeDomain) {
+            template.weights(i) = backupWeightsTemplate(i)
+          }
+        }
     }
-
+  }
+  
   // Make sure that weightsSum reflects the sum of all weights up to the current iterations
   def updateWeightsSum : Unit = {
     for (template <- familiesToUpdate) {
@@ -109,33 +105,25 @@ trait ParameterAveraging extends WeightUpdates {
     }
   }
 
-  // Before calling this the average weights are stored unnormalized in weightsSum.  After calling this the average weights are put in template.weights. 
-  def setWeightsToAverage : Unit =
-    {
-      backupWeights
+  // Before calling this the average weights are stored unnormalized in weightsSum.  After calling this the average weights are put in template.weights.
+  def setWeightsToAverage {
+    backupWeights  // back regardless so that unsetWeightsToAverage won't complain
+    if (perceptronIteration > 0) {  // i.e. the weights divisor
       updateWeightsSum
-      var divisor : Double = perceptronIteration.asInstanceOf[Double]
-//      System.out.println("PA: " + perceptronIteration+" up: " + updateCount+" div="+divisor)
-      for (template <- familiesToUpdate) 
-  {
-    if(weightsSum.contains(template))
-      {
-              val weightsSumTemplate = weightsSum(template)
-              val lastUpdateIterationTemplate = lastUpdateIteration(template)
-              for(i <- template.weights.activeDomain)
-    {
-    template.weights(i) = weightsSumTemplate(i)/divisor///lastUpdateIterationTemplate(i)
-    }
+      var divisor = perceptronIteration*1.0
+      for (template <- familiesToUpdate) {
+        if (weightsSum.contains(template)) {
+          val weightsSumTemplate = weightsSum(template)
+          val lastUpdateIterationTemplate = lastUpdateIteration(template)
+          for (i <- template.weights.activeDomain) {
+            template.weights(i) = weightsSumTemplate(i)/divisor///lastUpdateIterationTemplate(i)
+          }
+        }
       }
-    //the following results in divide-by-zero errors when size of allocated domain is larger than size of active  domain:
-    //if (weightsSum.contains(template))
-          //  template.weights := weightsSum(template) :/ lastUpdateIteration(template)
-  }
-      System.out.println("WEIGHtS DIVISOR: " + divisor)
     }
+  }
 
-
-  /**This method is agnostic to how the weights were originally updated**/
+  /** This method is agnostic to how the weights were originally updated */
   abstract override def updateWeights: Unit = {
     //Get the gradient to identify the locations of weights changed by update
     val metaGradient = new HashMap[UpdateFamilyType,SparseVector] {
@@ -149,24 +137,24 @@ trait ParameterAveraging extends WeightUpdates {
     }
     addGradient(metaGradient, 1.0)
     //put on gradient the values of these weights before the update (negated)
-    for((template,vector) <- metaGradient) {
+    for ((template,vector) <- metaGradient) {
       val templateWeights = template.weights
-      for(i <- vector.activeDomain)
-          vector(i) = -templateWeights(i)
+      for (i <- vector.activeDomain)
+        vector(i) = -templateWeights(i)
     }
     //perform the update
     super.updateWeights
     //add the values of these weights after the update
-    for((template,vector) <- metaGradient) {
+    for ((template,vector) <- metaGradient) {
       val templateWeights = template.weights
-      for(i <- vector.activeDomain)
+      for (i <- vector.activeDomain)
         vector(i) += templateWeights(i)
     }
     //determine if an update actually occurred
     if (l2Norm(metaGradient)==0.0) //TODO figure this out by checking updateCount instead because it is much faster
       return
     //accumulate weights sparsely
-    for((template,vector) <- metaGradient) {
+    for ((template,vector) <- metaGradient) {
       val templateWeightsSum = weightsSum(template)
       val templateLastUpdateIteration = lastUpdateIteration(template)
       val templateWeights = template.weights
@@ -179,17 +167,17 @@ trait ParameterAveraging extends WeightUpdates {
         if (iterationDiff > 0) {
           templateWeightsSum(i) += (templateWeights(i) * iterationDiff) + vector(i)
           templateLastUpdateIteration(i) = perceptronIteration
-        } else  
+        } else {
           templateWeightsSum(i) += vector(i)
-      } 
-    }  
-  } 
-
-  def l2Norm(grad : HashMap[UpdateFamilyType,SparseVector]) : Double = 
-   {
-      var result : Double = 0.0
-      for((t,v) <- grad)
-  result += v dot v
-      result
+        }
+      }
     }
+  }
+
+  def l2Norm(grad : HashMap[UpdateFamilyType,SparseVector]) : Double = {
+    var result : Double = 0.0
+    for ((t,v) <- grad)
+      result += v dot v
+    result
+  }
 }
