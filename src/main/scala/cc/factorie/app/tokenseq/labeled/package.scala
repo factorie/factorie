@@ -24,7 +24,12 @@ import cc.factorie._
  */
 package object labeled {
 
-  def labelEvaluation[L<:LabelVariable[String] with AbstractVarInSeq[L]](labels:Seq[L])(implicit m:Manifest[L]) = new LabelEvaluation[L](labels)
+  def labelEvaluation[L<:LabelVariable[String] with AbstractVarInSeq[L]](labels:Seq[L]) = {
+    val evaluator = new LabelEvaluation[L](backgroundLabelValue="O", labelDomain=labels.head.domain)  // TODO: using labels.head.domain is just a temporary solution
+    evaluator += labels
+    evaluator
+  }
+
   def segmentEvaluation[L<:LabelVariable[String]](labels:Seq[L])(implicit m:Manifest[L]) = new SegmentEvaluation[L](labels)
 
 }
