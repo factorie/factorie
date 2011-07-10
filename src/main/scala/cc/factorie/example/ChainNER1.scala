@@ -66,8 +66,8 @@ object ChainNER1 {
     predictor.processAll(testLabels, 3)
     
     // Evaluate
-    println("TRAIN "+labeled.labelEvaluation(trainLabels).accuracy)
-    println("TEST  "+labeled.labelEvaluation(testLabels).accuracy)
+    println("TRAIN "+labeled.labelEvaluation(trainLabels))
+    println("TEST  "+labeled.labelEvaluation(testLabels))
   }
 
 }
