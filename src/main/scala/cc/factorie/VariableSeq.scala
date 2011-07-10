@@ -23,7 +23,7 @@ class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8
   def +=(v: V) = {
     if (v.seq != null) throw new Error("Trying to add VarInSeq that is already assigned to another VariableSeq")
     _seq += v
-    v.setSeqPos(this, seq.size - 1)
+    v.setSeqPos(this, _seq.size - 1)
   }
   def +(v: V) = {this += v; this} // TODO But according to Scala convension this should create a return a new sequence, right?  Remove this method?
   def ++=(vs: Iterable[V]) = vs.foreach(this += _)
