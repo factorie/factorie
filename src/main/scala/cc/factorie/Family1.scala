@@ -23,10 +23,10 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-abstract class Family1[N1<:Variable](implicit nm1: Manifest[N1]) extends FamilyWithNeighborDomains {
+// TODO  Change to a trait and remove manifest; move neighborClass1 to Template1; move Factor and Values to a trait, then super.Factor can come from other mixins
+
+trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
-  val neighborClass1 = nm1.erasure
-  val neighborClass1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
   protected var _neighborDomain1: Domain[N1#Value] = null
   def neighborDomain1: Domain[N1#Value] = 
     if (_neighborDomain1 eq null) 
@@ -112,15 +112,15 @@ trait DotStatistics1[S1<:DiscreteVectorValue] extends VectorStatistics1[S1] with
   }
 }
 
-abstract class FamilyWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Family1[N1] with Statistics1[N1#Value] {
+trait FamilyWithStatistics1[N1<:Variable] extends Family1[N1] with Statistics1[N1#Value] {
   def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
 }
 
-abstract class FamilyWithVectorStatistics1[N1<:DiscreteVectorVar](implicit nm1:Manifest[N1]) extends Family1[N1] with VectorStatistics1[N1#Value] {
+trait FamilyWithVectorStatistics1[N1<:DiscreteVectorVar] extends Family1[N1] with VectorStatistics1[N1#Value] {
   def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
 }
 
-class FamilyWithDotStatistics1[N1<:DiscreteVectorVar](implicit nm1:Manifest[N1]) extends Family1[N1] with DotStatistics1[N1#Value] {
+trait FamilyWithDotStatistics1[N1<:DiscreteVectorVar] extends Family1[N1] with DotStatistics1[N1#Value] {
   def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
 }
 

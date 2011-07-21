@@ -17,39 +17,86 @@ import cc.factorie._
 
 // Proportions ~ Dirichlet(Proportions, Precision)
 
-class DirichletTemplate extends GenerativeTemplateWithStatistics3[Dirichlet,Proportions,RealVarParameter] {
-  def unroll1(d:Dirichlet) = Factor(d, d.mean, d.precision)
-  def unroll2(p:Proportions) = for (d <- p.childrenOfClass[Dirichlet]) yield Factor(d, p, d.precision)
-  def unroll3(prec:RealVarParameter) = for (d <- prec.childrenOfClass[Dirichlet]) yield Factor(d, d.mean, prec)
-  def logpr(s:Stat) = math.log(pr(s))
-  def pr(s:Stat): Double = pr(s._1, s._2, s._3)
-  def pr(value:ProportionsValue, mean:ProportionsValue, precision:Double): Double = {
-    def alpha(index:Int): Double = mean(index) * precision.doubleValue
-    require(mean.length == value.length)
-    var result = maths.logGamma(precision)
+object Dirichlet extends GenerativeFamilyWithStatistics2[Proportions,Masses] {
+  def pr(s:StatisticsType) = pr(s._1, s._2)
+  def pr(value:ProportionsValue, alpha:Seq[Double]): Double = {
+    require(value.length == alpha.length)
+    var result = maths.logGamma(alpha.sum)
     forIndex(value.length)((i:Int) => result -= maths.logGamma(alpha(i)))
     forIndex(value.length)((i:Int) => result += (alpha(i) - 1.0) * math.log(value(i)))
-    assert(result == result, "mean="+mean.toList+" precision="+precision+" p="+value.toList) // NaN?
+    assert(result == result, "alpha="+alpha.toList+" p="+value.toList) // NaN?
     result
   }
-  def sampledValue(s:Stat): ProportionsValue = sampledValue(s._2, s._3, Nil)
-  def sampledValue(mean:Seq[Double], prec:Double, children:Iterable[DiscreteVar] = Nil): ProportionsValue = 
+  def sampledValue(s:Stat): ProportionsValue = sampledValue(s._2, Nil)
+  def sampledValue(masses:Seq[Double], children:Iterable[DiscreteVar] = Nil): ProportionsValue = 
     new ProportionsValue {
-      private val array = Dirichlet.sampleFrom(mean, prec, children)
+      private val array = sampledArray(masses, children)
       def apply(i:Int) = array(i)
       def length = array.length
     }
-}
-object DirichletTemplate extends DirichletTemplate
+  // TODO Make a more general argument type than Iterable[DiscreteVar], like Iterable[Int] (but I'm concerned about boxing)
+  def sampledArray(alpha:Seq[Double], children:Iterable[DiscreteVar] = Nil): Array[Double] = {
+    var norm = 0.0
+    val p = new Array[Double](alpha.length)
+    val c = new Array[Double](alpha.length)
+    for (child <- children) c(child.intValue) += 1.0
+    forIndex(alpha.length)(i => {
+      p(i) = maths.nextGamma(alpha(i) + c(i), 1)(cc.factorie.random)
+      if (p(i) <= 0.0) p(i) = 0.0001
+      norm += p(i)
+    })
+    forIndex(alpha.length)(i => p(i) /= norm)
+    p
+  }
+  override def updateCollapsedChild(f:Factor): Boolean = f._1 match {
+    case p:DenseCountsProportions => { p.increment(f._2.value)(null); true }
+    case _ => false
+  }
 
+}
+
+object DirichletMomentMatching {
+  def estimate(masses:MutableMasses, model:Model = cc.factorie.generative.GenerativeModel): Unit = {
+    val numChildren = masses.childFactors.size
+    //val massesChildren = masses.children //mean.generatedChildren // TODO Without "generatedChildren" this no longer works for Dirichlet mixtures.
+    assert(numChildren > 1)
+    //val factors = model.factors(List(mean, precision)); assert(factors.size == mean.children.size); assert(factors.size == precision.children.size)
+    // Calculcate and set the mean
+    val m = new ProportionsArrayValue(new Array[Double](masses.length))
+    for (factor <- masses.childFactors) factor match { 
+      case f:Dirichlet.Factor => {
+        require(masses.length == f._1.length) // Make sure that each child Proportions has same length as parent masses
+        forIndex(m.size)(i => m(i) += f._1(i))
+      }
+    }
+    forIndex(m.size)(m(_) /= numChildren)
+    //mean.set(m)(null)
+    // Calculate variance = E[x^2] - E[x]^2 for each dimension
+    val variance = new Array[Double](masses.length)
+    for (factor <- masses.childFactors) factor match { 
+      case f:Dirichlet.Factor => forIndex(masses.length)(i => { val diff = f._1(i) - m(i); variance(i) += diff * diff })
+    }
+    //for (child <- meanChildren) child match { case p:Proportions => forIndex(mean.length)(i => variance(i) += p(i) * p(i)) }
+    //println("variance1="+variance.toList)
+    forIndex(masses.length)(i => variance(i) /= (numChildren - 1.0))
+    //forIndex(mean.length)(i => variance(i) = (variance(i) / meanChildren.size - 1.0) - (m(i) * m(i)))
+    //println("variance2="+variance.toList)
+    var alphaSum = 0.0
+    forIndex(masses.length)(i => if (m(i) != 0.0) alphaSum += math.log((m(i) * (1.0 - m(i)) / variance(i)) - 1.0))
+    val precision = math.exp(alphaSum / (masses.length - 1))
+    assert(precision == precision, "alphaSum="+alphaSum+" variance="+variance.toList+" mean="+m.toList) // Check for NaN
+    forIndex(m.size)(i => m(i) = m(i) * precision)
+    masses.set(m)(null)
+  }
+}
+
+/*
 trait Dirichlet extends Proportions with GeneratedVar with CollapsibleParameter with VarWithCollapsedType[DirichletMultinomial] {
-  /** Return the mean of the Dirichlet distribution from which this Proportions was generated.
-      Note that the returned object may be a temporary one generated for the return value, 
-      and may not have this Proportions as a child. */
+  // Return the mean of the Dirichlet distribution from which this Proportions was generated.
+  //   Note that the returned object may be a temporary one generated for the return value, 
+  //    and may not have this Proportions as a child. 
   def mean: Proportions
   def precision: RealVarParameter
-  val generativeTemplate = DirichletTemplate
-  def generativeFactor = new DirichletTemplate.Factor(this, mean, precision)
   // TODO Why was this next line causing strange compile errors?
   //override def parents: Seq[Parameter] = List(mean, precision)
   def alpha(index:Int): Double = mean(index) * precision.doubleValue
@@ -78,24 +125,7 @@ trait MutableDirichlet extends MutableProportions with Dirichlet with MutableGen
   override def defaultEstimator = MutableDirichletEstimator
 }
 
-object Dirichlet {
-  def sampleFrom(mean:Seq[Double], precision:Double, children:Iterable[DiscreteVar] = Nil): Array[Double] = {
-    def alpha(index:Int): Double = mean(index) * precision
-    var norm = 0.0
-    val p = new Array[Double](mean.length)
-    val c = new Array[Double](mean.length)
-    for (child <- children) c(child.intValue) += 1.0
-    forIndex(mean.length)(i => {
-      p(i) = maths.nextGamma(alpha(i) + c(i), 1)(cc.factorie.random)
-      if (p(i) <= 0.0) p(i) = 0.0001
-      norm += p(i)
-    })
-    forIndex(mean.length)(i => p(i) /= norm)
-    p
-  }
-}
 
-/** Proportions, Dirichlet-distributed, with dense separate values for all dimensions. */
 class DenseDirichlet(initialMean:Proportions, initialPrecision:RealVarParameter, p:Seq[Double] = Nil) extends DenseProportions(if (p.length == 0) initialMean else p) with MutableDirichlet with VarWithCollapsedType[DenseDirichletMultinomial]  {
   def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealVariableParameter(alpha * size), Nil)
   //def this[T<:DiscreteVars](alpha:Double)(implicit m:Manifest[T]) = this(Domain.get[T](m.erasure).size, alpha)
@@ -145,10 +175,10 @@ object MutableDirichletEstimator extends Estimator[MutableProportions] {
       e.increment(d.mean.map(_ * d.precision.doubleValue))(null)
       throw new Error("Implementation pending a re-visitation of Parameter.weightedGeneratedChildren implementation.")
       // Sum in influence of children
-      /*for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
-        case x:DiscreteVar => e.increment(x.intValue, weight)(null)
-        case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
-      }*/
+      //for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
+      //  case x:DiscreteVar => e.increment(x.intValue, weight)(null)
+      //  case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
+      //}
       // Set the DenseDirichlet to the newly estimated value
       d.set(e)(null)
     }
@@ -157,7 +187,7 @@ object MutableDirichletEstimator extends Estimator[MutableProportions] {
 
 // TODO Perhaps all Dirichlet* classes should be re-implemented in terms of "alpha:Masses" instead of "precision" in order to avoid some of this awkwardness.
 
-class GrowableDenseDirichlet(val alpha:Double, val dimensionDomain: DiscreteDomain /*, p:Seq[Double] = Nil*/ ) extends GrowableDenseCountsProportions(8) with MutableDirichlet with VarWithCollapsedType[GrowableDenseDirichletMultinomial] {
+class GrowableDenseDirichlet(val alpha:Double, val dimensionDomain: DiscreteDomain) extends GrowableDenseCountsProportions(8) with MutableDirichlet with VarWithCollapsedType[GrowableDenseDirichletMultinomial] {
   //def this(alpha:Double) = this(new GrowableUniformProportions(this), new RealVariableParameter(alpha))
   def mean = new GrowableUniformProportions(this)
   def precision = new RealFunction {
@@ -188,29 +218,5 @@ class GrowableDenseDirichlet(val alpha:Double, val dimensionDomain: DiscreteDoma
   }
 }
 
+*/
 
-object DirichletMomentMatching {
-  def estimate(mean:DenseProportions, precision:RealVariableParameter, model:Model = cc.factorie.generative.defaultGenerativeModel): Unit = {
-    val meanChildren = mean.children //mean.generatedChildren // TODO Without "generatedChildren" this no longer works for Dirichlet mixtures.
-    assert(meanChildren.size > 1)
-    assert(meanChildren.size == precision.children.size) //precision.generatedChildren.size // TODO We are assuming that the contents are the same.
-    //val factors = model.factors(List(mean, precision)); assert(factors.size == mean.children.size); assert(factors.size == precision.children.size)
-    // Calculcate and set the mean
-    val m = new ProportionsArrayValue(new Array[Double](mean.length))
-    for (child <- meanChildren) child match { case p:Proportions => forIndex(m.size)(i => m(i) += p(i)) }
-    forIndex(m.size)(m(_) /= meanChildren.size)
-    mean.set(m)(null)
-    // Calculate variance = E[x^2] - E[x]^2 for each dimension
-    val variance = new Array[Double](mean.length)
-    for (child <- meanChildren) child match { case p:Proportions => forIndex(mean.length)(i => { val diff = p(i) - mean(i); variance(i) += diff * diff })}
-    //for (child <- meanChildren) child match { case p:Proportions => forIndex(mean.length)(i => variance(i) += p(i) * p(i)) }
-    //println("variance1="+variance.toList)
-    forIndex(mean.length)(i => variance(i) /= (meanChildren.size - 1.0))
-    //forIndex(mean.length)(i => variance(i) = (variance(i) / meanChildren.size - 1.0) - (m(i) * m(i)))
-    //println("variance2="+variance.toList)
-    var alphaSum = 0.0
-    forIndex(mean.length)(i => if (m(i) != 0.0) alphaSum += math.log((m(i) * (1.0 - m(i)) / variance(i)) - 1.0))
-    precision := math.exp(alphaSum / (mean.length - 1))
-    assert(precision.doubleValue == precision.doubleValue, "alphaSum="+alphaSum+" variance="+variance.toList+" mean="+m.toList) // Check for NaN
-  }
-}

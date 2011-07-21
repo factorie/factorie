@@ -24,21 +24,22 @@ import cc.factorie.generative._
 object MultinomialDemo {
   val numSides = 6
   object RollDomain extends DiscreteDomain { def size = numSides }
-  class Roll(die:Proportions, value:Int) extends Discrete(die, value) { def domain = RollDomain }
+  class Roll extends Discrete { def domain = RollDomain }
 
   def main(args:Array[String]) : Unit = {
     val die = new DenseProportions(List(.1, .2, .3, .2, .2))
     println("True distribution "+die)
-    val rolls = for (i <- 1 to 1000) yield new Roll(die, die.sampleInt)
-    rolls.foreach(_.sampleFromParents(null))
-    die.estimate()
+    val rolls = for (i <- 1 to 1000) yield new Roll :~ Discrete(die)
+    Maximize(Seq(die))
     println("Est  distribution "+die)
 
+    /*
     val r = new scala.util.Random
     val die2 = new GrowableDenseCountsProportions
-    val rolls2 = for (i <- 1 to 1000) yield new Roll(die2, r.nextInt(6))
-    die2.estimate()
+    val rolls2 = for (i <- 1 to 1000) yield new Roll ~ Discrete(die2) := r.nextInt(6) 
+    Maximize(die2)
     println("Die2 "+die2)
+    */
   }
 
 }

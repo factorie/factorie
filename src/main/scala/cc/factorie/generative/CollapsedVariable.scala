@@ -17,13 +17,13 @@
 package cc.factorie.generative
 import cc.factorie._
 
-trait VarWithCollapsedType[+CT<:CollapsedVar] extends GeneratedVar {
+trait VarWithCollapsedType[+CT<:Variable /*<:CollapsedVar*/] extends GeneratedVar {
   type CollapsedType = CT
 }
 
 /** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.
     @author Andrew McCallum */
-trait CollapsibleVar extends GeneratedVar with VarWithCollapsedType[CollapsedVar] {
+trait CollapsibleVar extends GeneratedVar with VarWithCollapsedType[Variable] {
   def newCollapsed: CollapsedType
   // TODO Consider putting this in cc.factorie.Variable
   def setFrom(v:Variable)(implicit d:DiffList): Unit
@@ -34,16 +34,19 @@ trait CollapsibleVar extends GeneratedVar with VarWithCollapsedType[CollapsedVar
 /** A Parameter that can be marginalized out (collapsed).
     @see DirichletMultinomial
     @author Andrew McCallum */
-trait CollapsibleParameter extends Parameter with CollapsibleVar with VarWithCollapsedType[CollapsedParameter]
+trait CollapsibleParameter extends Parameter with CollapsibleVar with VarWithCollapsedType[Parameter]
+//trait CollapsibleParameterType[+CT<:Variable] extends CollapsibleParameter with VarWithCollapsedType[CT]
 
+
+// TODO Remove this.
 /** Something that represents the collapsing of an existing GeneratedVariable. */
-trait CollapsedVar extends GeneratedVar
+//trait CollapsedVar extends GeneratedVar
 
-trait CollapsedParameter extends CollapsedVar with Parameter {
-  /** Negative weight indicates removal of stats. */
+/*trait CollapsedParameter extends CollapsedVar with Parameter {
+  // Negative weight indicates removal of stats.
   def updateChildStats(child:Variable, weight:Double): Unit 
   def clearChildStats: Unit
-}
+}*/
 
 
 // /** DiscreteVar integrated out by a Multinomial distribution.

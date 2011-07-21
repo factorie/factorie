@@ -19,14 +19,20 @@ import cc.factorie._
 
 package object generative {
 
-  type GenerativeFactor = GenerativeTemplate#Factor
+  type GenerativeFactor = GenerativeFamily#Factor
 
-  val defaultGenerativeModel = new TemplateModel(
-      new DiscreteTemplate, 
-      new DiscreteMixtureTemplate,
-      new PlatedDiscreteTemplate,
-      new PlatedDiscreteMixtureTemplate,
-      new GaussianTemplate)
+  object GenerativeModel extends Model {
+    /** Only works on Iterable[GeneratedVar] */
+    def factors(variables:Iterable[Variable]): Seq[Factor] = {
+      val result = new scala.collection.mutable.ArrayBuffer[Factor];
+      variables.foreach(v => v match {
+        case p:Parameter => { result += p.parentFactor; result ++= p.childFactors }
+        case gv:GeneratedVar => result += gv.parentFactor
+      })
+      normalize(result)
+    }
+  }
+
 
   implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
     val value: IndexedSeq[Double] = s.toIndexedSeq

@@ -28,8 +28,10 @@ trait RealVar extends VarWithNumericValue with VarAndValueType[RealVar,Double] {
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
+trait MutableRealVar extends RealVar with MutableVar
+
 /** A Variable with a mutable real (double) value. */
-class RealVariable(initialValue: Double = 0.0) extends RealVar with MutableVar {
+class RealVariable(initialValue: Double = 0.0) extends MutableRealVar {
   private var _value: Double = initialValue
   @inline final def doubleValue = _value
   def +=(x:Double) = set(_value + x)(null) // Should we allow non-null DiffLists?

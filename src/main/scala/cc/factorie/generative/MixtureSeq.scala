@@ -16,9 +16,11 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
-trait PlatedMixtureGenerativeTemplate extends GenerativeTemplate {
-  type TemplateType <: PlatedMixtureGenerativeTemplate
-  type ChildType <: PlatedMixtureGeneratedVar
+abstract class PlatedGate(initial:Seq[Int]) extends PlatedDiscrete(initial) with Parameter
+
+trait PlatedMixtureGenerativeFamily extends GenerativeFamily {
+  type FamilyType <: PlatedMixtureGenerativeFamily
+  //type ChildType <: PlatedMixtureGeneratedVar
   def prChoosing(s:StatisticsType, seqIndex:Int, mixtureIndex:Int): Double
   def prChoosing(s:cc.factorie.Statistics, seqIndex:Int, mixtureIndex:Int): Double = 
     prChoosing(s.asInstanceOf[StatisticsType], seqIndex, mixtureIndex)
@@ -29,6 +31,8 @@ trait PlatedMixtureGenerativeTemplate extends GenerativeTemplate {
   def sampledValueChoosing(s:cc.factorie.Statistics, mixtureIndices:Seq[Int]): ChildType#Value = sampledValueChoosing(s.asInstanceOf[StatisticsType], mixtureIndices)
 }
 
+
+/*
 trait PlatedMixtureGeneratedVar extends GeneratedVar {
   override val generativeTemplate: PlatedMixtureGenerativeTemplate
   def choice: PlatedMixtureChoiceVar
@@ -51,3 +55,5 @@ trait PlatedMixtureChoiceVar extends DiscreteSeqVariable with MutableGeneratedVa
 abstract class PlatedMixtureChoice(p:Proportions, initialValue: Seq[Int] = Nil) extends PlatedDiscrete(p, initialValue) with PlatedMixtureChoiceVar {
   def prChoosing(value:Int): Double = proportions(value)
 }
+*/
+

@@ -26,6 +26,8 @@ import java.io._
 
 abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Family1[N1] with Template
 {
+  val neighborClass1 = nm1.erasure
+  val neighborClass1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
   // Factors
   def factors(v:Variable): Iterable[FactorType] = {
     // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!

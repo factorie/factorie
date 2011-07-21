@@ -17,31 +17,24 @@ import cc.factorie._
 
 // TODO Consider creating PostiveReal, and then Gamma extends 
 
-class GammaTemplate extends GenerativeTemplateWithStatistics3[Gamma,RealVarParameter,RealVarParameter] {
-  def unroll1(g:Gamma) = Factor(g, g.alpha, g.beta)
-  def unroll2(a:RealVarParameter) = for (g <- a.childrenOfClass[Gamma]; if (g.alpha == a)) yield Factor(g, a, g.beta)
-  def unroll3(b:RealVarParameter) = for (g <- b.childrenOfClass[Gamma]; if (g.beta == b)) yield Factor(g, g.alpha, b)
+//trait GeneratedRealVar extends IntegerVar with GeneratedVar
+//abstract class Real(initial: Double = 0.0) extends RealVariable(initial) with GeneratedRealVar with MutableGeneratedVar
+
+object Gamma extends GenerativeFamilyWithStatistics3[GeneratedRealVar,RealVarParameter,RealVarParameter] {
+  def logpr(value:Double, mean:Double, variance:Double): Double = {
+    val diff = value - mean
+    return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
+  }
   def pr(s:Stat): Double = pr(s._1, s._2, s._3)
   def pr(x:Double, alpha:Double, beta:Double): Double = {
     require(x > 0)
     math.pow(beta, alpha) / maths.gamma(alpha) * math.pow(x, alpha - 1) * math.exp(- beta * x)
   }
-  def logpr(s:Stat) = math.log(pr(s))
   def sampledValue(s:Stat): Double = sampledValue(s._2, s._3)
   def sampledValue(alpha:Double, beta:Double): Double = maths.nextGamma(alpha.doubleValue, beta.doubleValue)(cc.factorie.random)
 }
-object GammaTemplate extends GammaTemplate
 
 
-/** The Gamma distribution generating real values with parameters alpha and beta. 
-    @author Andrew McCallum. */
-class Gamma(val alpha:RealVarParameter, val beta:RealVarParameter, value:Double = 0) extends RealVariable(value) with MutableGeneratedVar {
-  val generativeTemplate = GammaTemplate
-  def generativeFactor = new GammaTemplate.Factor(this, alpha, beta)
-  alpha.addChild(this)(null)
-  beta.addChild(this)(null)
-  override def parents = List(alpha, beta)
-}
 
 // TODO Finish this.
 //class GammaGamma(alphaGamma:Gamma, betaGamma:Gamma, value:Double = 0) extends Gamma(alphaGamma, betaGamma, value)

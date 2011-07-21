@@ -21,16 +21,36 @@ import cc.factorie._
     Proportions ~ Dirichlet(Masses)
     Masses ~ Multinomial(Proportions) */
 // TODO Note, this is currently unused, since Dirichlet is instead parameterized by mean & precision
-trait Masses extends Variable with IndexedSeqEqualsEq[Double] with VarAndValueGenericDomain[Masses,Seq[Double]] {
+trait Masses extends Parameter with IndexedSeqEqualsEq[Double] with VarAndValueGenericDomain[Masses,Seq[Double]] {
   def value = this.asInstanceOf[Value] // TODO Not a safe immutable value
   override def toString = this.mkString(printName+"(", ",", ")")
   def activeDomain: Iterable[Int]
   //def vector: Vector // TODO Consider IncrementableMasses that actually store the counts in a Vector, ala BinaryVectorVariable
+  /*
+  def generatedChildValues: Iterable[DiscreteValue] = {
+    val result = new scala.collection.mutable.ArrayBuffer[DiscreteValue]
+    for (child <- children) child match {
+      case mcs:MixtureComponents[_] => {
+        val indexInMixture = mcs.indexOf(this)
+        require(indexInMixture >= 0)
+        for (grandchild <- mcs) grandchild match {
+          case dmv:DiscreteMixtureVar => if (dmv.choice.intValue == indexInMixture) result += dmv.value
+          case pdmv:PlatedDiscreteMixtureVar => forIndex(pdmv.length)(seqIndex => {
+            if (pdmv.choice.intValue(seqIndex) == indexInMixture) result += pdmv.value(seqIndex)
+          })
+        }
+      }
+      case gdv:GeneratedDiscreteVar => result += gdv.value
+    }
+    result
+  }
+
+   */
 }
 
 /** Masses that are also a Parameter.  Could in future be used as the parameters of a Dirichlet distribution, 
     but Dirichlet is currently parameterized instead by mean and precision. */
-trait MassesParameter extends Masses with Parameter
+//trait MassesParameter extends Masses with Parameter // For now Masses is already a Parameter 
 
 /** Masses that are mutable only through increment method. 
     Useful for Proportions, Dirichlet, DirichletMultinomial, etc. */
@@ -112,13 +132,14 @@ class SparseCounts(theDomainSize:Int) extends SparseVector(theDomainSize) with C
 }
 */
 
-trait SetableMasses extends Masses {
+trait MutableMasses extends Masses {
   def set(p:Seq[Double])(implicit d:DiffList): Unit 
 }
 
-class DenseMasses(m:Seq[Double]) extends SetableMasses {
-  def this(dim:Int) = this(Seq.fill(dim)(1.0))
-  private var _m = new Array[Double](length)
+class DenseMasses(m:Seq[Double]) extends MutableMasses {
+  def this(dim:Int, m:Double) = this(Seq.fill(dim)(m))
+  def this(dim:Int) = this(dim, 1.0)
+  private var _m = new Array[Double](m.length)
   if (m != Nil) this := m else setUniform(null)
   @inline final def length = _m.size
   @inline final def apply(index:Int) = _m(index)
@@ -136,4 +157,10 @@ class DenseMasses(m:Seq[Double]) extends SetableMasses {
     def undo = _m = oldM
     def redo = _m = newM
   }
+}
+
+class GrowableUniformMasses(val dimensionDomain:DiscreteDomain, val mass:Double) extends Masses {
+  def activeDomain: Iterable[Int] = Range(0, length)
+  def length: Int = dimensionDomain.length
+  def apply(i:Int) = mass
 }

@@ -17,7 +17,8 @@
 package cc.factorie.generative
 import cc.factorie._
 
-trait DirichletMultinomial extends Proportions with CollapsedParameter with GeneratedVar {
+/*
+trait DirichletMultinomial extends Proportions with CollapsedParameter with CollapsibleParameter with GeneratedVar {
   // TODO Implement these
   val generativeTemplate = null
   def generativeFactor = throw new Error
@@ -33,7 +34,7 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
   def counts(index:Int): Double
   def countsTotal: Double
   override def pr = throw new Error("Collapsed variable has no probability.") // TODO implement.  Since this is collapsed, what should it be?  1.0?
-  def detatch: Unit = { mean.removeChild(this)(null); precision.removeChild(this)(null) } // TODO Is this necessary?
+  //def detatch: Unit = { mean.removeChild(this)(null); precision.removeChild(this)(null) } // TODO Is this necessary?
   override def apply(index:Int) : Double = {
     val alphaSum = precision.doubleValue
     // TODO Consider pre-baking mean and alphaSum into counts, to avoid this extra math, and make faster.
@@ -41,15 +42,15 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
     assert(result >= 0.0 && result != Double.PositiveInfinity, "alphaSum="+alphaSum+" count="+counts(index)+" mean="+mean(index)+" countsTotal="+countsTotal)
     result
   }
-  /*override def addChild(c:GeneratedVar)(implicit d:DiffList): Unit = {
-    // xxx c match { case v:DiscreteVar => increment(v.intValue, 1.0); case _ => throw new Error } // xxx This seems to be the slowness culprit
-    super.addChild(c)(d)
-  }
-  override def removeChild(c:GeneratedVar)(implicit d:DiffList): Unit = {
-    //println("DirichletMultinomial.removeChild "+c)
-    // xxx c match { case v:DiscreteVar => increment(v.intValue, -1.0); case _ => throw new Error } 
-    super.removeChild(c)(d)
-  }*/
+  //override def addChild(c:GeneratedVar)(implicit d:DiffList): Unit = {
+  //  // xxx c match { case v:DiscreteVar => increment(v.intValue, 1.0); case _ => throw new Error } // xxx This seems to be the slowness culprit
+  //  super.addChild(c)(d)
+  //}
+  //override def removeChild(c:GeneratedVar)(implicit d:DiffList): Unit = {
+  //  //println("DirichletMultinomial.removeChild "+c)
+  //  // xxx c match { case v:DiscreteVar => increment(v.intValue, -1.0); case _ => throw new Error } 
+  //  super.removeChild(c)(d)
+  //}
   def clearChildStats: Unit = this.zero
   def updateChildStats(child:Variable, weight:Double): Unit = child match {
     case d:DiscreteVar => increment(d.intValue, weight)(null)
@@ -62,18 +63,27 @@ trait DirichletMultinomial extends Proportions with CollapsedParameter with Gene
   //def prFrom(parents:Seq[Parameter]): Double = throw new Error
 }
 
-class DenseDirichletMultinomial(val mean:Proportions, val precision:RealVarParameter) extends DenseCountsProportions(mean.length) with DirichletMultinomial {
-  def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealVariableParameter(alpha*size))
+class DenseDirichletMultinomial(val mean:Proportions, val precision:RealVarParameter) extends DenseCountsProportions(mean.length) with DirichletMultinomial with VarWithCollapsedType[DenseDirichletMultinomial] {
+  def this(size:Int, alpha:Double) = this(new UniformProportions(size), new RealParameter(alpha*size))
   //def this(dirichlet:Dirichlet) = this(dirichlet.mean, dirichlet.precision)
   //def estimate(map:Map[Variable,Variable]): Unit = throw new Error
+  def setFrom(v:Variable)(implicit d:DiffList): Unit = v match {
+    case ddm:DenseDirichletMultinomial if (ddm == this) => {}
+  }
+  def newCollapsed:CollapsedType = {
+    for (factor <- childFactors) factor match {
+      case f:Discrete.Factor => increment(f._1.intValue, 1.0)(null)
+    }
+    this
+  }
 }
 
-class GrowableDenseDirichletMultinomial(val alpha:Double, val dimensionDomain:DiscreteDomain) extends GrowableDenseCountsProportions with DirichletMultinomial {
+class GrowableDenseDirichletMultinomial(val alpha:Double, val dimensionDomain:DiscreteDomain) extends GrowableDenseCountsProportions with DirichletMultinomial with VarWithCollapsedType[GrowableDenseDirichletMultinomial] {
   lazy val mean = new GrowableUniformProportions(this)
   lazy val precision = new RealFunction {
     def doubleValue = alpha * dimensionDomain.size //GrowableDenseDirichletMultinomial.this.length
-    def pr = 1.0 // TODO Remove this; no longer necessary
-    def parents = List(GrowableDenseDirichletMultinomial.this) // TODO But note that GrowableDenseDirichletMultinomial doesn't have this as a child.
+    //def pr = 1.0 // TODO Remove this; no longer necessary
+    //def parents = List(GrowableDenseDirichletMultinomial.this) // TODO But note that GrowableDenseDirichletMultinomial doesn't have this as a child.
   }
   //override def length: Int = 
   // A little faster than the more generic one in its superclass
@@ -84,7 +94,16 @@ class GrowableDenseDirichletMultinomial(val alpha:Double, val dimensionDomain:Di
     assert(result >= 0.0 && result != Double.PositiveInfinity, "alphaSum="+alphaSum+" count="+counts(index)+" mean="+mean(index)+" countsTotal="+countsTotal)
     result
   }
+  def setFrom(v:Variable)(implicit d:DiffList): Unit = v match {
+    case gddm:GrowableDenseDirichletMultinomial if (gddm == this) => {}
+  }
+  def newCollapsed:CollapsedType = {
+    for (factor <- childFactors) factor match {
+      case f:Discrete.Factor => increment(f._1.intValue, 1.0)(null)
+    }
+    this
+  }
 
   //def estimate(map:Map[Variable,Variable]): Unit = throw new Error
 }
-
+*/

@@ -16,7 +16,7 @@ scalac:
 	JAVA_OPTS="-Xmx1800M -Xms256M -Xss16M" $(SCALA_HOME)/bin/scalac -Xmx2048m -deprecation -unchecked -cp $(CP) -d target/classes `find src -name '*.scala'` `find src -name '*.java'`
 
 lda:
-	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.LDADemo
+	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.LDA
 clda:
 	JAVA_OPTS="-Xmx1024M" $(SCALA_HOME)/bin/scala -cp target/classes cc.factorie.example.ClusterLDADemo
 hmm:

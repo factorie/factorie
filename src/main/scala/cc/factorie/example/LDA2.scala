@@ -24,6 +24,7 @@ import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 
 object LDA2 {
+  /*
   val numTopics = 10
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
@@ -98,4 +99,5 @@ object LDA2 {
     //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
   }
+  */
 }

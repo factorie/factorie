@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.HashMap
 
 @deprecated("Just a temporary placeholder.  Very much unfinished.")
-class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A], model:TemplateModel = cc.factorie.generative.defaultGenerativeModel) {
+class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A], model:Model = cc.factorie.generative.GenerativeModel) {
   private val _q = new HashMap[Variable,Variable] // 2nd is actually the Q distribution
   variables.foreach(v => _q(v) = v.newQ)
   def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]

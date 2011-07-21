@@ -22,6 +22,7 @@ import scala.collection.mutable.{ListBuffer,HashSet,ArrayBuffer}
     @see MixtureChoice
     @author Andrew McCallum */
 //@deprecated("In store for significant changes in the future.")
+// TODO Change this to GateVar or remove it?
 trait Gate extends DiscreteVariable {
   /** The collection of variable references controlled by the gate. */
   private var _gatedRefs: List[AbstractGatedRefVariable] = Nil

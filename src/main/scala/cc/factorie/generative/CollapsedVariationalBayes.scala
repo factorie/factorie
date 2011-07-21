@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 //import cc.factorie.la.ArrayLA.Implicits._
 
-class CollapsedVariationalBayes(collapse:Iterable[CollapsibleParameter], marginalize:Iterable[Variable with QDistribution], model:Model = cc.factorie.generative.defaultGenerativeModel) {
+class CollapsedVariationalBayes(collapse:Iterable[CollapsibleParameter], marginalize:Iterable[Variable with QDistribution], model:Model = cc.factorie.generative.GenerativeModel) {
   val handlers = new ArrayBuffer[CollapsedVariationalBayesHandler]
   //def defaultHandlers = List(GeneratedVariableCollapsedVariationalBayesHandler, MixtureChoiceCollapsedVariationalBayesHandler)
   def defaultHandlers = throw new Error("Not yet implemented")
@@ -41,7 +41,7 @@ class CollapsedVariationalBayes(collapse:Iterable[CollapsibleParameter], margina
   def children(p:Parameter): Iterable[GeneratedVar] = throw new Error
 
   def process(v:MutableGeneratedVar): DiffList = {
-    assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable
+    //assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable
     // Get factors, in sorted order of the their classname
     val factors = model.factors(Seq(v)).sortWith((f1:Factor,f2:Factor) => f1.factorName < f2.factorName)
     var done = false

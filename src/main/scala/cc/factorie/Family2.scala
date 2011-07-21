@@ -23,13 +23,16 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-abstract class Family2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends FamilyWithNeighborDomains {
+/*trait Factor2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
+  trait Factor extends super.Factor {
+    def _1: N1
+    def _2: N2
+  }
+}*/
+
+trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains /*with Factor2[N1,N2]*/ {
   type NeighborType1 = N1
   type NeighborType2 = N2
-  val neighborClass1 = nm1.erasure
-  val neighborClass2 = nm2.erasure
-  val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
-  val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass2)) { assert(ta.length == 1); ta.head.erasure } else null }
   protected var _neighborDomain1: Domain[N1#Value] = null
   protected var _neighborDomain2: Domain[N2#Value] = null
   def neighborDomain1: Domain[N1#Value] = if (_neighborDomain1 eq null) throw new Error("You must override neighborDomain1 if you want to access it before creating any Factor objects") else _neighborDomain1
@@ -156,15 +159,15 @@ trait VectorStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends
 
 trait DotStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorStatistics2[S1,S2] with DotFamily
 
-abstract class FamilyWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Family2[N1,N2] with Statistics2[N1#Value,N2#Value] {
+trait FamilyWithStatistics2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] with Statistics2[N1#Value,N2#Value] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
 }
 
-abstract class FamilyWithVectorStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Family2[N1,N2] with VectorStatistics2[N1#Value,N2#Value] {
+trait FamilyWithVectorStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar] extends Family2[N1,N2] with VectorStatistics2[N1#Value,N2#Value] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
 }
 
-abstract class FamilyWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Family2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
+trait FamilyWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar] extends Family2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
 }
 

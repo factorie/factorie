@@ -15,35 +15,9 @@
 package cc.factorie.generative
 import cc.factorie._
 
-class PoissonTemplate extends GenerativeTemplateWithStatistics2[Poisson,PoissonMeanVar] {
-  def unroll1(p:Poisson) = Factor(p, p.mean)
-  def unroll2(m:PoissonMeanVar) = for (p <- m.childrenOfClass[Poisson]) yield Factor(p, m)
-  def pr(s:Stat) = pr(s._1, s._2)
+object Poisson extends GenerativeFamilyWithStatistics2[GeneratedIntegerVar,RealVarParameter] {
   def pr(k:Int, mean:Double) = math.pow(mean, k) * math.exp(-mean) / maths.factorial(k)
-  def logpr(s:Stat) = math.log(pr(s))
-  def sampledValue(s:Stat): Int = sampledValue(s._2)
+  def pr(s:StatisticsType) = pr(s._1, s._2)
   def sampledValue(mean:Double): Int = maths.nextPoisson(mean)(cc.factorie.random).toInt
+  def sampledValue(s:StatisticsType): Int = sampledValue(s._2)
 }
-object PoissonTemplate extends PoissonTemplate
-
-/** The Poisson distribution generating integer values with parameter lambda. */
-class Poisson(val mean:PoissonMeanVar, value:Int = 0) extends IntegerVariable(value) with MutableGeneratedVar {
-  mean.addChild(this)(null)
-  val generativeTemplate = PoissonTemplate
-  def generativeFactor = new PoissonTemplate.Factor(this, mean)
-  override def parents = List(mean)
-  /** This implements the maximum likelihood estimator */
-  /*def estimate: Unit = {
-    if (generatedSamples.size == 0) throw new Error("No samles from which to estimate")
-    val sum = generatedSamples.sumInts(_.intValue).toDouble
-    lambda = sum/generatedSamples.size
-  }*/
-}
-
-trait PoissonMeanVar extends RealVar with Parameter
-
-/*abstract class GammaPoisson(gamma:Gamma) extends Distribution[IntegerVar] {
-  throw new Error("Not yet implemented")
-}
-*/
-
