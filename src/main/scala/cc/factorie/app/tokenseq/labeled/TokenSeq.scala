@@ -126,18 +126,18 @@ object TokenSeq {
         if (currLabel == prevLabel) {
           entity += token
         } else {
-          if (entity.length > 0) result += ((prevLabel, entity.reverse))
+          if (entity.length > 0) result += ((prevLabel, entity))
           entity = new ArrayBuffer
           entity += token 
         }
       } else {
-        if (entity.length > 0) result += ((prevLabel, entity.reverse))
+        if (entity.length > 0) result += ((prevLabel, entity))
         entity = new ArrayBuffer[T]
       }
       prevLabel = currLabel
     }
     // add any lingering bits
-    if (entity.length > 0) result += ((prevLabel, entity.reverse))
+    if (entity.length > 0) result += ((prevLabel, entity))
     result
   }
 
