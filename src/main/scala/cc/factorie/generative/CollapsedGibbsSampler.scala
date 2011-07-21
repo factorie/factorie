@@ -105,7 +105,7 @@ trait CollapsedGibbsSamplerClosure {
 object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
   def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
     if (v.size != 1 || factors.length != 1) return null
-    val pFactor = factors.collectFirst({case f:GenerativeFamily#Factor => f})
+    val pFactor = factors.collectFirst({case f:GenerativeFamily#Factor if (f.family.isInstanceOf[GenerativeFamily]) => f}) // TODO Yipes!  Clean up these tests!
     if (pFactor == None) return null
     // Make sure all parents are collapsed?
     if (!pFactor.get.variables.drop(1).asInstanceOf[Seq[Parameter]].forall(v => sampler.collapsedMap.contains(v))) return null
@@ -130,7 +130,7 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
   def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
     if (v.size != 1 || factors.length != 2) return null
     //println("GateCollapsedGibbsSamplerHander: "+factors.map(_.asInstanceOf[Family#Factor].family.getClass).mkString)
-    val gFactor = factors.collectFirst({case f:Discrete.Factor if (f.family == Discrete) => f}) // TODO Should be DiscreteGeneratingFamily#Factor => f
+    val gFactor = factors.collectFirst({case f:Discrete.Factor if (f.family == Discrete) => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
     val mFactor = factors.collectFirst({case f:MixtureFamily#Factor if (f.family.isInstanceOf[MixtureFamily]) => f})
     if (gFactor == None || mFactor == None) {
       //println("GateCollapsedGibbsSamplerHander: "+gFactor+" "+mFactor)

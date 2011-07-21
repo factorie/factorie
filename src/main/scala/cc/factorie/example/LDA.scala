@@ -29,7 +29,7 @@ object LDA {
   object ZDomain extends DiscreteDomain { def size = numTopics }
   class Z(value: Int = 0) extends cc.factorie.generative.Gate(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
-  class Word(value: String) extends Categorical(value) { def domain = WordDomain }
+  class Word(value: String) extends Categorical(value) { def domain = WordDomain; def z = parentFactor.asInstanceOf[DiscreteMixture.Factor]._3 }
   class Document(val file: String) extends ArrayBuffer[Word] {var theta: DenseCountsProportions = null}
   val beta = new GrowableUniformMasses(WordDomain, 1.0)
 
@@ -38,7 +38,6 @@ object LDA {
     val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(WordDomain) ~ Dirichlet(beta))
     val alphas = new DenseMasses(numTopics, 1.0)
     val documents = new ArrayBuffer[Document]
-    val zs = new ArrayBuffer[Z]
     for (directory <- directories) {
       println("Reading files from directory " + directory)
       for (file <- new File(directory).listFiles; if (file.isFile)) {
@@ -48,101 +47,27 @@ object LDA {
         for (word <- alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
           val z = new Z :~ Discrete(doc.theta)
           doc += new Word(word) ~ DiscreteMixture(phis, z)
-          zs += z
         }
         documents += doc
       }
     }
 
-    //val collapsedVariables = new ArrayBuffer[CollapsibleParameter]
-    //collapsedVariables ++= phis.components
-    //collapsedVariables ++= documents.map(_.theta)
-    val sampler = new CollapsedGibbsSampler(phis ++ documents.map(_.theta), GenerativeModel)
+    val sampler = new CollapsedGibbsSampler(phis ++ documents.map(_.theta))
     val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
-      zs.foreach(sampler.process(_))
+      for (doc <- documents; word <- doc) sampler.process(word.z)
       if (i % 5 == 0) {
         println("Iteration " + i)
-        // (phis ++ documents.map(_.theta)).foreach(_.export)
         sampler.export()
-        //(phis ++ documents.map(_.theta)).foreach(p => p.set(sampler.collapsed(p).value)(null))
         // Turned off hyperparameter optimization
         //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
         phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
-        //forIndex(numTopics)(i => println("Topic " +i+"  "+ sampler.collapsed(phis).asInstanceOf[CollapsedFiniteMixture[DirichletMultinomial]].apply(i).top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
         println
       }
     }
     //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
 
-/*
-    // Read data and create generative variables
-    val phis = CollapsibleFiniteMixture(numTopics)(new GrowableDenseDirichlet(0.01, WordDomain) with CategoricalProportions[String] {
-      override def apply(index:Int) : Double = {
-        val result = super.apply(index)
-        //println("LDA.phi.apply "+index+" "+result)
-        result
-      }
-      def categoricalDomain = WordDomain
-      override def toString = "Phi(" + countsSeq.take(20).toList + ")"
-    })
-    val alphaMean = new DenseProportions(numTopics)
-    val alphaPrecision = new RealVariableParameter(50) //(numTopics)
-    val documents = new ArrayBuffer[Document]
-    for (directory <- directories) {
-      println("Reading files from directory " + directory)
-      for (file <- new File(directory).listFiles; if (file.isFile)) {
-        print("."); Console.flush
-        val doc = new Document(file.toString)
-        doc.theta = new DenseDirichlet(alphaMean, alphaPrecision) //(numTopics, 0.01) // Shouldn't this have been 1.0 instead of 0.01 anyway?
-        for (word <- alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
-          val z = new Z(doc.theta, cc.factorie.random.nextInt(numTopics))
-          doc += new Word(phis, z, word)
-        }
-        documents += doc
-      }
-    }
-    //documents.trimEnd(documents.length-10)
-
-    println("\nRead " + documents.size + " documents with " + documents.foldLeft(0)(_ + _.size) + " tokens and " + WordDomain.size + " types.")
-    // Fit model
-    val zs = documents.flatMap(document => document.map(word => word.choice))
-
-    //val collapsed = new ArrayBuffer[CollapsedParameter]; collapsed ++= phis; collapsed ++= documents.map(_.theta)
-    //for (c <- collapsed) println("LDA collapsed parent="+c.getClass.getName+"@"+c.hashCode+" #children="+c.children.size)
-
-    val collapsedVariables = new ArrayBuffer[CollapsibleParameter]
-    collapsedVariables += phis
-    collapsedVariables ++= documents.map(_.theta)
-    val sampler = new CollapsedGibbsSampler(collapsedVariables)
-    val startTime = System.currentTimeMillis
-    for (i <- 1 to 100) {
-      var zChangeCount = 0
-      for (z <- zs) {
-        val oldValue = z.value
-        sampler.process(z)
-        val newValue = z.value
-        if (oldValue != newValue) zChangeCount += 1
-      }
-      print(zChangeCount*1.0/zs.size)
-      print(" "); Console.flush
-      if (i % 5 == 0) {
-        println("Iteration " + i)
-        // (phis ++ documents.map(_.theta)).foreach(_.export)
-        sampler.export()
-        //(phis ++ documents.map(_.theta)).foreach(p => p.set(sampler.collapsed(p).value)(null))
-        // Turned off hyperparameter optimization
-        //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
-        println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
-        //forIndex(numTopics)(i => println("Topic " +i+"  "+ sampler.collapsed(phis).asInstanceOf[CollapsedFiniteMixture[DirichletMultinomial]].apply(i).top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
-        println
-      }
-    }
-    //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
-    println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
-*/
   }
 }
