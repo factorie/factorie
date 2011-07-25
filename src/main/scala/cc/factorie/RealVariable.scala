@@ -85,3 +85,5 @@ class RealSingletonVectorVariable(initialValue:Double) extends RealSingletonVect
   private var _value = initialValue
   def doubleValue: Double = _value
 }
+
+// TODO Consider making an implicit conversion from RealVar to RealSingletonVectorVar 
