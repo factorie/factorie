@@ -17,42 +17,24 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:Model = cc.factorie.generative.GenerativeModel) extends Sampler[Iterable[MutableGeneratedVar]] {
+class CollapsedGibbsSampler(collapse:Iterable[GeneratedVar], val model:Model = cc.factorie.generative.GenerativeModel) extends Sampler[Iterable[MutableGeneratedVar]] {
   var debug = false
   makeNewDiffList = false // override default in cc.factorie.Sampler
   var temperature = 1.0 // TODO Currently ignored?
   val handlers = new ArrayBuffer[CollapsedGibbsSamplerHandler]
   def defaultHandlers = Seq(
       GateCollapsedGibbsSamplerHandler, 
-      GeneratedVarCollapsedGibbsSamplerHandler 
+      GeneratedVarCollapsedGibbsSamplerHandler,
+      PlatedGateDiscreteCollapsedGibbsSamplerHandler
       //PlatedMixtureChoiceCollapsedDirichletGibbsSamplerHandler
       )
   handlers ++= defaultHandlers
   val cacheClosures = true
   val closures = new HashMap[Variable, CollapsedGibbsSamplerClosure]
 
-  private val _c = new HashMap[Parameter,Parameter] with cc.factorie.util.Substitutions {
-    def sub[A](x:A): A = x match {
-      case p:Parameter => getOrElse(p, p).asInstanceOf[A]
-      case _ => x
-    }
-  }
-  def collapsedMap = _c
-  def collapsed[V<:CollapsibleParameter](v:V): V#CollapsedType = _c(v).asInstanceOf[V#CollapsedType]
-  //def collapsed(p:Parameter) = _c(p).asInstanceOf[CollapsedParameter] // generic version of the above
-  def collapsedOrNull(p:Parameter): Parameter = _c.getOrElse(p, null)
-  def collapsedOrSelf(p:Parameter): Parameter = _c.getOrElse(p, p)
-  def isCollapsed(v:Parameter) = _c.contains(v)
-  // TODO Consider renaming collapseOrRegisterParameter ?
-  def collapseParameter[V<:CollapsibleParameter](p:V): Unit = {
-    //println("CollapsedGibbsSampler collapseParameter "+p)
-    // If already collapsed, just clearChildStats, otherwise create a newCollapsed
-    val cp = p.newCollapsed
-    _c(p) = cp
-  }
-
   // Initialize collapsed parameters specified in constructor
-  collapse.foreach(collapseParameter(_))
+  collapse.foreach(v => Collapse(Seq(v)))
+  // TODO We should provide an interface that handlers can use to query whether or not a particular variable was collapsed or not?
 
   def process1(v:Iterable[MutableGeneratedVar]): DiffList = {
     //assert(!v.exists(_.isInstanceOf[CollapsedVar])) // We should never be sampling a CollapsedVariable
@@ -62,7 +44,7 @@ class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:M
       closures(v.head).sample(d)
     } else {
       // Get factors, no guarantees about their order
-      val factors: Seq[Factor] = model.factors(v).map(_.copy(collapsedMap))
+      val factors: Seq[Factor] = model.factors(v)
       //println("CollapsedGibbsSampler.process1 factors = "+factors.map(_.template.getClass).mkString)
       var done = false
       val handlerIterator = handlers.iterator
@@ -76,14 +58,14 @@ class CollapsedGibbsSampler(collapse:Iterable[CollapsibleParameter], val model:M
           }
         }
       }
-      if (!done) throw new Error("CollapsedGibbsSampler: No sampling method found for variable "+v+" with factors "+factors.map(_.factorName).mkString("List(",",",")"))
+      if (!done) throw new Error("CollapsedGibbsSampler: No sampling method found for variable "+v+" with factors "+factors.map(_.factorName).toList.mkString)
     }
     d
   }
 
   /** Set variables' values to the mean of their collapsed representation */
-  def export(implicit d:DiffList = null): Unit = {
-    collapsedMap.foreach({case(p:CollapsibleParameter,cp:Parameter) => p.setFrom(cp)})
+  @deprecated def export(implicit d:DiffList = null): Unit = {
+    //collapsedMap.foreach({case(p:CollapsibleParameter,cp:Parameter) => p.setFrom(cp)})
   }
 
   /** Convenience for sampling single variable */
@@ -108,7 +90,7 @@ object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHan
     val pFactor = factors.collectFirst({case f:GenerativeFamily#Factor if (f.family.isInstanceOf[GenerativeFamily]) => f}) // TODO Yipes!  Clean up these tests!
     if (pFactor == None) return null
     // Make sure all parents are collapsed?
-    if (!pFactor.get.variables.drop(1).asInstanceOf[Seq[Parameter]].forall(v => sampler.collapsedMap.contains(v))) return null
+    //if (!pFactor.get.variables.drop(1).asInstanceOf[Seq[Parameter]].forall(v => sampler.collapsedMap.contains(v))) return null
     new Closure(pFactor.get)
   }
   class Closure(val factor:GenerativeFamily#Factor) extends CollapsedGibbsSamplerClosure {
@@ -130,7 +112,8 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
   def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
     if (v.size != 1 || factors.length != 2) return null
     //println("GateCollapsedGibbsSamplerHander: "+factors.map(_.asInstanceOf[Family#Factor].family.getClass).mkString)
-    val gFactor = factors.collectFirst({case f:Discrete.Factor if (f.family == Discrete) => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
+    //val gFactor = factors.collectFirst({case f:Discrete.Factor if (f.family == Discrete) => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
+    val gFactor = factors.collectFirst({case f:DiscreteGeneratingFamily#Factor if (f.family.isInstanceOf[DiscreteGeneratingFamily]) => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
     val mFactor = factors.collectFirst({case f:MixtureFamily#Factor if (f.family.isInstanceOf[MixtureFamily]) => f})
     if (gFactor == None || mFactor == None) {
       //println("GateCollapsedGibbsSamplerHander: "+gFactor+" "+mFactor)
@@ -142,7 +125,7 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
     new Closure(gFactor.get, mFactor.get)
   }
     
-  class Closure(val gFactor:Discrete.Factor, val mFactor:MixtureFamily#Factor) extends CollapsedGibbsSamplerClosure
+  class Closure(val gFactor:DiscreteGeneratingFamily#Factor, val mFactor:MixtureFamily#Factor) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
       val gate = gFactor._1.asInstanceOf[Gate] //family.child(gFactor)
@@ -175,6 +158,54 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
       // Put back sufficient statistics of collapsed dependencies
       gFactor.family.updateCollapsedParents(gFactor, 1.0)
       mFactor.family.updateCollapsedParents(mFactor, 1.0)
+    }
+  }
+}
+
+object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
+  def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
+    if (v.size != 1 || factors.length != 2) return null
+    val gFactor = factors.collectFirst({case f:PlatedDiscrete.Factor if (f.family == PlatedDiscrete) => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
+    val mFactor = factors.collectFirst({case f:PlatedDiscreteMixture.Factor if (f.family == PlatedDiscreteMixture) => f})
+    if (gFactor == None || mFactor == None) return null
+    assert(gFactor.get._1 == mFactor.get._3)
+    new Closure(gFactor.get, mFactor.get)
+  }
+    
+  class Closure(val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedDiscreteMixture.Factor) extends CollapsedGibbsSamplerClosure
+  {
+    def sample(implicit d:DiffList = null): Unit = {
+      val gates = mFactor._3.asInstanceOf[PlatedGate];
+      val domainSize = gates(0).domain.size
+      val distribution = new Array[Double](domainSize)
+      val gParent = gFactor._2.asInstanceOf[DenseCountsProportions]
+      val mixture = mFactor._2.asInstanceOf[Mixture[DenseCountsProportions]]
+      for (index <- 0 until gates.length) {
+        val outcomeIntValue = mFactor._1(index).intValue
+        // Remove sufficient statistics from collapsed dependencies
+        var z: Int = gates(index).intValue
+        gParent.increment(z, -1.0)
+        mixture(z).increment(outcomeIntValue, -1.0)
+        // Calculate distribution of new value
+        //val mStat = mFactor.statistics
+        //val gStat = gFactor.statistics
+        var sum = 0.0
+        java.util.Arrays.fill(distribution, 0.0)
+        forIndex(domainSize)(i => {
+          distribution(i) = gParent(i) * mixture(i)(outcomeIntValue)
+          sum += distribution(i)
+        })
+        assert(sum == sum, "Distribution sum is NaN")
+        assert(sum != Double.PositiveInfinity, "Distrubtion sum is infinity.")
+        // Sample
+        // sum can be zero for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
+        if (sum == 0) z = cc.factorie.random.nextInt(domainSize)
+        else z = cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random)
+        gates.set(index, z)(null)
+        // Put back sufficient statistics of collapsed dependencies
+        gParent.increment(z, 1.0)
+        mixture(z).increment(outcomeIntValue, 1.0)
+      }
     }
   }
 }

@@ -20,6 +20,8 @@ abstract class Gate(initial:Int) extends Discrete(initial) with Parameter {
   //def prChoosing(value:Int): Double = parentFactor.template.prChoosing(parentFactor.statistics, index)
 }
 
+//abstract class PlatedGate(initial:Seq[Int]) extends PlatedDiscrete(initial) with Parameter { }
+
 // For factors between a Mixture and the child generated from that Mixture
 trait MixtureFamily extends GenerativeFamily {
   type FamilyType <: MixtureFamily
@@ -74,6 +76,7 @@ with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]]
     val result = new scala.collection.mutable.ArrayBuffer[MixtureFamily#Factor]
     for (factor <- childFactors) factor match {
       case f:MixtureFamily#Factor => if (f.family.gate(f).intValue == index) result += f
+      case f:PlatedMixtureFamily#Factor => throw new Error("Not yet implemented")
     }
     result
   }

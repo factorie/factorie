@@ -77,7 +77,8 @@ object ChainNER2 {
 
     // Predict, also by sampling, visiting each variable 3 times.
     val predictor = new VariableSettingsSampler[Label](model)
-    predictor.processAll(testLabels, 3)
+    //predictor.processAll(testLabels, 3)
+    for (i <- 0 until 3; label <- testLabels) predictor.process(label)
     
     // Evaluate
     println ("Train accuracy = "+ objective.aveScore(trainLabels))

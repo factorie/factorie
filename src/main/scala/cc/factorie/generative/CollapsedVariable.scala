@@ -17,25 +17,26 @@
 package cc.factorie.generative
 import cc.factorie._
 
-trait VarWithCollapsedType[+CT<:Variable /*<:CollapsedVar*/] extends GeneratedVar {
-  type CollapsedType = CT
-}
-
-/** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.
-    @author Andrew McCallum */
-trait CollapsibleVar extends GeneratedVar with VarWithCollapsedType[Variable] {
-  def newCollapsed: CollapsedType
-  // TODO Consider putting this in cc.factorie.Variable
-  def setFrom(v:Variable)(implicit d:DiffList): Unit
-  //def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit
-}
-// TODO Is there actually a need for CollapsibleVar; perhaps just CollapsibleParameter is enough?
-
-/** A Parameter that can be marginalized out (collapsed).
-    @see DirichletMultinomial
-    @author Andrew McCallum */
-trait CollapsibleParameter extends Parameter with CollapsibleVar with VarWithCollapsedType[Parameter]
-//trait CollapsibleParameterType[+CT<:Variable] extends CollapsibleParameter with VarWithCollapsedType[CT]
+//trait VarWithCollapsedType[+CT<:Variable /*<:CollapsedVar*/] extends GeneratedVar {
+//  type CollapsedType = CT
+//}
+//
+///** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.
+//    @author Andrew McCallum */
+//trait CollapsibleVar extends GeneratedVar with VarWithCollapsedType[Variable] {
+//  def newCollapsed: CollapsedType
+//  def setCollapsed: Unit
+//  // TODO Consider putting this in cc.factorie.Variable
+//  @deprecated("Will be removed in the future") def setFrom(v:Variable)(implicit d:DiffList): Unit
+//  //def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit
+//}
+//// TODO Is there actually a need for CollapsibleVar; perhaps just CollapsibleParameter is enough?
+//
+///** A Parameter that can be marginalized out (collapsed).
+//    @see DirichletMultinomial
+//    @author Andrew McCallum */
+//trait CollapsibleParameter extends Parameter with CollapsibleVar with VarWithCollapsedType[Parameter]
+////trait CollapsibleParameterType[+CT<:Variable] extends CollapsibleParameter with VarWithCollapsedType[CT]
 
 
 // TODO Remove this.

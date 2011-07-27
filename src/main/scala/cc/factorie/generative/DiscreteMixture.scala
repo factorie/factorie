@@ -18,7 +18,11 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-object DiscreteMixture extends /* TODO DiscreteGeneratingFamily with */ MixtureFamily with GenerativeFamilyWithStatistics3[GeneratedDiscreteVar,Mixture[Proportions],Gate] {
+trait DiscreteMixtureGeneratingFamily extends DiscreteGeneratingFamily with MixtureFamily {
+  type FamilyType <: DiscreteGeneratingFamily with MixtureFamily
+}
+
+object DiscreteMixture extends DiscreteMixtureGeneratingFamily /* TODO DiscreteGeneratingFamily with MixtureFamily */ with GenerativeFamilyWithStatistics3[GeneratedDiscreteVar,Mixture[Proportions],Gate] {
   def gate(f:Factor) = f._3
   def pr(s:StatisticsType) = s._2(s._3.intValue).apply(s._1.intValue)
   def sampledValue(s:StatisticsType): DiscreteValue = s._1.domain.getValue(s._2(s._3.intValue).sampleInt)

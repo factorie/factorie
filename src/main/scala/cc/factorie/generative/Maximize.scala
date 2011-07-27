@@ -19,14 +19,14 @@ import cc.factorie._
    usually maximum likelihood. 
    @author Andrew McCallum */
 class Maximize(val model:Model = GenerativeModel) {
-  def defaultMaximizers = Nil
+  def defaultMaximizers = Seq(DiscreteMaximizer, GatedDiscreteMaximizer)
   val maximizers = new scala.collection.mutable.ArrayBuffer[Maximizer] ++ defaultMaximizers
   def apply(variables:Seq[GeneratedVar]): Unit = {
     // The handlers can be assured that the Seq[Factor] will be sorted alphabetically by class name
-    val factors = model.factors(variables).sortWith((f1:Factor,f2:Factor) => f1.getClass.getName < f2.getClass.getName)
+    val factors = model.factors(variables)
     // This next line does the maximization
     val option = maximizers.find(maximizer => maximizer.maximize(variables, factors))
-    if (option == None) throw new Error("No maximizer found for factors "+factors.mkString)
+    if (option == None) throw new Error("No maximizer found for factors "+factors.take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString)
   }
 }
 object Maximize extends Maximize(GenerativeModel)
@@ -36,7 +36,7 @@ trait Maximizer {
   def maximize(variables:Seq[Variable], factors:Seq[Factor]): Boolean
 }
 
-object DiscreteMaximizer {
+object DiscreteMaximizer extends Maximizer {
   def maximize(variables:Seq[Variable], factors:Seq[Factor]): Boolean = {
     if (factors.size != 1) return false
     assert(variables.size == 1)
@@ -47,7 +47,7 @@ object DiscreteMaximizer {
   }
 }
 
-object GatedDiscreteMaximizer {
+object GatedDiscreteMaximizer extends Maximizer {
   def maximize(variables:Seq[Variable], factors:Seq[Factor]): Boolean = {
     if (variables.size != 1 || factors.size != 2 || !variables.head.isInstanceOf[Gate]) return false
     (variables.head, factors(1), factors(2)) match {

@@ -23,9 +23,9 @@ import scala.collection.mutable.{ListBuffer,HashSet,ArrayBuffer}
     @author Andrew McCallum */
 //@deprecated("In store for significant changes in the future.")
 // TODO Change this to GateVar or remove it?
-trait Gate extends DiscreteVariable {
+trait GateVar extends DiscreteVar {
   /** The collection of variable references controlled by the gate. */
-  private var _gatedRefs: List[AbstractGatedRefVariable] = Nil
+  protected var _gatedRefs: List[AbstractGatedRefVariable] = Nil
   def gatedRefs: List[AbstractGatedRefVariable] = _gatedRefs
   def +=(v:AbstractGatedRefVariable): this.type = {
     //println("Gate.+= "+v)
@@ -37,6 +37,9 @@ trait Gate extends DiscreteVariable {
     v.setByIndex(this.intValue)(null)
     this
   }
+}
+
+abstract class GateVariable(initial:Int) extends DiscreteVariable(initial) with GateVar {
   override def set(newIndex:Int)(implicit d:DiffList): Unit = {
     super.set(newIndex)
     if (_gatedRefs ne null) for (ref <- _gatedRefs) {
@@ -56,7 +59,7 @@ trait Gate extends DiscreteVariable {
     @author Andrew McCallum */
 // TODO !! Remove this
 trait AbstractGatedRefVariable {
-  def gate: Gate
+  def gate: GateVar
   //def gate_=(g:Gate): Unit
   def domainSize: Int
   def setToNull(implicit d:DiffList): Unit
@@ -68,7 +71,7 @@ trait AbstractGatedRefVariable {
     @author Andrew McCallum */
 trait GatedRefVariable[A<:AnyRef] extends RefVariable[A] with AbstractGatedRefVariable {
   //type VariableType <: GatedRefVariable[A]
-  def gate: Gate // TODO Are we sure we need to know who our gate is?  Can we save memory by deleting this?
+  def gate: GateVar // TODO Are we sure we need to know who our gate is?  Can we save memory by deleting this?
   /** Not the current value of this GatedRefVariable.
       Returns the value associated with a certain integer index value of the gate.  
       The gate uses this to call grf.set(grf.valueForIndex(this.intValue)).  */

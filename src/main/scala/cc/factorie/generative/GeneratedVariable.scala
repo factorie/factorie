@@ -35,6 +35,7 @@ trait GeneratedVar extends VarWithFactors {
   def factors: Seq[GenerativeFamily#Factor] = List(parentFactor)
   def sampledValue: Value = {
     val generativeTemplate = parentFactor.family
+    //println("GeneratedVar.sampledValue generativeFamily "+generativeTemplate.getClass)
     generativeTemplate.sampledValue(parentFactor.statistics.asInstanceOf[generativeTemplate.StatisticsType]).asInstanceOf[Value]
   }
   // TODO Consider template.pr(parentFactor) for efficiency
@@ -46,7 +47,8 @@ trait GeneratedVar extends VarWithFactors {
     parentFactor = f
     this
   }*/
-  def ~[V<:VariableType with GeneratedVar](partialFactor:Function1[V,GenerativeFamily#Factor]): this.type = {
+  // TODO The type parameter below doesn't actually enforce what we want.  Fix this.
+  def ~[V<:this.VariableType with GeneratedVar](partialFactor:Function1[V,GenerativeFamily#Factor]): this.type = {
     assert(parentFactor eq null)
     parentFactor = partialFactor(this.asInstanceOf[V])
     for (p <- parentFactor.variables.tail) p.asInstanceOf[Parameter].addChild(this) // TODO Think about this more.
@@ -81,7 +83,7 @@ trait MutableGeneratedVar extends GeneratedVar with MutableVar {
     set(this.sampledValue)(d)
     this
   }
-  def :~[V<:VariableType](partialFactor:Function1[V,GenerativeFamily#Factor]): this.type = {
+  def :~[V<:this.VariableType](partialFactor:Function1[V,GenerativeFamily#Factor]): this.type = {
     this ~ partialFactor
     this.set(this.sampledValue)(null)
     this

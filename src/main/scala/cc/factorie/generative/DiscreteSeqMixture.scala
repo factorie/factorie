@@ -18,7 +18,11 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-object PlatedDiscreteMixture extends GenerativeFamilyWithStatistics3[PlatedGeneratedDiscreteVar,Mixture[Proportions],PlatedGate] with MixtureFamily {
+trait PlatedDiscreteMixtureGeneratingFamily extends PlatedDiscreteGeneratingFamily /*with MixtureFamily*/ {
+  type FamilyType <: DiscreteGeneratingFamily //with MixtureFamily
+}
+
+object PlatedDiscreteMixture extends PlatedDiscreteMixtureGeneratingFamily with GenerativeFamilyWithStatistics3[PlatedGeneratedDiscreteVar,Mixture[Proportions],PlatedGate] {
   def gate(f:Factor) = throw new Error("Not yet implemented. Need to make PlatedGate be a Gate?") // f._3
   def pr(s:Stat): Double = pr(s._1, s._2, s._3)
   def pr(ds:Seq[DiscreteValue], mixture:Seq[IndexedSeq[Double]], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => mixture(tuple._2.intValue).apply(tuple._1.intValue)).product
@@ -29,4 +33,5 @@ object PlatedDiscreteMixture extends GenerativeFamilyWithStatistics3[PlatedGener
     for (i <- 0 until gates.length) yield d.getValue(mixture(gates(i).intValue).sampleInt) 
   def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = throw new Error
   def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value = throw new Error
+  def prValue(s:StatisticsType, value:Int, index:Int): Double = throw new Error
 }

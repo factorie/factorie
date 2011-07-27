@@ -16,7 +16,14 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
-abstract class PlatedGate(initial:Seq[Int]) extends PlatedDiscrete(initial) with Parameter
+abstract class PlatedGate(initial:Seq[Int]) extends PlatedDiscrete(initial) with Parameter {
+  def this(len:Int) = this(Seq.fill(len)(0))
+}
+
+// TODO Consider:  
+trait PlatedMixtureFamily extends GenerativeFamily {
+  type FamilyType <: PlatedMixtureFamily
+}
 
 trait PlatedMixtureGenerativeFamily extends GenerativeFamily {
   type FamilyType <: PlatedMixtureGenerativeFamily

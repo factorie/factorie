@@ -67,7 +67,7 @@ with VarAndValueGenericDomain[Proportions,ProportionsValue]
   def pr(index:Int) = apply(index)
   def logpr(index:Int) = math.log(apply(index))
   def maxPrIndex: Int = { var maxIndex = 0; var i = 1; while (i < length) { if (this(i) > this(maxIndex)) maxIndex =i; i += 1 }; maxIndex }
-  override def toString = this.take(100).mkString(printName+"(", ",", ")")
+  override def toString = this.take(10).mkString(printName+"(", ",", ")")
 
   class DiscretePr(val index:Int, val pr:Double)
   def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
@@ -84,6 +84,7 @@ trait CategoricalProportions[A] extends Proportions {
     entries.map({case (p,i)=>new DiscretePr(i, p, categoricalDomain.getCategory(i).toString)})
   }
   def topValues(n:Int) = top(n).toList.map(_.value)
+  // TODO Make a topCategories method
 }
 
 trait MutableProportions extends Proportions /*with MutableGeneratedVar*/ /*with Estimation[MutableProportions]*/ {
@@ -114,6 +115,7 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions {
   }
 }
 
+// TODO Change this to a Maximizer
 object MutableProportionsEstimator {
   def estimate(p:MutableProportions, map:scala.collection.Map[Variable,Variable] = Map[Variable,Variable]()): Unit = {
     val e = new DenseCountsProportions(p.length)
@@ -153,7 +155,7 @@ class GrowableUniformProportions(val sizeProxy:Iterable[_]) extends Proportions 
 }
 
 
-class DenseCountsProportions(len:Int) extends MutableProportions with CollapsibleParameter with VarWithCollapsedType[DenseCountsProportions] {
+class DenseCountsProportions(len:Int) extends MutableProportions {
   def this(p:Seq[Double]) = { this(p.length); this.set(p)(null) }
   protected var _counts = new Array[Double](len)
   protected var _countsTotal = 0.0
@@ -180,7 +182,7 @@ class DenseCountsProportions(len:Int) extends MutableProportions with Collapsibl
   def setFrom(v:Variable)(implicit d:DiffList): Unit = v match {
     case dcp:DenseCountsProportions if (dcp == this) => {}
   }
-  def newCollapsed: DenseCountsProportions = {
+  def setCollapsed: Unit = {
     //parentFactor.family.resetCollapsedChild(parentFactor)
     this.zero()
     // TODO Check to make sure that both "updates" below return true indicating success
@@ -189,7 +191,6 @@ class DenseCountsProportions(len:Int) extends MutableProportions with Collapsibl
     require(b1)
     require(b2)
     //for (factor <- childFactors) factor match { case f:Discrete.Factor => increment(f._1.intValue, 1.0)(null) }
-    this
   }
   //class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
   //override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i))}).filter(_.pr > 0.0)

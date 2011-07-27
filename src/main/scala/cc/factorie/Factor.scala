@@ -38,6 +38,8 @@ trait Factor extends Model with Ordered[Factor] {
   def outer_=(f:Factor): Unit = throw new Error("Re-assigning Factor.outer not supported.")
   def inner: Seq[Factor] = Nil
   def inner_=(f:Seq[Factor]): Unit = throw new Error("Re-assigning Factor.inner not supported.")
+  /** Returns the collection of variables neighboring this factor. */
+  def variables: Seq[Variable] // = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
   /** The number of variables neighboring this factor. */
   def numVariables: Int
   def variable(index: Int): Variable
@@ -49,8 +51,6 @@ trait Factor extends Model with Ordered[Factor] {
   def factors(variables:Iterable[Variable]): Seq[Factor] = if (variables.exists(touches(_))) Seq(this) else Nil
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
   override def score: Double = statistics.score
-  /** Returns the collection of variables neighboring this factor. */
-  def variables: Seq[Variable] // = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
   def values: Values                   
   /** Randomly selects and returns one of this factor's neighbors. */
   @deprecated def randomVariable(implicit random:Random = cc.factorie.random): Variable = variable(random.nextInt(numVariables))
@@ -107,7 +107,7 @@ trait Factor extends Model with Ordered[Factor] {
     These are necessary to construct a Statistics object. */
 trait Values /* extends Product with Ordered[Values] */ {
   // def factor: Factor // TODO Consider adding this method
-  def outer: Values = null
+  def outer: Values = null  // TODO Remove this
   def inner: Seq[Values] = Nil
   def statistics: Statistics
   def score: Double = statistics.score
@@ -119,7 +119,7 @@ trait Values /* extends Product with Ordered[Values] */ {
     There is one of these for each Factor. */
 trait Statistics {
   // def factor: Factor // TODO Consider adding this method
-  def outer: Statistics = null
+  def outer: Statistics = null // TODO Remove this
   def inner: Seq[Statistics] = Nil
   def score: Double
 }

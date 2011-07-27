@@ -32,17 +32,18 @@ trait DiscreteGeneratingFamily extends GenerativeFamily {
   def prValue(s:cc.factorie.Statistics, value:Int): Double = prValue(s.asInstanceOf[StatisticsType], value)
   def prValue(f:FactorType, value:Int): Double
   //def discreteChild(f:FactorType): GeneratedDiscreteVar
-  trait Factor extends super.Factor {
+  // Nice idea if this following would work, but "extends super.Factor" is not dynamically bound by mixin order! :-(
+  /*trait Factor extends super.Factor {
     def discreteGeneratingFamily = DiscreteGeneratingFamily.this
     //override def _1: GeneratedDiscreteVar
     def child = _1
     def prValue(s:StatisticsType, value:Int): Double = DiscreteGeneratingFamily.this.prValue(s, value)
     def prValue(value:Int): Double = DiscreteGeneratingFamily.this.prValue(this.asInstanceOf[FactorType], value)
-  }
+  }*/
   //type StatisticsType <: Statistics
-  trait Statistics extends super.Statistics {
+  /*trait Statistics extends super.Statistics {
     def prValue(value:Int): Double = DiscreteGeneratingFamily.this.prValue(this.asInstanceOf[StatisticsType], value)
-  }
+  }*/
 }
 
 object Discrete extends DiscreteGeneratingFamily with GenerativeFamilyWithStatistics2[GeneratedDiscreteVar,Proportions] /*with DiscreteGeneratingFamily*/ {

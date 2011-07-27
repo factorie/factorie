@@ -30,6 +30,11 @@ import java.io._
   }
 }*/
 
+// TODO Consider making a family-less
+// class Factor2[N1<:Variable,N2<:Variable](_1:N1, _2:N2)
+// or
+// trait Factor2[N1<:Variable,N2<:Variable] { def _1:N1; def _2:N2 }
+
 trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains /*with Factor2[N1,N2]*/ {
   type NeighborType1 = N1
   type NeighborType2 = N2

@@ -22,12 +22,23 @@ abstract class PlatedDiscrete(initialValue:Seq[Int]) extends DiscreteSeqVariable
 trait PlatedGeneratedCategoricalVar[A] extends CategoricalSeqVariable[A] with PlatedGeneratedDiscreteVar
 abstract class PlatedCategorical[A](initialValue:Seq[A]) extends CategoricalSeqVariable(initialValue) with PlatedGeneratedCategoricalVar[A]
 
+trait PlatedDiscreteGeneratingFamily extends GenerativeFamily {
+  def prValue(s:StatisticsType, value:Int, index:Int): Double
+}
+
 object PlatedDiscrete extends GenerativeFamilyWithStatistics2[PlatedGeneratedDiscreteVar,Proportions] {
+  //type FamilyType = PlatedDiscrete
   def pr(s:Stat): Double = pr(s._1, s._2)
   def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
-  override def logpr(s:Stat): Double = logpr(s._1, s._2)
+  override def logpr(s:StatisticsType): Double = logpr(s._1, s._2)
   def logpr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => math.log(p(dv.intValue))).sum
-  def sampledValue(s:Stat): Seq[DiscreteValue] = sampledValue(s._1.first.domain, s._1.length, s._2)
+  def sampledValue(s:StatisticsType): Seq[DiscreteValue] = sampledValue(s._1.first.domain, s._1.length, s._2)
   def sampledValue(d:DiscreteDomain, length:Int, p:ProportionsValue): Seq[DiscreteValue] = 
     ArrayBuffer.fill(length)(d.getValue(p.sampleInt))
+  def updateCollapsedParents(f:Factor, index:Int, weight:Double): Unit = {
+    f._2 match {
+      case p:DenseCountsProportions => { p.increment(f._1(index).intValue, weight)(null); true }
+      case _ => false
+    }
+  }
 }
