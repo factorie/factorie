@@ -86,6 +86,10 @@ abstract class DiscreteSeqVariable extends SeqVar[DiscreteValue] with VarAndElem
   def domain: DiscreteSeqDomain
   def appendInt(i:Int): Unit = _seq += domain.elementDomain.getValue(i)
   def intValue(seqIndex:Int): Int = _seq(seqIndex).intValue
+  def set(seqIndex:Int, newValue:Int)(implicit d:DiffList): Unit = {
+    require(d eq null)
+    _seq(seqIndex) = domain.elementDomain.getValue(newValue)
+  }
 }
 
 class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain[Seq[CategoricalValue[C]]] {

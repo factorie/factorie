@@ -110,20 +110,6 @@ trait Model {
   def score: Double = factors.foldLeft(0.0)((sum, f) => sum + f.score)
 }
 
-/*
-object GenerativeModel extends Model {
-  /** Only works on Iterable[GeneratedVar] */
-  def factors(variables:Iterable[Variable]): Seq[Factor] = {
-    val result = new ArrayBuffer[Factor]
-    variables.foreach(v => v match {
-      case p:cc.factorie.generative2.Parameter => { result += p.parentFactor; result ++= p.childFactors }
-      case gv:cc.factorie.generative2.GeneratedVar => result += gv.parentFactor
-    })
-    normalize(result)
-  }
-}
-*/
-
 
 /** A Model that concatenates the factors of multiple contained models.
     @author Andrew McCallum

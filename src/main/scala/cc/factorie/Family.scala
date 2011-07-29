@@ -30,6 +30,7 @@ trait Family {
   type FactorType <: Factor
   type ValuesType <: Values
   type StatisticsType <: Statistics
+  type NeighborType1
   /** The method responsible for mapping a Statistic object to a real-valued score.  
       Called by the Statistic.score method; implemented here so that it can be easily overriden in user-defined subclasses of Template. */
   def score(s:StatisticsType): Double
@@ -40,8 +41,9 @@ trait Family {
   def setFactorName(n:String): this.type = { factorName = n; this }
   /** Assign this Template a name which will be used later when its factors are printed. */
   def %(n:String): this.type = setFactorName(n) // because % is the comment character in shell languages such as /bin/sh and Makefiles.
-  trait Factor extends cc.factorie.Factor { 
+  trait Factor extends cc.factorie.Factor {
     def family: FamilyType = Family.this.asInstanceOf[FamilyType];
+    def _1: NeighborType1
     override def statistics: StatisticsType
     override def cachedStatistics: StatisticsType = statistics
     override def factorName = family.factorName

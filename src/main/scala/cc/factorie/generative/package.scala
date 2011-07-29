@@ -19,14 +19,25 @@ import cc.factorie._
 
 package object generative {
 
-  type GenerativeFactor = GenerativeTemplate#Factor
+  type GenerativeFactor = GenerativeFamily#Factor
 
-  val defaultGenerativeModel = new TemplateModel(
-      new DiscreteTemplate, 
-      new DiscreteMixtureTemplate,
-      new PlatedDiscreteTemplate,
-      new PlatedDiscreteMixtureTemplate,
-      new GaussianTemplate)
+  object GenerativeModel extends Model {
+    /** Only works on Iterable[GeneratedVar] */
+    def factors(variables:Iterable[Variable]): Seq[Factor] = {
+      val result = new scala.collection.mutable.ArrayBuffer[Factor];
+      variables.foreach(v => v match {
+        case p:Parameter => { 
+          if (p.parentFactor ne null) result += p.parentFactor // In particular MixtureComponent current has a null parentFactor
+          result ++= p.childFactors 
+        }
+        case gv:GeneratedVar => if (gv.parentFactor != null) result += gv.parentFactor
+      })
+      // TODO If a parent is a deterministic function (through a deterministic factor), also return factors that are parents of the deterministic factor
+      // TODO Likewise for children?  Or perhaps not necessary.
+      normalize(result)
+    }
+  }
+
 
   implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
     val value: IndexedSeq[Double] = s.toIndexedSeq
@@ -37,5 +48,9 @@ package object generative {
   
   //implicit val denseDirichletEstimator = new DenseDirichletEstimator
   //implicit val mutableProportionsEstimator = new MutableProportionsEstimator
+  
+  // TODO Consider generic mixtures like this:
+  //new Word(str) ~ Mixture(phis)(Discrete(_))
 
 }
+

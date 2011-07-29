@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 //import cc.factorie.la.ArrayLA.Implicits._
 
-class CollapsedVariationalBayes(collapse:Iterable[CollapsibleParameter], marginalize:Iterable[Variable with QDistribution], model:Model = cc.factorie.generative.defaultGenerativeModel) {
+class CollapsedVariationalBayes(collapse:Iterable[GeneratedVar], marginalize:Iterable[Variable with QDistribution], model:Model = cc.factorie.generative.GenerativeModel) {
   val handlers = new ArrayBuffer[CollapsedVariationalBayesHandler]
   //def defaultHandlers = List(GeneratedVariableCollapsedVariationalBayesHandler, MixtureChoiceCollapsedVariationalBayesHandler)
   def defaultHandlers = throw new Error("Not yet implemented")
@@ -27,9 +27,10 @@ class CollapsedVariationalBayes(collapse:Iterable[CollapsibleParameter], margina
   private val _q = new HashMap[Variable,Variable]
   def collapsedMap = _c
   def qMap = _q
-  collapse.foreach(v => _c(v) = v.newCollapsed)
+  //collapse.foreach(v => _c(v) = v.newCollapsed)
+  collapse.foreach(v => Collapse(Seq(v)))
   marginalize.foreach(v => _q(v) = v.newQ)
-  def collapsed[V<:CollapsibleParameter](v:V) = _c(v).asInstanceOf[V#CollapsedType]
+  //def collapsed[V<:CollapsibleParameter](v:V) = _c(v).asInstanceOf[V#CollapsedType]
   def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
   def collapsedOrSelf(v:Parameter): Parameter = _c.getOrElse(v, v)
   def collapsedp2[P<:Parameter](v:P): P = _c.getOrElse(v, v).asInstanceOf[P]
@@ -41,7 +42,7 @@ class CollapsedVariationalBayes(collapse:Iterable[CollapsibleParameter], margina
   def children(p:Parameter): Iterable[GeneratedVar] = throw new Error
 
   def process(v:MutableGeneratedVar): DiffList = {
-    assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable
+    //assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable
     // Get factors, in sorted order of the their classname
     val factors = model.factors(Seq(v)).sortWith((f1:Factor,f2:Factor) => f1.factorName < f2.factorName)
     var done = false

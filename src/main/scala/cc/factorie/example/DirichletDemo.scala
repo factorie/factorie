@@ -20,7 +20,7 @@ import cc.factorie.generative._
 object DirichletDemo {
 
   def main(args:Array[String]): Unit = {
-    
+    /*
     object WordDomain extends EnumDomain {
       val one, two, three, four, five, six = Value
     }
@@ -29,7 +29,7 @@ object DirichletDemo {
     }
    
     val dirmean = new DenseProportions(WordDomain.size)
-    val dirprec = new RealVariableParameter(1.0)
+    val dirprec = new RealParameter(1.0)
     println("Dirichlet1 mean = "+dirmean.toSeq)
     println("Dirichlet1 prec = "+dirprec.doubleValue)
    
@@ -47,7 +47,7 @@ object DirichletDemo {
     DirichletMomentMatching.estimate(dirmean, dirprec)
     println("Dirichlet2 mean = "+dirmean.toSeq)
     println("Dirichlet2 prec = "+dirprec.doubleValue)
-
+*/
   }
   
 }

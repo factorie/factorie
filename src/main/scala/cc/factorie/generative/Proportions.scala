@@ -18,10 +18,16 @@ import cc.factorie._
 // Proportions is a Seq[Double] that sums to 1.0
 // Discrete ~ DiscreteDistribution(Proportions)
 
-// TODO Make a GeneratedProportions trait, which implements sampleFrom and prFrom, etc.  No.  Isn't this what Dirichlet is? -akm
-
 trait ProportionsValue extends IndexedSeq[Double] {
   def sampleInt: Int = maths.nextDiscrete(this)
+  def maxInt: Int = { 
+    var i = 0; var maxi = 0; var maxd = 0.0
+    while (i < length) { 
+      if (this(i) > maxd) { maxd = this.apply(i); maxi = i }
+      i += 1 
+    } 
+    i
+  }
   def entropy: Double = maths.entropy(this)
   def klDivergence(p:ProportionsValue): Double = maths.klDivergence(this, p)
   def jsDivergence(p:ProportionsValue): Double = maths.jensenShannonDivergence(this, p)
@@ -33,7 +39,7 @@ class ProportionsArrayValue(value:Array[Double]) extends ProportionsValue {
   final def update(i:Int, v:Double) = array(i) = v
 }
 
-trait Proportions extends Parameter with DiscreteGenerating with IndexedSeqEqualsEq[Double] with ProportionsValue
+trait Proportions extends GeneratedVar with Parameter with DiscreteGenerating with IndexedSeqEqualsEq[Double] with ProportionsValue
 with VarAndValueGenericDomain[Proportions,ProportionsValue]
 /*with VarAndValueGenericDomain[Proportions,Seq[Double]]*/ 
 {
@@ -61,7 +67,7 @@ with VarAndValueGenericDomain[Proportions,ProportionsValue]
   def pr(index:Int) = apply(index)
   def logpr(index:Int) = math.log(apply(index))
   def maxPrIndex: Int = { var maxIndex = 0; var i = 1; while (i < length) { if (this(i) > this(maxIndex)) maxIndex =i; i += 1 }; maxIndex }
-  override def toString = this.mkString(printName+"(", ",", ")")
+  override def toString = this.take(10).mkString(printName+"(", ",", ")")
 
   class DiscretePr(val index:Int, val pr:Double)
   def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
@@ -78,11 +84,12 @@ trait CategoricalProportions[A] extends Proportions {
     entries.map({case (p,i)=>new DiscretePr(i, p, categoricalDomain.getCategory(i).toString)})
   }
   def topValues(n:Int) = top(n).toList.map(_.value)
+  // TODO Make a topCategories method
 }
 
-trait MutableProportions extends Proportions /*with MutableGeneratedVar*/ with Estimation[MutableProportions] {
+trait MutableProportions extends Proportions /*with MutableGeneratedVar*/ /*with Estimation[MutableProportions]*/ {
   def set(p:ProportionsValue)(implicit d:DiffList): Unit
-  def defaultEstimator: Estimator[MutableProportions] = MutableProportionsEstimator
+  //def defaultEstimator: Estimator[MutableProportions] = MutableProportionsEstimator
 }
 
 class DenseProportions(p:Seq[Double]) extends MutableProportions {
@@ -108,12 +115,14 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions {
   }
 }
 
-object MutableProportionsEstimator extends Estimator[MutableProportions] {
-  def estimate(d:MutableProportions, map:scala.collection.Map[Variable,Variable]): Unit = {
-    val e = new DenseCountsProportions(d.length)
-    for (child <- d.children) child match {
-      case x:DiscreteVar => e.increment(x.intValue, 1.0)(null)
-      case p:Proportions => forIndex(p.length)(i => e.increment(i, p(i))(null))
+// TODO Change this to a Maximizer
+object MutableProportionsEstimator {
+  def estimate(p:MutableProportions, map:scala.collection.Map[Variable,Variable] = Map[Variable,Variable]()): Unit = {
+    val e = new DenseCountsProportions(p.length)
+    p.parentFactor match { case f:Dirichlet.Factor => e.set(f._2)(null); case null => {} }
+    for (factor <- p.childFactors) factor match {
+      case d:Discrete.Factor => e.increment(d._1.intValue, 1.0)(null)
+      //case p:Proportions => forIndex(p.length)(i => e.increment(i, p(i))(null))
     }
     // TODO The above no longer works for weighted children!  
     // This will be a problem for EM.
@@ -122,7 +131,7 @@ object MutableProportionsEstimator extends Estimator[MutableProportions] {
       case x:DiscreteVar => e.increment(x.intValue, weight)(null)
       case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
     }*/
-    d.set(e)(null)
+    p.set(e)(null)
   }
 }
 
@@ -170,6 +179,19 @@ class DenseCountsProportions(len:Int) extends MutableProportions {
     else _counts(index) / _countsTotal
   }
   def zero(): Unit = { java.util.Arrays.fill(_counts, 0.0); _countsTotal = 0.0 }
+  def setFrom(v:Variable)(implicit d:DiffList): Unit = v match {
+    case dcp:DenseCountsProportions if (dcp == this) => {}
+  }
+  def setCollapsed: Unit = {
+    //parentFactor.family.resetCollapsedChild(parentFactor)
+    this.zero()
+    // TODO Check to make sure that both "updates" below return true indicating success
+    val b1 = parentFactor.family.updateCollapsedChild(parentFactor)
+    val b2 = childFactors.forall(f => f.family.updateCollapsedParents(f, 1.0))
+    require(b1)
+    require(b2)
+    //for (factor <- childFactors) factor match { case f:Discrete.Factor => increment(f._1.intValue, 1.0)(null) }
+  }
   //class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
   //override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i))}).filter(_.pr > 0.0)
   case class DenseCountsProportionsDiff(index:Int, incr:Double) extends Diff {
@@ -179,9 +201,9 @@ class DenseCountsProportions(len:Int) extends MutableProportions {
   }
 }
 
-class GrowableDenseCountsProportions(initialCapacity:Int = 32) extends DenseCountsProportions(initialCapacity) {
+class GrowableDenseCountsProportions(val dimensionDomain:DiscreteDomain, initialCapacity:Int = 32) extends DenseCountsProportions(initialCapacity) {
   private var _size: Int = 0
-  override def length: Int = _size // new Exception().printStackTrace()
+  override def length: Int = math.max(_size, dimensionDomain.size) // new Exception().printStackTrace()
   override def counts(index:Int):Double = if (index < _counts.size) _counts(index) else 0.0
   protected def ensureCapacity(size:Int): Unit = if (_counts.size < size) {
     val newSize = math.max(_counts.size * 2, size)
@@ -255,20 +277,3 @@ abstract class SortedSparseCountsProportions(dim:Int) extends CountsProportions 
 
 
 
-// The binary special case, for convenience
-
-/** The outcome of a coin flip, with boolean value.  */
-class Flip(coin:Coin, value:Boolean = false) extends BooleanVariable(value) with GeneratedDiscreteVar {
-  setProportions(coin)
-  coin.addChild(this)(null)
-}
-/** A coin, with Multinomial distribution over outcomes, which are Flips. */
-class Coin(p:Double) extends DenseProportions(Seq(1.0-p, p)) {
-  def this() = this(0.5)
-  assert (p >= 0.0 && p <= 1.0)
-  def flip: Flip = { val f = new Flip(this); f.set(this.sampleInt)(null); f }
-  def flip(n:Int) : Seq[Flip] = for (i <- 0 until n) yield flip
-}
-object Coin { 
-  def apply(p:Double) = new Coin(p)
-}

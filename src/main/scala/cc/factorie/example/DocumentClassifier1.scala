@@ -59,6 +59,13 @@ object DocumentClassifier1 {
     
     val infogains = new classify.InfoGain(documents)
     println(infogains.top(20).mkString)
+    println()
+    val plig = new classify.PerLabelInfoGain(documents)
+    for (label <- LabelDomain.values) println(label.category+": "+plig.top(label, 20))
+    println()
+    val pllo = new classify.PerLabelLogOdds(documents)
+    for (label <- LabelDomain.values) println(label.category+": "+pllo.top(label, 20))
+    println()
 
     // Make a test/train split
     val (testSet, trainSet) = documents.shuffle.split(0.5)

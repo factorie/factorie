@@ -22,78 +22,47 @@ import cc.factorie._
 //  variance.addCascade(this)
 //}
 
-class GaussianTemplate extends GenerativeTemplateWithStatistics3[Gaussian,GaussianMeanParameter,GaussianVarianceParameter] {
-  def unroll1(g:Gaussian) = Factor(g, g.mean, g.variance)
-  def unroll2(m:GaussianMeanParameter) = for (g <- m.childrenOfClass[Gaussian]) yield Factor(g, m, g.variance)
-  def unroll3(v:GaussianVarianceParameter) = for (g <- v.childrenOfClass[Gaussian]) yield Factor(g, g.mean, v)
-  def logpr(s:Stat): Double = logpr(s._1, s._2, s._3)
+object Gaussian extends GenerativeFamilyWithStatistics3[GeneratedRealVar,RealVarParameter,RealVarParameter] {
   def logpr(value:Double, mean:Double, variance:Double): Double = {
     val diff = value - mean
     return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
   }
-  def pr(s:Stat) = math.exp(logpr(s))
-  def sampledValue(s:Stat): Double = sampledValue(s._2, s._3)
+  override def logpr(s:StatisticsType): Double = logpr(s._1, s._2, s._3)
+  def pr(value:Double, mean:Double, variance:Double): Double = math.exp(logpr(value, mean, variance))
+  def pr(s:StatisticsType) = math.exp(logpr(s))
   def sampledValue(mean:Double, variance:Double): Double = maths.nextGaussian(mean, variance)(cc.factorie.random)
-}
-object GaussianTemplate extends GaussianTemplate
-object GaussianVarianceConstant1 extends GaussianVarianceParameter { def doubleValue = 1.0 }
-
-class Gaussian(val mean:GaussianMeanParameter, val variance:GaussianVarianceParameter = GaussianVarianceConstant1, initialValue: Double = 0.0) extends RealVariable(initialValue) with MutableGeneratedVar {
-  mean.addChild(this)(null)
-  variance.addChild(this)(null)
-  val generativeTemplate = GaussianTemplate
-  def generativeFactor = new GaussianTemplate.Factor(this, mean, variance)
-  override def toString = "Gaussian(mean="+mean.doubleValue+",variance="+variance.doubleValue+")"
+  def sampledValue(s:StatisticsType): Double = sampledValue(s._2, s._3)
 }
 
-trait GaussianMeanParameter extends RealVarParameter
-class GaussianMeanVariable(x:Double) extends RealVariableParameter(x) with GaussianMeanParameter with Estimation[GaussianMeanVariable] {
-  def defaultEstimator = GaussianMeanEstimator
-}
+// TODO Complete something like this
+//object PlatedGaussian extends GenerativeFamilyWithStatistics3[GeneratedRealVar,RealVarParameter,RealVarParameter] 
 
-trait GaussianVarianceParameter extends RealVarParameter
-class GaussianVarianceVariable(x:Double) extends RealVariableParameter(x) with GaussianVarianceParameter
-
-// TODO or consider instead the following, so that the same RealVar can be used as
-// multiple different parameter types?
-/*class GaussianMeanVariable(x:RealVar) extends RealFunction {
-  def doubleValue = x.doubleValue
-}*/
-
-object GaussianMeanEstimator extends Estimator[GaussianMeanVariable] {
-  def estimate(g:GaussianMeanVariable, map:scala.collection.Map[Variable,Variable]): Unit = {
-    var m = 0.0
-    var sum = 0.0
-    for (child <- g.children) child match {
-      case x:RealVar => { m += x.doubleValue; sum += 1.0 } 
-    }
-    // TODO The above no longer works for weighted children!  
-    // This will be a problem for EM.
-    /*for ((child, weight) <- g.weightedGeneratedChildren(map)) child match {
-      case x:RealVar => { m += x.doubleValue * weight; sum += weight }
-      //case g:GaussianDistribution...
-    }*/
-    g.set(m/sum)(null)
-  }
-}
-
-object Gaussian {
+object GaussianEstimator {
   def minSamplesForVarianceEstimate = 5
   /** This implements a moment-matching estimator. */
-  /*def estimate: Unit = {
-  	throw new Error
-    if (generatedSamples.size == 0) { mean = 0.0; variance = 1.0; return }
-    mean = 0.0
-    var weightSum = 0.0
-    for ((s,w) <- weightedGeneratedSamples) { mean += s.doubleValue * w; weightSum += w }
-    mean /= weightSum
-    if (weightSum < minSamplesForVarianceEstimate) { variance = 1.0; return }
-    variance = 0.0
-    for ((s,w) <- weightedGeneratedSamples) { 
-      val diff = mean - s.doubleValue
-      variance += diff * diff * w
+  def estimate(meanVar:MutableRealVarParameter, varianceVar:MutableRealVarParameter, map:scala.collection.Map[Variable,Variable] = null): Unit = {
+    require(map eq null) // TODO Otherwise not yet supported
+    // TODO Ignores the parents of 'mean' and 'variance'.  Fix this.
+    require(Set(meanVar.childFactors) == Set(varianceVar.childFactors)) // Expensive check may be unnecessary?
+    var mean = 0.0
+    var sum = 0.0
+    for (factor <- meanVar.childFactors) factor match {
+      case g:Gaussian.Factor if (g._2 == meanVar) => { mean += g._1.doubleValue; sum += 1.0 }
+      //case gm:GaussianMixture.Factor
     }
-    variance = math.sqrt(variance / (weightSum - 1))
+    mean /= sum
+    meanVar.set(mean)(null)
+    if (sum < minSamplesForVarianceEstimate) 
+      varianceVar.set(1.0)(null)
+    else {
+      var v = 0.0
+      for (factor <- varianceVar.childFactors) factor match {
+        case g:Gaussian.Factor if (g._3 == varianceVar) => { val diff = mean - g._1.doubleValue; v += diff * diff }
+        //  case gm:GaussianMixture.Factor
+      }
+      v = math.sqrt(v / (sum - 1))
+      varianceVar.set(v)(null)
+      // TODO Note this doesn't work for weighted children
+    }
   }
-    */
 }

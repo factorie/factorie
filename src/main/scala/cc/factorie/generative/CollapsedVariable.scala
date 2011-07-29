@@ -17,33 +17,37 @@
 package cc.factorie.generative
 import cc.factorie._
 
-trait VarWithCollapsedType[+CT<:CollapsedVar] extends GeneratedVar {
-  type CollapsedType = CT
-}
+//trait VarWithCollapsedType[+CT<:Variable /*<:CollapsedVar*/] extends GeneratedVar {
+//  type CollapsedType = CT
+//}
+//
+///** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.
+//    @author Andrew McCallum */
+//trait CollapsibleVar extends GeneratedVar with VarWithCollapsedType[Variable] {
+//  def newCollapsed: CollapsedType
+//  def setCollapsed: Unit
+//  // TODO Consider putting this in cc.factorie.Variable
+//  @deprecated("Will be removed in the future") def setFrom(v:Variable)(implicit d:DiffList): Unit
+//  //def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit
+//}
+//// TODO Is there actually a need for CollapsibleVar; perhaps just CollapsibleParameter is enough?
+//
+///** A Parameter that can be marginalized out (collapsed).
+//    @see DirichletMultinomial
+//    @author Andrew McCallum */
+//trait CollapsibleParameter extends Parameter with CollapsibleVar with VarWithCollapsedType[Parameter]
+////trait CollapsibleParameterType[+CT<:Variable] extends CollapsibleParameter with VarWithCollapsedType[CT]
 
-/** For variables that integrate themselves out, thus supporting collapsed Gibbs sampling.
-    @author Andrew McCallum */
-trait CollapsibleVar extends GeneratedVar with VarWithCollapsedType[CollapsedVar] {
-  def newCollapsed: CollapsedType
-  // TODO Consider putting this in cc.factorie.Variable
-  def setFrom(v:Variable)(implicit d:DiffList): Unit
-  //def setFromCollapsed(c:CollapsedType)(implicit d:DiffList): Unit
-}
-// TODO Is there actually a need for CollapsibleVar; perhaps just CollapsibleParameter is enough?
 
-/** A Parameter that can be marginalized out (collapsed).
-    @see DirichletMultinomial
-    @author Andrew McCallum */
-trait CollapsibleParameter extends Parameter with CollapsibleVar with VarWithCollapsedType[CollapsedParameter]
-
+// TODO Remove this.
 /** Something that represents the collapsing of an existing GeneratedVariable. */
-trait CollapsedVar extends GeneratedVar
+//trait CollapsedVar extends GeneratedVar
 
-trait CollapsedParameter extends CollapsedVar with Parameter {
-  /** Negative weight indicates removal of stats. */
+/*trait CollapsedParameter extends CollapsedVar with Parameter {
+  // Negative weight indicates removal of stats.
   def updateChildStats(child:Variable, weight:Double): Unit 
   def clearChildStats: Unit
-}
+}*/
 
 
 // /** DiscreteVar integrated out by a Multinomial distribution.

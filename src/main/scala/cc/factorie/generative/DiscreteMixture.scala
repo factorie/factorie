@@ -18,60 +18,23 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-class DiscreteMixtureTemplate extends GenerativeTemplateWithStatistics3[DiscreteMixtureVar,MixtureComponents[Proportions],MixtureChoiceVar] with MixtureGenerativeTemplate {
-  //class Factor(o:DiscreteMixtureVar, mc:MixtureComponents[Proportions], c:MixtureChoiceVar) extends super.Factor(o, mc, c)
-  def unroll1(d:DiscreteMixtureVar) = Factor(d, d.components, d.choice)
-  def unroll2(m:MixtureComponents[Proportions]) = for (d <- m.childrenOfClass[DiscreteMixtureVar]) yield Factor(d, m, d.choice)
-  def unroll3(g:MixtureChoiceVar) = for (d <- g.outcomesOfClass[DiscreteMixtureVar]; if (classOf[DiscreteMixtureVar].isAssignableFrom(d.getClass))) yield Factor(d, d.components, g)
-  def prChoosing(s:StatisticsType, mixtureIndex:Int) = pr(s._1.intValue, s._2, mixtureIndex)
-  def logprChoosing(s:StatisticsType, mixtureIndex:Int) = math.log(prChoosing(s, mixtureIndex))
-  def pr(s:StatisticsType): Double = pr(s._1.intValue, s._2, s._3.intValue)
-  def pr(value:Int, mixture:Seq[Proportions], mixtureIndex:Int): Double = {
-    //println("DiscreteMixtureTemplate component="+mixture(mixtureIndex).getClass+" "+mixture(mixtureIndex).getClass.getSuperclass)
-    mixture(mixtureIndex).apply(value)
-  }
-  def logpr(s:StatisticsType) = math.log(pr(s))
-  def sampledValue(s:StatisticsType): DiscreteValue = sampledValue(s._1.domain, s._2, s._3.intValue)
-  def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): DiscreteValue = sampledValue(s._1.domain, s._2, mixtureIndex)
-  def sampledValue(domain:DiscreteDomain, proportions:Seq[Proportions], mixtureIndex:Int): DiscreteValue = domain.getValue(proportions(mixtureIndex).sampleInt)
-}
-object DiscreteMixtureTemplate extends DiscreteMixtureTemplate
-
-trait DiscreteMixtureVar extends DiscreteVar with MixtureGeneratedVar {
-  val generativeTemplate = DiscreteMixtureTemplate
-  def generativeFactor = new DiscreteMixtureTemplate.Factor(this, components, choice)
-  private var _components: FiniteMixture[Proportions] = null
-  def components: FiniteMixture[Proportions] = _components
-  def setComponents(c:FiniteMixture[Proportions]): Unit = {
-    if (_components ne null) _components.removeChild(this)(null)
-    _components = c
-    _components.addChild(this)(null)
-  }
-  private var _choice: MixtureChoiceVar = null
-  def choice: MixtureChoiceVar = _choice
-  def setChoice(c:MixtureChoiceVar): Unit = {
-    if (_choice ne null) _choice.removeOutcome(this)
-    _choice = c
-    _choice.addOutcome(this)
-  }
-  def chosenParents = List(components(choice.intValue))
-  def proportions = components(choice.intValue)
-  // override for efficiency
-  override def prChoosing(mixtureIndex:Int) = components(choice.intValue).apply(this.intValue) 
-  override def sampledValueChoosing(mixtureIndex:Int): Value = domain.getValue(components(choice.intValue).sampleInt)
+trait DiscreteMixtureGeneratingFamily extends DiscreteGeneratingFamily with MixtureFamily {
+  type FamilyType <: DiscreteGeneratingFamily with MixtureFamily
 }
 
-abstract class DiscreteMixture(components: FiniteMixture[Proportions], choice:MixtureChoiceVar, initialValue:Int = 0) 
-         extends DiscreteVariable(initialValue) with DiscreteMixtureVar with MutableGeneratedVar 
-{
-  setComponents(components)
-  setChoice(choice)
-}
-
-abstract class CategoricalMixture[A](components: FiniteMixture[Proportions], choice:MixtureChoiceVar, initialValue:A)
-         extends CategoricalVariable(initialValue) with DiscreteMixtureVar with MutableGeneratedVar 
-{
-  setComponents(components)
-  setChoice(choice)
+object DiscreteMixture extends DiscreteMixtureGeneratingFamily /* TODO DiscreteGeneratingFamily with MixtureFamily */ with GenerativeFamilyWithStatistics3[GeneratedDiscreteVar,Mixture[Proportions],Gate] {
+  def gate(f:Factor) = f._3
+  def pr(s:StatisticsType) = s._2(s._3.intValue).apply(s._1.intValue)
+  def sampledValue(s:StatisticsType): DiscreteValue = s._1.domain.getValue(s._2(s._3.intValue).sampleInt)
+  def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = s._2(mixtureIndex).apply(s._1.intValue)
+  def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value = s._1.domain.getValue(s._2(mixtureIndex).sampleInt)
+  def prValue(f:Stat, intValue:Int): Double = f._2.apply(f._3.intValue).apply(intValue)
+  def prValue(f:Factor, intValue:Int): Double = f._2.apply(f._3.intValue).apply(intValue)
+  override def updateCollapsedParents(f:Factor, weight:Double): Boolean = {
+    f._2(f._3.intValue) match {
+      case p:DenseCountsProportions => { p.increment(f._1.intValue, weight)(null); true }
+      case _ => false // Just throw Error instead; change API to return Unit also and always throw Error for unsupported cases
+    }
+  }
 }
 

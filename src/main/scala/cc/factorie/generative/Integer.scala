@@ -15,11 +15,11 @@
 package cc.factorie.generative
 import cc.factorie._
 
-object DirichletMixture extends GenerativeFamilyWithStatistics3[Proportions,Mixture[Masses],Gate] with MixtureFamily {
-  def gate(f:Factor) = f._3
-  def pr(s:StatisticsType) = Dirichlet.pr(s._1, s._2(s._3.intValue))
-  def sampledValue(s:StatisticsType): ProportionsValue = Dirichlet.sampledValue(s._2(s._3.intValue))
-  def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = Dirichlet.pr(s._1, s._2(mixtureIndex))
-  def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ProportionsValue = Dirichlet.sampledValue(s._2(mixtureIndex))
-}
+trait GeneratedIntegerVar extends IntegerVar with GeneratedVar
+abstract class Integer(initialInt: Int = 0) extends IntegerVariable(initialInt) with GeneratedIntegerVar with MutableGeneratedVar
+
+trait IntegerVarParameter extends IntegerVar with Parameter
+trait MutableIntegerVarParameter extends MutableIntegerVar with IntegerVarParameter
+class IntegerParameter(value:Int) extends IntegerVariable(value) with MutableIntegerVarParameter
+
 

@@ -15,9 +15,9 @@
 package cc.factorie.generative
 import cc.factorie._
 
-class EMInferencer[M<:Parameter with Estimation[M]] extends Inferencer[M,MixtureChoiceVar] {
+class EMInferencer[M<:Parameter] extends Inferencer[M,Gate] {
   type LatticeType = EMLattice[M]
-  def infer(variables:Iterable[M], varying:Iterable[MixtureChoiceVar]): LatticeType = {
+  def infer(variables:Iterable[M], varying:Iterable[Gate]): LatticeType = {
     val em = new EMLattice[M](varying, variables)
     em.process()
     em
@@ -27,31 +27,33 @@ class EMInferencer[M<:Parameter with Estimation[M]] extends Inferencer[M,Mixture
 /** Currently uses IID estimation for m-step inference, 
     but in the future the selection of inference method may be more configurable. 
     @author Andrew McCallum */
-class EMLattice[M<:Parameter with Estimation[M]]
-  (eVariables:Iterable[MixtureChoiceVar], 
+class EMLattice[M<:Parameter]
+  (eVariables:Iterable[Gate], 
    mVariables:Iterable[M],
-   eInferencer: VariableInferencer[MixtureChoiceVar] = new IIDDiscreteInferencer[MixtureChoiceVar](cc.factorie.generative.defaultGenerativeModel))
+   eInferencer: VariableInferencer[Gate] = new IIDDiscreteInferencer[Gate](cc.factorie.generative.GenerativeModel))
 extends Lattice[M]
 {
-  var eLattice: Lattice[MixtureChoiceVar] = null
+  var eLattice: Lattice[Gate] = null
   def eStep: Unit = eLattice = eInferencer.infer(eVariables)
+    /*
   def mStep: Unit = {
-    /** Map access to variable marginals. */
+    throw new Error
     val latticeMapping: scala.collection.Map[Variable,Variable] = new scala.collection.DefaultMap[Variable,Variable] {
       def get(v:Variable): Option[Variable] = v match {
-        case v:MixtureChoiceVar => eLattice.marginal(v) //.asInstanceOf[Variable]
+        case v:Gate => eLattice.marginal(v) //.asInstanceOf[Variable]
         case _ => None
       }
       def iterator: Iterator[(Variable,Variable)] = throw new Error
     }
-    mVariables.foreach(v => v.estimate(v.defaultEstimator, latticeMapping))
+    mVariables.foreach(v => Maximize(Seq(v)) //.estimate(v.defaultEstimator, latticeMapping)
   }
+    */
   /** Return true iff converged. */
   // TODO Implement a proper convergence criterion
   def process(iterations:Int = 10): Boolean = {
     forIndex(iterations)(i => {
       eStep
-      mStep
+//      mStep
     })
     false // TODO Determine convergence criterion
   }

@@ -82,7 +82,15 @@ trait DiscreteVarWithTarget extends DiscreteVarWithTargetValue with VarWithTarge
   //def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
 }
 
-class DiscreteVariableWithTarget()
+abstract class DiscreteVariableWithTarget(targetVal:Int) extends DiscreteVariable(targetVal) with DiscreteVarWithTarget {
+  self =>
+  val target = new DiscreteTarget(targetVal)
+  class DiscreteTarget(targetVal:Int) extends DiscreteVariable(targetVal) with DiscreteTargetVar with AimerType[DiscreteVariableWithTarget] {
+    def domain = self.domain
+    def aimer = self
+  }
+  
+}
 
 trait CategoricalTargetVar[A] extends CategoricalVariable[A] with DiscreteTargetVar with AimerType[CategoricalVar[A]]
 

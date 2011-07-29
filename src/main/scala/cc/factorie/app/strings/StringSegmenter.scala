@@ -50,5 +50,14 @@ object wordSegmenter extends RegexSegmenter("\\w+".r)
 object wordClassesSegmenter extends RegexSegmenter("\\p{Alpha}+|\\p{Digit}+".r)
 object nonWhitespaceSegmenter extends RegexSegmenter("\\S+".r)
 object nonWhitespaceClassesSegmenter extends RegexSegmenter("\\p{Alpha}+|\\p{Digit}+|\\p{Punct}".r)
-object csvSegmenter extends RegexSegmenter("(?<=\")([^\"]*)(?=\")|(?<=,|^)([^,]*)(?=,|$)".r)
 object foreignWordSegmenter extends RegexSegmenter("[\\p{L}\\p{P}]*\\p{L}".r)
+
+/** For segmenting fields of a comma-separated-value file.
+    Handles commas nested in quotes, 
+    but note that the outer quotes will be part of the returned segments. */
+object csvSegmenter extends RegexSegmenter("(?:\"([^\"]*)\")|(?:(?<=,|^)([^,]*)(?=,|$))".r)
+
+// Attempts to get rid of the quotes, which didn't work for me:
+//object csvSegmenter extends RegexSegmenter("\"([^\"]+?)\",?|([^,]+),?|,".r)
+//object csvSegmenter extends RegexSegmenter("(?<=\")([^\"]*)(?=\")|(?<=,|^)([^,]*)(?=,|$)".r)
+//object csvSegmenter extends RegexSegmenter("(?:(?<=\")([^\"]*)(?=\"))|(?<=,|^)([^,]*)(?=,|$)".r)

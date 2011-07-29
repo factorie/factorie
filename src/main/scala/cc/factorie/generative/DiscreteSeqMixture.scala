@@ -18,68 +18,20 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-class PlatedDiscreteMixtureTemplate extends GenerativeTemplateWithStatistics3[PlatedDiscreteMixtureVar,MixtureComponents[Proportions],PlatedMixtureChoiceVar] with PlatedMixtureGenerativeTemplate {
-  type TemplateType <: PlatedDiscreteMixtureTemplate
-  type ChildType <: PlatedDiscreteMixtureVar
-  def unroll1(d:PlatedDiscreteMixtureVar) = Factor(d, d.components, d.choice)
-  def unroll2(m:MixtureComponents[Proportions]) = for (d <- m.childrenOfClass[PlatedDiscreteMixtureVar]) yield Factor(d, m, d.choice)
-  def unroll3(g:PlatedMixtureChoiceVar) = {
-    //g.outcomes.foreach(o => { println(o.getClass); println(classOf[DiscreteMixtureSeqVar].isAssignableFrom(o.getClass)) })
-    val ret =  for (d <- g.outcomesOfClass[PlatedDiscreteMixtureVar]; if (classOf[PlatedDiscreteMixtureVar].isAssignableFrom(d.getClass))) yield 
-      Factor(d, d.components, g)
-    //println("DiscreteSeqMixtureTemplate "+ret.size)
-    ret
-  }
-  def prChoosing(s:StatisticsType, seqIndex:Int, mixtureIndex:Int) = pr(s._1(seqIndex).intValue, s._2, mixtureIndex)
-  def logprChoosing(s:StatisticsType, seqIndex:Int, mixtureIndex:Int) = math.log(prChoosing(s, seqIndex, mixtureIndex))
-  def pr(s:StatisticsType): Double = (0 until s._1.length).foldLeft(1.0)((p:Double,i:Int) => p * pr(s._1(i).intValue, s._2, s._3(i).intValue))
-  def pr(s:StatisticsType, seqIndex:Int): Double = pr(s._1(seqIndex).intValue, s._2, s._3(seqIndex).intValue)
-  def pr(value:Int, mixture:Seq[Proportions], mixtureIndex:Int): Double = {
-    //println("DiscreteMixtureTemplate component="+mixture(mixtureIndex).getClass+" "+mixture(mixtureIndex).getClass.getSuperclass)
-    mixture(mixtureIndex).apply(value)
-  }
-  def logpr(s:StatisticsType) = math.log(pr(s))
-  def sampledValue(s:StatisticsType): Seq[DiscreteValue] = sampledValue(s._1(0).domain, s._2, s._3.map(_.intValue))
-  def sampledValueChoosing(s:StatisticsType, mixtureIndices:Seq[Int]): Seq[DiscreteValue] = sampledValue(s._1(0).domain, s._2, mixtureIndices)
-  def sampledValue(domain:DiscreteDomain, proportions:Seq[Proportions], mixtureIndices:Seq[Int]): Seq[DiscreteValue] =
-    mixtureIndices.map(i => domain.getValue(proportions(i).sampleInt))
-}
-object PlatedDiscreteMixtureTemplate extends PlatedDiscreteMixtureTemplate
-
-trait PlatedDiscreteMixtureVar extends DiscreteSeqVariable with PlatedMixtureGeneratedVar {
-  val generativeTemplate = PlatedDiscreteMixtureTemplate
-  def generativeFactor = new PlatedDiscreteMixtureTemplate.Factor(this, components, choice)
-  private var _components: FiniteMixture[Proportions] = null
-  def components: FiniteMixture[Proportions] = _components
-  def setComponents(c:FiniteMixture[Proportions]): Unit = {
-    if (_components ne null) _components.removeChild(this)(null)
-    _components = c
-    _components.addChild(this)(null)
-  }
-  private var _choice: PlatedMixtureChoiceVar = null
-  def choice: PlatedMixtureChoiceVar = _choice
-  def setChoice(c:PlatedMixtureChoiceVar): Unit = {
-    if (_choice ne null) _choice.removeOutcome(this)
-    _choice = c
-    _choice.addOutcome(this)
-  }
-  //def chosenParents = List(components(choice.intValue))
-  //def proportions = components(choice.intValue)
-  // override for efficiency
-  override def prChoosing(seqIndex:Int, mixtureIndex:Int) = components(choice.intValue(seqIndex)).apply(this.intValue(seqIndex)) 
-  //override def sampledValueChoosing(mixtureIndex:Int): Value = domain.getValue(components(choice.intValue).sampleInt)
+trait PlatedDiscreteMixtureGeneratingFamily extends PlatedDiscreteGeneratingFamily /*with MixtureFamily*/ {
+  type FamilyType <: DiscreteGeneratingFamily //with MixtureFamily
 }
 
-abstract class PlatedDiscreteMixture(components: FiniteMixture[Proportions], choice:PlatedMixtureChoiceVar, initialValue:Seq[Int] = Nil) 
-         extends DiscreteSeqVariable(initialValue) with PlatedDiscreteMixtureVar with GeneratedVar 
-{
-  setComponents(components)
-  setChoice(choice)
-}
-
-abstract class PlatedCategoricalMixture[A](components: FiniteMixture[Proportions], choice:PlatedMixtureChoiceVar, initialValue:Seq[A] = Nil) 
-         extends CategoricalSeqVariable(initialValue) with PlatedDiscreteMixtureVar with GeneratedVar 
-{
-  setComponents(components)
-  setChoice(choice)
+object PlatedDiscreteMixture extends PlatedDiscreteMixtureGeneratingFamily with GenerativeFamilyWithStatistics3[PlatedGeneratedDiscreteVar,Mixture[Proportions],PlatedGate] {
+  def gate(f:Factor) = throw new Error("Not yet implemented. Need to make PlatedGate be a Gate?") // f._3
+  def pr(s:Stat): Double = pr(s._1, s._2, s._3)
+  def pr(ds:Seq[DiscreteValue], mixture:Seq[IndexedSeq[Double]], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => mixture(tuple._2.intValue).apply(tuple._1.intValue)).product
+  override def logpr(s:Stat): Double = logpr(s._1, s._2, s._3)
+  def logpr(ds:Seq[DiscreteValue], mixture:Seq[IndexedSeq[Double]], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => math.log(mixture(tuple._2.intValue).apply(tuple._1.intValue))).sum  
+  def sampledValue(s:Stat): Seq[DiscreteValue] = sampledValue(s._1.first.domain, s._2, s._3)
+  def sampledValue(d:DiscreteDomain, mixture:Seq[ProportionsValue], gates:Seq[DiscreteValue]): Seq[DiscreteValue] = 
+    for (i <- 0 until gates.length) yield d.getValue(mixture(gates(i).intValue).sampleInt) 
+  def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = throw new Error
+  def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value = throw new Error
+  def prValue(s:StatisticsType, value:Int, index:Int): Double = throw new Error
 }

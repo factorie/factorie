@@ -24,6 +24,63 @@ import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 
 object LDA2 {
+  
+  val numTopics = 10
+  object ZDomain extends DiscreteDomain { def size = numTopics }
+  object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
+  class Zs(len:Int) extends PlatedGate(len) { def domain = ZSeqDomain }
+  object WordSeqDomain extends CategoricalSeqDomain[String]
+  val WordDomain = WordSeqDomain.elementDomain
+  class Words(strings:Seq[String]) extends PlatedCategorical(strings) {
+    def domain = WordSeqDomain
+    def zs = parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor]._3
+  }
+  class Document(val file:String, val theta:DenseCountsProportions, strings:Seq[String]) extends Words(strings)
+  val beta = new GrowableUniformMasses(WordDomain, 0.1)
+  val alphas = new DenseMasses(numTopics, 0.1)
+
+  def main(args: Array[String]): Unit = {
+    val directories = if (args.length > 0) args.toList else List("12", "11", "10", "09", "08").take(1).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
+    val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(WordDomain) ~ Dirichlet(beta))
+    val documents = new ArrayBuffer[Document]
+    for (directory <- directories) {
+      println("Reading files from directory " + directory)
+      for (file <- new File(directory).listFiles; if (file.isFile)) {
+        print("."); Console.flush
+        val theta = new DenseCountsProportions(numTopics) ~ Dirichlet(alphas)
+        val tokens = alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_)).toSeq
+        val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
+        documents += new Document(file.toString, theta, tokens) ~ PlatedDiscreteMixture(phis, zs)
+      }
+      println()
+    }
+
+    val collapse = new ArrayBuffer[GeneratedVar]
+    collapse += phis
+    collapse ++= documents.map(_.theta)
+    val sampler = new CollapsedGibbsSampler(collapse)
+    //println("Initialization:"); phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
+
+    val startTime = System.currentTimeMillis
+    for (i <- 1 to 20) {
+      for (doc <- documents) sampler.process(doc.zs)
+      if (i % 5 == 0) {
+        println("Iteration " + i)
+        sampler.export()
+        // Turned off hyperparameter optimization
+        //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
+        //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
+        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt))
+        println("Total words "+phis.map(_.countsTotal).sum.toInt)
+        println
+      }
+    }
+    //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
+    println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+  }
+}
+
+  /*
   val numTopics = 10
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
@@ -98,4 +155,4 @@ object LDA2 {
     //phis.foreach(t => {println("\nTopic "+phis.indexOf(t)); t.top(20).foreach(x => println("%-16s %f".format(x.value,x.pr)))})
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
   }
-}
+  */

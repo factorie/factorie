@@ -17,51 +17,74 @@ import cc.factorie._
 import cc.factorie.la._
 import scala.collection.mutable.{HashSet,ArrayBuffer}
 
-class DiscreteTemplate extends GenerativeTemplateWithStatistics2[GeneratedDiscreteVar,Proportions] {
-  def unroll1(d:GeneratedDiscreteVar) = Factor(d, d.proportions)
-  def unroll2(p:Proportions) = for (d <- p.childrenOfClass[GeneratedDiscreteVar]) yield Factor(d, p)
-  def logpr(s:Stat) = math.log(pr(s))
-  def pr(s:Stat): Double = pr(s._1, s._2)
-  def pr(d:DiscreteValue, p:IndexedSeq[Double]): Double = p(d.intValue)
-  def sampledValue(s:Stat): DiscreteValue = sampledValue(s._1.domain, s._2)
-  def sampledIntValue(s:Stat): Int = s._2.sampleInt
-  def sampledValue(d:DiscreteDomain, p:ProportionsValue): DiscreteValue = d(p.sampleInt)
-  def sampledIntValue(d:DiscreteDomain, p:ProportionsValue): DiscreteValue = d(p.sampleInt)
-}
-object DiscreteTemplate extends DiscreteTemplate
+trait GeneratedDiscreteVar extends DiscreteVar with GeneratedVar 
+trait MutableGeneratedDiscreteVar extends GeneratedDiscreteVar with MutableGeneratedVar with MutableDiscreteVar
+abstract class Discrete(initialInt: Int = 0) extends DiscreteVariable(initialInt) with MutableGeneratedDiscreteVar
 
-trait GeneratedDiscreteVar extends GeneratedVar with DiscreteVar {
-  val generativeTemplate = DiscreteTemplate
-  def generativeFactor = new DiscreteTemplate.Factor(this, proportions)
-  private var _proportions: Proportions = null
-  def proportions: Proportions = _proportions
-  def setProportions(p:Proportions): Unit = {
-    if (_proportions ne null) _proportions.removeChild(this)(null)
-    _proportions = p
-    _proportions.addChild(this)(null)
+trait GeneratedCategoricalVar[A] extends GeneratedDiscreteVar with CategoricalVar[A]
+trait MutableGeneratedCategoricalVar[A] extends MutableGeneratedDiscreteVar with GeneratedCategoricalVar[A] with MutableCategoricalVar[A]
+abstract class Categorical[A](initialValue:A) extends CategoricalVariable(initialValue) with MutableGeneratedCategoricalVar[A] 
+
+
+trait DiscreteGeneratingFamily extends GenerativeFamily {
+  type FamilyType <: DiscreteGeneratingFamily
+  def prValue(s:StatisticsType, value:Int): Double
+  def prValue(s:cc.factorie.Statistics, value:Int): Double = prValue(s.asInstanceOf[StatisticsType], value)
+  def prValue(f:FactorType, value:Int): Double
+  //def discreteChild(f:FactorType): GeneratedDiscreteVar
+  // Nice idea if this following would work, but "extends super.Factor" is not dynamically bound by mixin order! :-(
+  /*trait Factor extends super.Factor {
+    def discreteGeneratingFamily = DiscreteGeneratingFamily.this
+    //override def _1: GeneratedDiscreteVar
+    def child = _1
+    def prValue(s:StatisticsType, value:Int): Double = DiscreteGeneratingFamily.this.prValue(s, value)
+    def prValue(value:Int): Double = DiscreteGeneratingFamily.this.prValue(this.asInstanceOf[FactorType], value)
+  }*/
+  //type StatisticsType <: Statistics
+  /*trait Statistics extends super.Statistics {
+    def prValue(value:Int): Double = DiscreteGeneratingFamily.this.prValue(this.asInstanceOf[StatisticsType], value)
+  }*/
+}
+
+object Discrete extends DiscreteGeneratingFamily with GenerativeFamilyWithStatistics2[GeneratedDiscreteVar,Proportions] /*with DiscreteGeneratingFamily*/ {
+  //override type StatisticsType = Stat
+  //type FamilyType = Discrete
+  def pr(s:StatisticsType) = s._2.apply(s._1.intValue)
+  def prValue(s:StatisticsType, intValue:Int): Double = s._2.apply(intValue)
+  def prValue(f:Factor, intValue:Int): Double = f._2.apply(intValue)
+  def sampledValue(s:StatisticsType): DiscreteValue = s._1.domain.getValue(s._2.sampleInt)
+  //def discreteChild(f:Factor) = f._1 
+  //def maxIntValue(s:StatisticsType): Int = s._2.maxInt
+  override def updateCollapsedParents(f:Factor, weight:Double): Boolean = {
+    f._2 match {
+      case p:DenseCountsProportions => { p.increment(f._1.intValue, weight)(null); true }
+      case _ => false
+    }
   }
-  override def parents = Seq(proportions)
-  override def pr = proportions(this.intValue)
-}
-
-trait MutableGeneratedDiscreteVar extends GeneratedDiscreteVar with MutableGeneratedVar with MutableDiscreteVar {
-  def maximize(implicit d:DiffList): Unit = set(proportions.maxPrIndex)
-}
-
-abstract class Discrete(proportions:Proportions, initialValue: Int = 0) extends DiscreteVariable(initialValue) with MutableGeneratedDiscreteVar {
-  setProportions(proportions)
+  // TODO Arrange to call this in Factor construction.
+  def factorHook(factor:Factor): Unit =
+    if (factor._1.domain.size != factor._2.size) throw new Error("Discrete child domain size different from parent Proportions size.")
 }
 
 /*class Binomial(p:RealVarParameter, trials:Int) extends OrdinalVariable with GeneratedVariable {
   this := 0
 }*/
 
-trait GeneratedCategoricalVar[A] extends GeneratedDiscreteVar with CategoricalVar[A]
-trait MutableGeneratedCategoricalVar[A] extends MutableGeneratedDiscreteVar with CategoricalVar[A]
-//trait GeneratedCategoricalVariable[A] extends CategoricalVariable[A] with GeneratedDiscreteVariable with GeneratedCategoricalVar[A]
 
-abstract class Categorical[A](proportions:Proportions, initialValue:A) extends CategoricalVariable(initialValue) with MutableGeneratedCategoricalVar[A] {
-  setProportions(proportions)
+
+// The binary special case, for convenience
+// TODO Rename this Boolean, inherit from BooleanVariable, and move it to a new file
+
+/** The outcome of a coin flip, with boolean value.  */
+class Flip(value:Boolean = false) extends BooleanVariable(value) with MutableGeneratedDiscreteVar 
+
+/** A coin, with Multinomial distribution over outcomes, which are Flips. */
+class Coin(p:Double) extends DenseProportions(Seq(1.0-p, p)) {
+  def this() = this(0.5)
+  assert (p >= 0.0 && p <= 1.0)
+  def flip: Flip = { new Flip :~ Discrete(this) }
+  def flip(n:Int) : Seq[Flip] = for (i <- 0 until n) yield flip
 }
-
-
+object Coin { 
+  def apply(p:Double) = new Coin(p)
+}

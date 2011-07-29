@@ -53,7 +53,7 @@ trait VariableInferencer[V<:Variable] extends Inferencer[V,V] {
   def inferMarginalizing(targets:Iterable[V], marginalizing:Iterable[V]) = infer(targets, targets ++ marginalizing)
 }
 
-class IIDDiscreteInferencer[V<:MutableDiscreteVar](model:TemplateModel) extends VariableInferencer[V] {
+class IIDDiscreteInferencer[V<:MutableDiscreteVar](model:Model) extends VariableInferencer[V] {
   type LatticeType = IIDDiscreteLattice
   class IIDDiscreteLattice extends HashMap[V,DiscreteMarginal[V]] with Lattice[V] {
     type VariableMarginalType = DiscreteMarginal[V]
@@ -78,7 +78,7 @@ class IIDDiscreteInferencer[V<:MutableDiscreteVar](model:TemplateModel) extends 
 class DiscreteMarginal[V<:DiscreteVectorVar](val variable:V, proportions:Seq[Double] = Nil) extends cc.factorie.generative.DenseCountsProportions(variable.domain.dimensionSize) with Marginal {
   // TODO Consider also including "val inferencer:Inferencer" in constructor arguments
   if (proportions != Nil) this.set(proportions)(null)
-  override def keepChildren = false
+  //override def keepChildren = false
   def incrementCurrentValue : Unit = variable match {
     case v:DiscreteVar => increment(v.intValue, 1.0)(null)
     case v:BinaryFeatureVectorVariable[_] => { for (index <- v.activeDomain) increment(index, 1.0)(null) } // throw new Error // TODO Put this code back in: v.incrementInto(this)
@@ -106,7 +106,7 @@ class DiscreteFactorMarginal(val factor:Factor, val values:Array[Double]) extend
     by doing exhaustive enumeration or all possible configurations.
     @author Tim Vieira */
 @deprecated("This class is not yet integrated into the general Inference framework, and may be removed in the future.")
-class BruteForceInferencer[V<:DiscreteVariable with NoVariableCoordination](model:TemplateModel) {
+class BruteForceInferencer[V<:DiscreteVariable with NoVariableCoordination](model:Model) {
 
   // TODO: make this conform to some of the existing Inferencer interfaces.
   // extends VariableInferencer[V]?

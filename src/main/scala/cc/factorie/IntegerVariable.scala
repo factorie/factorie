@@ -28,9 +28,11 @@ trait IntegerVar extends VarWithNumericValue with VarAndValueType[IntegerVar,Int
   override def toString = printName + "(" + intValue + ")"
 }
 
+trait MutableIntegerVar extends IntegerVar with MutableVar
+
 /** A Variable with a mutable Int value.
     @author Andrew McCallum */ 
-class IntegerVariable(initialValue:Int = 0) extends IntegerVar with VarWithMutableIntValue {
+class IntegerVariable(initialValue:Int = 0) extends MutableIntegerVar with VarWithMutableIntValue {
   def domain = IntegerDomain
   private var _value: Int = initialValue
   @inline final def value = _value
