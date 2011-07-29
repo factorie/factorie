@@ -37,12 +37,12 @@ class PerLabelEvaluation[L<:LabelVariable[String]](val labelValue: String, var t
         if (trueIndex == predIndex)
           tp += 1
         else
-          fp += 1
+          fn += 1
       } else if (targetIndex == predIndex) {
         if (trueIndex == predIndex)
           tp += 1
         else
-          fn += 1
+          fp += 1
       }
     }
   }
