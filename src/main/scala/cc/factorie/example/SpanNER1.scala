@@ -130,19 +130,19 @@ object SpanNER1 {
     },
     // First Token of Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = v match { case Values(span,label,inner) => Stat(span.head.value, label) }
+      def statistics(v:Values) = Stat(v._1.head.value, v._2)
     },
     // Last Token of Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = v match { case Values(span,label,inner) => Stat(span.last.value, label) }
+      def statistics(v:Values) = Stat(v._1.last.value, v._2)
     },
     // Token before Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = v match { case Values(span,label,inner) => if (span.head.hasPrev) Stat(span.head.prev.value, label) else null }
+      def statistics(v:Values) = if (v._1.head.hasPrev) Stat(v._1.head.prev.value, v._2) else null
     },
     // Token after Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = v match { case Values(span,label,inner) => if (span.last.hasNext) Stat(span.last.next.value, label) else null }
+      def statistics(v:Values) = if (v._1.last.hasNext) Stat(v._1.last.next.value, v._2) else null 
     },
     // Single Token Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 

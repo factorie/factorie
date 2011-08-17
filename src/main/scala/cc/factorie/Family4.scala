@@ -23,6 +23,41 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
+/** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
+trait Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Factor {
+  type NeighborType1 = N1
+  type NeighborType2 = N2
+  type NeighborType3 = N3
+  type NeighborType4 = N4
+  type StatisticsType <: cc.factorie.Statistics
+  def _1: N1
+  def _2: N2
+  def _3: N3
+  def _4: N4
+  def numVariables = 4
+  override def variables = IndexedSeq(_1, _2, _3, _4)
+  def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case 3 => _4; case _ => throw new IndexOutOfBoundsException(i.toString) }
+  override def values = new Values(_1.value, _2.value, _3.value, _4.value, inner.map(_.values))
+  case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value, _4:N4#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
+    def statistics: StatisticsType = Factor4.this.statistics(this)
+  }
+  def statistics: StatisticsType = statistics(values)
+  def statistics(v:Values): StatisticsType
+}
+
+/** The only abstract things are _1, _2, _3, and score(Statistics) */
+trait FactorWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Factor4[N1,N2,N3,N4] {
+  self =>
+  type StatisticsType <: Statistics
+  case class Statistics(_1:N1#Value, _2:N2#Value, _3:N3#Value, _4:N4#Value) extends cc.factorie.Statistics {
+    // TODO Make this non-lazy later, when _statisticsDomains can be initialized earlier
+    lazy val score = self.score(this)
+  }
+  def statistics(v:Values) = new Statistics(v._1, v._2, v._3, v._4).asInstanceOf[StatisticsType]
+  def score(s:Statistics): Double
+}
+
+
 trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2
@@ -38,7 +73,9 @@ trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Famil
   def neighborDomain4: Domain[N4#Value] = if (_neighborDomain4 eq null) throw new Error("You must override neighborDomain4 if you want to access it before creating any Factor objects") else _neighborDomain4
 
   type FactorType = Factor
-  final case class Factor(_1:N1, _2:N2, _3:N3, _4:N4, override var inner:Seq[cc.factorie.Factor] = Nil, override var outer:cc.factorie.Factor = null) extends super.Factor {
+  type ValuesType = Factor#Values
+  final case class Factor(_1:N1, _2:N2, _3:N3, _4:N4, override var inner:Seq[cc.factorie.Factor] = Nil, override var outer:cc.factorie.Factor = null) extends super.Factor with Factor4[N1,N2,N3,N4] {
+    type StatisticsType = Family4.this.StatisticsType
     if (_neighborDomains eq null) {
       _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
       _neighborDomain2 = _2.domain.asInstanceOf[Domain[N2#Value]]
@@ -50,31 +87,21 @@ trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Famil
       _neighborDomains += _neighborDomain3
       _neighborDomains += _neighborDomain4
     }
-    def numVariables = 4
-    def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case 3 => _4; case _ => throw new IndexOutOfBoundsException(i.toString) }
-    override def variables: IndexedSeq[Variable] = IndexedSeq(_1, _2, _3, _4)
-    def values: ValuesType = new Values(_1.value, _2.value, _3.value, _4.value, inner.map(_.values))
-    def statistics: StatisticsType = Family4.this.statistics(values)
-    override def cachedStatistics: StatisticsType = Family4.this.statistics(values)
-    // TODO override def cachedStatistics: StatisticsType = Template4.this.cachedStatistics(_1.value, _2.value, _3.value, _4.value)
-    def copy(s:Substitutions) = Factor(s.sub(_1), s.sub(_2), s.sub(_3), s.sub(_4))
+    override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
   } 
-  // Values
-  type ValuesType = Values
-  final case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value, _4:N4#Value, override val inner:Seq[cc.factorie.Values]) extends super.Values {
-    def statistics = Family4.this.statistics(this)
-  }
-  // Statistics
-  def statistics(values:Values): StatisticsType
-  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = throw new Error("Not yet implemented")
 }
 
 trait Statistics4[S1,S2,S3,S4] extends Family {
+  self =>
   type StatisticsType = Stat
-  final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4, override val inner:Seq[cc.factorie.Statistics] = Nil) extends super.Statistics
+  final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4, override val inner:Seq[cc.factorie.Statistics] = Nil) extends super.Statistics {
+    lazy val score = self.score(this)
+  }
+  def score(s:Stat): Double
 }
 
 trait VectorStatistics4[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue,S4<:DiscreteVectorValue] extends VectorFamily {
+  self =>
   type StatisticsType = Stat
   final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4, override val inner:Seq[cc.factorie.Statistics] = Nil) extends  { val vector: Vector = _1 flatOuter (_2 flatOuter (_3 flatOuter _4)) } with super.Statistics {
     if (_statisticsDomains eq null) {
@@ -84,7 +111,9 @@ trait VectorStatistics4[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:Disc
       _statisticsDomains += _3.domain
       _statisticsDomains += _4.domain
     }
+    lazy val score = self.score(this)
   }
+  def score(s:Stat): Double
 }
 
 trait DotStatistics4[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue,S4<:DiscreteVectorValue] extends VectorStatistics4[S1,S2,S3,S4] with DotFamily

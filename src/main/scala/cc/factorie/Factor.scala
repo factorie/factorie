@@ -43,19 +43,21 @@ trait Factor extends Model with Ordered[Factor] {
   /** The number of variables neighboring this factor. */
   def numVariables: Int
   def variable(index: Int): Variable
-  def statistics: Statistics
   /** Optionally return pre-calculated Statistics.  By default not actually cached, but may be overridden in subclasses. */
   def cachedStatistics: Statistics = statistics
-  // The next two methods implement the Model trait
   def touches(variable:Variable): Boolean = this.variables.contains(variable) || inner.exists(_.touches(variable))
-  def factors(variables:Iterable[Variable]): Seq[Factor] = if (variables.exists(touches(_))) Seq(this) else Nil
+  def touchesAny(variables:Iterable[Variable]): Boolean = variables.exists(touches(_))
+  // The next method implements the Model trait
+  /** Return any inner factors touching the argument variables */
+  def factors(variables:Iterable[Variable]): Seq[Factor] = inner.filter(_.touchesAny(variables))
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
   override def score: Double = statistics.score
   def values: Values                   
+  def statistics: Statistics // = values.statistics
   /** Randomly selects and returns one of this factor's neighbors. */
-  @deprecated def randomVariable(implicit random:Random = cc.factorie.random): Variable = variable(random.nextInt(numVariables))
+  //@deprecated def randomVariable(implicit random:Random = cc.factorie.random): Variable = variable(random.nextInt(numVariables))
   /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
-  def copy(s:Substitutions): Factor
+  //def copy(s:Substitutions): Factor
   // Implement Ordered, such that worst (lowest) scores are considered "high"
   def compare(that: Factor) = {val d = that.score - this.score; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
   /** In order to two Factors to satisfy "equals", the value returned by this method for each Factor must by "eq" . */
@@ -101,26 +103,26 @@ trait Factor extends Model with Ordered[Factor] {
     */
 
 
-
-
 /** A container for all the values of the variables neighboring a factor.
     These are necessary to construct a Statistics object. */
-trait Values /* extends Product with Ordered[Values] */ {
+trait Values /* extends Product with Ordered[Values] */ { // TODO Make this extend Statistics
   // def factor: Factor // TODO Consider adding this method
-  def outer: Values = null  // TODO Remove this
+  //def outer: Values = null  // TODO Remove this
   def inner: Seq[Values] = Nil
   def statistics: Statistics
-  def score: Double = statistics.score
+  //def score: Double = statistics.score
   //def productArity: Int
   //def canEqual(other:Any) = other match { case other:Values => }
 }
 
 /** A container for sufficient statistics of a Factor.  
     There is one of these for each Factor. */
-trait Statistics {
+// Rename this to Statistic singular, so we can have Statistic1, Statistic2, etc like Factor2, separate from "Template with Statistics2"
+trait Statistics extends Values {
+  def statistics = this
   // def factor: Factor // TODO Consider adding this method
-  def outer: Statistics = null // TODO Remove this
-  def inner: Seq[Statistics] = Nil
+  //def outer: Statistics = null // TODO Remove this
+  override def inner: Seq[Statistics] = Nil
   def score: Double
 }
 

@@ -23,7 +23,49 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-// TODO  Change to a trait and remove manifest; move neighborClass1 to Template1; move Factor and Values to a trait, then super.Factor can come from other mixins
+/** A Factor with one neighboring variable */
+trait Factor1[N1<:Variable] extends Factor {
+  type NeighborType1 = N1
+  type StatisticsType <: cc.factorie.Statistics
+  protected def thisFactor: this.type = this
+  def _1: N1
+  def numVariables = 1
+  override def variables = IndexedSeq(_1)
+  def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
+  override def values = new Values(_1.value, inner.map(_.values))
+  case class Values(_1:N1#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
+    def statistics: StatisticsType = Factor1.this.statistics(this)
+  }
+  def statistics: StatisticsType = statistics(values)
+  def statistics(v:Values): StatisticsType
+
+  /** valuesIterator in style of specifying fixed neighbors */
+  def valuesIterator(fixed: Assignment): Iterator[Values] = {
+    if (fixed.contains(_1)) Iterator.single(Values(fixed(_1)))
+    else _1.domain match {
+      case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
+    }
+  }
+  /** valuesIterator in style of specifying varying neighbors */
+  def valuesIterator(varying:Seq[Variable]): Iterator[Values] = {
+    if (varying.size != 1 || varying.head != _1)
+      throw new Error("Template1.valuesIterator cannot vary arguments.")
+    else _1.domain match {
+      case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
+    }
+  }
+}
+
+/** A Factor with one neighboring variable, whose statistics are simply the value of that neighboring variable. */
+trait FactorWithStatistics1[N1<:Variable] extends Factor1[N1] {
+  self =>
+  type StatisticsType <: Statistics
+  case class Statistics(_1:N1#Value) extends cc.factorie.Statistics {
+    lazy val score = self.score(this)
+  }
+  override def statistics(v:Values) = Statistics(v._1).asInstanceOf[StatisticsType]
+  def score(s:Statistics): Double
+}
 
 trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
@@ -35,66 +77,45 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
       _neighborDomain1
       
   type FactorType = Factor
-  final case class Factor(_1:N1, override var inner:Seq[cc.factorie.Factor] = Nil, override var outer:cc.factorie.Factor = null) extends super.Factor {
+  type ValuesType = Factor#Values
+  final case class Factor(_1:N1, override var inner:Seq[cc.factorie.Factor] = Nil, override var outer:cc.factorie.Factor = null) extends super.Factor with Factor1[N1] {
+    type StatisticsType = Family1.this.StatisticsType
     if (_neighborDomains eq null) {
       _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
       _neighborDomains = _newNeighborDomains
       _neighborDomains += _neighborDomain1
     }
-    def numVariables = 1
-    def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
-    override def variables: IndexedSeq[Variable] = IndexedSeq(_1)
-    def values: ValuesType = new Values(_1.value, inner.map(_.values))
-    def statistics: StatisticsType = Family1.this.statistics(values)
-    override def cachedStatistics: StatisticsType = Family1.this.cachedStatistics(values)
-    // Note.  If someone subclasses Factor, then you might not get that subclass!  This is why class Factor is final.
-    def copy(s:Substitutions) = Factor(s.sub(_1), inner.map(_.copy(s)), outer)
+    override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
   } 
-  // Values
-  type ValuesType = Values
-  final case class Values(_1:N1#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends super.Values {
-    def statistics: StatisticsType = Family1.this.statistics(this)
-  }
-  // Statistics
-  def statistics(values:Values): StatisticsType
-  //def stats(v:Variable): Iterable[StatisticsType] = factors(v).map(_.statistics) // TODO Do we need to consider a flatMap here?
+  // Cached statistics
   private var cachedStatisticsArray: Array[StatisticsType] = null
-  override def cachedStatistics(vals:Values, stats:(ValuesType)=>StatisticsType): StatisticsType =
+  override def cachedStatistics(values:ValuesType): StatisticsType =
     if (Template.enableCachedStatistics) {
-    vals._1 match {
+    values._1 match {
     case v:DiscreteValue => {
       if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v.domain.size).asInstanceOf[Array[StatisticsType]]
       val i = v.intValue
-      if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = stats(vals)
+      if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = values.statistics
       cachedStatisticsArray(i)
     }
-    case _ => stats(vals)
-  }} else stats(vals)
+    case _ => values.statistics
+  }} else values.statistics
   /** You must clear cache the cache if DotTemplate.weights change! */
   override def clearCachedStatistics: Unit =  cachedStatisticsArray = null
-  /** valuesIterator in style of specifying fixed neighbors */
-  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values] = {
-    if (fixed.contains(factor._1)) Iterator.single(Values(fixed(factor._1)))
-    else factor._1.domain match {
-      case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
-    }
-  }
-  /** valuesIterator in style of specifying varying neighbors */
-  def valuesIterator(factor:FactorType, varying:Seq[Variable]): Iterator[Values] = {
-    if (varying.size != 1 || varying.head != factor._1)
-      throw new Error("Template1.valuesIterator cannot vary arguments.")
-    else factor._1.domain match {
-      case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
-    }
-  }
 }
 
 trait Statistics1[S1] extends Family {
-  final case class Stat(_1:S1, override val inner:Seq[cc.factorie.Statistics] = Nil) extends super.Statistics
+  self =>
   type StatisticsType = Stat
+  // TODO Consider renaming "Stat" to "Statistics"
+  case class Stat(_1:S1, override val inner:Seq[cc.factorie.Statistics] = Nil) extends super.Statistics {
+    lazy val score = self.score(this) 
+  }
+  def score(s:Stat): Double
 }
 
 trait VectorStatistics1[S1<:DiscreteVectorValue] extends VectorFamily {
+  self =>
   type StatisticsType = Stat
   // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
   final case class Stat(_1:S1, override val inner:Seq[cc.factorie.Statistics] = Nil) extends { val vector: Vector = _1 } with super.Statistics { 
@@ -102,7 +123,9 @@ trait VectorStatistics1[S1<:DiscreteVectorValue] extends VectorFamily {
       _statisticsDomains = _newStatisticsDomains
       _statisticsDomains += _1.domain
     } else if (_1.domain != _statisticsDomains(0)) throw new Error("Domain doesn't match previously cached domain.")
+    lazy val score = self.score(this)
   }
+  def score(s:Stat): Double
 }
 
 trait DotStatistics1[S1<:DiscreteVectorValue] extends VectorStatistics1[S1] with DotFamily {

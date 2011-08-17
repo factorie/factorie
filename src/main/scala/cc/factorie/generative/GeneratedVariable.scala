@@ -91,7 +91,7 @@ trait MutableGeneratedVar extends GeneratedVar with MutableVar {
 }
 
 
-// TODO Are these still necessary?  Consider deleting
+// TODO Are these still necessary?  Consider deleting.  Yes!
 trait RealGenerating {
   def sampleDouble: Double
   def pr(x:Double): Double

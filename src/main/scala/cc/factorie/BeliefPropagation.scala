@@ -138,17 +138,7 @@ abstract class BPFactor(val factor: Family#Factor) {
         } else if (neighborSettings.size == 1) {
           val neighbor = neighborSettings.head.variable
           msg(i) = Double.NegativeInfinity // i.e. log(0)
-          if (factor.family.hasSettingsIterator) {
-            factor.forSettingsOf(List(neighbor)) {
-              val cachedStats = factor.cachedStatistics.asInstanceOf[DotFamily#Statistics]
-              val factorMessage = cachedStats.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
-              if (statVector ne null) {
-                vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
-                // statVector += cachedStats.vector * -math.exp(factorMessage + variableMessage(i) - _logZ) // update expectations
-              }
-              msg(i) = maths.sumLogProb(msg(i), factorMessage)
-            }
-          } else {
+          if (true) {
             forIndex(neighbor.domain.size)(j => {
               neighbor.set(j)(null)
               val cachedStats = factor.cachedStatistics.asInstanceOf[DotFamily#Statistics]
@@ -164,17 +154,7 @@ abstract class BPFactor(val factor: Family#Factor) {
           // Sum over all combinations of values in neighboring variables with v's value fixed to i.
           neighborSettings.foreach(setting => {setting.reset; setting.next}) // reset iterator and advance to first setting.
           msg(i) = Double.NegativeInfinity // i.e. log(0)
-          if (factor.family.hasSettingsIterator) {
-            factor.forSettingsOf(neighborSettings.map(n => n.variable).toList) {
-              val cachedStats = factor.cachedStatistics.asInstanceOf[DotFamily#Statistics]
-              val factorMessage = cachedStats.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
-              if (statVector ne null) {
-                vecPlusEq(statVector, cachedStats.vector, -math.exp(factorMessage + variableMessage(i) - logZ))
-                // statVector += cachedStats.vector * -math.exp(factorMessage + variableMessage(i) - _logZ) // update expectations
-              }
-              msg(i) = maths.sumLogProb(msg(i), factorMessage)
-            }
-          } else {
+          if (true) {
             do {
               val cachedStats = factor.cachedStatistics.asInstanceOf[DotFamily#Statistics]
               val factorMessage = cachedStats.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
@@ -200,12 +180,7 @@ abstract class BPFactor(val factor: Family#Factor) {
         } else if (neighborSettings.size == 1) {
           val neighbor = neighborSettings.head.variable
           msg(i) = Double.NegativeInfinity
-          if (factor.family.hasSettingsIterator) {
-            factor.forSettingsOf(List(neighbor)) {
-              val score = factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
-              if (score > msg(i)) {msg(i) = score;}
-            }
-          } else {
+          if (true) {
             forIndex(neighbor.domain.size)(j => {
               neighbor.set(j)(null)
               val score = factor.cachedStatistics.score + BPFactor.this.messageFrom(neighbor).messageCurrentValue
@@ -215,12 +190,7 @@ abstract class BPFactor(val factor: Family#Factor) {
         } else { // This factor has variable neighbors in addition to v itself
           neighborSettings.foreach(setting => {setting.reset; setting.next})
           msg(i) = Double.NegativeInfinity
-          if (factor.family.hasSettingsIterator) {
-            factor.forSettingsOf(neighborSettings.map(n => n.variable).toList) {
-              val score = factor.cachedStatistics.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
-              if (score > msg(i)) {msg(i) = score;}
-            }
-          } else {
+          if (true) {
             do {
               val score = factor.cachedStatistics.score + neighborSettings.sumDoubles(n => BPFactor.this.messageFrom(n.variable).messageCurrentValue)
               if (score > msg(i)) {msg(i) = score;}

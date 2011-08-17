@@ -144,7 +144,7 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
       forIndex(domainSize)(i => {
         //throw new Error
         distribution(i) = /*gStat.prValue(i) * */ 
-          gStat.family.prValue(gStat, i) * 
+          gStat.family.asInstanceOf[DiscreteGeneratingFamily].prValue(gStat, i) * 
           mFactor.family.prChoosing(mStat, i)
         sum += distribution(i)
       })

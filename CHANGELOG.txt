@@ -1,3 +1,20 @@
+New in version 0.11:
+
+* DiscreteVector and CategoricalVector
+
+The old names "DiscretesValue", "DiscretesVariable", etc were
+deemed too easily misread (easy to miss the little "s" in the middle)
+and have been renamed "DiscreteVectorValue", "DiscreteVectorVariable",
+etc.
+
+* Factors independent of Templates
+
+* Models independent of Templates
+
+* Redesigned cc.factorie.generative package
+
+
+
 New in version 0.10.0:
 
 * Variable 'value' methods:

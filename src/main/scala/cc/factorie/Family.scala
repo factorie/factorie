@@ -28,13 +28,15 @@ import java.io._
 trait Family {
   type FamilyType <: Family // like a self-type
   type FactorType <: Factor
-  type ValuesType <: Values
+  type ValuesType <: cc.factorie.Values
+  type Values = ValuesType
   type StatisticsType <: Statistics
   type NeighborType1
+  @inline final def thisFamily: this.type = this
   /** The method responsible for mapping a Statistic object to a real-valued score.  
       Called by the Statistic.score method; implemented here so that it can be easily overriden in user-defined subclasses of Template. */
-  def score(s:StatisticsType): Double
-  @inline final def score(s:cc.factorie.Statistics): Double = score(s.asInstanceOf[StatisticsType])
+  //def score(s:StatisticsType): Double
+  //@inline final def score(s:cc.factorie.Statistics): Double = score(s.asInstanceOf[StatisticsType])
   def defaultFactorName = this.getClass.getName
   var factorName: String = defaultFactorName
   /** Assign this Template a name which will be used later when its factors are printed. */
@@ -43,42 +45,34 @@ trait Family {
   def %(n:String): this.type = setFactorName(n) // because % is the comment character in shell languages such as /bin/sh and Makefiles.
   trait Factor extends cc.factorie.Factor {
     def family: FamilyType = Family.this.asInstanceOf[FamilyType];
+    //def family = thisFamily
     def _1: NeighborType1
-    override def statistics: StatisticsType
-    override def cachedStatistics: StatisticsType = statistics
+    override def values: ValuesType
+    override def statistics: StatisticsType // = statistics(values)
+    override def cachedStatistics: StatisticsType = thisFamily.cachedStatistics(values)
     override def factorName = family.factorName
     override def equalityPrerequisite: AnyRef = Family.this
-    @deprecated def forSettingsOf(vs:Seq[Variable])(f: =>Unit): Unit = Family.this.forSettingsOf(this.asInstanceOf[FactorType], vs)(f)
+    //@deprecated def forSettingsOf(vs:Seq[Variable])(f: =>Unit): Unit = Family.this.forSettingsOf(this.asInstanceOf[FactorType], vs)(f)
   }
   // Values
-  trait Values extends cc.factorie.Values {
+  /*trait Values extends cc.factorie.Values {
     def family: FamilyType = Family.this.asInstanceOf[FamilyType]
-  }
+  }*/
   // Statistics
   trait Statistics extends cc.factorie.Statistics {
     def family: FamilyType = Family.this.asInstanceOf[FamilyType]
+    //def family = thisFamily
     // TODO Make this non-lazy later, when _statisticsDomains can be initialized earlier
     // Warning: if score gets called too late, might the values of the variables have been changed to something else already?
-    lazy val score = Family.this.score(this.asInstanceOf[StatisticsType]) 
+    //lazy val score = Family.this.score(this.asInstanceOf[StatisticsType]) 
     // TODO can we find a way to get rid of this cast?  Yes, use a self-type Stat[This], but too painful
   }
   def statistics(values:ValuesType): StatisticsType
   /** May be overridden in subclasses to actually cache. */
-  def cachedStatistics(values:ValuesType, stats:(ValuesType)=>StatisticsType): StatisticsType = stats(values)
-  def cachedStatistics(values:ValuesType): StatisticsType = cachedStatistics(values, statistics)
+  //def cachedStatistics(values:ValuesType, stats:(ValuesType)=>StatisticsType): StatisticsType = stats(values)
+  def cachedStatistics(values:ValuesType): StatisticsType = statistics(values)
   def clearCachedStatistics: Unit = {}
   
-  // Managing settings iteration
-  // TODO Replace this with message calculation code that does the settings iteration internally
-  def hasSettingsIterator: Boolean = false
-  def forSettings(factor:FactorType)(f: =>Unit): Unit = throw new Error("Not supported.")
-  def forSettingsOf(factor:FactorType, vs:Seq[Variable])(f: =>Unit): Unit = throw new Error("Not supported.")
-  def sparsifySettingsFor(vs:Iterable[Variable]): Unit = throw new Error("Not supported.")
-  // New version of settings iteration
-  def forSettingStats(factor:FactorType, vs:Seq[Variable])(f: (StatisticsType)=>Unit): Unit = throw new Error("Not supported.") // TODO Also pass variable values?
-  // New style for iterating over neighbor value combinations
-  def valuesIterator(factor:FactorType, fixed: Assignment): Iterator[Values]
-
   /** The filename into which to save this factor.  If templateName is not the default, use it, otherwise use the class name. */
   protected def filename: String = factorName
   def save(dirname:String): Unit = {}

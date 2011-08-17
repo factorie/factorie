@@ -72,5 +72,5 @@ abstract class DecisionTreeTemplateWithStatistics2[S1<:DiscreteVar,S2<:DiscreteV
 extends Template2[S1,S2] with DecisionTreeStatistics2[S1#ValueType,S2#ValueType] {
   //def statistics(s1:S1, s2:S2) = Stat(s1, s2)
   def statistics(values:Values) = Stat(values._1, values._2)
-  def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(_.statistics.asInstanceOf[StatisticsType]))
+  def train(labels: Iterable[S1]): Unit = throw new Error // train(labels.map(unroll1(_)).flatten.map(factor => factor.statistics /*.asInstanceOf[StatisticsType]*/))
 }

@@ -99,7 +99,7 @@ trait Variable {
   def isConstant = false
 }
 
-/** For variables that support representating of their uncertainty with a distribution Q over their values, 
+/** For variables that support representing of their uncertainty with a distribution Q over their values, 
     for variational inference with an approximate distribution Q.
     @author Andrew McCallum */
 trait QDistribution {
