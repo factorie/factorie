@@ -87,18 +87,18 @@ trait CollapsedGibbsSamplerClosure {
 object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
   def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
     if (v.size != 1 || factors.length != 1) return null
-    val pFactor = factors.collectFirst({case f:GenerativeFamily#Factor if (f.family.isInstanceOf[GenerativeFamily]) => f}) // TODO Yipes!  Clean up these tests!
+    val pFactor = factors.collectFirst({case f:GenerativeFactor => f}) // TODO Yipes!  Clean up these tests!
     if (pFactor == None) return null
     // Make sure all parents are collapsed?
     //if (!pFactor.get.variables.drop(1).asInstanceOf[Seq[Parameter]].forall(v => sampler.collapsedMap.contains(v))) return null
     new Closure(pFactor.get)
   }
-  class Closure(val factor:GenerativeFamily#Factor) extends CollapsedGibbsSamplerClosure {
+  class Closure(val factor:GenerativeFactor) extends CollapsedGibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = {
-      factor.family.updateCollapsedParents(factor, -1.0)
-      val variable = factor._1.asInstanceOf[MutableGeneratedVar]
-      variable.set(factor.family.sampledValue(factor.statistics).asInstanceOf[variable.Value])
-      factor.family.updateCollapsedParents(factor, 1.0)
+      factor.updateCollapsedParents(-1.0)
+      val variable = factor.child.asInstanceOf[MutableGeneratedVar]
+      variable.set(factor.sampledValue.asInstanceOf[variable.Value])
+      factor.updateCollapsedParents(1.0)
       // TODO Consider whether we should be passing values rather than variables to updateChildStats
       // TODO What about collapsed children?
     }
@@ -113,8 +113,8 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
     if (v.size != 1 || factors.length != 2) return null
     //println("GateCollapsedGibbsSamplerHander: "+factors.map(_.asInstanceOf[Family#Factor].family.getClass).mkString)
     //val gFactor = factors.collectFirst({case f:Discrete.Factor if (f.family == Discrete) => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
-    val gFactor = factors.collectFirst({case f:DiscreteGeneratingFamily#Factor if (f.family.isInstanceOf[DiscreteGeneratingFamily]) => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
-    val mFactor = factors.collectFirst({case f:MixtureFamily#Factor if (f.family.isInstanceOf[MixtureFamily]) => f})
+    val gFactor = factors.collectFirst({case f:DiscreteGeneratingFactor => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
+    val mFactor = factors.collectFirst({case f:MixtureFactor => f})
     if (gFactor == None || mFactor == None) {
       //println("GateCollapsedGibbsSamplerHander: "+gFactor+" "+mFactor)
       return null
@@ -125,14 +125,14 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
     new Closure(gFactor.get, mFactor.get)
   }
     
-  class Closure(val gFactor:DiscreteGeneratingFamily#Factor, val mFactor:MixtureFamily#Factor) extends CollapsedGibbsSamplerClosure
+  class Closure(val gFactor:DiscreteGeneratingFactor, val mFactor:MixtureFactor) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
-      val gate = gFactor._1.asInstanceOf[Gate] //family.child(gFactor)
+      val gate = mFactor.gate //family.child(gFactor)
       //val gateParent = gFactor._2
       // Remove sufficient statistics from collapsed dependencies
-      gFactor.family.updateCollapsedParents(gFactor, -1.0)
-      mFactor.family.updateCollapsedParents(mFactor, -1.0)
+      gFactor.updateCollapsedParents(-1.0)
+      mFactor.updateCollapsedParents(-1.0)
       // Calculate distribution of new value
       val mStat = mFactor.statistics
       val gStat = gFactor.statistics
@@ -144,8 +144,8 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
       forIndex(domainSize)(i => {
         //throw new Error
         distribution(i) = /*gStat.prValue(i) * */ 
-          gStat.family.asInstanceOf[DiscreteGeneratingFamily].prValue(gStat, i) * 
-          mFactor.family.prChoosing(mStat, i)
+          gFactor.prValue(i) * 
+          mFactor.prChoosing(i) // TODO Re-implement these methods so that they don't allocate new Statistics objects with each call
         sum += distribution(i)
       })
       assert(sum == sum, "Distribution sum is NaN")
@@ -156,8 +156,8 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
       if (sum == 0) gate.set(cc.factorie.random.nextInt(domainSize))(null)
       else gate.set(cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random))(null)
       // Put back sufficient statistics of collapsed dependencies
-      gFactor.family.updateCollapsedParents(gFactor, 1.0)
-      mFactor.family.updateCollapsedParents(mFactor, 1.0)
+      gFactor.updateCollapsedParents(1.0)
+      mFactor.updateCollapsedParents(1.0)
     }
   }
 }
@@ -165,8 +165,8 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
 object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
   def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
     if (v.size != 1 || factors.length != 2) return null
-    val gFactor = factors.collectFirst({case f:PlatedDiscrete.Factor if (f.family == PlatedDiscrete) => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
-    val mFactor = factors.collectFirst({case f:PlatedDiscreteMixture.Factor if (f.family == PlatedDiscreteMixture) => f})
+    val gFactor = factors.collectFirst({case f:PlatedDiscrete.Factor => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
+    val mFactor = factors.collectFirst({case f:PlatedDiscreteMixture.Factor => f})
     if (gFactor == None || mFactor == None) return null
     assert(gFactor.get._1 == mFactor.get._3)
     new Closure(gFactor.get, mFactor.get)

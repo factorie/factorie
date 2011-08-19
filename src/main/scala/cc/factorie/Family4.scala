@@ -48,7 +48,7 @@ trait Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Facto
 /** The only abstract things are _1, _2, _3, and score(Statistics) */
 trait FactorWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Factor4[N1,N2,N3,N4] {
   self =>
-  type StatisticsType <: Statistics
+  type StatisticsType = Statistics
   case class Statistics(_1:N1#Value, _2:N2#Value, _3:N3#Value, _4:N4#Value) extends cc.factorie.Statistics {
     // TODO Make this non-lazy later, when _statisticsDomains can be initialized earlier
     lazy val score = self.score(this)

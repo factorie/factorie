@@ -22,16 +22,20 @@ import cc.factorie._
 //  variance.addCascade(this)
 //}
 
-object Gaussian extends GenerativeFamilyWithStatistics3[GeneratedRealVar,RealVarParameter,RealVarParameter] {
+object Gaussian extends GenerativeFamily3[GeneratedRealVar,RealVarParameter,RealVarParameter] {
+  self =>
   def logpr(value:Double, mean:Double, variance:Double): Double = {
-    val diff = value - mean
-    return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
-  }
-  override def logpr(s:StatisticsType): Double = logpr(s._1, s._2, s._3)
+      val diff = value - mean
+      return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
+  } 
   def pr(value:Double, mean:Double, variance:Double): Double = math.exp(logpr(value, mean, variance))
-  def pr(s:StatisticsType) = math.exp(logpr(s))
   def sampledValue(mean:Double, variance:Double): Double = maths.nextGaussian(mean, variance)(cc.factorie.random)
-  def sampledValue(s:StatisticsType): Double = sampledValue(s._2, s._3)
+  case class Factor(_1:GeneratedRealVar, _2:RealVarParameter, _3:RealVarParameter) extends super.Factor {
+    override def logpr(s:StatisticsType): Double = self.logpr(s._1, s._2, s._3)
+    def pr(s:StatisticsType) = math.exp(logpr(s))
+    def sampledValue(s:StatisticsType): Double = self.sampledValue(s._2, s._3)
+  }
+  def newFactor(a:GeneratedRealVar, b:RealVarParameter, c:RealVarParameter) = Factor(a, b, c)
 }
 
 // TODO Complete something like this

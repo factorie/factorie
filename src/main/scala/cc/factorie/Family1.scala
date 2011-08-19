@@ -59,7 +59,7 @@ trait Factor1[N1<:Variable] extends Factor {
 /** A Factor with one neighboring variable, whose statistics are simply the value of that neighboring variable. */
 trait FactorWithStatistics1[N1<:Variable] extends Factor1[N1] {
   self =>
-  type StatisticsType <: Statistics
+  type StatisticsType = Statistics // TODO Consider making this <: and defining separate StatisticsReturnType and StatisticsArgumentType
   case class Statistics(_1:N1#Value) extends cc.factorie.Statistics {
     lazy val score = self.score(this)
   }

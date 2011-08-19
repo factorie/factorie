@@ -15,11 +15,14 @@
 package cc.factorie.generative
 import cc.factorie._
 
-object DirichletMixture extends GenerativeFamilyWithStatistics3[Proportions,Mixture[Masses],Gate] with MixtureFamily {
-  def gate(f:Factor) = f._3
-  def pr(s:StatisticsType) = Dirichlet.pr(s._1, s._2(s._3.intValue))
-  def sampledValue(s:StatisticsType): ProportionsValue = Dirichlet.sampledValue(s._2(s._3.intValue))
-  def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = Dirichlet.pr(s._1, s._2(mixtureIndex))
-  def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ProportionsValue = Dirichlet.sampledValue(s._2(mixtureIndex))
+object DirichletMixture extends GenerativeFamily3[Proportions,Mixture[Masses],Gate] {
+  case class Factor(_1:Proportions, _2:Mixture[Masses], _3:Gate) extends super.Factor with MixtureFactor {
+    def gate = _3
+    def pr(s:StatisticsType) = Dirichlet.pr(s._1, s._2(s._3.intValue))
+    def sampledValue(s:StatisticsType): ProportionsValue = Dirichlet.sampledValue(s._2(s._3.intValue))
+    def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = Dirichlet.pr(s._1, s._2(mixtureIndex))
+    def sampledValueChoosing(s:Statistics, mixtureIndex:Int): ProportionsValue = Dirichlet.sampledValue(s._2(mixtureIndex))
+  }
+  def newFactor(a:Proportions, b:Mixture[Masses], c:Gate) = Factor(a, b, c)
 }
 

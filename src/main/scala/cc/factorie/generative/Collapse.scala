@@ -43,17 +43,14 @@ object DenseCountsProportionsCollapser extends Collapser {
     variables.head match {
       case p:DenseCountsProportions => {
         p.zero()
-        for (f <- factors.asInstanceOf[Seq[Family#Factor]]) f.family.asInstanceOf[Family] match {
+        for (f <- factors) f match {
           //case f:Discrete.Factor if (f.family == Discrete) => p.increment(f._1.intValue, 1.0)(null)
-          case Discrete => p.increment(f.asInstanceOf[Discrete.Factor]._1.intValue, 1.0)(null)
-          case PlatedDiscrete => f match { case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => f._2.asInstanceOf[DenseCountsProportions].increment(f._1(i).intValue, 1.0)(null)) }
+          case f:Discrete.Factor => p.increment(f._1.intValue, 1.0)(null)
+          //case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => f._2.asInstanceOf[DenseCountsProportions].increment(f._1(i).intValue, 1.0)(null))
+          case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => p.increment(f._1(i).intValue, 1.0)(null))
           //case f:Dirichlet.Factor if (f.family == Dirichlet) => p.increment(f._2)(null)
-          case Dirichlet => p.increment(f.asInstanceOf[Dirichlet.Factor]._2)(null)
-          case family:Family => {
-            //if (f.isInstanceOf[Dirichlet.Factor]) println("Is Dirichlet.Factor") else println("Is NOT Dirichlet.Factor")
-            //println("DenseCountsProportionsCollapser unexpected factor family "+f.family+".  factor: "+f)
-            return false
-          }
+          case f:Dirichlet.Factor => p.increment(f._2)(null)
+          case _ => { println("DenseCountsProportionsCollapser unexpected factor "+f); return false }
         }
         true
       }
@@ -72,11 +69,11 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
         // TODO We really should create a mechanism indicating that a variable/factor is deterministic 
         //  and GenerativeFamily.normalize should expand the factors to include neighbors of these,
         //  then include Dirichlet.factor in the match statement below.
-        for (f <- factors.asInstanceOf[Seq[Family#Factor]]) f.family.asInstanceOf[Family] match {
-          case MixtureComponent => {}
-          case DiscreteMixture => m(f.asInstanceOf[DiscreteMixture.Factor]._3.intValue).increment(f.asInstanceOf[DiscreteMixture.Factor]._1.intValue, 1.0)(null)
-          case PlatedDiscreteMixture => forIndex(f.asInstanceOf[PlatedDiscreteMixture.Factor]._1.size)(i => m(f.asInstanceOf[PlatedDiscreteMixture.Factor]._3(i).intValue).increment(f.asInstanceOf[PlatedDiscreteMixture.Factor]._1(i).intValue, 1.0)(null))
-          case f:Family#Factor => { println("DenseCountsProportionsMixtureCollapser unexpected factor "+f.family); return false }
+        for (f <- factors) f match {
+          case f:MixtureComponent.Factor => {}
+          case f:DiscreteMixture.Factor => m(f._3.intValue).increment(f._1.intValue, 1.0)(null)
+          case f:PlatedDiscreteMixture.Factor => forIndex(f._1.size)(i => m(f._3(i).intValue).increment(f._1(i).intValue, 1.0)(null))
+          case f:Factor => { println("DenseCountsProportionsMixtureCollapser unexpected factor "+f); return false }
         }
         true
       }

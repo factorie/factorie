@@ -13,7 +13,6 @@
    limitations under the License. */
 
 
-
 package cc.factorie.generative
 import cc.factorie._
 

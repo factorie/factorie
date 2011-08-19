@@ -19,8 +19,6 @@ import cc.factorie._
 
 package object generative {
 
-  type GenerativeFactor = GenerativeFamily#Factor
-
   object GenerativeModel extends Model {
     /** Only works on Iterable[GeneratedVar] */
     def factors(variables:Iterable[Variable]): Seq[Factor] = {

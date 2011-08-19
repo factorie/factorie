@@ -20,18 +20,22 @@ import cc.factorie._
 //trait GeneratedRealVar extends IntegerVar with GeneratedVar
 //abstract class Real(initial: Double = 0.0) extends RealVariable(initial) with GeneratedRealVar with MutableGeneratedVar
 
-object Gamma extends GenerativeFamilyWithStatistics3[GeneratedRealVar,RealVarParameter,RealVarParameter] {
+object Gamma extends GenerativeFamily3[GeneratedRealVar,RealVarParameter,RealVarParameter] {
+  self =>
   def logpr(value:Double, mean:Double, variance:Double): Double = {
     val diff = value - mean
     return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
   }
-  def pr(s:Stat): Double = pr(s._1, s._2, s._3)
   def pr(x:Double, alpha:Double, beta:Double): Double = {
     require(x > 0)
     math.pow(beta, alpha) / maths.gamma(alpha) * math.pow(x, alpha - 1) * math.exp(- beta * x)
   }
-  def sampledValue(s:Stat): Double = sampledValue(s._2, s._3)
   def sampledValue(alpha:Double, beta:Double): Double = maths.nextGamma(alpha.doubleValue, beta.doubleValue)(cc.factorie.random)
+  case class Factor(_1:GeneratedRealVar, _2:RealVarParameter, _3:RealVarParameter) extends super.Factor {
+    def pr(s:Statistics): Double = self.pr(s._1, s._2, s._3)
+    def sampledValue(s:Statistics): Double = self.sampledValue(s._2, s._3)
+  }
+  def newFactor(_1:GeneratedRealVar, _2:RealVarParameter, _3:RealVarParameter) = Factor(_1, _2, _3)
 }
 
 

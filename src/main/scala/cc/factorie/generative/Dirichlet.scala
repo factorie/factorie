@@ -17,8 +17,8 @@ import cc.factorie._
 
 // Proportions ~ Dirichlet(Proportions, Precision)
 
-object Dirichlet extends GenerativeFamilyWithStatistics2[Proportions,Masses] {
-  def pr(s:StatisticsType) = pr(s._1, s._2)
+object Dirichlet extends GenerativeFamily2[Proportions,Masses] {
+  self =>
   def pr(value:ProportionsValue, alpha:Seq[Double]): Double = {
     require(value.length == alpha.length)
     var result = maths.logGamma(alpha.sum)
@@ -27,7 +27,6 @@ object Dirichlet extends GenerativeFamilyWithStatistics2[Proportions,Masses] {
     assert(result == result, "alpha="+alpha.toList+" p="+value.toList) // NaN?
     result
   }
-  def sampledValue(s:Stat): ProportionsValue = sampledValue(s._2, Nil)
   def sampledValue(masses:Seq[Double], children:Iterable[DiscreteVar] = Nil): ProportionsValue = 
     new ProportionsValue {
       private val array = sampledArray(masses, children)
@@ -48,11 +47,15 @@ object Dirichlet extends GenerativeFamilyWithStatistics2[Proportions,Masses] {
     forIndex(alpha.length)(i => p(i) /= norm)
     p
   }
-  override def updateCollapsedChild(f:Factor): Boolean = f._1 match {
-    case p:DenseCountsProportions => { p.increment(f._2.value)(null); true }
-    case _ => false
+  case class Factor(_1:Proportions, _2:Masses) extends super.Factor {
+    def pr(s:StatisticsType) = self.pr(s._1, s._2)
+    def sampledValue(s:StatisticsType): ProportionsValue = self.sampledValue(s._2, Nil)
+    override def updateCollapsedChild(): Boolean = _1 match {
+      case p:DenseCountsProportions => { p.increment(_2.value)(null); true }
+      case _ => false
+    }
   }
-
+  def newFactor(a:Proportions, b:Masses) = Factor(a, b)
 }
 
 object DirichletMomentMatching {

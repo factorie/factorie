@@ -23,17 +23,15 @@ abstract class Gate(initial:Int) extends Discrete(initial) with Parameter {
 //abstract class PlatedGate(initial:Seq[Int]) extends PlatedDiscrete(initial) with Parameter { }
 
 // For factors between a Mixture and the child generated from that Mixture
-trait MixtureFamily extends GenerativeFamily {
-  type FamilyType <: MixtureFamily
+trait MixtureFactor extends GenerativeFactor {
   //type ChildType <: MixtureGeneratedVar
-  def gate(f:FactorType): Gate
-  def gate(f:cc.factorie.Factor): Gate = gate(f.asInstanceOf[FactorType])
+  def gate: Gate
   def prChoosing(s:StatisticsType, mixtureIndex:Int): Double
-  def prChoosing(s:cc.factorie.Statistics, mixtureIndex:Int): Double = prChoosing(s.asInstanceOf[StatisticsType], mixtureIndex)
+  def prChoosing(mixtureIndex:Int): Double = prChoosing(statistics, mixtureIndex)
   def logprChoosing(s:StatisticsType, mixtureIndex:Int): Double = math.log(prChoosing(s, mixtureIndex))
-  def logprChoosing(s:cc.factorie.Statistics, mixtureIndex:Int): Double = logprChoosing(s.asInstanceOf[StatisticsType], mixtureIndex)
+  def logprChoosing(mixtureIndex:Int): Double = logprChoosing(statistics, mixtureIndex)
   def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value
-  def sampledValueChoosing(s:cc.factorie.Statistics, mixtureIndex:Int): ChildType#Value = sampledValueChoosing(s.asInstanceOf[StatisticsType], mixtureIndex)
+  def sampledValueChoosing(mixtureIndex:Int): ChildType#Value = sampledValueChoosing(statistics, mixtureIndex)
 }
 
 //trait ParameterVars[P<:Parameter] extends Vars[P] with Parameter
@@ -45,14 +43,17 @@ trait MixtureFamily extends GenerativeFamily {
   def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
   def updateCollapsedParents(f:Factor): Boolean =   
 }*/
-object MixtureComponent extends GenerativeFamilyWithStatistics2[Mixture[Parameter],Parameter] {
-  def pr(s:StatisticsType) = 1.0
-  def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
-  override def updateCollapsedParents(f:Factor, weight:Double): Boolean = {
-    // TODO this is inefficient because it will loop through all children of the Mixture for each Mixture component
-    for (f2 <- f._1.childFactorsOf(f._2)) f2.family.updateCollapsedParents(f2, weight) // TODO Consider collapsed Gate
-    true
+object MixtureComponent extends GenerativeFamily2[Mixture[Parameter],Parameter] {
+  case class Factor(_1:Mixture[Parameter], _2:Parameter) extends super.Factor {
+    def pr(s:StatisticsType) = 1.0
+    def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
+    override def updateCollapsedParents(weight:Double): Boolean = {
+    //  TODO this is inefficient because it will loop through all children of the Mixture for each Mixture component
+      for (f2 <- _1.childFactorsOf(_2)) f2.updateCollapsedParents(weight) // TODO Consider collapsed Gate
+      true
+    }
   }
+  def newFactor(a:Mixture[Parameter], b:Parameter) = Factor(a, b)
 }
 
 class Mixture[+P<:Parameter](val components:Seq[P]) extends Seq[P] with GeneratedVar with Parameter 
@@ -68,15 +69,15 @@ with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]]
   //parentFactor = new MixtureComponent.Factor(this, new SeqParameterVars(components)) // TODO Look at this again carefully
   //components.foreach(p => p.addChildFactor(parentFactor)) 
   override def isDeterministic = true
-  def childFactorsOf[P2>:P](p:P2): Seq[MixtureFamily#Factor] = {
+  def childFactorsOf[P2>:P](p:P2): Seq[MixtureFactor] = {
     val index = this.indexOf(p)
     //children.filter(_.isInstanceOf[MixtureGeneratedVar]).asInstanceOf[Iterable[MixtureGeneratedVar]].filter(_.choice.intValue == index)
     // If this cast fails, it means that some of the children are not a MixtureGeneratedVar; 
     // for example, they might be a MixtureSeqGeneratedVar, which is allowed, but not supported by this.childrenOf method.
-    val result = new scala.collection.mutable.ArrayBuffer[MixtureFamily#Factor]
+    val result = new scala.collection.mutable.ArrayBuffer[MixtureFactor]
     for (factor <- childFactors) factor match {
-      case f:MixtureFamily#Factor => if (f.family.gate(f).intValue == index) result += f
-      case f:PlatedMixtureFamily#Factor => throw new Error("Not yet implemented")
+      case f:MixtureFactor => if (f.gate.intValue == index) result += f
+      case f:PlatedMixtureFactor => throw new Error("Not yet implemented")
     }
     result
   }

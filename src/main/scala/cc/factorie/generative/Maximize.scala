@@ -56,7 +56,7 @@ object GatedDiscreteMaximizer extends Maximizer {
         var maxi = 0
         val statistics = dmf.statistics(dmf.values)
         forIndex(gate.domain.size)(i => {
-          val pr = df._2(i) * dmf.family.prChoosing(statistics, i)
+          val pr = df._2(i) * dmf.prChoosing(statistics, i)
           if (pr > max) { max = pr; maxi = i }
         })
         gate.set(maxi)(null)

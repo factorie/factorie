@@ -17,13 +17,13 @@ import cc.factorie._
 import scala.collection.mutable.{HashSet,ArrayBuffer}
 
 trait Parameter extends GeneratedVar {
-  private val _childFactors = new scala.collection.mutable.ArrayBuffer[GenerativeFamily#Factor]
-  override def factors: Seq[GenerativeFamily#Factor] = parentFactor +: _childFactors
-  def addChildFactor(f:GenerativeFamily#Factor): Unit = _childFactors += f
-  def removeChildFactor(f:GenerativeFamily#Factor): Unit = _childFactors -= f
+  private val _childFactors = new scala.collection.mutable.ArrayBuffer[GenerativeFactor]
+  override def factors: Seq[GenerativeFactor] = parentFactor +: _childFactors
+  def addChildFactor(f:GenerativeFactor): Unit = _childFactors += f
+  def removeChildFactor(f:GenerativeFactor): Unit = _childFactors -= f
   def addChild(v:GeneratedVar, d:DiffList = null): Unit = _childFactors += v.parentFactor
   def removeChild(v:GeneratedVar, d:DiffList = null): Unit = _childFactors -= v.parentFactor
-  def childFactors: Seq[GenerativeFamily#Factor] = _childFactors
+  def childFactors: Seq[GenerativeFactor] = _childFactors
   def children: Seq[GeneratedVar] = _childFactors.map(_.variables.head).asInstanceOf[Seq[GeneratedVar]]
   def childrenOfClass[A](implicit m:Manifest[A]) = children.filter(_.getClass == m.erasure).asInstanceOf[Iterable[A]]
   /** A collection of variables whose value depends on the value of this variable, 

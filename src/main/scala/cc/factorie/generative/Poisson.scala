@@ -15,9 +15,12 @@
 package cc.factorie.generative
 import cc.factorie._
 
-object Poisson extends GenerativeFamilyWithStatistics2[GeneratedIntegerVar,RealVarParameter] {
-  def pr(k:Int, mean:Double) = math.pow(mean, k) * math.exp(-mean) / maths.factorial(k)
-  def pr(s:StatisticsType) = pr(s._1, s._2)
-  def sampledValue(mean:Double): Int = maths.nextPoisson(mean)(cc.factorie.random).toInt
-  def sampledValue(s:StatisticsType): Int = sampledValue(s._2)
+object Poisson extends GenerativeFamily2[GeneratedIntegerVar,RealVarParameter] {
+  case class Factor(_1:GeneratedIntegerVar, _2:RealVarParameter) extends super.Factor {
+    def pr(k:Int, mean:Double): Double = math.pow(mean, k) * math.exp(-mean) / maths.factorial(k)
+    def pr(s:Statistics): Double = pr(s._1, s._2)
+    def sampledValue(mean:Double): Int = maths.nextPoisson(mean)(cc.factorie.random).toInt
+    def sampledValue(s:Statistics): Int = sampledValue(s._2)
+  }
+  def newFactor(a:GeneratedIntegerVar, b:RealVarParameter) = Factor(a, b)
 }

@@ -20,22 +20,11 @@ abstract class PlatedGate(initial:Seq[Int]) extends PlatedDiscrete(initial) with
   def this(len:Int) = this(Seq.fill(len)(0))
 }
 
-// TODO Consider:  
-trait PlatedMixtureFamily extends GenerativeFamily {
-  type FamilyType <: PlatedMixtureFamily
-}
-
-trait PlatedMixtureGenerativeFamily extends GenerativeFamily {
-  type FamilyType <: PlatedMixtureGenerativeFamily
+trait PlatedMixtureFactor extends GenerativeFactor {
   //type ChildType <: PlatedMixtureGeneratedVar
   def prChoosing(s:StatisticsType, seqIndex:Int, mixtureIndex:Int): Double
-  def prChoosing(s:cc.factorie.Statistics, seqIndex:Int, mixtureIndex:Int): Double = 
-    prChoosing(s.asInstanceOf[StatisticsType], seqIndex, mixtureIndex)
   def logprChoosing(s:StatisticsType, seqIndex:Int, mixtureIndex:Int): Double
-  def logprChoosing(s:cc.factorie.Statistics, seqIndex:Int, mixtureIndex:Int): Double = 
-    logprChoosing(s.asInstanceOf[StatisticsType], seqIndex, mixtureIndex)
   def sampledValueChoosing(s:StatisticsType, mixtureIndices:Seq[Int]): ChildType#Value
-  def sampledValueChoosing(s:cc.factorie.Statistics, mixtureIndices:Seq[Int]): ChildType#Value = sampledValueChoosing(s.asInstanceOf[StatisticsType], mixtureIndices)
 }
 
 

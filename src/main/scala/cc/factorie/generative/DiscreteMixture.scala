@@ -18,23 +18,22 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-trait DiscreteMixtureGeneratingFamily extends DiscreteGeneratingFamily with MixtureFamily {
-  type FamilyType <: DiscreteGeneratingFamily with MixtureFamily
-}
-
-object DiscreteMixture extends DiscreteMixtureGeneratingFamily /* TODO DiscreteGeneratingFamily with MixtureFamily */ with GenerativeFamilyWithStatistics3[GeneratedDiscreteVar,Mixture[Proportions],Gate] {
-  def gate(f:Factor) = f._3
-  def pr(s:StatisticsType) = s._2(s._3.intValue).apply(s._1.intValue)
-  def sampledValue(s:StatisticsType): DiscreteValue = s._1.domain.getValue(s._2(s._3.intValue).sampleInt)
-  def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = s._2(mixtureIndex).apply(s._1.intValue)
-  def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value = s._1.domain.getValue(s._2(mixtureIndex).sampleInt)
-  def prValue(f:Stat, intValue:Int): Double = f._2.apply(f._3.intValue).apply(intValue)
-  def prValue(f:Factor, intValue:Int): Double = f._2.apply(f._3.intValue).apply(intValue)
-  override def updateCollapsedParents(f:Factor, weight:Double): Boolean = {
-    f._2(f._3.intValue) match {
-      case p:DenseCountsProportions => { p.increment(f._1.intValue, weight)(null); true }
-      case _ => false // Just throw Error instead; change API to return Unit also and always throw Error for unsupported cases
+object DiscreteMixture extends GenerativeFamily3[GeneratedDiscreteVar,Mixture[Proportions],Gate] {
+  case class Factor(_1:GeneratedDiscreteVar, _2:Mixture[Proportions], _3:Gate) extends DiscreteGeneratingFactor with MixtureFactor with super.Factor {
+    def gate = _3
+    def pr(s:StatisticsType) = s._2(s._3.intValue).apply(s._1.intValue)
+    def sampledValue(s:StatisticsType): DiscreteValue = s._1.domain.getValue(s._2(s._3.intValue).sampleInt)
+    def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = s._2(mixtureIndex).apply(s._1.intValue)
+    override def prChoosing(mixtureIndex:Int): Double = _2(mixtureIndex).apply(_1.intValue)
+    def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value = s._1.domain.getValue(s._2(mixtureIndex).sampleInt)
+    def prValue(f:Statistics, intValue:Int): Double = f._2.apply(f._3.intValue).apply(intValue)
+    override def updateCollapsedParents(weight:Double): Boolean = {
+      _2(_3.intValue) match {
+        case p:DenseCountsProportions => { p.increment(_1.intValue, weight)(null); true }
+        case _ => false // Just throw Error instead; change API to return Unit also and always throw Error for unsupported cases
+      }
     }
   }
+  def newFactor(a:GeneratedDiscreteVar, b:Mixture[Proportions], c:Gate) = Factor(a, b, c)
 }
 

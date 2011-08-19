@@ -22,23 +22,27 @@ abstract class PlatedDiscrete(initialValue:Seq[Int]) extends DiscreteSeqVariable
 trait PlatedGeneratedCategoricalVar[A] extends CategoricalSeqVariable[A] with PlatedGeneratedDiscreteVar
 abstract class PlatedCategorical[A](initialValue:Seq[A]) extends CategoricalSeqVariable(initialValue) with PlatedGeneratedCategoricalVar[A]
 
-trait PlatedDiscreteGeneratingFamily extends GenerativeFamily {
+trait PlatedDiscreteGeneratingFactor extends GenerativeFactor {
   def prValue(s:StatisticsType, value:Int, index:Int): Double
+  def prValue(value:Int, index:Int): Double = prValue(statistics, value, index)
 }
 
-object PlatedDiscrete extends GenerativeFamilyWithStatistics2[PlatedGeneratedDiscreteVar,Proportions] {
-  //type FamilyType = PlatedDiscrete
-  def pr(s:Stat): Double = pr(s._1, s._2)
+object PlatedDiscrete extends GenerativeFamily2[PlatedGeneratedDiscreteVar,Proportions] {
+  self =>
   def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
-  override def logpr(s:StatisticsType): Double = logpr(s._1, s._2)
   def logpr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => math.log(p(dv.intValue))).sum
-  def sampledValue(s:StatisticsType): Seq[DiscreteValue] = sampledValue(s._1.first.domain, s._1.length, s._2)
   def sampledValue(d:DiscreteDomain, length:Int, p:ProportionsValue): Seq[DiscreteValue] = 
     ArrayBuffer.fill(length)(d.getValue(p.sampleInt))
-  def updateCollapsedParents(f:Factor, index:Int, weight:Double): Unit = {
-    f._2 match {
-      case p:DenseCountsProportions => { p.increment(f._1(index).intValue, weight)(null); true }
-      case _ => false
+  case class Factor(_1:PlatedGeneratedDiscreteVar, _2:Proportions) extends super.Factor {
+    def pr(s:Statistics): Double = self.pr(s._1, s._2)
+    override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
+    def sampledValue(s:Statistics): Seq[DiscreteValue] = self.sampledValue(s._1.first.domain, s._1.length, s._2)
+    def updateCollapsedParents(index:Int, weight:Double): Unit = {
+      _2 match {
+        case p:DenseCountsProportions => { p.increment(_1(index).intValue, weight)(null); true }
+        case _ => false
+      }
     }
   }
+  def newFactor(a:PlatedGeneratedDiscreteVar, b:Proportions) = Factor(a, b)
 }

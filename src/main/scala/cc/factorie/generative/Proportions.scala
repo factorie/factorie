@@ -182,16 +182,16 @@ class DenseCountsProportions(len:Int) extends MutableProportions {
   def setFrom(v:Variable)(implicit d:DiffList): Unit = v match {
     case dcp:DenseCountsProportions if (dcp == this) => {}
   }
-  def setCollapsed: Unit = {
+  /*def setCollapsed: Unit = {
     //parentFactor.family.resetCollapsedChild(parentFactor)
     this.zero()
     // TODO Check to make sure that both "updates" below return true indicating success
-    val b1 = parentFactor.family.updateCollapsedChild(parentFactor)
-    val b2 = childFactors.forall(f => f.family.updateCollapsedParents(f, 1.0))
+    val b1 = parentFactor.updateCollapsedChild(parentFactor)
+    val b2 = childFactors.forall(f => f.updateCollapsedParents(f, 1.0))
     require(b1)
     require(b2)
     //for (factor <- childFactors) factor match { case f:Discrete.Factor => increment(f._1.intValue, 1.0)(null) }
-  }
+  }*/
   //class DiscretePr(override val index:Int, override val pr:Double, val count:Double) extends super.DiscretePr(index,pr)
   //override def top(n:Int): Seq[DiscretePr] = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p,counts(i))}).filter(_.pr > 0.0)
   case class DenseCountsProportionsDiff(index:Int, incr:Double) extends Diff {

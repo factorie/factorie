@@ -31,16 +31,13 @@ trait VarWithFactors extends Variable {
     May or may not be mutable. */
 trait GeneratedVar extends VarWithFactors {
   //type VariableType <: GeneratedVar
-  var parentFactor: GenerativeFamily#Factor = null
-  def factors: Seq[GenerativeFamily#Factor] = List(parentFactor)
+  var parentFactor: GenerativeFactor = null
+  def factors: Seq[GenerativeFactor] = List(parentFactor)
   def sampledValue: Value = {
-    val generativeTemplate = parentFactor.family
-    //println("GeneratedVar.sampledValue generativeFamily "+generativeTemplate.getClass)
-    generativeTemplate.sampledValue(parentFactor.statistics.asInstanceOf[generativeTemplate.StatisticsType]).asInstanceOf[Value]
+    parentFactor.sampledValue.asInstanceOf[Value]
   }
-  // TODO Consider template.pr(parentFactor) for efficiency
-  def pr = parentFactor.family.pr(parentFactor.statistics)
-  def logpr = parentFactor.family.logpr(parentFactor.statistics)
+  def pr = parentFactor.pr
+  def logpr = parentFactor.logpr
   /*def ~(f:GenerativeFamily#Factor): this.type = {
     assert(f.family.isInstanceOf[GenerativeFamily])
     //assert(f._1 eq this) // TODO How to check this?
@@ -48,17 +45,17 @@ trait GeneratedVar extends VarWithFactors {
     this
   }*/
   // TODO The type parameter below doesn't actually enforce what we want.  Fix this.
-  def ~[V<:this.VariableType with GeneratedVar](partialFactor:Function1[V,GenerativeFamily#Factor]): this.type = {
+  def ~[V<:this.VariableType with GeneratedVar](partialFactor:Function1[V,GenerativeFactor]): this.type = {
     assert(parentFactor eq null)
     parentFactor = partialFactor(this.asInstanceOf[V])
-    for (p <- parentFactor.variables.tail) p.asInstanceOf[Parameter].addChild(this) // TODO Think about this more.
+    for (p <- parentFactor.parents) p.asInstanceOf[Parameter].addChild(this) // TODO Think about this more.
     this
   }
 
   /** The list of random variables on which the generation of this variable's value depends. 
       By convention the first variable of the parentFactor is the child, 
       and the remainder are its parents. */
-  def parents: Seq[Parameter] = parentFactor.variables.tail.asInstanceOf[Seq[Parameter]]
+  def parents: Seq[Parameter] = parentFactor.parents.asInstanceOf[Seq[Parameter]]
   /** The list of random variables on which the generation of this variable's value depends,
       either directly or via a sequence of deterministic variables.  Changes to these variables
       cause the value of this.pr to change. */
@@ -83,7 +80,7 @@ trait MutableGeneratedVar extends GeneratedVar with MutableVar {
     set(this.sampledValue)(d)
     this
   }
-  def :~[V<:this.VariableType](partialFactor:Function1[V,GenerativeFamily#Factor]): this.type = {
+  def :~[V<:this.VariableType](partialFactor:Function1[V,GenerativeFactor]): this.type = {
     this ~ partialFactor
     this.set(this.sampledValue)(null)
     this
@@ -111,94 +108,84 @@ trait ProportionGenerating {
 
 
 
-// Families
+// Generative Factors
 
-/*trait GenerativeFactor extends Factor {
-  type StatisticsType <: cc.factorie.Statistics
-  //type ChildType <: GenerativeVar
-  override def template: GenerativeTemplate
-  def sampledValue: Any
-  def pr: Double
-  def logpr: Double
-  def child: GeneratedVar
-  //def parents: Seq[Parameter]
-  override def statistics: StatisticsType
-  override def copy(s:Substitutions): GenerativeFactor
-}*/
-
-trait GenerativeFamily extends FamilyWithNeighborDomains {
+trait GenerativeFactor extends Factor {
   type ChildType <: GeneratedVar
-  type FamilyType <: GenerativeFamily
-  //matchNeighborDomains = false // There is just one Template for all variable classes, even with different domains.
-  def child(f:FactorType): ChildType
+  type StatisticsType <: Statistics
+  def statistics: StatisticsType
+  def child: ChildType
+  def parents: Seq[GeneratedVar]
   def pr(s:StatisticsType): Double
-  def pr(s:cc.factorie.Statistics): Double = pr(s.asInstanceOf[StatisticsType])
-  def logpr(s:StatisticsType) = math.log(pr(s))
-  def logpr(s:cc.factorie.Statistics): Double = logpr(s.asInstanceOf[StatisticsType])
-  def score(s:StatisticsType) = logpr(s)
-  def sampledValue(s:StatisticsType): ChildType#Value
-  def sampledValue(s:cc.factorie.Statistics): ChildType#Value = sampledValue(s.asInstanceOf[StatisticsType])
+  def pr: Double = pr(statistics)
+  def logpr(s:StatisticsType): Double = math.log(pr(s))
+  def logpr: Double = logpr(statistics)
+  def sampledValue(s:StatisticsType): Any
+  def sampledValue: Any = sampledValue(statistics)
   /** Update sufficient statistics in collapsed parents, using current value of child, with weight.  Return false on failure. */
-  def updateCollapsedParents(f:FactorType, weight:Double): Boolean = throw new Error(f.family.getClass.toString+": Collapsing parent not implemented.")
-  def updateCollapsedParents(f:cc.factorie.Factor, weight:Double): Boolean = updateCollapsedParents(f.asInstanceOf[FactorType], weight)
-  // TODO Put functionality of updateCollapsedChild into resetCollapsedChild (it resets and initializes to distribution of parent)
-  def updateCollapsedChild(f:FactorType): Boolean = throw new Error(f.family.getClass.toString+": Collapsing child not implemented.")
-  def updateCollapsedChild(f:cc.factorie.Factor): Boolean = updateCollapsedChild(f.asInstanceOf[FactorType])
-  def resetCollapsedChild(f:FactorType): Boolean = throw new Error(f.family.getClass.toString+": Resetting child not implemented.")
-  def resetCollapsedChild(f:cc.factorie.Factor): Boolean = resetCollapsedChild(f.asInstanceOf[FactorType])
-  /*trait Factor extends super.Factor {
-    def child: ChildType = GenerativeFamily.this.child(this.asInstanceOf[FactorType])
-    def updateCollapsedParents(weight:Double): Boolean = GenerativeFamily.this.updateCollapsedParents(this.asInstanceOf[FactorType], weight)
-  }*/
+  def updateCollapsedParents(weight:Double): Boolean = throw new Error(factorName+": Collapsing parent not implemented.")
+  def updateCollapsedChild(): Boolean = throw new Error(factorName+": Collapsing child not implemented.")
+  def resetCollapsedChild(): Boolean = throw new Error(factorName+": Resetting child not implemented.")
 }
 
-trait GenerativeFamilyWithStatistics1[C<:GeneratedVar] extends FamilyWithStatistics1[C] with GenerativeFamily {
-  thisTemplate =>
-  //type FamilyType <: GenerativeFamilyWithStatistics1[C]
+trait GenerativeFactorWithStatistics1[C<:GeneratedVar] extends GenerativeFactor with FactorWithStatistics1[C] {
   type ChildType = C
-  def child(f:Factor): C = f._1
-  def apply(): Function1[C,Factor] = new Function1[C,Factor] {
-    def apply(c:C) = Factor(c)
-  }
-  /*override def factors(v:Variable): Seq[FactorType] = v match {
-    case gv:GeneratedVar => gv.parentFactor match { case pf:Factor => if (pf.family eq thisTemplate) List(pf) else Nil; case _ => Nil }
-    case _ => Nil
-  }*/
+  def child = _1
+  def parents = Nil
+  def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType]) // Can't define score earlier because inner class Factor.Statistics not defined until here
 }
 
-trait GenerativeFamilyWithStatistics2[C<:GeneratedVar,P1<:Parameter] extends FamilyWithStatistics2[C,P1] with GenerativeFamily {
-  thisTemplate =>
+trait GenerativeFactorWithStatistics2[C<:GeneratedVar,P1<:Parameter] extends GenerativeFactor with FactorWithStatistics2[C,P1] {
   type ChildType = C
-  //type FamilyType <: GenerativeFamilyWithStatistics2[C,P1]
-  def child(f:Factor): C = f._1
+  def child = _1
+  def parents = Seq(_2)
+  def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
+}
+
+trait GenerativeFactorWithStatistics3[C<:GeneratedVar,P1<:Parameter,P2<:Parameter] extends GenerativeFactor with FactorWithStatistics3[C,P1,P2] {
+  type ChildType = C
+  def child = _1
+  def parents = Seq(_2, _3)
+  def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
+}
+
+trait GenerativeFactorWithStatistics4[C<:GeneratedVar,P1<:Parameter,P2<:Parameter,P3<:Parameter] extends GenerativeFactor with FactorWithStatistics4[C,P1,P2,P3] {
+  type ChildType = C
+  def child = _1
+  def parents = Seq(_2, _3, _4)
+  def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
+}
+
+trait GenerativeFamily2[Child<:GeneratedVar,Parent1<:Parameter] {
+  type C = Child
+  type P1 = Parent1
+  trait Factor extends GenerativeFactorWithStatistics2[C,P1] 
+  def newFactor(c:C, p1:P1): Factor
   def apply(p1:P1) = new Function1[C,Factor] {
-    def apply(c:C) = Factor(c, p1)
+    def apply(c:C) = newFactor(c, p1)
   }
-  //def unroll1(c:C) = if (c.parentFactor.family eq thisTemplate) List(c.parentFactor.asInstanceOf[Factor]) else Nil
-  //def unroll2(p1:P1) = p1.childFactors.filter(_.family eq thisTemplate).asInstanceOf[Seq[Factor]]
 }
 
-trait GenerativeFamilyWithStatistics3[C<:GeneratedVar,P1<:Parameter,P2<:Parameter] extends FamilyWithStatistics3[C,P1,P2] with GenerativeFamily {
-  thisTemplate =>
-  type ChildType = C
-  def child(f:Factor): C = f._1
+trait GenerativeFamily3[Child<:GeneratedVar,Parent1<:Parameter,Parent2<:Parameter] {
+  type C = Child
+  type P1 = Parent1
+  type P2 = Parent2
+  trait Factor extends GenerativeFactorWithStatistics3[C,P1,P2] 
+  def newFactor(c:C, p1:P1, p2:P2): Factor
   def apply(p1:P1,p2:P2) = new Function1[C,Factor] {
-    def apply(c:C) = Factor(c, p1, p2)
+    def apply(c:C) = newFactor(c, p1, p2)
   }
-  //def unroll1(c:C) = if (c.parentFactor.family eq thisTemplate) List(c.parentFactor.asInstanceOf[Factor]) else Nil
-  //def unroll2(p1:P1) = p1.childFactors.filter(_.family eq thisTemplate).asInstanceOf[Seq[Factor]]
-  //def unroll3(p2:P2) = p2.childFactors.filter(_.family eq thisTemplate).asInstanceOf[Seq[Factor]]
 }
 
-trait GenerativeFamilyWithStatistics4[C<:GeneratedVar,P1<:Parameter,P2<:Parameter,P3<:Parameter] extends FamilyWithStatistics4[C,P1,P2,P3] with GenerativeFamily {
-  thisTemplate =>
-  type ChildType = C
-  def child(f:Factor): C = f._1
-  def apply(p1:P1,p2:P2,p3:P3) = new Function1[C,Factor] { def apply(c:C) = Factor(c, p1, p2, p3) }
-  //def unroll1(c:C) = if (c.parentFactor.family eq thisTemplate) List(c.parentFactor.asInstanceOf[Factor]) else Nil
-  //def unroll2(p1:P1) = p1.childFactors.filter(_.family eq thisTemplate).asInstanceOf[Seq[Factor]]
-  //def unroll3(p2:P2) = p2.childFactors.filter(_.family eq thisTemplate).asInstanceOf[Seq[Factor]]
-  //def unroll4(p3:P3) = p3.childFactors.filter(_.family eq thisTemplate).asInstanceOf[Seq[Factor]]
+trait GenerativeFamily4[Child<:GeneratedVar,Parent1<:Parameter,Parent2<:Parameter,Parent3<:Parameter] {
+  type C = Child
+  type P1 = Parent1
+  type P2 = Parent2
+  type P3 = Parent3
+  trait Factor extends GenerativeFactorWithStatistics4[C,P1,P2,P3] 
+  def newFactor(c:C, p1:P1, p2:P2, p3:P3): Factor
+  def apply(p1:P1,p2:P2,p3:P3) = new Function1[C,Factor] {
+    def apply(c:C) = newFactor(c, p1, p2, p3)
+  }
 }
-
 
