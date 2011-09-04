@@ -284,7 +284,7 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
     // TODO Sort more efficiently
     for (i <- 1 until siz) bubbleDownFrom(i)
     //assert(countsTotal == calculatedCountsTotal) // TODO Remove this
-    assert(check, counts.toString)
+    //assert(check, counts.toString)
   }
   def this(dim:Int, initial:Array[Int]) = this(dim, initial, false)
   require(dim > 1)
@@ -330,15 +330,15 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
   }
   protected def bubbleUpFrom(pos:Int): Unit = {
     //assert(check, counts.toString)
-    val prevCounts = new scala.collection.mutable.ArrayBuffer[String]; prevCounts += counts.toString
+    //val prevCounts = new scala.collection.mutable.ArrayBuffer[String]; prevCounts += counts.toString
     val newb = buf(pos)
     var i = pos + 1
     while (i < siz && buf(i) > newb) {
       val tmp = buf(i); buf(i) = newb; buf(i-1) = tmp // swap
-      prevCounts += counts.toString
+      //prevCounts += counts.toString
       i += 1
     }
-    assert(check, "pos="+pos+" newb=("+ti(newb)+","+co(newb)+")\n"+prevCounts.mkString("\n")+"\n"+counts.toString)
+    //assert(check, "pos="+pos+" newb=("+ti(newb)+","+co(newb)+")\n"+prevCounts.mkString("\n")+"\n"+counts.toString)
   }
   def deletePosition(pos:Int): Unit = {
     require(co(buf(pos)) == 0) // otherwise we need to adjust _countsTotal and dbuf(index) = 0
@@ -353,14 +353,14 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
   def countAtPosition(pos:Int) = co(buf(pos))
   def indexAtPosition(pos:Int) = ti(buf(pos))
   def incrementCountAtPosition(pos:Int, incr:Int): Unit = {
-    val prevCounts = counts.toString
-    val prevTi = ti(buf(pos))
-    assert(check, prevCounts)
+    //val prevCounts = counts.toString
+    //val prevTi = ti(buf(pos))
+    //assert(check, prevCounts)
     if (dbuf ne null) dbuf(ti(buf(pos))) += incr
     //val newb = buf(pos) + (incr << topicBits)
     val newCount = co(buf(pos)) + incr
     val newb = coti(newCount, ti(buf(pos)))
-    assert(ti(newb) == prevTi)
+    //assert(ti(newb) == prevTi)
     buf(pos) = newb
     _countsTotal += incr
     assert(newCount >= 0)
@@ -368,7 +368,7 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
     else if (incr > 0) bubbleDownFrom(pos)
     else if (incr < 0) bubbleUpFrom(pos)
     //assert(countsTotal == calculatedCountsTotal) // TODO Remove this
-    assert(check, "\npos="+pos+" incr="+incr+" newCount="+newCount+"\n"+prevCounts+"\n"+counts.toString) // TODO Remove this
+    //assert(check, "\npos="+pos+" incr="+incr+" newCount="+newCount+"\n"+prevCounts+"\n"+counts.toString) // TODO Remove this
   }
   // TODO Make this do binary search instead of linear search
   def positionOfIndex(index:Int): Int = {
@@ -388,8 +388,8 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
     }
   }
   def incrementCountAtIndex(index:Int, incr:Int): Unit = {
-    assert(check, counts.toString)
-    val prevCounts = counts.toString
+    //assert(check, counts.toString)
+    //val prevCounts = counts.toString
     val pos = positionOfIndex(index)
     if (pos == -1) {
       if (incr <= 0) {
@@ -398,20 +398,20 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
       }
       ensureCapacity(siz+1)
       buf(siz) = coti(incr, index)
-      if (dbuf ne null) { assert(dbuf(index) == 0); dbuf(index) = incr }
+      if (dbuf ne null) { /* assert(dbuf(index) == 0);*/ dbuf(index) = incr }
       _countsTotal += incr
       siz += 1
       bubbleDownFrom(siz-1)
       //println("SortedSparseCounts pos="+pos+" siz="+siz+" coti="+coti(incr, index))
       //assert(countsTotal == calculatedCountsTotal, "ct="+countsTotal+" cct="+calculatedCountsTotal) // Remove this
-      if (!check) {  // TODO Remove this
+      /*if (!check) {  // TODO Remove this
         println(prevCounts)
         println(counts.toString)
         assert(false)
-      }
+      }*/
     } else {
       incrementCountAtPosition(pos, incr)
-      assert(check, counts.toString) // TODO Remove this
+      //assert(check, counts.toString) // TODO Remove this
     }
   }
   def counts: Iterable[(Int,Int)] = // (count,index)

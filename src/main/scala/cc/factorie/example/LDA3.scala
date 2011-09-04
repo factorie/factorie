@@ -9,7 +9,7 @@ import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 
 object LDA3 {
-  val numTopics = 10
+  val numTopics = 100
   val beta1 = 0.1
   val alpha1 = 0.1
   cc.factorie.random.setSeed(9)
@@ -30,7 +30,7 @@ object LDA3 {
   val alphas = new DenseMasses(numTopics, alpha1)
 
   def main(args: Array[String]): Unit = {
-    val directories = if (args.length > 0) args.toList else List("12", "11", "10", "09", "08").take(1).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
+    val directories = if (args.length > 0) args.toList else List("12", "11", "10", "09", "08").take(5).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
     val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(WordDomain) ~ Dirichlet(beta))
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
@@ -48,8 +48,8 @@ object LDA3 {
     val collapse = new ArrayBuffer[GeneratedVar]
     collapse += phis
     collapse ++= documents.map(_.theta)
-    val sampler = new CollapsedGibbsSampler(collapse)
-    //val sampler = new SparseLDAInferencer(documents)
+    //val sampler = new CollapsedGibbsSampler(collapse) { def export(m:Seq[Proportions]): Unit = {} }
+    val sampler = new SparseLDAInferencer(documents)
     //println("Initialization:"); phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
 
     val startTime = System.currentTimeMillis
@@ -57,7 +57,7 @@ object LDA3 {
       for (doc <- documents) sampler.process(doc.zs)
       if (i % 5 == 0) {
         println("Iteration " + i)
-        //sampler.export(phis)
+        sampler.export(phis)
         // Turned off hyperparameter optimization
         //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
@@ -179,9 +179,9 @@ object LDA3 {
       // sample each z
       forIndex(zs.length)(zp => { // z position
         val ti = zs(zp).intValue // intValue of z, "topic index"
-        assert(ti < numTopics)
+        //assert(ti < numTopics)
         val wi = ws(zp).intValue // intValue of word, "word index"
-        assert(wi < WordDomain.size)
+        //assert(wi < WordDomain.size)
         val ntd = docTopicCounts.countOfIndex(ti) // n_{t|d}
         val nt = phiCounts.mixtureCounts(ti)
         val phiCountsWi = phiCounts(wi)
@@ -245,7 +245,7 @@ object LDA3 {
             sample -= /*beta1 * */ docTopicCounts.countAtPosition(i) / (betaSum + phiCounts.mixtureCounts(newTi))
           }
           // Allow for rounding error, but not too much
-          if (sample * beta1 > 0.0001) throw new Error("Too much mass sample="+sample+" origSample="+origSample+" smoothingMass="+smoothingMass+" topicBetaMass="+topicBetaMass+" topicTermMass="+topicTermMass)
+          if (sample * beta1 > 0.00001) throw new Error("Too much mass sample="+sample+" origSample="+origSample+" smoothingMass="+smoothingMass+" topicBetaMass="+topicBetaMass+" topicTermMass="+topicTermMass)
         } else {
           smoothingOnlyCount += 1
           sample -= topicTermMass + topicBetaMass
@@ -294,9 +294,9 @@ object LDA3 {
       })
 
       // Put back cachedCoefficients to only smoothing
-      //forIndex(docTopicCounts.numPositions)(p => {
-      forIndex(numTopics)(ti => {
-        //val ti = docTopicCounts.indexAtPosition(p) // topic index
+      forIndex(docTopicCounts.numPositions)(p => {
+      //forIndex(numTopics)(ti => {
+        val ti = docTopicCounts.indexAtPosition(p) // topic index
         val nt = phiCounts.mixtureCounts(ti) // {n_t}
         cachedCoefficients(ti) = alphas(ti) / (nt + betaSum)
       })
