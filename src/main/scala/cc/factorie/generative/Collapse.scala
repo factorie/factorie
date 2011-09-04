@@ -67,7 +67,7 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
         if (!m(0).isInstanceOf[DenseCountsProportions]) return false // Because JVM erasure doesn't actually check the [DenseCountsProportions] above
         m.foreach(p => { p.zero(); p.parentFactor match { case f:Dirichlet.Factor => p.increment(f._2)(null) } } )
         // TODO We really should create a mechanism indicating that a variable/factor is deterministic 
-        //  and GenerativeFamily.normalize should expand the factors to include neighbors of these,
+        //  and GenerativeModel.normalize should expand the factors to include neighbors of these,
         //  then include Dirichlet.factor in the match statement below.
         for (f <- factors) f match {
           case f:MixtureComponent.Factor => {}

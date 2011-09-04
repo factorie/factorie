@@ -59,7 +59,7 @@ trait DiscreteVar extends DiscreteVectorVar with VarAndValueType[DiscreteVar,Dis
   //def activeDomain = List(intValue) // TODO try to make this implementation possible: = value
 }
 
-trait MutableDiscreteVar extends DiscreteVar {
+trait MutableDiscreteVar extends DiscreteVar with MutableVar {
   def set(newValue:ValueType)(implicit d:DiffList): Unit
   def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt))(d)
   def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
@@ -68,7 +68,7 @@ trait MutableDiscreteVar extends DiscreteVar {
 // TODO Note that DiscreteVariable is not a subclass of VectorVariable, due to initialization awkwardness.
 // Consider fixing this.
 /** A Variable holding a single DiscreteValue. */
-abstract class DiscreteVariable extends VectorVariable with MutableDiscreteVar with MutableVar with IterableSettings with QDistribution {
+abstract class DiscreteVariable3 extends VectorVariable with MutableDiscreteVar with IterableSettings with QDistribution {
   // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
   def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue) }
   def this(initialInt:Int) = { this(); _set(domain.getValue(initialInt)) }
@@ -89,10 +89,10 @@ abstract class DiscreteVariable extends VectorVariable with MutableDiscreteVar w
     def hasNext = i < max
     def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(i)(d); d }
     def reset = i = -1
-    override def variable: DiscreteVariable.this.type = DiscreteVariable.this
+    override def variable: DiscreteVariable3.this.type = DiscreteVariable3.this
   }
   case class DiscreteVariableDiff(oldValue: ValueType, newValue: ValueType) extends Diff {
-    @inline final def variable: DiscreteVariable = DiscreteVariable.this
+    @inline final def variable: DiscreteVariable3 = DiscreteVariable3.this
     @inline final def redo = _set(newValue)
     @inline final def undo = _set(oldValue)
     override def toString = variable match { 
@@ -106,6 +106,50 @@ abstract class DiscreteVariable extends VectorVariable with MutableDiscreteVar w
   def newQ = new cc.factorie.generative.DenseProportions(domain.size)
 }
 
+
+// TODO Consider the following
+abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with IterableSettings {
+  def this(initialValue:Int) = { this(); _value = initialValue }
+  def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _value = initialValue.intValue }
+  private var _value: Int = 0
+  override def intValue = _value
+  def value: Value = domain.getValue(_value)
+  def set(newValue:ValueType)(implicit d:DiffList): Unit = if (newValue.intValue != _value) {
+    assert((newValue eq null) || newValue.domain == domain)
+    if (d ne null) d += new DiscreteVariableDiff(_value, newValue.intValue)
+    _value = newValue.intValue
+  }
+  override def set(newValue:Int)(implicit d:DiffList): Unit = if (newValue != _value) {
+    assert(newValue < domain.size)
+    if (d ne null) d += new DiscreteVariableDiff(_value, newValue)
+    _value = newValue
+  }
+  @inline protected final def _set(newValue:ValueType): Unit = _value = newValue.intValue
+  def settings = new SettingIterator {
+    // TODO Base this on a domain.iterator instead, for efficiency
+    var i = -1
+    val max = domain.size - 1
+    def hasNext = i < max
+    def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(i)(d); d }
+    def reset = i = -1
+    override def variable: DiscreteVariable.this.type = DiscreteVariable.this
+  }
+  case class DiscreteVariableDiff(oldValue: Int, newValue: Int) extends Diff {
+    @inline final def variable: DiscreteVariable = DiscreteVariable.this
+    @inline final def redo = _value = newValue
+    @inline final def undo = _value = oldValue
+    override def toString = variable match { 
+      case cv:CategoricalVar[_] if (oldValue >= 0) => "DiscreteVariableDiff("+cv.domain.getCategory(oldValue)+"="+oldValue+","+cv.domain.getCategory(newValue)+"="+newValue+")"
+      case _ => "DiscreteVariableDiff("+oldValue+","+newValue+")"
+    }
+  }
+}
+
+abstract class CollapsableDiscreteVariable extends DiscreteVariable {
+  def this(initialValue:Int) = { this(); set(initialValue)(null) }
+  def this(initialValue:DiscreteValue) = { this(); set(initialValue)(null) }
+  private var _q: cc.factorie.generative.MutableProportions = null
+}
 
 /** A compact array of DiscreteValues. */
 /*

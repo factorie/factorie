@@ -86,9 +86,53 @@ abstract class DiscreteSeqVariable extends SeqVar[DiscreteValue] with VarAndElem
   def domain: DiscreteSeqDomain
   def appendInt(i:Int): Unit = _seq += domain.elementDomain.getValue(i)
   def intValue(seqIndex:Int): Int = _seq(seqIndex).intValue
+  def intValues: Array[Int] = Array.tabulate(_seq.length)(i => _seq(i).intValue)
   def set(seqIndex:Int, newValue:Int)(implicit d:DiffList): Unit = {
     require(d eq null)
     _seq(seqIndex) = domain.elementDomain.getValue(newValue)
+  }
+}
+
+// One that natively supports Ints.  Current breaks LDA2 for some unknown reason. 1 Sep 2011 -akm
+abstract class DiscreteSeqVariable2 extends MutableVar with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable2,DiscreteValue] {
+  type Element = VariableType#ElementType
+  private var _length = 0
+  private var _seq = new Array[Int](8)
+  private def ensureCapacity(c:Int): Unit = {
+    if (_seq.length < c) {
+      val newC = math.max(c, _seq.length*2)
+      val newSeq = new Array[Int](newC)
+      System.arraycopy(_seq, 0, newSeq, 0, _seq.length)
+      _seq = newSeq
+    }
+  }
+  def this(initialValue:Seq[Int]) = { this(); initialValue.foreach(i => this += i) }
+  def apply(index: Int): DiscreteValue = domain.elementDomain.getValue(_seq(index))
+  def length = _length
+  def iterator = new Iterator[DiscreteValue] {
+    var i = 0
+    def hasNext = i < _length
+    def next = { val result = domain.elementDomain.getValue(_seq(i)); i += 1; result }
+  }
+  def domain: DiscreteSeqDomain
+  def value: Value = _seq.map(i => domain.elementDomain.getValue(i))
+  def set(newValue:Value)(implicit d:DiffList): Unit = {
+    var i = 0
+    val len = newValue.length
+    while (i < len) {
+      _seq(i) = newValue.apply(i).intValue
+      i += 1
+    }
+    _length = len
+  }
+  def +=(i:Int): Unit = { ensureCapacity(_length+1); _seq(_length) = i; _length += 1 }
+  //def +=(e:VariableType#ElementType): Unit = this.+=(e.intValue)
+  def ++=(xs:Iterable[Int]) = { ensureCapacity(_length + xs.size); xs.foreach(i => this += i) }
+  def appendInt(i:Int): Unit = +=(i)
+  def intValue(seqIndex:Int): Int = _seq(seqIndex)
+  def set(seqIndex:Int, newValue:Int)(implicit d:DiffList): Unit = {
+    require(d eq null)
+    _seq(seqIndex) = newValue
   }
 }
 
@@ -96,8 +140,10 @@ class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain[Seq[Categori
   lazy val elementDomain: CategoricalDomain[C] = new CategoricalDomain[C]
 }
 abstract class CategoricalSeqVariable[C] extends DiscreteSeqVariable with VarAndElementType[CategoricalSeqVariable[C],CategoricalValue[C]] {
+  //def this(initialValue:Seq[C]) = { this(); val d = domain.elementDomain; initialValue.foreach(c => this += d.index(c)) }
   def this(initialValue:Seq[C]) = { this(); val d = domain.elementDomain; initialValue.foreach(c => this += d.getValue(c)) }
   def domain: CategoricalSeqDomain[C]
   def appendCategory(x:C): Unit = _seq += domain.elementDomain.getValue(x)
+  //def appendCategory(x:C): Unit = this.+=(domain.elementDomain.index(x))
 }
 

@@ -123,6 +123,7 @@ trait GenerativeFactor extends Factor {
   def sampledValue(s:StatisticsType): Any
   def sampledValue: Any = sampledValue(statistics)
   /** Update sufficient statistics in collapsed parents, using current value of child, with weight.  Return false on failure. */
+  // TODO Consider passing a second argument which is the value of the child to use in the upate
   def updateCollapsedParents(weight:Double): Boolean = throw new Error(factorName+": Collapsing parent not implemented.")
   def updateCollapsedChild(): Boolean = throw new Error(factorName+": Collapsing child not implemented.")
   def resetCollapsedChild(): Boolean = throw new Error(factorName+": Resetting child not implemented.")
