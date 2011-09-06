@@ -37,9 +37,9 @@ class TestBP extends TestCase {
 
   // a factor template that scores a single variable's value (if v==0 then score0 else score1)
   private def newTemplate1(score0: Double, score1: Double) =
-    new TemplateWithVectorStatistics1[BinVar] {
+    new TemplateWithStatistics1[BinVar] {
       def score(s: Stat) = {
-        if (s._1.asInstanceOf[DiscreteValue].intValue == 0) score0 else score1
+        if (s._1.category == 0) score0 else score1
       }
     }
 

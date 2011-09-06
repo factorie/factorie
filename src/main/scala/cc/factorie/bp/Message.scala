@@ -187,7 +187,7 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) exten
 
   def defaultValue = domain.head
 
-  //override def toString: String = domain.map(x => "%5.5f/%f".format(probability(x), score(x))).mkString(",")
+  override def toString: String = domain.map(x => "%5.5f/%f".format(probability(x), score(x))).mkString(",")
 
   override lazy val isDeterministic = scores.exists(s => s.isPosInfinity || s.isNegInfinity)
 

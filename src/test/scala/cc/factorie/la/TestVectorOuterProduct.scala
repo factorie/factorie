@@ -18,7 +18,6 @@ import org.junit.Assert._
 import org.junit.Before
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
-import cc.factorie.TestUtils
 
 /*class TestVectorOuterProduct extends JUnitSuite with TestUtils {
   import cc.factorie.la.OuterProduct.{computeMatrix => outerProductArrayJava}
