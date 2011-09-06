@@ -25,6 +25,7 @@ import java.io._
 
 /** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
 trait Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Factor {
+  factor =>
   type NeighborType1 = N1
   type NeighborType2 = N2
   type NeighborType3 = N3
@@ -39,10 +40,26 @@ trait Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Facto
   def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case 3 => _4; case _ => throw new IndexOutOfBoundsException(i.toString) }
   override def values = new Values(_1.value, _2.value, _3.value, _4.value, inner.map(_.values))
   case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value, _4:N4#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
+    def variables = Seq(factor._1, factor._2, factor._3, factor._4)
+    def get[B <: Variable](v: B) =
+      if(v == factor._1) Some(_1.asInstanceOf[B#Value])
+      else if(v == factor._2) Some(_2.asInstanceOf[B#Value])
+      else if(v == factor._3) Some(_3.asInstanceOf[B#Value])
+      else if(v == factor._4) Some(_4.asInstanceOf[B#Value])
+      else None
+    def contains(v: Variable) = v == factor._1 || v == factor._2 || v == factor._3 || v == factor._4
     def statistics: StatisticsType = Factor4.this.statistics(this)
   }
   def statistics: StatisticsType = statistics(values)
   def statistics(v:Values): StatisticsType
+  /** valuesIterator in style of specifying varying neighbors */
+  def valuesIterator(varying:Seq[Variable]): Iterator[Values] = {
+    val values1 = if(varying.contains(_1)) _1.domain.asInstanceOf[IterableDomain[N1#Value]].values else Seq(_1.value)
+    val values2 = if(varying.contains(_2)) _2.domain.asInstanceOf[IterableDomain[N2#Value]].values else Seq(_2.value)
+    val values3 = if(varying.contains(_3)) _3.domain.asInstanceOf[IterableDomain[N3#Value]].values else Seq(_3.value)
+    val values4 = if(varying.contains(_4)) _4.domain.asInstanceOf[IterableDomain[N4#Value]].values else Seq(_4.value)
+    (for (val1 <- values1; val2 <- values2; val3 <- values3; val4 <- values4) yield Values(val1, val2, val3, val4)).iterator
+  }
 }
 
 /** The only abstract things are _1, _2, _3, and score(Statistics) */
@@ -88,7 +105,7 @@ trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Famil
       _neighborDomains += _neighborDomain4
     }
     override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
-  } 
+  }
 }
 
 trait Statistics4[S1,S2,S3,S4] extends Family {

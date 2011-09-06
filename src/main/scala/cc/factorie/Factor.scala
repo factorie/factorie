@@ -54,6 +54,7 @@ trait Factor extends Model with Ordered[Factor] {
   override def score: Double = statistics.score
   def values: Values                   
   def statistics: Statistics // = values.statistics
+  def valuesIterator(varying:Seq[Variable]): Iterator[Values]
   /** Randomly selects and returns one of this factor's neighbors. */
   //@deprecated def randomVariable(implicit random:Random = cc.factorie.random): Variable = variable(random.nextInt(numVariables))
   /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
@@ -105,11 +106,12 @@ trait Factor extends Model with Ordered[Factor] {
 
 /** A container for all the values of the variables neighboring a factor.
     These are necessary to construct a Statistics object. */
-trait Values /* extends Product with Ordered[Values] */ { // TODO Make this extend Statistics
+trait Values extends Assignment { // TODO Make this extend Statistics
   // def factor: Factor // TODO Consider adding this method
   //def outer: Values = null  // TODO Remove this
   def inner: Seq[Values] = Nil
   def statistics: Statistics
+  def apply[B <: Variable](v: B): B#Value = { new Error("Never call apply() on values"); null.asInstanceOf[B#Value] }
   //def score: Double = statistics.score
   //def productArity: Int
   //def canEqual(other:Any) = other match { case other:Values => }
@@ -119,6 +121,10 @@ trait Values /* extends Product with Ordered[Values] */ { // TODO Make this exte
     There is one of these for each Factor. */
 // Rename this to Statistic singular, so we can have Statistic1, Statistic2, etc like Factor2, separate from "Template with Statistics2"
 trait Statistics extends Values {
+  def variables = { new Error("Statistics should not call Assignment methods"); null }
+  def get[B <: Variable](v: B) = { new Error("Statistics should not call Assignment methods"); null }
+  def contains(v: Variable) = { new Error("Statistics should not call Assignment methods"); false }
+
   def statistics = this
   // def factor: Factor // TODO Consider adding this method
   //def outer: Statistics = null // TODO Remove this

@@ -22,6 +22,9 @@ import collection.mutable.{ArrayBuffer, LinkedList, IndexedSeq}
 
 /**Maximize an Optimizable object by Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, "Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods" */
 class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends Optimizer with FastLogging {
+
+  case class StepTooSmallException(msg:String) extends Exception(msg)
+
   var isConverged = false
   var maxIterations = 1000
   var tolerance = 0.0001

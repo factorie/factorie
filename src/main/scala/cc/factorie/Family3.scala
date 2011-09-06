@@ -25,6 +25,7 @@ import java.io._
 
 /** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
 trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
+  factor =>
   type NeighborType1 = N1
   type NeighborType2 = N2
   type NeighborType3 = N3
@@ -37,6 +38,13 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
   def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case _ => throw new IndexOutOfBoundsException(i.toString) }
   override def values = new Values(_1.value, _2.value, _3.value, inner.map(_.values))
   case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
+    def variables = Seq(factor._1, factor._2, factor._3)
+    def get[B <: Variable](v: B) =
+      if(v == factor._1) Some(_1.asInstanceOf[B#Value])
+      else if(v == factor._2) Some(_2.asInstanceOf[B#Value])
+      else if(v == factor._3) Some(_3.asInstanceOf[B#Value])
+      else None
+    def contains(v: Variable) = v == factor._1 || v == factor._2 || v == factor._3
     def statistics: StatisticsType = Factor3.this.statistics(this)
   }
   def statistics: StatisticsType = statistics(values)

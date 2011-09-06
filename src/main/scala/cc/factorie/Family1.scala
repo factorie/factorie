@@ -25,6 +25,7 @@ import java.io._
 
 /** A Factor with one neighboring variable */
 trait Factor1[N1<:Variable] extends Factor {
+  factor =>
   type NeighborType1 = N1
   type StatisticsType <: cc.factorie.Statistics
   protected def thisFactor: this.type = this
@@ -34,6 +35,9 @@ trait Factor1[N1<:Variable] extends Factor {
   def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
   override def values = new Values(_1.value, inner.map(_.values))
   case class Values(_1:N1#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
+    def variables = Seq(factor._1)
+    def get[B <: Variable](v: B) = if(contains(v)) Some(_1.asInstanceOf[B#Value]) else None
+    def contains(v: Variable) = v == factor._1
     def statistics: StatisticsType = Factor1.this.statistics(this)
   }
   def statistics: StatisticsType = statistics(values)
