@@ -25,7 +25,7 @@ object LDA3 {
     def domain = WordSeqDomain
     def zs = parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor]._3.asInstanceOf[Zs]
   }
-  class Document(val file:String, val theta:DenseCountsProportions, strings:Seq[String]) extends Words(strings)
+  class Document(val file:String, val theta:CountsProportions, strings:Seq[String]) extends Words(strings)
   val beta = new GrowableUniformMasses(WordDomain, beta1)
   val alphas = new DenseMasses(numTopics, alpha1)
 
@@ -37,7 +37,7 @@ object LDA3 {
       println("Reading files from directory " + directory)
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         print("."); Console.flush
-        val theta = new DenseCountsProportions(numTopics) ~ Dirichlet(alphas)
+        val theta = new SortedSparseCountsProportions(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
         documents += new Document(file.toString, theta, tokens) ~ PlatedDiscreteMixture(phis, zs)
@@ -49,7 +49,7 @@ object LDA3 {
     collapse += phis
     collapse ++= documents.map(_.theta)
     //val sampler = new CollapsedGibbsSampler(collapse) { def export(m:Seq[Proportions]): Unit = {} }
-    val sampler = new SparseLDAInferencer(documents)
+    val sampler = new SparseLDAInferencer(numTopics, documents, alphas, beta1)
     //println("Initialization:"); phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
 
     val startTime = System.currentTimeMillis
@@ -58,11 +58,14 @@ object LDA3 {
       if (i % 5 == 0) {
         println("Iteration " + i)
         sampler.export(phis)
+        sampler.exportThetas(documents)
         // Turned off hyperparameter optimization
-        //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
-        //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt))
-        println("Total words "+phis.map(_.countsTotal).sum.toInt)
+        DirichletMomentMatching.estimate(alphas)
+        sampler.resetSmoothing(alphas, beta1)
+        println("alpha = " + alphas.mkString(" "))
+        //phis.zipWithIndex((phi,index) => )
+        phis.zipWithIndex.map({case (phi:GrowableDenseCountsProportions, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
+        println("Total words "+documents.map(_.length).sum)
         println
       }
     }
@@ -70,90 +73,52 @@ object LDA3 {
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
   }
   
-  class SparseLDAInferencer(docs:Iterable[Document]) {
+  class SparseLDAInferencer(val numTopics:Int, docs:Iterable[Document], initialAlphas:Seq[Double], initialBeta1:Double) {
+    var verbosity = 1
     var smoothingOnlyCount = 0; var topicBetaCount = 0; var topicTermCount = 0 // Just diagnostics
     def samplesCount = smoothingOnlyCount + topicBetaCount + topicTermCount
     val betaSum = beta1 * WordDomain.size
-    
+    private var alphas: Array[Double] = null
+    private var beta1: Double = 0.1
+    var smoothingMass: Double = 0.0
+    private val cachedCoefficients = new Array[Double](numTopics)
+
     // Create and populate the (word,topic) counts
     val phiCounts = new DiscreteMixtureCounts { // phi counts, indexed by (wi,ti)
       def discreteDomain = WordDomain
       def mixtureDomain = ZDomain
     }
-    for (doc <- docs) {
+    for (doc <- docs) addDocument(doc) 
+    if (verbosity > 0) println("Finished initializing phiCounts")
+    if (verbosity > 0) println("nt "+phiCounts.mixtureCounts.mkString(" "))
+    // Initialize alphas, beta1, smoothingMass and cachedCoefficients; must be done after phiCounts initialized
+    resetSmoothing(initialAlphas, initialBeta1)
+
+    def addDocument(doc:Document): Unit =
       phiCounts.incrementFactor(doc.parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor])
-      /*val zs = doc.zs
-      for (i <- 0 until doc.length) {
-        val ti = zs(i).intValue
-        val wi = doc(i).intValue
-        phiCounts(wi).incrementCountAtIndex(ti, 1)
-      }*/
-    }
-    println("Finished initializing phiCounts")
-    println("nt "+phiCounts.mixtureCounts.mkString(" "))
 
-    if (false) {
-      var numWords = 0
-      // Make sure all wi/zi have a >0 count in phiCounts
-      for (doc <- docs; i <- 0 until doc.length) {
-        assert(phiCounts(doc(i).intValue).countOfIndex(doc.zs(i).intValue) > 0)
-        numWords += 1
-      }
-      assert(phiCounts.countsTotal == numWords)
-      println("Finished checking positive counts for all wi/zi")
+    def resetSmoothing(newAlphas:Seq[Double], newBeta1:Double): Unit = {
+      require(numTopics == newAlphas.length)
+      alphas = newAlphas.toArray
+      beta1= newBeta1
+      // s = \sum_t ( \alpha_t \beta ) / ( |V| \beta + n_t )  [Mimno "Sparse LDA"]
+      smoothingMass = (0 until numTopics).foldLeft(0.0)((sum,t) => sum + (alphas(t) * beta1 / (phiCounts.mixtureCounts(t) + betaSum)))
+      // The first term in the per-topic summand for q, just missing *n_{w|t}  [Mimno "Sparse LDA"]
+      forIndex(numTopics)(t => cachedCoefficients(t) = alphas(t) / (phiCounts.mixtureCounts(t) + betaSum))
     }
-    
-    if (false) {
-      for (doc <- docs) {
-        val zs = doc.zs
-        for (i <- 0 until doc.length) {
-          val ti = zs(i).intValue
-          val wi = doc(i).intValue
-          val newTi = cc.factorie.random.nextInt(numTopics)
-          phiCounts(wi).incrementCountAtIndex(ti, -1)
-          phiCounts(wi).incrementCountAtIndex(newTi, 1)
-          zs.set(i, newTi)(null)
-        }
-      }
-      println("Finished frobbing all zs")
-    }
-    
-    // Modification check
-    if (false) {
-      for (wi <- 0 until WordDomain.size) {
-        repeat(10000) {
-          val pos = cc.factorie.random.nextInt(phiCounts(wi).numPositions)
-          val ti = phiCounts(wi).indexAtPosition(pos)
-          val newTi = cc.factorie.random.nextInt(numTopics)
-          phiCounts(wi).incrementCountAtIndex(ti, -1)
-          phiCounts(wi).incrementCountAtIndex(newTi, 1)
-        }
-      }
-      println("Finished checking phiCounts modifications")
-    }
-    
-    // Count check
-    if (false) {
-      for (wi <- 0 until WordDomain.size) {
-        var docWordCount = 0
-        docs.foreach(_.foreach(wordValue => if (wordValue.intValue == wi) docWordCount += 1))
-        assert(docWordCount == phiCounts(wi).countsTotal)
-        var phisCountWordCount = 0
-        phiCounts(wi).counts.foreach({case (i,c) => phisCountWordCount += c})
-        assert(phisCountWordCount == docWordCount)
-      }
-      println("Word counts check out.")
-    }
-    
-    // s = \sum_t ( \alpha_t \beta ) / ( |V| \beta + n_t )  [Mimno "Sparse LDA"]
-    var smoothingMass = (0 until numTopics).foldLeft(0.0)((sum,t) => sum + (alphas(t) * beta1 / (phiCounts.mixtureCounts(t) + betaSum)))
-    // The first term in the per-topic summand for q, just missing *n_{w|t}  [Mimno "Sparse LDA"]
-    val cachedCoefficients = Array.tabulate(numTopics)(t => alphas(t) / (phiCounts.mixtureCounts(t) + betaSum))
-
+      
     def export(phis:Seq[DenseCountsProportions]): Unit = {
-      phis.foreach(_.zero)
+      phis.foreach(_.zero())
       for (wi <- 0 until WordDomain.size)
         phiCounts(wi).forCounts((ti,count) => phis(ti).increment(wi, count)(null))
+    }
+    
+    def exportThetas(docs:Seq[Document]): Unit = {
+      for (doc <- docs) {
+        val theta = doc.theta
+        theta.zero()
+        for (dv <- doc.zs) theta.increment(dv.intValue, 1.0)(null)
+      }
     }
     
     /** Sample the Zs for one document. */
@@ -294,9 +259,9 @@ object LDA3 {
       })
 
       // Put back cachedCoefficients to only smoothing
-      forIndex(docTopicCounts.numPositions)(p => {
-      //forIndex(numTopics)(ti => {
-        val ti = docTopicCounts.indexAtPosition(p) // topic index
+      //forIndex(docTopicCounts.numPositions)(p => {
+      forIndex(numTopics)(ti => {
+        //val ti = docTopicCounts.indexAtPosition(p) // topic index
         val nt = phiCounts.mixtureCounts(ti) // {n_t}
         cachedCoefficients(ti) = alphas(ti) / (nt + betaSum)
       })

@@ -155,7 +155,12 @@ class GrowableUniformProportions(val sizeProxy:Iterable[_]) extends Proportions 
 }
 
 
-class DenseCountsProportions(len:Int) extends MutableProportions {
+trait CountsProportions extends Proportions {
+  def zero(): Unit
+  def increment(index:Int, incr:Double)(implicit d:DiffList): Unit 
+}
+
+class DenseCountsProportions(len:Int) extends MutableProportions with CountsProportions {
   def this(p:Seq[Double]) = { this(p.length); this.set(p)(null) }
   protected var _counts = new Array[Double](len) // TODO Make this private and provide a method _setCounts
   protected var _countsTotal = 0.0
@@ -414,6 +419,13 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
       //assert(check, counts.toString) // TODO Remove this
     }
   }
+  // Next method for CountsProportions trait
+  def zero(): Unit = {
+    siz = 0
+    _countsTotal = 0
+    if (dbuf ne null) java.util.Arrays.fill(dbuf, 0)
+  }
+
   def counts: Iterable[(Int,Int)] = // (count,index)
     for (i <- 0 until siz) yield (ti(buf(i)), co(buf(i)))
   def forCounts(f:(Int,Int)=>Unit): Unit = 
@@ -422,6 +434,7 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
     for (i <- 0 until siz) print(domain.getCategory(ti(buf(i)))+"="+co(buf(i))+" ")
     println
   }
+  /** Return false if there is internal inconsistency */
   def check: Boolean = {
     return true
     for (i <- 0 until siz-1) {
@@ -437,8 +450,20 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
   }
 }
 
-class SortedSparseCountsProportions(dim:Int) extends SortedSparseCounts(dim) with Proportions {
-  def apply(index:Int): Double = countOfIndex(index) / countsTotal
+class SortedSparseCountsProportions(dim:Int) extends SortedSparseCounts(dim) with CountsProportions {
+  def apply(index:Int): Double = {
+    if (countsTotal == 0) 1.0 / length
+    else countOfIndex(index).toDouble / countsTotal
+  }
+  def increment(index:Int, incr:Double)(implicit d:DiffList): Unit = {
+    assert(d eq null)
+    assert(incr.floor == incr)
+    incrementCountAtIndex(index, incr.toInt) 
+  }
+  override def top(n:Int): Seq[DiscretePr] =
+    for (i <- 0 until math.min(n, numPositions)) yield 
+      new DiscretePr(indexAtPosition(i), countAtPosition(i).toDouble / countsTotal)
+
 }
 
 
