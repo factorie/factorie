@@ -49,7 +49,9 @@ object Dirichlet extends GenerativeFamily2[Proportions,Masses] {
   }
   case class Factor(_1:Proportions, _2:Masses) extends super.Factor {
     def pr(s:StatisticsType) = self.pr(s._1, s._2)
+    override def pr: Double = self.pr(_1.value, _2.value)
     def sampledValue(s:StatisticsType): ProportionsValue = self.sampledValue(s._2, Nil)
+    override def sampledValue: ProportionsValue = self.sampledValue(_2.value, Nil)
     override def updateCollapsedChild(): Boolean = _1 match {
       case p:DenseCountsProportions => { p.increment(_2.value)(null); true }
       case _ => false
@@ -93,6 +95,11 @@ object DirichletMomentMatching {
   }
 }
 
+/** Alternative style of Dirichlet parameterized by 2 parents (mean,precision) rather than 1 (masses). */
+object Dirichlet2 extends GenerativeFamily3[Proportions,Proportions,RealVarParameter] {
+  def newFactor(a:Proportions, b:Proportions, c:RealVarParameter) = throw new Error("Not yet implemented")
+}
+  
 /*
 trait Dirichlet extends Proportions with GeneratedVar with CollapsibleParameter with VarWithCollapsedType[DirichletMultinomial] {
   // Return the mean of the Dirichlet distribution from which this Proportions was generated.

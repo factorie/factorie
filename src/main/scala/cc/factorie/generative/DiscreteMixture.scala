@@ -37,3 +37,35 @@ object DiscreteMixture extends GenerativeFamily3[GeneratedDiscreteVar,Mixture[Pr
   def newFactor(a:GeneratedDiscreteVar, b:Mixture[Proportions], c:Gate) = Factor(a, b, c)
 }
 
+abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
+  def discreteDomain: DiscreteDomain
+  def mixtureDomain: DiscreteDomain
+  // counts(wordIndex).countOfIndex(topicIndex)
+  private val counts = Array.fill(discreteDomain.size)(new SortedSparseCounts(mixtureDomain.size))
+  def apply(discreteIndex:Int) = counts(discreteIndex)
+  def length = discreteDomain.size
+  def iterator = counts.iterator
+  def countsTotal: Int = {
+    val result = counts.map(_.countsTotal).sum
+    var sum = counts.map(_.calculatedCountsTotal).sum
+    assert(result == sum, "result="+result+" sum="+sum+"\nresults="+counts.map(_.countsTotal).toSeq.take(20)+"\nsum="+counts.map(_.calculatedCountsTotal).toSeq.take(20))
+    result
+  }
+  val mixtureCounts = new Array[Int](mixtureDomain.size)
+  @inline final def increment(discrete:Int, mixture:Int, incr:Int) = {
+    mixtureCounts(mixture) += incr
+    assert(mixtureCounts(mixture) >= 0)
+    counts(discrete).incrementCountAtIndex(mixture, incr)
+  }
+  def incrementFactor(f:DiscreteMixture.Factor): Unit = increment(f._1.intValue, f._3.intValue, 1)
+  def incrementFactor(f:PlatedDiscreteMixture.Factor): Unit = {
+    val discretes = f._1
+    val gates = f._3
+    assert (discretes.length == gates.length)
+    var i = discretes.length - 1
+    while (i >= 0) {
+      increment(discretes(i).intValue, gates(i).intValue, 1)
+      i -= 1
+    }
+  }
+}

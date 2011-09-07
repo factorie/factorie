@@ -15,13 +15,6 @@
 package cc.factorie.generative
 import cc.factorie._
 
-// TODO Consider something like this?
-//trait Distribution extends Variable
-//class GaussianDistribution(val mean:RealParameter, val variance:RealParameter) extends Distribution {
-//  mean.addCascade(this)
-//  variance.addCascade(this)
-//}
-
 object Gaussian extends GenerativeFamily3[GeneratedRealVar,RealVarParameter,RealVarParameter] {
   self =>
   def logpr(value:Double, mean:Double, variance:Double): Double = {
@@ -32,8 +25,11 @@ object Gaussian extends GenerativeFamily3[GeneratedRealVar,RealVarParameter,Real
   def sampledValue(mean:Double, variance:Double): Double = maths.nextGaussian(mean, variance)(cc.factorie.random)
   case class Factor(_1:GeneratedRealVar, _2:RealVarParameter, _3:RealVarParameter) extends super.Factor {
     override def logpr(s:StatisticsType): Double = self.logpr(s._1, s._2, s._3)
+    override def logpr: Double = self.logpr(_1.value, _2.value, _3.value)
     def pr(s:StatisticsType) = math.exp(logpr(s))
+    override def pr: Double = self.pr(_1.value, _2.value, _3.value)
     def sampledValue(s:StatisticsType): Double = self.sampledValue(s._2, s._3)
+    override def sampledValue: Double = self.sampledValue(_2.value, _3.value)
   }
   def newFactor(a:GeneratedRealVar, b:RealVarParameter, c:RealVarParameter) = Factor(a, b, c)
 }

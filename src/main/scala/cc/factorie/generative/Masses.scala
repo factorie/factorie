@@ -158,6 +158,11 @@ class DenseMasses(m:Seq[Double]) extends MutableMasses {
   }
 }
 
+class UniformMasses(val length: Int, val mass:Double) extends Masses {
+  def activeDomain: Iterable[Int] = Range(0, length)
+  def apply(i:Int) = mass
+}
+
 class GrowableUniformMasses(val dimensionDomain:DiscreteDomain, val mass:Double) extends Masses {
   def activeDomain: Iterable[Int] = Range(0, length)
   def length: Int = dimensionDomain.length

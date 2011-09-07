@@ -61,6 +61,7 @@ trait CollapsedVariationalBayesHandler {
 }
 
 
+
 /*
 object GeneratedVariableCollapsedVariationalBayesHandler extends CollapsedVariationalBayesHandler {
   def process(v:Variable, factors:Seq[Factor], cvb:CollapsedVariationalBayes)(implicit d:DiffList): Boolean = {

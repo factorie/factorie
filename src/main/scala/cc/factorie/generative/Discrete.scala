@@ -17,7 +17,9 @@ import cc.factorie._
 import cc.factorie.la._
 import scala.collection.mutable.{HashSet,ArrayBuffer}
 
-trait GeneratedDiscreteVar extends DiscreteVar with GeneratedVar 
+trait GeneratedDiscreteVar extends DiscreteVar with GeneratedVar {
+  var q: Proportions = null // TODO consider something like this for collapsing?
+}
 trait MutableGeneratedDiscreteVar extends GeneratedDiscreteVar with MutableGeneratedVar with MutableDiscreteVar
 abstract class Discrete(initialInt: Int = 0) extends DiscreteVariable(initialInt) with MutableGeneratedDiscreteVar
 
