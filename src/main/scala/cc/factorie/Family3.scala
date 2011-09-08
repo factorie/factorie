@@ -38,6 +38,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
   def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case _ => throw new IndexOutOfBoundsException(i.toString) }
   override def values = new Values(_1.value, _2.value, _3.value, inner.map(_.values))
   case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
+    override def apply[B <: Variable](v: B) = get(v).get
     def variables = Seq(factor._1, factor._2, factor._3)
     def get[B <: Variable](v: B) =
       if(v == factor._1) Some(_1.asInstanceOf[B#Value])
@@ -45,7 +46,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
       else if(v == factor._3) Some(_3.asInstanceOf[B#Value])
       else None
     def contains(v: Variable) = v == factor._1 || v == factor._2 || v == factor._3
-    def statistics: StatisticsType = Factor3.this.statistics(this)
+    override def statistics: StatisticsType = Factor3.this.statistics(this)
   }
   def statistics: StatisticsType = statistics(values)
   def statistics(v:Values): StatisticsType
@@ -94,7 +95,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
     }
   }
   /** valuesIterator in style of specifying varying neighbors */
-  def valuesIterator(varying:Seq[Variable]): Iterator[Values] = {
+  def valuesIterator(varying:Set[Variable]): Iterator[Values] = {
     val varying1 = varying.contains(_1)
     val varying2 = varying.contains(_2)
     val varying3 = varying.contains(_3)

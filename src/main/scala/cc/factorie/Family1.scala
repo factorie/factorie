@@ -35,10 +35,19 @@ trait Factor1[N1<:Variable] extends Factor {
   def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
   override def values = new Values(_1.value, inner.map(_.values))
   case class Values(_1:N1#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
+    override def apply[B <: Variable](v: B) = get(v).get
     def variables = Seq(factor._1)
     def get[B <: Variable](v: B) = if(contains(v)) Some(_1.asInstanceOf[B#Value]) else None
     def contains(v: Variable) = v == factor._1
-    def statistics: StatisticsType = Factor1.this.statistics(this)
+    override def statistics: StatisticsType = Factor1.this.statistics(this)
+    override def index(varying:Set[Variable]): Int = {
+      if(varying.contains(factor._1)) {
+        _1 match {
+          case dv: DiscreteValue => dv.intValue
+          case _ => -1
+        }
+      } else -1
+    }
   }
   def statistics: StatisticsType = statistics(values)
   def statistics(v:Values): StatisticsType
@@ -51,7 +60,7 @@ trait Factor1[N1<:Variable] extends Factor {
     }
   }
   /** valuesIterator in style of specifying varying neighbors */
-  def valuesIterator(varying:Seq[Variable]): Iterator[Values] = {
+  def valuesIterator(varying:Set[Variable]): Iterator[Values] = {
     if (varying.size != 1 || varying.head != _1)
       throw new Error("Template1.valuesIterator cannot vary arguments.")
     else _1.domain match {

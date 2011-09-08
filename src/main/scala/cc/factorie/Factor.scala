@@ -54,7 +54,7 @@ trait Factor extends Model with Ordered[Factor] {
   override def score: Double = statistics.score
   def values: Values                   
   def statistics: Statistics // = values.statistics
-  def valuesIterator(varying:Seq[Variable]): Iterator[Values]
+  def valuesIterator(varying:Set[Variable]): Iterator[Values]
   /** Randomly selects and returns one of this factor's neighbors. */
   //@deprecated def randomVariable(implicit random:Random = cc.factorie.random): Variable = variable(random.nextInt(numVariables))
   /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
@@ -106,13 +106,33 @@ trait Factor extends Model with Ordered[Factor] {
 
 /** A container for all the values of the variables neighboring a factor.
     These are necessary to construct a Statistics object. */
-trait Values extends Assignment { // TODO Make this extend Statistics
+trait Values extends Statistics with Assignment { // TODO Make this extend Statistics
   // def factor: Factor // TODO Consider adding this method
   //def outer: Values = null  // TODO Remove this
-  def inner: Seq[Values] = Nil
-  def statistics: Statistics
-  def apply[B <: Variable](v: B): B#Value = { new Error("Never call apply() on values"); null.asInstanceOf[B#Value] }
-  //def score: Double = statistics.score
+  override def inner: Seq[Values] = Nil
+  //def statistics: Statistics
+  //def apply[B <: Variable](v: B): B#Value = { new Error("Never call apply() on values"); null.asInstanceOf[B#Value] }
+  def score: Double = statistics.score
+  // provides a unique index for these values (assuming varying remains the same)
+  def index(varying:Set[Variable]): Int = {
+    var result = 0
+    var mult = 1
+    var found: Boolean = false
+    for (variable <- variables) {
+      if(varying contains variable) {
+        variable match {
+          case dv:DiscreteVariable => {
+            val dvalue: DiscreteValue = get(dv).get
+            found = true
+            result += (dvalue.intValue * mult)
+            mult *= dv.domain.size
+          }
+          case _ => return -1
+        }
+      }
+    }
+    if (found) result else -1
+  }
   //def productArity: Int
   //def canEqual(other:Any) = other match { case other:Values => }
 }
@@ -120,15 +140,15 @@ trait Values extends Assignment { // TODO Make this extend Statistics
 /** A container for sufficient statistics of a Factor.  
     There is one of these for each Factor. */
 // Rename this to Statistic singular, so we can have Statistic1, Statistic2, etc like Factor2, separate from "Template with Statistics2"
-trait Statistics extends Values {
-  def variables = { new Error("Statistics should not call Assignment methods"); null }
-  def get[B <: Variable](v: B) = { new Error("Statistics should not call Assignment methods"); null }
-  def contains(v: Variable) = { new Error("Statistics should not call Assignment methods"); false }
+trait Statistics  {
+  //def variables = { new Error("Statistics should not call Assignment methods"); null }
+  //def get[B <: Variable](v: B) = { new Error("Statistics should not call Assignment methods"); null }
+  //def contains(v: Variable) = { new Error("Statistics should not call Assignment methods"); false }
 
-  def statistics = this
+  def statistics: Statistics = this
   // def factor: Factor // TODO Consider adding this method
   //def outer: Statistics = null // TODO Remove this
-  override def inner: Seq[Statistics] = Nil
+  def inner: Seq[Statistics] = Nil
   def score: Double
 }
 
