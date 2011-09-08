@@ -28,7 +28,7 @@ class TestBP extends TestCase {
   // a binary variable that takes values 0 or 1
   object BinDomain extends CategoricalDomain[Int](List(0, 1))
 
-  class BinVar(i: Int) extends LabelVariable(i) with VarInSeq[BinVar] with BPVariable {
+  class BinVar(i: Int) extends LabelVariable(i) with VarInSeq[BinVar] {
     def domain = BinDomain
   }
 
@@ -45,7 +45,7 @@ class TestBP extends TestCase {
 
   // a factor template that scores successive variables (if v1==v2 then scoreEqual else scoreUnequal)
   private def newTemplate2(scoreEqual: Double, scoreUnequal: Double) =
-    new TemplateWithVectorStatistics2[BinVar, BinVar] {
+    new TemplateWithStatistics2[BinVar, BinVar] {
       def unroll1(v1: BinVar) = if (v1.hasNext) Factor(v1, v1.next) else Nil
 
       def unroll2(v2: BinVar) = if (v2.hasPrev) Factor(v2.prev, v2) else Nil
@@ -72,46 +72,50 @@ class TestBP extends TestCase {
     // 1) equal potentials
     //    a) sum-product
     val model1 = new TemplateModel(newTemplate1(1, 1))
-    fg = new FG
-    fg.createUnrolled(model1, Seq(v))
-    println("num Factors = %d".format(fg.factors.size))
-    println("num Variables = %d".format(fg.nodes.size))
-    fg.infer(1)
-    val marginal = fg.node(v).marginal
-    println(marginal)
+    fg = new FG(Set(v))
+    fg.createUnrolled(model1)
+    //println("num Factors = %d".format(fg.factors.size))
+    //println("num Variables = %d".format(fg.nodes.size))
+    fg.inferLoopyBP(1)
+    println(fg.node(v).marginal)
     //println("domain: %s".format(marginal.domain))
     //println("indexEq: %s".format(marginal.domain(0) == 0))
     //println("index: %d".format(marginal.domain.indexOf(marginal.domain(0))))
     //println("score: %f".format(marginal.score(marginal.domain(0))))
-    assertEquals(marginal.probability(marginal.domain(0)), 0.5, eps)
+    assertEquals(fg.node(v).marginal.probability(BinDomain(0)), 0.5, eps)
     // 2) unequal potentials
     //    a) sum-product
     val model2 = new TemplateModel(newTemplate1(2, 1))
-    fg = new FG
-    fg.createUnrolled(model2, Seq(v))
-    println("num Factors = %d".format(fg.factors.size))
-    println("num Variables = %d".format(fg.nodes.size))
-    fg.infer(1)
+    fg = new FG(Set(v))
+    fg.createUnrolled(model2)
+    fg.inferLoopyBP(1)
     println(fg.node(v).marginal)
-    assertEquals(fg.node(v).marginal.probability(fg.node(v).marginal.domain(0)), e(1) / (1 + e(1)), eps)
+    assertEquals(fg.node(v).marginal.probability(BinDomain(0)), e(1) / (1 + e(1)), eps)
+    for (factor <- fg.factors) {
+      for (value: Values <- factor.valuesIterator(Set(v))) {
+        println(value.index(Set(v)))
+      }
+    }
   }
 
-  /*
   def testV1F2 = {
     // one variable, two factors
     val v = new BinVar(0)
-    var lattice: BPLattice[BinVar] = null
+    var fg: FG = null
     // 1) f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}
     val model1 = new TemplateModel(newTemplate1(2, 1), newTemplate1(1, 2))
-    val varying = Array(v)
-    lattice = new BPLattice[BinVar](varying, model1)
-    lattice.updateTreewise()
-    assertEquals(lattice.marginal(v).get(0), 0.5, eps)
+    fg = new FG(Set(v))
+    fg.createUnrolled(model1)
+    fg.inferLoopyBP(1)
+    println(fg.node(v).marginal)
+    assertEquals(fg.node(v).marginal.probability(BinDomain(0)), 0.5, eps)
     // 2) f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}
     val model2 = new TemplateModel(newTemplate1(0, 1), newTemplate1(0, 1))
-    lattice = new BPLattice(varying, model2)
-    lattice.updateTreewise()
-    assertEquals(lattice.marginal(v).get(0), 1.0 / (1 + e(2)), eps)
+    fg = new FG(Set(v))
+    fg.createUnrolled(model2)
+    fg.inferLoopyBP(1)
+    println(fg.node(v).marginal)
+    assertEquals(fg.node(v).marginal.probability(BinDomain(0)), 1.0 / (1 + e(2)), eps)
   }
 
   def testV2F1 = {
@@ -124,25 +128,107 @@ class TestBP extends TestCase {
     val v2 = new BinVar(0)
     vseq += v2
 
-    var lattice: BPLattice[BinVar] = null
-    val model1 = new TemplateModel(newTemplate2(1000, 0))
-    val varying = Array(v1, v2)
     // create template between v1 and v2
-    lattice = new BPLattice(varying, model1)
-    lattice.updateTreewise()
-    assertEquals(lattice.marginal(v1).get(0), 0.5, eps)
-    assertEquals(lattice.marginal(v2).get(0), 0.5, eps)
+    var fg: FG = null
+    val model = new TemplateModel(newTemplate2(10, 0))
+    val vars : Set[Variable] = Set(v1, v2)
+
+    // vary both variables
+    fg = new FG(vars)
+    fg.createUnrolled(model)
+    println("num Factors = %d".format(fg.factors.size))
+    println("num Variables = %d".format(fg._nodes.size))
+    fg.inferLoopyBP(1)
+    println("v1 : " + fg.node(v1).marginal)
+    println("v2 : " + fg.node(v2).marginal)
+    for (mfactor <- fg.mfactors) {
+      for (values <- mfactor.factor.valuesIterator(vars)) {
+        println(values + " : " + mfactor.marginal(values))
+        //if(values(v1)==values(v2))
+        //  assertEquals(mfactor.marginal(values), 0.5, eps)
+        //else assertEquals(mfactor.marginal(values), 0.0, eps)
+      }
+    }
+    assertEquals(fg.node(v1).marginal.probability(BinDomain(0)), 0.5, eps)
+    assertEquals(fg.node(v2).marginal.probability(BinDomain(0)), 0.5, eps)
     // vary just one variable
-    lattice = new BPLattice(Array(v2), model1)
-    lattice.updateTreewise()
-    assertEquals(lattice.marginal(v2).get(0), 0.0, eps)
-    // get the factor
-    val factor = model1.factors(Seq(v2)).head
-    val marginals = lattice.marginalMap(factor)
-    assertEquals(marginals(List(0)), 0.0, eps)
-    assertEquals(marginals(List(1)), 1.0, eps)
+    fg = new FG(Set(v2))
+    fg.createUnrolled(model)
+    println("num Factors = %d".format(fg.factors.size))
+    println("num Variables = %d".format(fg._nodes.size))
+    fg.inferLoopyBP(1)
+    println("v1 : " + fg.node(v1).marginal)
+    println("v2 : " + fg.node(v2).marginal)
+    for (mfactor <- fg.mfactors) {
+      for (values <- mfactor.factor.valuesIterator(Set(v2))) {
+        println(values + " : " + mfactor.marginal(values))
+        if(values(v1)==values(v2))
+          assertEquals(mfactor.marginal(values), 1.0, eps)
+        else assertEquals(mfactor.marginal(values), 0.0, eps)
+
+      }
+    }
+    assertEquals(fg.node(v1).marginal.probability(BinDomain(0)), 0.0, eps)
+    assertEquals(fg.node(v2).marginal.probability(BinDomain(0)), 0.0, eps)
   }
 
+  // Same as above, just use a much larger potential
+  def testV2F1Hard = {
+    // a sequence of two variables, one factor
+    var vseq = new BinVarSeq
+
+    val v1 = new BinVar(1)
+    vseq += v1
+
+    val v2 = new BinVar(0)
+    vseq += v2
+
+    // create template between v1 and v2
+    var fg: FG = null
+    val model = new TemplateModel(newTemplate2(1000, 0))
+    val vars : Set[Variable] = Set(v1, v2)
+
+    // vary both variables
+    fg = new FG(vars)
+    fg.createUnrolled(model)
+    println("num Factors = %d".format(fg.factors.size))
+    println("num Variables = %d".format(fg._nodes.size))
+    fg.inferLoopyBP(1)
+    println("v1 : " + fg.node(v1).marginal)
+    println("v2 : " + fg.node(v2).marginal)
+    for (mfactor <- fg.mfactors) {
+      for (values <- mfactor.factor.valuesIterator(vars)) {
+        println(values + " : " + mfactor.marginal(values))
+        if(values(v1)==values(v2))
+          assertEquals(mfactor.marginal(values), 0.5, eps)
+        else assertEquals(mfactor.marginal(values), 0.0, eps)
+
+      }
+    }
+    assertEquals(fg.node(v1).marginal.probability(BinDomain(0)), 0.5, eps)
+    assertEquals(fg.node(v2).marginal.probability(BinDomain(0)), 0.5, eps)
+    // vary just one variable
+    fg = new FG(Set(v2))
+    fg.createUnrolled(model)
+    println("num Factors = %d".format(fg.factors.size))
+    println("num Variables = %d".format(fg._nodes.size))
+    fg.inferLoopyBP(1)
+    println("v1 : " + fg.node(v1).marginal)
+    println("v2 : " + fg.node(v2).marginal)
+    for (mfactor <- fg.mfactors) {
+      for (values <- mfactor.factor.valuesIterator(Set(v2))) {
+        println(values + " : " + mfactor.marginal(values))
+        if(values(v1)==values(v2))
+          assertEquals(mfactor.marginal(values), 1.0, eps)
+        else assertEquals(mfactor.marginal(values), 0.0, eps)
+
+      }
+    }
+    assertEquals(fg.node(v1).marginal.probability(BinDomain(0)), 0.0, eps)
+    assertEquals(fg.node(v2).marginal.probability(BinDomain(0)), 0.0, eps)
+  }
+
+  /*
   def testTwoChain = {
     // two variables, three factors: two unary, one binary
     var vseq = new BinVarSeq

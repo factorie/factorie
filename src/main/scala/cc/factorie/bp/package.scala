@@ -7,7 +7,6 @@ import annotation.tailrec
  * @author sriedel
  */
 package object base {
-  type Var = BPVariable
   val testEps = 0.00000001
   val eps = 0.00000001
 

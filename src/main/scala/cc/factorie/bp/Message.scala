@@ -2,10 +2,10 @@ package cc.factorie.bp
 
 import collection.mutable.HashMap
 import scala.math._
-import base._
+import cc.factorie._
 
 /**
- * todo: we should define messages in a what that they are always
+ * todo: we should define messages in a way that they are always
  * defined over Any, but return 0/-inf for most values. This
  * will reduce type clutter, and should be sufficient for
  * all operations we need.
@@ -26,6 +26,8 @@ trait GenericMessage {
   def unnormalized(value: Any) = exp(score(value))
 
   def probability(value: Any) = exp(score(value)) / Z
+
+  def sample: Any
 
   def score(value: Any): Double
 
@@ -73,10 +75,8 @@ trait GenericMessage {
 
   def isDeterministic = false
 
-  def map: Any = domain.maxBy(v => score(v))
+  def map[A]: A = domain.maxBy(v => score(v)).asInstanceOf[A]
 }
-
-object Ignorance extends BinaryMessage(0.0)
 
 trait GenericUniformMessage extends GenericMessage {
   def defaultValue = null
@@ -100,38 +100,11 @@ trait GenericUniformMessage extends GenericMessage {
   override def dynamicRange = 1.0
 }
 
-trait UniformMessageOverride extends GenericMessage {
-
-  override def /(that: GenericMessage) = that.inverse
-
-  override def *(that: GenericMessage) = that
-
-  override def inverse = this
-
-  override def isUniform = true
-}
-
-
 object UniformMessage extends GenericUniformMessage {
+
+  def sample = null
+
   override def isUniform = true
-}
-
-
-class Messages extends HashMap[Var, GenericMessage] {
-  def this(pairs: (Var, GenericMessage)*) {
-    this ()
-    this ++= pairs
-  }
-
-  def typed[M <: GenericMessage](variable: Var) = this(variable).asInstanceOf[M]
-
-  override def default(key: Var): GenericMessage = key.uniformMessage
-
-  def copy(messages: Messages) = messages.foreach((p: (Var, GenericMessage)) => this(p._1) = p._2)
-
-  override def toString: String = map({
-    case (v, m) => "%-10s %s".format(v, m)
-  }).mkString("\n")
 }
 
 class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) extends GenericMessage {
@@ -139,6 +112,8 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) exten
   assert(!scores.exists(_.isPosInfinity), "Pos Inf in scores: " + scores)
 
   override def domain: Seq[Value] = _domain
+
+  def sample = domain((0 until domain.length).sampleExpProportionally(i => scores(i)))
 
   override def renormalize = new DiscreteMessage(scores.map(_ - log(Z)), domain)
 
@@ -203,6 +178,8 @@ class DiscreteDeterministicMessage[Value](val value: Value, _domain: Seq[Value])
 
   override def renormalize = this
 
+  override def sample = value
+
   override def *(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
     case d: DiscreteDeterministicMessage[Value] => {
@@ -239,10 +216,31 @@ class DiscreteDeterministicMessage[Value](val value: Value, _domain: Seq[Value])
   override lazy val Z = 1.0
 
   override def probability(other: Any) = other match {
-    case v if (v == other) => 1.0
+    case v if (value == other) => 1.0
     case _ => 0.0
   }
 }
+
+abstract class Messages[T] extends HashMap[T, GenericMessage] {
+  def this(pairs: (T, GenericMessage)*) {
+    this ()
+    this ++= pairs
+  }
+
+  def typed[M <: GenericMessage](t: T) = this(t).asInstanceOf[M]
+
+  override def default(key: T): GenericMessage = UniformMessage
+
+  def copy(messages: Messages[T]) = messages.foreach((p: (T, GenericMessage)) => this(p._1) = p._2)
+
+  override def toString: String = map({
+    case (v, m) => "%-10s %s".format(v, m)
+  }).mkString("\n")
+}
+
+class FactorMessages extends Messages[Variable]
+
+class VarMessages extends Messages[Factor]
 
 /**
  * message between a variable and a factor.
@@ -251,125 +249,6 @@ class DiscreteDeterministicMessage[Value](val value: Value, _domain: Seq[Value])
  * Note that this implementation is cpu-optimized, not memory optimized. If you
  * want to reduce memory footprint, replace 'lazy val' with 'def'.
  */
-class BinaryMessage(val logOdds: Double = 0.0) extends GenericMessage {
-
-  import StrictMath._
-
-  //  type Value = Boolean
-  // TODO are they useless? they were overrides earlier
-  lazy val probOfNonDefault = if (logOdds == Double.PositiveInfinity) 1.0 else exp(logOdds - log1p(exp(logOdds)))
-  lazy val probOfDefault = 1.0 - probOfNonDefault
-
-  def scoreOfNonDefault = logOdds
-
-
-  def prob = probOfNonDefault
-
-  lazy val oddRatio = prob / (1.0 - prob)
-
-  def negated = probOfDefault
-
-  def defaultValue = false
-
-
-  lazy val inverse = new BinaryMessage(-logOdds)
-  lazy val Z = domain.map((v: Any) => exp(score(v))).sum
-  lazy val domain = List(true, false)
-
-  def score(value: Any): Double = value match {
-    case true => logOdds
-    case false => 0.0
-    case _ => Double.NegativeInfinity
-  }
-
-
-  override def probability(value: Any) = value match {
-    case true => prob
-    case false => negated
-    case _ => 0.0
-  }
-
-  def deterministicValue = if (isDeterministic) Some(logOdds == Double.PositiveInfinity) else None
-
-  def *(that: GenericMessage): BinaryMessage = that match {
-    case m: BinaryMessage => {
-      if (logOdds == Double.PositiveInfinity && m.logOdds != Double.NegativeInfinity)
-        return True
-      if (logOdds == Double.NegativeInfinity && m.logOdds != Double.PositiveInfinity)
-        return False
-      new BinaryMessage(logOdds + m.logOdds)
-    }
-    case UniformMessage => this
-    case _ => error("Need compatible messages")
-  }
-
-  override lazy val isDeterministic = logOdds == Double.PositiveInfinity || logOdds == Double.NegativeInfinity
-
-  override lazy val dynamicRange = {
-    if (isDeterministic) Double.PositiveInfinity else sqrt(max(probOfNonDefault / probOfDefault, probOfNonDefault / probOfDefault))
-  }
-
-  def /(that: GenericMessage): GenericMessage = that match {
-    case m: BinaryMessage => {
-      if (logOdds == Double.PositiveInfinity && m.logOdds != Double.NegativeInfinity)
-        return True
-      if (logOdds == Double.PositiveInfinity && m.logOdds == Double.PositiveInfinity)
-        return UniformMessage
-      if (logOdds == Double.NegativeInfinity && m.logOdds == Double.NegativeInfinity)
-        return UniformMessage
-      if (logOdds == Double.NegativeInfinity && m.logOdds != Double.PositiveInfinity)
-        return False
-      new BinaryMessage(logOdds - m.logOdds)
-    }
-    case UniformMessage => inverse
-    case _ => error("Need compatible messages")
-  }
-
-  override def toString = "%4.3f / %4.2f".format(prob, logOdds)
-
-  override def isUniform = logOdds == 0.0
-
-  override def entropy = -prob * log(prob) - (1.0 - prob) * log1p(-prob)
-}
-
-object BinaryMessage {
-
-  import StrictMath._
-
-  def fromProb(prob: Double) = new BinaryMessage(log(prob / (1.0 - prob)))
-
-  def fromOddRatio(oddRatio: Double) = new BinaryMessage(log(oddRatio))
-
-  def fromLogOdds(posLogOdds: Double, negLogOdds: Double) = new BinaryMessage(posLogOdds - negLogOdds)
-}
-
-object True extends BinaryMessage(Double.PositiveInfinity) {
-
-  override lazy val prob = 1.0
-
-  override lazy val isDeterministic = true
-
-  override def *(that: GenericMessage) = that match {
-    case m if (m.isUniform) => this
-    case m: BinaryMessage => if (m.prob == 0.0) error("Cannot multiply True * False") else this
-    case _ => error("Need compatible messages")
-  }
-
-  override def /(that: GenericMessage): GenericMessage = that match {
-    case m if (m.isUniform) => this
-    case m: BinaryMessage => {
-      if (m.prob == 0.0) return error("Cannot divide True / False")
-      if (m.logOdds == Double.PositiveInfinity) return UniformMessage
-      return this
-    }
-    case _ => incompatible(this, that)
-  }
-}
-
-object False extends BinaryMessage(Double.NegativeInfinity) {
-  override lazy val isDeterministic = true
-}
-
 case class MessageOperationNotSupported(thisType: GenericMessage, thatType: GenericMessage)
       extends RuntimeException("Messages of type %s can't be combined with messages of type %s".format(
         thisType.getClass.getSimpleName, thatType.getClass.getSimpleName))
