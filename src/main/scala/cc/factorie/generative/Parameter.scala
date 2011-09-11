@@ -17,14 +17,17 @@ import cc.factorie._
 import scala.collection.mutable.{HashSet,ArrayBuffer}
 
 trait Parameter extends GeneratedVar {
-  private val _childFactors = new scala.collection.mutable.ArrayBuffer[GenerativeFactor]
-  override def factors: Seq[GenerativeFactor] = parentFactor +: _childFactors
-  def addChildFactor(f:GenerativeFactor): Unit = _childFactors += f
+  private var _childFactors: ArrayBuffer[GenerativeFactor] = null
+  def childFactors: Seq[GenerativeFactor] = if (_childFactors eq null) Nil else _childFactors
+  override def factors: Seq[GenerativeFactor] = parentFactor +: childFactors
+  def addChildFactor(f:GenerativeFactor): Unit = {
+    if (_childFactors eq null) _childFactors = new scala.collection.mutable.ArrayBuffer[GenerativeFactor]
+    _childFactors += f
+  }
+  def addChild(v:GeneratedVar, d:DiffList = null): Unit = addChildFactor(v.parentFactor)
   def removeChildFactor(f:GenerativeFactor): Unit = _childFactors -= f
-  def addChild(v:GeneratedVar, d:DiffList = null): Unit = _childFactors += v.parentFactor
-  def removeChild(v:GeneratedVar, d:DiffList = null): Unit = _childFactors -= v.parentFactor
-  def childFactors: Seq[GenerativeFactor] = _childFactors
-  def children: Seq[GeneratedVar] = _childFactors.map(_.variables.head).asInstanceOf[Seq[GeneratedVar]]
+  def removeChild(v:GeneratedVar, d:DiffList = null): Unit = removeChildFactor(v.parentFactor)
+  def children: Seq[GeneratedVar] = childFactors.map(_.child)
   def childrenOfClass[A](implicit m:Manifest[A]) = children.filter(_.getClass == m.erasure).asInstanceOf[Iterable[A]]
   /** A collection of variables whose value depends on the value of this variable, 
       either directly or via a sequence of deterministic variables.  If this variable's
@@ -147,3 +150,28 @@ class RealTimesConstant(override val real:RealVarParameter, val constant:Double)
   def doubleValue = real.doubleValue * constant
 }
 
+trait DeterministicFunct extends GeneratedVar {
+  //overrride var parentFactor: GenerativeFactor = null
+}
+trait RealFunct extends DeterministicFunct with RealVar
+
+class RealSum(a:RealVarParameter, b:RealVarParameter) extends DeterministicFunct with RealVar {
+  this ~ RealSum2(a, b)
+  def doubleValue = a.doubleValue + b.doubleValue
+}
+
+trait FunctionFactor extends GenerativeFactor {
+  type ValueType 
+  /*override*/ def isDeterministic = true
+  def value: ValueType
+}
+trait RealFunctionFactor extends FunctionFactor { type ValueType = Double }
+object RealSum2 extends GenerativeFamily3[RealFunct,RealVarParameter,RealVarParameter] {
+  case class Factor(_1:RealFunct, _2:RealVarParameter, _3:RealVarParameter) extends super.Factor {
+    def pr(s:Statistics): Double = if (_1.doubleValue == _2.doubleValue + _3.doubleValue) 1.0 else 0.0
+    def sampledValue(s:Statistics): Double = s._2 + s._3
+    def value: Double = _2.doubleValue + _3.doubleValue 
+  }
+  def newFactor(_1:RealFunct, _2:RealVarParameter, _3:RealVarParameter) = Factor(_1, _2, _3)
+}
+// val a = new RealFunction ~ RealSum(b, c)

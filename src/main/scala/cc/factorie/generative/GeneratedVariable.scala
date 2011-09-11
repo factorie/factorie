@@ -31,6 +31,7 @@ trait VarWithFactors extends Variable {
     May or may not be mutable. */
 trait GeneratedVar extends VarWithFactors {
   //type VariableType <: GeneratedVar
+  // TODO Don't make this "var".  The ~ method should be the only place that this gets changed!
   var parentFactor: GenerativeFactor = null
   def factors: Seq[GenerativeFactor] = List(parentFactor)
   def sampledValue: Value = {
@@ -87,6 +88,8 @@ trait MutableGeneratedVar extends GeneratedVar with MutableVar {
   }
 }
 
+// Consider something like this, but then the Vars container has a parent and children, and so do the contents?
+//trait GeneratedVars[V<:GeneratedVar] extends Vars[V] with GeneratedVar
 
 // TODO Are these still necessary?  Consider deleting.  Yes!
 trait RealGenerating {
@@ -122,8 +125,9 @@ trait GenerativeFactor extends Factor {
   def logpr: Double = logpr(statistics)
   def sampledValue(s:StatisticsType): Any
   def sampledValue: Any = sampledValue(statistics)
+  // TODO Consider removing these methods because we'd have specialized code in the inference recipes.
   /** Update sufficient statistics in collapsed parents, using current value of child, with weight.  Return false on failure. */
-  // TODO Consider passing a second argument which is the value of the child to use in the upate
+  // TODO Consider passing a second argument which is the value of the child to use in the update
   def updateCollapsedParents(weight:Double): Boolean = throw new Error(factorName+": Collapsing parent not implemented.")
   def updateCollapsedChild(): Boolean = throw new Error(factorName+": Collapsing child not implemented.")
   def resetCollapsedChild(): Boolean = throw new Error(factorName+": Resetting child not implemented.")
@@ -140,6 +144,8 @@ trait GenerativeFactorWithStatistics2[C<:GeneratedVar,P1<:Parameter] extends Gen
   type ChildType = C
   def child = _1
   def parents = Seq(_2)
+  // TODO Consider this:
+  //def parents = _2 match { case vars:Vars[Parameter] => vars; case _ => Seq(_2) }
   def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
 }
 
