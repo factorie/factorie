@@ -16,7 +16,7 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,Stack}
 
-abstract class Gate(initial:Int) extends Discrete(initial) with Parameter {
+abstract class Gate(initial:Int) extends Discrete(initial) {
   //def prChoosing(value:Int): Double = parentFactor.template.prChoosing(parentFactor.statistics, index)
 }
 
@@ -43,8 +43,8 @@ trait MixtureFactor extends GenerativeFactor {
   def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
   def updateCollapsedParents(f:Factor): Boolean =   
 }*/
-object MixtureComponent extends GenerativeFamily2[Mixture[Parameter],Parameter] {
-  case class Factor(_1:Mixture[Parameter], _2:Parameter) extends super.Factor {
+object MixtureComponent extends GenerativeFamily2[Mixture[GeneratedVar],GeneratedVar] {
+  case class Factor(_1:Mixture[GeneratedVar], _2:GeneratedVar) extends super.Factor {
     def pr(s:StatisticsType) = 1.0
     def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
     override def updateCollapsedParents(weight:Double): Boolean = {
@@ -53,10 +53,10 @@ object MixtureComponent extends GenerativeFamily2[Mixture[Parameter],Parameter] 
       true
     }
   }
-  def newFactor(a:Mixture[Parameter], b:Parameter) = Factor(a, b)
+  def newFactor(a:Mixture[GeneratedVar], b:GeneratedVar) = Factor(a, b)
 }
 
-class Mixture[+P<:Parameter](val components:Seq[P]) extends Seq[P] with GeneratedVar with Parameter 
+class Mixture[+P<:GeneratedVar](val components:Seq[P]) extends Seq[P] with GeneratedVar 
 with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]] 
 //with CollapsibleParameter with VarWithCollapsedType[Mixture[P]]
 {
@@ -94,7 +94,7 @@ with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]]
   }*/
 }
 object Mixture {
-  def apply[P<:Parameter](n:Int)(constructor: =>P): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor)
+  def apply[P<:GeneratedVar](n:Int)(constructor: =>P): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor)
 }
 
 

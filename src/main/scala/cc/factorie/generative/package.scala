@@ -24,11 +24,10 @@ package object generative {
     def factors(variables:Iterable[Variable]): Seq[Factor] = {
       val result = new scala.collection.mutable.ArrayBuffer[Factor];
       variables.foreach(v => v match {
-        case p:Parameter => { 
-          if (p.parentFactor ne null) result += p.parentFactor // In particular MixtureComponent current has a null parentFactor
-          result ++= p.childFactors 
+        case gv:GeneratedVar => {
+          if (gv.parentFactor != null) result += gv.parentFactor
+          if (gv.childFactors ne Nil) result ++= gv.childFactors
         }
-        case gv:GeneratedVar => if (gv.parentFactor != null) result += gv.parentFactor
       })
       // TODO If a parent is a deterministic function (through a deterministic factor), also return factors that are parents of the deterministic factor
       // TODO Likewise for children?  Or perhaps not necessary.

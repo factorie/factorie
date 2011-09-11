@@ -15,7 +15,7 @@
 package cc.factorie.generative
 import cc.factorie._
 
-object Gaussian extends GenerativeFamily3[GeneratedRealVar,RealVarParameter,RealVarParameter] {
+object Gaussian extends GenerativeFamily3[GeneratedRealVar,GeneratedRealVar,GeneratedRealVar] {
   self =>
   def logpr(value:Double, mean:Double, variance:Double): Double = {
       val diff = value - mean
@@ -23,7 +23,7 @@ object Gaussian extends GenerativeFamily3[GeneratedRealVar,RealVarParameter,Real
   } 
   def pr(value:Double, mean:Double, variance:Double): Double = math.exp(logpr(value, mean, variance))
   def sampledValue(mean:Double, variance:Double): Double = maths.nextGaussian(mean, variance)(cc.factorie.random)
-  case class Factor(_1:GeneratedRealVar, _2:RealVarParameter, _3:RealVarParameter) extends super.Factor {
+  case class Factor(_1:GeneratedRealVar, _2:GeneratedRealVar, _3:GeneratedRealVar) extends super.Factor {
     override def logpr(s:StatisticsType): Double = self.logpr(s._1, s._2, s._3)
     override def logpr: Double = self.logpr(_1.value, _2.value, _3.value)
     def pr(s:StatisticsType) = math.exp(logpr(s))
@@ -31,7 +31,7 @@ object Gaussian extends GenerativeFamily3[GeneratedRealVar,RealVarParameter,Real
     def sampledValue(s:StatisticsType): Double = self.sampledValue(s._2, s._3)
     override def sampledValue: Double = self.sampledValue(_2.value, _3.value)
   }
-  def newFactor(a:GeneratedRealVar, b:RealVarParameter, c:RealVarParameter) = Factor(a, b, c)
+  def newFactor(a:GeneratedRealVar, b:GeneratedRealVar, c:GeneratedRealVar) = Factor(a, b, c)
 }
 
 // TODO Complete something like this
@@ -40,7 +40,7 @@ object Gaussian extends GenerativeFamily3[GeneratedRealVar,RealVarParameter,Real
 object GaussianEstimator {
   def minSamplesForVarianceEstimate = 5
   /** This implements a moment-matching estimator. */
-  def estimate(meanVar:MutableRealVarParameter, varianceVar:MutableRealVarParameter, map:scala.collection.Map[Variable,Variable] = null): Unit = {
+  def estimate(meanVar:Real, varianceVar:Real, map:scala.collection.Map[Variable,Variable] = null): Unit = {
     require(map eq null) // TODO Otherwise not yet supported
     // TODO Ignores the parents of 'mean' and 'variance'.  Fix this.
     require(Set(meanVar.childFactors) == Set(varianceVar.childFactors)) // Expensive check may be unnecessary?

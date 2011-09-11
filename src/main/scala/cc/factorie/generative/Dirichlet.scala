@@ -96,8 +96,8 @@ object DirichletMomentMatching {
 }
 
 /** Alternative style of Dirichlet parameterized by 2 parents (mean,precision) rather than 1 (masses). */
-object Dirichlet2 extends GenerativeFamily3[Proportions,Proportions,RealVarParameter] {
-  def newFactor(a:Proportions, b:Proportions, c:RealVarParameter) = throw new Error("Not yet implemented")
+object Dirichlet2 extends GenerativeFamily3[Proportions,Proportions,GeneratedRealVar] {
+  def newFactor(a:Proportions, b:Proportions, c:GeneratedRealVar) = throw new Error("Not yet implemented")
 }
   
 /*

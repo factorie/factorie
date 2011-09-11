@@ -50,6 +50,7 @@ class MapAssignment extends MutableAssignment {
   def contains(v:Variable) = map.contains(v)
 }
 
+/** An efficient Assignment of one variable. */
 class Assignment1[A<:Variable](val variable:A, var value:A#Value) extends TypedAssignment[A] {
   def variables = List(variable)
   def apply[B<:A](v:B): B#Value = if (v eq variable) value.asInstanceOf[B#Value] else null.asInstanceOf[B#Value]
@@ -57,6 +58,7 @@ class Assignment1[A<:Variable](val variable:A, var value:A#Value) extends TypedA
   def contains(v:A): Boolean = if (v eq variable) true else false
 }
 
+/** An efficient Assignment of two variables. */
 class Assignment2[A<:Variable,B<:Variable](val var1:A, var value1:A#Value, val var2:B, value2:B#Value) extends Assignment {
   def variables = List(var1, var2)
   def apply[C<:Variable](v:C): C#Value = if (v eq var1) value1.asInstanceOf[C#Value] else if (v eq var2) value2.asInstanceOf[C#Value] else null.asInstanceOf[C#Value]
@@ -74,7 +76,9 @@ object GlobalAssignment extends Assignment {
   def contains(v:Variable) = true
 }
 
-/**  */
+/** An Assignment backed by a sequence of assignment.  
+    The returned value will be from the first Assignment in the sequence to contain the variable. 
+    @author Andrew McCallum */
 class AssignmentStack(val assignment:Assignment, val next:AssignmentStack = null) extends Assignment {
   def variables = assignment.variables ++ next.variables
   protected def apply[V<:Variable](v:V, s:AssignmentStack): V#Value =
