@@ -20,15 +20,17 @@ package cc.factorie.app.strings
     @author Andrew McCallum
     @see cc.factorie.example.LDA
 */
-object Stopwords {
+object Stopwords extends Stopwords
+class Stopwords {
   
   def contains(s:String) = asIndex.contains(s)
-  def index(s:String) = asIndex.index(s)
+  //def index(s:String) = asIndex.index(s)
+  def +=(s:String): Unit = asIndex.index(s)
   
-  lazy val asIndex = {
+  private lazy val asIndex = {
     val index = new cc.factorie.util.Index[String] {}
     index indexAll this.asArray
-    index.freeze0
+    //index.freeze0
     index
   } 
   

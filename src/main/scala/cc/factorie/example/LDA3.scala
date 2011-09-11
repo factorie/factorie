@@ -9,10 +9,12 @@ import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 
 object LDA3 {
-  val numTopics = 100
+  val numTopics = 30
   val beta1 = 0.1
   val alpha1 = 0.1
-  cc.factorie.random.setSeed(9)
+  val fitDirichlet = true
+  cc.factorie.random.setSeed(0)
+  
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
   class Zs(len:Int) extends PlatedGate(len) { 
@@ -30,27 +32,32 @@ object LDA3 {
   val alphas = new DenseMasses(numTopics, alpha1)
 
   def main(args: Array[String]): Unit = {
-    val directories = if (args.length > 0) args.toList else List("12", "11", "10", "09", "08").take(5).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
+    val directories = 
+      if (args.length > 0) args.toList 
+      else if (true) List("12", "11", "10", "09", "08").take(2).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
+      else if (false) List("acq", "earn", "money-fx").map("/Users/mccallum/research/data/text/reuters/reuters-parsed/modapte/"+_)
+      else List("comp.graphics", "comp.os.ms-windows.misc", "comp.sys.ibm.pc.hardware", "comp.sys.mac.hardware").map("/Users/mccallum/research/data/text/20_newsgroups/"+_)
     val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(WordDomain) ~ Dirichlet(beta))
     val documents = new ArrayBuffer[Document]
+    val stopwords = new Stopwords; stopwords += "rainbownum"
     for (directory <- directories) {
       println("Reading files from directory " + directory)
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         print("."); Console.flush
         val theta = new SortedSparseCountsProportions(numTopics) ~ Dirichlet(alphas)
-        val tokens = alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_)).toSeq
+        val tokens = alphaSegmenter(file).map(_ toLowerCase).filter(!stopwords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
         documents += new Document(file.toString, theta, tokens) ~ PlatedDiscreteMixture(phis, zs)
       }
       println()
     }
-
+    println("Read "+documents.size+" documents, "+WordDomain.size+" word types, "+documents.map(_.length).sum+" word tokens.")
+    
     val collapse = new ArrayBuffer[GeneratedVar]
     collapse += phis
     collapse ++= documents.map(_.theta)
     //val sampler = new CollapsedGibbsSampler(collapse) { def export(m:Seq[Proportions]): Unit = {} }
     val sampler = new SparseLDAInferencer(numTopics, documents, alphas, beta1)
-    //println("Initialization:"); phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
 
     val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
@@ -58,14 +65,15 @@ object LDA3 {
       if (i % 5 == 0) {
         println("Iteration " + i)
         sampler.export(phis)
-        sampler.exportThetas(documents)
-        // Turned off hyperparameter optimization
-        DirichletMomentMatching.estimate(alphas)
-        sampler.resetSmoothing(alphas, beta1)
-        println("alpha = " + alphas.mkString(" "))
-        //phis.zipWithIndex((phi,index) => )
-        phis.zipWithIndex.map({case (phi:GrowableDenseCountsProportions, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
-        println("Total words "+documents.map(_.length).sum)
+        if (fitDirichlet) {
+          sampler.exportThetas(documents)
+          DirichletMomentMatching.estimate(alphas)
+          sampler.resetSmoothing(alphas, beta1)
+          println("alpha = " + alphas.mkString(" "))
+          phis.zipWithIndex.map({case (phi:GrowableDenseCountsProportions, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).reverse.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
+        } else {
+          phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
+        }
         println
       }
     }
@@ -74,7 +82,7 @@ object LDA3 {
   }
   
   class SparseLDAInferencer(val numTopics:Int, docs:Iterable[Document], initialAlphas:Seq[Double], initialBeta1:Double) {
-    var verbosity = 1
+    var verbosity = 0
     var smoothingOnlyCount = 0; var topicBetaCount = 0; var topicTermCount = 0 // Just diagnostics
     def samplesCount = smoothingOnlyCount + topicBetaCount + topicTermCount
     val betaSum = beta1 * WordDomain.size
