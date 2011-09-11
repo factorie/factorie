@@ -23,7 +23,7 @@ class CollapsedVariationalBayes(collapse:Iterable[GeneratedVar], marginalize:Ite
   def defaultHandlers = throw new Error("Not yet implemented")
   handlers ++= defaultHandlers
 
-  private val _c = new HashMap[Parameter,Parameter]
+  private val _c = new HashMap[GeneratedVar,GeneratedVar]
   private val _q = new HashMap[Variable,Variable]
   def collapsedMap = _c
   def qMap = _q
@@ -32,14 +32,14 @@ class CollapsedVariationalBayes(collapse:Iterable[GeneratedVar], marginalize:Ite
   marginalize.foreach(v => _q(v) = v.newQ)
   //def collapsed[V<:CollapsibleParameter](v:V) = _c(v).asInstanceOf[V#CollapsedType]
   def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
-  def collapsedOrSelf(v:Parameter): Parameter = _c.getOrElse(v, v)
-  def collapsedp2[P<:Parameter](v:P): P = _c.getOrElse(v, v).asInstanceOf[P]
-  def collapsedOrNull(v:Parameter): Parameter = _c.getOrElse(v, null.asInstanceOf[Parameter])
+  def collapsedOrSelf(v:GeneratedVar): GeneratedVar = _c.getOrElse(v, v)
+  def collapsedp2[P<:GeneratedVar](v:P): P = _c.getOrElse(v, v).asInstanceOf[P]
+  def collapsedOrNull(v:GeneratedVar): GeneratedVar = _c.getOrElse(v, null.asInstanceOf[GeneratedVar])
   def qp(v:Variable) = _q.getOrElse(v, v)
   def setMaxMarginals(implicit d:DiffList = null): Unit = {
     throw new Error("Not yet implemented")
   }
-  def children(p:Parameter): Iterable[GeneratedVar] = throw new Error
+  def children(p:GeneratedVar): Iterable[GeneratedVar] = throw new Error
 
   def process(v:MutableGeneratedVar): DiffList = {
     //assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable

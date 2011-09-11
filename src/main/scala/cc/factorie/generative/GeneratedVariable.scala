@@ -31,8 +31,9 @@ trait VarWithFactors extends Variable {
     May or may not be mutable. */
 trait GeneratedVar extends VarWithFactors {
   //type VariableType <: GeneratedVar
+  // TODO Don't make this "var".  The ~ method should be the only place that this gets changed!
   var parentFactor: GenerativeFactor = null
-  def factors: Seq[GenerativeFactor] = List(parentFactor)
+  def factors: Seq[GenerativeFactor] = if (_childFactors eq null) List(parentFactor) else parentFactor +: childFactors 
   def sampledValue: Value = {
     parentFactor.sampledValue.asInstanceOf[Value]
   }
@@ -48,19 +49,19 @@ trait GeneratedVar extends VarWithFactors {
   def ~[V<:this.VariableType with GeneratedVar](partialFactor:Function1[V,GenerativeFactor]): this.type = {
     assert(parentFactor eq null)
     parentFactor = partialFactor(this.asInstanceOf[V])
-    for (p <- parentFactor.parents) p.asInstanceOf[Parameter].addChild(this) // TODO Think about this more.
+    for (p <- parentFactor.parents) p.addChild(this) // TODO Think about this more.
     this
   }
 
   /** The list of random variables on which the generation of this variable's value depends. 
       By convention the first variable of the parentFactor is the child, 
       and the remainder are its parents. */
-  def parents: Seq[Parameter] = parentFactor.parents.asInstanceOf[Seq[Parameter]]
+  def parents: Seq[GeneratedVar] = parentFactor.parents.asInstanceOf[Seq[GeneratedVar]]
   /** The list of random variables on which the generation of this variable's value depends,
       either directly or via a sequence of deterministic variables.  Changes to these variables
       cause the value of this.pr to change. */
-  def extendedParents: Seq[Parameter] = {
-    val result = new scala.collection.mutable.ArrayBuffer[Parameter]
+  def extendedParents: Seq[GeneratedVar] = {
+    val result = new scala.collection.mutable.ArrayBuffer[GeneratedVar]
     result ++= parents
     for (parent <- parents) parent match {
       case gv:GeneratedVar if (gv.isDeterministic) => result ++= gv.extendedParents
@@ -69,7 +70,48 @@ trait GeneratedVar extends VarWithFactors {
     result
   }
   /** Returns true if the value of this parameter is a deterministic (non-stochastic) function of its parents. */
+  // TODO Perhaps there should be a "isDeterministic" method in cc.factorie.Factor?  Or should it go in Statistics?  Ug. -akm
   def isDeterministic = false
+  private var _childFactors: ArrayBuffer[GenerativeFactor] = null
+  def childFactors: Seq[GenerativeFactor] = if (_childFactors eq null) Nil else _childFactors
+  def addChildFactor(f:GenerativeFactor): Unit = {
+    if (_childFactors eq null) _childFactors = new scala.collection.mutable.ArrayBuffer[GenerativeFactor]
+    _childFactors += f
+  }
+  def addChild(v:GeneratedVar, d:DiffList = null): Unit = addChildFactor(v.parentFactor)
+  def removeChildFactor(f:GenerativeFactor): Unit = _childFactors -= f
+  def removeChild(v:GeneratedVar, d:DiffList = null): Unit = removeChildFactor(v.parentFactor)
+  def children: Seq[GeneratedVar] = childFactors.map(_.child)
+  def childrenOfClass[A](implicit m:Manifest[A]) = children.filter(_.getClass == m.erasure).asInstanceOf[Iterable[A]]
+  /** A collection of variables whose value depends on the value of this variable, 
+      either directly or via a sequence of deterministic variables.  If this variable's
+      value changes, all of these extended children variables' .pr will change. */
+  def extendedChildren: Iterable[GeneratedVar] = {
+    if (_childFactors eq null) return Nil
+    val result = new ArrayBuffer[GeneratedVar]
+    for (child <- children) {
+      if (child.isDeterministic) { result += child; result ++= child.extendedChildren }
+      else result += child
+    }
+    result
+  }
+  def deprecated_weightedGeneratedChildren(map:scala.collection.Map[Variable,Variable]): Iterable[(GeneratedVar,Double)] = {
+    val result = new ArrayBuffer[(GeneratedVar,Double)]
+    for (child <- children) map.getOrElse(child,child) match {
+      /*case mcs:MixtureComponents[_] => {
+        val mci = mcs.components.indexOf(this); assert(mci >= 0)
+        for (c <- mcs.children) map.getOrElse(c,c) match {
+          case mv:MixtureGeneratedVar => map.getOrElse(mv.choice, mv.choice) match {
+            case mc:MixtureChoice => if (mc.intValue == mci) result += ((c, 1.0))
+            case pr:Proportions => { assert(pr.length == mcs.components.length); if (pr(mci) > 0.0) result += ((c, pr(mci))) }
+          }
+        }
+      }*/
+      case gv:GeneratedVar => result += ((child, 1.0))
+    }
+    result
+  }
+
 }
 
 
@@ -87,6 +129,8 @@ trait MutableGeneratedVar extends GeneratedVar with MutableVar {
   }
 }
 
+// Consider something like this, but then the Vars container has a parent and children, and so do the contents?
+//trait GeneratedVars[V<:GeneratedVar] extends Vars[V] with GeneratedVar
 
 // TODO Are these still necessary?  Consider deleting.  Yes!
 trait RealGenerating {
@@ -122,8 +166,9 @@ trait GenerativeFactor extends Factor {
   def logpr: Double = logpr(statistics)
   def sampledValue(s:StatisticsType): Any
   def sampledValue: Any = sampledValue(statistics)
+  // TODO Consider removing these methods because we'd have specialized code in the inference recipes.
   /** Update sufficient statistics in collapsed parents, using current value of child, with weight.  Return false on failure. */
-  // TODO Consider passing a second argument which is the value of the child to use in the upate
+  // TODO Consider passing a second argument which is the value of the child to use in the update
   def updateCollapsedParents(weight:Double): Boolean = throw new Error(factorName+": Collapsing parent not implemented.")
   def updateCollapsedChild(): Boolean = throw new Error(factorName+": Collapsing child not implemented.")
   def resetCollapsedChild(): Boolean = throw new Error(factorName+": Resetting child not implemented.")
@@ -136,28 +181,30 @@ trait GenerativeFactorWithStatistics1[C<:GeneratedVar] extends GenerativeFactor 
   def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType]) // Can't define score earlier because inner class Factor.Statistics not defined until here
 }
 
-trait GenerativeFactorWithStatistics2[C<:GeneratedVar,P1<:Parameter] extends GenerativeFactor with FactorWithStatistics2[C,P1] {
+trait GenerativeFactorWithStatistics2[C<:GeneratedVar,P1<:GeneratedVar] extends GenerativeFactor with FactorWithStatistics2[C,P1] {
   type ChildType = C
   def child = _1
   def parents = Seq(_2)
+  // TODO Consider this:
+  //def parents = _2 match { case vars:Vars[Parameter] => vars; case _ => Seq(_2) }
   def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
 }
 
-trait GenerativeFactorWithStatistics3[C<:GeneratedVar,P1<:Parameter,P2<:Parameter] extends GenerativeFactor with FactorWithStatistics3[C,P1,P2] {
+trait GenerativeFactorWithStatistics3[C<:GeneratedVar,P1<:GeneratedVar,P2<:GeneratedVar] extends GenerativeFactor with FactorWithStatistics3[C,P1,P2] {
   type ChildType = C
   def child = _1
   def parents = Seq(_2, _3)
   def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
 }
 
-trait GenerativeFactorWithStatistics4[C<:GeneratedVar,P1<:Parameter,P2<:Parameter,P3<:Parameter] extends GenerativeFactor with FactorWithStatistics4[C,P1,P2,P3] {
+trait GenerativeFactorWithStatistics4[C<:GeneratedVar,P1<:GeneratedVar,P2<:GeneratedVar,P3<:GeneratedVar] extends GenerativeFactor with FactorWithStatistics4[C,P1,P2,P3] {
   type ChildType = C
   def child = _1
   def parents = Seq(_2, _3, _4)
   def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
 }
 
-trait GenerativeFamily2[Child<:GeneratedVar,Parent1<:Parameter] {
+trait GenerativeFamily2[Child<:GeneratedVar,Parent1<:GeneratedVar] {
   type C = Child
   type P1 = Parent1
   trait Factor extends GenerativeFactorWithStatistics2[C,P1] 
@@ -167,7 +214,7 @@ trait GenerativeFamily2[Child<:GeneratedVar,Parent1<:Parameter] {
   }
 }
 
-trait GenerativeFamily3[Child<:GeneratedVar,Parent1<:Parameter,Parent2<:Parameter] {
+trait GenerativeFamily3[Child<:GeneratedVar,Parent1<:GeneratedVar,Parent2<:GeneratedVar] {
   type C = Child
   type P1 = Parent1
   type P2 = Parent2
@@ -178,7 +225,7 @@ trait GenerativeFamily3[Child<:GeneratedVar,Parent1<:Parameter,Parent2<:Paramete
   }
 }
 
-trait GenerativeFamily4[Child<:GeneratedVar,Parent1<:Parameter,Parent2<:Parameter,Parent3<:Parameter] {
+trait GenerativeFamily4[Child<:GeneratedVar,Parent1<:GeneratedVar,Parent2<:GeneratedVar,Parent3<:GeneratedVar] {
   type C = Child
   type P1 = Parent1
   type P2 = Parent2

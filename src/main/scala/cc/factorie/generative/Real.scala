@@ -18,8 +18,3 @@ import cc.factorie._
 trait GeneratedRealVar extends RealVar with GeneratedVar
 abstract class Real(initial: Double = 0.0) extends RealVariable(initial) with GeneratedRealVar with MutableGeneratedVar
 
-trait RealVarParameter extends RealVar with Parameter
-trait MutableRealVarParameter extends MutableRealVar with RealVarParameter
-class RealParameter(value:Double) extends RealVariable(value) with RealVarParameter
-//class RealConstantParameter(value:Double) extends RealObservation(value) with RealVarParameter
-

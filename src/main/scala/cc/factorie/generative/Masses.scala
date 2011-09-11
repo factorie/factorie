@@ -20,7 +20,7 @@ import cc.factorie._
     Proportions ~ Dirichlet(Masses)
     Masses ~ Multinomial(Proportions) */
 // TODO Note, this is currently unused, since Dirichlet is instead parameterized by mean & precision
-trait Masses extends Parameter with IndexedSeqEqualsEq[Double] with VarAndValueGenericDomain[Masses,Seq[Double]] {
+trait Masses extends GeneratedVar with IndexedSeqEqualsEq[Double] with VarAndValueGenericDomain[Masses,Seq[Double]] {
   def value = this.asInstanceOf[Value] // TODO Not a safe immutable value
   override def toString = this.mkString(printName+"(", ",", ")")
   def activeDomain: Iterable[Int]
