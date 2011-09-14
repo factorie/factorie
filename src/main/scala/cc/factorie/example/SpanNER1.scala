@@ -119,12 +119,12 @@ object SpanNER1 {
     // Token-Label within Span
     new SpanLabelTemplate with DotStatistics2[CategoricalVectorValue[String],Label#Value] { 
       def statistics(v:Values) = {
-        // TODO Yipes, this is awkward, but more convenient infrastruture could be build.
-        var vector = new cc.factorie.la.SparseVector(v._1.head.value.length) with CategoricalVectorValue[String] {
+        // TODO Yipes, this is awkward, but more convenient infrastructure could be build.
+        var vector = new cc.factorie.la.SparseBinaryVector(v._1.head.value.length) with CategoricalVectorValue[String] {
           val domain = v._1.head.value.domain
         }
-        for (token <- v._1) 
-          vector += token.value
+        for (token <- v._1; featureIndex <- token.activeDomain) 
+          vector.include(featureIndex) // TODO This is shifing array pieces all over; slow.  Fix it.
         Stat(vector, v._2) 
       }
     },
@@ -137,18 +137,24 @@ object SpanNER1 {
       def statistics(v:Values) = Stat(v._1.last.value, v._2)
     },
     // Token before Span
-    new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = if (v._1.head.hasPrev) Stat(v._1.head.prev.value, v._2) else null
+    new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] {
+      override def unroll1(span:Span) = if (span.head.hasPrev) Factor(span, span.label) else Nil
+      override def unroll2(label:Label) = if (label.span.head.hasPrev) Factor(label.span, label) else Nil
+      def statistics(v:Values) = Stat(v._1.head.prev.value, v._2)
     },
     // Token after Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
-      def statistics(v:Values) = if (v._1.last.hasNext) Stat(v._1.last.next.value, v._2) else null 
+      override def unroll1(span:Span) = if (span.last.hasNext) Factor(span, span.label) else Nil
+      override def unroll2(label:Label) = if (label.span.last.hasNext) Factor(label.span, label) else Nil
+      def statistics(v:Values) = Stat(v._1.last.next.value, v._2) 
     },
     // Single Token Span
     new SpanLabelTemplate with DotStatistics2[Token#Value,Label#Value] { 
+      override def unroll1(span:Span) = if (span.length == 1) Factor(span, span.label) else Nil
+      override def unroll2(label:Label) = if (label.span.length == 1) Factor(label.span, label) else Nil
       def statistics(v:Values) = {
         val span = v._1; val label = v._2
-        if (span.length == 1) Stat(span.head.value, label) else null
+        Stat(span.head.value, label)
       }
     }
     //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil },
@@ -217,6 +223,7 @@ object SpanNER1 {
             changes += {(d:DiffList) => { span.trimStart(1)(d); new Span(labelValue.category, _seq, span.start-1, 1)(d) } }
           }
         }
+        // TODO Add something to merge two neighboring spans!
         if (span.length == 3) {
           // Split span, dropping word in middle, preserving label value
           changes += {(d:DiffList) => span.delete(d); new Span(span.label.categoryValue, _seq, span.start, 1)(d); new Span(span.label.categoryValue, _seq, span.end, 1)(d) }

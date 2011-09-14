@@ -9,10 +9,10 @@ import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 
 object LDA3 {
-  val numTopics = 30
+  val numTopics = 10
   val beta1 = 0.1
   val alpha1 = 0.1
-  val fitDirichlet = true
+  val fitDirichlet = false
   cc.factorie.random.setSeed(0)
   
   object ZDomain extends DiscreteDomain { def size = numTopics }
@@ -34,7 +34,7 @@ object LDA3 {
   def main(args: Array[String]): Unit = {
     val directories = 
       if (args.length > 0) args.toList 
-      else if (true) List("12", "11", "10", "09", "08").take(2).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
+      else if (true) List("11", "12", "10", "09", "08").take(1).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
       else if (false) List("acq", "earn", "money-fx").map("/Users/mccallum/research/data/text/reuters/reuters-parsed/modapte/"+_)
       else List("comp.graphics", "comp.os.ms-windows.misc", "comp.sys.ibm.pc.hardware", "comp.sys.mac.hardware").map("/Users/mccallum/research/data/text/20_newsgroups/"+_)
     val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(WordDomain) ~ Dirichlet(beta))
@@ -62,7 +62,7 @@ object LDA3 {
     val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
       for (doc <- documents) sampler.process(doc.zs)
-      if (i % 5 == 0) {
+      if (i % 20 == 0) {
         println("Iteration " + i)
         sampler.export(phis)
         if (fitDirichlet) {

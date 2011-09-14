@@ -106,22 +106,20 @@ trait Factor extends Model with Ordered[Factor] {
 
 /** A container for all the values of the variables neighboring a factor.
     These are necessary to construct a Statistics object. */
-trait Values extends Statistics with Assignment { // TODO Make this extend Statistics
+trait Values extends Statistics with Assignment {
   // def factor: Factor // TODO Consider adding this method
-  //def outer: Values = null  // TODO Remove this
   override def inner: Seq[Values] = Nil
-  //def statistics: Statistics
   //def apply[B <: Variable](v: B): B#Value = { new Error("Never call apply() on values"); null.asInstanceOf[B#Value] }
   def score: Double = statistics.score
-  // provides a unique index for these values (assuming varying remains the same)
-  def index(varying:Set[Variable]): Int = {
+  /** Return a unique index for the combination of Discrete values in the set "varying".  Used in BeliefPropagation. */
+  def index(varying:Set[Variable]): Int = {  // TODO Change this to Set[DiscreteVar] and then rework body.
     var result = 0
     var mult = 1
     var found: Boolean = false
     for (variable <- variables) {
-      if(varying contains variable) {
+      if (varying contains variable) {
         variable match {
-          case dv:DiscreteVariable => {
+          case dv:DiscreteVar => {
             val dvalue: DiscreteValue = get(dv).get
             found = true
             result += (dvalue.intValue * mult)
