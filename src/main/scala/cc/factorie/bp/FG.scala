@@ -1,15 +1,14 @@
 package cc.factorie.bp
 
 import StrictMath._
-import collection.mutable.ArrayBuffer._
+import collection.mutable.{HashSet, ArrayBuffer, HashMap, Queue, Buffer}
 import cc.factorie._
-import collection.mutable.{HashSet, Buffer, ArrayBuffer, HashMap}
 
 /**
  * @author sameer
  */
 
-class FG(val varying: Set[Variable]) {
+class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
 
   def this(model: Model, varying: Set[Variable]) = {
     this (varying)
@@ -35,7 +34,11 @@ class FG(val varying: Set[Variable]) {
 
     val _incoming = new FactorMessages
     val _outgoing = new FactorMessages
-    protected val _marginal: Array[Double] = new Array(variables.filter(varyingNeighbors contains _).foldLeft(1)(_ * _.domain.size))
+    private val _valuesSize: Int = variables.filter(varyingNeighbors contains _).foldLeft(1)(_ * _.domain.size)
+    protected val _marginal: Array[Double] = new Array(_valuesSize)
+    private var _cache: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
+
+    def clearCache = _cache = Array.fill(_valuesSize)(Double.NaN)
 
     def incoming: FactorMessages = _incoming
 
@@ -56,7 +59,7 @@ class FG(val varying: Set[Variable]) {
       }
       // previously we used new AllAssignmentIterator(variables)
       for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
-        var num: Double = assignment.statistics.score
+        var num: Double = getScore(assignment)
         for (variable <- variables) {
           if (variable != target) {
             val mess = incoming(variable)
@@ -76,6 +79,15 @@ class FG(val varying: Set[Variable]) {
       BPUtil.message(target, varScores)
     }
 
+    def getScore(assignment: Values, index: Int = -1): Double = {
+      if (cacheScores) {
+        if (_cache(index).isNaN) {
+          _cache(index) = assignment.statistics.score
+        }
+        _cache(index)
+      } else assignment.statistics.score
+    }
+
     def marginalize(incoming: FactorMessages): FactorMessages = {
       val result = new FactorMessages()
       val scores: Array[Array[Double]] = new Array(varyingNeighbors.size)
@@ -88,7 +100,7 @@ class FG(val varying: Set[Variable]) {
       // and find the maximum score for numerical reasons
       for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
         val index = assignment.index(varyingNeighbors)
-        var num: Double = assignment.statistics.score
+        var num: Double = getScore(assignment, index)
         for (dv <- discreteVarying) {
           val mess = incoming(dv)
           num += mess.score(assignment(dv))
@@ -160,6 +172,8 @@ class FG(val varying: Set[Variable]) {
         log(dynamicRange)
       }).max
     }
+
+    override def toString = "M(%s)".format(factor)
   }
 
   class MessageNode(val variable: DiscreteVariable) {
@@ -222,6 +236,8 @@ class FG(val varying: Set[Variable]) {
     def currentMaxDelta: Double = {
       factors.map(_.currentMaxDelta).max
     }
+
+    override def toString = "M(%s)".format(variable)
   }
 
   val _nodes = new HashMap[DiscreteVariable, MessageNode]
@@ -256,6 +272,57 @@ class FG(val varying: Set[Variable]) {
     }
   }
 
+  private def _bfs(root: MessageNode, checkLoops: Boolean): Seq[MessageFactor] = {
+    val visited: HashSet[MessageFactor] = new HashSet
+    val result = new ArrayBuffer[MessageFactor]
+    val toProcess = new Queue[(MessageNode, MessageFactor)]
+    root.factors foreach (f => toProcess += Pair(root, f))
+    while (!toProcess.isEmpty) {
+      val (origin, factor) = toProcess.dequeue()
+      if (!checkLoops || !visited(factor)) {
+        visited += factor
+        result += factor
+        for (node <- factor.nodes; if (node != origin && node.varies)) {
+          node.factors filter (_ != factor) foreach (f => toProcess += Pair(node, f))
+        }
+      }
+    }
+    result
+  }
+
+  def inferUpDown(variable: DiscreteVariable, checkLoops: Boolean = true): Unit = inferTreewise(node(variable), checkLoops)
+
+  // Perform a single iteration of up-down BP using the given root to discover the tree. For
+  // loopy models, enable checkLoops to avoid infinite loops.
+  def inferTreewise(root: MessageNode, checkLoops: Boolean = true) {
+    // perform BFS
+    val bfsOrdering: Seq[MessageFactor] = _bfs(root, checkLoops)
+    // send messages leaf to root
+    for (factor <- bfsOrdering.reverse) {
+      factor.prepareIncoming()
+      factor.updateAllOutgoing()
+    }
+    // send root to leaves
+    for (factor <- bfsOrdering) {
+      factor.prepareIncoming()
+      factor.updateAllOutgoing()
+    }
+  }
+
+  // Perform up-down scheduling of messages. Picks a random root, and performs BFS
+  // ordering to discover the tree (efficiently if checkLoops is false), resulting in
+  // exact inference for tree-shaped models. For loopy models, enable checkLoops to avoid
+  // infinite loops, and have iterations>1 till convergence.
+  def inferTreeUpDown(iterations: Int = 1, checkLoops: Boolean = true) {
+    for (iteration <- 0 until iterations) {
+      // find a random root
+      val root = nodes.sampleUniformly
+      // treewise
+      inferTreewise(root, checkLoops)
+      println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+    }
+  }
+
   def nodes: Iterable[MessageNode] = _nodes.values
 
   def variables: Iterable[DiscreteVariable] = _nodes.keys
@@ -270,7 +337,7 @@ class FG(val varying: Set[Variable]) {
 
   def mfactor(factor: Factor): MessageFactor = _factors(factor)
 
-  def setToMaxMarginal(variables: Iterable[DiscreteVariable])(implicit d: DiffList = null): Unit = {
+  def setToMaxMarginal(variables: Iterable[DiscreteVariable] = this.variables)(implicit d: DiffList = null): Unit = {
     for (variable <- variables) {
       variable.set(node(variable).marginal.map[variable.Value])(d)
     }
