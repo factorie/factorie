@@ -128,7 +128,11 @@ class CombinedModel(val subModels:Model*) extends Model {
 class FactorModel(initialFactors:Factor*) extends Model {
   // TODO Also add Map[Variable,Factor] for storing Factors that do not belong to an unrolling Template
   private val _factors = new HashMap[Variable,HashSet[Factor]] {
-    override def default(v:Variable) = new HashSet[Factor]
+    override def default(v:Variable) = {
+      val result = new HashSet[Factor]
+      this(v)  = result
+      result
+    }
   }
   this ++= initialFactors
   def factors(variables:Iterable[Variable]): Seq[Factor] = normalize(variables.flatMap(v => _factors(v)).toSeq)
