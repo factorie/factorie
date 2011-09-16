@@ -19,7 +19,7 @@ import junit.framework._
 import Assert._
 
 /**
- * @author Tim Vieira
+ * @author timv, sameer
  * @since Sep 16, 2010
  */
 
@@ -28,12 +28,12 @@ class TestSparseBinaryVector extends TestCase {
   def test_suspicious_indices:Unit = {
     val v = new SparseBinaryVector(1000)
     // check the boundaries
-    v += 0
-    v += v.length-1
+    v include 0
+    v include v.length-1
     // TODO: these shoud probably raise an Exception!
-    v += v.length
-    v += v.length+100
-    v += -1
+    v include v.length
+    v include v.length+100
+    v include -1
     assertTrue(true)
   }
 
@@ -44,7 +44,7 @@ class TestSparseBinaryVector extends TestCase {
     assertEquals(v.activeDomain.size, 0)
     
     val x = List(100,300,1000,500,2,100)
-    x.foreach(v+=_)
+    x.foreach(v include _)
 
     val expect = x.toSet.toList.sortWith(_<_)
     assertEquals(v.activeDomain.toList, expect)
@@ -67,7 +67,7 @@ class TestSparseBinaryVector extends TestCase {
     v.zero
     appearsToBeEmpty
 
-    v += 100
+    v include 100
     doesNotAlterLength
     assertEquals(v.activeDomain, List(100))
     assertEquals(v.activeDomainSize, 1)
@@ -75,7 +75,7 @@ class TestSparseBinaryVector extends TestCase {
     v.zero
     appearsToBeEmpty
 
-    v += 100
+    v include 100
     doesNotAlterLength
     assertEquals(v.activeDomain, List(100))
     assertEquals(v.activeDomainSize, 1)

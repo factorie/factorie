@@ -6,19 +6,17 @@ import scala.io.{Source}
 import scala.collection.mutable.{ArrayBuffer}
 
 import org.junit.Assert._
-import org.junit.Before
-import org.junit.Test
-import org.scalatest.junit.JUnitSuite
 import cc.factorie.TestUtils
+import junit.framework._
 
 /**
- * @author Tim Vieira
+ * @author timv, sameer
  * @since Sep 30, 2010
  */
 
 // The Goal of this test is to ensure that all of the customizable parameters
 // from creating a labeled.TokenSeq will work properly.
-class TestTokenSeqCreation extends JUnitSuite {
+class TestTokenSeqCreation extends TestCase {
 
   // define classes for Token, Label, and Sequence, currently the base classes
   // cannot be instantiated.. they must be subclassed.
@@ -57,7 +55,6 @@ class TestTokenSeqCreation extends JUnitSuite {
   val newToken = new MyToken(_,_)
   val newSentence = () => new MySentence
 
-  @Test
   def test_fromPlainText = {
     // checks if lexer worked as expected
     // makes sure feature function was called
@@ -80,7 +77,7 @@ class TestTokenSeqCreation extends JUnitSuite {
 
     // all labels should equal defaultLabel.
     val seq = fromPlainText("The man saw the boy with the telescope.")
-    for (lbl <- seq.labels) assertEquals(lbl.value, defaultLabel)
+    for (lbl <- seq.labels) assertEquals(lbl.value.category, defaultLabel)
 
     // assert that the types of Sequence, Token, and Label are correct
     assertTrue(seq          .isInstanceOf[MySentence])
@@ -94,7 +91,6 @@ class TestTokenSeqCreation extends JUnitSuite {
                                                      feature startsWith "myfeature")
   }
 
-  @Test
   def test_fromOWPL_ignoreLines = {
     // Make sure that we ignore commented out lines
     val data = labeled.TokenSeq.fromOWPL(ExampleData.sampleOwpl,
@@ -117,16 +113,14 @@ class TestTokenSeqCreation extends JUnitSuite {
     assertTrue(data_not_ignoring.flatten[MyToken].map(_.word).exists(_ == "##"))
   }
 
-  @Test
   def test_fromOWPL_labelFunction = {
     val data = labeled.TokenSeq.fromOWPL(ExampleData.sampleOwpl,
       newSentence, newToken, featureFunction, labelFunction, sentenceBoundary,
       documentBoundary, ignoreLines)
     // make sure that our prefix was added
-    assertTrue(data.flatMap(_.labels).forall(_.value startsWith "MYPREFIX-"))
+    assertTrue(data.flatMap(_.labels).forall(_.value.category startsWith "MYPREFIX-"))
   }
 
-  @Test
   def test_fromSGML = {
     // TODO: TokenSeq.fromSGML is not implemented yet.
   }

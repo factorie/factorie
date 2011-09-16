@@ -17,13 +17,10 @@
 package cc.factorie
 
 /**
- * Created by IntelliJ IDEA.
- * User: gdruck
- * Date: Sep 2, 2010
- * Time: 12:11:28 PM
- * To change this template use File | Settings | File Templates.
+ * @author gdruck, sameer
  */
 
+import bp.FG
 import scala.collection.mutable.{ArrayBuffer}
 import scala.collection.mutable.HashMap
 import scala.util.matching.Regex
@@ -40,7 +37,7 @@ import scala.math
 object TestBPClassify {
   def main(args: Array[String]): Unit = {
     val t = new TestBPClassify
-    t.main(args)
+    t.process(args)
   }
 }
 
@@ -61,9 +58,10 @@ class TestBPClassify extends TestCase {
 
   val model = new TemplateModel (
     /**Bias term just on labels */
-    new TemplateWithDotStatistics1[Label],
+    new TemplateWithDotStatistics1[Label]{ override def statisticsDomains = Seq(LabelDomain) },
     /**Factor between label and observed document */
     new TemplateWithDotStatistics2[Label, Document] {
+      override def statisticsDomains = Seq(LabelDomain, DocumentDomain)
       def unroll1(label: Label) = Factor(label, label.document)
       def unroll2(token: Document) = throw new Error("Document values shouldn't change")
     }
@@ -71,9 +69,9 @@ class TestBPClassify extends TestCase {
 
   val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
   
-  def testMain: Unit = main(new Array[String](0))
+  def testMain: Unit = process(new Array[String](0))
 
-  def main(args: Array[String]): Unit = {
+  def process(args: Array[String]): Unit = {
     var documents = new ArrayBuffer[Document]
 
     if (args.length >= 2) {
@@ -103,19 +101,18 @@ class TestBPClassify extends TestCase {
     var trainVariables = trainSet.map(_ label)
     var testVariables = testSet.map(_ label)
     (trainVariables ++ testVariables).foreach(_.setRandomly())
-
     // Train and test
     val trainer = new SimpleMaxEntTrainer(model)
     trainer.process(trainVariables)
 
-    val inferencer = new BPInferencer[LabelVariable[String]](model)
-    val lattice = inferencer.inferTreewise(testVariables.asInstanceOf[Seq[LabelVariable[String]]])
+    val fg = new FG(model, testVariables.toSet[Variable])
+    fg.inferLoopyBP()
 
     var trueSumLogZ = 0.0
 
     println("CHECKING BP MARGINALS")
     testVariables.foreach(v => {
-      val bpMarginal = lattice.marginal(v)
+      val bpMarginal = fg.node(v).marginal
 
       val trueMarginal = new Array[Double](v.domain.size) // TODO Are we concerned about all this garbage collection?
       forIndex(trueMarginal.length)(i => {
@@ -133,17 +130,17 @@ class TestBPClassify extends TestCase {
       maths.expNormalize(trueMarginal)
 
       forIndex(trueMarginal.length)(i => {
-        if (math.abs(trueMarginal(i) - bpMarginal.get(i)) > 1e-6) {
-          throw new RuntimeException("BP MARGINALS INCORRECT! " + trueMarginal(i) + " " + bpMarginal.get(i))
+        if (math.abs(trueMarginal(i) - bpMarginal.probability(v.domain.apply(i))) > 1e-6) {
+          throw new RuntimeException("BP MARGINALS INCORRECT! " + trueMarginal(i) + " " + bpMarginal.probability(v.domain.apply(i)))
         }
       })
     })
     println("DONE CHECKING BP MARGINALS")
 
-    val bpSumLogZ = lattice.sumLogZ
+    /*val bpSumLogZ = lattice.sumLogZ
     if (math.abs(trueSumLogZ - lattice.sumLogZ) > 1e-6) {
       throw new RuntimeException("BP LOGZ INCORRECT! " + trueSumLogZ + " " + bpSumLogZ)
-    }
+    }*/
 
 
     val predictor = new VariableSettingsGreedyMaximizer[Label](model)
