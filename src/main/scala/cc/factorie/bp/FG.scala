@@ -17,7 +17,7 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
 
   class MessageFactor(val factor: Factor) {
 
-    val variables: Seq[DiscreteVariable] = factor.variables.map(_.asInstanceOf[DiscreteVariable])
+    val variables: Seq[Variable] = factor.variables
     // set of neighbors that are varying
     lazy val varyingNeighbors: Set[Variable] = {
       val set: HashSet[Variable] = new HashSet
@@ -25,7 +25,7 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
       set.toSet
     }
     // same as above, but in a ordered and DiscreteVariable form
-    val discreteVarying: Seq[DiscreteVariable] = variables.filter(varying contains _)
+    val discreteVarying: Seq[DiscreteVariable] = variables.filter(varying contains _).map(_.asInstanceOf[DiscreteVariable])
     // complement of varyingNeighbors
     val fixedNeighbors: Set[Variable] = variables.toSet -- varyingNeighbors
     val nodes: Seq[MessageNode] = variables.map(node(_))
@@ -34,7 +34,7 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
 
     val _incoming = new FactorMessages
     val _outgoing = new FactorMessages
-    private val _valuesSize: Int = variables.filter(varyingNeighbors contains _).foldLeft(1)(_ * _.domain.size)
+    private val _valuesSize: Int = discreteVarying.foldLeft(1)(_ * _.domain.size)
     protected val _marginal: Array[Double] = new Array(_valuesSize)
     private var _cache: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
 
@@ -152,7 +152,7 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
 
     def prepareIncoming() = nodes.foreach(prepareSingleIncoming(_))
 
-    def setSingleOutgoing(variable: DiscreteVariable, message: GenericMessage) {
+    def setSingleOutgoing(variable: Variable, message: GenericMessage) {
       if (outgoing(variable).isDeterministic) {
         outgoingDeltas(variable) = outgoing(variable)
       }
@@ -176,7 +176,7 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
     override def toString = "M(%s)".format(factor)
   }
 
-  class MessageNode(val variable: DiscreteVariable) {
+  class MessageNode(val variable: Variable) {
     // TODO: Add support for "changed" flag, i.e. recompute only when value is read, and hasnt changed since last read
     val factors = new ArrayBuffer[MessageFactor]
 
@@ -188,7 +188,7 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
 
     def priority(neighbor: MessageFactor): Double = currentMaxDelta
 
-    protected var _marginal: GenericMessage = if (varies) BPUtil.uniformMessage(variable) else BPUtil.deterministicMessage(variable, variable.value)
+    protected var _marginal: GenericMessage = if (varies) BPUtil.uniformMessage else BPUtil.deterministicMessage(variable, variable.value)
     protected var _incoming: VarMessages = new VarMessages
     protected var _outgoing: VarMessages = new VarMessages
 
@@ -199,7 +199,7 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
     def outgoing(mf: MessageFactor): GenericMessage = {
       if (varies) {
         if (_incoming(mf.factor).isDeterministic) {
-          var msg: GenericMessage = BPUtil.uniformMessage(variable)
+          var msg: GenericMessage = BPUtil.uniformMessage
           for (otherFactor <- factors; if (otherFactor != mf))
             msg = msg * otherFactor.outgoing(variable)
           msg
@@ -220,10 +220,10 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
         //TODO update marginal incrementally?
         //_marginal = (_marginal / _incoming(factor)) * mess
         // set the incoming message
-        _marginal = BPUtil.uniformMessage(variable)
+        _marginal = BPUtil.uniformMessage
         for (mf: MessageFactor <- factors) {
           _marginal = _marginal * _incoming(mf.factor)
-          var msg: GenericMessage = BPUtil.uniformMessage(variable)
+          var msg: GenericMessage = BPUtil.uniformMessage
           for (other: MessageFactor <- factors; if other != mf) {
             msg = msg * _incoming(other.factor)
           }
@@ -240,7 +240,7 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
     override def toString = "M(%s)".format(variable)
   }
 
-  val _nodes = new HashMap[DiscreteVariable, MessageNode]
+  val _nodes = new HashMap[Variable, MessageNode]
   val _factors = new HashMap[Factor, MessageFactor]
 
   def createFactor(potential: Factor) {
@@ -325,9 +325,9 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
 
   def nodes: Iterable[MessageNode] = _nodes.values
 
-  def variables: Iterable[DiscreteVariable] = _nodes.keys
+  def variables: Iterable[Variable] = _nodes.keys
 
-  def node(variable: DiscreteVariable): MessageNode = _nodes.getOrElseUpdate(variable, {
+  def node(variable: Variable): MessageNode = _nodes.getOrElseUpdate(variable, {
     new MessageNode(variable)
   })
 
@@ -337,7 +337,7 @@ class FG(val varying: Set[Variable], val cacheScores: Boolean = false) {
 
   def mfactor(factor: Factor): MessageFactor = _factors(factor)
 
-  def setToMaxMarginal(variables: Iterable[DiscreteVariable] = this.variables)(implicit d: DiffList = null): Unit = {
+  def setToMaxMarginal(variables: Iterable[MutableVar] = varying.map(_.asInstanceOf[MutableVar]).toSet)(implicit d: DiffList = null): Unit = {
     for (variable <- variables) {
       variable.set(node(variable).marginal.map[variable.Value])(d)
     }

@@ -119,14 +119,14 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) exten
 
   override def *(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
-    case d: DiscreteDeterministicMessage[Value] => d * this
+    case d: DeterministicMessage[Value] => d * this
     case d: DiscreteMessage[Value] => new DiscreteMessage[Value](scores.zip(d.scores).map(pair => pair._1 + pair._2), domain)
     case _ => error("Need compatible messages")
   }
 
   override def /(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
-    case d: DiscreteDeterministicMessage[Value] => error("Cannot divide regular message with Deterministic Message")
+    case d: DeterministicMessage[Value] => error("Cannot divide regular message with Deterministic Message")
     case d: DiscreteMessage[Value] => new DiscreteMessage[Value](scores.zip(d.scores).map(pair => pair._1 - pair._2), domain)
     case _ => error("Need compatible messages")
   }
@@ -170,8 +170,11 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) exten
 
 }
 
-class DiscreteDeterministicMessage[Value](val value: Value, _domain: Seq[Value])
-      extends DiscreteMessage(_domain.map(d => if (d != value) Double.NegativeInfinity else 0.0), _domain) {
+class DeterministicMessage[Value](val value: Value) extends GenericMessage {
+  def inverse = throw new Error("inverse not implemented for deterministic message")
+
+  def domain = Seq(value)
+
   override lazy val isDeterministic = true
 
   override lazy val deterministicValue: Option[Any] = Some(value)
@@ -182,7 +185,7 @@ class DiscreteDeterministicMessage[Value](val value: Value, _domain: Seq[Value])
 
   override def *(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
-    case d: DiscreteDeterministicMessage[Value] => {
+    case d: DeterministicMessage[Value] => {
       if (d.value != value)
         error("Cannot multiply %s with %s".format(value, d.value))
       else this
@@ -193,7 +196,7 @@ class DiscreteDeterministicMessage[Value](val value: Value, _domain: Seq[Value])
 
   override def /(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
-    case d: DiscreteDeterministicMessage[Value] => {
+    case d: DeterministicMessage[Value] => {
       if (d.value != value)
         error("Cannot divide %s with %s".format(value, d.value))
       else UniformMessage

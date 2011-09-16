@@ -11,10 +11,10 @@ object BPUtil {
 
   def message[V <: DiscreteVariable](v: V, scores: Seq[Double]): GenericMessage = new DiscreteMessage[v.ValueType](scores, v.domain.values)
 
-  def uniformMessage[V <: Variable](v: V): GenericMessage = UniformMessage
+  def uniformMessage: GenericMessage = UniformMessage
 
-  def deterministicMessage[V <: DiscreteVariable](v: V, value: Any): GenericMessage =
+  def deterministicMessage[V <: Variable](v: V, value: Any): GenericMessage =
     value match {
-      case valoo: v.ValueType => new DiscreteDeterministicMessage[v.ValueType](valoo, v.domain.values)
+      case valoo: v.ValueType => new DeterministicMessage[v.ValueType](valoo)
     }
 }
