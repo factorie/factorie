@@ -19,7 +19,7 @@ import cc.factorie._
     See also @see cc.factorie.generative.Counts
     @author Andrew McCallum */
 trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
-  val _hashcode = random.nextInt
+  val _hashcode = random.nextInt // Who added this?  What is this for? -akm
   def length: Int
   def activeDomainSize: Int
   def activeDomain: Iterable[Int]

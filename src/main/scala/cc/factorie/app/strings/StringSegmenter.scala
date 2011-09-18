@@ -61,3 +61,7 @@ object csvSegmenter extends RegexSegmenter("(?:\"([^\"]*)\")|(?:(?<=,|^)([^,]*)(
 //object csvSegmenter extends RegexSegmenter("\"([^\"]+?)\",?|([^,]+),?|,".r)
 //object csvSegmenter extends RegexSegmenter("(?<=\")([^\"]*)(?=\")|(?<=,|^)([^,]*)(?=,|$)".r)
 //object csvSegmenter extends RegexSegmenter("(?:(?<=\")([^\"]*)(?=\"))|(?<=,|^)([^,]*)(?=,|$)".r)
+
+//object csvSegmenter extends RegexSegmenter("\"([^\"]+?)\",?|([^,]+),?|,".r)                                                                    
+//object csvSegmenter extends RegexSegmenter("(?:\"([^\"]*)\")|(?:(?<=,|^)([^,]*)(?=,|$))".r)                                                      
+//object csvSegmenter extends RegexSegmenter("(?:(?<=\")([^\"]*)(?=\"))|(?<=,|^)([^,]*)(?=,|$)".r)                                               

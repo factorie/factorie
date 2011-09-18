@@ -52,6 +52,7 @@ class InfoGain(instances:Iterable[InstanceVariable]) extends IndexedSeq[Double] 
       assert(instance.label.domain == labelDomain)
       val labelIndex = instance.label.intValue
       targetProportions.increment(labelIndex, 1.0)(null)
+      //println("InfoGain "+instance.activeDomain.toSeq)
       for (featureIndex <- instance.activeDomain) {
         featureTargetProportions(featureIndex).increment(labelIndex, 1.0)(null)
         //targetFeatureCount(labelIndex)(featureIndex) += 1

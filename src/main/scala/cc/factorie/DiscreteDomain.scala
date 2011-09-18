@@ -15,8 +15,8 @@
 package cc.factorie
 import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
-// DiscreteVector refers to vectors with weights over a domain of multiple "DiscreteValue"s.
-// Discrete refers to single a DiscreteValue, which can also be seen as a singleton vector.
+// DiscreteVector* refers to vectors with weights over a domain of multiple "DiscreteValue"s.
+// Discrete* refers to single a DiscreteValue, which can also be seen as a singleton vector.
 
 // For variables that hold one or more discrete value weights in a vector
 
@@ -27,7 +27,6 @@ trait DiscreteVectorValue extends cc.factorie.la.Vector {
   def domain: DiscreteVectorDomain
 }
 
-// TODO Consider changing to DiscreteVectorDomain for parallel naming?
 /** A Domain for variables whose value is a DiscreteVectorValue, which is a Vector that also has a pointer back to its domain.
     This domain has a non-negative integer size.  The method 'size' is abstract. */
 trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscreteVectorValue] {
@@ -38,7 +37,7 @@ trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscreteVectorVal
   def dimensionSize: Int = dimensionDomain.size  // TODO Get rid of this?
   def dimensionDomain: DiscreteDomain
   def dimensionName(i:Int): String = i.toString
-  def freeze(): Unit = {}
+  def freeze(): Unit = dimensionDomain.freeze
 }
 
 
