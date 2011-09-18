@@ -36,7 +36,10 @@ object PlatedDiscrete extends GenerativeFamily2[PlatedGeneratedDiscreteVar,Propo
   case class Factor(_1:PlatedGeneratedDiscreteVar, _2:Proportions) extends super.Factor {
     def pr(s:Statistics): Double = self.pr(s._1, s._2)
     override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
-    def sampledValue(s:Statistics): Seq[DiscreteValue] = self.sampledValue(s._1.first.domain, s._1.length, s._2)
+    def sampledValue(s:Statistics): Seq[DiscreteValue] = {
+      if (s._1.length == 0) Nil
+      else self.sampledValue(s._1.first.domain, s._1.length, s._2)
+    }
     def updateCollapsedParents(index:Int, weight:Double): Unit = {
       _2 match {
         case p:DenseCountsProportions => { p.increment(_1(index).intValue, weight)(null); true }

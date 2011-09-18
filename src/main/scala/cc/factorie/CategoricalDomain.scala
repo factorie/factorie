@@ -203,7 +203,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   def trimBelowCount(threshold:Int): Int = {
     assert(!frozen)
     if (!someCountsGathered) throw new Error("Can't trim without first gathering any counts.")
-    val origEntries = _elements
+    val origEntries = _elements.clone
     reset() // TODO Should we override reset to also set gatherCounts = true?  I don't think so.
     gatherCounts = false
     for (i <- 0 until origEntries.size)
