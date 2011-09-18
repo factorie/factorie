@@ -28,7 +28,7 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   def dot(v:Vector): Double
   def oneNorm: Double = activeElements.foldLeft(0.0)(_ + _._2)
   def update(index:Int, value:Double): Unit = throw new Error("Method update not defined on class "+getClass.getName)
-  def increment(index:Int, incr:Double): Unit = throw new Error("Method update not defined on class "+getClass.getName)
+  def increment(index:Int, incr:Double): Unit = update(index, apply(index) + incr)
   def +=(v:Vector): Unit = throw new Error("Method +=(Vector) not defined on class "+getClass.getName)
   def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
   def *(scalar:Double) = new VectorTimesScalar(this, scalar)
@@ -73,6 +73,17 @@ object OuterProductMath {
     while (i<s1) {
       arr(i) = a1(i) * a2width + i2
       i +=1
+    }
+    arr
+  }
+  
+  def outerProductArray(i1:Int, a1width:Int, a2:Array[Int], s2:Int, a2width:Int) = {
+    var arr = new Array[Int](s2)
+    var i = 0
+    val offset = i1 * a2width
+    while (i < s2) {
+      arr(i) = offset + a2(i)
+      i += 1
     }
     arr
   }

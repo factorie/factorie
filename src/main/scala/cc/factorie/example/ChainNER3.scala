@@ -86,12 +86,12 @@ object ChainNER3 {
     // Put features of first mention on later mentions
     documents.foreach(d => {
       d.foreach(t => {
-        if (t.isCapitalized && t.word.length > 1 && !t.values.exists(f => f.matches(".*FIRSTMENTION.*"))) {
+        if (t.isCapitalized && t.word.length > 1 && !t.activeCategories.exists(f => f.matches(".*FIRSTMENTION.*"))) {
           //println("Looking for later mentions of "+t.word)
           var t2 = t
           while (t2.hasNext) {
             t2 = t2.next
-            if (t2.word == t.word) { /*println("Adding FIRSTMENTION to "+t2.word); */ t2 ++= t.values.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
+            if (t2.word == t.word) { /*println("Adding FIRSTMENTION to "+t2.word); */ t2 ++= t.activeCategories.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
           }
         }
       })

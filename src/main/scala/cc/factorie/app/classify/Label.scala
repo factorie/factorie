@@ -18,5 +18,20 @@ import cc.factorie.er._
 
 abstract class LabelVariable[+I<:InstanceVariable](labelString:String, val instance:I) extends cc.factorie.LabelVariable(labelString) {
   type InstanceType = I
+  // These next two methods are temporary, to be replaced later by appropriate methods somewhere among the "Inferencer"s.
+  def prs(model:Model): Array[Double] = {
+    val origIntValue = intValue
+    val distribution = new Array[Double](domain.size)
+    forIndex(distribution.length)(i => {
+      //model.factors(Seq(this)).sumBy(_.values.set(this, i).score)
+      this.set(i)(null)
+      // compute score of variable with value 'i'
+      distribution(i) = model.score(Seq(this))
+    })
+    maths.expNormalize(distribution)
+    set(origIntValue)(null)
+    distribution
+  }
+  def pr(model:Model) = prs(model)(intValue)
 }
 

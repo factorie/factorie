@@ -53,8 +53,8 @@ class TokenSeq[T<:Token[This,T],This<:TokenSeq[T,This]] extends VariableSeq[T] {
     val t2 = t.next(offset)
     val adding: Seq[String] = 
       if (t2 == null) { if (t.position + offset < 0) List("<START>") else List("<END>") }
-      else if (regex != null) t2.values.filter(str => str.matches(regex)) // Only include features that match pattern 
-      else t2.values
+      else if (regex != null) t2.activeCategories.filter(str => str.matches(regex)) // Only include features that match pattern 
+      else t2.activeCategories
     if (existing != null) {
       for (e <- existing; a <- adding) { val elt = (a,offset); if (!e.contains(elt)) result += (a,offset) :: e }
     } else {
@@ -83,13 +83,13 @@ class TokenSeq[T<:Token[This,T],This<:TokenSeq[T,This]] extends VariableSeq[T] {
       var t = token; var j = 0
       while (j < preSize && t.hasPrev) {
         t = t.prev; j += 1; val suffix = "@+"+j
-        thisTokenExtraFeatures ++= t.values.map(str => str+suffix) // t.values is the list of Strings representing the current features of token t
+        thisTokenExtraFeatures ++= t.activeCategories.map(str => str+suffix) // t.values is the list of Strings representing the current features of token t
       }
       // Do the postWindow features
       t = token; j = 0
       while (j < postSize && t.hasNext) {
         t = t.next; j += 1; val suffix = "@-"+j
-        thisTokenExtraFeatures ++= t.values.map(str => str+suffix) // t.values is the list of Strings representing the current features of token t
+        thisTokenExtraFeatures ++= t.activeCategories.map(str => str+suffix) // t.values is the list of Strings representing the current features of token t
       }
     }
     // Put the new features in the Token

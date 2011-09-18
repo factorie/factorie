@@ -24,12 +24,24 @@ import cc.factorie.la.SparseIndexedVector
 trait CategoricalVectorVar[T] extends DiscreteVectorVar with VarAndValueType[CategoricalVectorVar[T],CategoricalVectorValue[T]] {
   type CategoryType = T
   def domain: CategoricalVectorDomain[T]
-  def update(elt:T, newValue:Double): Unit = vector.update(domain.dimensionDomain.index(elt), newValue)
-  def increment(elt:T, incr:Double): Unit = vector.increment(domain.dimensionDomain.index(elt), incr)    
-  def incrementOld(elt:T, incr:Double): Unit = {
-    val i = domain.dimensionDomain.index(elt)
-    vector.update(i, vector(i) + incr)
-  }
+   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
+       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
+   def skipNonCategories = false
+   protected def doWithIndexSafely(elt:T, f:Int=>Unit): Unit = {
+     val i = domain.dimensionDomain.index(elt)
+     if (i == CategoricalDomain.NULL_INDEX) {
+       if (!skipNonCategories)
+         throw new Error("CategoricalVectorVar += value " + value + " not found in domain " + domain)
+     } else {
+       f(i)
+     }
+   }
+   def update(elt:T, newValue:Double): Unit = doWithIndexSafely(elt, i => vector.update(i, newValue))
+   def increment(elt:T, incr:Double): Unit = doWithIndexSafely(elt, i => vector.increment(i, incr))
+   def +=(elt:T): Unit = increment(elt, 1.0)
+   def ++=(elts:Iterable[T]): Unit = elts.foreach(this.+=(_))
+   def activeCategories: Seq[T] = vector.activeDomain.toSeq.map(i => domain.dimensionDomain.getCategory(i))
+   override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString+"="+i).mkString(printName+"(", ",", ")")
 }
 
 abstract class CategoricalVectorVariable[T] extends VectorVariable with CategoricalVectorVar[T] {
@@ -49,21 +61,7 @@ trait BinaryCategoricalVectorVar[T] extends CategoricalVectorVar[T] {
 
 trait SparseBinaryCategoricalVectorVar[T] extends SparseBinaryDiscreteVectorVar with BinaryCategoricalVectorVar[T] with VarAndValueType[SparseBinaryCategoricalVectorVar[T],SparseBinaryVector with CategoricalVectorValue[T]] {
   // TODO Rename next method to activeCategories or categoryValues
-  def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.dimensionDomain.getCategory(i)); result }
-  /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
-      If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
-  def skipNonCategories = false
-  def +=(value:T): Unit = {
-    val idx = domain.dimensionDomain.index(value);
-    if (idx == CategoricalDomain.NULL_INDEX) {
-      if (!skipNonCategories)
-        throw new Error("SparseBinaryCategoricalVectorVar += value " + value + " not found in domain " + domain)
-    } else {
-      this.+=(idx)
-    }
-  }
-  def ++=(values:Iterable[T]): Unit = values.foreach(this.+=(_))
-  override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString+"="+i).mkString(printName+"(", ",", ")")
+  //def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.dimensionDomain.getCategory(i)); result }
 }
 
 abstract class BinaryFeatureVectorVariable[T] extends VectorVariable with SparseBinaryCategoricalVectorVar[T] {
@@ -87,7 +85,6 @@ abstract class SparseIndexedCategoricalVectorVariable[T] extends VectorVariable 
 // TODO Finish this.
 abstract class FeatureVectorVariable2[T] extends SparseIndexedCategoricalVectorVariable[T] {
   def this(initVals:Iterable[T]) = { this(); initVals.foreach(t => this.increment(domain.dimensionDomain.index(t), 1.0)) }
-  def +=(elt:T): Unit = vector.increment(domain.dimensionDomain.index(elt), 1.0)  // TODO Just temporary until += is implemented in CategoricalVectorVar
 }
 
 

@@ -84,7 +84,7 @@ class TestBPClassify extends TestCase {
         for (file <- new File(directory).listFiles; if (file.isFile)) {
           //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
           documents += new Document(file)
-          if (docCount < 50) { documents.last.values.take(30).foreach((w:String) => print(w+" ")); println }
+          if (docCount < 50) { documents.last.activeCategories.take(30).foreach((w:String) => print(w+" ")); println }
           docCount += 1
         }
       }

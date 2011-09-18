@@ -75,8 +75,8 @@ object ChainNER4 {
     // Add features from next and previous tokens 
     println("Adding offset features...")
     allTokens.foreach(t => {
-      if (t.hasPrev) t ++= t.prev.values.filter(!_.contains('@')).map(_+"@-1")
-      if (t.hasNext) t ++= t.next.values.filter(!_.contains('@')).map(_+"@+1")
+      if (t.hasPrev) t ++= t.prev.activeCategories.filter(!_.contains('@')).map(_+"@-1")
+      if (t.hasNext) t ++= t.next.activeCategories.filter(!_.contains('@')).map(_+"@+1")
     })
     println("Using "+TokenDomain.dimensionSize+" observable features.")
     

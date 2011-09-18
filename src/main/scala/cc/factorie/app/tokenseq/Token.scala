@@ -52,7 +52,7 @@ extends BinaryFeatureVectorVariable[String](features) with VarInTypedSeq[This,S]
       def domain = Token.this.domain
       override def printName = "TokenSubVector" 
     }
-    result ++= this.values.filter(s => s.matches(regex))
+    result ++= this.activeCategories.filter(s => s.matches(regex))
     result
   }
 }

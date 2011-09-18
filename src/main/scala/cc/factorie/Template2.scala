@@ -55,8 +55,9 @@ abstract class TemplateWithVectorStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteV
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
 }
 
-abstract class TemplateWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
+abstract class TemplateWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotFamily with DotStatistics2[N1#Value,N2#Value] {
   type FamilyType <: TemplateWithDotStatistics2[N1,N2]
+  def weight(index0:Int, index1:Int): Double = weights(index0 * statisticsDomains(1).dimensionDomain.size + index1)
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values.inner.map(_.statistics))
 }
 

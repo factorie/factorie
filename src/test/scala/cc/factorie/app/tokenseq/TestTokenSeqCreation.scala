@@ -87,7 +87,7 @@ class TestTokenSeqCreation extends TestCase {
     // assert that all features came from our custom feature function.
     // We can check this because our features function puts a strange
     // prefix, "myfeature", on each of the features it generates.
-    for (tk <- seq; feature <- tk.values) assertTrue("Unexpected features found.",
+    for (tk <- seq; feature <- tk.activeCategories) assertTrue("Unexpected features found.",
                                                      feature startsWith "myfeature")
   }
 

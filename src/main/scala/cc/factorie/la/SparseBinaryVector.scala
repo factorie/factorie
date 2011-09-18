@@ -29,6 +29,12 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
          copyArray = false, 
          preSorted = true)
 
+         def this(v1:SingletonBinaryVec, v2:SparseBinaryVector) =
+    this(v1.length * v2.length,
+         outerProductArray(v1.singleIndex, v1.length, v2.ind, v2.activeDomainSize, v2.length),
+         //Array.tabulate(v2.activeDomainSize)(i => v1.singleIndex * v2.length + v2.ind(i)),
+         copyArray = false,
+         preSorted = true)
   /* init as flat outer product of vectors */
   def this(v1:SparseBinaryVector, v2:SparseBinaryVector) = 
     this(v1.size * v2.size, 
@@ -114,6 +120,8 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
   }
   //private var lastPosition = 0 // TODO Implement this speed-up, also used in scalala
   def apply(index:Int): Double = if (_contains(index, 0, _size)) 1.0 else 0.0
+  override def update(index:Int, value:Double): Unit = { assert(value == 1.0); include(index) }
+  override def increment(index:Int, incr:Double): Unit = { assert(incr == 1.0); include(index) }
   def zero(): Unit = { _size = 0 }
   override def iterator = new Iterator[Double] {
     var i = -1

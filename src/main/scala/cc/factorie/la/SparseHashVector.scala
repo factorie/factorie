@@ -23,11 +23,11 @@ class SparseHashVector(theLength:Int) extends Vector {
   var default = 0.0
   private val h = new scala.collection.mutable.HashMap[Int,Double] { override def default(index:Int) = SparseHashVector.this.default }
   def apply(index:Int) = h(index)
+  override def update(index:Int, value:Double) = h(index) = value // TODO Should we assert(index < length) ?
   def activeElements = h.iterator
   def activeDomainSize = h.size
   def activeDomain: Iterable[Int] = h.keys
   override def forActiveDomain(f: (Int)=>Unit): Unit = h.keys.foreach(f(_))
-  override def update(index:Int, value:Double) = h(index) = value // TODO Should we assert(index < length) ?
   override def increment(index:Int, incr:Double): Unit = h(index) = h(index) + incr // TODO Should we assert(index < length) ?
   def dot(v:Vector): Double = v match {
     case dv:DenseVector => {

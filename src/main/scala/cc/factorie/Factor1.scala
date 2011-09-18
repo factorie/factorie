@@ -34,6 +34,7 @@ trait Factor1[N1<:Variable] extends Factor {
   override def variables = IndexedSeq(_1)
   def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
   override def values = new Values(_1.value, inner.map(_.values))
+  def valuesAssigning[V<:Variable](variable:V, value:V#Value): Unit = if (variable eq _1) new Values(value.asInstanceOf[N1#Value], inner.map(_.values)) else throw new Error 
   case class Values(_1:N1#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
     override def apply[B <: Variable](v: B) = get(v).get
     def variables = Seq(factor._1)

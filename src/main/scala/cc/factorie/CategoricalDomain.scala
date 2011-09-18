@@ -97,14 +97,13 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   def contains(category: Any) = _indices.contains(category.asInstanceOf[T])
 
   /** Return an object at the given position or throws an exception if it's not found. */
-  def getCategory(index: Int): T = _elements(index).category
+  def getCategory(index: Int): T = _elements(index).category.asInstanceOf[T]
   override def getValue(index: Int): ValueType = _elements(index)
   def getValue(category:T): ValueType = {
     def nextMax: ValueType = {
       val m = _elements.size
       if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
       val e: ValueType = newCategoricalValue(m, category) // Here is the place that new CategoricalValue gets created
-      // TODO Can we make the above cast unnecessary??
       _elements += e
       _indices(category) = e
       e
@@ -208,7 +207,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
     reset() // TODO Should we override reset to also set gatherCounts = true?  I don't think so.
     gatherCounts = false
     for (i <- 0 until origEntries.size)
-      if (_counts(i) >= threshold) indexOnly(origEntries(i).category)
+      if (_counts(i) >= threshold) indexOnly(origEntries(i).category.asInstanceOf[T])
     _counts = null // We don't need counts any more; allow it to be garbage collected.  Note that if
     freeze()
     origEntries.size - size

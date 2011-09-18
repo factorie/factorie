@@ -70,7 +70,32 @@ with VarAndValueGenericDomain[Proportions,ProportionsValue]
   override def toString = this.take(10).mkString(printName+"(", ",", ")")
 
   class DiscretePr(val index:Int, val pr:Double)
-  def top(n:Int): Seq[DiscretePr] = this.zipWithIndex.sortBy({case (p,i) => -p}).take(n).toList.map({case (p,i)=>new DiscretePr(i,p)}).filter(_.pr > 0.0)
+  class DiscretePrSeq(val maxLength:Int) extends Seq[DiscretePr] {
+    def this(ml:Int, contents:Seq[Double]) = { this(ml); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
+    private val _seq = new Array[DiscretePr](maxLength)
+    private var _length: Int = 0
+    def length = _length
+    def apply(i:Int) = _seq(i)
+    def iterator: Iterator[DiscretePr] = new Iterator[DiscretePr] {
+      var i = 0
+      def hasNext = i < _length
+      def next = { i += 1; _seq(i-1) }
+    }
+    def +=(index:Int, pr:Double): Unit = {
+      if (_length < maxLength || (pr > _seq(_length-1).pr && pr > 0.0)) {
+       if (_length < maxLength) { _seq(_length) = new DiscretePr(index, pr); _length += 1 }
+       else if (pr > _seq(_length-1).pr) _seq(_length-1) = new DiscretePr(index, pr)
+       var i = _length - 1
+       while (i > 0 && _seq(i).pr > _seq(i-1).pr) {
+         val tmp = _seq(i)
+         _seq(i) = _seq(i-1)
+         _seq(i-1) = tmp
+         i -= 1
+       }
+      }
+    }
+  }
+  def top(n:Int): Seq[DiscretePr] = new DiscretePrSeq(n, this)
 }
 
 /** Proportions for which the indicies correspond to CategoricalValues.
@@ -79,10 +104,8 @@ trait CategoricalProportions[A] extends Proportions {
   def categoricalDomain: CategoricalDomain[A]
   // TODO change "value:String" to "category:A"
   class DiscretePr(override val index:Int, override val pr:Double, val value:String) extends super.DiscretePr(index, pr)
-  override def top(n:Int): Seq[DiscretePr] = {
-    val entries = this.toArray.zipWithIndex.sortBy({case (p,i) => -p}).take(n) //.toList
-    entries.map({case (p,i)=>new DiscretePr(i, p, categoricalDomain.getCategory(i).toString)})
-  }
+  override def top(n:Int): Seq[DiscretePr] =
+    super.top(n).map(dpr => new DiscretePr(dpr.index, dpr.pr, categoricalDomain.getCategory(dpr.index).toString))
   def topValues(n:Int) = top(n).toList.map(_.value)
   // TODO Make a topCategories method
 }
