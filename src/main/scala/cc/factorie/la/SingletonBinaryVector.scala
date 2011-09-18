@@ -27,10 +27,9 @@ trait SingletonBinaryVec extends Vector {
   def activeElements = Iterator.single((singleIndex, 1.0))
 
   override def flatOuter(v:Vector):Vector = v match {
-    case that:SparseBinaryVector => 
-      new SparseBinaryVector(that, this)
-    case that:SingletonBinaryVec => 
-      new SingletonBinaryVector(this.size * that.size, this.singleIndex * that.size + that.singleIndex)
+    case that:SparseBinaryVector => new SparseBinaryVector(that, this)
+    case that:SingletonBinaryVec => new SingletonBinaryVector(this.size * that.size, this.singleIndex * that.size + that.singleIndex)
+    case that:SparseIndexedVector => that flatOuter this
   }
 
   override def flatOuter(v1:Vector, v2:Vector):Vector = (v1,v2) match {

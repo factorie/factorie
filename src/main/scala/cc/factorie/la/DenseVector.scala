@@ -24,6 +24,7 @@ class DenseVector(val length:Int) extends Vector {
   override def forActiveDomain(f: (Int)=>Unit): Unit = forIndex(length)(f(_))
   def apply(index:Int): Double = a(index)
   override def update(index:Int, value:Double): Unit = a(index) = value
+  override def increment(index:Int, incr:Double): Unit = a(index) += incr
   def set(value:Double): Unit = java.util.Arrays.fill(a, value)
   def activeElements = new Iterator[(Int,Double)] {
     var i = -1

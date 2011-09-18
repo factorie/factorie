@@ -15,6 +15,7 @@
 package cc.factorie
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.la.SparseBinaryVector
+import cc.factorie.la.SparseIndexedVector
 
 /** A Variable holding one or more categorical values.
     The subclass CategoricalVariable holds a single CategoricalValue.
@@ -23,9 +24,9 @@ import cc.factorie.la.SparseBinaryVector
 trait CategoricalVectorVar[T] extends DiscreteVectorVar with VarAndValueType[CategoricalVectorVar[T],CategoricalVectorValue[T]] {
   type CategoryType = T
   def domain: CategoricalVectorDomain[T]
-  def update(elt:T, newValue:Double): Unit = 
-    vector.update(domain.dimensionDomain.index(elt), newValue)
-  def increment(elt:T, incr:Double): Unit = {
+  def update(elt:T, newValue:Double): Unit = vector.update(domain.dimensionDomain.index(elt), newValue)
+  def increment(elt:T, incr:Double): Unit = vector.increment(domain.dimensionDomain.index(elt), incr)    
+  def incrementOld(elt:T, incr:Double): Unit = {
     val i = domain.dimensionDomain.index(elt)
     vector.update(i, vector(i) + incr)
   }
@@ -47,6 +48,7 @@ trait BinaryCategoricalVectorVar[T] extends CategoricalVectorVar[T] {
 }
 
 trait SparseBinaryCategoricalVectorVar[T] extends SparseBinaryDiscreteVectorVar with BinaryCategoricalVectorVar[T] with VarAndValueType[SparseBinaryCategoricalVectorVar[T],SparseBinaryVector with CategoricalVectorValue[T]] {
+  // TODO Rename next method to activeCategories or categoryValues
   def values: Seq[T] = { val d = this.domain; val v = this.vector; val result = new ArrayBuffer[T](v.activeDomainSize); v.forActiveDomain(i => result += d.dimensionDomain.getCategory(i)); result }
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
@@ -73,7 +75,20 @@ abstract class BinaryFeatureVectorVariable[T] extends VectorVariable with Sparse
   })
 }
 
+abstract class SparseIndexedCategoricalVectorVariable[T] extends VectorVariable with SparseIndexedDiscreteVectorVar with CategoricalVectorVar[T] with VarAndValueType[SparseIndexedCategoricalVectorVariable[T],SparseIndexedVector with CategoricalVectorValue[T]] {
+  thisVariable =>
+  //def this(initVals:Iterable[T]) = { this(); initVals.foreach(category => increment(category, 1.0) }
+  _set(new cc.factorie.la.SparseIndexedVector(-1) with CategoricalVectorValue[T] {
+    def domain = thisVariable.domain
+    override def length = domain.dimensionSize
+  })
+}
 
+// TODO Finish this.
+abstract class FeatureVectorVariable2[T] extends SparseIndexedCategoricalVectorVariable[T] {
+  def this(initVals:Iterable[T]) = { this(); initVals.foreach(t => this.increment(domain.dimensionDomain.index(t), 1.0)) }
+  def +=(elt:T): Unit = vector.increment(domain.dimensionDomain.index(elt), 1.0)  // TODO Just temporary until += is implemented in CategoricalVectorVar
+}
 
 
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.

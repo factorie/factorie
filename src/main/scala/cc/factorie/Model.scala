@@ -73,7 +73,11 @@ trait Model {
   def factorsOfFamilies[F<:Family](d:DiffList, families:Seq[F]): Seq[F#Factor] = filterByFamilies(factors(d), families)
   
   def score(variables:Iterable[Variable]): Double = factors(variables).foldLeft(0.0)((sum, f) => sum + f.score)
-  def score(d:DiffList) : Double = factors(d).foldLeft(0.0)(_+_.statistics.score)
+  def score(d:DiffList) : Double = {
+    var result = 0.0
+    for (f <- factors(d)) result += f.statistics.score
+    result
+  }
   /** Returns the average score, that is score of variables, normalized by the size of the collections vars. */
   def aveScore(variables:Iterable[Variable]): Double = score(variables) / variables.size  // TODO Rename to scoreAve?
 

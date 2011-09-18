@@ -50,6 +50,25 @@ abstract class SparseBinaryDiscreteVectorVariable extends VectorVariable with Sp
   })
 }
 
+trait SparseIndexedDiscreteVectorVar extends DiscreteVectorVar with VarAndValueType[SparseIndexedDiscreteVectorVar,SparseIndexedVector with DiscreteVectorValue] {
+  def length = domain.dimensionSize
+  def activeDomain = vector.activeDomain
+  override def increment(index:Int, incr:Double): Unit = {
+    if (frozen) throw new Error("Cannot append to frozen SparseIndexedDiscreteVectorVar.")
+    value.increment(index, incr)
+  }
+  var frozen = false
+  def freeze() = frozen = true
+  override def isConstant = frozen
+}
+
+abstract class SparseIndexedDiscreteVectorVariable extends VectorVariable with SparseIndexedDiscreteVectorVar {
+  thisVariable =>
+  _set(new cc.factorie.la.SparseIndexedVector(-1) with DiscreteVectorValue {
+    def domain = thisVariable.domain
+    override def length = domain.dimensionSize
+  })
+}
 
 
 /** A single discrete variable */
@@ -65,7 +84,7 @@ trait MutableDiscreteVar extends DiscreteVar with MutableVar {
   def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
 }
 
-// TODO Note that DiscreteVariable is not a subclass of VectorVariable, due to initialization awkwardness.
+// TODO Note that DiscreteVariable is not a subclass of VectorVariableinde, due to initialization awkwardness.
 // Consider fixing this.
 /** A Variable holding a single DiscreteValue. */
 abstract class DiscreteVariable3 extends VectorVariable with MutableDiscreteVar with IterableSettings with QDistribution {
