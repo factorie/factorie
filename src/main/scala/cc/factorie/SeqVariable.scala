@@ -81,7 +81,7 @@ abstract class SeqVariable[X](initialValue: Seq[X]) extends SeqVar[X] with VarAn
 abstract class DiscreteSeqDomain extends Domain[Seq[DiscreteValue]] {
   def elementDomain: DiscreteDomain
 }
-abstract class DiscreteSeqVariable extends SeqVar[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] {
+abstract class DiscreteSeqVariableO extends SeqVar[DiscreteValue] with VarAndElementType[DiscreteSeqVariableO,DiscreteValue] {
   def this(initialValue:Seq[Int]) = { this(); val d = domain.elementDomain; initialValue.foreach(i => this += d.getValue(i)) }
   def domain: DiscreteSeqDomain
   def appendInt(i:Int): Unit = _seq += domain.elementDomain.getValue(i)
@@ -90,6 +90,30 @@ abstract class DiscreteSeqVariable extends SeqVar[DiscreteValue] with VarAndElem
   def set(seqIndex:Int, newValue:Int)(implicit d:DiffList): Unit = {
     require(d eq null)
     _seq(seqIndex) = domain.elementDomain.getValue(newValue)
+  }
+}
+
+abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] {
+  def this(initialValue:Seq[Int]) = { this(); _setCapacity(initialValue.length); _appendAll(initialValue.toArray) }
+  def length = _length
+  def apply(index: Int): DiscreteValue = domain.elementDomain.getValue(_apply(index))
+  def iterator = new Iterator[DiscreteValue] {
+    var i = 0
+    def hasNext = i < _length
+    def next = { i += 1; domain.elementDomain.getValue(_apply(i-1)) }
+  }
+  def domain: DiscreteSeqDomain
+  def value: Value = _toSeq.map(i => domain.elementDomain.getValue(i)) // TODO make this more efficient
+  def set(newValue:Value)(implicit d:DiffList): Unit = _set(Array.tabulate(newValue.length)(i => newValue(i).intValue))
+  def appendInt(i:Int): Unit = _append(i)
+  def +=(e:VariableType#ElementType): Unit = appendInt(e.intValue)
+  def ++=(es:Iterable[VariableType#ElementType]): Unit = _appendAll(es.map(_.intValue))
+  def appendInts(xs:Iterable[Int]) = _appendAll(xs)
+  def intValue(seqIndex:Int): Int = _apply(seqIndex)
+  def intValues: Array[Int] = _array
+  def set(seqIndex:Int, newValue:Int)(implicit d:DiffList): Unit = {
+    require(d eq null)
+    _update(seqIndex, newValue)
   }
 }
 
@@ -141,9 +165,9 @@ class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain[Seq[Categori
 }
 abstract class CategoricalSeqVariable[C] extends DiscreteSeqVariable with VarAndElementType[CategoricalSeqVariable[C],CategoricalValue[C]] {
   //def this(initialValue:Seq[C]) = { this(); val d = domain.elementDomain; initialValue.foreach(c => this += d.index(c)) }
-  def this(initialValue:Seq[C]) = { this(); val d = domain.elementDomain; initialValue.foreach(c => this += d.getValue(c)) }
+  def this(initialValue:Seq[C]) = { this(); _setCapacity(initialValue.length); val d = domain.elementDomain; initialValue.foreach(c => this += d.getValue(c)) }
   def domain: CategoricalSeqDomain[C]
-  def appendCategory(x:C): Unit = _seq += domain.elementDomain.getValue(x)
+  def appendCategory(x:C): Unit = this += domain.elementDomain.getValue(x)
   //def appendCategory(x:C): Unit = this.+=(domain.elementDomain.index(x))
 }
 

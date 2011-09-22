@@ -57,14 +57,14 @@ abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
     assert(mixtureCounts(mixture) >= 0)
     counts(discrete).incrementCountAtIndex(mixture, incr)
   }
-  def incrementFactor(f:DiscreteMixture.Factor): Unit = increment(f._1.intValue, f._3.intValue, 1)
-  def incrementFactor(f:PlatedDiscreteMixture.Factor): Unit = {
+  def incrementFactor(f:DiscreteMixture.Factor, incr:Int): Unit = increment(f._1.intValue, f._3.intValue, incr)
+  def incrementFactor(f:PlatedDiscreteMixture.Factor, incr:Int): Unit = {
     val discretes = f._1
     val gates = f._3
     assert (discretes.length == gates.length)
     var i = discretes.length - 1
     while (i >= 0) {
-      increment(discretes(i).intValue, gates(i).intValue, 1)
+      increment(discretes(i).intValue, gates(i).intValue, incr)
       i -= 1
     }
   }

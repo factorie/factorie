@@ -62,7 +62,7 @@ object LDA3 {
     val startTime = System.currentTimeMillis
     for (i <- 1 to 20) {
       for (doc <- documents) sampler.process(doc.zs)
-      if (i % 20 == 0) {
+      if (i % 5 == 0) {
         println("Iteration " + i)
         sampler.export(phis)
         if (fitDirichlet) {
@@ -103,18 +103,21 @@ object LDA3 {
     resetSmoothing(initialAlphas, initialBeta1)
 
     def addDocument(doc:Document): Unit =
-      phiCounts.incrementFactor(doc.parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor])
+      phiCounts.incrementFactor(doc.parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor], 1)
 
     def resetSmoothing(newAlphas:Seq[Double], newBeta1:Double): Unit = {
       require(numTopics == newAlphas.length)
       alphas = newAlphas.toArray
-      beta1= newBeta1
+      beta1 = newBeta1
       // s = \sum_t ( \alpha_t \beta ) / ( |V| \beta + n_t )  [Mimno "Sparse LDA"]
       smoothingMass = (0 until numTopics).foldLeft(0.0)((sum,t) => sum + (alphas(t) * beta1 / (phiCounts.mixtureCounts(t) + betaSum)))
       // The first term in the per-topic summand for q, just missing *n_{w|t}  [Mimno "Sparse LDA"]
       forIndex(numTopics)(t => cachedCoefficients(t) = alphas(t) / (phiCounts.mixtureCounts(t) + betaSum))
     }
-      
+    
+    private def recalcSmoothingMass: Double =  
+      (0 until numTopics).foldLeft(0.0)((sum,t) => sum + (alphas(t) * beta1 / (phiCounts.mixtureCounts(t) + betaSum)))
+
     def export(phis:Seq[DenseCountsProportions]): Unit = {
       phis.foreach(_.zero())
       for (wi <- 0 until WordDomain.size)
@@ -125,12 +128,20 @@ object LDA3 {
       for (doc <- docs) {
         val theta = doc.theta
         theta.zero()
-        for (dv <- doc.zs) theta.increment(dv.intValue, 1.0)(null)
+        val zis = doc.zs.intValues
+        var i = zis.length - 1
+        while (i >= 0) theta.increment(zis(i), 1.0)(null)
+        //for (dv <- doc.zs) theta.increment(dv.intValue, 1.0)(null)
       }
     }
     
     /** Sample the Zs for one document. */
     def process(zs:Zs): Unit = {
+      // TODO In some cases "smoothingMass" seems to drift low, perhaps due to math precision in its adjustments
+      // So reset it here for each document
+      //val newSmoothingMass = recalcSmoothingMass
+      //println(smoothingMass+" "+newSmoothingMass)
+      //smoothingMass = newSmoothingMass
       //println("process doc "+zs.words.asInstanceOf[Document].file)
       val ws = zs.words
       assert(ws.length == zs.length)
@@ -151,9 +162,9 @@ object LDA3 {
       
       // sample each z
       forIndex(zs.length)(zp => { // z position
-        val ti = zs(zp).intValue // intValue of z, "topic index"
+        val ti = zs.intValue(zp) // intValue of z, "topic index"
         //assert(ti < numTopics)
-        val wi = ws(zp).intValue // intValue of word, "word index"
+        val wi = ws.intValue(zp) // intValue of word, "word index"
         //assert(wi < WordDomain.size)
         val ntd = docTopicCounts.countOfIndex(ti) // n_{t|d}
         val nt = phiCounts.mixtureCounts(ti)
@@ -170,7 +181,7 @@ object LDA3 {
         val origTopicBetaMass = topicBetaMass
         val origCachedCoefficientTi = cachedCoefficients(ti)
         smoothingMass -= alphas(ti) * beta1 / (nt + betaSum)
-        smoothingMass += alphas(ti) * beta1 / ((nt-1) + betaSum)
+        smoothingMass += alphas(ti) * beta1 / ((nt-1) + betaSum); assert(smoothingMass > 0.0)
         topicBetaMass -= beta1 * ntd / (nt + betaSum)
         topicBetaMass += beta1 * (ntd-1) / ((nt-1) + betaSum)
         // Reset cachedCoefficients
@@ -188,9 +199,9 @@ object LDA3 {
           topicTermMass += score
         })
         
-        assert(smoothingMass > 0)
-        assert(topicBetaMass > 0)
-        assert(topicTermMass >= 0)
+        assert(smoothingMass > 0.0)
+        assert(topicBetaMass > 0.0)
+        assert(topicTermMass >= 0.0)
         val r = cc.factorie.random.nextDouble()
         var sample = r * (smoothingMass + topicBetaMass + topicTermMass)
         val origSample = sample
@@ -246,7 +257,7 @@ object LDA3 {
           val newNt = phiCounts.mixtureCounts(newTi)
           val newNtd = docTopicCounts.countOfIndex(newTi) // n_{t|d}
           smoothingMass -= alphas(ti) * beta1 / ((newNt-1) + betaSum)
-          smoothingMass += alphas(ti) * beta1 / (newNt + betaSum)
+          smoothingMass += alphas(ti) * beta1 / (newNt + betaSum); assert(smoothingMass > 0.0)
           topicBetaMass -= beta1 * (newNtd-1) / ((newNt-1) + betaSum)
           topicBetaMass += beta1 * newNtd / (newNt + betaSum)
           cachedCoefficients(newTi) = (alphas(newTi) + newNtd) / (newNt + betaSum)
