@@ -35,7 +35,7 @@ trait ElementType[+ET] {
   type ElementType = ET
 }
 
-trait VarAndElementType[+This<:Variable,+ET] extends VarAndValueType[This,Seq[ET]] with ElementType[ET]
+trait VarAndElementType[+This<:Variable,+ET] extends VarAndValueType[This,IndexedSeq[ET]] with ElementType[ET]
 
 /** A variable containing a mutable sequence of other variables.  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
@@ -44,7 +44,7 @@ trait SeqVar[X] extends MutableVar with VarAndElementType[SeqVar[X],X] with SeqE
   //type ElementType <: AnyRef
   type Element = VariableType#ElementType
   protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that SeqVar[Int] is efficient.
-  final def value: Seq[Element] = _seq
+  final def value: IndexedSeq[Element] = _seq
   def set(newValue:Value)(implicit d:DiffList): Unit = { _seq.clear; _seq ++= newValue }
   def update(seqIndex:Int, x:Element)(implicit d:DiffList): Unit = UpdateDiff(seqIndex, x)
   def append(x:Element)(implicit d:DiffList) = AppendDiff(x)
@@ -103,7 +103,13 @@ abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.Prot
     def next = { i += 1; domain.elementDomain.getValue(_apply(i-1)) }
   }
   def domain: DiscreteSeqDomain
-  def value: Value = _toSeq.map(i => domain.elementDomain.getValue(i)) // TODO make this more efficient
+  def value: Value = new IndexedSeq[DiscreteValue] {
+    private val arr = new Array[DiscreteValue](_length)
+    _mapToArray(arr, (i:Int) => domain.elementDomain.getValue(i))
+    def length = arr.length
+    def apply(i:Int) = arr(i)
+   //_toSeq.map(i => domain.elementDomain.getValue(i)) // TODO make this more efficient 
+  }
   def set(newValue:Value)(implicit d:DiffList): Unit = _set(Array.tabulate(newValue.length)(i => newValue(i).intValue))
   def appendInt(i:Int): Unit = _append(i)
   def +=(e:VariableType#ElementType): Unit = appendInt(e.intValue)

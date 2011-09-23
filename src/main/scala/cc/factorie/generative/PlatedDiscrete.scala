@@ -32,10 +32,11 @@ object PlatedDiscrete extends GenerativeFamily2[PlatedGeneratedDiscreteVar,Propo
   def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
   def logpr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => math.log(p(dv.intValue))).sum
   def sampledValue(d:DiscreteDomain, length:Int, p:ProportionsValue): Seq[DiscreteValue] = 
-    ArrayBuffer.fill(length)(d.getValue(p.sampleInt))
+    Vector.fill(length)(d.getValue(p.sampleInt))
   case class Factor(_1:PlatedGeneratedDiscreteVar, _2:Proportions) extends super.Factor {
     def pr(s:Statistics): Double = self.pr(s._1, s._2)
     override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
+    override def sampledValue: Any = self.sampledValue(_1.first.domain, _1.length, _2) // Avoid creating a Statistics
     def sampledValue(s:Statistics): Seq[DiscreteValue] = {
       if (s._1.length == 0) Nil
       else self.sampledValue(s._1.first.domain, s._1.length, s._2)
