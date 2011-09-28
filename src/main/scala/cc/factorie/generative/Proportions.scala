@@ -139,12 +139,26 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions {
 }
 
 // TODO Change this to a Maximizer
-object MutableProportionsEstimator {
+object ProportionsEstimator {
   def estimate(p:MutableProportions, map:scala.collection.Map[Variable,Variable] = Map[Variable,Variable]()): Unit = {
-    val e = new DenseCountsProportions(p.length)
+    var e: DenseCountsProportions = null
+    p match {
+      case p:DenseCountsProportions => { e = p; e.zero() }
+      case _ => e = new DenseCountsProportions(p.length)
+    }
     p.parentFactor match { case f:Dirichlet.Factor => e.set(f._2)(null); case null => {} }
-    for (factor <- p.childFactors) factor match {
+    for (factor <- p.extendedChildFactors) factor match {
       case d:Discrete.Factor => e.increment(d._1.intValue, 1.0)(null)
+      case dm:DiscreteMixture.Factor => {
+        val mixtureIndex = dm._2.indexOf(e)
+        if (dm._3.intValue == mixtureIndex) e.increment(dm._1.intValue, 1.0)(null)
+      }
+      case pdm:PlatedDiscreteMixture.Factor => {
+        val mixtureIndex = pdm._2.indexOf(e)
+        forIndex(pdm._1.length)(i => {
+          if (pdm._3.intValue(i) == mixtureIndex) e.increment(pdm._3.intValue(i), 1.0)(null)
+        })
+      }
       //case p:Proportions => forIndex(p.length)(i => e.increment(i, p(i))(null))
     }
     // TODO The above no longer works for weighted children!  
@@ -154,7 +168,7 @@ object MutableProportionsEstimator {
       case x:DiscreteVar => e.increment(x.intValue, weight)(null)
       case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
     }*/
-    p.set(e)(null)
+    if (p ne e) p.set(e)(null)
   }
 }
 

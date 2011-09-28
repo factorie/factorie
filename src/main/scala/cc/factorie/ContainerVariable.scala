@@ -20,7 +20,7 @@ import scala.collection.mutable.ArrayBuffer
     A Template that neighbors a ContainerVariable subclass, will also unroll a Factor
     for changes to any Variables of type ContainedVariableType.
     This mechanism is used for implementing var-args in Template arguments; 
-    for example see GeneratedVarTemplate. */
+    for example see Template2.factors. */
 trait ContainerVariable[A<:Variable] extends Variable {
   type ContainedVariableType = A
   def containedVariableManifest(implicit m:Manifest[A]) = m

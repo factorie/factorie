@@ -70,7 +70,8 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
         //  and GenerativeModel.normalize should expand the factors to include neighbors of these,
         //  then include Dirichlet.factor in the match statement below.
         for (f <- factors) f match {
-          case f:MixtureComponent.Factor => {}
+          //case f:MixtureComponent.Factor => {}
+          case f:Mixture.Factor => {}
           case f:DiscreteMixture.Factor => m(f._3.intValue).increment(f._1.intValue, 1.0)(null)
           case f:PlatedDiscreteMixture.Factor => forIndex(f._1.size)(i => m(f._3(i).intValue).increment(f._1(i).intValue, 1.0)(null))
           case f:Factor => { println("DenseCountsProportionsMixtureCollapser unexpected factor "+f); return false }

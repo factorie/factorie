@@ -43,7 +43,7 @@ trait MixtureFactor extends GenerativeFactor {
   def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
   def updateCollapsedParents(f:Factor): Boolean =   
 }*/
-object MixtureComponent extends GenerativeFamily2[Mixture[GeneratedVar],GeneratedVar] {
+/*object MixtureComponent extends GenerativeFamily2[Mixture[GeneratedVar],GeneratedVar] {
   case class Factor(_1:Mixture[GeneratedVar], _2:GeneratedVar) extends super.Factor {
     def pr(s:StatisticsType) = 1.0
     def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
@@ -54,20 +54,28 @@ object MixtureComponent extends GenerativeFamily2[Mixture[GeneratedVar],Generate
     }
   }
   def newFactor(a:Mixture[GeneratedVar], b:GeneratedVar) = Factor(a, b)
-}
+}*/
 
+// Graphical model structure of a mixture:
+// Proportions =Mixture.Factor=> Mixture[Proportions] =DiscreteMixture.Factor=> Discrete
+// Proportions =/                                Gate =/
+
+// TODO I think perhaps this should be a GeneratedVars[] ContainerVariable -akm
 class Mixture[+P<:GeneratedVar](val components:Seq[P]) extends Seq[P] with GeneratedVar 
 with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]] 
-//with CollapsibleParameter with VarWithCollapsedType[Mixture[P]]
 {
+  this ~ Mixture() // This will make this a child of each of the mixture components.
   def apply(i:Int) = components(i)
   def length = components.length
   def iterator = components.iterator
   def value = this.map(_.value)
   // TODO Note that if the Mixture grows, new component Parameters will not be properly get this childFactor 
-  val parentFactors = components.map(c => { val f = new MixtureComponent.Factor(this, c); c.addChildFactor(f); f })
+  //val parentFactors = components.map(c => { val f = new MixtureComponent.Factor(this, c); c.addChildFactor(f); f })
   //parentFactor = new MixtureComponent.Factor(this, new SeqParameterVars(components)) // TODO Look at this again carefully
   //components.foreach(p => p.addChildFactor(parentFactor)) 
+  /** A Mixture is a deterministic function of its parents.  
+      This fact is examined in GenerativeModel.factors, causing factors(mixtureComponent) 
+      to return not only this Mixture but also all the children of this Mixture. */
   override def isDeterministic = true
   def childFactorsOf[P2>:P](p:P2): Seq[MixtureFactor] = {
     val index = this.indexOf(p)
@@ -93,8 +101,22 @@ with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]]
     this
   }*/
 }
-object Mixture {
-  def apply[P<:GeneratedVar](n:Int)(constructor: =>P): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor)
+
+object Mixture extends GenerativeFamily1[Mixture[GeneratedVar]] {
+  def apply[P<:GeneratedVar](n:Int)(constructor: =>P): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead 
+  case class Factor(_1:Mixture[GeneratedVar]) extends super.Factor {
+    /** Even though they are the contents of the child, the parents are each of the mixture components. */
+    override def parents: Seq[GeneratedVar] = _1.components
+    def pr(s:StatisticsType) = 1.0
+    def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
+    override def updateCollapsedParents(weight:Double): Boolean = {
+      throw new Error("Not yet implemented.")
+      //  TODO this is inefficient because it will loop through all children of the Mixture for each Mixture component
+      //for (f2 <- _1.childFactorsOf(_2)) f2.updateCollapsedParents(weight) // TODO Consider collapsed Gate
+      true
+    }
+  }
+  def newFactor(a:Mixture[GeneratedVar]) = Factor(a)
 }
 
 

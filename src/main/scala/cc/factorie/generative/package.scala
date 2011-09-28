@@ -24,9 +24,16 @@ package object generative {
     def factors(variables:Iterable[Variable]): Seq[Factor] = {
       val result = new scala.collection.mutable.ArrayBuffer[Factor];
       variables.foreach(v => v match {
+        // TODO Also handle ContainerVariables!!!  Consider also interaction with handling of GeneratedVar.isDeterministic
+        case cv: ContainerVariable[_] => throw new Error("ContainerVariables not yet handled in GenerativeModel.")
         case gv:GeneratedVar => {
           if (gv.parentFactor != null) result += gv.parentFactor
-          if (gv.childFactors ne Nil) result ++= gv.childFactors
+          if (gv.childFactors ne Nil) {
+            for (childFactor <- gv.childFactors) {
+              result += childFactor
+              if (childFactor.child.isDeterministic) result ++= factors(Seq(childFactor.child))
+            }
+          }
         }
       })
       // TODO If a parent is a deterministic function (through a deterministic factor), also return factors that are parents of the deterministic factor

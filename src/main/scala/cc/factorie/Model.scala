@@ -82,7 +82,7 @@ trait Model {
   def aveScore(variables:Iterable[Variable]): Double = score(variables) / variables.size  // TODO Rename to scoreAve?
 
   /** Deduplicate a sequence of Factors while also being sure not to include inner factors 
-      (whose interpreation may require special handling by the outer factor).
+      (whose interpretation may require special handling by the outer factor).
       This method should be called on all Seq[Factor] before they are returned by methods such as "factors" */
   def normalize(factors:Seq[Factor]): Seq[Factor] = {
     if (factors.forall(_.outer eq null)) factors
@@ -121,8 +121,8 @@ trait Model {
  */
 class CombinedModel(val subModels:Model*) extends Model {
   def factors(variables:Iterable[Variable]): Seq[Factor] = normalize(subModels.flatMap(_.factors(variables)))
-  override def variables = subModels.flatMap(_.variables)
-  override def factors = subModels.flatMap(_.factors)
+  override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
+  override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
 }
 
 /** A Model that explicitly stores all factors, with an efficient map from variables to their neighboring factors.
@@ -134,11 +134,14 @@ class FactorModel(initialFactors:Factor*) extends Model {
   private val _factors = new HashMap[Variable,HashSet[Factor]] {
     override def default(v:Variable) = {
       val result = new HashSet[Factor]
-      this(v)  = result
+      this(v) = result
       result
     }
   }
   this ++= initialFactors
+  // TODO The next method is incredibly inefficient because it will result in the creation of a HashSet for every variable queried,
+  // even if that variable does not have any factors in this model.
+  // TODO The next method needs to handle ContainerVariables.
   def factors(variables:Iterable[Variable]): Seq[Factor] = normalize(variables.flatMap(v => _factors(v)).toSeq)
   override def factors: Seq[Factor] = _factors.values.flatMap(set => set).toSeq.distinct // TODO Make more efficient?
   def +=(f:Factor): Unit = f.variables.foreach(v => _factors(v) += f)

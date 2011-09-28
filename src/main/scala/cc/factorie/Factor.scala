@@ -110,7 +110,7 @@ trait Values extends Statistics with Assignment {
   // def factor: Factor // TODO Consider adding this method
   override def inner: Seq[Values] = Nil
   //def apply[B <: Variable](v: B): B#Value = { new Error("Never call apply() on values"); null.asInstanceOf[B#Value] }
-  def score: Double = statistics.score
+  def score: Double = statistics.score // TODO This will result in an infinite loop unless Statistics.statistics is overridden.  Consider leaving Statistics.statistics abstract? 
   /** Return a unique index for the combination of Discrete values in the set "varying".  Used in BeliefPropagation. */
   def index(varying:Set[Variable]): Int = {  // TODO Change this to Set[DiscreteVar] and then rework body.
     var result = 0

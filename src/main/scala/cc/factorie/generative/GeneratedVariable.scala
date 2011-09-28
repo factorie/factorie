@@ -31,24 +31,29 @@ trait VarWithFactors extends Variable {
     May or may not be mutable. */
 trait GeneratedVar extends VarWithFactors {
   //type VariableType <: GeneratedVar
-  // TODO Don't make this "var".  The ~ method should be the only place that this gets changed!
-  var parentFactor: GenerativeFactor = null
+  private var _parentFactor: GenerativeFactor = null
+  def parentFactor: GenerativeFactor = _parentFactor
   def factors: Seq[GenerativeFactor] = if (_childFactors eq null) List(parentFactor) else parentFactor +: childFactors 
   def sampledValue: Value = {
     parentFactor.sampledValue.asInstanceOf[Value]
   }
   def pr = parentFactor.pr
   def logpr = parentFactor.logpr
-  /*def ~(f:GenerativeFamily#Factor): this.type = {
-    assert(f.family.isInstanceOf[GenerativeFamily])
-    //assert(f._1 eq this) // TODO How to check this?
-    parentFactor = f
-    this
-  }*/
   // TODO The type parameter below doesn't actually enforce what we want.  Fix this.
+  /** Set the parentFactor of this child, but do not register the factor (or this child) with its parents.
+      This is non-standard behavior which should be used cautiously, but it is sometimes useful when 
+      (a) many children are being added and removed rapidly, and (b) parameter estimation in the parents
+       */
+  def ~<[V<:this.VariableType with GeneratedVar](partialFactor:Function1[V,GenerativeFactor]): this.type = {
+    assert(parentFactor eq null)
+    _parentFactor = if (partialFactor eq null) null else partialFactor(this.asInstanceOf[V])
+    this
+  }
+  /** Set the parentFactor of this child, and register the factor (and this child) with its parents. */
+
   def ~[V<:this.VariableType with GeneratedVar](partialFactor:Function1[V,GenerativeFactor]): this.type = {
     assert(parentFactor eq null)
-    parentFactor = partialFactor(this.asInstanceOf[V])
+    _parentFactor = if (partialFactor eq null) null else partialFactor(this.asInstanceOf[V])
     for (p <- parentFactor.parents) p.addChild(this) // TODO Think about this more.
     this
   }
@@ -56,7 +61,7 @@ trait GeneratedVar extends VarWithFactors {
   /** The list of random variables on which the generation of this variable's value depends. 
       By convention the first variable of the parentFactor is the child, 
       and the remainder are its parents. */
-  def parents: Seq[GeneratedVar] = parentFactor.parents.asInstanceOf[Seq[GeneratedVar]]
+  def parents: Seq[GeneratedVar] = parentFactor.parents //.asInstanceOf[Seq[GeneratedVar]]
   /** The list of random variables on which the generation of this variable's value depends,
       either directly or via a sequence of deterministic variables.  Changes to these variables
       cause the value of this.pr to change. */
@@ -69,18 +74,23 @@ trait GeneratedVar extends VarWithFactors {
     }
     result
   }
-  /** Returns true if the value of this parameter is a deterministic (non-stochastic) function of its parents. */
+  /** Returns true if the value of this parameter is a deterministic (non-stochastic) function of its parents.
+      Note that this is an attribute of a variable, not a factor, because it refers to the fact that the
+      variable's value changes automatically with changes to the parent variables' values.  How the automatic
+      values are scored (whether they are given 0.0 or 1.0 extreme probabilities) is a different matter. */
   // TODO Perhaps there should be a "isDeterministic" method in cc.factorie.Factor?  Or should it go in Statistics?  Ug. -akm
   def isDeterministic = false
   private var _childFactors: ArrayBuffer[GenerativeFactor] = null
   def childFactors: Seq[GenerativeFactor] = if (_childFactors eq null) Nil else _childFactors
-  def addChildFactor(f:GenerativeFactor): Unit = {
+  @deprecated("Make this private")
+  private def addChildFactor(f:GenerativeFactor): Unit = {
+    //throw new Error("Make this private")
     if (_childFactors eq null) _childFactors = new scala.collection.mutable.ArrayBuffer[GenerativeFactor]
     _childFactors += f
   }
-  def addChild(v:GeneratedVar, d:DiffList = null): Unit = addChildFactor(v.parentFactor)
-  def removeChildFactor(f:GenerativeFactor): Unit = _childFactors -= f
-  def removeChild(v:GeneratedVar, d:DiffList = null): Unit = removeChildFactor(v.parentFactor)
+  def addChild(v:GeneratedVar): Unit = addChildFactor(v.parentFactor)
+  private def removeChildFactor(f:GenerativeFactor): Unit = _childFactors -= f
+  private def removeChild(v:GeneratedVar, d:DiffList = null): Unit = removeChildFactor(v.parentFactor)
   def children: Seq[GeneratedVar] = childFactors.map(_.child)
   def childrenOfClass[A](implicit m:Manifest[A]) = children.filter(_.getClass == m.erasure).asInstanceOf[Iterable[A]]
   /** A collection of variables whose value depends on the value of this variable, 
@@ -90,11 +100,21 @@ trait GeneratedVar extends VarWithFactors {
     if (_childFactors eq null) return Nil
     val result = new ArrayBuffer[GeneratedVar]
     for (child <- children) {
-      if (child.isDeterministic) { result += child; result ++= child.extendedChildren }
-      else result += child
+      result += child
+      if (child.isDeterministic) result ++= child.extendedChildren
     }
     result
   }
+  def extendedChildFactors: Iterable[GenerativeFactor] = {
+    if (_childFactors eq null) return Nil
+    val result = new ArrayBuffer[GenerativeFactor]
+    for (factor <- childFactors) {
+      result += factor
+      if (factor.child.isDeterministic) result ++= factor.child.extendedChildFactors
+    }
+    result
+  }
+
   def deprecated_weightedGeneratedChildren(map:scala.collection.Map[Variable,Variable]): Iterable[(GeneratedVar,Double)] = {
     val result = new ArrayBuffer[(GeneratedVar,Double)]
     for (child <- children) map.getOrElse(child,child) match {
@@ -127,8 +147,17 @@ trait MutableGeneratedVar extends GeneratedVar with MutableVar {
     this.set(this.sampledValue)(null)
     this
   }
+  def :~<[V<:this.VariableType](partialFactor:Function1[V,GenerativeFactor]): this.type = {
+    this ~< partialFactor
+    this.set(this.sampledValue)(null)
+    this
+  }
 }
 
+trait GeneratedVars[V<:GeneratedVar] extends GeneratedVar with Vars[V]
+class GeneratedSeqVars[V<:GeneratedVar](seq:Seq[V]) extends SeqVars(seq) with GeneratedVars[V]
+
+  
 // Consider something like this, but then the Vars container has a parent and children, and so do the contents?
 //trait GeneratedVars[V<:GeneratedVar] extends Vars[V] with GeneratedVar
 
@@ -177,7 +206,7 @@ trait GenerativeFactor extends Factor {
 trait GenerativeFactorWithStatistics1[C<:GeneratedVar] extends GenerativeFactor with FactorWithStatistics1[C] {
   type ChildType = C
   def child = _1
-  def parents = Nil
+  def parents: Seq[GeneratedVar] = Nil
   def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType]) // Can't define score earlier because inner class Factor.Statistics not defined until here
 }
 
@@ -202,6 +231,15 @@ trait GenerativeFactorWithStatistics4[C<:GeneratedVar,P1<:GeneratedVar,P2<:Gener
   def child = _1
   def parents = Seq(_2, _3, _4)
   def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
+}
+
+trait GenerativeFamily1[Child<:GeneratedVar] {
+  type C = Child
+  trait Factor extends GenerativeFactorWithStatistics1[C] 
+  def newFactor(c:C): Factor
+  def apply() = new Function1[C,Factor] {
+    def apply(c:C) = newFactor(c)
+  }
 }
 
 trait GenerativeFamily2[Child<:GeneratedVar,Parent1<:GeneratedVar] {
