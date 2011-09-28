@@ -23,10 +23,10 @@ class CollapsedGibbsSampler(collapse:Iterable[GeneratedVar], val model:Model = c
   var temperature = 1.0 // TODO Currently ignored?
   val handlers = new ArrayBuffer[CollapsedGibbsSamplerHandler]
   def defaultHandlers = Seq(
+      PlatedGateDiscreteCollapsedGibbsSamplerHandler,
       GateCollapsedGibbsSamplerHandler, 
-      GeneratedVarCollapsedGibbsSamplerHandler,
-      PlatedGateDiscreteCollapsedGibbsSamplerHandler
-      //PlatedMixtureChoiceCollapsedDirichletGibbsSamplerHandler
+      //PlatedMixtureChoiceCollapsedDirichletGibbsSamplerHandler,
+      GeneratedVarCollapsedGibbsSamplerHandler
       )
   handlers ++= defaultHandlers
   val cacheClosures = true

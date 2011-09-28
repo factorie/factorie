@@ -47,6 +47,8 @@ trait GeneratedVar extends VarWithFactors {
   def ~<[V<:this.VariableType with GeneratedVar](partialFactor:Function1[V,GenerativeFactor]): this.type = {
     assert(parentFactor eq null)
     _parentFactor = if (partialFactor eq null) null else partialFactor(this.asInstanceOf[V])
+    // Gates are not exactly parents, so we make an exception for them here.  Needed for LDADoc ~< PlatedDiscreteMixture(phis, zs)
+    for (p <- parentFactor.parents) if (p.isInstanceOf[Gate] || p.isInstanceOf[PlatedGate]) p.addChild(this) // TODO Think about this more.
     this
   }
   /** Set the parentFactor of this child, and register the factor (and this child) with its parents. */
@@ -82,9 +84,7 @@ trait GeneratedVar extends VarWithFactors {
   def isDeterministic = false
   private var _childFactors: ArrayBuffer[GenerativeFactor] = null
   def childFactors: Seq[GenerativeFactor] = if (_childFactors eq null) Nil else _childFactors
-  @deprecated("Make this private")
   private def addChildFactor(f:GenerativeFactor): Unit = {
-    //throw new Error("Make this private")
     if (_childFactors eq null) _childFactors = new scala.collection.mutable.ArrayBuffer[GenerativeFactor]
     _childFactors += f
   }
