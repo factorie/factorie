@@ -24,6 +24,7 @@ trait Masses extends GeneratedVar with IndexedSeqEqualsEq[Double] with VarAndVal
   def value = this.asInstanceOf[Value] // TODO Not a safe immutable value
   override def toString = this.mkString(printName+"(", ",", ")")
   def activeDomain: Iterable[Int]
+  def massesTotal: Double
   //def vector: Vector // TODO Consider IncrementableMasses that actually store the counts in a Vector, ala BinaryVectorVariable
   /*
   def generatedChildValues: Iterable[DiscreteValue] = {
@@ -139,6 +140,8 @@ class DenseMasses(m:Seq[Double]) extends MutableMasses {
   def this(dim:Int, m:Double) = this(Seq.fill(dim)(m))
   def this(dim:Int) = this(dim, 1.0)
   private var _m = new Array[Double](m.length)
+  private var _massesTotal: Double = 0.0
+  def massesTotal = _massesTotal
   if (m != Nil) this := m else setUniform(null)
   @inline final def length = _m.size
   @inline final def apply(index:Int) = _m(index)
@@ -146,6 +149,7 @@ class DenseMasses(m:Seq[Double]) extends MutableMasses {
   def set(m:Seq[Double])(implicit d:DiffList): Unit = {
     assert(m.size == _m.size, "size mismatch: new="+m.size+", orig="+_m.size)
     val newM = m.toArray
+    _massesTotal = newM.sum // TODO Is this efficient?  Will it do boxing?
     if (d ne null) d += MassesDiff(_m, newM)
     _m = newM
   }
@@ -161,10 +165,12 @@ class DenseMasses(m:Seq[Double]) extends MutableMasses {
 class UniformMasses(val length: Int, val mass:Double) extends Masses {
   def activeDomain: Iterable[Int] = Range(0, length)
   def apply(i:Int) = mass
+  def massesTotal = length * mass
 }
 
 class GrowableUniformMasses(val dimensionDomain:DiscreteDomain, val mass:Double) extends Masses {
   def activeDomain: Iterable[Int] = Range(0, length)
   def length: Int = dimensionDomain.length
   def apply(i:Int) = mass
+  def massesTotal = length * mass
 }

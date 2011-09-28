@@ -148,6 +148,7 @@ object ProportionsEstimator {
     }
     p.parentFactor match { case f:Dirichlet.Factor => e.set(f._2)(null); case null => {} }
     for (factor <- p.extendedChildFactors) factor match {
+      case m:Mixture.Factor => {}
       case d:Discrete.Factor => e.increment(d._1.intValue, 1.0)(null)
       case dm:DiscreteMixture.Factor => {
         val mixtureIndex = dm._2.indexOf(e)
@@ -488,9 +489,16 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
 }
 
 class SortedSparseCountsProportions(dim:Int) extends SortedSparseCounts(dim) with CountsProportions {
+  // TODO We need somehow to say that this isDeterministic function of this.prior.
+  var prior: Masses = null
   def apply(index:Int): Double = {
-    if (countsTotal == 0) 1.0 / length
-    else countOfIndex(index).toDouble / countsTotal
+    if (prior eq null) {
+      if (countsTotal == 0) 1.0 / length
+      else countOfIndex(index).toDouble / countsTotal
+    } else {
+      if (countsTotal == 0) prior(index) / prior.massesTotal
+      else countOfIndex(index).toDouble / countsTotal
+    }
   }
   def increment(index:Int, incr:Double)(implicit d:DiffList): Unit = {
     assert(d eq null)

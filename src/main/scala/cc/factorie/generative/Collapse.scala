@@ -27,7 +27,7 @@ class Collapse(val model:Model = GenerativeModel) {
     val factors = model.factors(variables)
     // This next line does the collapsing
     val option = collapsers.find(_.collapse(variables, factors))
-    if (option == None) throw new Error("No collapser found for factors "+factors.take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString)
+    if (option == None) throw new Error("No collapser found for factors "+factors.take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString(" "))
   }
 }
 object Collapse extends Collapse(GenerativeModel) 
@@ -54,7 +54,20 @@ object DenseCountsProportionsCollapser extends Collapser {
         }
         true
       }
-      case _ => false
+      case p:SortedSparseCountsProportions => {
+        p.zero()
+        for (f <- factors) f match {
+          //case f:Discrete.Factor if (f.family == Discrete) => p.increment(f._1.intValue, 1.0)(null)
+          case f:Discrete.Factor => p.increment(f._1.intValue, 1.0)(null)
+          //case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => f._2.asInstanceOf[DenseCountsProportions].increment(f._1(i).intValue, 1.0)(null))
+          case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => p.increment(f._1(i).intValue, 1.0)(null))
+          case f:Dirichlet.Factor if (p.parentFactor eq f) => p.prior = f._2 //p.increment(f._2, 1)(null)
+          //case f:Dirichlet.Factor => { println("DenseCountsProportionsCollapser p.parentFactor "+p.parentFactor.getClass); p.prior = f._2 } //p.increment(f._2, 1)(null)
+          case _ => { println("DenseCountsProportionsCollapser unexpected factor "+f.getClass); return false }
+        }
+        true
+      }
+      case _ => { /* println("DenseCountsProportionsCollapser unexpected Proportions "+variables.head.getClass);*/ false }
     }
   }
 }

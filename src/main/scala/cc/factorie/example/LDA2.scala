@@ -35,7 +35,7 @@ object LDA2 {
     def domain = WordSeqDomain
     def zs = parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor]._3
   }
-  class Document(val file:String, val theta:DenseCountsProportions, strings:Seq[String]) extends Words(strings)
+  class Document(val file:String, val theta:CountsProportions, strings:Seq[String]) extends Words(strings)
   val beta = new GrowableUniformMasses(WordDomain, 0.1)
   val alphas = new DenseMasses(numTopics, 0.1)
 

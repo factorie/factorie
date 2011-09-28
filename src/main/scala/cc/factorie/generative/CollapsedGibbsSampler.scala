@@ -181,9 +181,9 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
       val gates = mFactor._3.asInstanceOf[PlatedGate];
       val domainSize = gates(0).domain.size
       val distribution = new Array[Double](domainSize)
-      val gParent = gFactor._2.asInstanceOf[DenseCountsProportions]
+      val gParent = gFactor._2.asInstanceOf[CountsProportions]
       val gParentCollapsed = sampler.isCollapsed(gParent)
-      val mixture = mFactor._2.asInstanceOf[Mixture[DenseCountsProportions]]
+      val mixture = mFactor._2.asInstanceOf[Mixture[CountsProportions]]
       val mixtureCollapsed = sampler.isCollapsed(mixture)
       for (index <- 0 until gates.length) {
         val outcomeIntValue = mFactor._1(index).intValue
