@@ -19,7 +19,6 @@ import cc.factorie._
     See also @see cc.factorie.generative.Counts
     @author Andrew McCallum */
 trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
-  val _hashcode = random.nextInt // Who added this?  What is this for? -akm
   def length: Int
   def activeDomainSize: Int
   def activeDomain: Iterable[Int]
@@ -36,7 +35,8 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
   // override def toString = this.take(math.min(5, length)).mkString(getClass.getName+"(", ",", if (length > 5) "...)" else ")")
   def flatOuter(that:Vector): Vector = throw new Error("Method flatOuter(Vector) not defined on class "+getClass.getName)
   def flatOuter(v1:Vector, v2:Vector):Vector = throw new Error("Method flatOuter(Vector, Vector) not defined on class "+getClass.getName)
-  override def hashCode = _hashcode
+  //val _hashcode = random.nextInt // Who added this?  What is this for? -akm
+  override def hashCode = System.identityHashCode(this)
   override def equals(p1: Any) = p1 match {
     case ref:AnyRef => eq(ref)
     case _ => false
