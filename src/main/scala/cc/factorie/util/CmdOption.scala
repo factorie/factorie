@@ -109,7 +109,7 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
       } 
     }
     this.find(o => o.required && o.invokedCount == 0) match {
-      case Some(o) => error("Required CmdOption "+o.name+" was not provided.")
+      case Some(o) => error("Required CmdOption --"+o.name+" was not provided.")
       case None =>
     }
   }

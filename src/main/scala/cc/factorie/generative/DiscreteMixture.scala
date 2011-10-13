@@ -42,16 +42,17 @@ abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
   def mixtureDomain: DiscreteDomain
   // counts(wordIndex).countOfIndex(topicIndex)
   private val counts = Array.fill(discreteDomain.size)(new SortedSparseCounts(mixtureDomain.size))
+  val mixtureCounts = new Array[Int](mixtureDomain.size)
+  //override def clone: DiscreteMixtureCounts = null
   def apply(discreteIndex:Int) = counts(discreteIndex)
   def length = discreteDomain.size
   def iterator = counts.iterator
   def countsTotal: Int = {
     val result = counts.map(_.countsTotal).sum
-    var sum = counts.map(_.calculatedCountsTotal).sum
-    assert(result == sum, "result="+result+" sum="+sum+"\nresults="+counts.map(_.countsTotal).toSeq.take(20)+"\nsum="+counts.map(_.calculatedCountsTotal).toSeq.take(20))
+    //var sum = counts.map(_.calculatedCountsTotal).sum
+    //assert(result == sum, "result="+result+" sum="+sum+"\nresults="+counts.map(_.countsTotal).toSeq.take(20)+"\nsum="+counts.map(_.calculatedCountsTotal).toSeq.take(20))
     result
   }
-  val mixtureCounts = new Array[Int](mixtureDomain.size)
   @inline final def increment(discrete:Int, mixture:Int, incr:Int) = {
     mixtureCounts(mixture) += incr
     assert(mixtureCounts(mixture) >= 0)
