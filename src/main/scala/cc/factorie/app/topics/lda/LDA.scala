@@ -36,6 +36,20 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     documentMap(doc.name) = doc
   }
 
+  /** Like addDocument, but does not register doc.theta or doc as children this.alphas or this.phis.
+      Useful for a temporary connection for inference of doc.theta and doc.zs. */
+  protected def connectDocument(doc:DocumentVar): Unit = {
+    doc.theta = new SortedSparseCountsProportions(numTopics) ~< Dirichlet(alphas) // was DenseCountsProportions
+    val zs = new Zs(doc.length) :~ PlatedDiscrete(doc.theta)
+    doc ~< PlatedDiscreteMixture(phis, zs)
+  }
+
+  def inferDocumentTheta(doc:Document, iterations:Int = 10): Unit = {
+    if (doc.parentFactor eq null) connectDocument(doc)
+    val sampler = new CollapsedGibbsSampler(Seq(doc.theta))
+    for (i <- 1 to iterations) sampler.process(doc.zs)
+  }
+
     /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
   def inferTopics(iterations:Int = 60, diagnosticInterval:Int = 10, fitAlphaInterval:Int = Int.MaxValue): Unit = {
     val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas, beta1)
