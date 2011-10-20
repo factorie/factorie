@@ -32,6 +32,7 @@ import junit.framework._
 import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.optimize._
+import cc.factorie.bp._
 import scala.math
 
 object TestBPClassify {
@@ -105,7 +106,7 @@ class TestBPClassify extends TestCase {
     val trainer = new SimpleMaxEntTrainer(model)
     trainer.process(trainVariables)
 
-    val fg = new FG(model, testVariables.toSet[Variable])
+    val fg = new SumProductFG(model, testVariables.toSet[Variable])
     fg.inferLoopyBP()
 
     var trueSumLogZ = 0.0
