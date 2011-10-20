@@ -16,7 +16,6 @@ object BuildSettings {
     retrieveManaged := true,
     autoCompilerPlugins := true,
     externalResolvers <<= resolvers map { rs => Resolver.withDefaultResolvers(rs)},
-    moduleConfigurations ++= Resolvers.moduleConfigurations,
     javacOptions ++= Seq("-Xlint:unchecked"),
     crossScalaVersions := Seq("2.9.1"),
     publishArtifact in (Compile, packageDoc) := false,
@@ -25,7 +24,6 @@ object BuildSettings {
 }
 
 object ShellPrompt {
-
   object devnull extends ProcessLogger {
     def info (s: => String) {}
     def error (s: => String) { }
@@ -46,34 +44,10 @@ object ShellPrompt {
   }
 }
 
-
-
-object Resolvers {
-  // val IESLRepo                = "IESL Repo" at "http://iesl.cs.umass.edu:8081/nexus/content/repositories/releases"
-  // val IESLSnapshotRepo        = "IESL Snapshot Repo" at "http://iesl.cs.umass.edu:8081/nexus/content/repositories/snapshots"
-  // val LocalIvy                = Resolver.file("Local .ivy", Path.userHome / ".ivy2" / "local" asFile)
-  // val LocalM2                 = "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
-
-  val moduleConfigurations = Seq(
-    // ModuleConfiguration("edu.umass.cs.iesl", LocalM2)
-  )
-}
-
-object Dependencies {
-}
-
-
-object Rexa2Build extends Build {
-
-  val buildShellPrompt = ShellPrompt.buildShellPrompt
-
-  import Resolvers._
-  import Dependencies._
+object FactorieBuild extends Build {
   import BuildSettings._
 
-  val commonDeps:Seq[sbt.ModuleID] = Seq(
-  )
-
+  val buildShellPrompt = ShellPrompt.buildShellPrompt
   val printClasspath = TaskKey[File]("print-class-path")
 
   def printCp = (target, fullClasspath in Compile, compile in Compile) map { (out, cp, analysis) =>
@@ -84,8 +58,6 @@ object Rexa2Build extends Build {
     println(out)
     out
   }
-
-  
 
   lazy val overrideSettings = {
     lazy val publishSetting = publishTo <<= (version) {
@@ -116,7 +88,6 @@ object Rexa2Build extends Build {
     base = file("."),
     settings = buildSettings ++ overrideSettings
   )
-
 }
 
 
