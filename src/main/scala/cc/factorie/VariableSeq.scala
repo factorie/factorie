@@ -25,7 +25,7 @@ class VariableSeq[V <: Variable with VarInTypedSeq[V,_]](initialCapacity:Int = 8
     _seq += v
     v.setSeqPos(this, _seq.size - 1)
   }
-  def +(v: V) = {this += v; this} // TODO But according to Scala convension this should create a return a new sequence, right?  Remove this method?
+  def +(v: V) = {this += v; this} // TODO But according to Scala convention this should create a return a new sequence, right?  Remove this method?
   def ++=(vs: Iterable[V]) = vs.foreach(this += _)
   def ++(vs: Iterable[V]) = {this ++= vs; this}
   override def iterator = _seq.iterator
