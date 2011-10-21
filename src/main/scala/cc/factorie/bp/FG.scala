@@ -5,7 +5,7 @@ import collection.mutable.{HashSet, ArrayBuffer, HashMap, Queue, Buffer}
 import cc.factorie._
 
 /**
- * @author sameer
+ * @author sameer, apassos
  */
 
 abstract class BaseMessage(val factor: Factor, val varying: Set[Variable], fg: FG) {
@@ -196,10 +196,7 @@ trait MaxMessage extends BaseMessage {
     }
     val varScores: Buffer[Double] = new ArrayBuffer(target.domain.size)
     for (value <- target.domain.values) {
-      varScores += log(scores(value))
-    }
-    if (varScores.exists(_.isNegInfinity)) {
-      //throw new Exception("output message has negInfinity")
+      varScores += scores(value)
     }
     BPUtil.message(target, varScores)
   }
@@ -211,28 +208,23 @@ trait MaxMessage extends BaseMessage {
     for (i <- 0 until discreteVarying.length) {
       scores(i) = new Array[Double](discreteVarying(i).domain.size)
     }
-    var maxLogScore = Double.NegativeInfinity
     // go through all the assignments of the varying variables
-    // and find the maximum score for numerical reasons
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       val index = assignment.index(varyingNeighbors)
       var num: Double = getScore(assignment, index)
       for (dv <- discreteVarying) {
         val mess = incoming(dv)
-        num = max(num,mess.score(assignment(dv)))
+        num = num + mess.score(assignment(dv))
       }
-      if (num > maxLogScore) maxLogScore = num
       _marginal(index) = num
     }
     // go through all the assignments of the varying variables
     // and find Z, and calculate the scores
-    var Z = 0.0
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       val index = assignment.index(varyingNeighbors)
-      val num = _marginal(index) - maxLogScore
-      _marginal(index) = num
       for (i <- 0 until discreteVarying.length) {
-        scores(i)(assignment(discreteVarying(i)).intValue) += num
+        val as = assignment(discreteVarying(i)).intValue
+        scores(i)(as) = max(scores(i)(as),_marginal(index))
       }
     }
     // set the outgoing messages
@@ -246,12 +238,12 @@ trait MaxMessage extends BaseMessage {
     result
   }
 }
-class MessageFactor(val fact: Factor, val varyin: Set[Variable], fgs: FG) extends BaseMessage(fact, varyin, fgs) with SumMessage {}
+class SumFactor(val fact: Factor, val varyin: Set[Variable], fgs: FG) extends BaseMessage(fact, varyin, fgs) with SumMessage {}
 
-class MapFactor(val fact: Factor, val varyin: Set[Variable], fgs: FG) extends BaseMessage(fact, varyin, fgs) with MaxMessage {}
+class MaxFactor(val fact: Factor, val varyin: Set[Variable], fgs: FG) extends BaseMessage(fact, varyin, fgs) with MaxMessage {}
 
 
-class MessageNode(val variable: Variable, val varying: Set[Variable]) {
+abstract class MessageNode(val variable: Variable, val varying: Set[Variable]) {
   // TODO: Add support for "changed" flag, i.e. recompute only when value is read, and hasnt changed since last read
   val factors = new ArrayBuffer[BaseMessage]
 
@@ -271,22 +263,7 @@ class MessageNode(val variable: Variable, val varying: Set[Variable]) {
 
   // Message from variable to factor
   // No recomputation, unless the incoming message from the factor was deterministic
-  def outgoing(mf: BaseMessage): GenericMessage = {
-    if (varies) {
-      if (_incoming(mf.factor).isDeterministic) {
-        var msg: GenericMessage = BPUtil.uniformMessage
-        for (otherFactor <- factors; if (otherFactor != mf))
-          msg = msg * otherFactor.outgoing(variable)
-        msg
-      } else {
-        _outgoing(mf.factor) //marginal / _incoming(factor)
-      }
-    } else {
-      // use the current value as the deterministic message
-      BPUtil.deterministicMessage(variable, variable.value)
-    }
-  }
-
+  def outgoing(mf: BaseMessage): GenericMessage
   // Message from factor to variable
   // stores the message and recomputes the marginal and the outgoing messages
   def incoming(mf: BaseMessage, mess: GenericMessage): Unit = {
@@ -315,6 +292,43 @@ class MessageNode(val variable: Variable, val varying: Set[Variable]) {
   override def toString = "M(%s)".format(variable)
 }
 
+class SumNode(val vari: Variable, val varyies: Set[Variable]) extends MessageNode(vari, varyies) {
+  def outgoing(mf: BaseMessage): GenericMessage = {
+      if (varies) {
+        if (_incoming(mf.factor).isDeterministic) {
+          var msg: GenericMessage = BPUtil.uniformMessage
+          for (otherFactor <- factors; if (otherFactor != mf))
+            msg = msg * otherFactor.outgoing(variable)
+          msg
+        } else {
+          _outgoing(mf.factor) //marginal / _incoming(factor)
+        }
+      } else {
+        // use the current value as the deterministic message
+        BPUtil.deterministicMessage(variable, variable.value)
+      }
+    }
+
+}
+
+class MaxNode(val vari: Variable, val varyies: Set[Variable]) extends MessageNode(vari, varyies) {
+  def outgoing(mf: BaseMessage): GenericMessage = {
+      if (varies) {
+        if (_incoming(mf.factor).isDeterministic) {
+          var msg: GenericMessage = BPUtil.uniformMessage
+          for (otherFactor <- factors; if (otherFactor != mf))
+            msg = msg * otherFactor.outgoing(variable) // FIXME make sure we're not normalizing accidentally
+          msg
+        } else {
+          _outgoing(mf.factor) //marginal / _incoming(factor)
+        }
+      } else {
+        // use the current value as the deterministic message
+        BPUtil.deterministicMessage(variable, variable.value)
+      }
+    }
+
+}
 
 
 
@@ -409,10 +423,7 @@ abstract class FG(val varying: Set[Variable]) {
 
   def variables: Iterable[Variable] = _nodes.keys
 
-  def node(variable: Variable): MessageNode = _nodes.getOrElseUpdate(variable, {
-    new MessageNode(variable, varying)
-  })
-
+  def node(variable: Variable): MessageNode
   def mfactors: Iterable[BaseMessage] = _factors.values
 
   def factors: Iterable[Factor] = _factors.keys
@@ -429,22 +440,30 @@ abstract class FG(val varying: Set[Variable]) {
 
 class SumProductFG(val varies: Set[Variable]) extends FG(varies) {
   def createFactor(potential: Factor) = {
-    val factor = new MessageFactor(potential, varying, this)
+    val factor = new SumFactor(potential, varying, this)
     _factors(potential) = factor
   }
   def this(model: Model, varying: Set[Variable]) = {
     this (varying)
     createUnrolled(model)
   }
+
+  def node(variable: Variable): MessageNode = _nodes.getOrElseUpdate(variable, {
+    new SumNode(variable, varying)
+  })
+
 }
 
 class MaxProductFG(val varies:Set[Variable]) extends FG(varies)  {
   def createFactor(potential: Factor) = {
-    val factor = new MapFactor(potential, varying, this)
+    val factor = new MaxFactor(potential, varying, this)
     _factors(potential) = factor
   }
   def this(model: Model, varying: Set[Variable]) = {
     this (varying)
     createUnrolled(model)
   }
+  def node(variable: Variable): MessageNode = _nodes.getOrElseUpdate(variable, {
+    new MaxNode(variable, varying)
+  })
 }
