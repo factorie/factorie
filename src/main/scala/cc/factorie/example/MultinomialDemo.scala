@@ -24,7 +24,7 @@ import cc.factorie.generative._
 object MultinomialDemo {
   val numSides = 6
   object RollDomain extends DiscreteDomain { def size = numSides }
-  class Roll extends Discrete { def domain = RollDomain }
+  class Roll extends DiscreteVariable { def domain = RollDomain }
 
   def main(args:Array[String]) : Unit = {
     val die = new DenseProportions(List(.1, .2, .3, .2, .2))

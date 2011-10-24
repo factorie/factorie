@@ -16,9 +16,12 @@
 
 package cc.factorie
 import cc.factorie._
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.ArrayBuffer
 
 package object generative {
 
+  /*@deprecated
   object GenerativeModel extends Model {
     /** Only works on Iterable[GeneratedVar] */
     def factors(variables:Iterable[Variable]): Seq[Factor] = {
@@ -40,8 +43,10 @@ package object generative {
       // TODO Likewise for children?  Or perhaps not necessary.
       normalize(result)
     }
-  }
+  }*/
 
+
+  implicit val defaultGenerativeModel = new GenerativeFactorModel
 
   implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
     val value: IndexedSeq[Double] = s.toIndexedSeq

@@ -85,6 +85,7 @@ trait ArrayImplicits {
     def -=(d:Double): Unit = ArrayOps.-=(s, d)
     def *=(d:Double): Unit = ArrayOps.*=(s, d)
     def /=(d:Double): Unit = ArrayOps./=(s, d)
+    def incr(t:A): Unit = ArrayOps.incr(s, t)
     def incr(t:A, factor:Double): Unit = ArrayOps.incr(s, t, factor)
     def different(t:A, threshold:Double): Boolean = ArrayOps.different(s, t, threshold)
     def dot(t:A): Double = ArrayOps.dot(s, t)

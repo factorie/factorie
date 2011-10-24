@@ -16,24 +16,25 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
-trait PlatedGeneratedDiscreteVar extends DiscreteSeqVariable with MutableGeneratedVar
-abstract class PlatedDiscrete(initialValue:Seq[Int]) extends DiscreteSeqVariable(initialValue) with PlatedGeneratedDiscreteVar
+// Move this out of generative
+trait PlatedDiscreteVar extends DiscreteSeqVariable with MutableVar
+abstract class PlatedDiscreteVariable(initialValue:Seq[Int]) extends DiscreteSeqVariable(initialValue) with PlatedDiscreteVar
 
-trait PlatedGeneratedCategoricalVar[A] extends CategoricalSeqVariable[A] with PlatedGeneratedDiscreteVar
-abstract class PlatedCategorical[A](initialValue:Seq[A]) extends CategoricalSeqVariable(initialValue) with PlatedGeneratedCategoricalVar[A]
+trait PlatedCategoricalVar[A] extends CategoricalSeqVariable[A] with PlatedDiscreteVar
+abstract class PlatedCategoricalVariable[A](initialValue:Seq[A]) extends CategoricalSeqVariable(initialValue) with PlatedCategoricalVar[A]
 
 trait PlatedDiscreteGeneratingFactor extends GenerativeFactor {
   def prValue(s:StatisticsType, value:Int, index:Int): Double
   def prValue(value:Int, index:Int): Double = prValue(statistics, value, index)
 }
 
-object PlatedDiscrete extends GenerativeFamily2[PlatedGeneratedDiscreteVar,Proportions] {
+object PlatedDiscrete extends GenerativeFamily2[PlatedDiscreteVar,Proportions] {
   self =>
   def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
   def logpr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => math.log(p(dv.intValue))).sum
   def sampledValue(d:DiscreteDomain, length:Int, p:ProportionsValue): Seq[DiscreteValue] = 
     Vector.fill(length)(d.getValue(p.sampleInt))
-  case class Factor(_1:PlatedGeneratedDiscreteVar, _2:Proportions) extends super.Factor {
+  case class Factor(_1:PlatedDiscreteVar, _2:Proportions) extends super.Factor {
     def pr(s:Statistics): Double = self.pr(s._1, s._2)
     override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
     override def sampledValue: Any = self.sampledValue(_1.first.domain, _1.length, _2) // Avoid creating a Statistics
@@ -48,5 +49,5 @@ object PlatedDiscrete extends GenerativeFamily2[PlatedGeneratedDiscreteVar,Propo
       }
     }
   }
-  def newFactor(a:PlatedGeneratedDiscreteVar, b:Proportions) = Factor(a, b)
+  def newFactor(a:PlatedDiscreteVar, b:Proportions) = Factor(a, b)
 }

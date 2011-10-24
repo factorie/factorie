@@ -39,7 +39,7 @@ class ProportionsArrayValue(value:Array[Double]) extends ProportionsValue {
   final def update(i:Int, v:Double) = array(i) = v
 }
 
-trait Proportions extends GeneratedVar with DiscreteGenerating with IndexedSeqEqualsEq[Double] with ProportionsValue
+trait Proportions extends Variable with DiscreteGenerating with IndexedSeqEqualsEq[Double] with ProportionsValue
 with VarAndValueGenericDomain[Proportions,ProportionsValue]
 /*with VarAndValueGenericDomain[Proportions,Seq[Double]]*/ 
 {
@@ -140,14 +140,14 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions {
 
 // TODO Change this to a Maximizer
 object ProportionsEstimator {
-  def estimate(p:MutableProportions, map:scala.collection.Map[Variable,Variable] = Map[Variable,Variable]()): Unit = {
+  def estimate(p:MutableProportions)(implicit model:GenerativeModel): Unit = {
     var e: DenseCountsProportions = null
     p match {
       case p:DenseCountsProportions => { e = p; e.zero() }
       case _ => e = new DenseCountsProportions(p.length)
     }
-    p.parentFactor match { case f:Dirichlet.Factor => e.set(f._2)(null); case null => {} }
-    for (factor <- p.extendedChildFactors) factor match {
+    model.parentFactor(p) match { case f:Dirichlet.Factor => e.set(f._2)(null); case null => {} }
+    for (factor <- model.extendedChildFactors(p)) factor match {
       case m:Mixture.Factor => {}
       case d:Discrete.Factor => e.increment(d._1.intValue, 1.0)(null)
       case dm:DiscreteMixture.Factor => {

@@ -18,8 +18,8 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-object DiscreteMixture extends GenerativeFamily3[GeneratedDiscreteVar,Mixture[Proportions],Gate] {
-  case class Factor(_1:GeneratedDiscreteVar, _2:Mixture[Proportions], _3:Gate) extends DiscreteGeneratingFactor with MixtureFactor with super.Factor {
+object DiscreteMixture extends GenerativeFamily3[DiscreteVar,Mixture[Proportions],GateVariable] {
+  case class Factor(_1:DiscreteVar, _2:Mixture[Proportions], _3:GateVariable) extends DiscreteGeneratingFactor with MixtureFactor with super.Factor {
     def gate = _3
     def pr(s:StatisticsType) = s._2(s._3.intValue).apply(s._1.intValue)
     def sampledValue(s:StatisticsType): DiscreteValue = s._1.domain.getValue(s._2(s._3.intValue).sampleInt)
@@ -34,7 +34,7 @@ object DiscreteMixture extends GenerativeFamily3[GeneratedDiscreteVar,Mixture[Pr
       }
     }
   }
-  def newFactor(a:GeneratedDiscreteVar, b:Mixture[Proportions], c:Gate) = Factor(a, b, c)
+  def newFactor(a:DiscreteVar, b:Mixture[Proportions], c:GateVariable) = Factor(a, b, c)
 }
 
 abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {

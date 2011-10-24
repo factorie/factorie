@@ -19,8 +19,8 @@ import scala.util.{Random,Sorting}
 import scala.reflect.Manifest
 
 // Notes on class names for Variables:
-// Except for cc.factorie.Variable, "*Variable" are classes.
-// "*Var" are trait counterparts, useful for creating Variables from your own pre-existing classes.
+// Except for cc.factorie.Variable, "*Variable" are classes and mutable.
+// "*Var" are trait counterparts, not yet committing to a value-storage mechanism or (im)mutability.
 
 /** Provides a covariant member type 'ValueType' in such a way that it can be overridden in subclasses. */
 trait ValueType[+VT] {
@@ -83,6 +83,13 @@ trait Variable {
       See also PyMC's "Containers"? */
   def unrollCascade: Iterable[Variable] = Nil
   
+  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
+      and add this new factor to the given model. */
+  def ~[V<:this.VariableType](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.GenerativeFactorModel): this.type = {
+    model += partialFactor(this.asInstanceOf[V])
+    this
+  }
+    
   private def shortClassName = {
     var fields = this.getClass.getName.split('$')
     if (fields.length == 1)
@@ -97,6 +104,14 @@ trait Variable {
   def printName = shortClassName
   override def toString = printName + "(_)"
   def isConstant = false
+  /** Returns true if the value of this parameter is a deterministic (non-stochastic) function of its GenerativeModel parents.
+      Note that this is an attribute of a variable, not a factor, because it refers to the fact that the
+      variable's value changes automatically with changes to the parent variables' values.  How the automatic
+      values are scored (whether they are given 0.0 or 1.0 extreme probabilities) is a different matter. 
+      This function is used in cc.factorie.generative.GenerativeModel.extendedParents and extendedChildren.
+      */
+  // TODO Perhaps there should be a "isDeterministic" method in cc.factorie.Factor?  Or should it go in Statistics?  Ug. -akm
+  def isDeterministic = false
 }
 
 /** For variables that support representing of their uncertainty with a distribution Q over their values, 
@@ -117,7 +132,16 @@ trait VarWithConstantValue extends Variable {
 
 trait MutableVar extends Variable {
   //def set(newValue:Value): Unit = set(newValue)(null)
-  def set(newValue:Value)(implicit d:DiffList): Unit 
+  /** Assign a new value to this variable */
+  def set(newValue:Value)(implicit d:DiffList): Unit
+  /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
+      add this new factor to the given model, 
+      and also assign the variable a new value randomly drawn from this factor. */
+  def :~[V<:this.VariableType](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.GenerativeFactorModel): this.type = {
+    this ~ (partialFactor)
+    this.set(model.parentFactor(this).sampledValue.asInstanceOf[this.Value])(null)
+    this
+  }
 }
 
 

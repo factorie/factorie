@@ -17,17 +17,17 @@ import cc.factorie._
 import cc.factorie.generative._
 import java.io.{File,Reader,StringReader,InputStreamReader,FileInputStream,BufferedReader,PrintWriter}
 
-trait DocumentVar extends PlatedCategorical[String] {
+trait DocumentVar extends PlatedCategoricalVariable[String] {
   def name: String
   def theta: CountsProportions
   def theta_=(p:CountsProportions): Unit
-  def zs: PlatedGate
-  def ws: PlatedGeneratedDiscreteVar
+  def zs: PlatedGateVariable
+  def ws: PlatedCategoricalVariable[String]
 }
 
-class Document(val domain:CategoricalSeqDomain[String], val name:String, tokens:Seq[String]) extends PlatedCategorical(tokens) with DocumentVar {
+class Document(val domain:CategoricalSeqDomain[String], val name:String, tokens:Seq[String]) extends PlatedCategoricalVariable(tokens) with DocumentVar {
   var theta: CountsProportions = null
-  def zs = parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor]._3
+  def zs = null //parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor]._3
   def ws = this
   // Getting tokens from character strings
   def stopwords = cc.factorie.app.strings.Stopwords

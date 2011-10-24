@@ -61,14 +61,14 @@ object Dirichlet extends GenerativeFamily2[Proportions,Masses] {
 }
 
 object DirichletMomentMatching {
-  def estimate(masses:MutableMasses, model:Model = cc.factorie.generative.GenerativeModel): Unit = {
-    val numChildren = masses.childFactors.size
+  def estimate(masses:MutableMasses, model:GenerativeModel = cc.factorie.generative.defaultGenerativeModel): Unit = {
+    val numChildren = model.childFactors(masses).size
     //val massesChildren = masses.children //mean.generatedChildren // TODO Without "generatedChildren" this no longer works for Dirichlet mixtures.
     assert(numChildren > 1)
     //val factors = model.factors(List(mean, precision)); assert(factors.size == mean.children.size); assert(factors.size == precision.children.size)
     // Calculcate and set the mean
     val m = new ProportionsArrayValue(new Array[Double](masses.length))
-    for (factor <- masses.childFactors) factor match { 
+    for (factor <- model.childFactors(masses)) factor match { 
       case f:Dirichlet.Factor => {
         require(masses.length == f._1.length) // Make sure that each child Proportions has same length as parent masses
         forIndex(m.size)(i => m(i) += f._1(i))
@@ -78,7 +78,7 @@ object DirichletMomentMatching {
     //mean.set(m)(null)
     // Calculate variance = E[x^2] - E[x]^2 for each dimension
     val variance = new Array[Double](masses.length)
-    for (factor <- masses.childFactors) factor match { 
+    for (factor <- model.childFactors(masses)) factor match { 
       case f:Dirichlet.Factor => forIndex(masses.length)(i => { val diff = f._1(i) - m(i); variance(i) += diff * diff })
     }
     //for (child <- meanChildren) child match { case p:Proportions => forIndex(mean.length)(i => variance(i) += p(i) * p(i)) }
@@ -96,8 +96,8 @@ object DirichletMomentMatching {
 }
 
 /** Alternative style of Dirichlet parameterized by 2 parents (mean,precision) rather than 1 (masses). */
-object Dirichlet2 extends GenerativeFamily3[Proportions,Proportions,GeneratedRealVar] {
-  def newFactor(a:Proportions, b:Proportions, c:GeneratedRealVar) = throw new Error("Not yet implemented")
+object Dirichlet2 extends GenerativeFamily3[Proportions,Proportions,RealVar] {
+  def newFactor(a:Proportions, b:Proportions, c:RealVar) = throw new Error("Not yet implemented")
 }
   
 /*

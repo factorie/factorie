@@ -4,11 +4,11 @@ import cc.factorie.generative._
 import scala.collection.mutable.HashMap
 import java.io.File
 
-class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.1) {
+class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.1)(implicit val model:GenerativeModel = defaultGenerativeModel) {
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
-  class Zs(intValues:Seq[Int]) extends PlatedGate(intValues) {
+  class Zs(intValues:Seq[Int]) extends PlatedGateVariable(intValues) {
     def this(len:Int) = this(Seq.fill(len)(0))
     def domain = ZSeqDomain
     //def words: Document = childFactors.first.asInstanceOf[PlatedDiscreteMixture.Factor]._1.asInstanceOf[Document]
@@ -35,19 +35,25 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     doc ~ PlatedDiscreteMixture(phis, zs)
     documentMap(doc.name) = doc
   }
+  
+  def removeDocument(doc:DocumentVar): Unit = {
+    throw new Error("Not yet implemeneted")
+  }
 
   /** Like addDocument, but does not register doc.theta or doc as children this.alphas or this.phis.
       Useful for a temporary connection for inference of doc.theta and doc.zs. */
-  protected def connectDocument(doc:DocumentVar): Unit = {
+  /*protected def connectDocument(doc:DocumentVar): Unit = {
     doc.theta = new SortedSparseCountsProportions(numTopics) ~< Dirichlet(alphas) // was DenseCountsProportions
     val zs = new Zs(doc.length) :~ PlatedDiscrete(doc.theta)
     doc ~< PlatedDiscreteMixture(phis, zs)
-  }
+  }*/
 
   def inferDocumentTheta(doc:Document, iterations:Int = 10): Unit = {
-    if (doc.parentFactor eq null) connectDocument(doc)
+    var tmp = false
+    if (model.parentFactor(doc) eq null) { addDocument(doc); tmp = true }
     val sampler = new CollapsedGibbsSampler(Seq(doc.theta))
     for (i <- 1 to iterations) sampler.process(doc.zs)
+    if (tmp) removeDocument(doc)
   }
 
     /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */

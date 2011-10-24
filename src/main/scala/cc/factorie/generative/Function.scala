@@ -15,13 +15,13 @@
 package cc.factorie.generative
 import cc.factorie._
 
-trait DeterministicFunction extends GeneratedVar {
+trait DeterministicFunction extends Variable {
   //overrride var parentFactor: GenerativeFactor = null
   override def isDeterministic = true
 }
 trait RealFunction extends DeterministicFunction with RealVar
 
-class RealSum(a:GeneratedRealVar, b:GeneratedRealVar) extends DeterministicFunction with RealVar {
+class RealSum(a:RealVar, b:RealVar) extends DeterministicFunction with RealVar {
   this ~ RealSum2(a, b)
   def doubleValue = a.doubleValue + b.doubleValue
 }
@@ -32,12 +32,12 @@ trait FunctionFactor extends GenerativeFactor {
   def value: ValueType
 }
 trait RealFunctionFactor extends FunctionFactor { type ValueType = Double }
-object RealSum2 extends GenerativeFamily3[RealFunction,GeneratedRealVar,GeneratedRealVar] {
-  case class Factor(_1:RealFunction, _2:GeneratedRealVar, _3:GeneratedRealVar) extends super.Factor {
+object RealSum2 extends GenerativeFamily3[RealFunction,RealVar,RealVar] {
+  case class Factor(_1:RealFunction, _2:RealVar, _3:RealVar) extends super.Factor {
     def pr(s:Statistics): Double = if (_1.doubleValue == _2.doubleValue + _3.doubleValue) 1.0 else 0.0
     def sampledValue(s:Statistics): Double = s._2 + s._3
     def value: Double = _2.doubleValue + _3.doubleValue 
   }
-  def newFactor(_1:RealFunction, _2:GeneratedRealVar, _3:GeneratedRealVar) = Factor(_1, _2, _3)
+  def newFactor(_1:RealFunction, _2:RealVar, _3:RealVar) = Factor(_1, _2, _3)
 }
 // val a = new RealFunction ~ RealSum2(b, c)

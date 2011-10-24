@@ -17,13 +17,13 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 //import cc.factorie.la.ArrayLA.Implicits._
 
-class CollapsedVariationalBayes(collapse:Iterable[GeneratedVar], marginalize:Iterable[Variable with QDistribution], model:Model = cc.factorie.generative.GenerativeModel) {
+class CollapsedVariationalBayes(collapse:Iterable[Variable], marginalize:Iterable[Variable with QDistribution], model:Model = cc.factorie.generative.defaultGenerativeModel) {
   val handlers = new ArrayBuffer[CollapsedVariationalBayesHandler]
   //def defaultHandlers = List(GeneratedVariableCollapsedVariationalBayesHandler, MixtureChoiceCollapsedVariationalBayesHandler)
   def defaultHandlers = throw new Error("Not yet implemented")
   handlers ++= defaultHandlers
 
-  private val _c = new HashMap[GeneratedVar,GeneratedVar]
+  private val _c = new HashMap[Variable,Variable]
   private val _q = new HashMap[Variable,Variable]
   def collapsedMap = _c
   def qMap = _q
@@ -32,16 +32,16 @@ class CollapsedVariationalBayes(collapse:Iterable[GeneratedVar], marginalize:Ite
   marginalize.foreach(v => _q(v) = v.newQ)
   //def collapsed[V<:CollapsibleParameter](v:V) = _c(v).asInstanceOf[V#CollapsedType]
   def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
-  def collapsedOrSelf(v:GeneratedVar): GeneratedVar = _c.getOrElse(v, v)
-  def collapsedp2[P<:GeneratedVar](v:P): P = _c.getOrElse(v, v).asInstanceOf[P]
-  def collapsedOrNull(v:GeneratedVar): GeneratedVar = _c.getOrElse(v, null.asInstanceOf[GeneratedVar])
+  def collapsedOrSelf(v:Variable): Variable = _c.getOrElse(v, v)
+  def collapsedp2[P<:Variable](v:P): P = _c.getOrElse(v, v).asInstanceOf[P]
+  def collapsedOrNull(v:Variable): Variable = _c.getOrElse(v, null.asInstanceOf[Variable])
   def qp(v:Variable) = _q.getOrElse(v, v)
   def setMaxMarginals(implicit d:DiffList = null): Unit = {
     throw new Error("Not yet implemented")
   }
-  def children(p:GeneratedVar): Iterable[GeneratedVar] = throw new Error
+  def children(p:Variable): Iterable[Variable] = throw new Error
 
-  def process(v:MutableGeneratedVar): DiffList = {
+  def process(v:MutableVar): DiffList = {
     //assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable
     // Get factors, in sorted order of the their classname
     val factors = model.factors(Seq(v)).sortWith((f1:Factor,f2:Factor) => f1.factorName < f2.factorName)

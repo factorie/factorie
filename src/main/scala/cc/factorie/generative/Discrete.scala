@@ -17,16 +17,6 @@ import cc.factorie._
 import cc.factorie.la._
 import scala.collection.mutable.{HashSet,ArrayBuffer}
 
-trait GeneratedDiscreteVar extends DiscreteVar with GeneratedVar {
-  var q: Proportions = null // TODO consider something like this for collapsing?
-}
-trait MutableGeneratedDiscreteVar extends GeneratedDiscreteVar with MutableGeneratedVar with MutableDiscreteVar
-abstract class Discrete(initialInt: Int = 0) extends DiscreteVariable(initialInt) with MutableGeneratedDiscreteVar
-
-trait GeneratedCategoricalVar[A] extends GeneratedDiscreteVar with CategoricalVar[A]
-trait MutableGeneratedCategoricalVar[A] extends MutableGeneratedDiscreteVar with GeneratedCategoricalVar[A] with MutableCategoricalVar[A]
-abstract class Categorical[A](initialValue:A) extends CategoricalVariable(initialValue) with MutableGeneratedCategoricalVar[A] 
-
 
 trait DiscreteGeneratingFactor extends GenerativeFactor {
   //type ChildType <: GeneratedDiscreteVar
@@ -34,8 +24,8 @@ trait DiscreteGeneratingFactor extends GenerativeFactor {
   def prValue(s:StatisticsType, value:Int): Double
 }
 
-object Discrete extends GenerativeFamily2[GeneratedDiscreteVar,Proportions] {
-  case class Factor(_1:GeneratedDiscreteVar, _2:Proportions) extends super.Factor with DiscreteGeneratingFactor {
+object Discrete extends GenerativeFamily2[DiscreteVar,Proportions] {
+  case class Factor(_1:DiscreteVar, _2:Proportions) extends super.Factor with DiscreteGeneratingFactor {
     def pr(s:Statistics) = s._2.apply(s._1.intValue)
     override def pr: Double = _2.apply(_1.intValue)
     def prValue(s:Statistics, intValue:Int): Double = s._2.apply(intValue)
@@ -50,7 +40,7 @@ object Discrete extends GenerativeFamily2[GeneratedDiscreteVar,Proportions] {
       }
     }
   }
-  def newFactor(a:GeneratedDiscreteVar, b:Proportions) = Factor(a, b)
+  def newFactor(a:DiscreteVar, b:Proportions) = Factor(a, b)
   // TODO Arrange to call this in Factor construction.
   def factorHook(factor:Factor): Unit =
     if (factor._1.domain.size != factor._2.size) throw new Error("Discrete child domain size different from parent Proportions size.")
@@ -65,14 +55,14 @@ object Discrete extends GenerativeFamily2[GeneratedDiscreteVar,Proportions] {
 // TODO Rename this Boolean, inherit from BooleanVariable, and move it to a new file
 
 /** The outcome of a coin flip, with boolean value.  */
-class Flip(value:Boolean = false) extends BooleanVariable(value) with MutableGeneratedDiscreteVar 
+class Flip(value:Boolean = false) extends BooleanVariable(value)  
 
 /** A coin, with Multinomial distribution over outcomes, which are Flips. */
 class Coin(p:Double) extends DenseProportions(Seq(1.0-p, p)) {
   def this() = this(0.5)
   assert (p >= 0.0 && p <= 1.0)
-  def flip: Flip = { new Flip :~ Discrete(this) }
-  def flip(n:Int) : Seq[Flip] = for (i <- 0 until n) yield flip
+  //def flip: Flip = { new Flip :~ Discrete(this) }
+  //def flip(n:Int) : Seq[Flip] = for (i <- 0 until n) yield flip
 }
 object Coin { 
   def apply(p:Double) = new Coin(p)

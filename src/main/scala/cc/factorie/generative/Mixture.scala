@@ -16,7 +16,9 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,Stack}
 
-abstract class Gate(initial:Int) extends Discrete(initial) {
+trait GateVar extends MutableDiscreteVar
+
+abstract class GateVariable(initial:Int) extends DiscreteVariable(initial) with GateVar {
   //def prChoosing(value:Int): Double = parentFactor.template.prChoosing(parentFactor.statistics, index)
 }
 
@@ -25,7 +27,7 @@ abstract class Gate(initial:Int) extends Discrete(initial) {
 // For factors between a Mixture and the child generated from that Mixture
 trait MixtureFactor extends GenerativeFactor {
   //type ChildType <: MixtureGeneratedVar
-  def gate: Gate
+  def gate: GateVariable
   def prChoosing(s:StatisticsType, mixtureIndex:Int): Double
   def prChoosing(mixtureIndex:Int): Double = prChoosing(statistics, mixtureIndex)
   def logprChoosing(s:StatisticsType, mixtureIndex:Int): Double = math.log(prChoosing(s, mixtureIndex))
@@ -34,34 +36,13 @@ trait MixtureFactor extends GenerativeFactor {
   def sampledValueChoosing(mixtureIndex:Int): ChildType#Value = sampledValueChoosing(statistics, mixtureIndex)
 }
 
-//trait ParameterVars[P<:Parameter] extends Vars[P] with Parameter
-//class SeqParameterVars[P<:Parameter](vs:Seq[P]) extends SeqVars(vs) with ParameterVars[P]
-
-/** The factor family between a Mixture (child) and one of its components (parent) */
-/*object MixtureComponent extends GenerativeFamilyWithStatistics2[Mixture[Parameter],ParameterVars[Parameter]] {
-  def pr(s:StatisticsType) = 1.0
-  def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
-  def updateCollapsedParents(f:Factor): Boolean =   
-}*/
-/*object MixtureComponent extends GenerativeFamily2[Mixture[GeneratedVar],GeneratedVar] {
-  case class Factor(_1:Mixture[GeneratedVar], _2:GeneratedVar) extends super.Factor {
-    def pr(s:StatisticsType) = 1.0
-    def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
-    override def updateCollapsedParents(weight:Double): Boolean = {
-    //  TODO this is inefficient because it will loop through all children of the Mixture for each Mixture component
-      for (f2 <- _1.childFactorsOf(_2)) f2.updateCollapsedParents(weight) // TODO Consider collapsed Gate
-      true
-    }
-  }
-  def newFactor(a:Mixture[GeneratedVar], b:GeneratedVar) = Factor(a, b)
-}*/
 
 // Graphical model structure of a mixture:
 // Proportions =Mixture.Factor=> Mixture[Proportions] =DiscreteMixture.Factor=> Discrete
 // Proportions =/                                Gate =/
 
 // TODO I think perhaps this should be a GeneratedVars[] ContainerVariable -akm
-class Mixture[+P<:GeneratedVar](val components:Seq[P]) extends Seq[P] with GeneratedVar 
+class Mixture[+P<:Variable](val components:Seq[P]) extends Seq[P] with Variable 
 with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]] 
 {
   this ~ Mixture() // This will make this a child of each of the mixture components.
@@ -77,7 +58,7 @@ with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]]
       This fact is examined in GenerativeModel.factors, causing factors(mixtureComponent) 
       to return not only this Mixture but also all the children of this Mixture. */
   override def isDeterministic = true
-  def childFactorsOf[P2>:P](p:P2): Seq[MixtureFactor] = {
+  /*def childFactorsOf[P2>:P](p:P2): Seq[MixtureFactor] = {
     val index = this.indexOf(p)
     //children.filter(_.isInstanceOf[MixtureGeneratedVar]).asInstanceOf[Iterable[MixtureGeneratedVar]].filter(_.choice.intValue == index)
     // If this cast fails, it means that some of the children are not a MixtureGeneratedVar; 
@@ -88,7 +69,7 @@ with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]]
       case f:PlatedMixtureFactor => throw new Error("Not yet implemented")
     }
     result
-  }
+  }*/
   /*def newCollapsed: Mixture[P] = {
     //parentFactor.family.resetCollapsedChild(parentFactor)
     parentFactors.foreach(f => f.resetCollapsedChild(f))
@@ -102,11 +83,11 @@ with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]]
   }*/
 }
 
-object Mixture extends GenerativeFamily1[Mixture[GeneratedVar]] {
-  def apply[P<:GeneratedVar](n:Int)(constructor: =>P): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead 
-  case class Factor(_1:Mixture[GeneratedVar]) extends super.Factor {
+object Mixture extends GenerativeFamily1[Mixture[Variable]] {
+  def apply[P<:Variable](n:Int)(constructor: =>P): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead 
+  case class Factor(_1:Mixture[Variable]) extends super.Factor {
     /** Even though they are the contents of the child, the parents are each of the mixture components. */
-    override def parents: Seq[GeneratedVar] = _1.components
+    override def parents: Seq[Variable] = _1.components
     def pr(s:StatisticsType) = 1.0
     def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
     override def updateCollapsedParents(weight:Double): Boolean = {
@@ -116,48 +97,12 @@ object Mixture extends GenerativeFamily1[Mixture[GeneratedVar]] {
       true
     }
   }
-  def newFactor(a:Mixture[GeneratedVar]) = Factor(a)
+  def newFactor(a:Mixture[Variable]) = Factor(a)
 }
-
-
 
 
 
 /*
-trait CollapsedMixtureComponents[+P<:CollapsedParameter] extends MixtureComponents[P]
-
-class FiniteMixture[+P<:Parameter](theComponents:Seq[P]) extends MixtureComponents[P] {
-  val generativeTemplate = new MixtureComponentsTemplate
-  //def generativeFactor = new generativeTemplate.Factor(this, Vars.fromSeq(components))
-  def generativeFactor = new generativeTemplate.Factor(this)
-  val components = theComponents.toIndexedSeq
-  components.foreach(_.addChild(this)(null)) // The components have this mixture as children
-}
-
-class CollapsibleFiniteMixture[+P<:CollapsibleParameter](theComponents:Seq[P]) extends FiniteMixture(theComponents) with CollapsibleParameter with VarWithCollapsedType[CollapsedFiniteMixture[P#CollapsedType]] {
-  def newCollapsed = new CollapsedFiniteMixture(components.map(_.newCollapsed))
-  def setFrom(v:Variable)(implicit d:DiffList): Unit = v match {
-    case cfm:CollapsedFiniteMixture[_] => forIndex(components.length)(i => components(i).setFrom(cfm(i)))
-  }
-}
-object CollapsibleFiniteMixture {
-  def apply[P<:CollapsibleParameter](n:Int)(constructor: =>P): CollapsibleFiniteMixture[P] = new CollapsibleFiniteMixture[P](for (i <- 1 to n) yield constructor)
-}
-class CollapsedFiniteMixture[+P<:CollapsedParameter](theComponents:Seq[P]) extends FiniteMixture(theComponents) with CollapsedParameter {
-  def clearChildStats: Unit = components.foreach(_.clearChildStats)
-  def updateChildStats(child:Variable, weight:Double): Unit = {
-    child match {
-      case mgv:MixtureGeneratedVar => {
-        //println("CollapsedFiniteMixture.updateChildStats "+mgv+" choice="+mgv.choice)
-        components(mgv.choice.intValue).updateChildStats(mgv, weight)
-      }
-      case pmgv:PlatedMixtureGeneratedVar => throw new Error("MixtureSeqGeneratedVar not yet handled.")
-      //case _ => {} // TODO Should we really not throw an error here?
-    }
-  }
-}
-
-
 // TODO Not yet finished
 class InfiniteMixture[P<:Parameter:Manifest](constructor: =>P) extends MixtureComponents[P] {
   val generativeTemplate = new MixtureComponentsTemplate

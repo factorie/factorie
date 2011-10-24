@@ -21,24 +21,24 @@ import scala.collection.mutable.ArrayBuffer
    that allows CollapsedGibbsSampler or CollapsedVariationalBayes to treat
    them as collapsed for their inference.
    @author Andrew McCallum */
-class Collapse(val model:Model = GenerativeModel) {
+class Collapse(val model:GenerativeModel = defaultGenerativeModel) {
   val collapsers = new ArrayBuffer[Collapser] ++= Seq(DenseCountsProportionsCollapser, DenseCountsProportionsMixtureCollapser)
-  def apply(variables:Seq[GeneratedVar]): Unit = {
+  def apply(variables:Seq[Variable]): Unit = {
     val factors = model.factors(variables)
     // This next line does the collapsing
-    val option = collapsers.find(_.collapse(variables, factors))
+    val option = collapsers.find(_.collapse(variables, factors, model))
     if (option == None) throw new Error("No collapser found for factors "+factors.take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString(" "))
   }
 }
-object Collapse extends Collapse(GenerativeModel) 
+object Collapse extends Collapse(defaultGenerativeModel) 
 
 trait Collapser {
   /** Returns true on success, false if this recipe was unable to handle the relevant factors. */
-  def collapse(variables:Seq[Variable], factors:Seq[Factor]): Boolean
+  def collapse(variables:Seq[Variable], factors:Seq[Factor], model:GenerativeModel): Boolean
 }
 
 object DenseCountsProportionsCollapser extends Collapser {
-  def collapse(variables:Seq[Variable], factors:Seq[Factor]): Boolean = {
+  def collapse(variables:Seq[Variable], factors:Seq[Factor], model:GenerativeModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
       case p:DenseCountsProportions => {
@@ -61,7 +61,7 @@ object DenseCountsProportionsCollapser extends Collapser {
           case f:Discrete.Factor => p.increment(f._1.intValue, 1.0)(null)
           //case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => f._2.asInstanceOf[DenseCountsProportions].increment(f._1(i).intValue, 1.0)(null))
           case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => p.increment(f._1(i).intValue, 1.0)(null))
-          case f:Dirichlet.Factor if (p.parentFactor eq f) => p.prior = f._2 //p.increment(f._2, 1)(null)
+          case f:Dirichlet.Factor if (model.parentFactor(p) eq f) => p.prior = f._2 //p.increment(f._2, 1)(null)
           //case f:Dirichlet.Factor => { println("DenseCountsProportionsCollapser p.parentFactor "+p.parentFactor.getClass); p.prior = f._2 } //p.increment(f._2, 1)(null)
           case _ => { println("DenseCountsProportionsCollapser unexpected factor "+f.getClass); return false }
         }
@@ -73,12 +73,12 @@ object DenseCountsProportionsCollapser extends Collapser {
 }
 
 object DenseCountsProportionsMixtureCollapser extends Collapser {
-  def collapse(variables:Seq[Variable], factors:Seq[Factor]): Boolean = {
+  def collapse(variables:Seq[Variable], factors:Seq[Factor], model:GenerativeModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
       case m:Mixture[DenseCountsProportions] => {
         if (!m(0).isInstanceOf[DenseCountsProportions]) return false // Because JVM erasure doesn't actually check the [DenseCountsProportions] above
-        m.foreach(p => { p.zero(); p.parentFactor match { case f:Dirichlet.Factor => p.increment(f._2)(null) } } )
+        m.foreach(p => { p.zero(); model.parentFactor(p) match { case f:Dirichlet.Factor => p.increment(f._2)(null) } } )
         // TODO We really should create a mechanism indicating that a variable/factor is deterministic 
         //  and GenerativeModel.normalize should expand the factors to include neighbors of these,
         //  then include Dirichlet.factor in the match statement below.

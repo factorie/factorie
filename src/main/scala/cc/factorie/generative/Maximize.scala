@@ -18,10 +18,11 @@ import cc.factorie._
 /* Contains various recipes to maximize the value of variables to maximize some objective, 
    usually maximum likelihood. 
    @author Andrew McCallum */
-class Maximize(val model:Model = GenerativeModel) {
+@deprecated("This should move out of cc.factorie.generative")
+class Maximize(val model:Model) {
   def defaultMaximizers = Seq(DiscreteMaximizer, GatedDiscreteMaximizer)
   val maximizers = new scala.collection.mutable.ArrayBuffer[Maximizer] ++ defaultMaximizers
-  def apply(variables:Seq[GeneratedVar]): Unit = {
+  def apply(variables:Seq[Variable]): Unit = {
     // The handlers can be assured that the Seq[Factor] will be sorted alphabetically by class name
     val factors = model.factors(variables)
     // This next line does the maximization
@@ -29,7 +30,7 @@ class Maximize(val model:Model = GenerativeModel) {
     if (option == None) throw new Error("No maximizer found for factors "+factors.take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString)
   }
 }
-object Maximize extends Maximize(GenerativeModel)
+object Maximize extends Maximize(defaultGenerativeModel)
 
 trait Maximizer {
   /** Returns true on success, false if this recipe was unable to handle the relevant factors. */
@@ -49,9 +50,9 @@ object DiscreteMaximizer extends Maximizer {
 
 object GatedDiscreteMaximizer extends Maximizer {
   def maximize(variables:Seq[Variable], factors:Seq[Factor]): Boolean = {
-    if (variables.size != 1 || factors.size != 2 || !variables.head.isInstanceOf[Gate]) return false
+    if (variables.size != 1 || factors.size != 2 || !variables.head.isInstanceOf[GateVar]) return false
     (variables.head, factors(1), factors(2)) match {
-      case (gate:Gate, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => {
+      case (gate:GateVar, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => {
         var max = Double.NegativeInfinity
         var maxi = 0
         val statistics = dmf.statistics(dmf.values)

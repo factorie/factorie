@@ -28,12 +28,12 @@ object LDA2 {
   val numTopics = 10
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
-  class Zs(len:Int) extends PlatedGate(len) { def domain = ZSeqDomain }
+  class Zs(len:Int) extends PlatedGateVariable(len) { def domain = ZSeqDomain }
   object WordSeqDomain extends CategoricalSeqDomain[String]
   val WordDomain = WordSeqDomain.elementDomain
-  class Words(strings:Seq[String]) extends PlatedCategorical(strings) {
+  class Words(strings:Seq[String]) extends PlatedCategoricalVariable(strings) {
     def domain = WordSeqDomain
-    def zs = parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor]._3
+    def zs = defaultGenerativeModel.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3
   }
   class Document(val file:String, val theta:CountsProportions, strings:Seq[String]) extends Words(strings)
   val beta = new GrowableUniformMasses(WordDomain, 0.1)
@@ -55,7 +55,7 @@ object LDA2 {
       println()
     }
 
-    val collapse = new ArrayBuffer[GeneratedVar]
+    val collapse = new ArrayBuffer[Variable]
     collapse += phis
     collapse ++= documents.map(_.theta)
     val sampler = new CollapsedGibbsSampler(collapse)

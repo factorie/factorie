@@ -7,7 +7,8 @@ class SparseLDAInferencer(
     val wordDomain:CategoricalDomain[String], 
     docs:Iterable[DocumentVar], 
     initialAlphas:Seq[Double], 
-    initialBeta1:Double) 
+    initialBeta1:Double,
+    model:GenerativeModel = defaultGenerativeModel) 
 {
   var verbosity = 0
   var smoothingOnlyCount = 0; var topicBetaCount = 0; var topicTermCount = 0 // Just diagnostics
@@ -32,7 +33,7 @@ class SparseLDAInferencer(
   resetSmoothing(initialAlphas, initialBeta1)
 
   def addDocument(doc:DocumentVar): Unit =
-    phiCounts.incrementFactor(doc.parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor], 1)
+    phiCounts.incrementFactor(model.parentFactor(doc).asInstanceOf[PlatedDiscreteMixture.Factor], 1)
 
   def resetSmoothing(newAlphas:Seq[Double], newBeta1:Double): Unit = {
     require(numTopics == newAlphas.length)
@@ -71,14 +72,14 @@ class SparseLDAInferencer(
   }
     
   /** Sample the Zs for one document. */
-  def process(zs:PlatedDiscrete): Unit = {
+  def process(zs:PlatedDiscreteVariable): Unit = {
     // TODO In some cases "smoothingMass" seems to drift low, perhaps due to math precision in its adjustments
     // So reset it here for each document
     //println(smoothingMass+" "+recalcSmoothingMass)
     smoothingMass = recalcSmoothingMass
     assert(smoothingMass > 0.0)
     //println("process doc "+zs.words.asInstanceOf[Document].file)
-    val ws = zs.childFactors.head.asInstanceOf[PlatedDiscreteMixture.Factor]._1 //words
+    val ws = model.childFactors(zs).head.asInstanceOf[PlatedDiscreteMixture.Factor]._1 //words
     assert(ws.length == zs.length)
     val docTopicCounts = new SortedSparseCounts(numTopics, zs.intValues, keepDense = true)
     // r = sum_t ( \beta n_{t|d} ) ( n_t + |V| \beta )  [Mimno "Sparse LDA"]

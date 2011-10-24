@@ -15,6 +15,6 @@
 package cc.factorie.generative
 import cc.factorie._
 
-trait GeneratedRealVar extends RealVar with GeneratedVar
-abstract class Real(initial: Double = 0.0) extends RealVariable(initial) with GeneratedRealVar with MutableGeneratedVar
+//trait GeneratedRealVar extends RealVar with GeneratedVar
+//abstract class Real(initial: Double = 0.0) extends RealVariable(initial) with GeneratedRealVar with MutableGeneratedVar
 

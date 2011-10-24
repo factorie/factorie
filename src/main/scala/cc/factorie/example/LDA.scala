@@ -27,9 +27,9 @@ import cc.factorie.app.strings.alphaSegmenter
 object LDA {
   val numTopics = 10
   object ZDomain extends DiscreteDomain { def size = numTopics }
-  class Z(value: Int = 0) extends cc.factorie.generative.Gate(value) { def domain = ZDomain }
+  class Z(value: Int = 0) extends cc.factorie.generative.GateVariable(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
-  class Word(value: String) extends Categorical(value) { def domain = WordDomain; def z = parentFactor.asInstanceOf[DiscreteMixture.Factor]._3 }
+  class Word(value: String) extends CategoricalVariable(value) { def domain = WordDomain; def z = defaultGenerativeModel.parentFactor(this).asInstanceOf[DiscreteMixture.Factor]._3 }
   class Document(val file: String) extends ArrayBuffer[Word] {var theta: DenseCountsProportions = null}
   val beta = new GrowableUniformMasses(WordDomain, 0.1)
 
@@ -52,7 +52,7 @@ object LDA {
       }
     }
 
-    val collapse = new ArrayBuffer[GeneratedVar]
+    val collapse = new ArrayBuffer[Variable]
     collapse += phis
     collapse ++= documents.map(_.theta)
     val sampler = new CollapsedGibbsSampler(collapse)

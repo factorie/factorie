@@ -18,8 +18,8 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-object GaussianMixture extends GenerativeFamily4[GeneratedRealVar,Mixture[GeneratedRealVar],Mixture[GeneratedRealVar],Gate] {
-  case class Factor(_1:GeneratedRealVar, _2:Mixture[GeneratedRealVar], _3:Mixture[GeneratedRealVar], _4:Gate) extends super.Factor {
+object GaussianMixture extends GenerativeFamily4[RealVar,Mixture[RealVar],Mixture[RealVar],GateVar] {
+  case class Factor(_1:RealVar, _2:Mixture[RealVar], _3:Mixture[RealVar], _4:GateVar) extends super.Factor {
     def gate = _4
     override def logpr(s:StatisticsType) = Gaussian.logpr(s._1.doubleValue, s._2(s._4.intValue).doubleValue, s._3(s._4.intValue).doubleValue) 
     def pr(s:StatisticsType) = Gaussian.pr(s._1.doubleValue, s._2(s._4.intValue).doubleValue, s._3(s._4.intValue).doubleValue) 
@@ -27,5 +27,5 @@ object GaussianMixture extends GenerativeFamily4[GeneratedRealVar,Mixture[Genera
     def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = Gaussian.pr(s._1.doubleValue, s._2(mixtureIndex).doubleValue, s._3(mixtureIndex).doubleValue) 
     def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): Double = Gaussian.sampledValue(s._2(mixtureIndex).doubleValue, s._3(mixtureIndex).doubleValue)
   }
-  def newFactor(a:GeneratedRealVar, b:Mixture[GeneratedRealVar], c:Mixture[GeneratedRealVar], d:Gate) = Factor(a, b, c, d)
+  def newFactor(a:RealVar, b:Mixture[RealVar], c:Mixture[RealVar], d:GateVar) = Factor(a, b, c, d)
 }

@@ -18,13 +18,13 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-object PlatedDiscreteMixture extends GenerativeFamily3[PlatedGeneratedDiscreteVar,Mixture[Proportions],PlatedGate] {
+object PlatedDiscreteMixture extends GenerativeFamily3[PlatedDiscreteVar,Mixture[Proportions],PlatedGateVariable] {
   self =>
   def pr(ds:Seq[DiscreteValue], mixture:Seq[IndexedSeq[Double]], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => mixture(tuple._2.intValue).apply(tuple._1.intValue)).product
   def logpr(ds:Seq[DiscreteValue], mixture:Seq[IndexedSeq[Double]], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => math.log(mixture(tuple._2.intValue).apply(tuple._1.intValue))).sum  
   def sampledValue(d:DiscreteDomain, mixture:Seq[ProportionsValue], gates:Seq[DiscreteValue]): Seq[DiscreteValue] = 
     for (i <- 0 until gates.length) yield d.getValue(mixture(gates(i).intValue).sampleInt) 
-  case class Factor(_1:PlatedGeneratedDiscreteVar, _2:Mixture[Proportions], _3:PlatedGate) extends super.Factor with PlatedDiscreteGeneratingFactor with MixtureFactor {
+  case class Factor(_1:PlatedDiscreteVar, _2:Mixture[Proportions], _3:PlatedGateVariable) extends super.Factor with PlatedDiscreteGeneratingFactor with MixtureFactor {
     def gate = throw new Error("Not yet implemented. Need to make PlatedGate be a Gate?") // f._3
     def pr(s:Statistics): Double = self.pr(s._1, s._2, s._3)
     override def logpr(s:Statistics): Double = self.logpr(s._1, s._2, s._3)
@@ -33,5 +33,5 @@ object PlatedDiscreteMixture extends GenerativeFamily3[PlatedGeneratedDiscreteVa
     def sampledValueChoosing(s:Statistics, mixtureIndex:Int): ChildType#Value = throw new Error("Not yet implemented")
     def prValue(s:Statistics, value:Int, index:Int): Double = throw new Error
   }
-  def newFactor(a:PlatedGeneratedDiscreteVar, b:Mixture[Proportions], c:PlatedGate) = Factor(a, b, c)
+  def newFactor(a:PlatedDiscreteVar, b:Mixture[Proportions], c:PlatedGateVariable) = Factor(a, b, c)
 }

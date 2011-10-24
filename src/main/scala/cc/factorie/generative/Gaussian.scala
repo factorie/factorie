@@ -15,7 +15,7 @@
 package cc.factorie.generative
 import cc.factorie._
 
-object Gaussian extends GenerativeFamily3[GeneratedRealVar,GeneratedRealVar,GeneratedRealVar] {
+object Gaussian extends GenerativeFamily3[RealVar,RealVar,RealVar] {
   self =>
   def logpr(value:Double, mean:Double, variance:Double): Double = {
       val diff = value - mean
@@ -23,7 +23,7 @@ object Gaussian extends GenerativeFamily3[GeneratedRealVar,GeneratedRealVar,Gene
   } 
   def pr(value:Double, mean:Double, variance:Double): Double = math.exp(logpr(value, mean, variance))
   def sampledValue(mean:Double, variance:Double): Double = maths.nextGaussian(mean, variance)(cc.factorie.random)
-  case class Factor(_1:GeneratedRealVar, _2:GeneratedRealVar, _3:GeneratedRealVar) extends super.Factor {
+  case class Factor(_1:RealVar, _2:RealVar, _3:RealVar) extends super.Factor {
     override def logpr(s:StatisticsType): Double = self.logpr(s._1, s._2, s._3)
     override def logpr: Double = self.logpr(_1.value, _2.value, _3.value)
     def pr(s:StatisticsType) = math.exp(logpr(s))
@@ -31,7 +31,7 @@ object Gaussian extends GenerativeFamily3[GeneratedRealVar,GeneratedRealVar,Gene
     def sampledValue(s:StatisticsType): Double = self.sampledValue(s._2, s._3)
     override def sampledValue: Double = self.sampledValue(_2.value, _3.value)
   }
-  def newFactor(a:GeneratedRealVar, b:GeneratedRealVar, c:GeneratedRealVar) = Factor(a, b, c)
+  def newFactor(a:RealVar, b:RealVar, c:RealVar) = Factor(a, b, c)
 }
 
 // TODO Complete something like this
@@ -40,13 +40,12 @@ object Gaussian extends GenerativeFamily3[GeneratedRealVar,GeneratedRealVar,Gene
 object GaussianEstimator {
   def minSamplesForVarianceEstimate = 5
   /** This implements a moment-matching estimator. */
-  def estimate(meanVar:Real, varianceVar:Real, map:scala.collection.Map[Variable,Variable] = null): Unit = {
-    require(map eq null) // TODO Otherwise not yet supported
+  def estimate(meanVar:MutableRealVar, varianceVar:MutableRealVar)(implicit model:GenerativeModel): Unit = {
     // TODO Ignores the parents of 'mean' and 'variance'.  Fix this.
-    require(Set(meanVar.childFactors) == Set(varianceVar.childFactors)) // Expensive check may be unnecessary?
+    require(Set(model.childFactors(meanVar)) == Set(model.childFactors(varianceVar))) // Expensive check may be unnecessary?
     var mean = 0.0
     var sum = 0.0
-    for (factor <- meanVar.childFactors) factor match {
+    for (factor <- model.childFactors(meanVar)) factor match {
       case g:Gaussian.Factor if (g._2 == meanVar) => { mean += g._1.doubleValue; sum += 1.0 }
       //case gm:GaussianMixture.Factor
     }
@@ -56,7 +55,7 @@ object GaussianEstimator {
       varianceVar.set(1.0)(null)
     else {
       var v = 0.0
-      for (factor <- varianceVar.childFactors) factor match {
+      for (factor <- model.childFactors(varianceVar)) factor match {
         case g:Gaussian.Factor if (g._3 == varianceVar) => { val diff = mean - g._1.doubleValue; v += diff * diff }
         //  case gm:GaussianMixture.Factor
       }

@@ -34,7 +34,7 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 
 /** Simple GibbsSampler.
     @author Andrew McCallum */
-class GibbsSampler(val model:Model = cc.factorie.generative.GenerativeModel) extends Sampler[Iterable[Variable]] {
+class GibbsSampler(val model:Model = cc.factorie.generative.defaultGenerativeModel) extends Sampler[Iterable[Variable]] {
   var temperature = 1.0
   val handlers = new ArrayBuffer[GibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVarGibbsSamplerHandler) //, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler
@@ -74,14 +74,14 @@ trait GibbsSamplerClosure {
 
 
 object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
-  class Closure(val variable:MutableGeneratedVar, val factor:GenerativeFactor) extends GibbsSamplerClosure {
-    def sample(implicit d:DiffList = null): Unit = variable.set(variable.sampledValue)
+  class Closure(val variable:MutableVar, val factor:GenerativeFactor) extends GibbsSamplerClosure {
+    def sample(implicit d:DiffList = null): Unit = variable.set(factor.sampledValue.asInstanceOf[variable.Value])
   }
   def sampler(vs:Iterable[Variable], factors:List[Factor], sampler:GibbsSampler): GibbsSamplerClosure = {
     factors match {
       case List(factor:GenerativeFactor) => {
         vs.head match {
-          case v:MutableGeneratedVar => new Closure(v, factor)
+          case v:MutableVar => new Closure(v, factor)
         }
       }
       case _ => null

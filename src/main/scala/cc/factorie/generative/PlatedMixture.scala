@@ -16,7 +16,7 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
-abstract class PlatedGate(initial:Seq[Int]) extends PlatedDiscrete(initial) {
+abstract class PlatedGateVariable(initial:Seq[Int]) extends PlatedDiscreteVariable(initial) {
   def this(len:Int) = this(Seq.fill(len)(0))
 }
 

@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(collapse:Iterable[GeneratedVar], val model:Model = cc.factorie.generative.GenerativeModel) extends Sampler[Iterable[MutableGeneratedVar]] {
+class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:Model = cc.factorie.generative.defaultGenerativeModel) extends Sampler[Iterable[MutableVar]] {
   var debug = false
   makeNewDiffList = false // override default in cc.factorie.Sampler
   var temperature = 1.0 // TODO Currently ignored?
@@ -31,15 +31,15 @@ class CollapsedGibbsSampler(collapse:Iterable[GeneratedVar], val model:Model = c
   handlers ++= defaultHandlers
   val cacheClosures = true
   val closures = new HashMap[Variable, CollapsedGibbsSamplerClosure]
-  private val collapsed = new HashSet[GeneratedVar] ++ collapse
+  private val collapsed = new HashSet[Variable] ++ collapse
 
   // Initialize collapsed parameters specified in constructor
   collapse.foreach(v => Collapse(Seq(v)))
   // TODO We should provide an interface that handlers can use to query whether or not a particular variable was collapsed or not?
 
-  def isCollapsed(v:GeneratedVar): Boolean = collapsed.contains(v)
+  def isCollapsed(v:Variable): Boolean = collapsed.contains(v)
   
-  def process1(v:Iterable[MutableGeneratedVar]): DiffList = {
+  def process1(v:Iterable[MutableVar]): DiffList = {
     //assert(!v.exists(_.isInstanceOf[CollapsedVar])) // We should never be sampling a CollapsedVariable
     val d = newDiffList
     // If we have a cached closure, just use it and return
@@ -72,7 +72,7 @@ class CollapsedGibbsSampler(collapse:Iterable[GeneratedVar], val model:Model = c
   }
 
   /** Convenience for sampling single variable */
-  def process(v:MutableGeneratedVar): DiffList = process(Seq(v))
+  def process(v:MutableVar): DiffList = process(Seq(v))
 
 }
 
@@ -99,7 +99,7 @@ object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHan
   class Closure(val factor:GenerativeFactor) extends CollapsedGibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = {
       factor.updateCollapsedParents(-1.0)
-      val variable = factor.child.asInstanceOf[MutableGeneratedVar]
+      val variable = factor.child.asInstanceOf[MutableVar]
       variable.set(factor.sampledValue.asInstanceOf[variable.Value])
       factor.updateCollapsedParents(1.0)
       // TODO Consider whether we should be passing values rather than variables to updateChildStats
@@ -178,7 +178,7 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
   class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedDiscreteMixture.Factor) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
-      val gates = mFactor._3.asInstanceOf[PlatedGate];
+      val gates = mFactor._3.asInstanceOf[PlatedGateVariable];
       val domainSize = gates(0).domain.size
       val distribution = new Array[Double](domainSize)
       val gParent = gFactor._2.asInstanceOf[CountsProportions]

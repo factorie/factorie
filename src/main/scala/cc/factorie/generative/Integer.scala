@@ -15,5 +15,5 @@
 package cc.factorie.generative
 import cc.factorie._
 
-trait GeneratedIntegerVar extends IntegerVar with GeneratedVar
-abstract class Integer(initialInt: Int = 0) extends IntegerVariable(initialInt) with GeneratedIntegerVar with MutableGeneratedVar
+//trait GeneratedIntegerVar extends IntegerVar with GeneratedVar
+//abstract class Integer(initialInt: Int = 0) extends IntegerVariable(initialInt) with GeneratedIntegerVar with MutableGeneratedVar

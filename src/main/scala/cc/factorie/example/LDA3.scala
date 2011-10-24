@@ -17,15 +17,15 @@ object LDA3 {
   
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
-  class Zs(len:Int) extends PlatedGate(len) { 
+  class Zs(len:Int) extends PlatedGateVariable(len) { 
     def domain = ZSeqDomain
-    def words: Words = childFactors.first.asInstanceOf[PlatedDiscreteMixture.Factor]._1.asInstanceOf[Words]
+    def words: Words = defaultGenerativeModel.childFactors(this).first.asInstanceOf[PlatedDiscreteMixture.Factor]._1.asInstanceOf[Words]
   }
   object WordSeqDomain extends CategoricalSeqDomain[String]
   val WordDomain = WordSeqDomain.elementDomain
-  class Words(strings:Seq[String]) extends PlatedCategorical(strings) {
+  class Words(strings:Seq[String]) extends PlatedCategoricalVariable(strings) {
     def domain = WordSeqDomain
-    def zs = parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor]._3.asInstanceOf[Zs]
+    def zs = defaultGenerativeModel.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3.asInstanceOf[Zs]
   }
   class Document(val file:String, val theta:CountsProportions, strings:Seq[String]) extends Words(strings)
   val beta = new GrowableUniformMasses(WordDomain, beta1)
@@ -53,7 +53,7 @@ object LDA3 {
     }
     println("Read "+documents.size+" documents, "+WordDomain.size+" word types, "+documents.map(_.length).sum+" word tokens.")
     
-    val collapse = new ArrayBuffer[GeneratedVar]
+    val collapse = new ArrayBuffer[Variable]
     collapse += phis
     collapse ++= documents.map(_.theta)
     //val sampler = new CollapsedGibbsSampler(collapse) { def export(m:Seq[Proportions]): Unit = {} }
@@ -82,6 +82,7 @@ object LDA3 {
   }
   
   class SparseLDAInferencer(val numTopics:Int, docs:Iterable[Document], initialAlphas:Seq[Double], initialBeta1:Double) {
+    val model = defaultGenerativeModel // TODO clean this up
     var verbosity = 0
     var smoothingOnlyCount = 0; var topicBetaCount = 0; var topicTermCount = 0 // Just diagnostics
     def samplesCount = smoothingOnlyCount + topicBetaCount + topicTermCount
@@ -103,7 +104,7 @@ object LDA3 {
     resetSmoothing(initialAlphas, initialBeta1)
 
     def addDocument(doc:Document): Unit =
-      phiCounts.incrementFactor(doc.parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor], 1)
+      phiCounts.incrementFactor(model.parentFactor(doc).asInstanceOf[PlatedDiscreteMixture.Factor], 1)
 
     def resetSmoothing(newAlphas:Seq[Double], newBeta1:Double): Unit = {
       require(numTopics == newAlphas.length)
