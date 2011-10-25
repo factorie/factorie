@@ -2,7 +2,7 @@ package cc.factorie.app.topics.lda
 import cc.factorie._
 import cc.factorie.generative._
 import scala.collection.mutable.HashMap
-import java.io.File
+import java.io.{FileWriter, File}
 
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.1)(implicit val model:GenerativeModel = defaultGenerativeModel) {
   /** The per-word variable that indicates which topic it comes from. */
@@ -70,8 +70,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       if (i % diagnosticInterval == 0) {
         println ("\nIteration "+i)
         sampler.export(phis)
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => wordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
-        println
+        printTopics
       }
       if (i % fitAlphaInterval == 0) {
         sampler.exportThetas(documents)
@@ -98,11 +97,15 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       if (i % diagnosticInterval == 0) {
         println ("Iteration "+i)
         maximizePhisAndThetas
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => wordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
-        println
+        printTopics
       }
     }
     maximizePhisAndThetas
+  }
+
+  def printTopics : Unit = {
+    phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => wordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
+    println
   }
 
   def maximizePhisAndThetas: Unit = {
@@ -113,7 +116,25 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       doc.theta.increment(zi, 1.0)(null)
     }
   }
-  
+
+  def saveModel(fileName:String) {
+    val file = new File(fileName)
+    val dir = file.getParentFile()
+    if(!dir.exists()) dir.mkdirs()
+
+    val fileWriter = new FileWriter(file);
+
+    fileWriter.write(numTopics + "\n") // what else to write to first line? alpha/beta?  should save wordDomain
+
+    for(doc <- documents) {
+      fileWriter.write(doc.name)
+      for(i <- 0 until doc.length) fileWriter.write(" " + doc(i) + " " + doc.zs.intValue(i))
+      fileWriter.write("\n");
+    }
+
+    fileWriter.flush
+    fileWriter.close
+  }
 }
 
 
@@ -167,5 +188,97 @@ object LDA {
     else 
       lda.inferTopics(opts.numIterations.value, opts.diagnostic.value)
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+  }
+
+  def loadModel(fileName:String, wordSeqDomain:CategoricalSeqDomain[String] = new CategoricalSeqDomain[String]) : LDA = {
+    val source = scala.io.Source.fromFile(fileName)
+    val lines = source.getLines()
+    if(!lines.hasNext) new Error("File " + fileName + " had 0 lines")
+
+    var line = lines.next()
+    val numTopics = java.lang.Integer.parseInt(line.trim()) // first line has non-document details
+
+    val lda = new LDA(wordSeqDomain, numTopics) // do we have to create this here?  problem because we don't have topics/alphas/betas/etc beforehand to create LDA instance
+    while(lines.hasNext) {
+      line = lines.next()
+      var tokens = new ArrayBuffer[String]
+      var topicAssignments = new ArrayBuffer[Int]
+      val fields = line.split(" +")
+
+      assert(fields.length >= 3) // at least 1 token
+
+      val docName = fields(0)
+      for(i <- 1 until fields.length by 2) { // grab each pair of token/count
+        tokens += fields(i)
+        topicAssignments += java.lang.Integer.parseInt(fields(i+1))
+      }
+
+      val doc = Document(wordSeqDomain, docName, tokens.iterator) // create and add document
+      lda.addDocument(doc)
+      for(i <- 0 until doc.length) // put z's to correct values we found in loaded file
+        doc.zs.set(i, topicAssignments(i))(null)
+
+      //for(i <- 0 until doc.length) Console.print(doc(i) + " " + doc.zs.intValue(i) + " ")
+      //Console.println("");
+    }
+
+    lda.maximizePhisAndThetas
+
+    return lda
+  }
+
+  def testSaveLoad(lda:LDA) {
+    val testLoc = "/Users/kschultz/dev/backedup/models/ldatestsave/ldatestsave"
+    lda.saveModel(testLoc)
+
+    val testLoad = loadModel(testLoc)
+    val testLoadSameDomain = loadModel(testLoc, lda.wordSeqDomain)
+
+    Console.println("Topics from pre-save model: \n")
+    lda.printTopics; //debugTopics(lda)
+
+    Console.println("**********************************\n")
+
+    Console.println("Topics from loaded model (SAME WordSeqDomain): \n")
+    testLoadSameDomain.printTopics; // debugTopics(testLoadSameDomain)
+
+    Console.println("**********************************\n")
+
+    Console.println("Topics from loaded model (NEW WordSeqDomain): \n")
+    testLoad.printTopics; // debugTopics(testLoad)
+    
+    verifyPhis(lda, testLoad)
+  }
+
+  def verifyPhis(lda1:LDA, lda2:LDA) : Unit = {
+    val topicPlusWordToCountMap = new HashMap[String, Double]
+    
+    for(t <- lda1.phis) {
+      val topicId = lda1.phis.indexOf(t)
+      for(i <- 0 until t.length) {
+        val word = lda1.wordDomain.getCategory(i)
+        val count = t.counts(i)
+        topicPlusWordToCountMap(topicId + "_" + word) = count
+      }
+    }
+
+
+    for(t2 <- lda2.phis) {
+      val topicId = lda2.phis.indexOf(t2)
+      for(i <- 0 until t2.length) {
+        val word = lda2.wordDomain.getCategory(i)
+        val count = t2.counts(i)
+        if(topicPlusWordToCountMap(topicId + "_" + word) != count) Console.err.println("failed to match count for topic " + topicId + " and word " + word + " with count " + count)
+      }
+    }
+  }
+
+  def debugTopics(lda:LDA) {
+    lda.phis.foreach(t => {
+      print("Topic " + lda.phis.indexOf(t) + "  ");
+      t.top(20).zipWithIndex.foreach(dp => print(dp._2 + "=" + lda.wordDomain.getCategory(dp._1.index) + "(" + t.counts(dp._1.index) + ", " + dp._1.index + ") "));
+      println
+    })
+    println
   }
 }
