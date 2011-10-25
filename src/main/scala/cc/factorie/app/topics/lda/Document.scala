@@ -27,7 +27,7 @@ trait DocumentVar extends PlatedCategoricalVariable[String] {
 
 class Document(val domain:CategoricalSeqDomain[String], val name:String, tokens:Seq[String]) extends PlatedCategoricalVariable(tokens) with DocumentVar {
   var theta: CountsProportions = null
-  def zs = null //parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor]._3
+  def zs = defaultGenerativeModel.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3 //parentFactor.asInstanceOf[PlatedDiscreteMixture.Factor]._3
   def ws = this
   // Getting tokens from character strings
   def stopwords = cc.factorie.app.strings.Stopwords
