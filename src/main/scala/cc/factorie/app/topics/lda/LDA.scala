@@ -31,13 +31,16 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     require(wordSeqDomain eq doc.domain)
     require(doc.length > 1)
     doc.theta = new SortedSparseCountsProportions(numTopics) ~ Dirichlet(alphas) // was DenseCountsProportions
-    val zs = new Zs(doc.length) :~ PlatedDiscrete(doc.theta) // TODO Consider making this :~ because now all words start in topic 0!
-    doc ~ PlatedDiscreteMixture(phis, zs)
+    doc.zs = new Zs(doc.length) :~ PlatedDiscrete(doc.theta) // TODO Consider making this :~ because now all words start in topic 0!
+    doc ~ PlatedDiscreteMixture(phis, doc.zs)
     documentMap(doc.name) = doc
   }
   
   def removeDocument(doc:DocumentVar): Unit = {
-    throw new Error("Not yet implemeneted")
+    defaultGenerativeModel -= defaultGenerativeModel.parentFactor(doc.theta)
+    defaultGenerativeModel -= defaultGenerativeModel.parentFactor(doc.zs)
+    defaultGenerativeModel -= defaultGenerativeModel.parentFactor(doc)
+    //throw new Error("Not yet implemeneted")
   }
 
   /** Like addDocument, but does not register doc.theta or doc as children this.alphas or this.phis.
@@ -48,7 +51,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     doc ~< PlatedDiscreteMixture(phis, zs)
   }*/
 
-  def inferDocumentTheta(doc:Document, iterations:Int = 10): Unit = {
+  def inferDocumentTheta(doc:DocumentVar, iterations:Int = 10): Unit = {
     var tmp = false
     if (model.parentFactor(doc) eq null) { addDocument(doc); tmp = true }
     val sampler = new CollapsedGibbsSampler(Seq(doc.theta))
@@ -188,6 +191,16 @@ object LDA {
     else 
       lda.inferTopics(opts.numIterations.value, opts.diagnostic.value)
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+    
+    /*for (doc1 <- lda.documents.take(20)) {
+      println(doc1.ws.map(dv => WordSeqDomain.elementDomain.getCategory(dv.intValue)).mkString(" "))
+      println(doc1.theta)
+      lda.removeDocument(doc1)
+      doc1.theta.zero()
+      lda.inferDocumentTheta(doc1, 50)
+      println(doc1.theta)
+      println()
+    }*/
   }
 
   def loadModel(fileName:String, wordSeqDomain:CategoricalSeqDomain[String] = new CategoricalSeqDomain[String]) : LDA = {
