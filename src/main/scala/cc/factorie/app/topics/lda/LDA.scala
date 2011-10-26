@@ -191,6 +191,8 @@ object LDA {
     else 
       lda.inferTopics(opts.numIterations.value, opts.diagnostic.value)
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+
+    //testSaveLoad(lda)
     
     /*for (doc1 <- lda.documents.take(20)) {
       println(doc1.ws.map(dv => WordSeqDomain.elementDomain.getCategory(dv.intValue)).mkString(" "))
@@ -198,18 +200,30 @@ object LDA {
       lda.removeDocument(doc1)
       doc1.theta.zero()
       lda.inferDocumentTheta(doc1, 50)
-      println(doc1.theta)
+      println(doc1.theta.toString())
+
+      var bNonZeroFound = false;
+      for(i <- 0 until doc1.theta.size) if(doc1.theta(i) > 0.0) bNonZeroFound = true
+      if(!bNonZeroFound) {
+        println("DIDN'T FIND NON-ZERO THETA")
+      }
+
       println()
     }*/
   }
 
   def loadModel(fileName:String, wordSeqDomain:CategoricalSeqDomain[String] = new CategoricalSeqDomain[String]) : LDA = {
-    val source = scala.io.Source.fromFile(fileName)
+    val file = new File(fileName)
+    if(!file.exists()) return null;
+
+    val source = scala.io.Source.fromFile(file)
     val lines = source.getLines()
     if(!lines.hasNext) new Error("File " + fileName + " had 0 lines")
 
     var line = lines.next()
     val numTopics = java.lang.Integer.parseInt(line.trim()) // first line has non-document details
+
+    println("loaded model with " + numTopics + " topics")
 
     val lda = new LDA(wordSeqDomain, numTopics) // do we have to create this here?  problem because we don't have topics/alphas/betas/etc beforehand to create LDA instance
     while(lines.hasNext) {
