@@ -238,9 +238,9 @@ trait MaxMessage extends BaseMessage {
     result
   }
 }
-class SumFactor(val fact: Factor, val varyin: Set[Variable], fgs: FG) extends BaseMessage(fact, varyin, fgs) with SumMessage {}
+class SumFactor(val fact: Factor, val varyin: Set[Variable], fgs: FG) extends BaseMessage(fact, varyin, fgs) with SumMessage
 
-class MaxFactor(val fact: Factor, val varyin: Set[Variable], fgs: FG) extends BaseMessage(fact, varyin, fgs) with MaxMessage {}
+class MaxFactor(val fact: Factor, val varyin: Set[Variable], fgs: FG) extends BaseMessage(fact, varyin, fgs) with MaxMessage
 
 
 abstract class MessageNode(val variable: Variable, val varying: Set[Variable]) {

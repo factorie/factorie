@@ -17,6 +17,8 @@ package cc.factorie.bp
 import cc.factorie._
 import junit.framework._
 import Assert._
+import scala.util.Random
+import collection.mutable.ArrayBuffer
 
 /**
  * @author sameer
@@ -77,7 +79,7 @@ class TestBP extends TestCase {
   // short for exponential
   private def e(num: Double) = math.exp(num)
 
-  val eps = 0.001
+  val eps = 1e-5
 
   override protected def setUp() {
     super.setUp
@@ -296,45 +298,24 @@ class TestBP extends TestCase {
     assertEquals(fg.node(v2).marginal.probability(BinDomain(0)), 0.0, eps)
   }
 
-  /*
   def testTwoChain = {
-    // two variables, three factors: two unary, one binary
-    var vseq = new BinVarSeq
-
     val v1 = new BinVar(1)
-    vseq += v1
-
     val v2 = new BinVar(1)
-    vseq += v2
 
-    var lattice: BPLattice[BinVar] = null
-    val model = new TemplateModel(newTemplate1(1, 0), newTemplate2(9, 0))
-    lattice = new BPLattice(Array(v1, v2), model)
-    lattice.updateTreewise()
-    // print factor marginal
-    model.factors(Seq(v2)).foreach {
-      f =>
-        if (f.variables.size == 1) {
-          val marginals = lattice.marginalMap(f)
-          assertEquals(marginals(List(0)), (1 + e(10)) / (2 + e(8) + e(10)), eps)
-          assertEquals(marginals(List(1)), (1 + e(8)) / (2 + e(8) + e(10)), eps)
-        } else {
-          val marginals = lattice.marginalMap(f)
-          assertEquals(marginals(List(0, 0)), e(10) / (2 + e(8) + e(10)), eps)
-          assertEquals(marginals(List(0, 1)), 1.0 / (2 + e(8) + e(10)), eps)
-          assertEquals(marginals(List(1, 0)), 1.0 / (2 + e(8) + e(10)), eps)
-          assertEquals(marginals(List(1, 1)), e(8) / (2 + e(8) + e(10)), eps)
-        }
-    }
-    assertEquals(lattice.marginal(v1).get(0), (1 + e(10)) / (2 + e(8) + e(10)), eps)
-    assertEquals(lattice.sumLogZ, 11.127, eps)
-    // check that max configuration is (v1=0, v2=0)
-    lattice = new BPLattice(Array(v1, v2), model)
-    lattice.updateTreewiseMax()
-    lattice.setVariablesToMax(Array(v1, v2))
+    val model = new FactorModel(newFactor1(v1, 1, 0), newFactor1(v2, 1, 0), newFactor2(v1, v2, 2, 0))
+    val fg = new SumProductFG(Set(v1, v2))
+    fg.createUnrolled(model)
+    fg.inferLoopyBP(2)
+    println("v1 : " + fg.node(v1).marginal)
+    println("v2 : " + fg.node(v2).marginal)
+    println("tv1 : " + ((e(4) + e(1)) / (e(4) + e(1) + e(1) + e(2))))
+    println("tv2 : " + ((e(4) + e(1)) / (e(4) + e(1) + e(1) + e(2))))
+    fg.setToMaxMarginal(Set(v1, v2))
+    println("v1 val : " + v1.value)
+    println("v2 val : " + v2.value)
     assertEquals(v1.intValue, 0)
     assertEquals(v2.intValue, 0)
-  }*/
+  }
 
   def testLoop2 = {
     val v1 = new BinVar(1)
@@ -520,5 +501,65 @@ class TestBP extends TestCase {
     assertEquals(v6.intValue, 1)
     assertEquals(v7.intValue, 0)
   }
+
+  def testChainRandom = {
+    println(" -- Testing Random Inference")
+    val numVars = 2
+    val vars: Seq[BinVar] = (0 until numVars).map(new BinVar(_)).toSeq
+    val varSet = vars.toSet[Variable]
+    for (seed <- (3 until 13)) {
+      val random = new Random(seed)
+      val model = new FactorModel
+      for (i <- 0 until numVars) {
+        model += newFactor1(vars(i), 0, random.nextDouble() * 4.0 - 2.0)
+        if ((i + 1) != numVars) model += newFactor2(vars(i), vars(i + 1), 0, random.nextDouble() * 6.0 - 3.0)
+      }
+      // true marginals and the map
+      val marginals: Array[Double] = Array.fill(numVars)(0.0)
+
+      // go through all the configurations
+      var Z = 0.0
+      val scores = new ArrayBuffer[Double]
+      var maxScore = Double.NegativeInfinity
+      var mapAssignment: Int = -1
+      for (bs <- 0 until math.pow(2, numVars).toInt) {
+        for (i <- 0 until numVars) {
+          vars(i).set((bs / math.pow(2, i)).toInt % 2)(null)
+        }
+        val score = model.score(vars.toIterable)
+        //println(bs + " -> " + score)
+        scores += score
+        Z += math.exp(score)
+        for (i <- 0 until numVars) {
+          if (vars(i).intValue == 0) {
+            marginals(i) += math.exp(score)
+          }
+        }
+        if (score > maxScore) {
+          maxScore = score
+          mapAssignment = bs
+        }
+      }
+      println("map : " + mapAssignment)
+      println("marginals : " + marginals.map(_ / Z).mkString(", "))
+      val fg = new SumProductFG(model, varSet)
+      fg.inferUpDown(vars.sampleUniformly, false)
+      for (i <- 0 until numVars) {
+        //println("v" + i + " : " + fg.node(vars(i)).marginal)
+        assertEquals(marginals(i)/Z, fg.node(vars(i)).marginal.probability(BinDomain(0)), eps)
+      }
+      val mfg = new MaxProductFG(model, varSet)
+      mfg.inferUpDown(vars.sampleUniformly, false)
+      mfg.inferUpDown(vars.sampleUniformly, false)
+      //mfg.inferLoopyBP(numVars*2) //UpDown(vars.sampleUniformly, false)
+      mfg.setToMaxMarginal()
+      println("probabilities : " + scores.map(math.exp(_) / Z).mkString(", "))
+      for (i <- 0 until numVars) {
+        //println("v" + i + " : " + mfg.node(vars(i)).marginal)
+        assertEquals(vars(i).value.intValue, (mapAssignment / math.pow(2, i)).toInt % 2)
+      }
+    }
+  }
+
 
 }
