@@ -85,8 +85,8 @@ trait Model {
       (whose interpretation may require special handling by the outer factor).
       This method should be called on all Seq[Factor] before they are returned by methods such as "factors" */
   def normalize(factors:Seq[Factor]): Seq[Factor] = {
-    if (factors.forall(_.outer eq null)) factors
-    else {
+    //if (factors.forall(_.outer eq null)) factors
+    //else {
       val result = new scala.collection.mutable.HashSet[Factor] {
         override def addEntry(f:Factor): Boolean = {
           if (f.outer eq null) super.addEntry(f)
@@ -99,7 +99,7 @@ trait Model {
       }
       result ++= factors
       result.toSeq
-    }
+    //}
   }
   
   // Some Model subclasses have a list of Families to which all its factors belong
