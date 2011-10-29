@@ -208,13 +208,13 @@ class TestBP extends TestCase {
       for (values <- mfactor.factor.valuesIterator(Set(v2))) {
         println(values + " : " + mfactor.marginal(values))
         if (values(v1) == values(v2))
-          assertEquals(mfactor.marginal(values), 1.0, eps)
-        else assertEquals(mfactor.marginal(values), 0.0, eps)
+          assertEquals(1.0 - 5e-5, mfactor.marginal(values), eps)
+        else assertEquals(5e-5, mfactor.marginal(values), eps)
 
       }
     }
-    assertEquals(fg.node(v1).marginal.probability(BinDomain(0)), 0.0, eps)
-    assertEquals(fg.node(v2).marginal.probability(BinDomain(0)), 0.0, eps)
+    assertEquals(0.0, fg.node(v1).marginal.probability(BinDomain(0)), eps)
+    assertEquals(5e-5, fg.node(v2).marginal.probability(BinDomain(0)), eps)
   }
 
   def testV2F1MAP = {
@@ -479,7 +479,7 @@ class TestBP extends TestCase {
       newFactor2(v3, v4, 5, 0), newFactor2(v5, v4, -5, 0),
       newFactor2(v6, v5, 5, 0), newFactor2(v7, v5, -5, 0)
     )
-    val fg = new FG(model, vars)  with MaxProductFG
+    val fg = new FG(model, vars) with MaxProductFG
     fg.inferUpDown(v1, false)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
@@ -549,7 +549,7 @@ class TestBP extends TestCase {
         println("v" + i + " : " + fg.node(vars(i)).marginal)
         assertEquals(marginals(i) / Z, fg.node(vars(i)).marginal.probability(BinDomain(0)), eps)
       }
-      println("z : " + math.log(Z) + ", " +fg.logZ)
+      println("z : " + math.log(Z) + ", " + fg.logZ)
       // max product
       val mfg = new FG(model, varSet) with MaxProductFG
       mfg.inferUpDown(vars.sampleUniformly, false)
