@@ -106,7 +106,7 @@ class TestBPClassify extends TestCase {
     val trainer = new SimpleMaxEntTrainer(model)
     trainer.process(trainVariables)
 
-    val fg = new SumProductFG(model, testVariables.toSet[Variable])
+    val fg = new FG(model, testVariables.toSet[Variable]) with SumProductFG
     fg.inferLoopyBP()
 
     var trueSumLogZ = 0.0

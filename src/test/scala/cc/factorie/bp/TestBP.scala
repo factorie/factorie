@@ -95,7 +95,7 @@ class TestBP extends TestCase {
     // 1) equal potentials
     //    a) sum-product
     val model1 = new FactorModel(newFactor1(v, 1, 1))
-    fg = new SumProductFG(Set(v))
+    fg = new FG(Set(v)) with SumProductFG
     fg.createUnrolled(model1)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg.nodes.size))
@@ -109,7 +109,7 @@ class TestBP extends TestCase {
     // 2) unequal potentials
     //    a) sum-product
     val model2 = new FactorModel(newFactor1(v, 2, 1))
-    fg = new SumProductFG(Set(v))
+    fg = new FG(Set(v)) with SumProductFG
     fg.createUnrolled(model2)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg.nodes.size))
@@ -129,7 +129,7 @@ class TestBP extends TestCase {
     var fg: FG = null
     // 1) f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}
     val model1 = new FactorModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
-    fg = new SumProductFG(Set(v))
+    fg = new FG(Set(v)) with SumProductFG
     fg.createUnrolled(model1)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg.nodes.size))
@@ -138,7 +138,7 @@ class TestBP extends TestCase {
     assertEquals(fg.node(v).marginal.probability(BinDomain(0)), 0.5, eps)
     // 2) f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}
     val model2 = new FactorModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
-    fg = new SumProductFG(Set(v))
+    fg = new FG(Set(v)) with SumProductFG
     fg.createUnrolled(model2)
     fg.inferLoopyBP(1)
     println(fg.node(v).marginal)
@@ -152,7 +152,7 @@ class TestBP extends TestCase {
     var fg: FG = null
     // 1) f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}
     val model1 = new FactorModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
-    fg = new MaxProductFG(Set(v))
+    fg = new FG(Set(v)) with MaxProductFG
     fg.createUnrolled(model1)
     // println("num Factors = %d".format(fg.factors.size))
     // println("num Variables = %d".format(fg.nodes.size))
@@ -161,7 +161,7 @@ class TestBP extends TestCase {
     assertEquals(fg.node(v).marginal.score(BinDomain(0)), 3.0, eps)
     // 2) f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}
     val model2 = new FactorModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
-    fg = new MaxProductFG(Set(v))
+    fg = new FG(Set(v)) with MaxProductFG
     fg.createUnrolled(model2)
     fg.inferLoopyBP(1)
     // println(fg.node(v).marginal)
@@ -179,7 +179,7 @@ class TestBP extends TestCase {
     val vars: Set[Variable] = Set(v1, v2)
 
     // vary both variables
-    fg = new SumProductFG(vars)
+    fg = new FG(vars) with SumProductFG
     fg.createUnrolled(model)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg._nodes.size))
@@ -197,7 +197,7 @@ class TestBP extends TestCase {
     assertEquals(fg.node(v1).marginal.probability(BinDomain(0)), 0.5, eps)
     assertEquals(fg.node(v2).marginal.probability(BinDomain(0)), 0.5, eps)
     // vary just one variable
-    fg = new SumProductFG(Set(v2))
+    fg = new FG(Set(v2)) with SumProductFG
     fg.createUnrolled(model)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg._nodes.size))
@@ -228,7 +228,7 @@ class TestBP extends TestCase {
     val vars: Set[Variable] = Set(v1, v2)
 
     // vary both variables
-    fg = new MaxProductFG(vars)
+    fg = new FG(vars) with MaxProductFG
     fg.createUnrolled(model)
     // println("num Factors = %d".format(fg.factors.size))
     // println("num Variables = %d".format(fg._nodes.size))
@@ -259,7 +259,7 @@ class TestBP extends TestCase {
     val vars: Set[Variable] = Set(v1, v2)
 
     // vary both variables
-    fg = new SumProductFG(vars)
+    fg = new FG(vars) with SumProductFG
     fg.createUnrolled(model)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg._nodes.size))
@@ -278,7 +278,7 @@ class TestBP extends TestCase {
     assertEquals(fg.node(v1).marginal.probability(BinDomain(0)), 0.5, eps)
     assertEquals(fg.node(v2).marginal.probability(BinDomain(0)), 0.5, eps)
     // vary just one variable
-    fg = new SumProductFG(Set(v2))
+    fg = new FG(Set(v2)) with SumProductFG
     fg.createUnrolled(model)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg._nodes.size))
@@ -303,7 +303,7 @@ class TestBP extends TestCase {
     val v2 = new BinVar(1)
 
     val model = new FactorModel(newFactor1(v1, 1, 0), newFactor1(v2, 1, 0), newFactor2(v1, v2, 2, 0))
-    val fg = new SumProductFG(Set(v1, v2))
+    val fg = new FG(Set(v1, v2)) with SumProductFG
     fg.createUnrolled(model)
     fg.inferLoopyBP(2)
     println("v1 : " + fg.node(v1).marginal)
@@ -325,7 +325,7 @@ class TestBP extends TestCase {
     val model = new FactorModel(
       newFactor1(v1, 1, 0), newFactor1(v2, 1, 0),
       newFactor2(v1, v2, 1, 0), newFactor2(v1, v2, 3, -1))
-    var fg = new SumProductFG(model, vars)
+    var fg = new FG(model, vars) with SumProductFG
     fg.inferLoopyBP()
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
@@ -348,7 +348,7 @@ class TestBP extends TestCase {
       newFactor2(v1, v2, -5, 0), newFactor2(v1, v3, -5, 0),
       newFactor2(v2, v4, -5, 0), newFactor2(v3, v4, -5, 0)
     )
-    var fg = new SumProductFG(model, vars)
+    var fg = new FG(model, vars) with SumProductFG
     fg.inferLoopyBP(4)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
@@ -378,7 +378,7 @@ class TestBP extends TestCase {
       newFactor2(v2, v4, -5, 0), newFactor2(v3, v4, -5, 0)
     )
     // println("Testing loopy map")
-    val fg = new MaxProductFG(model, vars)
+    val fg = new FG(model, vars) with MaxProductFG
     fg.inferLoopyBP(4)
     // println("v1 : " + fg.node(v1).marginal)
     // println("v2 : " + fg.node(v2).marginal)
@@ -404,7 +404,7 @@ class TestBP extends TestCase {
     val model = new FactorModel(
       newFactor1(v1, 3, 0), newFactor1(v2, 0, 3),
       newFactor2(v1, v3, 3, 0), newFactor2(v2, v3, 3, 0))
-    var fg = new SumProductFG(model, vars)
+    var fg = new FG(model, vars) with SumProductFG
     fg.inferUpDown(v1, false)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
@@ -436,7 +436,7 @@ class TestBP extends TestCase {
       newFactor2(v3, v4, 5, 0), newFactor2(v5, v4, -5, 0),
       newFactor2(v6, v5, 5, 0), newFactor2(v7, v5, -5, 0)
     )
-    var fg = new SumProductFG(model, vars)
+    var fg = new FG(model, vars) with SumProductFG
     fg.inferUpDown(v1, false)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
@@ -479,7 +479,7 @@ class TestBP extends TestCase {
       newFactor2(v3, v4, 5, 0), newFactor2(v5, v4, -5, 0),
       newFactor2(v6, v5, 5, 0), newFactor2(v7, v5, -5, 0)
     )
-    val fg = new MaxProductFG(model, vars)
+    val fg = new FG(model, vars)  with MaxProductFG
     fg.inferUpDown(v1, false)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
@@ -507,7 +507,7 @@ class TestBP extends TestCase {
     val numVars = 2
     val vars: Seq[BinVar] = (0 until numVars).map(new BinVar(_)).toSeq
     val varSet = vars.toSet[Variable]
-    for (seed <- (3 until 13)) {
+    for (seed <- (3 until 33)) {
       val random = new Random(seed)
       val model = new FactorModel
       for (i <- 0 until numVars) {
@@ -542,13 +542,16 @@ class TestBP extends TestCase {
       }
       println("map : " + mapAssignment)
       println("marginals : " + marginals.map(_ / Z).mkString(", "))
-      val fg = new SumProductFG(model, varSet)
+      // test sum-product
+      val fg = new FG(model, varSet) with SumProductFG
       fg.inferUpDown(vars.sampleUniformly, false)
       for (i <- 0 until numVars) {
-        //println("v" + i + " : " + fg.node(vars(i)).marginal)
-        assertEquals(marginals(i)/Z, fg.node(vars(i)).marginal.probability(BinDomain(0)), eps)
+        println("v" + i + " : " + fg.node(vars(i)).marginal)
+        assertEquals(marginals(i) / Z, fg.node(vars(i)).marginal.probability(BinDomain(0)), eps)
       }
-      val mfg = new MaxProductFG(model, varSet)
+      println("z : " + math.log(Z) + ", " +fg.logZ)
+      // max product
+      val mfg = new FG(model, varSet) with MaxProductFG
       mfg.inferUpDown(vars.sampleUniformly, false)
       mfg.inferUpDown(vars.sampleUniformly, false)
       //mfg.inferLoopyBP(numVars*2) //UpDown(vars.sampleUniformly, false)
