@@ -3,12 +3,13 @@ package cc.factorie.bp
 import StrictMath._
 import collection.mutable.{HashSet, ArrayBuffer, HashMap, Queue, Buffer}
 import cc.factorie._
+import cc.factorie.la.{DenseVector, Vector}
 
 /**
  * @author sameer, apassos
  */
 
-abstract class BaseMessage(val factor: Factor, val varying: Set[Variable], fg: FG) {
+abstract class MessageFactor(val factor: Factor, val varying: Set[Variable], fg: FG) {
 
   val variables: Seq[Variable] = factor.variables
   // set of neighbors that are varying
@@ -88,14 +89,42 @@ abstract class BaseMessage(val factor: Factor, val varying: Set[Variable], fg: F
     }).max
   }
 
+  def logZ: Double = {
+    var Z = 0.0
+    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
+      var num: Double = getScore(assignment)
+      for (variable <- variables) {
+        val mess = incoming(variable)
+        num += mess.score(assignment.get(variable).get)
+      }
+      num = exp(num)
+      Z += num
+    }
+    log(Z)
+  }
+
+  def updateStatExpectations(exps: HashMap[DotFamily, Vector]): Unit = {
+    factor match {
+      case f: DotFamily#Factor => {
+        if(!exps.contains(f.family)) exps(f.family) = new DenseVector(f.family.statisticsVectorLength)
+        for (assignment: Values <- f.valuesIterator(varyingNeighbors)) {
+          val prob = marginal(assignment)
+          val vector = assignment.statistics.asInstanceOf[DotFamily#StatisticsType].vector
+          exps(f.family) += (vector * prob)
+        }
+      }
+      case _ =>
+    }
+  }
+
   override def toString = "M(%s)".format(factor)
 
-
   def marginalize(target: DiscreteVariable, incoming: FactorMessages): GenericMessage
+
   def marginalize(incoming: FactorMessages): FactorMessages
 }
 
-trait SumMessage extends BaseMessage {
+trait SumFactor extends MessageFactor {
 
   def marginalize(target: DiscreteVariable, incoming: FactorMessages): GenericMessage = {
     // TODO add to _marginals
@@ -174,7 +203,7 @@ trait SumMessage extends BaseMessage {
 
 }
 
-trait MaxMessage extends BaseMessage {
+trait MaxFactor extends MessageFactor {
 
   def marginalize(target: DiscreteVariable, incoming: FactorMessages): GenericMessage = {
     // TODO add to _marginals
@@ -224,7 +253,7 @@ trait MaxMessage extends BaseMessage {
       val index = assignment.index(varyingNeighbors)
       for (i <- 0 until discreteVarying.length) {
         val as = assignment(discreteVarying(i)).intValue
-        scores(i)(as) = max(scores(i)(as),_marginal(index))
+        scores(i)(as) = max(scores(i)(as), _marginal(index))
       }
     }
     // set the outgoing messages
@@ -238,14 +267,10 @@ trait MaxMessage extends BaseMessage {
     result
   }
 }
-class SumFactor(val fact: Factor, val varyin: Set[Variable], fgs: FG) extends BaseMessage(fact, varyin, fgs) with SumMessage
 
-class MaxFactor(val fact: Factor, val varyin: Set[Variable], fgs: FG) extends BaseMessage(fact, varyin, fgs) with MaxMessage
-
-
-abstract class MessageNode(val variable: Variable, val varying: Set[Variable]) {
+class MessageNode(val variable: Variable, val varying: Set[Variable]) {
   // TODO: Add support for "changed" flag, i.e. recompute only when value is read, and hasnt changed since last read
-  val factors = new ArrayBuffer[BaseMessage]
+  val factors = new ArrayBuffer[MessageFactor]
 
   lazy val varies: Boolean = varying contains variable
 
@@ -253,7 +278,7 @@ abstract class MessageNode(val variable: Variable, val varying: Set[Variable]) {
 
   def priority: Double = currentMaxDelta
 
-  def priority(neighbor: BaseMessage): Double = currentMaxDelta
+  def priority(neighbor: MessageFactor): Double = currentMaxDelta
 
   protected var _marginal: GenericMessage = if (varies) BPUtil.uniformMessage else BPUtil.deterministicMessage(variable, variable.value)
   protected var _incoming: VarMessages = new VarMessages
@@ -263,20 +288,35 @@ abstract class MessageNode(val variable: Variable, val varying: Set[Variable]) {
 
   // Message from variable to factor
   // No recomputation, unless the incoming message from the factor was deterministic
-  def outgoing(mf: BaseMessage): GenericMessage
+  def outgoing(mf: MessageFactor): GenericMessage = {
+    if (varies) {
+      if (_incoming(mf.factor).isDeterministic) {
+        var msg: GenericMessage = BPUtil.uniformMessage
+        for (otherFactor <- factors; if (otherFactor != mf))
+          msg = msg * otherFactor.outgoing(variable) // FIXME make sure we're not normalizing accidentally
+        msg
+      } else {
+        _outgoing(mf.factor) //marginal / _incoming(factor)
+      }
+    } else {
+      // use the current value as the deterministic message
+      BPUtil.deterministicMessage(variable, variable.value)
+    }
+  }
+
   // Message from factor to variable
   // stores the message and recomputes the marginal and the outgoing messages
-  def incoming(mf: BaseMessage, mess: GenericMessage): Unit = {
+  def incoming(mf: MessageFactor, mess: GenericMessage): Unit = {
     _incoming(mf.factor) = mess
     if (varies) {
       //TODO update marginal incrementally?
       //_marginal = (_marginal / _incoming(factor)) * mess
       // set the incoming message
       _marginal = BPUtil.uniformMessage
-      for (mf: BaseMessage <- factors) {
+      for (mf: MessageFactor <- factors) {
         _marginal = _marginal * _incoming(mf.factor)
         var msg: GenericMessage = BPUtil.uniformMessage
-        for (other: BaseMessage <- factors; if other != mf) {
+        for (other: MessageFactor <- factors; if other != mf) {
           msg = msg * _incoming(other.factor)
         }
         _outgoing(mf.factor) = msg
@@ -292,46 +332,6 @@ abstract class MessageNode(val variable: Variable, val varying: Set[Variable]) {
   override def toString = "M(%s)".format(variable)
 }
 
-class SumNode(val vari: Variable, val varyies: Set[Variable]) extends MessageNode(vari, varyies) {
-  def outgoing(mf: BaseMessage): GenericMessage = {
-      if (varies) {
-        if (_incoming(mf.factor).isDeterministic) {
-          var msg: GenericMessage = BPUtil.uniformMessage
-          for (otherFactor <- factors; if (otherFactor != mf))
-            msg = msg * otherFactor.outgoing(variable)
-          msg
-        } else {
-          _outgoing(mf.factor) //marginal / _incoming(factor)
-        }
-      } else {
-        // use the current value as the deterministic message
-        BPUtil.deterministicMessage(variable, variable.value)
-      }
-    }
-
-}
-
-class MaxNode(val vari: Variable, val varyies: Set[Variable]) extends MessageNode(vari, varyies) {
-  def outgoing(mf: BaseMessage): GenericMessage = {
-      if (varies) {
-        if (_incoming(mf.factor).isDeterministic) {
-          var msg: GenericMessage = BPUtil.uniformMessage
-          for (otherFactor <- factors; if (otherFactor != mf))
-            msg = msg * otherFactor.outgoing(variable) // FIXME make sure we're not normalizing accidentally
-          msg
-        } else {
-          _outgoing(mf.factor) //marginal / _incoming(factor)
-        }
-      } else {
-        // use the current value as the deterministic message
-        BPUtil.deterministicMessage(variable, variable.value)
-      }
-    }
-
-}
-
-
-
 abstract class FG(val varying: Set[Variable]) {
 
   def this(model: Model, varying: Set[Variable]) = {
@@ -340,7 +340,7 @@ abstract class FG(val varying: Set[Variable]) {
   }
 
   val _nodes = new HashMap[Variable, MessageNode]
-  val _factors = new HashMap[Factor, BaseMessage]
+  val _factors = new HashMap[Factor, MessageFactor]
 
   def createFactor(potential: Factor)
 
@@ -356,6 +356,8 @@ abstract class FG(val varying: Set[Variable]) {
     _factors.values.map(_.currentMaxDelta).max
   }
 
+  def logZ: Double = mfactors.foldLeft(0.0)(_ + _.logZ)
+
   def inferLoopyBP(iterations: Int = 1) {
     for (iteration <- 0 until iterations) {
       for (factor <- _factors.values.shuffle(cc.factorie.random)) {
@@ -368,10 +370,10 @@ abstract class FG(val varying: Set[Variable]) {
     }
   }
 
-  private def _bfs(root: MessageNode, checkLoops: Boolean): Seq[BaseMessage] = {
-    val visited: HashSet[BaseMessage] = new HashSet
-    val result = new ArrayBuffer[BaseMessage]
-    val toProcess = new Queue[(MessageNode, BaseMessage)]
+  private def _bfs(root: MessageNode, checkLoops: Boolean): Seq[MessageFactor] = {
+    val visited: HashSet[MessageFactor] = new HashSet
+    val result = new ArrayBuffer[MessageFactor]
+    val toProcess = new Queue[(MessageNode, MessageFactor)]
     root.factors foreach (f => toProcess += Pair(root, f))
     while (!toProcess.isEmpty) {
       val (origin, factor) = toProcess.dequeue()
@@ -392,7 +394,7 @@ abstract class FG(val varying: Set[Variable]) {
   // loopy models, enable checkLoops to avoid infinite loops.
   def inferTreewise(root: MessageNode, checkLoops: Boolean = true) {
     // perform BFS
-    val bfsOrdering: Seq[BaseMessage] = _bfs(root, checkLoops)
+    val bfsOrdering: Seq[MessageFactor] = _bfs(root, checkLoops)
     // send messages leaf to root
     for (factor <- bfsOrdering.reverse) {
       factor.prepareIncoming()
@@ -423,12 +425,15 @@ abstract class FG(val varying: Set[Variable]) {
 
   def variables: Iterable[Variable] = _nodes.keys
 
-  def node(variable: Variable): MessageNode
-  def mfactors: Iterable[BaseMessage] = _factors.values
+  def node(variable: Variable): MessageNode = _nodes.getOrElseUpdate(variable, {
+    new MessageNode(variable, varying)
+  })
+
+  def mfactors: Iterable[MessageFactor] = _factors.values
 
   def factors: Iterable[Factor] = _factors.keys
 
-  def mfactor(factor: Factor): BaseMessage = _factors(factor)
+  def mfactor(factor: Factor): MessageFactor = _factors(factor)
 
   def setToMaxMarginal(variables: Iterable[MutableVar] = varying.map(_.asInstanceOf[MutableVar]).toSet)(implicit d: DiffList = null): Unit = {
     for (variable <- variables) {
@@ -436,34 +441,30 @@ abstract class FG(val varying: Set[Variable]) {
     }
   }
 
-}
-
-class SumProductFG(val varies: Set[Variable]) extends FG(varies) {
-  def createFactor(potential: Factor) = {
-    val factor = new SumFactor(potential, varying, this)
-    _factors(potential) = factor
+  def statExpectations: HashMap[DotFamily, Vector] = {
+    val exps = new HashMap[DotFamily, Vector]
+    for (mf <- mfactors) {
+      mf.updateStatExpectations(exps)
+    }
+    exps
   }
-  def this(model: Model, varying: Set[Variable]) = {
-    this (varying)
-    createUnrolled(model)
-  }
-
-  def node(variable: Variable): MessageNode = _nodes.getOrElseUpdate(variable, {
-    new SumNode(variable, varying)
-  })
 
 }
 
-class MaxProductFG(val varies:Set[Variable]) extends FG(varies)  {
+trait SumProductFG {
+  this: FG =>
+
   def createFactor(potential: Factor) = {
-    val factor = new MaxFactor(potential, varying, this)
+    val factor = new MessageFactor(potential, varying, this) with SumFactor
     _factors(potential) = factor
   }
-  def this(model: Model, varying: Set[Variable]) = {
-    this (varying)
-    createUnrolled(model)
+}
+
+trait MaxProductFG {
+  this: FG =>
+
+  def createFactor(potential: Factor) = {
+    val factor = new MessageFactor(potential, varying, this) with MaxFactor
+    _factors(potential) = factor
   }
-  def node(variable: Variable): MessageNode = _nodes.getOrElseUpdate(variable, {
-    new MaxNode(variable, varying)
-  })
 }
