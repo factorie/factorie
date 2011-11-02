@@ -2,7 +2,7 @@ package cc.factorie.app.topics.lda
 import cc.factorie._
 import cc.factorie.generative._
 import scala.collection.mutable.HashMap
-import java.io.{FileWriter, File}
+import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.1)(implicit val model:GenerativeModel = defaultGenerativeModel) {
   /** The per-word variable that indicates which topic it comes from. */
@@ -21,39 +21,37 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   val alphas = new DenseMasses(numTopics, alpha1)
 
   /** The collection of all documents used to fit the parameters of this LDA model. */
-  private val documentMap = new HashMap[String,DocumentVar] { def +=(d:Document): Unit = this(d.name) = d }
-  def documents: Iterable[DocumentVar] = documentMap.values
+  private val documentMap = new HashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
+  def documents: Iterable[Doc] = documentMap.values
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
   val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(wordDomain) ~ Dirichlet(betas))
 
   /** Add a document to the LDA model. */
-  def addDocument(doc:DocumentVar): Unit = {
-    require(wordSeqDomain eq doc.domain)
-    require(doc.length > 1)
-    doc.theta = new SortedSparseCountsProportions(numTopics) ~ Dirichlet(alphas) // was DenseCountsProportions
-    doc.zs = new Zs(doc.length) :~ PlatedDiscrete(doc.theta) // TODO Consider making this :~ because now all words start in topic 0!
-    doc ~ PlatedDiscreteMixture(phis, doc.zs)
+  def addDocument(doc:Doc): Unit = {
+    if (documentMap.contains(doc.name)) throw new Error(this.toString+" already contains document "+doc.name)
+    require(wordSeqDomain eq doc.ws.domain)
+    require(doc.ws.length > 1)
+    if (doc.theta eq null) doc.theta = new SortedSparseCountsProportions(numTopics)
+    else require (doc.theta.length == numTopics)
+    doc.theta ~ Dirichlet(alphas) // was DenseCountsProportions
+    if (doc.zs eq null) doc.zs = new Zs(doc.ws.length)
+    else require(doc.zs.length == doc.ws.length)
+    doc.zs :~ PlatedDiscrete(doc.theta) // TODO Consider using ~ because it is more efficient for all words to start in topic 0
+    doc.ws ~ PlatedDiscreteMixture(phis, doc.zs)
     documentMap(doc.name) = doc
   }
   
-  def removeDocument(doc:DocumentVar): Unit = {
+  def removeDocument(doc:Doc): Unit = {
+    documentMap.remove(doc.name)
     defaultGenerativeModel -= defaultGenerativeModel.parentFactor(doc.theta)
     defaultGenerativeModel -= defaultGenerativeModel.parentFactor(doc.zs)
-    defaultGenerativeModel -= defaultGenerativeModel.parentFactor(doc)
-    //throw new Error("Not yet implemeneted")
+    defaultGenerativeModel -= defaultGenerativeModel.parentFactor(doc.ws)
   }
 
-  /** Like addDocument, but does not register doc.theta or doc as children this.alphas or this.phis.
-      Useful for a temporary connection for inference of doc.theta and doc.zs. */
-  /*protected def connectDocument(doc:DocumentVar): Unit = {
-    doc.theta = new SortedSparseCountsProportions(numTopics) ~< Dirichlet(alphas) // was DenseCountsProportions
-    val zs = new Zs(doc.length) :~ PlatedDiscrete(doc.theta)
-    doc ~< PlatedDiscreteMixture(phis, zs)
-  }*/
-
-  def inferDocumentTheta(doc:DocumentVar, iterations:Int = 10): Unit = {
+  /** Infer doc.theta, but to not adjust LDA.phis.  Document not added to LDA model. */
+  def inferDocumentTheta(doc:Doc, iterations:Int = 10): Unit = {
     var tmp = false
-    if (model.parentFactor(doc) eq null) { addDocument(doc); tmp = true }
+    if (model.parentFactor(doc.ws) eq null) { addDocument(doc); tmp = true }
     val sampler = new CollapsedGibbsSampler(Seq(doc.theta))
     for (i <- 1 to iterations) sampler.process(doc.zs)
     if (tmp) removeDocument(doc)
@@ -105,7 +103,12 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     }
     maximizePhisAndThetas
   }
+  
+  def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).top(numWords).map(dp => wordDomain.getCategory(dp.index))
+  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic "+topicIndex+"  "+(topicWords(topicIndex, numWords).mkString(" ")+"  "+phis(topicIndex).countsTotal.toInt+"  "+alphas(topicIndex))
+  def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_)).mkString("\n")
 
+  @deprecated
   def printTopics : Unit = {
     phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => wordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
     println
@@ -113,11 +116,21 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
   def maximizePhisAndThetas: Unit = {
     phis.foreach(_.zero())
-    for (doc <- documents; i <- 0 until doc.length) {
+    for (doc <- documents; i <- 0 until doc.ws.length) {
       val zi = doc.zs.intValue(i)
-      phis(zi).increment(doc.intValue(i), 1.0)(null)
+      phis(zi).increment(doc.ws.intValue(i), 1.0)(null)
       doc.theta.increment(zi, 1.0)(null)
     }
+  }
+  
+  def saveWordsZs(file:File): Unit = {
+    val pw = new PrintWriter(file)
+    for (doc <- documents) doc.writeNameWordsZs(pw)
+  }
+  
+  def addDocumentsFromWordZs(file:File): Unit = {
+    val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+    
   }
 
   def saveModel(fileName:String) {
@@ -131,7 +144,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
     for(doc <- documents) {
       fileWriter.write(doc.name)
-      for(i <- 0 until doc.length) fileWriter.write(" " + doc(i) + " " + doc.zs.intValue(i))
+      for(i <- 0 until doc.ws.length) fileWriter.write(" " + doc.ws(i) + " " + doc.zs.intValue(i))
       fileWriter.write("\n");
     }
 
@@ -143,47 +156,69 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
 object LDA {
   import scala.collection.mutable.ArrayBuffer
+  import scala.util.control.Breaks._
   var verbose = false
+  val minDocLength = 3
   def main(args:Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
-      val numTopics =     new CmdOption("num-topics", "N", 10, "Number of topics.")
-      val numThreads =    new CmdOption("num-threads", "N", 1, "Number of threads for multithreaded topic inference.")
-      val numIterations = new CmdOption("num-iterations", "N", 20, "Number of iterations of inference.")
-      val diagnostic =    new CmdOption("diagnostic-interval", "N", 10, "Number of iterations between each diagnostic printing of intermediate results.")
-      val inputDirs =     new CmdOption("input-dirs", "DIR,DIR", List(""), "Comma-separated list of directories containing plain text input files.")
-      val inputLines =    new CmdOption("input-lines", "FILE", "", "File containing lines of text, one for each document.")
+      val numTopics =     CmdOption("num-topics", 't', 10, "N", "Number of topics.")
+      val alpha =         CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
+      val beta =          CmdOption("beta", 0.1, "N", "Dirichlet parameter for per-topic word proportions.")
+      val numThreads =    CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
+      val numIterations = CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
+      val diagnostic =    CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
+      val readDirs =      CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
+      val readLines =     CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
+      val readDocs =      CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments") 
+      val writeDocs =     CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments") 
+      val maxNumDocs =    CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
       val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = LDA.this.verbose = true }
     }
     opts.parse(args)
     /** The domain of the words in documents */
     object WordSeqDomain extends CategoricalSeqDomain[String]
-    val lda = new LDA(WordSeqDomain, opts.numTopics.value)
-    if (opts.inputDirs.wasInvoked) {
-      for (directory <- opts.inputDirs.value) {
+    val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value)
+    if (opts.readDirs.wasInvoked) {
+      for (directory <- opts.readDirs.value) {
         val dir = new File(directory); if (!dir.isDirectory) { System.err.println(directory+" is not a directory."); System.exit(-1) }
         println("Reading files from directory " + directory)
-        for (file <- new File(directory).listFiles; if (file.isFile)) {
+        breakable { for (file <- new File(directory).listFiles; if (file.isFile)) {
+          if (lda.documentMap.size == opts.maxNumDocs.value) break
           val doc = Document(WordSeqDomain, file, "UTF-8")
-          if (doc.length > 3) lda.addDocument(doc)
-          //print("."); Console.flush
-        }
+          if (doc.length >= minDocLength) lda.addDocument(doc)
+          if (lda.documentMap.size % 1000 == 0) { print(" "+lda.documentMap.size); Console.flush() }; if (lda.documentMap.size % 10000 == 0) println()
+        }}
         //println()
       }
     } 
-    if (opts.inputLines.wasInvoked) {
-      val file = new File(opts.inputLines.value)
+    if (opts.readLines.wasInvoked) {
+      val file = new File(opts.readLines.value)
       val source = scala.io.Source.fromFile(file)
       val name = file.getName
       var count = 0
-      for (line <- source.getLines()) {
+      breakable { for (line <- source.getLines()) {
+        if (lda.documentMap.size == opts.maxNumDocs.value) break
         val doc = Document(WordSeqDomain, name+":"+count, line)
-        if (doc.length > 3) lda.addDocument(doc)
+        if (doc.length >= minDocLength) lda.addDocument(doc)
         count += 1
         if (count % 1000 == 0) { print(" "+count); Console.flush() }; if (count % 10000 == 0) println()
-      }
+      }}
+      source.close()
+    }
+    if (opts.readDocs.wasInvoked) {
+      val file = new File(opts.readDocs.value)
+      val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+      breakable { while (true) {
+        if (lda.documentMap.size == opts.maxNumDocs.value) break
+        val doc = new Document(WordSeqDomain, "", Nil)
+        val numWords = doc.readNameWordsZs(reader)
+        if (numWords < 0) break
+        else if (numWords >= minDocLength) lda.addDocument(doc) // Skip documents that have only one word because inference can't handle them
+      }}
+      reader.close()
     }
     if (lda.documents.size == 0) { System.err.println("You must specific either the --input-dirs or --input-lines options to provide documents."); System.exit(-1) }
-    println("Read "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.length).sum+" word tokens.")
+    println("Read "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
     
     val startTime = System.currentTimeMillis
     if (opts.numThreads.value > 1) 
@@ -194,24 +229,16 @@ object LDA {
 
     //testSaveLoad(lda)
     
-    /*for (doc1 <- lda.documents.take(20)) {
-      println(doc1.ws.map(dv => WordSeqDomain.elementDomain.getCategory(dv.intValue)).mkString(" "))
-      println(doc1.theta)
-      lda.removeDocument(doc1)
-      doc1.theta.zero()
-      lda.inferDocumentTheta(doc1, 50)
-      println(doc1.theta.toString())
+    if (opts.writeDocs.wasInvoked) {
+      val file = new File(opts.writeDocs.value)
+      val pw = new PrintWriter(file)
+      lda.documents.foreach(_.writeNameWordsZs(pw))
+      pw.close()
+    }
 
-      var bNonZeroFound = false;
-      for(i <- 0 until doc1.theta.size) if(doc1.theta(i) > 0.0) bNonZeroFound = true
-      if(!bNonZeroFound) {
-        println("DIDN'T FIND NON-ZERO THETA")
-      }
-
-      println()
-    }*/
   }
 
+  @deprecated("Will be removed")
   def loadModel(fileName:String, wordSeqDomain:CategoricalSeqDomain[String] = new CategoricalSeqDomain[String]) : LDA = {
     val file = new File(fileName)
     if(!file.exists()) return null;

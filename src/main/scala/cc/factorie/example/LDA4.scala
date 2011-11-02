@@ -41,7 +41,7 @@ object LDA4 extends cc.factorie.maths.ArrayImplicits {
         if (doc.year < minYear) minYear = doc.year
         if (doc.length > 3) { print("+"+doc.year); Console.flush; lda.addDocument(doc) } 
       }})
-      println("\nRead "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.length).sum+" word tokens.")
+      println("\nRead "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
       /*for (file <- recursiveFiles(new File(dirname))) {
         //println("Considering "+file.getCanonicalPath)
         if (file.getName.endsWith("xml")) {
@@ -58,7 +58,7 @@ object LDA4 extends cc.factorie.maths.ArrayImplicits {
       }*/
     } 
     if (lda.documents.size == 0) { System.err.println("No documents found."); System.exit(-1) }
-    println("Read "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.length).sum+" word tokens.")
+    println("Read "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
     
     val startTime = System.currentTimeMillis
     lda.inferTopics(numIterations, 10)
