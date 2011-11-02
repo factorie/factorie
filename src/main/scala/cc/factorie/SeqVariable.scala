@@ -16,6 +16,7 @@ package cc.factorie
 
 import scala.collection.mutable.ArrayBuffer
 import scala.math
+import java.util.Arrays
 
 // Variables for dealing with sequences
 
@@ -85,27 +86,31 @@ abstract class DiscreteSeqDomain extends Domain[Seq[DiscreteValue]] {
 abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] {
   def this(initialValue:Seq[Int]) = { this(); _setCapacity(if (initialValue.length > 0) initialValue.length else 1); _appendAll(initialValue.toArray) }
   def length = _length
-  def apply(index: Int): DiscreteValue = domain.elementDomain.getValue(_apply(index))
-  def iterator = new Iterator[DiscreteValue] {
+  def apply(index: Int): ElementType = domain.elementDomain.getValue(_apply(index))
+  def iterator = new Iterator[ElementType] {
     var i = 0
     def hasNext = i < _length
     def next = { i += 1; domain.elementDomain.getValue(_apply(i-1)) }
   }
   def domain: DiscreteSeqDomain
-  def value: Value = new IndexedSeq[DiscreteValue] {
-    private val arr = new Array[DiscreteValue](_length)
-    _mapToArray(arr, (i:Int) => domain.elementDomain.getValue(i))
+  def value: Value = new IndexedSeq[ElementType] {
+    private val arr = new Array[ElementType](_length)
+    _mapToArray(arr, (i:Int) => domain.elementDomain.getValue(i)) // Do this so that it stays constant even if _array changes later
     def length = arr.length
     def apply(i:Int) = arr(i)
    //_toSeq.map(i => domain.elementDomain.getValue(i)) // TODO make this more efficient 
   }
   def set(newValue:Value)(implicit d:DiffList): Unit = _set(Array.tabulate(newValue.length)(i => newValue(i).intValue))
+  def trimCapacity: Unit = _trimCapacity
+  def clear(): Unit = _clear()
+  def fill(newValue:Int): Unit = Arrays.fill(_array, newValue)
   def appendInt(i:Int): Unit = _append(i)
   def +=(e:VariableType#ElementType): Unit = appendInt(e.intValue)
   def ++=(es:Iterable[VariableType#ElementType]): Unit = _appendAll(es.map(_.intValue))
   def appendInts(xs:Iterable[Int]) = _appendAll(xs)
   def intValue(seqIndex:Int): Int = _apply(seqIndex)
   def intValues: Array[Int] = _array
+  def uniqueIntValues: Array[Int] = _array.distinct.sorted
   def set(seqIndex:Int, newValue:Int)(implicit d:DiffList): Unit = {
     require(d eq null)
     _update(seqIndex, newValue)
@@ -125,7 +130,8 @@ abstract class CategoricalSeqVariable[C] extends DiscreteSeqVariable with VarAnd
   }
   def domain: CategoricalSeqDomain[C]
   def appendCategory(x:C): Unit = this += domain.elementDomain.getValue(x)
-  def appendCategories(xs:Iterator[C]): Unit = _appendAll(xs.map(c => domain.elementDomain.index(c)).toArray)
-  //def appendCategory(x:C): Unit = this.+=(domain.elementDomain.index(x))
+  def appendCategories(xs:Iterable[C]): Unit = _appendAll(xs.map(c => domain.elementDomain.index(c)).toArray)
+  def categoryValue(seqIndex:Int): C = domain.elementDomain.getCategory(_apply(seqIndex))
+  def categoryValues: Seq[C] = Seq.tabulate(length)(i => categoryValue(i))
 }
 

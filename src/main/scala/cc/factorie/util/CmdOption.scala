@@ -44,9 +44,9 @@ trait CmdOption[T] {
     <code>
     def main(args:Array[String]): Unit = {
       object opts extends CmdOptions {
-        val train = CmdOption("train", "eng.train", "CoNLL-format file from which to get training data.")
-        val temperature = CmdOption("temperature", 1.0, "Temperature for the sampler.")
-        val iterations = CmdOption("iterations", 15, "Number of iterations of training.")
+        val train = new CmdOption("train", "eng.train", "CoNLL-format file from which to get training data.")
+        val temperature = new CmdOption("temperature", 1.0, "Temperature for the sampler.")
+        val iterations = new CmdOption("iterations", 15, "Number of iterations of training.")
       }
       opts.parse(args)
       // then later
@@ -113,6 +113,14 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
       case None =>
     }
   }
+  object CmdOption {
+    def apply[T](name:String, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]): CmdOption[T] =
+      new CmdOption[T](name, valueName, defaultValue, helpMsg)
+    def apply[T](name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]): CmdOption[T] =
+      new CmdOption[T](name, shortName, valueName, defaultValue, helpMsg)
+    def apply(name:String, helpMsg:String): CmdOption[Any] =
+      new CmdOption[Any](name, helpMsg)
+  }
   class CmdOption[T](val name:String, val helpMsg:String)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
     // TODO Add "required" constructor argument when we have Scala 2.8
     def this(name:String, valueName:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
@@ -148,12 +156,12 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
         Return the index of the next position to be processed. */
     def parse(args:Seq[String], index:Int): Int = {
       if (valueClass == noValueClass && args(index) == "--"+name || args(index) == "-"+shortName) {
-        // support --help or -h (i.e. no arguments to option)
+        // support options like --help or -h (i.e. no arguments to option)
         invoke
         invokedCount += 1
         index + 1
       } else if (args(index) == "--"+name || args(index) == "-"+shortName) {
-        // support --file foo, or -f foo (or just --file or -f, in which case value is the defaultValue)
+        // support options like --file foo, or -f foo (or just --file or -f, in which case value is the defaultValue)
         var newIndex = index + 1
         // If the next args does not begin with a "-" assume it is the value of this argument and parse it...
         if (!args(newIndex).startsWith("-")) newIndex = parseValue(args, newIndex)
@@ -176,7 +184,29 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
     /** After we have found a match, request that argument(s) to command-line option be parsed. 
         Return the index position that should be processed next. 
         This method allows one option to possibly consume multiple args, (in contrast with parseValue(String).) */
-    protected def parseValue(args:Seq[String], index:Int): Int = { parseValue(args(index)); index + 1 }
+    protected def parseValue(args:Seq[String], index:Int): Int = {
+      if (valueManifest <:< Manifest.classType[List[String]](classOf[List[String]], Manifest.classType[String](classOf[String]))) {
+        // Handle CmdOpt whose value is a List[String]
+        if (args(index).contains(',')) {
+          // Handle the case in which the list is comma-separated
+          value = args(index).split(",").toList.asInstanceOf[T]
+          index + 1
+        } else {
+          // Handle the case in which the list is space-separated
+          var i = index
+          val listValue = new scala.collection.mutable.ListBuffer[String]
+          while (i < args.length && !args(i).startsWith("--")) {
+            listValue += args(i)
+            i += 1
+          }
+          value = listValue.toList.asInstanceOf[T]
+          i
+        }
+      } else {
+        parseValue(args(index))
+        index + 1
+      }
+    }
     /** Parse a value from a single arg */
     protected def parseValue(valueStr:String): Unit = {
       // TODO Is there a better way to do this?
@@ -189,7 +219,7 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
       else if (valueClass eq classOf[Char]) value = valueStr.apply(0).asInstanceOf[T]
       else if (valueClass eq classOf[String]) value = valueStr.asInstanceOf[T]
       // Support comma-separated multiple values, e.g. --train=eng.train,eng.testa
-      else if (valueManifest <:< Manifest.classType[List[String]](classOf[List[String]], Manifest.classType[String](classOf[String]))) value = valueStr.split(",").toList.asInstanceOf[T]
+      //else if (valueManifest <:< Manifest.classType[List[String]](classOf[List[String]], Manifest.classType[String](classOf[String]))) value = valueStr.split(",").toList.asInstanceOf[T] // Now handled above.
       //else if (valueManifest <:< Manifest.classType[List[Int]](classOf[List[Int]], Manifest.classType[Int](classOf[Int]))) value = valueStr.split(',').map(Integer.parseInt(_)).toList.asInstanceOf[T]
       else throw new Error("CmdOption does not handle value of type "+valueManifest)
       // TODO Add an option that will run the interpreter on some code

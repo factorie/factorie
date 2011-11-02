@@ -5,7 +5,7 @@ import cc.factorie.generative._
 class SparseLDAInferencer(
     val zDomain:DiscreteDomain, 
     val wordDomain:CategoricalDomain[String], 
-    docs:Iterable[DocumentVar], 
+    docs:Iterable[Doc], 
     initialAlphas:Seq[Double], 
     initialBeta1:Double,
     model:GenerativeModel = defaultGenerativeModel) 
@@ -32,8 +32,8 @@ class SparseLDAInferencer(
   // Initialize alphas, beta1, smoothingMass and cachedCoefficients; must be done after phiCounts initialized
   resetSmoothing(initialAlphas, initialBeta1)
 
-  def addDocument(doc:DocumentVar): Unit =
-    phiCounts.incrementFactor(model.parentFactor(doc).asInstanceOf[PlatedDiscreteMixture.Factor], 1)
+  def addDocument(doc:Doc): Unit =
+    phiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedDiscreteMixture.Factor], 1)
 
   def resetSmoothing(newAlphas:Seq[Double], newBeta1:Double): Unit = {
     require(numTopics == newAlphas.length)
@@ -63,7 +63,7 @@ class SparseLDAInferencer(
       phiCounts(wi).forCounts((ti,count) => phis(ti).increment(wi, count)(null))
   }
     
-  def exportThetas(docs:Iterable[DocumentVar]): Unit = {
+  def exportThetas(docs:Iterable[Doc]): Unit = {
     for (doc <- docs) {
       val theta = doc.theta
       theta.zero()
