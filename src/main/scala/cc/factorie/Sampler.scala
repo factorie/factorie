@@ -117,13 +117,13 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
 // Not intended for users.  Here just so that SampleRank can override it.
 // TODO is there a better way to do this?
 trait SettingsSampler0 {
-  def objective: TemplateModel
+  def objective: Model
 }
 
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(C), 
     scores each, builds a distribution from the scores, and samples from it.
     @author Andrew McCallum */
-abstract class SettingsSampler[C](theModel:TemplateModel, theObjective:TemplateModel = null) extends ProposalSampler[C] with SettingsSampler0 {
+abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) extends ProposalSampler[C] with SettingsSampler0 {
   //def this(m:Model) = this(m, null)
   def model = theModel
   def objective = theObjective 
@@ -140,7 +140,7 @@ abstract class SettingsSampler[C](theModel:TemplateModel, theObjective:TemplateM
 }
 
 /** Instead of randomly sampling according to the distribution, always pick the setting with the maximum acceptanceScore. */
-abstract class SettingsGreedyMaximizer[C](theModel:TemplateModel, theObjective:TemplateModel = null) extends SettingsSampler[C](theModel, theObjective) {
+abstract class SettingsGreedyMaximizer[C](theModel:Model, theObjective:Model = null) extends SettingsSampler[C](theModel, theObjective) {
   override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.maxByDouble(_.acceptanceScore)
 }
 
@@ -151,11 +151,11 @@ abstract class SettingsGreedyMaximizer[C](theModel:TemplateModel, theObjective:T
     Because SampleRank requires Proposal objects, we use this intsead of GibbsSampler.
     @see generative.GibbsSampler
     @author Andrew McCallum */
-class VariableSettingsSampler[V<:Variable with IterableSettings](model:TemplateModel = cc.factorie.defaultModel, objective:TemplateModel = null) extends SettingsSampler[V](model, objective) {
+class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 
-class VariablesSettingsSampler[V<:Variable with IterableSettings](model:TemplateModel = cc.factorie.defaultModel, objective:TemplateModel = null) extends SettingsSampler[Seq[V]](model, objective) {
+class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
   def settings(variables:Seq[V]): SettingIterator = new SettingIterator {
     val vs = variables.map(_.settings).toList // .asInstanceOf[List[IterableSettings#SettingIterator]]
     var initialized = false
@@ -190,7 +190,7 @@ class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Template
 }
 
 /* Besag's Iterated Conditional Modes */
-class VariableSettingsGreedyMaximizer[V<:Variable with IterableSettings](model:TemplateModel = cc.factorie.defaultModel, objective:TemplateModel = null) extends SettingsGreedyMaximizer[V](model, objective) {
+class VariableSettingsGreedyMaximizer[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsGreedyMaximizer[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 
@@ -206,7 +206,7 @@ trait FactorQueue[C] extends Sampler[C] {
   
   /** Override to provide the generic sampler that can potentially deal with arbitrary variables coming from Factors */
   def process0(x:AnyRef): DiffList
-  def model: TemplateModel
+  def model: Model
   
   override def postProcessHook(context:C, diff:DiffList): Unit = {
     super.postProcessHook(context, diff)
