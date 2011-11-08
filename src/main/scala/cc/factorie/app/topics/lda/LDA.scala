@@ -1,6 +1,7 @@
 package cc.factorie.app.topics.lda
 import cc.factorie._
 import cc.factorie.generative._
+import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 
@@ -167,8 +168,10 @@ object LDA {
       val numThreads =    CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
       val numIterations = CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
       val diagnostic =    CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
+      val tokenRegex =    CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
       val readDirs =      CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
       val readLines =     CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
+      val readLinesRegex= CmdOption("read-lines-regex", "", "REGEX", "Regular expression with parens around the portion of the line that should be read as the text of the document.")
       val readDocs =      CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments") 
       val writeDocs =     CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments") 
       val maxNumDocs =    CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
@@ -192,13 +195,14 @@ object LDA {
       }
     } 
     if (opts.readLines.wasInvoked) {
+      if (opts.readLinesRegex.wasInvoked) throw new Error("--read-lines-regex not yet implemented.")
       val file = new File(opts.readLines.value)
       val source = scala.io.Source.fromFile(file)
       val name = file.getName
       var count = 0
       breakable { for (line <- source.getLines()) {
         if (lda.documentMap.size == opts.maxNumDocs.value) break
-        val doc = Document(WordSeqDomain, name+":"+count, line)
+        val doc = Document(WordSeqDomain, name+":"+count, opts.tokenRegex.value.r.findAllIn(line).map(_.toLowerCase).filter(!Stopwords.contains(_)))
         if (doc.length >= minDocLength) lda.addDocument(doc)
         count += 1
         if (count % 1000 == 0) { print(" "+count); Console.flush() }; if (count % 10000 == 0) println()

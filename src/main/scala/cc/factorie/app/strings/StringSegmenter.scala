@@ -24,7 +24,7 @@ trait StringSegmenter {
   def apply(reader:Reader): Iterator[String] = apply(cc.factorie.app.strings.readerToString(reader))
 }
 
-class RegexSegmenter(regex:scala.util.matching.Regex) extends StringSegmenter {
+class RegexSegmenter(val regex:scala.util.matching.Regex) extends StringSegmenter {
   def apply(s:String): Iterator[String] = regex.findAllIn(s)
 }
 
@@ -51,6 +51,7 @@ object wordClassesSegmenter extends RegexSegmenter("\\p{Alpha}+|\\p{Digit}+".r)
 object nonWhitespaceSegmenter extends RegexSegmenter("\\S+".r)
 object nonWhitespaceClassesSegmenter extends RegexSegmenter("\\p{Alpha}+|\\p{Digit}+|\\p{Punct}".r)
 object foreignWordSegmenter extends RegexSegmenter("[\\p{L}\\p{P}]*\\p{L}".r)
+object urlSegmenter extends RegexSegmenter("\\b(https?|ftp|file)://[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|]".r)
 
 /** For segmenting fields of a comma-separated-value file.
     Handles commas nested in quotes, 
