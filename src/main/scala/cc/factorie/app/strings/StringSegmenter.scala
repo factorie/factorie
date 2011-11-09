@@ -25,7 +25,7 @@ trait StringSegmenter {
 }
 
 class RegexSegmenter(val regex:scala.util.matching.Regex) extends StringSegmenter {
-  def apply(s:String): Iterator[String] = regex.findAllIn(s)
+  def apply(s:String): scala.util.matching.Regex.MatchIterator = regex.findAllIn(s)
 }
 
 class BreakIteratorSegmenter(bi:BreakIterator) extends StringSegmenter {

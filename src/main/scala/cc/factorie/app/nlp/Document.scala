@@ -3,18 +3,6 @@ import cc.factorie._
 import cc.factorie.app.tokenseq._
 import scala.collection.mutable.ArrayBuffer
 
-// TODO Rename AttrClasses
-class ClassMap {
-  private val map = new scala.collection.mutable.ListMap[Class[_],AnyRef]
-  def apply[C<:AnyRef]()(implicit m: Manifest[C]): C = map(m.erasure).asInstanceOf[C]
-  def attr[C<:AnyRef](implicit m: Manifest[C]): C = map(m.erasure).asInstanceOf[C]
-  def addAttr[C<:AnyRef](c:C)(implicit m: Manifest[C]): Unit = map(m.erasure) = c
-  def get[C<:AnyRef](implicit m: Manifest[C]): Option[C] = map.get(m.erasure).asInstanceOf[Option[C]]
-  def +=[C<:AnyRef](value:C): Unit = map(value.getClass) = value
-  def -=[C<:AnyRef](value:C): Unit = map -= value.getClass
-  def remove[C<:AnyRef](implicit m: Manifest[C]): Unit = map -= m.erasure
-}
-
 trait Attr {
   object attr extends scala.collection.mutable.ListMap[Class[_],AnyRef] {
     def apply[C<:AnyRef]()(implicit m: Manifest[C]): C = this(m.erasure).asInstanceOf[C]
@@ -23,10 +11,6 @@ trait Attr {
     def -=[C<:AnyRef](value:C): Unit = super.-=(value.getClass)
     def remove[C<:AnyRef](implicit m: Manifest[C]): Unit = super.-=(m.erasure)
   }
-}
-
-object Attr {
-  val c = 1.getClass
 }
 
 trait ThisType[+This] {
@@ -38,13 +22,16 @@ trait ElementType[+E] {
   type ElementType = E
 }
 
-trait InChain[+This<:InChain[This,S],+S<:Chain[S,This]] extends ThisType[This] {
+trait ChainType[+C] {
+  type ChainType = C
+}
+
+trait InChain[+This<:InChain[This,C],+C<:Chain[C,This]] extends ThisType[This] with ChainType[C] {
   //this: This =>
   //type ThisType = This
-  type ChainType = S
   var _position: Int = -1
   var _chain: scala.collection.IndexedSeq[AnyRef] = null
-  def chain: S = _chain.asInstanceOf[S]
+  def chain: ChainType = _chain.asInstanceOf[ChainType]
   def position: Int = _position
   def next: This = chain(_position+1)
   def prev: This = chain(_position-1)
@@ -61,10 +48,11 @@ trait Chain[+This<:Chain[This,A],+A<:InChain[A,This]] extends scala.collection.I
   //def sequence: IndexedSeq[A] = _sequence.asInstanceOf[IndexedSeq[A]]
   def apply(i:Int): A = _sequence(i).asInstanceOf[A]
   def length = _sequence.length
-  def +=(a:InChain[_,_]): Unit = {
-    a._position = _sequence.length
-    a._chain = this
-    _sequence += a.asInstanceOf[InChain[A,This]]
+  // TODO Try to make type of 'e' stronger without getting into contravariance trouble 
+  def +=(e:InChain[_,_]): Unit = {
+    e._position = _sequence.length
+    e._chain = this
+    _sequence += e.asInstanceOf[InChain[A,This]]
   }
 }
 
@@ -74,12 +62,17 @@ trait ChainInChain[+This<:ChainInChain[This,E,S],+E<:InChain[E,This],+S<:Chain[S
 
 //trait ChainWithSpans[+This<:ChainWithSpans[This,S,E],+S,+E<:InChain[E,This]] extends Chain[This,E]
 
+// There are two ways to create/add Tokens/Sentences:
+// Without String arguments, in which case the string is assumed to already be in the Document
+// With String arguments, in which case the string is appended to the Document (and for Tokens, Sentence length is automatically extended)
+
+// TODO Consider stringEnd instead of stringLength
 class Token(var stringStart:Int, var stringLength:Int) extends StringVar with InChain[Token,Sentence] with Attr {
   def this(sentence:Sentence, s:Int, l:Int) = { this(s, l); sentence += this }
   def this(sentence:Sentence, tokenString:String) = {
     this(sentence.stringLength, tokenString.length)
     sentence.document.appendString(tokenString)
-    sentence.document.appendString(" ") // TODO Make this configurable
+    //sentence.document.appendString(" ") // TODO Make this configurable
     sentence.stringLength += tokenString.length + 1
   }
   def sentence: ChainType = chain
@@ -87,16 +80,39 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with In
   def value: String = string // abstract in StringVar
 }
 
+class TokenSpan(val sentence:Sentence, initialStart:Int, initialLength:Int) extends ElementType[Token] with ChainType[Sentence] with IndexedSeq[Token] {
+  private var _start = initialStart
+  private var _length = initialLength
+  def start = _start
+  def length = _length
+  def apply(i:Int): ElementType = sentence(initialStart+i)
+  def phrase = if (length == 1) this.head.toString else this.mkString(" ")
+}
+
 class Sentence(var stringStart:Int, var stringLength:Int) extends StringVar with ChainInChain[Sentence,Token,Document] {
   def this(doc:Document) = { this(doc.stringLength, 0); doc += this }
   def this(doc:Document, sentenceString:String) = { this(doc.stringLength, sentenceString.length); doc.appendString(sentenceString) }
-  type TokenType <: Token
+  def this(doc:Document, stringStart:Int, stringLength:Int) = { this(stringStart, stringLength); doc += this }
   def document: ChainType = chain
-  def value: String = document.string.substring(stringStart, stringLength)
+  def string: String = document.string.substring(stringStart, stringLength)
+  def value: String = string
   def tokens: IndexedSeq[ElementType] = this
+  def tokenAt(charOffset:Int): ElementType = {
+    require(charOffset >= stringStart && charOffset <= stringStart + stringLength)
+    var i = 0 // TODO Implement as faster binary search
+    while (i < this.length && this(i).stringStart <= charOffset) {
+      val token = this(i)
+      if (token.stringStart <= charOffset && token.stringStart + token.stringLength <= charOffset) return token
+      i += 1
+    }
+    return null
+  }
 }
 
+// TODO Consider putting Tokens directly in Document, and still implementing the ability to get the Tokens in a sentence separately
+
 class Document(val name:String, strValue:String = "") extends StringVar with Chain[Document,Sentence] {
+  // One of the following two is always null, the other non-null
   private var _string: String = strValue
   private var _stringbuf: StringBuffer = null
   def appendString(s:String): Int = {
@@ -114,28 +130,18 @@ class Document(val name:String, strValue:String = "") extends StringVar with Cha
   def value: String = string
   def stringLength: Int = if (_string ne null) _string.length else _stringbuf.length
   def sentences: IndexedSeq[ElementType] = this
+  def tokens: IndexedSeq[ElementType#ElementType] = this.flatMap(_.tokens)
 }
 
 object Document {
+  /** Create a new document using a tokenizing regex.  Currently all tokens in document contained in one sentence. */
   def apply(name:String, contents:String): Document = {
     val doc = new Document(name, contents)
-    val sentence = new Sentence(0, contents.length)
-    doc += sentence
-    val tokenIterator = "[A-Za-z]+".r.findAllIn(contents)
+    val sentence = new Sentence(doc, 0, contents.length) // TODO Implement sentence segmentation
+    val tokenIterator = cc.factorie.app.strings.nonWhitespaceClassesSegmenter/*.regex.findAllIn*/(contents)
     for (tokenString <- tokenIterator)
       sentence += new Token(tokenIterator.start, tokenIterator.end - tokenIterator.start)
-    doc += (sentence)
     doc
   }
 }
 
-object Test {
-  object PosDomain extends CategoricalDomain[String]
-  //class Token1(s:Int, l:Int) extends Token(s, l) with PosToken with InChain[Token1,Sentence1] { def posDomain = PosDomain }
-  //class Sentence1(s:Int, l:Int) extends Sentence(s, l) with ChainInChain[Sentence1,Token1,Document1]
-  //class Document1(n:String, s:String) extends Document(n,s) with Chain[Document1,Sentence1]
-  def main(args:Array[String]): Unit = {
-    
-  }
-
-}
