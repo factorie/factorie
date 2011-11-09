@@ -25,6 +25,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   /** The collection of all documents used to fit the parameters of this LDA model. */
   private val documentMap = new HashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
   def documents: Iterable[Doc] = documentMap.values
+  def getDocument(name:String) : Doc = documentMap.getOrElse(name, null)
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
   val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(wordDomain) ~ Dirichlet(betas))
   
@@ -59,8 +60,15 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   }
 
   /** Infer doc.theta, but to not adjust LDA.phis.  Document not added to LDA model. */
-  def inferDocumentTheta(doc:Doc, iterations:Int = 10): Unit = {
+  def inferDocumentThetaOld(doc:Doc, iterations:Int = 10): Unit = {
     var tmp = false
+    if (model.parentFactor(doc.ws) eq null) { addDocument(doc); tmp = true }
+    val sampler = new CollapsedGibbsSampler(Seq(doc.theta))
+    for (i <- 1 to iterations) sampler.process(doc.zs)
+    if (tmp) removeDocument(doc)
+  }
+
+  def inferDocumentTheta(doc:Doc, iterations:Int = 10): Unit = {
     if (model.parentFactor(doc.ws) ne null) {
       val sampler = new CollapsedGibbsSampler(Seq(doc.theta), model)
       for (i <- 1 to iterations) sampler.process(doc.zs)
@@ -81,11 +89,8 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     val sampler = new CollapsedGibbsSampler(varsToSample)
     val startTime = System.currentTimeMillis()
     for(i <- 1 to iterations) {
-      val iterStartTime = System.currentTimeMillis()
-      print("iteration " + i)
       for(doc <- newDocs)
         sampler.process(doc.zs)
-      println(" time: " + (System.currentTimeMillis() - iterStartTime)/1000.0 + " seconds")
     }
     println("Total inference time = " + (System.currentTimeMillis() - startTime)/1000.0 + " seconds")
 
