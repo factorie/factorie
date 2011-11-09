@@ -26,10 +26,8 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   def documents: Iterable[Doc] = documentMap.values
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
   val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(wordDomain) ~ Dirichlet(betas))
-
-  /** Add a document to the LDA model. */
-  def addDocument(doc:Doc): Unit = {
-    if (documentMap.contains(doc.name)) throw new Error(this.toString+" already contains document "+doc.name)
+  
+  protected def setupDocument(doc:Doc)(implicit m:GenerativeModel = model): Unit = {
     require(wordSeqDomain eq doc.ws.domain)
     require(doc.ws.length > 1)
     if (doc.theta eq null) doc.theta = new SortedSparseCountsProportions(numTopics)
@@ -39,23 +37,38 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     else require(doc.zs.length == doc.ws.length)
     doc.zs :~ PlatedDiscrete(doc.theta) // TODO Consider using ~ because it is more efficient for all words to start in topic 0
     doc.ws ~ PlatedDiscreteMixture(phis, doc.zs)
+  }
+
+  /** Add a document to the LDA model. */
+  def addDocument(doc:Doc): Unit = {
+    if (documentMap.contains(doc.name)) throw new Error(this.toString+" already contains document "+doc.name)
+    setupDocument(doc)
     documentMap(doc.name) = doc
   }
   
   def removeDocument(doc:Doc): Unit = {
     documentMap.remove(doc.name)
-    defaultGenerativeModel -= defaultGenerativeModel.parentFactor(doc.theta)
-    defaultGenerativeModel -= defaultGenerativeModel.parentFactor(doc.zs)
-    defaultGenerativeModel -= defaultGenerativeModel.parentFactor(doc.ws)
+    model match {
+      case m:GenerativeFactorModel => {
+        m -= m.parentFactor(doc.theta)
+        m -= m.parentFactor(doc.zs)
+        m -= m.parentFactor(doc.ws)
+      }
+    }
   }
 
   /** Infer doc.theta, but to not adjust LDA.phis.  Document not added to LDA model. */
   def inferDocumentTheta(doc:Doc, iterations:Int = 10): Unit = {
     var tmp = false
-    if (model.parentFactor(doc.ws) eq null) { addDocument(doc); tmp = true }
-    val sampler = new CollapsedGibbsSampler(Seq(doc.theta))
-    for (i <- 1 to iterations) sampler.process(doc.zs)
-    if (tmp) removeDocument(doc)
+    if (model.parentFactor(doc.ws) ne null) {
+      val sampler = new CollapsedGibbsSampler(Seq(doc.theta), model)
+      for (i <- 1 to iterations) sampler.process(doc.zs)
+    } else {
+      val m = new GenerativeFactorModel
+      setupDocument(doc)(m)
+      val sampler = new CollapsedGibbsSampler(Seq(doc.theta), m)
+      for (i <- 1 to iterations) sampler.process(doc.zs)
+    }
   }
 
     /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
