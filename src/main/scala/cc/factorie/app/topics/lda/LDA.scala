@@ -4,6 +4,7 @@ import cc.factorie.generative._
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
+import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.1)(implicit val model:GenerativeModel = defaultGenerativeModel) {
   /** The per-word variable that indicates which topic it comes from. */
@@ -69,6 +70,29 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       val sampler = new CollapsedGibbsSampler(Seq(doc.theta), m)
       for (i <- 1 to iterations) sampler.process(doc.zs)
     }
+  }
+
+  /** A batch based version of inferDocumentTheta, not yet complete. */
+  def inferMultipleDocumentThetas(newDocs:Seq[Doc], iterations:Int = 10) : Unit = {
+    val docsAdded = new HashSet[Doc]
+    val varsToSample = new ArrayBuffer[Variable]
+
+    for(doc <- newDocs) if(model.parentFactor(doc.ws) eq null) { addDocument(doc); docsAdded += doc; varsToSample ++= Seq(doc.theta) }
+    val sampler = new CollapsedGibbsSampler(varsToSample)
+    val startTime = System.currentTimeMillis()
+    for(i <- 1 to iterations) {
+      val iterStartTime = System.currentTimeMillis()
+      print("iteration " + i)
+      for(doc <- newDocs)
+        sampler.process(doc.zs)
+      println(" time: " + (System.currentTimeMillis() - iterStartTime)/1000.0 + " seconds")
+    }
+    println("Total inference time = " + (System.currentTimeMillis() - startTime)/1000.0 + " seconds")
+
+    // removal takes 150 times longer than inference ???
+    //val removeStartTime = System.currentTimeMillis()
+    //for(doc <- docsAdded) removeDocument(doc)
+    //println("Total doc removal time = " + (System.currentTimeMillis() - removeStartTime)/1000.0 + " seconds")
   }
 
     /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
@@ -264,10 +288,12 @@ object LDA {
     val lines = source.getLines()
     if(!lines.hasNext) new Error("File " + fileName + " had 0 lines")
 
+    val startTime = System.currentTimeMillis()
+
     var line = lines.next()
     val numTopics = java.lang.Integer.parseInt(line.trim()) // first line has non-document details
 
-    println("loaded model with " + numTopics + " topics")
+    println("loading model with " + numTopics + " topics")
 
     val lda = new LDA(wordSeqDomain, numTopics) // do we have to create this here?  problem because we don't have topics/alphas/betas/etc beforehand to create LDA instance
     while(lines.hasNext) {
@@ -294,6 +320,8 @@ object LDA {
     }
 
     lda.maximizePhisAndThetas
+
+    println("Load file time = " + (System.currentTimeMillis() - startTime)/1000.0 + " seconds")
 
     return lda
   }

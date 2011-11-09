@@ -33,7 +33,9 @@ trait CategoricalVectorValue[T] extends DiscreteVectorValue {
 trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[CategoricalVectorValue[T]] {
   thisDomain =>
   type CategoryType = T
-  lazy val dimensionDomain: CategoricalDomain[T] = new CategoricalDomain[T]
+  lazy val dimensionDomain: CategoricalDomain[T] = new CategoricalDomain[T] {
+    override def filename = thisDomain.filename
+  }
   // Use dimensionSize to get the "size" of the vectors belonging to this domain.
 }
 
