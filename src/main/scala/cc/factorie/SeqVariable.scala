@@ -38,10 +38,13 @@ trait ElementType[+ET] {
 
 trait VarAndElementType[+This<:Variable,+ET] extends VarAndValueType[This,IndexedSeq[ET]] with ElementType[ET]
 
+trait SeqVar[+X] extends Variable with VarAndElementType[SeqVar[X],X] with SeqEqualsEq[X] with VarAndValueGenericDomain[SeqVar[X],Seq[X]] 
+trait IndexedSeqVar[+X] extends Variable with VarAndElementType[IndexedSeqVar[X],X] with IndexedSeqEqualsEq[X] with VarAndValueGenericDomain[IndexedSeqVar[X],IndexedSeq[X]] 
+
 /** A variable containing a mutable sequence of other variables.  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
     @author Andrew McCallum */
-trait SeqVar[X] extends MutableVar with VarAndElementType[SeqVar[X],X] with SeqEqualsEq[X] {
+trait MutableSeqVar[X] extends SeqVar[X] with MutableVar /*with VarAndElementType[SeqVar[X],X] with SeqEqualsEq[X]*/ {
   //type ElementType <: AnyRef
   type Element = VariableType#ElementType
   protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that SeqVar[Int] is efficient.
@@ -55,7 +58,7 @@ trait SeqVar[X] extends MutableVar with VarAndElementType[SeqVar[X],X] with SeqE
   def remove(n:Int)(implicit d:DiffList) = Remove1Diff(n)
   def swap(i:Int,j:Int)(implicit d:DiffList) = Swap1Diff(i,j)
   def swapLength(pivot:Int,length:Int)(implicit d:DiffList) = for (i <- pivot-length until pivot) Swap1Diff(i,i+length)
-  abstract class SeqVariableDiff(implicit d:DiffList) extends AutoDiff {override def variable = SeqVar.this}
+  abstract class SeqVariableDiff(implicit d:DiffList) extends AutoDiff {override def variable = MutableSeqVar.this}
   case class UpdateDiff(i:Int, x:Element)(implicit d:DiffList) extends SeqVariableDiff {val xo = _seq(i); def undo = _seq(i) = xo; def redo = _seq(i) = x}
   case class AppendDiff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimEnd(1); def redo = _seq.append(x)}
   case class PrependDiff(x:Element)(implicit d:DiffList) extends SeqVariableDiff {def undo = _seq.trimStart(1); def redo = _seq.prepend(x)}
@@ -73,7 +76,7 @@ trait SeqVar[X] extends MutableVar with VarAndElementType[SeqVar[X],X] with SeqE
   //def update(index:Int, x:Element): Unit = _seq(index) = x
 }
 
-abstract class SeqVariable[X](initialValue: Seq[X]) extends SeqVar[X] with VarAndElementType[SeqVariable[X],X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]] {
+abstract class SeqVariable[X](initialValue: Seq[X]) extends MutableSeqVar[X] with VarAndElementType[SeqVariable[X],X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]] {
   def this() = this(Nil)
   _seq ++= initialValue
   //protected val _seq: ArrayBuffer[X] = { val a = new ArrayBuffer[X](); a ++= sequence; a }

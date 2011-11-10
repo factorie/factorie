@@ -66,7 +66,7 @@ object NER {
   }
 
   
-  def load(filename:String) : Seq[Sentence] = {
+  def load(filename:String) : Seq[Document] = {
     import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
     val Capitalized = "^[A-Z].*".r
@@ -74,17 +74,21 @@ object NER {
     val Punctuation = "[-,\\.;:?!()]+".r
 
     var wordCount = 0
-    var document = new Document("CoNLL2003")
+    val documents = new ArrayBuffer[Document]
+    var document = new Document("CoNLL2003-"+documents.length, "")
+    documents += document
     val source = Source.fromFile(new File(filename))
-    var sentence = new Sentence(document, 0, 0)
+    var sentence = new Sentence(document, 0, 0)(null)
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
-        sentence.stringLength = document.stringLength - sentence.stringStart
+        //sentence.stringLength = document.stringLength - sentence.stringStart
         //document += sentence
         document.appendString("\n")
-        sentence = new Sentence(document, document.stringLength, document.stringLength) 
+        sentence = new Sentence(document, document.length, 0)(null) 
       } else if (line.startsWith("-DOCSTART-")) {
         // Skip document boundaries
+        document = new Document("CoNLL2003-"+documents.length, "")
+        documents += document
       } else {
         val fields = line.split(' ')
         assert(fields.length == 4)
@@ -92,7 +96,7 @@ object NER {
         val partOfSpeech = fields(1)
         val labelString = fields(3).stripLineEnd
         document.appendString(" ")
-        val token = new Token(sentence, document.stringLength, word.length)
+        val token = new Token(document, word)
         document.appendString(word)
         if (false && document.stringLength < 100) {
           println("word=%s documentlen=>%s<".format(word, document.string))
@@ -114,8 +118,8 @@ object NER {
         wordCount += 1
       }
     }
-    sentence.stringLength = document.stringLength - sentence.stringStart
+    //sentence.stringLength = document.stringLength - sentence.stringStart
     println("Loaded "+document.length+" sentences with "+wordCount+" words total from file "+filename)
-    document
+    documents
   }
 }
