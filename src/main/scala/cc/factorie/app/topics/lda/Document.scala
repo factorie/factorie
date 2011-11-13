@@ -66,6 +66,7 @@ trait Doc /* extends PlatedCategoricalVariable[String]*/ {
       line = p.readLine()
     }
     ws.clear(); ws.appendCategories(words)
+    if (zs eq null) throw new Error("Doc.zs must be set non-null and empty before calling this method.") 
     zs.clear(); zs.appendInts(zints)
     ws.length
   }

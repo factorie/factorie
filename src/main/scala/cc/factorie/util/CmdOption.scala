@@ -163,8 +163,9 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
       } else if (args(index) == "--"+name || args(index) == "-"+shortName) {
         // support options like --file foo, or -f foo (or just --file or -f, in which case value is the defaultValue)
         var newIndex = index + 1
-        // If the next args does not begin with a "-" assume it is the value of this argument and parse it...
-        if (!args(newIndex).startsWith("-")) newIndex = parseValue(args, newIndex)
+        // If the next args does not begin with regex "-.+" assume it is the value of this argument and parse it...
+        if (newIndex < args.length && !(args(newIndex).startsWith("-") && args(newIndex).length > 1)) newIndex = parseValue(args, newIndex)
+        else if (valueClass == classOf[Boolean]) this.asInstanceOf[CmdOption[Boolean]].value = true // for CmdOption[Boolean], invoking with no value arg defaults to true
         // ...otherwise the value will just remain the defaultValue
         invoke
         invokedCount += 1
@@ -195,7 +196,8 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
           // Handle the case in which the list is space-separated
           var i = index
           val listValue = new scala.collection.mutable.ListBuffer[String]
-          while (i < args.length && !args(i).startsWith("--")) {
+          // Read arguments until we find another CmdOption, which must begin with either with regex "--" or "-.+"
+          while (i < args.length && !args(i).startsWith("--") && !(args(i).startsWith("-") && args(i).length > 1)) {
             listValue += args(i)
             i += 1
           }

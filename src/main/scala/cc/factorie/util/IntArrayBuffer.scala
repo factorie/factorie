@@ -9,7 +9,7 @@ trait ProtectedIntArrayBuffer {
   private var _size = 0
   @inline final protected def _setCapacity(cap:Int): Unit = {
     if (_arr.length != cap) {
-      require(cap > _size && cap > 0)
+      require(cap >= _size && cap >= 0)
       val newArray = new Array[Int](cap)
       if (_size > 0) compat.Platform.arraycopy(_arr, 0, newArray, 0, _size)
       _arr = newArray

@@ -35,9 +35,9 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     if (doc.theta eq null) doc.theta = new SortedSparseCountsProportions(numTopics)
     else require (doc.theta.length == numTopics)
     doc.theta ~ Dirichlet(alphas) // was DenseCountsProportions
-    if (doc.zs eq null) doc.zs = new Zs(doc.ws.length)
+    if (doc.zs eq null) doc.zs = new Zs(Array.tabulate(doc.ws.length)(i => random.nextInt(numTopics))) // Could also initialize to all 0 for more efficient sparse inference
     else require(doc.zs.length == doc.ws.length)
-    doc.zs :~ PlatedDiscrete(doc.theta) // TODO Consider using ~ because it is more efficient for all words to start in topic 0
+    doc.zs ~ PlatedDiscrete(doc.theta)
     doc.ws ~ PlatedDiscreteMixture(phis, doc.zs)
   }
 
@@ -211,12 +211,16 @@ object LDA {
       val numIterations = CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
       val diagnostic =    CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
       val tokenRegex =    CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
+      val addStopwords =  CmdOption("add-stopwords", List[String](), "WORDS...", "Add these words to the standard list of of stopwords.")
       val readDirs =      CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
-      val readLines =     CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
+      val readLines =     CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.  To read stdin use '--readlines -'.")
       val readLinesRegex= CmdOption("read-lines-regex", "", "REGEX", "Regular expression with parens around the portion of the line that should be read as the text of the document.")
-      val readDocs =      CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments") 
-      val writeDocs =     CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments") 
+      val readLinesRegexGroups= CmdOption("read-lines-regex-groups", List(1), "GROUPNUMS", "The --read-lines-regex group numbers from which to grab the text of the document.")
+      val readLinesRegexPrint = CmdOption("read-lines-regex-print", false, "BOOL", "Print the --read-lines-regex match that will become the text of the document.")
+      val readDocs =      CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments from the format saved by --write-docs.") 
+      val writeDocs =     CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments.") 
       val maxNumDocs =    CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
+      val printTopics =   CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
       val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = LDA.this.verbose = true }
     }
     opts.parse(args)
@@ -237,14 +241,25 @@ object LDA {
       }
     } 
     if (opts.readLines.wasInvoked) {
-      if (opts.readLinesRegex.wasInvoked) throw new Error("--read-lines-regex not yet implemented.")
-      val file = new File(opts.readLines.value)
-      val source = scala.io.Source.fromFile(file)
-      val name = file.getName
+      val name = if (opts.readLines.value == "-") "stdin" else opts.readLines.value
+      val source = if (opts.readLines.value == "-") scala.io.Source.stdin else scala.io.Source.fromFile(new File(opts.readLines.value))
       var count = 0
       breakable { for (line <- source.getLines()) {
         if (lda.documentMap.size == opts.maxNumDocs.value) break
-        val doc = Document(WordSeqDomain, name+":"+count, opts.tokenRegex.value.r.findAllIn(line).map(_.toLowerCase).filter(!Stopwords.contains(_)))
+        val text: String = 
+          if (!opts.readLinesRegex.wasInvoked) line 
+          else {
+            val textbuffer = new StringBuffer
+            for (groupIndex <- opts.readLinesRegexGroups.value) {
+            	val mi = opts.readLinesRegex.value.r.findFirstMatchIn(line).getOrElse(throw new Error("No regex match for --read-lines-regex in "+line))
+            	if (mi.groupCount >= groupIndex) textbuffer append mi.group(groupIndex)
+            	else throw new Error("No group found with index "+groupIndex)
+            }
+            textbuffer.toString
+          }
+        if (text eq null) throw new Error("No () group for --read-lines-regex in "+line)
+        if (opts.readLinesRegexPrint.value) println(text)
+        val doc = Document(WordSeqDomain, name+":"+count, opts.tokenRegex.value.r.findAllIn(text).map(_.toLowerCase).filter(!Stopwords.contains(_)))
         if (doc.length >= minDocLength) lda.addDocument(doc)
         count += 1
         if (count % 1000 == 0) { print(" "+count); Console.flush() }; if (count % 10000 == 0) println()
@@ -257,21 +272,29 @@ object LDA {
       breakable { while (true) {
         if (lda.documentMap.size == opts.maxNumDocs.value) break
         val doc = new Document(WordSeqDomain, "", Nil)
+        doc.zs = new lda.Zs(Nil)
         val numWords = doc.readNameWordsZs(reader)
         if (numWords < 0) break
         else if (numWords >= minDocLength) lda.addDocument(doc) // Skip documents that have only one word because inference can't handle them
+        else System.err.println("--read-docs skipping document %s: only %d words found.".format(doc.name, numWords))
       }}
       reader.close()
+      lda.maximizePhisAndThetas
+      //println(lda.documents.head.ws.categoryValues.mkString(" "))
+      //println(lda.documents.head.zs.intValues.mkString(" "))
     }
     if (lda.documents.size == 0) { System.err.println("You must specific either the --input-dirs or --input-lines options to provide documents."); System.exit(-1) }
     println("Read "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
     
-    val startTime = System.currentTimeMillis
-    if (opts.numThreads.value > 1) 
-      lda.inferTopicsMultithreaded(opts.numThreads.value, opts.numIterations.value, opts.diagnostic.value) 
-    else 
-      lda.inferTopics(opts.numIterations.value, opts.diagnostic.value)
-    println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+    // Run inference to discover topics
+    if (opts.numIterations.value > 0) {
+      val startTime = System.currentTimeMillis
+      if (opts.numThreads.value > 1) 
+       lda.inferTopicsMultithreaded(opts.numThreads.value, opts.numIterations.value, opts.diagnostic.value) 
+      else 
+        lda.inferTopics(opts.numIterations.value, opts.diagnostic.value)
+      println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+  	}	
 
     //testSaveLoad(lda)
     
@@ -281,6 +304,9 @@ object LDA {
       lda.documents.foreach(_.writeNameWordsZs(pw))
       pw.close()
     }
+    
+    if (opts.printTopics.wasInvoked) 
+      println(lda.topicsSummary(opts.printTopics.value))
 
   }
 
