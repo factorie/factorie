@@ -28,37 +28,68 @@ trait ChainType[+C<:AnyRef] {
   type ChainType = C
 }
 
+/** An element or "link" of a Chain, having methods "next", "prev", etc. */
 trait InChain[+This<:InChain[This,C],+C<:Chain[C,This]] extends ThisType[This] with ChainType[C] {
-  //this: This =>
+  this: This =>
   var _position: Int = -1
   var _chain: scala.collection.IndexedSeq[AnyRef] = null
   def chain: ChainType = _chain.asInstanceOf[ChainType]
   def position: Int = _position
-  def next: This = chain(_position+1)
-  def prev: This = chain(_position-1)
-  def hasPrev: Boolean = _position > 0
-  def hasNext: Boolean = _position < _chain.length - 1
+  
+  def hasNext = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else _chain != null && _position + 1 < _chain.length
+  def next: This = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (_position + 1 < _chain.length) chain(_position + 1) else null.asInstanceOf[This]
+  def hasPrev = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else _chain != null && _position > 0
+  def prev: This = if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") else if (_position > 0) chain(_position - 1) else null.asInstanceOf[This]
+  def next(n:Int): This = { 
+    if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set")
+    val i = _position + n
+    if (i >= 0 && i < _chain.length) chain(i) else null.asInstanceOf[This]
+  }
+  def prev(n:Int): This = {
+    if (_position == -1) throw new IllegalStateException("VarInSeq position not yet set") 
+    val i = _position - n
+    if (i >= 0 && i < _chain.length) chain(i) else null.asInstanceOf[This]
+  }
+  def seqAfter = chain.drop(_position+1)
+  def seqBefore = chain.take(_position)
+  def prevWindow(n:Int): Seq[This] = for (i <- math.max(_position-n, 0) to math.max(_position-1,0)) yield chain(i)
+  def nextWindow(n:Int): Seq[This] = for (i <- math.min(_position+1, _chain.length-1) to math.min(_position+n, _chain.length-1)) yield chain(i)
+  def window(n:Int): Seq[This] = for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1)) yield chain(i)
+  def windowWithoutSelf(n:Int): Seq[This] = for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1); if (i != _position)) yield chain(i)
+  def between(other:InChain[_,_]): Seq[This] = {
+    assert (other.chain == chain)
+    if (other.position > _position)
+      for (i <- _position until other.position) yield chain(i)
+    else
+      for (i <- other.position until _position) yield chain(i)
+  } 
+  def firstInSeq = chain(0)
+  /*class InSubChain[+This2<:InSubChain[This,C2],+C2<:Chain[C2,This2]](val subchain:C) extends InChain[This2,C2] {
+    this: This2 =>
+    def elt: This = InChain.this
+  }*/
 }
 
-trait Chain[+This<:Chain[This,A],+A<:InChain[A,This]] extends IndexedSeqEqualsEq[A] with ThisType[This] with ElementType[A] {
+/** A chain of elements, each of which has methods "next", "prev", etc */
+trait Chain[+This<:Chain[This,E],+E<:InChain[E,This]] extends IndexedSeqEqualsEq[E] with ThisType[This] with ElementType[E] {
   //this: This =>
-  type _Element = ThisType#ElementType
-  type _This = ThisType#ThisType
   private val _sequence = new ArrayBuffer[AnyRef]
-  def apply(i:Int): A = _sequence(i).asInstanceOf[A]
+  def apply(i:Int): ElementType = _sequence(i).asInstanceOf[ElementType]
   def length = _sequence.length
   // TODO Try to make type of 'e' stronger without getting into contravariance trouble 
   def +=(e:InChain[_,_]): Unit = {
     e._position = _sequence.length
     e._chain = this
-    _sequence += e.asInstanceOf[InChain[A,This]]
+    _sequence += e.asInstanceOf[InChain[ElementType,This]]
   }
 }
 
-trait ChainVar[+This<:Chain[This,A],+A<:InChain[A,This]] extends Chain[This,A] with IndexedSeqVar[A]
+/** A Chain that is also a Variable, with value Seq[ElementType] */
+trait ChainVar[+This<:Chain[This,E],+E<:InChain[E,This]] extends Chain[This,E] with IndexedSeqVar[E]
 
+/** A Chain which itself is also an element of an outer Chain */
 trait ChainInChain[+This<:ChainInChain[This,E,S],+E<:InChain[E,This],+S<:Chain[S,This]] extends InChain[This,S] with Chain[This,E] {
-  //this: This =>
+  this: This =>
 }
 
 trait SpanType[+S<:AnyRef] {
@@ -68,9 +99,10 @@ trait SpanType[+S<:AnyRef] {
 //trait Span[This<:Span[This,C,E],+C<:Chain[C,E],+E<:InChain[E,C]]
 
 trait SpanInChain[This<:SpanInChain[This,C,E],+C<:ChainWithSpans[C,This,E],+E<:InChain[E,C]] extends IndexedSeq[E] with ThisType[This] with ElementType[E] with ChainType[C] {
+  type Element = ThisType#ElementType
   protected var _start = 0
   protected var _length = 0
-  var _chain: ChainWithSpans[_,This,_] = null
+  var _chain: ChainWithSpans[_,This,_] = null // Set automatically in ChainWithSpans.+= and -=
   /** True if this span is currently present in a ChainWithSpans.  Used by Diff objects to handle deleted spans. */
   def present = _chain ne null
   def start: Int = _start
@@ -94,6 +126,15 @@ trait SpanInChain[This<:SpanInChain[This,C,E],+C<:ChainWithSpans[C,This,E],+E<:I
   def hasPredecessor(i: Int) = (start - i) >= 0
   def successor(i: Int): E = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[E]
   def predecessor(i: Int): E = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[E]
+  def prevWindow(n:Int): Seq[E] = for (i <- math.max(0,start-n) until start) yield chain(i)
+  def nextWindow(n:Int): Seq[E] = for (i <- end+1 until math.min(seq.length-1,end+n)) yield chain(i)
+  def window(n:Int): Seq[E] = for (i <- math.max(0,start-n) to math.min(seq.length-1,end+n)) yield chain(i)
+  def windowWithoutSelf(n:Int): Seq[E] = for (i <- math.max(0,start-n) to math.min(seq.length-1,end+n); if (i < start || i > end)) yield chain(i)
+  // Support for next/prev of elements within a span
+  //def hasNext(elt:Element): Boolean = { require(elt.chain eq chain); elt.position < end }
+  //def hasPrev(elt:Element): Boolean = { require(elt.chain eq chain); elt.position > start }
+  //def next(elt:ElementType): E = if (hasNext(elt)) elt.next else null.asInstanceOf[E]
+  //def prev(elt:ElementType): E = if (hasPrev(elt)) elt.prev else null.asInstanceOf[E]
 }
 
 trait SpanInChainVar[This<:SpanInChainVar[This,C,E],+C<:ChainWithSpansVar[C,This,E],+E<:InChain[E,C]] extends SpanInChain[This,C,E] with IndexedSeqVar[E] {
@@ -250,6 +291,9 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with In
   def document: ChainType = chain
   def string = document.string.substring(stringStart, stringStart + stringLength)
   def value: String = string // abstract in StringVar
+  private var _sentence: Sentence = null
+  def sentence = _sentence
+  //def sentenceNext: ThisType 
 }
 
 class TokenSpan(val document:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanInChainVar[TokenSpan,Document,Token] {
@@ -311,7 +355,7 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
   def stringLength: Int = if (_string ne null) _string.length else _stringbuf.length
   override def +=(s:Span): Unit = s match {
     case s:Sentence => {
-      if (_sentences.length == 0 || _sentences.last.end < s.start) _sentences += s
+      if (_sentences.length == 0 || _sentences.last.end >= s.start) _sentences += s
       else throw new Error("Sentences must be added in order.")
       s._chain = this
     }

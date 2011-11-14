@@ -96,6 +96,7 @@ trait VarInSeq[This <: VarInSeq[This] with Variable] extends VarInTypedSeq[This,
     the collection represents both the element and the collection itself.
     This class may be deprecated in the future.
     @author Andrew McCallum */
+@deprecated
 trait VarInMutableSeq[This >: Null <: VarInMutableSeq[This] with cc.factorie.util.LinkList[This] with Variable] extends cc.factorie.util.LinkList[This] {
   this : This =>
     def swapWithVar(that:This)(implicit d:DiffList) : Unit = {
