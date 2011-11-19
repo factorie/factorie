@@ -68,7 +68,7 @@ object ChainNER4 {
     val testSentences = load(args(1))
 
     // Get the variables to be inferred
-    val trainLabels = trainSentences.flatMap(_.map(_.label)).take(10000)
+    val trainLabels = trainSentences.flatMap(_.map(_.label)).take(30000)
     val testLabels = testSentences.flatMap(_.map(_.label)).take(2000)
     val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
 
@@ -82,6 +82,7 @@ object ChainNER4 {
     
     
     // Sample and Learn!
+    val startTime = System.currentTimeMillis
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with ConfidenceWeightedUpdates { temperature = 0.01 }
     val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.01 }
@@ -98,6 +99,7 @@ object ChainNER4 {
     predictor.temperature *= 0.1
     predictor.processAll(testLabels, 2)
     println ("Final Test  accuracy = "+ objective.aveScore(testLabels))
+    println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
   }
 
   // Feature extraction

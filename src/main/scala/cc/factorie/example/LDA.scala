@@ -32,11 +32,11 @@ object LDA {
   class Word(value: String) extends CategoricalVariable(value) { def domain = WordDomain; def z = defaultGenerativeModel.parentFactor(this).asInstanceOf[DiscreteMixture.Factor]._3 }
   class Document(val file: String) extends ArrayBuffer[Word] {var theta: DenseCountsProportions = null}
   val beta = new GrowableUniformMasses(WordDomain, 0.1)
+  val alphas = new DenseMasses(numTopics, 0.1)
+  val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(WordDomain) ~ Dirichlet(beta))
 
   def main(args: Array[String]): Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
-    val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(WordDomain) ~ Dirichlet(beta))
-    val alphas = new DenseMasses(numTopics, 0.1)
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
       println("Reading files from directory " + directory)

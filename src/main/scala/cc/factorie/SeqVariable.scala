@@ -30,16 +30,24 @@ trait SeqEqualsEq[+A] extends scala.collection.Seq[A] {
   override def hashCode: Int = java.lang.System.identityHashCode(this)
 }
 
-trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A]
+trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A] {
+  override def equals(that:Any): Boolean = that match {
+    case that:AnyRef => this eq that
+    case _ => false
+  }
+  override def hashCode: Int = java.lang.System.identityHashCode(this)
+}
 
 trait ElementType[+ET] {
   type ElementType = ET
 }
 
+@deprecated("Will be removed")
 trait VarAndElementType[+This<:Variable,+ET] extends VarAndValueType[This,IndexedSeq[ET]] with ElementType[ET]
 
-trait SeqVar[+X] extends Variable with VarAndElementType[SeqVar[X],X] with SeqEqualsEq[X] with VarAndValueGenericDomain[SeqVar[X],Seq[X]] 
-trait IndexedSeqVar[+X] extends Variable with VarAndElementType[IndexedSeqVar[X],X] with IndexedSeqEqualsEq[X] with VarAndValueGenericDomain[IndexedSeqVar[X],IndexedSeq[X]] 
+trait SeqVar[+E] extends Variable with /*VarAndElementType[SeqVar[X],X] with*/ SeqEqualsEq[E] with VarAndValueType[SeqVar[E],Seq[E]] with ElementType[E] //with VarAndValueGenericDomain[SeqVar[E],Seq[E]]
+trait IndexedSeqVar[+E] extends Variable with IndexedSeqEqualsEq[E] with VarAndValueType[IndexedSeqVar[E],IndexedSeq[E]] with ElementType[E] //with VarAndValueGenericDomain[IndexedSeqVar[E],IndexedSeq[E]]
+//trait IndexedSeqVar[+X] extends Variable with VarAndElementType[IndexedSeqVar[X],X] with IndexedSeqEqualsEq[X] with VarAndValueGenericDomain[IndexedSeqVar[X],IndexedSeq[X]] 
 
 /** A variable containing a mutable sequence of other variables.  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
@@ -76,7 +84,7 @@ trait MutableSeqVar[X] extends SeqVar[X] with MutableVar /*with VarAndElementTyp
   //def update(index:Int, x:Element): Unit = _seq(index) = x
 }
 
-abstract class SeqVariable[X](initialValue: Seq[X]) extends MutableSeqVar[X] with VarAndElementType[SeqVariable[X],X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]] {
+abstract class SeqVariable[X](initialValue: Seq[X]) extends MutableSeqVar[X] /*with VarAndElementType[SeqVariable[X],X] with VarAndValueGenericDomain[SeqVariable[X],Seq[X]]*/ {
   def this() = this(Nil)
   _seq ++= initialValue
   //protected val _seq: ArrayBuffer[X] = { val a = new ArrayBuffer[X](); a ++= sequence; a }
@@ -86,11 +94,12 @@ abstract class DiscreteSeqDomain extends Domain[Seq[DiscreteValue]] {
   def elementDomain: DiscreteDomain
 }
 
-abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] {
+//abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] 
+abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with IndexedSeqVar[DiscreteValue] {
   def this(initialValue:Seq[Int]) = { this(); _setCapacity(if (initialValue.length > 0) initialValue.length else 1); _appendAll(initialValue.toArray) }
   def length = _length
   def apply(index: Int): ElementType = domain.elementDomain.getValue(_apply(index))
-  def iterator = new Iterator[ElementType] {
+  override def iterator = new Iterator[ElementType] {
     var i = 0
     def hasNext = i < _length
     def next = { i += 1; domain.elementDomain.getValue(_apply(i-1)) }

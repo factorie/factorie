@@ -14,8 +14,8 @@ object NerModel extends TemplateModel(
     new TemplateWithDotStatistics1[NerLabel], 
     // Transition factors between two successive labels
     new TemplateWithDotStatistics2[NerLabel, NerLabel] {
-      def unroll1(label: NerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[NerLabel], label) else Nil
-      def unroll2(label: NerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[NerLabel]) else Nil
+      def unroll1(label: NerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[NerLabel], label) else Nil
+      def unroll2(label: NerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[NerLabel]) else Nil
     },
     // Factor between label and observed token
     new TemplateWithDotStatistics2[NerLabel,TokenFeatures] {
@@ -73,18 +73,17 @@ object NER {
     val Numeric = "^[0-9]+$".r
     val Punctuation = "[-,\\.;:?!()]+".r
 
-    var wordCount = 0
     val documents = new ArrayBuffer[Document]
     var document = new Document("CoNLL2003-"+documents.length, "")
     documents += document
     val source = Source.fromFile(new File(filename))
-    var sentence = new Sentence(document, 0, 0)(null)
+    var sentence = new Sentence(document)(null)
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
         //sentence.stringLength = document.stringLength - sentence.stringStart
         //document += sentence
         document.appendString("\n")
-        sentence = new Sentence(document, document.length, 0)(null) 
+        sentence = new Sentence(document)(null)
       } else if (line.startsWith("-DOCSTART-")) {
         // Skip document boundaries
         document = new Document("CoNLL2003-"+documents.length, "")
@@ -96,8 +95,7 @@ object NER {
         val partOfSpeech = fields(1)
         val labelString = fields(3).stripLineEnd
         document.appendString(" ")
-        val token = new Token(document, word)
-        document.appendString(word)
+        val token = new Token(sentence, word)
         if (false && document.stringLength < 100) {
           println("word=%s documentlen=>%s<".format(word, document.string))
           println("token start,end %d,%d".format(token.stringStart, token.stringLength))
@@ -115,11 +113,10 @@ object NER {
         if (Capitalized.findFirstMatchIn(word) != None) token.attr[TokenFeatures] += "CAPITALIZED"
         if (Numeric.findFirstMatchIn(word) != None) token.attr[TokenFeatures] += "NUMERIC"
         if (Punctuation.findFirstMatchIn(word) != None) token.attr[TokenFeatures] += "PUNCTUATION"
-        wordCount += 1
       }
     }
     //sentence.stringLength = document.stringLength - sentence.stringStart
-    println("Loaded "+document.length+" sentences with "+wordCount+" words total from file "+filename)
+    println("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.length).sum+" tokens total from file "+filename)
     documents
   }
 }
