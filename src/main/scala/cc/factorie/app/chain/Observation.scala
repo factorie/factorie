@@ -16,7 +16,8 @@ package cc.factorie.app.chain
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
-trait Observation[+This<:Observation[This]] extends AbstractInChain[This] {
+/** A element of the input sequence to a linear-chain (CRF).  Its corresponding label will be an Attr attribute. */
+trait Observation[+This<:Observation[This]] extends AbstractInChain[This] with Attr {
   this: This =>
   def string: String
   //def vector: VectorVar
@@ -98,4 +99,74 @@ object Observations {
     else appendConjunctions(t, vf, regex, result, offsets.drop(1))
   }  
   
+  
+  
+  
+  /** Extract a collection contiguous non-"background" labels
+      @author Tim Vieira, Andrew McCallum */
+  @deprecated("May be moved elsewhere")
+  def extractContiguous[T](s:Seq[T], labeler:T=>String, background:String = "O"): Seq[(String,Seq[T])] = {
+    val result = new ArrayBuffer[(String,Seq[T])]
+    if (s.size == 0) return result
+    var prevLabel = background
+    var entity = new ArrayBuffer[T]
+    for (token <- s) {
+      val currLabel = labeler(token)
+      if (currLabel != background) {
+        if (currLabel == prevLabel) {
+          entity += token
+        } else {
+          if (entity.length > 0) result += ((prevLabel, entity))
+          entity = new ArrayBuffer
+          entity += token 
+        }
+      } else {
+        if (entity.length > 0) result += ((prevLabel, entity))
+        entity = new ArrayBuffer[T]
+      }
+      prevLabel = currLabel
+    }
+    // add any lingering bits
+    if (entity.length > 0) result += ((prevLabel, entity))
+    result
+  }
+
+  /** Given a sequence and a labeling function extract segments encoded in the BIO or IOB scheme.
+      Note: a hueristic correction is applied when a segment starts with "I-"
+      @author Tim Vieira */
+  @deprecated("May be moved elsewhere")
+  def extractBIO[T](s:Seq[T], labeler:T=>String): Seq[(String,Seq[T])] = {
+    val result = new ArrayBuffer[(String,Seq[T])]
+    var phrase = new ArrayBuffer[T]
+    var intag: String = null
+    for (tk <- s) {
+      val lbl = labeler(tk)
+      if (lbl startsWith "B-") {
+        if (intag != null && phrase.length > 0) {
+          result += ((intag, phrase))
+          phrase = new ArrayBuffer[T]
+        }
+        intag = lbl.substring(2)
+        phrase += tk.asInstanceOf[T]
+      } else if (lbl startsWith "I-") {
+        if (intag == lbl.substring(2)) {  // and still in the same span
+          phrase += tk
+        } else {                            // you're in a new span (hueristic correction)
+          if (phrase.length > 0) result += ((intag, phrase))
+          intag = lbl.substring(2)
+          phrase = ArrayBuffer[T](tk)
+        }
+      } else if (intag != null) {          // was in tag, now outiside
+        result += ((intag, phrase))
+        intag = null
+        phrase = new ArrayBuffer[T]
+      } else {
+        // label is not B-* I-*, must be "O", AND not intag
+      }
+    }
+    if (intag != null && phrase.length > 0) result += ((intag, phrase))  // close any lingering spans
+    result
+  }
+
+
 }

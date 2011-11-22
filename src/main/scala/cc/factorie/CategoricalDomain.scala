@@ -133,6 +133,8 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
 
   //def indexOf[B >: Value](elem: B): Int = elem.index // elem.asInstanceOf[Value].index //index(elem.asInstanceOf[T]) // TODO Try to get rid of this cast!!!
 
+  def categoryValues: Seq[T] = values.map(_.category)
+  
   // Separate argument types preserves return collection type
   def indexAll(c: Iterator[T]) = c map index;
   def indexAll(c: List[T]) = c map index;

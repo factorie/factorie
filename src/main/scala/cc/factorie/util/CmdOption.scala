@@ -113,33 +113,33 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
       case None =>
     }
   }
-  object CmdOption {
+  /*object CmdOption {
     def apply[T](name:String, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]): CmdOption[T] =
-      new CmdOption[T](name, valueName, defaultValue, helpMsg)
+      new CmdOption[T](name, defaultValue, valueName, helpMsg)
     def apply[T](name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]): CmdOption[T] =
-      new CmdOption[T](name, shortName, valueName, defaultValue, helpMsg)
+      new CmdOption[T](name, shortName, defaultValue, valueName, helpMsg)
     def apply(name:String, helpMsg:String): CmdOption[Any] =
       new CmdOption[Any](name, helpMsg)
-  }
+  }*/
   class CmdOption[T](val name:String, val helpMsg:String)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
     // TODO Add "required" constructor argument when we have Scala 2.8
-    def this(name:String, valueName:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
+    def this(name:String, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]) = { 
       this(name, helpMsg)
       this.valueName = valueName
       value = defaultValue
       this.defaultValue = defaultValue
     }
-    def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
-      this(name, { val fields = m.erasure.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.head }, defaultValue, helpMsg)
-    }
-    def this(name:String, shortName:Char, valueName:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
-      this(name, valueName, defaultValue, helpMsg)
+    /*def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
+      this(name, defaultValue, { val fields = m.erasure.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.head }, helpMsg)
+    }*/
+    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]) = { 
+      this(name, defaultValue, valueName, helpMsg)
       this.shortName = shortName
     }
-    def this(name:String, shortName:Char, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
+    /*def this(name:String, shortName:Char, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
       this(name, defaultValue, helpMsg)
       this.shortName = shortName
-    }
+    }*/
     CmdOptions.this += this
     // TODO When we have Scala 2.8 default args, add a "shortName" one-char alternative here
     var shortName: Char = ' ' // space char indicates no shortName

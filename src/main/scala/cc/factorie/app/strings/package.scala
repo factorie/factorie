@@ -61,4 +61,12 @@ package object strings {
     //for (i <- 0 until w.length; j <- min to max; if (i+j < w.length)) yield w.substring(i,i+j)
   }
   
+  // Simplified form of word for feature generation
+  def simplifyDigits(word:String): String = {
+    if (word.matches("(19|20)\\d\\d")) "<YEAR>" 
+    else if (word.matches("\\d+")) "<NUM>"
+    else if (word.matches(".*\\d.*")) word.replaceAll("\\d","#").toLowerCase
+    else word
+  }
+
 }

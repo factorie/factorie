@@ -28,22 +28,44 @@ class RegexSegmenter(val regex:scala.util.matching.Regex) extends StringSegmente
   def apply(s:String): scala.util.matching.Regex.MatchIterator = regex.findAllIn(s)
 }
 
-class BreakIteratorSegmenter(bi:BreakIterator) extends StringSegmenter {
-  def apply(s:String): Iterator[String] = new Iterator[String] {
+trait IndexedStringIterator extends Iterator[String] {
+  def start: Int
+  def end: Int
+}
+
+// This seems totally broken.  I tried:
+// scala -cp ~/workspace/factorie/target cc.factorie.app.strings.sentenceSegmenter ~/research/data/text/nipstxt/nips11/0620.txt
+// and got garbage
+class BreakIteratorSegmenter(val bi:BreakIterator) extends StringSegmenter {
+  def apply(s:String): IndexedStringIterator = new IndexedStringIterator {
     bi.setText(s)
-    var start: Int = bi.first
-    var end: Int = bi.next()
-    def hasNext: Boolean = end != BreakIterator.DONE
+    var start: Int = -1
+    var end: Int = -1
+    var nextStart: Int = bi.first()
+    var nextEnd: Int = bi.next()
+    def hasNext: Boolean = nextEnd != BreakIterator.DONE
     def next: String = {
+      start = nextStart
+      end = nextEnd
       val result = s.substring(start, end)
-      start = end // TODO Is this right?
-      end = bi.next() // TODO Fix this!
+      nextStart = end // TODO Is this right?
+      nextEnd = bi.next()
       result
     }
   }
 }
 
-object sentenceSegmenter extends BreakIteratorSegmenter(BreakIterator.getSentenceInstance(java.util.Locale.US))
+object sentenceSegmenter extends BreakIteratorSegmenter(BreakIterator.getSentenceInstance(java.util.Locale.US)) {
+  def main(args:Array[String]): Unit = {
+    for (filename <- args) {
+      println("\n"+filename)
+      val iterator = apply(new java.io.File(filename))
+      for (sentence <- iterator) println(sentence)
+    }
+  }
+}
+
+
 
 object alphaSegmenter extends RegexSegmenter("\\p{Alpha}+".r)
 object wordSegmenter extends RegexSegmenter("\\w+".r)
@@ -52,6 +74,10 @@ object nonWhitespaceSegmenter extends RegexSegmenter("\\S+".r)
 object nonWhitespaceClassesSegmenter extends RegexSegmenter("\\p{Alpha}+|\\p{Digit}+|\\p{Punct}".r)
 object foreignWordSegmenter extends RegexSegmenter("[\\p{L}\\p{P}]*\\p{L}".r)
 object urlSegmenter extends RegexSegmenter("\\b(https?|ftp|file)://[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|]".r)
+
+// TODO Should this be moved to cc.factorie.nlp? -akm
+// TODO The regex needs more work.  Brian, care to do this?
+object nlpTokenSegmenter extends RegexSegmenter("'s|n't|a\\.m\\.|p\\.m\\.|Inc\\.|Corp\\.|St\\.|Mr\\.|Mrs\\.|Dr\\.|([A-Z]\\.)+|vs\\.|[-0-9,\\.]+|$|[-A-Za-z0-9\\+$]+|\\p{Punct}".r)
 
 /** For segmenting fields of a comma-separated-value file.
     Handles commas nested in quotes, 

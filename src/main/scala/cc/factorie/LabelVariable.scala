@@ -139,3 +139,87 @@ class ZeroOneLossTemplate[A<:VarWithTarget]()(implicit am:Manifest[A], tm:Manife
   def statistics(values:Values) = Stat(values._1 == values._2)
   def score(s:Stat) = if (s._1) 1.0 else 0.0
 }
+
+object ZeroOneLossObjective extends TemplateModel(new ZeroOneLossTemplate[VarWithTarget])
+
+// Evaluation
+
+/** Stores the results of evaluating per-label accuracy and other measures.
+    Note, this is not per-field accuracy. */
+class LabelEvaluation(val domain: CategoricalDomain[String]) {
+  //val labelValue: String, var targetIndex:Int) {
+
+  private val _fp = new Array[Int](domain.size)
+  private val _fn = new Array[Int](domain.size)
+  private val _tp = new Array[Int](domain.size)
+  private val _tn = new Array[Int](domain.size)
+  private var _size: Int = 0
+  def size = _size
+
+  /*private val targetIndex = -1 // TODO replace this: Domain[L](m).index(labelValue) */
+
+  //def ++=(tokenseqs:Seq[Seq[{def label:LabelVariable[String]}]]) = tokenseqs.foreach(ts => this += ts.map(_.label))
+
+  def +=(label: LabelVariable[String]): this.type = {
+    require(label.domain eq domain)
+    _size += 1
+    val trueIndex = label.target.intValue
+    val predIndex = label.intValue
+    for (targetIndex <- 0 until domain.size) {
+      if (targetIndex == trueIndex) {
+        if (trueIndex == predIndex)
+          _tp(targetIndex) += 1
+        else
+          _fn(targetIndex) += 1
+      } else if (targetIndex == predIndex) {
+        if (trueIndex == predIndex)
+          _tp(targetIndex) += 1
+        else
+          _fp(targetIndex) += 1
+      }
+    }
+    this
+  }
+  def +=(a:Attr, f:Attr=>LabelVariable[String]): this.type = this += f(a)
+  def ++=(labels: Iterable[LabelVariable[String]]): this.type = { labels.foreach(+=(_)); this }
+  def ++=(as:Iterable[Attr], f:Attr=>LabelVariable[String]): this.type = { as.foreach(this += f(_)); this }
+  def +++=(labels: Iterable[Iterable[LabelVariable[String]]]): this.type = { labels.foreach(_.foreach(+=(_))); this }
+  def +++=(as:Iterable[Iterable[Attr]], f:Attr=>LabelVariable[String]): this.type = { as.foreach(_.foreach(this += f(_))); this }
+  
+  def accuracy: Double = (_tp.sum + _tn.sum).toDouble / size
+  def precision(labelIndex:Int): Double = if (_tp(labelIndex) + _fp(labelIndex) == 0.0) 0.0 else _tp(labelIndex).toDouble / (_tp(labelIndex) + _fp(labelIndex))
+  def precision(labelValue:DiscreteValue): Double = precision(labelValue.intValue)
+  def precision(category:String): Double = precision(domain.getIndex(category))
+  def precision: Double = precision(0)
+  def recall(labelIndex:Int): Double = if (_tp(labelIndex) + _fn(labelIndex) == 0.0) 0.0 else _tp(labelIndex).toDouble / (_tp(labelIndex) + _fn(labelIndex))
+  def recall(labelValue:DiscreteValue): Double = recall(labelValue.intValue)
+  def recall(category:String): Double = recall(domain.getIndex(category))
+  def recall: Double = recall(0)
+  def f1(labelIndex:Int): Double = if (precision(labelIndex) + recall(labelIndex) == 0.0) 0.0 else 2.0 * precision(labelIndex) * recall(labelIndex) / (precision(labelIndex) + recall(labelIndex))
+  def f1(labelValue:DiscreteValue): Double = f1(labelValue.intValue)
+  def f1(category:String): Double = f1(domain.getIndex(category))
+  def f1: Double = f1(0)
+  def tp(labelIndex:Int): Int = _tp(labelIndex)
+  def tp(labelValue:DiscreteValue): Int = _tp(labelValue.intValue)
+  def tp(category:String): Int = _tp(domain.getIndex(category))
+  def tp: Int = _tp(0)
+  def fp(labelIndex:Int): Int = _fp(labelIndex)
+  def fp(labelValue:DiscreteValue): Int = _fp(labelValue.intValue)
+  def fp(category:String): Int = _fp(domain.getIndex(category))
+  def fp: Int = _fp(0)
+  def tn(labelIndex:Int): Int = _tn(labelIndex)
+  def tn(labelValue:DiscreteValue): Int = _tn(labelValue.intValue)
+  def tn(category:String): Int = _tn(domain.getIndex(category))
+  def tn: Int = _tn(0)
+  def fn(labelIndex:Int): Int = _fn(labelIndex)
+  def fn(labelValue:DiscreteValue): Int = _fn(labelValue.intValue)
+  def fn(category:String): Int = _fn(domain.getIndex(category))
+  def fn: Int = _fn(0)
+  
+  //def correctCount(labelIndex:Int) = _tp(labelIndex)
+  //def missCount(labelIndex:Int) = _fn(labelIndex)
+  //def alarmCount(labelIndex:Int) = _fp(labelIndex)
+  def toString(labelIndex:Int) = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(domain.getCategory(labelIndex), f1(labelIndex), precision(labelIndex), recall(labelIndex), tp(labelIndex), fp(labelIndex), fn(labelIndex), tp(labelIndex)+fn(labelIndex), tp(labelIndex)+fp(labelIndex))
+  override def toString = (0 until domain.size).map(toString(_)).mkString("\n")
+}
+

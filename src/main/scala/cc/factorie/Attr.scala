@@ -20,6 +20,8 @@ trait Attr {
   object attr extends scala.collection.mutable.ListMap[Class[_],AnyRef] {
     def apply[C<:AnyRef]()(implicit m: Manifest[C]): C = this(m.erasure).asInstanceOf[C]
     def get[C<:AnyRef](implicit m: Manifest[C]): Option[C] = this.get(m.erasure).asInstanceOf[Option[C]]
+    def getOrElse[C<:AnyRef](defaultValue:C)(implicit m: Manifest[C]): Option[C] = this.getOrElse(m.erasure, defaultValue).asInstanceOf[Option[C]]
+    def getOrElseUpdate[C<:AnyRef](defaultValue:C)(implicit m: Manifest[C]): Option[C] = this.getOrElseUpdate(m.erasure, defaultValue).asInstanceOf[Option[C]]
     def +=[C<:AnyRef](value:C): C = { this(value.getClass) = value; value }
     def -=[C<:AnyRef](value:C): C = { super.-=(value.getClass); value }
     def remove[C<:AnyRef](implicit m: Manifest[C]): Unit = super.-=(m.erasure)

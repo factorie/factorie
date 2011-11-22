@@ -54,6 +54,7 @@ trait AbstractInChain[+This<:AbstractInChain[This]] {
   }
 }
 
+// TODO Rename "ChainLink"
 /** An element or "link" of a Chain, having methods "next", "prev", etc. */
 trait InChain[This<:InChain[This,C],C<:Chain[C,This]] extends AbstractInChain[This] with ThisType[This] with ChainType[C] {
   this: This =>
