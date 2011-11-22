@@ -37,8 +37,6 @@ trait VarAndValueType[+This<:Variable,+VT] extends ValueType[VT] {
   //this: This => // Crashes under scala-2.9.0.r24003-b20110118020144
   type VariableType = This
 }
-// TODO Consider renaming ValueAndVarType[+VT,+This<:Variable] to match other ordering of self-type going last.
-
 
 
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
@@ -117,6 +115,7 @@ trait Variable {
 /** For variables that support representing of their uncertainty with a distribution Q over their values, 
     for variational inference with an approximate distribution Q.
     @author Andrew McCallum */
+@deprecated("Will be removed")
 trait QDistribution {
   this: Variable =>
   type QType <: Variable

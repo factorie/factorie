@@ -291,11 +291,11 @@ object SpanNER1 {
   def main(args: Array[String]): Unit = {
     // Parse command-line
     object opts extends DefaultCmdOptions {
-      val trainFile = new CmdOption("train", "FILE", List("eng.train"), "CoNLL formatted training file.")
-      val testFile  = new CmdOption("test",  "FILE", "", "CoNLL formatted dev file.")
-      val modelDir =  new CmdOption("model", "DIR",  "spanner1.factorie", "Directory for saving or loading model.")
-      val runXmlDir = new CmdOption("run",   "DIR",  "xml", "Directory for reading data on which to run saved model.")
-      val lexiconDir =new CmdOption("lexicons", "DIR", "lexicons", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
+      val trainFile = new CmdOption("train", List("eng.train"), "FILE", "CoNLL formatted training file.")
+      val testFile  = new CmdOption("test",  "", "FILE", "CoNLL formatted dev file.")
+      val modelDir =  new CmdOption("model", "spanner1.factorie", "DIR", "Directory for saving or loading model.")
+      val runXmlDir = new CmdOption("run", "xml", "DIR", "Directory for reading data on which to run saved model.")
+      val lexiconDir =new CmdOption("lexicons", "lexicons", "DIR", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
       val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER1.this.verbose = true }
       val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
     }

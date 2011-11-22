@@ -1,3 +1,17 @@
+/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
+   Department of Computer Science.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
+
 package cc.factorie.app.topics.lda
 import cc.factorie._
 import cc.factorie.generative._
@@ -204,23 +218,20 @@ object LDA {
   val minDocLength = 3
   def main(args:Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
-      val numTopics =     CmdOption("num-topics", 't', 10, "N", "Number of topics.")
-      val alpha =         CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
-      val beta =          CmdOption("beta", 0.1, "N", "Dirichlet parameter for per-topic word proportions.")
-      val numThreads =    CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
-      val numIterations = CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
-      val diagnostic =    CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
-      val tokenRegex =    CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
-      val addStopwords =  CmdOption("add-stopwords", List[String](), "WORDS...", "Add these words to the standard list of of stopwords.")
-      val readDirs =      CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
-      val readLines =     CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.  To read stdin use '--readlines -'.")
-      val readLinesRegex= CmdOption("read-lines-regex", "", "REGEX", "Regular expression with parens around the portion of the line that should be read as the text of the document.")
-      val readLinesRegexGroups= CmdOption("read-lines-regex-groups", List(1), "GROUPNUMS", "The --read-lines-regex group numbers from which to grab the text of the document.")
-      val readLinesRegexPrint = CmdOption("read-lines-regex-print", false, "BOOL", "Print the --read-lines-regex match that will become the text of the document.")
-      val readDocs =      CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments from the format saved by --write-docs.") 
-      val writeDocs =     CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments.") 
-      val maxNumDocs =    CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
-      val printTopics =   CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
+      val numTopics =     new CmdOption("num-topics", 't', 10, "N", "Number of topics.")
+      val alpha =         new CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
+      val beta =          new CmdOption("beta", 0.1, "N", "Dirichlet parameter for per-topic word proportions.")
+      val numThreads =    new CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
+      val numIterations = new CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
+      val diagnostic =    new CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
+      val tokenRegex =    new CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
+      val readDirs =      new CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
+      val readLines =     new CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
+      val readLinesRegex= new CmdOption("read-lines-regex", "", "REGEX", "Regular expression with parens around the portion of the line that should be read as the text of the document.")
+      val readDocs =      new CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments") 
+      val writeDocs =     new CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments") 
+      val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
+      val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
       val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = LDA.this.verbose = true }
     }
     opts.parse(args)
@@ -284,7 +295,7 @@ object LDA {
       //println(lda.documents.head.zs.intValues.mkString(" "))
     }
     if (lda.documents.size == 0) { System.err.println("You must specific either the --input-dirs or --input-lines options to provide documents."); System.exit(-1) }
-    println("Read "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
+    println("\nRead "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
     
     // Run inference to discover topics
     if (opts.numIterations.value > 0) {

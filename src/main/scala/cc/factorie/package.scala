@@ -21,6 +21,12 @@ package object factorie {
   // TODO If we keep it, find a way to automatically maintain this string value
   //def factorieVersionString = "0.9.0.SNAPSHOT"
 
+  trait ThisType[+This<:AnyRef] {
+    this: This =>
+    type ThisType = This
+  }
+
+
   var randomSeed = 0
   implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
   
@@ -30,6 +36,7 @@ package object factorie {
   // TODO Consider removing this now that we have separate, more specific samplers.
   // TODO Consider also removing SamplerSuite?
   // Yes to both.
+  @deprecated("Will be removed.")
   val defaultSampler = new SamplerSuite
 
   type Logging = cc.factorie.util.Logging
