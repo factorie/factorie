@@ -18,28 +18,28 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 
-object NerFeaturesDomain extends CategoricalVectorDomain[String]
-class NerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
-  def domain = NerFeaturesDomain
+object ChainNerFeaturesDomain extends CategoricalVectorDomain[String]
+class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
+  def domain = ChainNerFeaturesDomain
   override def skipNonCategories = true
 }
 
-object NerModel extends TemplateModel(
+object ChainNerModel extends TemplateModel(
     // Bias term on each individual label 
-    new TemplateWithDotStatistics1[NerLabel], 
+    new TemplateWithDotStatistics1[ChainNerLabel], 
     // Transition factors between two successive labels
-    new TemplateWithDotStatistics2[NerLabel, NerLabel] {
-      def unroll1(label: NerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[NerLabel], label) else Nil
-      def unroll2(label: NerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[NerLabel]) else Nil
+    new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel] {
+      def unroll1(label: ChainNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[ChainNerLabel], label) else Nil
+      def unroll2(label: ChainNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[ChainNerLabel]) else Nil
     },
     // Factor between label and observed token
-    new TemplateWithDotStatistics2[NerLabel,NerFeatures] {
-      def unroll1(label: NerLabel) = Factor(label, label.token.attr[NerFeatures])
-      def unroll2(tf: NerFeatures) = Factor(tf.token.attr[NerLabel], tf)
+    new TemplateWithDotStatistics2[ChainNerLabel,ChainNerFeatures] {
+      def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
+      def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
     }
   )
 
-object NerObjective extends TemplateModel(new ZeroOneLossTemplate[NerLabel])
+object ChainNerObjective extends TemplateModel(new ZeroOneLossTemplate[ChainNerLabel])
 
 
 object NER {
@@ -58,7 +58,7 @@ object NER {
     for (document <- (trainDocuments ++ testDocuments)) {
       for (token <- document) {
         val word = token.string
-        val features = token.attr += new NerFeatures(token)
+        val features = token.attr += new ChainNerFeatures(token)
         features += "W="+word
         features += "SHAPE="+cc.factorie.app.strings.stringShape(word, 2)
         features += "SUFFIX3="+word.takeRight(3)
@@ -69,26 +69,26 @@ object NER {
         if (Punctuation.findFirstMatchIn(word) != None) features += "PUNCTUATION"
       }
       for (sentence <- document.sentences)
-        cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[NerFeatures], List(1), List(-1))
+        cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[ChainNerFeatures], List(1), List(-1))
     }
     println("Example Token features")
-    println(trainDocuments(3).tokens.take(10).map(_.attr[NerFeatures].toString).mkString("\n"))
-    println("Num TokenFeatures = "+NerFeaturesDomain.dimensionDomain.size)
+    println(trainDocuments(3).tokens.take(10).map(_.attr[ChainNerFeatures].toString).mkString("\n"))
+    println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.flatten.map(_.attr[NerLabel]) //.take(10000)
-    val testLabels = testDocuments.flatten.map(_.attr[NerLabel]) //.take(2000)
+    val trainLabels = trainDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(10000)
+    val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     
     def printEvaluation(iteration:String): Unit = {
       //println("Train Token accuracy = "+ NerObjective.aveScore(trainLabels))
       //println(" Test Token accuracy = "+ NerObjective.aveScore(testLabels))
       for (docs <- List(trainDocuments, testDocuments)) {
         if (docs.length > 300) println ("TRAIN") else println("TEST") // Fragile
-        val tokenEvaluation = new LabelEvaluation(NerDomain)
-        for (doc <- docs; token <- doc) tokenEvaluation += token.attr[NerLabel]
+        val tokenEvaluation = new LabelEvaluation(NerLabelDomain)
+        for (doc <- docs; token <- doc) tokenEvaluation += token.attr[ChainNerLabel]
         println(tokenEvaluation)
-        val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[NerLabel](NerDomain.categoryValues.filter(_.length > 2).map(_.substring(2)))
-        for (doc <- docs; sentence <- doc.sentences) segmentEvaluation += sentence.map(_.attr[NerLabel])
+        val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](NerLabelDomain.categoryValues.filter(_.length > 2).map(_.substring(2)))
+        for (doc <- docs; sentence <- doc.sentences) segmentEvaluation += sentence.map(_.attr[ChainNerLabel])
         println("Segment evaluation")
         println(segmentEvaluation)
         println("Iteration "+iteration)
@@ -98,8 +98,8 @@ object NER {
     // Train for 5 iterations
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     printEvaluation("Initialization")
-    val learner = new VariableSettingsSampler[NerLabel](NerModel, NerObjective) with SampleRank with GradientAscentUpdates
-    val predictor = new VariableSettingsSampler[NerLabel](NerModel)
+    val learner = new VariableSettingsSampler[ChainNerLabel](ChainNerModel, ChainNerObjective) with SampleRank with GradientAscentUpdates
+    val predictor = new VariableSettingsSampler[ChainNerLabel](ChainNerModel)
     for (i <- 1 until 5) {
       learner.processAll(trainLabels)
       predictor.processAll(testLabels)

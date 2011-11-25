@@ -28,3 +28,23 @@ trait Attr {
   }
 }
 
+trait Attr2 {
+  object attr {
+    private var _attr: Array[AnyRef] = new Array[AnyRef](2)
+    def length: Int = { var i = 0; while ((i < _attr.length) && (_attr(i) ne null)) i += 1; i }
+    def setCapacity(cap:Int): Unit = { val ta = new Array[AnyRef](cap); System.arraycopy(_attr, 0, ta, 0, math.min(cap, math.min(cap, _attr.length))); ta }
+    def growCapacity(cap:Int): Unit = if (cap > _attr.length) { val ta = new Array[AnyRef](cap); System.arraycopy(_attr, 0, ta, 0, _attr.length); ta }
+    def increaseCapacity(incr:Int): Unit = { val ta = new Array[AnyRef](_attr.length+incr); System.arraycopy(_attr, 0, ta, 0, _attr.length); ta }
+    def trim: Unit = { val l = length; if (l < _attr.length) setCapacity(l) }
+    def +=[C<:AnyRef](value:C): C = {
+      var i = 0
+      while (i < _attr.length && _attr(i).getClass.isAssignableFrom(value.getClass))
+        i += 1
+      if (i == _attr.length)
+        increaseCapacity(1)
+      _attr(i) = value
+      value
+    }
+
+  }
+}

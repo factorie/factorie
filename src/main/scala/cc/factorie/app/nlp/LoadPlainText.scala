@@ -31,8 +31,9 @@ object LoadPlainText {
           while (tokenIterator.hasNext) {
             tokenIterator.next
             val start = sentenceIterator.start + tokenIterator.start
-            val end = sentenceIterator.start + tokenIterator.end
-            new Token(sentence, start, end) // This will automatically extend the sentence end boundary
+            val length = tokenIterator.end - start
+            if (length > 0)
+              new Token(sentence, start, length) // This will automatically extend the sentence end boundary
           }
         }
       }
@@ -40,7 +41,10 @@ object LoadPlainText {
       val tokenIterator = cc.factorie.app.strings.nlpTokenSegmenter(document.string)
       while (tokenIterator.hasNext) {
         tokenIterator.next
-        new Token(document, tokenIterator.start, tokenIterator.end - tokenIterator.start)
+        val start = tokenIterator.start
+        val length = tokenIterator.end - start
+        if (length > 0)
+          new Token(document, start, length)
       }
     }
     document

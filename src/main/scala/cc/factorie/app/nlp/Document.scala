@@ -27,8 +27,9 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:InChain[E,C]] ext
   protected var _start = 0
   protected var _length = 0
   var _chain: C = null.asInstanceOf[C] //ChainWithSpans[C,This,E] = null // Set automatically in ChainWithSpans.+= and -=
+  var _present = true
   /** True if this span is currently present in a ChainWithSpans.  Used by Diff objects to handle deleted spans. */
-  def present = _chain ne null
+  def present = _present
   def start: Int = _start
   def length: Int = _length
   def chain: C = _chain
@@ -151,12 +152,25 @@ trait ChainWithSpans[This<:ChainWithSpans[This,S,E],S<:Span[S,This,E],E<:InChain
   //type Span = ThisType#SpanType
   private val _spans = new scala.collection.mutable.ListBuffer[Span[S,This,E]];
   def spans: Seq[S] = _spans.asInstanceOf[Seq[S]]
-  def +=(s:S): Unit = { _spans.prepend(s); s._chain = this }
-  def -=(s:S): Unit = { _spans -= s; s._chain = null.asInstanceOf[This] }
+  def spansOfClass[A<:S](c:Class[A]): Seq[A] = _spans.filter(s => c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  def spansOfClass[A<:S](implicit m:Manifest[A]): Seq[A] = spansOfClass[A](m.erasure.asInstanceOf[Class[A]])
+  def +=(s:S): Unit = { /*println("ChainWithSpans.+=1 "+spans);*/ _spans.prepend(s); s._chain = this; s._present = true }
+  def -=(s:S): Unit = { /*println("ChainWithSpans.-=1 "+spans);*/ _spans -= s; s._present = false }
+  // Aliases for the above two methods, which the Scala compiler seemed to be confusing! 
+  //def ad(s:S): Unit = { _spans.prepend(s); s._chain = this; s._present = true }
+  //def rm(s:S): Unit = { _spans -= s; s._present = false }
   def orderedSpans: Seq[S] = spans.toList.sortWith((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
+  def orderedSpansOfClass[A<:S](c:Class[A]): Seq[A] = spansOfClass(c).toList.sortWith((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
+  def orderedSpansOfClass[A<:S](implicit m:Manifest[A]): Seq[A] = orderedSpansOfClass(m.erasure.asInstanceOf[Class[A]])
   def spansContaining(position: Int): Seq[S] = spans.filter(s => s.start <= position && position < (s.start + s.length))
+  def spansOfClassContaining[A<:S](c:Class[A], position: Int): Seq[A] = spans.filter(s => s.start <= position && position < (s.start + s.length) && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  def spansOfClassContaining[A<:S](position: Int)(implicit m:Manifest[A]): Seq[A] = spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
   def spansStartingAt(position: Int): Seq[S] = spans.filter(s => s.start == position)
+  def spansOfClassStartingAt[A<:S](c:Class[A], position: Int)(implicit m:Manifest[A]): Seq[A] = spans.filter(s => s.start == position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  def spansOfClassStartingAt[A<:S](position: Int)(implicit m:Manifest[A]): Seq[A] = spansOfClassStartingAt(m.erasure.asInstanceOf[Class[A]], position) 
   def spansEndingAt(position: Int): Seq[S] = spans.filter(s => s.start + s.length - 1 == position)
+  def spansOfClassEndingAt[A<:S](c:Class[A], position: Int)(implicit m:Manifest[A]): Seq[A] = spans.filter(s => s.start + s.length - 1 == position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  def spansOfClassEndingAt[A<:S](position: Int)(implicit m:Manifest[A]): Seq[A] = spansOfClassEndingAt(m.erasure.asInstanceOf[Class[A]], position) 
 }
 
 trait ChainWithSpansVar[This<:ChainWithSpansVar[This,S,E],S<:SpanVar[S,This,E],E<:InChain[E,This]] extends ChainVar[This,E] with ChainWithSpans[This,S,E] with IndexedSeqVar[E] with VarAndElementType[ChainWithSpansVar[This,S,E],E]{
@@ -182,9 +196,9 @@ trait ChainWithSpansVar[This<:ChainWithSpansVar[This,S,E],S<:SpanVar[S,This,E],E
     var done = false
     if (d != null) d += this
     redo
-    def variable: S = if (done) span else null.asInstanceOf[S]
+    def variable: S = if (span._present || span.diffIfNotPresent) span else null.asInstanceOf[S]
     def redo = { ChainWithSpansVar.this.+=(span); assert(!done); done = true }
-    def undo = { ChainWithSpansVar.this.-=(span); assert(done); done = false }
+    def undo = { /*println("AddSpan.undo1 "+spans);*/ ChainWithSpansVar.this.-=(span); /*println("AddSpan.undo2 "+spans);*/ assert(done); done = false }
     override def toString = "AddSpanVariable("+span+")"
   }
   case class RemoveSpanVariable(span:S)(implicit d: DiffList) extends Diff {
@@ -192,7 +206,7 @@ trait ChainWithSpansVar[This<:ChainWithSpansVar[This,S,E],S<:SpanVar[S,This,E],E
     var done = false
     if (d != null) d += this
     redo
-    def variable: S = if (done) null.asInstanceOf[S] else span
+    def variable: S = if (span._present || span.diffIfNotPresent) span else null.asInstanceOf[S]
     def redo = { ChainWithSpansVar.this.-=(span); assert(!done); done = true }
     def undo = { ChainWithSpansVar.this.+=(span); assert(done); done = false }
     override def toString = "RemoveSpanVariable("+span+")"
@@ -232,7 +246,7 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with In
   
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PosLabel]
-  def nerLabel = attr[cc.factorie.app.nlp.ner.NerLabel]
+  def nerLabel = attr[cc.factorie.app.nlp.ner.ChainNerLabel]
   
   // Sentence methods
   // Consider not storing _sentence, but instead
@@ -248,9 +262,13 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with In
   def isSentenceEnd: Boolean = (_sentence ne null) && _sentence.end == position
   
   // Span methods
-  def spans:Seq[TokenSpan] = chain.spansContaining(position).toList
+  def spans:Seq[TokenSpan] = chain.spansContaining(position) //.toList
+  def spansOfClass[A<:TokenSpan](c:Class[A]) = chain.spansOfClassContaining(c, position)
+  def spansOfClass[A<:TokenSpan](implicit m:Manifest[A]) = chain.spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
   def startsSpans: Iterable[TokenSpan] = chain.spansStartingAt(position)
+  def startsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassStartingAt(position)
   def endsSpans: Iterable[TokenSpan] = chain.spansEndingAt(position)
+  def endsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassEndingAt(position)
   
   // String feature help:
   def matches(t2:Token): Boolean = string == t2.string
@@ -267,11 +285,12 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with In
       Skip more than 'maxRepetitions' of the same character class. */
   def wordShape(maxRepetitions:Int): String = cc.factorie.app.strings.stringShape(string, maxRepetitions)
   def charNGrams(min:Int, max:Int): Seq[String] = cc.factorie.app.strings.charNGrams(string, min, max)
+  override def toString = "Token("+stringStart+"+"+stringLength+":"+string+")"
 }
 
 class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanVariable[TokenSpan,Document,Token](doc, initialStart, initialLength) with Attr {
   def document = chain
-  def phrase = if (length == 1) this.head.toString else this.mkString(" ")
+  def phrase = if (length == 1) this.head.string else this.map(_.string).mkString(" ")
   // Does this span contain the words of argument span in order?
   def containsStrings(span:TokenSpan): Boolean = {
     for (i <- 0 until length) {
@@ -286,7 +305,7 @@ class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Di
     }
     return false
   }
-  override def toString = "TokenSpan("+length+","+attr[cc.factorie.app.nlp.ner.NerLabel].categoryValue+":"+this.phrase+")"
+  override def toString = "TokenSpan("+length+":"+this.phrase+")"
   /** A short name for this span */
   def name: String = attr.values.head match {
     case label:LabelVariable[String] => label.categoryValue
@@ -344,13 +363,13 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     case s:Sentence => {
       if (_sentences.length == 0 || _sentences.last.end < s.start) _sentences += s
       else throw new Error("Sentences must be added in order and not overlap.")
-      s._chain = this
+      s._chain = this // not already done in += be cause += is not on ChainWithSpans
     }
     case s:TokenSpan => super.+=(s)
   }
   override def -=(s:TokenSpan): Unit = s match {
     case s:Sentence => _sentences -= s
-    case s:TokenSpan => super.+=(s)
+    case s:TokenSpan => super.-=(s)
   }
   
   def tokens: IndexedSeq[ElementType] = this

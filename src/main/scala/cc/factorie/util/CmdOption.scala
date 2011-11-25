@@ -186,7 +186,15 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
         Return the index position that should be processed next. 
         This method allows one option to possibly consume multiple args, (in contrast with parseValue(String).) */
     protected def parseValue(args:Seq[String], index:Int): Int = {
-      if (valueManifest <:< Manifest.classType[List[String]](classOf[List[String]], Manifest.classType[String](classOf[String]))) {
+      //println("CmdOption    "+valueManifest)
+      //val listIntManifest = Manifest.classType[List[Int]](classOf[List[Int]], Manifest.classType[Int](classOf[Int]))
+      //println("Manifest     "+listIntManifest)
+      //println("CmdOption == "+(valueManifest == listIntManifest))
+      //println("typeArgs     "+(valueManifest.typeArguments))
+      //println("typeArgs1 == "+((valueClass eq classOf[List[_]])))
+      //if (valueManifest.typeArguments.size > 0) println("typeArgs2 == "+((valueManifest.typeArguments(0).erasure eq classOf[Int])))
+      //println("typeArgs ==  "+((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).erasure eq classOf[Int])))
+      if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).erasure eq classOf[String])) {
         // Handle CmdOpt whose value is a List[String]
         if (args(index).contains(',')) {
           // Handle the case in which the list is comma-separated
@@ -199,6 +207,42 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
           // Read arguments until we find another CmdOption, which must begin with either with regex "--" or "-.+"
           while (i < args.length && !args(i).startsWith("--") && !(args(i).startsWith("-") && args(i).length > 1)) {
             listValue += args(i)
+            i += 1
+          }
+          value = listValue.toList.asInstanceOf[T]
+          i
+        }
+      } else if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).erasure eq classOf[Int])) {
+        // Handle CmdOpt whose value is a List[String]
+        if (args(index).contains(',')) {
+          // Handle the case in which the list is comma-separated
+          value = args(index).split(",").toList.map(_.toInt).asInstanceOf[T]
+          index + 1
+        } else {
+          // Handle the case in which the list is space-separated
+          var i = index
+          val listValue = new scala.collection.mutable.ListBuffer[Int]
+          // Read arguments until we find another CmdOption, which must begin with either with regex "--" or "-.+"
+          while (i < args.length && !args(i).startsWith("--") && !(args(i).startsWith("-") && args(i).length > 1)) {
+            listValue += args(i).toInt
+            i += 1
+          }
+          value = listValue.toList.asInstanceOf[T]
+          i
+        }
+      } else if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).erasure eq classOf[Double])) {
+        // Handle CmdOpt whose value is a List[String]
+        if (args(index).contains(',')) {
+          // Handle the case in which the list is comma-separated
+          value = args(index).split(",").toList.map(_.toDouble).asInstanceOf[T]
+          index + 1
+        } else {
+          // Handle the case in which the list is space-separated
+          var i = index
+          val listValue = new scala.collection.mutable.ListBuffer[Double]
+          // Read arguments until we find another CmdOption, which must begin with either with regex "--" or "-.+"
+          while (i < args.length && !args(i).startsWith("--") && !(args(i).startsWith("-") && args(i).length > 1)) {
+            listValue += args(i).toDouble
             i += 1
           }
           value = listValue.toList.asInstanceOf[T]

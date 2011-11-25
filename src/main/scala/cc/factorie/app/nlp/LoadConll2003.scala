@@ -48,7 +48,7 @@ object LoadConll2003 {
           println("token=%s".format(token.string))
           println()
         }
-        token.attr += new cc.factorie.app.nlp.ner.NerLabel(token, ner)
+        token.attr += new cc.factorie.app.nlp.ner.ChainNerLabel(token, ner)
         token.attr += new cc.factorie.app.nlp.pos.PosLabel(token, partOfSpeech)
       }
     }

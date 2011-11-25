@@ -224,6 +224,7 @@ object LDA {
       val numThreads =    new CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
       val numIterations = new CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
       val diagnostic =    new CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
+      val fitAlpha =      new CmdOption("fit-alpha-interval", Int.MaxValue, "N", "Number of iterations between each re-estimation of prior on per-document topic distribution.")
       val tokenRegex =    new CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
       val readDirs =      new CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
       val readLines =     new CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
@@ -305,7 +306,7 @@ object LDA {
       if (opts.numThreads.value > 1) 
        lda.inferTopicsMultithreaded(opts.numThreads.value, opts.numIterations.value, opts.diagnostic.value) 
       else 
-        lda.inferTopics(opts.numIterations.value, opts.diagnostic.value)
+        lda.inferTopics(opts.numIterations.value, opts.diagnostic.value, opts.fitAlpha.value)
       println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
   	}	
 

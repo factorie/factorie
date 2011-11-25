@@ -16,7 +16,19 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.app.nlp._
 
-object NerDomain extends CategoricalDomain[String]
-class NerLabel(val token:Token, initialValue:String) extends LabelVariable(initialValue) {
-  def domain = NerDomain
-} 
+object NerLabelDomain extends CategoricalDomain[String]
+class NerLabel(initialValue:String) extends LabelVariable(initialValue) {
+  def domain = NerLabelDomain
+}
+
+class ChainNerLabel(val token:Token, initialValue:String) extends NerLabel(initialValue)
+class SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue)
+
+
+class NerSpan(doc:Document, labelString:String, start:Int, end:Int)(implicit d:DiffList) extends TokenSpan(doc, start, end) {
+  val label = new SpanNerLabel(this, labelString)
+  def isCorrect = this.forall(token => token.nerLabel.intValue == label.intValue) &&
+    (!hasPredecessor(1) || predecessor(1).nerLabel.intValue != label.intValue) && 
+    (!hasSuccessor(1) || successor(1).nerLabel.intValue != label.intValue)
+  override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
+}

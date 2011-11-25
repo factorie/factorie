@@ -41,7 +41,8 @@ trait CategoricalVectorVar[T] extends DiscreteVectorVar with VarAndValueType[Cat
    def +=(elt:T): Unit = increment(elt, 1.0)
    def ++=(elts:Iterable[T]): Unit = elts.foreach(this.+=(_))
    def activeCategories: Seq[T] = vector.activeDomain.toSeq.map(i => domain.dimensionDomain.getCategory(i))
-   override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString+"="+i).mkString(printName+"(", ",", ")")
+   //override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString+"="+i).mkString(printName+"(", ",", ")")
+   override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString).mkString(printName+"(", ",", ")")
 }
 
 abstract class CategoricalVectorVariable[T] extends VectorVariable with CategoricalVectorVar[T] {
