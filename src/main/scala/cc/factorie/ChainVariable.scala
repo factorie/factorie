@@ -24,7 +24,7 @@ trait ChainType[+C<:AnyRef] {
 }
 
 // Used by app.chain.Observation and app.chain.Lexicon.LexiconToken
-trait AbstractInChain[+This<:AbstractInChain[This]] {
+trait AbstractChainLink[+This<:AbstractChainLink[This]] {
   this: This =>
   def hasNext: Boolean
   def hasPrev: Boolean
@@ -54,9 +54,8 @@ trait AbstractInChain[+This<:AbstractInChain[This]] {
   }
 }
 
-// TODO Rename "ChainLink"
 /** An element or "link" of a Chain, having methods "next", "prev", etc. */
-trait InChain[This<:InChain[This,C],C<:Chain[C,This]] extends AbstractInChain[This] with ThisType[This] with ChainType[C] {
+trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainLink[This] with ThisType[This] with ChainType[C] {
   this: This =>
   private var _position: Int = -1
   private var _chain: C = null.asInstanceOf[C]
@@ -106,7 +105,7 @@ trait InChain[This<:InChain[This,C],C<:Chain[C,This]] extends AbstractInChain[Th
 }
 
 /** A chain of elements, each of which has methods "next", "prev", etc */
-trait Chain[This<:Chain[This,E],E<:InChain[E,This]] extends IndexedSeqEqualsEq[E] with ThisType[This] with ElementType[E] {
+trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends IndexedSeqEqualsEq[E] with ThisType[This] with ElementType[E] {
   this: This =>
   private val _chainseq = new scala.collection.mutable.ArrayBuffer[E]
   def apply(i:Int): E = _chainseq(i)
@@ -122,15 +121,15 @@ trait Chain[This<:Chain[This,E],E<:InChain[E,This]] extends IndexedSeqEqualsEq[E
 }
 
 /** A Chain that is also a Variable, with value Seq[ElementType] */
-trait ChainVar[This<:ChainVar[This,E],E<:InChain[E,This]] extends Chain[This,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[ChainVar[This,E],IndexedSeq[E]] {
+trait ChainVar[This<:ChainVar[This,E],E<:ChainLink[E,This]] extends Chain[This,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[ChainVar[This,E],IndexedSeq[E]] {
   this: This =>
 }
 
-class ChainVariable[This<:ChainVariable[This,E],E<:InChain[E,This]] extends ChainVar[This,E] {
+class ChainVariable[This<:ChainVariable[This,E],E<:ChainLink[E,This]] extends ChainVar[This,E] {
   this: This =>
 }
 
 /** A Chain which itself is also an element of an outer Chain */
-trait ChainInChain[This<:ChainInChain[This,E,S],E<:InChain[E,This],S<:Chain[S,This]] extends InChain[This,S] with Chain[This,E] {
+trait ChainInChain[This<:ChainInChain[This,E,S],E<:ChainLink[E,This],S<:Chain[S,This]] extends ChainLink[This,S] with Chain[This,E] {
   this: This =>
 }

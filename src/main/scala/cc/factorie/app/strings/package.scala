@@ -65,7 +65,7 @@ package object strings {
   def simplifyDigits(word:String): String = {
     if (word.matches("(19|20)\\d\\d")) "<YEAR>" 
     else if (word.matches("\\d+")) "<NUM>"
-    else if (word.matches(".*\\d.*")) word.replaceAll("\\d","#").toLowerCase
+    else if (word.matches(".*\\d.*")) word.replaceAll("\\d","#")
     else word
   }
 

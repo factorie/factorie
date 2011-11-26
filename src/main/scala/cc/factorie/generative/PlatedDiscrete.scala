@@ -28,13 +28,13 @@ trait PlatedDiscreteGeneratingFactor extends GenerativeFactor {
   def prValue(value:Int, index:Int): Double = prValue(statistics, value, index)
 }
 
-object PlatedDiscrete extends GenerativeFamily2[PlatedDiscreteVar,Proportions] {
+object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVariable,Proportions] {
   self =>
   def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
   def logpr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => math.log(p(dv.intValue))).sum
   def sampledValue(d:DiscreteDomain, length:Int, p:ProportionsValue): Seq[DiscreteValue] = 
     Vector.fill(length)(d.getValue(p.sampleInt))
-  case class Factor(_1:PlatedDiscreteVar, _2:Proportions) extends super.Factor {
+  case class Factor(_1:DiscreteSeqVariable, _2:Proportions) extends super.Factor {
     def pr(s:Statistics): Double = self.pr(s._1, s._2)
     override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
     override def sampledValue: Any = self.sampledValue(_1.first.domain, _1.length, _2) // Avoid creating a Statistics
@@ -49,5 +49,5 @@ object PlatedDiscrete extends GenerativeFamily2[PlatedDiscreteVar,Proportions] {
       }
     }
   }
-  def newFactor(a:PlatedDiscreteVar, b:Proportions) = Factor(a, b)
+  def newFactor(a:DiscreteSeqVariable, b:Proportions) = Factor(a, b)
 }

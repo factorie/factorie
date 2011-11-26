@@ -62,9 +62,8 @@ class POS1 {
       features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
       features += "SUFFIX3="+word.takeRight(3)
       features += "PREFIX3="+word.take(3)
-      features += "POS="+token.attr[cc.factorie.app.nlp.pos.PosLabel].categoryValue
-      if (token.isCapitalized) features += "CAPITALIZED"
-      if (token.containsDigit) features += "NUMERIC"
+      //if (token.isCapitalized) features += "CAPITALIZED"
+      //if (token.containsDigit) features += "NUMERIC"
       if (token.isPunctuation) features += "PUNCTUATION"
     }
     for (sentence <- document.sentences)

@@ -149,8 +149,9 @@ trait DotFamily extends VectorFamily {
   }
 
   override def load(dirname:String): Unit = {
-    //println("Loading "+this.getClass.getName+" from directory "+dirname)
-    for (d <- statisticsDomains) { /* println(" Loading Domain["+d+"]"); */ d.load(dirname) }
+    //println("Loading DotFamily "+this.factorName+" from directory "+dirname)
+    for (d <- statisticsDomains) { /*println(" Loading Domain["+d+"]");*/ d.load(dirname) }
+    //println("Statistics sizes "+statisticsDomains.map(_.dimensionDomain.length).mkString(" "))
     val f = new File(dirname+"/"+filename)
     val reader = new BufferedReader(new FileReader(f))
     loadFromReader(reader)

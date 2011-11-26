@@ -148,6 +148,7 @@ object ZeroOneLossObjective extends TemplateModel(new ZeroOneLossTemplate[VarWit
     Note, this is not per-field accuracy. */
 class LabelEvaluation(val domain: CategoricalDomain[String]) {
   //val labelValue: String, var targetIndex:Int) {
+  def this(labels:Iterable[LabelVariable[String]]) = { this(labels.head.domain); this ++= labels }
 
   private val _fp = new Array[Int](domain.size)
   private val _fn = new Array[Int](domain.size)

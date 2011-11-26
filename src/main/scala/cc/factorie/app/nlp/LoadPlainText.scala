@@ -16,8 +16,12 @@ package cc.factorie.app.nlp
 import java.io.File
 
 object LoadPlainText {
-  def fromFile(file:File, segmentSentences:Boolean): Document = 
-    fromString(file.getCanonicalPath, scala.io.Source.fromFile(file).toString, segmentSentences)
+  def fromFile(file:File, segmentSentences:Boolean): Document = {
+    //println("LoadPlainText.fromFile: "+file.getCanonicalPath)
+    val string = scala.io.Source.fromFile(file).mkString
+    //println("LoadPlainText.fromFile: "+string)
+    fromString(file.getCanonicalPath, string, segmentSentences)
+  }
 
   def fromString(name:String, contents:String, segmentSentences:Boolean): Document = {
     val document = new Document(name, contents)
@@ -39,6 +43,7 @@ object LoadPlainText {
       }
     } else {
       val tokenIterator = cc.factorie.app.strings.nlpTokenSegmenter(document.string)
+      println("LoadPlainText: <START>"+document.string+"<END>")
       while (tokenIterator.hasNext) {
         tokenIterator.next
         val start = tokenIterator.start

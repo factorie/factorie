@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
 /** A element of the input sequence to a linear-chain (CRF).  Its corresponding label will be an Attr attribute. */
-trait Observation[+This<:Observation[This]] extends AbstractInChain[This] with Attr {
+trait Observation[+This<:Observation[This]] extends AbstractChainLink[This] with Attr {
   this: This =>
   def string: String
   //def vector: VectorVar

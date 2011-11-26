@@ -18,9 +18,15 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import cc.factorie.util.DefaultCmdOptions
-import cc.factorie.app.nlp.ner.chain.ChainNerFeatures
-import cc.factorie.app.nlp.ner.chain.ChainNerFeaturesDomain
 import java.io.File
+
+class NerSpan(doc:Document, labelString:String, start:Int, end:Int)(implicit d:DiffList) extends TokenSpan(doc, start, end) {
+  val label = new SpanNerLabel(this, labelString)
+  def isCorrect = this.forall(token => token.nerLabel.intValue == label.intValue) &&
+    (!hasPredecessor(1) || predecessor(1).nerLabel.intValue != label.intValue) && 
+    (!hasSuccessor(1) || successor(1).nerLabel.intValue != label.intValue)
+  override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
+}
 
 object SpanNerFeaturesDomain extends CategoricalVectorDomain[String]
 class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -209,39 +215,6 @@ class SpanNerPredictor(model:TemplateModel) extends TokenSpanSampler(model, null
           case _ => {}
         })
     }
-  }
-}
-
-object SpanNER extends SpanNER {
-  // The "main", examine the command line and do some work
-  def main(args: Array[String]): Unit = {
-    // Parse command-line
-    object opts extends DefaultCmdOptions {
-      val trainFile = new CmdOption("train", List("eng.train"), "FILE", "CoNLL formatted training file.")
-      val testFile  = new CmdOption("test",  "", "FILE", "CoNLL formatted dev file.")
-      val modelDir =  new CmdOption("model", "spanner1.factorie", "DIR", "Directory for saving or loading model.")
-      val runXmlDir = new CmdOption("run", "xml", "DIR", "Directory for reading data on which to run saved model.")
-      val lexiconDir =new CmdOption("lexicons", "lexicons", "DIR", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
-      val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER.this.verbose = true }
-      val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
-    }
-    opts.parse(args)
-    
-    if (opts.lexiconDir.wasInvoked) {
-      for (filename <- List("cities", "companies", "companysuffix", "countries", "days", "firstname.high", "firstname.highest", "firstname.med", "jobtitle", "lastname.high", "lastname.highest", "lastname.med", "months", "states")) {
-        println("Reading lexicon "+filename)
-        lexicons += new Lexicon(opts.lexiconDir.value+"/"+filename)
-      }
-    }
-    
-    if (opts.runXmlDir.wasInvoked) {
-      //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
-      model.load(opts.modelDir.value)
-      run(opts.runXmlDir.value)
-    } else {
-      train(opts.trainFile.value, opts.testFile.value)
-      if (opts.modelDir.wasInvoked) model.save(opts.modelDir.value)
-    }   
   }
 }
 
@@ -453,3 +426,37 @@ class SpanNER {
 
   
 }
+
+object SpanNER extends SpanNER {
+  // The "main", examine the command line and do some work
+  def main(args: Array[String]): Unit = {
+    // Parse command-line
+    object opts extends DefaultCmdOptions {
+      val trainFile = new CmdOption("train", List("eng.train"), "FILE", "CoNLL formatted training file.")
+      val testFile  = new CmdOption("test",  "", "FILE", "CoNLL formatted dev file.")
+      val modelDir =  new CmdOption("model", "spanner.factorie", "DIR", "Directory for saving or loading model.")
+      val runXmlDir = new CmdOption("run", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
+      val lexiconDir =new CmdOption("lexicons", "lexicons", "DIR", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
+      val verbose =   new CmdOption("verbose", "Turn on verbose output") { override def invoke = SpanNER.this.verbose = true }
+      val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
+    }
+    opts.parse(args)
+    
+    if (opts.lexiconDir.wasInvoked) {
+      for (filename <- List("cities", "companies", "companysuffix", "countries", "days", "firstname.high", "firstname.highest", "firstname.med", "jobtitle", "lastname.high", "lastname.highest", "lastname.med", "months", "states")) {
+        println("Reading lexicon "+filename)
+        lexicons += new Lexicon(opts.lexiconDir.value+"/"+filename)
+      }
+    }
+    
+    if (opts.runXmlDir.wasInvoked) {
+      //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))
+      model.load(opts.modelDir.value)
+      run(opts.runXmlDir.value)
+    } else {
+      train(opts.trainFile.value, opts.testFile.value)
+      if (opts.modelDir.wasInvoked) model.save(opts.modelDir.value)
+    }   
+  }
+}
+

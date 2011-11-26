@@ -27,7 +27,7 @@ trait Doc /* extends PlatedCategoricalVariable[String]*/ {
   //def theta_=(p:CountsProportions): Unit
   var zs: PlatedGateVariable
   //def zs_=(theZs:PlatedGateVariable): Unit
-  def ws: PlatedCategoricalVariable[String]
+  def ws: CategoricalSeqVariable[String]
   
   // Experimental thoughts about serialization with Facades
   type WordsZs = { def words: Seq[String]; def zInts: Array[Int] } 
