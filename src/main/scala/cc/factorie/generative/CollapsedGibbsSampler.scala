@@ -178,7 +178,7 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
   class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedDiscreteMixture.Factor) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
-      val gates = mFactor._3.asInstanceOf[PlatedGateVariable];
+      val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
       val domainSize = gates(0).domain.size
       val distribution = new Array[Double](domainSize)
       val gParent = gFactor._2.asInstanceOf[CountsProportions]

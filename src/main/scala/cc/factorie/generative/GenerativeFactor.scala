@@ -35,6 +35,18 @@ trait GenerativeFactor extends Factor {
   def resetCollapsedChild(): Boolean = throw new Error(factorName+": Resetting child not implemented.")
 }
 
+trait RealGeneratingFactor extends GenerativeFactor {
+  def sampleDouble: Double
+  def pr(x:Double): Double
+  def logpr(x:Double): Double
+}
+
+trait IntGeneratingFactor extends GenerativeFactor {
+  def sampleInt: Int
+  def pr(x:Int): Double
+  def logpr(x:Int): Double
+}
+
 trait GenerativeFactorWithStatistics1[C<:Variable] extends GenerativeFactor with FactorWithStatistics1[C] {
   type ChildType = C
   def child = _1

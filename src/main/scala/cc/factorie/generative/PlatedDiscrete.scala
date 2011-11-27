@@ -16,25 +16,20 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
-// Move this out of generative
-trait PlatedDiscreteVar extends DiscreteSeqVariable with MutableVar
-abstract class PlatedDiscreteVariable(initialValue:Seq[Int]) extends DiscreteSeqVariable(initialValue) with PlatedDiscreteVar
-
-trait PlatedCategoricalVar[A] extends CategoricalSeqVariable[A] with PlatedDiscreteVar
-abstract class PlatedCategoricalVariable[A](initialValue:Seq[A]) extends CategoricalSeqVariable(initialValue) with PlatedCategoricalVar[A]
-
+/*
 trait PlatedDiscreteGeneratingFactor extends GenerativeFactor {
   def prValue(s:StatisticsType, value:Int, index:Int): Double
   def prValue(value:Int, index:Int): Double = prValue(statistics, value, index)
 }
+*/
 
-object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVariable,Proportions] {
+object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVar,Proportions] {
   self =>
   def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
   def logpr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => math.log(p(dv.intValue))).sum
   def sampledValue(d:DiscreteDomain, length:Int, p:ProportionsValue): Seq[DiscreteValue] = 
     Vector.fill(length)(d.getValue(p.sampleInt))
-  case class Factor(_1:DiscreteSeqVariable, _2:Proportions) extends super.Factor {
+  case class Factor(_1:DiscreteSeqVar, _2:Proportions) extends super.Factor {
     def pr(s:Statistics): Double = self.pr(s._1, s._2)
     override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
     override def sampledValue: Any = self.sampledValue(_1.first.domain, _1.length, _2) // Avoid creating a Statistics
@@ -49,5 +44,5 @@ object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVariable,Proportions]
       }
     }
   }
-  def newFactor(a:DiscreteSeqVariable, b:Proportions) = Factor(a, b)
+  def newFactor(a:DiscreteSeqVar, b:Proportions) = Factor(a, b)
 }

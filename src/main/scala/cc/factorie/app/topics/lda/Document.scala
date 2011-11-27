@@ -25,7 +25,7 @@ trait Doc /* extends PlatedCategoricalVariable[String]*/ {
   var name: String
   var theta: CountsProportions
   //def theta_=(p:CountsProportions): Unit
-  var zs: PlatedGateVariable
+  var zs: DiscreteSeqVariable
   //def zs_=(theZs:PlatedGateVariable): Unit
   def ws: CategoricalSeqVariable[String]
   
@@ -74,9 +74,9 @@ trait Doc /* extends PlatedCategoricalVariable[String]*/ {
 }
 
 /** A simple concrete implementation of DocumentVar. */
-class Document(val domain:CategoricalSeqDomain[String], var name:String, tokens:Seq[String]) extends PlatedCategoricalVariable(tokens) with Doc {
+class Document(val domain:CategoricalSeqDomain[String], var name:String, tokens:Seq[String]) extends CategoricalSeqVariable(tokens) with Doc {
   var theta: CountsProportions = null
-  var zs: PlatedGateVariable = null
+  var zs: DiscreteSeqVariable = null
   def ws = this
 }
 

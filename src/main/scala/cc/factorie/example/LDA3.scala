@@ -17,13 +17,13 @@ object LDA3 {
   
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
-  class Zs(len:Int) extends PlatedGateVariable(len) { 
+  class Zs(len:Int) extends DiscreteSeqVariable(len) { 
     def domain = ZSeqDomain
     def words: Words = defaultGenerativeModel.childFactors(this).first.asInstanceOf[PlatedDiscreteMixture.Factor]._1.asInstanceOf[Words]
   }
   object WordSeqDomain extends CategoricalSeqDomain[String]
   val WordDomain = WordSeqDomain.elementDomain
-  class Words(strings:Seq[String]) extends PlatedCategoricalVariable(strings) {
+  class Words(strings:Seq[String]) extends CategoricalSeqVariable(strings) {
     def domain = WordSeqDomain
     def zs = defaultGenerativeModel.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3.asInstanceOf[Zs]
   }

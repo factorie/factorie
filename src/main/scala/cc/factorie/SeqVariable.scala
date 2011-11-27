@@ -94,9 +94,17 @@ abstract class DiscreteSeqDomain extends Domain[Seq[DiscreteValue]] {
   def elementDomain: DiscreteDomain
 }
 
+trait DiscreteSeqVar extends IndexedSeqVar[DiscreteValue] {
+  def domain: DiscreteSeqDomain
+  def intValue(seqIndex:Int): Int
+  def intValues: Array[Int]
+  def uniqueIntValues: Array[Int]
+}
+
 //abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] 
-abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with IndexedSeqVar[DiscreteValue] {
+abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with DiscreteSeqVar {
   def this(initialValue:Seq[Int]) = { this(); _setCapacity(if (initialValue.length > 0) initialValue.length else 1); _appendAll(initialValue.toArray) }
+  def this(len:Int) = { this(); _setCapacity(len); _appendAll(Array.fill(len)(0)) }
   def length = _length
   def apply(index: Int): ElementType = domain.elementDomain.getValue(_apply(index))
   override def iterator = new Iterator[ElementType] {

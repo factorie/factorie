@@ -24,7 +24,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
-  class Zs(intValues:Seq[Int]) extends PlatedGateVariable(intValues) {
+  class Zs(intValues:Seq[Int]) extends DiscreteSeqVariable(intValues) {
     def this(len:Int) = this(Seq.fill(len)(0))
     def domain = ZSeqDomain
     //def words: Document = childFactors.first.asInstanceOf[PlatedDiscreteMixture.Factor]._1.asInstanceOf[Document]

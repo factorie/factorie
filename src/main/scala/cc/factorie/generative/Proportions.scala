@@ -16,7 +16,14 @@ package cc.factorie.generative
 import cc.factorie._
 
 // Proportions is a Seq[Double] that sums to 1.0
-// Discrete ~ DiscreteDistribution(Proportions)
+// e.g. DiscreteVariable ~ Discrete(Proportions)
+
+trait ProportionGeneratingFactor extends GenerativeFactor {
+  def sampleProportions: Proportions
+  def pr(p:Proportions): Double
+  def logpr(p:Proportions): Double
+}
+
 
 trait ProportionsValue extends IndexedSeq[Double] {
   def sampleInt: Int = maths.nextDiscrete(this)
@@ -39,7 +46,7 @@ class ProportionsArrayValue(value:Array[Double]) extends ProportionsValue {
   final def update(i:Int, v:Double) = array(i) = v
 }
 
-trait Proportions extends Variable with DiscreteGenerating with IndexedSeqEqualsEq[Double] with ProportionsValue
+trait Proportions extends Variable /*with DiscreteGenerating*/ with IndexedSeqEqualsEq[Double] with ProportionsValue
 with VarAndValueGenericDomain[Proportions,ProportionsValue]
 /*with VarAndValueGenericDomain[Proportions,Seq[Double]]*/ 
 {

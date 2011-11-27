@@ -72,7 +72,7 @@ class SparseLDAInferencer(
   }
     
   /** Sample the Zs for one document. */
-  def process(zs:PlatedDiscreteVariable): Unit = {
+  def process(zs:DiscreteSeqVariable): Unit = {
     // TODO In some cases "smoothingMass" seems to drift low, perhaps due to math precision in its adjustments
     // So reset it here for each document
     //println(smoothingMass+" "+recalcSmoothingMass)

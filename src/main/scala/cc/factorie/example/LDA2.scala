@@ -28,10 +28,10 @@ object LDA2 {
   val numTopics = 10
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
-  class Zs(len:Int) extends PlatedGateVariable(len) { def domain = ZSeqDomain }
+  class Zs(len:Int) extends DiscreteSeqVariable(len) { def domain = ZSeqDomain }
   object WordSeqDomain extends CategoricalSeqDomain[String]
   val WordDomain = WordSeqDomain.elementDomain
-  class Words(strings:Seq[String]) extends PlatedCategoricalVariable(strings) {
+  class Words(strings:Seq[String]) extends CategoricalSeqVariable(strings) {
     def domain = WordSeqDomain
     def zs = defaultGenerativeModel.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3
   }

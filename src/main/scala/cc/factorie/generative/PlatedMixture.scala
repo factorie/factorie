@@ -16,6 +16,7 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
+/*
 abstract class PlatedGateVariable(initial:Seq[Int]) extends PlatedDiscreteVariable(initial) {
   def this(len:Int) = this(Seq.fill(len)(0))
 }
@@ -26,7 +27,7 @@ trait PlatedMixtureFactor extends GenerativeFactor {
   def logprChoosing(s:StatisticsType, seqIndex:Int, mixtureIndex:Int): Double
   def sampledValueChoosing(s:StatisticsType, mixtureIndices:Seq[Int]): ChildType#Value
 }
-
+*/
 
 /*
 trait PlatedMixtureGeneratedVar extends GeneratedVar {

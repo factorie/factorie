@@ -21,6 +21,7 @@ import cc.factorie._
 
 
 // TODO Are these still necessary?  Consider deleting.  Yes!
+/*
 trait RealGenerating {
   def sampleDouble: Double
   def pr(x:Double): Double
@@ -37,3 +38,4 @@ trait ProportionGenerating {
   def pr(p:Proportions): Double
   def logpr(p:Proportions): Double
 }
+*/
