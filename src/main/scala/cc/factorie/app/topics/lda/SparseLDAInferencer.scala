@@ -192,8 +192,8 @@ class SparseLDAInferencer(
         phiCounts.increment(wi, newTi, 1)
         val newNt = phiCounts.mixtureCounts(newTi)
         val newNtd = docTopicCounts.countOfIndex(newTi) // n_{t|d}
-        smoothingMass -= alphas(ti) * beta1 / ((newNt-1) + betaSum)
-        smoothingMass += alphas(ti) * beta1 / (newNt + betaSum)
+        smoothingMass -= alphas(newTi) * beta1 / ((newNt-1) + betaSum)
+        smoothingMass += alphas(newTi) * beta1 / (newNt + betaSum)
         if (smoothingMass <= 0.0) {
           println("smoothingMass="+smoothingMass+" alphas(ti)=%f beta1=%f newNt=%d betaSum=%f".format(alphas(ti), beta1, newNt, betaSum))
           val smoothingMass2 = (0 until numTopics).foldLeft(0.0)((sum,t) => sum + (alphas(t) * beta1 / (phiCounts.mixtureCounts(t) + betaSum)))
