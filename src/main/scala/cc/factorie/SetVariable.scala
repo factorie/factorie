@@ -36,6 +36,7 @@ abstract class SetVariable[A]() extends Variable with VarAndValueGenericDomain[S
     def variable: SetVariable[A] = SetVariable.this
     def redo = _members += added //if (_members.contains(added)) throw new Error else
     def undo = _members -= added
+    override def toString = "SetVariableAddDiff of " + added + " to " + SetVariable.this
   }
   case class SetVariableRemoveDiff(removed: A) extends Diff {
     //        Console.println ("new SetVariableRemoveDiff removed="+removed)

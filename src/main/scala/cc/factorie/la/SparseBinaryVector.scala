@@ -164,7 +164,9 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
   def dot(v:Vector): Double = v match {
     case v:DenseVector => {
       var i = 0; var result = 0.0
-      while (i < _size) { result += v(ind(i)); i += 1 }; result
+      while (i < _size) { result += v(ind(i)); i += 1 }
+      //println("SparseBinaryVector.dot result="+result)
+      result
     }
     case v:SparseHashVector => {
       var i = 0; var result = 0.0
@@ -177,7 +179,7 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
     case _ => throw new Error("SparseBinaryVector.dot does not handle "+v.getClass.getName)
   }
 
-  override def toString = getClass.getName+"("+"len="+length+" 1s=("+ind.view(0, _size).mkString("[", ", ", "]")+")"
+  override def toString = getClass.getName+"("+"len="+length+" 1s=("+ind.view(0, _size).mkString("[", ", ", "]")+"))"
 
   override def flatOuter(v1:Vector, v2:Vector):Vector = (v1,v2) match {
     case (v1:SparseBinaryVector    ,v2:SparseBinaryVector)    => new SparseBinaryVector(this, v1, v2)

@@ -69,4 +69,24 @@ package object strings {
     else word
   }
 
+  /** Implements Levenshtein Distance, with specific operation costs to go from this String to String s2. */
+  def editDistance(s:String, s2: String, substCost: Int = 1, deleteCost: Int = 1, insertCost: Int = 1): Int = {
+    if (s.length == 0) s2.length
+    else if (s2.length == 0) s.length
+    else {
+      val d = Array.ofDim[Int](s.length + 1, s2.length + 1)
+      for (i <- 0 to s.length)
+        d(i)(0) = i * deleteCost
+      for (i <- 0 to s2.length)
+        d(0)(i) = i * insertCost
+      for (i <- 1 to s.length; j <- 1 to s2.length) {
+        val cost = if (s(i - 1) == s2(j - 1)) 0 else substCost
+        d(i)(j) = math.min(d(i - 1)(j) + deleteCost, math.min(d(i)(j - 1) + insertCost, d(i - 1)(j - 1) + cost))
+      }
+      d(s.length)(s2.length)
+    }
+  }
+
+  
+  
 }

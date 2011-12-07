@@ -91,7 +91,7 @@ class ChainNer {
           t2 = t2.next
           if (t2.string == t.string) { 
             //println("Adding FIRSTMENTION to "+t2.word); 
-            t2.attr[ChainNerFeatures] ++= t.attr[ChainNerFeatures].activeCategories.filter(_.contains("@")).map(f => "FIRSTMENTION="+f)
+            t2.attr[ChainNerFeatures] ++= t.attr[ChainNerFeatures].activeCategories.map(f => "FIRSTMENTION="+f)
           }
         }
       }
@@ -131,7 +131,7 @@ class ChainNer {
       (trainLabels ++ testLabels).foreach(_.setRandomly())
       val learner = new VariableSettingsSampler[ChainNerLabel](model, objective) with SampleRank with GradientAscentUpdates //ConfidenceWeightedUpdates { temperature = 0.01 }
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
-      for (iteration <- 1 until 5) {
+      for (iteration <- 1 until 3) {
         learner.processAll(trainLabels)
         predictor.processAll(testLabels)
         printEvaluation(trainDocuments, testDocuments, iteration.toString)

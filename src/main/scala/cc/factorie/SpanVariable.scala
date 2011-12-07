@@ -33,10 +33,10 @@ trait SpanValue[T] extends IndexedSeq[T] {
   def chain: IndexedSeq[T]
   def start: Int
   def length: Int
-  def hasSuccessor(i: Int) = (start + length - 1 + i) < seq.length
+  def hasSuccessor(i: Int) = (start + length - 1 + i) < chain.length
   def hasPredecessor(i: Int) = (start - i) >= 0
-  def successor(i: Int): T = if (hasSuccessor(i)) seq(start + length - 1 + i) else null.asInstanceOf[T]
-  def predecessor(i: Int): T = if (hasPredecessor(i)) seq(start - i) else null.asInstanceOf[T]
+  def successor(i: Int): T = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[T]
+  def predecessor(i: Int): T = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[T]
 }
 
 /** A Span that is not necessarily a Variable. */
@@ -70,9 +70,9 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
   //def successor(i: Int): E = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[E]
   //def predecessor(i: Int): E = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[E]
   def prevWindow(n:Int): Seq[E] = for (i <- math.max(0,start-n) until start) yield chain(i)
-  def nextWindow(n:Int): Seq[E] = for (i <- end+1 until math.min(seq.length-1,end+n)) yield chain(i)
-  def window(n:Int): Seq[E] = for (i <- math.max(0,start-n) to math.min(seq.length-1,end+n)) yield chain(i)
-  def windowWithoutSelf(n:Int): Seq[E] = for (i <- math.max(0,start-n) to math.min(seq.length-1,end+n); if (i < start || i > end)) yield chain(i)
+  def nextWindow(n:Int): Seq[E] = for (i <- end+1 until math.min(chain.length-1,end+n)) yield chain(i)
+  def window(n:Int): Seq[E] = for (i <- math.max(0,start-n) to math.min(chain.length-1,end+n)) yield chain(i)
+  def windowWithoutSelf(n:Int): Seq[E] = for (i <- math.max(0,start-n) to math.min(chain.length-1,end+n); if (i < start || i > end)) yield chain(i)
   // Support for next/prev of elements within a span
   @inline private def checkInSpan(elt:E): Unit = { require(elt.chain eq chain); require(elt.position >= start && elt.position <= end) } 
   def hasNext(elt:E): Boolean = { checkInSpan(elt); elt.position < end }
@@ -162,34 +162,72 @@ class SpanVariable[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:Cha
   _start = initialStart
   _length = initialLength
   _chain = theChain
-  _chain.addSpan(this)(d)
+  _chain.addSpan(this)(d)  // TODO Remove this.  There can be a span that the document doesn't know about.
   //if (d ne null) NewSpan // Add NewSpan diff to the DiffList
 }
 
 trait ChainWithSpans[This<:ChainWithSpans[This,S,E],S<:Span[S,This,E],E<:ChainLink[E,This]] extends Chain[This,E] with SpanType[S] {
   this: This =>
   //type Span = ThisType#SpanType
-  private val _spans = new scala.collection.mutable.ListBuffer[Span[S,This,E]];
-  def spans: Seq[S] = _spans.asInstanceOf[Seq[S]]
+  private val _spans = new scala.collection.mutable.ListBuffer[S];
+  def spans: Seq[S] = _spans
   def spansOfClass[A<:S](c:Class[A]): Seq[A] = _spans.filter(s => c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
   def spansOfClass[A<:S](implicit m:Manifest[A]): Seq[A] = spansOfClass[A](m.erasure.asInstanceOf[Class[A]])
-  def +=(s:S): Unit = { /*println("ChainWithSpans.+=1 "+spans);*/ _spans.prepend(s); s._chain = this; s._present = true }
-  def -=(s:S): Unit = { /*println("ChainWithSpans.-=1 "+spans);*/ _spans -= s; s._present = false }
-  // Aliases for the above two methods, which the Scala compiler seemed to be confusing! 
-  //def ad(s:S): Unit = { _spans.prepend(s); s._chain = this; s._present = true }
-  //def rm(s:S): Unit = { _spans -= s; s._present = false }
+  def +=(s:S): Unit = { _spans.prepend(s); s._chain = this; s._present = true }
+  def -=(s:S): Unit = { _spans -= s; s._present = false }
+  // Spans sorted by their start position
   def orderedSpans: Seq[S] = spans.toList.sortWith((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
   def orderedSpansOfClass[A<:S](c:Class[A]): Seq[A] = spansOfClass(c).toList.sortWith((s1,s2) => s1.start < s2.start) // TODO Make this more efficient by avoiding toList
   def orderedSpansOfClass[A<:S](implicit m:Manifest[A]): Seq[A] = orderedSpansOfClass(m.erasure.asInstanceOf[Class[A]])
+  // Spans the cover a position
+  def hasSpanContaining(position:Int): Boolean = spans.exists(s => s.start <= position && position < (s.start + s.length))
+  def hasSpanOfClassContaining[A<:S](c:Class[A], position:Int): Boolean = spans.exists(s => s.start <= position && position < (s.start + s.length) && c.isAssignableFrom(s.getClass))
+  def hasSpanOfClassContaining[A<:S](position:Int)(implicit m:Manifest[A]): Boolean = hasSpanOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
   def spansContaining(position: Int): Seq[S] = spans.filter(s => s.start <= position && position < (s.start + s.length))
   def spansOfClassContaining[A<:S](c:Class[A], position: Int): Seq[A] = spans.filter(s => s.start <= position && position < (s.start + s.length) && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
   def spansOfClassContaining[A<:S](position: Int)(implicit m:Manifest[A]): Seq[A] = spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
+  // Spans that start exactly at position
   def spansStartingAt(position: Int): Seq[S] = spans.filter(s => s.start == position)
   def spansOfClassStartingAt[A<:S](c:Class[A], position: Int)(implicit m:Manifest[A]): Seq[A] = spans.filter(s => s.start == position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
-  def spansOfClassStartingAt[A<:S](position: Int)(implicit m:Manifest[A]): Seq[A] = spansOfClassStartingAt(m.erasure.asInstanceOf[Class[A]], position) 
+  def spansOfClassStartingAt[A<:S](position: Int)(implicit m:Manifest[A]): Seq[A] = spansOfClassStartingAt(m.erasure.asInstanceOf[Class[A]], position)
+  // Spans that end exactly at position
   def spansEndingAt(position: Int): Seq[S] = spans.filter(s => s.start + s.length - 1 == position)
   def spansOfClassEndingAt[A<:S](c:Class[A], position: Int)(implicit m:Manifest[A]): Seq[A] = spans.filter(s => s.start + s.length - 1 == position && c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
   def spansOfClassEndingAt[A<:S](position: Int)(implicit m:Manifest[A]): Seq[A] = spansOfClassEndingAt(m.erasure.asInstanceOf[Class[A]], position) 
+  // Closest span starting prior to position
+  def spanPreceeding(position:Int): S = {
+    var result = null.asInstanceOf[S]
+    for (s <- _spans) if (s.start < position && ((result eq null) || (s.start > result.start))) result = s
+    result
+  } 
+  def spansPreceeding(position:Int): Seq[S] = _spans.filter(s => s.start < position)
+  def spanOfClassPreceeding[A<:S](position:Int)(implicit m:Manifest[A]): A = {
+    var result = null.asInstanceOf[A]
+    val mc = m.erasure
+    for (s <- _spans) if (s.start < position && mc.isAssignableFrom(s.getClass) && ((result eq null) || (s.start > result.start))) result = s.asInstanceOf[A]
+    result
+  } 
+  def spansOfClassPreceeding[A<:S](position:Int)(implicit m:Manifest[A]): Seq[A] = {
+    val mc = m.erasure
+    _spans.filter(s => s.start < position && mc.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  }
+  // Closest span starting after to position
+  def spanFollowing(position:Int): S = {
+    var result = null.asInstanceOf[S]
+    for (s <- _spans) if (s.start > position && ((result eq null) || (s.start < result.start))) result = s
+    result
+  }
+  def spansFollowing(position:Int): Seq[S] = _spans.filter(s => s.start > position)
+  def spanOfClassFollowing[A<:S](position:Int)(implicit m:Manifest[A]): S = {
+    var result = null.asInstanceOf[A]
+    val mc = m.erasure
+    for (s <- _spans) if (s.start > position && mc.isAssignableFrom(s.getClass) && ((result eq null) || (s.start < result.start))) result = s.asInstanceOf[A]
+    result
+  } 
+  def spansOfClassFollowing[A<:S](position:Int)(implicit m:Manifest[A]): Seq[A] = {
+    val mc = m.erasure
+    _spans.filter(s => s.start > position && mc.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
+  }
 }
 
 trait ChainWithSpansVar[This<:ChainWithSpansVar[This,S,E],S<:SpanVar[S,This,E],E<:ChainLink[E,This]] extends ChainVar[This,E] with ChainWithSpans[This,S,E] with IndexedSeqVar[E] with VarAndElementType[ChainWithSpansVar[This,S,E],E]{
@@ -197,10 +235,10 @@ trait ChainWithSpansVar[This<:ChainWithSpansVar[This,S,E],S<:SpanVar[S,This,E],E
   /** Add the span to the list of spans maintained by this VariableSeqWithSpans.
       Typically you would not call this yourself; it is called automatically from the SpanVariable constructor. */
   def addSpan(s:S)(implicit d:DiffList): Unit = {
-    //require(s.seq == this, "VariableSeqWithSpans.addSpan: span.seq="+s.seq+" != this="+this)
+    //require(s.chain == this, "VariableSeqWithSpans.addSpan: span.chain="+s.chain+" != this="+this)
     AddSpanVariable(s)
   }
-  /** Remove the span from the list of spans maintained by this VariableSeqWithSpans.
+  /** Remove the span from the list of spans maintained by this ChainWithSpans.
       Typically you would not call this yourself; it is called automatically from SpanVariable.delete. */
   def removeSpan(s:S)(implicit d:DiffList): Unit = {
     require(s.chain == this)

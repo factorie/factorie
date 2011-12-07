@@ -20,22 +20,39 @@ trait Attr {
   object attr extends scala.collection.mutable.ListMap[Class[_],AnyRef] {
     def apply[C<:AnyRef]()(implicit m: Manifest[C]): C = this(m.erasure).asInstanceOf[C]
     def get[C<:AnyRef](implicit m: Manifest[C]): Option[C] = this.get(m.erasure).asInstanceOf[Option[C]]
-    def getOrElse[C<:AnyRef](defaultValue:C)(implicit m: Manifest[C]): Option[C] = this.getOrElse(m.erasure, defaultValue).asInstanceOf[Option[C]]
-    def getOrElseUpdate[C<:AnyRef](defaultValue:C)(implicit m: Manifest[C]): Option[C] = this.getOrElseUpdate(m.erasure, defaultValue).asInstanceOf[Option[C]]
+    def getOrElse[C<:AnyRef](defaultValue:C)(implicit m: Manifest[C]): C = super.getOrElse(m.erasure, defaultValue).asInstanceOf[C]
+    def getOrElseUpdate[C<:AnyRef](defaultValue:C)(implicit m: Manifest[C]): C = super.getOrElseUpdate(m.erasure, defaultValue).asInstanceOf[C]
     def +=[C<:AnyRef](value:C): C = { this(value.getClass) = value; value }
     def -=[C<:AnyRef](value:C): C = { super.-=(value.getClass); value }
     def remove[C<:AnyRef](implicit m: Manifest[C]): Unit = super.-=(m.erasure)
   }
 }
 
+// A future substitute for the above.
 trait Attr2 {
+  /** A collection of attributes, keyed by the attribute class. */
   object attr {
     private var _attr: Array[AnyRef] = new Array[AnyRef](2)
+    /** The number of attributes present. */
     def length: Int = { var i = 0; while ((i < _attr.length) && (_attr(i) ne null)) i += 1; i }
+    def capacity: Int = _attr.length
     def setCapacity(cap:Int): Unit = { val ta = new Array[AnyRef](cap); System.arraycopy(_attr, 0, ta, 0, math.min(cap, math.min(cap, _attr.length))); ta }
-    def growCapacity(cap:Int): Unit = if (cap > _attr.length) { val ta = new Array[AnyRef](cap); System.arraycopy(_attr, 0, ta, 0, _attr.length); ta }
+    /** Make sure there is capacity of at least "cap"  */
+    def ensureCapacity(cap:Int): Unit = if (cap > _attr.length) { val ta = new Array[AnyRef](cap); System.arraycopy(_attr, 0, ta, 0, _attr.length); ta }
+    /** Increase capacity by "incr". */
     def increaseCapacity(incr:Int): Unit = { val ta = new Array[AnyRef](_attr.length+incr); System.arraycopy(_attr, 0, ta, 0, _attr.length); ta }
-    def trim: Unit = { val l = length; if (l < _attr.length) setCapacity(l) }
+    /** Re-allocate to remove any unused capacity */
+    def trimCapacity: Unit = { val l = length; if (l < _attr.length) setCapacity(l) }
+    def apply[C<:AnyRef]()(implicit m: Manifest[C]): C = {
+      var i = 0
+      val key = m.erasure
+      while (i < _attr.length) {
+        if (_attr(i).getClass.isAssignableFrom(key))
+          return _attr(i).asInstanceOf[C]
+        i += 1
+      }
+      null.asInstanceOf[C]
+    }
     def +=[C<:AnyRef](value:C): C = {
       var i = 0
       while (i < _attr.length && _attr(i).getClass.isAssignableFrom(value.getClass))

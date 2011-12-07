@@ -64,7 +64,8 @@ class DiffList extends ArrayBuffer[Diff] {
     //log(Log.DEBUG)("DiffList scoreAndUndo  pre-undo score=" + s)
     this.undo
     // We need to re-calculate the Factors list because the structure may have changed
-    s -= model.score(this)
+    val s2 = model.score(this) 
+    s -= s2
     //log(Log.DEBUG)("DiffList scoreAndUndo post-undo score=" + s)
     s
   }
@@ -73,9 +74,13 @@ class DiffList extends ArrayBuffer[Diff] {
     if (this.length == 0) return (0.0, if (model2 == null) Double.NaN else 0.0) // short-cut the simple case
     var s1 = model1.score(this)
     var s2 = if (model2 == null) Double.NaN else model2.score(this)
+    //println("DiffList scoreAndUndo  pre-undo score=" + s1)
     this.undo
-    s1 -= model1.score(this)
+    val s1b = model1.score(this) 
+    //println("DiffList scoreAndUndo post-undo score=" + s1b)
+    s1 -= s1b
     if (model2 != null) s2 -= model2.score(this)
+    //println("DiffList scoreAndUndo *** score diff=" + s1)
     (s1, s2)
   }
   /** More efficient than model.factorsOf[T](difflist) when the difflist might be empty. */

@@ -59,7 +59,7 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
   this: This =>
   private var _position: Int = -1
   private var _chain: C = null.asInstanceOf[C]
-  // To be called only in Chain.+=
+  // This method should never be called outside Chain.+=
   def _setChainPosition(c:C, p:Int): Unit = {
     require(_chain eq null)
     require(p >= 0)
@@ -89,7 +89,6 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
   def nextWindow(n:Int): Seq[This] = for (i <- math.min(_position+1, _chain.length-1) to math.min(_position+n, _chain.length-1)) yield chain(i)
   def window(n:Int): Seq[This] = for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1)) yield chain(i)
   def windowWithoutSelf(n:Int): Seq[This] = for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1); if (i != _position)) yield chain(i)
-  // Note the lack of strong typing here, but I think it is OK because we require the chains are equal
   def between(other:This): Seq[This] = {
     require(other.chain == chain)
     if (other.position > _position)
@@ -113,20 +112,19 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends IndexedSeqEqualsEq
   def value = _chainseq // TODO But this isn't actually immutable. :-(  Inefficient to copy whole seq though. 
   def +=(e:E): Unit = {
     e._setChainPosition(this, _chainseq.length)
-    //e._position = _chainseq.length
-    //e._chain = this
     _chainseq += e
   }
   def ++=(es:Iterable[E]): Unit = es.foreach(+=(_))
 }
 
-/** A Chain that is also a Variable, with value Seq[ElementType] */
+/** A Chain that is also a Variable, with value IndexedSeq[ElementType] */
 trait ChainVar[This<:ChainVar[This,E],E<:ChainLink[E,This]] extends Chain[This,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[ChainVar[This,E],IndexedSeq[E]] {
   this: This =>
 }
 
 class ChainVariable[This<:ChainVariable[This,E],E<:ChainLink[E,This]] extends ChainVar[This,E] {
   this: This =>
+  def this(elements:Iterable[E]) = { this(); elements.foreach(+=(_)) }
 }
 
 /** A Chain which itself is also an element of an outer Chain */

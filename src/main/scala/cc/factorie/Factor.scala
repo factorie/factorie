@@ -23,9 +23,7 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-/** A single factor in a factor graph.  In other words, a factor
-    template packaged with a set of variables neighboring the
-    factor.
+/** A single factor in a factor graph:  neighboring variables and methods for getting values and their score.
     @author Andrew McCallum */
 trait Factor extends Model with Ordered[Factor] {
   /** In some cases a factor "belongs" to some outer factor which uses this inner one as part of its score calculation.

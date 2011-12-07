@@ -20,7 +20,7 @@ import cc.factorie.app.nlp.ner._
 import cc.factorie.util.DefaultCmdOptions
 import java.io.File
 
-class NerSpan(doc:Document, labelString:String, start:Int, end:Int)(implicit d:DiffList) extends TokenSpan(doc, start, end) {
+class NerSpan(doc:Document, labelString:String, start:Int, end:Int)(implicit d:DiffList) extends TokenSpan(doc, start, end) with cc.factorie.app.nlp.coref.Mention {
   val label = new SpanNerLabel(this, labelString)
   def isCorrect = this.forall(token => token.nerLabel.intValue == label.intValue) &&
     (!hasPredecessor(1) || predecessor(1).nerLabel.intValue != label.intValue) && 
@@ -34,92 +34,97 @@ class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[Strin
   override def skipNonCategories = true
 }
 
-abstract class SpanNerTemplate extends Template2[NerSpan,SpanNerLabel] {
+abstract class SpanNerTemplate extends Template2[NerSpan,SpanNerLabel] with DotStatistics2[SpanNerFeatures#Value,SpanNerLabel#Value] {
+  override def statisticsDomains = List(SpanNerFeaturesDomain, NerLabelDomain)
   def unroll1(span:NerSpan) = Factor(span, span.label)
   def unroll2(label:SpanNerLabel) = Factor(label.span, label)
 }
 
 class SpanNerModel extends TemplateModel(
     // Bias term on each individual label 
-    new TemplateWithDotStatistics1[SpanNerLabel],
+    new TemplateWithDotStatistics1[SpanNerLabel] {
+      override def statisticsDomains = List(NerLabelDomain)
+    },
     // Token-Label within Span
-    new SpanNerTemplate with DotStatistics2[CategoricalVectorValue[String],SpanNerLabel#Value] { 
+    new SpanNerTemplate { 
       def statistics(v:Values) = {
         // TODO Yipes, this is awkward, but more convenient infrastructure could be build.
         var vector = new cc.factorie.la.SparseBinaryVector(v._1.head.value.length) with CategoricalVectorValue[String] {
-          val domain = ChainNerFeaturesDomain
+          val domain = SpanNerFeaturesDomain
         }
-        for (token <- v._1; featureIndex <- token.attr[ChainNerFeatures].activeDomain) 
+        for (token <- v._1; featureIndex <- token.attr[SpanNerFeatures].activeDomain) 
           vector.include(featureIndex) // TODO This is shifing array pieces all over; slow.  Fix it.
         Stat(vector, v._2) 
       }
     },
     // First Token of Span
-    new SpanNerTemplate with DotStatistics2[ChainNerFeatures#Value,SpanNerLabel#Value] { 
-      def statistics(v:Values) = Stat(v._1.head.attr[ChainNerFeatures].value, v._2)
+    new SpanNerTemplate { 
+      def statistics(v:Values) = Stat(v._1.head.attr[SpanNerFeatures].value, v._2)
     },
     // Last Token of Span
-    new SpanNerTemplate with DotStatistics2[ChainNerFeatures#Value,SpanNerLabel#Value] { 
-      def statistics(v:Values) = Stat(v._1.last.attr[ChainNerFeatures].value, v._2)
+    new SpanNerTemplate { 
+      def statistics(v:Values) = Stat(v._1.last.attr[SpanNerFeatures].value, v._2)
     },
     // Token before Span
-    new SpanNerTemplate with DotStatistics2[ChainNerFeatures#Value,SpanNerLabel#Value] { 
+    new SpanNerTemplate { 
       override def unroll1(span:NerSpan) = if (span.head.hasPrev) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.head.hasPrev) Factor(label.span, label) else Nil
-      def statistics(v:Values) = Stat(v._1.head.prev.attr[ChainNerFeatures].value, v._2)
+      def statistics(v:Values) = Stat(v._1.head.prev.attr[SpanNerFeatures].value, v._2)
     },
     // Token after Span
-    new SpanNerTemplate with DotStatistics2[ChainNerFeatures#Value,SpanNerLabel#Value] { 
+    new SpanNerTemplate { 
       override def unroll1(span:NerSpan) = if (span.last.hasNext) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.last.hasNext) Factor(label.span, label) else Nil
-      def statistics(v:Values) = Stat(v._1.last.next.attr[ChainNerFeatures].value, v._2)
+      def statistics(v:Values) = Stat(v._1.last.next.attr[SpanNerFeatures].value, v._2)
     },
     // Single Token Span
-    new SpanNerTemplate with DotStatistics2[ChainNerFeatures#Value,SpanNerLabel#Value] { 
+    new SpanNerTemplate { 
       override def unroll1(span:NerSpan) = if (span.length == 1) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.length == 1) Factor(label.span, label) else Nil
-      def statistics(v:Values) = Stat(v._1.head.attr[ChainNerFeatures].value, v._2)
+      def statistics(v:Values) = Stat(v._1.head.attr[SpanNerFeatures].value, v._2)
     }
     //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil },
     // Span Length with Label
     //new SpanLabelTemplate with DotStatistics2[SpanLength,Label] { def statistics(span:Span, label:Label) = Stat(span.spanLength, span.label) },
     // Label of span that preceeds or follows this one
     //new Template2[Span,Span] with Statistics2[Label,Label] { def unroll1(span:Span) = { val result = Nil; var t = span.head; while (t.hasPrev) { if } } }
-  )
+  ) {
+  def this(file:File) = { this(); this.load(file.getPath)}
+}
 
-  // The training objective
-  class SpanNerObjective extends TemplateModel(
-    new TemplateWithStatistics2[NerSpan,SpanNerLabel] {
-      def unroll1(span:NerSpan) = Factor(span, span.label)
-      def unroll2(label:SpanNerLabel) = Factor(label.span, label)
-      def score(s:Stat) = {
-        val spanValue = s._1
-        val labelValue = s._2
-        var result = 0.0
-        var trueLabelIncrement = 10.0
-        var allTokensCorrect = true
-        for (token <- spanValue) {
-          //if (token.trueLabelValue != "O") result += 2.0 else result -= 1.0
-          if (token.nerLabel.intValue == labelValue.intValue) {
-            result += trueLabelIncrement
-            trueLabelIncrement += 2.0 // proportionally more benefit for longer sequences to help the longer seq steal tokens from the shorter one.
-          } else if (token.nerLabel.target.categoryValue == "O") {
-            result -= 1.0
-            allTokensCorrect = false
-          } else {
-            result += 1.0
-            allTokensCorrect = false
-          }
-          if (token.spans.length > 1) result -= 100.0 // penalize overlapping spans
+// The training objective
+class SpanNerObjective extends TemplateModel(
+  new TemplateWithStatistics2[NerSpan,SpanNerLabel] {
+    def unroll1(span:NerSpan) = Factor(span, span.label)
+    def unroll2(label:SpanNerLabel) = Factor(label.span, label)
+    def score(s:Stat) = {
+      val spanValue = s._1
+      val labelValue = s._2
+      var result = 0.0
+      var trueLabelIncrement = 10.0
+      var allTokensCorrect = true
+      for (token <- spanValue) {
+        //if (token.trueLabelValue != "O") result += 2.0 else result -= 1.0
+        if (token.nerLabel.intValue == labelValue.intValue) {
+          result += trueLabelIncrement
+          trueLabelIncrement += 2.0 // proportionally more benefit for longer sequences to help the longer seq steal tokens from the shorter one.
+        } else if (token.nerLabel.target.categoryValue == "O") {
+          result -= 1.0
+          allTokensCorrect = false
+        } else {
+          result += 1.0
+          allTokensCorrect = false
         }
-        if (allTokensCorrect) {
-          if (!spanValue.head.hasPrev || spanValue.head.prev.nerLabel.intValue != labelValue.intValue) result += 5.0 // reward for getting starting boundary correct
-          if (!spanValue.last.hasNext || spanValue.last.next.nerLabel.intValue != labelValue.intValue) result += 5.0 // reward for getting starting boundary correct
-        }
-        result
+        if (token.spans.length > 1) result -= 100.0 // penalize overlapping spans
       }
+      if (allTokensCorrect) {
+        if (!spanValue.head.hasPrev || spanValue.head.prev.nerLabel.intValue != labelValue.intValue) result += 5.0 // reward for getting starting boundary correct
+        if (!spanValue.last.hasNext || spanValue.last.next.nerLabel.intValue != labelValue.intValue) result += 5.0 // reward for getting starting boundary correct
+      }
+      result
     }
-  )
+  }
+)
 
 // The sampler
 class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends SettingsSampler[Token](model, objective) {
@@ -146,7 +151,6 @@ class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends Set
           changes += {(d:DiffList) => { span.trimStart(1)(d); new NerSpan(_seq, labelValue.category, span.start-1, 1)(d) } }
         }
       }
-      // TODO Add something to merge two neighboring spans!
       if (span.length == 3) {
         // Split span, dropping word in middle, preserving label value
         changes += {(d:DiffList) => span.delete(d); new NerSpan(_seq, span.label.categoryValue, span.start, 1)(d); new NerSpan(_seq, span.label.categoryValue, span.end, 1)(d) }
@@ -162,6 +166,13 @@ class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends Set
           changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.append(1)(d); span.last.spans.filter(_ != span).foreach(_.trimStart(1)(d)) } }
       }
       // Merge two neighboring spans having the same label
+      if (span.hasPredecessor(1)) {
+        val prevSpans = span.predecessor(1).endsSpansOfClass[NerSpan]
+        val prevSpan: NerSpan = if (prevSpans.size > 0) prevSpans.head else null
+        if (prevSpan != null && prevSpan.label.intValue == span.label.intValue) {
+          changes += {(d:DiffList) => { new NerSpan(_seq, span.label.categoryValue, prevSpan.start, prevSpan.length + span.length)(d); span.delete(d); prevSpan.delete(d)}}
+        }
+      }
       if (span.hasSuccessor(1)) {
         val nextSpans = span.successor(1).startsSpansOfClass[NerSpan]
         val nextSpan: NerSpan = if (nextSpans.size > 0) nextSpans.head else null
@@ -189,7 +200,8 @@ class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends Set
 
 // The predictor for test data
 class SpanNerPredictor(model:TemplateModel) extends TokenSpanSampler(model, null) {
-  var verbose = true
+  def this(file:File) = this(new SpanNerModel(file))
+  var verbose = false
   temperature = 0.0001 
   override def preProcessHook(t:Token): Token = { 
     super.preProcessHook(t)
@@ -230,6 +242,7 @@ class SpanNER {
   val predictor = new SpanNerPredictor(model)
 
   def train(trainFiles:Seq[String], testFile:String): Unit = {
+    predictor.verbose = true
     // Read training and testing data.  The function 'featureExtractor' function is defined below.  Now training on seq == whole doc, not seq == sentece
     val trainDocuments = trainFiles.flatMap(LoadConll2003.fromFilename(_))
     val testDocuments = LoadConll2003.fromFilename(testFile)
@@ -239,7 +252,7 @@ class SpanNER {
     testDocuments.foreach(addFeatures(_))
 
     println("Have "+trainDocuments.map(_.length).sum+" trainTokens "+testDocuments.map(_.length).sum+" testTokens")
-    println("FeaturesDomain size="+ChainNerFeaturesDomain.dimensionSize)
+    println("FeaturesDomain size="+SpanNerFeaturesDomain.dimensionSize)
     println("LabelDomain "+NerLabelDomain.values.toList)
     
     if (verbose) trainDocuments.take(10).flatten.take(500).foreach(token => { print(token.string+"\t"); printFeatures(token) })
@@ -296,7 +309,7 @@ class SpanNER {
     documents.foreach(addFeatures(_))
     val testTokens = documents.flatten
     println("Have "+testTokens.length+" tokens")
-    println("TokenDomain size="+ChainNerFeaturesDomain.dimensionSize)
+    println("TokenDomain size="+SpanNerFeaturesDomain.dimensionSize)
     println("LabelDomain "+NerLabelDomain.values.toList)
     predictor.processAll(testTokens, 2)
     documents.foreach(d => { println("FILE "+d.name); printDocument(d) })
@@ -305,14 +318,14 @@ class SpanNER {
   
   def addFeatures(document:Document): Unit = {
     for (token <- document) {
-      val features = token.attr += new ChainNerFeatures(token)
+      val features = token.attr += new SpanNerFeatures(token)
       val rawWord = token.string
       val word = cc.factorie.app.strings.simplifyDigits(rawWord)
       features += "W="+word.toLowerCase
       features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
       //features += "SUFFIX3="+word.takeRight(3)
       //features += "PREFIX3="+word.take(3)
-      features += "POS="+token.attr[cc.factorie.app.nlp.pos.PosLabel].categoryValue
+      //features += "POS="+token.attr[cc.factorie.app.nlp.pos.PosLabel].categoryValue
       //if (token.isCapitalized) features += "CAPITALIZED"
       //if (token.containsDigit) features += "NUMERIC"
       if (token.isPunctuation) features += "PUNCTUATION"
@@ -322,17 +335,17 @@ class SpanNER {
     }
     // Make features of offset conjunctions
     for (sentence <- document.sentences)
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[ChainNerFeatures], List(0), List(0,0), List(-1), List(-1,0), List(1))
+      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[SpanNerFeatures], List(0), List(0,0), List(-1), List(-1,0), List(1))
     // The remaining features will not be put into conjunctions
 
     // For documents that have a "-" within the first three words, the first word is a HEADER feature; apply it to all words in the document
     //documents.foreach(d => if (d.take(3).map(_.word).contains("-")) { val f = "HEADER="+d(0).word.toLowerCase; d.foreach(t => t += f)})
 
     // If the sentence contains no lowercase letters, tell all tokens in the sentence they are part of an uppercase sentence
-    document.sentences.foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t.attr[ChainNerFeatures] += "SENTENCEUPPERCASE"))
+    document.sentences.foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t.attr[SpanNerFeatures] += "SENTENCEUPPERCASE"))
 
     // Add features for character n-grams between sizes 2 and 5
-    document.foreach(t => if (t.string.matches("[A-Za-z]+")) t.attr[ChainNerFeatures] ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
+    document.foreach(t => if (t.string.matches("[A-Za-z]+")) t.attr[SpanNerFeatures] ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
 
     // Add features from window of 4 words before and after
     //(trainSentences ++ testSentences).foreach(s => s.foreach(t => t ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplify(t2.word).toLowerCase)))
@@ -340,14 +353,14 @@ class SpanNER {
     
     // Put features of first mention on later mentions
     document.foreach(t => {
-      if (t.isCapitalized && t.string.length > 1 && !t.attr[ChainNerFeatures].activeCategories.exists(f => f.matches(".*FIRSTMENTION.*"))) {
+      if (t.isCapitalized && t.string.length > 1 && !t.attr[SpanNerFeatures].activeCategories.exists(f => f.matches(".*FIRSTMENTION.*"))) {
         //println("Looking for later mentions of "+t.word)
         var t2 = t
         while (t2.hasNext) {
           t2 = t2.next
           if (t2.string == t.string) { 
             //println("Adding FIRSTMENTION to "+t2.word); 
-            t2.attr[ChainNerFeatures] ++= t.attr[ChainNerFeatures].activeCategories.filter(_.contains("@")).map(f => "FIRSTMENTION="+f)
+            t2.attr[SpanNerFeatures] ++= t.attr[SpanNerFeatures].activeCategories.filter(_.contains("@")).map(f => "FIRSTMENTION="+f)
           }
         }
       }
@@ -375,7 +388,7 @@ class SpanNER {
   
   
   def printFeatures(token:Token): Unit = {
-    println(token.attr[ChainNerFeatures])
+    println(token.attr[SpanNerFeatures])
   }
 
   

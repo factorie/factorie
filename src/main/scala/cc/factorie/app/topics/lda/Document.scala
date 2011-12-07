@@ -19,14 +19,10 @@ import scala.collection.mutable.ArrayBuffer
 import java.io.{File,Reader,StringReader,InputStreamReader,FileInputStream,BufferedReader,PrintWriter}
 
 /** The abstract document variable required by LDA. */
-// TODO Consider changing to "extends Variable", and in LDA using doc.ws ~ ...  DONE
-// TODO Rename to something that doesn't have Var in the name
-trait Doc /* extends PlatedCategoricalVariable[String]*/ {
+trait Doc {
   var name: String
   var theta: CountsProportions
-  //def theta_=(p:CountsProportions): Unit
   var zs: DiscreteSeqVariable
-  //def zs_=(theZs:PlatedGateVariable): Unit
   def ws: CategoricalSeqVariable[String]
   
   // Experimental thoughts about serialization with Facades

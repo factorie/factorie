@@ -36,11 +36,12 @@ object LoadConll2003 {
         documents += document
       } else {
         val fields = line.split(' ')
+        // fields = word part-of-speech shallow-parse(IOB) ner-label(IOB)
         assert(fields.length == 4)
         val word = fields(0)
         val partOfSpeech = fields(1)
         val ner = fields(3).stripLineEnd
-        document.appendString(" ")
+        if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
         if (false && document.stringLength < 100) {
           println("word=%s documentlen=>%s<".format(word, document.string))
