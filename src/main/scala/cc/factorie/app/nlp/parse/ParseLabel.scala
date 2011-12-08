@@ -15,6 +15,7 @@
 package cc.factorie.app.nlp.parse
 import cc.factorie._
 import cc.factorie.app.nlp._
+import collection.mutable.{HashSet, ArrayBuffer}
 
 // Representation for Dependency Parse
 
@@ -27,9 +28,21 @@ class ParseFeatures(val token:Token) extends BinaryFeatureVectorVariable[String]
 class ParseEdge(val child:Token, initialParent:Token, labelString:String) extends RefVariable(initialParent) {
   @inline final def parent = value
   val label = new ParseLabel(this, labelString)
-  //child.attr += this
-  //How to add to parent?
+  val childEdges = new ChildEdges
+
+  child.attr += label
+  //initialParent.attr[ParseLabel].edge.childEdges.addEntry(this)
+  override def set(newValue: Token)(implicit d: DiffList): Unit =
+    if (newValue != value) {
+      // update parent's child pointers
+      parent.attr[ParseLabel].edge.childEdges.remove(this)
+      super.set(newValue)(d)
+      //this is necessary b/c I am using a self-loop to indicate root.
+      if (child != parent) parent.attr[ParseLabel].edge.childEdges.addEntry(this)
+    }
 }
+
+class ChildEdges extends HashSet[ParseEdge]
 
 // token.attr[ParseEdge].parent
 // token.attr[ParseNode].parent
