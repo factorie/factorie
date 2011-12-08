@@ -15,7 +15,6 @@
 package cc.factorie.app.nlp.parse
 import cc.factorie._
 import cc.factorie.app.nlp._
-import collection.mutable.{HashSet, ArrayBuffer}
 
 // Representation for a dependency parse
 
@@ -30,6 +29,7 @@ class ParseEdge(theChild:Token, initialParent:Token, labelString:String) extends
   @inline final def parent = dst
   val label = new ParseLabel(this, labelString)
   val childEdges = new ParseChildEdges
+  def children = childEdges.value.map(_.child)
 
   // Initialization
   child.attr += this // Add the edge as an attribute to the child node.
