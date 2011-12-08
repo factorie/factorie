@@ -40,3 +40,24 @@ class EdgeVariable[A,B](initialSrc:A, initialDst:B) extends EdgeVar[A,B] with Mu
   }
 }
 
+/** An EdgeVar in which the src is constant, and the dst is mutable. */
+class ArrowVariable[A<:AnyRef,B](val src:A, initialDst:B) extends EdgeVar[A,B] {
+  private var _dst = initialDst
+  def dst = _dst
+  def value = (src, _dst)
+  def set(newDst:B)(implicit d:DiffList): Unit = {
+    if (d ne null) d += ArrowDiff(_dst, newDst)
+    _dst = newDst
+  }
+  final def set(newSrc:A, newDst:B)(implicit d:DiffList): Unit = {
+    require(newSrc eq src)
+    set(newDst)
+  }
+  //final def set(value:(A,B))(implicit d:DiffList): Unit = set(value._1, value._2) // Was here to enable MutableVar, but clashes with set(newDst:B)
+  case class ArrowDiff(oldDst:B, newDst:B) extends Diff {
+    def variable = ArrowVariable.this
+    def redo = _dst = newDst
+    def undo = _dst = oldDst
+    override def toString = "ArrowDiff(%s,%s)".format(oldDst.toString, newDst.toString)
+  }
+}

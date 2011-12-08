@@ -21,7 +21,7 @@ trait Entity {
   def string: String
   def superEntityRef: EntityRef
   def superEntity: Entity = { val ref = superEntityRef; if (superEntityRef eq null) null else superEntityRef.dst }
-  def setSuperEntity(e:Entity)(implicit d:DiffList): Unit = superEntityRef.setDst(e)
+  def setSuperEntity(e:Entity)(implicit d:DiffList): Unit = superEntityRef.set(e)
   def subEntities: Iterable[Entity]
   // Next two methods should only be called in EntityRef
   def _addSubEntity(e:Entity)(implicit d:DiffList): Unit
@@ -73,13 +73,12 @@ class EntityVariable(var initialCanonicalString:String) extends SetVariable[Enti
   override def toString = "Entity("+string+":"+mentions.toSeq.size+")"
 }
 
-class EntityRef(theSrc:Entity, initialDst:Entity) extends EdgeVariable(theSrc, initialDst) {
+class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, initialDst) {
   if (dst ne null) dst._addSubEntity(src)(null)
-  override def set(m:Entity, e:Entity)(implicit d:DiffList): Unit = {
-    require(m eq src)
+  override def set(e:Entity)(implicit d:DiffList): Unit = {
     if (e ne dst) {
-      if (dst ne null) dst._removeSubEntity(m)
-      e._addSubEntity(m)
+      if (dst ne null) dst._removeSubEntity(src)
+      e._addSubEntity(src)
       super.set(src, e)
     }
   }
@@ -183,7 +182,7 @@ object EntityTest {
       changes += {(d:DiffList) => {}}
       // Proposals to make coref with each of the previous mentions
       for (antecedant <- mention.document.spansOfClassPreceeding[Mention](mention.start))
-        changes += {(d:DiffList) => entityRef.setDst(antecedant)(d)}
+        changes += {(d:DiffList) => entityRef.set(antecedant)(d)}
       var i = 0
       def hasNext = i < changes.length
       def next(d:DiffList) = { val d = new DiffList; changes(i).apply(d); i += 1; d }

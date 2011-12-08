@@ -17,7 +17,7 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import collection.mutable.{HashSet, ArrayBuffer}
 
-// Representation for Dependency Parse
+// Representation for a dependency parse
 
 object ParseLabelDomain extends CategoricalDomain[String]
 class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabelVariable(targetValue) { def domain = ParseLabelDomain } 
@@ -25,15 +25,16 @@ class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabelVariable(t
 object ParseFeaturesDomain extends CategoricalVectorDomain[String]
 class ParseFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = ParseFeaturesDomain }
 
-class ParseEdge(val child:Token, initialParent:Token, labelString:String) extends RefVariable(initialParent) {
-  @inline final def parent = value
+class ParseEdge(theChild:Token, initialParent:Token, labelString:String) extends ArrowVariable(theChild, initialParent) {
+  @inline final def child = src
+  @inline final def parent = dst
   val label = new ParseLabel(this, labelString)
-  val childEdges = new ChildEdges
+  val childEdges = new ParseChildEdges
 
-  child.attr += label
+  child.attr += label // Really?  Why is the label on the Token and not simply associated with this edge?
   //initialParent.attr[ParseLabel].edge.childEdges.addEntry(this)
   override def set(newValue: Token)(implicit d: DiffList): Unit =
-    if (newValue != value) {
+    if (newValue ne value) {
       // update parent's child pointers
       parent.attr[ParseLabel].edge.childEdges.remove(this)
       super.set(newValue)(d)
@@ -42,13 +43,10 @@ class ParseEdge(val child:Token, initialParent:Token, labelString:String) extend
     }
 }
 
-//class ParseChildEdges extends scala.collection.mutable.ArrayBuffer[ParseEdge]
-class ChildEdges extends HashSet[ParseEdge]
+class ParseChildEdges extends HashSet[ParseEdge]
 
+// Example usages:
 // token.attr[ParseEdge].parent
 // token.attr[ParseNode].parent
 // token.attr[ParseChildEdges].map(_.child)
 
-// token.attr += 
-
-// Speculative Design
