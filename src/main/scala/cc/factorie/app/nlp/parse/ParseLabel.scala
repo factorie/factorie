@@ -25,28 +25,31 @@ class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabelVariable(t
 object ParseFeaturesDomain extends CategoricalVectorDomain[String]
 class ParseFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = ParseFeaturesDomain }
 
-class ParseEdge(theChild:Token, initialParent:Token, labelString:String) extends ArrowVariable(theChild, initialParent) {
+class ParseEdge(theChild:Token, initialParent:Token, labelString:String) extends ArrowVariable[Token,Token](theChild, initialParent) {
   @inline final def child = src
   @inline final def parent = dst
   val label = new ParseLabel(this, labelString)
   val childEdges = new ParseChildEdges
 
-  child.attr += label // Really?  Why is the label on the Token and not simply associated with this edge?
-  //initialParent.attr[ParseLabel].edge.childEdges.addEntry(this)
-  override def set(newValue: Token)(implicit d: DiffList): Unit =
-    if (newValue ne value) {
+  // Initialization
+  child.attr += this // Add the edge as an attribute to the child node.
+  if (initialParent ne null) initialParent.attr[ParseEdge].childEdges.add(this)(null)
+  // Note that the line above requires that the parent already have a ParseEdge attribute.
+  // One way to avoid this need is to create the ParseEdges with null parents, and then set them later.
+  
+  override def set(newParent: Token)(implicit d: DiffList): Unit =
+    if (newParent ne parent) {
       // update parent's child pointers
-      parent.attr[ParseLabel].edge.childEdges.remove(this)
-      super.set(newValue)(d)
-      //this is necessary b/c I am using a self-loop to indicate root.
-      if (child != parent) parent.attr[ParseLabel].edge.childEdges.addEntry(this)
+      if (parent ne null) parent.attr[ParseEdge].childEdges.remove(this)
+      if (newParent ne null) newParent.attr[ParseEdge].childEdges.add(this)
+      super.set(newParent)(d)
     }
 }
 
-class ParseChildEdges extends HashSet[ParseEdge]
+class ParseChildEdges extends SetVariable[ParseEdge]
 
 // Example usages:
 // token.attr[ParseEdge].parent
-// token.attr[ParseNode].parent
+// token.attr[ParseEdge].childEdges.map(_.child)
 // token.attr[ParseChildEdges].map(_.child)
 
