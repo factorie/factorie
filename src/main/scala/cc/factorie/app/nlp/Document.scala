@@ -17,6 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
 /** Value is the sequence of tokens */
+// Consider Document(strValue:String, name:String = "")
 class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[Document,TokenSpan,Token] with Attr {
   // One of the following two is always null, the other non-null
   private var _string: String = strValue
