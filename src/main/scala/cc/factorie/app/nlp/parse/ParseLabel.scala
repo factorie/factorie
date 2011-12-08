@@ -31,8 +31,11 @@ class ParseEdge(val child:Token, initialParent:Token, labelString:String) extend
   //How to add to parent?
 }
 
+class ParseChildEdges extends scala.collection.mutable.ArrayBuffer[ParseEdge]
+
 // token.attr[ParseEdge].parent
 // token.attr[ParseNode].parent
+// token.attr[ParseChildEdges].map(_.child)
 
 // token.attr += 
 

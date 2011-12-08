@@ -19,9 +19,9 @@ import scala.collection.mutable.{ArrayBuffer,ListBuffer}
 
 trait Entity {
   def string: String
-  def entityRef: EntityRef
-  def superEntity: Entity = { val ref = entityRef; if (entityRef eq null) null else entityRef.dst }
-  def setSuperEntity(e:Entity)(implicit d:DiffList): Unit = entityRef.setDst(e)
+  def superEntityRef: EntityRef
+  def superEntity: Entity = { val ref = superEntityRef; if (superEntityRef eq null) null else superEntityRef.dst }
+  def setSuperEntity(e:Entity)(implicit d:DiffList): Unit = superEntityRef.setDst(e)
   def subEntities: Iterable[Entity]
   // Next two methods should only be called in EntityRef
   def _addSubEntity(e:Entity)(implicit d:DiffList): Unit
@@ -42,8 +42,11 @@ trait Entity {
 
 // In the world view with sub-entities and super-entities, a mention is a kind of entity with no sub-entities
 trait Mention extends TokenSpan with Entity {
-  def entityRef: EntityRef = attr[EntityRef]
+  def superEntityRef: EntityRef = attr[EntityRef]
+  // Just aliases for nicer names
   def entity: Entity = superEntity
+  def entityRef: EntityRef = superEntityRef
+  def setEntity(e:Entity)(implicit d:DiffList): Unit = setSuperEntity(e)
   //def setSuperEntity(e:Entity)(implicit d:DiffList): Unit = entityRef.setDst(e)
   private def _subEntities: SubEntities = attr[SubEntities]
   private def _ensuredSubEntities: SubEntities = attr.getOrElseUpdate[SubEntities](new SubEntities)
