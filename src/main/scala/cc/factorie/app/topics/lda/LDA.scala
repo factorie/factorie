@@ -35,7 +35,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   val betas = new GrowableUniformMasses(wordDomain, beta1)
   /** The prior over per-document topic distribution */
   val alphas = new DenseMasses(numTopics, alpha1)
-
+  
   /** The collection of all documents used to fit the parameters of this LDA model. */
   private val documentMap = new HashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
   def documents: Iterable[Doc] = documentMap.values
@@ -115,7 +115,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   }
 
     /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
-  def inferTopics(iterations:Int = 60, diagnosticInterval:Int = 10, fitAlphaInterval:Int = Int.MaxValue): Unit = {
+  def inferTopics(iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
     val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas, beta1)
     println("Collapsing finished.  Starting sampling iterations:")
     //sampler.debug = debug
@@ -128,7 +128,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       if (i % diagnosticInterval == 0) {
         println ("\nIteration "+i)
         sampler.export(phis)
-        printTopics
+        if (diagnosticShowPhrases) println(topicsWordsAndPhrasesSummary(10,10)) else println(topicsSummary(10))
       }
       if (i % fitAlphaInterval == 0) {
         sampler.exportThetas(documents)
@@ -144,7 +144,8 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   }
   
   // Not finished
-  def inferTopicsMultithreaded(numThreads:Int, iterations:Int = 60, diagnosticInterval:Int = 10): Unit = {
+  def inferTopicsMultithreaded(numThreads:Int, iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
+    if (fitAlphaInterval != Int.MaxValue) throw new Error("LDA.inferTopicsMultithreaded.fitAlphaInterval not yet implemented.")
     val docSubsets = documents.grouped(documents.size/numThreads + 1).toSeq
     //println("Subsets = "+docSubsets.size)
     for (i <- 1 to iterations) {
@@ -155,16 +156,29 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       if (i % diagnosticInterval == 0) {
         println ("Iteration "+i)
         maximizePhisAndThetas
-        printTopics
+        if (diagnosticShowPhrases) println(topicsWordsAndPhrasesSummary(10,10)) else println(topicsSummary(10))
       }
     }
     maximizePhisAndThetas
   }
   
   def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).top(numWords).map(dp => wordDomain.getCategory(dp.index))
-  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic "+topicIndex+"  "+(topicWords(topicIndex, numWords).mkString(" ")+"  "+phis(topicIndex).countsTotal.toInt+"  "+alphas(topicIndex))
+  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).countsTotal.toInt, alphas(topicIndex))
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_)).mkString("\n")
 
+  def topicsPhraseCounts = new TopicPhraseCounts(numTopics) ++= documents
+  def topicsWordsAndPhrasesSummary(numWords: Int = 10, numPhrases: Int = 10): String = {
+    val sb = new StringBuffer
+    val tpc = topicsPhraseCounts
+    forIndex(numTopics)(i => {
+      sb.append(topicSummary(i, numWords))
+      sb.append("\n           ") // Matching "Topic 333  ", plus one extra space for indentation
+      sb.append(tpc.topicPhrases(i, numPhrases).mkString(" "))
+      sb.append("\n")
+    })
+    sb.toString
+  }
+  
   @deprecated
   def printTopics : Unit = {
     phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => wordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
@@ -187,7 +201,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   
   def addDocumentsFromWordZs(file:File): Unit = {
     val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
-    
+    throw new Error("Not yet implemented.")
   }
 
   def saveModel(fileName:String) {
@@ -210,12 +224,17 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   }
 }
 
+object LDA extends LDACmd
 
-object LDA {
+class LDACmd {
   import scala.collection.mutable.ArrayBuffer
   import scala.util.control.Breaks._
+  import java.io.Reader
+  import cc.factorie.app.strings.StringSegmenter
   var verbose = false
   val minDocLength = 3
+  def newDocument(domain:CategoricalSeqDomain[String], name:String, contents:Reader, segmenter:StringSegmenter): Doc = Document.fromReader(domain, name, contents, segmenter) 
+
   def main(args:Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val numTopics =     new CmdOption("num-topics", 't', 10, "N", "Number of topics.")
@@ -224,6 +243,7 @@ object LDA {
       val numThreads =    new CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
       val numIterations = new CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
       val diagnostic =    new CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
+      val diagnosticPhrases= new CmdOption("diagnostic-phrases", false, "true|false", "If true diagnostic printing will include multi-word phrases.")
       val fitAlpha =      new CmdOption("fit-alpha-interval", Int.MaxValue, "N", "Number of iterations between each re-estimation of prior on per-document topic distribution.")
       val tokenRegex =    new CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
       val readDirs =      new CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
@@ -235,21 +255,24 @@ object LDA {
       val writeDocs =     new CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments") 
       val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
       val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
-      val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = LDA.this.verbose = true }
+      val printPhrases =  new CmdOption("print-topics-phrases", 20, "N", "Just before exiting print top N phrases for each topic.")
+      val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = LDACmd.this.verbose = true }
+      // TODO Add stopwords option
     }
     opts.parse(args)
     /** The domain of the words in documents */
     object WordSeqDomain extends CategoricalSeqDomain[String]
     val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value)
+    val mySegmenter = new cc.factorie.app.strings.RegexSegmenter(opts.tokenRegex.value.r)
     if (opts.readDirs.wasInvoked) {
       for (directory <- opts.readDirs.value) {
         val dir = new File(directory); if (!dir.isDirectory) { System.err.println(directory+" is not a directory."); System.exit(-1) }
         println("Reading files from directory " + directory)
         breakable { for (file <- new File(directory).listFiles; if (file.isFile)) {
-          if (lda.documentMap.size == opts.maxNumDocs.value) break
-          val doc = Document(WordSeqDomain, file, "UTF-8")
+          if (lda.documents.size == opts.maxNumDocs.value) break
+          val doc = Document.fromFile(WordSeqDomain, file, "UTF-8", segmenter = mySegmenter)
           if (doc.length >= minDocLength) lda.addDocument(doc)
-          if (lda.documentMap.size % 1000 == 0) { print(" "+lda.documentMap.size); Console.flush() }; if (lda.documentMap.size % 10000 == 0) println()
+          if (lda.documents.size % 1000 == 0) { print(" "+lda.documents.size); Console.flush() }; if (lda.documents.size % 10000 == 0) println()
         }}
         //println()
       }
@@ -259,7 +282,7 @@ object LDA {
       val source = if (opts.readLines.value == "-") scala.io.Source.stdin else scala.io.Source.fromFile(new File(opts.readLines.value))
       var count = 0
       breakable { for (line <- source.getLines()) {
-        if (lda.documentMap.size == opts.maxNumDocs.value) break
+        if (lda.documents.size == opts.maxNumDocs.value) break
         val text: String = 
           if (!opts.readLinesRegex.wasInvoked) line 
           else {
@@ -273,7 +296,7 @@ object LDA {
           }
         if (text eq null) throw new Error("No () group for --read-lines-regex in "+line)
         if (opts.readLinesRegexPrint.value) println(text)
-        val doc = Document(WordSeqDomain, name+":"+count, opts.tokenRegex.value.r.findAllIn(text).map(_.toLowerCase).filter(!Stopwords.contains(_)))
+        val doc = Document.fromString(WordSeqDomain, name+":"+count, text, segmenter = mySegmenter)
         if (doc.length >= minDocLength) lda.addDocument(doc)
         count += 1
         if (count % 1000 == 0) { print(" "+count); Console.flush() }; if (count % 10000 == 0) println()
@@ -284,8 +307,8 @@ object LDA {
       val file = new File(opts.readDocs.value)
       val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
       breakable { while (true) {
-        if (lda.documentMap.size == opts.maxNumDocs.value) break
-        val doc = new Document(WordSeqDomain, "", Nil)
+        if (lda.documents.size == opts.maxNumDocs.value) break
+        val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
         doc.zs = new lda.Zs(Nil)
         val numWords = doc.readNameWordsZs(reader)
         if (numWords < 0) break
@@ -304,9 +327,9 @@ object LDA {
     if (opts.numIterations.value > 0) {
       val startTime = System.currentTimeMillis
       if (opts.numThreads.value > 1) 
-       lda.inferTopicsMultithreaded(opts.numThreads.value, opts.numIterations.value, opts.diagnostic.value) 
+       lda.inferTopicsMultithreaded(opts.numThreads.value, opts.numIterations.value, diagnosticInterval = opts.diagnostic.value, diagnosticShowPhrases = opts.diagnosticPhrases.value) 
       else 
-        lda.inferTopics(opts.numIterations.value, opts.diagnostic.value, opts.fitAlpha.value)
+        lda.inferTopics(opts.numIterations.value, fitAlphaInterval = opts.fitAlpha.value, diagnosticInterval = opts.diagnostic.value, diagnosticShowPhrases = opts.diagnosticPhrases.value)
       println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
   	}	
 
@@ -321,6 +344,9 @@ object LDA {
     
     if (opts.printTopics.wasInvoked) 
       println(lda.topicsSummary(opts.printTopics.value))
+    if (opts.printPhrases.wasInvoked) 
+      println(lda.topicsWordsAndPhrasesSummary(opts.printPhrases.value, opts.printPhrases.value))
+      //println(lda.topicsPhraseCounts.topicsPhrasesSummary(opts.printPhrases.value))
 
   }
 
@@ -355,7 +381,7 @@ object LDA {
         topicAssignments += java.lang.Integer.parseInt(fields(i+1))
       }
 
-      val doc = Document(wordSeqDomain, docName, tokens.iterator) // create and add document
+      val doc = Document.fromStringIterator(wordSeqDomain, docName, tokens.iterator, stopwords = cc.factorie.app.strings.EmptyStringSet) // create and add document
       lda.addDocument(doc)
       for(i <- 0 until doc.length) // put z's to correct values we found in loaded file
         doc.zs.set(i, topicAssignments(i))(null)
@@ -426,3 +452,4 @@ object LDA {
     println
   }
 }
+

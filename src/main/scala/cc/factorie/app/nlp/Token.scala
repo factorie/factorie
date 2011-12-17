@@ -15,13 +15,16 @@
 package cc.factorie.app.nlp
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.er._
 
 // There are two ways to create Tokens and add them to Sentences and/or Documents:
 // Without String arguments, in which case the string is assumed to already be in the Document
 // With String arguments, in which case the string is appended to the Document (and when Sentence is specified, Sentence length is automatically extended)
 
 // TODO Consider stringEnd instead of stringLength?
-class Token(var stringStart:Int, var stringLength:Int) extends StringVar with ChainLink[Token,Document] with Attr with cc.factorie.app.chain.Observation[Token] {
+class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Document] with Attr with Entity[Token] {
+  type GetterType <: TokenGetter
+  class GetterClass extends TokenGetter
   def this(doc:Document, s:Int, l:Int) = {
     this(s, l)
     doc += this
@@ -95,6 +98,48 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with Ch
   override def toString = "Token("+stringStart+"+"+stringLength+":"+string+")"
 }
 
+
+/** Implementation of the entity-relationship language we can use with Token objects. */
+class TokenGetter extends EntityGetter[Token] {
+  type T = Token
+  //type S = Chain[S,Token]
+  def newTokenGetter = new TokenGetter
+  /** Go from a token to the next token. */
+  def next = initManyToMany[T](newTokenGetter,
+                               (token:T) => if (!token.hasNext) Nil else List(token.next), 
+                               (token:T) => if (!token.hasPrev) Nil else List(token.prev))
+  /** Go from a token to the previous token. */
+  def prev = initManyToMany[T](newTokenGetter,
+                               (token:T) => if (!token.hasPrev) Nil else List(token.prev), 
+                               (token:T) => if (!token.hasNext) Nil else List(token.next))
+  /** Go from a token to the collection of the next 'n' tokens. */
+  def next(n:Int) = initManyToMany[T](newTokenGetter,
+                                      (t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret },
+                                      (t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret })
+  /** Go from a token to the collection of the previous 'n' tokens. */
+  def prev(n:Int) = initManyToMany[T](newTokenGetter,
+                                      (t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret },
+                                      (t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret })
+  /** All the other tokens in the Sentence. */
+  def sentenceTokens = initManyToMany[T](newTokenGetter,
+                                         (token:T) => token.chain, 
+                                         (token:T) => token.chain)
+  //def nerLabel = initOneToOne[ChainNerLabel]                                       
+  /** Return a BooleanObservation with value true if the word of this Token is equal to 'w'.  
+   Intended for use in tests in er.Formula, not as a feature itself.  
+   If you want such a feature, you should += it to the Token (BinaryFeatureVectorVariable) */
+  def isWord(w:String) = getOneToOne[BooleanObservationWithGetter](
+    // TODO Consider making this more efficient by looking up an already-constructed instance, as in "object Bool"
+    token => if (token.string == w) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
+    bool => throw new Error("Constant bool shouldn't change"))
+  /** Return a BooleanObservation with value true if the word of this Token is capitalized.  
+   Intended for use in tests in er.Formula, not as a feature itself.  
+   If you want such a feature, you should += it to the Token (BinaryFeatureVectorVariable) */
+  def isCapitalized = getOneToOne[BooleanObservationWithGetter](
+    // TODO Consider making this more efficient by looking up an already-constructed instance, as in "object Bool"
+    token => if (java.lang.Character.isUpperCase(token.string.head)) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
+    bool => throw new Error("Constant bool shouldn't change"))
+}
 
 
   /** Given some String features read from raw data, in which the first feature is always the word String itself, add some more features.  */

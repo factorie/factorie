@@ -32,11 +32,11 @@ object ChainNER2b {
     def domain = TokenDomain
   }
   object LabelDomain extends CategoricalDomain[String]
-  class Label(labelName: String, word: String) extends LabelVariable(labelName) with VarInSeq[Label] {
+  class Label(labelName: String, word: String) extends LabelVariable(labelName) with ChainLink[Label,Sentence] {
     val token = new Token(word, this)
     def domain = LabelDomain
   }
-  class Sentence extends VariableSeq[Label]
+  class Sentence extends Chain[Sentence,Label]
   
   // The model
   val model = new TemplateModel(

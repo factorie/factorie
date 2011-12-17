@@ -16,12 +16,13 @@ package cc.factorie
 import scala.collection.mutable.HashSet
 
 /**A variable whose value is a set of other variables */
-abstract class SetVariable[A]() extends Variable with VarAndValueGenericDomain[SetVariable[A],scala.collection.Set[A]] {
+abstract class SetVariable[A]() extends Variable with VarAndValueGenericDomain[SetVariable[A],scala.collection.Set[A]] with Iterable[A] {
   // Note that the returned value is not immutable.
   def value = _members
   private val _members = new HashSet[A];
   def members: scala.collection.Set[A] = _members
-  def size = _members.size
+  def iterator = _members.iterator
+  override def size = _members.size
   def contains(x:A) = _members.contains(x)
   def add(x:A)(implicit d: DiffList): Unit = if (!_members.contains(x)) {
     if (d != null) d += new SetVariableAddDiff(x)

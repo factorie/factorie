@@ -200,6 +200,8 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   }
   def count(i:Int): Int = _counts(i)
   def count(category:T): Int = _counts(indexOnly(category))
+  def counts: Seq[Int] = _counts.toIndexedSeq.take(length)
+  def countsTotal: Int = _counts.sum    
   def incrementCount(i:Int): Unit = { ensureSize(i); _counts(i) += 1 }
   def incrementCount(category:T): Unit = incrementCount(indexOnly(category))
   private def someCountsGathered: Boolean = { for (i <- 0 until _counts.size) if (_counts(i) > 0) return true; return false }

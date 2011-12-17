@@ -78,7 +78,7 @@ with VarAndValueGenericDomain[Proportions,ProportionsValue]
 
   class DiscretePr(val index:Int, val pr:Double)
   class DiscretePrSeq(val maxLength:Int) extends Seq[DiscretePr] {
-    def this(ml:Int, contents:Seq[Double]) = { this(ml); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
+    def this(maxLength:Int, contents:Seq[Double]) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
     private val _seq = new Array[DiscretePr](maxLength)
     private var _length: Int = 0
     def length = _length

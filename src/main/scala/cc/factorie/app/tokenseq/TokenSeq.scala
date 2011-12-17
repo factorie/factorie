@@ -20,6 +20,7 @@ import scala.util.Sorting
 import scala.util.matching.Regex
 
 /** A sequence of Tokens */
+@deprecated("Will be removed in the future")
 class TokenSeq[T<:Token[This,T],This<:TokenSeq[T,This]] extends VariableSeq[T] {
   this: This =>
   /** Add new features created as conjunctions of existing features, with the given offsets.

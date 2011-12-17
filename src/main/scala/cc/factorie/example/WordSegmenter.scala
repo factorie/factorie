@@ -28,14 +28,15 @@ object WordSegmenterDemo {
     def domain = LabelDomain
   }
   object TokenDomain extends CategoricalVectorDomain[String]
-  class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
+  class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
     def domain = TokenDomain
     val label = new Label(isWordStart, this)
     this += char.toString
     if ("aeiou".contains(char)) this += "VOWEL"
   }
+  class Sentence extends Chain[Sentence,Token]
 
-  // The factor templates that define the model
+    // The factor templates that define the model
   val model = new TemplateModel
   /** Bias term just on labels */
   model += new TemplateWithDotStatistics1[Label] 
@@ -59,7 +60,7 @@ object WordSegmenterDemo {
   val skipTemplate = new Template2[Label,Label] with DotStatistics1[BooleanValue] {
     def unroll1 (label:Label) =  
       // could cache this search in label.similarSeq for speed
-      for (other <- label.token.seq; if label.token.char == other.char) yield
+      for (other <- label.token.chain; if label.token.char == other.char) yield
         if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
     def unroll2 (label:Label) = Nil // We handle symmetric case above
     def statistics(values:Values) = Stat(values._1 == values._2)
@@ -76,7 +77,6 @@ object WordSegmenterDemo {
     var startTime:Long = 0
   
     // Read data and create Variables
-    class Sentence extends VariableSeq[Token]
     val sentences = for (string <- data.toList) yield {
       val sentence = new Sentence
       var beginword = true
