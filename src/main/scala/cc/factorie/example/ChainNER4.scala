@@ -22,7 +22,7 @@ object ChainNER4 {
 
   // The variable classes
   object TokenDomain extends CategoricalVectorDomain[String]
-  class Token(val word:String, features:Seq[String], labelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
+  class Token(val word:String, features:Seq[String], labelString:String) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
     def domain = TokenDomain
     val label: Label = new Label(labelString, this)
     this ++= features
@@ -35,7 +35,7 @@ object ChainNER4 {
     def next = token.next.label
     def prev = token.prev.label
   }
-  class Sentence extends VariableSeq[Token]
+  class Sentence extends Chain[Sentence,Token]
   
   // The model
   val model = new TemplateModel(

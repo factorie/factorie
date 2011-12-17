@@ -17,6 +17,8 @@ import java.io.File
 import cc.factorie._ 
 import cc.factorie.er._
 import cc.factorie.app.tokenseq.labeled
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.ner._
 
 /** Simple, introductory linear-chain CRF for named-entity recognition,
     using FACTORIE's "entity-relationship" language to define model structure.
@@ -25,6 +27,53 @@ import cc.factorie.app.tokenseq.labeled
     Overly simple features to not, however, provide very high accuracy.
     See ChainNER3 for a related example with better features. 
     @author Andrew McCallum */
+object ChainNER1a {
+  object TokenFeaturesDomain extends CategoricalVectorDomain[String]
+  class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
+    def domain = TokenFeaturesDomain
+  }
+  val model = new TemplateModel(
+    // Bias term on each individual label 
+    new TemplateWithDotStatistics1[ChainNerLabel], 
+    // Factor between label and observed token
+    new TemplateWithDotStatistics2[ChainNerLabel,TokenFeatures] {
+      def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
+      def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
+    },
+    // Transition factors between two successive labels
+    new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel] {
+      def unroll1(label: ChainNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[ChainNerLabel], label) else Nil
+      def unroll2(label: ChainNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[ChainNerLabel]) else Nil
+    }
+  )
+
+  
+  def main(args:Array[String]): Unit = {
+    val trainDocuments = LoadConll2003.fromFilename(args(0))
+    val testDocuments = LoadConll2003.fromFilename(args(1))
+    for (document <- (trainDocuments ++ testDocuments); token <- document) {
+      val features = new TokenFeatures(token)
+      features += "W="+token.string
+      features += "SHAPE="+cc.factorie.app.strings.stringShape(token.string, 2)
+      token.attr += features
+    }
+    val trainLabels = trainDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(10000)
+    val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(2000)
+    (trainLabels ++ testLabels).foreach(_.setRandomly())
+    val learner = new VariableSettingsSampler[ChainNerLabel](model) with SampleRank with GradientAscentUpdates
+    val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
+    for (iteration <- 1 until 5) {
+      learner.processAll(trainLabels)
+      predictor.processAll(testLabels)
+    }
+    println("Train Acccuracy = "+ZeroOneLossObjective.aveScore(trainLabels))
+    println("Test Acccuracy = "+ZeroOneLossObjective.aveScore(testLabels))
+  }
+}
+  
+// TODO Consider implementing cc.factorie.app.nlp.Token as a cc.factorie.er.Entity, 
+// so that a model definition like in the following could work again
+/*
 object ChainNER1 {
   
   // Define the variable classes
@@ -71,5 +120,5 @@ object ChainNER1 {
   }
 
 }
-
+*/
 

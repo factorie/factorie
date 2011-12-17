@@ -19,7 +19,7 @@ import scala.collection.mutable.ArrayBuffer
 import java.io.{File,Reader,StringReader,InputStreamReader,FileInputStream,BufferedReader,PrintWriter}
 
 /** The abstract document variable required by LDA. */
-trait Doc {
+trait Doc extends SeqBreaks {
   var name: String
   var theta: CountsProportions
   var zs: DiscreteSeqVariable
@@ -77,19 +77,38 @@ class Document(val domain:CategoricalSeqDomain[String], var name:String, tokens:
 }
 
 object Document {
-  import cc.factorie.app.strings.{StringSegmenter,Stopwords,alphaSegmenter}
+  import cc.factorie.app.strings.{StringSegmenter,StringSet,EmptyStringSet,Stopwords,alphaSegmenter}
+  import scala.util.control.Breaks._
+  def addWords(doc:Document,
+      reader:Reader, 
+      segmenter:StringSegmenter = alphaSegmenter, 
+      stopwords:StringSet = Stopwords, 
+      wordCountMax:Int = Int.MaxValue): Unit = 
+  {
+    //val allWords = new ArrayBuffer[String]
+    breakable { for (word <- segmenter(reader)) {
+      val w = word.toLowerCase
+      //allWords += w
+      if (stopwords.contains(w)) doc.breaks += doc.length
+      else doc.appendCategory(w)
+      if (doc.length == wordCountMax) break
+    }}
+    doc.trimCapacity
+    /*if (allWords.contains("logistic")) {
+      println("Document allWords "+allWords.mkString(" "))
+      forIndex(doc.length)(i => { if (doc.breaks.contains(i)) print("#"); print(doc.categoryValue(i)+" ") })
+      println()  
+      //println("Document %s %s".format(doc.name, doc.breaks.toString))
+    }*/
+  }
   def wordIterator(reader:Reader, 
       segmenter:StringSegmenter = alphaSegmenter, 
       stopwords:Stopwords = Stopwords, 
       wordCountMax:Int = Int.MaxValue): Iterator[String] = 
     segmenter(reader).map(_ toLowerCase).filter(!stopwords.contains(_)).take(wordCountMax)
   // Convenience methods for creating new documents
-  def apply(domain:CategoricalSeqDomain[String], name:String, tokens:Iterator[String]) = 
-    new Document(domain, name, tokens.toIndexedSeq)
-  def apply(domain:CategoricalSeqDomain[String], name:String, reader:Reader) = 
-    new Document(domain, name, wordIterator(reader).toIndexedSeq)
-  def apply(domain:CategoricalSeqDomain[String], name:String, contents:String) = 
-    new Document(domain, name, wordIterator(new StringReader(contents)).toIndexedSeq)
-  def apply(domain:CategoricalSeqDomain[String], file:File, encoding:String = "UTF-8") = 
-    new Document(domain, file.getPath, wordIterator(new BufferedReader(new InputStreamReader(new FileInputStream(file), encoding))).toIndexedSeq)
+  def fromStringIterator(domain:CategoricalSeqDomain[String], name:String, tokens:Iterator[String], stopwords:StringSet = EmptyStringSet) = new Document(domain, name, tokens.filter(stopwords.contains(_)).toIndexedSeq)
+  def fromReader(domain:CategoricalSeqDomain[String], name:String, reader:Reader, segmenter:StringSegmenter = alphaSegmenter, stopwords:StringSet = Stopwords, wordCountMax:Int = Int.MaxValue): Document = { val d = new Document(domain, name, Nil); addWords(d, reader, segmenter, stopwords, wordCountMax); d }
+  def fromString(domain:CategoricalSeqDomain[String], name:String, contents:String, segmenter:StringSegmenter = alphaSegmenter, stopwords:StringSet = Stopwords, wordCountMax:Int = Int.MaxValue): Document = fromReader(domain, name, new StringReader(contents), segmenter, stopwords, wordCountMax)
+  def fromFile(domain:CategoricalSeqDomain[String], file:File, encoding:String = "UTF-8", segmenter:StringSegmenter = alphaSegmenter, stopwords:StringSet = Stopwords, wordCountMax:Int = Int.MaxValue): Document = fromReader(domain, file.getPath, new BufferedReader(new InputStreamReader(new FileInputStream(file), encoding)), segmenter, stopwords, wordCountMax)
 }

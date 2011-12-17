@@ -224,3 +224,28 @@ class LabelEvaluation(val domain: CategoricalDomain[String]) {
   override def toString = (0 until domain.size).map(toString(_)).mkString("\n")
 }
 
+import cc.factorie.generative.Proportions
+class LabelDistribution(val label:LabelVariable[String], val distribution:Proportions)
+
+class LabelEvaluationCurve(domain:CategoricalDomain[String]) {
+  private val labelDistributions = new scala.collection.mutable.ArrayBuffer[LabelDistribution]
+  def +=(label:LabelVariable[String], distribution:Proportions): Unit = this.+=(new LabelDistribution(label, distribution)) 
+  def +=(ld:LabelDistribution): Unit = labelDistributions += ld
+  
+  /** precision and recall curve */
+  // TODO Make this more general
+  def prString: String = {
+    val sb = new StringBuffer
+    val sorted = labelDistributions.sortBy(ld => - ld.distribution(0))
+    val numBins = math.max(20, labelDistributions.size/10)
+    val binSize = sorted.size/numBins
+    for (i <- Range(binSize, sorted.size, binSize)) {
+      val subset = sorted.take(i)
+      val le = new LabelEvaluation(subset.map(_.label))
+      sb.append("threshold %f p %f r %f f1 %f\n".format(subset.last.distribution(0), le.precision, le.recall, le.f1))
+    }
+    sb.toString
+  }
+}
+
+

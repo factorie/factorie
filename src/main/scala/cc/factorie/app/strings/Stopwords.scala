@@ -20,8 +20,20 @@ package cc.factorie.app.strings
     @author Andrew McCallum
     @see cc.factorie.example.LDA
 */
+
+trait StringSet {
+  def contains(s:String): Boolean
+  def +=(s:String): Unit
+}
+
 object Stopwords extends Stopwords
-class Stopwords {
+
+object EmptyStringSet extends StringSet {
+  def contains(s:String): Boolean = false
+  def +=(s:String): Unit = throw new Error("Cannot add strings to the EmptyStringSet")
+}
+
+class Stopwords extends StringSet {
   
   def contains(s:String) = asIndex.contains(s)
   //def index(s:String) = asIndex.index(s)

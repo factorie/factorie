@@ -103,7 +103,7 @@ trait DiscreteSeqVar extends IndexedSeqVar[DiscreteValue] {
 
 //abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] 
 abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with DiscreteSeqVar {
-  def this(initialValue:Seq[Int]) = { this(); _setCapacity(if (initialValue.length > 0) initialValue.length else 1); _appendAll(initialValue.toArray) }
+  def this(initialValue:Seq[Int]) = { this(); /*_setCapacity(if (initialValue.length > 0) initialValue.length else 1);*/ if (initialValue.length > 0) _appendAll(initialValue.toArray) }
   def this(len:Int) = { this(); _setCapacity(len); _appendAll(Array.fill(len)(0)) }
   def length = _length
   def apply(index: Int): ElementType = domain.elementDomain.getValue(_apply(index))
@@ -135,6 +135,11 @@ abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.Prot
     require(d eq null)
     _update(seqIndex, newValue)
   }
+}
+
+trait SeqBreaks {
+  /** Contains indices of the sequence positions which immediately follow breaks (e.g. removed stopwords) */
+  val breaks = new scala.collection.mutable.BitSet
 }
 
 class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain[Seq[CategoricalValue[C]]] {
