@@ -166,6 +166,8 @@ class TemplateModel(initialTemplates:Template*) extends Model {
   override def families = _templates
   override def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = _templates.filter(t => fclass.isAssignableFrom(t.getClass)).asInstanceOf[Seq[F]]
 
+  def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = _templates.foreach(_.limitDiscreteValuesIteratorAsIn(variables))
+  
   /*@deprecated
   def templatesOf[T2<:Template](implicit m:Manifest[T2]) : IndexedSeq[T2] = {
     val templateClass = m.erasure

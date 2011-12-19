@@ -48,6 +48,10 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
   def statistics: StatisticsType = statistics(values)
   def statistics(v:Values): StatisticsType
 
+  // For implementing sparsity in belief propagation
+  def isLimitingValuesIterator = false
+  def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = Iterator.empty
+
   /** valuesIterator in style of specifying fixed neighbors */
   def valuesIterator(fixed: Assignment): Iterator[Values] = {
     val fixed1 = fixed.contains(_1)
@@ -56,16 +60,34 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
       Iterator.single(new Values(fixed(_1), fixed(_2)))
     else if (fixed1) {
       val val1 = fixed(_1)
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-      d2.values.iterator.map(value => new Values(val1, value))
+      if (isLimitingValuesIterator) {
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
+        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value]))
+      } else {
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        d2.values.iterator.map(value => new Values(val1, value))
+      }
     } else if (fixed2) {
       val val2 = fixed(_2)
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-      d1.values.iterator.map(value => new Values(value, val2))
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
+        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2))
+      } else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        d1.values.iterator.map(value => new Values(value, val2)) 
+      }
     } else {
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-      (for (val1 <- d1.values; val2 <- d2.values) yield new Values(val1, val2)).iterator
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        limitedDiscreteValuesIterator.map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value])) 
+      } else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        (for (val1 <- d1.values; val2 <- d2.values) yield new Values(val1, val2)).iterator
+      }
     }
   }
   
@@ -74,17 +96,35 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
     val varying1 = varying.contains(_1)
     val varying2 = varying.contains(_2)
     if (varying1 && varying2) {
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-      (for (val1 <- d1.values; val2 <- d2.values) yield new Values(val1, val2)).iterator
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        limitedDiscreteValuesIterator.map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value])) 
+      } else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        (for (val1 <- d1.values; val2 <- d2.values) yield new Values(val1, val2)).iterator
+      }
     } else if (varying1) {
       val val2 = _2.value
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-      d1.values.iterator.map(value => new Values(value, val2))
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
+        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2))
+      } else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        d1.values.iterator.map(value => new Values(value, val2))
+      }
     } else if (varying2) {
       val val1 = _1.value
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-      d2.values.iterator.map(value => new Values(val1, value))
+      if (isLimitingValuesIterator) {
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
+        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value]))
+      } else {
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        d2.values.iterator.map(value => new Values(val1, value))
+      }
     } else {
       Iterator.single(new Values(_1.value, _2.value))
     }
@@ -114,6 +154,13 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
 
   type FactorType = Factor
   type ValuesType = Factor#Values
+
+  // For implementing sparsity in belief propagation
+  var isLimitingValuesIterator = false
+  lazy val limitedDiscreteValues = new scala.collection.mutable.HashSet[(Int,Int)]
+  def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = limitedDiscreteValues ++= values
+  //def limitDiscreteValuesIterator
+  
   final case class Factor(_1:N1, _2:N2, override var inner:Seq[cc.factorie.Factor] = Nil, override var outer:cc.factorie.Factor = null) extends super.Factor with Factor2[N1,N2] {
     type StatisticsType = Family2.this.StatisticsType
     if (_neighborDomains eq null) {
@@ -124,6 +171,8 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
       _neighborDomains += _neighborDomain2
     }
     override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
+    override def isLimitingValuesIterator = Family2.this.isLimitingValuesIterator
+    override def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = limitedDiscreteValues.iterator
   }
   // Cached Statistics
   private var cachedStatisticsArray: Array[StatisticsType] = null

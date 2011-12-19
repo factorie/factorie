@@ -16,14 +16,14 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.app.nlp._
 
-object NerLabelDomain extends CategoricalDomain[String]
-class NerLabel(initialValue:String) extends LabelVariable(initialValue) {
-  def domain = NerLabelDomain
+//object NerLabelDomain extends CategoricalDomain[String]
+abstract class NerLabel(initialValue:String) extends LabelVariable(initialValue) {
+  //def domain = NerLabelDomain
   /** Return "PER" instead of "I-PER". */
   def shortCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
 }
 
-class ChainNerLabel(val token:Token, initialValue:String) extends NerLabel(initialValue)
-class SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue)
+abstract class ChainNerLabel(val token:Token, initialValue:String) extends NerLabel(initialValue)
+abstract class SpanNerLabel(val span:NerSpan, initialValue:String) extends NerLabel(initialValue)
 
 

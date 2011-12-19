@@ -53,3 +53,88 @@ class ParseChildEdges extends SetVariable[ParseEdge]
 // token.attr[ParseEdge].childEdges.map(_.child)
 // token.attr[ParseChildEdges].map(_.child)
 
+
+// Proposed new style
+
+object ParseTreeLabelDomain extends CategoricalDomain[String]
+class ParseTreeLabel(val tree:ParseTree, targetValue:String = "O") extends LabelVariable(targetValue) { def domain = ParseTreeLabelDomain }
+
+class ParseTree(val sentence:Sentence) {
+  private val _parents = new Array[Int](sentence.length)
+  private val _labels = Array.tabulate(sentence.length)(i => new ParseTreeLabel(this))
+  /** Returns the position in the sentence of the root token. */ 
+  def rootIndex: Int = firstChild(-1)
+  /** Return the token at the root of the parse tree.  The parent of this token is null.  The parentIndex of this position is -1. */
+  def root: Token = sentence(rootIndex)
+  /** Make the argument the root of the tree.  This method does not prevent their being two roots. */
+  def setRoot(token:Token): Unit = setParent(token.position - sentence.start, -1)
+  /** Returns the sentence position of the parent of the token at position childIndex */
+  def parentIndex(childIndex:Int): Int = _parents(childIndex)
+  /** Returns the parent token of the token at position childIndex */
+  def parent(index:Int): Token = sentence(_parents(index))
+  /** Returns the parent token of the given token */
+  def parent(token:Token): Token = { require(token.sentence eq sentence); parent(token.position - sentence.start) }
+  /** Set the parent of the token at position 'child' to be at position 'parentIndex'.  A parentIndex of -1 indicates the root.  */
+  def setParent(childIndex:Int, parentIndex:Int): Unit = _parents(childIndex) = parentIndex
+  /** Set the parent of the token 'child' to be 'parent'. */
+  def setParent(child:Token, parent:Token): Unit = {
+    require(child.sentence eq sentence)
+    if (parent eq null) {
+      _parents(child.position - sentence.start) = -1
+    } else {
+      require(parent.sentence eq sentence)
+      _parents(child.position - sentence.start) = parent.position - sentence.start
+    }
+  }
+  /** Return the sentence index of the first token whose parent is 'parentIndex' */
+  private def firstChild(parentIndex:Int): Int = {
+    var i = 0
+    while ( i < _parents.length) {
+      if (_parents(i) == parentIndex) return i
+      i += 1
+    }
+    return -1
+  }
+  /** Return a list of tokens who are the children of the token at sentence position 'parentIndex' */
+  def children(parentIndex:Int): Seq[Token] = {
+    val result = new scala.collection.mutable.ArrayBuffer[Token]
+    var i = 0
+    while (i < _parents.length) {
+      if (_parents(i) == parentIndex) result += sentence(i)
+      i += 1
+    }
+    result
+  }
+  /** Return a list of tokens who are the children of parentToken */
+  def children(parentToken:Token): Seq[Token] = children(parentToken.position - sentence.start)
+  /** Return a list of tokens who are the children of the token at sentence position 'parentIndex' and who also have the indicated label value. */
+  def childrenOfLabel(index:Int, labelIntValue:Int): Seq[Token] = {
+    val result = new scala.collection.mutable.ArrayBuffer[Token]
+    var i = 0
+    while (i < _parents.length) {
+      if (_parents(i) == index && _labels(i).intValue == labelIntValue) result += sentence(i)
+      i += 1
+    }
+    result
+  }
+  def childrenOfLabel(token:Token, labelIntValue:Int): Seq[Token] = childrenOfLabel(token.position - sentence.start, labelIntValue)
+  def childrenOfLabel(index:Int, labelValue:DiscreteValue): Seq[Token] = childrenOfLabel(index, labelValue.intValue) 
+  def childrenOfLabel(token:Token, labelValue:DiscreteValue): Seq[Token] = childrenOfLabel(token.position - sentence.start, labelValue.intValue)
+  /** Return the label on the edge from the child at sentence position 'index' to its parent. */
+  def label(index:Int): ParseTreeLabel = _labels(index)
+  /** Return the label on the edge from 'childToken' to its parent. */
+  def label(childToken:Token): ParseTreeLabel = { require(childToken.sentence eq sentence); label(childToken.position - sentence.start) }
+}
+
+// Example usages:
+// sentence.attr[ParseTree].parent(token)
+// sentence.attr[ParseTree].children(token)
+// sentence.attr[ParseTree].setParent(token, parentToken)
+// sentence.attr[ParseTree].label(token)
+// sentence.attr[ParseTree].label(token).set("SUBJ")
+
+// Methods also created in Token supporting:
+// token.parseParent
+// token.setParseParent(parentToken)
+// token.parseChildren
+// token.parseLabel

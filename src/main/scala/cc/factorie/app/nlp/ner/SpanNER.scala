@@ -20,8 +20,12 @@ import cc.factorie.app.nlp.ner._
 import cc.factorie.util.DefaultCmdOptions
 import java.io.File
 
+class Conll2003SpanNerLabel(span:NerSpan, initialValue:String) extends SpanNerLabel(span, initialValue) {
+  def domain = Conll2003NerDomain
+}
+
 class NerSpan(doc:Document, labelString:String, start:Int, end:Int)(implicit d:DiffList) extends TokenSpan(doc, start, end) with cc.factorie.app.nlp.coref.Mention {
-  val label = new SpanNerLabel(this, labelString)
+  val label = new Conll2003SpanNerLabel(this, labelString)
   def isCorrect = this.forall(token => token.nerLabel.intValue == label.intValue) &&
     (!hasPredecessor(1) || predecessor(1).nerLabel.intValue != label.intValue) && 
     (!hasSuccessor(1) || successor(1).nerLabel.intValue != label.intValue)
@@ -35,7 +39,7 @@ class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[Strin
 }
 
 abstract class SpanNerTemplate extends Template2[NerSpan,SpanNerLabel] with DotStatistics2[SpanNerFeatures#Value,SpanNerLabel#Value] {
-  override def statisticsDomains = List(SpanNerFeaturesDomain, NerLabelDomain)
+  override def statisticsDomains = List(SpanNerFeaturesDomain, Conll2003NerDomain)
   def unroll1(span:NerSpan) = Factor(span, span.label)
   def unroll2(label:SpanNerLabel) = Factor(label.span, label)
 }
@@ -43,7 +47,7 @@ abstract class SpanNerTemplate extends Template2[NerSpan,SpanNerLabel] with DotS
 class SpanNerModel extends TemplateModel(
     // Bias term on each individual label 
     new TemplateWithDotStatistics1[SpanNerLabel] {
-      override def statisticsDomains = List(NerLabelDomain)
+      override def statisticsDomains = List(Conll2003NerDomain)
     },
     // Token-Label within Span
     new SpanNerTemplate { 
@@ -136,7 +140,7 @@ class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends Set
     //println("existing spans = "+existingSpans)
     for (span <- existingSpans) {
       // Change label without changing boundaries
-      for (labelValue <- NerLabelDomain.values; if (labelValue.category != "O"))
+      for (labelValue <- Conll2003NerDomain.values; if (labelValue.category != "O"))
         changes += {(d:DiffList) => span.label.set(labelValue)(d)}
       // Delete the span
       changes += {(d:DiffList) => span.delete(d)}
@@ -146,7 +150,7 @@ class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends Set
         // Trim first word, without changing label
         changes += {(d:DiffList) => span.trimStart(1)(d)}
         // Split off first and last word, with choices of the label of the split off portion
-        for (labelValue <- NerLabelDomain.values; if (labelValue.category != "O")) {
+        for (labelValue <- Conll2003NerDomain.values; if (labelValue.category != "O")) {
           changes += {(d:DiffList) => { span.trimEnd(1)(d); new NerSpan(_seq, labelValue.category, span.end+1, 1)(d) } }
           changes += {(d:DiffList) => { span.trimStart(1)(d); new NerSpan(_seq, labelValue.category, span.start-1, 1)(d) } }
         }
@@ -157,12 +161,12 @@ class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends Set
       }
       // Add a new word to beginning, and change label
       if (span.canPrepend(1)) {
-        for (labelValue <- NerLabelDomain.values; if (labelValue.category != "O"))
+        for (labelValue <- Conll2003NerDomain.values; if (labelValue.category != "O"))
           changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.prepend(1)(d); span.head.spans.filter(_ != span).foreach(_.trimEnd(1)(d)) } }
       }
       // Add a new word to the end, and change label
       if (span.canAppend(1)) {
-        for (labelValue <- NerLabelDomain.values; if (labelValue.category != "O"))
+        for (labelValue <- Conll2003NerDomain.values; if (labelValue.category != "O"))
           changes += {(d:DiffList) => { span.label.set(labelValue)(d); span.append(1)(d); span.last.spans.filter(_ != span).foreach(_.trimStart(1)(d)) } }
       }
       // Merge two neighboring spans having the same label
@@ -184,7 +188,7 @@ class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends Set
     }
     if (existingSpans.isEmpty) {
       changes += {(d:DiffList) => {}} // The no-op action
-      for (labelValue <- NerLabelDomain.values; if (labelValue.category != "O")) {
+      for (labelValue <- Conll2003NerDomain.values; if (labelValue.category != "O")) {
         // Add new length=1 span, for each label value
         changes += {(d:DiffList) => new NerSpan(_seq, labelValue.category, token.position, 1)(d)}
         //if (position != _seq.length-1) changes += {(d:DiffList) => new Span(labelValue.category, _seq, position, 2)(d)}
@@ -253,7 +257,7 @@ class SpanNER {
 
     println("Have "+trainDocuments.map(_.length).sum+" trainTokens "+testDocuments.map(_.length).sum+" testTokens")
     println("FeaturesDomain size="+SpanNerFeaturesDomain.dimensionSize)
-    println("LabelDomain "+NerLabelDomain.values.toList)
+    println("LabelDomain "+Conll2003NerDomain.values.toList)
     
     if (verbose) trainDocuments.take(10).flatten.take(500).foreach(token => { print(token.string+"\t"); printFeatures(token) })
     
@@ -310,7 +314,7 @@ class SpanNER {
     val testTokens = documents.flatten
     println("Have "+testTokens.length+" tokens")
     println("TokenDomain size="+SpanNerFeaturesDomain.dimensionSize)
-    println("LabelDomain "+NerLabelDomain.values.toList)
+    println("LabelDomain "+Conll2003NerDomain.values.toList)
     predictor.processAll(testTokens, 2)
     documents.foreach(d => { println("FILE "+d.name); printDocument(d) })
   }  

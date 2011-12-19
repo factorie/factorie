@@ -27,19 +27,19 @@ class ChainNerModel extends TemplateModel(
   // Bias term on each individual label 
   new TemplateWithDotStatistics1[ChainNerLabel] {
     factorName = "bias"
-    override def statisticsDomains = List(NerLabelDomain)
+    override def statisticsDomains = List(Conll2003NerDomain)
   },
   // Factor between label and observed token
   new TemplateWithDotStatistics2[ChainNerLabel,ChainNerFeatures] {
     factorName = "markov"
-    override def statisticsDomains = List(NerLabelDomain, ChainNerFeaturesDomain)
+    override def statisticsDomains = List(Conll2003NerDomain, ChainNerFeaturesDomain)
     def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
     def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
   },
   // Transition factors between two successive labels
   new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel] {
     factorName = "observation"
-    override def statisticsDomains = List(NerLabelDomain, NerLabelDomain)
+    override def statisticsDomains = List(Conll2003NerDomain, Conll2003NerDomain)
     def unroll1(label: ChainNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[ChainNerLabel], label) else Nil
     def unroll2(label: ChainNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[ChainNerLabel]) else Nil
   }
@@ -159,7 +159,7 @@ class ChainNer {
     val buf = new StringBuffer
     // Per-token evaluation
     buf.append(new LabelEvaluation(documents.flatMap(_.map(_.attr[ChainNerLabel]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](NerLabelDomain.categoryValues.filter(_.length > 2).map(_.substring(2)))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categoryValues.filter(_.length > 2).map(_.substring(2)))
     for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.map(_.attr[ChainNerLabel])
     println("Segment evaluation")
     println(segmentEvaluation)
@@ -169,11 +169,11 @@ class ChainNer {
   def process(document:Document): Unit = {
     if (document.length == 0) return
     if (!hasFeatures(document)) initFeatures(document)
-    if (!hasLabels(document)) document.foreach(token => token.attr += new ChainNerLabel(token, "O"))
+    if (!hasLabels(document)) document.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
     if (true) {
       new BPInferencer[ChainNerLabel](model).inferTreewiseMax(document.map(_.attr[ChainNerLabel]))
     } else {
-      for (token <- document) if (token.attr[ChainNerLabel] == null) token.attr += new ChainNerLabel(token, NerLabelDomain.getCategory(0)) // init value doens't matter
+      for (token <- document) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.getCategory(0)) // init value doens't matter
       val localModel = new TemplateModel(model.templates(0), model.templates(1))
       val localPredictor = new VariableSettingsGreedyMaximizer[ChainNerLabel](localModel, null)
       for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)
@@ -184,7 +184,7 @@ class ChainNer {
   
   def printSGML(tokens:IndexedSeq[Token]): Unit = {
     var i = 0
-    val other = NerLabelDomain.index("O")
+    val other = Conll2003NerDomain.index("O")
     while (i < tokens.length) {
       if (tokens(i).nerLabel.intValue != other) {
         val start = i
@@ -205,7 +205,7 @@ class ChainNer {
   
   def printEntities(tokens:IndexedSeq[Token]): Unit = {
     var i = 0
-    val other = NerLabelDomain.index("O")
+    val other = Conll2003NerDomain.index("O")
     while (i < tokens.length) {
       if (tokens(i).nerLabel.intValue != other) {
         val start = i

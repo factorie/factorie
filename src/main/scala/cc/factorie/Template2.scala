@@ -30,6 +30,11 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass2)) { assert(ta.length == 1); ta.head.erasure } else null }
 
+  override def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = {
+    if (classOf[DiscreteVar].isAssignableFrom(neighborClass1) && classOf[DiscreteVar].isAssignableFrom(neighborClass2)) 
+      for (variable <- variables; factor <- factors(variable)) limitedDiscreteValues.+=((factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue))
+  }
+
   override def factors(v: Variable): Iterable[FactorType] = {
     var ret = new ListBuffer[FactorType]
     if (neighborClass1.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain1 eq v.domain) || (_neighborDomain1 eq null))) ret ++= unroll1(v.asInstanceOf[N1])

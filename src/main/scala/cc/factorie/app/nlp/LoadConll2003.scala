@@ -13,6 +13,13 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
+import cc.factorie._
+import cc.factorie.app.nlp.ner._
+
+object Conll2003NerDomain extends CategoricalDomain[String]
+class Conll2003ChainNerLabel(token:Token, initialValue:String) extends ChainNerLabel(token, initialValue) {
+  def domain = Conll2003NerDomain
+}
 
 object LoadConll2003 {
   def fromFilename(filename:String): Seq[Document] = {
@@ -49,7 +56,7 @@ object LoadConll2003 {
           println("token=%s".format(token.string))
           println()
         }
-        token.attr += new cc.factorie.app.nlp.ner.ChainNerLabel(token, ner)
+        token.attr += new Conll2003ChainNerLabel(token, ner)
         token.attr += new cc.factorie.app.nlp.pos.PosLabel(token, partOfSpeech)
       }
     }

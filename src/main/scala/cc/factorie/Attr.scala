@@ -65,15 +65,25 @@ trait Attr {
       _attr(i) = value
       value
     }
-    /** Returns the index of the first attribute with class matching the argument.
+    /** Returns the index of the last attribute with class that is assignable from the argument.
         Attributes occur in the order in which they were inserted.
         Note this means you can add a:MyClass, then add b:MySubclass, then index[MyClass] will return the index of a. */
     @inline final def index(key:Class[_]): Int = {
-      var i = 0
-      while (i < _attr.length) {
+      var i = _attr.length - 1
+      while (i >= 0) {
         if ((_attr(i) ne null) && key.isAssignableFrom(_attr(i).getClass))
           return i
-        i += 1
+        i -= 1
+      }
+      -1
+    }
+    /** Returns the index of the last attribute with class that is exactly to the argument.
+        Attributes occur in the order in which they were inserted. */
+    @inline final def indexExactly(key:Class[_]): Int = {
+      var i = _attr.length - 1
+      while (i >= 0) {
+        if (key eq _attr(i).getClass) return i
+        i -= 1
       }
       -1
     }
@@ -113,7 +123,11 @@ trait Attr {
     def contains(key:Class[_]): Boolean = index(key) >= 0
     /** Fetch the first value associated with the given class.  If none present, return null. */
     def apply[C<:AnyRef]()(implicit m: Manifest[C]): C = {
-      var i = index[C]
+      var i = index(m.erasure)
+      if (i >= 0) _attr(i).asInstanceOf[C] else null.asInstanceOf[C]
+    }
+    def exactly[C<:AnyRef]()(implicit m: Manifest[C]): C = {
+      var i = indexExactly(m.erasure)
       if (i >= 0) _attr(i).asInstanceOf[C] else null.asInstanceOf[C]
     }
     def get[C<:AnyRef](implicit m: Manifest[C]): Option[C] = {

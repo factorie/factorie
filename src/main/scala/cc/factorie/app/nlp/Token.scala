@@ -54,6 +54,10 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PosLabel]
   def nerLabel = attr[cc.factorie.app.nlp.ner.ChainNerLabel]
+  def parentParent: Token = attr[cc.factorie.app.nlp.parse.ParseTree].parent(this)
+  def setParentParent(parent:Token): Unit = attr[cc.factorie.app.nlp.parse.ParseTree].setParent(this, parent)
+  def parseChildren: Seq[Token] = attr[cc.factorie.app.nlp.parse.ParseTree].children(this)
+  def parseLabel: cc.factorie.app.nlp.parse.ParseTreeLabel = attr[cc.factorie.app.nlp.parse.ParseTree].label(this)
   
   // Sentence methods
   // Consider not storing _sentence, but instead

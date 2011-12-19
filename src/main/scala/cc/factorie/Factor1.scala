@@ -53,18 +53,28 @@ trait Factor1[N1<:Variable] extends Factor {
   def statistics: StatisticsType = statistics(values)
   def statistics(v:Values): StatisticsType
 
+  // For implementing sparsity in belief propagation
+  def isLimitingValuesIterator = false
+  def limitedDiscreteValuesIterator: Iterator[Int] = Iterator.empty
+
   /** valuesIterator in style of specifying fixed neighbors */
   def valuesIterator(fixed: Assignment): Iterator[Values] = {
     if (fixed.contains(_1)) Iterator.single(Values(fixed(_1)))
-    else _1.domain match {
+    else if (isLimitingValuesIterator) {
+      val d = _1.domain.asInstanceOf[DiscreteDomain]
+      limitedDiscreteValuesIterator.map(i => Values(d.getValue(i).asInstanceOf[N1#Value]))
+    } else _1.domain match {
       case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
     }
   }
   /** valuesIterator in style of specifying varying neighbors */
   def valuesIterator(varying:Set[Variable]): Iterator[Values] = {
     if (varying.size != 1 || varying.head != _1)
-      throw new Error("Template1.valuesIterator cannot vary arguments.")
-    else _1.domain match {
+      throw new Error("Factor1.valuesIterator cannot vary arguments.")
+    else if (isLimitingValuesIterator) {
+      val d = _1.domain.asInstanceOf[DiscreteDomain]
+      limitedDiscreteValuesIterator.map(i => Values(d.getValue(i).asInstanceOf[N1#Value]))
+    } else _1.domain match {
       case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
     }
   }
@@ -92,6 +102,12 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
       
   type FactorType = Factor
   type ValuesType = Factor#Values
+
+  // For implementing sparsity in belief propagation
+  var isLimitingValuesIterator = false
+  lazy val limitedDiscreteValues = new scala.collection.mutable.HashSet[Int]
+  def addLimitedDiscreteValues(values:Iterable[Int]): Unit = limitedDiscreteValues ++= values
+  
   final case class Factor(_1:N1, override var inner:Seq[cc.factorie.Factor] = Nil, override var outer:cc.factorie.Factor = null) extends super.Factor with Factor1[N1] {
     type StatisticsType = Family1.this.StatisticsType
     if (_neighborDomains eq null) {
@@ -100,6 +116,8 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
       _neighborDomains += _neighborDomain1
     }
     override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
+    override def isLimitingValuesIterator = Family1.this.isLimitingValuesIterator
+    override def limitedDiscreteValuesIterator: Iterator[Int] = limitedDiscreteValues.iterator
   } 
   // Cached statistics
   private var cachedStatisticsArray: Array[StatisticsType] = null

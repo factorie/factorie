@@ -28,6 +28,12 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Famil
 {
   val neighborClass1 = nm1.erasure
   val neighborClass1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
+
+  override def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = {
+    if (classOf[DiscreteVar].isAssignableFrom(neighborClass1)) 
+      for (variable <- variables; factor <- factors(variable)) limitedDiscreteValues.+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+  }
+
   // Factors
   def factors(v:Variable): Iterable[FactorType] = {
     // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!

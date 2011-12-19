@@ -65,6 +65,10 @@ trait Template extends FamilyWithNeighborDomains { thisTemplate =>
   /** Called in implementations of factors(Variable) to give the variable a chance
       to specify additional dependent variables on which factors(Variable) should also be called. */
   def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade
+  
+  /** Causes future calls to factor.valuesIterator to limit the returned values to 
+      those value combinations seen in the current values of the variables in factors touching "vars". */
+  def limitDiscreteValuesIteratorAsIn(vars:Iterable[DiscreteVar]): Unit = {}
 }
 
 
