@@ -59,15 +59,19 @@ class ParseChildEdges extends SetVariable[ParseEdge]
 object ParseTreeLabelDomain extends CategoricalDomain[String]
 class ParseTreeLabel(val tree:ParseTree, targetValue:String = "O") extends LabelVariable(targetValue) { def domain = ParseTreeLabelDomain }
 
+object ParseTree {
+  val rootIndex = -1
+  val noIndex = -2
+}
 class ParseTree(val sentence:Sentence) {
   private val _parents = new Array[Int](sentence.length)
   private val _labels = Array.tabulate(sentence.length)(i => new ParseTreeLabel(this))
   /** Returns the position in the sentence of the root token. */ 
-  def rootIndex: Int = firstChild(-1)
+  def rootChildIndex: Int = firstChild(-1)
   /** Return the token at the root of the parse tree.  The parent of this token is null.  The parentIndex of this position is -1. */
-  def root: Token = sentence(rootIndex)
+  def rootChild: Token = sentence(rootChildIndex)
   /** Make the argument the root of the tree.  This method does not prevent their being two roots. */
-  def setRoot(token:Token): Unit = setParent(token.position - sentence.start, -1)
+  def setRootChild(token:Token): Unit = setParent(token.position - sentence.start, -1)
   /** Returns the sentence position of the parent of the token at position childIndex */
   def parentIndex(childIndex:Int): Int = _parents(childIndex)
   /** Returns the parent token of the token at position childIndex */
@@ -105,6 +109,8 @@ class ParseTree(val sentence:Sentence) {
     }
     result
   }
+  def leftChildren(parentIndex:Int): Seq[Token] = throw new Error("Not yet implemented") 
+  def rightChildren(parentIndex:Int): Seq[Token] = throw new Error("Not yet implemented") 
   /** Return a list of tokens who are the children of parentToken */
   def children(parentToken:Token): Seq[Token] = children(parentToken.position - sentence.start)
   /** Return a list of tokens who are the children of the token at sentence position 'parentIndex' and who also have the indicated label value. */
@@ -117,17 +123,17 @@ class ParseTree(val sentence:Sentence) {
     }
     result
   }
-  def childrenOfLabel(token:Token, labelIntValue:Int): Seq[Token] = childrenOfLabel(token.position - sentence.start, labelIntValue)
+  //def childrenOfLabel(token:Token, labelIntValue:Int): Seq[Token] = childrenOfLabel(token.position - sentence.start, labelIntValue)
   def childrenOfLabel(index:Int, labelValue:DiscreteValue): Seq[Token] = childrenOfLabel(index, labelValue.intValue) 
-  def childrenOfLabel(token:Token, labelValue:DiscreteValue): Seq[Token] = childrenOfLabel(token.position - sentence.start, labelValue.intValue)
+  //def childrenOfLabel(token:Token, labelValue:DiscreteValue): Seq[Token] = childrenOfLabel(token.position - sentence.start, labelValue.intValue)
   /** Return the label on the edge from the child at sentence position 'index' to its parent. */
   def label(index:Int): ParseTreeLabel = _labels(index)
   /** Return the label on the edge from 'childToken' to its parent. */
-  def label(childToken:Token): ParseTreeLabel = { require(childToken.sentence eq sentence); label(childToken.position - sentence.start) }
+  //def label(childToken:Token): ParseTreeLabel = { require(childToken.sentence eq sentence); label(childToken.position - sentence.start) }
 }
 
 // Example usages:
-// sentence.attr[ParseTree].parent(token)
+// token.sentence.attr[ParseTree].parent(token)
 // sentence.attr[ParseTree].children(token)
 // sentence.attr[ParseTree].setParent(token, parentToken)
 // sentence.attr[ParseTree].label(token)
@@ -138,3 +144,4 @@ class ParseTree(val sentence:Sentence) {
 // token.setParseParent(parentToken)
 // token.parseChildren
 // token.parseLabel
+// token.leftChildren
