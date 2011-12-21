@@ -109,12 +109,28 @@ class ParseTree(val sentence:Sentence) {
     }
     result
   }
-  def leftChildren(parentIndex:Int): Seq[Token] = throw new Error("Not yet implemented") 
-  def rightChildren(parentIndex:Int): Seq[Token] = throw new Error("Not yet implemented") 
+  def leftChildren(parentIndex:Int): Seq[Token] = {
+    val result = new scala.collection.mutable.ArrayBuffer[Token]
+    var i = 0
+    while (i < parentIndex) {
+      if (_parents(i) == parentIndex) result += sentence(i)
+      i += 1
+    }
+    result
+  }
+  def rightChildren(parentIndex:Int): Seq[Token] = {
+    val result = new scala.collection.mutable.ArrayBuffer[Token]
+    var i = parentIndex+1
+    while (i > _parents.length) {
+      if (_parents(i) == parentIndex) result += sentence(i)
+      i += 1
+    }
+    result
+  }
   /** Return a list of tokens who are the children of parentToken */
-  def children(parentToken:Token): Seq[Token] = children(parentToken.position - sentence.start)
+  //def children(parentToken:Token): Seq[Token] = children(parentToken.position - sentence.start)
   /** Return a list of tokens who are the children of the token at sentence position 'parentIndex' and who also have the indicated label value. */
-  def childrenOfLabel(index:Int, labelIntValue:Int): Seq[Token] = {
+  def childrenLabeled(index:Int, labelIntValue:Int): Seq[Token] = {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = 0
     while (i < _parents.length) {
@@ -123,8 +139,26 @@ class ParseTree(val sentence:Sentence) {
     }
     result
   }
+  def leftChildrenLabeled(parentIndex:Int, labelIntValue:Int): Seq[Token] = {
+    val result = new scala.collection.mutable.ArrayBuffer[Token]
+    var i = 0
+    while (i < parentIndex) {
+      if (_parents(i) == parentIndex && _labels(i).intValue == labelIntValue) result += sentence(i)
+      i += 1
+    }
+    result
+  }
+  def rightChildrenLabeled(parentIndex:Int, labelIntValue:Int): Seq[Token] = {
+    val result = new scala.collection.mutable.ArrayBuffer[Token]
+    var i = parentIndex+1
+    while (i > _parents.length) {
+      if (_parents(i) == parentIndex && _labels(i).intValue == labelIntValue) result += sentence(i)
+      i += 1
+    }
+    result
+  }
   //def childrenOfLabel(token:Token, labelIntValue:Int): Seq[Token] = childrenOfLabel(token.position - sentence.start, labelIntValue)
-  def childrenOfLabel(index:Int, labelValue:DiscreteValue): Seq[Token] = childrenOfLabel(index, labelValue.intValue) 
+  //def childrenLabeled(index:Int, labelValue:DiscreteValue): Seq[Token] = childrenLabeled(index, labelValue.intValue) 
   //def childrenOfLabel(token:Token, labelValue:DiscreteValue): Seq[Token] = childrenOfLabel(token.position - sentence.start, labelValue.intValue)
   /** Return the label on the edge from the child at sentence position 'index' to its parent. */
   def label(index:Int): ParseTreeLabel = _labels(index)

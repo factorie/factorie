@@ -29,4 +29,9 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
     }
     return null
   }
+  
+  // Parse attributes
+  def parse = attr[cc.factorie.app.nlp.parse.ParseTree]
+  def parseRootChild: Token = attr[cc.factorie.app.nlp.parse.ParseTree].rootChild
+
 }

@@ -49,15 +49,21 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
   def document: ChainType = chain
   def string = document.string.substring(stringStart, stringStart + stringLength)
   def stringEnd = stringStart + stringLength
+  def sentencePosition = position - sentence.start
   def value: String = string // abstract in StringVar
   
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PosLabel]
   def nerLabel = attr[cc.factorie.app.nlp.ner.ChainNerLabel]
-  def parentParent: Token = attr[cc.factorie.app.nlp.parse.ParseTree].parent(this)
-  def setParentParent(parent:Token): Unit = attr[cc.factorie.app.nlp.parse.ParseTree].setParent(this, parent)
-  def parseChildren: Seq[Token] = attr[cc.factorie.app.nlp.parse.ParseTree].children(this)
-  def parseLabel: cc.factorie.app.nlp.parse.ParseTreeLabel = attr[cc.factorie.app.nlp.parse.ParseTree].label(this)
+  // Parse attributes, will throw exception if parse is not present
+  def parseParent: Token = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].parent(sentencePosition)
+  def parseLabel: cc.factorie.app.nlp.parse.ParseTreeLabel = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].label(sentencePosition)
+  def parseChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].children(sentencePosition)
+  def parseLeftChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildren(sentencePosition)
+  def parseRightChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildren(sentencePosition)
+  def parseChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].childrenLabeled(sentencePosition, label.intValue)
+  def parseLeftChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].leftChildrenLabeled(sentencePosition, label.intValue)
+  def parseRightChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].rightChildrenLabeled(sentencePosition, label.intValue)
   
   // Sentence methods
   // Consider not storing _sentence, but instead
