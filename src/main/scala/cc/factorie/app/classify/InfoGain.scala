@@ -14,48 +14,43 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
+import cc.factorie.util.TopN
 
 /** Calculate the information gain between all features of Instances and the Instances' labels.
     @author Andrew McCallum
     @since 0.10
  */
-class InfoGain(instances:Iterable[InstanceVariable]) extends IndexedSeq[Double] {
+class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteVectorVar) extends IndexedSeq[Double] {
+  def this(labels:LabelList[L]) = this(labels, labels.labelToFeatures)
   def apply(i:Int) = infogains(i)
   def length = infogains.length
-  val categoricalDomain: CategoricalDomain[String] = instances.head.domain.dimensionDomain
-  private val infogains = new Array[Double](categoricalDomain.size)
+  val domain: DiscreteDomain = f(labels.head).domain.dimensionDomain
+  private val infogains = new Array[Double](domain.size)
   var baseEntropy: Double = 0.0
-  init(instances)
+  init(labels)
   
-  def top(n:Int): Seq[(String,Double)] = {
-    val entries = this.toArray.zipWithIndex.sortBy({case (infogain, index) => -infogain}).take(n) //.toList
-    entries.map({case (infogain,index)=>new Tuple2(categoricalDomain.getCategory(index).toString, infogain)})
-  }
+  // TODO Currently only works for CategoricalDomain, not DiscreteDomain
+  def top(n:Int): TopN[String] = new TopN[String](n, this, domain.asInstanceOf[CategoricalDomain[String]].categoryValues)
   
-  protected def init(instances:Iterable[InstanceVariable]) {
-    val numInstances = instances.size
-    val instanceDomain = instances.head.domain
+  protected def init(labels:Iterable[L]) {
+    val numInstances = labels.size
+    val instanceDomain = f(labels.head).domain
     val numFeatures = instanceDomain.dimensionDomain.size
-    val labelDomain = instances.head.label.domain
+    val labelDomain = labels.head.domain
     val numLabels = labelDomain.size
-    //val targetFeatureCount = Array.ofDim[Double](numTargets, numFeatures)
     val featureTargetProportions = Array.fill(numFeatures)(new cc.factorie.generative.DenseCountsProportions(numLabels))
     val featureCount = new Array[Double](numFeatures)
     val targetProportions = new cc.factorie.generative.DenseCountsProportions(numLabels)
     var targetCountSum = 0.0
-    // double flv; // feature location value
-    // int fli; // feature location index
-    // double count;
-    // Populate targetFeatureCount, et al
-    for (instance <- instances) {
+    for (label <- labels) {
+      val instance = f(label)
       assert(instance.domain == instanceDomain)
-      assert(instance.label.domain == labelDomain)
-      val labelIndex = instance.label.intValue
+      assert(label.domain == labelDomain)
+      val labelIndex = label.intValue
       targetProportions.increment(labelIndex, 1.0)(null)
       //println("InfoGain "+instance.activeDomain.toSeq)
       for (featureIndex <- instance.activeDomain) {
         featureTargetProportions(featureIndex).increment(labelIndex, 1.0)(null)
-        //targetFeatureCount(labelIndex)(featureIndex) += 1
         featureCount(featureIndex) += 1
       }
     }

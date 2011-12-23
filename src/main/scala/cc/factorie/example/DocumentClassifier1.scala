@@ -13,7 +13,6 @@
    limitations under the License. */
 
 
-
 package cc.factorie.example
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
@@ -24,36 +23,31 @@ object DocumentClassifier1 {
   
   // Define variable classes
   object DocumentDomain extends CategoricalVectorDomain[String];
-  class Document(file:File) extends classify.document.DocumentVariable(file) {
+  class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     val label = new Label(file.getParentFile.getName, this)
+    cc.factorie.app.strings.alphaSegmenter(file).foreach(token => this += token)
   }
   object LabelDomain extends CategoricalDomain[String];
-  class Label(labelString:String, document:Document) extends classify.LabelVariable(labelString, document) {
+  class Label(labelString:String, val document:Document) extends LabelVariable(labelString) {
     def domain = LabelDomain
   }
  
   // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
-  val model = classify.newModel[Label,Document];
-  /*val model2 = new TemplateModel(
-      new TemplateWithDotStatistics2[Label,Document] {
-        def unroll1(label:Label) = Factor(label, label.instance)
-        def unroll2(instance:Document) = Factor(instance.label, instance)
-      }
-  )*/
+  val model = new classify.ClassifyModel[Label,Document](_.document)
 
   def main(args:Array[String]): Unit = {
     if (args.length < 2) 
       throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 
     // Read data and create Variables
-    var documents = new ArrayBuffer[Document];
+    var documents = new classify.LabelList[Label](_.document);
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
-        documents += new Document(file)
+        documents += new Document(file).label
       }
     }
     
@@ -68,9 +62,7 @@ object DocumentClassifier1 {
     println()
 
     // Make a test/train split
-    val (testSet, trainSet) = documents.shuffle.split(0.5)
-    var trainVariables = trainSet.map(_ label)
-    var testVariables = testSet.map(_ label)
+    val (trainVariables, testVariables) = documents.shuffle.split(0.5)
     (trainVariables ++ testVariables).foreach(_.setRandomly())
 
     //println(model)

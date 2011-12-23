@@ -1,5 +1,6 @@
 package cc.factorie.app.classify
 import cc.factorie._
+import cc.factorie.util.TopN
 
 /** Calculate the information gain between the binary variable "in class" / "not in class" 
     and the binary variable "has feature" / "does not have feature"
@@ -7,37 +8,35 @@ import cc.factorie._
     @author Andrew McCallum
     @since 0.10
  */
-class PerLabelInfoGain(instances:Iterable[InstanceVariable]) {
-  val categoricalDomain: CategoricalDomain[String] = instances.head.domain.dimensionDomain
-  val labelDomain: DiscreteDomain = instances.head.label.domain
-  private val infogains = Array.ofDim[Double](labelDomain.size, categoricalDomain.size)
+class PerLabelInfoGain[L<:DiscreteVar](labels:Iterable[L], labelToFeatures:L=>DiscreteVectorVar) {
+  def this(labels:LabelList[L]) = this(labels, labels.labelToFeatures)
+  val instanceDomain: DiscreteVectorDomain = labelToFeatures(labels.head).domain
+  val featureDomain: DiscreteDomain = instanceDomain.dimensionDomain
+  val labelDomain: DiscreteDomain = labels.head.domain
+  private val infogains = Array.ofDim[Double](labelDomain.size, featureDomain.size)
   var labelEntropies = new Array[Double](labelDomain.size)
-  init(instances)
+  init(labels)
   
-  def top(labelIndex:Int, n:Int): Seq[(String,Double)] = {
-    val entries = infogains(labelIndex).zipWithIndex.sortBy({case (infogain, index) => -infogain}).take(n) //.toList
-    entries.map({case (infogain,index)=>new Tuple2(categoricalDomain.getCategory(index).toString, infogain)})
-  }
-  def top(labelValue:DiscreteValue, n:Int): Seq[(String,Double)] = {
+  def top(labelIndex:Int, n:Int): TopN[String] = new TopN[String](n, infogains(labelIndex), featureDomain.asInstanceOf[CategoricalDomain[String]].categoryValues)
+  def top(labelValue:DiscreteValue, n:Int): TopN[String] = {
     require(labelValue.domain == labelDomain)
     top(labelValue.intValue, n)
   }
   
-  protected def init(instances:Iterable[InstanceVariable]) {
-    val numInstances = instances.size
-    val instanceDomain = instances.head.domain
-    val numFeatures = instanceDomain.dimensionDomain.size
-    val labelDomain = instances.head.label.domain
+  protected def init(labels:Iterable[L]) {
+    val numInstances = labels.size
+    val numFeatures = featureDomain.size
     val numLabels = labelDomain.size
     
     val labelFeatureCounts = Array.ofDim[Double](numLabels, numFeatures)
     val featureCounts = new Array[Int](numFeatures)
     val labelCounts = new Array[Int](numLabels)
     
-    for (instance <- instances) {
+    for (label <- labels) {
+      val instance = labelToFeatures(label)
       assert(instance.domain == instanceDomain)
-      assert(instance.label.domain == labelDomain)
-      val labelIndex = instance.label.intValue
+      assert(label.domain == labelDomain)
+      val labelIndex = label.intValue
       labelCounts(labelIndex) += 1
       for (featureIndex <- instance.activeDomain) {
         labelFeatureCounts(labelIndex)(featureIndex) += 1

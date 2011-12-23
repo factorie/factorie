@@ -14,17 +14,22 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
+import cc.factorie.generative.Proportions
 import cc.factorie.er._
+import scala.collection.mutable.{HashMap,ArrayBuffer}
 
-/** Factor between label and observed instance vector */
-class LabelInstanceTemplate[L<:LabelVariable[InstanceVariable]](implicit lm:Manifest[L]) extends TemplateWithDotStatistics2[L,L#InstanceType]() {
-  def unroll1(label: L) = Factor(label, label.instance)
-  def unroll2(instance: L#InstanceType) = Factor(instance.label.asInstanceOf[L], instance)
+class MaxEntSampleRankTrainer extends ClassifierTrainer {
+  var iterations = 10
+  var learningRateDecay = 0.9
+  def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
+    val cmodel = new LogLinearModel(il.labelToFeatures)
+    val learner = new VariableSettingsSampler[L](cmodel, ZeroOneLossObjective) with SampleRank with GradientAscentUpdates
+    learner.learningRate = 1.0
+    for (i <- 0 until iterations) {
+      learner.processAll(il)
+      learner.learningRate *= learningRateDecay
+    }
+    new Classifier[L] { val model = cmodel; val labelDomain = il.head.domain }
+  }
 }
 
-/** Factor between label and observed instance vector */
-class SparseLabelInstanceTemplate[L<:LabelVariable[InstanceVariable]](implicit lm:Manifest[L]) extends TemplateWithDotStatistics2[L,L#InstanceType]() with SparseWeights {
-  def unroll1(label: L) = Factor(label, label.instance)
-  def unroll2(instance: L#InstanceType) = throw new Error("Instance BinaryFeatureVectorVariable shouldn't change")
-}
- 

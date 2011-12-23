@@ -20,6 +20,7 @@ import scala.collection.mutable.ArrayBuffer
 trait DiscreteVectorVar extends VectorVar with VarAndValueType[DiscreteVectorVar,DiscreteVectorValue] {
   def domain: DiscreteVectorDomain
   def contains(dimension:Int): Boolean = vector.apply(dimension) != 0.0
+  def activeDomain = vector.activeDomain
 }
 
 /** A vector with dimensions corresponding to a DiscreteDomain, and with Double weights for each dimension, represented by a sparse vector. */
@@ -33,7 +34,6 @@ trait SparseBinaryDiscreteVectorVar extends DiscreteVectorVar with VarAndValueTy
   //type ValueType <: cc.factorie.la.SparseBinaryVector with DiscreteVectorValue
   def length = domain.dimensionSize //allocSize // TODO Remove this?
   //def apply(i:Int) = vector.apply(i)
-  def activeDomain = vector.activeDomain
   def zero(): Unit = value.zero()
   def +=(i:Int): Unit = { if (frozen) throw new Error("Cannot append to frozen SparseBinaryDiscreteVectorVar."); value.include(i) }
   //def ++=(is:Iterable[Int]): Unit = is.foreach(i => vector.+=(i)) // Conflicts with ++=(Iterable[T])
@@ -52,7 +52,6 @@ abstract class SparseBinaryDiscreteVectorVariable extends VectorVariable with Sp
 
 trait SparseIndexedDiscreteVectorVar extends DiscreteVectorVar with VarAndValueType[SparseIndexedDiscreteVectorVar,SparseIndexedVector with DiscreteVectorValue] {
   def length = domain.dimensionSize
-  def activeDomain = vector.activeDomain
   override def increment(index:Int, incr:Double): Unit = {
     if (frozen) throw new Error("Cannot append to frozen SparseIndexedDiscreteVectorVar.")
     value.increment(index, incr)
@@ -153,6 +152,21 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
     def reset = i = -1
     override def variable: DiscreteVariable.this.type = DiscreteVariable.this
   }
+  // TODO Keep this?  Or replace later by appropriate methods somewhere among the "Inferencer"s?
+  def proportions(model:Model): cc.factorie.generative.Proportions = {
+    val origIntValue = intValue
+    val distribution = new Array[Double](domain.size)
+    forIndex(distribution.length)(i => {
+      //model.factors(Seq(this)).sumBy(_.values.set(this, i).score) // a version that doesn't change the value of this variable
+      this.set(i)(null)
+      // compute score of variable with value 'i'
+      distribution(i) = model.score(Seq(this))
+    })
+    maths.expNormalize(distribution)
+    set(origIntValue)(null)
+    new cc.factorie.generative.DenseProportions(distribution)
+  }
+
   case class DiscreteVariableDiff(oldValue: Int, newValue: Int) extends Diff {
     @inline final def variable: DiscreteVariable = DiscreteVariable.this
     @inline final def redo = _value = newValue
