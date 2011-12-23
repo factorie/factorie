@@ -34,7 +34,7 @@ object DocumentClassifier1 {
   }
  
   // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
-  val model = new classify.ClassifyModel[Label,Document](_.document)
+  val model = new classify.LogLinearModel[Label,Document](_.document)
 
   def main(args:Array[String]): Unit = {
     if (args.length < 2) 
