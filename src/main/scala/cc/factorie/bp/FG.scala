@@ -103,10 +103,19 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[Variable], fg:
     log(Z)
   }
 
+  def foldMarginals[A](init: A)(f: (A, Values, Double) => A): A = {
+    var a: A = init
+    for (value: Values <- factor.valuesIterator(varyingNeighbors)) {
+      val prob = marginal(value)
+      a = f(a, value, prob)
+    }
+    a
+  }
+
   def updateStatExpectations(exps: HashMap[DotFamily, Vector]): Unit = {
     factor match {
       case f: DotFamily#Factor => {
-        if(!exps.contains(f.family)) exps(f.family) = new DenseVector(f.family.statisticsVectorLength)
+        if (!exps.contains(f.family)) exps(f.family) = new DenseVector(f.family.statisticsVectorLength)
         for (assignment: Values <- f.valuesIterator(varyingNeighbors)) {
           val prob = marginal(assignment)
           val vector = assignment.statistics.asInstanceOf[DotFamily#StatisticsType].vector
@@ -133,8 +142,9 @@ trait SumFactor extends MessageFactor {
     val scores: HashMap[Any, Double] = new HashMap[Any, Double] {
       override def default(key: Any) = 0.0
     }
-    // previously we used new AllAssignmentIterator(variables)
+    var maxLogScore = Double.NegativeInfinity
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
+      val index = assignment.index(varyingNeighbors)
       var num: Double = getScore(assignment)
       for (variable <- variables) {
         if (variable != target) {
@@ -142,8 +152,14 @@ trait SumFactor extends MessageFactor {
           num += mess.score(assignment.get(variable).get)
         }
       }
-      num = exp(num)
-      scores(assignment.get(target).get) = num + scores(assignment.get(target).get)
+      if (num > maxLogScore) maxLogScore = num
+      _marginal(index) = num
+    }
+    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
+      val index = assignment.index(varyingNeighbors)
+      val num: Double = _marginal(index) - maxLogScore
+      val expnum = exp(num)
+      scores(assignment.get(target).get) = expnum + scores(assignment.get(target).get)
     }
     val varScores: Buffer[Double] = new ArrayBuffer(target.domain.size)
     for (value <- target.domain.values) {
