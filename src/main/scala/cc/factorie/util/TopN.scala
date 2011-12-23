@@ -1,6 +1,8 @@
 package cc.factorie.util
 
-class TopEntry[A<:AnyRef](val index:Int, val score:Double, val category:A)
+class TopEntry[A<:AnyRef](val index:Int, val score:Double, val category:A) {
+  override def toString = category.toString+" "+score
+}
 
 /** For gathering a sorted list of at most N indexed entries, sorted by a floating-point score. */
 class TopN[A<:AnyRef](maxLength:Int) extends Seq[TopEntry[A]] {
@@ -35,4 +37,7 @@ class TopN[A<:AnyRef](maxLength:Int) extends Seq[TopEntry[A]] {
      }
     }
   }
+  
+  override def toString: String = mkString(", ") 
+  
 }
