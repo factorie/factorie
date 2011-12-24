@@ -15,6 +15,7 @@
 package cc.factorie.app.nlp.parse
 import cc.factorie._
 import cc.factorie.app.nlp._
+import java.lang.StringBuffer
 
 // Representation for a dependency parse
 
@@ -164,6 +165,14 @@ class ParseTree(val sentence:Sentence) {
   def label(index:Int): ParseTreeLabel = _labels(index)
   /** Return the label on the edge from 'childToken' to its parent. */
   //def label(childToken:Token): ParseTreeLabel = { require(childToken.sentence eq sentence); label(childToken.position - sentence.start) }
+  override def toString(): String = {
+    val tokenStrings = sentence.tokens.map(_.string)
+    val labelStrings = _labels.map(_.value.toString())
+    val buff = new StringBuffer()
+    for (i <- 0 until sentence.size)
+      buff.append(i + " " + _parents(i) + " " + tokenStrings(i) + " " + labelStrings(i) + "\n")
+    buff.toString()
+  }
 }
 
 // Example usages:

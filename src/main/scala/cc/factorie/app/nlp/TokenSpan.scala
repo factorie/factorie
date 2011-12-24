@@ -14,7 +14,6 @@
 
 package cc.factorie.app.nlp
 import cc.factorie._
-import scala.collection.mutable.ArrayBuffer
 
 class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanVariable[TokenSpan,Document,Token](doc, initialStart, initialLength) with Attr {
   def document = chain

@@ -16,27 +16,34 @@ package cc.factorie.app.nlp
 
 import scala.io.Source
 import cc.factorie.app.nlp.pos.PosLabel
-import cc.factorie.app.nlp.parse.{ParseLabel, ParseEdge}
+import cc.factorie.app.nlp.parse.ParseTree
 
 object LoadConll2006 {
-  private def addChildParentSeq(ts: Seq[Token], xs: Seq[(Token,Int)]): Unit =
-    for ((child, parentIdx) <- xs)
-      child.attr[ParseEdge].set(ts(parentIdx))(null)
+  private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int,Int,String)]): Unit = {
+    val tree = new ParseTree(s)
+    for ((childIdx, parentIdx, depLabel) <- depInfoSeq) {
+      tree.setParent(childIdx, parentIdx)
+      tree.label(childIdx).setCategory(depLabel)(null)
+    }
+    s.attr += tree
+  }
 
   def fromFilename(filename:String): Seq[Document] = {
     var document: Document = new Document("Conll2006", "")
-    val source = Source.fromFile(new java.io.File(filename))
+    val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)(null)
-    var childParentSeq = Seq.empty[(Token,Int)]
+    var depInfoSeq = Seq.empty[(Int,Int,String)]
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
+        new Token(sentence, " ")  // todo: why is this necessary? Without it, the last token of the sentence is dropped.
         document.appendString("\n")
-        addChildParentSeq(sentence.tokens, childParentSeq)
-        childParentSeq = Seq.empty[(Token,Int)]
+        addDepInfo(sentence, depInfoSeq)
+        depInfoSeq = Seq.empty[(Int,Int,String)]
         sentence = new Sentence(document)(null)
       } else {
         val fields = line.split('\t')
         assert(fields.length == 10)
+        val currTokenIdx = fields(0).toInt - 1
         val word = fields(1)
         val partOfSpeech = fields(3)
         val parentIdx = fields(6).toInt - 1
@@ -44,35 +51,19 @@ object LoadConll2006 {
         document.appendString(" ")
         val token = new Token(sentence, word)
         token.attr += new PosLabel(token, partOfSpeech)
-        new ParseEdge(token, null, depLabel) // all parents are the first word
-        // if the token is not <root>, record the actual parents to add once the whole sentence has been read
-        if (parentIdx != -1)
-          childParentSeq ++= Seq((token, parentIdx))
+        depInfoSeq ++= Seq((currTokenIdx, parentIdx, depLabel))
       }
     }
-    addChildParentSeq(sentence.tokens, childParentSeq)
+    new Token(sentence, " ")
+    addDepInfo(sentence, depInfoSeq)
 
     println("Loaded 1 document with "+document.sentences.size+" sentences with "+document.length+" tokens total from file "+filename)
     Seq(document)
   }
 
-  def printDocument(doc: Document): Unit = {
-    def isParentRoot(token: Token): Boolean = token.attr[ParseEdge].parent == null
-    def getRoot(sentence: Sentence): Token = sentence.tokens.filter(t => isParentRoot(t)).head
-
-    def treeString(root: Token, sentence: Sentence): String = {
-      var sb = new StringBuilder
-      for (child <- root.attr[ParseEdge].children)
-        sb.append(child.attr[ParseEdge].label.value + "(" + root.string + "-" + sentence.tokens.indexOf(root) + ", " + child.string + "-" + sentence.tokens.indexOf(child) + ")" + "\n" + treeString(child, sentence))
-      sb.toString()
-    }
-
-    def printTree(sentence:Sentence) = println(treeString(getRoot(sentence), sentence))
-
-    for (sent <- doc.sentences)
-      printTree(sent)
-
-  }
+  def printDocument(d: Document) =
+    for (s <- d.sentences)
+      println(s.attr[ParseTree].toString() + "\n")
 
   def main(args: Array[String]) =
     for (filename <- args)
