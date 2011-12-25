@@ -59,11 +59,11 @@ trait Mention extends Entity {
 }
 
 class PairwiseBoolean(val edge:PairwiseEdge, b:Boolean) extends BooleanVariable(b)
-class PairwiseEdge(m1:PairwiseMention, m2:PairwiseMention) extends ArrowVariable(m1,m2) {
+class PairwiseEdge(val m1:PairwiseMention, val m2:PairwiseMention) extends ArrowVariable(m1,m2) {
   val coref = new PairwiseBoolean(this, false)
 }
-trait PairwiseMention extends Mention {
-  val edges = new ArrayBuffer[ArrowVariable[Mention,Mention]]
+trait PairwiseMention extends TokenSpanMention {
+  val edges = new ArrayBuffer[PairwiseEdge]
 }
 abstract class PairwiseTemplate extends Template2[PairwiseBoolean,PairwiseEdge] with Statistics2[BooleanValue,CorefAffinity] {
   def statistics(v:Values): Stat = {
