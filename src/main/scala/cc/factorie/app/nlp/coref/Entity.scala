@@ -58,7 +58,7 @@ trait Mention extends Entity {
   def setEntity(e:Entity)(implicit d:DiffList): Unit = setSuperEntity(e)
 }
 
-class PairwiseBoolean(val edge:PairwiseEdge, b:Boolean) extends BooleanVariable(b)
+class PairwiseBoolean(val edge:PairwiseEdge, b:Boolean) extends LabelVariable(b) with BooleanVar
 class PairwiseEdge(val m1:PairwiseMention, val m2:PairwiseMention) extends ArrowVariable(m1,m2) {
   val coref = new PairwiseBoolean(this, false)
 }
