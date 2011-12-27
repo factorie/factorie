@@ -17,15 +17,16 @@ class Tokenizer extends RegexSegmenter(Seq(
   "[0-9]{4}", // match years before other numbers
   "[0-9\\-.\\:/,\\+\\=]+[0-9\\-:/,\\+\\=]", // is there a better way to say, "doesn't end in '.'"?
   "[\\p{L}\\p{Nd}.]+@[\\p{L}\\{Nd}\\.]+\\.[a-z]{2,4}", // email
-  "[A-Z][a-z]{0,4}\\.", // Mr. Mrs. Calif. but not Institute.
+  "[A-Z][a-z]{0,4}\\.[^$]", // Mr. Mrs. Calif. but not Institute.
   "[.?!][\\p{Pf}\\p{Pe}]?", // ending/final punctuation
   "[\\p{Pf}\\p{Pe}]?[.?!]", // ending/final punctuation followed by [.?!]
   "[`'\"]+", // mid-sentence quotes
   """[,-:;$?&@\(\)]+""", // other symbols
-  "[\\w\\-0-9']+"  // any combo of word-chars, numbers, and hyphens
-  ).mkString("|").r) {
-  
+  "[\\w\\-0-9']+" // any combo of word-chars, numbers, and hyphens
+).mkString("|").r) {
+
   def process(documents: Seq[Document]): Unit = documents.map(d => process(d))
+
   def process(document: Document): Unit = {
     println(document.string)
     val tokenIterator = this.apply(document.string)
