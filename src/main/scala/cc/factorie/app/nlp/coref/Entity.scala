@@ -64,6 +64,8 @@ class PairwiseEdge(val m1:PairwiseMention, val m2:PairwiseMention) extends Arrow
 }
 trait PairwiseMention extends TokenSpanMention {
   val edges = new ArrayBuffer[PairwiseEdge]
+  var _head: Token = null
+  def headToken: Token = _head
 }
 abstract class PairwiseTemplate extends Template2[PairwiseBoolean,PairwiseEdge] with Statistics2[BooleanValue,CorefAffinity] {
   def statistics(v:Values): Stat = {
@@ -86,6 +88,7 @@ trait TokenSpanMention extends TokenSpan with Mention {
   def subEntities: Iterable[Entity] = { val se = _subEntities; if (se eq null) Nil else se }
   def _addSubEntity(e:Entity)(implicit d:DiffList): Unit = _ensuredSubEntities.add(e)
   def _removeSubEntity(e:Entity)(implicit d:DiffList): Unit = _ensuredSubEntities.remove(e)
+  def sentence = this(0).sentence
 }
 
 class SubEntities extends SetVariable[Entity]
@@ -212,7 +215,7 @@ class PairwiseModel extends TemplateModel(
 )*/
 
 object EntityTest {
-  
+
   def brainDeadMentionExtraction(doc:Document): Unit = {
     for (i <- 0 until doc.length) {
       // Make a mention for simple pronouns
@@ -225,12 +228,12 @@ object EntityTest {
       }
     }
   }
-  
+
   object spanner extends cc.factorie.app.nlp.ner.SpanNerPredictor(new java.io.File("/Users/mccallum/tmp/spanner.factorie"))
   def nerMentionExtraction(doc:Document): Unit = {
     for (iteration <- 1 to 3; token <- doc) spanner.process(token)
   }
-  
+
   def corefInit(doc:Document): Unit = {
     //val entities = new ArrayBuffer[Entity]
     // Make each Mention its own Entity
@@ -242,7 +245,7 @@ object EntityTest {
         mention.entityRef.setDst(prevMention.entity)(null)
     }*/
   }
-  
+
   object EntityRefSampler extends SettingsSampler[EntityRef](new EntityMentionModel, null) {
     def settings(entityRef:EntityRef) : SettingIterator = new SettingIterator {
       val mention = entityRef.src.asInstanceOf[TokenSpanMention]
@@ -274,13 +277,13 @@ object EntityTest {
     }*/
 
   }
-  
+
   def coref(doc:Document): Unit = {
     for (mention <- doc.orderedSpansOfClass[TokenSpanMention]) {
       EntityRefSampler.process(mention.entityRef)
     }
   }
-  
+
   def main(args:Array[String]): Unit = {
     println("Entity running...")
     //val doc = LoadPlainText.fromString("USAToday", docString.takeWhile(_ != '\n'), false)
@@ -317,7 +320,7 @@ Mr. Obama, to laughter from those familiar with attacks against him, noted: "For
 After the speech, one woman in the audience, Debra Harrison said the president put voice to her concerns about this community, which has been eroded by job losses and depopulation.
 "We're doing what the middle class has always done in this country," said Ms. Harrison, 51, who works at a nearby bank, shaking her head. "We work hard. We teach our kids to work hard. But it's very hard for us to keep our heads above water these days. And it's even harder for our kids."
     """
-  
+
   val docString2 = """
 Several thousand protesters took to the streets Monday night and accused Prime Minister Vladimir Putin's party of rigging this weekend's parliamentary election in which it won the largest share of the seats.
 It was perhaps the biggest opposition rally in years and ended with police detaining about 300 activists. A group of several hundred marched toward the Central Elections Commission near the Kremlin, but were stopped by riot police and taken away in buses.
