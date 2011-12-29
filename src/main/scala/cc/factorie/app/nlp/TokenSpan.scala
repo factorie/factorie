@@ -39,5 +39,6 @@ class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Di
     case label:LabelVariable[String] => label.categoryValue
     case x => x.toString
   }
+  def end = _start + length
 }
 
