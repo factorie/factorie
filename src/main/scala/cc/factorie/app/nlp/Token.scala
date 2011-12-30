@@ -66,18 +66,21 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
   def parseRightChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].rightChildrenLabeled(sentencePosition, label.intValue)
   
   // Sentence methods
-  // Consider not storing _sentence, but instead
-  //def sentence: Sentence = document.sentenceContaining(this) // but will it be too slow?
   private var _sentence: Sentence = null // This must be changeable from outside because sometimes Tokenization comes before Sentence segmentation
-  def sentence = _sentence
+  def sentence = {
+    if (_sentence == null) _sentence = document.sentenceContaining(this)
+    _sentence
+  }
+  def indexInSentence: Int = sentence.zipWithIndex.find(_._1 == this).get._2
   def sentenceHasNext: Boolean = (sentence ne null) && position < sentence.end
   def sentenceHasPrev: Boolean = (sentence ne null) && position > sentence.start
   def sentenceNext: Token = if (sentenceHasNext) next else null
   def sentencePrev: Token = if (sentenceHasPrev) prev else null
-  def isInSentence: Boolean = _sentence ne null
-  def isSentenceStart: Boolean = (_sentence ne null) && _sentence.start == position
-  def isSentenceEnd: Boolean = (_sentence ne null) && _sentence.end == position
+  def isInSentence: Boolean = sentence ne null
+  def isSentenceStart: Boolean = (sentence ne null) && sentence.start == position
+  def isSentenceEnd: Boolean = (sentence ne null) && sentence.end == position
   
+
   // Span methods
   def inSpan: Boolean = chain.hasSpanContaining(position) 
   def inSpanOfClass[A<:TokenSpan](c:Class[A]): Boolean = chain.hasSpanOfClassContaining(c, position)

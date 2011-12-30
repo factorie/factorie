@@ -52,7 +52,9 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
   def tokens: IndexedSeq[ElementType] = this
   private var _sentences = new ArrayBuffer[Sentence]
   def sentences: Seq[Sentence] = _sentences
-  
+  // potentially very slow for large documents.
+  def sentenceContaining(token: Token): Sentence = sentences.find(_.contains(token)).getOrElse(null)
+
   def sgmlString: String = {
     val buf = new StringBuffer
     for (token <- this) {
