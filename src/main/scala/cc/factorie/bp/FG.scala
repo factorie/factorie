@@ -382,7 +382,7 @@ abstract class FG(val varying: Set[Variable]) {
         //synchronous belief updates on all outgoing edges
         factor.updateAllOutgoing()
       }
-      println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
     }
   }
 
@@ -433,7 +433,7 @@ abstract class FG(val varying: Set[Variable]) {
       val root = nodes.sampleUniformly
       // treewise
       inferTreewise(root, checkLoops)
-      println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
     }
   }
 
