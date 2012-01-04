@@ -66,11 +66,11 @@ trait PairwiseMention extends TokenSpanMention {
   var _head: Token = null
   def headToken: Token = _head
 }
-abstract class PairwiseTemplate extends Template2[PairwiseBoolean,PairwiseEdge] with Statistics2[BooleanValue,CorefAffinity] {
+abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseBoolean] with Statistics2[BooleanValue,CorefAffinity] {
   def statistics(v:Values): Stat = {
-    val mention1 = v._2._1
-    val mention2 = v._2._2
-    val coref: Boolean = v._1.booleanValue
+    val mention1 = v._1
+    val mention2 = v._2
+    val coref: Boolean = v._3.booleanValue
     new Stat(null, null)
   }
 }
