@@ -14,7 +14,7 @@ class SparseLDAInferencer(
   var smoothingOnlyCount = 0; var topicBetaCount = 0; var topicTermCount = 0 // Just diagnostics
   def samplesCount = smoothingOnlyCount + topicBetaCount + topicTermCount
   private var alphas: Array[Double] = null
-  private var beta1: Double = 0.1
+  private var beta1: Double = 0.01
   private var betaSum = beta1 * wordDomain.size
   var smoothingMass: Double = 0.0
   private val cachedCoefficients = new Array[Double](numTopics)

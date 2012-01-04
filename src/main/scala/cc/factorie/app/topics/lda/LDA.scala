@@ -20,7 +20,7 @@ import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
-class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.1)(implicit val model:GenerativeModel = defaultGenerativeModel) {
+class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01)(implicit val model:GenerativeModel = defaultGenerativeModel) {
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
@@ -239,7 +239,7 @@ class LDACmd {
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val numTopics =     new CmdOption("num-topics", 't', 10, "N", "Number of topics.")
       val alpha =         new CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
-      val beta =          new CmdOption("beta", 0.1, "N", "Dirichlet parameter for per-topic word proportions.")
+      val beta =          new CmdOption("beta", 0.01, "N", "Dirichlet parameter for per-topic word proportions.")
       val numThreads =    new CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
       val numIterations = new CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
       val diagnostic =    new CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
