@@ -98,9 +98,9 @@ class SparseLDAInferencer(
       
     // sample each z
     forIndex(zs.length)(zp => { // z position
-      val ti = zs(zp).intValue // intValue of z, "topic index"
+      val ti = zs.intValue(zp) // intValue of z, "topic index"
       //assert(ti < numTopics)
-      val wi = ws(zp).intValue // intValue of word, "word index"
+      val wi = ws.intValue(zp) // intValue of word, "word index"
       //assert(wi < WordDomain.size)
       val ntd = docTopicCounts.countOfIndex(ti); assert(ntd > 0) // n_{t|d}
       val nt = phiCounts.mixtureCounts(ti); assert(nt > 0)
