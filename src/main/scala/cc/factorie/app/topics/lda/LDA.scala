@@ -20,6 +20,7 @@ import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
+/** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.1)(implicit val model:GenerativeModel = defaultGenerativeModel) {
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain { def size = numTopics }
@@ -37,7 +38,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   val alphas = new DenseMasses(numTopics, alpha1)
   
   /** The collection of all documents used to fit the parameters of this LDA model. */
-  private val documentMap = new HashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
+  protected val documentMap = new HashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
   def documents: Iterable[Doc] = documentMap.values
   def getDocument(name:String) : Doc = documentMap.getOrElse(name, null)
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
@@ -179,7 +180,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     sb.toString
   }
   
-  @deprecated
+  @deprecated("Will be removed eventually")
   def printTopics : Unit = {
     phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => wordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
     println
@@ -204,6 +205,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     throw new Error("Not yet implemented.")
   }
 
+  @deprecated("Should be removed eventually")
   def saveModel(fileName:String) {
     val file = new File(fileName)
     val dir = file.getParentFile()

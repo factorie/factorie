@@ -145,6 +145,7 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
   /** Add a value, (while keeping the content Array[Int] sorted). */
   // Renamed from '+=' to 'include' to avoid confusing auto-casting from Int=>Double for Vector.+=(Double)
   def include(theValue:Int): Unit = {
+    require (theValue >= 0)
     val i = _positionLte(theValue, 0, _size)
     //println
     //println("  In Vector+=")

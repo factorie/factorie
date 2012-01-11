@@ -41,6 +41,7 @@ trait Classifier[L<:DiscreteVariable] {
 
 /** An "instance list" for iid classification, except it actually holds labels, each of which is associated with a feature vector. */
 class LabelList[L<:DiscreteVar](val labelToFeatures:L=>DiscreteVectorVar)(implicit lm:Manifest[L]) extends ArrayBuffer[L] {
+  def this(labels:Iterable[L], l2f:L=>DiscreteVectorVar)(implicit lm:Manifest[L]) = { this(l2f); this ++= labels }
   val instanceWeights: HashMap[L,Double] = null
   def labelDomain = head.domain // TODO Perhaps we should verify that all labels in the list have the same domain
   def instanceDomain = labelToFeatures(head).domain // TODO Likewise

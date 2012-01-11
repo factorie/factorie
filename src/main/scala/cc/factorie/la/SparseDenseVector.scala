@@ -30,57 +30,117 @@ abstract class SparseOuter2Vector(val i1:Int, val length1:Int, val i2:Int, lengt
   def this(i1:Int, l1:Int, i2:Int, l2:Int, initialInners:Vector*) = { this(i1, l1, i2, l2); throw new Error }
   def inner(i:Int, j:Int): Vector
 }
+*/
 
-class SparseOuter1Vector1(i1:Int, length1:Int, val inner:Vector) extends SparseOuter1Vector(i1, length1) {
+/** The result of the statistics.vector (through flatOuter) from a Factor2[DiscreteVar,DiscreteVectorVar] */
+class SparseOuter1sVector1(val i1:Int, val length1:Int, val inner:Vector) extends Vector {
   val length = length1 * inner.length
   val offset = i1 * length1
   def inner(i:Int): Vector = if (i == 0) inner else throw new Error // TODO Avoid the error?
-  def apply(i:Int): Double = if (i < offset || i >= offset + innerLength) 0.0 else v(i - offset)
+  def apply(i:Int): Double = if (i < offset || i >= offset + inner.length) 0.0 else inner(i - offset)
   def activeDomainSize = inner.activeDomainSize
-  def activeDomain: Iterable[Int] = new Seq[Int] {
+  def activeDomain: Iterable[Int] = new IndexedSeq[Int] {
     val va = inner.activeDomain.toSeq // TODO Will this be efficient?
     def length = inner.length
     def apply(i:Int) = offset + va(i)
   }
   def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] {
-    val vi = inner.activeDomain.activeElements
+    val vi = inner.activeElements
+    def hasNext = vi.hasNext
+    def next: (Int,Double) = { val (i,d) = vi.next; (i + offset, d) }
+  }
+  def dot(v:Vector): Double = v match {
+    case v:DenseVector => inner match {
+      case inner:SparseBinaryVector => { var i = 0; var result = 0.0; while (i < inner.ind.length) { result += v(inner.ind(i) + offset); i += 1 }; result }
+      case inner:DenseVector => {
+        var result = 0.0
+        var i = 0
+        val len = inner.length
+        while (i < len) result += inner(i) * v(i + offset)
+        result
+      }
+      case _ => activeElements.foldLeft(0.0)((result:Double, elt:(Int,Double)) => result + elt._2 * v(elt._1))
+    }
+    //case v:SparseOuter1Vector => inner.dot(v.inner(i1)) else 0.0 // TODO assert that lengths are equal?
+    case v:SparseOuter1sVector1 => if (i1 == v.i1) inner.dot(v.inner) else 0.0
+  }
+}
+
+
+
+// abstract class SparseOuter2Vector1(val i1:Int, val length1:Int, val i2:Int, val length2:Int)...
+
+
+// TODO Remove this.
+/*class InnerVector[A<:Vector](index1:Int, length1: Int, val inner:A) extends Vector {
+  val length = length1 * inner.length
+  val offset = index1 * length1
+  def apply(i:Int): Double = if (i < offset || i >= offset + inner.length) 0.0 else inner(i - offset)
+  def activeDomainSize = inner.activeDomainSize
+  def activeDomain: Iterable[Int] = new IndexedSeq[Int] {
+    val va = inner.activeDomain.toSeq // TODO Will this be efficient?
+    def length = inner.length
+    def apply(i:Int) = offset + va(i)
+  }
+  def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] {
+    val vi = inner.activeElements
     def hasNext = vi.hasNext
     def next: (Int,Double) = { val (i,d) = vi.next; (i + offset, d) }
   }
   def dot(v:Vector): Double = v match {
     case v:DenseVector => activeElements.foldLeft(0.0)((result:Double, elt:(Int,Double)) => result + elt._2 * v(elt._1))
-    case v:SparseOuter1Vector => inner.dot(v.inner(i1)) else 0.0 // TODO assert that lengths are equal?
-    case v:SparseOuter1Vector1 => if (i1 == v.i1) inner.dot(v.inner) else 0.0
+    //case v:SparseOuter1Vector => inner.dot(v.inner(i1)) else 0.0 // TODO assert that lengths are equal?
+    //case v:SparseOuter1Vector1 => if (i1 == v.i1) inner.dot(v.inner) else 0.0
   }
-}
+}*/
 
-class SparseOuter1SparseBinaryVector1(override val i1:Int, override val length1:Int, override val inner:SparseBinaryVector) 
-extends OuterSparseVector1(dim1, dim1max, v) {
-  override def dot(v:Vector): Double = v match {
-    case v:DenseVector => { var i = 0; var result = 0.0; while (i < inner.ind.length) { result += v(ind(i) + offset); i += 1 }; result }
-  }
-}
-
-class SparseOuter1DenseVector1(override val i1:Int, override val length1:Int, v:DenseVector) extends OuterSparseVector1(dim1, dim1max, v) {
-  private val innerLength = inner.length
-  override def activeDomain: Iterable[Int] = new Seq[Int] {
-    def length = v.length
-    def apply(i:Int) = offset + i
-  }
-  override def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] {
-    var i = -1
-    def hasNext = i < v.length
-    def next: (Int,Double) = { i += 1; (i + offset, v(i)) }
-  }
-  def dot(v2:Vector): Double = v2 match {
-    case v2:DenseVector => {
-      var result = 0.0
-      var i = 0
-      val len = v.length
-      while (i < len) result += v(i) * v2(i + offset)
-      result
+/** A representation for weights of DotFamily2[DiscreteVar,DiscreteVectorVar] that can be sparse in domain of the DiscreteVar */
+class SparseOuter1DenseVector1(val length1:Int, val length2:Int) extends Vector {
+  private val inners = new Array[DenseVector](length1)
+  def inner(i:Int) = inners(i)
+  def length = length1 * length2
+  def apply(i:Int): Double = { val i1 = i / length1; val i2 = i % length1; inners(i1).apply(i2) }
+  def activeDomainSize = inners.filter(_ ne null).map(_.activeDomainSize).sum
+  def activeDomain: Iterable[Int] = Range(0,length1).filter(inners(_) ne null).map(i => inners(i).activeDomain.map(j => j*i*length1)).flatten
+  def activeElements: Iterator[(Int,Double)] = throw new Error("Not yet implemented.")
+  def dot(v:Vector): Double = v match {
+    // TODO Make this more efficient!!
+    case v:DenseVector => v.activeElements.foldLeft(0.0)((result:Double, elt:(Int,Double)) => result + elt._2 * v(elt._1))
+    case v:SparseOuter1DenseVector1 => {
+      assert(v.length1 == length1)
+      
+      0.0
     }
   }
+  override def update(index:Int, value:Double): Unit = {
+    val i = index / length1
+    if (inners(i) ne null) inners(i)(index % length1) = value
+    else {
+      val v = new DenseVector(length2)
+      v(index % length1) = value
+      inners(i) = v
+    }
+  }
+  override def increment(index:Int, incr:Double): Unit = {
+    val i = index / length1
+    if (inners(i) ne null) inners(i)(index % length1) += incr
+    else {
+      val v = new DenseVector(length2)
+      v(index % length1) = incr
+      inners(i) = v
+    }
+  }
+  override def +=(v:Vector): Unit = v match {
+    case v:SparseVector => v.activeElements.foreach(t => increment(t._1, t._2))
+    case _ => throw new Error("Not yet implemented")
+  }
 
 }
-*/
+
+abstract class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int) extends Vector {
+  private val inners = new Array[DenseVector](length1*length2)
+  def inner(i:Int, j:Int) = inners(i*length2 + j)
+  def length = length1 * length2 * length3
+  //def apply(i:Int): Double = { val i1 = i / length1; val i2 = i % length1; inners(i1).apply(i2) }
+}
+

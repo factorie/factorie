@@ -179,10 +179,28 @@ trait SparseWeights extends DotFamily {
   override lazy val weights: Vector = { new SparseVector(statisticsVectorLength) } // Dense by default, here overridden to be sparse
 }
 
-/** A DotTemplate that stores its parameters in a Scalala SparseHashVector instead of a DenseVector
+/** A DotTemplate that stores its parameters in a SparseHashVector instead of a DenseVector
     @author Sameer Singh */
 trait SparseHashWeights extends DotFamily {
   override lazy val weights: Vector = { freezeDomains; new SparseHashVector(statisticsVectorLength) } // Dense by default, override to be sparseHashed
 }
 
+trait SparseOuter1Dense1Weights[S1<:DiscreteValue,S2<:DiscreteVectorValue] extends DotStatistics2[S1,S2] {
+  override lazy val weights: SparseOuter1DenseVector1 = {
+    freezeDomains
+    val d1 = statisticsDomains(0)
+    val d2 = statisticsDomains(1)
+    new SparseOuter1DenseVector1(d1.dimensionSize, d2.dimensionSize) 
+  }
+}
 
+trait SparseOuter2Dense1Weights[S1<:DiscreteValue,S2<:DiscreteValue,S3<:DiscreteVectorValue] extends DotStatistics3[S1,S2,S3] {
+  override lazy val weights: SparseOuter1DenseVector1 = {
+    freezeDomains
+    val d1 = statisticsDomains(0)
+    val d2 = statisticsDomains(1)
+    val d3 = statisticsDomains(1)
+    throw new Error("Not yet implemented")
+    //new SparseOuter2DenseVector1(d1.dimensionSize, d2.dimensionSize, d3.dimensionSize) 
+  }
+}

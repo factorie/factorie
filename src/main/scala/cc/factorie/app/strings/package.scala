@@ -87,6 +87,6 @@ package object strings {
     }
   }
 
-  
+  def porterStem(s:String): String = Stemmer(s)
   
 }
