@@ -58,20 +58,19 @@ trait Mention extends Entity {
   def setEntity(e:Entity)(implicit d:DiffList): Unit = setSuperEntity(e)
 }
 
-class PairwiseBoolean(val edge:PairwiseEdge, b:Boolean) extends LabelVariable(b) with BooleanVar
-class PairwiseEdge(val m1:PairwiseMention, val m2:PairwiseMention) extends ArrowVariable(m1,m2) {
-  val coref = new PairwiseBoolean(this, false)
+class PairwiseBoolean(val m1:PairwiseMention, val m2:PairwiseMention, b:Boolean) extends LabelVariable(b) with BooleanVar {
+  def other(m:PairwiseMention): Option[PairwiseMention] = if(m == m1) Some(m2) else if (m == m2) Some(m1) else None
 }
 trait PairwiseMention extends TokenSpanMention {
-  val edges = new ArrayBuffer[PairwiseEdge]
+  val edges = new ArrayBuffer[PairwiseBoolean]
   var _head: Token = null
   def headToken: Token = _head
 }
-abstract class PairwiseTemplate extends Template2[PairwiseBoolean,PairwiseEdge] with Statistics2[BooleanValue,CorefAffinity] {
+abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseBoolean] with Statistics2[BooleanValue,CorefAffinity] {
   def statistics(v:Values): Stat = {
-    val mention1 = v._2._1
-    val mention2 = v._2._2
-    val coref: Boolean = v._1.booleanValue
+    val mention1 = v._1
+    val mention2 = v._2
+    val coref: Boolean = v._3.booleanValue
     new Stat(null, null)
   }
 }

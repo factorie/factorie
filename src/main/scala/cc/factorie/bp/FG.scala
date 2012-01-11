@@ -3,7 +3,7 @@ package cc.factorie.bp
 import StrictMath._
 import collection.mutable.{HashSet, ArrayBuffer, HashMap, Queue, Buffer}
 import cc.factorie._
-import cc.factorie.la.{DenseVector, Vector}
+import cc.factorie.la.{DenseVector, SparseVector, Vector}
 
 /**
  * @author sameer, apassos
@@ -115,7 +115,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[Variable], fg:
   def updateStatExpectations(exps: HashMap[DotFamily, Vector]): Unit = {
     factor match {
       case f: DotFamily#Factor => {
-        if (!exps.contains(f.family)) exps(f.family) = new DenseVector(f.family.statisticsVectorLength)
+        if (!exps.contains(f.family)) exps(f.family) = new SparseVector(f.family.statisticsVectorLength)
         for (assignment: Values <- f.valuesIterator(varyingNeighbors)) {
           val prob = marginal(assignment)
           val vector = assignment.statistics.asInstanceOf[DotFamily#StatisticsType].vector
@@ -382,7 +382,7 @@ abstract class FG(val varying: Set[Variable]) {
         //synchronous belief updates on all outgoing edges
         factor.updateAllOutgoing()
       }
-      println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
     }
   }
 
@@ -433,7 +433,7 @@ abstract class FG(val varying: Set[Variable]) {
       val root = nodes.sampleUniformly
       // treewise
       inferTreewise(root, checkLoops)
-      println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
     }
   }
 
