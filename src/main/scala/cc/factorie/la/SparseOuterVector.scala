@@ -147,15 +147,62 @@ class SparseOuter1DenseVector1(val length1:Int, val length2:Int) extends Vector 
 
 }
 
-//TODO
-abstract class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int) extends Vector {
+// TODO: inline inner for readability and code dedup? --brian
+class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int) extends Vector {
   private val inners = new Array[DenseVector](length1*length2)
-  def inner(i:Int, j:Int) = inners(i*length2 + j)
-  def length = length1 * length2 * length3
+  private val l2Timesl3 = length2 * length3
+  def inner(i:Int, j:Int): DenseVector = inners(i*length2 + j)
+  def length = length1 * l2Timesl3
   def apply(i:Int): Double = {
-    val i1 = i / length1
-    val i2 = i % length1
-    inners(i1).apply(i2)
+    val i1 = i / l2Timesl3
+    val i2 = (i % l2Timesl3) / length3
+    val i3 = i % length3
+    inner(i1,i2).apply(i3) // TODO: skip the call to inner here?
+  }
+  private var _activeSize = 0
+  def activeDomainSize: Int = _activeSize
+  // should there be two lists (one for dim1 and one for dim2)?
+  private var _activeDomains = ArrayBuffer[Int]()
+  def activeDomain: Iterable[Int] = {
+    throw new Error("Not yet implemented")
+    new IndexedSeq[Int] { def length = 0; def apply(idx: Int)= 42 }
+  }
+  def activeElements: Iterator[(Int, Double)] = {
+    throw new Error("Not yet implemented")
+    new IndexedSeq[(Int, Double)] { def length = 0; def apply(idx: Int)= (1, 42.0) } iterator
+  }
+  def dot(v: Vector): Double = {
+    throw new Error("Not yet implemented")
+    0.0
+  }
+  override def update(index: Int, value: Double): Unit = {
+    val i1 = index / l2Timesl3
+    val i2 = (index % l2Timesl3) / length3
+    if (inner(i1, i2) ne null)
+      inners(i1 * length2 + i2).update(index % length3, value)
+    else {
+      val v = new DenseVector(length3)
+      _activeSize += length3
+      //_activeDomains
+      v(index % length3) = value
+      inners(i1* length2 + i2) = v
+    }
+  }
+  override def increment(index: Int, value: Double): Unit = {
+    val i1 = index / l2Timesl3
+    val i2 = (index % l2Timesl3) / length3
+    if (inner(i1, i2) ne null)
+      inners(i1 * length2 + i2).increment(index % length3, value)
+    else {
+      val v = new DenseVector(length3)
+      _activeSize += length3
+      //_activeDomains
+      v(index % length3) = value
+      inners(i1* length2 + i2) = v
+    }
+  }
+  override def +=(v: Vector): Unit = {
+    throw new Error("Not yet implemented")
   }
 }
 

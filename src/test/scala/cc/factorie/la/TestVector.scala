@@ -135,19 +135,19 @@ object VectorTestingUtils {
 }
 
 class TestSparseOuter1DenseVector1 extends TestCase {
-//object TestSparseOuter1DenseVector1 {
   import VectorTestingUtils._
 
   val dim1 = 3 // sparse dimension size
   val dim2 = 5 // dense dimension size
 
   val denseWeights = new DenseVector(dim1*dim2)
-  fillVector(denseWeights, dim1*dim2)
   val sparseOuterWeights = new SparseOuter1DenseVector1(dim1, dim2)
-  copyVector(denseWeights, sparseOuterWeights)
 
-  println(denseWeights)
-  println(sparseOuterWeights)
+  fillVector(denseWeights, dim1*dim2)
+  fillVector(sparseOuterWeights, dim1*dim2)
+
+//  println(denseWeights)
+//  println(sparseOuterWeights)
 
   def testInner: Unit = {
     val i = dim1 - 1 // the last inner
@@ -184,38 +184,41 @@ class TestSparseOuter1DenseVector1 extends TestCase {
   }
 //  def testInnerDenseDotDense
 //  def testInnerSparseBinaryDotDense
-  
-//  def main(args: Array[String]): Unit = {
-//    testActiveElements
-//  }
 
 }
 
 class TestSparseOuter2DenseVector1 extends TestCase {
+//object TestSparseOuter2DenseVector1 {
   import VectorTestingUtils._
 
-  val dim1 = 3 // first sparse dimension size
-  val dim2 = 5 // second sparse dimension size
-  val dim3 = 7 // dense dimension size
+  val dim1 = 2 // first sparse dimension size
+  val dim2 = 3 // second sparse dimension size
+  val dim3 = 4 // dense dimension size
 
   val denseWeights = new DenseVector(dim1*dim2*dim3)
+  val sparseOuterWeights = new SparseOuter2DenseVector1(dim1, dim2, dim3)
+
   fillVector(denseWeights, dim1*dim2*dim3)
-  val sparseOuterWeights = new SparseOuter1DenseVector1(dim1, dim2)
-  copyVector(denseWeights, sparseOuterWeights)
+  fillVector(sparseOuterWeights, dim1*dim2*dim3)
 
   println(denseWeights)
   println(sparseOuterWeights)
-  
+
   def testInner: Unit = {
     val i = dim1 - 1
     val j = dim2 - 1
     val inner = sparseOuterWeights.inner(i, j)
-    val offset = i * dim2 + j
+    val offset = (i * dim2 + j) * dim3
     var k = offset
     while (k < offset + dim3) {
+      //println(k + " " + offset + " " + (inner(k - offset) == denseWeights(k)))
       assertTrue(inner(k - offset) == denseWeights(k))
       k += 1
     }
+  }
+  
+  def main(args: Array[String]): Unit = {
+    testInner
   }
 
 }
