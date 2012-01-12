@@ -188,7 +188,6 @@ class TestSparseOuter1DenseVector1 extends TestCase {
 }
 
 class TestSparseOuter2DenseVector1 extends TestCase {
-//object TestSparseOuter2DenseVector1 {
   import VectorTestingUtils._
 
   val dim1 = 2 // first sparse dimension size
@@ -216,10 +215,25 @@ class TestSparseOuter2DenseVector1 extends TestCase {
       k += 1
     }
   }
-  
-  def main(args: Array[String]): Unit = {
-    testInner
+
+  def testActiveDomainSize: Unit = {
+    println("activeDomain: ")
+    println(sparseOuterWeights.activeDomain.mkString(", "))
+    assertTrue(sparseOuterWeights.activeDomainSize == dim1 * dim2 * dim3)
   }
+
+  def testSizeOfActiveDomain: Unit = {
+    assertTrue(sparseOuterWeights.activeDomain.size == dim1 * dim2 * dim3)
+  }
+
+  def testActiveElements: Unit = {
+    val actualValues = (0 until (dim1*dim2*dim3)).map(i => (i, i.toDouble)).iterator
+    println("activeElements: ")
+    println(sparseOuterWeights.activeElements.mkString(", "))
+    sparseOuterWeights.activeElements.zip(actualValues).foreach(v => assertTrue(v._1 == v._2))
+  }
+  //  def testInnerDenseDotDense
+  //  def testInnerSparseBinaryDotDense
 
 }
 

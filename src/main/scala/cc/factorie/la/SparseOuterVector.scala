@@ -161,15 +161,46 @@ class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int
   }
   private var _activeSize = 0
   def activeDomainSize: Int = _activeSize
-  // should there be two lists (one for dim1 and one for dim2)?
-  private var _activeDomains = ArrayBuffer[Int]()
-  def activeDomain: Iterable[Int] = {
-    throw new Error("Not yet implemented")
-    new IndexedSeq[Int] { def length = 0; def apply(idx: Int)= 42 }
+  private var _activeDomains = ArrayBuffer[Int]() // list of indices into inners of non-null DenseVectors
+  // TODO: this should throw an error if the _activeSize == 0
+  def activeDomain: Iterable[Int] = new IndexedSeq[Int] {
+    val result = new Array[Int](_activeSize)
+    var currResultIdx = 0
+    var currDomainIdx = 0
+    var j = -1
+    var currDomain = _activeDomains.apply(currDomainIdx)
+    while (j < (length3 - 1) || currDomainIdx < (_activeDomains.size - 1)) {
+      if (j+1 == length3) {
+        j = 0
+        currDomainIdx += 1
+        currDomain = _activeDomains(currDomainIdx)
+      }
+      else j += 1
+      result(currResultIdx) = currDomain * length3 + j
+      currResultIdx += 1
+    }
+    def length = _activeSize
+    def apply(k: Int) = result(k)
   }
+  // code copied from above for access to currDomain and j
   def activeElements: Iterator[(Int, Double)] = {
-    throw new Error("Not yet implemented")
-    new IndexedSeq[(Int, Double)] { def length = 0; def apply(idx: Int)= (1, 42.0) } iterator
+    val result = new Array[(Int, Double)](_activeSize)
+    var currResultIdx = 0
+    var currDomainIdx = 0
+    var j = -1
+    var currDomain = _activeDomains.apply(currDomainIdx)
+    while (j < (length3 - 1) || currDomainIdx < (_activeDomains.size - 1)) {
+      if (j+1 == length3) {
+        j = 0
+        currDomainIdx += 1
+        currDomain = _activeDomains(currDomainIdx)
+      }
+      else j += 1
+      val currIdx = currDomain * length3 + j
+      result(currResultIdx) = (currIdx, inners(currDomain).apply(j)) // this should be the only diff with activeDomain
+      currResultIdx += 1
+    }
+    result.iterator
   }
   def dot(v: Vector): Double = {
     throw new Error("Not yet implemented")
@@ -183,9 +214,10 @@ class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int
     else {
       val v = new DenseVector(length3)
       _activeSize += length3
-      //_activeDomains
+      val innersIdx = i1 * length2 + i2
+      _activeDomains.append(innersIdx)
       v(index % length3) = value
-      inners(i1* length2 + i2) = v
+      inners(innersIdx) = v
     }
   }
   override def increment(index: Int, value: Double): Unit = {
@@ -196,9 +228,10 @@ class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int
     else {
       val v = new DenseVector(length3)
       _activeSize += length3
-      //_activeDomains
+      val innersIdx = i1 * length2 + i2
+      _activeDomains.append(innersIdx)
       v(index % length3) = value
-      inners(i1* length2 + i2) = v
+      inners(innersIdx) = v
     }
   }
   override def +=(v: Vector): Unit = {
