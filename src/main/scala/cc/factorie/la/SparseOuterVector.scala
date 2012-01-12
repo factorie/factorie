@@ -96,13 +96,40 @@ class SparseOuter1DenseVector1(val length1:Int, val length2:Int) extends Vector 
     result.iterator
   }
 
-  def dot(v:Vector): Double = v match {
-    // TODO Make this more efficient!!
-    case v:DenseVector => v.activeElements.foldLeft(0.0)((result:Double, elt:(Int,Double)) => result + elt._2 * v(elt._1))
-    case v:SparseOuter1DenseVector1 => {
-      assert(v.length1 == length1)
-      
-      0.0
+  def dot(that:Vector): Double = that match {
+    // assume this vector's activeDomain is smaller than that's
+    case that:DenseVector => {
+      var result = 0.0
+      val domain = activeElements
+      while (domain.hasNext) {
+        val next = domain.next
+        result += that(next._1) * next._2
+      }
+      result
+    }
+    case that:SparseOuter1DenseVector1 => {
+      if (_activeSize < that.activeDomainSize) {
+        //test this case
+        that.dot(this)
+      }
+      else {
+        assert(that.length1 == length1)
+        var result = 0.0
+        var currDomainIdx = 0
+        while (currDomainIdx < _activeDomains.size) {
+          val currDomain = _activeDomains(currDomainIdx)
+          if (that.inners(currDomain) ne null) {
+            val thatInner = that.inners(currDomain)
+            var j = 0
+            while (j < length2) {
+              result += inners(currDomain).apply(j) * thatInner.apply(j)
+              j += 1
+            }
+          }
+          currDomainIdx += 1
+        }
+        result
+      }
     }
   }
   override def update(index:Int, value:Double): Unit = {
