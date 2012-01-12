@@ -14,7 +14,7 @@
 
 package cc.factorie.la
 
-import cc.factorie.la._
+import cc.factorie._
 import junit.framework._
 import Assert._
 
@@ -105,6 +105,124 @@ class TestSparseBinaryVector extends TestCase {
 
 object TestSparseBinaryVector extends TestSuite {
   addTestSuite(classOf[TestSparseBinaryVector])
+  def main(args: Array[String]) {
+    junit.textui.TestRunner.run(this)
+  }
+}
+
+
+/**
+ * @author Brian Martin
+ */
+
+object VectorTestingUtils {
+  def fillVector(v: Vector, length:Int): Unit = {
+    var i = 0
+    while (i < length) {
+      v(i) = i
+      i += 1
+    }
+  }
+
+  def copyVector(v1: Vector,  v2: Vector): Unit = {
+    assert(v1.size == v2.size)
+    var i = 0
+    while (i < v1.size) {
+      v2.update(i, v1(i))
+      i += 1
+    }
+  }
+}
+
+class TestSparseOuter1DenseVector1 extends TestCase {
+//object TestSparseOuter1DenseVector1 {
+  import VectorTestingUtils._
+
+  val dim1 = 3 // sparse dimension size
+  val dim2 = 5 // dense dimension size
+
+  val denseWeights = new DenseVector(dim1*dim2)
+  fillVector(denseWeights, dim1*dim2)
+  val sparseOuterWeights = new SparseOuter1DenseVector1(dim1, dim2)
+  copyVector(denseWeights, sparseOuterWeights)
+
+  println(denseWeights)
+  println(sparseOuterWeights)
+
+  def testInner: Unit = {
+    val i = dim1 - 1 // the last inner
+    val inner = sparseOuterWeights.inner(i)
+    val offset = dim2 * i
+    var j = offset
+    while (j < offset + dim2) {
+      assertTrue(inner(j - offset) == denseWeights(j))
+      j += 1
+    }
+  }
+
+  def testPlusEq: Unit = {
+    sparseOuterWeights += denseWeights
+    for ((se, de) <- sparseOuterWeights.activeElements.zip(denseWeights.activeElements))
+      assertTrue(se._1 == de._1 && se._2 == de._2 * 2)
+  }
+
+  def testActiveDomainSize: Unit = {
+    println("activeDomain: ")
+    println(sparseOuterWeights.activeDomain.mkString(", "))
+    assertTrue(sparseOuterWeights.activeDomainSize == dim1 * dim2)
+  }
+
+  def testSizeOfActiveDomain: Unit = {
+    assertTrue(sparseOuterWeights.activeDomain.size == dim1 * dim2)
+  }
+
+  def testActiveElements: Unit = {
+    val actualValues = (0 until (dim1*dim2)).map(i => (i, i.toDouble)).iterator
+    println("activeElements: ")
+    println(sparseOuterWeights.activeElements.mkString(", "))
+    sparseOuterWeights.activeElements.zip(actualValues).foreach(v => assertTrue(v._1 == v._2))
+  }
+//  def testInnerDenseDotDense
+//  def testInnerSparseBinaryDotDense
+  
+//  def main(args: Array[String]): Unit = {
+//    testActiveElements
+//  }
+
+}
+
+class TestSparseOuter2DenseVector1 extends TestCase {
+  import VectorTestingUtils._
+
+  val dim1 = 3 // first sparse dimension size
+  val dim2 = 5 // second sparse dimension size
+  val dim3 = 7 // dense dimension size
+
+  val denseWeights = new DenseVector(dim1*dim2*dim3)
+  fillVector(denseWeights, dim1*dim2*dim3)
+  val sparseOuterWeights = new SparseOuter1DenseVector1(dim1, dim2)
+  copyVector(denseWeights, sparseOuterWeights)
+
+  println(denseWeights)
+  println(sparseOuterWeights)
+  
+  def testInner: Unit = {
+    val i = dim1 - 1
+    val j = dim2 - 1
+    val inner = sparseOuterWeights.inner(i, j)
+    val offset = i * dim2 + j
+    var k = offset
+    while (k < offset + dim3) {
+      assertTrue(inner(k - offset) == denseWeights(k))
+      k += 1
+    }
+  }
+
+}
+
+object TestSparseOuter extends TestSuite {
+  addTestSuite(classOf[TestSparseOuter1DenseVector1])
+  addTestSuite(classOf[TestSparseOuter2DenseVector1])
   def main(args: Array[String]) {
     junit.textui.TestRunner.run(this)
   }
