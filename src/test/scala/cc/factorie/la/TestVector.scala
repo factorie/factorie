@@ -238,7 +238,13 @@ class TestSparseOuter2DenseVector1 extends TestCase {
     println(sparseOuterWeights.activeElements.mkString(", "))
     sparseOuterWeights.activeElements.zip(actualValues).foreach(v => assertTrue(v._1 == v._2))
   }
-  //  def testInnerDenseDotDense
+
+  def testInnerDenseDotDense: Unit = {
+    val dotted = denseWeights.dot(denseWeights)
+    assertTrue(denseWeights.dot(sparseOuterWeights) == dotted)
+    assertTrue(sparseOuterWeights.dot(denseWeights) == dotted)
+    //assertTrue(sparseOuterWeights.dot(sparseOuterWeights) == dotted)
+  }
   //  def testInnerSparseBinaryDotDense
 
 }

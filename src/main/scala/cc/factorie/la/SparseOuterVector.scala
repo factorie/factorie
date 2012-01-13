@@ -166,7 +166,7 @@ class SparseOuter1DenseVector1(val length1:Int, val length2:Int) extends Vector 
       val activeIdxs = this.activeDomain.iterator
       while (activeIdxs.hasNext) {
         val ai = activeIdxs.next
-        this.increment(ai, d.apply(ai))
+        increment(ai, d.apply(ai))
       }
     }
     case _ => throw new Error("Not yet implemented")
@@ -178,13 +178,14 @@ class SparseOuter1DenseVector1(val length1:Int, val length2:Int) extends Vector 
 class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int) extends Vector {
   private val inners = new Array[DenseVector](length1*length2)
   private val l2Timesl3 = length2 * length3
-  def inner(i:Int, j:Int): DenseVector = inners(i*length2 + j)
+  def inner(i:Int, j:Int): DenseVector = inners(i * length2 + j)
   def length = length1 * l2Timesl3
+  // TODO: currently throws an error when trying to access sparse element
   def apply(i:Int): Double = {
     val i1 = i / l2Timesl3
     val i2 = (i % l2Timesl3) / length3
     val i3 = i % length3
-    inner(i1,i2).apply(i3) // TODO: skip the call to inner here?
+    inners(i1 * length2 + i2).apply(i3)
   }
   private var _activeSize = 0
   def activeDomainSize: Int = _activeSize
@@ -229,9 +230,33 @@ class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int
     }
     result.iterator
   }
-  def dot(v: Vector): Double = {
-    throw new Error("Not yet implemented")
-    0.0
+  def dot(i: Int, j: Int, v: Vector): Double = v.dot(inner(i,j))
+  def dot(v: Vector): Double = v match {
+    case that:DenseVector => {
+      var result = 0.0
+      val domain = activeElements
+      while (domain.hasNext) {
+        val next = domain.next
+        result += that(next._1) * next._2
+      }
+      result
+    }
+    case that: SparseVector => {
+      // have to iterate of this's elements because apply may throw error
+      var result = 0.0
+      val elements = activeElements
+      while (elements.hasNext) {
+        val next = elements.next
+        result += next._2 * that.apply(next._1)
+      }
+      result
+    }
+    case that:SparseOuter1DenseVector1 => {
+      throw new Error("Not yet implemented.")
+    }
+    case _ => {
+      throw new Error("Not yet implemented.")
+    }
   }
   override def update(index: Int, value: Double): Unit = {
     val i1 = index / l2Timesl3
@@ -261,8 +286,22 @@ class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int
       inners(innersIdx) = v
     }
   }
-  override def +=(v: Vector): Unit = {
-    throw new Error("Not yet implemented")
+  override def +=(v: Vector): Unit = v match {
+    case that: SparseVector => {
+      val aes = that.activeElements
+      while(aes.hasNext) {
+        val ae = aes.next()
+        increment(ae._1, ae._2)
+      }
+    }
+    case that: DenseVector => {
+      val activeIdxs = this.activeDomain.iterator
+      while (activeIdxs.hasNext) {
+        val ai = activeIdxs.next
+        increment(ai, that.apply(ai))
+      }
+    }
+    case _ => throw new Error("Not yet implemented")
   }
 }
 
