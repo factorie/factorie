@@ -49,6 +49,8 @@ class LogLinearMaximumLikelihood(model: Model) {
         val vector: Vector = template.weights match {
           case w: SparseVector => new SparseVector(w.length)
           case w: DenseVector => new DenseVector(w.length)
+          case w: SparseOuter1DenseVector1 => new SparseOuter1DenseVector1(w.length1, w.length2)
+          case w: SparseOuter2DenseVector1 => new SparseOuter2DenseVector1(w.length1, w.length2, w.length3)
         }
         this(template) = vector
         vector
