@@ -14,15 +14,15 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
+import bp.{SumProductFG, FG}
 import cc.factorie.app.nlp._
-import cc.factorie.app.chain._
 
 class SparseOuterChainNerModel extends TemplateModel(
   // Bias term on each individual label 
-  new TemplateWithDotStatistics1[ChainNerLabel] {
-    factorName = "bias"
-    override def statisticsDomains = List(Conll2003NerDomain)
-  },
+//  new TemplateWithDotStatistics1[ChainNerLabel] {
+//    factorName = "bias"
+//    override def statisticsDomains = List(Conll2003NerDomain)
+//  },
   // Transition factors between two successive labels and a token
 //  new TemplateWithDotStatistics3[ChainNerLabel, ChainNerLabel, ChainNerFeatures] with SparseOuter2Dense1Weights[ChainNerLabel#Value, ChainNerLabel#Value, ChainNerFeatures#Value] {
   new TemplateWithDotStatistics3[ChainNerLabel, ChainNerLabel, ChainNerFeatures] with SparseOuter2Dense1Weights {
@@ -103,21 +103,23 @@ class SparseOuterChainNer {
     println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.flatten.map(_.attr[ChainNerLabel]).take(10000)
-    val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]).take(2000)
+    val trainLabels = trainDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(10000)
+    val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(2000)
  
     // Train for 5 iterations
     if (false) {
       val trainer = new LogLinearMaximumLikelihood(model)
-      trainer.processAll(trainDocuments.map(doc => doc.map(_.nerLabel)), 10) // Do just one iteration for initial timing
+      trainer.processAll(trainDocuments.take(20).map(doc => doc.map(_.nerLabel)), 10) // Do just one iteration for initial timing
       trainDocuments.foreach(process(_))
       testDocuments.foreach(process(_))
       printEvaluation(trainDocuments, testDocuments, "FINAL")
     } else {
       (trainLabels ++ testLabels).foreach(_.setRandomly())
+      println("Set labels randomly...")
       val learner = new VariableSettingsSampler[ChainNerLabel](model, objective) with SampleRank with GradientAscentUpdates //ConfidenceWeightedUpdates { temperature = 0.01 }
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       for (iteration <- 1 until 3) {
+        println("Starting iteration %d..." format iteration)
         learner.processAll(trainLabels)
         predictor.processAll(testLabels)
         printEvaluation(trainDocuments, testDocuments, iteration.toString)
@@ -125,8 +127,13 @@ class SparseOuterChainNer {
       }
       // Predict, also by sampling, visiting each variable 3 times.
       //predictor.processAll(testLabels, 3)
-      for (i <- 0 until 3; label <- testLabels) predictor.process(label)
-      // Final evaluatation
+      val fg = new FG(testDocuments.flatten.toSet) with SumProductFG
+      fg.createUnrolled(model)
+      val start = System.currentTimeMillis()
+      for (i <- 0 until 100000000)
+        fg.factors.foreach(_.statistics.score)
+      println("time taken: " + (System.currentTimeMillis() - start))
+      // Final evaluation
       printEvaluation(trainDocuments, testDocuments, "FINAL")
     }
   }
@@ -229,13 +236,15 @@ object SparseOuterChainNer extends SparseOuterChainNer {
     }
     opts.parse(args)
     
+    Template.enableCachedStatistics = false
+
     if (opts.lexiconDir.wasInvoked) {
       for (filename <- List("cities", "companies", "companysuffix", "countries", "days", "firstname.high", "firstname.highest", "firstname.med", "jobtitle", "lastname.high", "lastname.highest", "lastname.med", "months", "states")) {
         println("Reading lexicon "+filename)
         lexicons += new Lexicon(opts.lexiconDir.value+"/"+filename)
       }
     }
-    
+
     if (opts.runPlainFiles.wasInvoked) {
       model.load(opts.modelDir.value)
       for (filename <- opts.runPlainFiles.value) {
@@ -256,7 +265,6 @@ object SparseOuterChainNer extends SparseOuterChainNer {
       train(opts.trainFile.value, opts.testFile.value)
       if (opts.modelDir.wasInvoked) model.save(opts.modelDir.value)
     }
-
   }
 
 }

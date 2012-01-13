@@ -243,9 +243,12 @@ class TestSparseOuter2DenseVector1 extends TestCase {
     val dotted = denseWeights.dot(denseWeights)
     assertTrue(denseWeights.dot(sparseOuterWeights) == dotted)
     assertTrue(sparseOuterWeights.dot(denseWeights) == dotted)
-    //assertTrue(sparseOuterWeights.dot(sparseOuterWeights) == dotted)
+    assertTrue(sparseOuterWeights.dot(sparseOuterWeights) == dotted)
   }
   //  def testInnerSparseBinaryDotDense
+//  def main(args: Array[String]): Unit = {
+//    testInnerDenseDotDense
+//  }
 
 }
 
