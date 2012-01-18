@@ -27,7 +27,7 @@ trait SingletonBinaryVec extends Vector {
   def activeElements = Iterator.single((singleIndex, 1.0))
 
   override def flatOuter(v:Vector):Vector = v match {
-     case that:SparseBinaryVector => 
+     case that:SparseBinaryVector =>
       //new SparseBinaryVector(that, this) // TODO !!! Shouldn't this be ordered: (this, that) because first argument is spread further through memory, second argument has last array offset ????
       new SparseBinaryVector(this, that) // TODO !!! Shouldn't this be ordered: (this, that) because first argument is spread further through memory, second argument has last array offset ????
     case that:SingletonBinaryVec => new SingletonBinaryVector(this.size * that.size, this.singleIndex * that.size + that.singleIndex)
@@ -35,8 +35,8 @@ trait SingletonBinaryVec extends Vector {
     case that:SparseHashVector => {
       val offset = this.singleIndex * that.length
       val result = new SparseHashVector(this.length * that.length)
-      that.activeDomain.foreach(i => result(i) = offset + that(i))
-      that
+      that.activeDomain.foreach(i => result(offset + i) = that(i))
+      result
     }
   }
 
@@ -44,7 +44,7 @@ trait SingletonBinaryVec extends Vector {
     case (v1:SparseBinaryVector ,v2:SparseBinaryVector)    => new SparseBinaryVector(v1, v2, this)
     case (v1:SparseBinaryVector ,v2:SingletonBinaryVec) => new SparseBinaryVector(v1, v2, this)
     case (v1:SingletonBinaryVec ,v2:SparseBinaryVector)    => new SparseBinaryVector(v2, this, v1)
-    case (v1:SingletonBinaryVec ,v2:SingletonBinaryVec) => 
+    case (v1:SingletonBinaryVec ,v2:SingletonBinaryVec) =>
       new SingletonBinaryVector(this.size * v1.size * v2.size,
                                 (this.singleIndex * v1.size + v1.singleIndex) * v2.size + v2.singleIndex)
   }
