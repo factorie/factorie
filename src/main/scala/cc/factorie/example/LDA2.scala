@@ -26,6 +26,7 @@ import cc.factorie.app.strings.alphaSegmenter
 object LDA2 {
   
   val numTopics = 10
+  implicit val model = GenerativeModel()
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
   class Zs(len:Int) extends DiscreteSeqVariable(len) { def domain = ZSeqDomain }
@@ -33,7 +34,7 @@ object LDA2 {
   val WordDomain = WordSeqDomain.elementDomain
   class Words(strings:Seq[String]) extends CategoricalSeqVariable(strings) {
     def domain = WordSeqDomain
-    def zs = defaultGenerativeModel.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3
+    def zs = model.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3
   }
   class Document(val file:String, val theta:CountsProportions, strings:Seq[String]) extends Words(strings)
   val beta = new GrowableUniformMasses(WordDomain, 0.1)
@@ -58,7 +59,7 @@ object LDA2 {
     val collapse = new ArrayBuffer[Variable]
     collapse += phis
     collapse ++= documents.map(_.theta)
-    val sampler = new CollapsedGibbsSampler(collapse)
+    val sampler = new CollapsedGibbsSampler(collapse, model)
     //println("Initialization:"); phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
 
     val startTime = System.currentTimeMillis

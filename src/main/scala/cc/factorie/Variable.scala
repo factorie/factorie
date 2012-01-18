@@ -83,7 +83,7 @@ trait Variable {
   
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
       and add this new factor to the given model. */
-  def ~[V<:this.VariableType](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.GenerativeFactorModel): this.type = {
+  def ~[V<:this.VariableType](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
     model += partialFactor(this.asInstanceOf[V])
     this
   }
@@ -136,7 +136,7 @@ trait MutableVar extends Variable {
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
       add this new factor to the given model, 
       and also assign the variable a new value randomly drawn from this factor. */
-  def :~[V<:this.VariableType](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.GenerativeFactorModel): this.type = {
+  def :~[V<:this.VariableType](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
     this ~ (partialFactor)
     this.set(model.parentFactor(this).sampledValue.asInstanceOf[this.Value])(null)
     this

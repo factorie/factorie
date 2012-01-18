@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 //import cc.factorie.la.ArrayLA.Implicits._
 
-class CollapsedVariationalBayes(collapse:Iterable[Variable], marginalize:Iterable[Variable with QDistribution], model:Model = cc.factorie.generative.defaultGenerativeModel) {
+class CollapsedVariationalBayes(collapse:Iterable[Variable], marginalize:Iterable[Variable with QDistribution], model:GenerativeModel) {
   val handlers = new ArrayBuffer[CollapsedVariationalBayesHandler]
   //def defaultHandlers = List(GeneratedVariableCollapsedVariationalBayesHandler, MixtureChoiceCollapsedVariationalBayesHandler)
   def defaultHandlers = throw new Error("Not yet implemented")
@@ -28,7 +28,8 @@ class CollapsedVariationalBayes(collapse:Iterable[Variable], marginalize:Iterabl
   def collapsedMap = _c
   def qMap = _q
   //collapse.foreach(v => _c(v) = v.newCollapsed)
-  collapse.foreach(v => Collapse(Seq(v)))
+  val collapser = new Collapse(model)
+  collapse.foreach(v => collapser(Seq(v)))
   marginalize.foreach(v => _q(v) = v.newQ)
   //def collapsed[V<:CollapsibleParameter](v:V) = _c(v).asInstanceOf[V#CollapsedType]
   def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]

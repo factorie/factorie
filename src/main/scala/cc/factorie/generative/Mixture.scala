@@ -42,7 +42,7 @@ trait MixtureFactor extends GenerativeFactor {
 // Proportions =/                                Gate =/
 
 // TODO I think perhaps this should be a GeneratedVars[] ContainerVariable -akm
-class Mixture[+P<:Variable](val components:Seq[P]) extends Seq[P] with Variable 
+class Mixture[+P<:Variable](val components:Seq[P])(implicit val model: MutableGenerativeModel) extends Seq[P] with Variable 
 with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]] 
 {
   this ~ Mixture() // This will make this a child of each of the mixture components.
@@ -84,7 +84,7 @@ with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]]
 }
 
 object Mixture extends GenerativeFamily1[Mixture[Variable]] {
-  def apply[P<:Variable](n:Int)(constructor: =>P): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead 
+  def apply[P<:Variable](n:Int)(constructor: =>P)(implicit model: MutableGenerativeModel): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead 
   case class Factor(_1:Mixture[Variable]) extends super.Factor {
     /** Even though they are the contents of the child, the parents are each of the mixture components. */
     override def parents: Seq[Variable] = _1.components

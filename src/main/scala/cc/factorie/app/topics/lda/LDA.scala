@@ -21,7 +21,7 @@ import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
-class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01)(implicit val model:GenerativeModel = defaultGenerativeModel) {
+class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01)(implicit val model:MutableGenerativeModel) {
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
@@ -44,41 +44,37 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
   val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(wordDomain) ~ Dirichlet(betas))
   
-  protected def setupDocument(doc:Doc)(implicit m:GenerativeModel = model): Unit = {
+  protected def setupDocument(doc:Doc, m:MutableGenerativeModel): Unit = {
     require(wordSeqDomain eq doc.ws.domain)
     require(doc.ws.length > 1)
     if (doc.theta eq null) doc.theta = new SortedSparseCountsProportions(numTopics)
     else require (doc.theta.length == numTopics)
-    doc.theta ~ Dirichlet(alphas) // was DenseCountsProportions
+    doc.theta.~(Dirichlet(alphas))(m) // was DenseCountsProportions
     if (doc.zs eq null) doc.zs = new Zs(Array.tabulate(doc.ws.length)(i => random.nextInt(numTopics))) // Could also initialize to all 0 for more efficient sparse inference
     else require(doc.zs.length == doc.ws.length)
-    doc.zs ~ PlatedDiscrete(doc.theta)
-    doc.ws ~ PlatedDiscreteMixture(phis, doc.zs)
+    doc.zs.~(PlatedDiscrete(doc.theta))(m)
+    doc.ws.~(PlatedDiscreteMixture(phis, doc.zs))(m)
   }
 
   /** Add a document to the LDA model. */
   def addDocument(doc:Doc): Unit = {
     if (documentMap.contains(doc.name)) throw new Error(this.toString+" already contains document "+doc.name)
-    setupDocument(doc)
+    setupDocument(doc, model)
     documentMap(doc.name) = doc
   }
   
   def removeDocument(doc:Doc): Unit = {
     documentMap.remove(doc.name)
-    model match {
-      case m:GenerativeFactorModel => {
-        m -= m.parentFactor(doc.theta)
-        m -= m.parentFactor(doc.zs)
-        m -= m.parentFactor(doc.ws)
-      }
-    }
+    model -= model.parentFactor(doc.theta)
+    model -= model.parentFactor(doc.zs)
+    model -= model.parentFactor(doc.ws)
   }
 
   /** Infer doc.theta, but to not adjust LDA.phis.  Document not added to LDA model. */
   def inferDocumentThetaOld(doc:Doc, iterations:Int = 10): Unit = {
     var tmp = false
     if (model.parentFactor(doc.ws) eq null) { addDocument(doc); tmp = true }
-    val sampler = new CollapsedGibbsSampler(Seq(doc.theta))
+    val sampler = new CollapsedGibbsSampler(Seq(doc.theta), model)
     for (i <- 1 to iterations) sampler.process(doc.zs)
     if (tmp) removeDocument(doc)
   }
@@ -88,8 +84,10 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       val sampler = new CollapsedGibbsSampler(Seq(doc.theta), model)
       for (i <- 1 to iterations) sampler.process(doc.zs)
     } else {
-      val m = new GenerativeFactorModel
-      setupDocument(doc)(m)
+      val m = GenerativeModel()
+      setupDocument(doc, m)
+      //println("LDA.inferDocumentTheta: model factors = "+m.allFactors)
+      //println("LDA.inferDocumentTheta: zs factors = "+m.factors(Seq(doc.zs)))
       val sampler = new CollapsedGibbsSampler(Seq(doc.theta), m)
       for (i <- 1 to iterations) sampler.process(doc.zs)
     }
@@ -101,7 +99,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     val varsToSample = new ArrayBuffer[Variable]
 
     for(doc <- newDocs) if(model.parentFactor(doc.ws) eq null) { addDocument(doc); docsAdded += doc; varsToSample ++= Seq(doc.theta) }
-    val sampler = new CollapsedGibbsSampler(varsToSample)
+    val sampler = new CollapsedGibbsSampler(varsToSample, model)
     val startTime = System.currentTimeMillis()
     for(i <- 1 to iterations) {
       for(doc <- newDocs)
@@ -117,7 +115,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
     /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
   def inferTopics(iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
-    val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas, beta1)
+    val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas, beta1, model)
     println("Collapsing finished.  Starting sampling iterations:")
     //sampler.debug = debug
     val startTime = System.currentTimeMillis
@@ -133,7 +131,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       }
       if (i % fitAlphaInterval == 0) {
         sampler.exportThetas(documents)
-        DirichletMomentMatching.estimate(alphas)
+        DirichletMomentMatching.estimate(alphas, model)
         sampler.resetSmoothing(alphas, beta1)
         println("alpha = " + alphas.mkString(" "))
       }
@@ -151,7 +149,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     //println("Subsets = "+docSubsets.size)
     for (i <- 1 to iterations) {
       docSubsets.par.foreach(docSubset => {
-        val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas, beta1)
+        val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas, beta1, model)
         for (doc <- docSubset) sampler.process(doc.zs.asInstanceOf[Zs])
       })
       if (i % diagnosticInterval == 0) {
@@ -264,7 +262,8 @@ class LDACmd {
     opts.parse(args)
     /** The domain of the words in documents */
     object WordSeqDomain extends CategoricalSeqDomain[String]
-    val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value)
+    val model = GenerativeModel()
+    val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value)(model)
     val mySegmenter = new cc.factorie.app.strings.RegexSegmenter(opts.tokenRegex.value.r)
     if (opts.readDirs.wasInvoked) {
       for (directory <- opts.readDirs.value) {
@@ -336,6 +335,12 @@ class LDACmd {
   	}	
 
     //testSaveLoad(lda)
+    //println("topics.LDA temporary test")
+    //val doc1 = lda.documents.head
+    //lda.removeDocument(doc1)
+    //lda.inferDocumentTheta(doc1)
+    //println(doc1.ws.categoryValues.take(10).mkString(" "))
+    //println(doc1.theta)
     
     if (opts.writeDocs.wasInvoked) {
       val file = new File(opts.writeDocs.value)
@@ -368,7 +373,7 @@ class LDACmd {
 
     println("loading model with " + numTopics + " topics")
 
-    val lda = new LDA(wordSeqDomain, numTopics) // do we have to create this here?  problem because we don't have topics/alphas/betas/etc beforehand to create LDA instance
+    val lda = new LDA(wordSeqDomain, numTopics)(GenerativeModel()) // do we have to create this here?  problem because we don't have topics/alphas/betas/etc beforehand to create LDA instance
     while(lines.hasNext) {
       line = lines.next()
       var tokens = new ArrayBuffer[String]

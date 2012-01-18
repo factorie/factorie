@@ -15,17 +15,18 @@ object LDA3 {
   val fitDirichlet = false
   cc.factorie.random.setSeed(0)
   
+  implicit val model = GenerativeModel()
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
   class Zs(len:Int) extends DiscreteSeqVariable(len) { 
     def domain = ZSeqDomain
-    def words: Words = defaultGenerativeModel.childFactors(this).first.asInstanceOf[PlatedDiscreteMixture.Factor]._1.asInstanceOf[Words]
+    def words: Words = model.childFactors(this).first.asInstanceOf[PlatedDiscreteMixture.Factor]._1.asInstanceOf[Words]
   }
   object WordSeqDomain extends CategoricalSeqDomain[String]
   val WordDomain = WordSeqDomain.elementDomain
   class Words(strings:Seq[String]) extends CategoricalSeqVariable(strings) {
     def domain = WordSeqDomain
-    def zs = defaultGenerativeModel.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3.asInstanceOf[Zs]
+    def zs = model.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3.asInstanceOf[Zs]
   }
   class Document(val file:String, val theta:CountsProportions, strings:Seq[String]) extends Words(strings)
   val beta = new GrowableUniformMasses(WordDomain, beta1)
@@ -67,7 +68,7 @@ object LDA3 {
         sampler.export(phis)
         if (fitDirichlet) {
           sampler.exportThetas(documents)
-          DirichletMomentMatching.estimate(alphas)
+          DirichletMomentMatching.estimate(alphas, model)
           sampler.resetSmoothing(alphas, beta1)
           println("alpha = " + alphas.mkString(" "))
           phis.zipWithIndex.map({case (phi:GrowableDenseCountsProportions, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).reverse.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
@@ -82,7 +83,6 @@ object LDA3 {
   }
   
   class SparseLDAInferencer(val numTopics:Int, docs:Iterable[Document], initialAlphas:Seq[Double], initialBeta1:Double) {
-    val model = defaultGenerativeModel // TODO clean this up
     var verbosity = 0
     var smoothingOnlyCount = 0; var topicBetaCount = 0; var topicTermCount = 0 // Just diagnostics
     def samplesCount = smoothingOnlyCount + topicBetaCount + topicTermCount

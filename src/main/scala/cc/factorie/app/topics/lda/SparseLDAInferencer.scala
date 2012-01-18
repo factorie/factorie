@@ -8,7 +8,7 @@ class SparseLDAInferencer(
     docs:Iterable[Doc], 
     initialAlphas:Seq[Double], 
     initialBeta1:Double,
-    model:GenerativeModel = defaultGenerativeModel) 
+    model:GenerativeModel) 
 {
   var verbosity = 0
   var smoothingOnlyCount = 0; var topicBetaCount = 0; var topicTermCount = 0 // Just diagnostics

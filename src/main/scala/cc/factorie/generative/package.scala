@@ -45,8 +45,10 @@ package object generative {
     }
   }*/
 
-
-  implicit val defaultGenerativeModel = new GenerativeFactorModel
+  // Removed because it was causing implicit conflicts and because it was too much "magic".  
+  // Users should have to create their own (implicit) models.
+  // -akm 17 Jan 2012
+  //implicit val defaultGenerativeModel = new GenerativeFactorModel
 
   implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
     val value: IndexedSeq[Double] = s.toIndexedSeq

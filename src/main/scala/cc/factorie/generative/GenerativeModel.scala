@@ -17,7 +17,17 @@ trait GenerativeModel extends Model {
   def sampleFromParents(v:MutableVar)(implicit d:DiffList): Unit
 }
 
-class GenerativeFactorModel extends GenerativeModel {
+trait MutableGenerativeModel extends GenerativeModel {
+  def +=(f:GenerativeFactor): Unit
+  def -=(f:GenerativeFactor): Unit
+}
+
+object GenerativeModel {
+  /** Contructor for a default GenerativeModel */
+  def apply(): GenerativeFactorModel = new GenerativeFactorModel
+}
+
+class GenerativeFactorModel extends MutableGenerativeModel {
   private val _parentFactor = new HashMap[Variable,GenerativeFactor]
   private val _childFactors = new HashMap[Variable,ArrayBuffer[GenerativeFactor]]
   def factors(variables:Iterable[Variable]): Seq[Factor] = {
@@ -31,6 +41,7 @@ class GenerativeFactorModel extends GenerativeModel {
     })
     normalize(result)
   }
+  def allFactors: Iterable[Factor] = _parentFactor.values ++ _childFactors.values.flatten
   def getParentFactor(v:Variable): Option[GenerativeFactor] = _parentFactor.get(v)
   def getChildFactors(v:Variable): Option[Seq[GenerativeFactor]] = _childFactors.get(v)
   def parentFactor(v:Variable): GenerativeFactor = _parentFactor.getOrElse(v, null)

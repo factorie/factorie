@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:Model = cc.factorie.generative.defaultGenerativeModel) extends Sampler[Iterable[MutableVar]] {
+class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:GenerativeModel) extends Sampler[Iterable[MutableVar]] {
   var debug = false
   makeNewDiffList = false // override default in cc.factorie.Sampler
   var temperature = 1.0 // TODO Currently ignored?
@@ -34,7 +34,8 @@ class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:Model = cc.fa
   private val collapsed = new HashSet[Variable] ++ collapse
 
   // Initialize collapsed parameters specified in constructor
-  collapse.foreach(v => Collapse(Seq(v)))
+  val collapser = new Collapse(model)
+  collapse.foreach(v => collapser(Seq(v)))
   // TODO We should provide an interface that handlers can use to query whether or not a particular variable was collapsed or not?
 
   def isCollapsed(v:Variable): Boolean = collapsed.contains(v)

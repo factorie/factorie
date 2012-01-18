@@ -61,7 +61,7 @@ object Dirichlet extends GenerativeFamily2[Proportions,Masses] {
 }
 
 object DirichletMomentMatching {
-  def estimate(masses:MutableMasses, model:GenerativeModel = cc.factorie.generative.defaultGenerativeModel): Unit = {
+  def estimate(masses:MutableMasses, model:GenerativeModel): Unit = {
     val numChildren = model.childFactors(masses).size
     //val massesChildren = masses.children //mean.generatedChildren // TODO Without "generatedChildren" this no longer works for Dirichlet mixtures.
     assert(numChildren > 1)

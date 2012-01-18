@@ -34,7 +34,7 @@ import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 
 /** Simple GibbsSampler.
     @author Andrew McCallum */
-class GibbsSampler(val model:Model = cc.factorie.generative.defaultGenerativeModel) extends Sampler[Iterable[Variable]] {
+class GibbsSampler(val model:Model) extends Sampler[Iterable[Variable]] {
   var temperature = 1.0
   val handlers = new ArrayBuffer[GibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVarGibbsSamplerHandler) //, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler

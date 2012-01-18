@@ -21,7 +21,7 @@ trait DeterministicFunction extends Variable {
 }
 trait RealFunction extends DeterministicFunction with RealVar
 
-class RealSum(a:RealVar, b:RealVar) extends DeterministicFunction with RealVar {
+class RealSum(a:RealVar, b:RealVar)(implicit val model: MutableGenerativeModel) extends DeterministicFunction with RealVar {
   this ~ RealSum2(a, b)
   def doubleValue = a.doubleValue + b.doubleValue
 }

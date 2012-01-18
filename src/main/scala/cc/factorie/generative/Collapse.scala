@@ -21,7 +21,7 @@ import scala.collection.mutable.ArrayBuffer
    that allows CollapsedGibbsSampler or CollapsedVariationalBayes to treat
    them as collapsed for their inference.
    @author Andrew McCallum */
-class Collapse(val model:GenerativeModel = defaultGenerativeModel) {
+class Collapse(val model:GenerativeModel) {
   val collapsers = new ArrayBuffer[Collapser] ++= Seq(DenseCountsProportionsCollapser, DenseCountsProportionsMixtureCollapser)
   def apply(variables:Seq[Variable]): Unit = {
     val factors = model.factors(variables)
@@ -30,7 +30,7 @@ class Collapse(val model:GenerativeModel = defaultGenerativeModel) {
     if (option == None) throw new Error("No collapser found for factors "+factors.take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString(" "))
   }
 }
-object Collapse extends Collapse(defaultGenerativeModel) 
+//object Collapse extends Collapse(defaultGenerativeModel) 
 
 trait Collapser {
   /** Returns true on success, false if this recipe was unable to handle the relevant factors. */

@@ -23,16 +23,15 @@ import cc.factorie.er._
 
 // TODO Consider stringEnd instead of stringLength?
 class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Document] with Attr with Entity[Token] {
-  type GetterType <: TokenGetter
-  class GetterClass extends TokenGetter
   def this(doc:Document, s:Int, l:Int) = {
     this(s, l)
     doc += this
   }
   def this(sentence:Sentence, s:Int, l:Int) = {
-    this(s, l)
+    this(s, l) // TODO Rather than TODO below, we should just make this line: this(sentence.document, s, l)
     if (sentence.document.sentences.last ne sentence) throw new Error("Can only append of the last sentence of the Document.")
     _sentence = sentence
+    // TODO Don't we also need to do??: doc += this
     sentence.setLength(this.position - sentence.start)(null)
   }
   def this(doc:Document, tokenString:String) = {
@@ -109,6 +108,10 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
   def wordShape(maxRepetitions:Int): String = cc.factorie.app.strings.stringShape(string, maxRepetitions)
   def charNGrams(min:Int, max:Int): Seq[String] = cc.factorie.app.strings.charNGrams(string, min, max)
   override def toString = "Token("+stringStart+"+"+stringLength+":"+string+")"
+
+  // factorie.er interface
+  type GetterType <: TokenGetter
+  class GetterClass extends TokenGetter
 }
 
 

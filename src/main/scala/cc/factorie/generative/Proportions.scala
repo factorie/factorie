@@ -253,7 +253,8 @@ class DenseCountsProportions(len:Int) extends MutableProportions with CountsProp
   }
 }
 
-class GrowableDenseCountsProportions(val dimensionDomain:DiscreteDomain, initialCapacity:Int = 32) extends DenseCountsProportions(initialCapacity) {
+class GrowableDenseCountsProportions(val dimensionDomain:DiscreteDomain, initialCapacity:Int) extends DenseCountsProportions(initialCapacity) {
+  def this(dd:DiscreteDomain) = this (dd, 32)
   private var _size: Int = 0
   override def length: Int = math.max(_size, dimensionDomain.size) // new Exception().printStackTrace()
   override def counts(index:Int):Double = if (index < _counts.size) _counts(index) else 0.0

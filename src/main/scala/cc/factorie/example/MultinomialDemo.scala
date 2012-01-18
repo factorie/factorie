@@ -25,12 +25,13 @@ object MultinomialDemo {
   val numSides = 6
   object RollDomain extends DiscreteDomain { def size = numSides }
   class Roll extends DiscreteVariable { def domain = RollDomain }
+  implicit val model = new GenerativeFactorModel
 
   def main(args:Array[String]) : Unit = {
     val die = new DenseProportions(List(.1, .2, .3, .2, .2))
     println("True distribution "+die)
     val rolls = for (i <- 1 to 1000) yield new Roll :~ Discrete(die)
-    Maximize(Seq(die))
+    new Maximize(model)(Seq(die))
     println("Est  distribution "+die)
 
     /*

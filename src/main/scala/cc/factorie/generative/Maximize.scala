@@ -30,7 +30,8 @@ class Maximize(val model:Model) {
     if (option == None) throw new Error("No maximizer found for factors "+factors.take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString)
   }
 }
-object Maximize extends Maximize(defaultGenerativeModel)
+//object Maximize extends Maximize(defaultGenerativeModel)
+// TODO Need to fix this up now that defaultGenerativeModel is gone. -akm
 
 trait Maximizer {
   /** Returns true on success, false if this recipe was unable to handle the relevant factors. */
