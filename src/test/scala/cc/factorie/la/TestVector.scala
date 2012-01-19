@@ -30,19 +30,24 @@ class TestSparseBinaryVector extends TestCase {
     // check the boundaries
     v include 0
     v include v.length-1
-    // TODO: these shoud probably raise an Exception!
-    v include v.length
-    v include v.length+100
-    v include -1
+    try {
+      v include v.length
+      v include v.length + 100
+      v include -1
+      fail("No Exception Thrown")
+    } catch {
+      case e: java.lang.IllegalArgumentException =>
+      case _ => fail("Incorrect Exception")
+    }
     assertTrue(true)
   }
 
   def test_advanced:Unit = {
     val v = new SparseBinaryVector(10000)
-     
+
     // initial size should be zero
     assertEquals(v.activeDomain.size, 0)
-    
+
     val x = List(100,300,1000,500,2,100)
     x.foreach(v include _)
 
@@ -250,6 +255,10 @@ class TestSparseOuter2DenseVector1 extends TestCase {
 //    testInnerDenseDotDense
 //  }
 
+}
+
+class TestSparseOuter extends TestCase {
+  def testSuite = assertTrue(true)
 }
 
 object TestSparseOuter extends TestSuite {
