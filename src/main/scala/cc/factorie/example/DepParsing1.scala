@@ -26,7 +26,7 @@ import java.io.File
 object DepParsing1 {
 
   object TokenDomain extends CategoricalVectorDomain[String]
-  class Token(val word:String, posString:String, trueParentPosition:Int, trueLabelString:String) extends BinaryFeatureVectorVariable[String] with VarInSeq[Token] {
+  class Token(val word:String, posString:String, trueParentPosition:Int, trueLabelString:String) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
     def domain = TokenDomain
     val parent = new Node(this, trueParentPosition, trueLabelString)
     val pos = new POS(posString)
@@ -35,7 +35,7 @@ object DepParsing1 {
 
   class Node(val token:Token, val truePosition:Int, trueLabelString:String) extends RefVariable[Token] with VarWithTargetValue with IterableSettings {
     lazy val trueValue: Token = seq(truePosition)
-    def seq: Seq[Token] = token.seq
+    def seq: Seq[Token] = token.chain
     val label = new Label(trueLabelString)
     def valueIsTarget = value == trueValue
     def setToTarget(implicit d:DiffList): Unit = set(trueValue)
@@ -58,7 +58,7 @@ object DepParsing1 {
     def setRandomly: Unit = { this := seq.sampleUniformly }
     def settings = new SettingIterator {
       var i = -1
-      val max = token.seq.length - 1
+      val max = token.chain.length - 1
       def hasNext = i < max // && !(i == token.position && i+1 == max)
       def next(difflist:DiffList) = { 
         i += 1; //if (i == token.position) i += 1;
@@ -84,7 +84,7 @@ object DepParsing1 {
   class POS(posString:String) extends CategoricalVariable(posString) { def domain = POSDomain }
   object LabelDomain extends CategoricalDomain[String]
   class Label(trueString:String) extends LabelVariable(trueString) { def domain = LabelDomain }
-  class Sentence extends VariableSeq[Token] {
+  class Sentence extends Chain[Sentence,Token] {
     this += new Token("<ROOT>", ".", 0, "ROOT")
   }
   
@@ -220,7 +220,7 @@ object DepParsing1 {
         super.proposalsHook(proposals)
       }
       override def postProcessHook(n:Node, d:DiffList): Unit = {
-        printSentence(n.token.seq)
+        printSentence(n.token.chain)
         super.postProcessHook(n,d)
       }
     }

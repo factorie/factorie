@@ -20,31 +20,44 @@ import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import cc.factorie._
-import cc.factorie.app.tokenseq._
-import cc.factorie.app.tokenseq.labeled
-import cc.factorie.er._
+import cc.factorie.app.chain._
+import cc.factorie.app.nlp._
+//import cc.factorie.er._
 
 object Football {
   val printLexiconsOnly = false
 
   // Define the variable classes
-  object TokenDomain extends CategoricalVectorDomain[String]
-  class Token(word:String, labelString:String) extends labeled.Token[Sentence,Label,Token](word) {
-    def domain = TokenDomain
-    val label = new Label(labelString, this)
+  object TokenFeaturesDomain extends CategoricalVectorDomain[String]
+  class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
+    def domain = TokenFeaturesDomain
   }
   object LabelDomain extends CategoricalDomain[String]
-  class Label(tag:String, token:Token) extends labeled.Label[Sentence,Token,Label](tag, token) {
+  class Label(tag:String, val token:Token) extends LabelVariable(tag) {
     def domain = LabelDomain
   }
-  class Sentence extends labeled.TokenSeq[Token,Label,Sentence]
 
   // Define the model
   val model = new TemplateModel(
-    Foreach[Label] { label => Score(label) },
-    Foreach[Label] { label => Score(label, label.token) },
-    Foreach[Label] { label => Score(label.prev, label, label.token) },
-    Foreach[Label] { label => Score(label.prev, label) }
+    //Foreach[Label] { label => Score(label) },
+    new TemplateWithDotStatistics1[Label],
+    //Foreach[Label] { label => Score(label, label.token) },
+    new TemplateWithDotStatistics2[Label,TokenFeatures] {
+      def unroll1(label:Label) = Factor(label, label.token.attr[TokenFeatures])
+      def unroll2(tf:TokenFeatures) = throw new Error()
+    },
+    //Foreach[Label] { label => Score(label.prev, label, label.token) },
+    new TemplateWithDotStatistics3[Label,Label,TokenFeatures] {
+      def unroll1(label:Label) = Factor(label, label.token.next.attr[Label], label.token.next.attr[TokenFeatures])
+      def unroll2(label:Label) = Factor(label.token.prev.attr[Label], label, label.token.attr[TokenFeatures])
+      def unroll3(tf:TokenFeatures) = throw new Error()
+    },
+    //Foreach[Label] { label => Score(label.prev, label) }
+    new TemplateWithDotStatistics2[Label,Label] {
+      def unroll1(label:Label) = Factor(label, label.token.next.attr[Label])
+      def unroll2(label:Label) = Factor(label.token.prev.attr[Label], label)
+    }
+
   )
   
   // Define the objective function
@@ -109,7 +122,7 @@ object Football {
     LabelDomain.index("PER")
     LabelDomain.index("ORG")
     // Read in the data
-    val documents = new ArrayBuffer[Sentence]
+    val documents = new ArrayBuffer[cc.factorie.app.nlp.Document]
     for (dirname <- directories) {
       for (file <- files(new File(dirname))) {
         val article = XML.loadFile(file)
@@ -119,28 +132,30 @@ object Football {
         if (printLexiconsOnly) printLexicons(content)
         else {
           print("Reading ***"+(article\\"head"\\"title").text+"***")
-          documents +=
-            labeled.TokenSeq.fromPlainText(Source.fromString((article \\ "body" \\ "body.content").text), () => new Sentence, (word,lab)=>new Token(word,lab), "O", 
-                featureFunction, "[A-Za-z0-9]+|\\p{Punct}".r)
+          documents += LoadPlainText.fromString(file.getName, Source.fromString((article \\ "body" \\ "body.content").text).mkString, false)
+          for (token <- documents.last) {
+            token.attr += new Label("O", token)
+            token.attr += new TokenFeatures(token) ++= featureFunction(token.string)
+          }
           println("  "+documents.last.size)
-          documents.last.foreach(t=> print(t.word+" ")); println
+          documents.last.foreach(t=> print(t.string+" ")); println
         }  
       }
     }
     if (printLexiconsOnly) System.exit(0)
-    documents.foreach(d => d.addNeighboringFeatureConjunctions(List(-1), List(-1,0), List(0), List(1)))
-    documents.foreach(d => d.foreach(t => t ++= charNGrams(t.word, 2,5).map(g => "NGRAMS="+g)))
+    documents.foreach(d => Observations.addNeighboringFeatureConjunctions(d, (t:Token) => t.attr[TokenFeatures], List(-1), List(-1,0), List(0), List(1)))
+    documents.foreach(d => d.foreach(t => t.attr[TokenFeatures] ++= cc.factorie.app.strings.charNGrams(t.string, 2,5).map(g => "NGRAMS="+g)))
     
     // Train and print diagnostics
-    val labels = documents.flatMap(seq => seq.map(_.label))
+    val labels = documents.flatMap(seq => seq.map(_.attr[Label]))
     val learner = new VariableSettingsSampler[Label](model,objective) with SampleRank with GradientAscentUpdates {
       override def postIterationHook(): Boolean = {
         println("Iteration "+iterationCount)
         var docCount = 1
         for (doc <- documents) {
           println("Document "+docCount)
-          for (entity <- doc.entities) { 
-            println(entity._1+" "+entity._2.map(t=>t.word).mkString(" "))
+          for (entity <- Observations.extractContiguous(doc, (t:Token) => t.attr[Label].categoryValue)) { 
+            println(entity._1+" "+entity._2.map(t=>t.string).mkString(" "))
           }
           docCount += 1
         } 
@@ -153,11 +168,10 @@ object Football {
   
   // Helper functions
   
-  def featureFunction(in:Seq[String]): Seq[String] = {
-    val word = in.head
+  def featureFunction(word:String): Seq[String] = {
     val result = new ArrayBuffer[String]
     if (!word.matches("\\d+")) result += "W="+word
-    result += "SHAPE="+wordShape(word, 2)
+    result += "SHAPE="+cc.factorie.app.strings.stringShape(word, 2)
     result
   }
   def printLexicons(content:NodeSeq): Unit = {

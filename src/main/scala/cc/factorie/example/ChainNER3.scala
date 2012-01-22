@@ -18,11 +18,11 @@ package cc.factorie.example
 import scala.io.Source
 import cc.factorie._ 
 import cc.factorie.er._
-import cc.factorie.app.tokenseq.labeled
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
 
 /** Demo of CoNLL NER with lots of features.  Aiming for near state-of-the-art accuracy, but not yet finished. */
+/*
 object ChainNER3 {
 
   // Define the variable classes
@@ -91,7 +91,7 @@ object ChainNER3 {
           var t2 = t
           while (t2.hasNext) {
             t2 = t2.next
-            if (t2.word == t.word) { /*println("Adding FIRSTMENTION to "+t2.word); */ t2 ++= t.activeCategories.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
+            if (t2.word == t.word) { t2 ++= t.activeCategories.filter(_.contains("@")).map(f => "FIRSTMENTION="+f) }
           }
         }
       })
@@ -141,7 +141,7 @@ object ChainNER3 {
   }
 
   
-  /** Print diagnostics for error tokens, plus two true tokens before and after. */
+  // Print diagnostics for error tokens, plus two true tokens before and after. 
   def printErrors(labels:Seq[Label], maxErrors:Int): Unit = {
     val contextSize = 2
     var count = 0
@@ -185,5 +185,6 @@ object ChainNER3 {
   }
   
 }
+*/
 
 

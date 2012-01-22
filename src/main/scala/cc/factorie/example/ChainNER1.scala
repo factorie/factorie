@@ -16,7 +16,6 @@ package cc.factorie.example
 import java.io.File
 import cc.factorie._ 
 import cc.factorie.er._
-import cc.factorie.app.tokenseq.labeled
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 

@@ -18,76 +18,71 @@ package cc.factorie.example
 
 import java.io.File
 import cc.factorie._
-import cc.factorie.er._
-import cc.factorie.app.tokenseq.labeled
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.ner._
 import collection.mutable.ArrayBuffer
 
 object ChainNER1ML {
-
-  // Define the variable classes
-  object TokenDomain extends CategoricalVectorDomain[String]
-  class Token(word: String, labelString: String) extends labeled.Token[Sentence, Label, Token](word) {
-    val label = new Label(labelString, this)
-    def domain = TokenDomain
+  object TokenFeaturesDomain extends CategoricalVectorDomain[String]
+  class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
+    def domain = TokenFeaturesDomain
   }
-  object LabelDomain extends CategoricalDomain[String]
-  class Label(tag: String, token: Token) extends labeled.Label[Sentence, Token, Label](tag, token) {
-    def domain = LabelDomain
-  }
-  class Sentence extends labeled.TokenSeq[Token, Label, Sentence]
-
-  // Define the model:
   val model = new TemplateModel(
-    new TemplateWithDotStatistics1[Label] {
-      override def unroll1(label: Label) = if (!label.hasPrev) Factor(label) else Nil
+    // Bias term on each individual label 
+    new TemplateWithDotStatistics1[ChainNerLabel], 
+    // Factor between label and observed token
+    new TemplateWithDotStatistics2[ChainNerLabel,TokenFeatures] {
+      def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
+      def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
     },
-    new TemplateWithDotStatistics1[Label] {
-      override def unroll1(label: Label) = if (!label.hasNext) Factor(label) else Nil
-    },
-    Foreach[Label] {label => Score(label, label.token)},
-    Foreach[Label] {label => Score(label.prev, label, label.token)}
-    )
-
-  def main(args: Array[String]): Unit = {
-
-    if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
-
-    def featureFunction(inFeatures: Seq[String]): Seq[String] = {
-      val result = new ArrayBuffer[String]
-      // Assume the first feature is the word
-      result += "DEFAULT"
-      result ++= inFeatures
-      result
+    // Transition factors between two successive labels
+    new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel] {
+      def unroll1(label: ChainNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[ChainNerLabel], label) else Nil
+      def unroll2(label: ChainNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[ChainNerLabel]) else Nil
     }
+  )
 
-    // Read training and testing data.
-    val trainSentences = labeled.TokenSeq.fromOWPL(new File(args(0)), () => new Sentence, (word, lab) => new Token(word, lab), featureFunction _)
-    val testSentences = labeled.TokenSeq.fromOWPL(new File(args(1)), () => new Sentence, (word, lab) => new Token(word, lab), featureFunction _)
-
+  
+  def main(args:Array[String]): Unit = {
+    if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
+    val trainDocuments = LoadConll2003.fromFilename(args(0))
+    val testDocuments = LoadConll2003.fromFilename(args(1))
+    for (document <- (trainDocuments ++ testDocuments); token <- document) {
+      val features = new TokenFeatures(token)
+      features += "W="+token.string
+      features += "SHAPE="+cc.factorie.app.strings.stringShape(token.string, 2)
+      token.attr += features
+    }
+    val trainLabels = trainDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(10000)
+    val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(2000)
+    
     // Get the variables to be inferred
-    val trainVariables = trainSentences.map(_.labels)
-    val testVariables = testSentences.map(_.labels)
-    val allTestVariables = testVariables.flatMap(l => l)
-    val allTokens: Seq[Token] = (trainSentences ++ testSentences).flatten
-    allTokens.foreach(_.freeze) // To enable Template.cachedStatistics
+    val trainLabelsSentences: Seq[Seq[NerLabel]] = trainDocuments.map(_.map(_.nerLabel))
+    val  testLabelsSentences: Seq[Seq[NerLabel]] =  testDocuments.map(_.map(_.nerLabel))
+    //val trainVariables = trainLabels
+    //val testVariables = testLabels
+    //val allTestVariables = testVariables.flatMap(l => l)
+    //val allTokens: Seq[Token] = (trainSentences ++ testSentences).flatten
+    // To enable Template.cachedStatistics
+    for (doc <- (trainDocuments ++ testDocuments); token <- doc) token.attr[TokenFeatures].freeze
 
     // Train and test
-    println("*** Starting training (#sentences=%d)".format(trainSentences.size))
+    println("*** Starting training (#sentences=%d)".format(trainDocuments.map(_.sentences.size).sum))
     val start = System.currentTimeMillis
     val trainer = new LogLinearMaximumLikelihood(model)
-    trainer.processAll(trainVariables, 1) // Do just one iteration for initial timing
+    trainer.processAll(trainLabelsSentences, 1) // Do just one iteration for initial timing
     println("One iteration took " + (System.currentTimeMillis - start) / 1000.0 + " seconds")
     //System.exit(0)
 
-    trainer.processAll(trainVariables) // Keep training to convergence
+    trainer.processAll(trainLabelsSentences) // Keep training to convergence
 
-    val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
+    val objective = ZeroOneLossObjective
     // slightly more memory efficient - kedarb
-    println("*** Starting inference (#sentences=%d)".format(testSentences.size))
-    testVariables.foreach {
+    println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))
+    testLabelsSentences.foreach {
       variables => new BPInferencer(model).inferTreewiseMax(variables)
     }
-    println("test token accuracy=" + objective.aveScore(allTestVariables))
+    println("test token accuracy=" + objective.aveScore(testLabelsSentences.flatten))
 
     println("Total training took " + (System.currentTimeMillis - start) / 1000.0 + " seconds")
   }

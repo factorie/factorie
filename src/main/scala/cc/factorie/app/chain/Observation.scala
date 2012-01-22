@@ -104,7 +104,6 @@ object Observations {
   
   /** Extract a collection contiguous non-"background" labels
       @author Tim Vieira, Andrew McCallum */
-  @deprecated("May be moved elsewhere")
   def extractContiguous[T](s:Seq[T], labeler:T=>String, background:String = "O"): Seq[(String,Seq[T])] = {
     val result = new ArrayBuffer[(String,Seq[T])]
     if (s.size == 0) return result
@@ -134,7 +133,6 @@ object Observations {
   /** Given a sequence and a labeling function extract segments encoded in the BIO or IOB scheme.
       Note: a hueristic correction is applied when a segment starts with "I-"
       @author Tim Vieira */
-  @deprecated("May be moved elsewhere")
   def extractBIO[T](s:Seq[T], labeler:T=>String): Seq[(String,Seq[T])] = {
     val result = new ArrayBuffer[(String,Seq[T])]
     var phrase = new ArrayBuffer[T]

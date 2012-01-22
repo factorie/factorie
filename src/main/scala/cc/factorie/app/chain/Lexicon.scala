@@ -23,7 +23,7 @@ class Lexicon(val caseSensitive:Boolean) {
   import java.io.File
   /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */
   def this(filename:String) = { this(false); this.++=(Source.fromFile(new File(filename))(scala.io.Codec.UTF8)) }
-  var lexer = cc.factorie.app.tokenseq.nonWhitespaceClasses // TODO Make this a choice
+  var lexer = cc.factorie.app.strings.nonWhitespaceClassesSegmenter // TODO Make this a choice
   private class LexiconToken(val string:String) extends Observation[LexiconToken] {
     var next: LexiconToken = null
     var prev: LexiconToken = null
@@ -64,7 +64,7 @@ class Lexicon(val caseSensitive:Boolean) {
   }
   def +=(w:String): Unit = this.+=(new LexiconToken(w))
   def ++=(ws:Seq[String]): Unit = this.addAll(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
-  def ++=(source:Source): Unit = for (line <- source.getLines()) { this.++=(lexer.findAllIn(line).toList); /*println("TokenSeqs.Lexicon adding "+line)*/ }
+  def ++=(source:Source): Unit = for (line <- source.getLines()) { this.++=(lexer.regex.findAllIn(line).toList); /*println("TokenSeqs.Lexicon adding "+line)*/ }
   /** Is 'query' in the lexicon, accounting for lexicon phrases and the context of 'query' */
   def contains[T<:Observation[T]](query:T): Boolean = {
     //println("contains "+query.word+" "+query.hasPrev+" "+query)
