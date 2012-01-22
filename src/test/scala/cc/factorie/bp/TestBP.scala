@@ -30,7 +30,7 @@ class TestBP extends TestCase {
   // a binary variable that takes values 0 or 1
   object BinDomain extends CategoricalDomain[Int](List(0, 1))
 
-  class BinVar(i: Int) extends LabelVariable(i) with VarInSeq[BinVar] {
+  class BinVar(i: Int) extends LabelVariable(i) {
     def domain = BinDomain
   }
 
