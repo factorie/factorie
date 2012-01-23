@@ -18,7 +18,14 @@ import scala.io.Source
 import cc.factorie.app.nlp.pos.PosLabel
 import cc.factorie.app.nlp.parse.ParseTree
 
-object LoadConll2006 {
+/*
+ * Loader for the CoNLL 2008 closed-track shared task data.
+ * Details on the format are available at http://barcelona.research.yahoo.net/dokuwiki/doku.php?id=conll2008:format
+ *
+ * @author Brian Martin
+ */
+
+object LoadConll2008 {
   private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int,Int,String)]): Unit = {
     val tree = new ParseTree(s)
     for ((childIdx, parentIdx, depLabel) <- depInfoSeq) {
@@ -29,7 +36,7 @@ object LoadConll2006 {
   }
 
   def fromFilename(filename:String): Seq[Document] = {
-    var document: Document = new Document("Conll2006", "")
+    var document: Document = new Document("Conll2008", "")
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)(null)
     var depInfoSeq = Seq.empty[(Int,Int,String)]
