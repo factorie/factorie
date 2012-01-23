@@ -54,19 +54,23 @@ abstract class StructuredPerceptron[V<:VarWithTargetValue] extends GradientAscen
  * Averaged version of Collins' structured perceptron
  *
  * Usage:
- *   The user needs to call incrementIteration after each iteration.
- *   At the end of training, call setToAveraged
+ *   The user needs to call setToAveraged at the end of training.
  *
  * @author Brian Martin
  */
 abstract class AveragedStructuredPerceptron[V<:VarWithTargetValue] extends StructuredPerceptron[V] {
 
   private val wa = new HashMap[DotFamily, Vector]
-  private var c = 1
+  private var c = 0
   def incrementIteration(): Unit = c += 1
   def setToAveraged(): Unit = wa.foreach { case (f, v) => f.weights += (v * (-1.0/c)) }
   def unsetAveraged(): Unit = wa.foreach { case (f, v) => f.weights += (v * (1.0/c)) }
-  def clear(): Unit = { c = 1; wa.clear() }
+  def clear(): Unit = { c = 0; wa.clear() }
+
+  override def process(vs: Seq[V]): Unit = {
+    c += 1
+    super.process(vs)
+  }
 
   override def addGradient(accumulator:DotFamily=>Vector, rate:Double): Unit = {
     // for some reason familiesToUpdate and model.familiesOfClass(classOf[DotTemplate])
