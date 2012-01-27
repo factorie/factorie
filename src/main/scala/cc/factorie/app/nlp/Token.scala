@@ -43,7 +43,7 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
     this(s.document, tokenString)
     if (s.document.sentences.last ne s) throw new Error("Can only append of the last sentence of the Document.")
     _sentence = s
-    s.setLength(this.position - s.start)(null)
+    s.setLength(this.position - s.start + 1)(null)
   }
   def document: ChainType = chain
   def string = document.string.substring(stringStart, stringStart + stringLength)
