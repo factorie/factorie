@@ -23,25 +23,21 @@ class Conll2003ChainNerLabel(token:Token, initialValue:String) extends ChainNerL
 
 object LoadConll2003 {
   def fromFilename(filename:String): Seq[Document] = {
-    import scala.io.Source
-    import scala.collection.mutable.ArrayBuffer
-
-    val documents = new ArrayBuffer[Document]
-    var document = new Document("CoNLL2003-"+documents.length, "")
-    documents += document
-    val source = Source.fromFile(new java.io.File(filename))
-    var sentence = new Sentence(document)(null)
+    val documents = new collection.mutable.ArrayBuffer[Document]
+    var document: Document = null
+    val source = io.Source.fromFile(filename)
+    var sentence: Sentence = null
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
-        //sentence.stringLength = document.stringLength - sentence.stringStart
-        //document += sentence
         document.appendString("\n")
-        sentence = new Sentence(document)(null)
+        sentence = null
       } else if (line.startsWith("-DOCSTART-")) {
         // Skip document boundaries
         document = new Document("CoNLL2003-"+documents.length, "")
         documents += document
       } else {
+        // checking here avoids a new sentence on the last \n of the file
+        if (sentence eq null) sentence = new Sentence(document)(null)
         val fields = line.split(' ')
         // fields = word part-of-speech shallow-parse(IOB) ner-label(IOB)
         assert(fields.length == 4)
@@ -60,7 +56,6 @@ object LoadConll2003 {
         token.attr += new cc.factorie.app.nlp.pos.PosLabel(token, partOfSpeech)
       }
     }
-    //sentence.stringLength = document.stringLength - sentence.stringStart
     println("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.length).sum+" tokens total from file "+filename)
     documents
   }
