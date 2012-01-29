@@ -44,6 +44,7 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
     if (s.document.sentences.last ne s) throw new Error("Can only append of the last sentence of the Document.")
     _sentence = s
     s.setLength(this.position - s.start + 1)(null)
+    assert (_sentence.contains(this))
   }
   def document: ChainType = chain
   def string = document.string.substring(stringStart, stringStart + stringLength)
@@ -67,10 +68,10 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
   // Sentence methods
   private var _sentence: Sentence = null // This must be changeable from outside because sometimes Tokenization comes before Sentence segmentation
   def sentence = {
-    if (_sentence == null) _sentence = document.sentenceContaining(this)
+    if (_sentence eq null) _sentence = document.sentenceContaining(this)
     _sentence
   }
-  def indexInSentence: Int = sentence.zipWithIndex.find(_._1 == this).get._2
+  def indexInSentence: Int = position - sentence.start // alias for sentencePosition
   def sentenceHasNext: Boolean = (sentence ne null) && position < sentence.end
   def sentenceHasPrev: Boolean = (sentence ne null) && position > sentence.start
   def sentenceNext: Token = if (sentenceHasNext) next else null
