@@ -32,7 +32,7 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
     if (sentence.document.sentences.last ne sentence) throw new Error("Can only append of the last sentence of the Document.")
     _sentence = sentence
     // TODO Don't we also need to do??: doc += this
-    sentence.setLength(this.position - sentence.start)(null)
+    sentence.setLength(this.position - sentence.start + 1)(null)
   }
   def this(doc:Document, tokenString:String) = {
     this(doc, doc.stringLength, tokenString.length)
