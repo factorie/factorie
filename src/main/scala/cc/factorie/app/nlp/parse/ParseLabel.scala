@@ -76,7 +76,13 @@ class ParseTree(val sentence:Sentence) {
   /** Returns the sentence position of the parent of the token at position childIndex */
   def parentIndex(childIndex:Int): Int = _parents(childIndex)
   /** Returns the parent token of the token at position childIndex */
-  def parent(index:Int): Token = sentence(_parents(index))
+  def parent(childIndex:Int): Token = {
+    val idx = _parents(childIndex);
+    if (idx == ParseTree.rootIndex)
+      throw new IllegalAccessException("Attempting to retrieve the parent of the root token which does not exist.")
+    else
+      sentence(_parents(childIndex))
+  }
   /** Returns the parent token of the given token */
   def parent(token:Token): Token = { require(token.sentence eq sentence); parent(token.position - sentence.start) }
   /** Set the parent of the token at position 'child' to be at position 'parentIndex'.  A parentIndex of -1 indicates the root.  */
