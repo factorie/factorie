@@ -372,7 +372,27 @@ abstract class FG(val varying: Set[Variable]) {
     _factors.values.map(_.currentMaxDelta).max
   }
 
-  def logZ: Double = mfactors.foldLeft(0.0)(_ + _.logZ)
+  def logZ: Double = {
+    //Bethe approximation according to wainwright 08 page 83 top.
+    var logZ = 0.0
+    for (node <- nodes) {
+      val nodeEntropy = node.marginal.entropy
+      logZ += (1.0 - node.factors.size) * nodeEntropy
+    }
+    for (edge <- mfactors) {
+      //we can join expected edge score and entropy as local logZ of potential
+      val factorLogZ = edge.logZ
+      logZ += factorLogZ
+      // compensate for double counting <incoming, mu>
+      for (node <- edge.nodes) {
+        // dot product of node marginals and incoming from node
+        val dot = node.marginal.domain.foldLeft(0.0)(
+          (d, v) => d + (node.marginal.probability(v) * edge.incoming(node.variable).score(v)))
+        logZ -= dot
+      }
+    }
+    logZ
+  }
 
   def inferLoopyBP(iterations: Int = 1) {
     for (iteration <- 0 until iterations) {

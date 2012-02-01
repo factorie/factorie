@@ -550,6 +550,7 @@ class TestBP extends TestCase {
         assertEquals(marginals(i) / Z, fg.node(vars(i)).marginal.probability(BinDomain(0)), eps)
       }
       println("z : " + math.log(Z) + ", " + fg.logZ)
+      assertEquals(math.log(Z), fg.logZ, eps)
       // max product
       val mfg = new FG(model, varSet) with MaxProductFG
       mfg.inferUpDown(vars.sampleUniformly, false)
