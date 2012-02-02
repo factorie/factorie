@@ -12,23 +12,24 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.example
+
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import java.io.File
+import java.util.Random
 
 /** Example of model for dependency parsing.
     Not finished.  Overly simple inference (just sampling!), projectivity not maintained.
     But interesting example of flexibility of the "Template.statistics" method. */
+
 object DepParsing1 {
 
   object TokenDomain extends CategoricalVectorDomain[String]
   class Token(val word:String, posString:String, trueParentPosition:Int, trueLabelString:String) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
     def domain = TokenDomain
-    val parent = new Node(this, trueParentPosition, trueLabelString)
+    val node = new Node(this, trueParentPosition, trueLabelString)
     val pos = new POS(posString)
     override def toString = "Token("+word+":"+position+")"
   }
@@ -88,7 +89,7 @@ object DepParsing1 {
     this += new Token("<ROOT>", ".", 0, "ROOT")
   }
   
-  val model = new TemplateModel(
+  val templateModel = new TemplateModel(
     /*new Template2[Node,Token] with DotStatistics2[Token#ValueType,Token#ValueType] with SparseWeights {
       def unroll1(n:Node) = Factor(n, n.token)
       def unroll2(t:Token) = Nil
@@ -123,54 +124,98 @@ object DepParsing1 {
       def unroll2(p:POS) = Nil
       def statistics(values:Values) = Stat(values._2)
       //def statistics(n:Node#ValueType, pos:POS#ValueType) = Stat(pos)
-    }
+    },
     //new Template1[Node] with DotStatistics1[POS] {
     //override def _statistics(n:Node) = Stat(token.pos)
     //def statistics(nv:Node#ValueType) = new Error
     //},
     //new Template1[Node] with DotStatistics1[POS] { def statistics(n:Node) = Stat(token.pos) },
 
-    /*
-    new Template1[Node] with DotStatistics1[POS] { def statistics(n:Node) = Stat(n.parent.pos) },
-    new Template1[Node] with DotStatistics1[Token] { def statistics(n:Node) = Stat(n.token) },
-    new Template1[Node] with DotStatistics1[Token] { def statistics(n:Node) = Stat(n.parent) },
-    new Template1[Node] with DotStatistics2[POS,POS] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos) },
-    new Template1[Node] with DotStatistics2[POS,Token] with SparseWeights { def statistics(n:Node) = Stat(n.token.pos, n.parent) },
-    new Template1[Node] with DotStatistics2[Token,POS] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.parent.pos) },
-    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = for (b <- n.token.between(n.parent)) yield Stat(n.token.pos, b.pos, n.parent.pos) },
-    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.token.hasPrev) Stat(n.token.prev.pos, n.token.pos, n.parent.pos) else Nil },
-    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos) else Nil },
-    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasPrev) Stat(n.token.pos, n.parent.prev.pos, n.parent.pos) else Nil },
-    new Template1[Node] with DotStatistics3[POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasNext) Stat(n.token.pos, n.parent.pos, n.parent.next.pos) else Nil },
-    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasNext && n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos, n.parent.next.pos) else Nil },
-    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasNext && n.token.hasPrev) Stat(n.token.pos, n.token.prev.pos, n.parent.pos, n.parent.next.pos) else Nil },
-    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasPrev && n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos, n.parent.prev.pos) else Nil },
-    new Template1[Node] with DotStatistics4[POS,POS,POS,POS] { def statistics(n:Node) = if (n.parent.hasPrev && n.token.hasPrev) Stat(n.token.pos, n.token.prev.pos, n.parent.pos, n.parent.prev.pos) else Nil },
-    new Template1[Node] with DotStatistics2[Token,Direction] with SparseWeights { def statistics(n:Node) = Stat(n.token, n.direction) },
-    new Template1[Node] with DotStatistics2[Direction,Distance] { def statistics(n:Node) = Stat(n.direction, n.distance) },
-    new Template1[Node] with DotStatistics1[Direction] { def statistics(n:Node) = Stat(n.direction) },
-    new Template1[Node] with DotStatistics1[Distance] { def statistics(n:Node) = Stat(n.distance) },
-    new Template1[Node] with DotStatistics3[POS,Direction,Distance] { def statistics(n:Node) = Stat(n.token.pos, n.direction, n.distance) },
-    new Template1[Node] with DotStatistics3[POS,POS,Direction] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos, n.direction) },
-    new Template1[Node] with DotStatistics4[POS,POS,Direction,Distance] { def statistics(n:Node) = Stat(n.token.pos, n.parent.pos, n.direction, n.distance) }
-    */
+
+
+    new Template1[Node] with DotStatistics1[POS#Value] { def statistics(v:Values) = Stat(v._1.node.token.pos.value) },
+    new Template1[Node] with DotStatistics1[Token#Value] { def statistics(v:Values) = Stat(v._1.value) },
+    new Template1[Node] with DotStatistics1[Token#Value] { def statistics(v:Values) = Stat(v._1.node.token.value) },
+    new Template1[Node] with DotStatistics2[POS#Value,POS#Value] { def statistics(v:Values) = Stat(v._1.pos.value, v._1.node.token.pos.value) },
+    new Template1[Node] with DotStatistics2[POS#Value,Token#Value] with SparseWeights { def statistics(v:Values) = Stat(v._1.pos.value, v._1.node.token.value) },
+//
+//    new Template1[Node] with DotStatistics2[Token#Value,POS#Value] with SparseWeights { def statistics(v:Values) = Stat(n.token, n.parent.pos) },
+//    new Template1[Node] with DotStatistics3[POS#Value,POS#Value,POS#Value] { def statistics(v:Values) = for (b <- n.token.between(n.parent)) yield Stat(n.token.pos, b.pos, n.parent.pos) },
+//    new Template1[Node] with DotStatistics3[POS#Value,POS#Value,POS#Value] { def statistics(v:Values) = if (n.token.hasPrev) Stat(n.token.prev.pos, n.token.pos, n.parent.pos) else Nil },
+//    new Template1[Node] with DotStatistics3[POS#Value,POS#Value,POS#Value] { def statistics(v:Values) = if (n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos) else Nil },
+//    new Template1[Node] with DotStatistics3[POS#Value,POS#Value,POS#Value] { def statistics(v:Values) = if (n.parent.hasPrev) Stat(n.token.pos, n.parent.prev.pos, n.parent.pos) else Nil },
+//    new Template1[Node] with DotStatistics3[POS#Value,POS#Value,POS#Value] { def statistics(v:Values) = if (n.parent.hasNext) Stat(n.token.pos, n.parent.pos, n.parent.next.pos) else Nil },
+//    new Template1[Node] with DotStatistics4[POS#Value,POS#Value,POS#Value,POS#Value] { def statistics(v:Values) = if (n.parent.hasNext && n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos, n.parent.next.pos) else Nil },
+//    new Template1[Node] with DotStatistics4[POS#Value,POS#Value,POS#Value,POS#Value] { def statistics(v:Values) = if (n.parent.hasNext && n.token.hasPrev) Stat(n.token.pos, n.token.prev.pos, n.parent.pos, n.parent.next.pos) else Nil },
+//    new Template1[Node] with DotStatistics4[POS#Value,POS#Value,POS#Value,POS#Value] { def statistics(v:Values) = if (n.parent.hasPrev && n.token.hasNext) Stat(n.token.pos, n.token.next.pos, n.parent.pos, n.parent.prev.pos) else Nil },
+//    new Template1[Node] with DotStatistics4[POS#Value,POS#Value,POS#Value,POS#Value] { def statistics(v:Values) = if (n.parent.hasPrev && n.token.hasPrev) Stat(n.token.pos, n.token.prev.pos, n.parent.pos, n.parent.prev.pos) else Nil },
+//
+    new Template1[Node] with DotStatistics2[Token#ValueType,Direction#Value] with SparseWeights { def statistics(v:Values) = Stat(v._1.node.token.value, v._1.node.direction.value) }, // is parent.token right for direction?
+    new Template1[Node] with DotStatistics2[Direction#Value,Distance#Value] { def statistics(v:Values) = Stat(v._1.node.direction.value, v._1.node.distance.value) },
+    new Template1[Node] with DotStatistics1[Direction#Value] { def statistics(v:Values) = Stat(v._1.node.direction.value) },
+    new Template1[Node] with DotStatistics1[Distance#Value] { def statistics(v:Values) = Stat(v._1.node.distance.value) },
+    new Template1[Node] with DotStatistics3[POS#Value,Direction#Value,Distance#Value] { def statistics(v:Values) = Stat(v._1.pos.value, v._1.node.direction.value, v._1.node.distance.value) },
+    new Template1[Node] with DotStatistics3[POS#Value,POS#Value,Direction#Value] { def statistics(v:Values) = Stat(v._1.pos.value, v._1.node.token.pos.value, v._1.node.direction.value) },
+    new Template1[Node] with DotStatistics4[POS#Value,POS#Value,Direction#Value,Distance#Value] { def statistics(v:Values) = Stat(v._1.pos.value, v._1.node.token.pos.value, v._1.node.direction.value, v._1.node.distance.value) }
   )
+
+  val factorModel = new Model {
+    def factors(vars: Iterable[Variable]): Seq[Factor] = Seq(new Factor {
+      def variable(i: Int): Variable = null
+      val statistics = new Statistics {
+        override def score: Double = {
+          var ret = 0.0
+          vars.foreach(va => {
+            val v = va.asInstanceOf[Node]
+            val s = collection.mutable.HashSet[Int]()
+            var vv = v.parent.node
+            //println("Inspecting position "+v.token.position+" with parent "+vv.token.position)
+            if (v.token.position == 0) {
+              if (v.parent.node.token.position != 0) ret -= 100// Double.NegativeInfinity
+            } else {
+              while(! s.contains(vv.token.position)) {
+                s.add(vv.token.position)
+                vv = vv.parent.node
+                //println("now looking at position "+vv.token.position)
+              }
+              if (vv.token.position == v.token.position) {
+                //println ("setting parent to "+vv.token.position );
+                ret -= 100// Double.NegativeInfinity
+              }
+            }
+          })
+          //println ("returning "+ret)
+          ret
+        }
+
+      }
+      val values: Values = null
+      def valuesIterator(v: Set[Variable]): Iterator[Values] = null
+      val numVariables = 0
+      
+    })
+  }
+
+
+
+  val model = new CombinedModel(templateModel, factorModel)
   
-  val objective = new TemplateModel(
+  val obj = new TemplateModel(
     new TemplateWithStatistics2[Node,BooleanVar] {
       def unroll1(n:Node) = Factor(n, new BooleanVariable(n.valueIsTarget))
       def unroll2(b:BooleanVar) = Nil
       def score(s:Stat) = {
         val valueIsTarget = s._2
-        throw new Error("Why doesn't the following line compile?")
-        //if (valueIsTarget.booleanValue) 1.0 else 0.0
+        if (valueIsTarget.booleanValue) 1.0 else 0.0
         //-math.abs(node.position - node.truePosition)
       }
     }
   )
+
+  val objective = new CombinedModel(obj, factorModel)
   
   def main(args:Array[String]): Unit = {
-    val datafile = if (args.length > 0) args(0) else "/Users/mccallum/research/data/parsing/depparsing/train.owpl"
+    val datafile = if (args.length > 0) args(0) else "/Users/apassos/data/deptrain.owpl"
     val sentences = new ArrayBuffer[Sentence];
     var sentence = new Sentence
     val source = Source.fromFile(new File(datafile))
@@ -179,17 +224,14 @@ object DepParsing1 {
         if (sentence.length > 0) { sentences += sentence; sentence = new Sentence }
       } else {
         val fields = line.split("\\s+")
-        if (fields.length != 4) println("Skipping line: "+line)
-        else {
-          val word = fields(0)
-          val pos = fields(1)
-          val parentPosition = Integer.parseInt(fields(2))
-          val token = new Token(word, pos, parentPosition, fields(3))
-          val w = simplify(word)
-          token += w //.substring(0, math.min(w.length, 6))
-          //token += "POS="+pos
-          sentence += token
-        }
+        val word = fields(2)
+        val pos = fields(3)
+        val parentPosition = Integer.parseInt(fields(8))
+        val token = new Token(word, pos, parentPosition, fields(9))
+        val w = simplify(word)
+        token += w //.substring(0, math.min(w.length, 6))
+        //token += "POS="+pos
+        sentence += token
       }
     }
     println("Read "+sentences.length+" sentences, "+sentences.foldLeft(0)(_+_.length)+" words.")
@@ -197,10 +239,10 @@ object DepParsing1 {
     println("Domain[POS] size = "+POSDomain.size)
     println("Domain[Distance] size = "+DistanceDomain.size)
     
-    val nodes = sentences.flatMap(_.map(_.parent))
-    nodes.foreach(_.setRandomly)
-    val learner = new VariableSettingsSampler[Node](model, objective) with SampleRank with GradientAscentUpdates {
-      //val learner = new VariableSettingsSampler[Node](objective)
+    val nodes = sentences.flatMap(_.map(_.node))
+    nodes.foreach(n => n.set(n.token.seq.head)(null))
+    nodes.foreach(n => n.setRandomly)
+    val learner = new VariableSettingsSampler[Node](model, objective) with SampleRank with AROWUpdates {
       temperature = 0.01
       override def postIterationHook(): Boolean = {
         for (sentence <- sentences.take(20)) printSentence(sentence)
@@ -211,14 +253,17 @@ object DepParsing1 {
         //proposals.foreach(p => println("%-6f %-6f %s".format(p.modelScore, p.objectiveScore, p.diff.toString)))
         val bestModel = proposals.maxByDouble(_.modelScore)
         val bestObjective = proposals.maxByDouble(_.objectiveScore)
-        println(bestModel.diff)
-        println(bestObjective.diff)
-        println("modelBest modelScore "+bestModel.modelScore)
-        println("modelBest objecScore "+bestModel.objectiveScore)
-        println("objecBest modelScore "+bestObjective.modelScore)
-        println("objecBest objecScore "+bestObjective.objectiveScore)
+        if (rng.nextInt(200) == 0) {
+          println(bestModel.diff)
+          println(bestObjective.diff)
+          println("modelBest modelScore "+bestModel.modelScore)
+          println("modelBest objecScore "+bestModel.objectiveScore)
+          println("objecBest modelScore "+bestObjective.modelScore)
+          println("objecBest objecScore "+bestObjective.objectiveScore)
+        }
         super.proposalsHook(proposals)
       }
+      val rng = new java.util.Random()
       override def postProcessHook(n:Node, d:DiffList): Unit = {
         printSentence(n.token.chain)
         super.postProcessHook(n,d)
@@ -270,9 +315,9 @@ object DepParsing1 {
   
   def printSentence(sentence:Seq[Token]): Unit = {
     for (token <- sentence) println("%-3d %-20s %-3d %-3d %s".
-        format(token.position, token.word, token.parent.truePosition, token.parent.position,
-        if (token.parent.valueIsTarget) " " else "*"))
-    println("#correct = "+objective.score(sentence.map(_.parent)))
+        format(token.position, token.word, token.node.truePosition, token.node.position,
+        if (token.node.valueIsTarget) " " else "*"))
+    println("#correct = "+objective.score(sentence.map(_.node)))
     println
   }
   
