@@ -61,7 +61,7 @@ object ChainNER4 {
 
 
   def main(args: Array[String]): Unit = {
-    if (args.length != 2) throw new Error("Usage: ChainNER3 trainfile testfile")
+    if (args.length != 2) throw new Error("Usage: ChainNER4 trainfile testfile")
 
     // Read in the data
     val trainSentences = load(args(0))

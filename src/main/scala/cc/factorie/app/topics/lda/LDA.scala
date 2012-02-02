@@ -46,12 +46,15 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   
   protected def setupDocument(doc:Doc, m:MutableGenerativeModel): Unit = {
     require(wordSeqDomain eq doc.ws.domain)
-    require(doc.ws.length > 1)
+    require(doc.ws.length > 0)  // was > 1
     if (doc.theta eq null) doc.theta = new SortedSparseCountsProportions(numTopics)
     else require (doc.theta.length == numTopics)
     doc.theta.~(Dirichlet(alphas))(m) // was DenseCountsProportions
     if (doc.zs eq null) doc.zs = new Zs(Array.tabulate(doc.ws.length)(i => random.nextInt(numTopics))) // Could also initialize to all 0 for more efficient sparse inference
-    else require(doc.zs.length == doc.ws.length)
+    else {
+      require(doc.zs.length == doc.ws.length, "doc.ws.length=%d != doc.zs.length=%d".format(doc.ws.length, doc.zs.length))
+      require(doc.zs.domain.elementDomain.size == numTopics, "zs.domain.elementDomain.size=%d != numTopics=%d".format(doc.zs.domain.elementDomain.size, numTopics))
+    }
     doc.zs.~(PlatedDiscrete(doc.theta))(m)
     doc.ws.~(PlatedDiscreteMixture(phis, doc.zs))(m)
   }

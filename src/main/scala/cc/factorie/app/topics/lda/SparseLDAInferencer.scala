@@ -136,7 +136,7 @@ class SparseLDAInferencer(
       })
         
       assert(smoothingMass > 0)
-      assert(topicBetaMass > 0, "topicBetaMass="+topicBetaMass+" doc.length="+zs.length)
+      assert(topicBetaMass >= 0, "topicBetaMass="+topicBetaMass+" doc.length="+zs.length) // was >
       assert(topicTermMass >= 0)
       val r = cc.factorie.random.nextDouble()
       var sample = r * (smoothingMass + topicBetaMass + topicTermMass)
