@@ -133,14 +133,14 @@ abstract class LabelVariable[T](targetVal:T) extends CoordinatedLabelVariable(ta
 
 //class ZeroOneLossTemplate[A<:VarWithTarget[TargetVar[A,TargetVar[A,_]],A]]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends Template2[A,A#TargetType] with Statistics1[Boolean] 
 
-class ZeroOneLossTemplate[A<:VarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends Template2[A,A#TargetType] with Statistics1[Boolean] {
+class HammingLossTemplate[A<:VarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends Template2[A,A#TargetType] with Statistics1[Boolean] {
   def unroll1(aimer:A) = Factor(aimer, aimer.target)
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
   def statistics(values:Values) = Stat(values._1 == values._2)
   def score(s:Stat) = if (s._1) 1.0 else 0.0
 }
 
-object ZeroOneLossObjective extends TemplateModel(new ZeroOneLossTemplate[VarWithTarget])
+object HammingLossObjective extends TemplateModel(new HammingLossTemplate[VarWithTarget])
 
 // Evaluation
 

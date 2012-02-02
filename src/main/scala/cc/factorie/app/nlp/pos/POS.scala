@@ -35,7 +35,7 @@ object PosModel extends TemplateModel(
     }
   )
 
-object PosObjective extends TemplateModel(new ZeroOneLossTemplate[PosLabel])
+object PosObjective extends TemplateModel(new HammingLossTemplate[PosLabel])
 
 
 object POS {

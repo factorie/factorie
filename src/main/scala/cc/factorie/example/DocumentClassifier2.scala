@@ -48,7 +48,7 @@ object DocumentClassifier2 {
     }
   )
 
-  val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
+  val objective = new TemplateModel(new HammingLossTemplate[Label])
 
   def main(args: Array[String]) : Unit = {
     if (args.length < 2) 

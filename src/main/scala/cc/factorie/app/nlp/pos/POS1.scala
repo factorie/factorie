@@ -136,7 +136,7 @@ object POS1 extends POS1 {
 
       // Train for 5 iterations
       (trainLabels ++ testLabels).foreach(_.setRandomly())
-      val learner = new VariableSettingsSampler[PosLabel](PosModel, ZeroOneLossObjective) with SampleRank with GradientAscentUpdates
+      val learner = new VariableSettingsSampler[PosLabel](PosModel, HammingLossObjective) with SampleRank with GradientAscentUpdates
       val predictor = new VariableSettingsSampler[PosLabel](PosModel)
       for (i <- 1 until 10) {
         learner.processAll(trainLabels)

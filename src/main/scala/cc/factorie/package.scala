@@ -31,7 +31,7 @@ package object factorie {
   implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
   
   val defaultModel = new TemplateModel
-  val defaultObjective = new TemplateModel(new ZeroOneLossTemplate[CoordinatedLabelVariable[AnyRef]]())
+  val defaultObjective = HammingLossObjective
 
   // TODO Consider removing this now that we have separate, more specific samplers.
   // TODO Consider also removing SamplerSuite?

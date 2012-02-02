@@ -23,7 +23,7 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
   var learningRateDecay = 0.9
   def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures)
-    val learner = new VariableSettingsSampler[L](cmodel, ZeroOneLossObjective) with SampleRank with GradientAscentUpdates
+    val learner = new VariableSettingsSampler[L](cmodel, HammingLossObjective) with SampleRank with GradientAscentUpdates
     learner.learningRate = 1.0
     for (i <- 0 until iterations) {
       learner.processAll(il)

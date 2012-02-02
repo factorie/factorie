@@ -68,7 +68,7 @@ class TestBPClassify extends TestCase {
     }
   )
 
-  val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
+  val objective = new TemplateModel(new HammingLossTemplate[Label])
   
   def testMain: Unit = process(new Array[String](0))
 

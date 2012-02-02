@@ -76,7 +76,7 @@ object ChainNER1ML {
 
     trainer.processAll(trainLabelsSentences) // Keep training to convergence
 
-    val objective = ZeroOneLossObjective
+    val objective = HammingLossObjective
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))
     testLabelsSentences.foreach {

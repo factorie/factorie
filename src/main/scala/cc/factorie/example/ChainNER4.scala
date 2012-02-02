@@ -56,7 +56,7 @@ object ChainNER4 {
   )
   
   // The training objective
-  val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
+  val objective = new TemplateModel(new HammingLossTemplate[Label])
   
 
 

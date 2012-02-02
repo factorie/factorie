@@ -45,7 +45,7 @@ class ChainNerModel extends TemplateModel(
   }
 )
 
-class ChainNerObjective extends TemplateModel(new ZeroOneLossTemplate[ChainNerLabel])
+class ChainNerObjective extends TemplateModel(new HammingLossTemplate[ChainNerLabel])
 
   
 class ChainNer {

@@ -68,7 +68,7 @@ object WordSegmenterDemo {
   }
   //model += skipTemplate
 
-  val objective = new TemplateModel(new ZeroOneLossTemplate[Label])
+  val objective = new TemplateModel(new HammingLossTemplate[Label])
 
 
 
