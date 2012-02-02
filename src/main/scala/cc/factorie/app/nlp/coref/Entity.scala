@@ -66,6 +66,8 @@ trait PairwiseMention extends TokenSpanMention {
   val edges = new ArrayBuffer[PairwiseLabel]
   var _head: Token = null
   def headToken: Token = _head
+  // this is done for cases where the mention is split across multiple sentence in error (e.g. in reACE: george w. | bush)
+  override def sentence = if (_head ne null) headToken.sentence else super.sentence
 }
 abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseLabel] with Statistics2[BooleanValue,CorefAffinity] {
   def statistics(v:Values): Stat = {
