@@ -75,8 +75,12 @@ class ParseTree(val sentence:Sentence) {
   def setRootChild(token:Token): Unit = setParent(token.position - sentence.start, -1)
   /** Returns the sentence position of the parent of the token at position childIndex */
   def parentIndex(childIndex:Int): Int = _parents(childIndex)
-  /** Returns the parent token of the token at position childIndex */
-  def parent(index:Int): Token = sentence(_parents(index))
+  /** Returns the parent token of the token at position childIndex (or null if the token at childIndex is the root) */
+  def parent(childIndex:Int): Token = {
+    val idx = _parents(childIndex)
+    if (idx == -1) null // -1 is rootIndex
+    else sentence(idx)
+  }
   /** Returns the parent token of the given token */
   def parent(token:Token): Token = { require(token.sentence eq sentence); parent(token.position - sentence.start) }
   /** Set the parent of the token at position 'child' to be at position 'parentIndex'.  A parentIndex of -1 indicates the root.  */

@@ -14,6 +14,7 @@
 
 package cc.factorie
 import cc.factorie.la._
+import collection.mutable.HashMap
 
 /** Collins' structured-perceptron 
     @author Andrew McCallum */
@@ -22,7 +23,7 @@ abstract class StructuredPerceptron[V<:VarWithTargetValue] extends GradientAscen
 
   val model: TemplateModel
   var learningMargin = 1.0 // TODO not currently used
-  private var difflist: DiffList = null
+  protected[this] var difflist: DiffList = null
   
   // Abstract method to be provided elsewhere
   def predict(vs:Seq[V]): Unit
@@ -47,5 +48,45 @@ abstract class StructuredPerceptron[V<:VarWithTargetValue] extends GradientAscen
 
 }
 
-
 // TODO What would a MaximumMargin trait look like?
+
+/**
+ * Averaged version of Collins' structured perceptron
+ *
+ * Usage:
+ *   The user needs to call setToAveraged at the end of training.
+ *
+ * @author Brian Martin
+ */
+abstract class AveragedStructuredPerceptron[V<:VarWithTargetValue] extends StructuredPerceptron[V] {
+
+  private val wa = new HashMap[DotFamily, Vector]
+  private var c = 0
+  def incrementIteration(): Unit = c += 1
+  def setToAveraged(): Unit = wa.foreach { case (f, v) => f.weights += (v * (-1.0/c)) }
+  def unsetAveraged(): Unit = wa.foreach { case (f, v) => f.weights += (v * (1.0/c)) }
+  def clear(): Unit = { c = 0; wa.clear() }
+
+  override def process(vs: Seq[V]): Unit = {
+    c += 1
+    super.process(vs)
+  }
+
+  override def addGradient(accumulator:DotFamily=>Vector, rate:Double): Unit = {
+    // for some reason familiesToUpdate and model.familiesOfClass(classOf[DotTemplate])
+    // give null pointer when outside this fn.
+    if (wa.size == 0) familiesToUpdate.foreach(f => wa(f) = new DenseVector(f.statisticsVectorLength))
+
+    if (!difflist.done) difflist.redo
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => {
+      wa(f.family) += f.statistics.vector * (rate * c)
+      accumulator(f.family) += f.statistics.vector * rate
+    })
+    difflist.undo
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => {
+      wa(f.family) += f.statistics.vector * (-rate * c)
+      accumulator(f.family) += f.statistics.vector * -rate
+    })
+  }
+}
+

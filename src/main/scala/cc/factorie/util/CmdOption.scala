@@ -172,9 +172,9 @@ class CmdOptions extends HashSet[cc.factorie.util.CmdOption[_]] {
         newIndex
       } else if (args(index).startsWith("--"+name+"=")) {
         // support --file=foo
-        val fields = args(index).split("=")
-        if (fields.length != 2) error("Expected a single '=' followed by a value.  Instead got command "+args(index))
-        parseValue(List(fields(1)), 0)
+        // modified on 1/21/2012 to support --file=foo=bar --brian
+        val rightOfEq = args(index).drop(name.size + 3)
+        parseValue(List(rightOfEq), 0)
         invoke
         invokedCount += 1
         index + 1

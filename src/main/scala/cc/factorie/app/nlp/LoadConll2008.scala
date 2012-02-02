@@ -18,7 +18,14 @@ import scala.io.Source
 import cc.factorie.app.nlp.pos.PosLabel
 import cc.factorie.app.nlp.parse.ParseTree
 
-object LoadConll2006 {
+/*
+ * Loader for the CoNLL 2008 closed-track shared task data.
+ * Details on the format are available at http://barcelona.research.yahoo.net/dokuwiki/doku.php?id=conll2008:format
+ *
+ * @author Brian Martin
+ */
+
+object LoadConll2008 {
   private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int,Int,String)]): Unit = {
     val tree = new ParseTree(s)
     for ((childIdx, parentIdx, depLabel) <- depInfoSeq) {
@@ -29,33 +36,34 @@ object LoadConll2006 {
   }
 
   def fromFilename(filename:String): Seq[Document] = {
-    var document: Document = new Document("Conll2006", "")
+    var document: Document = new Document("Conll2008", "")
     val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)(null)
-    var depInfoSeq = Seq.empty[(Int,Int,String)]
+    var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
-        new Token(sentence, " ")  // todo: why is this necessary? Without it, the last token of the sentence is dropped.
         document.appendString("\n")
         addDepInfo(sentence, depInfoSeq)
-        depInfoSeq = Seq.empty[(Int,Int,String)]
-        sentence = new Sentence(document)(null)
+        depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
+        sentence = null
       } else {
+        if (sentence eq null)
+          sentence = new Sentence(document)(null) // avoids empty sentence at the end of doc
         val fields = line.split('\t')
-        assert(fields.length == 10)
+        assert(fields.length >= 10)
         val currTokenIdx = fields(0).toInt - 1
         val word = fields(1)
         val partOfSpeech = fields(3)
-        val parentIdx = fields(6).toInt - 1
-        val depLabel = fields(7)
+        val parentIdx = fields(8).toInt - 1
+        val depLabel = fields(9)
         document.appendString(" ")
         val token = new Token(sentence, word)
         token.attr += new PosLabel(token, partOfSpeech)
-        depInfoSeq ++= Seq((currTokenIdx, parentIdx, depLabel))
+        depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
     }
-    new Token(sentence, " ")
-    addDepInfo(sentence, depInfoSeq)
+    if (sentence ne null)
+      addDepInfo(sentence, depInfoSeq)
 
     println("Loaded 1 document with "+document.sentences.size+" sentences with "+document.length+" tokens total from file "+filename)
     Seq(document)
