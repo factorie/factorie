@@ -28,7 +28,6 @@ class Tokenizer extends RegexSegmenter(Seq(
   def process(documents: Seq[Document]): Unit = documents.map(d => process(d))
 
   def process(document: Document): Unit = {
-    println(document.string)
     val tokenIterator = this.apply(document.string)
     while (tokenIterator.hasNext) {
       tokenIterator.next()
