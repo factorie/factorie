@@ -47,7 +47,7 @@ trait ReACEWordAnnotations {
 
 class ReACESentenceId(val sentId: String)
 
-object ReACELoader {
+object LoadReACE {
 
   private def getAttr(ns: NodeSeq, key: String): Option[String] = {
     val fullKey: String = "@" + key
@@ -94,10 +94,6 @@ object ReACELoader {
         }
       }
     }
-
-    assert(doc.tokens.last.sentence ne null, "Last token in document is sentence-less.")
-    for (t <- doc.tokens) assert(t.sentence ne null, "Sentence-less token while loading")
-
     doc
   }
 
@@ -173,6 +169,8 @@ object ReACELoader {
     doc
   }
 
+  // TODO: consider renaming this to fromFile to match the API for other loaders.
+  // But if renamed, how can the user know that ttt.xml is required?
   def fromTtt(ttt: String): Document = {
     val fileStr = ttt.dropRight(8)
     val doc = makeDoc(fileStr)

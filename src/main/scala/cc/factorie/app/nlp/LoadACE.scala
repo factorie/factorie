@@ -35,7 +35,7 @@ trait ACERelationIdentifiers {
 
 class ACEFileIdentifier(val fileId: String)
 
-object ACELoader {
+object LoadACE {
 
   private val matchTag = "<[A-Za-z=_\"/ ]*>".r
 
@@ -135,15 +135,11 @@ object ACELoader {
   // drops the first two lines (xml decl, and dtd)
   private def loadXML(apfFile: String): NodeSeq = XML.loadString(io.Source.fromFile(apfFile).getLines().drop(2).mkString("\n"))
 
-  def fromApf(apfFile: String): Document = {
-    val doc = makeDoc(apfFile.dropRight(8) + ".sgm")
-    addMentionsFromApf(loadXML(apfFile), doc)
-    addRelationsFromApf(loadXML(apfFile), doc)
-    doc
-  }
+  // TODO: consider renaming this to fromFile to match the API for other loaders.
+  // But if renamed, how can the user know that apf.xml is required (instead of alf.xml or .xml)?
+  def fromApf(apfFile: String): Document = fromApf(apfFile, makeDoc(apfFile.dropRight(8) + ".sgm"))
 
   def fromApf(apfFile: String, doc: Document): Document = {
-    println(apfFile)
     addMentionsFromApf(loadXML(apfFile), doc)
     addRelationsFromApf(loadXML(apfFile), doc)
     doc
