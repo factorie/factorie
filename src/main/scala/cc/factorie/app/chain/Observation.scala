@@ -69,13 +69,13 @@ object Observations {
       val token = observations(i)
       val thisTokenNewFeatures = newFeatures(i)
       for (offsets <- offsetConjunctions) 
-        thisTokenNewFeatures ++= appendConjunctions(token, vf, regex, null, offsets).
-      map(list => list.sortBy({case(f,o)=>o+f}).map({case(f,o) => if (o == 0) f else f+"@"+o}).mkString("_&_")) // TODO "f+o" is doing string concatenation, consider something faster
+        thisTokenNewFeatures ++= appendConjunctions(token, vf, regex, null, offsets).map(list => list.sortBy({case(f,o)=>o+f}).map({case(f,o) => if (o == 0) f else f+"@"+o}).mkString("_&_"))
+      // TODO "f+o" is doing string concatenation, consider something faster
     }
     // ... then add them to each Token
     for (i <- 0 until size) {
       val token = observations(i)
-      // vf(token).zero  // TODO  Removed when transferring code from app.tokenseq.TokenSeq.  Is this still necessary? -akm
+      vf(token).zero()  // TODO  Removed when transferring code from app.tokenseq.TokenSeq.  Is this still necessary? -akm
       vf(token) ++= newFeatures(i)
     }
     //if (size > 0) println("addNeighboringFeatureConjunctions "+first)

@@ -58,6 +58,7 @@ abstract class FeatureVectorVariable[T] extends CategoricalVectorVariable[T]
 trait BinaryCategoricalVectorVar[T] extends CategoricalVectorVar[T] {
   def +=(value:T): Unit 
   def ++=(values:Iterable[T]): Unit
+  def zero(): Unit
 }
 
 trait SparseBinaryCategoricalVectorVar[T] extends SparseBinaryDiscreteVectorVar with BinaryCategoricalVectorVar[T] with VarAndValueType[SparseBinaryCategoricalVectorVar[T],SparseBinaryVector with CategoricalVectorValue[T]] {
@@ -133,7 +134,7 @@ abstract class CategoricalVariable[A] extends DiscreteVariable with MutableCateg
 // But then we couldn't use syntax like:  Domain[Person].size
 // But this doesn't matter any more.
 
-// Can we make this ItemizedVariable
+// Can we make this ItemizedVar
 
 /** An Observation put into an index, and whose value is the Observation variable itself.  
     For example, you can create 10 'Person extends ItemizedObservation[Person]' objects, 
