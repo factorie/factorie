@@ -157,16 +157,24 @@ class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model = c
 
 class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
   def settings(variables:Seq[V]): SettingIterator = new SettingIterator {
-    val vs = variables.map(_.settings).toList // .asInstanceOf[List[IterableSettings#SettingIterator]]
+    val vs = variables.map(_.settings).toList
+    val vds = variables.map(v => new DiffList).toList // maintains a list of changes for each variable
     var initialized = false
-    println("VariablesSettingsSampler.settings "+variables)
+    //println("VariablesSettingsSampler.settings "+variables)
     var _hasNext = true
     var prevDiffList: DiffList = null
     /**Iterate through all combinations of values in Variables given their `SettingIterators */
-    def nextValues(vs: List[IterableSettings#SettingIterator], d:DiffList): Boolean = {
+    def nextValues(vs: List[IterableSettings#SettingIterator], vds: List[DiffList]): Boolean = {
       if (vs == Nil) false
-      else if (vs.head.hasNext) { d ++= vs.head.next(d); println("nextValues changed "+vs.map(_.variable)); true /*(vs.head.hasNext || vs.tail != Nil)*/ }
-      else if (vs.tail != Nil) { vs.head.reset; d ++= vs.head.next(d); println("nextValues changed "+vs.map(_.variable)); nextValues(vs.tail, d) }
+      else if (vs.head.hasNext) {
+        val vd = vs.head.next(vds.head); vds.head.clear(); vds.head ++= vd; // update the changelist for the variable
+        //println("nextValues changed "+vs.map(_.variable));
+        true /*(vs.head.hasNext || vs.tail != Nil)*/
+      } else if (vs.tail != Nil) {
+        vs.head.reset; val vd = vs.head.next(vds.head); vds.head.clear(); vds.head ++= vd; // update the changelist for the variable
+        //println("nextValues changed "+vs.map(_.variable));
+        nextValues(vs.tail, vds.tail)
+      }
       else false
     }
     def next(d:DiffList): DiffList = {
@@ -177,11 +185,12 @@ class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model = 
         initialized = true
         _hasNext = true
       } else {
-        //if ((prevDiffList ne null) && !prevDiffList.done) { prevDiffList.redo; prevDiffList.done = false } // TODO  Ug!  Ugly hack that will not generalize!
-        _hasNext = nextValues(vs, result)
+        //if (prevDiffList ne null) { prevDiffList.redo; prevDiffList.done = false } // TODO  Ug!  Ugly hack that will not generalize!
+        _hasNext = nextValues(vs, vds)
+        // copy over the difflist for each variable to the result
+        vds.foreach(vd => { vd.done = false; vd.redo; result ++= vd })
       }
-      println("VariablesSettingsSampler.next "+vs.map(_.variable)+" hasNext="+this.hasNext)
-      prevDiffList = result
+      //println("VariablesSettingsSampler.next "+vs.map(_.variable)+" hasNext="+this.hasNext)
       result
     }
     def reset: Unit = { vs.foreach(_.reset); prevDiffList = null }
