@@ -19,7 +19,6 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.maths._
 import collection.mutable.{ArrayBuffer, LinkedList, IndexedSeq}
-import optimize.LimitedMemoryBFGS.StepTooSmallException
 
 /**Maximize an Optimizable object by Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, "Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods" */
 class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends Optimizer with FastLogging {
