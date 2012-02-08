@@ -15,7 +15,7 @@ trait Piece {
   def valueAndGradient: (Double, Map[DotFamily, Vector])
 }
 
-class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue], val infer: (FG) => Unit = _.inferTreeUpDown(2, true)) extends Piece {
+class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue], val infer: (LatticeBP) => Unit = new InferencerBPWorker(_).inferTreeUpDown(2, true)) extends Piece {
 
   // compute the empirical counts of the model
   lazy val empiricalCounts: Map[DotFamily, Vector] = {
@@ -44,7 +44,7 @@ class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue], val infer:
   }
 
   def valueAndGradient: (Double, Map[DotFamily, Vector]) = {
-    val fg = new FG(model, vars.toSet) with SumProductFG
+    val fg = new LatticeBP(model, vars.toSet) with SumProductLattice
     // perform BP
     infer(fg)
     // compute the gradient

@@ -91,15 +91,15 @@ class TestBP extends TestCase {
   def testV1F1 = {
     // one variable, one factor
     val v = new BinVar(0)
-    var fg: FG = null
+    var fg: LatticeBP = null
     // 1) equal potentials
     //    a) sum-product
     val model1 = new FactorModel(newFactor1(v, 1, 1))
-    fg = new FG(Set(v)) with SumProductFG
+    fg = new LatticeBP(Set(v)) with SumProductLattice
     fg.createUnrolled(model1)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg.nodes.size))
-    fg.inferLoopyBP(1)
+    new InferencerBPWorker(fg).inferLoopyBP(1)
     println(fg.node(v).marginal)
     //println("domain: %s".format(marginal.domain))
     //println("indexEq: %s".format(marginal.domain(0) == 0))
@@ -109,11 +109,11 @@ class TestBP extends TestCase {
     // 2) unequal potentials
     //    a) sum-product
     val model2 = new FactorModel(newFactor1(v, 2, 1))
-    fg = new FG(Set(v)) with SumProductFG
+    fg = new LatticeBP(Set(v)) with SumProductLattice
     fg.createUnrolled(model2)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg.nodes.size))
-    fg.inferLoopyBP(1)
+    new InferencerBPWorker(fg).inferLoopyBP(1)
     println(fg.node(v).marginal)
     assertEquals(fg.node(v).marginal.probability(BinDomain(0)), e(1) / (1 + e(1)), eps)
     for (factor <- fg.factors) {
@@ -126,21 +126,21 @@ class TestBP extends TestCase {
   def testV1F2 = {
     // one variable, two factors
     val v = new BinVar(0)
-    var fg: FG = null
+    var fg: LatticeBP = null
     // 1) f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}
     val model1 = new FactorModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
-    fg = new FG(Set(v)) with SumProductFG
+    fg = new LatticeBP(Set(v)) with SumProductLattice
     fg.createUnrolled(model1)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg.nodes.size))
-    fg.inferLoopyBP(2)
+    new InferencerBPWorker(fg).inferLoopyBP(2)
     println(fg.node(v).marginal)
     assertEquals(fg.node(v).marginal.probability(BinDomain(0)), 0.5, eps)
     // 2) f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}
     val model2 = new FactorModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
-    fg = new FG(Set(v)) with SumProductFG
+    fg = new LatticeBP(Set(v)) with SumProductLattice
     fg.createUnrolled(model2)
-    fg.inferLoopyBP(1)
+    new InferencerBPWorker(fg).inferLoopyBP(1)
     println(fg.node(v).marginal)
     assertEquals(fg.node(v).marginal.probability(BinDomain(0)), 1.0 / (1 + e(2)), eps)
   }
@@ -149,21 +149,21 @@ class TestBP extends TestCase {
     // one variable, two factors
     // println("Testing MAP BP")
     val v = new BinVar(0)
-    var fg: FG = null
+    var fg: LatticeBP = null
     // 1) f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}
     val model1 = new FactorModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
-    fg = new FG(Set(v)) with MaxProductFG
+    fg = new LatticeBP(Set(v)) with MaxProductLattice
     fg.createUnrolled(model1)
     // println("num Factors = %d".format(fg.factors.size))
     // println("num Variables = %d".format(fg.nodes.size))
-    fg.inferLoopyBP(2)
+    new InferencerBPWorker(fg).inferLoopyBP(2)
     // println(fg.node(v).marginal)
     assertEquals(fg.node(v).marginal.score(BinDomain(0)), 3.0, eps)
     // 2) f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}
     val model2 = new FactorModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
-    fg = new FG(Set(v)) with MaxProductFG
+    fg = new LatticeBP(Set(v)) with MaxProductLattice
     fg.createUnrolled(model2)
-    fg.inferLoopyBP(1)
+    new InferencerBPWorker(fg).inferLoopyBP(1)
     // println(fg.node(v).marginal)
     assertEquals(fg.node(v).marginal.probability(BinDomain(0)), 1.0 / (1 + e(2)), eps)
   }
@@ -174,16 +174,16 @@ class TestBP extends TestCase {
     val v2 = new BinVar(0)
 
     // create template between v1 and v2
-    var fg: FG = null
+    var fg: LatticeBP = null
     val model = new FactorModel(newFactor2(v1, v2, 10, 0))
     val vars: Set[Variable] = Set(v1, v2)
 
     // vary both variables
-    fg = new FG(vars) with SumProductFG
+    fg = new LatticeBP(vars) with SumProductLattice
     fg.createUnrolled(model)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg._nodes.size))
-    fg.inferLoopyBP(1)
+    new InferencerBPWorker(fg).inferLoopyBP(1)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     for (mfactor <- fg.mfactors) {
@@ -197,11 +197,11 @@ class TestBP extends TestCase {
     assertEquals(fg.node(v1).marginal.probability(BinDomain(0)), 0.5, eps)
     assertEquals(fg.node(v2).marginal.probability(BinDomain(0)), 0.5, eps)
     // vary just one variable
-    fg = new FG(Set(v2)) with SumProductFG
+    fg = new LatticeBP(Set(v2)) with SumProductLattice
     fg.createUnrolled(model)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg._nodes.size))
-    fg.inferLoopyBP(1)
+    new InferencerBPWorker(fg).inferLoopyBP(1)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     for (mfactor <- fg.mfactors) {
@@ -223,16 +223,16 @@ class TestBP extends TestCase {
     val v2 = new BinVar(0)
     // println("Testing MAP V2F1")
     // create template between v1 and v2
-    var fg: FG = null
+    var fg: LatticeBP = null
     val model = new FactorModel(newFactor2(v1, v2, 10, 0))
     val vars: Set[Variable] = Set(v1, v2)
 
     // vary both variables
-    fg = new FG(vars) with MaxProductFG
+    fg = new LatticeBP(vars) with MaxProductLattice
     fg.createUnrolled(model)
     // println("num Factors = %d".format(fg.factors.size))
     // println("num Variables = %d".format(fg._nodes.size))
-    fg.inferLoopyBP(2)
+    new InferencerBPWorker(fg).inferLoopyBP(2)
     // println("v1 : " + fg.node(v1).marginal)
     // println("v2 : " + fg.node(v2).marginal)
     for (mfactor <- fg.mfactors) {
@@ -254,16 +254,16 @@ class TestBP extends TestCase {
     val v2 = new BinVar(0)
 
     // create template between v1 and v2
-    var fg: FG = null
+    var fg: LatticeBP = null
     val model = new FactorModel(newFactor2(v1, v2, 1000, 0))
     val vars: Set[Variable] = Set(v1, v2)
 
     // vary both variables
-    fg = new FG(vars) with SumProductFG
+    fg = new LatticeBP(vars) with SumProductLattice
     fg.createUnrolled(model)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg._nodes.size))
-    fg.inferLoopyBP(1)
+    new InferencerBPWorker(fg).inferLoopyBP(1)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     for (mfactor <- fg.mfactors) {
@@ -278,11 +278,11 @@ class TestBP extends TestCase {
     assertEquals(fg.node(v1).marginal.probability(BinDomain(0)), 0.5, eps)
     assertEquals(fg.node(v2).marginal.probability(BinDomain(0)), 0.5, eps)
     // vary just one variable
-    fg = new FG(Set(v2)) with SumProductFG
+    fg = new LatticeBP(Set(v2)) with SumProductLattice
     fg.createUnrolled(model)
     println("num Factors = %d".format(fg.factors.size))
     println("num Variables = %d".format(fg._nodes.size))
-    fg.inferLoopyBP(1)
+    new InferencerBPWorker(fg).inferLoopyBP(1)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     for (mfactor <- fg.mfactors) {
@@ -303,9 +303,9 @@ class TestBP extends TestCase {
     val v2 = new BinVar(1)
 
     val model = new FactorModel(newFactor1(v1, 1, 0), newFactor1(v2, 1, 0), newFactor2(v1, v2, 2, 0))
-    val fg = new FG(Set(v1, v2)) with SumProductFG
+    val fg = new LatticeBP(Set(v1, v2)) with SumProductLattice
     fg.createUnrolled(model)
-    fg.inferLoopyBP(2)
+    new InferencerBPWorker(fg).inferLoopyBP(2)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     println("tv1 : " + ((e(4) + e(1)) / (e(4) + e(1) + e(1) + e(2))))
@@ -325,8 +325,8 @@ class TestBP extends TestCase {
     val model = new FactorModel(
       newFactor1(v1, 1, 0), newFactor1(v2, 1, 0),
       newFactor2(v1, v2, 1, 0), newFactor2(v1, v2, 3, -1))
-    var fg = new FG(model, vars) with SumProductFG
-    fg.inferLoopyBP()
+    var fg = new LatticeBP(model, vars) with SumProductLattice
+    new InferencerBPWorker(fg).inferLoopyBP()
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     fg.setToMaxMarginal(Set(v1, v2))
@@ -348,8 +348,8 @@ class TestBP extends TestCase {
       newFactor2(v1, v2, -5, 0), newFactor2(v1, v3, -5, 0),
       newFactor2(v2, v4, -5, 0), newFactor2(v3, v4, -5, 0)
     )
-    var fg = new FG(model, vars) with SumProductFG
-    fg.inferLoopyBP(4)
+    var fg = new LatticeBP(model, vars) with SumProductLattice
+    new InferencerBPWorker(fg).inferLoopyBP(4)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     println("v3 : " + fg.node(v3).marginal)
@@ -378,8 +378,8 @@ class TestBP extends TestCase {
       newFactor2(v2, v4, -5, 0), newFactor2(v3, v4, -5, 0)
     )
     // println("Testing loopy map")
-    val fg = new FG(model, vars) with MaxProductFG
-    fg.inferLoopyBP(4)
+    val fg = new LatticeBP(model, vars) with MaxProductLattice
+    new InferencerBPWorker(fg).inferLoopyBP(4)
     // println("v1 : " + fg.node(v1).marginal)
     // println("v2 : " + fg.node(v2).marginal)
     // println("v3 : " + fg.node(v3).marginal)
@@ -404,8 +404,8 @@ class TestBP extends TestCase {
     val model = new FactorModel(
       newFactor1(v1, 3, 0), newFactor1(v2, 0, 3),
       newFactor2(v1, v3, 3, 0), newFactor2(v2, v3, 3, 0))
-    var fg = new FG(model, vars) with SumProductFG
-    fg.inferUpDown(v1, false)
+    var fg = new LatticeBP(model, vars) with SumProductLattice
+    new InferencerBPWorker(fg).inferUpDown(v1, false)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     println("v3 : " + fg.node(v3).marginal)
@@ -436,8 +436,8 @@ class TestBP extends TestCase {
       newFactor2(v3, v4, 5, 0), newFactor2(v5, v4, -5, 0),
       newFactor2(v6, v5, 5, 0), newFactor2(v7, v5, -5, 0)
     )
-    var fg = new FG(model, vars) with SumProductFG
-    fg.inferUpDown(v1, false)
+    var fg = new LatticeBP(model, vars) with SumProductLattice
+    new InferencerBPWorker(fg).inferUpDown(v1, false)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     println("v3 : " + fg.node(v3).marginal)
@@ -479,8 +479,8 @@ class TestBP extends TestCase {
       newFactor2(v3, v4, 5, 0), newFactor2(v5, v4, -5, 0),
       newFactor2(v6, v5, 5, 0), newFactor2(v7, v5, -5, 0)
     )
-    val fg = new FG(model, vars) with MaxProductFG
-    fg.inferUpDown(v1, false)
+    val fg = new LatticeBP(model, vars) with MaxProductLattice
+    new InferencerBPWorker(fg).inferUpDown(v1, false)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     println("v3 : " + fg.node(v3).marginal)
@@ -543,8 +543,8 @@ class TestBP extends TestCase {
       println("map : " + mapAssignment)
       println("marginals : " + marginals.map(_ / Z).mkString(", "))
       // test sum-product
-      val fg = new FG(model, varSet) with SumProductFG
-      fg.inferUpDown(vars.sampleUniformly, false)
+      val fg = new LatticeBP(model, varSet) with SumProductLattice
+      new InferencerBPWorker(fg).inferUpDown(vars.sampleUniformly, false)
       for (i <- 0 until numVars) {
         println("v" + i + " : " + fg.node(vars(i)).marginal)
         assertEquals(marginals(i) / Z, fg.node(vars(i)).marginal.probability(BinDomain(0)), eps)
@@ -552,10 +552,10 @@ class TestBP extends TestCase {
       println("z : " + math.log(Z) + ", " + fg.logZ)
       assertEquals(math.log(Z), fg.logZ, eps)
       // max product
-      val mfg = new FG(model, varSet) with MaxProductFG
-      mfg.inferUpDown(vars.sampleUniformly, false)
-      mfg.inferUpDown(vars.sampleUniformly, false)
-      //mfg.inferLoopyBP(numVars*2) //UpDown(vars.sampleUniformly, false)
+      val mfg = new LatticeBP(model, varSet) with MaxProductLattice
+      new InferencerBPWorker(mfg).inferUpDown(vars.sampleUniformly, false)
+      new InferencerBPWorker(mfg).inferUpDown(vars.sampleUniformly, false)
+      //new InferencerBPWorker(mfg).inferLoopyBP(numVars*2) //UpDown(vars.sampleUniformly, false)
       mfg.setToMaxMarginal()
       println("probabilities : " + scores.map(math.exp(_) / Z).mkString(", "))
       for (i <- 0 until numVars) {

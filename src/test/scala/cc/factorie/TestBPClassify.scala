@@ -20,7 +20,7 @@ package cc.factorie
  * @author gdruck, sameer
  */
 
-import bp.FG
+import bp.LatticeBP
 import scala.collection.mutable.{ArrayBuffer}
 import scala.collection.mutable.HashMap
 import scala.util.matching.Regex
@@ -106,8 +106,8 @@ class TestBPClassify extends TestCase {
     val trainer = new SimpleMaxEntTrainer(model)
     trainer.process(trainVariables)
 
-    val fg = new FG(model, testVariables.toSet[Variable]) with SumProductFG
-    fg.inferLoopyBP()
+    val fg = new LatticeBP(model, testVariables.toSet[Variable]) with SumProductLattice
+    new InferencerBPWorker(fg).inferLoopyBP()
 
     var trueSumLogZ = 0.0
 

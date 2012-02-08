@@ -9,7 +9,7 @@ import cc.factorie.la.{DenseVector, SparseVector, Vector}
  * @author sameer, apassos
  */
 
-abstract class MessageFactor(val factor: Factor, val varying: Set[Variable], fg: FG) {
+abstract class MessageFactor(val factor: Factor, val varying: Set[Variable], fg: LatticeBP) {
 
   val variables: Seq[Variable] = factor.variables
   // set of neighbors that are varying
@@ -348,7 +348,7 @@ class MessageNode(val variable: Variable, val varying: Set[Variable]) {
   override def toString = "M(%s)".format(variable)
 }
 
-abstract class FG(val varying: Set[Variable]) {
+abstract class LatticeBP(val varying: Set[Variable]) extends Lattice[Variable] {
 
   def this(model: Model, varying: Set[Variable]) = {
     this (varying)
@@ -394,18 +394,6 @@ abstract class FG(val varying: Set[Variable]) {
     logZ
   }
 
-  def inferLoopyBP(iterations: Int = 1) {
-    for (iteration <- 0 until iterations) {
-      for (factor <- _factors.values.shuffle(cc.factorie.random)) {
-        //for every factor first calculate all incoming beliefs
-        factor.prepareIncoming()
-        //synchronous belief updates on all outgoing edges
-        factor.updateAllOutgoing()
-      }
-      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
-    }
-  }
-
   private def _bfs(root: MessageNode, checkLoops: Boolean): Seq[MessageFactor] = {
     val visited: HashSet[MessageFactor] = new HashSet
     val result = new ArrayBuffer[MessageFactor]
@@ -424,38 +412,49 @@ abstract class FG(val varying: Set[Variable]) {
     result
   }
 
-  def inferUpDown(variable: DiscreteVariable, checkLoops: Boolean = true): Unit = inferTreewise(node(variable), checkLoops)
-
-  // Perform a single iteration of up-down BP using the given root to discover the tree. For
-  // loopy models, enable checkLoops to avoid infinite loops.
-  def inferTreewise(root: MessageNode, checkLoops: Boolean = true) {
-    // perform BFS
-    val bfsOrdering: Seq[MessageFactor] = _bfs(root, checkLoops)
-    // send messages leaf to root
-    for (factor <- bfsOrdering.reverse) {
-      factor.prepareIncoming()
-      factor.updateAllOutgoing()
-    }
-    // send root to leaves
-    for (factor <- bfsOrdering) {
-      factor.prepareIncoming()
-      factor.updateAllOutgoing()
-    }
-  }
-
-  // Perform up-down scheduling of messages. Picks a random root, and performs BFS
-  // ordering to discover the tree (efficiently if checkLoops is false), resulting in
-  // exact inference for tree-shaped models. For loopy models, enable checkLoops to avoid
-  // infinite loops, and have iterations>1 till convergence.
-  def inferTreeUpDown(iterations: Int = 1, checkLoops: Boolean = true) {
-    for (iteration <- 0 until iterations) {
-      // find a random root
-      val root = nodes.sampleUniformly
-      // treewise
-      inferTreewise(root, checkLoops)
-      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
-    }
-  }
+//  def inferUpDown(variable: DiscreteVariable, checkLoops: Boolean = true): Unit = inferTreewise(node(variable), checkLoops)
+//
+//  // Perform a single iteration of up-down BP using the given root to discover the tree. For
+//  // loopy models, enable checkLoops to avoid infinite loops.
+//  def inferTreewise(root: MessageNode = nodes.head, checkLoops: Boolean = true) {
+//    // perform BFS
+//    val bfsOrdering: Seq[MessageFactor] = _bfs(root, checkLoops)
+//    // send messages leaf to root
+//    for (factor <- bfsOrdering.reverse) {
+//      factor.prepareIncoming()
+//      factor.updateAllOutgoing()
+//    }
+//    // send root to leaves
+//    for (factor <- bfsOrdering) {
+//      factor.prepareIncoming()
+//      factor.updateAllOutgoing()
+//    }
+//  }
+//
+//  // Perform up-down scheduling of messages. Picks a random root, and performs BFS
+//  // ordering to discover the tree (efficiently if checkLoops is false), resulting in
+//  // exact inference for tree-shaped models. For loopy models, enable checkLoops to avoid
+//  // infinite loops, and have iterations>1 till convergence.
+//  def inferTreeUpDown(iterations: Int = 1, checkLoops: Boolean = true) {
+//    for (iteration <- 0 until iterations) {
+//      // find a random root
+//      val root = nodes.sampleUniformly
+//      // treewise
+//      inferTreewise(root, checkLoops)
+//      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+//    }
+//  }
+//  def inferLoopyBP(iterations: Int = 1) {
+//    for (iteration <- 0 until iterations) {
+//      for (factor <- _factors.values.shuffle(cc.factorie.random)) {
+//        //for every factor first calculate all incoming beliefs
+//        factor.prepareIncoming()
+//        //synchronous belief updates on all outgoing edges
+//        factor.updateAllOutgoing()
+//      }
+//      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+//    }
+//  }
 
   def nodes: Iterable[MessageNode] = _nodes.values
 
@@ -485,10 +484,21 @@ abstract class FG(val varying: Set[Variable]) {
     exps
   }
 
+  type VariableMarginalType = GenericMessage
+  type FactorMarginalType = DiscreteFactorMarginal
+
+  override def marginal(v: Variable) = {
+    if(_nodes.contains(v)) Some(node(v).marginal) else None
+  }
+
+  override def marginal(f: Factor) = if(_factors.contains(f)) {
+    val mf = mfactor(f)
+    Some(new DiscreteFactorMarginal(f, f.valuesIterator(mf.varying).map(mf marginal _).toArray))
+  } else None
 }
 
-trait SumProductFG {
-  this: FG =>
+trait SumProductLattice {
+  this: LatticeBP =>
 
   def createFactor(potential: Factor) = {
     val factor = new MessageFactor(potential, varying, this) with SumFactor
@@ -496,8 +506,8 @@ trait SumProductFG {
   }
 }
 
-trait MaxProductFG {
-  this: FG =>
+trait MaxProductLattice {
+  this: LatticeBP =>
 
   def createFactor(potential: Factor) = {
     val factor = new MessageFactor(potential, varying, this) with MaxFactor

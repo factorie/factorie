@@ -14,7 +14,7 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
-import bp.{SumProductFG, FG}
+import bp.{SumProductLattice, LatticeBP}
 import cc.factorie.app.nlp._
 
 class SparseOuterChainNerModel extends TemplateModel(
@@ -127,7 +127,7 @@ class SparseOuterChainNer {
       }
       // Predict, also by sampling, visiting each variable 3 times.
       //predictor.processAll(testLabels, 3)
-      val fg = new FG(testDocuments.flatten.toSet) with SumProductFG
+      val fg = new LatticeBP(testDocuments.flatten.toSet) with SumProductLattice
       fg.createUnrolled(model)
       val start = System.currentTimeMillis()
       for (i <- 0 until 100000000)

@@ -10,7 +10,7 @@ import cc.factorie._
  * will reduce type clutter, and should be sufficient for
  * all operations we need.
  */
-trait GenericMessage {
+trait GenericMessage extends Marginal {
   self =>
 
   import StrictMath._
