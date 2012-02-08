@@ -19,6 +19,7 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.maths._
 import collection.mutable.{ArrayBuffer, LinkedList, IndexedSeq}
+import optimize.LimitedMemoryBFGS.StepTooSmallException
 
 /**Maximize an Optimizable object by Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, "Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods" */
 class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends Optimizer with FastLogging {
@@ -99,7 +100,7 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
         logger.error("Line search could not step in the current direction. " +
                 "(This is not necessarily cause for alarm. Sometimes this happens close to the maximum," +
                 " where the function may be very flat.)")
-        throw new Error("Line search could not step in current direction.")
+        throw new StepTooSmallException("Line search could not step in current direction.")
       }
 
       optimizable.getOptimizableParameters(params)
