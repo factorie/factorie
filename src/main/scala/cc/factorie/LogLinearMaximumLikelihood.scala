@@ -60,10 +60,10 @@ class LogLinearMaximumLikelihood(model: Model) {
     }
     val constraints = new SuffStats
     // Add all model dot templates to constraints
-    familiesToUpdate.foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
+    //familiesToUpdate.foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
     // Gather constraints
     variableSets.foreach(_.foreach(_.setToTarget(null)))
-    variableSets.foreach(vars => model.factorsOfFamilies(vars, familiesToUpdate).foreach(f => constraints(f.family) += f.cachedStatistics.vector))
+    variableSets.foreach(vars => model.factorsOfFamilies(vars, familiesToUpdate).foreach(f => { val vector = f.cachedStatistics.vector ; constraints(f.family) += vector }))
 
     def templates = constraints.sortedKeys
 

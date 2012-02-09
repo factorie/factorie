@@ -19,3 +19,6 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteVectorVar](lf:L=>F, fl:F=>L)(impl
   this += biasTemplate
   this += evidenceTemplate
 }
+
+// TODO consider requiring the statisticsDomains for label and features when creating the model.
+// otherwise we can get error "You must override statisticsDomains if you want..."

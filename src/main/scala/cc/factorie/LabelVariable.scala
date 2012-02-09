@@ -221,7 +221,8 @@ class LabelEvaluation(val domain: CategoricalDomain[String]) {
   //def correctCount(labelIndex:Int) = _tp(labelIndex)
   //def missCount(labelIndex:Int) = _fn(labelIndex)
   //def alarmCount(labelIndex:Int) = _fp(labelIndex)
-  def toString(labelIndex:Int) = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(domain.getCategory(labelIndex), f1(labelIndex), precision(labelIndex), recall(labelIndex), tp(labelIndex), fp(labelIndex), fn(labelIndex), tp(labelIndex)+fn(labelIndex), tp(labelIndex)+fp(labelIndex))
-  override def toString = (0 until domain.size).map(toString(_)).mkString("\n")
+  def evalString(labelIndex:Int): String = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(domain.getCategory(labelIndex), f1(labelIndex), precision(labelIndex), recall(labelIndex), tp(labelIndex), fp(labelIndex), fn(labelIndex), tp(labelIndex)+fn(labelIndex), tp(labelIndex)+fp(labelIndex))
+  def evalString: String = (0 until domain.size).map(evalString(_)).mkString("\n")
+  override def toString = evalString
 }
 
