@@ -5,7 +5,7 @@ import Scope.{GlobalScope, ThisScope}
 object BuildSettings {
   val buildOrganization = "cc.factorie"
   val buildScalaVersion = "2.9.1"
-  val buildVersion = "0.10.1"
+  val buildVersion = "0.10.2-SNAPSHOT"
 
   val buildSettings = Defaults.defaultSettings ++
   Seq (
