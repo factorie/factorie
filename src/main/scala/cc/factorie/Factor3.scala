@@ -14,14 +14,8 @@
 
 package cc.factorie
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.util.{Random,Sorting}
-import scala.util.Random
-import scala.math
-import scala.util.Sorting
+import scala.collection.mutable.HashMap
 import cc.factorie.la._
-import cc.factorie.util.Substitutions
-import java.io._
 
 /** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
 trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
@@ -50,6 +44,11 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
   }
   def statistics: StatisticsType = statistics(values)
   def statistics(v:Values): StatisticsType
+
+  // For implementing sparsity in belief propagation
+  def isLimitingValuesIterator = false
+  def limitedDiscreteValuesIterator: Iterator[(Int,Int,Int)] = Iterator.empty
+
   /** Values iterator in style of specifying fixed neighbors. */
   def valuesIterator(fixed: Assignment): Iterator[Values] = {
     val fixed1 = fixed.contains(_1)
@@ -60,80 +59,193 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
     else if (fixed1 && fixed2) {
       val val1 = fixed(_1)
       val val2 = fixed(_2)
-      val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-      d3.values.iterator.map(value => Values(val1, val2, value))
+      if (isLimitingValuesIterator) {
+        val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
+        val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
+        val d3 = _3.domain.asInstanceOf[DiscreteDomain]
+        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._2 == intVal2)).map(t => new Values(val1, val2, d3.getValue(t._3).asInstanceOf[N3#Value]))
+      }
+      else {
+        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
+        d3.values.iterator.map(value => Values(val1, val2, value))
+      }
     } else if (fixed2 && fixed3) {
       val val2 = fixed(_2)
       val val3 = fixed(_3)
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-      d1.values.iterator.map(value => Values(value, val2, val3))
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
+        val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
+        limitedDiscreteValuesIterator.filter(t => (t._2 == intVal2) && (t._3 == intVal3)).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2, val3))
+      }
+      else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        d1.values.iterator.map(value => Values(value, val2, val3))
+      }
     } else if (fixed1 && fixed3) {
       val val1 = fixed(_1)
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
       val val3 = fixed(_3)
-      d2.values.iterator.map(value => Values(val1, value, val3))
+      if (isLimitingValuesIterator) {
+        val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
+        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._3 == intVal3)).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value], val3))
+      }
+      else {
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        d2.values.iterator.map(value => Values(val1, value, val3))
+      }
     } else if (fixed1) {
       val val1 = fixed(_1)
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-      val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-      (for (val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      if (isLimitingValuesIterator) {
+        val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        val d3 = _3.domain.asInstanceOf[DiscreteDomain]
+        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value], d3.getValue(t._3).asInstanceOf[N3#Value]))
+      }
+      else {
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
+        (for (val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      }
     } else if (fixed2) {
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
       val val2 = fixed(_2)
-      val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-      (for (val1 <- d1.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
+        val d3 = _3.domain.asInstanceOf[DiscreteDomain]
+        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2, d3.getValue(t._3).asInstanceOf[N3#Value]))
+      }
+      else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
+        (for (val1 <- d1.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      }
     } else if (fixed3) {
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
       val val3 = fixed(_3)
-      (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
+        limitedDiscreteValuesIterator.filter(t => t._3 == intVal3).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value], val3))
+      }
+      else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+      }
     } else {
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-      val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-      (for (val1 <- d1.values; val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        val d3 = _3.domain.asInstanceOf[DiscreteDomain]
+        limitedDiscreteValuesIterator.map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value], d3.getValue(t._3).asInstanceOf[N3#Value]))
+      }
+      else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
+        (for (val1 <- d1.values; val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      }
     }
   }
+
   /** valuesIterator in style of specifying varying neighbors */
   def valuesIterator(varying:Set[Variable]): Iterator[Values] = {
     val varying1 = varying.contains(_1)
     val varying2 = varying.contains(_2)
     val varying3 = varying.contains(_3)
-    if (varying1 && varying2 & varying3) {
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-      val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-      (for (val1 <- d1.values; val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+    if (varying1 && varying2 && varying3) {
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        val d3 = _3.domain.asInstanceOf[DiscreteDomain]
+        limitedDiscreteValuesIterator.map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value], d3.getValue(t._3).asInstanceOf[N3#Value]))
+      }
+      else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
+        (for (val1 <- d1.values; val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      }
     } else if (varying1 && varying2) {
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
       val val3 = _3.value
-      (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
+        limitedDiscreteValuesIterator.filter(t => t._3 == intVal3).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value], val3))
+      }
+      else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+      }
     } else if (varying2 && varying3) {
       val val1 = _1.value
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-      val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-      (for (val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      if (isLimitingValuesIterator) {
+        val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        val d3 = _3.domain.asInstanceOf[DiscreteDomain]
+        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value], d3.getValue(t._3).asInstanceOf[N3#Value]))
+      }
+      else {
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
+        (for (val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      }
     } else if (varying1 && varying3) {
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
       val val2 = _2.value
-      val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-      (for (val1 <- d1.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
+        val d3 = _3.domain.asInstanceOf[DiscreteDomain]
+        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2, d3.getValue(t._3).asInstanceOf[N3#Value]))
+      }
+      else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
+        (for (val1 <- d1.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      }
     } else if (varying1) {
-      val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
       val val2 = _2.value
       val val3 = _3.value
-      (for (val1 <- d1.values) yield Values(val1, val2, val3)).iterator
+      if (isLimitingValuesIterator) {
+        val d1 = _1.domain.asInstanceOf[DiscreteDomain]
+        val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
+        val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
+        limitedDiscreteValuesIterator.filter(t => (t._2 == intVal2) && (t._3 == intVal3)).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2, val3))
+      }
+      else {
+        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
+        (for (val1 <- d1.values) yield Values(val1, val2, val3)).iterator
+      }
     } else if (varying2) {
       val val1 = _1.value
-      val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
       val val3 = _3.value
-      (for (val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+      if (isLimitingValuesIterator) {
+        val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
+        val d2 = _2.domain.asInstanceOf[DiscreteDomain]
+        val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
+        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._3 == intVal3)).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value], val3))
+      }
+      else {
+        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
+        (for (val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+      }
     } else if (varying3) {
       val val1 = _1.value
       val val2 = _2.value
-      val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-      (for (val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      if (isLimitingValuesIterator) {
+        val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
+        val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
+        val d3 = _3.domain.asInstanceOf[DiscreteDomain]
+        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._2 == intVal2)).map(t => new Values(val1, val2, d3.getValue(t._3).asInstanceOf[N3#Value]))
+      }
+      else {
+        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
+        (for (val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+      }
     } else {
       Iterator.single(Values(_1.value, _2.value, _3.value))
     }
@@ -177,7 +289,15 @@ trait Family3[N1<:Variable,N2<:Variable,N3<:Variable] extends FamilyWithNeighbor
       _neighborDomains += _neighborDomain3
     }
     override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
-  } 
+    override def limitedDiscreteValuesIterator: Iterator[(Int,Int,Int)] = limitedDiscreteValues.iterator
+    override def isLimitingValuesIterator = thisFamily.isLimitingValuesIterator
+  }
+
+  // For implementing sparsity in belief propagation
+  var isLimitingValuesIterator = false
+  lazy val limitedDiscreteValues = new scala.collection.mutable.HashSet[(Int,Int,Int)]
+  def addLimitedDiscreteValues(values:Iterable[(Int,Int,Int)]): Unit = limitedDiscreteValues ++= values
+
   // Cached Statistics
   private var cachedStatisticsArray: Array[StatisticsType] = null
   private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null
