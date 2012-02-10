@@ -15,9 +15,9 @@ class Tokenizer extends RegexSegmenter(Seq(
   "[\\p{L}]\\.[\\p{L}\\.]*", // A.de, A.A.A.I, etc.
   "[0-9]{1,2}[sthnrd]+[\\-\\p{L}]+", // the second part is for 20th-century
   "[0-9]{4}", // match years before other numbers
-  "[0-9\\-.\\:/,\\+\\=]+[0-9\\-:/,\\+\\=]", // is there a better way to say, "doesn't end in '.'"?
+  "[0-9\\-.\\:/,\\+\\=%]+[0-9\\-:/,\\+\\=%]", // is there a better way to say, "doesn't end in '.'"?
   "[\\p{L}\\p{Nd}.]+@[\\p{L}\\{Nd}\\.]+\\.[a-z]{2,4}", // email
-  "[A-Z][a-z]{0,4}\\.[^$]", // Mr. Mrs. Calif. but not Institute.
+  "[A-Z][a-z]{0,4}\\.", // Mr. Mrs. Calif. but not Institute.
   "[.?!][\\p{Pf}\\p{Pe}]?", // ending/final punctuation
   "[\\p{Pf}\\p{Pe}]?[.?!]", // ending/final punctuation followed by [.?!]
   "[`'\"]+", // mid-sentence quotes
