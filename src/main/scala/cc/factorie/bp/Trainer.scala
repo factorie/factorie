@@ -41,7 +41,10 @@ trait L2Regularizer extends Regularizer {
 }
 
 class Trainer(val model: Model, val pieces: Seq[Piece], val families: Seq[DotFamily])
-  extends OptimizableByValueAndGradient with Regularizer {
+      extends OptimizableByValueAndGradient with Regularizer {
+
+  def this(model: Model, pieces: Seq[Piece]) = this(model, pieces, model.familiesOfClass[DotFamily].toSeq)
+
   var _weights: ArrayFromVectors = null
   var _gradients: ArrayFromVectors = null
   var _changed: Boolean = true
@@ -112,7 +115,7 @@ class Trainer(val model: Model, val pieces: Seq[Piece], val families: Seq[DotFam
 }
 
 class ParallelTrainer(model: Model, pieces: Seq[Piece], families: Seq[DotFamily])
-  extends Trainer(model, pieces, families) {
+      extends Trainer(model, pieces, families) {
 
   var seqCalls = 0
   var combCalls = 0
