@@ -52,7 +52,15 @@ class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue], val infer:
     val gradient: Map[DotFamily, Vector] = new HashMap[DotFamily, Vector]
     for (df <- model.familiesOfClass[DotFamily with Template]) {
       val vector = new SparseVector(df.statisticsVectorLength)
-      vector += (exps(df) * -1.0)
+      val expv = exps.get(df)
+      if (expv.isDefined) {
+        vector += (expv.get * -1.0)
+      } else {
+        println("ERROR: %s, from %s, not found in %s".format(df.factorName,
+          model.familiesOfClass[DotFamily with Template].map(_.factorName).mkString(", "),
+          exps.keySet.map(_.factorName).mkString(", ")))
+        println("Families of the factors: %s".format(fg.factors.map(_.asInstanceOf[Family#Factor]).map(_.family).toSet.mkString(", ")))
+      }
       vector += empiricalCounts(df)
       gradient(df) = vector
     }

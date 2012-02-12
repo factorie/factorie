@@ -139,7 +139,7 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) exten
     }
   }
 
-  override def entropy = {
+  override lazy val entropy = {
     var result = 0.0
     for (i <- 0 until scores.size) {
       val score = scores(i)
