@@ -83,8 +83,8 @@ class ChainNerBP {
 
   def train(trainFilename:String, testFilename:String): Unit = {
     // Read in the data
-    val trainDocuments = LoadConll2003.fromFilename(trainFilename)
-    val testDocuments = LoadConll2003.fromFilename(testFilename)
+    val trainDocuments = LoadConll2003.fromFilename(trainFilename).take(100)
+    val testDocuments = LoadConll2003.fromFilename(testFilename).take(20)
 
     // Add features for NER
     trainDocuments.foreach(initFeatures(_))
@@ -98,11 +98,11 @@ class ChainNerBP {
     val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(2000)
  
     // Train for 5 iterations
-	  val vars = (for(td <- trainDocuments) yield td.sentences.map(d => d.tokens.map(_.attr[ChainNerLabel]))).flatten
-      //val vars = trainDocuments.map(d => d.sentences.map(s => s.tokens.map(_.attr[ChainNerLabel])))
-      val trainingInstances = vars.map(new ModelPiece(model, _))
-      val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances, model.familiesOfClass[DotFamily]()) with L2Regularizer { override def sigmaSq = 10.0 }
-      println("Size of families: " + model.familiesOfClass[DotFamily]().size)
+    val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 0) yield sentence.tokens.map(_.attr[ChainNerLabel])
+    //val vars = trainDocuments.map(d => d.sentences.map(s => s.tokens.map(_.attr[ChainNerLabel])))
+    val trainingInstances = vars.map(new ModelPiece(model, _))
+    val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances, model.familiesOfClass[DotFamily]()) with L2Regularizer { override def sigmaSq = 10.0 }
+    println("Size of families: " + model.familiesOfClass[DotFamily]().size)
       val optimizer = new LimitedMemoryBFGS(newLearner)
       optimizer.optimize()
       optimizer.optimize()
