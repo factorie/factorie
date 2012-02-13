@@ -59,7 +59,7 @@ class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue], val infer:
         println("ERROR: %s, from %s, not found in %s".format(df.factorName,
           model.familiesOfClass[DotFamily with Template].map(_.factorName).mkString(", "),
           exps.keySet.map(_.factorName).mkString(", ")))
-        println("Families of the factors: %s".format(fg.factors.map(_.asInstanceOf[Family#Factor]).map(_.family).toSet.mkString(", ")))
+        println("Families of the factors: %s".format(fg.factors.map(_.asInstanceOf[Family#Factor]).map(_.family.factorName).toSet.mkString(", ")))
       }
       vector += empiricalCounts(df)
       gradient(df) = vector
