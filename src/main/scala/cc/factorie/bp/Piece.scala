@@ -60,6 +60,7 @@ class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue], val infer:
           model.familiesOfClass[DotFamily with Template].map(_.factorName).mkString(", "),
           exps.keySet.map(_.factorName).mkString(", ")))
         println("Families of the factors: %s".format(fg.factors.map(_.asInstanceOf[Family#Factor]).map(_.family.factorName).toSet.mkString(", ")))
+        println("Factors (%d): %s".format(fg.factors.size, fg.factors.map(_.asInstanceOf[Family#Factor]).map(f => f.family.factorName + "(" + f.variables + ")").mkString(", ")))
       }
       vector += empiricalCounts(df)
       gradient(df) = vector
