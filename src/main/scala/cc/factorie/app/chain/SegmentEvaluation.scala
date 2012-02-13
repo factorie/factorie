@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.util.matching.Regex
 import scala.collection.mutable.{HashSet,HashMap}
 
-/** Evaluate in terms of correct entire segments.
+/** Evalute in terms of correct entire segments.
     The field start and end boundaries must be perfect to count as correct.  No partial credit.
     For example, this is the standard for results on CoNLL 2003. */
 class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val labelValueContinue: Regex) {
@@ -41,7 +41,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
   protected def isStart(x:String) = labelValueStart.pattern.matcher(x).matches
   protected def isContinue(x:String) = labelValueContinue.pattern.matcher(x).matches
 
-  /** Add the given sequence of labels to the statistics for this evaluation.
+  /** Add the given sequence of labels to the statistics for this evalution.
 
       Note: Putting all Label instances across all sentences in a single Seq[]
       may result in slightly incorrect results at document boundaries: when one
@@ -74,53 +74,34 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
 
       // Truth and prediction both agree that a segment is starting here, let's see if they end in the same place
       if (predictedStart && targetStart) {
-        var foundCorrect = false
-        // If we are already at the end of the sequence we know we got it right already.
-        if(position == labels.length-1) {
+		if(position == labels.length-1)
           correctCount += 1 // Both sequences ended at the same position: correct
-          foundCorrect = true
-        } else { //Otherwise lets be sure they end at the same place
+        else { //Otherwise lets be sure they end at the same place
+        
+        	//print(" pts ")
+        	//print("%s=%s ".format(label.token.word, label.value))
+        	var predictedContinue, targetContinue = false
+        	var j = position + 1
+        	var stopSearchForSegmentEnd = false
+        	while (j < labels.length && !stopSearchForSegmentEnd) {
+          		val label2 = labels(j)
+          		predictedContinue = isContinue(label2.categoryValue)
+          		targetContinue = isContinue(label2.target.categoryValue)
+          		//print("j="+j+predictedContinue+targetContinue)
+          		//if (predictedContinue) print("pc ")
+          		//if (targetContinue) print("tc ")
 
-          //print(" pts ")
-          //print("%s=%s ".format(label.token.word, label.value))
-          var predictedContinue, targetContinue = false
-          var j = position + 1
-          var stopSearchForSegmentEnd = false
-          while (j < labels.length && !stopSearchForSegmentEnd) {
-            val label2 = labels(j)
-            predictedContinue = isContinue(label2.categoryValue)
-            targetContinue = isContinue(label2.target.categoryValue)
-            //print("j="+j+predictedContinue+targetContinue)
-            //if (predictedContinue) print("pc ")
-            //if (targetContinue) print("tc ")
-
-            // if true or predicted segment ends (i.e. is not a continue) or we reach the end of our label sequence.
-            if (!predictedContinue || !targetContinue || j == labels.length - 1) {
-              if (predictedContinue == targetContinue) {
-                correctCount += 1 // Both sequences ended at the same position: correct
-                foundCorrect = true
-                //print("%s=%s/%s correct".format(label2.token.word, label2.trueValue.toString, label2.value))
-              } //else print("%s=%s %s=%s/%s @%d wrong".format(if (label2.hasPrev) label2.prev.token.word else "(null)", if (label2.hasPrev) label2.prev.value else "(null)", label2.token.word, label2.trueValue, label2.value, j-position))
-              stopSearchForSegmentEnd = true
-            } //else print("%s=%s ".format(label2.token.word, label2.value))
-            j += 1
-          }
-          /*
-          if(j > (labels.length-1) ) j = labels.length-1
-
-          if(!foundCorrect) {
-            println("\n=====Incorrect Segment tag=====")
-            print("Predict: ")
-            for(p <- position to j) {
-              print(labels(p).categoryValue + "\t")
-            }
-            print("\nCorrect: ")
-            for(p <- position to j) {
-              print(labels(p).target.categoryValue + "\t")
-            }
-            println("Where j is: " + j + " position is: " + position + " and labels length is: " + labels.length)
-          }*/
-        }
+          		// if true or predicted segment ends (i.e. is not a continue) or we reach the end of our label sequence.
+          		if (!predictedContinue || !targetContinue || j == labels.length - 1) {
+            		if (predictedContinue == targetContinue) {
+              			correctCount += 1 // Both sequences ended at the same position: correct
+              			//print("%s=%s/%s correct".format(label2.token.word, label2.trueValue.toString, label2.value))
+            		} //else print("%s=%s %s=%s/%s @%d wrong".format(if (label2.hasPrev) label2.prev.token.word else "(null)", if (label2.hasPrev) label2.prev.value else "(null)", label2.token.word, label2.trueValue, label2.value, j-position))
+            		stopSearchForSegmentEnd = true
+          		} //else print("%s=%s ".format(label2.token.word, label2.value))
+          		j += 1
+        	}
+		}
       }
     }
   }
@@ -147,9 +128,7 @@ object SegmentEvaluation {
 }
 
 // for defaultStartPrefix = "(B|I)-" Although just "B-" would be enough for BIO, "(B|I)-" is needed for IOB
-// Add to (B|I)- so that it looks like (B|I|U)- so that BILOU can also be evalutated.
-// Add to I- for continue so that it looks like (I|L)- also that BILOU can be evaluated ~anzaroot
-class SegmentEvaluation[L<:LabelVariable[String]](baseLabelStrings: Seq[String], startPrefix:String = "(B|I|U)-", continuePrefix:String = "(I|L)-") {
+class SegmentEvaluation[L<:LabelVariable[String]](baseLabelStrings: Seq[String], startPrefix:String = "(B|I)-", continuePrefix:String = "I-") {
   def this(startPrefix:String, continuePrefix:String, labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.values.toSeq.map(_.category)), startPrefix, continuePrefix)
   def this(labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.values.toSeq.map(_.category)))
   // Grab the domain from the first label in the Seq; assume all the domains are the same

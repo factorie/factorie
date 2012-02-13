@@ -10,13 +10,13 @@
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
-   limitations under the License.
+   limitations under the License. */
 
 package cc.factorie.example
 import cc.factorie._
 import java.io.File
 
- Simple, introductory linear-chain CRF for named-entity recognition,
+/** Simple, introductory linear-chain CRF for named-entity recognition,
     using FACTORIE's low-level "imperative" language to define model structure.
 
     Demonstrates model creation, training and testing.
@@ -24,7 +24,7 @@ import java.io.File
     See ChainNER3 for a related example with better features.
 
     @author Andrew McCallum 
-
+*/
 object ChainNER2 {
 
   // The variable classes
@@ -136,4 +136,3 @@ object ChainNER2 {
 }
 
 
-*/

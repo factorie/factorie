@@ -233,7 +233,7 @@ object ChainNer extends ChainNer {
     // Parse command-line
     object opts extends DefaultCmdOptions {
       val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
-      val testFile  =     new CmdOption("test",  "eng.testa", "FILE", "CoNLL formatted test file.")
+      val testFile  =     new CmdOption("test",  "", "FILE", "CoNLL formatted test file.")
       val modelDir =      new CmdOption("model", "chainner.factorie", "DIR", "Directory for saving or loading model.")
       val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
       val runPlainFiles = new CmdOption("run-plain", List("ner.txt"), "FILE...", "List of files for reading plain texgt data on which to run saved model.")

@@ -83,12 +83,10 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
     val i = _position - n
     if (i >= 0 && i < _chain.length) chain(i) else null.asInstanceOf[This]
   }
-  def seqAfter = chain.drop(_position+1)
-  def seqBefore = chain.take(_position)
+  def chainAfter = _chain.drop(_position+1)
+  def chainBefore = _chain.take(_position)
   def prevWindow(n:Int): Seq[This] = for (i <- math.max(_position-n, 0) to math.max(_position-1,0)) yield chain(i)
   def nextWindow(n:Int): Seq[This] = for (i <- math.min(_position+1, _chain.length-1) to math.min(_position+n, _chain.length-1)) yield chain(i)
-  def prevWindowNum(n:Int): IndexedSeq[(Int,This)] = for (i <- math.max(_position-n, 0) until math.max(_position,0)) yield ((i-_position).abs->chain(i))
-  def nextWindowNum(n:Int): IndexedSeq[(Int,This)] = for (i <- math.min(_position+1, _chain.length-1) until math.min(_position+n+1, _chain.length-1)) yield ((i-_position).abs->chain(i))
   def window(n:Int): Seq[This] = for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1)) yield chain(i)
   def windowWithoutSelf(n:Int): Seq[This] = for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1); if (i != _position)) yield chain(i)
   def between(other:This): Seq[This] = {
