@@ -14,41 +14,18 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
+import app.strings._
+import bp._
+import optimize._
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.LoadConll2003._
+import scala.io.Source
 import cc.factorie.app.chain._
-
-object ChainNerFeaturesDomain extends CategoricalVectorDomain[String]
-class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
-  def domain = ChainNerFeaturesDomain
-  override def skipNonCategories = true
-}
-
-class ChainNerModel extends TemplateModel(
-  // Bias term on each individual label 
-  new TemplateWithDotStatistics1[ChainNerLabel] {
-    factorName = "bias"
-    override def statisticsDomains = List(Conll2003NerDomain)
-  },
-  // Factor between label and observed token
-  new TemplateWithDotStatistics2[ChainNerLabel,ChainNerFeatures] {
-    factorName = "markov"
-    override def statisticsDomains = List(Conll2003NerDomain, ChainNerFeaturesDomain)
-    def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
-    def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
-  },
-  // Transition factors between two successive labels
-  new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel] {
-    factorName = "observation"
-    override def statisticsDomains = List(Conll2003NerDomain, Conll2003NerDomain)
-    def unroll1(label: ChainNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[ChainNerLabel], label) else Nil
-    def unroll2(label: ChainNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[ChainNerLabel]) else Nil
-  }
-)
-
-class ChainNerObjective extends TemplateModel(new HammingLossTemplate[ChainNerLabel])
-
+import scala.io._
+import java.io.{FileWriter, BufferedWriter, File}
+import scala.math.round
   
-class ChainNer {
+class ChainNerBP {
 
   val model = new ChainNerModel
   val objective = new ChainNerObjective
@@ -121,28 +98,17 @@ class ChainNer {
     val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(2000)
  
     // Train for 5 iterations
-    if (false) {
-      val trainer = new LogLinearMaximumLikelihood(model)
-      trainer.processAll(trainDocuments.map(doc => doc.map(_.nerLabel)), 10) // Do just one iteration for initial timing
+	  val vars = (for(td <- trainDocuments) yield td.sentences.map(d => d.tokens.map(_.attr[ChainNerLabel]))).flatten
+      //val vars = trainDocuments.map(d => d.sentences.map(s => s.tokens.map(_.attr[ChainNerLabel])))
+      val trainingInstances = vars.map(new ModelPiece(model, _))
+      val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances, model.familiesOfClass[DotFamily]()) with L2Regularizer { override def sigmaSq = 10.0 }
+      println("Size of families: " + model.familiesOfClass[DotFamily]().size)
+      val optimizer = new LimitedMemoryBFGS(newLearner)
+      optimizer.optimize()
+      optimizer.optimize()
       trainDocuments.foreach(process(_))
       testDocuments.foreach(process(_))
-      printEvaluation(trainDocuments, testDocuments, "FINAL")
-    } else {
-      (trainLabels ++ testLabels).foreach(_.setRandomly())
-      val learner = new VariableSettingsSampler[ChainNerLabel](model, objective) with SampleRank with GradientAscentUpdates //ConfidenceWeightedUpdates { temperature = 0.01 }
-      val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
-      for (iteration <- 1 until 3) {
-        learner.processAll(trainLabels)
-        predictor.processAll(testLabels)
-        printEvaluation(trainDocuments, testDocuments, iteration.toString)
-        //learner.learningRate *= 0.9
-      }
-      // Predict, also by sampling, visiting each variable 3 times.
-      //predictor.processAll(testLabels, 3)
-      for (i <- 0 until 3; label <- testLabels) predictor.process(label)
-      // Final evaluatation
-      printEvaluation(trainDocuments, testDocuments, "FINAL")
-    }
+      printEvaluation(trainDocuments, testDocuments, "FINAL")    
   }
   
   def printEvaluation(trainDocuments:Iterable[Document], testDocuments:Iterable[Document], iteration:String): Unit = {
@@ -170,15 +136,12 @@ class ChainNer {
     if (document.length == 0) return
     if (!hasFeatures(document)) initFeatures(document)
     if (!hasLabels(document)) document.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
-    if (true) {
-      new BPInferencer[ChainNerLabel](model).inferTreewiseMax(document.map(_.attr[ChainNerLabel]))
-    } else {
-      for (token <- document) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.getCategory(0)) // init value doens't matter
-      val localModel = new TemplateModel(model.templates(0), model.templates(1))
-      val localPredictor = new VariableSettingsGreedyMaximizer[ChainNerLabel](localModel, null)
-      for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)
-      val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
-      for (i <- 0 until 3; label <- document.tokens.map(_.attr[ChainNerLabel])) predictor.process(label)
+    for(sentence <- document.sentences if sentence.tokens.size > 0) {
+	    val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
+	    val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
+    	new InferencerBPWorker(mfg).inferUpDown(vars.sampleUniformly, false)
+    	new InferencerBPWorker(mfg).inferUpDown(vars.sampleUniformly, false)
+    	mfg.setToMaxMarginal()
     }
   }
   
@@ -225,7 +188,7 @@ class ChainNer {
   
 }
 
-object ChainNer extends ChainNer {
+object ChainNerBP extends ChainNerBP {
   import cc.factorie.util.DefaultCmdOptions
   var verbose = false
 
@@ -238,7 +201,7 @@ object ChainNer extends ChainNer {
       val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
       val runPlainFiles = new CmdOption("run-plain", List("ner.txt"), "FILE...", "List of files for reading plain texgt data on which to run saved model.")
       val lexiconDir =    new CmdOption("lexicons", "lexicons", "DIR", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
-      val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = ChainNer.this.verbose = true }
+      val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = ChainNerBP.this.verbose = true }
       //val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
     }
     opts.parse(args)

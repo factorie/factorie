@@ -133,6 +133,31 @@
                                 <jvmArg>-Xmx1800m</jvmArg>
                             </jvmArgs>
 			    <launchers>
+ 			     <launcher>
+                                <id>ChainNER2Basic</id>
+                                <mainClass>cc.factorie.app.nlp.ner.ChainNer2</mainClass>
+                                <jvmArgs><jvmArg>-Xmx4g</jvmArg></jvmArgs>
+                             </launcher>
+			      <launcher>
+				<id>ChainNER2Aggregate</id>
+				<mainClass>cc.factorie.app.nlp.ner.ChainNer2</mainClass>
+				<jvmArgs><jvmArg>-Xmx4g</jvmArg></jvmArgs>
+			        <args>
+                                   <arg>--aggregate</arg>
+                                </args>
+				</launcher>
+			      <launcher>
+				<id>ChainNER2</id>
+				<mainClass>cc.factorie.app.nlp.ner.ChainNer2</mainClass>
+				<jvmArgs><jvmArg>-Xmx200g</jvmArg></jvmArgs>
+				<args>
+                                     <arg>--lexicons=KnownLists</arg>
+                                     <arg>--brown=brownBllipClusters</arg>
+                                     <arg>--aggregate</arg>   
+				     <arg>--test=eng.testb</arg>
+				     <arg>--extended</arg>
+ 				</args>
+			      </launcher>
 			      <launcher>
 				<id>ChainNER1ML</id>
 				<mainClass>cc.factorie.example.ChainNER1ML</mainClass>
