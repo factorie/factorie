@@ -25,14 +25,14 @@ class InferencerBPWorker(lattice: LatticeBP) {
     val visited: HashSet[MessageFactor] = new HashSet
     val result = new ArrayBuffer[MessageFactor]
     val toProcess = new Queue[(MessageNode, MessageFactor)]
-    root.factors foreach (f => toProcess += Pair(root, f))
+    root.neighbors foreach (f => toProcess += Pair(root, f))
     while (!toProcess.isEmpty) {
       val (origin, factor) = toProcess.dequeue()
       if (!checkLoops || !visited(factor)) {
         visited += factor
         result += factor
         for (node <- factor.nodes; if (node != origin && node.varies)) {
-          node.factors filter (_ != factor) foreach (f => toProcess += Pair(node, f))
+          node.neighbors filter (_ != factor) foreach (f => toProcess += Pair(node, f))
         }
       }
     }
@@ -48,12 +48,12 @@ class InferencerBPWorker(lattice: LatticeBP) {
     val bfsOrdering: Seq[MessageFactor] = _bfs(root, checkLoops)
     // send messages leaf to root
     for (factor <- bfsOrdering.reverse) {
-      factor.prepareIncoming()
+      factor.prepareAllIncoming()
       factor.updateAllOutgoing()
     }
     // send root to leaves
     for (factor <- bfsOrdering) {
-      factor.prepareIncoming()
+      factor.prepareAllIncoming()
       factor.updateAllOutgoing()
     }
   }
@@ -76,7 +76,7 @@ class InferencerBPWorker(lattice: LatticeBP) {
     for (iteration <- 0 until iterations) {
       for (factor <- lattice.mfactors.toSeq.shuffle(cc.factorie.random)) {
         //for every factor first calculate all incoming beliefs
-        factor.prepareIncoming()
+        factor.prepareAllIncoming()
         //synchronous belief updates on all outgoing edges
         factor.updateAllOutgoing()
       }
