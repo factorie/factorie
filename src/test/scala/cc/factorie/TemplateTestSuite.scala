@@ -2,6 +2,7 @@ package cc.factorie
 
 import org.scalatest.junit._
 import org.junit.Test
+import junit.framework.TestCase
 
 /**
  * @author sriedel
@@ -58,7 +59,7 @@ class TemplateTestSuite extends JUnitSuite  {
     }
     val aggregate = new Aggregate
     val template = new Template2[Aggregate,Vars[Aggregate#Member]] with DotStatistics1[RealSingletonVectorVariable#ValueType] {
-      def unroll2(v: Vars[Aggregate#Member]) = error("Not needed")
+      def unroll2(v: Vars[Aggregate#Member]) = sys.error("Not needed")
       def unroll1(v: Aggregate) = Factor(v,Vars(v.members))
       override def unroll2s(v: Aggregate#Member) = Factor(v.owner,Vars(v.owner.members))
       def statistics(v:Values) = 
@@ -74,6 +75,78 @@ class TemplateTestSuite extends JUnitSuite  {
 
 
   }
-  
+}
+
+
+/**
+ * @author brian martin
+ * @date 2/9/2012
+ */
+class SettingIteratorTests extends TestCase {
+  val v1 = new BooleanVariable(true)
+  val v2 = new BooleanVariable(true)
+  val v3 = new BooleanVariable(true)
+
+  //TODO: test fixed assignments
+
+  def testLimitedSettingsIterator1 {
+    val template = new TemplateWithDotStatistics1[BooleanVariable]
+    val factor = template.unroll1(v1).head
+    assert(factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).size == 2)
+    println("Template1 valuesIterator:")
+    factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).foreach(println(_))
+    println("--------------------------------")
+
+    template.addLimitedDiscreteValues(Seq(BooleanDomain.values.head.intValue))
+    template.isLimitingValuesIterator = true
+    assert(factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).size == 1)
+    println("Template1 limitedValuesIterator:")
+    factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).foreach(println(_))
+    println("--------------------------------")
+  }
+
+  def testLimitedSettingsIterator2 {
+    val template = new TemplateWithDotStatistics2[BooleanVariable, BooleanVariable] {
+      def unroll1(v: BooleanVariable) = Factor(v1, v2)
+      def unroll2(v: BooleanVariable) = sys.error("Not needed")
+    }
+
+    val factor = template.unroll1(v1).head
+    assert(factor.valuesIterator(factor.variables.toSet).size == 4)
+    println("Template2 valuesIterator:")
+    factor.valuesIterator(factor.variables.toSet).foreach(println(_))
+    println("--------------------------------")
+
+    template.addLimitedDiscreteValues(Seq((0,0),(1,1)))
+    template.isLimitingValuesIterator = true
+
+    assert(factor.valuesIterator(factor.variables.toSet).size == 2)
+    println("Template2 limitedValuesIterator:")
+    factor.valuesIterator(factor.variables.toSet).foreach(println(_))
+    println("--------------------------------")
+  }
+
+  def testLimitedSettingsIterator3 {
+    val template = new TemplateWithDotStatistics3[BooleanVariable, BooleanVariable, BooleanVariable] {
+      def unroll1(v: BooleanVariable) = Factor(v1, v2, v3)
+      def unroll2(v: BooleanVariable) = sys.error("Not needed")
+      def unroll3(v: BooleanVariable) = sys.error("Not needed")
+    }
+
+    var factor = template.unroll1(v1).head
+    println("Template3 valuesIterator:")
+    factor.valuesIterator(factor.variables.toSet).foreach(println(_))
+    assert(factor.valuesIterator(factor.variables.toSet).size == 8)
+    println("--------------------------------")
+
+    template.addLimitedDiscreteValues(Seq((0,0,0),(1,1,1)))
+    template.isLimitingValuesIterator = true
+
+    println("limiting factor? : " + factor.isLimitingValuesIterator)
+    println("Template3 limitedValuesIterator:")
+    factor.valuesIterator(factor.variables.toSet).foreach(println(_))
+    assert(factor.valuesIterator(factor.variables.toSet).size == 2)
+    println("--------------------------------")
+  }
 
 }
