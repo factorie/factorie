@@ -117,6 +117,8 @@ class Trainer(val model: Model, val pieces: Seq[Piece], val families: Seq[DotFam
 class ParallelTrainer(model: Model, pieces: Seq[Piece], families: Seq[DotFamily])
       extends Trainer(model, pieces, families) {
 
+  def this(model: Model, pieces: Seq[Piece]) = this(model, pieces, model.familiesOfClass[DotFamily].toSeq)
+
   var seqCalls = 0
   var combCalls = 0
 
