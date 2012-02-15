@@ -76,6 +76,8 @@ trait GenericMessage extends Marginal {
   def isDeterministic = false
 
   def map[A]: A = domain.maxBy(v => score(v)).asInstanceOf[A]
+
+  override def toString: String = domain.map(x => "%5.5f/%f".format(probability(x), score(x))).mkString(",")
 }
 
 trait GenericUniformMessage extends GenericMessage {
@@ -161,8 +163,6 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) exten
   lazy val inverse = new DiscreteMessage[Value](scores.map(score => -score), domain)
 
   def defaultValue = domain.head
-
-  override def toString: String = domain.map(x => "%5.5f/%f".format(probability(x), score(x))).mkString(",")
 
   override lazy val isDeterministic = scores.exists(s => s.isPosInfinity || s.isNegInfinity)
 
