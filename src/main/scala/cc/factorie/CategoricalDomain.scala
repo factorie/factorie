@@ -85,7 +85,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   def reset(): Unit = {
     _frozen = false
     _elements.clear()
-    _indices = Map[T,ValueType]()
+    _indices = new Map[T,ValueType] with collection.mutable.SynchronizedMap[T, ValueType]
   }
   /** An alias for reset(). */
   def clear() = reset()
