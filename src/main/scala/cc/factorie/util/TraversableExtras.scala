@@ -81,8 +81,25 @@ trait TraversableExtras[A] {
   def max2ByDouble(extractor: A => Double): (A, A) = {
     val s1 = t.toSeq
     assert(s1.length > 1)
-    val s2: Seq[A] = s1.sortWith((x1:A, x2:A) => extractor(x1) > extractor(x2))
-    (s2(0), s2(1))
+    var best1 = Double.NegativeInfinity
+    var best1i: A = null.asInstanceOf[A]
+    var best2 = Double.NegativeInfinity
+    var best2i: A = null.asInstanceOf[A]
+    var i = 0
+    while (i < s1.length) {
+      val x = extractor(s1(i))
+      if (x > best1) {
+        best2 = best1
+        best2i = best1i
+        best1 = x
+        best1i = s1(i)
+      } else if (x > best2) {
+        best2 = x
+        best2i = s1(i)
+      }
+      i += 1
+    }
+    (best1i,best2i)
   }
 
   /** Sorts with minimum first. */
