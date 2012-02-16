@@ -181,7 +181,12 @@ class TemplateModel(initialTemplates:Template*) extends Model {
     for (t <- templates) if (cls.isAssignableFrom(t.getClass)) ret += t.asInstanceOf[T2]
     ret
   }*/
-  
+
+  override def normalize(factors: Seq[Factor]) = {
+    // do nothing since templates are responsible for de-duplication
+    factors
+  }
+
   def factors(vs:Iterable[Variable]) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(vs)))
   override def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else normalize(templates.flatMap(template => template.factors(d)))
   
