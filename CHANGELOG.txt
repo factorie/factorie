@@ -1,4 +1,20 @@
-New in version 0.11:
+New in version 0.10.1:
+
+* Many renames, new features and refactors; the list below is partially complete.
+
+* Initial support for sparse value iteration in factor/families
+
+* Data representation for app.nlp like Tokens, ParseTrees, Spans, Sentences, etc.
+
+* Initial version for POS, NER, within-doc coref for app.nlp
+
+* Additional vectors that mix sparse and dense representations (SparseOuterVector) in factorie.la
+
+* Added Families that represent sets of factors. Templates are a type of Family now.
+
+* Initial support for MaxLikelihood and Piecewise Training using the new BP framework
+
+* Added a more flexible, modular BP framework
 
 * DiscreteVector and CategoricalVector
 

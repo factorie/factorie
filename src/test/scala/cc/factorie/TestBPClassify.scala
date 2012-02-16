@@ -106,7 +106,7 @@ class TestBPClassify extends TestCase {
     val trainer = new SimpleMaxEntTrainer(model)
     trainer.process(trainVariables)
 
-    val fg = new LatticeBP(model, testVariables.toSet[Variable]) with SumProductLattice
+    val fg = new LatticeBP(model, testVariables.toSet[DiscreteVariable]) with SumProductLattice
     new InferencerBPWorker(fg).inferLoopyBP()
 
     var trueSumLogZ = 0.0

@@ -71,37 +71,45 @@ class SparseOuter1DenseVector1(val length1:Int, val length2:Int) extends Vector 
   def activeDomainSize = _activeSize
   private var _activeDomains = ArrayBuffer[Int]() // a list of the first index of each instantiated inner
   // should this by lazier? --brian
-  def activeDomain: Iterable[Int] = new IndexedSeq[Int] {
-    //TODO: transform to handle the 0 case like SparseOuter2
-    val result = new Array[Int](_activeSize)
-    var currResultIdx = 0
-    var i = 0
-    var j = -1
-    var currDomain = _activeDomains(i) * length2  // do the multiplication here to avoid it for every j
-    while (j < length2-1 || i < _activeDomains.size-1) {
-      if (j+1 == length2) { j = 0; i += 1; currDomain = _activeDomains(i) * length2 }
-      else j += 1
-      result(currResultIdx) = currDomain + j
-      currResultIdx += 1
-    }
-    def length = _activeSize
-    def apply(k: Int) = result(k)
+  def activeDomain: Iterable[Int] = {
+    if (_activeSize == 0)
+      new IndexedSeq[Int] { def length = 0; def apply(k: Int) = 0 } // throw error in apply?
+    else
+      new IndexedSeq[Int] {
+        val result = new Array[Int](_activeSize)
+        var currResultIdx = 0
+        var i = 0
+        var j = -1
+        var currDomain = _activeDomains(i) * length2  // do the multiplication here to avoid it for every j
+        while (j < length2-1 || i < _activeDomains.size-1) {
+          if (j+1 == length2) { j = 0; i += 1; currDomain = _activeDomains(i) * length2 }
+          else j += 1
+          result(currResultIdx) = currDomain + j
+          currResultIdx += 1
+        }
+        def length = _activeSize
+        def apply(k: Int) = result(k)
+      }
   }
   // copied from activeDomain for use of the internal i's and j's to skip apply
   def activeElements: Iterator[(Int,Double)] = {
-    //TODO: transform to handle the 0 case like SparseOuter2
-    var result = new Array[(Int, Double)](_activeDomains.size * length2)
-    var currResultIdx = 0
-    var i = 0
-    var j = -1
-    var currDomain = _activeDomains(i) // consider doing the *length2 here, and also keeping _activeDomains(i) for indexing into inners
-    while (j < length2-1 || i < _activeDomains.size-1) {
-      if (j+1 == length2) { j = 0; i += 1; currDomain = _activeDomains(i) }
-      else j += 1
-      result(currResultIdx) = (currDomain * length2 + j, inners(currDomain).apply(j))
-      currResultIdx += 1
+    if (_activeSize == 0) {
+      (new IndexedSeq[(Int, Double)] { def length = 0; def apply(k: Int) = { throw new Error("Length is 0"); (0, 0.0) } }).iterator
     }
-    result.iterator
+    else {
+      var result = new Array[(Int, Double)](_activeDomains.size * length2)
+      var currResultIdx = 0
+      var i = 0
+      var j = -1
+      var currDomain = _activeDomains(i) // consider doing the *length2 here, and also keeping _activeDomains(i) for indexing into inners
+      while (j < length2-1 || i < _activeDomains.size-1) {
+        if (j+1 == length2) { j = 0; i += 1; currDomain = _activeDomains(i) }
+        else j += 1
+        result(currResultIdx) = (currDomain * length2 + j, inners(currDomain).apply(j))
+        currResultIdx += 1
+      }
+      result.iterator
+    }
   }
 
   def dot(that:Vector): Double = that match {
@@ -177,7 +185,12 @@ class SparseOuter1DenseVector1(val length1:Int, val length2:Int) extends Vector 
         increment(ai, d.apply(ai))
       }
     }
-    case _ => { throw new Error("Not yet implemented") }
+    case d: SingletonBinaryVector => {
+      increment(d.singleIndex, 1.0)
+    }
+    case _ => {
+      throw new Error("SparseOuter1DenseVector1 dot " + v.getClass.getName + "not yet implemented.")
+    }
   }
 
 }
@@ -192,10 +205,9 @@ class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int
   def apply(i:Int): Double = {
     val i1 = i / l2Timesl3
     val i2 = (i % l2Timesl3) / length3
-    val i3 = i % length3
     val in = inners(i1 * length2 + i2)
     if (in ne null)
-      in.apply(i3)
+      in.apply(i % length3)
     else
       0.0
   }
@@ -208,7 +220,31 @@ class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int
     else
       new IndexedSeq[Int] {
         def length = _activeSize
-        def apply(k: Int) = _activeDomains(k / length3) * length3 + (k % length3)
+        private var lastK = -1
+        private var lastIdx = -1
+        private var j = -1
+        private var _activeDomainsIdx = 0
+        def apply(k: Int) = {
+          // if we're iterating in order then act like an iterator...
+          if (k == lastK + 1) {
+            if (j < length3) {
+              j += 1
+              lastIdx += 1
+            }
+            else {
+              j = 0
+              _activeDomainsIdx += 1
+              lastIdx = _activeDomains(_activeDomainsIdx) * length3 // + j -- which is zero so not needed
+            }
+          }
+          // otherwise do the full calculation and set the iterator vars
+          else {
+            j = k % length3
+            _activeDomainsIdx = k / length3
+            lastIdx = _activeDomains(_activeDomainsIdx) * length3 + j
+          }
+          lastIdx
+        }
       }
   }
   def activeElements: Iterator[(Int, Double)] = {
@@ -235,12 +271,11 @@ class SparseOuter2DenseVector1(val length1:Int, val length2:Int, val length3:Int
       result
     }
     case that: SparseVector => {
-      // have to iterate of this's elements because apply may throw error
       var result = 0.0
-      val elements = activeElements
+      val elements = that.activeElements
       while (elements.hasNext) {
         val next = elements.next
-        result += next._2 * that.apply(next._1)
+        result += next._2 * this.apply(next._1)
       }
       result
     }

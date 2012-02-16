@@ -31,6 +31,17 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass2)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc3a = { val ta = nm3.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass3)) { assert(ta.length == 1); ta.head.erasure } else null }
 
+  override def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = {
+    if (classOf[DiscreteVar].isAssignableFrom(neighborClass1) &&
+        classOf[DiscreteVar].isAssignableFrom(neighborClass2) &&
+        classOf[DiscreteVar].isAssignableFrom(neighborClass3))
+      for (variable <- variables; factor <- factors(variable))
+        limitedDiscreteValues.+=((
+          factor._1.asInstanceOf[DiscreteVar].intValue,
+          factor._2.asInstanceOf[DiscreteVar].intValue,
+          factor._3.asInstanceOf[DiscreteVar].intValue))
+  }
+  
   override def factors(v: Variable): Iterable[FactorType] = {
     var ret = new ListBuffer[FactorType]
     if (neighborClass1.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain1 eq v.domain) || (_neighborDomain1 eq null))) ret ++= unroll1(v.asInstanceOf[N1])
@@ -62,5 +73,9 @@ abstract class TemplateWithVectorStatistics3[N1<:DiscreteVectorVar,N2<:DiscreteV
 
 abstract class TemplateWithDotStatistics3[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar,N3<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with DotFamily with DotStatistics3[N1#Value,N2#Value,N3#Value]  {
   type FamilyType <: TemplateWithDotStatistics3[N1,N2,N3]
+  def weight(index0:Int, index1:Int, index2:Int): Double = weights(
+    index0 * statisticsDomains(1).dimensionDomain.size  * statisticsDomains(2).dimensionDomain.size +
+          index1 * statisticsDomains(2).dimensionDomain.size +
+          index2)
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values.inner.map(_.statistics))
 }

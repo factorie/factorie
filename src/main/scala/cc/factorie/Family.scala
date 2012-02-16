@@ -185,22 +185,30 @@ trait SparseHashWeights extends DotFamily {
   override lazy val weights: Vector = { freezeDomains; new SparseHashVector(statisticsVectorLength) } // Dense by default, override to be sparseHashed
 }
 
-trait SparseOuter1Dense1Weights[S1<:DiscreteValue,S2<:DiscreteVectorValue] extends DotStatistics2[S1,S2] {
+trait SparseOuter1Dense1Weights extends DotStatistics2[DiscreteVectorValue,DiscreteVectorValue] {
   override lazy val weights: SparseOuter1DenseVector1 = {
     freezeDomains
     val d1 = statisticsDomains(0)
     val d2 = statisticsDomains(1)
-    new SparseOuter1DenseVector1(d1.dimensionSize, d2.dimensionSize) 
+    new SparseOuter1DenseVector1(d1.dimensionSize, d2.dimensionSize)
   }
-  // TODO: override score like below? --brian
+
+  override def score(s:StatisticsType) = {
+    if (s eq null) 0.0
+    else {
+      val w = weights.inner(s._1.asInstanceOf[DiscreteValue].intValue)
+      if (w eq null)
+        0.0
+      else
+        w dot s._2
+    }
+  }
 }
 
 
 trait SparseOuter2Dense1Weights extends DotStatistics3[DiscreteVectorValue,DiscreteVectorValue,DiscreteVectorValue] {
-//trait SparseOuter2Dense1Weights[S1<:DiscreteValue,S2<:DiscreteValue,S3<:DiscreteVectorValue] {
-//trait SparseOuter2Dense1Weights {
-//  this: DotStatistics3[S1, S2, S3] =>
-  // assert that the S1, S2 are <: DiscreteValue? how can this be done? --brian
+// This is what we'd really like, but gives incompatible types:
+//   trait SparseOuter2Dense1Weights[S1<:DiscreteValue,S2<:DiscreteValue,S3<:DiscreteVectorValue] {
   override lazy val weights: SparseOuter2DenseVector1 = {
     freezeDomains
     val d1 = statisticsDomains(0)
@@ -208,14 +216,15 @@ trait SparseOuter2Dense1Weights extends DotStatistics3[DiscreteVectorValue,Discr
     val d3 = statisticsDomains(2)
     new SparseOuter2DenseVector1(d1.dimensionSize, d2.dimensionSize, d3.dimensionSize)
    }
-   override def score(s:StatisticsType) = {
-     if (s eq null) 0.0
-     else {
-       val w = weights.inner(s._1.asInstanceOf[DiscreteValue].intValue, s._2.asInstanceOf[DiscreteValue].intValue)
-       if (w eq null)
-         0.0
-       else
-         w dot s._3
-     }
-   }
+
+  override def score(s:StatisticsType) = {
+    if (s eq null) 0.0
+    else {
+      val w = weights.inner(s._1.asInstanceOf[DiscreteValue].intValue, s._2.asInstanceOf[DiscreteValue].intValue)
+      if (w eq null)
+        0.0
+      else
+        w dot s._3
+    }
+  }
 }

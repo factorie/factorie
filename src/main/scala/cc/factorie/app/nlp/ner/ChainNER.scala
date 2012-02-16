@@ -31,14 +31,14 @@ class ChainNerModel extends TemplateModel(
   },
   // Factor between label and observed token
   new TemplateWithDotStatistics2[ChainNerLabel,ChainNerFeatures] {
-    factorName = "markov"
+    factorName = "observation"
     override def statisticsDomains = List(Conll2003NerDomain, ChainNerFeaturesDomain)
     def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
     def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
   },
   // Transition factors between two successive labels
   new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel] {
-    factorName = "observation"
+    factorName = "markov"
     override def statisticsDomains = List(Conll2003NerDomain, Conll2003NerDomain)
     def unroll1(label: ChainNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[ChainNerLabel], label) else Nil
     def unroll2(label: ChainNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[ChainNerLabel]) else Nil
