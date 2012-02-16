@@ -85,10 +85,24 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
   }
   def chainAfter = _chain.drop(_position+1)
   def chainBefore = _chain.take(_position)
-  def prevWindow(n:Int): Seq[This] = for (i <- math.max(_position-n, 0) to math.max(_position-1,0)) yield chain(i)
-  def nextWindow(n:Int): Seq[This] = for (i <- math.min(_position+1, _chain.length-1) to math.min(_position+n, _chain.length-1)) yield chain(i)
-  def window(n:Int): Seq[This] = for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1)) yield chain(i)
-  def windowWithoutSelf(n:Int): Seq[This] = for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1); if (i != _position)) yield chain(i)
+  def prevWindow(n:Int): Seq[This] = {
+    var i = math.max(_position-n,  0)
+    val res = new collection.mutable.ListBuffer[This]
+    while (i <= math.max(_position-1, 0)) {res.append(chain(i)) ;i += 1}
+    res
+  }
+  def nextWindow(n:Int): Seq[This] = {
+    var i = math.min(_position+1,  _chain.length-1)
+    val res = new collection.mutable.ListBuffer[This]
+    while (i <= math.min(_position+n, _chain.length-1)) {res.append(chain(i)) ;i += 1}
+    res
+  }
+  def window(n:Int): Seq[This] = {
+    for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1)) yield chain(i)
+  }
+  def windowWithoutSelf(n:Int): Seq[This] = {
+    for (i <- math.max(_position-n,0) to math.min(_position+n, _chain.length-1); if (i != _position)) yield chain(i)
+  }
   def between(other:This): Seq[This] = {
     require(other.chain == chain)
     if (other.position > _position)
