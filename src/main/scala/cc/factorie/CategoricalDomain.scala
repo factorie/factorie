@@ -102,16 +102,21 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   def getCategory(index: Int): T = _elements(index).category.asInstanceOf[T]
   override def getValue(index: Int): ValueType = _elements(index)
   def getValue(category:T): ValueType = {
-    def nextMax: ValueType = {
-      val m = _elements.size
-      if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
-      val e: ValueType = newCategoricalValue(m, category) // Here is the place that new CategoricalValue gets created
-      _elements += e
-      _indices(category) = e
-      e
-    }
     if (_frozen) _indices.getOrElse(category, null.asInstanceOf[ValueType])
-    else _indices.getOrElseUpdate(category, nextMax)
+    else {
+      if (_indices.get(category).isEmpty) { // double-tap locking necessary to ensure only one thread adds to _indices
+        _indices.synchronized({
+          if (_indices.get(category).isEmpty) {
+            val m = _elements.size
+            if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
+            val e: ValueType = newCategoricalValue(m, category)
+            _elements += e
+            _indices(category) = e
+          }
+        })
+      }
+      _indices.get(category).head
+    }
   }
 
   /** Return a densely-packed positive integer index for the given object.  
