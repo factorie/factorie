@@ -101,7 +101,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
       // todo: remarginalize, but for individual variables separately
       // val mess = marginalize(node.variable, incoming)
       for (e <- edges) {
-        val mess = result.get(e) / incoming(e)
+        val mess = if(incoming(e).isDeterministic) incoming(e) else result.get(e) / incoming(e)
         setOutgoing(e, mess)
       }
       _remarginalize = false
