@@ -115,7 +115,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
           }
         })
       }
-      _indices.get(category).head
+      _indices.getOrElse(category, null)
     }
   }
 
