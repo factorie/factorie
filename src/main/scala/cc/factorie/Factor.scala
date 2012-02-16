@@ -66,6 +66,7 @@ trait Factor extends Model with Ordered[Factor] {
   override def equals(other: Any): Boolean = other match {
     case other:Factor =>
       (this eq other) || ((this.equalityPrerequisite eq other.equalityPrerequisite)
+                          && (this.hashCode == other.hashCode)
                           && forallIndex(numVariables)(i =>
                             (this.variable(i) eq other.variable(i)) ||
                             (this.variable(i).isInstanceOf[Vars[_]] && this.variable(i) == other.variable(i))))
