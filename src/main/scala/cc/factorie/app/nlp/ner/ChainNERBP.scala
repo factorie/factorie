@@ -139,8 +139,8 @@ class ChainNerBP {
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
 	    val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
 	    val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
-    	new InferencerBPWorker(mfg).inferUpDown(vars.sampleUniformly, false)
-    	new InferencerBPWorker(mfg).inferUpDown(vars.sampleUniformly, false)
+    	new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
+    	new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
     	mfg.setToMaxMarginal()
     }
   }

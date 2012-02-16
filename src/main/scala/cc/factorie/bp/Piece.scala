@@ -15,8 +15,8 @@ trait Piece {
   def valueAndGradient: (Double, Map[DotFamily, Vector])
 }
 
-class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue],
-                 val infer: (LatticeBP) => Unit = new InferencerBPWorker(_).inferTreeUpDown(1, true)) extends Piece {
+class ModelPiece(val model: Model, val vars: Seq[DiscreteVariable with VarWithTargetValue],
+                 val infer: (LatticeBP) => Unit = new InferencerBPWorker(_).inferTreewise()) extends Piece {
 
   // compute the empirical counts of the model
   lazy val empiricalCounts: Map[DotFamily, Vector] = {

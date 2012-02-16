@@ -127,7 +127,7 @@ class SparseOuterChainNer {
       }
       // Predict, also by sampling, visiting each variable 3 times.
       //predictor.processAll(testLabels, 3)
-      val fg = new LatticeBP(testDocuments.flatten.toSet) with SumProductLattice
+      val fg = new LatticeBP(testDocuments.flatten.map(_.attr[ChainNerLabel]).toSet) with SumProductLattice
       fg.createUnrolled(model)
       val start = System.currentTimeMillis()
       for (i <- 0 until 100000000)

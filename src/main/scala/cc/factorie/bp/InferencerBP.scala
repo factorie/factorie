@@ -8,12 +8,12 @@ import collection.mutable.{Queue, ArrayBuffer, HashSet}
  * @date 2/7/12
  */
 
-class InferencerBP(lattice: LatticeBP) extends VariableInferencer[Variable] {
+class InferencerBP extends VariableInferencer[Variable] {
   type LatticeType = LatticeBP
 
   def infer(variables: Iterable[Variable], varying: Iterable[Variable]) = {
     // TODO: No access to model yet
-    val lattice = new LatticeBP(varying.toSet) with SumProductLattice
+    val lattice = new LatticeBP(varying.map(_.asInstanceOf[DiscreteVariable]).toSet) with SumProductLattice
     val inf = new InferencerBPWorker(lattice)
     inf.inferLoopyBP()
     lattice
@@ -21,40 +21,41 @@ class InferencerBP(lattice: LatticeBP) extends VariableInferencer[Variable] {
 }
 
 class InferencerBPWorker(lattice: LatticeBP) {
-  private def _bfs(root: MessageNode, checkLoops: Boolean): Seq[MessageFactor] = {
-    val visited: HashSet[MessageFactor] = new HashSet
-    val result = new ArrayBuffer[MessageFactor]
-    val toProcess = new Queue[(MessageNode, MessageFactor)]
-    root.neighbors foreach (f => toProcess += Pair(root, f))
+  private def _bfs(root: MessageNode, checkLoops: Boolean): Seq[(Edge, Boolean)] = {
+    val visited: HashSet[(Edge, Boolean)] = new HashSet
+    val result = new ArrayBuffer[(Edge, Boolean)]
+    val toProcess = new Queue[(Edge, Boolean)]
+    root.edges foreach (e => toProcess += Pair(e, true))
     while (!toProcess.isEmpty) {
-      val (origin, factor) = toProcess.dequeue()
-      if (!checkLoops || !visited(factor)) {
-        visited += factor
-        result += factor
-        for (node <- factor.nodes; if (node != origin && node.varies)) {
-          node.neighbors filter (_ != factor) foreach (f => toProcess += Pair(node, f))
-        }
+      val (edge, varRoot) = toProcess.dequeue()
+      if (!checkLoops || !visited((edge, varRoot))) {
+        visited += Pair(edge, varRoot)
+        result += Pair(edge, varRoot)
+        val edges =
+          if (varRoot) edge.f.edges.filter(_ != edge)
+          else {
+            if (edge.n.varies) edge.n.edges.filter(_ != edge) else Seq.empty[Edge]
+          }
+        edges.foreach(ne => toProcess += Pair(ne, !varRoot))
       }
     }
     result
   }
 
-  def inferUpDown(variable: DiscreteVariable, checkLoops: Boolean = true): Unit = inferTreewise(lattice.node(variable), checkLoops)
+  def inferTreewise(variable: DiscreteVariable = lattice.varying.head, checkLoops: Boolean = true): Unit = _inferTreewise(lattice.node(variable), checkLoops)
 
   // Perform a single iteration of up-down BP using the given root to discover the tree. For
   // loopy models, enable checkLoops to avoid infinite loops.
-  def inferTreewise(root: MessageNode = lattice.nodes.head, checkLoops: Boolean = true) {
+  private def _inferTreewise(root: MessageNode = lattice.nodes.head, checkLoops: Boolean = true) {
     // perform BFS
-    val bfsOrdering: Seq[MessageFactor] = _bfs(root, checkLoops)
+    val bfsOrdering: Seq[(Edge, Boolean)] = _bfs(root, checkLoops)
     // send messages leaf to root
-    for (factor <- bfsOrdering.reverse) {
-      factor.prepareAllIncoming()
-      factor.updateAllOutgoing()
+    for ((e,varRoot) <- bfsOrdering.reverse) {
+      if(varRoot) e.fToV else e.vToF
     }
     // send root to leaves
-    for (factor <- bfsOrdering) {
-      factor.prepareAllIncoming()
-      factor.updateAllOutgoing()
+    for ((e,varRoot) <- bfsOrdering) {
+      if(varRoot) e.vToF else e.fToV
     }
   }
 
@@ -62,12 +63,12 @@ class InferencerBPWorker(lattice: LatticeBP) {
   // ordering to discover the tree (efficiently if checkLoops is false), resulting in
   // exact inference for tree-shaped models. For loopy models, enable checkLoops to avoid
   // infinite loops, and have iterations>1 till convergence.
-  def inferTreeUpDown(iterations: Int = 1, checkLoops: Boolean = true) {
+  def inferUsingTreeSchedule(iterations: Int = 1, checkLoops: Boolean = true) {
     for (iteration <- 0 until iterations) {
       // find a random root
       val root = lattice.nodes.sampleUniformly
       // treewise
-      inferTreewise(root, checkLoops)
+      _inferTreewise(root, checkLoops)
       // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
     }
   }
@@ -76,9 +77,9 @@ class InferencerBPWorker(lattice: LatticeBP) {
     for (iteration <- 0 until iterations) {
       for (factor <- lattice.mfactors.toSeq.shuffle(cc.factorie.random)) {
         //for every factor first calculate all incoming beliefs
-        factor.prepareAllIncoming()
-        //synchronous belief updates on all outgoing edges
-        factor.updateAllOutgoing()
+        factor.receiveFromAll
+        //synchronous belief updates on all send edges
+        factor.sendToAll
       }
       // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
     }

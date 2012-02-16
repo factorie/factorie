@@ -54,6 +54,8 @@ class TestBP extends TestCase {
       }
 
       override def equalityPrerequisite = this
+
+      override def toString = "F(%s)".format(n1)
     }
 
   private def newFactor2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double) =
@@ -74,6 +76,8 @@ class TestBP extends TestCase {
       def score(s: Stat): Double = if (s._1 == s._2) scoreEqual else scoreUnequal
 
       override def equalityPrerequisite = this
+
+      override def toString = "F(%s,%s)".format(n1, n2)
     }
 
   // short for exponential
@@ -176,7 +180,7 @@ class TestBP extends TestCase {
     // create template between v1 and v2
     var fg: LatticeBP = null
     val model = new FactorModel(newFactor2(v1, v2, 10, 0))
-    val vars: Set[Variable] = Set(v1, v2)
+    val vars: Set[DiscreteVariable] = Set(v1, v2)
 
     // vary both variables
     fg = new LatticeBP(vars) with SumProductLattice
@@ -187,7 +191,7 @@ class TestBP extends TestCase {
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     for (mfactor <- fg.mfactors) {
-      for (values <- mfactor.factor.valuesIterator(vars)) {
+      for (values <- mfactor.factor.valuesIterator(vars.toSet)) {
         println(values + " : " + mfactor.marginal(values))
         //if(values(v1)==values(v2))
         //  assertEquals(mfactor.marginal(values), 0.5, eps)
@@ -225,7 +229,7 @@ class TestBP extends TestCase {
     // create template between v1 and v2
     var fg: LatticeBP = null
     val model = new FactorModel(newFactor2(v1, v2, 10, 0))
-    val vars: Set[Variable] = Set(v1, v2)
+    val vars: Set[DiscreteVariable] = Set(v1, v2)
 
     // vary both variables
     fg = new LatticeBP(vars) with MaxProductLattice
@@ -236,7 +240,7 @@ class TestBP extends TestCase {
     // println("v1 : " + fg.node(v1).marginal)
     // println("v2 : " + fg.node(v2).marginal)
     for (mfactor <- fg.mfactors) {
-      for (values <- mfactor.factor.valuesIterator(vars)) {
+      for (values <- mfactor.factor.valuesIterator(vars.toSet)) {
         println(values + " : " + mfactor.marginal(values))
       }
     }
@@ -256,7 +260,7 @@ class TestBP extends TestCase {
     // create template between v1 and v2
     var fg: LatticeBP = null
     val model = new FactorModel(newFactor2(v1, v2, 1000, 0))
-    val vars: Set[Variable] = Set(v1, v2)
+    val vars: Set[DiscreteVariable] = Set(v1, v2)
 
     // vary both variables
     fg = new LatticeBP(vars) with SumProductLattice
@@ -267,7 +271,7 @@ class TestBP extends TestCase {
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     for (mfactor <- fg.mfactors) {
-      for (values <- mfactor.factor.valuesIterator(vars)) {
+      for (values <- mfactor.factor.valuesIterator(vars.toSet)) {
         println(values + " : " + mfactor.marginal(values))
         if (values(v1) == values(v2))
           assertEquals(mfactor.marginal(values), 0.5, eps)
@@ -320,7 +324,7 @@ class TestBP extends TestCase {
   def testLoop2 = {
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
-    val vars: Set[Variable] = Set(v1, v2)
+    val vars: Set[DiscreteVariable] = Set(v1, v2)
 
     val model = new FactorModel(
       newFactor1(v1, 1, 0), newFactor1(v2, 1, 0),
@@ -341,7 +345,7 @@ class TestBP extends TestCase {
     val v2 = new BinVar(0)
     val v3 = new BinVar(1)
     val v4 = new BinVar(0)
-    val vars: Set[Variable] = Set(v1, v2, v3, v4)
+    val vars: Set[DiscreteVariable] = Set(v1, v2, v3, v4)
 
     val model = new FactorModel(
       newFactor1(v4, 10, 0),
@@ -370,7 +374,7 @@ class TestBP extends TestCase {
     val v2 = new BinVar(0)
     val v3 = new BinVar(1)
     val v4 = new BinVar(0)
-    val vars: Set[Variable] = Set(v1, v2, v3, v4)
+    val vars: Set[DiscreteVariable] = Set(v1, v2, v3, v4)
 
     val model = new FactorModel(
       newFactor1(v4, 10, 0),
@@ -399,13 +403,13 @@ class TestBP extends TestCase {
     val v1 = new BinVar(0)
     val v2 = new BinVar(1)
     val v3 = new BinVar(0)
-    val vars: Set[Variable] = Set(v1, v2, v3)
+    val vars: Set[DiscreteVariable] = Set(v1, v2, v3)
     // v1 -- v3 -- v2
     val model = new FactorModel(
       newFactor1(v1, 3, 0), newFactor1(v2, 0, 3),
       newFactor2(v1, v3, 3, 0), newFactor2(v2, v3, 3, 0))
     var fg = new LatticeBP(model, vars) with SumProductLattice
-    new InferencerBPWorker(fg).inferUpDown(v1, false)
+    new InferencerBPWorker(fg).inferTreewise(v1, false)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     println("v3 : " + fg.node(v3).marginal)
@@ -419,14 +423,28 @@ class TestBP extends TestCase {
   }
 
   def testTree7 = {
-    val v1 = new BinVar(0)
-    val v2 = new BinVar(1)
-    val v3 = new BinVar(0)
-    val v4 = new BinVar(0)
-    val v5 = new BinVar(0)
-    val v6 = new BinVar(0)
-    val v7 = new BinVar(0)
-    val vars: Set[Variable] = Set(v1, v2, v3, v4, v5, v6, v7)
+    val v1 = new BinVar(0) {
+      override def toString = "v1"
+    }
+    val v2 = new BinVar(1) {
+      override def toString = "v2"
+    }
+    val v3 = new BinVar(0) {
+      override def toString = "v3"
+    }
+    val v4 = new BinVar(0) {
+      override def toString = "v4"
+    }
+    val v5 = new BinVar(0) {
+      override def toString = "v5"
+    }
+    val v6 = new BinVar(0) {
+      override def toString = "v6"
+    }
+    val v7 = new BinVar(0) {
+      override def toString = "v7"
+    }
+    val vars: Set[DiscreteVariable] = Set(v1, v2, v3, v4, v5, v6, v7)
     //        v4
     //    v3      v5
     //  v1  v2  v6  v7
@@ -437,7 +455,10 @@ class TestBP extends TestCase {
       newFactor2(v6, v5, 5, 0), newFactor2(v7, v5, -5, 0)
     )
     var fg = new LatticeBP(model, vars) with SumProductLattice
-    new InferencerBPWorker(fg).inferUpDown(v1, false)
+    //val inf = new InferencerBPWorker(fg)
+    //val q = inf.bfs(fg.node(v4), true)
+    //println("QUEUE: " + q)
+    new InferencerBPWorker(fg).inferTreewise(v1, false)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     println("v3 : " + fg.node(v3).marginal)
@@ -469,7 +490,7 @@ class TestBP extends TestCase {
     val v5 = new BinVar(0)
     val v6 = new BinVar(0)
     val v7 = new BinVar(0)
-    val vars: Set[Variable] = Set(v1, v2, v3, v4, v5, v6, v7)
+    val vars: Set[DiscreteVariable] = Set(v1, v2, v3, v4, v5, v6, v7)
     //        v4
     //    v3      v5
     //  v1  v2  v6  v7
@@ -480,7 +501,7 @@ class TestBP extends TestCase {
       newFactor2(v6, v5, 5, 0), newFactor2(v7, v5, -5, 0)
     )
     val fg = new LatticeBP(model, vars) with MaxProductLattice
-    new InferencerBPWorker(fg).inferUpDown(v1, false)
+    new InferencerBPWorker(fg).inferTreewise(v1, false)
     println("v1 : " + fg.node(v1).marginal)
     println("v2 : " + fg.node(v2).marginal)
     println("v3 : " + fg.node(v3).marginal)
@@ -506,8 +527,8 @@ class TestBP extends TestCase {
     println(" -- Testing Random Inference")
     val numVars = 2
     val vars: Seq[BinVar] = (0 until numVars).map(new BinVar(_)).toSeq
-    val varSet = vars.toSet[Variable]
-    for (seed <- (3 until 33)) {
+    val varSet = vars.toSet[DiscreteVariable]
+    for (seed <- (0 until 40)) {
       val random = new Random(seed)
       val model = new FactorModel
       for (i <- 0 until numVars) {
@@ -544,7 +565,7 @@ class TestBP extends TestCase {
       println("marginals : " + marginals.map(_ / Z).mkString(", "))
       // test sum-product
       val fg = new LatticeBP(model, varSet) with SumProductLattice
-      new InferencerBPWorker(fg).inferUpDown(vars.sampleUniformly, false)
+      new InferencerBPWorker(fg).inferTreewise(vars.sampleUniformly, false)
       for (i <- 0 until numVars) {
         println("v" + i + " : " + fg.node(vars(i)).marginal)
         assertEquals(marginals(i) / Z, fg.node(vars(i)).marginal.probability(BinDomain(0)), eps)
@@ -553,8 +574,8 @@ class TestBP extends TestCase {
       assertEquals(math.log(Z), fg.logZ, eps)
       // max product
       val mfg = new LatticeBP(model, varSet) with MaxProductLattice
-      new InferencerBPWorker(mfg).inferUpDown(vars.sampleUniformly, false)
-      new InferencerBPWorker(mfg).inferUpDown(vars.sampleUniformly, false)
+      new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
+      new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
       //new InferencerBPWorker(mfg).inferLoopyBP(numVars*2) //UpDown(vars.sampleUniformly, false)
       mfg.setToMaxMarginal()
       println("probabilities : " + scores.map(math.exp(_) / Z).mkString(", "))
@@ -565,5 +586,38 @@ class TestBP extends TestCase {
     }
   }
 
+  def testV2F1MAPEquals = {
+    // a sequence of two variables, one factor
+    val v1 = new BinVar(0)
+    val v2 = new BinVar(0)
+    // println("Testing MAP V2F1")
+    // create template between v1 and v2
+    var fg: LatticeBP = null
+    val model = new FactorModel(newFactor2(v1, v2, 0, 10))
+    val vars: Set[DiscreteVariable] = Set(v1, v2)
+
+    // vary both variables
+    fg = new LatticeBP(vars) with MaxProductLattice
+    fg.createUnrolled(model)
+    // println("num Factors = %d".format(fg.factors.size))
+    // println("num Variables = %d".format(fg._nodes.size))
+    new InferencerBPWorker(fg).inferTreewise()
+    // println("v1 : " + fg.node(v1).marginal)
+    // println("v2 : " + fg.node(v2).marginal)
+    for (mfactor <- fg.mfactors) {
+      for (values <- mfactor.factor.valuesIterator(vars.toSet)) {
+        println(values + " : " + mfactor.marginal(values))
+      }
+    }
+    fg.setToMaxMarginal()
+    println("V1: %d, V2: %d".format(v1.categoryValue, v2.categoryValue))
+    println("v1: " + fg.node(v1).marginal)
+    println("v2: " + fg.node(v2).marginal)
+    assertEquals(fg.node(v1).marginal.score(BinDomain(0)), 10, eps)
+    assertEquals(fg.node(v2).marginal.score(BinDomain(0)), 10, eps)
+    assertEquals(fg.node(v1).marginal.score(BinDomain(1)), 10, eps)
+    assertEquals(fg.node(v2).marginal.score(BinDomain(1)), 10, eps)
+    // vary just one variable
+  }
 
 }

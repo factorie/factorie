@@ -257,13 +257,21 @@ abstract class Messages[T](val neighbors: Seq[T]) extends Seq[GenericMessage] {
   override def toString: String = (0 until length).map(i => "%-10s %s".format(neighbors(i), get(i))).mkString("\n")
 }
 
-class FactorMessages(vars: Seq[Variable]) extends Messages[Variable](vars)
+class FactorMessages(vars: Seq[Variable]) extends Messages[Variable](vars) {
+  def get(e: Edge): GenericMessage = get(e.vid)
 
-class VarMessages(factors: Seq[Factor]) extends Messages[Factor](factors)
+  def set(e: Edge, msg: GenericMessage): Unit = set(e.vid, msg)
+}
+
+class VarMessages(factors: Seq[Factor]) extends Messages[Factor](factors) {
+  def get(e: Edge): GenericMessage = get(e.fid)
+
+  def set(e: Edge, msg: GenericMessage): Unit = set(e.fid, msg)
+}
 
 /**
  * message between a variable and a factor.
- * also used to represent variable's product of incoming/outgoing message.
+ * also used to represent variable's product of incoming/send message.
  *
  * Note that this implementation is cpu-optimized, not memory optimized. If you
  * want to reduce memory footprint, replace 'lazy val' with 'def'.
