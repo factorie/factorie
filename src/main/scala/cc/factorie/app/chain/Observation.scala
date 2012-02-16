@@ -65,18 +65,22 @@ object Observations {
     val size = observations.size
     // First gather all the extra features here,...
     val newFeatures = Array.tabulate(size)(i => new ArrayBuffer[String])
-    for (i <- 0 until size) {
+    var i = 0
+    while (i < size) {
       val token = observations(i)
       val thisTokenNewFeatures = newFeatures(i)
       for (offsets <- offsetConjunctions) 
         thisTokenNewFeatures ++= appendConjunctions(token, vf, regex, null, offsets).map(list => list.sortBy({case(f,o)=>o+f}).map({case(f,o) => if (o == 0) f else f+"@"+o}).mkString("_&_"))
       // TODO "f+o" is doing string concatenation, consider something faster
+      i += 1
     }
     // ... then add them to each Token
-    for (i <- 0 until size) {
+    i = 0
+    while (i < size) {
       val token = observations(i)
       vf(token).zero()  // TODO  Removed when transferring code from app.tokenseq.TokenSeq.  Is this still necessary? -akm
       vf(token) ++= newFeatures(i)
+      i += 1
     }
     //if (size > 0) println("addNeighboringFeatureConjunctions "+first)
   }
