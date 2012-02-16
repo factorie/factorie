@@ -240,7 +240,7 @@ object DepParsing1 {
     println("Domain[Distance] size = "+DistanceDomain.size)
     
     val nodes = sentences.flatMap(_.map(_.node))
-    nodes.foreach(n => n.set(n.token.seq.head)(null))
+    //nodes.foreach(n => n.set(n.token.seq.head)(null))
     nodes.foreach(n => n.setRandomly)
     val learner = new VariableSettingsSampler[Node](model, objective) with SampleRank with AROWUpdates {
       temperature = 0.01
