@@ -14,6 +14,8 @@
 
 package cc.factorie.app
 
+import util.matching.Regex
+
 package object strings {
 
   def inputStreamToString(is:java.io.InputStream, encoding:String = "UTF-8"): String = {
@@ -62,10 +64,13 @@ package object strings {
   }
   
   // Simplified form of word for feature generation
+  val yearRegexp = "(19|20)\\d\\d".r
+  val numRegexp = "\\d+".r
+  val wordRegexp = ".*\\d.*".r
   def simplifyDigits(word:String): String = {
-    if (word.matches("(19|20)\\d\\d")) "<YEAR>" 
-    else if (word.matches("\\d+")) "<NUM>"
-    else if (word.matches(".*\\d.*")) word.replaceAll("\\d","#")
+    if (! yearRegexp.unapplySeq(word).isEmpty) "<YEAR>"
+    else if (! numRegexp.unapplySeq(word).isEmpty) "<NUM>"
+    else if (! numRegexp.unapplySeq(word).isEmpty) word.replaceAll("\\d","#")
     else word
   }
 

@@ -67,6 +67,7 @@ class Trial[L<:LabelVariable[String]](val classifier:Classifier[L]) extends Labe
   def apply(i:Int) = classifications(i)
   def +=(label:L): Unit = { classifications.+=(classifier.classify(label)); super.+=(label) }
   def ++=(labels:Iterable[L]): this.type = { labels.foreach(+=(_)); this }
+  override def toString: String = evalString
 }
 
 /** An object that can train a Classifier given a LabelList. */

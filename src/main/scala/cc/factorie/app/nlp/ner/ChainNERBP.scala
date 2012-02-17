@@ -14,29 +14,20 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
-import bp.{SumProductLattice, LatticeBP}
+import app.strings._
+import bp._
+import optimize._
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.LoadConll2003._
+import scala.io.Source
+import cc.factorie.app.chain._
+import scala.io._
+import java.io.{FileWriter, BufferedWriter, File}
+import scala.math.round
+  
+class ChainNerBP {
 
-class SparseOuterChainNerModel extends TemplateModel(
-  // Bias term on each individual label 
-//  new TemplateWithDotStatistics1[ChainNerLabel] {
-//    factorName = "bias"
-//    override def statisticsDomains = List(Conll2003NerDomain)
-//  },
-  // Transition factors between two successive labels and a token
-//  new TemplateWithDotStatistics3[ChainNerLabel, ChainNerLabel, ChainNerFeatures] with SparseOuter2Dense1Weights[ChainNerLabel#Value, ChainNerLabel#Value, ChainNerFeatures#Value] {
-  new TemplateWithDotStatistics3[ChainNerLabel, ChainNerLabel, ChainNerFeatures] with SparseOuter2Dense1Weights {
-    factorName = "observation"
-    override def statisticsDomains = List(Conll2003NerDomain, Conll2003NerDomain, ChainNerFeaturesDomain)
-    def unroll1(label: ChainNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[ChainNerLabel], label, label.token.attr[ChainNerFeatures]) else Nil
-    def unroll2(label: ChainNerLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[ChainNerLabel], label.token.sentenceNext.attr[ChainNerFeatures]) else Nil
-    def unroll3(features: ChainNerFeatures) = if (features.token.sentenceHasNext) Factor(features.token.sentencePrev.attr[ChainNerLabel], features.token.attr[ChainNerLabel], features) else Nil
-  }
-)
-
-class SparseOuterChainNer {
-
-  val model = new SparseOuterChainNerModel
+  val model = new ChainNerModel
   val objective = new ChainNerObjective
   class Lexicon(filename:String) extends cc.factorie.app.chain.Lexicon(filename) {
     def name = filename.substring(filename.lastIndexOf('/')+1).toUpperCase
@@ -92,8 +83,8 @@ class SparseOuterChainNer {
 
   def train(trainFilename:String, testFilename:String): Unit = {
     // Read in the data
-    val trainDocuments = LoadConll2003.fromFilename(trainFilename)
-    val testDocuments = LoadConll2003.fromFilename(testFilename)
+    val trainDocuments = LoadConll2003.fromFilename(trainFilename).take(100)
+    val testDocuments = LoadConll2003.fromFilename(testFilename).take(20)
 
     // Add features for NER
     trainDocuments.foreach(initFeatures(_))
@@ -107,35 +98,17 @@ class SparseOuterChainNer {
     val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(2000)
  
     // Train for 5 iterations
-    if (false) {
-      val trainer = new LogLinearMaximumLikelihood(model)
-      trainer.processAll(trainDocuments.take(20).map(doc => doc.map(_.nerLabel)), 10) // Do just one iteration for initial timing
+    val vars = for(td <- trainDocuments; sentence <- td.sentences) yield sentence.tokens.map(_.attr[ChainNerLabel])
+    //val vars = trainDocuments.map(d => d.sentences.map(s => s.tokens.map(_.attr[ChainNerLabel])))
+    val trainingInstances = vars.map(new ModelPiece(model, _))
+    val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances) with L2Regularizer { override def sigmaSq = 10.0 }
+    println("Size of families: " + model.familiesOfClass[DotFamily]().size)
+      val optimizer = new LimitedMemoryBFGS(newLearner)
+      optimizer.optimize()
+      optimizer.optimize()
       trainDocuments.foreach(process(_))
       testDocuments.foreach(process(_))
-      printEvaluation(trainDocuments, testDocuments, "FINAL")
-    } else {
-      (trainLabels ++ testLabels).foreach(_.setRandomly())
-      println("Set labels randomly...")
-      val learner = new VariableSettingsSampler[ChainNerLabel](model, objective) with SampleRank with GradientAscentUpdates //ConfidenceWeightedUpdates { temperature = 0.01 }
-      val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
-      for (iteration <- 1 until 3) {
-        println("Starting iteration %d..." format iteration)
-        learner.processAll(trainLabels)
-        predictor.processAll(testLabels)
-        printEvaluation(trainDocuments, testDocuments, iteration.toString)
-        //learner.learningRate *= 0.9
-      }
-      // Predict, also by sampling, visiting each variable 3 times.
-      //predictor.processAll(testLabels, 3)
-      val fg = new LatticeBP(testDocuments.flatten.map(_.attr[ChainNerLabel]).toSet) with SumProductLattice
-      fg.createUnrolled(model)
-      val start = System.currentTimeMillis()
-      for (i <- 0 until 100000000)
-        fg.factors.foreach(_.statistics.score)
-      println("time taken: " + (System.currentTimeMillis() - start))
-      // Final evaluation
-      printEvaluation(trainDocuments, testDocuments, "FINAL")
-    }
+      printEvaluation(trainDocuments, testDocuments, "FINAL")    
   }
   
   def printEvaluation(trainDocuments:Iterable[Document], testDocuments:Iterable[Document], iteration:String): Unit = {
@@ -163,15 +136,12 @@ class SparseOuterChainNer {
     if (document.length == 0) return
     if (!hasFeatures(document)) initFeatures(document)
     if (!hasLabels(document)) document.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
-    if (true) {
-      new BPInferencer[ChainNerLabel](model).inferTreewiseMax(document.map(_.attr[ChainNerLabel]))
-    } else {
-      for (token <- document) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.getCategory(0)) // init value doens't matter
-      val localModel = new TemplateModel(model.templates(0), model.templates(1))
-      val localPredictor = new VariableSettingsGreedyMaximizer[ChainNerLabel](localModel, null)
-      for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)
-      val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
-      for (i <- 0 until 3; label <- document.tokens.map(_.attr[ChainNerLabel])) predictor.process(label)
+    for(sentence <- document.sentences if sentence.tokens.size > 0) {
+	    val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
+	    val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
+    	new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
+    	new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
+    	mfg.setToMaxMarginal()
     }
   }
   
@@ -218,7 +188,7 @@ class SparseOuterChainNer {
   
 }
 
-object SparseOuterChainNer extends SparseOuterChainNer {
+object ChainNerBP extends ChainNerBP {
   import cc.factorie.util.DefaultCmdOptions
   var verbose = false
 
@@ -226,25 +196,23 @@ object SparseOuterChainNer extends SparseOuterChainNer {
     // Parse command-line
     object opts extends DefaultCmdOptions {
       val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
-      val testFile  =     new CmdOption("test",  "", "FILE", "CoNLL formatted test file.")
+      val testFile  =     new CmdOption("test",  "eng.testa", "FILE", "CoNLL formatted test file.")
       val modelDir =      new CmdOption("model", "chainner.factorie", "DIR", "Directory for saving or loading model.")
       val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
       val runPlainFiles = new CmdOption("run-plain", List("ner.txt"), "FILE...", "List of files for reading plain texgt data on which to run saved model.")
       val lexiconDir =    new CmdOption("lexicons", "lexicons", "DIR", "Directory containing lexicon files named cities, companies, companysuffix, countries, days, firstname.high,...") 
-      val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = SparseOuterChainNer.this.verbose = true }
+      val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = ChainNerBP.this.verbose = true }
       //val noSentences=new CmdOption("nosentences", "Do not use sentence segment boundaries in training.  Improves accuracy when testing on data that does not have sentence boundaries.")
     }
     opts.parse(args)
     
-    Template.enableCachedStatistics = false
-
     if (opts.lexiconDir.wasInvoked) {
       for (filename <- List("cities", "companies", "companysuffix", "countries", "days", "firstname.high", "firstname.highest", "firstname.med", "jobtitle", "lastname.high", "lastname.highest", "lastname.med", "months", "states")) {
         println("Reading lexicon "+filename)
         lexicons += new Lexicon(opts.lexiconDir.value+"/"+filename)
       }
     }
-
+    
     if (opts.runPlainFiles.wasInvoked) {
       model.load(opts.modelDir.value)
       for (filename <- opts.runPlainFiles.value) {
@@ -265,6 +233,13 @@ object SparseOuterChainNer extends SparseOuterChainNer {
       train(opts.trainFile.value, opts.testFile.value)
       if (opts.modelDir.wasInvoked) model.save(opts.modelDir.value)
     }
+    
+
+    //if (args.length != 2) throw new Error("Usage: NER trainfile testfile.")
+
+   
+
   }
 
+  
 }

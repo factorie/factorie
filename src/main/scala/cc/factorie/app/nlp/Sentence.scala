@@ -29,7 +29,11 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
     }
     return null
   }
-  
+
+  def contains(t: Token) = {
+    t.stringStart >= initialStart && t.stringEnd <= (initialStart+initialLength)
+  }
+
   // Parse attributes
   def parse = attr[cc.factorie.app.nlp.parse.ParseTree]
   def parseRootChild: Token = attr[cc.factorie.app.nlp.parse.ParseTree].rootChild

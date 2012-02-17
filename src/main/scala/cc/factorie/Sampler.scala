@@ -130,12 +130,26 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) ext
   /** Abstract method must be implemented in sub-classes.  
       Provides access to all different possible worlds we will evaluate for each call to 'process' */ 
   def settings(context:C) : SettingIterator
+
+  val proposalsCache = collection.mutable.ArrayBuffer[Proposal]()
   def proposals(context:C): Seq[Proposal] = {
-    // 'map's call to 'next' is actually what causes the change in state to happen
-    // TODO some more efficient alternative to 'toList'?  But we have to be careful to make the collection 'strict'
-    val s = settings(context).map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m, o, m/temperature)}).toList
+    // the call to 'next' is actually what causes the change in state to happen
+    var i = 0
+    val si = settings(context)
+    while (si.hasNext) {
+      val d = si.next
+      val (m,o) = d.scoreAndUndo(model, objective)
+      if (proposalsCache.length == i) proposalsCache.append(null)
+      proposalsCache(i) = new Proposal(d, m, o, m/temperature)
+      i += 1
+    }
+    if (proposalsCache.length > i) {
+      proposalsCache.trimEnd(proposalsCache.length - i)
+    }
+    assert(proposalsCache.length == i)
+    //val s = settings(context).map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m, o, m/temperature)}).toList
     //if (s.exists(p=>p.modelScore > 0.0)) { s.foreach(p => println(p.modelScore+" "+model)); println("SettingsSampler^") }
-    s
+    proposalsCache.toSeq
   } 
 }
 

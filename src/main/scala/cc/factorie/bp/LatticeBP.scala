@@ -6,83 +6,128 @@ import cc.factorie._
 import cc.factorie.la.{DenseVector, SparseVector, Vector}
 
 /**
- * @author sameer, apassos
+ * @author sameer, apassos, bmartin
  */
 
-abstract class MessageFactor(val factor: Factor, val varying: Set[Variable], fg: LatticeBP) {
+class Edge(val fid: Int,
+           val vid: Int,
+           val f: MessageFactor,
+           val n: MessageNode) {
+  // Send message from the variable to the factor
+  def vToF = f.receive(this)
 
+  // Send message from the factor to the variable
+  def fToV = f.send(this)
+
+  override def toString = "%s -- %s".format(f.factor, n.variable)
+}
+
+abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariable], fg: LatticeBP) {
   val variables: Seq[Variable] = factor.variables
+  val _incoming = new FactorMessages(variables)
+  val _outgoing = new FactorMessages(variables)
+  // same as above, but in a ordered and DiscreteVariable form
+  val discreteVarying: Seq[(DiscreteVariable, Int)] =
+    variables.zipWithIndex.filter(_._1.isInstanceOf[DiscreteVariable])
+          .map(p => Pair(p._1.asInstanceOf[DiscreteVariable], p._2))
+          .filter(varying contains _._1)
+  // complement of varyingNeighbors
+  val fixedNeighbors: Seq[(DiscreteVariable, Int)] =
+    variables.zipWithIndex.filter(_._1.isInstanceOf[DiscreteVariable])
+          .map(p => Pair(p._1.asInstanceOf[DiscreteVariable], p._2))
+          .filter(p => !varying.contains(p._1))
   // set of neighbors that are varying
   lazy val varyingNeighbors: Set[Variable] = {
     val set: HashSet[Variable] = new HashSet
-    set ++= discreteVarying
+    set ++= discreteVarying.map(_._1)
     set.toSet
   }
-  // same as above, but in a ordered and DiscreteVariable form
-  val discreteVarying: Seq[DiscreteVariable] = variables.filter(varying contains _).map(_.asInstanceOf[DiscreteVariable])
-  // complement of varyingNeighbors
-  val fixedNeighbors: Set[Variable] = variables.toSet -- varyingNeighbors
-  val nodes: Seq[MessageNode] = variables.map(fg.node(_))
-  // adds itself to the neighbor's node
-  for (node <- nodes) node.factors += this
+  val edges: Seq[Edge] = (0 until variables.length).map(vid => {
+    val variable = variables(vid)
+    val node = fg.node(variable)
+    node.addEdge(vid, this)
+  })
 
-  val _incoming = new FactorMessages
-  val _outgoing = new FactorMessages
-  private val _valuesSize: Int = discreteVarying.foldLeft(1)(_ * _.domain.size)
-  protected val _marginal: Array[Double] = new Array(_valuesSize)
+  val nodes = edges.map(_.n).toSeq
+
+  protected val _valuesSize: Int = discreteVarying.foldLeft(1)(_ * _._1.domain.size)
+  protected val _marginal: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
+  protected var _remarginalize: Boolean = true
+
+  // caching of the scores
   private var _cache: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
+
+  // Maintain deltas of consecutive send messages
+  val outgoingDeltas = new FactorMessages(variables)
 
   def clearCache = _cache = Array.fill(_valuesSize)(Double.NaN)
 
-  def incoming: FactorMessages = _incoming
+  def resetMessages = {
+    _incoming.reset
+    _outgoing.reset
+    (0 until _valuesSize).foreach(i => _marginal(i) = Double.NaN)
+    _remarginalize = true
+  }
 
-  def outgoing: FactorMessages = _outgoing
-
-  // Maintain deltas of consecutive outgoing messages
-  val outgoingDeltas = new FactorMessages
-
-  // return the stored marginal probability for the given value
-  def marginal(values: Values): Double = _marginal(values.index(varyingNeighbors))
-
-
-  def getScore(assignment: Values, index: Int = -1): Double = {
+  protected def getScore(assignment: Values, index: Int = -1): Double = {
     assignment.statistics.score
   }
 
+  def incoming(e: Edge): GenericMessage = _incoming.get(e)
 
-  def updateAllOutgoing() {
-    val result = marginalize(incoming)
-    // remarginalize, but for individual variables separately
-    //  for (node <- nodes) {
-    //    val mess = marginalize(node.variable, incoming)
-    //    setSingleOutgoing(node.variable, mess)
-    //    node.incoming(this, mess)
-    //  }
-    for (node <- nodes) {
-      //todo: fix case where both incoming and potential are deterministic, leading to a uniform outgoing
-      val mess = result(node.variable) / incoming(node.variable)
-      setSingleOutgoing(node.variable, mess)
-      node.incoming(this, mess)
+  def outgoing(e: Edge): GenericMessage = _outgoing.get(e)
+
+  private def setIncoming(e: Edge, message: GenericMessage) = {
+    _incoming.set(e, message)
+    _remarginalize = true
+  }
+
+  def receive(e: Edge): Unit = setIncoming(e, e.n.send(e))
+
+  def receiveFromAll = edges.foreach(e => receive(e))
+
+  private def setOutgoing(e: Edge, message: GenericMessage) {
+    if (outgoing(e).isDeterministic) {
+      outgoingDeltas.set(e, outgoing(e))
+    } else {
+      outgoingDeltas.set(e, message / outgoing(e))
+    }
+    _outgoing.set(e, message)
+  }
+
+  private def incomingToOutgoing = {
+    if (_remarginalize) {
+      val result = marginalize(_incoming)
+      // todo: remarginalize, but for individual variables separately
+      // val mess = marginalize(node.variable, incoming)
+      for (e <- edges) {
+        val mess = if(incoming(e).isDeterministic) incoming(e) else result.get(e) / incoming(e)
+        setOutgoing(e, mess)
+      }
+      _remarginalize = false
     }
   }
 
-  def prepareIncoming() = nodes.foreach(prepareSingleIncoming(_))
-
-  def setSingleOutgoing(variable: Variable, message: GenericMessage) {
-    if (outgoing(variable).isDeterministic) {
-      outgoingDeltas(variable) = outgoing(variable)
-    }
-    else {
-      outgoingDeltas(variable) = message / outgoing(variable)
-    }
-    outgoing(variable) = message
+  def send(e: Edge) {
+    incomingToOutgoing
+    e.n.receive(e, outgoing(e))
   }
 
-  def prepareSingleIncoming(node: MessageNode) = incoming(node.variable) = node.outgoing(this)
+  def sendToAll = {
+    incomingToOutgoing
+    //todo: fix case where both incoming and potential are deterministic, leading to a uniform send
+    edges.foreach(e => send(e))
+  }
+
+  // return the stored marginal probability for the given value
+  def marginal(values: Values): Double = {
+    incomingToOutgoing
+    _marginal(values.index(varyingNeighbors))
+  }
 
   def currentMaxDelta: Double = {
     if (outgoingDeltas.size == 0) Double.PositiveInfinity
-    else outgoingDeltas.values.map(m => {
+    else outgoingDeltas.map(m => {
       val dynamicRange = m.dynamicRange
       assert(!dynamicRange.isNaN)
       log(dynamicRange)
@@ -93,9 +138,9 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[Variable], fg:
     var Z = 0.0
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       var num: Double = getScore(assignment)
-      for (variable <- variables) {
-        val mess = incoming(variable)
-        num += mess.score(assignment.get(variable).get)
+      for (e <- edges) {
+        val mess = incoming(e)
+        num += mess.score(assignment.get(e.n.variable).get)
       }
       num = exp(num)
       Z += num
@@ -128,13 +173,14 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[Variable], fg:
 
   override def toString = "M(%s)".format(factor)
 
-  def marginalize(target: DiscreteVariable, incoming: FactorMessages): GenericMessage
+  // def marginalize(target: DiscreteVariable, incoming: FactorMessages): GenericMessage
 
   def marginalize(incoming: FactorMessages): FactorMessages
 }
 
 trait SumFactor extends MessageFactor {
 
+  /*
   def marginalize(target: DiscreteVariable, incoming: FactorMessages): GenericMessage = {
     // TODO add to _marginals
     // TODO incorporate fixed vars
@@ -169,50 +215,55 @@ trait SumFactor extends MessageFactor {
       //throw new Exception("output message has negInfinity")
     }
     BPUtil.message(target, varScores)
-  }
+  } */
 
   def marginalize(incoming: FactorMessages): FactorMessages = {
-    val result = new FactorMessages()
+    val result = new FactorMessages(variables)
     val scores: Array[Array[Double]] = new Array(varyingNeighbors.size)
     // initialize score arrays for varying neighbors
     for (i <- 0 until discreteVarying.length) {
-      scores(i) = new Array[Double](discreteVarying(i).domain.size)
+      scores(i) = Array.fill(discreteVarying(i)._1.domain.size)(0.0)
     }
     var maxLogScore = Double.NegativeInfinity
     // go through all the assignments of the varying variables
     // and find the maximum score for numerical reasons
+    val tmpScore: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       val index = assignment.index(varyingNeighbors)
       var num: Double = getScore(assignment, index)
       for (dv <- discreteVarying) {
-        val mess = incoming(dv)
-        num += mess.score(assignment(dv))
+        val vid = dv._2
+        val mess = incoming.get(vid)
+        num += mess.score(assignment(dv._1))
       }
       if (num > maxLogScore) maxLogScore = num
-      _marginal(index) = num
+      tmpScore(index) = num
     }
     // go through all the assignments of the varying variables
     // and find Z, and calculate the scores
     var Z = 0.0
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       val index = assignment.index(varyingNeighbors)
-      val num = _marginal(index) - maxLogScore
+      val num = tmpScore(index) - maxLogScore
       val expnum = exp(num)
       assert(!expnum.isInfinity)
       _marginal(index) = expnum
       for (i <- 0 until discreteVarying.length) {
-        scores(i)(assignment(discreteVarying(i)).intValue) += expnum
+        scores(i)(assignment(discreteVarying(i)._1).intValue) += expnum
       }
       Z += expnum
     }
     (0 until _marginal.size).foreach(i => _marginal(i) /= Z)
-    // set the outgoing messages
+    // set the send messages
     for (i <- 0 until discreteVarying.length) {
-      result(discreteVarying(i)) = BPUtil.message(discreteVarying(i), scores(i).map(s => log(s)).toSeq)
+      val dv = discreteVarying(i)
+      val vid = dv._2
+      result.set(vid, BPUtil.message(dv._1, scores(i).map(s => log(s)).toSeq))
     }
     // deterministic messages for the fixed neighbors
-    for (variable <- fixedNeighbors) {
-      result(variable) = incoming(variable)
+    for (fv <- fixedNeighbors) {
+      val vid = fv._2
+      result.set(vid, incoming.get(vid))
     }
     result
   }
@@ -221,6 +272,7 @@ trait SumFactor extends MessageFactor {
 
 trait MaxFactor extends MessageFactor {
 
+  /*
   def marginalize(target: DiscreteVariable, incoming: FactorMessages): GenericMessage = {
     // TODO add to _marginals
     // TODO incorporate fixed vars
@@ -244,22 +296,22 @@ trait MaxFactor extends MessageFactor {
       varScores += scores(value)
     }
     BPUtil.message(target, varScores)
-  }
+  } */
 
   def marginalize(incoming: FactorMessages): FactorMessages = {
-    val result = new FactorMessages()
+    val result = new FactorMessages(variables)
     val scores: Array[Array[Double]] = new Array(varyingNeighbors.size)
     // initialize score arrays for varying neighbors
     for (i <- 0 until discreteVarying.length) {
-      scores(i) = new Array[Double](discreteVarying(i).domain.size)
+      scores(i) = new Array[Double](discreteVarying(i)._1.domain.size)
     }
     // go through all the assignments of the varying variables
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       val index = assignment.index(varyingNeighbors)
       var num: Double = getScore(assignment, index)
       for (dv <- discreteVarying) {
-        val mess = incoming(dv)
-        num = num + mess.score(assignment(dv))
+        val mess = incoming(dv._2)
+        num = num + mess.score(assignment(dv._1))
       }
       _marginal(index) = num
     }
@@ -268,90 +320,124 @@ trait MaxFactor extends MessageFactor {
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       val index = assignment.index(varyingNeighbors)
       for (i <- 0 until discreteVarying.length) {
-        val as = assignment(discreteVarying(i)).intValue
+        val as = assignment(discreteVarying(i)._1).intValue
         scores(i)(as) = max(scores(i)(as), _marginal(index))
       }
     }
-    // set the outgoing messages
+    // set the send messages
     for (i <- 0 until discreteVarying.length) {
-      result(discreteVarying(i)) = BPUtil.message(discreteVarying(i), scores(i).toSeq)
+      val dv = discreteVarying(i)
+      val vid = dv._2
+      result.set(vid, BPUtil.message(dv._1, scores(i).toSeq))
     }
     // deterministic messages for the fixed neighbors
-    for (variable <- fixedNeighbors) {
-      result(variable) = incoming(variable)
+    for (fv <- fixedNeighbors) {
+      val vid = fv._2
+      result.set(vid, incoming.get(vid))
     }
     result
   }
 }
 
-class MessageNode(val variable: Variable, val varying: Set[Variable]) {
+class MessageNode(val variable: Variable, val varying: Set[DiscreteVariable]) {
   // TODO: Add support for "changed" flag, i.e. recompute only when value is read, and hasnt changed since last read
-  val factors = new ArrayBuffer[MessageFactor]
+  private val _edges = new ArrayBuffer[Edge]
 
-  lazy val varies: Boolean = varying contains variable
+  lazy val varies: Boolean = variable match {
+    case dv: DiscreteVariable => varying contains dv
+    case _ => false
+  }
 
-  def neighbors = factors.toSeq
+  protected var _marginal: GenericMessage = if (varies) BPUtil.uniformMessage else BPUtil.deterministicMessage(variable, variable.value)
+  protected var _incoming: VarMessages = new VarMessages(factors)
+  protected var _outgoing: VarMessages = new VarMessages(factors)
+  protected var _remarginalize: Boolean = false
+
+  def marginal = {
+    marginalize
+    _marginal
+  }
+
+  def addEdge(vid: Int, mf: MessageFactor): Edge = {
+    val pos = _edges.length
+    val e = new Edge(pos, vid, mf, this)
+    _edges += e
+    resetMessages
+    e
+  }
+
+  def neighbors = _edges.map(_.f).toSeq
+
+  def factors = neighbors.map(_.factor).toSeq
+
+  def edges = _edges.toSeq
 
   def priority: Double = currentMaxDelta
 
   def priority(neighbor: MessageFactor): Double = currentMaxDelta
 
-  protected var _marginal: GenericMessage = if (varies) BPUtil.uniformMessage else BPUtil.deterministicMessage(variable, variable.value)
-  protected var _incoming: VarMessages = new VarMessages
-  protected var _outgoing: VarMessages = new VarMessages
+  // Message from factor to variable
+  // stores the message
+  def receive(e: Edge, mess: GenericMessage): Unit = {
+    _incoming.set(e, mess)
+    _remarginalize = true
+  }
 
-  def marginal = _marginal
+  // ue incoming messages to compute the outgoing messages
+  protected def marginalize = {
+    if (varies && _remarginalize) {
+      //TODO update marginal incrementally?
+      //_marginal = (_marginal / _incoming(factor)) * mess
+      /*if (_incoming.get(e).isDeterministic) {
+        var msg: GenericMessage = BPUtil.uniformMessage
+        for (other <- edges; if (other != e))
+          msg = msg * _incoming.get(other) // FIXME make sure we're not normalizing accidentally
+        msg
+      } else {*/
+      _marginal = BPUtil.uniformMessage
+      for (e <- edges) {
+        _marginal = _marginal * _incoming.get(e)
+        var msg: GenericMessage = BPUtil.uniformMessage
+        for (other <- edges; if other != e) {
+          msg = msg * _incoming.get(other)
+        }
+        _outgoing.set(e, msg)
+      }
+      _remarginalize = false
+    }
+  }
 
   // Message from variable to factor
-  // No recomputation, unless the incoming message from the factor was deterministic
-  def outgoing(mf: MessageFactor): GenericMessage = {
+  // recomputes the marginal and the send messages, if required
+  def send(e: Edge): GenericMessage = {
     if (varies) {
-      if (_incoming(mf.factor).isDeterministic) {
-        var msg: GenericMessage = BPUtil.uniformMessage
-        for (otherFactor <- factors; if (otherFactor != mf))
-          msg = msg * otherFactor.outgoing(variable) // FIXME make sure we're not normalizing accidentally
-        msg
-      } else {
-        _outgoing(mf.factor) //marginal / _incoming(factor)
-      }
+      marginalize
+      _outgoing.get(e) //marginal / _incoming(factor)
+      //}
     } else {
       // use the current value as the deterministic message
       BPUtil.deterministicMessage(variable, variable.value)
     }
   }
 
-  // Message from factor to variable
-  // stores the message and recomputes the marginal and the outgoing messages
-  def incoming(mf: MessageFactor, mess: GenericMessage): Unit = {
-    _incoming(mf.factor) = mess
-    if (varies) {
-      //TODO update marginal incrementally?
-      //_marginal = (_marginal / _incoming(factor)) * mess
-      // set the incoming message
-      _marginal = BPUtil.uniformMessage
-      for (mf: MessageFactor <- factors) {
-        _marginal = _marginal * _incoming(mf.factor)
-        var msg: GenericMessage = BPUtil.uniformMessage
-        for (other: MessageFactor <- factors; if other != mf) {
-          msg = msg * _incoming(other.factor)
-        }
-        _outgoing(mf.factor) = msg
-      }
-    }
-
+  def resetMessages = {
+    _incoming = new VarMessages(factors)
+    _outgoing = new VarMessages(factors)
+    _marginal = if (varies) BPUtil.uniformMessage else BPUtil.deterministicMessage(variable, variable.value)
+    _remarginalize = false
   }
 
   def currentMaxDelta: Double = {
-    factors.map(_.currentMaxDelta).max
+    neighbors.map(_.currentMaxDelta).max
   }
 
   override def toString = "M(%s)".format(variable)
 }
 
-abstract class LatticeBP(val varying: Set[Variable]) extends Lattice[Variable] {
+abstract class LatticeBP(val varying: Set[DiscreteVariable]) extends Lattice[Variable] {
 
-  def this(model: Model, varying: Set[Variable]) = {
-    this (varying)
+  def this(model: Model, varying: Set[DiscreteVariable]) = {
+    this(varying)
     createUnrolled(model)
   }
 
@@ -368,97 +454,11 @@ abstract class LatticeBP(val varying: Set[Variable]) extends Lattice[Variable] {
     createFactors(model.factors(varying))
   }
 
-  def currentMaxDelta: Double = {
-    _factors.values.map(_.currentMaxDelta).max
-  }
-
-  def logZ: Double = {
-    //Bethe approximation according to wainwright 08 page 83 top.
-    var logZ = 0.0
-    for (node <- nodes) {
-      val nodeEntropy = node.marginal.entropy
-      logZ += (1.0 - node.factors.size) * nodeEntropy
-    }
-    for (edge <- mfactors) {
-      //we can join expected edge score and entropy as local logZ of potential
-      val factorLogZ = edge.logZ
-      logZ += factorLogZ
-      // compensate for double counting <incoming, mu>
-      for (node <- edge.nodes) {
-        // dot product of node marginals and incoming from node
-        val dot = node.marginal.domain.foldLeft(0.0)(
-          (d, v) => d + (node.marginal.probability(v) * edge.incoming(node.variable).score(v)))
-        logZ -= dot
-      }
-    }
-    logZ
-  }
-
-  private def _bfs(root: MessageNode, checkLoops: Boolean): Seq[MessageFactor] = {
-    val visited: HashSet[MessageFactor] = new HashSet
-    val result = new ArrayBuffer[MessageFactor]
-    val toProcess = new Queue[(MessageNode, MessageFactor)]
-    root.factors foreach (f => toProcess += Pair(root, f))
-    while (!toProcess.isEmpty) {
-      val (origin, factor) = toProcess.dequeue()
-      if (!checkLoops || !visited(factor)) {
-        visited += factor
-        result += factor
-        for (node <- factor.nodes; if (node != origin && node.varies)) {
-          node.factors filter (_ != factor) foreach (f => toProcess += Pair(node, f))
-        }
-      }
-    }
-    result
-  }
-
-//  def inferUpDown(variable: DiscreteVariable, checkLoops: Boolean = true): Unit = inferTreewise(node(variable), checkLoops)
-//
-//  // Perform a single iteration of up-down BP using the given root to discover the tree. For
-//  // loopy models, enable checkLoops to avoid infinite loops.
-//  def inferTreewise(root: MessageNode = nodes.head, checkLoops: Boolean = true) {
-//    // perform BFS
-//    val bfsOrdering: Seq[MessageFactor] = _bfs(root, checkLoops)
-//    // send messages leaf to root
-//    for (factor <- bfsOrdering.reverse) {
-//      factor.prepareIncoming()
-//      factor.updateAllOutgoing()
-//    }
-//    // send root to leaves
-//    for (factor <- bfsOrdering) {
-//      factor.prepareIncoming()
-//      factor.updateAllOutgoing()
-//    }
-//  }
-//
-//  // Perform up-down scheduling of messages. Picks a random root, and performs BFS
-//  // ordering to discover the tree (efficiently if checkLoops is false), resulting in
-//  // exact inference for tree-shaped models. For loopy models, enable checkLoops to avoid
-//  // infinite loops, and have iterations>1 till convergence.
-//  def inferTreeUpDown(iterations: Int = 1, checkLoops: Boolean = true) {
-//    for (iteration <- 0 until iterations) {
-//      // find a random root
-//      val root = nodes.sampleUniformly
-//      // treewise
-//      inferTreewise(root, checkLoops)
-//      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
-//    }
-//  }
-//  def inferLoopyBP(iterations: Int = 1) {
-//    for (iteration <- 0 until iterations) {
-//      for (factor <- _factors.values.shuffle(cc.factorie.random)) {
-//        //for every factor first calculate all incoming beliefs
-//        factor.prepareIncoming()
-//        //synchronous belief updates on all outgoing edges
-//        factor.updateAllOutgoing()
-//      }
-//      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
-//    }
-//  }
-
   def nodes: Iterable[MessageNode] = _nodes.values
 
   def variables: Iterable[Variable] = _nodes.keys
+
+  def edges = nodes.map(_.edges).flatten
 
   def node(variable: Variable): MessageNode = _nodes.getOrElseUpdate(variable, {
     new MessageNode(variable, varying)
@@ -470,10 +470,54 @@ abstract class LatticeBP(val varying: Set[Variable]) extends Lattice[Variable] {
 
   def mfactor(factor: Factor): MessageFactor = _factors(factor)
 
-  def setToMaxMarginal(variables: Iterable[MutableVar] = varying.map(_.asInstanceOf[MutableVar]).toSet)(implicit d: DiffList = null): Unit = {
+  def setToMaxMarginal(variables: Iterable[MutableVar] = varying.toSet)(implicit d: DiffList = null): Unit = {
     for (variable <- variables) {
       variable.set(node(variable).marginal.map[variable.Value])(d)
     }
+  }
+
+  def resetMessages = {
+    mfactors.foreach(_.resetMessages)
+    nodes.foreach(_.resetMessages)
+  }
+
+  type VariableMarginalType = GenericMessage
+  type FactorMarginalType = DiscreteFactorMarginal
+
+  override def marginal(v: Variable) = {
+    if (_nodes.contains(v)) Some(node(v).marginal) else None
+  }
+
+  override def marginal(f: Factor) = if (_factors.contains(f)) {
+    val mf = mfactor(f)
+    Some(new DiscreteFactorMarginal(f, f.valuesIterator(mf.varying.toSet).map(mf marginal _).toArray))
+  } else None
+
+  def currentMaxDelta: Double = {
+    _factors.values.map(_.currentMaxDelta).max
+  }
+
+  def logZ: Double = {
+    //Bethe approximation according to wainwright 08 page 83 top.
+    var logZ = 0.0
+    for (node <- nodes) {
+      val nodeEntropy = node.marginal.entropy
+      logZ += (1.0 - node.neighbors.size) * nodeEntropy
+    }
+    for (mf <- mfactors) {
+      //we can join expected edge score and entropy as local logZ of potential
+      val factorLogZ = mf.logZ
+      logZ += factorLogZ
+      // compensate for double counting <incoming, mu>
+      for (e <- mf.edges) {
+        val node = mf.nodes(e.vid)
+        // dot product of node marginals and incoming from node
+        val dot = node.marginal.domain.foldLeft(0.0)(
+          (d, v) => d + (node.marginal.probability(v) * mf.incoming(e).score(v)))
+        logZ -= dot
+      }
+    }
+    logZ
   }
 
   def statExpectations: HashMap[DotFamily, Vector] = {
@@ -484,17 +528,6 @@ abstract class LatticeBP(val varying: Set[Variable]) extends Lattice[Variable] {
     exps
   }
 
-  type VariableMarginalType = GenericMessage
-  type FactorMarginalType = DiscreteFactorMarginal
-
-  override def marginal(v: Variable) = {
-    if(_nodes.contains(v)) Some(node(v).marginal) else None
-  }
-
-  override def marginal(f: Factor) = if(_factors.contains(f)) {
-    val mf = mfactor(f)
-    Some(new DiscreteFactorMarginal(f, f.valuesIterator(mf.varying).map(mf marginal _).toArray))
-  } else None
 }
 
 trait SumProductLattice {
@@ -508,6 +541,8 @@ trait SumProductLattice {
 
 trait MaxProductLattice {
   this: LatticeBP =>
+
+  var finalPass: Boolean = false
 
   def createFactor(potential: Factor) = {
     val factor = new MessageFactor(potential, varying, this) with MaxFactor

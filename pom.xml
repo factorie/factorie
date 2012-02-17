@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <properties>
         <scala.version>2.9.1</scala.version>
-        <factorie.version>0.10.1-SNAPSHOT</factorie.version>
+        <factorie.version>0.10.2-SNAPSHOT</factorie.version>
         <factorie.group>cc.factorie</factorie.group>
     </properties>
 

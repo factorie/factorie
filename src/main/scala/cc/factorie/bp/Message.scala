@@ -1,8 +1,8 @@
 package cc.factorie.bp
 
-import collection.mutable.HashMap
 import scala.math._
 import cc.factorie._
+import collection.mutable.{ArrayBuffer, HashMap}
 
 /**
  * todo: we should define messages in a way that they are always
@@ -76,6 +76,8 @@ trait GenericMessage extends Marginal {
   def isDeterministic = false
 
   def map[A]: A = domain.maxBy(v => score(v)).asInstanceOf[A]
+
+  override def toString: String = domain.map(x => "%5.5f/%f".format(probability(x), score(x))).mkString(",")
 }
 
 trait GenericUniformMessage extends GenericMessage {
@@ -139,7 +141,7 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) exten
     }
   }
 
-  override def entropy = {
+  override lazy val entropy = {
     var result = 0.0
     for (i <- 0 until scores.size) {
       val score = scores(i)
@@ -161,8 +163,6 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) exten
   lazy val inverse = new DiscreteMessage[Value](scores.map(score => -score), domain)
 
   def defaultValue = domain.head
-
-  override def toString: String = domain.map(x => "%5.5f/%f".format(probability(x), score(x))).mkString(",")
 
   override lazy val isDeterministic = scores.exists(s => s.isPosInfinity || s.isNegInfinity)
 
@@ -224,30 +224,54 @@ class DeterministicMessage[Value](val value: Value) extends GenericMessage {
   }
 }
 
-abstract class Messages[T] extends HashMap[T, GenericMessage] {
-  def this(pairs: (T, GenericMessage)*) {
-    this ()
-    this ++= pairs
+abstract class Messages[T](val neighbors: Seq[T]) extends Seq[GenericMessage] {
+
+  val length = neighbors.length
+  val _msgs: ArrayBuffer[GenericMessage] = ArrayBuffer.fill(length)(BPUtil.uniformMessage)
+
+  def apply(i: Int) = get(i)
+
+  def iterator = _msgs.iterator
+
+  def get(i: Int): GenericMessage = {
+    assert(i < length)
+    _msgs(i)
   }
 
-  def typed[M <: GenericMessage](t: T) = this(t).asInstanceOf[M]
+  def set(i: Int, msg: GenericMessage) = {
+    assert(i < length)
+    _msgs(i) = msg
+  }
 
-  override def default(key: T): GenericMessage = UniformMessage
+  def typed[M <: GenericMessage](i: Int) = this(i).asInstanceOf[M]
 
-  def copy(messages: Messages[T]) = messages.foreach((p: (T, GenericMessage)) => this(p._1) = p._2)
+  def copy(messages: Messages[T]) = {
+    assert(length == messages.length)
+    (0 until length) foreach (i => set(i, messages.get(i)))
+  }
 
-  override def toString: String = map({
-    case (v, m) => "%-10s %s".format(v, m)
-  }).mkString("\n")
+  def reset = {
+    (0 until length) foreach (i => set(i, BPUtil.uniformMessage))
+  }
+
+  override def toString: String = (0 until length).map(i => "%-10s %s".format(neighbors(i), get(i))).mkString("\n")
 }
 
-class FactorMessages extends Messages[Variable]
+class FactorMessages(vars: Seq[Variable]) extends Messages[Variable](vars) {
+  def get(e: Edge): GenericMessage = get(e.vid)
 
-class VarMessages extends Messages[Factor]
+  def set(e: Edge, msg: GenericMessage): Unit = set(e.vid, msg)
+}
+
+class VarMessages(factors: Seq[Factor]) extends Messages[Factor](factors) {
+  def get(e: Edge): GenericMessage = get(e.fid)
+
+  def set(e: Edge, msg: GenericMessage): Unit = set(e.fid, msg)
+}
 
 /**
  * message between a variable and a factor.
- * also used to represent variable's product of incoming/outgoing message.
+ * also used to represent variable's product of incoming/send message.
  *
  * Note that this implementation is cpu-optimized, not memory optimized. If you
  * want to reduce memory footprint, replace 'lazy val' with 'def'.

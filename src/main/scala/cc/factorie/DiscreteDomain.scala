@@ -102,7 +102,9 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
   def getValue(index:Int): ValueType = {
     if (index > maxRequestedInt) maxRequestedInt = index
     if (index >= size) throw new IllegalArgumentException("DiscreteDomain.getValue: index "+index+" larger than size "+size)
-    if (index >= _elements.size) for (i <- _elements.size to index) _elements += new DiscreteValue(i) //.asInstanceOf[Value] // Here new a DiscreteValue gets created
+    if (index >= _elements.size) {
+      _elements synchronized { for (i <- _elements.size to index) _elements += new DiscreteValue(i) }
+    } //.asInstanceOf[Value] // Here new a DiscreteValue gets created
     _elements(index)
   }
 

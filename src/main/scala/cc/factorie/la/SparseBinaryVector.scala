@@ -73,7 +73,8 @@ class SparseBinaryVector(val theLength:Int, indices:Array[Int] = null, copyArray
   if (!preSorted && indices != null) scala.util.Sorting.quickSort(ind)
 
   def activeDomainSize = _size
-  def activeDomain: Iterable[Int] = new IndexedSeq[Int] { def apply(i:Int) = ind(i); def length = _size }
+  val __activeDomain = new IndexedSeq[Int] { def apply(i:Int) = ind(i); def length = _size }
+  def activeDomain: Iterable[Int] = __activeDomain
   override def forActiveDomain(f: (Int)=>Unit): Unit = forIndex(_size)((i:Int) => f(ind(i)))
   /** Ensure that the array "ind" is big enough to allow ind(n). */
   private def ensureCapacity(n:Int): Unit = {

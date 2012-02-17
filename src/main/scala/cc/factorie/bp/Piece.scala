@@ -15,7 +15,8 @@ trait Piece {
   def valueAndGradient: (Double, Map[DotFamily, Vector])
 }
 
-class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue], val infer: (LatticeBP) => Unit = new InferencerBPWorker(_).inferTreeUpDown(2, true)) extends Piece {
+class ModelPiece(val model: Model, val vars: Seq[DiscreteVariable with VarWithTargetValue],
+                 val infer: (LatticeBP) => Unit = new InferencerBPWorker(_).inferTreewise()) extends Piece {
 
   // compute the empirical counts of the model
   lazy val empiricalCounts: Map[DotFamily, Vector] = {
@@ -35,6 +36,9 @@ class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue], val infer:
     result
   }
 
+  // lattice to perform BP over
+  val fg = new LatticeBP(model, vars.toSet) with SumProductLattice
+
   def truthScore: Double = {
     val diff = new DiffList
     vars.foreach(_.setToTarget(diff))
@@ -44,7 +48,8 @@ class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue], val infer:
   }
 
   def valueAndGradient: (Double, Map[DotFamily, Vector]) = {
-    val fg = new LatticeBP(model, vars.toSet) with SumProductLattice
+    // reset Messages
+    fg.resetMessages
     // perform BP
     infer(fg)
     // compute the gradient
@@ -52,7 +57,10 @@ class ModelPiece(val model: Model, val vars: Seq[VarWithTargetValue], val infer:
     val gradient: Map[DotFamily, Vector] = new HashMap[DotFamily, Vector]
     for (df <- model.familiesOfClass[DotFamily with Template]) {
       val vector = new SparseVector(df.statisticsVectorLength)
-      vector += (exps(df) * -1.0)
+      val expv = exps.get(df)
+      if (expv.isDefined) {
+        vector += (expv.get * -1.0)
+      }
       vector += empiricalCounts(df)
       gradient(df) = vector
     }

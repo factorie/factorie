@@ -53,14 +53,14 @@ trait Template extends FamilyWithNeighborDomains { thisTemplate =>
     var result = new HashSet[FactorType]()
     for (diff <- difflist; factor <- factors(diff)) { if (factor eq null) throw new Error("Template.factors returned null Factor") else result += factor }
     //difflist.foreach(diff => result ++= factors(diff))
-    result.toSeq // TODO is this necessary?
+    result
   }
   def factors(variables:Iterable[Variable]): Iterable[FactorType] = {
     if (variables.size == 1) return factors(variables.head) // Efficiently avoids the HashSet.
     //var result = new LinkedHashSet[FactorType]()
     var result = new HashSet[FactorType]()
     for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("Template.factors returned null Factor") else result += factor }
-    result.toSeq // TODO is this necessary?
+    result
   }
   /** Called in implementations of factors(Variable) to give the variable a chance
       to specify additional dependent variables on which factors(Variable) should also be called. */

@@ -23,7 +23,9 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
   var learningRateDecay = 0.9
   def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures)
-    val learner = new VariableSettingsSampler[L](cmodel, HammingLossObjective) with SampleRank with GradientAscentUpdates
+    val learner = new VariableSettingsSampler[L](cmodel, HammingLossObjective) with SampleRank with GradientAscentUpdates {
+      override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.head
+    }
     learner.learningRate = 1.0
     for (i <- 0 until iterations) {
       learner.processAll(il)
@@ -33,3 +35,12 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
   }
 }
 
+class MaxEntLikelihoodTrainer extends ClassifierTrainer {
+  def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
+    val cmodel = new LogLinearModel(il.labelToFeatures)
+    val trainer = new LogLinearMaximumLikelihood(cmodel)
+    // Do the training by BFGS
+    trainer.processAll(il.map(List(_)))
+    new Classifier[L] { val model = cmodel; val labelDomain = il.head.domain }
+  }
+}
