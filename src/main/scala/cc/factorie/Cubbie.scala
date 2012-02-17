@@ -40,7 +40,7 @@ class Cubbie {
   def this(map:java.util.HashMap[String,Any]) = { this(); this._map = map }
   // Managing raw underlying map that hold the data
   private var _map: AnyRef = null
-  def _newDefaultMap = new scala.collection.mutable.HashMap[String,Any]
+  def _newDefaultMap: AnyRef = new scala.collection.mutable.HashMap[String,Any]
   def _rawGet(name:String): Any = _map match {
     case smap:scala.collection.Map[String,Any] => smap(name)
     case jmap:java.util.Map[String,Any] => jmap.get(name)
@@ -51,7 +51,7 @@ class Cubbie {
   def _rawPut(name:String, value:Any): Unit = _map match {
     case smap:scala.collection.mutable.Map[String,Any] => smap(name) = value
     case jmap:java.util.Map[String,Any] => jmap.put(name, value)
-    case null => { _map = _newDefaultMap }
+    case null => { _map = _newDefaultMap; _rawPut(name, value) }
   }
   // Access to collection of all map contents
   def elements: Iterator[(String,Any)] = {
