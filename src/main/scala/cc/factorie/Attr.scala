@@ -16,20 +16,6 @@ package cc.factorie
 
 /** Provides member "attr" which is a map from class to an attribute value (instance of that class).
     For example: object foo extends Attr; foo.attr += "bar"; require(foo.attr[String] == "bar"); foo.attr.remove[String] */
-trait AttrOld {
-  object attr extends scala.collection.mutable.ListMap[Class[_],AnyRef] {
-    def apply[C<:AnyRef]()(implicit m: Manifest[C]): C = this(m.erasure).asInstanceOf[C]
-    def get[C<:AnyRef](implicit m: Manifest[C]): Option[C] = this.get(m.erasure).asInstanceOf[Option[C]]
-    def getOrElse[C<:AnyRef](defaultValue:C)(implicit m: Manifest[C]): C = super.getOrElse(m.erasure, defaultValue).asInstanceOf[C]
-    def getOrElseUpdate[C<:AnyRef](defaultValue:C)(implicit m: Manifest[C]): C = super.getOrElseUpdate(m.erasure, defaultValue).asInstanceOf[C]
-    def +=[C<:AnyRef](value:C): C = { this(value.getClass) = value; value }
-    def -=[C<:AnyRef](value:C): C = { super.-=(value.getClass); value }
-    def remove[C<:AnyRef](implicit m: Manifest[C]): Unit = super.-=(m.erasure)
-  }
-}
-
-/** Provides member "attr" which is a map from class to an attribute value (instance of that class).
-    For example: object foo extends Attr; foo.attr += "bar"; require(foo.attr[String] == "bar"); foo.attr.remove[String] */
 trait Attr {
   /** A collection of attributes, keyed by the attribute class. */
   object attr {
@@ -77,7 +63,7 @@ trait Attr {
       }
       -1
     }
-    /** Returns the index of the last attribute with class that is exactly to the argument.
+    /** Returns the index of the last attribute with class that is exactly the argument.
         Attributes occur in the order in which they were inserted. */
     @inline final def indexExactly(key:Class[_]): Int = {
       var i = _attr.length - 1
@@ -87,6 +73,7 @@ trait Attr {
       }
       -1
     }
+    /** Returns a sequence of all attributes with classes that are equal to or subclasses of C. */
     def all[C<:AnyRef]()(implicit m: Manifest[C]): Seq[C] = {
       val key = m.erasure
       val result = new scala.collection.mutable.ArrayBuffer[C]
@@ -109,6 +96,7 @@ trait Attr {
         else i += 1
       }
     }
+    /** Return a sequence of all attributes */
     def values: Seq[AnyRef] = {
       val result = new scala.collection.mutable.ArrayBuffer[AnyRef]
       var i = 0 
@@ -146,5 +134,14 @@ trait Attr {
         value
       }
     }
+
+    @deprecated("Will be removed in favor of a CubbieConverter context")
+    def intoCubbie(c:Cubbie): Unit = for(a <- values) a match {
+      case tc:ToCubbieSlot => c._rawPut(tc.cubbieSlotName, tc.cubbieSlotValue)
+      case _ => throw new Error(a.getClass.getName+": Attr does not inherit from ToCubbieSlot")
+    }
+    
   }
+  
 }
+

@@ -17,10 +17,16 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 
 //object NerLabelDomain extends CategoricalDomain[String]
-abstract class NerLabel(initialValue:String) extends LabelVariable(initialValue) {
+abstract class NerLabel(initialValue:String) extends LabelVariable(initialValue) with ToCubbieSlot {
   //def domain = NerLabelDomain
   /** Return "PER" instead of "I-PER". */
   def shortCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
+  def cubbieSlotName = "ner"
+  def cubbieSlotValue = categoryValue
+}
+
+class NerLabelCubbie extends Cubbie {
+  val label = StringSlot("label")
 }
 
 abstract class ChainNerLabel(val token:Token, initialValue:String) extends NerLabel(initialValue)

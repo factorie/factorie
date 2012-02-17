@@ -19,6 +19,7 @@ import scala.collection.mutable.ArrayBuffer
 /** Value is the sequence of tokens */
 // Consider Document(strValue:String, name:String = "")
 class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[Document,TokenSpan,Token] with Attr {
+    
   // One of the following two is always null, the other non-null
   private var _string: String = strValue
   private var _stringbuf: StringBuffer = null
@@ -68,6 +69,45 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     buf.toString
   }
   
+  def this(c:DocumentCubbie) = {
+	this(c.name.value, c.string.value)
+    val tokenStarts = c.tokenStarts.value
+    val tokenLengths = c.tokenLengths.value
+    for (i <- 0 until tokenStarts.length)
+      this += new Token(tokenStarts(i), tokenLengths(i))
+    val sentenceStarts = c.sentenceStarts.value
+    val sentenceLengths = c.sentenceLengths.value
+    for (i <- 0 until sentenceStarts.length)
+      this += new Sentence(this, sentenceStarts(i), sentenceLengths(i))(null)
+    for (spanCubbie <- c.spans.value) this += new TokenSpan(this, spanCubbie)
+  }
+  
+  def cubbieName = "Document"
+  def toCubbie: DocumentCubbie = { val c = new DocumentCubbie(); this.intoCubbie(c); c }
+  def intoCubbie(c:DocumentCubbie): Unit = {
+    c.name := name
+    c.string := string
+    c.tokenStarts := tokens.map(_.stringStart)
+    c.tokenLengths := tokens.map(_.stringLength)
+    c.sentenceStarts := sentences.map(_.start)
+    c.sentenceLengths := sentences.map(_.length)
+    c.spans := spans.map(_.toCubbie)
+  }
   
 }
+
+
+class DocumentCubbie extends Cubbie {
+  val name = StringSlot("name")
+  val string = StringSlot("string")
+  val tokenStarts = IntListSlot("tokenStarts")
+  val tokenLengths = IntListSlot("tokenLengths")
+  val sentenceStarts = IntListSlot("sentenceStarts")
+  val sentenceLengths = IntListSlot("sentenceLengths")
+  val spans = CubbieListSlot("spans", ()=>new TokenSpanCubbie)
+}
+
+
+
+
 
