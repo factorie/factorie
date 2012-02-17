@@ -76,7 +76,12 @@ trait Factor extends Model with Ordered[Factor] {
   override def hashCode: Int = {
     if (_hashCode == -1) {
       _hashCode = getClass.hashCode
-      forIndex(numVariables)(i => { val v = variable(i); _hashCode += 31*i + (if (v eq null) 0 else v.hashCode) })
+      var i = 0
+      while (i < numVariables) {
+        val v = variable(i);
+        _hashCode += 31*i + (if (v eq null) 0 else v.hashCode)
+        i += 1
+      }
     }
     _hashCode
   }
