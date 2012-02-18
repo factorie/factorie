@@ -133,6 +133,7 @@ trait MutableVar extends Variable {
   //def set(newValue:Value): Unit = set(newValue)(null)
   /** Assign a new value to this variable */
   def set(newValue:Value)(implicit d:DiffList): Unit
+  final def :=(newValue:Value): Unit = set(newValue)(null)
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
       add this new factor to the given model, 
       and also assign the variable a new value randomly drawn from this factor. */

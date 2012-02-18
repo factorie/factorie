@@ -71,11 +71,11 @@ trait Template extends FamilyWithNeighborDomains { thisTemplate =>
   def limitDiscreteValuesIteratorAsIn(vars:Iterable[DiscreteVar]): Unit = {}
 }
 
-
+// TODO Remove this
 trait VectorTemplate extends VectorFamily with Template
 
 
-
+// TODO Remove this
 trait DotTemplate extends DotFamily with Template {
   //type FamilyType <: DotTemplate
 }

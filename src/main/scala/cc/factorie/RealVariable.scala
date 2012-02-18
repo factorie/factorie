@@ -38,7 +38,6 @@ class RealVariable(initialValue: Double = 0.0) extends MutableRealVar {
   def -=(x:Double) = set(_value - x)(null)
   def *=(x:Double) = set(_value * x)(null)
   def /=(x:Double) = set(_value / x)(null)
-  def :=(x:Double) = set(x)(null)
   def set(newValue: Double)(implicit d: DiffList): Unit = if (newValue != _value) {
     if (d ne null) d += new RealDiff(_value, newValue)
     _value = newValue

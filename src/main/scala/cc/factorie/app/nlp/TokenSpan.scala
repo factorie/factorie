@@ -16,10 +16,10 @@ package cc.factorie.app.nlp
 import cc.factorie._
 
 class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanVariable[TokenSpan,Document,Token](doc, initialStart, initialLength) with Attr {
-  def document = chain
-  def phrase: String = if (length == 1) this.head.string else doc.string.substring(head.stringStart, last.stringEnd) // this.map(_.string).mkString(" ")
+  def document = chain // Just a convenient alias
+  def phrase: String = if (length == 1) this.head.string else doc.string.substring(head.stringStart, last.stringEnd)
   def string: String = phrase
-  // Does this span contain the words of argument span in order?
+  /** Returns true if this span contain the words of argument span in order. */
   def containsStrings(span:TokenSpan): Boolean = {
     for (i <- 0 until length) {
       if (length - i < span.length) return false
@@ -39,5 +39,23 @@ class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Di
     case label:LabelVariable[String] => label.categoryValue
     case x => x.toString
   }
+  
+  def toCubbie: TokenSpanCubbie = {
+    val c = new TokenSpanCubbie
+    c.start := start
+    c.length := length
+    attr.intoCubbie(c)
+    c
+  }
+  def this(doc:Document, c:TokenSpanCubbie) = {
+    this(doc, c.start.value, c.length.value)(null)
+    // TODO Do something with Attr
+  }
 }
 
+class TokenSpanCubbie extends Cubbie {
+  val doc = RefSlot("doc", ()=>new DocumentCubbie)
+  val start = IntSlot("start")
+  val length = IntSlot("length")
+  // TODO put the Attr in here also
+}
