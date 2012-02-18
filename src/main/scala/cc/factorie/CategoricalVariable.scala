@@ -27,17 +27,20 @@ trait CategoricalVectorVar[T] extends DiscreteVectorVar with VarAndValueType[Cat
    /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
        If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
    def skipNonCategories = false
-   protected def doWithIndexSafely(elt:T, f:Int=>Unit): Unit = {
+   protected def doWithIndexSafely(elt:T, v: Double, update: Boolean): Unit = {
      val i = domain.dimensionDomain.index(elt)
      if (i == CategoricalDomain.NULL_INDEX) {
        if (!skipNonCategories)
          throw new Error("CategoricalVectorVar += value " + value + " not found in domain " + domain)
      } else {
-       f(i)
+       if (update)
+         vector.update(i, v)
+       else
+         vector.increment(i, v)
      }
    }
-   def update(elt:T, newValue:Double): Unit = doWithIndexSafely(elt, i => vector.update(i, newValue))
-   def increment(elt:T, incr:Double): Unit = doWithIndexSafely(elt, i => vector.increment(i, incr))
+   def update(elt:T, newValue:Double): Unit = doWithIndexSafely(elt, newValue, true)
+   def increment(elt:T, incr:Double): Unit = doWithIndexSafely(elt, incr, false)
    def +=(elt:T): Unit = increment(elt, 1.0)
    def ++=(elts:Iterable[T]): Unit = elts.foreach(this.+=(_))
    def activeCategories: Seq[T] = vector.activeDomain.toSeq.map(i => domain.dimensionDomain.getCategory(i))
