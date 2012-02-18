@@ -70,7 +70,7 @@ package object strings {
   def simplifyDigits(word:String): String = {
     if (! yearRegexp.unapplySeq(word).isEmpty) "<YEAR>"
     else if (! numRegexp.unapplySeq(word).isEmpty) "<NUM>"
-    else if (! numRegexp.unapplySeq(word).isEmpty) word.replaceAll("\\d","#")
+    else if (! wordRegexp.unapplySeq(word).isEmpty) word.replaceAll("\\d","#")
     else word
   }
 
