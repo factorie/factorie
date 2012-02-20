@@ -70,6 +70,7 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
     if (_sentence eq null) _sentence = document.sentenceContaining(this)
     _sentence
   }
+  @deprecated("This method should be removed.  'index' is reserved for other meanings; use only 'position'.")
   def indexInSentence: Int = position - sentence.start // alias for sentencePosition
   def sentenceHasNext: Boolean = (sentence ne null) && position < sentence.end
   def sentenceHasPrev: Boolean = (sentence ne null) && position > sentence.start
@@ -113,6 +114,61 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
   type GetterType <: TokenGetter
   class GetterClass extends TokenGetter
 }
+
+
+// Cubbie storage
+
+class TokenCubbie extends Cubbie {
+  val start = IntSlot("start")
+  val length = IntSlot("length")
+  def fetchToken: Token = new Token(start.value, length.value)
+  def storeToken(t:Token): this.type = {
+    start := t.stringStart
+    length := t.stringLength
+    this
+  }
+}
+
+trait TokenStringCubbie extends TokenCubbie {
+  val string = StringSlot("string")
+  override def storeToken(t:Token): this.type = {
+    super.storeToken(t)
+    string := t.string	
+    this
+  }
+}
+
+trait TokenNerLabelCubbie extends TokenCubbie {
+  val ner = StringSlot("ner")
+  def newTokenNerLabel(t:Token, s:String): cc.factorie.app.nlp.ner.ChainNerLabel
+  override def storeToken(t:Token): this.type = {
+    super.storeToken(t)
+    ner := t.nerLabel.categoryValue
+    this
+  }
+  override def fetchToken: Token = {
+    val t = super.fetchToken
+    t.attr += newTokenNerLabel(t, ner.value)
+    t
+  }
+}
+
+trait TokenPosLabelCubbie extends TokenCubbie {
+  val pos = StringSlot("pos")
+  def newTokenPosLabel(t:Token, s:String): cc.factorie.app.nlp.pos.PosLabel
+  override def storeToken(t:Token): this.type = {
+    super.storeToken(t)
+    pos:= t.posLabel.categoryValue
+    this
+  }
+  override def fetchToken: Token = {
+    val t = super.fetchToken
+    t.attr += newTokenPosLabel(t, pos.value)
+    t
+  }
+}
+
+
 
 
 /** Implementation of the entity-relationship language we can use with Token objects. */

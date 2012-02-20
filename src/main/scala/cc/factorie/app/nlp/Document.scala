@@ -68,46 +68,67 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     }
     buf.toString
   }
-  
-  def this(c:DocumentCubbie) = {
-	this(c.name.value, c.string.value)
-    val tokenStarts = c.tokenStarts.value
-    val tokenLengths = c.tokenLengths.value
-    for (i <- 0 until tokenStarts.length)
-      this += new Token(tokenStarts(i), tokenLengths(i))
-    val sentenceStarts = c.sentenceStarts.value
-    val sentenceLengths = c.sentenceLengths.value
-    for (i <- 0 until sentenceStarts.length)
-      this += new Sentence(this, sentenceStarts(i), sentenceLengths(i))(null)
-    for (spanCubbie <- c.spans.value) this += new TokenSpan(this, spanCubbie)
-  }
-  
-  def cubbieName = "Document"
-  def toCubbie: DocumentCubbie = { val c = new DocumentCubbie(); this.intoCubbie(c); c }
-  def intoCubbie(c:DocumentCubbie): Unit = {
-    c.name := name
-    c.string := string
-    c.tokenStarts := tokens.map(_.stringStart)
-    c.tokenLengths := tokens.map(_.stringLength)
-    c.sentenceStarts := sentences.map(_.start)
-    c.sentenceLengths := sentences.map(_.length)
-    c.spans := spans.map(_.toCubbie)
-  }
-  
+    
 }
 
 
-class DocumentCubbie extends Cubbie {
+class DocumentCubbie[TC<:TokenCubbie,TSC<:TokenSpanCubbie](val tc:()=>TC, val tsc:()=>TSC) extends Cubbie {
   val name = StringSlot("name")
-  val string = StringSlot("string")
-  val tokenStarts = IntListSlot("tokenStarts")
-  val tokenLengths = IntListSlot("tokenLengths")
-  val sentenceStarts = IntListSlot("sentenceStarts")
-  val sentenceLengths = IntListSlot("sentenceLengths")
-  val spans = CubbieListSlot("spans", ()=>new TokenSpanCubbie)
+  val string = StringSlot("string")  
+  val tokens = CubbieListSlot("tokens", tc)
+  val spans = CubbieListSlot("spans", tsc)
+  def storeDocument(doc:Document): this.type = {
+    name := doc.name
+    string := doc.string
+    if (doc.tokens.length > 0) tokens := doc.tokens.map(t => tokens.constructor().storeToken(t))
+    if (doc.spans.length > 0) spans := doc.spans.map(s => spans.constructor().storeTokenSpan(s))
+    this
+  }
+  def fetchDocument: Document = {
+    val doc = new Document(name.value, string.value)
+    if (tokens.value ne null) tokens.value.foreach(tc => doc += tc.fetchToken)
+    if (spans.value ne null) spans.value.foreach(sc => doc += sc.fetchTokenSpan(doc))
+    doc
+  }
 }
 
+/*
+@deprecated("Old draft")
+class DocumentCubbieOld extends Cubbie {
+  val name = StringSlot("name")
+  val string = StringSlot("string")  
+  val tokens = CubbieListSlot("tokens", ()=>new TokenCubbie)
+  val spans = CubbieListSlot("spans", ()=>new TokenSpanCubbie)
+  def storeDocument(doc:Document): this.type = {
+    name := doc.name
+    string := doc.string
+    if (doc.tokens.length > 0) tokens := doc.tokens.map(t => tokens.constructor().storeToken(t))
+    this
+  }
+  def fetchDocument: Document = {
+    val doc = new Document(name.value, string.value)
+    if (tokens ne null) tokens.value.foreach(tc => doc += tc.fetchToken)
+    doc
+  }
+}
 
-
+@deprecated("Old draft")
+trait DocumentTokenNerLabelsOld extends DocumentCubbie {
+  self =>
+  def newTokenNerLabel(t:Token, value:String): cc.factorie.app.nlp.ner.ChainNerLabel
+  //override def newTokenCubbieFunction = () => new TokenCubbie with TokenNerLabelCubbie
+  //override val tokens = CubbieListSlot("tokens", () => new TokenCubbie with TokenNerLabelCubbie { def newTokenNerLabel(t:Token, v:String) = self.newTokenNerLabel(t, v) })
+  override def storeDocument(doc:Document): this.type = {
+    super.storeDocument(doc)
+    doc.tokens.zip(tokens.value).foreach({case (token,tcubbie) => tcubbie._rawPut("ner", token.nerLabel.categoryValue)})
+    this
+  }
+  override def fetchDocument: Document = {
+    val doc = super.fetchDocument
+    //doc.tokens.zip(tokens.value).foreach({case (token,tcubbie) => token.attr += tcubbie._rawPut("ner", token.nerLabel.categoryValue)})
+    doc
+  }
+}
+*/
 
 
