@@ -40,22 +40,44 @@ class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Di
     case x => x.toString
   }
   
-  def toCubbie: TokenSpanCubbie = {
-    val c = new TokenSpanCubbie
-    c.start := start
-    c.length := length
-    attr.intoCubbie(c)
-    c
+}
+
+
+// Cubbie storage
+
+class TokenSpanCubbie extends Cubbie {
+  //val doc = RefSlot("doc", ()=>new DocumentCubbie)
+  val start = IntSlot("start")
+  val length = IntSlot("length")
+  def newObject(doc:Document, start:Int, length:Int): TokenSpan = new TokenSpan(doc, start, length)
+  def storeTokenSpan(ts:TokenSpan): this.type = {
+    start := ts.start
+    length:= ts.length
+    this
   }
-  def this(doc:Document, c:TokenSpanCubbie) = {
-    this(doc, c.start.value, c.length.value)(null)
-    // TODO Do something with Attr
+  def fetchTokenSpan(doc:Document): TokenSpan = {
+    val ts = newObject(doc, start.value, length.value)
+    ts
+  }
+  // A version that gets the Document from the cubbie.doc RefSlot
+  def fetchTokenSpan(/*implicit cr:CubbieRefs*/): TokenSpan = {
+    throw new Error("Not yet implemented")
+    val ts = newObject(null, start.value, length.value)
+    ts
   }
 }
 
-class TokenSpanCubbie extends Cubbie {
-  val doc = RefSlot("doc", ()=>new DocumentCubbie)
-  val start = IntSlot("start")
-  val length = IntSlot("length")
-  // TODO put the Attr in here also
+trait TokenSpanNerLabelCubbie extends TokenSpanCubbie {
+  def newTokenSpanNerLabel(ts:TokenSpan, s:String): cc.factorie.app.nlp.ner.NerLabel
+  val ner = StringSlot("ner")
+  override def storeTokenSpan(ts:TokenSpan): this.type = {
+    super.storeTokenSpan(ts)
+    ner := ts.attr[cc.factorie.app.nlp.ner.NerLabel].categoryValue
+    this
+  }
+  override def fetchTokenSpan: TokenSpan = {
+    val ts = super.fetchTokenSpan
+    ts.attr += newTokenSpanNerLabel(ts, ner.value)
+    ts
+  }
 }

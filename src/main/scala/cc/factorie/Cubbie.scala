@@ -15,16 +15,6 @@
 package cc.factorie
 import scala.collection.mutable.ArrayBuffer
 
-trait ToCubbie {
-  def toCubbie: Cubbie
-  def cubbieName = this.getClass.getName
-}
-
-trait ToCubbieSlot {
-  def cubbieSlotName: String
-  def cubbieSlotValue: Any
-}
-
 // Property, ala NeXTStep PropertyLists, used for JSON-like serialization
 // Call it "Tyson" for "Typed JSON"
 // or "Tymap" for "Typed Map"
@@ -51,7 +41,7 @@ class Cubbie {
   def _rawPut(name:String, value:Any): Unit = _map match {
     case smap:scala.collection.mutable.Map[String,Any] => smap(name) = value
     case jmap:java.util.Map[String,Any] => jmap.put(name, value)
-    case null => { _map = _newDefaultMap; _rawPut(name, value) }
+    case null => { _map = _newDefaultMap; require(_map ne null); _rawPut(name, value) }
   }
   // Access to collection of all map contents
   def elements: Iterator[(String,Any)] = {
@@ -61,6 +51,32 @@ class Cubbie {
       case jmap:java.util.Map[String,Any] => jmap.toMap.elements
       case null => Iterator.empty
     }
+  }
+  override def toString = toString(0, elements) 
+  def toString(indent:Int, elements: Iterator[(String,Any)]): String = {
+    val is = " " * indent
+    val isi = " " * (indent+1)
+    val sb = new StringBuffer
+    sb.append(is); sb.append("{\n")
+    for (e <- elements) {
+      sb.append(isi); sb.append("\""); sb.append(e._1); sb.append("\":");
+      e._2 match {
+        case x:Int => sb.append(x)
+        case x:Double => sb.append(x)
+        case x:Boolean => sb.append(x)
+        case x:String => sb.append("\""); sb.append(x.replace("\"","\\\"")); sb.append("\"")
+        case x:Seq[_] => sb.append("["); sb.append(x.map(_.toString).mkString(",")); sb.append("]") // TODO needs more than just _.toString!
+        case smap:scala.collection.mutable.Map[String,Any] => {
+          sb.append("{\n")
+          sb.append(toString(indent+1, smap.elements))
+          sb.append(isi); sb.append("}\n")
+        }
+        //case jmap:java.util.Map[String,Any] => sb.append(toString(indent+1, jmap.toMap.elements))
+      }
+      sb.append("\n")
+    }
+    sb.append(is); sb.append("}")
+    sb.toString
   }
   // Managing the "id"; aligns with MongoDB "_id"
   def idName = "_id"

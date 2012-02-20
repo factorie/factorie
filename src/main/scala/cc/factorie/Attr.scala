@@ -135,11 +135,6 @@ trait Attr {
       }
     }
 
-    @deprecated("Will be removed in favor of a CubbieConverter context")
-    def intoCubbie(c:Cubbie): Unit = for(a <- values) a match {
-      case tc:ToCubbieSlot => c._rawPut(tc.cubbieSlotName, tc.cubbieSlotValue)
-      case _ => throw new Error(a.getClass.getName+": Attr does not inherit from ToCubbieSlot")
-    }
     
   }
   

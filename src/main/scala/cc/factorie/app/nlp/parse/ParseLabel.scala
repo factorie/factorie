@@ -67,6 +67,8 @@ object ParseTree {
 class ParseTree(val sentence:Sentence) {
   private val _parents = new Array[Int](sentence.length)
   private val _labels = Array.tabulate(sentence.length)(i => new ParseTreeLabel(this))
+  def parents: Seq[Int] = _parents
+  def labels: Seq[ParseTreeLabel] = _labels
   /** Returns the position in the sentence of the root token. */ 
   def rootChildIndex: Int = firstChild(-1)
   /** Return the token at the root of the parse tree.  The parent of this token is null.  The parentIndex of this position is -1. */
@@ -192,3 +194,22 @@ class ParseTree(val sentence:Sentence) {
 // token.parseChildren
 // token.parseLabel
 // token.leftChildren
+
+class ParseTreeCubbie extends Cubbie {
+  val parents = IntListSlot("parents")
+  val labels = StringListSlot("labels")
+  def newParseTree(s:Sentence): ParseTree = new ParseTree(s) // This will be abstract when ParseTree domain is unfixed
+  def storeParseTree(pt:ParseTree): this.type = {
+    parents := pt.parents
+    labels := pt.labels.map(_.categoryValue)
+    this
+  }
+  def fetchParseTree(s:Sentence): ParseTree = {
+    val pt = newParseTree(s)
+    for (i <- 0 until s.length) {
+      pt.setParent(i, parents.value(i))
+      pt.label(i).setCategory(labels.value(i))(null)
+    }
+    pt
+  }
+}
