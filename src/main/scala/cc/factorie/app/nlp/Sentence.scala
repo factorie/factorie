@@ -31,13 +31,16 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
   }
 
   def contains(t: Token) = {
-    t.stringStart >= initialStart && t.stringEnd <= (initialStart+initialLength)
+    t.stringStart >= start && t.stringEnd <= (start + length)
   }
 
   // Parse attributes
   def parse = attr[cc.factorie.app.nlp.parse.ParseTree]
   def parseRootChild: Token = attr[cc.factorie.app.nlp.parse.ParseTree].rootChild
 
+  // common labels
+  def posLabels = this.map(_.posLabel)
+  def nerLabels = this.map(_.nerLabel)
 }
 
 // Cubbie storage
