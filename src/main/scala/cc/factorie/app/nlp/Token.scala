@@ -70,8 +70,8 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
     if (_sentence eq null) _sentence = document.sentenceContaining(this)
     _sentence
   }
-  @deprecated("This method should be removed.  'index' is reserved for other meanings; use only 'position'.")
-  def indexInSentence: Int = position - sentence.start // alias for sentencePosition
+  @deprecated("This method should be removed. use 'sentencePosition'.")
+  def indexInSentence: Int = sentencePosition
   def sentenceHasNext: Boolean = (sentence ne null) && position < sentence.end
   def sentenceHasPrev: Boolean = (sentence ne null) && position > sentence.start
   def sentenceNext: Token = if (sentenceHasNext) next else null
