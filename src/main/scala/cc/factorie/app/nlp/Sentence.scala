@@ -18,7 +18,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends TokenSpan(doc, initialStart, initialLength) {
   def this(doc:Document)(implicit d:DiffList = null) = this(doc, doc.length, 0)
-  def tokens: IndexedSeq[Token] = this 
+  def tokens: IndexedSeq[Token] = this
   def tokenAtCharIndex(charOffset:Int): Token = {
     require(charOffset >= first.stringStart && charOffset <= last.stringStart + last.stringLength)
     var i = 0 // TODO Implement as faster binary search
@@ -30,9 +30,7 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
     return null
   }
 
-  def contains(t: Token) = {
-    t.position >= start && t.position <= (start + length)
-  }
+  def contains(elem: Token) = tokens.contains(elem)
 
   // Parse attributes
   def parse = attr[cc.factorie.app.nlp.parse.ParseTree]
