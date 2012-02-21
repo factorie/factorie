@@ -31,7 +31,7 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
   }
 
   def contains(t: Token) = {
-    t.stringStart >= start && t.stringEnd <= (start + length)
+    t.position >= start && t.position <= (start + length)
   }
 
   // Parse attributes
