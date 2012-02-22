@@ -86,7 +86,8 @@ class Cubbie { thisCubbie =>
     if (result != null) result
     else { result = newId; _rawPut(idName, result); result }
   }
-  def id_=(i:Any): Unit = { require(_rawGet(idName) == null); _rawPut(idName, i) }
+  //todo: maps throw exceptions when key is not defined, need to adapt requirement
+  def id_=(i:Any): Unit = { /*require(_rawGet(idName) == null); */_rawPut(idName, i) }
   // Classes for holding key:value pairs
   abstract class Slot[T](val name:String) {
     def value: T
