@@ -24,12 +24,12 @@ import scala.collection.mutable.ArrayBuffer
 
 // Design goal:  You can initialize with cubbie._map = DBObject and it just works without conversion
 //  although other direction: cubbie._map => DBObject will require some conversion
-class Cubbie {
+class Cubbie { thisCubbie =>
   import scala.collection.mutable.Map
   def this(map:scala.collection.mutable.HashMap[String,Any]) = { this(); this._map = map }
   def this(map:java.util.HashMap[String,Any]) = { this(); this._map = map }
   // Managing raw underlying map that hold the data
-  private var _map: AnyRef = null
+  var _map: AnyRef = null
   def _newDefaultMap: AnyRef = new scala.collection.mutable.HashMap[String,Any]
   def _rawGet(name:String): Any = _map match {
     case smap:scala.collection.Map[String,Any] => smap(name)
@@ -92,10 +92,12 @@ class Cubbie {
     def value: T
     def :=(value:T): Unit
     def raw: Any = _rawGet(name)
+    def rawPut(value:Any) {_rawPut(name,value)}
     def isDefined: Boolean = null != _rawGet(name)
     def :=(opt:Option[T]): Unit = for (value <- opt) this := (value)
-    def set(value:T): this.type = { this := value; this }
-    def set(opt: Option[T]): this.type = { for (value <- opt) this := value; this }
+    def set(value:T): thisCubbie.type = { this := value; thisCubbie }
+    def set(opt: Option[T]): thisCubbie.type = { for (value <- opt) this := value; thisCubbie }
+    def cubbie:thisCubbie.type = thisCubbie
     override def toString = name+":"+_rawGet(name) 
   }
   abstract class PrimitiveSlot[T](n:String) extends Slot[T](n) {
