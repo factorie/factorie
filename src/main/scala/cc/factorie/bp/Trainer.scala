@@ -54,6 +54,8 @@ class Trainer(val model: Model, val pieces: Seq[Piece], val families: Seq[DotFam
   def init = {
     _weights = new ArrayFromVectors(families.map(_.weights))
     println("Number of pieces: " + pieces.length)
+    println("Number of active weights: " + _weights.vectorsArraySize)
+    println("Number of total weights: " + families.foldLeft(0)(_ + _.weights.length))
   }
 
   def numOptimizableParameters = _weights.vectorsArraySize

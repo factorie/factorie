@@ -15,15 +15,20 @@ trait Piece {
   def valueAndGradient: (Double, Map[DotFamily, Vector])
 }
 
-class ModelPiece(val model: Model, val vars: Seq[DiscreteVariable with VarWithTargetValue],
-                 val infer: (LatticeBP) => Unit = new InferencerBPWorker(_).inferTreewise()) extends Piece {
+class ModelPiece(val model: Model,
+                 val vars: Seq[DiscreteVariable with VarWithTargetValue],
+                 val families: Seq[DotFamily with Template],
+                 val infer: (LatticeBP) => Unit) extends Piece {
+
+  def this(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue], families: Seq[DotFamily with Template]) = this(model, vars, families, new InferencerBPWorker(_).inferTreewise())
+  def this(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue]) = this(model, vars, model.familiesOfClass[DotFamily with Template])
 
   // compute the empirical counts of the model
   lazy val empiricalCounts: Map[DotFamily, Vector] = {
     val diff = new DiffList
     vars.foreach(_.setToTarget(diff))
     val result: Map[DotFamily, Vector] = new HashMap
-    for (dt <- model.familiesOfClass[DotFamily with Template]) {
+    for (dt <- families) {
       // unroll the factors and count them up
       result(dt) = dt.factors(vars).foldLeft(
         new SparseVector(dt.statisticsVectorLength))((v, f) => {
@@ -55,7 +60,7 @@ class ModelPiece(val model: Model, val vars: Seq[DiscreteVariable with VarWithTa
     // compute the gradient
     val exps = fg.statExpectations
     val gradient: Map[DotFamily, Vector] = new HashMap[DotFamily, Vector]
-    for (df <- model.familiesOfClass[DotFamily with Template]) {
+    for (df <- families) {
       val vector = new SparseVector(df.statisticsVectorLength)
       val expv = exps.get(df)
       if (expv.isDefined) {
