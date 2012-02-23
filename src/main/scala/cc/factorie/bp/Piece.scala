@@ -15,24 +15,29 @@ trait Piece {
   def valueAndGradient: (Double, Map[DotFamily, Vector])
 }
 
-class ModelPiece(val model: Model,
-                 val vars: Seq[DiscreteVariable with VarWithTargetValue],
+class ModelPiece(val vars: Seq[DiscreteVariable with VarWithTargetValue],
                  val families: Seq[DotFamily with Template],
                  val infer: (LatticeBP) => Unit,
                  val fg: LatticeBP) extends Piece {
 
   // compute the empirical counts of the model
-  lazy val empiricalCounts: Map[DotFamily, Vector] = {
+  val empiricalCounts: Map[DotFamily, Vector] = {
     //val diff = new DiffList
     vars.foreach(_.setToTarget(null))
     val result: Map[DotFamily, Vector] = new HashMap
+    // TODO currently fT, when f factors and T templates
     for (dt <- families) {
-      // unroll the factors and count them up
-      result(dt) = dt.factors(vars).foldLeft(
-        new SparseVector(dt.statisticsVectorLength))((v, f) => {
-        v += f.statistics.vector
-        v
-      })
+      val vector = new SparseVector(dt.statisticsVectorLength)
+      for (factor <- fg.factors) {
+        factor match {
+          case f: DotFamily#Factor => {
+            if (f.family == dt)
+              vector += f.statistics.vector
+          }
+          case _ =>
+        }
+      }
+      result(dt) = vector
     }
     // undo the change
     //diff.undo
@@ -42,7 +47,19 @@ class ModelPiece(val model: Model,
   def truthScore: Double = {
     //val diff = new DiffList
     vars.foreach(_.setToTarget(null))
-    val score = model.score(vars)
+    var score = 0.0
+    // TODO currently fT, when f factors and T templates
+    for (dt <- families) {
+      for (factor <- fg.factors) {
+        factor match {
+          case f: DotFamily#Factor => {
+            if (f.family == dt) score += f.score
+          }
+          case _ =>
+        }
+      }
+    }
+
     //diff.undo
     score
   }
@@ -59,6 +76,7 @@ class ModelPiece(val model: Model,
       val vector = new SparseVector(df.statisticsVectorLength)
       val expv = exps.get(df)
       if (expv.isDefined) {
+        assert(expv.get.length == df.statisticsVectorLength)
         vector += (expv.get * -1.0)
       }
       vector += empiricalCounts(df)
@@ -69,6 +87,8 @@ class ModelPiece(val model: Model,
       val sb = new StringBuffer
       sb append ("value: %f\n".format(value))
       sb append ("truthScore: %f\n".format(truthScore))
+      sb append ("numFactors: %d\n".format(fg.factors.size))
+      sb append ("numVars: %d\n".format(fg.nodes.size))
       sb append ("logZ: %f\n".format(fg.logZ(true)))
       sb.toString
     })
@@ -78,20 +98,20 @@ class ModelPiece(val model: Model,
 
 object ModelPiece {
   def apply(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue], families: Seq[DotFamily with Template], infer: (LatticeBP) => Unit, unrollVars: Seq[DiscreteVariable]) =
-    new ModelPiece(model, vars, families, infer, {
+    new ModelPiece(vars, families, infer, {
       val fg = new LatticeBP(vars.toSet) with SumProductLattice
       fg.createFactors(model.factors(unrollVars))
       fg
     })
 
   def apply(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue], families: Seq[DotFamily with Template], infer: (LatticeBP) => Unit) =
-    new ModelPiece(model, vars, families, infer, new LatticeBP(model, vars.toSet) with SumProductLattice)
+    new ModelPiece(vars, families, infer, new LatticeBP(model, vars.toSet) with SumProductLattice)
 
   def apply(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue], families: Seq[DotFamily with Template]) =
-    new ModelPiece(model, vars, families, (fg: LatticeBP) => new InferencerBPWorker(fg).inferTreewise(), new LatticeBP(model, vars.toSet) with SumProductLattice)
+    new ModelPiece(vars, families, (fg: LatticeBP) => new InferencerBPWorker(fg).inferTreewise(), new LatticeBP(model, vars.toSet) with SumProductLattice)
 
   def apply(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue]) =
-    new ModelPiece(model, vars, model.familiesOfClass[DotFamily with Template],
+    new ModelPiece(vars, model.familiesOfClass[DotFamily with Template],
       (fg: LatticeBP) => new InferencerBPWorker(fg).inferTreewise(),
       new LatticeBP(model, vars.toSet) with SumProductLattice)
 

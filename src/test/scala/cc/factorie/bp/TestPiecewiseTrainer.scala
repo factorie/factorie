@@ -45,7 +45,7 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val model = new TemplateModel(localTemplate)
     val piece1 = ModelPiece(model, Seq(features1.label))
     val piece2 = ModelPiece(model, Seq(features2.label))
-    val optimizer = new LimitedMemoryBFGS(new Trainer(model, Seq(piece1, piece2), Seq(localTemplate)))
+    val optimizer = new LimitedMemoryBFGS(new Trainer(Seq(piece1, piece2), Seq(localTemplate)))
     optimizer.optimize(10)
     println("FD: " + FeaturesDomain.dimensionDomain.values)
     println("LD: " + LabelDomain.values)
@@ -68,7 +68,7 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val model = new TemplateModel(localTemplate)
     val piece1 = ModelPiece(model, Seq(features1.label))
     val piece2 = ModelPiece(model, Seq(features2.label))
-    val optimizer = new LimitedMemoryBFGS(new Trainer(model, Seq(piece1, piece2), Seq(localTemplate)) with L2Regularizer {
+    val optimizer = new LimitedMemoryBFGS(new Trainer(Seq(piece1, piece2), Seq(localTemplate)) with L2Regularizer {
       override def sigmaSq = 1
     })
     optimizer.optimize(10)
@@ -93,7 +93,7 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val model = new TemplateModel(localTemplate)
     val piece1 = ModelPiece(model, Seq(features1.label))
     val piece2 = ModelPiece(model, Seq(features2.label))
-    val optimizer = new LimitedMemoryBFGS(new ParallelTrainer(model, Seq(piece1, piece2), Seq(localTemplate)))
+    val optimizer = new LimitedMemoryBFGS(new ParallelTrainer(Seq(piece1, piece2), Seq(localTemplate)))
     optimizer.optimize(10)
     println("FD: " + FeaturesDomain.dimensionDomain.values)
     println("LD: " + LabelDomain.values)
@@ -116,7 +116,7 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val localTemplatePar = new LocalTemplate
     val modelPar = new TemplateModel(localTemplatePar)
     val piecesPar = features.map(f => ModelPiece(modelPar, Seq(f.label)))
-    val optimizerPar = new LimitedMemoryBFGS(new ParallelTrainer(modelPar, piecesPar, Seq(localTemplatePar)))
+    val optimizerPar = new LimitedMemoryBFGS(new ParallelTrainer(piecesPar, Seq(localTemplatePar)))
     var initTime = System.currentTimeMillis()
     optimizerPar.optimize(1)
     println("Parallel Time: " + (System.currentTimeMillis() - initTime))
@@ -129,7 +129,7 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val localTemplateSeq = new LocalTemplate
     val modelSeq = new TemplateModel(localTemplateSeq)
     val piecesSeq = features.map(f => ModelPiece(modelSeq, Seq(f.label)))
-    val optimizerSeq = new LimitedMemoryBFGS(new Trainer(modelSeq, piecesSeq, Seq(localTemplateSeq)))
+    val optimizerSeq = new LimitedMemoryBFGS(new Trainer(piecesSeq, Seq(localTemplateSeq)))
     initTime = System.currentTimeMillis()
     optimizerSeq.optimize(1)
     println("Sequential Time: " + (System.currentTimeMillis() - initTime))

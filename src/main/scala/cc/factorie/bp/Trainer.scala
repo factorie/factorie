@@ -11,7 +11,7 @@ import cc.factorie.la.{DenseVector, ArrayFromVectors, Vector}
  */
 
 trait Regularizer {
-  def model: Model
+  def families: Seq[DotFamily]
 
   def regValue: Double = 0.0
 
@@ -22,14 +22,14 @@ trait L2Regularizer extends Regularizer {
   def sigmaSq: Double = 10.0
 
   override def regValue = {
-    -(model.familiesOfClass[DotFamily].foldLeft(0.0)(
+    -(families.foldLeft(0.0)(
       (tot: Double, t: DotFamily) =>
         tot + t.weights.activeElements.foldLeft(0.0)(
           (totw, v) => totw + math.pow(v._2, 2)))) / (2.0 * sigmaSq)
   }
 
   override def regGradients(gradients: Map[DotFamily, Vector]) = {
-    for (df <- model.familiesOfClass[DotFamily]) {
+    for (df <- families) {
       val wv = df.weights
       val gv = gradients.getOrElseUpdate(df, new DenseVector(df.statisticsVectorLength))
       for (i: Int <- wv.activeDomain) {
@@ -40,10 +40,10 @@ trait L2Regularizer extends Regularizer {
   }
 }
 
-class Trainer(val model: Model, val pieces: Seq[Piece], val families: Seq[DotFamily])
+class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
       extends OptimizableByValueAndGradient with Regularizer {
 
-  def this(model: Model, pieces: Seq[Piece]) = this(model, pieces, model.familiesOfClass[DotFamily].toSeq)
+  def this(model: Model, pieces: Seq[Piece]) = this(pieces, model.familiesOfClass[DotFamily].toSeq)
 
   var _weights: ArrayFromVectors = null
   var _gradients: ArrayFromVectors = null
@@ -119,10 +119,10 @@ class Trainer(val model: Model, val pieces: Seq[Piece], val families: Seq[DotFam
   }
 }
 
-class ParallelTrainer(model: Model, pieces: Seq[Piece], families: Seq[DotFamily])
-      extends Trainer(model, pieces, families) {
+class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
+      extends Trainer(pieces, families) {
 
-  def this(model: Model, pieces: Seq[Piece]) = this(model, pieces, model.familiesOfClass[DotFamily].toSeq)
+  def this(model: Model, pieces: Seq[Piece]) = this(pieces, model.familiesOfClass[DotFamily].toSeq)
 
   var seqCalls = 0
   var combCalls = 0

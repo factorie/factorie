@@ -23,12 +23,18 @@ class SparseHashVector(theLength:Int) extends Vector {
   var default = 0.0
   private val h = new scala.collection.mutable.HashMap[Int,Double] { override def default(index:Int) = SparseHashVector.this.default }
   def apply(index:Int) = h(index)
-  override def update(index:Int, value:Double) = h(index) = value // TODO Should we assert(index < length) ?
+  override def update(index:Int, value:Double) = {
+    assert(index < length)
+    h(index) = value
+  }
   def activeElements = h.iterator
   def activeDomainSize = h.size
   def activeDomain: Iterable[Int] = h.keys
   override def forActiveDomain(f: (Int)=>Unit): Unit = h.keys.foreach(f(_))
-  override def increment(index:Int, incr:Double): Unit = h(index) = h(index) + incr // TODO Should we assert(index < length) ?
+  override def increment(index:Int, incr:Double): Unit = {
+    assert(index < length)
+    h(index) = h(index) + incr
+  }
   def dot(v:Vector): Double = v match {
     case dv:DenseVector => {
       var result = 0.0
@@ -47,10 +53,10 @@ class SparseHashVector(theLength:Int) extends Vector {
     }
     case _ => throw new Error("SparseHashVector.dot does not handle "+v.getClass.getName)
   }
-  override def +=(v:Vector): Unit = v.activeElements.foreach({case(index,value) => h.update(index, h(index) + value)})
+  override def +=(v:Vector): Unit = v.activeElements.foreach({case(index,value) => increment(index, value)}) //h.update(index, h(index) + value)})
   override def +=(s:Double): Unit = {
     default += s
-    h.keys.foreach(index => h.update(index, h(index) + s))
+    h.keys.foreach(index => increment(index, s)) //h.update(index, h(index) + s))
   }
 }
 
