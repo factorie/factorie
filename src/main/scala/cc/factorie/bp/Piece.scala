@@ -18,15 +18,13 @@ trait Piece {
 class ModelPiece(val model: Model,
                  val vars: Seq[DiscreteVariable with VarWithTargetValue],
                  val families: Seq[DotFamily with Template],
-                 val infer: (LatticeBP) => Unit) extends Piece {
-
-  def this(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue], families: Seq[DotFamily with Template]) = this(model, vars, families, new InferencerBPWorker(_).inferTreewise())
-  def this(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue]) = this(model, vars, model.familiesOfClass[DotFamily with Template])
+                 val infer: (LatticeBP) => Unit,
+                 val fg: LatticeBP) extends Piece {
 
   // compute the empirical counts of the model
   lazy val empiricalCounts: Map[DotFamily, Vector] = {
-    val diff = new DiffList
-    vars.foreach(_.setToTarget(diff))
+    //val diff = new DiffList
+    vars.foreach(_.setToTarget(null))
     val result: Map[DotFamily, Vector] = new HashMap
     for (dt <- families) {
       // unroll the factors and count them up
@@ -37,18 +35,15 @@ class ModelPiece(val model: Model,
       })
     }
     // undo the change
-    diff.undo
+    //diff.undo
     result
   }
 
-  // lattice to perform BP over
-  val fg = new LatticeBP(model, vars.toSet) with SumProductLattice
-
   def truthScore: Double = {
-    val diff = new DiffList
-    vars.foreach(_.setToTarget(diff))
+    //val diff = new DiffList
+    vars.foreach(_.setToTarget(null))
     val score = model.score(vars)
-    diff.undo
+    //diff.undo
     score
   }
 
@@ -69,6 +64,35 @@ class ModelPiece(val model: Model,
       vector += empiricalCounts(df)
       gradient(df) = vector
     }
-    (truthScore - fg.logZ, gradient)
+    val value = truthScore - fg.logZ()
+    assert(!value.isNaN && !value.isInfinity && value < 0.0, {
+      val sb = new StringBuffer
+      sb append ("value: %f\n".format(value))
+      sb append ("truthScore: %f\n".format(truthScore))
+      sb append ("logZ: %f\n".format(fg.logZ(true)))
+      sb.toString
+    })
+    (value, gradient)
   }
+}
+
+object ModelPiece {
+  def apply(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue], families: Seq[DotFamily with Template], infer: (LatticeBP) => Unit, unrollVars: Seq[DiscreteVariable]) =
+    new ModelPiece(model, vars, families, infer, {
+      val fg = new LatticeBP(vars.toSet) with SumProductLattice
+      fg.createFactors(model.factors(unrollVars))
+      fg
+    })
+
+  def apply(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue], families: Seq[DotFamily with Template], infer: (LatticeBP) => Unit) =
+    new ModelPiece(model, vars, families, infer, new LatticeBP(model, vars.toSet) with SumProductLattice)
+
+  def apply(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue], families: Seq[DotFamily with Template]) =
+    new ModelPiece(model, vars, families, (fg: LatticeBP) => new InferencerBPWorker(fg).inferTreewise(), new LatticeBP(model, vars.toSet) with SumProductLattice)
+
+  def apply(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue]) =
+    new ModelPiece(model, vars, model.familiesOfClass[DotFamily with Template],
+      (fg: LatticeBP) => new InferencerBPWorker(fg).inferTreewise(),
+      new LatticeBP(model, vars.toSet) with SumProductLattice)
+
 }

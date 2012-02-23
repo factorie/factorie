@@ -90,6 +90,9 @@ class Trainer(val model: Model, val pieces: Seq[Piece], val families: Seq[DotFam
       if (pieces.length >= 10000 && i % (pieces.length / 25) == 0)
         println("Done %d of %d pieces".format(i, pieces.length))
     }
+    //println("--- Normalizing ---")
+    //_value *= (1.0 / pieces.length)
+    //grads.values.foreach(g => g.activeDomain.foreach(i => g(i) = g(i) * (1.0 / pieces.length)))
     println("Regularizing")
     // include the regularization
     _value += regValue
@@ -159,6 +162,9 @@ class ParallelTrainer(model: Model, pieces: Seq[Piece], families: Seq[DotFamily]
       new ValAndGrad
     })(_ augment _, _ combineWith _)
     println("--- seqCalls: %d, combCalls: %d".format(seqCalls, combCalls))
+    //result.value *= (1.0 / pieces.length)
+    //result.grad.values.foreach(g => g.activeDomain.foreach(i => g(i) = g(i) * (1.0 / pieces.length)))
+    //println("--- Normalized ---")
     seqCalls = 0
     combCalls = 0
     _value = result.value

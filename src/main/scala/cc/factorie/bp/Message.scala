@@ -51,6 +51,8 @@ trait GenericMessage extends Marginal {
       val prob = probability(x)
       result -= prob * log(prob)
     }
+    assert(!result.isNaN, () => toString)
+    assert(!result.isInfinity, () => toString)
     result
   }
 

@@ -37,7 +37,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
           .map(p => Pair(p._1.asInstanceOf[DiscreteVariable], p._2))
           .filter(p => !varying.contains(p._1))
   // set of neighbors that are varying
-  lazy val varyingNeighbors: Set[Variable] = {
+  val varyingNeighbors: Set[Variable] = {
     val set: HashSet[Variable] = new HashSet
     set ++= discreteVarying.map(_._1)
     set.toSet
@@ -101,7 +101,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
       // todo: remarginalize, but for individual variables separately
       // val mess = marginalize(node.variable, incoming)
       for (e <- edges) {
-        val mess = if(incoming(e).isDeterministic) incoming(e) else result.get(e) / incoming(e)
+        val mess = if (incoming(e).isDeterministic) incoming(e) else result.get(e) / incoming(e)
         setOutgoing(e, mess)
       }
       _remarginalize = false
@@ -136,16 +136,20 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
 
   def logZ: Double = {
     var Z = 0.0
+    var maxScore = Double.NegativeInfinity
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       var num: Double = getScore(assignment)
       for (e <- edges) {
         val mess = incoming(e)
-        num += mess.score(assignment.get(e.n.variable).get)
+        num += mess.score(assignment(e.n.variable))
       }
-      num = exp(num)
-      Z += num
+      if (maxScore < num) maxScore = num
+      val expnum = exp(num)
+      Z += expnum
     }
-    log(Z)
+    val lZ = log(Z)
+    assert(lZ > maxScore, "LogZ %f less than maxScore %f".format(lZ, maxScore))
+    lZ
   }
 
   def foldMarginals[A](init: A)(f: (A, Values, Double) => A): A = {
@@ -340,10 +344,9 @@ trait MaxFactor extends MessageFactor {
 }
 
 class MessageNode(val variable: Variable, val varying: Set[DiscreteVariable]) {
-  // TODO: Add support for "changed" flag, i.e. recompute only when value is read, and hasnt changed since last read
   private val _edges = new ArrayBuffer[Edge]
 
-  lazy val varies: Boolean = variable match {
+  val varies: Boolean = variable match {
     case dv: DiscreteVariable => varying contains dv
     case _ => false
   }
@@ -497,25 +500,28 @@ abstract class LatticeBP(val varying: Set[DiscreteVariable]) extends Lattice[Var
     _factors.values.map(_.currentMaxDelta).max
   }
 
-  def logZ: Double = {
+  def logZ(debug: Boolean = false): Double = {
     //Bethe approximation according to wainwright 08 page 83 top.
     var logZ = 0.0
     for (node <- nodes) {
       val nodeEntropy = node.marginal.entropy
       logZ += (1.0 - node.neighbors.size) * nodeEntropy
     }
+    if (debug) println("post entropy: " + logZ)
     for (mf <- mfactors) {
       //we can join expected edge score and entropy as local logZ of potential
+      mf.receiveFromAll
       val factorLogZ = mf.logZ
       logZ += factorLogZ
+      if (debug) println("factor: " + factorLogZ + ", logZ: " + logZ)
       // compensate for double counting <incoming, mu>
       for (e <- mf.edges) {
-        val node = mf.nodes(e.vid)
         // dot product of node marginals and incoming from node
-        val dot = node.marginal.domain.foldLeft(0.0)(
-          (d, v) => d + (node.marginal.probability(v) * mf.incoming(e).score(v)))
+        val dot = e.n.marginal.domain.foldLeft(0.0)(
+          (d, v) => d + (e.n.marginal.probability(v) * mf.incoming(e).score(v)))
         logZ -= dot
       }
+      if (debug) println("post compensation: " + logZ)
     }
     logZ
   }

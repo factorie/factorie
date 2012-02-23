@@ -80,6 +80,30 @@ class TestBP extends TestCase {
       override def toString = "F(%s,%s)".format(n1, n2)
     }
 
+  private def newFactor3(n1: BinVar, n2: BinVar, n3: BinVar, scores: Seq[Double]) =
+    new Factor3[BinVar, BinVar, BinVar] {
+      factor =>
+      def _1 = n1
+
+      def _2 = n2
+
+      def _3 = n3
+
+      type StatisticsType = Stat
+
+      final case class Stat(_1: BinVar#Value, _2: BinVar#Value, _3: BinVar#Value) extends Statistics {
+        lazy val score: Double = factor.score(this)
+      }
+
+      def statistics(v: this.type#Values) = Stat(v._1, v._2, v._3)
+
+      def score(s: Stat): Double = scores(s._1.category * 4 + s._2.category * 2 + s._3.category)
+
+      override def equalityPrerequisite = this
+
+      override def toString = "F(%s,%s,%s)".format(n1, n2, n3)
+    }
+
   // short for exponential
   private def e(num: Double) = math.exp(num)
 
@@ -570,8 +594,8 @@ class TestBP extends TestCase {
         println("v" + i + " : " + fg.node(vars(i)).marginal)
         assertEquals(marginals(i) / Z, fg.node(vars(i)).marginal.probability(BinDomain(0)), eps)
       }
-      println("z : " + math.log(Z) + ", " + fg.logZ)
-      assertEquals(math.log(Z), fg.logZ, eps)
+      println("z : " + math.log(Z) + ", " + fg.logZ())
+      assertEquals(math.log(Z), fg.logZ(), eps)
       // max product
       val mfg = new LatticeBP(model, varSet) with MaxProductLattice
       new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
@@ -618,6 +642,58 @@ class TestBP extends TestCase {
     assertEquals(fg.node(v1).marginal.score(BinDomain(1)), 10, eps)
     assertEquals(fg.node(v2).marginal.score(BinDomain(1)), 10, eps)
     // vary just one variable
+  }
+
+  def testV3F4Random = {
+    val n1 = new BinVar(0)
+    val n2 = new BinVar(0)
+    val n3 = new BinVar(0)
+    val varSet: Set[DiscreteVariable] = Set(n1, n2, n3)
+    for (seed <- (0 until 10)) {
+      val random = new Random(seed)
+      val model = new FactorModel
+      model += newFactor1(n1, 0, random.nextDouble() * 4.0 - 2.0)
+      model += newFactor1(n2, 0, random.nextDouble() * 4.0 - 2.0)
+      model += newFactor1(n3, 0, random.nextDouble() * 4.0 - 2.0)
+      model += newFactor3(n1, n2, n3, (0 until 8).map(i => random.nextDouble() * 6.0 - 3.0))
+      // true marginals and the map
+      val marginals: Array[Double] = Array.fill(3)(0.0)
+
+      // go through all the configurations
+      var Z = 0.0
+      val scores = new ArrayBuffer[Double]
+      var maxScore = Double.NegativeInfinity
+      var mapAssignment: Int = -1
+      for (bs <- 0 until 8) {
+        n1.set(bs % 2)(null)
+        n2.set((bs / 2) % 2)(null)
+        n3.set((bs / 4) % 2)(null)
+        val score = model.score(varSet.toIterable)
+        //println(bs + " -> " + score)
+        scores += score
+        Z += math.exp(score)
+        if (n1.intValue == 0) marginals(0) += math.exp(score)
+        if (n2.intValue == 0) marginals(1) += math.exp(score)
+        if (n3.intValue == 0) marginals(2) += math.exp(score)
+        if (score > maxScore) {
+          maxScore = score
+          mapAssignment = bs
+        }
+      }
+      println("map : " + mapAssignment + ", score: " + maxScore)
+      println("marginals : " + marginals.map(_ / Z).mkString(", "))
+      // test sum-product
+      val fg = new LatticeBP(model, varSet) with SumProductLattice
+      new InferencerBPWorker(fg).inferLoopyBP(4)
+      println("n1 : " + fg.node(n1).marginal)
+      assertEquals(marginals(0) / Z, fg.node(n1).marginal.probability(BinDomain(0)), eps)
+      println("n2 : " + fg.node(n2).marginal)
+      assertEquals(marginals(1) / Z, fg.node(n2).marginal.probability(BinDomain(0)), eps)
+      println("n3 : " + fg.node(n3).marginal)
+      assertEquals(marginals(2) / Z, fg.node(n3).marginal.probability(BinDomain(0)), eps)
+      println("z : " + math.log(Z) + ", " + fg.logZ())
+      assertEquals(math.log(Z), fg.logZ(), eps)
+    }
   }
 
 }
