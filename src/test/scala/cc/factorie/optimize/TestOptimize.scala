@@ -1,4 +1,4 @@
-package cc.factorie.optimzie
+package cc.factorie.optimize
 
 import junit.framework._
 import Assert._
