@@ -111,7 +111,7 @@ object UniformMessage extends GenericUniformMessage {
   override def isUniform = true
 }
 
-class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) extends GenericMessage {
+class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value], dmap: HashMap[Value,Int]) extends GenericMessage {
   assert(!scores.exists(_.isNaN), "Nan in scores: " + scores)
   assert(!scores.exists(_.isPosInfinity), "Pos Inf in scores: " + scores)
 
@@ -119,26 +119,26 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) exten
 
   def sample = domain((0 until domain.length).sampleExpProportionally(i => scores(i)))
 
-  override def renormalize = new DiscreteMessage(scores.map(_ - log(Z)), domain)
+  override def renormalize = new DiscreteMessage(scores.map(_ - log(Z)), domain, dmap)
 
   override def *(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
     case d: DeterministicMessage[Value] => d * this
-    case d: DiscreteMessage[Value] => new DiscreteMessage[Value](scores.zip(d.scores).map(pair => pair._1 + pair._2), domain)
+    case d: DiscreteMessage[Value] => new DiscreteMessage[Value](scores.zip(d.scores).map(pair => pair._1 + pair._2), domain, dmap)
     case _ => error("Need compatible messages")
   }
 
   override def /(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
     case d: DeterministicMessage[Value] => error("Cannot divide regular message with Deterministic Message")
-    case d: DiscreteMessage[Value] => new DiscreteMessage[Value](scores.zip(d.scores).map(pair => pair._1 - pair._2), domain)
+    case d: DiscreteMessage[Value] => new DiscreteMessage[Value](scores.zip(d.scores).map(pair => pair._1 - pair._2), domain, dmap)
     case _ => error("Need compatible messages")
   }
 
   override def score(value: Any) = {
     value match {
       //      case i: Int => scores(i)
-      case v: Value => scores(domain.indexOf(v))
+      case v: Value => scores(dmap(v))
       case _ => Double.NegativeInfinity
     }
   }
@@ -162,7 +162,7 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value]) exten
       domain.find(score(_) != Double.NegativeInfinity)
     } else None
 
-  lazy val inverse = new DiscreteMessage[Value](scores.map(score => -score), domain)
+  lazy val inverse = new DiscreteMessage[Value](scores.map(score => -score), domain, dmap)
 
   def defaultValue = domain.head
 
