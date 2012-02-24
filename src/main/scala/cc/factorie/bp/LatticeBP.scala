@@ -221,12 +221,27 @@ trait SumFactor extends MessageFactor {
     BPUtil.message(target, varScores)
   } */
 
+  var scores : Array[Array[Double]] = new Array(1)
   def marginalize(incoming: FactorMessages): FactorMessages = {
     val result = new FactorMessages(variables)
-    val scores: Array[Array[Double]] = new Array(varyingNeighbors.size)
+    //val scores: Array[Array[Double]] = new Array(varyingNeighbors.size)
+    if (scores.length < varyingNeighbors.size) {
+      scores = new Array(varyingNeighbors.size)
+    } // else println("saving allocation")
     // initialize score arrays for varying neighbors
-    for (i <- 0 until discreteVarying.length) {
-      scores(i) = Array.fill(discreteVarying(i)._1.domain.size)(0.0)
+    var i = 0
+    while (i < discreteVarying.length) {
+      if (scores(i) == null || scores(i).length < discreteVarying(i)._1.domain.size) {
+        scores(i) = Array.fill(discreteVarying(i)._1.domain.size)(0.0)
+      } else {
+        var j = 0
+        while (j < scores(i).length) {
+          scores(i)(j) = 0.0
+          j += 1
+        }
+        // println("saving another allocation")
+      }
+      i += 1
     }
     var maxLogScore = Double.NegativeInfinity
     // go through all the assignments of the varying variables
@@ -252,17 +267,25 @@ trait SumFactor extends MessageFactor {
       val expnum = exp(num)
       assert(!expnum.isInfinity)
       _marginal(index) = expnum
-      for (i <- 0 until discreteVarying.length) {
+      i = 0
+      while (i < discreteVarying.length) {
         scores(i)(assignment(discreteVarying(i)._1).intValue) += expnum
+        i += 1
       }
       Z += expnum
     }
-    (0 until _marginal.size).foreach(i => _marginal(i) /= Z)
+    i = 0
+    while (i < _marginal.size) {
+      _marginal(i) /= Z
+      i += 1
+    }
     // set the send messages
-    for (i <- 0 until discreteVarying.length) {
+    i = 0
+    while (i < discreteVarying.length) {
       val dv = discreteVarying(i)
       val vid = dv._2
       result.set(vid, BPUtil.message(dv._1, scores(i).map(s => log(s)).toSeq))
+      i += 1
     }
     // deterministic messages for the fixed neighbors
     for (fv <- fixedNeighbors) {
