@@ -14,6 +14,7 @@
 
 package cc.factorie
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{Map => MutableMap}
 
 // Property, ala NeXTStep PropertyLists, used for JSON-like serialization
 // Call it "Tyson" for "Typed JSON"
@@ -27,61 +28,23 @@ import scala.collection.mutable.ArrayBuffer
 class Cubbie { thisCubbie =>
   import scala.collection.mutable.Map
   def this(map:scala.collection.mutable.HashMap[String,Any]) = { this(); this._map = map }
-  def this(map:java.util.HashMap[String,Any]) = { this(); this._map = map }
+//  def this(map:java.util.HashMap[String,Any]) = { this(); this._map = map }
   // Managing raw underlying map that hold the data
-  var _map: AnyRef = null
+  type MapType = MutableMap[String, Any]
+  var _map: MapType = null
   def _newDefaultMap: AnyRef = new scala.collection.mutable.HashMap[String,Any]
-  def _rawGet(name:String): Any = _map match {
-    case smap:scala.collection.Map[String,Any] => smap(name)
-    case jmap:java.util.Map[String,Any] => jmap.get(name)
-    case null => null
-  }
-  def _rawGetOrElse(name:String, default: =>Any) = { val r = _rawGet(name); if (r equals null) default else r }
-  def _rawGetOrElseUpdate(name:String, default: =>Any) = { val r = _rawGet(name); if (r != null) r else { val d = default; _rawPut(name, d); d } }
-  def _rawPut(name:String, value:Any): Unit = _map match {
-    case smap:scala.collection.mutable.Map[String,Any] => smap(name) = value
-    case jmap:java.util.Map[String,Any] => jmap.put(name, value)
-    case null => { _map = _newDefaultMap; require(_map ne null); _rawPut(name, value) }
-  }
+  def _rawGet(name:String): Any = _map(name)
+  def _rawGetOrElse(name:String, default: =>Any) = _map.getOrElse(name, default)
+  def _rawGetOrElseUpdate(name:String, default: =>Any) = _map.getOrElseUpdate(name, default)
+  def _rawPut(name:String, value:Any) {_map(name) = value }
   // Access to collection of all map contents
-  def elements: Iterator[(String,Any)] = {
-    import collection.JavaConversions._
-    _map match {
-      case smap:scala.collection.mutable.Map[String,Any] => smap.elements
-      case jmap:java.util.Map[String,Any] => jmap.toMap.elements
-      case null => Iterator.empty
-    }
-  }
-  override def toString = toString(0, elements) 
-  def toString(indent:Int, elements: Iterator[(String,Any)]): String = {
-    val is = " " * indent
-    val isi = " " * (indent+1)
-    val sb = new StringBuffer
-    sb.append(is); sb.append("{\n")
-    for (e <- elements) {
-      sb.append(isi); sb.append("\""); sb.append(e._1); sb.append("\":");
-      e._2 match {
-        case x:Int => sb.append(x)
-        case x:Double => sb.append(x)
-        case x:Boolean => sb.append(x)
-        case x:String => sb.append("\""); sb.append(x.replace("\"","\\\"")); sb.append("\"")
-        case x:Seq[_] => sb.append("["); sb.append(x.map(_.toString).mkString(",")); sb.append("]") // TODO needs more than just _.toString!
-        case smap:scala.collection.mutable.Map[String,Any] => {
-          sb.append("{\n")
-          sb.append(toString(indent+1, smap.elements))
-          sb.append(isi); sb.append("}\n")
-        }
-        //case jmap:java.util.Map[String,Any] => sb.append(toString(indent+1, jmap.toMap.elements))
-      }
-      sb.append("\n")
-    }
-    sb.append(is); sb.append("}")
-    sb.toString
-  }
-  // Managing the "id"; aligns with MongoDB "_id"
+  def elements: Iterator[(String,Any)] = _map.iterator
+  override def toString = toString(0, elements)
+  def toString(indent:Int, elements: Iterator[(String,Any)]): String = _map.toString()
+    // Managing the "id"; aligns with MongoDB "_id"
   def idName = "_id"
   def newId = java.util.UUID.randomUUID
-  final def id: Any = { // "final" because we need to ensure that the _id gets inserted into the 
+  final def id: Any = { // "final" because we need to ensure that the _id gets inserted into the
     var result = _rawGet(idName) // avoid getOrElseUpdate because it will allocate a closure object
     if (result != null) result
     else { result = newId; _rawPut(idName, result); result }
@@ -99,7 +62,7 @@ class Cubbie { thisCubbie =>
     def set(value:T): thisCubbie.type = { this := value; thisCubbie }
     def set(opt: Option[T]): thisCubbie.type = { for (value <- opt) this := value; thisCubbie }
     def cubbie:thisCubbie.type = thisCubbie
-    override def toString = name+":"+_rawGet(name) 
+    override def toString = name+":"+_rawGet(name)
   }
   abstract class PrimitiveSlot[T](n:String) extends Slot[T](n) {
     def value: T = _rawGet(name).asInstanceOf[T]
@@ -129,8 +92,8 @@ class Cubbie { thisCubbie =>
     import collection.JavaConversions._
     def value: Seq[A] = _rawGet(name) match {
       case null => null
-      case s:Seq[AnyRef] => if (s.length == 0) Nil else s.map(m => { val c = constructor(); c._map = m; c }) // The AnyRef is expected to be a Scala or Java Map 
-      case al:java.util.ArrayList[A] => if (al.size == 0) Nil else al.toSeq.map(m => { val c = constructor(); c._map = m; c }) // The AnyRef is expected to be a Scala or Java Map
+      case s:Seq[AnyRef] => if (s.length == 0) Nil else s.map(m => { val c = constructor(); c._map = m.asInstanceOf[MapType]; c }) // The AnyRef is expected to be a Scala or Java Map
+//      case al:java.util.ArrayList[A] => if (al.size == 0) Nil else al.toSeq.map(m => { val c = constructor(); c._map = m; c }) // The AnyRef is expected to be a Scala or Java Map
     }
     def :=(value:Seq[A]) = _rawPut(name, value.map(c => c._map)) // Actually put in the sequence of Maps, not sequence of Cubbies
   }
@@ -141,8 +104,8 @@ class Cubbie { thisCubbie =>
     def deref(implicit tr:CubbieRefs) = tr(value).asInstanceOf[A]
   }
   case class CubbieSlot[A<:Cubbie](override val name:String, constructor: ()=>A) extends Slot[A](name) {
-    def value: A = { val a = constructor(); a._map = _rawGet(name).asInstanceOf[AnyRef]; a }
-    def :=(value:A) = _rawPut(name, value._map) 
+    def value: A = { val a = constructor(); a._map = _rawGet(name).asInstanceOf[MapType]; a }
+    def :=(value:A) = _rawPut(name, value._map)
   }
 }
 
