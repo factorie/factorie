@@ -2,6 +2,7 @@ package cc.factorie.bp
 
 import scala.math._
 import cc.factorie._
+import cc.factorie.la._
 import collection.mutable.{ArrayBuffer, HashMap}
 
 /**
@@ -25,9 +26,9 @@ trait GenericMessage extends Marginal {
 
   def unnormalized(value: Any) = exp(score(value))
 
-  def probability(value: Any) = exp(score(value)) / Z
+  def probability(value: Any) = unnormalized(value) / Z
 
-  def sample: Any
+  def sample[A]: A = domain.sampleExpProportionally(score(_)).asInstanceOf[A]
 
   def score(value: Any): Double
 
@@ -35,15 +36,7 @@ trait GenericMessage extends Marginal {
 
   def defaultScore: Double = Double.NegativeInfinity
 
-  def nonMerged: Iterable[Any] = domain
-
-  def mergedSize: Long = (domain.size - nonMerged.size).toLong
-
   def Z: Double
-
-  def renormalize = this
-
-  //def normalize
 
   def entropy = {
     var result = 0.0
@@ -111,34 +104,49 @@ object UniformMessage extends GenericUniformMessage {
   override def isUniform = true
 }
 
-class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value], dmap: HashMap[Value,Int]) extends GenericMessage {
+/**
+ * An immutable message that is defined over the complete domain of a discrete variable.
+ * @param scores - Array of unnormalized scores defined over the domain of the variable
+ * @param variable - The variable that the message is defined over
+ * @tparam DV - Type of the variable that the message is defined over
+ */
+class DiscreteMessage[DV <: DiscreteVariable](val variable: DV, val scores: Vector) extends GenericMessage {
   assert(!scores.exists(_.isNaN), "Nan in scores: " + scores)
   assert(!scores.exists(_.isPosInfinity), "Pos Inf in scores: " + scores)
+  assert(scores.length == variable.domain.size, "Message score should be defined on the whole domain")
 
-  override def domain: Seq[Value] = _domain
+  type Value = DV#ValueType
 
-  def sample = domain((0 until domain.length).sampleExpProportionally(i => scores(i)))
-
-  override def renormalize = new DiscreteMessage(scores.map(_ - log(Z)), domain, dmap)
+  override def domain: Seq[Value] = variable.domain.values
 
   override def *(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
-    case d: DeterministicMessage[Value] => d * this
-    case d: DiscreteMessage[Value] => new DiscreteMessage[Value](scores.zip(d.scores).map(pair => pair._1 + pair._2), domain, dmap)
-    case _ => error("Need compatible messages")
+    case d: DeterministicMessage[_] => d * this
+    case d: DiscreteMessage[DV] => new DiscreteMessage(variable, {
+      val dv = new DenseVector(scores.length)
+      dv += scores
+      dv += d.scores
+      dv
+    })
+    case _ => sys.error("Need compatible messages")
   }
 
   override def /(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
-    case d: DeterministicMessage[Value] => error("Cannot divide regular message with Deterministic Message")
-    case d: DiscreteMessage[Value] => new DiscreteMessage[Value](scores.zip(d.scores).map(pair => pair._1 - pair._2), domain, dmap)
-    case _ => error("Need compatible messages")
+    case d: DeterministicMessage[_] => sys.error("Cannot divide regular message with Deterministic Message")
+    case d: DiscreteMessage[DV] => new DiscreteMessage(variable, {
+      val dv = new DenseVector(scores.length)
+      dv += scores
+      dv += (d.scores * -1)
+      dv
+    })
+    case _ => sys.error("Need compatible messages")
   }
 
   override def score(value: Any) = {
     value match {
       //      case i: Int => scores(i)
-      case v: Value => scores(dmap(v))
+      case v: Value => scores(v.intValue)
       case _ => Double.NegativeInfinity
     }
   }
@@ -155,25 +163,24 @@ class DiscreteMessage[Value](val scores: Seq[Double], _domain: Seq[Value], dmap:
 
   lazy val Z = scores.map(exp(_)).sum
 
-  def deterministicValue: Option[Any] =
+  def deterministicValue: Option[Value] =
     if (scores.exists(s => s.isPosInfinity)) {
       domain.find(score(_) == Double.PositiveInfinity)
     } else if (scores.exists(s => s.isNegInfinity)) {
       domain.find(score(_) != Double.NegativeInfinity)
     } else None
 
-  lazy val inverse = new DiscreteMessage[Value](scores.map(score => -score), domain, dmap)
+  lazy val inverse = new DiscreteMessage(variable, scores * -1)
 
   def defaultValue = domain.head
 
   override lazy val isDeterministic = scores.exists(s => s.isPosInfinity || s.isNegInfinity)
 
   override lazy val isUniform = scores.min == scores.max
-
 }
 
 class DeterministicMessage[Value](val value: Value) extends GenericMessage {
-  def inverse = throw new Error("inverse not implemented for deterministic message")
+  def inverse = sys.error("inverse not implemented for deterministic message")
 
   def domain = Seq(value)
 
@@ -181,9 +188,11 @@ class DeterministicMessage[Value](val value: Value) extends GenericMessage {
 
   override lazy val deterministicValue: Option[Any] = Some(value)
 
-  override def renormalize = this
+  override def sample[A]: A = value match {
+    case a: A => a
+  }
 
-  override def sample = value
+  override def map[A] = sample[A]
 
   override def *(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
@@ -192,7 +201,7 @@ class DeterministicMessage[Value](val value: Value) extends GenericMessage {
         error("Cannot multiply %s with %s".format(value, d.value))
       else this
     }
-    case d: DiscreteMessage[Value] => this
+    case d: DiscreteMessage[_] => this
     case _ => error("Need compatible messages")
   }
 
@@ -203,7 +212,7 @@ class DeterministicMessage[Value](val value: Value) extends GenericMessage {
         error("Cannot divide %s with %s".format(value, d.value))
       else UniformMessage
     }
-    case d: DiscreteMessage[Value] => this // TODO: correct?
+    case d: DiscreteMessage[_] => this // TODO: correct?
     case _ => error("Need compatible messages")
   }
 
@@ -214,7 +223,7 @@ class DeterministicMessage[Value](val value: Value) extends GenericMessage {
     }
   }
 
-  override def entropy = 0.0 // TODO correct?
+  override def entropy = 0.0
 
   override def dynamicRange = Double.PositiveInfinity
 
@@ -271,13 +280,6 @@ class VarMessages(factors: Seq[Factor]) extends Messages[Factor](factors) {
   def set(e: Edge, msg: GenericMessage): Unit = set(e.fid, msg)
 }
 
-/**
- * message between a variable and a factor.
- * also used to represent variable's product of incoming/send message.
- *
- * Note that this implementation is cpu-optimized, not memory optimized. If you
- * want to reduce memory footprint, replace 'lazy val' with 'def'.
- */
 case class MessageOperationNotSupported(thisType: GenericMessage, thatType: GenericMessage)
       extends RuntimeException("Messages of type %s can't be combined with messages of type %s".format(
         thisType.getClass.getSimpleName, thatType.getClass.getSimpleName))

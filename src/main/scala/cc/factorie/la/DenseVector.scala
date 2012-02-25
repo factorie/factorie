@@ -55,4 +55,9 @@ object DenseVector {
     result.set(default)
     result
   }
+  def apply(values:Seq[Double]) = {
+    val result = new DenseVector(values.length)
+    (0 until values.length).map(i => result(i) = values(i))
+    result
+  }
 }
