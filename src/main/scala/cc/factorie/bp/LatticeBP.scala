@@ -222,6 +222,7 @@ trait SumFactor extends MessageFactor {
   } */
 
   var scores : Array[Array[Double]] = new Array(1)
+  var tmpScore: Array[Double] = new Array(1)
   def marginalize(incoming: FactorMessages): FactorMessages = {
     val result = new FactorMessages(variables)
     //val scores: Array[Array[Double]] = new Array(varyingNeighbors.size)
@@ -234,26 +235,33 @@ trait SumFactor extends MessageFactor {
       if (scores(i) == null || scores(i).length < discreteVarying(i)._1.domain.size) {
         scores(i) = Array.fill(discreteVarying(i)._1.domain.size)(0.0)
       } else {
+        //java.util.Arrays.fill(scores(i), 0.0) should be faster, but isn't
         var j = 0
         while (j < scores(i).length) {
           scores(i)(j) = 0.0
           j += 1
         }
-        // println("saving another allocation")
       }
       i += 1
     }
     var maxLogScore = Double.NegativeInfinity
     // go through all the assignments of the varying variables
     // and find the maximum score for numerical reasons
-    val tmpScore: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
+    //val tmpScore: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
+    if (tmpScore.length < _valuesSize) tmpScore = Array.fill(_valuesSize)(Double.NaN)
+    else {
+      // there's no need to initialize it
+    }
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       val index = assignment.index(varyingNeighbors)
       var num: Double = getScore(assignment, index)
-      for (dv <- discreteVarying) {
+      i = 0
+      while (i < discreteVarying.length) {
+        val dv = discreteVarying(i)
         val vid = dv._2
         val mess = incoming.get(vid)
         num += mess.score(assignment(dv._1))
+        i += 1
       }
       if (num > maxLogScore) maxLogScore = num
       tmpScore(index) = num
