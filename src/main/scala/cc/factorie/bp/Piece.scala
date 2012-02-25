@@ -2,7 +2,8 @@ package cc.factorie.bp
 
 import cc.factorie._
 import collection.mutable.{Map, HashMap}
-import la.{SparseVector, Vector}
+import cc.factorie.bp.optimized._
+import la.{SparseBinaryVector, SparseVector, Vector}
 
 
 /**
@@ -115,4 +116,55 @@ object ModelPiece {
       (fg: LatticeBP) => new InferencerBPWorker(fg).inferTreewise(),
       new LatticeBP(model, vars.toSet) with SumProductLattice)
 
+}
+
+/**
+ * @author brian martin
+ * @date 2/24/11
+ *
+ * This class makes some assumptions about the model to preserve efficiency.
+ * The transTemplate should be such that unroll1 goes to the previous label,
+ * and unroll2 goes to the next label.
+ *
+ * It also assumes that vars are given in the same order as they appear in the chain.
+ */
+class PerceptronChainPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
+        localTemplate: TemplateWithDotStatistics2[LV,OV],
+        transTemplate: TemplateWithDotStatistics2[LV,LV],
+        vars: Array[LV])
+   extends Piece {
+
+ val _searcher = new BeamSearch with FullBeam
+ def search(vs: Seq[LV]): Unit = _searcher.searchAndSetToMax(localTemplate, transTemplate, vs)
+
+ def valueAndGradient: (Double,  Map[DotFamily, Vector]) = {
+   // do beam search
+   vars.foreach(_.setRandomly())
+   search(vars)
+   val localGradient = new SparseVector(localTemplate.statisticsVectorLength)
+   val transGradient = new SparseVector(transTemplate.statisticsVectorLength)
+
+   // get local gradient
+   for (v <- vars) {
+     val localStats = localTemplate.unroll1(v).head.asInstanceOf[DotFamily#Factor].statistics.vector
+     localGradient += localStats * -1.0
+     if (!transTemplate.unroll2(v).isEmpty) {
+       val transStats = transTemplate.unroll2(v).head.asInstanceOf[DotFamily#Factor].statistics.vector
+       transGradient += transStats * -1.0
+     }
+   }
+   val d = new DiffList()
+   vars.foreach(_.setToTarget(d))
+   for (v <- vars) {
+     val localStats2 = localTemplate.unroll1(v).head.asInstanceOf[DotFamily#Factor].statistics.vector
+     localGradient += localStats2 * 1.0
+     if (!transTemplate.unroll2(v).isEmpty) {
+       val transStats2 = transTemplate.unroll2(v).head.asInstanceOf[DotFamily#Factor].statistics.vector
+       transGradient += transStats2
+     }
+   }
+   d.undo
+
+   (-1.0, Map(localTemplate -> localGradient, transTemplate -> transGradient))
+ }
 }

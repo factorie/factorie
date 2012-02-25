@@ -78,7 +78,7 @@ object Observations {
     i = 0
     while (i < size) {
       val token = observations(i)
-      vf(token).zero()  // TODO  Removed when transferring code from app.tokenseq.TokenSeq.  Is this still necessary? -akm
+      //vf(token).zero()  // TODO  Removed when transferring code from app.tokenseq.TokenSeq.  Is this still necessary? -akm
       vf(token) ++= newFeatures(i)
       i += 1
     }

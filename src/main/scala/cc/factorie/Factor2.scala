@@ -34,10 +34,11 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
   def numVariables = 2
   override def variables = IndexedSeq(_1, _2)
   def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case _ => throw new IndexOutOfBoundsException(i.toString) }
+  val _variables = Seq(factor._1, factor._2)
   override def values: Values = new Values(_1.value, _2.value, inner.map(_.values))
   case class Values(_1:N1#Value, _2:N2#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
     override def apply[B <: Variable](v: B) = get(v).get
-    def variables = Seq(factor._1, factor._2)
+    def variables = _variables
     def get[B <: Variable](v: B) =
       if(v == factor._1) Some(_1.asInstanceOf[B#Value])
       else if(v == factor._2) Some(_2.asInstanceOf[B#Value])
