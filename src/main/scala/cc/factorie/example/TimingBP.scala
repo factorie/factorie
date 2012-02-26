@@ -87,11 +87,15 @@ object TimingBP {
 
     def test(name: String, f: Seq[PosLabel] => Unit) {
       println("Testing "+name)
-      println("Time was: "+ (0 until burnIn + nIterations).map(i => {
+      val times = (0 until burnIn + nIterations).map(i => {
         val t0 = System.currentTimeMillis()
         labels.foreach(l => f(l))
         System.currentTimeMillis()-t0
-      }).drop(burnIn).sum / nIterations)
+      }).drop(burnIn)
+      val mean = times.sum/nIterations
+      val meanSq = times.map(x => x*x).sum / nIterations
+      val std = math.sqrt(meanSq - mean*mean)
+      println("Time was: "+mean+"+-"+2*(std/math.sqrt(nIterations)))
     }
 
     val searcher = new BeamSearch with FullBeam
