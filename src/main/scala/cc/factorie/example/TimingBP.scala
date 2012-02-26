@@ -106,5 +106,10 @@ object TimingBP {
       fg.setToMaxMarginal(l)
     })
 
+    test("old BP", l => {
+      assert(l.head.token.hasNext)
+      new BPInferencer[PosLabel](TestModel).inferTreewise(l)
+    })
+
   }
 }
