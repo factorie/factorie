@@ -148,7 +148,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
       Z += expnum
     }
     val lZ = log(Z)
-    assert(lZ > maxScore, "LogZ %f less than maxScore %f".format(lZ, maxScore))
+    assert(lZ+0.01 > maxScore, "LogZ %f less than maxScore %f".format(lZ, maxScore))
     lZ
   }
 
