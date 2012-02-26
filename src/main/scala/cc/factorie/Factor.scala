@@ -120,7 +120,10 @@ trait Values extends Statistics with Assignment {
     var result = 0
     var mult = 1
     var found: Boolean = false
-    for (variable <- variables) {
+    var i = 0
+
+    while (i < variables.length) {
+      val variable = variables(i)
       if (varying contains variable) {
         variable match {
           case dv:DiscreteVar => {
@@ -132,6 +135,7 @@ trait Values extends Statistics with Assignment {
           case _ => return -1
         }
       }
+      i += 1
     }
     if (found) result else -1
   }
