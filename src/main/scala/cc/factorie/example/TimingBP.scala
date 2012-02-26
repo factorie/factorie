@@ -39,8 +39,8 @@ object TestModel extends TemplateModel {
   // Transition factors between two successive labels
   val transTemplate = new TemplateWithDotStatistics2[PosLabel, PosLabel] { // the sparse weights are kind of worthless here
     override def statisticsDomains = Seq(PosDomain, PosFeaturesDomain)
-    def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
-    def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
+    def unroll1(label: PosLabel) = if (label.token.hasPrev) Factor(label.token.prev.posLabel, label) else Nil
+    def unroll2(label: PosLabel) = if (label.token.hasNext) Factor(label, label.token.next.posLabel) else Nil
   }
 
   this += localTemplate
@@ -50,7 +50,7 @@ object TestModel extends TemplateModel {
 
 object TimingBP {
   def main(args: Array[String]) {
-    val nTokenFeatures = 1000
+    val nTokenFeatures = 100
     val tokenFeaturesPerToken = 10
     val nStates = 30
     val nDocuments = 100
@@ -100,8 +100,9 @@ object TimingBP {
     })
 
     test("new BP", l => {
+      assert(l.head.token.hasNext)
       val fg = new LatticeBP(TestModel,  l.toSet) with SumProductLattice
-      new InferencerBPWorker(fg).inferTreewise(l.head, false)
+      new InferencerBPWorker(fg).inferTreewise()
       fg.setToMaxMarginal(l)
     })
 
