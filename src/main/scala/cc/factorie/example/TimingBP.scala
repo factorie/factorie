@@ -12,8 +12,6 @@ import cc.factorie.bp.optimized._
 import cc.factorie.app.nlp.pos._
 
 object TestModel extends TemplateModel {
-  // Bias term on each individual label
-  val biasTemplate =  new TemplateWithDotStatistics1[PosLabel] { override def statisticsDomains = Seq(PosDomain) }
   // Factor between label and observed token
   val localTemplate = new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
     override def statisticsDomains = Seq(PosDomain, PosFeaturesDomain)
