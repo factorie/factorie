@@ -64,11 +64,11 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
 
 
 abstract class TemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values.inner.map(_.statistics))
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
 }
 
 abstract class TemplateWithVectorStatistics3[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar,N3<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with VectorStatistics3[N1#Value,N2#Value,N3#Value]  {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values.inner.map(_.statistics))
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
 }
 
 abstract class TemplateWithDotStatistics3[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar,N3<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with DotFamily with DotStatistics3[N1#Value,N2#Value,N3#Value]  {
@@ -77,5 +77,5 @@ abstract class TemplateWithDotStatistics3[N1<:DiscreteVectorVar,N2<:DiscreteVect
     index0 * statisticsDomains(1).dimensionDomain.size  * statisticsDomains(2).dimensionDomain.size +
           index1 * statisticsDomains(2).dimensionDomain.size +
           index2)
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values.inner.map(_.statistics))
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
 }

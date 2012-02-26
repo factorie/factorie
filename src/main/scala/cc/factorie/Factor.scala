@@ -26,16 +26,8 @@ import java.io._
 /** A single factor in a factor graph:  neighboring variables and methods for getting values and their score.
     @author Andrew McCallum */
 trait Factor extends Model with Ordered[Factor] {
-  /** In some cases a factor "belongs" to some outer factor which uses this inner one as part of its score calculation.
-      In this case this inner factor should not also be used for score generation because it would be redundant.
-      For example, see method Template{1,2,3,4}.factors() */
-  // TODO Change these back to def's
-  //var outer: Factor
-  //var inner: Seq[Factor]
-  def outer: Factor = null
-  def outer_=(f:Factor): Unit = throw new Error("Re-assigning Factor.outer not supported.")
-  def inner: Seq[Factor] = Nil
-  def inner_=(f:Seq[Factor]): Unit = throw new Error("Re-assigning Factor.inner not supported.")
+  // FIXME: Alex: it's not clear to me whether Factor.factors should return this or Nil
+  def factors(variables: Iterable[Variable]): Seq[Factor] = Nil
   /** Returns the collection of variables neighboring this factor. */
   def variables: Seq[Variable] // = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
   /** The number of variables neighboring this factor. */
@@ -43,11 +35,8 @@ trait Factor extends Model with Ordered[Factor] {
   def variable(index: Int): Variable
   /** Optionally return pre-calculated Statistics.  By default not actually cached, but may be overridden in subclasses. */
   def cachedStatistics: Statistics = statistics
-  def touches(variable:Variable): Boolean = this.variables.contains(variable) || inner.exists(_.touches(variable))
+  def touches(variable:Variable): Boolean = this.variables.contains(variable)
   def touchesAny(variables:Iterable[Variable]): Boolean = variables.exists(touches(_))
-  // The next method implements the Model trait
-  /** Return any inner factors touching the argument variables */
-  def factors(variables:Iterable[Variable]): Seq[Factor] = inner.filter(_.touchesAny(variables))
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
   override def score: Double = statistics.score
   def values: Values                   

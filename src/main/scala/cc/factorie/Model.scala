@@ -81,25 +81,12 @@ trait Model {
   /** Returns the average score, that is score of variables, normalized by the size of the collections vars. */
   def aveScore(variables:Iterable[Variable]): Double = score(variables) / variables.size  // TODO Rename to scoreAve?
 
-  /** Deduplicate a sequence of Factors while also being sure not to include inner factors 
-      (whose interpretation may require special handling by the outer factor).
+  /** Deduplicate a sequence of Factors.
       This method should be called on all Seq[Factor] before they are returned by methods such as "factors" */
   def normalize(factors:Seq[Factor]): Seq[Factor] = {
-    //if (factors.forall(_.outer eq null)) factors
-    //else {
-      val result = new scala.collection.mutable.HashSet[Factor] {
-        override def addEntry(f:Factor): Boolean = {
-          if (f.outer eq null) super.addEntry(f)
-          else {
-            var f2 = f.outer
-            while ((f2.outer ne null) && (f2.outer ne Model.this)) f2 = f2.outer
-            super.addEntry(f2)
-          }
-        }
-      }
+      val result = new scala.collection.mutable.HashSet[Factor]
       result ++= factors
       result.toSeq
-    //}
   }
   
   // Some Model subclasses have a list of Families to which all its factors belong

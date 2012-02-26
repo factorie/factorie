@@ -33,9 +33,9 @@ trait Factor1[N1<:Variable] extends Factor {
   def numVariables = 1
   override def variables = IndexedSeq(_1)
   def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
-  override def values = new Values(_1.value, inner.map(_.values))
-  def valuesAssigning[V<:Variable](variable:V, value:V#Value): Unit = if (variable eq _1) new Values(value.asInstanceOf[N1#Value], inner.map(_.values)) else throw new Error 
-  case class Values(_1:N1#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
+  override def values = new Values(_1.value)
+  def valuesAssigning[V<:Variable](variable:V, value:V#Value): Unit = if (variable eq _1) new Values(value.asInstanceOf[N1#Value]) else throw new Error
+  case class Values(_1:N1#Value) extends cc.factorie.Values {
     override def apply[B <: Variable](v: B) = get(v).get
     def variables = Seq(factor._1)
     def get[B <: Variable](v: B) = if(contains(v)) Some(_1.asInstanceOf[B#Value]) else None
@@ -108,7 +108,7 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
   lazy val limitedDiscreteValues = new scala.collection.mutable.HashSet[Int]
   def addLimitedDiscreteValues(values:Iterable[Int]): Unit = limitedDiscreteValues ++= values
   
-  final case class Factor(_1:N1, override var inner:Seq[cc.factorie.Factor] = Nil, override var outer:cc.factorie.Factor = null) extends super.Factor with Factor1[N1] {
+  final case class Factor(_1:N1) extends super.Factor with Factor1[N1] {
     type StatisticsType = Family1.this.StatisticsType
     if (_neighborDomains eq null) {
       _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
@@ -140,7 +140,7 @@ trait Statistics1[S1] extends Family {
   self =>
   type StatisticsType = Stat
   // TODO Consider renaming "Stat" to "Statistics"
-  case class Stat(_1:S1, override val inner:Seq[cc.factorie.Statistics] = Nil) extends super.Statistics {
+  case class Stat(_1:S1) extends super.Statistics {
     lazy val score = self.score(this) 
   }
   def score(s:Stat): Double
@@ -150,7 +150,7 @@ trait VectorStatistics1[S1<:DiscreteVectorValue] extends VectorFamily {
   self =>
   type StatisticsType = Stat
   // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
-  final case class Stat(_1:S1, override val inner:Seq[cc.factorie.Statistics] = Nil) extends { val vector: Vector = _1 } with super.Statistics { 
+  final case class Stat(_1:S1) extends { val vector: Vector = _1 } with super.Statistics {
     if (_statisticsDomains eq null) {
       _statisticsDomains = _newStatisticsDomains
       _statisticsDomains += _1.domain
@@ -168,14 +168,14 @@ trait DotStatistics1[S1<:DiscreteVectorValue] extends VectorStatistics1[S1] with
 }
 
 trait FamilyWithStatistics1[N1<:Variable] extends Family1[N1] with Statistics1[N1#Value] {
-  def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
+  def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
 
 trait FamilyWithVectorStatistics1[N1<:DiscreteVectorVar] extends Family1[N1] with VectorStatistics1[N1#Value] {
-  def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
+  def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
 
 trait FamilyWithDotStatistics1[N1<:DiscreteVectorVar] extends Family1[N1] with DotStatistics1[N1#Value] {
-  def statistics(vals:Values): StatisticsType = Stat(vals._1, vals.inner.map(_.statistics))
+  def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
 

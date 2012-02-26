@@ -30,8 +30,8 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
   def numVariables = 3
   override def variables = IndexedSeq(_1, _2, _3)
   def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case _ => throw new IndexOutOfBoundsException(i.toString) }
-  override def values = new Values(_1.value, _2.value, _3.value, inner.map(_.values))
-  case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value, override val inner:Seq[cc.factorie.Values] = Nil) extends cc.factorie.Values {
+  override def values = new Values(_1.value, _2.value, _3.value)
+  case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value) extends cc.factorie.Values {
     override def apply[B <: Variable](v: B) = get(v).get
     def variables = Seq(factor._1, factor._2, factor._3)
     def get[B <: Variable](v: B) =
@@ -277,7 +277,7 @@ trait Family3[N1<:Variable,N2<:Variable,N3<:Variable] extends FamilyWithNeighbor
 
   type FactorType = Factor
   type ValuesType = Factor#Values
-  final case class Factor(_1:N1, _2:N2, _3:N3, override var inner:Seq[cc.factorie.Factor] = Nil, override var outer: cc.factorie.Factor = null) extends super.Factor with Factor3[N1,N2,N3] {
+  final case class Factor(_1:N1, _2:N2, _3:N3) extends super.Factor with Factor3[N1,N2,N3] {
     type StatisticsType = Family3.this.StatisticsType
     if (_neighborDomains eq null) {
       _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
@@ -323,7 +323,7 @@ trait Family3[N1<:Variable,N2<:Variable,N3<:Variable] extends FamilyWithNeighbor
 trait Statistics3[S1,S2,S3] extends Family {
   self =>
   type StatisticsType = Stat
-  final case class Stat(_1:S1, _2:S2, _3:S3, override val inner:Seq[cc.factorie.Statistics] = Nil) extends super.Statistics {
+  final case class Stat(_1:S1, _2:S2, _3:S3) extends super.Statistics {
     lazy val score = self.score(this)
   }
   def score(s:Stat): Double
@@ -332,7 +332,7 @@ trait Statistics3[S1,S2,S3] extends Family {
 trait VectorStatistics3[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue] extends VectorFamily {
   self =>
   type StatisticsType = Stat
-  final case class Stat(_1:S1, _2:S2, _3:S3, override val inner:Seq[cc.factorie.Statistics] = Nil) extends { val vector: Vector = _1 flatOuter (_2 flatOuter _3) } with super.Statistics {
+  final case class Stat(_1:S1, _2:S2, _3:S3) extends { val vector: Vector = _1 flatOuter (_2 flatOuter _3) } with super.Statistics {
     if (_statisticsDomains eq null) {
       _statisticsDomains = _newStatisticsDomains
       _statisticsDomains += _1.domain
@@ -347,6 +347,6 @@ trait VectorStatistics3[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:Disc
 trait DotStatistics3[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue] extends VectorStatistics3[S1,S2,S3] with DotFamily
 
 trait FamilyWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable] extends Family3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3, values.inner.map(_.statistics))
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
 }
 
