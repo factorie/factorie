@@ -1,31 +1,15 @@
 package cc.factorie.example
 
 /**
- * Created by IntelliJ IDEA.
  * User: apassos
  * Date: 2/25/12
- * Time: 6:30 PM
- * To change this template use File | Settings | File Templates.
  */
-
 
 import cc.factorie._
 import cc.factorie.bp._
 import cc.factorie.app.nlp._
-import cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions
+import cc.factorie.bp.optimized._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.bp.optimized
-import cc.factorie.bp.optimized.FullBeam
-import cc.factorie.bp.optimized.BeamSearch
-import cc.factorie.bp.optimized.FullBeam
-import cc.factorie.TemplateModel
-import cc.factorie.TemplateWithDotStatistics1
-import cc.factorie.app.nlp.pos.PosLabel
-import cc.factorie.app.nlp.pos.PosDomain
-import cc.factorie.TemplateWithDotStatistics2
-import cc.factorie.app.nlp.pos.PosFeatures
-import cc.factorie.app.nlp.pos.PosFeaturesDomain
-
 
 object TestModel extends TemplateModel {
   // Bias term on each individual label
@@ -99,20 +83,28 @@ object TimingBP {
     }
 
     val searcher = new BeamSearch with FullBeam
-    test("viterbi", l => {
-      searcher.searchAndSetToMax(TestModel.localTemplate, TestModel.transTemplate, l)
+    test("viterbi (max)", l => {
+      searcher.search(TestModel.localTemplate, TestModel.transTemplate, l)
     })
 
-    test("new BP", l => {
+    test("old BP (max)", l => {
+      new BPInferencer[PosLabel](TestModel).inferTreewiseMax(l)
+    })
+
+    test("old BP (sum)", l => {
+      new BPInferencer[PosLabel](TestModel).inferTreewise(l)
+    })
+
+    test("new BP (max)", l => {
+      assert(l.head.token.hasNext)
+      val fg = new LatticeBP(TestModel,  l.toSet) with MaxProductLattice
+      new InferencerBPWorker(fg).inferTreewise()
+    })
+
+    test("new BP (sum)", l => {
       assert(l.head.token.hasNext)
       val fg = new LatticeBP(TestModel,  l.toSet) with SumProductLattice
       new InferencerBPWorker(fg).inferTreewise()
-      fg.setToMaxMarginal(l)
-    })
-
-    test("old BP", l => {
-      assert(l.head.token.hasNext)
-      new BPInferencer[PosLabel](TestModel).inferTreewise(l)
     })
 
   }
