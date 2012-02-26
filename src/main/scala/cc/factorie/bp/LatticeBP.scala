@@ -184,52 +184,10 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
 
 trait SumFactor extends MessageFactor {
 
-  /*
-  def marginalize(target: DiscreteVariable, incoming: FactorMessages): GenericMessage = {
-    // TODO add to _marginals
-    // TODO incorporate fixed vars
-    if (incoming(target).isDeterministic) return incoming(target)
-    val scores: HashMap[Any, Double] = new HashMap[Any, Double] {
-      override def default(key: Any) = 0.0
-    }
-    var maxLogScore = Double.NegativeInfinity
-    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
-      val index = assignment.index(varyingNeighbors)
-      var num: Double = getScore(assignment)
-      for (variable <- variables) {
-        if (variable != target) {
-          val mess = incoming(variable)
-          num += mess.score(assignment.get(variable).get)
-        }
-      }
-      if (num > maxLogScore) maxLogScore = num
-      _marginal(index) = num
-    }
-    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
-      val index = assignment.index(varyingNeighbors)
-      val num: Double = _marginal(index) - maxLogScore
-      val expnum = exp(num)
-      scores(assignment.get(target).get) = expnum + scores(assignment.get(target).get)
-    }
-    val varScores: Buffer[Double] = new ArrayBuffer(target.domain.size)
-    for (value <- target.domain.values) {
-      varScores += log(scores(value))
-    }
-    if (varScores.exists(_.isNegInfinity)) {
-      //throw new Exception("output message has negInfinity")
-    }
-    BPUtil.message(target, varScores)
-  } */
-
   var scores : Array[Array[Double]] = new Array(1)
   var tmpScore: Array[Double] = new Array(1)
-  def marginalize(incoming: FactorMessages): FactorMessages = {
-    val result = new FactorMessages(variables)
-    //val scores: Array[Array[Double]] = new Array(varyingNeighbors.size)
-    if (scores.length < varyingNeighbors.size) {
-      scores = new Array(varyingNeighbors.size)
-    } // else println("saving allocation")
-    // initialize score arrays for varying neighbors
+
+  def initializeScores() {
     var i = 0
     while (i < discreteVarying.length) {
       if (scores(i) == null || scores(i).length < discreteVarying(i)._1.domain.size) {
@@ -244,18 +202,14 @@ trait SumFactor extends MessageFactor {
       }
       i += 1
     }
+  }
+
+  def sumNeighbors(incoming: FactorMessages) = {
     var maxLogScore = Double.NegativeInfinity
-    // go through all the assignments of the varying variables
-    // and find the maximum score for numerical reasons
-    //val tmpScore: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
-    if (tmpScore.length < _valuesSize) tmpScore = Array.fill(_valuesSize)(Double.NaN)
-    else {
-      // there's no need to initialize it
-    }
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       val index = assignment.index(varyingNeighbors)
       var num: Double = getScore(assignment, index)
-      i = 0
+      var i = 0
       while (i < discreteVarying.length) {
         val dv = discreteVarying(i)
         val vid = dv._2
@@ -266,8 +220,10 @@ trait SumFactor extends MessageFactor {
       if (num > maxLogScore) maxLogScore = num
       tmpScore(index) = num
     }
-    // go through all the assignments of the varying variables
-    // and find Z, and calculate the scores
+    maxLogScore
+  }
+
+  def computeZ(maxLogScore: Double) = {
     var Z = 0.0
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
       val index = assignment.index(varyingNeighbors)
@@ -275,20 +231,18 @@ trait SumFactor extends MessageFactor {
       val expnum = exp(num)
       assert(!expnum.isInfinity)
       _marginal(index) = expnum
-      i = 0
+      var i = 0
       while (i < discreteVarying.length) {
         scores(i)(assignment(discreteVarying(i)._1).intValue) += expnum
         i += 1
       }
       Z += expnum
     }
-    i = 0
-    while (i < _marginal.size) {
-      _marginal(i) /= Z
-      i += 1
-    }
-    // set the send messages
-    i = 0
+    Z
+  }
+
+  def setMessages(result: FactorMessages, incoming: FactorMessages) {
+    var i = 0
     while (i < discreteVarying.length) {
       val dv = discreteVarying(i)
       val vid = dv._2
@@ -296,10 +250,32 @@ trait SumFactor extends MessageFactor {
       i += 1
     }
     // deterministic messages for the fixed neighbors
-    for (fv <- fixedNeighbors) {
+    i = 0
+    while (i < fixedNeighbors.length) {
+      val fv = fixedNeighbors(i)
+      i += 1
       val vid = fv._2
       result.set(vid, incoming.get(vid))
     }
+  }
+
+  def marginalize(incoming: FactorMessages): FactorMessages = {
+    val result = new FactorMessages(variables)
+    if (scores.length < varyingNeighbors.size) {
+      scores = new Array(varyingNeighbors.size)
+    }
+    initializeScores()
+    if (tmpScore.length < _valuesSize) tmpScore = Array.fill(_valuesSize)(Double.NaN)
+    // go through all the assignments of the varying variables
+    // and find the maximum score for numerical reasons
+    val maxLogScore = sumNeighbors(incoming)
+    val Z = computeZ(maxLogScore)
+    var i = 0
+    while (i < _marginal.size) {
+      _marginal(i) /= Z
+      i += 1
+    }
+    setMessages(result, incoming)
     result
   }
 
