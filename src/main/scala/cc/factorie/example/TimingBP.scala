@@ -37,11 +37,11 @@ object TimingBP {
     val nTokenFeatures = 100
     val tokenFeaturesPerToken = 10
     val nStates = 30
-    val nDocuments = 100
-    val nTokensPerDocument = 50
+    val nDocuments = 50
+    val nTokensPerDocument = 35
 
     val burnIn = 5 // iterations to skip before measuring performance
-    val nIterations = 20 // number of iterations
+    val nIterations = 30 // number of iterations
 
     val rng = new java.util.Random()
 
