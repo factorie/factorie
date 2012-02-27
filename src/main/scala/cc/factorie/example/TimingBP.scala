@@ -82,6 +82,12 @@ object TimingBP {
       println("Time was: "+mean+"+-"+2*(std/math.sqrt(nIterations)))
     }
 
+    test("new BP (sum)", l => {
+      assert(l.head.token.hasNext)
+      val fg = new LatticeBP(TestModel,  l.toSet) with SumProductLattice
+      new InferencerBPWorker(fg).inferTreewise()
+    })
+
     val searcher = new BeamSearch with FullBeam
     test("viterbi (max)", l => {
       searcher.search(TestModel.localTemplate, TestModel.transTemplate, l)
@@ -101,11 +107,6 @@ object TimingBP {
       new InferencerBPWorker(fg).inferTreewise()
     })
 
-    test("new BP (sum)", l => {
-      assert(l.head.token.hasNext)
-      val fg = new LatticeBP(TestModel,  l.toSet) with SumProductLattice
-      new InferencerBPWorker(fg).inferTreewise()
-    })
 
   }
 }
