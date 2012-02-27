@@ -148,9 +148,9 @@ trait TokenSpanWithDocRefCubbie[DC<:DocumentCubbie[_,_,_]] extends TokenSpanCubb
 trait TokenSpanNerLabelCubbieSlot extends TokenSpanCubbie {
   def newTokenSpanNerLabel(ts:TokenSpan, s:String): cc.factorie.app.nlp.ner.NerLabel
   val ner = StringSlot("ner")
-  if (storing ne null) storing match {
+  /*if (storing ne null) storing match {
     case ts:TokenSpan => ner := ts.attr[cc.factorie.app.nlp.ner.NerLabel].categoryValue
-  }
+  }*/
   /*override def storeTokenSpan(ts:TokenSpan): this.type = {
     super.storeTokenSpan(ts)
     ner := ts.attr[cc.factorie.app.nlp.ner.NerLabel].categoryValue
