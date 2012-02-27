@@ -15,6 +15,7 @@
 package cc.factorie.generative
 import cc.factorie._
 
+// Proportions ~ Dirichlet(Masses)
 // Proportions ~ Dirichlet(Proportions, Precision)
 
 object Dirichlet extends GenerativeFamily2[Proportions,Masses] {

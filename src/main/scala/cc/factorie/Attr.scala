@@ -14,7 +14,7 @@
 
 package cc.factorie
 
-/** Provides member "attr" which is a map from class to an attribute value (instance of that class).
+/** Provides member "attr" which is a map from a class to an attribute value (instance of that class).
     For example: object foo extends Attr; foo.attr += "bar"; require(foo.attr[String] == "bar"); foo.attr.remove[String] */
 trait Attr {
   /** A collection of attributes, keyed by the attribute class. */
