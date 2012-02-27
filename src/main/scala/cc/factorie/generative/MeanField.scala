@@ -16,29 +16,51 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.HashMap
 
-@deprecated("Just a temporary placeholder.  Very much unfinished.")
-class MeanFieldInferencer[A<:Variable with QDistribution](variables:Iterable[A], model:Model) {
-  private val _q = new HashMap[Variable,Variable] // 2nd is actually the Q distribution
-  variables.foreach(v => _q(v) = v.newQ)
-  def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
-  def updateQ(v:A): Unit = {
-    (v, _q(v)) match {
-      case (v:DiscreteVariable, d:DenseProportions) => {
-        val distribution = new Array[Double](v.domain.size)
-        for (i <- 0 until v.domain.size) {
-          val diff = new DiffList
-          v.set(i)(diff)
-          val factors = model.factorsOfFamilyClass[Template](diff)
-          //val factors = diff.factorsOf[Template](model)
-          val neighbors = factors.flatMap(_.variables).filter(_ != v).toSet
-          if (neighbors.exists(_.isInstanceOf[Variable with QDistribution])) throw new Error("Not yet implemented neighboring mean fields.")
-          val modelScore = diff.scoreAndUndo(model)
-          distribution(i) = modelScore
-        }
-        maths.expNormalize(distribution)
-        d.set(distribution)(null)
-      }
-      case _ => throw new Error("MeanField does not know how to handle a variable of type "+v.getClass)
+/** A model with independent generative factors for a collection of variables. */
+// TODO Consider making this a Lattice since it holds some "marginals"
+class MeanField(variables:Iterable[Variable]) extends Model {
+  private val _factor = new HashMap[Variable,Factor]
+  def init(variables:Iterable[Variable]): Unit = {
+    for (v <- variables) v match {
+      case d:DiscreteVar => _factor(v) = new Discrete.Factor(d, new DenseProportions(d.domain.size))
+      case r:RealVar => _factor(v) = new Gaussian.Factor(r, new RealVariable, new RealVariable)
     }
   }
+  init(variables)
+  def factors(variables:Iterable[Variable]): Seq[Factor] = variables.flatMap(v => _factor.get(v)).toSeq
+  def factor(v:Variable): Factor = _factor(v)
+  /*override def marginal(v:Variable): Option[Variable] = _factor(v) match {
+    case null => None
+    case f:Discrete.Factor => Some(f._2)
+    // TODO Is this how it should work?  Missing type information.  How to implement generically?  Should we actually return the factor instead?
+  }*/
+}
+
+/**  */
+class MeanFieldInferencer(val variables:Iterable[Variable], val model:Model, val qModel:Model) {
+  def this(vs:Iterable[Variable], model:Model) = this(vs, model, new MeanField(vs))
+  def updateQ(v:Variable): Unit = {
+    val seqv = Seq(v)
+    val qFactors = qModel.factors(seqv)
+    if (qFactors.size > 1) throw new Error("Multiple factors touching a variable in qModel; structured mean field not yet implemented.")
+    qFactors.head match {
+      case f:Discrete.Factor => {
+        val d = f._1.asInstanceOf[DiscreteVariable]
+        val p = f._2.asInstanceOf[DenseProportions]
+        val distribution = new Array[Double](p.size)
+        for (i <- 0 until p.size) {
+          val diff = new DiffList
+          d.set(i)(diff)
+          val factors = model.factors(diff)
+          // Inefficient to have this in inner loop; but what is the alternative?
+          if (factors.flatMap(_.variables).exists(v => qModel.factors(seqv) != Nil)) throw new Error("Not yet implemented neighboring mean fields")
+          distribution(i) = diff.scoreAndUndo(model)
+        }
+        maths.expNormalize(distribution)
+        p.set(distribution)(null)
+      }
+      case f:Factor => throw new Error("MeanFieldInferencer does not know how to handle factors of type "+f.getClass)
+    }
+  }
+  def updateQ: Unit = variables.foreach(updateQ(_))
 }

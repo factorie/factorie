@@ -78,7 +78,7 @@ object GlobalAssignment extends Assignment {
   def contains(v:Variable) = true
 }
 
-/** An Assignment backed by a sequence of assignment.  
+/** An Assignment backed by a sequence of assignments.  
     The returned value will be from the first Assignment in the sequence to contain the variable. 
     @author Andrew McCallum */
 class AssignmentStack(val assignment:Assignment, val next:AssignmentStack = null) extends Assignment {

@@ -30,6 +30,7 @@ class Cubbie { thisCubbie =>
   def this(map:scala.collection.mutable.HashMap[String,Any]) = { this(); this._map = map }
 //  def this(map:java.util.HashMap[String,Any]) = { this(); this._map = map }
   // Managing raw underlying map that hold the data
+  def setMap(map: MapType): this.type = { _map = map; this }
   type MapType = MutableMap[String, Any]
   var _map: MapType = null
   def _newDefaultMap: AnyRef = new scala.collection.mutable.HashMap[String,Any]
@@ -73,7 +74,8 @@ class Cubbie { thisCubbie =>
   case class BooleanSlot(override val name:String) extends PrimitiveSlot[Boolean](name)
   case class DoubleSlot(override val name:String) extends PrimitiveSlot[Double](name)
   case class StringSlot(override val name:String) extends PrimitiveSlot[String](name)
-  // TODO We need a DateSlot and others supported in BSON
+  case class DateSlot(override val name:String) extends PrimitiveSlot[java.util.Date](name)
+  // TODO We need other primitive types supported in BSON
   abstract class PrimitiveListSlot[A](override val name:String) extends Slot[Seq[A]](name) {
     import collection.JavaConversions._
     def value: Seq[A] = _rawGet(name) match {

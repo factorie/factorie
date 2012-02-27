@@ -44,11 +44,12 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
 // Cubbie storage
 
 class SentenceCubbie extends TokenSpanCubbie {
-  override def newObject(doc:Document, start:Int, length:Int): Sentence = new Sentence(doc, start, length)
-  def storeSentence(s:Sentence): this.type = {
-    storeTokenSpan(s)
+  def newObject(doc:Document, start:Int, length:Int): Sentence = new Sentence(doc, start, length)
+  def store(s:Sentence): this.type = {
+    //super.store(s)
+    this
   }
-  def fetchSentence(doc:Document): Sentence = {
+  def fetch(doc:Document): Sentence = {
     val s = newObject(doc, start.value, length.value)
     s
   }
@@ -57,13 +58,13 @@ class SentenceCubbie extends TokenSpanCubbie {
 // To save the sentence with its parse tree use "new SentenceCubbie with SentenceParseTreeCubbie"
 trait SentenceParseCubbie extends SentenceCubbie {
   val parse = CubbieSlot("parse", () => new cc.factorie.app.nlp.parse.ParseTreeCubbie)
-  override def storeSentence(s:Sentence): this.type = {
-    super.storeSentence(s)
+  def storeSentence(s:Sentence): this.type = {
+    super.store(s)
     parse := parse.constructor().storeParseTree(s.parse)
     this
   }
-  override def fetchSentence(doc:Document): Sentence = {
-    val s = super.fetchSentence(doc)
+  def fetchSentence(doc:Document): Sentence = {
+    val s = super.fetch(doc)
     s.attr += parse.value.fetchParseTree(s)
     s
   }

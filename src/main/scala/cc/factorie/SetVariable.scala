@@ -15,8 +15,16 @@
 package cc.factorie
 import scala.collection.mutable.HashSet
 
+trait SetVar[A] extends Variable with VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]] with Iterable[A]
+
+class EmptySetVar[A] extends SetVar[A] {
+  def iterator = Iterator.empty
+  override def size = 0
+  def value = Set.empty[A]
+}
+
 /**A variable whose value is a set of other variables */
-abstract class SetVariable[A]() extends Variable with VarAndValueGenericDomain[SetVariable[A],scala.collection.Set[A]] with Iterable[A] {
+class SetVariable[A]() extends SetVar[A] with VarAndValueGenericDomain[SetVariable[A],scala.collection.Set[A]] {
   // Note that the returned value is not immutable.
   def value = _members
   private val _members = new HashSet[A];
@@ -32,6 +40,10 @@ abstract class SetVariable[A]() extends Variable with VarAndValueGenericDomain[S
     if (d != null) d += new SetVariableRemoveDiff(x)
     _members -= x
   }
+  final def +=(x:A): Unit = add(x)(null)
+  final def -=(x:A): Unit = remove(x)(null)
+  final def ++=(xs:Iterable[A]): Unit = xs.foreach(add(_)(null))
+  final def --=(xs:Iterable[A]): Unit = xs.foreach(remove(_)(null))
   case class SetVariableAddDiff(added: A) extends Diff {
     // Console.println ("new SetVariableAddDiff added="+added)
     def variable: SetVariable[A] = SetVariable.this
@@ -48,7 +60,7 @@ abstract class SetVariable[A]() extends Variable with VarAndValueGenericDomain[S
   }
 }
 
-abstract class WeakSetVariable[A<:{def present:Boolean}] extends Variable with VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]] {
+class WeakSetVariable[A<:{def present:Boolean}] extends Variable with VarAndValueGenericDomain[WeakSetVariable[A],scala.collection.Set[A]] {
   private val _members = new cc.factorie.util.WeakHashSet[A];
   def value: scala.collection.Set[A] = _members
   def iterator = _members.iterator.filter(_.present)

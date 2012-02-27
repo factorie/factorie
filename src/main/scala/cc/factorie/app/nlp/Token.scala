@@ -55,6 +55,7 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
   def posLabel = attr[cc.factorie.app.nlp.pos.PosLabel]
   def nerLabel = attr[cc.factorie.app.nlp.ner.ChainNerLabel]
   // Parse attributes, will throw exception if parse is not present
+  def parse = sentence.attr[cc.factorie.app.nlp.parse.ParseTree]
   def parseParent: Token = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].parent(sentencePosition)
   def parseLabel: cc.factorie.app.nlp.parse.ParseTreeLabel = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].label(sentencePosition)
   def parseChildren: Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].children(sentencePosition)
@@ -129,7 +130,7 @@ class TokenCubbie extends Cubbie {
   }
 }
 
-trait TokenStringCubbie extends TokenCubbie {
+trait TokenStringCubbieSlot extends TokenCubbie {
   val string = StringSlot("string")
   override def storeToken(t:Token): this.type = {
     super.storeToken(t)

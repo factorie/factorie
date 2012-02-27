@@ -72,63 +72,41 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
 }
 
 
-class DocumentCubbie[TC<:TokenCubbie,TSC<:TokenSpanCubbie](val tc:()=>TC, val tsc:()=>TSC) extends Cubbie {
+class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](val tc:()=>TC, val sc:()=>SC, val tsc:()=>TSC) extends Cubbie with AttrCubbieSlots {
   val name = StringSlot("name")
   val string = StringSlot("string")  
   val tokens = CubbieListSlot("tokens", tc)
+  val sentences = CubbieListSlot("sentences", sc)
   val spans = CubbieListSlot("spans", tsc)
   def storeDocument(doc:Document): this.type = {
     name := doc.name
     string := doc.string
     if (doc.tokens.length > 0) tokens := doc.tokens.map(t => tokens.constructor().storeToken(t))
-    if (doc.spans.length > 0) spans := doc.spans.map(s => spans.constructor().storeTokenSpan(s))
+    //if (doc.spans.length > 0) spans := doc.spans.map(s => spans.constructor().store(s))
+    storeAttr(doc)
     this
   }
   def fetchDocument: Document = {
     val doc = new Document(name.value, string.value)
     if (tokens.value ne null) tokens.value.foreach(tc => doc += tc.fetchToken)
-    if (spans.value ne null) spans.value.foreach(sc => doc += sc.fetchTokenSpan(doc))
+    //if (spans.value ne null) spans.value.foreach(sc => doc += sc.fetch(doc))
+    fetchAttr(doc)
     doc
   }
 }
 
-/*
-@deprecated("Old draft")
-class DocumentCubbieOld extends Cubbie {
-  val name = StringSlot("name")
-  val string = StringSlot("string")  
-  val tokens = CubbieListSlot("tokens", ()=>new TokenCubbie)
-  val spans = CubbieListSlot("spans", ()=>new TokenSpanCubbie)
-  def storeDocument(doc:Document): this.type = {
-    name := doc.name
-    string := doc.string
-    if (doc.tokens.length > 0) tokens := doc.tokens.map(t => tokens.constructor().storeToken(t))
-    this
-  }
-  def fetchDocument: Document = {
-    val doc = new Document(name.value, string.value)
-    if (tokens ne null) tokens.value.foreach(tc => doc += tc.fetchToken)
-    doc
-  }
+trait AttrCubbieSlots extends Cubbie {
+  val storeHooks = new cc.factorie.util.Hooks1[Attr]
+  val fetchHooks = new cc.factorie.util.Hooks1[AnyRef]
+  def storeAttr(a:Attr): this.type = { storeHooks(a); this }
+  def fetchAttr(a:Attr): Attr = { fetchHooks(a); a }
 }
 
-@deprecated("Old draft")
-trait DocumentTokenNerLabelsOld extends DocumentCubbie {
-  self =>
-  def newTokenNerLabel(t:Token, value:String): cc.factorie.app.nlp.ner.ChainNerLabel
-  //override def newTokenCubbieFunction = () => new TokenCubbie with TokenNerLabelCubbie
-  //override val tokens = CubbieListSlot("tokens", () => new TokenCubbie with TokenNerLabelCubbie { def newTokenNerLabel(t:Token, v:String) = self.newTokenNerLabel(t, v) })
-  override def storeDocument(doc:Document): this.type = {
-    super.storeDocument(doc)
-    doc.tokens.zip(tokens.value).foreach({case (token,tcubbie) => tcubbie._rawPut("ner", token.nerLabel.categoryValue)})
-    this
-  }
-  override def fetchDocument: Document = {
-    val doc = super.fetchDocument
-    //doc.tokens.zip(tokens.value).foreach({case (token,tcubbie) => token.attr += tcubbie._rawPut("ner", token.nerLabel.categoryValue)})
-    doc
-  }
+trait DateAttrCubbieSlot extends AttrCubbieSlots {
+  val date = DateSlot("date")
+  storeHooks += ((a:Attr) => date := a.attr[java.util.Date])
+  //fetchHooks += ((a:Attr) => a.attr += date.value)
+  fetchHooks += { case a:Attr => a.attr += date.value }
 }
-*/
 
 

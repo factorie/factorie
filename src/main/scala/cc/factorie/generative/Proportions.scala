@@ -180,9 +180,65 @@ object ProportionsEstimator {
   }
 }
 
+// TODO Put this into new Maximizer framework
+object ProportionsMaximizer {
+  def estimate(p:MutableProportions, model:GenerativeModel, qModel:Model = null): Unit = {
+    // Zero an accumulator
+    var e: DenseCountsProportions = null
+    p match {
+      case p:DenseCountsProportions => { e = p; e.zero() }
+      case _ => e = new DenseCountsProportions(p.length)
+    }
+    // Initialize with prior
+    model.parentFactor(p) match { case f:Dirichlet.Factor => e.set(f._2)(null); case null => {} }
+    // Incorporate children
+    @inline def incrementForDiscreteVar(dv:DiscreteVar, incr:Double): Unit = {
+      val qFactors = if (qModel eq null) Nil else qModel.factors(Seq(dv))
+      if (qFactors.size == 0)
+        e.increment(dv.intValue, 1.0)(null)
+      else qFactors.head match {
+        // The child has a Q distribution
+        case qd:Discrete.Factor => forIndex(qd._2.length)(i => e.increment(i, qd._2(i))(null))
+      } // TODO We should check that qFactors.size == 1
+    }
+    for (factor <- model.extendedChildFactors(p)) factor match {
+      // The array holding the mixture components; the individual components (DiscreteMixture.Factors) will also be among the extendedChildFactors
+      case m:Mixture.Factor => {}
+      // A simple DiscreteVar child of the Proportions
+      case d:Discrete.Factor => incrementForDiscreteVar(d._1, 1.0)
+      // A DiscreteVar child of a Mixture[Proportions]
+      case dm:DiscreteMixture.Factor => {
+        val gate = dm._2
+        val qFactors = if (qModel eq null) Nil else qModel.factors(Seq(gate))
+        val mixtureIndex = dm._2.indexOf(e) // Yipes!  Linear search.
+        if (qFactors.size == 0) {
+          if (dm._3.intValue == mixtureIndex) incrementForDiscreteVar(dm._1, 1.0)
+        } else qFactors.head match {
+          // The gate has a Q distribution
+          case qd:Discrete.Factor => incrementForDiscreteVar(dm._1, qd._2(mixtureIndex))
+        }
+      }
+      case pdm:PlatedDiscreteMixture.Factor => {
+        require(qModel.factors(pdm.variables).size == 0) // We don't yet handle variational qModel of PlatedDiscreteMixture.Factor
+        val mixtureIndex = pdm._2.indexOf(e)
+        forIndex(pdm._1.length)(i => {
+          if (pdm._3.intValue(i) == mixtureIndex) e.increment(pdm._3.intValue(i), 1.0)(null)
+        })
+      }
+    }
+    // TODO The above no longer works for weighted children!  
+    // This will be a problem for EM.
+    // Grep source for weightedGeneratedChildren to find all the places that may need fixing.
+    /*for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
+      case x:DiscreteVar => e.increment(x.intValue, weight)(null)
+      case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
+    }*/
+    if (p ne e) p.set(e)(null)
+  }
+}
 
-class DiracProportions(val length:Int, val peak:Int) extends Proportions {
-  @inline final def apply(index:Int) = if (index == peak) 1.0 else 0.0
+class DiracProportions(val length:Int, val peakIndex:Int) extends Proportions {
+  @inline final def apply(index:Int) = if (index == peakIndex) 1.0 else 0.0
 }
 
 class UniformProportions(val length:Int) extends Proportions {
@@ -194,7 +250,7 @@ class GrowableUniformProportions(val sizeProxy:Iterable[_]) extends Proportions 
   def length = sizeProxy.size
   @inline final def apply(index:Int) = {
     val result = 1.0 / length
-    assert(length > 0, "GrowableUniformProportions domain size is zero.")
+    assert(result > 0 && result != Double.PositiveInfinity, "GrowableUniformProportions domain size is negative or zero.")
     result
   }
 }

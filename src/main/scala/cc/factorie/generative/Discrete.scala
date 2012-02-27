@@ -26,6 +26,7 @@ trait DiscreteGeneratingFactor extends GenerativeFactor {
 
 object Discrete extends GenerativeFamily2[DiscreteVar,Proportions] {
   case class Factor(_1:DiscreteVar, _2:Proportions) extends super.Factor with DiscreteGeneratingFactor {
+    //def proportions: Proportions = _2 // Just an alias
     def pr(s:Statistics) = s._2.apply(s._1.intValue)
     override def pr: Double = _2.apply(_1.intValue)
     def prValue(s:Statistics, intValue:Int): Double = s._2.apply(intValue)
