@@ -145,7 +145,6 @@ trait TokenSpanWithDocRefCubbie[DC<:DocumentCubbie[_,_,_]] extends TokenSpanCubb
   }
 }
 
-/* ACS: Commented out non-compiling code when integrating mongo-cubbie w/factorie 
 trait TokenSpanNerLabelCubbieSlot extends TokenSpanCubbie {
   def newTokenSpanNerLabel(ts:TokenSpan, s:String): cc.factorie.app.nlp.ner.NerLabel
   val ner = StringSlot("ner")
@@ -163,4 +162,3 @@ trait TokenSpanNerLabelCubbieSlot extends TokenSpanCubbie {
     ts
   }*/
 }
-*/
