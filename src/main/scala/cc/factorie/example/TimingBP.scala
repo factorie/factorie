@@ -12,6 +12,8 @@ import cc.factorie.bp.optimized._
 import cc.factorie.app.nlp.pos._
 
 object TestModel extends TemplateModel {
+  // Bias term on each individual label
+  val biasTemplate =  new TemplateWithDotStatistics1[PosLabel] { override def statisticsDomains = Seq(PosDomain) }
   // Factor between label and observed token
   val localTemplate = new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
     override def statisticsDomains = Seq(PosDomain, PosFeaturesDomain)
@@ -25,6 +27,7 @@ object TestModel extends TemplateModel {
     def unroll2(label: PosLabel) = if (label.token.hasNext) Factor(label, label.token.next.posLabel) else Nil
   }
 
+  this += biasTemplate
   this += localTemplate
   this += transTemplate
 }
@@ -62,7 +65,7 @@ object TimingBP {
     val labels = documents.map(_.map(_.posLabel))
 
     println("Initializing the weights")
-    List(TestModel.localTemplate,TestModel.transTemplate).foreach(t => {
+    List(TestModel.localTemplate,TestModel.transTemplate, TestModel.biasTemplate).foreach(t => {
       t.freezeDomains
       (0 until t.weights.length).foreach(t.weights(_) = rng.nextGaussian())
     })
@@ -88,7 +91,7 @@ object TimingBP {
 
     val searcher = new BeamSearch with FullBeam
     test("viterbi (max)", l => {
-      searcher.search(TestModel.localTemplate, TestModel.transTemplate, l)
+      searcher.search(TestModel.localTemplate, TestModel.transTemplate, l, TestModel.biasTemplate)
     })
 
     test("old BP (max)", l => {

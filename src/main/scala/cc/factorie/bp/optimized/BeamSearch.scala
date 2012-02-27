@@ -31,7 +31,8 @@ trait BeamSearch {
   def search[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
           localTemplate: TemplateWithDotStatistics2[LV, OV],
           transTemplate: TemplateWithDotStatistics2[LV, LV],
-          vs: Seq[LV]
+          vs: Seq[LV],
+          biasTemplate: TemplateWithDotStatistics1[LV] = null
         ): Seq[Int] = {
 
     // get localScores
@@ -50,10 +51,16 @@ trait BeamSearch {
 
     def transScores(i: Int, j: Int): Double = transTemplate.weight(i,j)
 
+    val biasScores: (Int) => Double = {
+      if (biasTemplate eq null)
+        (i: Int) => biasTemplate.weights(i)
+      else
+        (i: Int) => 0.0
+    }
 
     // the int is the intValue of the previous variable, the double is the alpha
     val backPtrs: Array[Array[(Int, Double)]] = Array.fill(vs.size)(null)
-    
+
     //do the first variable first
     var vi = 0
     val firstCol = Array((0 until localScores(vi).size).zip(localScores(vi)): _*)
@@ -75,7 +82,7 @@ trait BeamSearch {
         while (di < localScores(vi).size) {
           val prev = backPtrs(vi-1)(di)
           if (prev ne null) {
-            val alpha = prev._2 + transScores(di,i) + localScores(vi)(i)
+            val alpha = prev._2 + transScores(di,i) + localScores(vi)(i) + biasScores(i)
             if (alpha > bestAlpha) {
               bestAlpha = alpha
               bestVal = di
