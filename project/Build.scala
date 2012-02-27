@@ -1,63 +1,8 @@
 import sbt._
 import Keys._
-import Scope.{GlobalScope, ThisScope}
 
-object BuildSettings {
-  val buildOrganization = "cc.factorie"
-  val buildScalaVersion = "2.9.1"
-  val buildVersion = "0.10.2-SNAPSHOT"
-
-  val buildSettings = Defaults.defaultSettings ++
-  Seq (
-    organization := buildOrganization,
-    scalaVersion := buildScalaVersion,
-    version := buildVersion,
-    parallelExecution := true,
-    retrieveManaged := true,
-    autoCompilerPlugins := true,
-    externalResolvers <<= resolvers map { rs => Resolver.withDefaultResolvers(rs)},
-    javacOptions ++= Seq("-Xlint:unchecked"),
-    crossScalaVersions := Seq("2.9.1"),
-    publishArtifact in (Compile, packageDoc) := false,
-    scalacOptions ++= Seq("-deprecation", "-unchecked", "-Xcheckinit", "-encoding", "utf8"),
-    shellPrompt := ShellPrompt.buildShellPrompt)
-}
-
-object ShellPrompt {
-  object devnull extends ProcessLogger {
-    def info (s: => String) {}
-    def error (s: => String) { }
-    def buffer[T] (f: => T): T = f
-  }
-
-  val current = """\*\s+([^\s]+)""".r
-
-  def gitBranches = ("git branch --no-color" lines_! devnull mkString)
-  def hgBranch = ("hg branch" lines_! devnull mkString)
-
-  val buildShellPrompt = {
-    (state: State) => {
-      val currBranch = hgBranch
-      val currProject = Project.extract (state).currentProject.id
-      "%s:%s:%s> ".format (currBranch, currProject, BuildSettings.buildVersion)
-    }
-  }
-}
-
-object FactorieBuild extends Build {
-  import BuildSettings._
-
-  val buildShellPrompt = ShellPrompt.buildShellPrompt
-  val printClasspath = TaskKey[File]("print-class-path")
-
-  def printCp = (target, fullClasspath in Compile, compile in Compile) map { (out, cp, analysis) =>
-    println(cp.files.map(_.getName).mkString("\n"))
-    println("----")
-    println(analysis.relations.allBinaryDeps.toSeq.mkString("\n"))
-    println("----")
-    println(out)
-    out
-  }
+object Build extends sbt.Build {
+  import Dependencies._
 
   lazy val overrideSettings = {
     lazy val publishSetting = publishTo <<= (version) {
@@ -76,18 +21,44 @@ object FactorieBuild extends Build {
           Credentials(Path.userHome / ".ivy2" / ".credentials")
       }
     }
-
-    Defaults.defaultSettings ++ Seq(
-      publishSetting, 
-      credentialsSetting
-    )
   }
 
-  lazy val factorie:Project = Project(
-    id = "factorie",
-    base = file("."),
-    settings = buildSettings ++ overrideSettings
+  lazy val myProject = Project("factorie", file("."))
+    .settings(
+      organization  := "cc.factorie",
+      version       := "0.10.2-SNAPSHOT",
+      scalaVersion  := "2.9.1",
+      scalacOptions := Seq("-deprecation", "-unchecked", "-encoding", "utf8"),
+      resolvers     ++= Dependencies.resolutionRepos,
+      libraryDependencies ++= Seq(
+        Compile.jdom,
+        Compile.mongodb,
+        Test.junit,
+        Test.scalatest
+      )
+    ) 
+}
+
+object Dependencies {
+  val resolutionRepos = Seq(
+    ScalaToolsSnapshots,
+    "IESL rel  repo"    at "http://iesl.cs.umass.edu:8081/nexus/content/repositories/releases/",
+    "IESL snap repo"    at "http://iesl.cs.umass.edu:8081/nexus/content/repositories/snapshots/"
   )
+
+
+  
+  object Compile {
+    val commonsIo    = "commons-io"                %  "commons-io"        % "2.0.1"
+    val jettison     = "org.codehaus.jettison"     %  "jettison"          % "1.3"
+    val jdom         = "org.jdom"                  %  "jdom"              % "1.1"
+    val mongodb      = "com.mongodb.casbah"        %% "casbah"            % "2.1.5-1"
+  }
+
+  object Test {
+    val scalatest    = "org.scalatest"             %  "scalatest"         % "1.2"      % "test"
+    val junit        = "junit"                     %  "junit"             % "4.8.1"    % "test"
+  }
 }
 
 

@@ -25,11 +25,14 @@
     </scm>
 
     <repositories>
+
         <repository>
             <id>scala-tools.org</id>
             <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
+            <url>https://oss.sonatype.org/content/groups/scala-tools</url>
         </repository>
+
+
         <repository>
             <id>iesl.cs.umass.edu</id>
             <name>IESL repository</name>
@@ -57,13 +60,47 @@
             <version>4.8.1</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest</artifactId>
             <version>1.2</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.mongodb.casbah</groupId>
+            <artifactId>casbah_2.9.1</artifactId>
+            <type>pom</type>
+            <version>2.1.5-1</version>
+        </dependency>
+
+        <!-- <dependency> -->
+        <!--     <groupId>org.codehaus.jackson</groupId> -->
+        <!--     <artifactId>jackson-mapper-asl</artifactId> -->
+        <!--     <version>1.9.1</version> -->
+        <!-- </dependency> -->
+
+        <!-- <dependency> -->
+        <!--     <groupId>org.riedelcastro.nurupo</groupId> -->
+        <!--     <artifactId>nurupo</artifactId> -->
+        <!--     <version>0.1-SNAPSHOT</version> -->
+        <!-- </dependency> -->
+
+        <!-- <dependency> -->
+        <!--     <groupId>log4j</groupId> -->
+        <!--     <artifactId>log4j</artifactId> -->
+        <!--     <version>1.2.16</version> -->
+        <!-- </dependency> -->
+
+        <!-- <dependency> -->
+        <!--     <groupId>xom</groupId> -->
+        <!--     <artifactId>xom</artifactId> -->
+        <!--     <version>1.2.5</version> -->
+        <!-- </dependency> -->
+
     </dependencies>
+
     <distributionManagement>
         <repository>
             <id>ieslnexus</id>
