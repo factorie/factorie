@@ -69,6 +69,32 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
     _remarginalize = true
   }
 
+
+  def getIndex(assignment: Values) = {
+    var i = 0
+    var idx = 0
+    var mult = 1
+    while (i < discreteVarying.length) {
+      val va = assignment(discreteVarying(i)._1)
+      idx *= mult
+      idx += va.intValue
+      mult = va.domain.size
+      i += 1
+    }
+    idx
+  }
+
+  def deIndex(index: Int, variable: Int) = {
+    var tmp = discreteVarying.length-1
+    var idx = index
+    while (tmp > variable) {
+      idx /= discreteVarying(tmp)._1.domain.size
+      tmp -= 1
+    }
+    idx % discreteVarying(variable)._1.domain.size
+  }
+
+
   protected def getScore(assignment: Values, index: Int = -1): Double = {
     assignment.statistics.score
   }
@@ -122,7 +148,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   // return the stored marginal probability for the given value
   def marginal(values: Values): Double = {
     incomingToOutgoing
-    _marginal(values.index(varyingNeighbors))
+    _marginal(getIndex(values))
   }
 
   def currentMaxDelta: Double = {
@@ -207,8 +233,12 @@ trait SumFactor extends MessageFactor {
   def sumNeighbors(incoming: FactorMessages) = {
     var maxLogScore = Double.NegativeInfinity
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
-      val index = assignment.index(varyingNeighbors)
-      var num: Double = getScore(assignment, index)
+      val stat = assignment.statistics
+      val index = getIndex(assignment)
+      //for (i <- 0 until discreteVarying.length)
+      //  assert(deIndex(getIndex(assignment), i) == assignment(discreteVarying(i)._1).intValue, getIndex(assignment)+" "+assignment(discreteVarying(i)._1).intValue+" "+deIndex(getIndex(assignment), i)+" "+i)
+      // uncomment above to test indexing code
+      var num: Double = stat.score
       var i = 0
       while (i < discreteVarying.length) {
         val dv = discreteVarying(i)
@@ -225,18 +255,20 @@ trait SumFactor extends MessageFactor {
 
   def computeZ(maxLogScore: Double) = {
     var Z = 0.0
-    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
-      val index = assignment.index(varyingNeighbors)
-      val num = tmpScore(index) - maxLogScore
+    var idx = 0
+    while (idx < _marginal.length) {
+      val num = tmpScore(idx) - maxLogScore
       val expnum = exp(num)
       assert(!expnum.isInfinity)
-      _marginal(index) = expnum
+      _marginal(idx) = expnum
       var i = 0
       while (i < discreteVarying.length) {
-        scores(i)(assignment(discreteVarying(i)._1).intValue) += expnum
+        // scores(i)(assignment(discreteVarying(i)._1).intValue) += expnum
+        scores(i)(deIndex(idx, i)) += expnum
         i += 1
       }
       Z += expnum
+      idx += 1
     }
     Z
   }
@@ -318,7 +350,7 @@ trait MaxFactor extends MessageFactor {
     }
     // go through all the assignments of the varying variables
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
-      val index = assignment.index(varyingNeighbors)
+      val index = getIndex(assignment)
       var num: Double = getScore(assignment, index)
       for (dv <- discreteVarying) {
         val mess = incoming(dv._2)
@@ -328,12 +360,13 @@ trait MaxFactor extends MessageFactor {
     }
     // go through all the assignments of the varying variables
     // and find Z, and calculate the scores
-    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
-      val index = assignment.index(varyingNeighbors)
+    var index = 0
+    while (index < _marginal.length) {
       for (i <- 0 until discreteVarying.length) {
-        val as = assignment(discreteVarying(i)._1).intValue
+        val as = deIndex(index, i)
         scores(i)(as) = max(scores(i)(as), _marginal(index))
       }
+      index += 1
     }
     // set the send messages
     for (i <- 0 until discreteVarying.length) {
