@@ -2,6 +2,7 @@ package cc.factorie.bp.optimized
 
 import cc.factorie._
 import collection.mutable.ListBuffer
+import la.{Vector, SparseVector}
 
 /**
  * Author: martin
@@ -51,11 +52,13 @@ trait BeamSearch {
 
     def transScores(i: Int, j: Int): Double = transTemplate.weight(i,j)
 
-    val biasScores: (Int) => Double = {
+    val biasScores: Vector = {
       if (biasTemplate eq null)
-        (i: Int) => biasTemplate.weights(i)
+        biasTemplate.weights
+        //(i: Int) => biasTemplate.weights(i)
       else
-        (i: Int) => 0.0
+        new SparseVector(localScores(0).size)
+        //(i: Int) => 0.0
     }
 
     // the int is the intValue of the previous variable, the double is the alpha
