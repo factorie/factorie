@@ -85,7 +85,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   }
 
   def deIndex(index: Int, variable: Int) = {
-    var tmp = discreteVarying.length-1
+    var tmp = discreteVarying.length - 1
     var idx = index
     while (tmp > variable) {
       idx /= discreteVarying(tmp)._1.domain.size
@@ -174,7 +174,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
       Z += expnum
     }
     val lZ = log(Z)
-    assert(lZ+0.01 > maxScore, "LogZ %f less than maxScore %f".format(lZ, maxScore))
+    assert(lZ + 0.01 > maxScore, "LogZ %f less than maxScore %f".format(lZ, maxScore))
     lZ
   }
 
@@ -210,7 +210,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
 
 trait SumFactor extends MessageFactor {
 
-  var scores : Array[Array[Double]] = new Array(1)
+  var scores: Array[Array[Double]] = new Array(1)
   var tmpScore: Array[Double] = new Array(1)
 
   def initializeScores() {
@@ -516,6 +516,15 @@ abstract class LatticeBP(val varying: Set[DiscreteVariable]) extends Lattice[Var
   def setToMaxMarginal(variables: Iterable[MutableVar] = varying.toSet)(implicit d: DiffList = null): Unit = {
     for (variable <- variables) {
       variable.set(node(variable).marginal.map[variable.Value])(d)
+    }
+  }
+
+  def setToMaxMarginalWithThreshold[Var <: DiscreteVariable, Val <: Var#ValueType](variables: Iterable[Var],
+                                                                                   threshold: Double,
+                                                                                   default: Val)
+                                                                                  (implicit d: DiffList = null): Unit = {
+    for (variable <- variables) {
+      variable.set(node(variable).marginal.mapWithThreshold[variable.Value](threshold, default))(d)
     }
   }
 

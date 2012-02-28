@@ -70,7 +70,17 @@ trait GenericMessage extends Marginal {
 
   def isDeterministic = false
 
-  def map[A]: A = domain.maxBy(v => score(v)).asInstanceOf[A]
+  def map[A]: A = domain.maxByDouble(v => score(v)).asInstanceOf[A]
+
+  def map2[A]: (A, A) = domain.asInstanceOf[Seq[A]].max2ByDouble(v => score(v))
+
+  def mapWithThreshold[A](threshold:Double, default: A): A = {
+    // get the best two values
+    val (v1,v2) = map2[A]
+    // pick the one to check for threshold (should be non-default)
+    val value = if(v1 == default) v2 else v1
+    if(probability(value) > threshold) value else default
+  }
 
   override def toString: String = domain.map(x => "%5.5f/%f".format(probability(x), score(x))).mkString(",")
 }
@@ -217,6 +227,8 @@ class DeterministicMessage[Value](val value: Value) extends GenericMessage {
   }
 
   override def score(arg: Any) = {
+  override def score(arg: Any) = {
+  override def score(arg: Any) = {
     arg match {
       case m if (m == value) => 0.0
       case _ => Double.NegativeInfinity
@@ -285,3 +297,11 @@ case class MessageOperationNotSupported(thisType: GenericMessage, thatType: Gene
         thisType.getClass.getSimpleName, thatType.getClass.getSimpleName))
 
 case class CantCompute(function: String) extends RuntimeException("Can't compute " + function)
+
+trait Marginal {
+  var _marginal: GenericMessage = UniformMessage
+
+  def setMarginal(msg: GenericMessage) = _marginal = msg
+
+  def marginal = _marginal
+}
