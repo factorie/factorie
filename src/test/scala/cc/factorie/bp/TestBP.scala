@@ -696,4 +696,16 @@ class TestBP extends TestCase {
     }
   }
 
+  def testThresholdsOnMarginals = {
+    val v = new BinVar(0)
+    for (seed <- (0 until 10)) {
+      val random = new Random(seed)
+      val score = random.nextDouble * 6.0 - 3.0
+      val msg = BPUtil.message(v, Seq(score, 0.0))
+      for(thresh <- 0.0 to(1.0, 0.1)) {
+        println(thresh + " : " + msg.mapWithThreshold(thresh, BinDomain(0)))
+      }
+    }
+  }
+
 }

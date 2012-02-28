@@ -227,8 +227,6 @@ class DeterministicMessage[Value](val value: Value) extends GenericMessage {
   }
 
   override def score(arg: Any) = {
-  override def score(arg: Any) = {
-  override def score(arg: Any) = {
     arg match {
       case m if (m == value) => 0.0
       case _ => Double.NegativeInfinity

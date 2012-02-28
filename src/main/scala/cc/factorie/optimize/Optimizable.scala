@@ -16,6 +16,7 @@
 
 package cc.factorie.optimize
 import cc.factorie._
+import cc.factorie.la.Vector
 import scala.collection.mutable.IndexedSeq
 
 /** Functions that can be maximized by numeric optimization must provide these
@@ -31,19 +32,39 @@ trait Optimizable {
   def optimizableParameter_=(index:Int, d:Double): Unit
 }
 
-/** An Optimizable object that can provide the value of the function being optimized. 
+/** An Optimizable object that can provide the value of the function being optimized.
     @author Andrew McCallum */
 trait OptimizableByValue extends Optimizable {
   def optimizableValue: Double
 }
 
-/** An Optimizable object that can provide the gradient of the function being optimized. 
+/** An Optimizable object that can provide the gradient of the function being optimized.
     @author Andrew McCallum */
 trait OptimizableByGradient extends Optimizable {
   /** If argument is null, an array will be allocated for you and returned. */
   def getOptimizableGradient(a:Array[Double])
 }
 
-/** An Optimizable object that can provide both the value and the gradient of the function being optimized. 
+/** An Optimizable object that can provide both the value and the gradient of the function being optimized.
     @author Andrew McCallum */
 trait OptimizableByValueAndGradient extends OptimizableByValue with OptimizableByGradient
+
+trait VectorOptimizable {
+  def numParamGroups: Int
+  def numParams(vi:Int): Int
+  def getParameters(vi:Int): Vector
+  def setParameters(vi:Int, v: Vector): Unit
+  def getParameter(vi:Int, index: Int): Double
+  def setParameter(vi:Int, index: Int, d: Double): Unit
+}
+
+trait VectorOptimizableByValue extends VectorOptimizable {
+  def getValue: Double
+}
+
+trait VectorOptimizableByGradient extends VectorOptimizable {
+  def getGradient(vi: Int): Vector
+  def getGradients: Seq[Vector]
+}
+
+trait VectorOptimizableByValueAndGradient extends VectorOptimizableByValue with VectorOptimizableByGradient
