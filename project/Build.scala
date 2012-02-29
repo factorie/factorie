@@ -52,7 +52,8 @@ object Dependencies {
     val commonsIo    = "commons-io"                %  "commons-io"        % "2.0.1"
     val jettison     = "org.codehaus.jettison"     %  "jettison"          % "1.3"
     val jdom         = "org.jdom"                  %  "jdom"              % "1.1"
-    val mongodb      = "com.mongodb.casbah"        %% "casbah"            % "2.1.5-1"
+    val casbah       = "com.mongodb.casbah"        %% "casbah"            % "2.1.5-1"
+    val mongodb      = "org.mongodb"               % "mongo-java-driver"  % "2.7.3"
   }
 
   object Test {

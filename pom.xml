@@ -69,35 +69,10 @@
         </dependency>
 
         <dependency>
-            <groupId>com.mongodb.casbah</groupId>
-            <artifactId>casbah_2.9.1</artifactId>
-            <type>pom</type>
-            <version>2.1.5-1</version>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>2.7.3</version>
         </dependency>
-
-        <!-- <dependency> -->
-        <!--     <groupId>org.codehaus.jackson</groupId> -->
-        <!--     <artifactId>jackson-mapper-asl</artifactId> -->
-        <!--     <version>1.9.1</version> -->
-        <!-- </dependency> -->
-
-        <!-- <dependency> -->
-        <!--     <groupId>org.riedelcastro.nurupo</groupId> -->
-        <!--     <artifactId>nurupo</artifactId> -->
-        <!--     <version>0.1-SNAPSHOT</version> -->
-        <!-- </dependency> -->
-
-        <!-- <dependency> -->
-        <!--     <groupId>log4j</groupId> -->
-        <!--     <artifactId>log4j</artifactId> -->
-        <!--     <version>1.2.16</version> -->
-        <!-- </dependency> -->
-
-        <!-- <dependency> -->
-        <!--     <groupId>xom</groupId> -->
-        <!--     <artifactId>xom</artifactId> -->
-        <!--     <version>1.2.5</version> -->
-        <!-- </dependency> -->
 
     </dependencies>
 
