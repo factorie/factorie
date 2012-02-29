@@ -80,13 +80,13 @@ object LoadReACE {
       currP += 1
       for (s <- p \\ "s") {
         val sId = getAttr(s, "id")
-        val sent = new Sentence(doc)
+        val sent = new Sentence(doc)(null)
         sent.attr += new ReACESentenceAnnotations {
           val paragraphId = Some(currP.toString);
           val sentenceId = sId
         }
         for (w <- s \\ "w") {
-          val t = new Token(sent, w text)
+          val t = new Token(sent, w.text)
           doc.appendString(" ")
           val annotations = makeTokenAnnotations(w)
           t.attr += annotations

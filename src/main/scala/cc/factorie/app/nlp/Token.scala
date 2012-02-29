@@ -15,27 +15,26 @@
 package cc.factorie.app.nlp
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.er._
 
 // There are two ways to create Tokens and add them to Sentences and/or Documents:
 // Without String arguments, in which case the string is assumed to already be in the Document
 // With String arguments, in which case the string is appended to the Document (and when Sentence is specified, Sentence length is automatically extended)
 
 // TODO Consider stringEnd instead of stringLength?
-class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Document] with Attr with Entity[Token] {
-  def this(doc:Document, s:Int, l:Int) = {
-    this(s, l)
+class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Document] with Attr {
+  def this(doc:Document, s:Int, e:Int) = {
+    this(s, e)
     doc += this
   }
-  def this(sentence:Sentence, s:Int, l:Int) = {
-    this(s, l) // TODO Rather than TODO below, we should just make this line: this(sentence.document, s, l)
+  def this(sentence:Sentence, s:Int, e:Int) = {
+    this(s, e) // TODO Rather than TODO below, we should just make this line: this(sentence.document, s, l)
     if (sentence.document.sentences.last ne sentence) throw new Error("Can only append of the last sentence of the Document.")
     _sentence = sentence
     // TODO Don't we also need to do??: doc += this
     sentence.setLength(this.position - sentence.start + 1)(null)
   }
   def this(doc:Document, tokenString:String) = {
-    this(doc, doc.stringLength, tokenString.length)
+    this(doc, doc.stringLength, doc.stringLength + tokenString.length)
     doc.appendString(tokenString)
     //doc.appendString(" ") // TODO Make this configurable
   }
@@ -46,10 +45,13 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
     s.setLength(this.position - s.start + 1)(null)
   }
   def document: ChainType = chain
-  def string = document.string.substring(stringStart, stringStart + stringLength)
-  def stringEnd = stringStart + stringLength
-  def sentencePosition = position - sentence.start
   def value: String = string // abstract in StringVar
+  def docSubstring = document.string.substring(stringStart, stringEnd)
+  /** Return the string contents of this Token, either from its attr[TokenString] variable or ,if unset, directly as a substring of the Document */
+  def string = { val ts = attr[TokenString]; if (ts ne null) ts.value else docSubstring }
+  def stringVar: StringVariable = { val ts = attr[TokenString]; if (ts ne null) ts else { val ts2 = new TokenString(this, docSubstring); attr += ts2; ts2 } }
+  def sentencePosition = position - sentence.start
+  //def stringLength = throw new Error("Use string.length instead")
   
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PosLabel]
@@ -109,29 +111,28 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
       Skip more than 'maxRepetitions' of the same character class. */
   def wordShape(maxRepetitions:Int): String = cc.factorie.app.strings.stringShape(string, maxRepetitions)
   def charNGrams(min:Int, max:Int): Seq[String] = cc.factorie.app.strings.charNGrams(string, min, max)
-  override def toString = "Token("+stringStart+"+"+stringLength+":"+string+")"
+  override def toString = "Token("+stringStart+":"+string+")"
 
-  // factorie.er interface
-  type GetterType <: TokenGetter
-  class GetterClass extends TokenGetter
 }
+
+class TokenString(val token:Token, s:String) extends StringVariable(s) 
 
 
 // Cubbie storage
 
 class TokenCubbie extends Cubbie {
   val start = IntSlot("start")
-  val length = IntSlot("length")
+  val end = IntSlot("end")
   def postFetchToken(t:Token): Unit = {}
   def fetchToken: Token = {
-    val t = new Token(start.value, length.value)
+    val t = new Token(start.value, end.value)
     postFetchToken(t)
     t
   }
   def postStoreToken(t:Token): Unit = {}
   def storeToken(t:Token): this.type = {
     start := t.stringStart
-    length := t.stringLength
+    end := t.stringEnd
     postStoreToken(t)
     this
   }
@@ -179,47 +180,6 @@ trait TokenPosLabelCubbie extends TokenCubbie {
 
 
 
-/** Implementation of the entity-relationship language we can use with Token objects. */
-class TokenGetter extends EntityGetter[Token] {
-  type T = Token
-  //type S = Chain[S,Token]
-  def newTokenGetter = new TokenGetter
-  /** Go from a token to the next token. */
-  def next = initManyToMany[T](newTokenGetter,
-                               (token:T) => if (!token.hasNext) Nil else List(token.next), 
-                               (token:T) => if (!token.hasPrev) Nil else List(token.prev))
-  /** Go from a token to the previous token. */
-  def prev = initManyToMany[T](newTokenGetter,
-                               (token:T) => if (!token.hasPrev) Nil else List(token.prev), 
-                               (token:T) => if (!token.hasNext) Nil else List(token.next))
-  /** Go from a token to the collection of the next 'n' tokens. */
-  def next(n:Int) = initManyToMany[T](newTokenGetter,
-                                      (t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret },
-                                      (t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret })
-  /** Go from a token to the collection of the previous 'n' tokens. */
-  def prev(n:Int) = initManyToMany[T](newTokenGetter,
-                                      (t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasPrev && i > 0) { ret = t.prev :: ret; i += 1}; ret },
-                                      (t:T) => { var i = n; var ret:List[T] = Nil; while (t.hasNext && i > 0) { ret = t.next :: ret; i += 1}; ret })
-  /** All the other tokens in the Sentence. */
-  def sentenceTokens = initManyToMany[T](newTokenGetter,
-                                         (token:T) => token.chain, 
-                                         (token:T) => token.chain)
-  //def nerLabel = initOneToOne[ChainNerLabel]                                       
-  /** Return a BooleanObservation with value true if the word of this Token is equal to 'w'.  
-   Intended for use in tests in er.Formula, not as a feature itself.  
-   If you want such a feature, you should += it to the Token (BinaryFeatureVectorVariable) */
-  def isWord(w:String) = getOneToOne[BooleanObservationWithGetter](
-    // TODO Consider making this more efficient by looking up an already-constructed instance, as in "object Bool"
-    token => if (token.string == w) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
-    bool => throw new Error("Constant bool shouldn't change"))
-  /** Return a BooleanObservation with value true if the word of this Token is capitalized.  
-   Intended for use in tests in er.Formula, not as a feature itself.  
-   If you want such a feature, you should += it to the Token (BinaryFeatureVectorVariable) */
-  def isCapitalized = getOneToOne[BooleanObservationWithGetter](
-    // TODO Consider making this more efficient by looking up an already-constructed instance, as in "object Bool"
-    token => if (java.lang.Character.isUpperCase(token.string.head)) new BooleanObservationWithGetter(true) else new BooleanObservationWithGetter(false),
-    bool => throw new Error("Constant bool shouldn't change"))
-}
 
 
   /** Given some String features read from raw data, in which the first feature is always the word String itself, add some more features.  */

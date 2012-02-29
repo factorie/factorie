@@ -48,7 +48,7 @@ object LoadConll2003 {
         val token = new Token(sentence, word)
         if (false && document.stringLength < 100) {
           println("word=%s documentlen=>%s<".format(word, document.string))
-          println("token start,end %d,%d".format(token.stringStart, token.stringLength))
+          println("token start,end %d,%d".format(token.stringStart, token.stringEnd))
           println("token=%s".format(token.string))
           println()
         }
