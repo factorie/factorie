@@ -24,11 +24,3 @@ trait Optimizer {
   def isConverged: Boolean
   def optimizable: Optimizable
 }
-
-/** A method of iterative, numeric function maximization, given a function provided as an Optimizable object. */
-trait VectorOptimizer {
-  /** Returns true if converged. */
-  def optimize(numIterations:Int = Int.MaxValue): Boolean
-  def isConverged: Boolean
-  def optimizable: VectorOptimizable
-}
