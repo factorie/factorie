@@ -650,7 +650,7 @@ class TestBP extends TestCase {
     val n3 = new BinVar(0)
     val varSet: Set[DiscreteVariable] = Set(n1, n2, n3)
     for (seed <- (0 until 10)) {
-      val random = new Random(seed)
+      val random = new Random(seed * 1024)
       val model = new FactorModel
       model += newFactor1(n1, 0, random.nextDouble() * 4.0 - 2.0)
       model += newFactor1(n2, 0, random.nextDouble() * 4.0 - 2.0)
@@ -698,14 +698,26 @@ class TestBP extends TestCase {
 
   def testThresholdsOnMarginals = {
     val v = new BinVar(0)
-    for (seed <- (0 until 10)) {
-      val random = new Random(seed)
-      val score = random.nextDouble * 6.0 - 3.0
+    for (seed <- (0 until 25)) {
+      val random = new Random(seed * 1024)
+      val score = random.nextGaussian()
+      val prob = (1.0 / (e(score) + 1))
+      print(score + ": " + prob + "\t")
       val msg = BPUtil.message(v, Seq(score, 0.0))
-      for(thresh <- 0.0 to(1.0, 0.1)) {
-        println(thresh + " : " + msg.mapWithThreshold(thresh, BinDomain(0)))
+      for (thresh <- 0.0 to(1.0, 0.1)) {
+        val vl = msg.mapWithThreshold(thresh, BinDomain(0))
+        print("%s ".format(vl))
+        if (thresh > prob) assertTrue(vl.category == 0) else assertTrue(vl.category == 1)
       }
+      println
     }
+    val msg = BPUtil.deterministicMessage(v, BinDomain(1))
+    for (thresh <- 0.0 to(1.0, 0.1)) {
+      val vl = msg.mapWithThreshold(thresh, BinDomain(0))
+      print("%s ".format(vl))
+      assertTrue(vl.category == 1)
+    }
+    println
   }
 
 }

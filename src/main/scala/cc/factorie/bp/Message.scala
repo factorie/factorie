@@ -74,12 +74,12 @@ trait GenericMessage extends Marginal {
 
   def map2[A]: (A, A) = domain.asInstanceOf[Seq[A]].max2ByDouble(v => score(v))
 
-  def mapWithThreshold[A](threshold:Double, default: A): A = {
+  def mapWithThreshold[A](threshold: Double, default: A): A = {
     // get the best two values
-    val (v1,v2) = map2[A]
+    val (v1, v2) = map2[A]
     // pick the one to check for threshold (should be non-default)
-    val value = if(v1 == default) v2 else v1
-    if(probability(value) > threshold) value else default
+    val value = if (v1 == default) v2 else v1
+    if (probability(value) > threshold) value else default
   }
 
   override def toString: String = domain.map(x => "%5.5f/%f".format(probability(x), score(x))).mkString(",")
@@ -203,6 +203,10 @@ class DeterministicMessage[Value](val value: Value) extends GenericMessage {
   }
 
   override def map[A] = sample[A]
+
+  override def map2[A] = value match {
+    case a: A => Pair(a, a)
+  }
 
   override def *(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
