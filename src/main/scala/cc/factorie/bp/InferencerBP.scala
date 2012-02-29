@@ -58,6 +58,7 @@ class InferencerBPWorker(lattice: LatticeBP) {
         l.finalPass = true
         root.maxAsMarginal
       }
+      case _ =>
     }
     // send root to leaves
     for ((e, varRoot) <- bfsOrdering) {
