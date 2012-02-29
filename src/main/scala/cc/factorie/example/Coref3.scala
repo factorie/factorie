@@ -13,7 +13,7 @@ object Coref3 {
   class MyMention(n:String, b:Iterable[String]) extends StringMention(n) {
     attr += new Bow(this, b)
   }
-  class MyMentionCubbie extends StringMentionCubbie {
+  class MyMentionCubbie extends StringEntityCubbie {
     val bow = StringListSlot("bow")
   }
   

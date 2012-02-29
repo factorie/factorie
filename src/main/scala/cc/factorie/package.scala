@@ -42,6 +42,8 @@ package object factorie {
   type Logging = cc.factorie.util.Logging
   type FastLogging = cc.factorie.util.FastLogging
   type GlobalLogging = cc.factorie.util.GlobalLogging
+  type Attr = cc.factorie.util.Attr
+  type Cubbie = cc.factorie.util.Cubbie
 
   //def repeat[T](n:Int)(f: =>T) : Iterable[T] = for (i <- 0 until n) yield f
   def repeat(n:Int)(f: =>Unit) : Unit = for (i <- 0 until n) f

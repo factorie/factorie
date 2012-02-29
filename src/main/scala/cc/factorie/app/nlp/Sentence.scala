@@ -41,16 +41,20 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
   def nerLabels = this.map(_.nerLabel)
 }
 
+
 // Cubbie storage
 
 class SentenceCubbie extends TokenSpanCubbie {
-  def newObject(doc:Document, start:Int, length:Int): Sentence = new Sentence(doc, start, length)
-  def store(s:Sentence): this.type = {
-    //super.store(s)
+  def finishStoreSentence(s:Sentence): Unit = {}
+  def storeSentence(s:Sentence): this.type = {
+	storeTokenSpan(s) // also calls finishStoreTokenSpan(s)
+    finishStoreSentence(s)
     this
   }
-  def fetch(doc:Document): Sentence = {
-    val s = newObject(doc, start.value, length.value)
+  def finishFetchSentence(s:Sentence): Unit = finishFetchTokenSpan(s)
+  def fetchSentence(doc:Document): Sentence = {
+    val s = new Sentence(doc, start.value, length.value)
+    finishFetchSentence(s)
     s
   }
 }
@@ -58,14 +62,12 @@ class SentenceCubbie extends TokenSpanCubbie {
 // To save the sentence with its parse tree use "new SentenceCubbie with SentenceParseTreeCubbie"
 trait SentenceParseCubbie extends SentenceCubbie {
   val parse = CubbieSlot("parse", () => new cc.factorie.app.nlp.parse.ParseTreeCubbie)
-  def storeSentence(s:Sentence): this.type = {
-    super.store(s)
+  override def finishStoreSentence(s:Sentence): Unit = {
+    super.finishStoreSentence(s)
     parse := parse.constructor().storeParseTree(s.parse)
-    this
   }
-  def fetchSentence(doc:Document): Sentence = {
-    val s = super.fetch(doc)
+  override def finishFetchSentence(s:Sentence): Unit = {
+    super.finishFetchSentence(s)
     s.attr += parse.value.fetchParseTree(s)
-    s
   }
 }

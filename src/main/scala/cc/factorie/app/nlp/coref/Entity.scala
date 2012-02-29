@@ -16,11 +16,27 @@ package cc.factorie.app.nlp.coref
 import cc.factorie._
 import cc.factorie.app.nlp._
 import scala.collection.mutable.{ArrayBuffer,ListBuffer}
+import cc.factorie.util.{Cubbie,CubbieRefs}
+import cc.factorie.util.Attr
+
+/** A pointer from a child Entity (or Mention) to its parent Entity in an coreference problem. */
+class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, initialDst) {
+  if (dst ne null) dst._addSubEntity(src)(null)
+  override def set(e:Entity)(implicit d:DiffList): Unit = {
+    if (e ne dst) {
+      if (dst ne null) dst._removeSubEntity(src)
+      e._addSubEntity(src)
+      super.set(src, e)
+    }
+  }
+  final def mention = src
+  final def entity = dst
+}
 
 /** A trait for entities (and mentions, sub-entities and super-entities) in a coreference problem.
     Abstract classes here are string, superEntityRef, subEntities, _addSubEntity and _removeSubEntity. */
 trait Entity extends Attr {
-  @deprecated("Will be removed.  Entities are guaranteed to have string names.") def string: String
+  @deprecated("Will be removed.  Entities are not guaranteed to have string names.") def string: String
   def id: Any = this // Override to make some persistent id
   /** Ensure that we return a non-null value. */
   private def _ensuredSubEntities: SubEntities = {
@@ -69,21 +85,26 @@ trait Entity extends Attr {
   def mentionsOfClass[A<:Mention](implicit m:Manifest[A]): Seq[A] = mentionsOfClass[A](m.erasure.asInstanceOf[Class[A]])
 }
 
+/** This variable should not be changed directly.  Change EntityRef variables, and they will automatically coordinate with SubEntities variables. */
 class SubEntities(val entity:Entity) extends SetVariable[Entity]
 
-class EntityCubbie extends Cubbie {
-  def this(e:Entity) = {
-    this()
-    entityRef := e.superEntity.id
-  }
-  def newEntity: Entity = new Entity { def string = throw new Error("Abstract Entity does not implement string") }
-  def newEntityCubbie: EntityCubbie = new EntityCubbie
+abstract class EntityCubbie extends Cubbie {
   val entityRef = RefSlot("entityRef", () => newEntityCubbie)
-  def fetch(cr:CubbieRefs): Entity = {
-    val ev = newEntity
-    ev.setSuperEntity(cr(entityRef.value).asInstanceOf[Entity])(null)
-    ev
+  def newEntity: Entity
+  def newEntityCubbie: EntityCubbie
+  def storeEntity(e:Entity): this.type = {
+    entityRef := e.superEntity.id
+    finishStoreEntity(e)
+    this
   }
+  def finishStoreEntity(e:Entity): Unit = {}
+  def fetchEntity(cr:CubbieRefs): Entity = {
+    val e = newEntity
+    e.setSuperEntity(cr(entityRef.value).asInstanceOf[Entity])(null)
+    finishFetchEntity(e)
+    e
+  }
+  def finishFetchEntity(e:Entity): Unit = {}
 }
 
 
@@ -98,61 +119,52 @@ trait Mention extends Entity {
 
 
 trait TokenSpanMention extends TokenSpan with Mention
-class TokenSpanMentionCubbie extends TokenSpanCubbie {
+abstract class TokenSpanMentionCubbie extends TokenSpanCubbie {
   // Unfortunately we can't inherit from both TokenSpanCubbie and EntityCubbie
-  def this(tsm:TokenSpanMention) = {
-    this()
+  val entityRef = RefSlot("entityRef", () => newEntityCubbie)
+  def newEntityCubbie: TokenSpanMentionCubbie
+  def newTokenSpanMention(doc:Document, start:Int, length:Int): TokenSpanMention
+  def storeTokenSpanMention(tsm:TokenSpan with Mention): this.type = {
+    storeTokenSpan(tsm)
+    entityRef := tsm.superEntity.id
+    this
   }
-  val entityRef = RefSlot("entityRef", () => new EntityCubbie)
-  //def init(ts:TokenSpan): TokenSpanMention = {  }
+  def fetchTokenSpanMention(doc:Document): TokenSpanMention = {
+    val tsm = newTokenSpanMention(doc, start.value, length.value)
+    throw new Error("Not yet implemented")
+    tsm.entity.setSuperEntity(null)(null)
+    finishFetchTokenSpan(tsm)
+    tsm
+  }
 }
 
+class StringEntity(s:String) extends EntityWithName {
+  val name = new EntityName(this, s)
+  @deprecated("Use name.value instead") def string = name.value  
+}
+class StringMention(s:String) extends StringEntity(s) with Mention
+trait EntityWithName extends Entity {
+  def name: EntityName
+}
 class EntityName(val entity:Entity, s:String) extends StringVariable(s)
+@deprecated("Use StringEntity instead.") class EntityVariable(s:String) extends StringEntity(s) 
 
-class StringMention(s:String) extends Mention {
-  attr += new EntityName(this, s)
-  def name = attr[EntityName]
-  final def nameString = name.value
-  @deprecated("Use nameString instead.") def string = name.value
-  //def superEntityRef: EntityRef = attr[EntityRef]
-}
 
-class EntityVariable(s:String) extends Entity {
-  attr += new EntityName(this, s)
-  def name = attr[EntityName]
-  final def nameString = name.value
-  @deprecated("Use nameString instead.") def string = name.value
-}
-
-class StringMentionCubbie extends Cubbie {
-  val string = StringSlot("string")
-  val entityRef = RefSlot("entityRef", () => new EntityCubbie)
+class StringEntityCubbie extends Cubbie {
+  val name = StringSlot("name")
+  val entityRef = RefSlot("entityRef", () => new StringEntityCubbie)
   def newObject(s:String): StringMention = new StringMention(s) 
   def store(sm:StringMention): this.type = {
-    string := sm.nameString
+    name := sm.name.value
     entityRef := sm.entity.id
     this
   }
   def fetch(cr:CubbieRefs): StringMention = {
-    val sm = newObject(string.value)
+    val sm = newObject(name.value)
     sm.setSuperEntity(cr(entityRef.value).asInstanceOf[Entity])(null)
     sm
   }
 }
-
-/*trait StringVarAttrSlots extends Cubbie {
-  val strAttr = StringListSlot("strAttr")
-  abstract override def store(attr:Attr): this.type = {
-    //super.store(attr) // TODO Arggg!
-    val b = new ArrayBuffer[String]
-    for (a <- attr.attr.all[StringVariable]) {
-      b += a.getClass.getName
-      b += a.value
-    }
-    strAttr := b
-    this
-  }
-}*/
 
 
 
@@ -190,17 +202,4 @@ class EntityVariableCubbie extends Cubbie {
   }
 }
 */
-
-class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, initialDst) {
-  if (dst ne null) dst._addSubEntity(src)(null)
-  override def set(e:Entity)(implicit d:DiffList): Unit = {
-    if (e ne dst) {
-      if (dst ne null) dst._removeSubEntity(src)
-      e._addSubEntity(src)
-      super.set(src, e)
-    }
-  }
-  final def mention = src
-  final def entity = dst
-}
 
