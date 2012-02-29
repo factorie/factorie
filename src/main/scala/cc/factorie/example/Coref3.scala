@@ -10,10 +10,10 @@ object Coref3 {
     def this(e:Entity, ss:Iterable[String]) = { this(e); ss.foreach(this.add(_)(null)) }
   }
   
-  class MyMention(n:String, b:Iterable[String]) extends StringMention(n) {
+  class MyMention(n:String, b:Iterable[String]) extends NamedMention(n) {
     attr += new Bow(this, b)
   }
-  class MyMentionCubbie extends StringEntityCubbie {
+  class MyMentionCubbie extends NamedEntityCubbie {
     val bow = StringListSlot("bow")
   }
   
