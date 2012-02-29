@@ -552,7 +552,7 @@ class TestBP extends TestCase {
     val numVars = 2
     val vars: Seq[BinVar] = (0 until numVars).map(new BinVar(_)).toSeq
     val varSet = vars.toSet[DiscreteVariable]
-    for (seed <- (0 until 40)) {
+    for (seed <- (0 until 50)) {
       val random = new Random(seed)
       val model = new FactorModel
       for (i <- 0 until numVars) {
@@ -599,8 +599,6 @@ class TestBP extends TestCase {
       // max product
       val mfg = new LatticeBP(model, varSet) with MaxProductLattice
       new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
-      new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
-      //new InferencerBPWorker(mfg).inferLoopyBP(numVars*2) //UpDown(vars.sampleUniformly, false)
       mfg.setToMaxMarginal()
       println("probabilities : " + scores.map(math.exp(_) / Z).mkString(", "))
       for (i <- 0 until numVars) {
@@ -610,38 +608,33 @@ class TestBP extends TestCase {
     }
   }
 
-  def testV2F1MAPEquals = {
+  def testV3F1MAPEquals = {
     // a sequence of two variables, one factor
-    val v1 = new BinVar(0)
-    val v2 = new BinVar(0)
+    val v0 = new BinVar(0)
+    val v1 = new BinVar(1)
+    val v2 = new BinVar(1)
     // println("Testing MAP V2F1")
     // create template between v1 and v2
     var fg: LatticeBP = null
-    val model = new FactorModel(newFactor2(v1, v2, 0, 10))
-    val vars: Set[DiscreteVariable] = Set(v1, v2)
+    val model = new FactorModel(newFactor2(v0, v1, 0, 10), newFactor2(v1, v2, 0, 0))
+    val vars: Set[DiscreteVariable] = Set(v0, v1, v2)
 
     // vary both variables
     fg = new LatticeBP(vars) with MaxProductLattice
     fg.createUnrolled(model)
-    // println("num Factors = %d".format(fg.factors.size))
-    // println("num Variables = %d".format(fg._nodes.size))
     new InferencerBPWorker(fg).inferTreewise()
-    // println("v1 : " + fg.node(v1).marginal)
-    // println("v2 : " + fg.node(v2).marginal)
     for (mfactor <- fg.mfactors) {
       for (values <- mfactor.factor.valuesIterator(vars.toSet)) {
         println(values + " : " + mfactor.marginal(values))
       }
     }
     fg.setToMaxMarginal()
-    println("V1: %d, V2: %d".format(v1.categoryValue, v2.categoryValue))
+    println("V0: %d, V1: %d, V2: %d".format(v0.categoryValue, v1.categoryValue, v2.categoryValue))
+    println("v0: " + fg.node(v0).marginal)
     println("v1: " + fg.node(v1).marginal)
     println("v2: " + fg.node(v2).marginal)
-    assertEquals(fg.node(v1).marginal.score(BinDomain(0)), 10, eps)
-    assertEquals(fg.node(v2).marginal.score(BinDomain(0)), 10, eps)
-    assertEquals(fg.node(v1).marginal.score(BinDomain(1)), 10, eps)
-    assertEquals(fg.node(v2).marginal.score(BinDomain(1)), 10, eps)
-    // vary just one variable
+    assertFalse(v1.value == v0.value)
+    //assert(v1.value == v2.value)
   }
 
   def testV3F4Random = {

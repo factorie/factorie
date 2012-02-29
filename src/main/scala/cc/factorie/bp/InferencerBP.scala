@@ -50,12 +50,18 @@ class InferencerBPWorker(lattice: LatticeBP) {
     // perform BFS
     val bfsOrdering: Seq[(Edge, Boolean)] = _bfs(root, checkLoops)
     // send messages leaf to root
-    for ((e,varRoot) <- bfsOrdering.reverse) {
-      if(varRoot) e.fToV else e.vToF
+    for ((e, varRoot) <- bfsOrdering.reverse) {
+      if (varRoot) e.fToV else e.vToF
+    }
+    lattice match {
+      case l: MaxProductLattice => {
+        l.finalPass = true
+        root.maxAsMarginal
+      }
     }
     // send root to leaves
-    for ((e,varRoot) <- bfsOrdering) {
-      if(varRoot) e.vToF else e.fToV
+    for ((e, varRoot) <- bfsOrdering) {
+      if (varRoot) e.vToF else e.fToV
     }
   }
 

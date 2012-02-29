@@ -22,7 +22,7 @@ class Edge(val fid: Int,
   override def toString = "%s -- %s".format(f.factor, n.variable)
 }
 
-abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariable], fg: LatticeBP) {
+abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariable], val fg: LatticeBP) {
   val variables: Seq[Variable] = factor.variables
   val _incoming = new FactorMessages(variables)
   val _outgoing = new FactorMessages(variables)
@@ -314,7 +314,6 @@ trait SumFactor extends MessageFactor {
 }
 
 trait MaxFactor extends MessageFactor {
-
   /*
   def marginalize(target: DiscreteVariable, incoming: FactorMessages): GenericMessage = {
     // TODO add to _marginals
@@ -372,7 +371,13 @@ trait MaxFactor extends MessageFactor {
     for (i <- 0 until discreteVarying.length) {
       val dv = discreteVarying(i)
       val vid = dv._2
-      result.set(vid, BPUtil.message(dv._1, scores(i).toSeq))
+      val msg = fg match {
+        case l: MaxProductLattice =>
+          if (l.finalPass) BPUtil.deterministicMessage(dv._1, dv._1.domain.getValue(scores(i).toSeq.indexOfMaxByDouble(d => d)))
+          else BPUtil.message(dv._1, scores(i).toSeq)
+        case _ => BPUtil.message(dv._1, scores(i).toSeq)
+      }
+      result.set(vid, msg)
     }
     // deterministic messages for the fixed neighbors
     for (fv <- fixedNeighbors) {
@@ -397,7 +402,7 @@ class MessageNode(val variable: Variable, val varying: Set[DiscreteVariable]) {
   protected var _remarginalize: Boolean = false
 
   def marginal = {
-    marginalize
+    if (!_marginal.isDeterministic) marginalize
     _marginal
   }
 
@@ -432,11 +437,11 @@ class MessageNode(val variable: Variable, val varying: Set[DiscreteVariable]) {
       //TODO update marginal incrementally?
       //_marginal = (_marginal / _incoming(factor)) * mess
       /*if (_incoming.get(e).isDeterministic) {
-        var msg: GenericMessage = BPUtil.uniformMessage
-        for (other <- edges; if (other != e))
-          msg = msg * _incoming.get(other) // FIXME make sure we're not normalizing accidentally
-        msg
-      } else {*/
+      var msg: GenericMessage = BPUtil.uniformMessage
+      for (other <- edges; if (other != e))
+        msg = msg * _incoming.get(other) // FIXME make sure we're not normalizing accidentally
+      msg
+    } else {*/
       _marginal = BPUtil.uniformMessage
       for (e <- edges) {
         _marginal = _marginal * _incoming.get(e)
@@ -460,6 +465,18 @@ class MessageNode(val variable: Variable, val varying: Set[DiscreteVariable]) {
     } else {
       // use the current value as the deterministic message
       BPUtil.deterministicMessage(variable, variable.value)
+    }
+  }
+
+  // set the map of the marginal as the deterministic message
+  def maxAsMarginal = {
+    variable match {
+      case dv: DiscreteVariable => {
+        marginalize
+        _marginal = BPUtil.deterministicMessage(dv, _marginal.map[dv.ValueType])
+        for (e <- edges) _outgoing.set(e, _marginal)
+        _remarginalize = false
+      }
     }
   }
 

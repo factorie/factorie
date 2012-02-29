@@ -41,6 +41,19 @@ trait TraversableExtras[A] {
     }
     result
   }
+
+  def indexOfMaxByDouble(extractor: A => Double): Int = {
+    val seq = t.toSeq
+    if (seq.isEmpty) throw new Error("TraversableExtras.indexOfMaxByDouble on empty Traversable")
+    var result: Int = 0
+    var value = extractor(seq(0))
+    for(i <- 1 until seq.length) {
+      val v = extractor(seq(i))
+      if (v > value) { result = i; value = v }
+    }
+    result
+  }
+
   def maxByInt(extractor: A => Int): A = {
     val iter = t.toSeq.iterator
     if (!iter.hasNext) throw new Error("TraversableExtras.maxByInt on empty Traversable")

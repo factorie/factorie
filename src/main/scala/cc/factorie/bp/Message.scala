@@ -82,7 +82,7 @@ trait GenericMessage extends cc.factorie.Marginal {
     if (probability(value) > threshold) value else default
   }
 
-  override def toString: String = domain.map(x => "%5.5f/%f".format(probability(x), score(x))).mkString(",")
+  override def toString: String = domain.map(x => "%s:%5.5f/%f".format(x, probability(x), score(x))).mkString(",")
 }
 
 trait GenericUniformMessage extends GenericMessage {
