@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie
+package cc.factorie.util
 
 /** Provides member "attr" which is a map from a class to an attribute value (instance of that class).
     For example: object foo extends Attr; foo.attr += "bar"; require(foo.attr[String] == "bar"); foo.attr.remove[String] */

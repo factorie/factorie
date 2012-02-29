@@ -122,21 +122,28 @@ class Token(var stringStart:Int, var stringLength:Int) extends StringVar with cc
 class TokenCubbie extends Cubbie {
   val start = IntSlot("start")
   val length = IntSlot("length")
-  def fetchToken: Token = new Token(start.value, length.value)
+  def postFetchToken(t:Token): Unit = {}
+  def fetchToken: Token = {
+    val t = new Token(start.value, length.value)
+    postFetchToken(t)
+    t
+  }
+  def postStoreToken(t:Token): Unit = {}
   def storeToken(t:Token): this.type = {
     start := t.stringStart
     length := t.stringLength
+    postStoreToken(t)
     this
   }
 }
 
 trait TokenStringCubbieSlot extends TokenCubbie {
   val string = StringSlot("string")
-  override def storeToken(t:Token): this.type = {
-    super.storeToken(t)
+  override def postStoreToken(t:Token): Unit = {
+    super.postStoreToken(t)
     string := t.string	
-    this
   }
+  // No postFetchToken necessary because "string" isn't needed for Token initialization
 }
 
 trait TokenNerLabelCubbie extends TokenCubbie {

@@ -46,119 +46,59 @@ class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Di
 
 // Cubbie storage
 
-/*class TokenSpanCubbie(storing:TokenSpan) extends Cubbie(storing) {
-  if (storing ne null) {
-    start := storing.start
-    length := storing.length
-  }
+
+
+
+class TokenSpanCubbie extends Cubbie {
   val start = IntSlot("start")
   val length = IntSlot("length")
-  def newObject(doc:Document, start:Int, length:Int): TokenSpan = new TokenSpan(doc, start, length)(null)
-  def fetch(doc:Document): TokenSpan = {
-    val ts = newObject(doc, start.value, length.value)
-    ts
-  }
-  // A version that gets the Document from the cubbie.doc RefSlot
-  def fetch(/*implicit cr:CubbieRefs*/): TokenSpan = {
-    throw new Error("Not yet implemented")
-    val ts = newObject(null, start.value, length.value)
-    ts
-  }
-}*/
-
-abstract class ObjectCubbie extends Cubbie {
-  type A <: AnyRef
-  val storeHooks = new cc.factorie.util.Hooks1[A]
-  val fetchHooks = new cc.factorie.util.Hooks1[A]
-  final def store4(a:A): this.type = {
-	storeHooks(a)
+  def storeTokenSpan(ts:TokenSpan): this.type = {
+	start := ts.start
+	length := ts.length
+	finishStoreTokenSpan(ts)
 	this
   }
-  final def fetch(a:A): Unit = {
-    fetchHooks(a)
+  def finishStoreTokenSpan(ts:TokenSpan): Unit = {}
+  def fetchTokenSpan(doc:Document): TokenSpan = {
+    val ts = new TokenSpan(doc, start.value, length.value)(null)
+    finishFetchTokenSpan(ts)
+    ts
   }
-  protected def store1(o:A): Unit = {}
-  final def store(o:AnyRef): this.type = {
-    store1(o.asInstanceOf[A])
-    this
-  }
-  //def frob: Unit = store1(null)
+  def finishFetchTokenSpan(ts:TokenSpan): Unit = {}
 }
 
-class TokenSpanCubbie extends ObjectCubbie {
-  type A <: TokenSpan
-  val start = IntSlot("start")
-  val length = IntSlot("length")
-  override protected def store1(a:A): Unit = {
-    super.store1(a)
-	start := a.start
-	length := a.length
-  }  
-  def store2(o:AnyRef): this.type = {
-    //super.store(o)
-    o match {
-      case ts:TokenSpan => {
-        start := ts.start
-        length := ts.length
-      }
-    }
-    this
+trait TokenSpanWithPhraseCubbie extends TokenSpanCubbie {
+  val phrase = StringSlot("phrase")
+  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
+    super.finishStoreTokenSpan(ts)
+    phrase := ts.phrase
   }
-
 }
-
-object TestTokenSpanCubbie {
-  //val t = new TokenSpan(new Document("foo"), 0, 2)
-  //val c = new TokenSpanCubbie().store(t)
-}
-
-//class TokenSpanCubbie extends Cubbie {
-//  val start = IntSlot("start")
-//  val length = IntSlot("length")
-//  def newObject(doc:Document, start:Int, length:Int): TokenSpan = new TokenSpan(doc, start, length)(null)
-//  def store(ts:TokenSpan): this.type = {
-//    start := ts.start
-//    length:= ts.length
-//    this
-//  }
-//  final def fetch(doc:Document): TokenSpan = {
-//    val ts = newObject(doc, start.value, length.value)
-//    init(ts)
-//    ts
-//  }
-//  def init(ts:TokenSpan): Unit = {}
-//  // A version that gets the Document from the cubbie.doc RefSlot
-//  def fetch(/*implicit cr:CubbieRefs*/): TokenSpan = {
-//    throw new Error("Not yet implemented")
-//    val ts = newObject(null, start.value, length.value)
-//    ts
-//  }
-//}
 
 trait TokenSpanWithDocRefCubbie[DC<:DocumentCubbie[_,_,_]] extends TokenSpanCubbie {
   def newDocumentCubbie: DC
   val doc = RefSlot("doc", ()=>newDocumentCubbie)
-  def store3(o:AnyRef): this.type = {
-    super.store(o)
-    doc := o.asInstanceOf[TokenSpan].document.name
-    this
+  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
+    super.finishStoreTokenSpan(ts)
+    doc := ts.document.name
+  }
+  def fetchTokenSpan(/* implicit cr:CubbieRefs */): TokenSpan = {
+    throw new Error("Not yet implemented")
+    val ts = new TokenSpan(null, start.value, length.value)(null)
+    finishFetchTokenSpan(ts)
+    ts
   }
 }
 
 trait TokenSpanNerLabelCubbieSlot extends TokenSpanCubbie {
   def newTokenSpanNerLabel(ts:TokenSpan, s:String): cc.factorie.app.nlp.ner.NerLabel
   val ner = StringSlot("ner")
-  /*if (storing ne null) storing match {
-    case ts:TokenSpan => ner := ts.attr[cc.factorie.app.nlp.ner.NerLabel].categoryValue
-  }*/
-  /*override def storeTokenSpan(ts:TokenSpan): this.type = {
-    super.storeTokenSpan(ts)
+  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
+    super.finishStoreTokenSpan(ts)
     ner := ts.attr[cc.factorie.app.nlp.ner.NerLabel].categoryValue
-    this
-  }*/
-  /*override def fetchTokenSpan: TokenSpan = {
-    val ts = newTokenSpan
+  }
+  override def finishFetchTokenSpan(ts:TokenSpan): Unit = {
+    super.finishFetchTokenSpan(ts)
     ts.attr += newTokenSpanNerLabel(ts, ner.value)
-    ts
-  }*/
+  }
 }
