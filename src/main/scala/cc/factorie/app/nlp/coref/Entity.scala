@@ -108,98 +108,10 @@ abstract class EntityCubbie extends Cubbie {
 }
 
 
-
-
 trait Mention extends Entity {
   // Just aliases for nicer names
   final def entity: Entity = superEntity
   final def entityRef: EntityRef = superEntityRef
   final def setEntity(e:Entity)(implicit d:DiffList): Unit = superEntityRef.set(e)
 }
-
-
-trait TokenSpanMention extends TokenSpan with Mention
-abstract class TokenSpanMentionCubbie extends TokenSpanCubbie {
-  // Unfortunately we can't inherit from both TokenSpanCubbie and EntityCubbie
-  val entityRef = RefSlot("entityRef", () => newEntityCubbie)
-  def newEntityCubbie: TokenSpanMentionCubbie
-  def newTokenSpanMention(doc:Document, start:Int, length:Int): TokenSpanMention
-  def storeTokenSpanMention(tsm:TokenSpan with Mention): this.type = {
-    storeTokenSpan(tsm)
-    entityRef := tsm.superEntity.id
-    this
-  }
-  def fetchTokenSpanMention(doc:Document): TokenSpanMention = {
-    val tsm = newTokenSpanMention(doc, start.value, length.value)
-    throw new Error("Not yet implemented")
-    tsm.entity.setSuperEntity(null)(null)
-    finishFetchTokenSpan(tsm)
-    tsm
-  }
-}
-
-class StringEntity(s:String) extends EntityWithName {
-  val name = new EntityName(this, s)
-  @deprecated("Use name.value instead") def string = name.value  
-}
-class StringMention(s:String) extends StringEntity(s) with Mention
-trait EntityWithName extends Entity {
-  def name: EntityName
-}
-class EntityName(val entity:Entity, s:String) extends StringVariable(s)
-@deprecated("Use StringEntity instead.") class EntityVariable(s:String) extends StringEntity(s) 
-
-
-class StringEntityCubbie extends Cubbie {
-  val name = StringSlot("name")
-  val entityRef = RefSlot("entityRef", () => new StringEntityCubbie)
-  def newObject(s:String): StringMention = new StringMention(s) 
-  def store(sm:StringMention): this.type = {
-    name := sm.name.value
-    entityRef := sm.entity.id
-    this
-  }
-  def fetch(cr:CubbieRefs): StringMention = {
-    val sm = newObject(name.value)
-    sm.setSuperEntity(cr(entityRef.value).asInstanceOf[Entity])(null)
-    sm
-  }
-}
-
-
-
-
-/*class EntityVariable(var initialCanonicalString:String) extends SetVariable[Entity] with Entity {
-  def this() = this("")
-  attr += new EntityName(this, initialCanonicalString)
-  def name = attr[EntityName] 
-  def string = name.value
-  @deprecated("Use name instead") def canonical = name
-  @deprecated("Use name instead") def canonicalString: String = canonical.value
-  //def mentions: scala.collection.Set[Entity] = value
-  val superEntityRef = new EntityRef(this, null)
-  def subEntities = value
-  def _addSubEntity(e:Entity)(implicit d:DiffList): Unit = add(e)
-  def _removeSubEntity(e:Entity)(implicit d:DiffList): Unit = remove(e)
-
-  //def closestPreviousMention(position:Int): Entity = mentions.filter(_.start < position).toSeq.sortBy(- _.start).head
-  override def toString = "Entity("+string+":"+mentions.toSeq.size+")"
-}
-
-
-class EntityVariableCubbie extends Cubbie {
-  val string = StringSlot("string")
-  val entityRef = RefSlot("entityRef", () => new EntityVariableCubbie)
-  def store(ev:EntityVariable): this.type = {
-    string := ev.canonicalString
-    entityRef := ev.superEntity.id
-    this
-  }
-  def fetch(cr:CubbieRefs): EntityVariable = {
-    val ev = new EntityVariable(string.value)
-    ev.setSuperEntity(cr(entityRef.value).asInstanceOf[EntityVariable])(null)
-    ev
-  }
-}
-*/
 
