@@ -22,6 +22,7 @@ import scala.collection.mutable.ArrayBuffer
 
 // TODO Consider stringEnd instead of stringLength?
 class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Document] with Attr {
+  assert(stringStart <= stringEnd)
   def this(doc:Document, s:Int, e:Int) = {
     this(s, e)
     doc += this

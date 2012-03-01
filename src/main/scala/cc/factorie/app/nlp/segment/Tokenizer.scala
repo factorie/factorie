@@ -31,7 +31,7 @@ class Tokenizer extends RegexSegmenter(Seq(
     val tokenIterator = this.apply(document.string)
     while (tokenIterator.hasNext) {
       tokenIterator.next()
-      new Token(document, tokenIterator.start, tokenIterator.end - tokenIterator.start)
+      new Token(document, tokenIterator.start, tokenIterator.end)
     }
   }
 }
