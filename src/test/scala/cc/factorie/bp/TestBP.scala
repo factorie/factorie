@@ -507,13 +507,27 @@ class TestBP extends TestCase {
 
   def testTree7MAP = {
     println(" -- Testing MAP tree")
-    val v1 = new BinVar(0)
-    val v2 = new BinVar(1)
-    val v3 = new BinVar(0)
-    val v4 = new BinVar(0)
-    val v5 = new BinVar(0)
-    val v6 = new BinVar(0)
-    val v7 = new BinVar(0)
+    val v1 = new BinVar(0) {
+      override def toString = "v1"
+    }
+    val v2 = new BinVar(1) {
+      override def toString = "v2"
+    }
+    val v3 = new BinVar(0) {
+      override def toString = "v3"
+    }
+    val v4 = new BinVar(0) {
+      override def toString = "v4"
+    }
+    val v5 = new BinVar(0) {
+      override def toString = "v5"
+    }
+    val v6 = new BinVar(0) {
+      override def toString = "v6"
+    }
+    val v7 = new BinVar(0) {
+      override def toString = "v7"
+    }
     val vars: Set[DiscreteVariable] = Set(v1, v2, v3, v4, v5, v6, v7)
     //        v4
     //    v3      v5
@@ -538,13 +552,13 @@ class TestBP extends TestCase {
     println("      %2d".format(v4.intValue))
     println("  %2d      %2d".format(v3.intValue, v5.intValue))
     println("%2d  %2d  %2d  %2d".format(v1.intValue, v2.intValue, v6.intValue, v7.intValue))
-//    assertEquals(v1.intValue, 0)
-//    assertEquals(v2.intValue, 1)
-//    assertEquals(v3.intValue, 0)
-//    assertEquals(v4.intValue, 0)
-//    assertEquals(v5.intValue, 1)
-//    assertEquals(v6.intValue, 1)
-//    assertEquals(v7.intValue, 0)
+    assertEquals(v1.intValue, 0)
+    assertEquals(v2.intValue, 1)
+    assertEquals(v3.intValue, 0)
+    assertEquals(v4.intValue, 0)
+    assertEquals(v5.intValue, 1)
+    assertEquals(v6.intValue, 1)
+    assertEquals(v7.intValue, 0)
   }
 
   def testChainRandom = {
@@ -553,7 +567,7 @@ class TestBP extends TestCase {
     val vars: Seq[BinVar] = (0 until numVars).map(new BinVar(_)).toSeq
     val varSet = vars.toSet[DiscreteVariable]
     for (seed <- (0 until 50)) {
-      val random = new Random(seed)
+      val random = new Random(seed * 1024)
       val model = new FactorModel
       for (i <- 0 until numVars) {
         model += newFactor1(vars(i), 0, random.nextDouble() * 4.0 - 2.0)
@@ -604,7 +618,7 @@ class TestBP extends TestCase {
       for (i <- 0 until numVars) {
         println("v" + i + " : " + mfg.node(vars(i)).marginal)
         println("tv" + i + " : " + (mapAssignment / math.pow(2, i)).toInt % 2)
-        //assertEquals(vars(i).value.intValue, (mapAssignment / math.pow(2, i)).toInt % 2)
+        assertEquals(vars(i).value.intValue, (mapAssignment / math.pow(2, i)).toInt % 2)
       }
     }
   }

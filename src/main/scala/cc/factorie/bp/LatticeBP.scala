@@ -26,31 +26,30 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   val variables: Seq[Variable] = factor.variables
   val _incoming = new FactorMessages(variables)
   val _outgoing = new FactorMessages(variables)
-  // same as above, but in a ordered and DiscreteVariable form
-  val discreteVarying: Seq[(DiscreteVariable, Int)] =
-    variables.zipWithIndex.filter(_._1.isInstanceOf[DiscreteVariable])
-          .map(p => Pair(p._1.asInstanceOf[DiscreteVariable], p._2))
-          .filter(varying contains _._1)
-  // complement of varyingNeighbors
-  val fixedNeighbors: Seq[(DiscreteVariable, Int)] =
-    variables.zipWithIndex.filter(_._1.isInstanceOf[DiscreteVariable])
-          .map(p => Pair(p._1.asInstanceOf[DiscreteVariable], p._2))
-          .filter(p => !varying.contains(p._1))
-  // set of neighbors that are varying
-  val varyingNeighbors: Set[Variable] = {
-    val set: HashSet[Variable] = new HashSet
-    set ++= discreteVarying.map(_._1)
-    set.toSet
-  }
+
   val edges: Seq[Edge] = (0 until variables.length).map(vid => {
     val variable = variables(vid)
     val node = fg.node(variable)
     node.addEdge(vid, this)
   })
 
+  // same as above, but in a ordered and DiscreteVariable form
+  val discreteVarying: Seq[(DiscreteVariable, Edge)] =
+    edges.filter(e => e.n.variable.isInstanceOf[DiscreteVariable])
+          .map(e => Pair(e.n.variable.asInstanceOf[DiscreteVariable], e))
+          .filter(varying contains _._1).toSeq
+  // set of neighbors that are varying
+  val varyingNeighbors: Set[Variable] = {
+    val set: HashSet[Variable] = new HashSet
+    set ++= discreteVarying.map(_._1)
+    set.toSet
+  }
+  // complement of varyingNeighbors
+  val fixedNeighbors: Seq[Edge] = edges.filter(e => !varyingNeighbors.contains(e.n.variable)).toSeq
   val nodes = edges.map(_.n).toSeq
-
+  // number of possible values
   protected val _valuesSize: Int = discreteVarying.foldLeft(1)(_ * _._1.domain.size)
+
   protected val _marginal: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
   protected var _remarginalize: Boolean = true
 
@@ -68,32 +67,6 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
     (0 until _valuesSize).foreach(i => _marginal(i) = Double.NaN)
     _remarginalize = true
   }
-
-
-  def getIndex(assignment: Values) = {
-    var i = 0
-    var idx = 0
-    var mult = 1
-    while (i < discreteVarying.length) {
-      val va = assignment(discreteVarying(i)._1)
-      idx *= mult
-      idx += va.intValue
-      mult = va.domain.size
-      i += 1
-    }
-    idx
-  }
-
-  def deIndex(index: Int, variable: Int) = {
-    var tmp = discreteVarying.length - 1
-    var idx = index
-    while (tmp > variable) {
-      idx /= discreteVarying(tmp)._1.domain.size
-      tmp -= 1
-    }
-    idx % discreteVarying(variable)._1.domain.size
-  }
-
 
   protected def getScore(assignment: Values, index: Int = -1): Double = {
     assignment.statistics.score
@@ -123,7 +96,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
 
   private def incomingToOutgoing = {
     if (_remarginalize) {
-      val result = marginalize(_incoming)
+      val result = marginalize
       // todo: remarginalize, but for individual variables separately
       // val mess = marginalize(node.variable, incoming)
       for (e <- edges) {
@@ -148,7 +121,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   // return the stored marginal probability for the given value
   def marginal(values: Values): Double = {
     incomingToOutgoing
-    _marginal(getIndex(values))
+    _marginal(values.index(varyingNeighbors))
   }
 
   def currentMaxDelta: Double = {
@@ -205,18 +178,18 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
 
   // def marginalize(target: DiscreteVariable, incoming: FactorMessages): GenericMessage
 
-  def marginalize(incoming: FactorMessages): FactorMessages
+  def marginalize: FactorMessages
 }
 
 trait SumFactor extends MessageFactor {
 
-  var scores: Array[Array[Double]] = new Array(1)
-  var tmpScore: Array[Double] = new Array(1)
+  var scores: Array[Array[Double]] = null
+  var tmpScore: Array[Double] = null
 
   def initializeScores() {
     var i = 0
     while (i < discreteVarying.length) {
-      if (scores(i) == null || scores(i).length < discreteVarying(i)._1.domain.size) {
+      if (scores(i) == null || scores(i).length != discreteVarying(i)._1.domain.size) {
         scores(i) = Array.fill(discreteVarying(i)._1.domain.size)(0.0)
       } else {
         //java.util.Arrays.fill(scores(i), 0.0) should be faster, but isn't
@@ -233,19 +206,11 @@ trait SumFactor extends MessageFactor {
   def sumNeighbors(incoming: FactorMessages) = {
     var maxLogScore = Double.NegativeInfinity
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
-      val stat = assignment.statistics
-      val index = getIndex(assignment)
-      //for (i <- 0 until discreteVarying.length)
-      //  assert(deIndex(getIndex(assignment), i) == assignment(discreteVarying(i)._1).intValue, getIndex(assignment)+" "+assignment(discreteVarying(i)._1).intValue+" "+deIndex(getIndex(assignment), i)+" "+i)
-      // uncomment above to test indexing code
-      var num: Double = stat.score
-      var i = 0
-      while (i < discreteVarying.length) {
-        val dv = discreteVarying(i)
-        val vid = dv._2
-        val mess = incoming.get(vid)
+      val index = assignment.index(varyingNeighbors)
+      var num: Double = getScore(assignment, index)
+      for (dv <- discreteVarying) {
+        val mess = incoming.get(dv._2)
         num += mess.score(assignment(dv._1))
-        i += 1
       }
       if (num > maxLogScore) maxLogScore = num
       tmpScore(index) = num
@@ -255,20 +220,18 @@ trait SumFactor extends MessageFactor {
 
   def computeZ(maxLogScore: Double) = {
     var Z = 0.0
-    var idx = 0
-    while (idx < _marginal.length) {
-      val num = tmpScore(idx) - maxLogScore
+    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
+      val index = assignment.index(varyingNeighbors)
+      val num = tmpScore(index) - maxLogScore
       val expnum = exp(num)
       assert(!expnum.isInfinity)
-      _marginal(idx) = expnum
+      _marginal(index) = expnum
       var i = 0
       while (i < discreteVarying.length) {
-        // scores(i)(assignment(discreteVarying(i)._1).intValue) += expnum
-        scores(i)(deIndex(idx, i)) += expnum
+        scores(i)(assignment(discreteVarying(i)._1).intValue) += expnum
         i += 1
       }
       Z += expnum
-      idx += 1
     }
     Z
   }
@@ -286,28 +249,27 @@ trait SumFactor extends MessageFactor {
     while (i < fixedNeighbors.length) {
       val fv = fixedNeighbors(i)
       i += 1
-      val vid = fv._2
-      result.set(vid, incoming.get(vid))
+      result.set(fv, incoming.get(fv))
     }
   }
 
-  def marginalize(incoming: FactorMessages): FactorMessages = {
+  def marginalize: FactorMessages = {
     val result = new FactorMessages(variables)
-    if (scores.length < varyingNeighbors.size) {
+    if (scores == null || scores.length != varyingNeighbors.size) {
       scores = new Array(varyingNeighbors.size)
     }
     initializeScores()
-    if (tmpScore.length < _valuesSize) tmpScore = Array.fill(_valuesSize)(Double.NaN)
+    if (tmpScore == null || tmpScore.length != _valuesSize) tmpScore = Array.fill(_valuesSize)(Double.NaN)
     // go through all the assignments of the varying variables
     // and find the maximum score for numerical reasons
-    val maxLogScore = sumNeighbors(incoming)
+    val maxLogScore = sumNeighbors(_incoming)
     val Z = computeZ(maxLogScore)
     var i = 0
     while (i < _marginal.size) {
       _marginal(i) /= Z
       i += 1
     }
-    setMessages(result, incoming)
+    setMessages(result, _incoming)
     result
   }
 
@@ -340,52 +302,48 @@ trait MaxFactor extends MessageFactor {
     BPUtil.message(target, varScores)
   } */
 
-  def marginalize(incoming: FactorMessages): FactorMessages = {
+  def marginalize: FactorMessages = {
     val result = new FactorMessages(variables)
     val scores: Array[Array[Double]] = new Array(varyingNeighbors.size)
     // initialize score arrays for varying neighbors
     for (i <- 0 until discreteVarying.length) {
-      scores(i) = new Array[Double](discreteVarying(i)._1.domain.size)
+      scores(i) = Array.fill(discreteVarying(i)._1.domain.size)(Double.NegativeInfinity)
     }
     // go through all the assignments of the varying variables
     for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
-      val index = getIndex(assignment)
+      val index = assignment.index(varyingNeighbors)
       var num: Double = getScore(assignment, index)
       for (dv <- discreteVarying) {
-        val mess = incoming(dv._2)
+        val mess = _incoming.get(dv._2)
         num = num + mess.score(assignment(dv._1))
       }
       _marginal(index) = num
-    }
-    // go through all the assignments of the varying variables
-    // and find Z, and calculate the scores
-    var index = 0
-    while (index < _marginal.length) {
       for (i <- 0 until discreteVarying.length) {
-        val as = deIndex(index, i)
+        val as = assignment(discreteVarying(i)._1).intValue
         scores(i)(as) = max(scores(i)(as), _marginal(index))
       }
-      index += 1
     }
+
     // set the send messages
     for (i <- 0 until discreteVarying.length) {
       val dv = discreteVarying(i)
       val vid = dv._2
       val msg = fg match {
         case l: MaxProductLattice =>
-          if (l.finalPass) BPUtil.deterministicMessage(dv._1, dv._1.domain.getValue(scores(i).toSeq.indexOfMaxByDouble(d => d)))
-          else BPUtil.message(dv._1, scores(i).toSeq)
+          if (l.finalPass) {
+            BPUtil.deterministicMessage(dv._1, dv._1.domain.getValue(scores(i).toSeq.indexOfMaxByDouble(d => d)))
+          } else BPUtil.message(dv._1, scores(i).toSeq)
         case _ => BPUtil.message(dv._1, scores(i).toSeq)
       }
       result.set(vid, msg)
     }
     // deterministic messages for the fixed neighbors
     for (fv <- fixedNeighbors) {
-      val vid = fv._2
-      result.set(vid, incoming.get(vid))
+      result.set(fv, _incoming.get(fv))
     }
     result
   }
+
 }
 
 class MessageNode(val variable: Variable, val varying: Set[DiscreteVariable]) {
