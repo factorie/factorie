@@ -58,35 +58,30 @@ trait Entity extends Attr {
   def superEntity: Entity = { val ref = superEntityRef; if (ref eq null) null else superEntityRef.dst }
   def superEntityOption: Option[Entity] = { val ref = superEntityRef; if (ref eq null) None else if (ref.value eq null) None else Some(ref.dst) }
   final def setSuperEntity(e:Entity)(implicit d:DiffList): Unit = superEntityRef.set(e) // Just a convenient alias
-  def exists: Boolean = superEntityRef.value != null || subEntitiesSize > 0
+  @deprecated("Use isConnected instead") def exists: Boolean = superEntityRef.value != null || subEntitiesSize > 0
+  def isConnected: Boolean = (superEntity ne null) || subEntitiesSize > 0 
   def entityRoot: Entity = { val s = superEntity; if (s eq null) this else this.entityRoot }
   
-  /** Recursively descend sub-entities to return only the Mentions */
-  def mentions: Seq[Mention] = {
-    var result = new ListBuffer[Mention]
-    for (entity <- subEntitiesIterator) {
-      entity match {
-        case mention:Mention => result += mention
-        case _ => {}
-      }
-      result ++= entity.mentions
-    }
-    result
-  }
-  def mentionsOfClass[A<:Mention](cls:Class[A]): Seq[A] = {
+  /** Recursively descend sub-entities and return only those matching criterion */
+  def filterDescendants(test:Entity=>Boolean): Seq[Entity] = subEntitiesIterator.filter(test).toSeq
+  def descendantsOfClass[A<:Entity](cls:Class[A]): Seq[A] = {
     var result = new ListBuffer[A]
     for (entity <- subEntitiesIterator) {
       if (cls.isAssignableFrom(entity.getClass))
         result += entity.asInstanceOf[A]
-      result ++= entity.mentionsOfClass[A](cls)
+      result ++= entity.descendantsOfClass[A](cls)
     }
     result
   }
-  def mentionsOfClass[A<:Mention](implicit m:Manifest[A]): Seq[A] = mentionsOfClass[A](m.erasure.asInstanceOf[Class[A]])
+  def descendantsOfClass[A<:Entity](implicit m:Manifest[A]): Seq[A] = descendantsOfClass[A](m.erasure.asInstanceOf[Class[A]])
 }
 
 /** This variable should not be changed directly.  Change EntityRef variables, and they will automatically coordinate with SubEntities variables. */
 class SubEntities(val entity:Entity) extends SetVariable[Entity]
+
+
+
+// Cubbie storage
 
 abstract class EntityCubbie extends Cubbie {
   val entityRef = RefSlot("entityRef", () => newEntityCubbie)
@@ -106,12 +101,3 @@ abstract class EntityCubbie extends Cubbie {
   }
   def finishFetchEntity(e:Entity): Unit = {}
 }
-
-
-trait Mention extends Entity {
-  // Just aliases for nicer names
-  final def entity: Entity = superEntity
-  final def entityRef: EntityRef = superEntityRef
-  final def setEntity(e:Entity)(implicit d:DiffList): Unit = superEntityRef.set(e)
-}
-

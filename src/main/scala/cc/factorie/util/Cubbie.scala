@@ -44,7 +44,7 @@ class Cubbie { thisCubbie =>
   def toString(indent:Int, elements: Iterator[(String,Any)]): String = _map.toString()
     // Managing the "id"; aligns with MongoDB "_id"
   def idName = "_id"
-  def newId = java.util.UUID.randomUUID
+  def newId = java.util.UUID.randomUUID.timestamp
   final def id: Any = { // "final" because we need to ensure that the _id gets inserted into the
     var result = _rawGet(idName) // avoid getOrElseUpdate because it will allocate a closure object
     if (result != null) result

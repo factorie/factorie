@@ -69,7 +69,7 @@ object Coref1 {
 
   def coref(doc:Document): Unit = {
     for (mention <- doc.orderedSpansOfClass[TokenSpanMention]) {
-      EntityRefSampler.process(mention.entityRef)
+      EntityRefSampler.process(mention.superEntityRef)
     }
   }
 
@@ -83,7 +83,7 @@ object Coref1 {
     coref(doc)
     // Print the results
     for (mention <- doc.orderedSpansOfClass[TokenSpanMention]) {
-      println(mention+" => "+mention.entity+"\n")
+      println(mention+" => "+mention.superEntity+"\n")
     }
   }
 

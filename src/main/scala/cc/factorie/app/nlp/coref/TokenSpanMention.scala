@@ -19,13 +19,13 @@ import scala.collection.mutable.{ArrayBuffer,ListBuffer}
 import cc.factorie.util.{Cubbie,CubbieRefs}
 import cc.factorie.util.Attr
 
-trait TokenSpanMention extends TokenSpan with Mention
+trait TokenSpanMention extends TokenSpan with Entity
 abstract class TokenSpanMentionCubbie extends TokenSpanCubbie {
   // Unfortunately we can't inherit from both TokenSpanCubbie and EntityCubbie
   val entityRef = RefSlot("entityRef", () => newEntityCubbie)
   def newEntityCubbie: TokenSpanMentionCubbie
   def newTokenSpanMention(doc:Document, start:Int, length:Int): TokenSpanMention
-  def storeTokenSpanMention(tsm:TokenSpan with Mention): this.type = {
+  def storeTokenSpanMention(tsm:TokenSpanMention): this.type = {
     storeTokenSpan(tsm)
     entityRef := tsm.superEntity.id
     this
@@ -33,7 +33,7 @@ abstract class TokenSpanMentionCubbie extends TokenSpanCubbie {
   def fetchTokenSpanMention(doc:Document): TokenSpanMention = {
     val tsm = newTokenSpanMention(doc, start.value, length.value)
     throw new Error("Not yet implemented")
-    tsm.entity.setSuperEntity(null)(null)
+    tsm.superEntity.setSuperEntity(null)(null)
     finishFetchTokenSpan(tsm)
     tsm
   }

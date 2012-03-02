@@ -20,7 +20,7 @@ import scala.collection.mutable.{ArrayBuffer,ListBuffer}
 class PairwiseLabel(val m1:PairwiseMention, val m2:PairwiseMention, b:Boolean) extends LabelVariable(b) with BooleanVar {
   def other(m:PairwiseMention): Option[PairwiseMention] = if(m == m1) Some(m2) else if (m == m2) Some(m1) else None
 }
-trait PairwiseMention extends TokenSpan with Mention {
+trait PairwiseMention extends TokenSpan with Entity {
   val edges = new ArrayBuffer[PairwiseLabel]
   var _head: Token = null
   def headToken: Token = _head

@@ -2,27 +2,49 @@ package cc.factorie.example
 
 import cc.factorie._
 import cc.factorie.app.nlp.coref._
+import cc.factorie.db.mongo._
+import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
 
 
 object Coref3 {
   
+  // Random variables 
   class Bow(val entity:Entity) extends SetVariable[String] {
     def this(e:Entity, ss:Iterable[String]) = { this(e); ss.foreach(this.add(_)(null)) }
   }
   
-  class MyMention(n:String, b:Iterable[String]) extends NamedMention(n) {
+  var entityCount = 0
+  class MyEntity(s:String, b:Iterable[String] = Nil) extends NamedEntity(s) {
+    override val id = { entityCount += 1; entityCount }
     attr += new Bow(this, b)
   }
-  class MyMentionCubbie extends NamedEntityCubbie {
+  
+  // Cubbie storage
+  class MyEntityCubbie extends NamedEntityCubbie {
     val bow = StringListSlot("bow")
+    override def finishStoreEntity(e:Entity): Unit = {
+      super.finishStoreEntity(e)
+      bow := e.attr[Bow].value.toSeq
+    }
+    override def finishFetchEntity(e:Entity): Unit = {
+      super.finishFetchEntity(e)
+      e.attr[Bow] ++= bow.value
+    }
+  }
+  object Entities {
+    private val mongoConn = new Mongo("localhost", 27017)
+    private val mongoDB = mongoConn.getDB("mongocubbie-test")
+    private val coll = mongoDB.getCollection("persons")
+    coll.drop()
+    val entities = new MongoCubbieCollection(coll, () => new MyEntityCubbie)
+    def getEntity(eid:Any): MyEntity = {
+      throw new Error("Not yet implemented")
+      //entities.query(_.id_=(eid))
+    }
+    
   }
   
-  var entityCount = 0
-  class MyEntityVariable(s:String) extends EntityVariable(s) {
-    override val id = { entityCount += 1; entityCount }
-    attr += new Bow(this)
-  }
-  
+
   object HierCorefModel extends TemplateModel(
     // compatibility between string names, entityRef, 
     new TemplateWithStatistics3[EntityRef,EntityName,EntityName] {
@@ -49,8 +71,8 @@ object Coref3 {
   )
   
   object HierarchicalCorefSampler extends SettingsSampler[Null](HierCorefModel, null) {
-    val entityVar:MyEntityVariable = null
-    var entities:Seq[MyEntityVariable] = null
+    val entityVar:MyEntity= null
+    var entities:Seq[MyEntity] = null
     def infer(numSamples:Int):Unit ={
 	  
     }
@@ -81,7 +103,8 @@ object Coref3 {
   
   
   def main(args:Array[String]): Unit = {
-    val mentions = for (t <- data) yield new MyMention(t._1, t._2)
+
+    val mentions = for (t <- data) yield new MyEntity(t._1, t._2)
     // priority queue
     // get next n entities from db, and their canopy
     // how much of tree substructure to retrieve
