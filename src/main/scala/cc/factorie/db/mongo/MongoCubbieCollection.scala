@@ -4,15 +4,14 @@ import cc.factorie.Cubbie
 import java.util.Map
 import org.bson.BSONObject
 import collection.JavaConversions._
-import com.mongodb.casbah.{MongoConnection, MongoCollection}
-import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject}
+import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
 import org.bson.types.BasicBSONList
 import collection.mutable.{ArrayBuffer, HashMap}
 
 /**
  * @author sriedel
  */
-class MongoCubbieCollection[C <: Cubbie](val coll: MongoCollection, val constructor: () => C) extends Iterable[C] {
+class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection, val constructor: () => C) extends Iterable[C] {
 
   import MongoCubbieConverter._
 
@@ -57,10 +56,6 @@ class MongoCubbieCollection[C <: Cubbie](val coll: MongoCollection, val construc
     def next() = MongoCubbieConverter.eagerCubbie(underlying.next(), constructor)
 
     def hasNext = underlying.hasNext
-
-    def this(cursor: MongoCollection#CursorType) {
-      this(cursor.underlying)
-    }
 
     def headOption = if (hasNext) Some(next()) else None
 
@@ -231,9 +226,10 @@ object CubbieMongoTest {
     james.spouse ::= laura
     laura.spouse ::= james
 
-    val mongoConn = MongoConnection("localhost", 27017)
-    val mongoDB = mongoConn("mongocubbie-test")
-    val coll = mongoDB("persons")
+
+    val mongoConn = new Mongo("localhost", 27017)
+    val mongoDB = mongoConn.getDB("mongocubbie-test")
+    val coll = mongoDB.getCollection("persons")
     coll.drop()
     val persons = new MongoCubbieCollection(coll, () => new Person)
 

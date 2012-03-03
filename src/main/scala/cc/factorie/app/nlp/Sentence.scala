@@ -20,11 +20,11 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
   def this(doc:Document)(implicit d:DiffList = null) = this(doc, doc.length, 0)
   def tokens: IndexedSeq[Token] = this
   def tokenAtCharIndex(charOffset:Int): Token = {
-    require(charOffset >= first.stringStart && charOffset <= last.stringStart + last.stringLength)
+    require(charOffset >= first.stringStart && charOffset <= last.stringEnd)
     var i = 0 // TODO Implement as faster binary search
     while (i < this.length && this(i).stringStart <= charOffset) {
       val token = this(i)
-      if (token.stringStart <= charOffset && token.stringStart + token.stringLength <= charOffset) return token
+      if (token.stringStart <= charOffset && token.stringEnd <= charOffset) return token
       i += 1
     }
     return null

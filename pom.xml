@@ -1,325 +1,304 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <properties>
-        <scala.version>2.9.1</scala.version>
-        <factorie.version>0.10.2-SNAPSHOT</factorie.version>
-        <factorie.group>cc.factorie</factorie.group>
-    </properties>
+  <modelVersion>4.0.0</modelVersion>
+  <properties>
+    <scala.version>2.9.1</scala.version>
+  </properties>
 
-    <name>Factorie</name>
-    <artifactId>factorie</artifactId>
-    <groupId>${factorie.group}</groupId>
-    <version>${factorie.version}</version>
-    <inceptionYear>2009</inceptionYear>
+  <name>Factorie</name>
+  <artifactId>factorie</artifactId>
+  <groupId>cc.factorie</groupId>
+  <version>0.10.2-SNAPSHOT</version>
+  <inceptionYear>2009</inceptionYear>
 
-    <url>http://factorie.googlecode.com</url>
-    <scm>
-        <connection>scm:hg:file://${basedir}</connection>
-        <developerConnection>scm:hg:file://${basedir}</developerConnection>
-        <!--
-            <connection>scm:hg:http://factorie.googlecode.com/hg/</connection>
-            <developerConnection>scm:hg:https://factorie.googlecode.com/hg/</developerConnection>
-            <url>http://code.google.com/p/factorie/source/checkout</url>
-        -->
-    </scm>
+  <url>http://factorie.googlecode.com</url>
+  <scm>
+    <connection>scm:hg:file://${basedir}</connection>
+    <developerConnection>scm:hg:file://${basedir}</developerConnection>
+    <!--
+        <connection>scm:hg:http://factorie.googlecode.com/hg/</connection>
+        <developerConnection>scm:hg:https://factorie.googlecode.com/hg/</developerConnection>
+        <url>http://code.google.com/p/factorie/source/checkout</url>
+    -->
+  </scm>
 
-    <repositories>
+  <repositories>
 
-        <repository>
-            <id>scala-tools.org</id>
-            <name>Scala-Tools Maven2 Repository</name>
-            <url>https://oss.sonatype.org/content/groups/scala-tools</url>
-        </repository>
+    <repository>
+      <id>scala-tools.org</id>
+      <name>Scala-Tools Maven2 Repository</name>
+      <url>https://oss.sonatype.org/content/groups/scala-tools</url>
+    </repository>
 
 
-        <repository>
-            <id>iesl.cs.umass.edu</id>
-            <name>IESL repository</name>
-            <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/thirdparty/</url>
-        </repository>
-    </repositories>
+    <repository>
+      <id>iesl.cs.umass.edu</id>
+      <name>IESL repository</name>
+      <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/thirdparty/</url>
+    </repository>
+  </repositories>
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>scala-tools.org</id>
-            <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
-        </pluginRepository>
-    </pluginRepositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>scala-tools.org</id>
+      <name>Scala-Tools Maven2 Repository</name>
+      <url>http://scala-tools.org/repo-releases</url>
+    </pluginRepository>
+  </pluginRepositories>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.1</version>
-            <scope>test</scope>
-        </dependency>
+  <dependencies>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.1</version>
+      <scope>test</scope>
+    </dependency>
 
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest</artifactId>
-            <version>1.2</version>
-            <scope>test</scope>
-        </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest</artifactId>
+      <version>1.2</version>
+      <scope>test</scope>
+    </dependency>
 
-        <dependency>
-            <groupId>com.mongodb.casbah</groupId>
-            <artifactId>casbah_2.9.1</artifactId>
-            <type>pom</type>
-            <version>2.1.5-1</version>
-        </dependency>
+    <dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongo-java-driver</artifactId>
+      <version>2.7.3</version>
+    </dependency>
 
-        <!-- <dependency> -->
-        <!--     <groupId>org.codehaus.jackson</groupId> -->
-        <!--     <artifactId>jackson-mapper-asl</artifactId> -->
-        <!--     <version>1.9.1</version> -->
-        <!-- </dependency> -->
+  </dependencies>
 
-        <!-- <dependency> -->
-        <!--     <groupId>org.riedelcastro.nurupo</groupId> -->
-        <!--     <artifactId>nurupo</artifactId> -->
-        <!--     <version>0.1-SNAPSHOT</version> -->
-        <!-- </dependency> -->
+  <distributionManagement>
+    <repository>
+      <id>ieslnexus</id>
+      <name>IESL Nexus repostory</name>
+      <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>ieslnexus</id>
+      <name>IESL Nexus repostory</name>
+      <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <site>
+      <id>ieslwww</id>
+      <name>IESL www repository</name>
+      <url>scp://iesl.cs.umass.edu/m/iesl/data2/www/iesl/maven/factorie</url>
+    </site>
+  </distributionManagement>
 
-        <!-- <dependency> -->
-        <!--     <groupId>log4j</groupId> -->
-        <!--     <artifactId>log4j</artifactId> -->
-        <!--     <version>1.2.16</version> -->
-        <!-- </dependency> -->
-
-        <!-- <dependency> -->
-        <!--     <groupId>xom</groupId> -->
-        <!--     <artifactId>xom</artifactId> -->
-        <!--     <version>1.2.5</version> -->
-        <!-- </dependency> -->
-
-    </dependencies>
-
-    <distributionManagement>
-        <repository>
-            <id>ieslnexus</id>
-            <name>IESL Nexus repostory</name>
-            <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>ieslnexus</id>
-            <name>IESL Nexus repostory</name>
-            <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <site>
-            <id>ieslwww</id>
-            <name>IESL www repository</name>
-            <url>scp://iesl.cs.umass.edu/m/iesl/data2/www/iesl/maven/factorie</url>
-        </site>
-    </distributionManagement>
-
-    <profiles>
-        <profile>
-            <id>scala-build</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.scala-tools</groupId>
-                            <artifactId>maven-scala-plugin</artifactId>
-                            <version>2.12</version>
-                        </plugin>
-
-                        <plugin>
-                            <artifactId>maven-assembly-plugin</artifactId>
-                            <version>2.2-beta-5</version>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-
-                <plugins>
-                    <!-- Tells Maven to use the Scala compiler first, from -->
-                    <!-- http://scala-tools.org/mvnsites/maven-scala-plugin/usage_java.html -->
-                    <plugin>
-                        <groupId>org.scala-tools</groupId>
-                        <artifactId>maven-scala-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>scala-compile-first</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>add-source</goal>
-                                    <goal>compile</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>scala-test-compile</id>
-                                <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>testCompile</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <jvmArgs>
-                                <jvmArg>-Xms64m</jvmArg>
-                                <jvmArg>-Xmx1800m</jvmArg>
-                            </jvmArgs>
-			    <launchers>
-			      <launcher>
-				<id>ChainNER1ML</id>
-				<mainClass>cc.factorie.example.ChainNER1ML</mainClass>
-				<jvmArgs><jvmArg>-Xmx4g</jvmArg></jvmArgs>
-			      </launcher>
-			    </launchers>
-                          </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <!-- <executable>path/to/javac</executable> -->
-                            <fork>true</fork>
-                            <meminitial>512m</meminitial>
-                            <maxmem>1024m</maxmem>
-                            <!-- <compilerArgument>-verbose -bootclasspath ${java.home}\lib\rt.jar</compilerArgument> -->
-                            <source>1.5</source>
-                            <target>1.5</target>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>compile</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <!-- Customize the generated Eclipse project files for Scala -->
-                    <plugin>
-                        <artifactId>maven-eclipse-plugin</artifactId>
-                        <configuration>
-                            <!-- <jvmArgs><jvmArg>-Xmx1524m</jvmArg></jvmArgs> -->
-                            <sourceIncludes>
-                                <sourceInclude>**/*.scala</sourceInclude>
-                            </sourceIncludes>
-                            <buildcommands>
-                                <buildcommand>ch.epfl.lamp.sdt.core.scalabuilder</buildcommand>
-                            </buildcommands>
-                            <additionalProjectnatures>
-                                <!-- maven-eclipse-plugin puts this nature after org.eclipse.jdt.core.javanature in .project so the project will have a J badge instead of an S in the Package Explorer -->
-                                <projectnature>ch.epfl.lamp.sdt.core.scalanature</projectnature>
-                            </additionalProjectnatures>
-                            <classpathContainers>
-                                <classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER</classpathContainer>
-                                <classpathContainer>ch.epfl.lamp.sdt.launching.SCALA_CONTAINER</classpathContainer>
-                            </classpathContainers>
-                        </configuration>
-                    </plugin>
-
-                    <!-- Adds src/main/scala and src/test/scala as source folders, from http://groups.google.com/group/liftweb/browse_thread/thread/3dac7002f9e59546/3918bba2f7a92cd3?pli=1 -->
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>add-source</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>add-source</goal>
-                                </goals>
-                                <configuration>
-                                    <sources>
-                                        <source>src/main/scala</source>
-                                    </sources>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>add-test-source</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>add-test-source</goal>
-                                </goals>
-                                <configuration>
-                                    <sources>
-                                        <source>src/test/scala</source>
-                                    </sources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>2.1.2</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>make-assembly</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>attached</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <descriptorRefs>
-                                <descriptorRef>project</descriptorRef>
-                            </descriptorRefs>
-                            <descriptors>
-                                <descriptor>src/main/assembly/src.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <version>2.1</version>
-                        <configuration>
-                            <!--
-                             During release:perform, enable the "release" profile
-                            -->
-                            <releaseProfiles>release</releaseProfiles>
-                            <goals>deploy package</goals>
-                        </configuration>
-                    </plugin>
-
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
-    <reporting>
-        <plugins>
+  <profiles>
+    <profile>
+      <id>scala-build</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
             <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
-                <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                </configuration>
+              <groupId>org.scala-tools</groupId>
+              <artifactId>maven-scala-plugin</artifactId>
+              <version>2.12</version>
             </plugin>
+
+            <plugin>
+              <artifactId>maven-assembly-plugin</artifactId>
+              <version>2.2-beta-5</version>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+
+        <plugins>
+          <!-- Tells Maven to use the Scala compiler first, from -->
+          <!-- http://scala-tools.org/mvnsites/maven-scala-plugin/usage_java.html -->
+          <plugin>
+            <groupId>org.scala-tools</groupId>
+            <artifactId>maven-scala-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>scala-compile-first</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>add-source</goal>
+                  <goal>compile</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>scala-test-compile</id>
+                <phase>process-test-resources</phase>
+                <goals>
+                  <goal>testCompile</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <jvmArgs>
+                <jvmArg>-Xms64m</jvmArg>
+                <jvmArg>-Xmx1800m</jvmArg>
+              </jvmArgs>
+              <launchers>
+                <launcher>
+                  <id>ChainNER1ML</id>
+                  <mainClass>cc.factorie.example.ChainNER1ML</mainClass>
+                  <jvmArgs>
+                    <jvmArg>-Xmx4g</jvmArg>
+                  </jvmArgs>
+                </launcher>
+              </launchers>
+            </configuration>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>2.3.2</version>
+            <configuration>
+              <!-- <executable>path/to/javac</executable> -->
+              <fork>true</fork>
+              <meminitial>512m</meminitial>
+              <maxmem>1024m</maxmem>
+              <!-- <compilerArgument>-verbose -bootclasspath ${java.home}\lib\rt.jar</compilerArgument> -->
+              <source>1.5</source>
+              <target>1.5</target>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>compile</phase>
+                <goals>
+                  <goal>compile</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Customize the generated Eclipse project files for Scala -->
+          <plugin>
+            <artifactId>maven-eclipse-plugin</artifactId>
+            <version>2.8</version>
+            <configuration>
+              <!-- <jvmArgs><jvmArg>-Xmx1524m</jvmArg></jvmArgs> -->
+              <sourceIncludes>
+                <sourceInclude>**/*.scala</sourceInclude>
+              </sourceIncludes>
+              <buildcommands>
+                <buildcommand>ch.epfl.lamp.sdt.core.scalabuilder</buildcommand>
+              </buildcommands>
+              <additionalProjectnatures>
+                <!-- maven-eclipse-plugin puts this nature after org.eclipse.jdt.core.javanature in .project so the project will have a J badge instead of an S in the Package Explorer -->
+                <projectnature>ch.epfl.lamp.sdt.core.scalanature</projectnature>
+              </additionalProjectnatures>
+              <classpathContainers>
+                <classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER</classpathContainer>
+                <classpathContainer>ch.epfl.lamp.sdt.launching.SCALA_CONTAINER</classpathContainer>
+              </classpathContainers>
+            </configuration>
+          </plugin>
+
+          <!-- Adds src/main/scala and src/test/scala as source folders, from http://groups.google.com/group/liftweb/browse_thread/thread/3dac7002f9e59546/3918bba2f7a92cd3?pli=1 -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>1.7</version>
+            <executions>
+              <execution>
+                <id>add-source</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>add-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/main/scala</source>
+                  </sources>
+                </configuration>
+              </execution>
+              <execution>
+                <id>add-test-source</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/test/scala</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.1.2</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>make-assembly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>attached</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>project</descriptorRef>
+              </descriptorRefs>
+              <descriptors>
+                <descriptor>src/main/assembly/src.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </plugin>
+
+          <plugin>
+            <artifactId>maven-release-plugin</artifactId>
+            <version>2.1</version>
+            <configuration>
+              <!--
+               During release:perform, enable the "release" profile
+              -->
+              <releaseProfiles>release</releaseProfiles>
+              <goals>deploy package</goals>
+            </configuration>
+          </plugin>
+
         </plugins>
-    </reporting>
+      </build>
+    </profile>
+  </profiles>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <version>2.15.2</version>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
 
 </project>
 

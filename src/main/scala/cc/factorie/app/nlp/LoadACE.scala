@@ -57,7 +57,7 @@ object LoadACE {
     var i = 0
     while (i < doc.tokens.size) {
       val t = doc.tokens(i)
-      if (t.stringStart <= charOffset && charOffset <= t.stringStart + t.stringLength)
+      if (t.stringStart <= charOffset && charOffset <= t.stringEnd)
         return i
       i += 1
     }

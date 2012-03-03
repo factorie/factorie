@@ -35,9 +35,10 @@ object LoadPlainText {
           while (tokenIterator.hasNext) {
             tokenIterator.next
             val start = sentenceIterator.start + tokenIterator.start
-            val length = tokenIterator.end - start
+            val end = tokenIterator.end
+            val length = end - start
             if (length > 0)
-              new Token(sentence, start, length) // This will automatically extend the sentence end boundary
+              new Token(sentence, start, end) // This will automatically extend the sentence end boundary
           }
         }
       }
@@ -47,9 +48,10 @@ object LoadPlainText {
       while (tokenIterator.hasNext) {
         tokenIterator.next
         val start = tokenIterator.start
-        val length = tokenIterator.end - start
+        val end = tokenIterator.end
+        val length = end - start
         if (length > 0)
-          new Token(document, start, length)
+          new Token(document, start, end)
       }
     }
     document
