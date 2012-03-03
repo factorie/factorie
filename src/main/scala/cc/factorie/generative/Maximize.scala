@@ -51,9 +51,9 @@ object DiscreteMaximizer extends Maximizer {
 
 object GatedDiscreteMaximizer extends Maximizer {
   def maximize(variables:Seq[Variable], factors:Seq[Factor]): Boolean = {
-    if (variables.size != 1 || factors.size != 2 || !variables.head.isInstanceOf[GateVar]) return false
+    if (variables.size != 1 || factors.size != 2 || !variables.head.isInstanceOf[DiscreteVariable]) return false
     (variables.head, factors(1), factors(2)) match {
-      case (gate:GateVar, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => {
+      case (gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => {
         var max = Double.NegativeInfinity
         var maxi = 0
         val statistics = dmf.statistics(dmf.values)
