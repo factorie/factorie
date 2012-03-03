@@ -45,7 +45,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
     _sentence = s
     s.setLength(this.position - s.start + 1)(null)
   }
-  def document: ChainType = chain
+  def document: Document = chain
   def value: String = string // abstract in StringVar
   def docSubstring = document.string.substring(stringStart, stringEnd)
   /** Return the string contents of this Token, either from its attr[TokenString] variable or ,if unset, directly as a substring of the Document */
