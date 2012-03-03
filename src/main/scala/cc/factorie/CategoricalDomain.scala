@@ -18,27 +18,6 @@ import scala.util.Random
 import cc.factorie.la._
 import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
 
-// TODO Also make a randomized-representation CategoricalDomain, with hashes?
-
-// CategoricalVector refers to vectors with weights over a domain of multiple "CategoricalValue"s.
-// Categorical refers to single a CategoricalValue, which can also be seen as a singleton vector.
-
-/** A value in a CategoricalVectorDomain */
-trait CategoricalVectorValue[T] extends DiscreteVectorValue {
-  def domain:CategoricalVectorDomain[T]
-}
-
-/** Domain for CategoricalVectorVar, e.g. FeatureVectorVariable.
-    @author Andrew McCallum */
-trait CategoricalVectorDomain[T] extends DiscreteVectorDomain with ValueType[CategoricalVectorValue[T]] {
-  thisDomain =>
-  type CategoryType = T
-  lazy val dimensionDomain: CategoricalDomain[T] = new CategoricalDomain[T] {
-    override def filename = thisDomain.filename
-  }
-  // Use dimensionSize to get the "size" of the vectors belonging to this domain.
-}
-
 
 // For single categorical values
 
