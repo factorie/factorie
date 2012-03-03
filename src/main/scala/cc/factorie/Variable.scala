@@ -112,15 +112,6 @@ trait Variable {
   def isDeterministic = false
 }
 
-/** For variables that support representing of their uncertainty with a distribution Q over their values, 
-    for variational inference with an approximate distribution Q.
-    @author Andrew McCallum */
-@deprecated("Will be removed")
-trait QDistribution {
-  this: Variable =>
-  type QType <: Variable
-  def newQ: QType
-}
 
 /** Used as a marker for Variables whose value does not change once created.  
     Be  careful to only use this in class definitions that cannot become mutable in subclasses. */
@@ -130,7 +121,6 @@ trait VarWithConstantValue extends Variable {
 }
 
 trait MutableVar extends Variable {
-  //def set(newValue:Value): Unit = set(newValue)(null)
   /** Assign a new value to this variable */
   def set(newValue:Value)(implicit d:DiffList): Unit
   final def :=(newValue:Value): Unit = set(newValue)(null)
@@ -162,7 +152,7 @@ trait VarWithMutableDoubleValue extends VarWithNumericValue {
 /** A Variable whose (constant) value is the Variable object itself. */
 trait SelfVariable[This<:SelfVariable[This]] extends Variable with VarAndValueGenericDomain[SelfVariable[This],This] {
   this: This =>
-  def value: This = this
+  final def value: This = this
 }
 
 

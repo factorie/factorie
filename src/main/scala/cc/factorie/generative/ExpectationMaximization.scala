@@ -15,9 +15,9 @@
 package cc.factorie.generative
 import cc.factorie._
 
-class EMInferencer[M<:Variable] extends Inferencer[M,GateVariable] {
+class EMInferencer[M<:Variable] extends Inferencer[M,DiscreteVariable] {
   type LatticeType = EMLattice[M]
-  def infer(variables:Iterable[M], varying:Iterable[GateVariable]): LatticeType = {
+  def infer(variables:Iterable[M], varying:Iterable[DiscreteVariable]): LatticeType = {
     val em = new EMLattice[M](varying, variables, null) // TODO Fix this null
     em.process()
     em
@@ -28,12 +28,12 @@ class EMInferencer[M<:Variable] extends Inferencer[M,GateVariable] {
     but in the future the selection of inference method may be more configurable. 
     @author Andrew McCallum */
 class EMLattice[M<:Variable]
-  (eVariables:Iterable[GateVariable], 
+  (eVariables:Iterable[DiscreteVariable], 
    mVariables:Iterable[M],
-   eInferencer: VariableInferencer[GateVariable] /*= new IIDDiscreteInferencer[GateVariable](cc.factorie.generative.defaultGenerativeModel)*/ )
+   eInferencer: VariableInferencer[DiscreteVariable] /*= new IIDDiscreteInferencer[GateVariable](cc.factorie.generative.defaultGenerativeModel)*/ )
 extends Lattice[M]
 {
-  var eLattice: Lattice[GateVariable] = null
+  var eLattice: Lattice[DiscreteVariable] = null
   def eStep: Unit = eLattice = eInferencer.infer(eVariables)
     /*
   def mStep: Unit = {

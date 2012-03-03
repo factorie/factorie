@@ -86,7 +86,7 @@ trait MutableDiscreteVar extends DiscreteVar with MutableVar {
 // TODO Note that DiscreteVariable is not a subclass of VectorVariableinde, due to initialization awkwardness.
 // Consider fixing this.
 /** A Variable holding a single DiscreteValue. */
-abstract class DiscreteVariable3 extends VectorVariable with MutableDiscreteVar with IterableSettings with QDistribution {
+abstract class DiscreteVariable3 extends VectorVariable with MutableDiscreteVar with IterableSettings {
   // The base constructor must take no arguments because CategoricalVariable needs to create with a temporary value and do the lookup later.
   def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue) }
   def this(initialInt:Int) = { this(); _set(domain.getValue(initialInt)) }
