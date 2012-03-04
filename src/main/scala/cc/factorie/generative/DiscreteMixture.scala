@@ -70,3 +70,43 @@ abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
     }
   }
 }
+
+
+object MaximizeGate extends Maximize {
+  // Underlying workhorse
+  def apply(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Boolean = {
+    var max = Double.NegativeInfinity
+    var maxi = 0
+    val statistics = dmf.statistics(dmf.values)
+    forIndex(gate.domain.size)(i => {
+      val pr = df._2(i) * dmf.prChoosing(statistics, i)
+      if (pr > max) { max = pr; maxi = i }
+    })
+    gate.set(maxi)(null)
+    true
+  }
+  // For typical direct callers
+  def apply(gate:DiscreteVariable, model:Model): Boolean = {
+    val factors = model.factors(Seq(gate))
+    if (factors.size != 2) return false
+    (factors(0), factors(1)) match {
+      case (df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
+      case (dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
+      case _ => return false
+    }
+    true
+  }
+  // For the Maximize interface
+  def apply(variables:Seq[Variable], varying:Seq[Variable], factors:Seq[Factor], qModel:Model): Boolean = {
+    if (varying.size != 0) return false
+    if (variables.size != 1 || factors.size != 2 || !variables.head.isInstanceOf[DiscreteVariable]) return false
+    if (qModel ne null) return false
+    if (factors.size != 2) return false
+    (variables.head, factors(0), factors(1)) match {
+      case (gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
+      case (gate:DiscreteVariable, dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
+      case _ => false
+    }
+  }
+}
+

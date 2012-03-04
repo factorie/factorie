@@ -15,13 +15,9 @@
 package cc.factorie.generative
 import cc.factorie._
 
-class EMInferencer[M<:Variable] extends Inferencer[M,DiscreteVariable] {
-  type LatticeType = EMLattice[M]
-  def infer(variables:Iterable[M], varying:Iterable[DiscreteVariable]): LatticeType = {
-    val em = new EMLattice[M](varying, variables, null) // TODO Fix this null
-    em.process()
-    em
-  }
+class EMInferencer(variables:Iterable[Variable], varying:Iterable[DiscreteVariable], model:Model) extends MeanFieldInferencer(varying, model) {
+  def eStep: Unit = updateQ
+  def mStep: Unit = {}
 }
 
 /** Currently uses IID estimation for m-step inference, 

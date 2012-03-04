@@ -114,3 +114,5 @@ class InfiniteMixture[P<:Parameter:Manifest](constructor: =>P) extends MixtureCo
 //object InfiniteMixture { def apply[P<:Parameter](constructor: =>P) = new InfiniteMixture[P](constructor) }
 */
 
+
+

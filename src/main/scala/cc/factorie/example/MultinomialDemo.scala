@@ -31,7 +31,7 @@ object MultinomialDemo {
     val die = new DenseProportions(List(.1, .2, .3, .2, .2))
     println("True distribution "+die)
     val rolls = for (i <- 1 to 1000) yield new Roll :~ Discrete(die)
-    new Maximize(model)(Seq(die))
+    Maximize(Seq(die), model)
     println("Est  distribution "+die)
 
     /*

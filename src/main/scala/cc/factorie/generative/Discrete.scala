@@ -47,6 +47,22 @@ object Discrete extends GenerativeFamily2[DiscreteVar,Proportions] {
     if (factor._1.domain.size != factor._2.size) throw new Error("Discrete child domain size different from parent Proportions size.")
 }
 
+object MaximizeDiscrete extends Maximize {
+  def apply(variables:Seq[Variable], varying:Seq[Variable], factors:Seq[Factor], qModel:Model): Boolean = {
+    if (varying.size != 0) return false
+    if (factors.size != 1) return false
+    if (qModel ne null) return false 
+    assert(variables.size == 1)
+    if (!variables.head.isInstanceOf[MutableDiscreteVar]) return false
+    factors.head match {
+      case factor:Discrete.Factor => { variables.head.asInstanceOf[MutableDiscreteVar].set(factor._2.value.maxInt)(null); true }
+      case _ => false
+    }
+  }
+}
+
+
+
 /*class Binomial(p:RealVarParameter, trials:Int) extends OrdinalVariable with GeneratedVariable {
   this := 0
 }*/
