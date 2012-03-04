@@ -180,18 +180,22 @@ object ProportionsEstimator {
   }
 }
 
-object MaximizeProportions extends Maximize {
-  def apply(variables:Seq[Variable], varying:Seq[Variable], factors:Seq[Factor], qModel:Model): Boolean = {
+object MaximizeProportions extends Maximize[MutableProportions,Nothing] {
+  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], factors:Seq[Factor], qModel:Model): Boolean = {
     if (varying.size != 0) return false
     if (variables.size != 1) return false
     variables.head match {
-      case mp: MutableProportions => apply(mp, factors, qModel)
+      case mp: MutableProportions => { apply(mp, factors, qModel); true }
       case _ => return false
     }
   }
+  def apply(variables:Iterable[MutableProportions], varying:Iterable[Nothing], factors:Seq[Factor], qModel:Model): Unit = {
+    if (variables.size != 1) throw new Error
+    apply(variables.head, factors, qModel)
+  }
   def apply(p:MutableProportions, model:GenerativeModel, qModel:Model = null): Unit = 
     if (apply(p, model.factors(Seq(p)), qModel) == false) throw new Error("Not handled.")
-  private def apply(p:MutableProportions, factors:Seq[Factor], qModel:Model): Boolean = {
+  private def apply(p:MutableProportions, factors:Seq[Factor], qModel:Model): Unit = {
     // Zero an accumulator
     var e: DenseCountsProportions = null
     p match {
@@ -237,7 +241,6 @@ object MaximizeProportions extends Maximize {
       }
     }
     if (p ne e) p.set(e)(null)
-    true
   }
 }
 

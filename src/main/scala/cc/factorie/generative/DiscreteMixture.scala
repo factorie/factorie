@@ -72,9 +72,9 @@ abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
 }
 
 
-object MaximizeGate extends Maximize {
+object MaximizeGate extends Maximize[DiscreteVariable,Nothing] {
   // Underlying workhorse
-  def apply(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Boolean = {
+  def apply(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Unit = {
     var max = Double.NegativeInfinity
     var maxi = 0
     val statistics = dmf.statistics(dmf.values)
@@ -83,30 +83,39 @@ object MaximizeGate extends Maximize {
       if (pr > max) { max = pr; maxi = i }
     })
     gate.set(maxi)(null)
-    true
   }
   // For typical direct callers
-  def apply(gate:DiscreteVariable, model:Model): Boolean = {
+  def apply(gate:DiscreteVariable, model:Model): Unit = {
     val factors = model.factors(Seq(gate))
-    if (factors.size != 2) return false
+    if (factors.size != 2) throw new Error
     (factors(0), factors(1)) match {
       case (df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
       case (dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
-      case _ => return false
+      case _ => throw new Error
     }
-    true
   }
   // For the Maximize interface
-  def apply(variables:Seq[Variable], varying:Seq[Variable], factors:Seq[Factor], qModel:Model): Boolean = {
+  def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Nothing], factors:Seq[Factor], qModel:Model): Unit = {
+    if (variables.size != 1 || factors.size != 2 || !variables.head.isInstanceOf[DiscreteVariable]) throw new Error
+    if (qModel ne null) throw new Error
+    if (factors.size != 2) throw new Error
+    (variables.head, factors(0), factors(1)) match {
+      case (gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
+      case (gate:DiscreteVariable, dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
+      case _ => throw new Error
+    }
+  }
+  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], factors:Seq[Factor], qModel:Model): Boolean = {
     if (varying.size != 0) return false
     if (variables.size != 1 || factors.size != 2 || !variables.head.isInstanceOf[DiscreteVariable]) return false
     if (qModel ne null) return false
     if (factors.size != 2) return false
     (variables.head, factors(0), factors(1)) match {
-      case (gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
-      case (gate:DiscreteVariable, dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
+      case (gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => { apply(gate, df, dmf); true }
+      case (gate:DiscreteVariable, dmf:DiscreteMixture.Factor, df:Discrete.Factor) => { apply(gate, df, dmf); true }
       case _ => false
     }
   }
+  
 }
 

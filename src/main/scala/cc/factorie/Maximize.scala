@@ -16,28 +16,34 @@ package cc.factorie
 import cc.factorie.generative._
 
 
-// TODO consider making this inherit from Infer
-trait Maximize {
-  /** Returns true on success, false if this recipe was unable to handle the relevant factors. */
-  def apply(variables:Seq[Variable], varying:Seq[Variable], factors:Seq[Factor], qModel:Model): Boolean // Abstract implemented in subclasses
-  def apply(variables:Seq[Variable], factors:Seq[Factor], qModel:Model): Boolean = apply(variables, Nil, factors, qModel)
-  def apply(variables:Seq[Variable], factors:Seq[Factor]): Boolean = apply(variables, factors, null)
-  def apply(variables:Seq[Variable], model:Model): Boolean = apply(variables, model.factors(variables))
-  def apply(variables:Seq[Variable], model:Model, qModel:Model): Boolean = apply(variables, model.factors(variables), qModel)
+// TODO consider making this inherit from Infer, but the return type is different.
+// TODO consider returning an Assignment instead of true/false.
+trait Maximize[-V1<:Variable,-V2<:Variable] {
+  /** Set the variables to values that maximize some criteria, usually maximum likelihood. */
+  def apply(variables:Iterable[V1], varying:Iterable[V2], factors:Seq[Factor], qModel:Model): Unit // Abstract implemented in subclasses
+  def apply(variables:Iterable[V1], varying:Iterable[V2], model:Model): Unit = apply(variables, varying, model.factors(variables), null)
+  def apply(variables:Iterable[V1], factors:Seq[Factor], qModel:Model): Unit = apply(variables, Nil, factors, qModel)
+  def apply(variables:Iterable[V1], factors:Seq[Factor]): Unit = apply(variables, Nil, factors, null)
+  def apply(variables:Iterable[V1], model:Model, qModel:Model): Unit = apply(variables, model.factors(variables), qModel)
+  def apply(variables:Iterable[V1], model:Model): Unit = apply(variables, Nil, model.factors(variables), null)
+  /** Called by generic maximize engines that manages a suite of Infer objects, allowing each to attempt an maximize request.
+      If you want your Maximize subclass to support such usage by a suite, override this method to check types as a appropriate
+      and return a true on success, or false on failure. */
+  def attempt(variables:Iterable[Variable], varying:Iterable[Variable], factors:Seq[Factor], qModel:Model): Boolean = false
 }
 
-/* Contains various recipes to maximize the value of variables to maximize some objective, 
+
+/* A suite containing various recipes to maximize the value of variables to maximize some objective, 
    usually maximum likelihood. 
    @author Andrew McCallum */
-class MaximizeVariables extends Maximize {
-  def defaultSuite = Seq(MaximizeDiscrete, MaximizeGate, MaximizeProportions)
-  val suite = new scala.collection.mutable.ArrayBuffer[Maximize] ++ defaultSuite
-  def apply(variables:Seq[Variable], varying:Seq[Variable], factors:Seq[Factor], qModel:Model): Boolean = {
+class MaximizeVariables extends Maximize[Variable,Variable] {
+  def defaultSuite = Seq(MaximizeGeneratedDiscrete, MaximizeGate, MaximizeProportions)
+  val suite = new scala.collection.mutable.ArrayBuffer[Maximize[Variable,Variable]] ++ defaultSuite
+  def apply(variables:Iterable[Variable], varying:Iterable[Variable], factors:Seq[Factor], qModel:Model): Unit = {
     // The handlers can be assured that the Seq[Factor] will be sorted alphabetically by class name
     // This next line does the maximization
-    val option = suite.find(_.apply(variables, varying, factors, qModel))
+    val option = suite.find(_.attempt(variables, varying, factors, qModel))
     if (option == None) throw new Error("No maximizer found for factors "+factors.take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString)
-    false
   }
 }
 object Maximize extends MaximizeVariables // A default instance of this class

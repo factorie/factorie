@@ -22,13 +22,24 @@ package cc.factorie
     because we need a special type signature for 'apply' and 'get'.
     @author Andrew McCallum */
 trait TypedAssignment[A<:Variable] {
-  //def variables: Seq[A]
+  /** All variables with values in this Assignment */
   def variables: Seq[A]
+  /** Return the value assigned to variable v. */
   def apply[B<:A](v:B): B#Value
+  /** Return the an Option for the value assigned to variable v.  If v is not contained in this Assignment return None. */
   def get[B<:A](v:B): Option[B#Value]
+  /** Return true if this Assignment has a value for variable v. */
   def contains(v:A): Boolean
   def getOrElse[B<:A](v:B, default: => B#Value): B#Value = if (contains(v)) apply(v) else default
-  //def globalize: DiffList
+  /** Set variables to the values specified in this assignment */
+  def globalize: DiffList = {
+    implicit val d = new DiffList
+    for (v <- variables) v match {
+      case v:MutableVar => v.set(this.apply(v.asInstanceOf[A]).asInstanceOf[v.Value])
+      case _ => throw new Error
+    }
+    d
+  }
 }
 
 trait Assignment extends TypedAssignment[Variable]
