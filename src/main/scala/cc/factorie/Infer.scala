@@ -13,6 +13,7 @@
    limitations under the License. */
 
 package cc.factorie
+import cc.factorie.generative._
 
 // BPInfer is a factory for BPInferencers
 // BPInferencer is specific to a model and some variables
@@ -31,4 +32,78 @@ trait Infer {
   def apply(variables:Seq[Variable], factors:Seq[Factor]): Lattice2 = apply(variables, factors, null)
   def apply(variables:Seq[Variable], model:Model): Lattice2 = apply(variables, model.factors(variables))
   def apply(variables:Seq[Variable], model:Model, qModel:Model): Lattice2 = apply(variables, model.factors(variables), qModel)
+}
+
+
+
+
+class IndependentDiscreteLattice extends GenerativeFactorModel with Lattice2 {
+  def marginal(d:DiscreteVariable): Proportions = this.parentFactor(d) match {
+    case f:Discrete.Factor => f._2
+  }
+}
+
+object InferIndependentDiscrete extends Infer {
+  def array(d:DiscreteVariable, factors:Seq[Factor]): Array[Double] = {
+    val distribution = new Array[Double](d.domain.size)
+    val origValue = d.intValue
+    for (i <- 0 until distribution.size) {
+      d := i
+      factors.foreach(f => distribution(i) += f.score)
+    }
+    maths.expNormalize(distribution)
+    d := origValue
+    distribution
+  }
+  def array(d:DiscreteVariable, model:Model): Array[Double] = array(d, model.factors1(d))
+  def proportions(d:DiscreteVariable, model:Model): Proportions = new DenseProportions(array(d, model))
+  def proportions(d:DiscreteVariable, factors:Seq[Factor]): Proportions = new DenseProportions(array(d, factors))
+  def apply(d:DiscreteVariable, factors:Seq[Factor]): IndependentDiscreteLattice = {
+    implicit val lattice = new IndependentDiscreteLattice
+    d ~ Discrete(proportions(d, factors))
+    lattice
+  }
+  def apply(variables:Seq[Variable], varying:Seq[Variable], factors:Seq[Factor], qModel:Model): IndependentDiscreteLattice = {
+    if (varying.size > 0) return null
+    if (qModel ne null) return null
+    implicit val lattice = new IndependentDiscreteLattice
+    for (v <- variables) v match {
+      case d:DiscreteVariable => d ~ Discrete(proportions(d, factors))
+      case _ => return null
+    }
+    lattice
+  }
+}
+
+
+class DiscreteSamplingLattice(variables:Iterable[DiscreteVariable]) extends IndependentDiscreteLattice {
+  for (d <- variables) d.~(Discrete(new DenseCountsProportions(d.domain.size)))(this)
+  def proportions(d:DiscreteVariable): DenseCountsProportions = this.parentFactor(d) match {
+    case df: Discrete.Factor => df._2.asInstanceOf[DenseCountsProportions]
+  }
+  def increment(d:DiscreteVariable): Unit = proportions(d).increment(d.intValue, 1.0)(null) 
+}
+
+class SamplingInferencer2[C](val sampler:Sampler[C]) {
+  var burnIn = 100 // I really want these to be  the default-values for parameters to infer, in Scala 2.8.
+  var thinning = 20
+  var iterations = 500
+  def infer(targets:Iterable[DiscreteVariable], contexts:Iterable[C], iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): DiscreteSamplingLattice = {
+    val lattice = new DiscreteSamplingLattice(targets)
+    sampler.processAll(contexts, burnIn)
+    for (i <- 0 until iterations/thinning) {
+      sampler.processAll(contexts, thinning)
+      for (d <- targets) lattice.increment(d)
+      //postSample(targets)
+    }
+    lattice
+  }
+}
+
+object InferByGibbsSampling extends Infer {
+  def apply(variables:Seq[DiscreteVariable], varying:Seq[Variable with IterableSettings], model:Model, qModel:Model): DiscreteSamplingLattice = {
+    val inferencer = new SamplingInferencer2(new VariableSettingsSampler[Variable with IterableSettings](model, null))
+    inferencer.infer(variables, varying)
+  }
+  def apply(variables:Seq[Variable], varying:Seq[Variable], factors:Seq[Factor], qModel:Model): Lattice2 = null
 }

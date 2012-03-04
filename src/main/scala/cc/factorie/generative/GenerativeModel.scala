@@ -41,6 +41,15 @@ class GenerativeFactorModel extends MutableGenerativeModel {
     })
     normalize(result)
   }
+  override def factors1(v:Variable): Seq[Factor] = {
+    val result = new ArrayBuffer[GenerativeFactor]
+    if (_parentFactor.contains(v)) result += _parentFactor(v)
+    // TODO Do we need to use extendedParentFactors also?
+    //if (_childFactors.contains(v)) result ++= _childFactors(v)
+    if (_childFactors.contains(v)) result ++= extendedChildFactors(v)
+    // TODO special handling of ContainerVariable[_]??
+    normalize(result)
+  }
   def allFactors: Iterable[Factor] = _parentFactor.values ++ _childFactors.values.flatten
   def getParentFactor(v:Variable): Option[GenerativeFactor] = _parentFactor.get(v)
   def getChildFactors(v:Variable): Option[Seq[GenerativeFactor]] = _childFactors.get(v)

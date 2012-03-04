@@ -49,6 +49,7 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
     if (d ne null) d += new DiscreteVariableDiff(_value, newValue)
     _value = newValue
   }
+  final def :=(i:Int): Unit = set(i)(null)
   @inline protected final def _set(newValue:ValueType): Unit = _value = newValue.intValue
   def settings = new SettingIterator {
     // TODO Base this on a domain.iterator instead, for efficiency
