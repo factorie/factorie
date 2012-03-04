@@ -12,12 +12,13 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie.generative
-import cc.factorie._
+package cc.factorie
+import cc.factorie.generative._
 import scala.collection.mutable.HashMap
 
-/** A model with independent generative factors for a collection of variables. */
 // TODO Consider making this a Lattice since it holds some "marginals"
+// This is actually a "naive mean field"
+/** A model with independent generative factors for each of a collection of variables. */
 class MeanField(variables:Iterable[Variable]) extends Model {
   private val _factor = new HashMap[Variable,Factor]
   def init(variables:Iterable[Variable]): Unit = {
@@ -29,19 +30,13 @@ class MeanField(variables:Iterable[Variable]) extends Model {
   init(variables)
   def factors(variables:Iterable[Variable]): Seq[Factor] = variables.flatMap(v => _factor.get(v)).toSeq
   def factor(v:Variable): Factor = _factor(v)
-  /*override def marginal(v:Variable): Option[Variable] = _factor(v) match {
-    case null => None
-    case f:Discrete.Factor => Some(f._2)
-    // TODO Is this how it should work?  Missing type information.  How to implement generically?  Should we actually return the factor instead?
-  }*/
 }
 
-/**  */
+/** Performs naive mean field inference */
 class MeanFieldInferencer(val variables:Iterable[Variable], val model:Model, val qModel:Model) {
   def this(vs:Iterable[Variable], model:Model) = this(vs, model, new MeanField(vs))
   def updateQ(v:Variable): Unit = {
-    val seqv = Seq(v)
-    val qFactors = qModel.factors(seqv)
+    val qFactors = qModel.factors1(v)
     if (qFactors.size > 1) throw new Error("Multiple factors touching a variable in qModel; structured mean field not yet implemented.")
     qFactors.head match {
       case f:Discrete.Factor => {
@@ -53,7 +48,7 @@ class MeanFieldInferencer(val variables:Iterable[Variable], val model:Model, val
           d.set(i)(diff)
           val factors = model.factors(diff)
           // Inefficient to have this in inner loop; but what is the alternative?
-          if (factors.flatMap(_.variables).exists(v => qModel.factors(seqv) != Nil)) throw new Error("Not yet implemented neighboring mean fields")
+          if (factors.flatMap(_.variables).exists(v => qModel.factors1(v) != Nil)) throw new Error("Not yet implemented neighboring mean fields")
           distribution(i) = diff.scoreAndUndo(model)
         }
         maths.expNormalize(distribution)
