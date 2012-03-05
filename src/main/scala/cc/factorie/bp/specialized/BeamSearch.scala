@@ -1,12 +1,12 @@
-package cc.factorie.bp.optimized
+package cc.factorie.bp.specialized
 
 import cc.factorie._
+import cc.factorie.la.{Vector, SparseVector}
 import collection.mutable.ListBuffer
-import la.{Vector, SparseVector}
 
 /**
  * Author: martin
- * Date: 2/11/12
+ * Date: 2/28/12
  */
 
 trait BeamSearch {
@@ -14,14 +14,16 @@ trait BeamSearch {
   var debug = false
 
   // the contract here is: null out array elements you don't like
-  def threshold(domainScores: Array[(Int, Double)]): Unit
+  def threshold(domainScores: Array[(Int, Double)]): Unit = ()
 
   def searchAndSetToMax[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
-          localTemplate: TemplateWithDotStatistics2[LV, OV],
-          transTemplate: TemplateWithDotStatistics2[LV, LV],
-          vs: Seq[LV]
-        ): Unit = {
-    val resultAssignment: Seq[Int] = search(localTemplate, transTemplate, vs)
+            vs: Seq[LV],
+            localTemplate: TemplateWithDotStatistics2[LV, OV],
+            transTemplate: TemplateWithDotStatistics2[LV, LV],
+            biasTemplate: TemplateWithDotStatistics1[LV] = null
+          ): Unit = {
+
+    val resultAssignment: Seq[Int] = search(vs, localTemplate, transTemplate, biasTemplate)
     var i = 0
     while (i < vs.size) {
       vs(i).set(resultAssignment(i))(null)
@@ -30,11 +32,11 @@ trait BeamSearch {
   }
 
   def search[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
-          localTemplate: TemplateWithDotStatistics2[LV, OV],
-          transTemplate: TemplateWithDotStatistics2[LV, LV],
-          vs: Seq[LV],
-          biasTemplate: TemplateWithDotStatistics1[LV] = null
-        ): Seq[Int] = {
+             vs: Seq[LV],
+             localTemplate: TemplateWithDotStatistics2[LV, OV],
+             transTemplate: TemplateWithDotStatistics2[LV, LV],
+             biasTemplate: TemplateWithDotStatistics1[LV] = null
+           ): Seq[Int] = {
 
     // get localScores
     val localScores: Array[Array[Double]] = {
@@ -46,19 +48,19 @@ trait BeamSearch {
       }
       arrays
     }
-    
+
     if (vs.size == 0) return Seq.empty[Int]
     else if (vs.size == 1) return Seq(localScores.head.zipWithIndex.maxBy(_._1)._2)
 
-    def transScores(i: Int, j: Int): Double = transTemplate.weight(i,j)
+    val ds = vs.head.domain.size
+
+    def transScores(i: Int, j: Int): Double = transTemplate.weights(i * ds + j)
 
     val biasScores: Vector = {
-      if (biasTemplate eq null)
+      if (biasTemplate ne null)
         biasTemplate.weights
-        //(i: Int) => biasTemplate.weights(i)
       else
         new SparseVector(localScores(0).size)
-        //(i: Int) => 0.0
     }
 
     // the int is the intValue of the previous variable, the double is the alpha
@@ -145,7 +147,7 @@ trait BeamSearch {
 
     intValSeq
   }
-  
+
   def printBackPtrs(backPtrs: Array[Array[(Int, Double)]]): Unit = {
     for (j <- 0 until backPtrs.head.size) {
       for (i <- 0 until backPtrs.size)
@@ -165,11 +167,6 @@ trait BeamSearch {
   }
 }
 
-trait FullBeam {
-  this: BeamSearch =>
-  def threshold(domainScores: Array[(Int, Double)]): Unit = ()
-}
-
 trait FixedBeamWidth {
   this: BeamSearch =>
 
@@ -186,6 +183,7 @@ trait FixedBeamWidth {
   }
 }
 
+// cumulative density function beam
 trait CDFBeamWidth {
   this: BeamSearch =>
 
@@ -213,35 +211,3 @@ trait CDFBeamWidth {
     }
   }
 }
-
-
-/*
-object TestBeam {
-  object D20 extends CategoricalDomain[Int] { 1 to 50 foreach { this += _ } }
-  class Var20 extends DiscreteVariable { def domain = D20 }
-  
-  def main(args: Array[String]): Unit = {
-    val localWeights = Seq((1 to 500).map(_.toDouble): _*).toArray
-    val transWeights = Seq((1 to 250000).reverse.map(_.toDouble): _*).toArray
-    val vars = 1 to 50 map { i => i; new Var20 }
-
-    val searcher =
-      new BeamSearch
-        with CDFBeamWidth
-        with StaticScoring {
-          val ratio = .5
-          val staticLocalScores = localWeights
-          val staticTransScores = transWeights
-        }
-
-    val mapAss = searcher.search(vars)
-    //val mapAss = (new BeamSearch with FixedBeamWidth { val width = 5 }).search(vars, localWeights, transWeights)
-    for (i <- 1 to 100) {
-      val start = System.currentTimeMillis()
-      searcher.search(vars)
-      println(System.currentTimeMillis() - start)
-    }
-    println(mapAss)
-  }
-}
-*/

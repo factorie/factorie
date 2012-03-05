@@ -203,21 +203,19 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily], val minib
 
   def truncate(x: Double) = math.signum(x)*math.max(0.0, math.abs(x) - l1)
 
- def addGradients() {
-   var f = 0
-   val lr = lrate(t)
-   while (f < families.length) {
-     val fam = families(f)
-     val grad = gradients(f)
-     var i = 0
-     while (i < grad.length) {
-       fam.weights(i) = truncate(fam.weights(i) + lr*(grad(i) - l2*fam.weights(i)))
-       grad(i) = 0.0
-       i += 1
-     }
-     f += 1
-   }
- }
+  def addGradients() {
+    var f = 0
+    val lr = lrate(t)
+    while (f < families.length) {
+      val fam = families(f)
+      val grad = gradients(f)
+      for (i <- grad.activeDomain) {
+        fam.weights(i) = truncate(fam.weights(i) + lr*(grad(i) - l2*fam.weights(i)))
+        grad(i) = 0.0
+      }
+      f += 1
+    }
+  }
 
   def doStep(i: Int) {
     t += 1

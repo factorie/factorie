@@ -10,6 +10,7 @@ import cc.factorie.bp._
 import cc.factorie.app.nlp._
 import cc.factorie.bp.optimized._
 import cc.factorie.app.nlp.pos._
+import specialized.Viterbi
 
 object TestModel extends TemplateModel {
   // Bias term on each individual label
@@ -83,23 +84,28 @@ object TimingBP {
       println("Time was: "+mean+"+-"+2*(std/math.sqrt(nIterations)))
     }
 
+    test("forward-backward (sum)", l => {
+      ForwardBackward.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
+    })
+
+    test("old BP (sum)", l => {
+      new BPInferencer[PosLabel](TestModel).inferTreewise(l)
+    })
+
+
+    test("viterbi (max)", l => {
+      Viterbi.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
+    })
+
     test("new BP (sum)", l => {
       assert(l.head.token.hasNext)
       val fg = new LatticeBP(TestModel,  l.toSet) with SumProductLattice
       new InferencerBPWorker(fg).inferTreewise()
     })
 
-    val searcher = new BeamSearch with FullBeam
-    test("viterbi (max)", l => {
-      searcher.search(TestModel.localTemplate, TestModel.transTemplate, l, TestModel.biasTemplate)
-    })
 
     test("old BP (max)", l => {
       new BPInferencer[PosLabel](TestModel).inferTreewiseMax(l)
-    })
-
-    test("old BP (sum)", l => {
-      new BPInferencer[PosLabel](TestModel).inferTreewise(l)
     })
 
     test("new BP (max)", l => {
