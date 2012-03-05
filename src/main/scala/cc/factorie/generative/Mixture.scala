@@ -16,18 +16,15 @@ package cc.factorie.generative
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,Stack}
 
-trait GateVar extends MutableDiscreteVar
-
-abstract class GateVariable(initial:Int) extends DiscreteVariable(initial) with GateVar {
-  //def prChoosing(value:Int): Double = parentFactor.template.prChoosing(parentFactor.statistics, index)
-}
+//trait GateVar extends MutableDiscreteVar
+//abstract class GateVariable(initial:Int) extends DiscreteVariable(initial) with GateVar {}
 
 //abstract class PlatedGate(initial:Seq[Int]) extends PlatedDiscrete(initial) with Parameter { }
 
 // For factors between a Mixture and the child generated from that Mixture
 trait MixtureFactor extends GenerativeFactor {
   //type ChildType <: MixtureGeneratedVar
-  def gate: GateVariable
+  def gate: DiscreteVariable
   def prChoosing(s:StatisticsType, mixtureIndex:Int): Double
   def prChoosing(mixtureIndex:Int): Double = prChoosing(statistics, mixtureIndex)
   def logprChoosing(s:StatisticsType, mixtureIndex:Int): Double = math.log(prChoosing(s, mixtureIndex))
@@ -116,4 +113,6 @@ class InfiniteMixture[P<:Parameter:Manifest](constructor: =>P) extends MixtureCo
 }
 //object InfiniteMixture { def apply[P<:Parameter](constructor: =>P) = new InfiniteMixture[P](constructor) }
 */
+
+
 

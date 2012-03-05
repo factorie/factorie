@@ -28,7 +28,7 @@ object LDA {
   val numTopics = 10
   implicit val model = GenerativeModel()
   object ZDomain extends DiscreteDomain { def size = numTopics }
-  class Z(value: Int = 0) extends cc.factorie.generative.GateVariable(value) { def domain = ZDomain }
+  class Z(value: Int = 0) extends DiscreteVariable(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
   class Word(value: String) extends CategoricalVariable(value) { def domain = WordDomain; def z = model.parentFactor(this).asInstanceOf[DiscreteMixture.Factor]._3 }
   class Document(val file: String) extends ArrayBuffer[Word] {var theta: DenseCountsProportions = null}

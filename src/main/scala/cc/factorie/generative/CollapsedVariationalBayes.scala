@@ -17,30 +17,30 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 //import cc.factorie.la.ArrayLA.Implicits._
 
-class CollapsedVariationalBayes(collapse:Iterable[Variable], marginalize:Iterable[Variable with QDistribution], model:GenerativeModel) {
+class CollapsedVariationalBayes(collapse:Iterable[Variable], marginalize:Iterable[Variable], model:GenerativeModel) {
   val handlers = new ArrayBuffer[CollapsedVariationalBayesHandler]
   //def defaultHandlers = List(GeneratedVariableCollapsedVariationalBayesHandler, MixtureChoiceCollapsedVariationalBayesHandler)
   def defaultHandlers = throw new Error("Not yet implemented")
   handlers ++= defaultHandlers
 
-  private val _c = new HashMap[Variable,Variable]
-  private val _q = new HashMap[Variable,Variable]
-  def collapsedMap = _c
-  def qMap = _q
-  //collapse.foreach(v => _c(v) = v.newCollapsed)
-  val collapser = new Collapse(model)
-  collapse.foreach(v => collapser(Seq(v)))
-  marginalize.foreach(v => _q(v) = v.newQ)
-  //def collapsed[V<:CollapsibleParameter](v:V) = _c(v).asInstanceOf[V#CollapsedType]
-  def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
-  def collapsedOrSelf(v:Variable): Variable = _c.getOrElse(v, v)
-  def collapsedp2[P<:Variable](v:P): P = _c.getOrElse(v, v).asInstanceOf[P]
-  def collapsedOrNull(v:Variable): Variable = _c.getOrElse(v, null.asInstanceOf[Variable])
-  def qp(v:Variable) = _q.getOrElse(v, v)
-  def setMaxMarginals(implicit d:DiffList = null): Unit = {
-    throw new Error("Not yet implemented")
-  }
-  def children(p:Variable): Iterable[Variable] = throw new Error
+//  private val _c = new HashMap[Variable,Variable]
+//  private val _q = new HashMap[Variable,Variable]
+//  def collapsedMap = _c
+//  def qMap = _q
+//  //collapse.foreach(v => _c(v) = v.newCollapsed)
+//  val collapser = new Collapse(model)
+//  collapse.foreach(v => collapser(Seq(v)))
+//  marginalize.foreach(v => _q(v) = v.newQ)
+//  //def collapsed[V<:CollapsibleParameter](v:V) = _c(v).asInstanceOf[V#CollapsedType]
+//  def q[V<:Variable with QDistribution](v:V) = _q(v).asInstanceOf[V#QType]
+//  def collapsedOrSelf(v:Variable): Variable = _c.getOrElse(v, v)
+//  def collapsedp2[P<:Variable](v:P): P = _c.getOrElse(v, v).asInstanceOf[P]
+//  def collapsedOrNull(v:Variable): Variable = _c.getOrElse(v, null.asInstanceOf[Variable])
+//  def qp(v:Variable) = _q.getOrElse(v, v)
+//  def setMaxMarginals(implicit d:DiffList = null): Unit = {
+//    throw new Error("Not yet implemented")
+//  }
+//  def children(p:Variable): Iterable[Variable] = throw new Error
 
   def process(v:MutableVar): DiffList = {
     //assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable

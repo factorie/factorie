@@ -21,6 +21,7 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 // TODO This is wrong.  A Marginal should be a GenerativeFactor
 trait Marginal //extends Variable // extend Variable because ExpectationMaximization depends on knowing that a Variable is returned by Lattice.marginal
 
+@deprecated("This will be removed in future")
 trait Lattice[V<:Variable] {
   type VariableMarginalType <: Marginal
   type FactorMarginalType <: Marginal

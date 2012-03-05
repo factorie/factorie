@@ -145,52 +145,40 @@ class DenseProportions(p:Seq[Double]) extends MutableProportions {
   }
 }
 
-// TODO Change this to a Maximizer
-object ProportionsEstimator {
-  def estimate(p:MutableProportions)(implicit model:GenerativeModel): Unit = {
-    var e: DenseCountsProportions = null
-    p match {
-      case p:DenseCountsProportions => { e = p; e.zero() }
-      case _ => e = new DenseCountsProportions(p.length)
-    }
-    model.parentFactor(p) match { case f:Dirichlet.Factor => e.set(f._2)(null); case null => {} }
-    for (factor <- model.extendedChildFactors(p)) factor match {
-      case m:Mixture.Factor => {}
-      case d:Discrete.Factor => e.increment(d._1.intValue, 1.0)(null)
-      case dm:DiscreteMixture.Factor => {
-        val mixtureIndex = dm._2.indexOf(e)
-        if (dm._3.intValue == mixtureIndex) e.increment(dm._1.intValue, 1.0)(null)
-      }
-      case pdm:PlatedDiscreteMixture.Factor => {
-        val mixtureIndex = pdm._2.indexOf(e)
-        forIndex(pdm._1.length)(i => {
-          if (pdm._3.intValue(i) == mixtureIndex) e.increment(pdm._3.intValue(i), 1.0)(null)
-        })
-      }
-      //case p:Proportions => forIndex(p.length)(i => e.increment(i, p(i))(null))
-    }
-    // TODO The above no longer works for weighted children!  
-    // This will be a problem for EM.
-    // Grep source for weightedGeneratedChildren to find all the places that may need fixing.
-    /*for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
-      case x:DiscreteVar => e.increment(x.intValue, weight)(null)
-      case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
-    }*/
-    if (p ne e) p.set(e)(null)
-  }
-}
 
-// TODO Put this into new Maximizer framework
-object ProportionsMaximizer {
-  def estimate(p:MutableProportions, model:GenerativeModel, qModel:Model = null): Unit = {
+object MaximizeProportions extends Maximize[MutableProportions,Nothing] {
+  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): Boolean = {
+    if (varying.size != 0) return false
+    if (variables.size != 1) return false
+    variables.head match {
+      case mp: MutableProportions => {
+        model match {
+          case model:GenerativeModel => apply(mp, model, qModel)
+          case _ => return false
+        }
+      }
+      case _ => return false
+    }
+    true
+  }
+  def apply(variables:Iterable[MutableProportions], varying:Iterable[Nothing], model:Model, qModel:Model): Unit = {
+    if (variables.size != 1) throw new Error
+    apply(variables.head, model.asInstanceOf[GenerativeModel], qModel)
+  }
+  //def apply(p:MutableProportions, model:GenerativeModel, qModel:Model = null): Unit = if (apply(p, model.factors(Seq(p)), qModel) == false) throw new Error("Not handled.")
+  def apply(p:MutableProportions, model:GenerativeModel, qModel:Model): Unit = {
     // Zero an accumulator
     var e: DenseCountsProportions = null
     p match {
       case p:DenseCountsProportions => { e = p; e.zero() }
       case _ => e = new DenseCountsProportions(p.length)
     }
-    // Initialize with prior
-    model.parentFactor(p) match { case f:Dirichlet.Factor => e.set(f._2)(null); case null => {} }
+    // Initialize with prior; find the factor that is the parent of "p", and use its Dirichlet masses for initialization
+    model.parentFactor(p) match {
+      case f:Dirichlet.Factor => e.set(f._2)(null)
+      case _ => throw new Error
+    }
+    //factors.collectFirst({case f:Dirichlet.Factor if (f.child == p) => e.set(f._2)(null)})
     // Incorporate children
     @inline def incrementForDiscreteVar(dv:DiscreteVar, incr:Double): Unit = {
       val qFactors = if (qModel eq null) Nil else qModel.factors(Seq(dv))
@@ -202,6 +190,7 @@ object ProportionsMaximizer {
       } // TODO We should check that qFactors.size == 1
     }
     for (factor <- model.extendedChildFactors(p)) factor match {
+      //case parent:GenerativeFactor if (parent.child == p) => {} // Parent factor of the Proportions we are estimating already incorporated above
       // The array holding the mixture components; the individual components (DiscreteMixture.Factors) will also be among the extendedChildFactors
       case m:Mixture.Factor => {}
       // A simple DiscreteVar child of the Proportions
@@ -226,13 +215,6 @@ object ProportionsMaximizer {
         })
       }
     }
-    // TODO The above no longer works for weighted children!  
-    // This will be a problem for EM.
-    // Grep source for weightedGeneratedChildren to find all the places that may need fixing.
-    /*for ((child, weight) <- d.weightedGeneratedChildren(map)) child match {
-      case x:DiscreteVar => e.increment(x.intValue, weight)(null)
-      case p:Proportions => forIndex(p.length)(i => e.increment(i, weight * p(i))(null))
-    }*/
     if (p ne e) p.set(e)(null)
   }
 }

@@ -14,15 +14,6 @@
 
 package cc.factorie
 
-/*trait ElementType[+E<:AnyRef] {
-  type ElementType = E
-}*/
-
-// TODO Consider getting rid of this, now that InChain is not longer covariant in C
-trait ChainType[+C<:AnyRef] {
-  type ChainType = C
-}
-
 // Used by app.chain.Observation and app.chain.Lexicon.LexiconToken
 trait AbstractChainLink[+This<:AbstractChainLink[This]] {
   this: This =>
@@ -55,7 +46,7 @@ trait AbstractChainLink[+This<:AbstractChainLink[This]] {
 }
 
 /** An element or "link" of a Chain, having methods "next", "prev", etc. */
-trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainLink[This] with ThisType[This] with ChainType[C] {
+trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainLink[This] with ThisType[This] {
   this: This =>
   private var _position: Int = -1
   private var _chain: C = null.asInstanceOf[C]

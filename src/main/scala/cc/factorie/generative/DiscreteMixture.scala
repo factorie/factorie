@@ -18,8 +18,8 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-object DiscreteMixture extends GenerativeFamily3[DiscreteVar,Mixture[Proportions],GateVariable] {
-  case class Factor(_1:DiscreteVar, _2:Mixture[Proportions], _3:GateVariable) extends DiscreteGeneratingFactor with MixtureFactor with super.Factor {
+object DiscreteMixture extends GenerativeFamily3[DiscreteVar,Mixture[Proportions],DiscreteVariable] {
+  case class Factor(_1:DiscreteVar, _2:Mixture[Proportions], _3:DiscreteVariable) extends DiscreteGeneratingFactor with MixtureFactor with super.Factor {
     def gate = _3
     def pr(s:StatisticsType) = s._2(s._3.intValue).apply(s._1.intValue)
     def sampledValue(s:StatisticsType): DiscreteValue = s._1.domain.getValue(s._2(s._3.intValue).sampleInt)
@@ -34,7 +34,7 @@ object DiscreteMixture extends GenerativeFamily3[DiscreteVar,Mixture[Proportions
       }
     }
   }
-  def newFactor(a:DiscreteVar, b:Mixture[Proportions], c:GateVariable) = Factor(a, b, c)
+  def newFactor(a:DiscreteVar, b:Mixture[Proportions], c:DiscreteVariable) = Factor(a, b, c)
 }
 
 abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
@@ -70,3 +70,57 @@ abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
     }
   }
 }
+
+
+object MaximizeGate extends Maximize[DiscreteVariable,Nothing] {
+  // Underlying workhorse
+  def apply(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Unit = {
+    var max = Double.NegativeInfinity
+    var maxi = 0
+    val statistics = dmf.statistics(dmf.values)
+    forIndex(gate.domain.size)(i => {
+      val pr = df._2(i) * dmf.prChoosing(statistics, i)
+      if (pr > max) { max = pr; maxi = i }
+    })
+    gate.set(maxi)(null)
+  }
+  // For typical direct callers
+  def apply(gate:DiscreteVariable, model:Model): Unit = {
+    val factors = model.factors(Seq(gate))
+    if (factors.size != 2) throw new Error
+    (factors(0), factors(1)) match {
+      case (df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
+      case (dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
+      case _ => throw new Error
+    }
+  }
+  // For the Maximize interface
+  def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Nothing], model:Model, qModel:Model): Unit = {
+    if (varying.size != 0) throw new Error
+    if (variables.size != 1) throw new Error
+    if (qModel ne null) throw new Error
+    val gate = variables.head
+    val factors = model.factors1(gate)
+    if (factors.size != 2) throw new Error
+    (factors(0), factors(1)) match {
+      case (df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
+      case (dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
+      case _ => throw new Error
+    }
+  }
+  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): Boolean = {
+    if (varying.size != 0) return false
+    if (variables.size != 1) return false
+    if (!variables.head.isInstanceOf[DiscreteVariable]) return false
+    if (qModel ne null) return false
+    val factors = model.factors1(variables.head)
+    if (factors.size != 2) return false
+    (variables.head, factors(0), factors(1)) match {
+      case (gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => { apply(gate, df, dmf); true }
+      case (gate:DiscreteVariable, dmf:DiscreteMixture.Factor, df:Discrete.Factor) => { apply(gate, df, dmf); true }
+      case _ => false
+    }
+  }
+  
+}
+

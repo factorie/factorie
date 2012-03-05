@@ -47,6 +47,39 @@ object Discrete extends GenerativeFamily2[DiscreteVar,Proportions] {
     if (factor._1.domain.size != factor._2.size) throw new Error("Discrete child domain size different from parent Proportions size.")
 }
 
+object MaximizeGeneratedDiscrete extends Maximize[DiscreteVariable,Nothing] {
+  def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Nothing], model:Model, qModel:Model): Unit = {
+    if (varying.size > 0) throw new Error
+    if (qModel ne null) throw new Error
+    for (d <- variables) {
+      val dFactors = model.factors1(d)
+      require(dFactors.size == 1)
+      dFactors.head match {
+      	case factor:Discrete.Factor => d.set(factor._2.value.maxInt)(null)
+        case _ => throw new Error("This Maximizer only handles factors of type Discrete.Factor.")
+      }
+    }
+  }
+  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): Boolean = {
+    if (varying.size != 0) return false
+    if (qModel ne null) return false 
+    for (d <- variables) d match {
+      case d:MutableDiscreteVar => {
+        val dFactors = model.factors1(d)
+        if (dFactors.size != 1) return false
+        dFactors.head match {
+          case factor:Discrete.Factor => d.asInstanceOf[MutableDiscreteVar].set(factor._2.value.maxInt)(null)
+          case _ => return false
+        }
+      }
+      case _ => return false
+    }
+    true
+  }
+}
+
+
+
 /*class Binomial(p:RealVarParameter, trials:Int) extends OrdinalVariable with GeneratedVariable {
   this := 0
 }*/

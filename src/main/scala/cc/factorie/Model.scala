@@ -39,6 +39,7 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet}
  */
 trait Model {
   def factors(variables:Iterable[Variable]): Seq[Factor]
+  def factors1(variable:Variable): Seq[Factor] = factors(Seq(variable))
   def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else normalize(factors(d.map(_.variable)))
 
   def filterByFactorClass[F<:Factor](factors:Seq[Factor], fclass:Class[F]): Seq[F] = factors.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Seq[F]]
@@ -130,6 +131,7 @@ class FactorModel(initialFactors:Factor*) extends Model {
   // even if that variable does not have any factors in this model.
   // TODO The next method needs to handle ContainerVariables.
   def factors(variables:Iterable[Variable]): Seq[Factor] = normalize(variables.flatMap(v => _factors(v)).toSeq)
+  override def factors1(variable:Variable): Seq[Factor] = normalize(_factors(variable).toSeq)
   override def factors: Seq[Factor] = _factors.values.flatMap(set => set).toSeq.distinct // TODO Make more efficient?
   def +=(f:Factor): Unit = f.variables.foreach(v => _factors(v) += f)
   def -=(f:Factor): Unit = f.variables.foreach(v => _factors(v) -= f)
@@ -174,7 +176,8 @@ class TemplateModel(initialTemplates:Template*) extends Model {
     factors
   }
 
-  def factors(vs:Iterable[Variable]) : Seq[Factor] = normalize(templates.flatMap(template => template.factors(vs)))
+  def factors(vs:Iterable[Variable]): Seq[Factor] = normalize(templates.flatMap(template => template.factors(vs)))
+  override def factors1(variable:Variable): Seq[Factor] = normalize(templates.flatMap(template => template.factors(variable))) 
   override def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else normalize(templates.flatMap(template => template.factors(d)))
   
   def save(dirname:String): Unit = {

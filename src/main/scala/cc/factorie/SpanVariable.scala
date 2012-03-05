@@ -40,7 +40,7 @@ trait SpanValue[T] extends IndexedSeq[T] {
 }
 
 /** A Span that is not necessarily a Variable. */
-trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] extends SpanValue[E] with ThisType[This] with ElementType[E] with ChainType[C] {
+trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] extends SpanValue[E] with ThisType[This] with ElementType[E] {
   this: This =>
   protected var _start = 0
   protected var _length = 0

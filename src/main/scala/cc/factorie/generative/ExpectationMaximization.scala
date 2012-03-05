@@ -15,46 +15,9 @@
 package cc.factorie.generative
 import cc.factorie._
 
-class EMInferencer[M<:Variable] extends Inferencer[M,GateVariable] {
-  type LatticeType = EMLattice[M]
-  def infer(variables:Iterable[M], varying:Iterable[GateVariable]): LatticeType = {
-    val em = new EMLattice[M](varying, variables, null) // TODO Fix this null
-    em.process()
-    em
-  }
+class EMInferencer(val maximize:Iterable[Variable], val varying:Iterable[DiscreteVariable], model:Model) extends MeanFieldInferencer(varying, model) {
+  def eStep: Unit = updateQ // qModel is automatically filled in with a naive mean field
+  def mStep: Unit = maximize.foreach(v => Maximize(Seq(v), model, qModel))
+  def process(iterations:Int): Unit = for (i <- 0 until iterations) { mStep; eStep }
 }
 
-/** Currently uses IID estimation for m-step inference, 
-    but in the future the selection of inference method may be more configurable. 
-    @author Andrew McCallum */
-class EMLattice[M<:Variable]
-  (eVariables:Iterable[GateVariable], 
-   mVariables:Iterable[M],
-   eInferencer: VariableInferencer[GateVariable] /*= new IIDDiscreteInferencer[GateVariable](cc.factorie.generative.defaultGenerativeModel)*/ )
-extends Lattice[M]
-{
-  var eLattice: Lattice[GateVariable] = null
-  def eStep: Unit = eLattice = eInferencer.infer(eVariables)
-    /*
-  def mStep: Unit = {
-    throw new Error
-    val latticeMapping: scala.collection.Map[Variable,Variable] = new scala.collection.DefaultMap[Variable,Variable] {
-      def get(v:Variable): Option[Variable] = v match {
-        case v:Gate => eLattice.marginal(v) //.asInstanceOf[Variable]
-        case _ => None
-      }
-      def iterator: Iterator[(Variable,Variable)] = throw new Error
-    }
-    mVariables.foreach(v => Maximize(Seq(v)) //.estimate(v.defaultEstimator, latticeMapping)
-  }
-    */
-  /** Return true iff converged. */
-  // TODO Implement a proper convergence criterion
-  def process(iterations:Int = 10): Boolean = {
-    forIndex(iterations)(i => {
-      eStep
-//      mStep
-    })
-    false // TODO Determine convergence criterion
-  }
-}

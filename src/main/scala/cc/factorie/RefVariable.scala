@@ -14,20 +14,12 @@
 
 package cc.factorie
 
-/** A Variable whose value has type indicated by the type parameter, which must be a scala.AnyRef.
-    Scala primitive types such as Int and Double should be stored in specialized variables, 
-    such as IntegerVar and RealVar, respectively. */
-trait RefVar[A<:AnyRef] extends Variable with VarAndValueGenericDomain[RefVar[A],A] {
-  //def value: A
-  //def abstractValue: AnyRef = value
-  // TODO Consider moving these method to Variable!
-  //def ===(other: RefVar[A]) = value == other.value
-  //def !==(other: RefVar[A]) = value != other.value
-}
+/** A Variable whose value is a pointer to a Scala object (which may also be a Variable) */
+trait RefVar[A<:AnyRef] extends Variable with VarAndValueGenericDomain[RefVar[A],A] 
 
 /**A variable with a single mutable (unindexed) value which is of Scala type A. */
 // TODO A candidate for Scala 2.8 @specialized
-class RefVariable[A<:AnyRef](initialValue:A = null) extends RefVar[A] {
+class RefVariable[A<:AnyRef](initialValue:A = null) extends RefVar[A] with MutableVar {
   //type VariableType <: RefVariable[A]
   // TODO  Consider: def this(initval:A)(implicit d:DiffList = null)
   //def this(initval:A) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
@@ -38,9 +30,7 @@ class RefVariable[A<:AnyRef](initialValue:A = null) extends RefVar[A] {
     if (d ne null) d += new RefVariableDiff(_value, newValue)
     _value = newValue
   }
-  def :=(newValue:A): this.type = { set(newValue)(null); this }
-  // TODO Remove this next line, I think.  Just use method above instead.
-  //def value_=(newValue:A) = set(newValue)(null)
+  //  def :=(newValue:A): this.type = { set(newValue)(null); this }
   override def toString = printName + "(" + (if (value == this) "this" else value.toString) + ")"
   case class RefVariableDiff(oldValue:A, newValue:A) extends Diff {
     //        Console.println ("new RefVariableDiff old="+oldValue+" new="+newValue)
