@@ -95,20 +95,25 @@ object MaximizeGate extends Maximize[DiscreteVariable,Nothing] {
     }
   }
   // For the Maximize interface
-  def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Nothing], factors:Seq[Factor], qModel:Model): Unit = {
-    if (variables.size != 1 || factors.size != 2 || !variables.head.isInstanceOf[DiscreteVariable]) throw new Error
+  def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Nothing], model:Model, qModel:Model): Unit = {
+    if (varying.size != 0) throw new Error
+    if (variables.size != 1) throw new Error
     if (qModel ne null) throw new Error
+    val gate = variables.head
+    val factors = model.factors1(gate)
     if (factors.size != 2) throw new Error
-    (variables.head, factors(0), factors(1)) match {
-      case (gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
-      case (gate:DiscreteVariable, dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
+    (factors(0), factors(1)) match {
+      case (df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
+      case (dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
       case _ => throw new Error
     }
   }
-  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], factors:Seq[Factor], qModel:Model): Boolean = {
+  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): Boolean = {
     if (varying.size != 0) return false
-    if (variables.size != 1 || factors.size != 2 || !variables.head.isInstanceOf[DiscreteVariable]) return false
+    if (variables.size != 1) return false
+    if (!variables.head.isInstanceOf[DiscreteVariable]) return false
     if (qModel ne null) return false
+    val factors = model.factors1(variables.head)
     if (factors.size != 2) return false
     (variables.head, factors(0), factors(1)) match {
       case (gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => { apply(gate, df, dmf); true }

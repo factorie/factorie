@@ -30,22 +30,20 @@ trait Lattice2 extends Model
 trait Infer[-V1<:Variable,-V2<:Variable] {
   type LatticeType <: Lattice2
   /** Returns true on success, false if this recipe was unable to handle the relevant factors. */
-  def apply(variables:Iterable[V1], varying:Iterable[V2], factors:Seq[Factor], qModel:Model): LatticeType // Abstract implemented in subclasses
-  def apply(variables:Iterable[V1], varying:Iterable[V2], model:Model): LatticeType = apply(variables, varying, model.factors(variables), null)
-  def apply(variables:Iterable[V1], factors:Seq[Factor], qModel:Model): LatticeType = apply(variables, Nil, factors, qModel)
-  def apply(variables:Iterable[V1], factors:Seq[Factor]): LatticeType = apply(variables, Nil, factors, null)
-  def apply(variables:Iterable[V1], model:Model, qModel:Model): LatticeType = apply(variables, model.factors(variables), qModel)
-  def apply(variables:Iterable[V1], model:Model): LatticeType = apply(variables, Nil, model.factors(variables), null)
+  def apply(variables:Iterable[V1], varying:Iterable[V2], model:Model, qModel:Model): LatticeType // Abstract implemented in subclasses
+  def apply(variables:Iterable[V1], varying:Iterable[V2], model:Model): LatticeType = apply(variables, varying, model, null)
+  def apply(variables:Iterable[V1], model:Model, qModel:Model): LatticeType = apply(variables, model, qModel)
+  def apply(variables:Iterable[V1], model:Model): LatticeType = apply(variables, Nil, model, null)
   /** Called by generic inference engines that manages a suite of Infer objects, allowing each to attempt an inference request.
       If you want your Infer subclass to support such usage by a suite, override this method to check types as a appropriate
       and return a non-null Lattice on success, or null on failure. */
-  def attempt(variables:Iterable[Variable], varying:Iterable[Variable], factors:Seq[Factor], qModel:Model): LatticeType = null.asInstanceOf[LatticeType]
+  def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): LatticeType = null.asInstanceOf[LatticeType]
 }
 
 class InferVariables extends Infer[Variable,Variable] {
   def defaultSuite = List(InferIndependentDiscrete,InferByGibbsSampling)
   val suite = new scala.collection.mutable.ArrayBuffer[Infer[Variable,Variable]] ++ defaultSuite
-  def apply(variables:Iterable[Variable], varying:Iterable[Variable], factors:Seq[Factor], qModel:Model): LatticeType = throw new Error
+  def apply(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): LatticeType = throw new Error
 }
 object Infer extends InferVariables
 
@@ -58,9 +56,10 @@ class IndependentDiscreteLattice extends GenerativeFactorModel with Lattice2 {
 
 object InferIndependentDiscrete extends Infer[DiscreteVariable,Nothing] {
   type LatticeType = IndependentDiscreteLattice
-  def array(d:DiscreteVariable, factors:Seq[Factor]): Array[Double] = {
+  def array(d:DiscreteVariable, model:Model): Array[Double] = {
     val distribution = new Array[Double](d.domain.size)
     val origValue = d.intValue
+    val factors = model.factors1(d)
     for (i <- 0 until distribution.size) {
       d := i
       factors.foreach(f => distribution(i) += f.score)
@@ -69,27 +68,25 @@ object InferIndependentDiscrete extends Infer[DiscreteVariable,Nothing] {
     d := origValue
     distribution
   }
-  def array(d:DiscreteVariable, model:Model): Array[Double] = array(d, model.factors1(d))
   def proportions(d:DiscreteVariable, model:Model): Proportions = new DenseProportions(array(d, model))
-  def proportions(d:DiscreteVariable, factors:Seq[Factor]): Proportions = new DenseProportions(array(d, factors))
-  def apply(d:DiscreteVariable, factors:Seq[Factor]): IndependentDiscreteLattice = {
+  def apply(d:DiscreteVariable, model:Model): IndependentDiscreteLattice = {
     implicit val lattice = new IndependentDiscreteLattice
-    d ~ Discrete(proportions(d, factors))
+    d ~ Discrete(proportions(d, model))
     lattice
   }
-  def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Nothing], factors:Seq[Factor], qModel:Model): IndependentDiscreteLattice = {
+  def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Nothing], model:Model, qModel:Model): IndependentDiscreteLattice = {
     if (varying.size > 0) return null
     if (qModel ne null) return null
     implicit val lattice = new IndependentDiscreteLattice
-    for (d <- variables) d ~ Discrete(proportions(d, factors))
+    for (d <- variables) d ~ Discrete(proportions(d, model))
     lattice
   }
-  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], factors:Seq[Factor], qModel:Model): IndependentDiscreteLattice = {
+  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): IndependentDiscreteLattice = {
     if (varying.size > 0) return null
     if (qModel ne null) return null
     implicit val lattice = new IndependentDiscreteLattice
     for (d <- variables) d match {
-      case d:DiscreteVariable => d ~ Discrete(proportions(d, factors))
+      case d:DiscreteVariable => d ~ Discrete(proportions(d, model))
       case _ => return null
     }
     lattice
@@ -124,6 +121,5 @@ object InferByGibbsSampling extends Infer[DiscreteVariable,Variable with Iterabl
     val inferencer = new SamplingInferencer2(new VariableSettingsSampler[Variable with IterableSettings](model, null))
     inferencer.infer(variables, varying)
   }
-  def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Variable with IterableSettings], factors:Seq[Factor], qModel:Model) = throw new Error("Not implemented.")
-  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], factors:Seq[Factor], qModel:Model): DiscreteSamplingLattice = null
+  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): DiscreteSamplingLattice = throw new Error("Not yet implemented.")
 }
