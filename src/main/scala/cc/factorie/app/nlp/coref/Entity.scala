@@ -24,9 +24,15 @@ class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, 
   if (dst ne null) dst._addSubEntity(src)(null)
   override def set(e:Entity)(implicit d:DiffList): Unit = {
     if (e ne dst) {
-      if (dst ne null) dst._removeSubEntity(src)
+      val old = dst
+      if (dst ne null) {
+        dst._removeSubEntity(src)
+        dst.removedChildHooks(src,d)
+      }
       e._addSubEntity(src)
-      super.set(src, e)
+      e.addedChildHooks(src,d)
+      super.set(e)
+      src.changedSuperEntityHooks(old,e,d)
     }
   }
   final def mention = src
@@ -38,6 +44,11 @@ class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, 
 trait Entity extends Attr {
   @deprecated("Will be removed.  Entities are not guaranteed to have string names.") def string: String
   def id: Any = this // Override to make some persistent id
+  attr+=new EntityRef(this,null)
+  val removedChildHooks = new cc.factorie.util.Hooks2[Entity,DiffList]
+  val addedChildHooks = new cc.factorie.util.Hooks2[Entity,DiffList]
+  val changedSuperEntityHooks = new cc.factorie.util.Hooks3[Entity,Entity,DiffList]
+
   /** Ensure that we return a non-null value. */
   private def _ensuredSubEntities: SubEntities = {
     var result = subEntities
@@ -46,7 +57,7 @@ trait Entity extends Attr {
       attr += result
     }
     result
-  } 
+  }
   def subEntities: SubEntities = attr[SubEntities]
   // The following two methods will work even if subEntities is null
   def subEntitiesSize: Int = { val se = subEntities; if (se eq null) 0 else se.size }
@@ -58,10 +69,42 @@ trait Entity extends Attr {
   def superEntity: Entity = { val ref = superEntityRef; if (ref eq null) null else superEntityRef.dst }
   def superEntityOption: Option[Entity] = { val ref = superEntityRef; if (ref eq null) None else if (ref.value eq null) None else Some(ref.dst) }
   final def setSuperEntity(e:Entity)(implicit d:DiffList): Unit = superEntityRef.set(e) // Just a convenient alias
+
+  //def removedChildHook(removed:Entity,d:DiffList):Unit = {}
+  //def addedChildHook(added:Entity,d:DiffList):Unit = {}
+  //def changedSuperEntityHook(oldSuper:Entity,newSuper:Entity,d:DiffList):Unit = {}
+
+
+  
+/*
+  //todo: rename connected or something more literal
+  def exists: Boolean = (superEntityRef != null && superEntityRef.dst != null) || subEntitiesSize > 0
+  def entityRoot: Entity = if (isEntity) this else superEntity.entityRoot
+  def isEntity:Boolean = (superEntityRef == null || superEntityRef.dst == null)
+  def isMention:Boolean = this.isInstanceOf[Mention]
+//  def entityRoot: Entity = { val s = superEntity; if (s eq null) this else s.entityRoot }
+  /** Recursively descend sub-entities to return only the Mentions */
+  def mentions: Seq[Mention] = {
+    var result = new ListBuffer[Mention]
+    for (entity <- subEntitiesIterator) {
+      entity match {
+        case mention:Mention => result += mention
+        case _ => {}
+      }
+      result ++= entity.mentions
+    }
+    result
+  }
+  def mentionsOfClass[A<:Mention](cls:Class[A]): Seq[A] = {
+  */
   @deprecated("Use isConnected instead") def exists: Boolean = superEntityRef.value != null || subEntitiesSize > 0
   def isConnected: Boolean = (superEntity ne null) || subEntitiesSize > 0 
   def entityRoot: Entity = { val s = superEntity; if (s eq null) this else this.entityRoot }
-  
+  def isRoot:Boolean = (superEntityRef == null || superEntityRef.dst == null)
+  def isLeaf:Boolean = subEntitiesSize==0
+  var isObserved:Boolean = false
+  var treatAsObserved:Boolean=false
+
   /** Recursively descend sub-entities and return only those matching criterion */
   def filterDescendants(test:Entity=>Boolean): Seq[Entity] = subEntitiesIterator.filter(test).toSeq
   def descendantsOfClass[A<:Entity](cls:Class[A]): Seq[A] = {
@@ -73,6 +116,12 @@ trait Entity extends Attr {
     }
     result
   }
+  /*
+  def mentionsOfClass[A<:Mention](implicit m:Manifest[A]): Seq[A] = mentionsOfClass[A](m.erasure.asInstanceOf[Class[A]])
+  def removeChildTrigger(removed:Entity)(implicit d:DiffList):Unit ={}
+  def addChildTrigger(added:Entity)(implicit d:DiffList):Unit = {}
+  def changeSuperEntityRef(oldValue:Entity,newEntity:Entity)(implicit d:DiffList):Unit ={}
+*/
   def descendantsOfClass[A<:Entity](implicit m:Manifest[A]): Seq[A] = descendantsOfClass[A](m.erasure.asInstanceOf[Class[A]])
 }
 
@@ -82,7 +131,6 @@ class SubEntities(val entity:Entity) extends SetVariable[Entity]
 
 
 // Cubbie storage
-
 abstract class EntityCubbie extends Cubbie {
   val entityRef = RefSlot("entityRef", () => newEntityCubbie)
   def newEntity: Entity
@@ -101,3 +149,4 @@ abstract class EntityCubbie extends Cubbie {
   }
   def finishFetchEntity(e:Entity): Unit = {}
 }
+

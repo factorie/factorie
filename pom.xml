@@ -150,6 +150,11 @@
                     <jvmArg>-Xmx4g</jvmArg>
                   </jvmArgs>
                 </launcher>
+                <launcher>
+                  <id>hier-coref-demo</id>
+                  <mainClass>cc.factorie.example.Coref3</mainClass>
+                  <jvmArgs><jvmArg>-Xmx1g</jvmArg></jvmArgs>
+                </launcher>
               </launchers>
             </configuration>
           </plugin>
