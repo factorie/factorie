@@ -16,7 +16,6 @@ package cc.factorie
 import cc.factorie.generative._
 import scala.collection.mutable.HashMap
 
-// TODO Consider making this a Lattice since it holds some "marginals"
 // This is actually a "naive mean field"
 /** A model with independent generative factors for each of a collection of variables. */
 class MeanField(variables:Iterable[Variable]) extends Model {
@@ -58,4 +57,16 @@ class MeanFieldInferencer(val variables:Iterable[Variable], val model:Model, val
     }
   }
   def updateQ: Unit = variables.foreach(updateQ(_))
+}
+
+class InferByMeanField extends Infer[Variable,Nothing] {
+  type LatticeType = Model
+  def inferencer(variables:Iterable[Variable], model:Model, qModel:Model): MeanFieldInferencer = new MeanFieldInferencer(variables, model, qModel)
+  def inferencer(variables:Iterable[Variable], model:Model): MeanFieldInferencer = inferencer(variables, model, new MeanField(variables))
+  def apply(variables:Iterable[Variable], varying:Iterable[Nothing], model:Model, qModel:Model): Model = {
+    val inf = inferencer(variables, model, qModel)
+    for (i <- 0 until 50) inf.updateQ // TODO Replace with a proper convergence criterion!!!
+    qModel
+  }
+  override def apply(variables:Iterable[Variable], varying:Iterable[Nothing], model:Model): Model = apply(variables, varying, model, new MeanField(variables))
 }

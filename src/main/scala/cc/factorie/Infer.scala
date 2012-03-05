@@ -25,18 +25,18 @@ import cc.factorie.generative._
 
 // TODO What methods should go in a generic Lattice?
 // If none, then delete this and just use "Model" instead.
-trait Lattice2 extends Model
+//trait Lattice2 extends Model
 
 trait Infer[-V1<:Variable,-V2<:Variable] {
-  type LatticeType <: Lattice2
-  /** Returns true on success, false if this recipe was unable to handle the relevant factors. */
+  type LatticeType <: Model
+  /** Returns a lattice on success, null if this recipe was unable to handle the relevant factors. */
   def apply(variables:Iterable[V1], varying:Iterable[V2], model:Model, qModel:Model): LatticeType // Abstract implemented in subclasses
   def apply(variables:Iterable[V1], varying:Iterable[V2], model:Model): LatticeType = apply(variables, varying, model, null)
   def apply(variables:Iterable[V1], model:Model, qModel:Model): LatticeType = apply(variables, model, qModel)
   def apply(variables:Iterable[V1], model:Model): LatticeType = apply(variables, Nil, model, null)
   /** Called by generic inference engines that manages a suite of Infer objects, allowing each to attempt an inference request.
       If you want your Infer subclass to support such usage by a suite, override this method to check types as a appropriate
-      and return a non-null Lattice on success, or null on failure. */
+      and return a non-null lattice on success, or null on failure. */
   def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): LatticeType = null.asInstanceOf[LatticeType]
 }
 
@@ -48,7 +48,7 @@ class InferVariables extends Infer[Variable,Variable] {
 object Infer extends InferVariables
 
 
-class IndependentDiscreteLattice extends GenerativeFactorModel with Lattice2 {
+class IndependentDiscreteLattice extends GenerativeFactorModel {
   def marginal(d:DiscreteVariable): Proportions = this.parentFactor(d) match {
     case f:Discrete.Factor => f._2
   }
