@@ -15,96 +15,153 @@
 package cc.factorie.app.nlp.pos
 
 import cc.factorie._
-import cc.factorie.app.nlp._
+import app.nlp._
+import app.chain.Observations.addNeighboringFeatureConjunctions
+import optimize.LimitedMemoryBFGS
+import bp._
+import bp.specialized.Viterbi
+import util._
 
 object PosFeaturesDomain extends CategoricalVectorDomain[String]
 class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 
-object PosModel extends TemplateModel(
-    // Bias term on each individual label 
-    new TemplateWithDotStatistics1[PosLabel], 
-    // Transition factors between two successive labels
-    new TemplateWithDotStatistics2[PosLabel, PosLabel] {
-      def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[PosLabel], label) else Nil
-      def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[PosLabel]) else Nil
-    },
-    // Factor between label and observed token
-    new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
-      def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
-      def unroll2(tf: PosFeatures) = Factor(tf.token.attr[PosLabel], tf)
-    }
-  )
+object PosModel extends TemplateModel {
+  // Bias term on each individual label
+  val bias = new TemplateWithDotStatistics1[PosLabel] { override def statisticsDomains = Seq(PosDomain) }
+  // Factor between label and observed token
+  val local = new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
+    override def statisticsDomains = Seq(PosDomain, PosFeaturesDomain)
+    def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
+    def unroll2(tf: PosFeatures) = Factor(tf.token.posLabel, tf)
+  }
+  // Transition factors between two successive labels
+  val trans = new TemplateWithDotStatistics2[PosLabel, PosLabel] {
+    override def statisticsDomains = Seq(PosDomain, PosFeaturesDomain)
+    def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
+    def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
+  }
+
+  // Add the templates
+  this += local
+  this += bias
+  this += trans
+}
 
 object PosObjective extends TemplateModel(new HammingLossTemplate[PosLabel])
 
-
 object POS {
-  
-  def main(args: Array[String]): Unit = {
-    if (args.length != 2) throw new Error("Usage: POS trainfile testfile.")
 
-    // Read in the data
-    val trainDocuments = LoadConll2003.fromFilename(args(0))
-    val testDocuments = LoadConll2003.fromFilename(args(1))
-
-    // Add features for NER
-    val Capitalized = "^[A-Z].*".r
-    val Numeric = "^[0-9]+$".r
-    val Punctuation = "[-,\\.;:?!()]+".r
-    for (document <- (trainDocuments ++ testDocuments)) {
-      for (token <- document) {
-        token.attr.remove[cc.factorie.app.nlp.ner.NerLabel] // We don't need this
-        val word = token.string
-        val features = token.attr += new PosFeatures(token)
-        features += "W="+word
-        features += "SHAPE="+cc.factorie.app.strings.stringShape(word, 2)
-        features += "SUFFIX3="+word.takeRight(3)
-        features += "PREFIX3="+word.take(3)
-        features += "POS="+token.attr[cc.factorie.app.nlp.pos.PosLabel].categoryValue
-        if (Capitalized.findFirstMatchIn(word) != None) features += "CAPITALIZED"
-        if (Numeric.findFirstMatchIn(word) != None) features += "NUMERIC"
-        if (Punctuation.findFirstMatchIn(word) != None) features += "PUNCTUATION"
-      }
-      for (sentence <- document.sentences)
-        cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[PosFeatures], List(1), List(-1))
+  def initPosFeatures(documents: Seq[Document]): Unit = documents.map(initPosFeatures(_))
+  def initPosFeatures(document: Document): Unit = {
+    for (token <- document) {
+      val rawWord = token.string
+      val word = cc.factorie.app.strings.simplifyDigits(rawWord)
+      val features = token.attr += new PosFeatures(token)
+      features += "W=" + word
+      features += "STEM=" + cc.factorie.app.strings.porterStem(word)
+      features += "SHAPE2=" + cc.factorie.app.strings.stringShape(rawWord, 2)
+      features += "SHAPE3=" + cc.factorie.app.strings.stringShape(rawWord, 3)
+      // pre/suf of length 1..9
+      //for (i <- 1 to 9) {
+      val i = 3
+        features += "SUFFIX" + i + "=" + word.takeRight(i)
+        features += "PREFIX" + i + "=" + word.take(i)
+      //}
+      if (token.isCapitalized) features += "CAPITALIZED"
+      if (token.string.matches("[A-Z]")) features += "CONTAINS_CAPITAL"
+      if (token.string.matches("-")) features += "CONTAINS_DASH"
+      if (token.containsDigit) features += "NUMERIC"
+      if (token.isPunctuation) features += "PUNCTUATION"
     }
-    println("Example Token features")
-    println(trainDocuments(3).tokens.take(10).map(_.attr[PosFeatures].toString).mkString("\n"))
-    println("Num TokenFeatures = "+PosFeaturesDomain.dimensionDomain.size)
-    
-    // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.flatten.map(_.attr[PosLabel]) //.take(10000)
-    val testLabels = testDocuments.flatten.map(_.attr[PosLabel]) //.take(2000)
-    
-    def printEvaluation(iteration:String): Unit = {
-      println("Iteration "+iteration)
-      println("Train Token accuracy = "+ PosObjective.aveScore(trainLabels))
-      println(" Test Token accuracy = "+ PosObjective.aveScore(testLabels))
-      /*for (docs <- List(trainDocuments, testDocuments)) {
-        if (docs.length > 300) println ("TRAIN") else println("TEST") // Fragile
-        val tokenEvaluation = new LabelEvaluation(PosDomain)
-        for (doc <- docs; token <- doc) tokenEvaluation += token.attr[PosLabel]
-        println(tokenEvaluation)
-      }*/
-    }
-
-    // Train for 5 iterations
-    (trainLabels ++ testLabels).foreach(_.setRandomly())
-    val learner = new VariableSettingsSampler[PosLabel](PosModel, PosObjective) with SampleRank with GradientAscentUpdates
-    val predictor = new VariableSettingsSampler[PosLabel](PosModel)
-    for (i <- 1 until 5) {
-      learner.processAll(trainLabels)
-      predictor.processAll(testLabels)
-      printEvaluation(i.toString)
-    }
-
-    // Predict, also by sampling, visiting each variable 3 times.
-    //predictor.processAll(testLabels, 3)
-    for (i <- 0 until 3; label <- testLabels) predictor.process(label)
-    
-    // Evaluate
-    printEvaluation("FINAL")
+    // add conjunctions of word features
+    for (sentence <- document.sentences)
+      addNeighboringFeatureConjunctions(sentence, (t: Token) => t.attr[PosFeatures], "W=", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 
+  def train(documents: Seq[Document],
+            devDocuments: Seq[Document],
+            testDocuments: Seq[Document] = Seq.empty[Document],
+            modelFile: String = ""): Unit = {
+
+    val sentences = documents.flatMap(_.sentences.filter(s => s.size > 0))
+    val labels = sentences.map(_.posLabels)
+
+    val pieces = labels.map(ls => ModelPiece(PosModel, ls))
+    val trainer = new Trainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
+    new LimitedMemoryBFGS(trainer).optimize(1)
+
+    test(documents, "train")
+    test(testDocuments, "test")
+    test(devDocuments, "dev")
+
+    PosModel.save(modelFile)
+  }
+
+  def predictSentence(s: Sentence): Unit = predictSentence(s.map(_.posLabel))
+  def predictSentence(vs: Seq[PosLabel], oldBp: Boolean = false): Unit =
+    if (vs.nonEmpty) Viterbi.searchAndSetToMax(vs, PosModel.local, PosModel.trans, PosModel.bias)
+
+  def test(documents: Seq[Document], label: String): Unit = {
+    val sentences = documents.flatMap(_.sentences)
+    val labels = sentences.flatMap(s => s.map(_.posLabel))
+    labels.map(_.setRandomly())
+    sentences.map(predictSentence(_))
+    println(label + " accuracy: " + PosObjective.aveScore(labels) + "%")
+  }
+
+  var modelLoaded = false
+  def load(modelFile: String) = { PosModel.load(modelFile); modelLoaded = true; }
+
+  def process(documents: Seq[Document]): Unit = documents.map(process(_))
+  def process(document: Document): Unit = {
+    if (!modelLoaded) throw new Error("First call PosModel.load(\"path/to/model\")")
+
+    // add the labels and features if they aren't there already.
+    if (document.head.attr.get[PosLabel] == None) {
+      val defaultCategory = PosDomain.categoryValues.head
+      document.foreach(t => t.attr += new PosLabel(t, defaultCategory))
+      initPosFeatures(document)
+    }
+
+    document.sentences.foreach(predictSentence(_))
+  }
   
+  def main(args: Array[String]): Unit = {
+    object opts extends cc.factorie.util.DefaultCmdOptions {
+      val trainFile = new CmdOption("train", "", "FILE", "")
+      val devFile =   new CmdOption("dev", "", "FILE", "")
+      val testFile =  new CmdOption("test", "", "FILE", "")
+      val takeOnly =  new CmdOption("takeOnly", "-1", "", "")
+      val modelDir =  new CmdOption("model", "pos.fac", "DIR", "Directory in which to save the trained model.")
+      val runFiles =  new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
+    }
+    opts.parse(args)
+    import opts._
+
+    if (trainFile.wasInvoked && devFile.wasInvoked && testFile.wasInvoked && modelDir.wasInvoked) {
+      Template.enableCachedStatistics = false // for contention free parallelism
+      val labelMaker = (t: Token, l: String) => new PosLabel(t, l)
+      def load(file: String) = LoadOWPL.fromFilename(file, labelMaker, takeOnly.value.toInt)
+
+      val trainDocs = load(trainFile.value)
+      val devDocs = load(devFile.value)
+      val testDocs = load(testFile.value)
+
+      println("train sentences: " + trainDocs.flatMap(_.sentences).size)
+      println("docs loaded")
+
+      initPosFeatures(trainDocs ++ devDocs ++ testDocs)
+      println("train, test, and dev features calculated")
+
+      train(trainDocs, devDocs, testDocs, modelDir.value)
+    }
+    else if (runFiles.wasInvoked && modelDir.wasInvoked) {
+      // TODO
+    }
+    else {
+      println("Either provide files to process and a model, or provide train, test, dev files and a model ouput location.")
+    }
+  }
+
 }
+
