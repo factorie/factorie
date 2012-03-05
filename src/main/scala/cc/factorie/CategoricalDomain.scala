@@ -16,7 +16,8 @@ package cc.factorie
 import scala.collection.mutable.{Map,ArrayBuffer, HashMap, ListBuffer}
 import scala.util.Random
 import cc.factorie.la._
-import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
+import java.io._
+import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 
 
 // For single categorical values
@@ -141,32 +142,39 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   override def toString = "CategoricalDomain[]("+size+")"
   override def dimensionName(i:Int): String = getCategory(i).toString
 
-  override def save(dirname:String): Unit = {
-    val f = new File(dirname+"/"+filename)
+  override def save(dirname:String, gzip: Boolean = true): Unit = {
+    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     if (f.exists) return // Already exists, don't write it again.  // TODO Careful about trying to re-write to the same location, though.
-    val s = new PrintWriter(new FileWriter(f))
-    //if (elements.next.asInstanceOf[AnyVal].getClass != classOf[String]) throw new Error("Only know how to save CategoryType String.")
-    if (frozen) s.println("#frozen = true") else s.println("#frozen = false")
+    val writer = new PrintWriter(new BufferedOutputStream({
+      if (gzip)
+        new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
+      else
+        new FileOutputStream(f)
+    }))
+    if (frozen) writer.println("#frozen = true") else writer.println("#frozen = false")
     for (e <- iterator) {
       if (e.toString.contains("\n")) throw new Error("Cannot save Domain with category String containing newline.")
-      s.println(e.toString)
+      writer.println(e.toString)
     }
-    s.close
+    writer.close
   }
-  override def load(dirname:String): Unit = {
+
+  override def load(dirname:String, gzip: Boolean = true): Unit = {
     if (size > 0) return // Already initialized, don't read again
-    val f = new File(dirname+"/"+filename)
-    val s = new BufferedReader(new FileReader(f))
-    var line = s.readLine
+    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
+    val reader = new BufferedReader(new InputStreamReader({
+      if (gzip)
+        new GZIPInputStream(new BufferedInputStream(new FileInputStream(f)))
+      else
+        new FileInputStream(f)
+    }))
+    var line = reader.readLine
     var willFreeze = false
     if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
-    while ({line = s.readLine; line != null}) {
-      //println("Domain load got "+line)
+    while ({line = reader.readLine; line != null})
       this.index(line.asInstanceOf[T]) // TODO What if T isn't a String?  Fix this.
-    }
     if (willFreeze) freeze()
-    s.close
-    //println("Loading Domain["+filename+"].size="+size)
+    reader.close
   }
   
   // Code for managing occurrence counts

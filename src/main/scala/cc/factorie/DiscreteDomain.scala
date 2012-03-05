@@ -13,7 +13,9 @@
    limitations under the License. */
 
 package cc.factorie
-import java.io.{File,FileOutputStream,PrintWriter,FileReader,FileWriter,BufferedReader}
+
+import java.io._
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 // For variables that hold a single discrete value
 
@@ -73,16 +75,28 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
   }
 
   // Serialization
-  override def save(dirname:String): Unit = {
-    val f = new File(dirname+"/"+filename)
-    val s = new PrintWriter(new FileWriter(f))
-    s.println(size)
-    s.close
+  override def save(dirname:String, gzip: Boolean = true): Unit = {
+    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
+    val writer = new PrintWriter(new BufferedOutputStream({
+      if (gzip)
+        new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
+      else
+        new FileOutputStream(f)
+    }))
+
+    writer.println(size)
+    writer.close
   }
-  override def load(dirname:String): Unit = {
-    val f = new File(dirname+"/"+filename)
-    val s = new BufferedReader(new FileReader(f))
-    val line = s.readLine
+
+  override def load(dirname:String, gzip: Boolean = true): Unit = {
+    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
+    val reader = new BufferedReader(new InputStreamReader({
+      if (gzip)
+        new GZIPInputStream(new BufferedInputStream(new FileInputStream(f)))
+      else
+        new FileInputStream(f)
+    }))
+    val line = reader.readLine
     val readSize = Integer.parseInt(line)
     require(size == readSize)
   }

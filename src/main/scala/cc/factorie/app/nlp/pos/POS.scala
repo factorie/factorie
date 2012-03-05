@@ -138,6 +138,8 @@ object POS {
     opts.parse(args)
     import opts._
 
+    load(modelDir.value)
+
     if (trainFile.wasInvoked && devFile.wasInvoked && testFile.wasInvoked && modelDir.wasInvoked) {
       Template.enableCachedStatistics = false // for contention free parallelism
       val labelMaker = (t: Token, l: String) => new PosLabel(t, l)
@@ -153,7 +155,8 @@ object POS {
       initPosFeatures(trainDocs ++ devDocs ++ testDocs)
       println("train, test, and dev features calculated")
 
-      train(trainDocs, devDocs, testDocs, modelDir.value)
+      test(devDocs, "dev")
+      //train(trainDocs, devDocs, testDocs, modelDir.value)
     }
     else if (runFiles.wasInvoked && modelDir.wasInvoked) {
       // TODO
