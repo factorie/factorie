@@ -102,19 +102,31 @@ trait LogProb {
    * @param vals An array log(x1), log(x2), ..., log(xn)
    * @return log(x1+x2+...+xn)
    */
-  def sumLogProbs (vals:Seq[Double])
-  {
-    val LOGTOLERANCE = 30.0;
-    val len = vals.length;
-    var max = Double.NegativeInfinity;
-    var maxidx = 0;
-    for (i <- 0 until len) if (vals(i) > max) { max = vals(i); maxidx = i; }
-    var anyAdded = false;
-    var intermediate = 0.0;
-    val cutoff = max - LOGTOLERANCE;
-    for (i <- 0 until maxidx) if (vals(i) >= cutoff) { anyAdded = true; intermediate += math.exp(vals(i) - max) }
-    for (i <- maxidx + 1 until len) if (vals(i) >= cutoff) { anyAdded = true; intermediate += math.exp(vals(i) - max) }
-    if (anyAdded) max + math.log(1.0 + intermediate) else max
+  def sumLogProbs (vals:Seq[Double]): Double = {
+    val LOGTOLERANCE = 30.0
+
+    val len = vals.length
+    var max = Double.NegativeInfinity
+    var maxIdx = 0
+    for (i <- 0 until len if (vals(i) > max)) {
+      max = vals(i)
+      maxIdx = i
+    }
+    var anyAdded = false
+    var intermediate = 0.0
+    val cutoff = max - LOGTOLERANCE
+    for (i <- 0 until maxIdx if (vals(i) >= cutoff)) {
+      anyAdded = true
+      intermediate += math.exp(vals(i) - max)
+    }
+    for (i <- (maxIdx + 1) until len if (vals(i) >= cutoff)) {
+      anyAdded = true
+      intermediate += math.exp(vals(i) - max)
+    }
+    if (anyAdded)
+      max + math.log(1.0 + intermediate)
+    else
+      max
   }
 
   /**

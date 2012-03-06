@@ -14,16 +14,12 @@
 
 package cc.factorie
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.util.{Random,Sorting}
-import scala.util.Random
-import scala.math
-import scala.util.Sorting
+import scala.collection.mutable.ArrayBuffer
 import cc.factorie.la._
-import cc.factorie.util.Substitutions
 import java.io._
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
-/** Related factors may be associated with a Family.  
+/** Related factors may be associated with a Family.
     Those factors may share parameters or other attributes that may be stored in the Family. */
 trait Family {
   type FamilyType <: Family // like a self-type
@@ -75,8 +71,8 @@ trait Family {
   
   /** The filename into which to save this factor.  If templateName is not the default, use it, otherwise use the class name. */
   protected def filename: String = factorName
-  def save(dirname:String): Unit = {}
-  def load(dirname:String): Unit = {}
+  def save(dirname:String, gzip: Boolean = true): Unit = {}
+  def load(dirname:String, gzip: Boolean = true): Unit = {}
 }
 
 
@@ -123,24 +119,32 @@ trait VectorFamily extends Family {
 trait DotFamily extends VectorFamily {
   //type TemplateType <: DotFamily
   type FamilyType <: DotFamily
-  lazy val weights: Vector = { freezeDomains; new DenseVector(statisticsVectorLength) } // Dense by default, may be override in sub-traits
+  lazy val weights: Vector = { freezeDomains; newWeightsTypeVector } // Dense by default, may be override in sub-traits
+  def newWeightsTypeVector: Vector = new DenseVector(statisticsVectorLength)
   def score(s:StatisticsType) = if (s eq null) 0.0 else weights match {
     case w:DenseVector => { w dot s.vector }
     //case w:SparseHashVector => w dot s.vector // TODO Uncomment this.  It was only commented because latest version of scalala didn't seem to have this class any more
     case w:SparseVector => w dot s.vector
   }
 
-  override def save(dirname:String): Unit = {
-    val f = new File(dirname+"/"+filename) // TODO Make this work on MSWindows also
+  override def save(dirname:String, gzip: Boolean = true): Unit = {
+    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also
     if (f.exists) return // Already exists, don't write it again
     for (d <- statisticsDomains) d.save(dirname)
-    val writer = new PrintWriter(new FileWriter(f))
+
+    val writer = new PrintWriter(new BufferedOutputStream({
+      if (gzip)
+        new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
+      else
+        new FileOutputStream(f)
+    }))
+
     saveToWriter(writer)
   }
 
   def saveToWriter(writer:PrintWriter): Unit = {
     // TODO Do we also need to save the weights.default?
-    for (weight <- weights.activeElements; if (weight._2 != 0.0)) { // before June 21 2010, used too be weights.iterator -akm
+    for (weight <- weights.activeElements; if (weight._2 != 0.0)) {
       writer.print(weight._1)
       writer.print(" ")
       writer.println(weight._2)
@@ -148,18 +152,22 @@ trait DotFamily extends VectorFamily {
     writer.close
   }
 
-  override def load(dirname:String): Unit = {
-    //println("Loading DotFamily "+this.factorName+" from directory "+dirname)
-    for (d <- statisticsDomains) { /*println(" Loading Domain["+d+"]");*/ d.load(dirname) }
-    //println("Statistics sizes "+statisticsDomains.map(_.dimensionDomain.length).mkString(" "))
-    val f = new File(dirname+"/"+filename)
-    val reader = new BufferedReader(new FileReader(f))
+  override def load(dirname: String, gzip: Boolean = true): Unit = {
+    for (d <- statisticsDomains) d.load(dirname)
+    val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
+    val reader = new BufferedReader(new InputStreamReader({
+      if (gzip)
+        new GZIPInputStream(new BufferedInputStream(new FileInputStream(f)))
+      else
+        new FileInputStream(f)
+    }))
+
     loadFromReader(reader)
   }
 
-  def loadFromReader(reader:BufferedReader): Unit = {
-    // TODO Why would statisticsVectorLength be 0 or negative?
-    if (statisticsVectorLength <= 0 || weights.activeElements.exists({case(i,v) => v != 0})) return // Already have non-zero weights, must already be read.
+  def loadFromReader(reader: BufferedReader): Unit = {
+    // TODO: consider verifying the weights match the saved model --brian
+    if (weights.activeElements.exists({case(i,v) => v != 0})) return // Already have non-zero weights, must already be read.
     var line = ""
     while ({ line = reader.readLine; line != null }) {
       val fields = line.split(" +")
@@ -176,13 +184,13 @@ trait DotFamily extends VectorFamily {
 /** A DotTemplate that stores its parameters in a Scalala SparseVector instead of a DenseVector
     @author Andrew McCallum */
 trait SparseWeights extends DotFamily {
-  override lazy val weights: Vector = { new SparseVector(statisticsVectorLength) } // Dense by default, here overridden to be sparse
+  override def newWeightsTypeVector: Vector = new SparseVector(statisticsVectorLength)
 }
 
 /** A DotTemplate that stores its parameters in a SparseHashVector instead of a DenseVector
     @author Sameer Singh */
 trait SparseHashWeights extends DotFamily {
-  override lazy val weights: Vector = { freezeDomains; new SparseHashVector(statisticsVectorLength) } // Dense by default, override to be sparseHashed
+  override def newWeightsTypeVector: Vector = new SparseHashVector(statisticsVectorLength)
 }
 
 trait SparseOuter1Dense1Weights extends DotStatistics2[DiscreteVectorValue,DiscreteVectorValue] {

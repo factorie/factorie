@@ -180,7 +180,7 @@ class TemplateModel(initialTemplates:Template*) extends Model {
   override def factors1(variable:Variable): Seq[Factor] = normalize(templates.flatMap(template => template.factors(variable))) 
   override def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else normalize(templates.flatMap(template => template.factors(d)))
   
-  def save(dirname:String): Unit = {
+  def save(dirname:String, gzip: Boolean = true): Unit = {
     import java.io.File
     //println("Saving model "+getClass.getName+" to "+dirname)
     val f = new File(dirname)
@@ -188,10 +188,10 @@ class TemplateModel(initialTemplates:Template*) extends Model {
     def delete(f:File): Boolean = { if (f.isDirectory) f.listFiles.forall(f2 => delete(f2)) else f.delete }
     if (f.exists) if (!delete(f)) throw new Error("Error deleting directory "+dirname)
     f.mkdir
-    templates.foreach(_.save(dirname))
+    templates.foreach(_.save(dirname, gzip))
   }
  
-  def load(dirname:String): Unit = {
-    templates.foreach(_.load(dirname))
+  def load(dirname:String, gzip: Boolean = true): Unit = {
+    templates.foreach(_.load(dirname, gzip))
   }
 }

@@ -25,7 +25,8 @@ class SparseHashVector(theLength:Int) extends Vector {
   def apply(index:Int) = h(index)
   override def update(index:Int, value:Double) = {
     assert(index < length)
-    h(index) = value
+    if(value == default) h.remove(index)
+    else h(index) = value
   }
   def activeElements = h.iterator
   def activeDomainSize = h.size

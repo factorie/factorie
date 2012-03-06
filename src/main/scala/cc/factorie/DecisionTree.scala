@@ -13,15 +13,13 @@
    limitations under the License. */
 
 package cc.factorie
-import cc.factorie.la.Vector
 import cc.factorie.generative.Proportions
 import cc.factorie.generative.DenseCountsProportions
 
 /** Statistics for factors who scores are the log-probability of 
     label S1 given feature vector S2, according to a decision tree.
     @author Arti Ramesh */
-trait DecisionTreeStatistics2[S1<:DiscreteValue,S2<:DiscreteVectorValue]
-extends VectorStatistics2[S1,S2] {
+trait DecisionTreeStatistics2[S1<:DiscreteValue,S2<:DiscreteVectorValue] extends VectorStatistics2[S1,S2] {
   // Number of different values taken on by s._1
   val numOutcomes: Int = statisticsDomains(0).asInstanceOf[DiscreteDomain].size
   case class DTNode(parent:DTNode, var yesChild:DTNode = null, var noChild:DTNode = null, var index:Int = -1, var p:Proportions = null) {
@@ -55,12 +53,12 @@ extends VectorStatistics2[S1,S2] {
     dtree
   }
   protected def  bestInfoGain(stats:Iterable[StatisticsType]): Int = throw new Error("Implement me.") // Be clever to make this efficient
-  override def save(dirname:String): Unit = {
-    super.save(dirname)
+  override def save(dirname:String, gzip: Boolean = true): Unit = {
+    super.save(dirname, gzip)
     throw new Error("Not yet implemented")
   }
-  override def load(dirname:String): Unit = {
-    super.load(dirname)
+  override def load(dirname:String, gzip: Boolean = true): Unit = {
+    super.load(dirname, gzip)
     throw new Error("Not yet implemented")
   }
 }

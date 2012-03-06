@@ -1,7 +1,7 @@
 package cc.factorie.example
 
 import cc.factorie._
-import cc.factorie.bp.optimized._
+import bp.specialized.Viterbi
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions
 import pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
@@ -10,7 +10,7 @@ import pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
  * Author: martin
  * Date: 2/8/12
  *
- * A simple chain POS tagger trained using optimized Viterbi inference
+ * A simple chain POS tagger trained using Viterbi inference
  * and averaged, structured perceptron learning.
  */
 
@@ -62,11 +62,10 @@ object PerceptronPOS {
     numCorrect / ls.size * 100
   }
 
-  val searcher = new BeamSearch with FullBeam
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.map(_.posLabel))
   def predictSentence(vs: Seq[PosLabel], oldBp: Boolean = false): Unit =
-    searcher.searchAndSetToMax(PosModel.localTemplate, PosModel.transTemplate, vs)
+    Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
 
   def train(
         documents: Seq[Document],

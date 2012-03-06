@@ -245,6 +245,41 @@ class TestBP extends TestCase {
     assertEquals(5e-5, fg.node(v2).marginal.probability(BinDomain(0)), eps)
   }
 
+  def testV2F1Limiting = {
+    // a sequence of two variables, one factor
+    val v1 = new BinVar(1)
+    val v2 = new BinVar(0)
+    val vars: Set[DiscreteVariable] = Set(v1, v2)
+
+    // create template between v1 and v2
+    var fg: LatticeBP = null
+    val template = new TemplateWithDotStatistics2[BinVar, BinVar] {
+      override def statisticsDomains = Seq(BinDomain, BinDomain)
+      def unroll1(v: BinVar) = Factor(v1,v2)
+      def unroll2(v: BinVar) = Nil
+    }
+    val model = new TemplateModel(template)
+
+    template.weights.update(1, 2.0)
+    template.weights.update(3, 3.0)
+
+    template.addLimitedDiscreteValues(Seq((0,0), (0,1)))
+
+    def infer {
+      fg = new LatticeBP(vars) with SumProductLattice
+      fg.createUnrolled(model)
+      new InferencerBPWorker(fg).inferLoopyBP(1)
+      println("v1 : " + fg.node(v1).marginal)
+      println("v2 : " + fg.node(v2).marginal)
+    }
+
+    // test non-limited
+    template.isLimitingValuesIterator = false
+    infer
+    template.isLimitingValuesIterator = true
+    infer
+  }
+
   def testV2F1MAP = {
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)

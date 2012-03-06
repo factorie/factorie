@@ -33,9 +33,9 @@ import util.ClassPathUtils
     @since 0.8 */
 trait Domain[+VT] extends ValueType[VT] {
   /** Serialize this domain to disk in the given directory. */
-  def save(dirname:String): Unit = {}
+  def save(dirname:String, gzip: Boolean = true): Unit = {}
   /** Deserialize this domain from disk in the given directory. */
-  def load(dirname:String): Unit = {}
+  def load(dirname:String, gzip: Boolean = true): Unit = {}
   /** The name of the file (in directory specified in "save" and "load") to which this Domain is saved. */
   def filename:String = this.getClass.getName
 }

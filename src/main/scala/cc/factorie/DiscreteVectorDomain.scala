@@ -39,14 +39,14 @@ trait DiscreteVectorDomain extends VectorDomain with ValueType[DiscreteVectorVal
   def dimensionName(i:Int): String = i.toString
   def freeze(): Unit = dimensionDomain.freeze
 
-  override def save(dirname: String) {
+  override def save(dirname: String, gzip: Boolean = true) {
     // TODO: Note that if multiple vectors have same dimension domains, it will be written multiple times
-    dimensionDomain.save(dirname)
+    dimensionDomain.save(dirname, gzip)
   }
 
-  override def load(dirname: String) {
+  override def load(dirname: String, gzip: Boolean = true) {
     // TODO: Note that the dimensionDomain might get read multiple times
-    if(!dimensionDomain.frozen) dimensionDomain.load(dirname)
+    if(!dimensionDomain.frozen) dimensionDomain.load(dirname, gzip)
   }
 }
 

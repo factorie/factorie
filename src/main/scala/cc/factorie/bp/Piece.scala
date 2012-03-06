@@ -3,7 +3,8 @@ package cc.factorie.bp
 import cc.factorie._
 import collection.mutable.{Map, HashMap}
 import cc.factorie.bp.optimized._
-import la.{SparseBinaryVector, SparseVector, Vector}
+import la.{SparseVector, Vector}
+import specialized.Viterbi
 
 
 /**
@@ -134,8 +135,7 @@ class PerceptronChainPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
         vars: Array[LV])
    extends Piece {
 
- val _searcher = new BeamSearch with FullBeam
- def search(vs: Seq[LV]): Unit = _searcher.searchAndSetToMax(localTemplate, transTemplate, vs)
+ def search(vs: Seq[LV]): Unit = Viterbi.searchAndSetToMax(vs, localTemplate, transTemplate)
 
  def valueAndGradient: (Double,  Map[DotFamily, Vector]) = {
    // do beam search
@@ -168,3 +168,61 @@ class PerceptronChainPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
    (-1.0, Map(localTemplate -> localGradient, transTemplate -> transGradient))
  }
 }
+
+class ForwardBackwardPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
+        vars: Array[LV],
+        localTemplate: TemplateWithDotStatistics2[LV,OV],
+        transTemplate: TemplateWithDotStatistics2[LV,LV])
+  extends Piece {
+  
+  assert(vars.size > 0, "Piece has no variables.")
+  
+  val families = Seq(localTemplate, transTemplate).map(_.asInstanceOf[DotFamily with Template])
+
+  val empiricalCounts: Map[DotFamily, Vector] = {
+    vars.foreach(_.setToTarget(null))
+    val result: Map[DotFamily, Vector] = new HashMap
+    for (dt <- families) {
+      val vector = new SparseVector(dt.statisticsVectorLength)
+      for (factor <- dt.factors(vars)) {
+        factor match {
+          case f: dt.Factor => {
+            if (f.family == dt)
+              vector += f.statistics.vector
+          }
+          case _ =>
+        }
+      }
+      result(dt) = vector
+    }
+    result
+  }
+
+  def truthScore: Double = {
+    vars.foreach(_.setToTarget(null))
+    var score = 0.0
+    for (dt <- families) {
+      for (factor <- dt.factors(vars)) {
+        factor match {
+          case f: dt.Factor => {
+            if (f.family == dt) score += f.score
+          }
+          case _ =>
+        }
+      }
+    }
+    score
+  }
+
+  def valueAndGradient: (Double,  Map[DotFamily, Vector]) = {
+    val (exps, logZ) = ForwardBackward.featureExpectationsAndLogZ(vars, localTemplate, transTemplate)
+    val gradient = new HashMap[DotFamily, Vector]
+    for ((family, expectation) <- exps) {
+      val grad = empiricalCounts(family.asInstanceOf[DotFamily with Template])
+      grad += expectation * -1.0
+      gradient(family) = grad
+    }
+    (truthScore - logZ, gradient)
+  }
+}
+
