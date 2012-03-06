@@ -53,6 +53,9 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
   var step = 1.0
   var iterations: Int = 0
 
+  // override to evaluate on dev set, save the intermediate model, etc.
+  def postIteration(iter: Int): Unit = ()
+
   def optimize(numIterations: Int = Int.MaxValue): Boolean = {
     if (isConverged) return true;
     val initialValue = optimizable.optimizableValue
@@ -215,6 +218,8 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
         isConverged = true
         return true;
       }
+
+      postIteration(iterationCount)
     })
 
     return false
