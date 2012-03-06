@@ -97,6 +97,8 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
     // include the regularization
     _value += regValue
     regGradients(grads)
+    // project the gradient
+    grads.foreach(p => projectGradient(p._1, p._2))
     // create the gradient
     _gradients = new ArrayFromVectors(families.map(grads(_)))
   }
@@ -117,6 +119,8 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
     }
     _value
   }
+
+  def projectGradient(df: DotFamily, grad: Vector): Unit = {}
 }
 
 class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
@@ -138,6 +142,8 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
         result(df) = v
       }
       seqCalls += 1
+      // project the gradient
+      result.foreach(p => projectGradient(p._1, p._2))
       new ValAndGrad(value + pv, result)
     }
 
@@ -152,6 +158,8 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
         c(df) = v
       }
       combCalls += 1
+      // project the gradient
+      c.foreach(p => projectGradient(p._1, p._2))
       new ValAndGrad(value + vandg.value, c)
     }
   }
@@ -171,21 +179,25 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
     // include the regularization
     _value += regValue
     regGradients(result.grad)
+    // project the gradient
+    result.grad.foreach(p => projectGradient(p._1, p._2))
     // create the gradient
     _gradients = new ArrayFromVectors(families.map(result.grad(_)))
   }
 }
 
 class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily], val minibatchSize: Int,
-                  val initialLearningRate: Double, val decayDamping: Double, val l2: Double,  val l1: Double) {
+                 val initialLearningRate: Double, val decayDamping: Double, val l2: Double, val l1: Double) {
   var t = 0.0
-  def lrate(t: Double) = initialLearningRate/math.sqrt(decayDamping + t)
+
+  def lrate(t: Double) = initialLearningRate / math.sqrt(decayDamping + t)
 
   families.foreach(_.freezeDomains)
   val gradients = families.map(f => f.newWeightsTypeVector).toArray
- 
-  var batches : Seq[Seq[Piece]] = null
+
+  var batches: Seq[Seq[Piece]] = null
   val rng = new util.Random()
+
   def initializeBatches() {
     rng.shuffle(pieces)
     batches = pieces.grouped(minibatchSize).toSeq
@@ -201,7 +213,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily], val minib
     }
   }
 
-  def truncate(x: Double) = math.signum(x)*math.max(0.0, math.abs(x) - l1)
+  def truncate(x: Double) = math.signum(x) * math.max(0.0, math.abs(x) - l1)
 
   def addGradients() {
     var f = 0
@@ -210,7 +222,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily], val minib
       val fam = families(f)
       val grad = gradients(f)
       for (i <- grad.activeDomain) {
-        fam.weights(i) = truncate(fam.weights(i) + lr*(grad(i) - l2*fam.weights(i)))
+        fam.weights(i) = truncate(fam.weights(i) + lr * (grad(i) - l2 * fam.weights(i)))
         grad(i) = 0.0
       }
       f += 1
