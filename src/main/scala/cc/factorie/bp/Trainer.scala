@@ -3,7 +3,7 @@ package cc.factorie.bp
 import cc.factorie.{DotFamily, Model}
 import cc.factorie.optimize.OptimizableByValueAndGradient
 import collection.mutable.{HashMap, Map}
-import cc.factorie.la.{DenseVector, ArrayFromVectors, Vector}
+import cc.factorie.la.{ArrayFromVectors, Vector}
 
 /**
  * @author sameer
@@ -31,7 +31,7 @@ trait L2Regularizer extends Regularizer {
   override def regGradients(gradients: Map[DotFamily, Vector]) = {
     for (df <- families) {
       val wv = df.weights
-      val gv = gradients.getOrElseUpdate(df, new DenseVector(df.statisticsVectorLength))
+      val gv = gradients.getOrElseUpdate(df, df.newWeightsTypeVector)
       for (i: Int <- wv.activeDomain) {
         val reg: Double = wv(i) / sigmaSq
         gv(i) = gv(i) - reg
@@ -85,7 +85,7 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
       val (pv, pg) = piece.valueAndGradient
       _value += pv
       for (df <- pg.keys) {
-        grads.getOrElseUpdate(df, new DenseVector(df.statisticsVectorLength)) += pg(df)
+        grads.getOrElseUpdate(df, df.newWeightsTypeVector) += pg(df)
       }
       if (pieces.length >= 10000 && i % (pieces.length / 25) == 0)
         println("Done %d of %d pieces".format(i, pieces.length))
@@ -133,7 +133,7 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
       val (pv, pg) = piece.valueAndGradient
       val result = new HashMap[DotFamily, Vector]
       for (df <- grad.keySet ++ pg.keySet) {
-        val v = if (grad contains df) grad(df) else new DenseVector(df.statisticsVectorLength)
+        val v = if (grad contains df) grad(df) else df.newWeightsTypeVector
         if (pg contains df) v += pg(df)
         result(df) = v
       }
@@ -146,7 +146,7 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
       val b: HashMap[DotFamily, Vector] = vandg.grad
       val c = new HashMap[DotFamily, Vector]
       for (df <- a.keySet ++ b.keySet) {
-        val v = new DenseVector(df.statisticsVectorLength)
+        val v = df.newWeightsTypeVector
         if (a contains df) v += a(df)
         if (b contains df) v += b(df)
         c(df) = v
@@ -182,7 +182,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily], val minib
   def lrate(t: Double) = initialLearningRate/math.sqrt(decayDamping + t)
 
   families.foreach(_.freezeDomains)
-  val gradients = families.map(f => {new DenseVector(f.weights.length)}).toArray
+  val gradients = families.map(f => f.newWeightsTypeVector).toArray
  
   var batches : Seq[Seq[Piece]] = null
   val rng = new util.Random()

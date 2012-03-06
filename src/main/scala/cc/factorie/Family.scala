@@ -119,7 +119,8 @@ trait VectorFamily extends Family {
 trait DotFamily extends VectorFamily {
   //type TemplateType <: DotFamily
   type FamilyType <: DotFamily
-  lazy val weights: Vector = { freezeDomains; new DenseVector(statisticsVectorLength) } // Dense by default, may be override in sub-traits
+  lazy val weights: Vector = { freezeDomains; newWeightsTypeVector } // Dense by default, may be override in sub-traits
+  def newWeightsTypeVector: Vector = new DenseVector(statisticsVectorLength)
   def score(s:StatisticsType) = if (s eq null) 0.0 else weights match {
     case w:DenseVector => { w dot s.vector }
     //case w:SparseHashVector => w dot s.vector // TODO Uncomment this.  It was only commented because latest version of scalala didn't seem to have this class any more
@@ -183,13 +184,13 @@ trait DotFamily extends VectorFamily {
 /** A DotTemplate that stores its parameters in a Scalala SparseVector instead of a DenseVector
     @author Andrew McCallum */
 trait SparseWeights extends DotFamily {
-  override lazy val weights: Vector = { new SparseVector(statisticsVectorLength) } // Dense by default, here overridden to be sparse
+  override def newWeightsTypeVector: Vector = new SparseVector(statisticsVectorLength)
 }
 
 /** A DotTemplate that stores its parameters in a SparseHashVector instead of a DenseVector
     @author Sameer Singh */
 trait SparseHashWeights extends DotFamily {
-  override lazy val weights: Vector = { freezeDomains; new SparseHashVector(statisticsVectorLength) } // Dense by default, override to be sparseHashed
+  override def newWeightsTypeVector: Vector = new SparseHashVector(statisticsVectorLength)
 }
 
 trait SparseOuter1Dense1Weights extends DotStatistics2[DiscreteVectorValue,DiscreteVectorValue] {
