@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.ner._
 import cc.factorie.app.classify._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie._
-import bp.optimized.{FullBeam, BeamSearch}
+//import bp.optimized.{FullBeam, BeamSearch}
 import ner.ChainNerLabel
 
 object TokenLDA {
@@ -153,8 +153,8 @@ object TokenLDA {
        val learner2 = new VariableSettingsSampler[ChainNerLabel](MyModel, obj) with SampleRank with AROWUpdates
        learner2.processAll(trainLabels, 5)
        val ld = d.categoryValues.filter(_.length > 2).map(_.substring(2))
-       val searcher = new BeamSearch with FullBeam
-       testDocs.foreach(d => d.sentences.foreach(s=>searcher.searchAndSetToMax(localTemplate, transTemplate, s.tokens.map(_.nerLabel))))
+       //val searcher = new BeamSearch with FullBeam
+       //testDocs.foreach(d => d.sentences.foreach(s=>searcher.searchAndSetToMax(localTemplate, transTemplate, s.tokens.map(_.nerLabel))))
        val tee = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](ld)
        tee += testLabels.asInstanceOf[Seq[ChainNerLabel]]
        println(tee.f1)
