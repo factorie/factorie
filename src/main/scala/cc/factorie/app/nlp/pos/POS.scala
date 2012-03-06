@@ -87,14 +87,22 @@ object POS {
     val labels = sentences.map(_.posLabels)
 
     val pieces = labels.map(ls => ModelPiece(PosModel, ls))
-    val trainer = new Trainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
-    new LimitedMemoryBFGS(trainer).optimize(1)
+    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
+    val optimizer = new LimitedMemoryBFGS(trainer) {
+      override def postIteration(iter: Int): Unit = {
+        PosModel.save(modelFile + "-iter=" + iter)
+        test(documents, "train")
+        test(testDocuments, "test")
+        test(devDocuments, "dev")
+      }
+    }
 
+    optimizer.optimize()
+
+    PosModel.save(modelFile)
     test(documents, "train")
     test(testDocuments, "test")
     test(devDocuments, "dev")
-
-    PosModel.save(modelFile)
   }
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.map(_.posLabel))
@@ -155,8 +163,9 @@ object POS {
 
       train(trainDocs, devDocs, testDocs, modelDir.value)
     }
-    else if (runFiles.wasInvoked && modelDir.wasInvoked) {
-      // TODO
+    else if (runFiles.wasInvoked) {
+      println(this.getClass().getResource("pos-model").toURI)
+      println(this.getClass().getResource("pos-model").toString)
     }
     else {
       println("Either provide files to process and a model, or provide train, test, dev files and a model ouput location.")
