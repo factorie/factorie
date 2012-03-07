@@ -50,14 +50,14 @@ object ForwardBackward {
 
     var vi = 0
     while (vi < alpha.size - 1) {
-      var sum = 0.0
+      var logsum = 0.0
       var i = 0
       while (i < ds) {
         var j = 0
         while (j < ds) {
-          val tmp = exp(alpha(vi)(i) + transWeights(i,j) + beta(vi+1)(j))
+          val tmp = alpha(vi)(i) + transWeights(i,j) + beta(vi+1)(j)
           marginal(vi)(i * ds + j) = tmp
-          sum += tmp
+          logsum = sumLogProb(logsum, tmp)
           j += 1
         }
         i += 1
@@ -66,7 +66,7 @@ object ForwardBackward {
       // normalize the node marginal
       i = 0
       while (i < marginal(vi).length) {
-        marginal(vi)(i) /= sum
+        marginal(vi)(i) = exp(marginal(vi)(i) - logsum)
         i += 1
       }
       vi += 1
