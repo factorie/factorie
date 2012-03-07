@@ -198,21 +198,8 @@ class ForwardBackwardPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
     result
   }
 
-  def truthScore: Double = {
-    vars.foreach(_.setToTarget(null))
-    var score = 0.0
-    for (dt <- families) {
-      for (factor <- dt.factors(vars)) {
-        factor match {
-          case f: dt.Factor => {
-            if (f.family == dt) score += f.score
-          }
-          case _ =>
-        }
-      }
-    }
-    score
-  }
+  val m = new TemplateModel(localTemplate, transTemplate)
+  def truthScore: Double = m.score(vars)
 
   def valueAndGradient: (Double,  Map[DotFamily, Vector]) = {
     val (exps, logZ) = ForwardBackward.featureExpectationsAndLogZ(vars, localTemplate, transTemplate)
