@@ -71,7 +71,7 @@ trait Entity extends Attr {
   def superEntity: Entity = { val ref = superEntityRef; if (ref eq null) null else superEntityRef.dst }
   def superEntityOption: Option[Entity] = { val ref = superEntityRef; if (ref eq null) None else if (ref.value eq null) None else Some(ref.dst) }
   final def setSuperEntity(e:Entity)(implicit d:DiffList): Unit = superEntityRef.set(e) // Just a convenient alias
-  @deprecated("Use isConnected instead") def exists: Boolean = superEntityRef.value != null || subEntitiesSize > 0
+  @deprecated("Use isConnected instead") def exists: Boolean = isConnected
   def isConnected: Boolean = (superEntity ne null) || subEntitiesSize > 0 || isObserved
   //def entityRoot: Entity = { val s = superEntity; if (s eq null) this else this.entityRoot }©
   def entityRoot: Entity = if (isRoot) this else superEntity.entityRoot

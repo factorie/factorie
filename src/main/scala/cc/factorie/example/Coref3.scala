@@ -78,8 +78,6 @@ object Coref3 {
         val childString = s._2
         val parentString = s._3
         var result = -cc.factorie.app.strings.editDistance(childString, parentString)
-        println("   "+parentString+" <--- "+childString)
-        println(" resultPW: "+result)
         result
       }
     },
@@ -109,30 +107,24 @@ object Coref3 {
         var result = 0.0
         if(exists && isEntity) result -= entityExistenceCost
         if(exists && !isEntity && !isMention)result -= subEntityExistenceCost
-        println("RESULT: "+result)
         result
       }
     }
   )
   class HierarchicalCorefSampler(model:HierCorefModel) extends SettingsSampler[Null](model, null) {
     protected var entities:ArrayBuffer[Entity] = null
-    def getEntities = entities.filter(_.exists)
+    def getEntities = entities.filter(_.isConnected)
     def infer(numSamples:Int):Unit ={}
     /**Returns a random entity that 'exists'*/
     def nextEntity:Entity={
       var tries = 4
       var e:Entity = null
-      while({tries-= 1;tries} >= 0 && (e==null || !e.exists)){e = entities(random.nextInt(entities.size));if(tries==1)performMaintenance}
+      while({tries-= 1;tries} >= 0 && (e==null || !e.isConnected)){e = entities(random.nextInt(entities.size));if(tries==1)performMaintenance}
       e
     }
     def setEntities(ents:Iterable[Entity]) = {entities = new ArrayBuffer[Entity];entities ++= ents}
     /**Garbage collects all the deleted entities from the master list of entities*/
-    def performMaintenance:Unit = {val cleanEntities = new ArrayBuffer[Entity];cleanEntities ++= entities.filter(_.exists);entities=cleanEntities}
-    override def pickProposal(proposals:Seq[Proposal]): Proposal = {
-      for(p<-proposals)
-        println("  D: "+p.diff.size+" score: "+p.modelScore)
-      proposals.sampleExpProportionally((p:Proposal) => p.acceptanceScore)
-    }
+    def performMaintenance:Unit = {val cleanEntities = new ArrayBuffer[Entity];cleanEntities ++= entities.filter(_.isConnected);entities=cleanEntities}
     /**This function randomly generates a list of jumps/proposals to choose from.*/
     def settings(c:Null) : SettingIterator = new SettingIterator {
       val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit];
@@ -146,10 +138,10 @@ object Coref3 {
         }
         changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
       } else { //sampled nodes refer to same entity
-        changes += {(d:DiffList) => entity1.setSuperEntity(null)(d)}
-        changes += {(d:DiffList) => entity2.setSuperEntity(null)(d)}
+        changes += {(d:DiffList) => splitRight(entity1,entity2)(d)}
+        changes += {(d:DiffList) => splitRight(entity2,entity1)(d)}
         if(entity1.superEntity != null && !entity1.isObserved)
-          changes += {(d:DiffList) => {entity1.subEntitiesIterator.foreach(_.setSuperEntity(entity1.superEntity)(d));entity1.setSuperEntity(null)(d)}}
+          changes += {(d:DiffList) => {collapse(entity1)(d)}}
       }
       changes += {(d:DiffList) => {}} //give the sampler an option to reject all other proposals
       var i = 0
@@ -157,15 +149,27 @@ object Coref3 {
       def next(d:DiffList) = { val d = new DiffList; changes(i).apply(d); i += 1; d }
       def reset = i = 0
     }
-
+    /**Removes an intermediate node in the tree, merging that nodes children to their grandparent.*/
+    def collapse(entity:Entity)(implicit d:DiffList):Unit ={
+      if(entity.superEntity==null)throw new Exception("Can't collapse a node that is the root of a tree.")
+      //println("Collapse")
+      //println("  e.children="+entity.subEntitiesSize)
+      val oldParent = entity.superEntity
+      entity.subEntitiesIterator.foreach(_.setSuperEntity(entity.superEntity)(d))
+      entity.setSuperEntity(null)(d)
+     // println("  super.size="+oldParent.subEntitiesSize)
+    }
+    /**Peels off the entity "right", does not really need both arguments unless we want to error check.*/
+    def splitRight(left:Entity,right:Entity)(implicit d:DiffList):Unit ={
+      val oldParent = right.superEntity
+      right.setSuperEntity(null)(d)
+      structurePreservationForEntityThatLostSubEntity(oldParent)(d)
+    }
     /**Jump function that proposes merge: entity1<----entity2*/
     def mergeLeft(entity1:Entity,entity2:Entity)(implicit d:DiffList):Unit ={
-      println("MergingLeft: "+entity1+"<---"+entity2)
-      println("  num child(b): "+entity1.subEntitiesSize)
       val oldParent = entity2.superEntity
       entity2.setSuperEntity(entity1)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent)(d)
-      println("  num child(a):"+entity1.subEntitiesSize)
     }
     /**Jump function that proposes merge: entity1--->NEW-SUPER-ENTITY<---entity2 */
     def mergeUp(e1:Entity,e2:Entity)(implicit d:DiffList):Entity = {
@@ -177,51 +181,32 @@ object Coref3 {
       e2.setSuperEntity(result)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent1)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent2)(d)
-      println("  mergeUp:"+result.subEntitiesSize)
-      println("  diff: "+d.size)
       result
     }
-    /**Ensures that chains are not created in our tree.*/
+    /**Ensure that chains are not created in our tree. No dangling sub-entities either.*/
     def structurePreservationForEntityThatLostSubEntity(e:Entity)(implicit d:DiffList):Unit ={
       if(e!=null && e.subEntitiesSize<=1){
         for(subEntity <- e.subEntities)subEntity.setSuperEntity(e.superEntity)
         e.setSuperEntity(null)(d)
-        structurePreservationForEntityThatLostSubEntity(e.superEntity)(d)
       }
     }
     /**Identify entities that are created by accepted jumps so we can add them to our master entity list.*/
     override def proposalHook(proposal:Proposal) = {
       val newEntities = new HashSet[Entity]
-      println("DIFF SIZE: "+proposal.diff.size)
       proposal.diff.undo //an entity that does not exit in the current world is one that was newly created by the jump
       for(diff<-proposal.diff){
-        println("  diff: "+diff)
         diff.variable match{
           case sub:SubEntities => if(!sub.entity.isConnected)newEntities += sub.entity
-            /*
-          case bag:BagOfWordsVariable[BagOfWordsProposeAndDecide] => {
-            bag.accept
-            println("ACCEPTING BAG")
-            println("  l2a: "+bag.expose.l2Norm)
-            println("  l2b:" +bag.expose.l2NormBruteForce)
-          }
-          */
           case _ => {}
         }
       }
       proposal.diff.redo
-      println("Found new: "+newEntities.size)
       entities ++= newEntities
     }
   }
   def isMention(e:Entity):Boolean = e.isObserved
 
 
-/*
-  def cosineSimilarityA(a:HashMap[String,Double],b:HashMap[String,Double]){
-
-  }
-  */
 
 /*
   def testBags:Unit = {
@@ -255,6 +240,33 @@ object Coref3 {
     }
   }
   */
+
+  def testBags:Unit ={
+    val bag1 = new ComposableBagOfWords(Seq("ICML", "NIPS", "UAI", "AAAI", "KDD"))
+    val bag2 = new ComposableBagOfWords(Seq("ACL","EMNLP","HLT","KDD"))
+    val bag3 = new ComposableBagOfWords(Seq("KDD"))
+    val combined = new ComposableBagOfWords(Seq("IJCAI"))
+    printBag(combined,"CombinedInitial")
+    combined.addBag(bag1)
+    printBag(combined,"addedBag1")
+    combined.addBag(bag2)
+    printBag(combined,"addedBag2")
+    combined.removeBag(bag3)
+    printBag(combined,"removedBag3")
+    combined.incorporateBags
+    printBag(combined,"incorporated all")
+    combined.removeBag(bag1)
+    combined.removeBag(bag2)
+    combined.addBag(bag3)
+    printBag(combined,"undoAll")
+    combined.incorporateBags
+    printBag(combined,"undoAllIncorporated")
+    def printBag(b:ComposableBagOfWords,str:String):Unit ={
+      println(str+":"+b)
+      println("  l2a: "+b.l2Norm)
+      println("  l2b: "+b.l2NormBruteForce)
+    }
+  }
 
   object Entities {
     import MongoCubbieConverter._
@@ -295,7 +307,6 @@ object Coref3 {
   }
 
   def main(args:Array[String]): Unit = {
-    System.out.println("MAIN")
     populateDB
     val mentions = Entities.nextBatch
     for(m <- mentions){
@@ -358,14 +369,13 @@ object Coref3 {
 }
 
 /**Basic trait for doing operations with bags of words*/
-/*
 trait BagOfWords{ // extends scala.collection.Map[String,Double]{
   //def empty: This
   def size:Int
   def apply(word:String):Double
   def iterator:Iterator[(String,Double)]
   def l2Norm:Double
-  def *(that:BagOfWords):Double //= inner(that)
+  def *(that:BagOfWords):Double
   def cosineSimilarity(that:BagOfWords):Double = {
     val numerator:Double = this * that
     val denominator:Double = this.l2Norm*that.l2Norm
@@ -382,12 +392,73 @@ trait BagOfWords{ // extends scala.collection.Map[String,Double]{
       result += v*v
     scala.math.sqrt(result)
   }
-  class HashCodeClass
-  val hashCodeClass = new HashCodeClass
-  override def hashCode = hashCodeClass.hashCode
 }
 
+class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,Double]=null) extends BagOfWords{
+  /*Only works if one bag is added or removed... otherwise computation becomes expensive. Solution
+  *   change addBags and removeBags to "addBag" and "removeBag", allow just one.
+  *   If more bags are to be added or removed simultaneously, then revert to the old brute force way.
+  *   Do this in a way so that undo/redo operations result in the correct final bag*/
+  val _bag = new HashMap[String,Double]
+  var addBags = new HashSet[BagOfWords]
+  var removeBags = new HashSet[BagOfWords]
+  protected var _l2Norm2 = 0.0
+
+  if(initialWords!=null)for(w<-initialWords)this += (w,1.0)
+  if(initialBag!=null)for((k,v)<-initialBag)this += (k,v)
+  override def toString = _bag.toString
+  def incorporateBags:Unit = {
+    addBags.foreach(this ++= _)
+    removeBags.foreach(this --= _)
+    addBags = new HashSet[BagOfWords]
+    removeBags = new HashSet[BagOfWords]
+  }
+  def discardBags:Unit ={
+    addBags = new HashSet[BagOfWords]
+    removeBags = new HashSet[BagOfWords]
+  }
+  def addBag(that:BagOfWords):Unit = addBags += that
+  def removeBag(that:BagOfWords):Unit = removeBags += that
+  def size = _bag.size
+  def iterator = _bag.iterator
+  def apply(s:String):Double = _bag.getOrElse(s,0.0)
+  def contains(s:String):Boolean = _bag.contains(s)
+  def *(that:BagOfWords):Double = {
+    //if(this.size > that.size)return that * this
+    var result = 0.0
+    for((word,weight) <- iterator)
+      result += weight * that(word)
+    addBags.foreach(result += _ * this)
+    removeBags.foreach(result += _ * this)
+    result
+  }
+  def +=(s:String,w:Double=1.0):Unit ={
+    _l2Norm2 += w*w + 2*this(s)*w
+    _bag(s) = _bag.getOrElse(s,0.0)+w
+  }
+  def -=(s:String,w:Double=1.0):Unit ={
+    _l2Norm2 +=  w*w - 2*this(s)*w
+    if(_bag(s)==w)_bag.remove(s)
+    else _bag(s) = _bag(s) - w
+  }
+  def l2Norm:Double ={
+    var result = _l2Norm2
+    addBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result += l2*l2+bow*this})
+    removeBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result += -l2*l2-bow*this})
+    scala.math.sqrt(result)
+  }
+  override def l2NormBruteForce:Double = {
+    var result=super.l2NormBruteForce
+    result = result * result
+    addBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result += l2*l2})
+    removeBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result -= l2*l2})
+    scala.math.sqrt(result)
+  }
+}
+
+
 /**Efficient implementation for bags of words where proposals temporarily hypothesize new bags, and these proposals are efficiently undone/redone.*/
+/*
 trait BagOfWordsProposeAndDecide extends BagOfWords{
   var addBags = new HashSet[BagOfWords]
   var removeBags = new HashSet[BagOfWords]
