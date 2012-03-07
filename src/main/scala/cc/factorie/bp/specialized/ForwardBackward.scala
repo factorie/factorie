@@ -156,7 +156,7 @@ object ForwardBackward {
     // sum edge marginals
     val edgeExp = vectorFromArray(elementwiseSum(edgeMargs))
 
-    val logZ = sumLogProbs(alphaZs)
+    val logZ = sumLogProbs(alpha(alpha.length-1))
 
     (Map(localTemplate -> nodeExp, transTemplate -> edgeExp), logZ)
   }
@@ -187,7 +187,7 @@ object ForwardBackward {
       alpha(vi)(i) = localScores(vi)(i)
       i += 1
     }
-    normalizeLogProb(alpha(vi))
+    //normalizeLogProb(alpha(vi))
     vi += 1
     while (vi < vs.size) {
       i = 0
@@ -203,7 +203,7 @@ object ForwardBackward {
         alpha(vi)(i) = newAlpha
         i += 1
       }
-      alphaNormalizers(vi) = math.log(normalizeLogProb(alpha(vi)))
+      //alphaNormalizers(vi) = math.log(normalizeLogProb(alpha(vi)))
       vi += 1
     }
 
@@ -229,7 +229,7 @@ object ForwardBackward {
         beta(vi)(i) = newBeta
         i += 1
       }
-      normalizeLogProb(beta(vi))
+      //normalizeLogProb(beta(vi))
       vi -= 1
     }
 
