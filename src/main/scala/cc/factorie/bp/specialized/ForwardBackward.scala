@@ -149,9 +149,8 @@ object ForwardBackward {
       while (i < nodeMargs(vi).length) {
         v.set(i)(null)
         val m = nodeMargs(vi)(i)
-        val stats = localTemplate.unroll1(v).head.variable(1).asInstanceOf[OV].vector
-        for ((dj, value) <- stats.activeElements)
-          nodeExp.increment(dj, m * value)
+        val stats = localTemplate.unroll1(v).head.values.statistics.vector
+        nodeExp += (stats * m)
         i += 1
       }
     }
