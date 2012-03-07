@@ -146,10 +146,14 @@ object ForwardBackward {
     // get the node feature expectations
     for ((v, vi) <- vs.zipWithIndex) { // for variables
       val stats = localTemplate.unroll1(v).head.variable(1).asInstanceOf[OV].vector
-      for (m <- nodeMargs(vi)) { // label domain
-        for ((dj, value) <- stats.activeElements) {
+      var i = 0
+      while (i < nodeMargs(vi).length) {
+        v.set(i)(null)
+        val m = nodeMargs(vi)(i)
+        val stats = localTemplate.unroll1(v).head.variable(1).asInstanceOf[OV].vector
+        for ((dj, value) <- stats.activeElements)
           nodeExp.increment(dj, m * value)
-        }
+        i += 1
       }
     }
 
