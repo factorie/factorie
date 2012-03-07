@@ -23,17 +23,17 @@ object ForwardBackward {
     while (vi < alpha.size) {
 
       var i = 0
-      var sum = 0.0
+      var logsum = Double.NegativeInfinity
       while (i < ds) {
-        marginal(vi)(i) = exp(alpha(vi)(i) + beta(vi)(i))
-        sum += marginal(vi)(i)
+        marginal(vi)(i) = alpha(vi)(i) + beta(vi)(i)
+        logsum = sumLogProb (logsum, marginal(vi)(i))
         i += 1
       }
 
       // normalize the node marginal
       i = 0
       while (i < ds) {
-        marginal(vi)(i) /= sum
+        marginal(vi)(i) = exp(marginal(vi)(i) - logsum)
         i += 1
       }
 
@@ -50,7 +50,7 @@ object ForwardBackward {
 
     var vi = 0
     while (vi < alpha.size - 1) {
-      var logsum = 0.0
+      var logsum = Double.NegativeInfinity
       var i = 0
       while (i < ds) {
         var j = 0
@@ -145,7 +145,6 @@ object ForwardBackward {
 
     // get the node feature expectations
     for ((v, vi) <- vs.zipWithIndex) { // for variables
-      val stats = localTemplate.unroll1(v).head.variable(1).asInstanceOf[OV].vector
       var i = 0
       while (i < nodeMargs(vi).length) {
         v.set(i)(null)
