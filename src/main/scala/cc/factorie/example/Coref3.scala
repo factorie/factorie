@@ -35,19 +35,37 @@ object Coref3 {
     removedChildHooks += ((removed:Entity, d:DiffList) => {attr[EntityExists].set(this.isConnected)(d)})
     addedChildHooks += ((added:Entity, d:DiffList) => {attr[EntityExists].set(this.isConnected)(d)})
     changedSuperEntityHooks += ((oldSuper:Entity,newSuper:Entity, d:DiffList) => {attr[IsEntity].set(this.isRoot)(d);attr[EntityExists].set(this.isConnected)(d);})
+    /**Should only be called once context of the entire tree this entity belongs to has been connected together.*/
+    override def initializeAttributesOfStructure:Unit={
+      attr[EntityExists].set(this.isConnected)(null)
+      attr[IsEntity].set(this.isRoot)(null)
+    }
   }
   // Cubbie storage
   class MyEntityCubbie extends NamedEntityCubbie {
     _map = new HashMap[String,Any]
     val bow = StringListSlot("bow")
+    val isMention = BooleanSlot("isMention")
+    //val name = StringSlot("name")
+    /**TODO: where to set these? They are determined by the graph structure which is incomplete at the time this cubbie is loaded.
+    attr += new EntityExists(this,this.isConnected)
+    attr += new IsEntity(this,this.isRoot)
+    attr += new IsMention(this,this.isObserved)
+   */
+    override def newEntity:NamedEntity = new MyEntity("UNINITIALIZED")
+    override def newEntityCubbie:NamedEntityCubbie = new NamedEntityCubbie
     override def finishStoreEntity(e:Entity): Unit = {
       super.finishStoreEntity(e)
       bow := e.attr[Bow].value.toSeq
+      isMention := e.attr[IsMention].booleanValue
     }
     override def finishFetchEntity(e:Entity): Unit = {
       super.finishFetchEntity(e)
-      e.attr += new Bow(e, Nil) //this is necessary because e is an Entity not a "MyEntity"
+      //e.attr += new Bow(e, Nil) //this is necessary because e is an Entity not a "MyEntity"
+      e.attr[EntityName].set(name.value)(null)
       e.attr[Bow] ++= bow.value
+      e.attr[IsMention].set(isMention.value)(null)
+      e.isObserved=isMention.value
     }
   }
 
@@ -180,12 +198,14 @@ object Coref3 {
         println("  diff: "+diff)
         diff.variable match{
           case sub:SubEntities => if(!sub.entity.isConnected)newEntities += sub.entity
+            /*
           case bag:BagOfWordsVariable[BagOfWordsProposeAndDecide] => {
             bag.accept
             println("ACCEPTING BAG")
             println("  l2a: "+bag.expose.l2Norm)
             println("  l2b:" +bag.expose.l2NormBruteForce)
           }
+          */
           case _ => {}
         }
       }
@@ -203,7 +223,7 @@ object Coref3 {
   }
   */
 
-
+/*
   def testBags:Unit = {
     val d = new DiffList
     val bag1 = new BagOfWordsHashMap(Seq("ICML", "NIPS", "UAI", "AAAI", "KDD"))
@@ -233,8 +253,8 @@ object Coref3 {
       println("  l2a: "+b.l2Norm)
       println("  l2b: "+b.l2Norm)
     }
-
   }
+  */
 
   object Entities {
     import MongoCubbieConverter._
@@ -261,6 +281,11 @@ object Coref3 {
       }
       result.toSeq
     }
+    def nextBatch:Seq[Entity] ={
+      val result = getAll
+      result.map(_.initializeAttributesOfStructure)
+      result.toSeq
+    }
   }
 
   def populateDB:Unit = {
@@ -272,7 +297,11 @@ object Coref3 {
   def main(args:Array[String]): Unit = {
     System.out.println("MAIN")
     populateDB
-    val mentions = Entities.getAll
+    val mentions = Entities.nextBatch
+    for(m <- mentions){
+      println(this.entityString(m))
+      println("   *properties:  (exists?="+m.isConnected+" mention?="+m.isObserved+" #children:"+m.subEntitiesSize+")")
+    }
     println("Coref mentions: "+data)
     println("Number of mentions: "+mentions.size)
     val model = new HierCorefModel
