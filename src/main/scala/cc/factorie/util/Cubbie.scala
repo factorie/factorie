@@ -53,7 +53,15 @@ class Cubbie { thisCubbie =>
   //todo: maps throw exceptions when key is not defined, need to adapt requirement
   def id_=(i:Any): Unit = { /*require(_rawGet(idName) == null); */_rawPut(idName, i) }
   // Classes for holding key:value pairs
-  abstract class Slot[T](val name:String) {
+
+  trait AbstractSlot[+T] {
+    def value:T
+    def name:String
+  }
+
+
+
+  abstract class Slot[T](val name:String) extends AbstractSlot[T] {
     def value: T
     def :=(value:T): Unit
     def raw: Any = _rawGet(name)
