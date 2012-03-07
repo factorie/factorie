@@ -184,19 +184,13 @@ class ForwardBackwardPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
     val result: Map[DotFamily, Vector] = new HashMap
     for (dt <- families) {
       val vector = new SparseVector(dt.statisticsVectorLength)
-      for (factor <- dt.factors(vars)) {
-        factor match {
-          case f: dt.Factor => {
-            if (f.family == dt)
-              vector += f.statistics.vector
-          }
-          case _ =>
-        }
-      }
+      for (factor <- dt.factors(vars))
+        vector += factor.statistics.vector
       result(dt) = vector
     }
     result
   }
+
 
   val m = new TemplateModel(localTemplate, transTemplate)
   def truthScore: Double = m.score(vars)
