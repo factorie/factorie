@@ -65,7 +65,7 @@ object ForwardBackward {
 
       // normalize the node marginal
       i = 0
-      while (i < ds) {
+      while (i < marginal(vi).length) {
         marginal(vi)(i) /= sum
         i += 1
       }
