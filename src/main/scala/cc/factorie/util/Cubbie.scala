@@ -16,7 +16,7 @@ package cc.factorie.util
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{Map => MutableMap}
 
-// Property, ala NeXTStep PropertyLists, used for JSON-like serialization
+// Property, ala NeXTStep PropertyLists, used for JSON-like serialization©
 // Call it "Tyson" for "Typed JSON"
 // or "Tymap" for "Typed Map"
 // or just call it a Facade afterall; it is a "facade" of a Map, but it is the core data of a Document---"opposite of a facade"
@@ -34,7 +34,7 @@ class Cubbie { thisCubbie =>
   type MapType = MutableMap[String, Any]
   var _map: MapType = null
   def _newDefaultMap: AnyRef = new scala.collection.mutable.HashMap[String,Any]
-  def _rawGet(name:String): Any = _map(name)
+  def _rawGet(name:String): Any = {_map(name)}
   def _rawGetOrElse(name:String, default: =>Any) = _map.getOrElse(name, default)
   def _rawGetOrElseUpdate(name:String, default: =>Any) = _map.getOrElseUpdate(name, default)
   def _rawPut(name:String, value:Any) {_map(name) = value }
@@ -82,6 +82,7 @@ class Cubbie { thisCubbie =>
       case s:Seq[A] => s
       case al:java.util.ArrayList[A] => al.toSeq
       case m:java.util.Map[String,A] => Range(0, m.size).map(i => m.get(i.toString))
+      case m:Map[String,A] => m.map(_._2).toSeq
       case null => null
     }
     def :=(value:Seq[A]) = _rawPut(name, value) // TODO Perhaps we should store a Map[String,Any] here instead, like BSON?  Avoids the need for conversion later

@@ -58,6 +58,6 @@ class ArrowVariable[A<:AnyRef,B](val src:A, initialDst:B) extends EdgeVar[A,B] {
     def variable = ArrowVariable.this
     def redo = _dst = newDst
     def undo = _dst = oldDst
-    override def toString = "ArrowDiff(%s,%s)".format(oldDst.toString, newDst.toString)
+    override def toString = "ArrowDiff(%s,%s)".format(oldDst, newDst)
   }
 }

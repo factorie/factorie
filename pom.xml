@@ -155,6 +155,11 @@
                   <mainClass>cc.factorie.example.Coref3</mainClass>
                   <jvmArgs><jvmArg>-Xmx1g</jvmArg></jvmArgs>
                 </launcher>
+                <launcher>
+                  <id>cubbie-test</id>
+                  <mainClass>cc.factorie.db.mongo.CubbieMongoTest</mainClass>
+                  <jvmArgs><jvmArg>-Xmx1g</jvmArg></jvmArgs>
+                </launcher>
               </launchers>
             </configuration>
           </plugin>

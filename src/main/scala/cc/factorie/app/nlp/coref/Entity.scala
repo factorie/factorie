@@ -29,10 +29,12 @@ class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, 
         dst._removeSubEntity(src)
         dst.removedChildHooks(src,d)
       }
-      e._addSubEntity(src)
-      e.addedChildHooks(src,d)
       super.set(e)
       src.changedSuperEntityHooks(old,e,d)
+      if(e!=null){
+        e._addSubEntity(src)
+        e.addedChildHooks(src,d)
+      }
     }
   }
   final def mention = src
@@ -98,12 +100,13 @@ trait Entity extends Attr {
   def mentionsOfClass[A<:Mention](cls:Class[A]): Seq[A] = {
   */
   @deprecated("Use isConnected instead") def exists: Boolean = superEntityRef.value != null || subEntitiesSize > 0
-  def isConnected: Boolean = (superEntity ne null) || subEntitiesSize > 0 
-  def entityRoot: Entity = { val s = superEntity; if (s eq null) this else this.entityRoot }
+  def isConnected: Boolean = (superEntity ne null) || subEntitiesSize > 0 || isObserved
+  //def entityRoot: Entity = { val s = superEntity; if (s eq null) this else this.entityRoot }©
+  def entityRoot: Entity = if (isRoot) this else superEntity.entityRoot
   def isRoot:Boolean = (superEntityRef == null || superEntityRef.dst == null)
   def isLeaf:Boolean = subEntitiesSize==0
   var isObserved:Boolean = false
-  var treatAsObserved:Boolean=false
+  //var treatAsObserved:Boolean=false
 
   /** Recursively descend sub-entities and return only those matching criterion */
   def filterDescendants(test:Entity=>Boolean): Seq[Entity] = subEntitiesIterator.filter(test).toSeq
@@ -136,14 +139,15 @@ abstract class EntityCubbie extends Cubbie {
   def newEntity: Entity
   def newEntityCubbie: EntityCubbie
   def storeEntity(e:Entity): this.type = {
-    entityRef := e.superEntity.id
+    if(e.superEntity!=null)entityRef := e.superEntity.id
     finishStoreEntity(e)
     this
   }
   def finishStoreEntity(e:Entity): Unit = {}
   def fetchEntity(cr:CubbieRefs): Entity = {
-    val e = newEntity
-    e.setSuperEntity(cr(entityRef.value).asInstanceOf[Entity])(null)
+    val e = newEntity //mwick: shouldn't we consult cubbierefs?
+    if(entityRef.cubbie._map.contains(entityRef.name)) //mwick: is there a better way?
+      e.setSuperEntity(cr(entityRef.value).asInstanceOf[Entity])(null)
     finishFetchEntity(e)
     e
   }
