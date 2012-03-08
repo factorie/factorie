@@ -155,7 +155,12 @@ object Coref3 {
   )
   class HierarchicalCorefSampler(model:HierCorefModel) extends SettingsSampler[Null](model, null) {
     protected var entities:ArrayBuffer[Entity] = null
+    protected var deletedEntities:ArrayBuffer[Entity] = null
     def getEntities = entities.filter(_.isConnected)
+    def getDeletedEntities = {
+      performMaintenance
+      deletedEntities
+    }
     def infer(numSamples:Int):Unit ={}
     /**Returns a random entity that 'exists'*/
     def nextEntity:Entity={
@@ -164,9 +169,9 @@ object Coref3 {
       while({tries-= 1;tries} >= 0 && (e==null || !e.isConnected)){e = entities(random.nextInt(entities.size));if(tries==1)performMaintenance}
       e
     }
-    def setEntities(ents:Iterable[Entity]) = {entities = new ArrayBuffer[Entity];entities ++= ents}
+    def setEntities(ents:Iterable[Entity]) = {entities = new ArrayBuffer[Entity];entities ++= ents;deletedEntities = new ArrayBuffer[Entity]}
     /**Garbage collects all the deleted entities from the master list of entities*/
-    def performMaintenance:Unit = {val cleanEntities = new ArrayBuffer[Entity];cleanEntities ++= entities.filter(_.isConnected);entities=cleanEntities}
+    def performMaintenance:Unit = {val cleanEntities = new ArrayBuffer[Entity];cleanEntities ++= entities.filter(_.isConnected);deletedEntities ++= entities.filter(!_.isConnected);entities=cleanEntities}
     /**This function randomly generates a list of jumps/proposals to choose from.*/
     def settings(c:Null) : SettingIterator = new SettingIterator {
       val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit];
@@ -212,6 +217,7 @@ object Coref3 {
       val oldParent = entity2.superEntity
       entity2.setSuperEntity(entity1)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent)(d)
+      //propogateBagUp(entity2)(d)
     }
     /**Jump function that proposes merge: entity1--->NEW-SUPER-ENTITY<---entity2 */
     def mergeUp(e1:Entity,e2:Entity)(implicit d:DiffList):Entity = {
@@ -234,6 +240,20 @@ object Coref3 {
         e.setSuperEntity(null)(d)
       }
     }
+    def propogateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
+      var e = entity.superEntity
+      while(e!=null){
+        e.attr[TrueBow].add(entity.attr[TrueBow].value)(d)
+        e = e.superEntity
+      }
+    }
+    def propogateRemoveBagFromEntity(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit ={
+      var e = formerParent
+      while(e!=null){
+        e.attr[TrueBow].remove(parting.attr[TrueBow].value)
+        e = e.superEntity
+      }
+    }
     /**Identify entities that are created by accepted jumps so we can add them to our master entity list.*/
     override def proposalHook(proposal:Proposal) = {
       val newEntities = new HashSet[Entity]
@@ -245,6 +265,12 @@ object Coref3 {
         }
       }
       proposal.diff.redo
+      for(diff<-proposal.diff){
+        diff.variable match{
+          case bag:TrueBow => bag.accept
+          case _ => {}
+        }
+      }
       entities ++= newEntities
     }
   }
@@ -467,13 +493,14 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
     removeBag = None
   }
   def addBag(that:BagOfWords):Unit ={
-    if(addBag == None)addBag = Some(that)
-    else if(removeBag!=None && removeBag.get.eq(that))removeBag=None
+    if(removeBag!=None && removeBag.get.eq(that))removeBag=None
+    else if(addBag == None)addBag = Some(that)
     else this ++= that
+    if(this eq that)throw new Exception("Can't add myself.")
   }
   def removeBag(that:BagOfWords):Unit ={
-    if(removeBag == None)removeBag = Some(that)
-    else if(addBag!=None && addBag .get.eq(that))addBag=None
+    if(addBag!=None && addBag .get.eq(that))addBag=None
+    else if(removeBag == None)removeBag = Some(that)
     else this --= that
   }
   def getCombinedBag:HashMap[String,Double] ={
@@ -488,6 +515,8 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
   def apply(s:String):Double = _bag.getOrElse(s,0.0)
   def contains(s:String):Boolean = _bag.contains(s)
   def *(that:BagOfWords):Double = {
+    println("BAG: "+that)
+    println("   this: "+this)
     //if(this.size > that.size)return that * this
     var result = 0.0
     for((word,weight) <- iterator)
@@ -507,6 +536,7 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
   }
   def l2Norm:Double ={
     var result = _l2Norm2
+    if(addBag!=None && this.eq(addBag.get))throw new Exception("Cannot add myself.")
     val addL2Norm2 = getOptionBagL2Norm2(addBag)
     val removeL2Norm2 = getOptionBagL2Norm2(removeBag)
     result += addL2Norm2 + removeL2Norm2 + 2 * (this * addBag - this * removeBag  - mult (addBag,removeBag))
