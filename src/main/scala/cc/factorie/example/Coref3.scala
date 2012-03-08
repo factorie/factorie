@@ -282,7 +282,8 @@ object Coref3 {
       proposal.diff.redo
       for(diff<-proposal.diff){
         diff.variable match{
-          case bag:TrueBow => bag.accept
+          case bag:BagOfWordsVariable => bag.accept
+          //case bag:TrueBow => bag.accept
           case _ => {}
         }
       }
@@ -471,21 +472,34 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
     for((k,v)<-this.iterator)combined(k) = combined.getOrElse(k,0.0)+v
     for(bag<-addBag)for((k,v)<-bag.iterator)combined(k) = combined.getOrElse(k,0.0)+v
     for(bag<-removeBag)for((k,v)<-bag.iterator)combined(k) = combined.getOrElse(k,0.0)-v
-    combined
+    val result = new HashMap[String,Double]
+    result ++= combined.filter(_._2 != 0.0)
+    //result ++= combined.filter((k,v):(String,Double) => {v != 0.0})
   }
   def size = {var r =_bag.size;for(b<-addBag)r+=b.size;for(b<-removeBag)r+=b.size;r}
   def iterator = _bag.iterator //this is technical wrong, oh well. Tricky to think about the semantics of this in the context of "removeBag"
-  def apply(s:String):Double = _bag.getOrElse(s,0.0)
+  def apply(s:String):Double = {
+    var result = _bag.getOrElse(s,0.0)
+    for(bag<-addBag)result += bag(s)
+    for(bag<-removeBag)result -= bag(s)
+    result
+  }
   def contains(s:String):Boolean = _bag.contains(s)
   def *(that:BagOfWords):Double = {
-    println("BAG: "+that)
-    println("   this: "+this)
     //if(this.size > that.size)return that * this
     var result = 0.0
+    println("corebag:" + _bag)
+    println("addbag:"+addBag)
+    println("removebag:"+removeBag)
     for((word,weight) <- iterator)
       result += weight * that(word)
+    println("iresult:"+result)
     for(bag<-addBag)result += bag  * this
+    println("iresult:"+result)
     for(bag<-removeBag)result -= bag * this
+    println("dot: "+result)
+    println("   that: "+that)
+    println("   this: "+this)
     result
   }
   def +=(s:String,w:Double=1.0):Unit ={
