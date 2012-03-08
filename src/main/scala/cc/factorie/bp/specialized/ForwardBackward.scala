@@ -191,7 +191,7 @@ object ForwardBackward {
     while (vi < vs.size) {
       i = 0
       while(i < ds) {
-        var newAlpha = 0.0
+        var newAlpha = Double.NegativeInfinity
         var di = 0
         while (di < ds) {
           val prev = alpha(vi-1)(di)
@@ -208,14 +208,14 @@ object ForwardBackward {
     vi = vs.size-1
     i = 0
     while (i < ds) {
-      beta(vi)(i) = 0.0
+      beta(vi)(i) = localScores(vi)(i)
       i += 1
     }
     vi -= 1
     while (vi >= 0) {
       i = 0
       while (i < ds) {
-        var newBeta = 0.0
+        var newBeta = Double.NegativeInfinity
         var di = 0
         while (di < ds) {
           val prev = beta(vi+1)(di)
