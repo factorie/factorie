@@ -1,7 +1,6 @@
 package cc.factorie.db.mongo
 
 import cc.factorie.Cubbie
-import java.util.Map
 import org.bson.BSONObject
 import collection.JavaConversions._
 import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
@@ -249,6 +248,23 @@ object MongoCubbieConverter {
 }
 
 /**
+ * A wrapper around a cubbie that can be used to specify mongo queries using the cubbie map.
+ * @param cubbie the cubbie to wrap around
+ * @tparam C the type of cubbie.
+ */
+class MongoCubbie[C <: Cubbie](val cubbie: C) {
+  def idIs(id: Any): cubbie.type = {
+    cubbie._map("_id") = id
+    cubbie
+  }
+
+  def idsIn(ids: Seq[Any]): cubbie.type = {
+    cubbie._map("_id") = Map("$in" -> ids)
+    cubbie
+  }
+}
+
+/**
  * A slot that can do mongo specific operations
  * @param slot the original slot in the cubbie
  * @tparam C the cubbie type.
@@ -282,6 +298,10 @@ class MongoSlot[C <: Cubbie, V](val slot: C#Slot[V]) {
 
 }
 
+/**
+ * Lazy scala seq wrapper around bson sequence.
+ * @param bson the bson list to wrap around.
+ */
 class BasicBSONBSeq(val bson: BasicBSONList) extends Seq[Any] {
 
   import MongoCubbieConverter._
@@ -320,6 +340,9 @@ class BSONMap(val bson: BSONObject) extends collection.mutable.Map[String, Any] 
 object MongoCubbieImplicits {
 
   implicit def toMongoSlot[C <: Cubbie, V](slot: C#Slot[V]) = new MongoSlot(slot)
+
+  implicit def toMongoCubbie[C <: Cubbie](cubbie: C) = new MongoCubbie(cubbie)
+
 }
 
 object CubbieMongoTest {
@@ -395,6 +418,12 @@ object CubbieMongoTest {
     persons.updateDelta(laura, updatedLaura)
 
     println(persons.mkString("\n"))
+
+    //test batch id query
+    println("****")
+    println(persons.query(_.idsIn(Seq(1, 2))).mkString("\n"))
+    println(persons.query(_.idIs(1)).mkString("\n"))
+
 
 
   }
