@@ -54,9 +54,9 @@ object LDA3 {
     }
     println("Read "+documents.size+" documents, "+WordDomain.size+" word types, "+documents.map(_.length).sum+" word tokens.")
     
-    val collapse = new ArrayBuffer[Variable]
-    collapse += phis
-    collapse ++= documents.map(_.theta)
+    //val collapse = new ArrayBuffer[Variable]
+    //collapse += phis
+    //collapse ++= documents.map(_.theta)
     //val sampler = new CollapsedGibbsSampler(collapse) { def export(m:Seq[Proportions]): Unit = {} }
     val sampler = new SparseLDAInferencer(numTopics, documents, alphas, beta1)
 
