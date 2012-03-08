@@ -7,6 +7,7 @@ import collection.JavaConversions._
 import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
 import org.bson.types.BasicBSONList
 import collection.mutable.{ArrayBuffer, HashMap}
+import collection.mutable.{Map => MutableMap}
 
 /**
  * A MongoCubbieCollection stores cubbies in a Mongo collection.
@@ -19,7 +20,8 @@ import collection.mutable.{ArrayBuffer, HashMap}
  */
 class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
                                          val constructor: () => C,
-                                         val indices: C => Seq[Seq[C#AbstractSlot[Any]]] = (c: C) => Seq.empty[Seq[C#AbstractSlot[Any]]]) extends Iterable[C] {
+                                         val indices: C => Seq[Seq[C#AbstractSlot[Any]]] = (c: C) => Seq.empty[Seq[C#AbstractSlot[Any]]])
+  extends Iterable[C] with MongoCubbieConverter[C] {
 
   import MongoCubbieConverter._
 
@@ -135,12 +137,16 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
     coll.update(queryDBO, modDBO, upsert, multi)
   }
 
+  def mongo2Cubbie(dbo: DBObject, constructor: () => C) = {
+    MongoCubbieConverter.eagerCubbie(dbo, constructor)
+  }
+
   class CursorIterator(val underlying: DBCursor) extends Iterator[C] {
     def skip(amount: Int) = new CursorIterator(underlying.skip(amount))
 
     def limit(amount: Int) = new CursorIterator(underlying.limit(amount))
 
-    def next() = MongoCubbieConverter.eagerCubbie(underlying.next(), constructor)
+    def next() = mongo2Cubbie(underlying.next(), constructor)
 
     def hasNext = underlying.hasNext
 
@@ -155,8 +161,28 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
     }
   }
 
-
 }
+
+trait MongoCubbieConverter[C <: Cubbie] {
+  def mongo2Cubbie(dbo: DBObject, constructor: () => C): C
+}
+
+trait EagerCubbieConverter[C <: Cubbie] extends MongoCubbieConverter[C] {
+  abstract override def mongo2Cubbie(dbo: DBObject, constructor: () => C) = {
+    MongoCubbieConverter.eagerCubbie(dbo, constructor)
+  }
+}
+
+/**
+ * Mix in this trait to a mongo cubbie collection and you get lazy loading of cubbie objects.
+ * @tparam C the type of cubbie the converter creates.
+ */
+trait LazyCubbieConverter[C <: Cubbie] extends MongoCubbieConverter[C] {
+  abstract override def mongo2Cubbie(dbo: DBObject, constructor: () => C) = {
+    MongoCubbieConverter.lazyCubbie(dbo, constructor)
+  }
+}
+
 
 /**
  * Methods to convert cubbies into mongo objects and vice versa.
@@ -169,9 +195,16 @@ object MongoCubbieConverter {
 
   def eagerCubbie[C <: Cubbie](dbo: DBObject, constructor: () => C): C = {
     val c = constructor()
-    c._map = toCubbie(dbo).asInstanceOf[HashMap[String, Any]]
+    c._map = toCubbie(dbo).asInstanceOf[MutableMap[String, Any]]
     c
   }
+
+  def lazyCubbie[C <: Cubbie](dbo: DBObject, constructor: () => C): C = {
+    val c = constructor()
+    c._map = toLazyCubbie(dbo).asInstanceOf[MutableMap[String, Any]]
+    c
+  }
+
 
   def toMongo(any: Any): Any = {
     any match {
@@ -334,7 +367,7 @@ object CubbieMongoTest {
     val mongoDB = mongoConn.getDB("mongocubbie-test")
     val coll = mongoDB.getCollection("persons")
     coll.drop()
-    val persons = new MongoCubbieCollection(coll, () => new Person, (p: Person) => Seq(Seq(p.name)))
+    val persons = new MongoCubbieCollection(coll, () => new Person, (p: Person) => Seq(Seq(p.name))) with LazyCubbieConverter[Person]
 
     persons += james
     persons += laura
