@@ -65,10 +65,11 @@ object Coref3 {
     }
     override def finishFetchEntity(e:Entity): Unit = {
       super.finishFetchEntity(e)
+      //println("Beig called twice? "+e.id)
       //e.attr += new Bow(e, Nil) //this is necessary because e is an Entity not a "MyEntity"
       e.attr[EntityName].set(name.value)(null)
       e.attr[Bow] ++= bow.value
-      e.attr[TrueBow] ++= bowVar.value.fetch
+      if(e.attr[TrueBow].size==0)e.attr[TrueBow] ++= bowVar.value.fetch
       e.attr[IsMention].set(isMention.value)(null)
       e.isObserved=isMention.value
     }
@@ -87,7 +88,10 @@ object Coref3 {
       val result = new HashMap[String,Double]
       val wordSeq = words.value
       val weightSeq = weights.value
+      println("WORDS: "+words)
+      println("WEIGHTS: "+weights)
       for(i<-0 until wordSeq.size)result += wordSeq(i) -> weightSeq(i)
+      println("RESULT: "+result)
       result
     }
   }
@@ -183,7 +187,8 @@ object Coref3 {
           if(entity1.id != entity1.entityRoot.id) //avoid adding the same jump to the list twice
             changes += {(d:DiffList) => mergeLeft(entity1.entityRoot,entity2)(d)}
         }
-        changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
+        if(entity1.superEntity==null && entity2.superEntity==null)
+          changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
       } else { //sampled nodes refer to same entity
         changes += {(d:DiffList) => splitRight(entity1,entity2)(d)}
         changes += {(d:DiffList) => splitRight(entity2,entity1)(d)}
@@ -210,14 +215,16 @@ object Coref3 {
     def splitRight(left:Entity,right:Entity)(implicit d:DiffList):Unit ={
       val oldParent = right.superEntity
       right.setSuperEntity(null)(d)
+      propagateRemoveBag(right,oldParent)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent)(d)
     }
     /**Jump function that proposes merge: entity1<----entity2*/
     def mergeLeft(entity1:Entity,entity2:Entity)(implicit d:DiffList):Unit ={
       val oldParent = entity2.superEntity
       entity2.setSuperEntity(entity1)(d)
+      propagateBagUp(entity2)(d)
+      propagateRemoveBag(entity2,oldParent)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent)(d)
-      //propogateBagUp(entity2)(d)
     }
     /**Jump function that proposes merge: entity1--->NEW-SUPER-ENTITY<---entity2 */
     def mergeUp(e1:Entity,e2:Entity)(implicit d:DiffList):Entity = {
@@ -229,6 +236,8 @@ object Coref3 {
       e2.setSuperEntity(result)(d)
       result.attr[TrueBow].add(e1.attr[TrueBow].value)(d)
       result.attr[TrueBow].add(e2.attr[TrueBow].value)(d)
+      propagateRemoveBag(e1,oldParent1)(d)
+      propagateRemoveBag(e2,oldParent2)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent1)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent2)(d)
       result
@@ -236,18 +245,19 @@ object Coref3 {
     /**Ensure that chains are not created in our tree. No dangling sub-entities either.*/
     def structurePreservationForEntityThatLostSubEntity(e:Entity)(implicit d:DiffList):Unit ={
       if(e!=null && e.subEntitiesSize<=1){
-        for(subEntity <- e.subEntities)subEntity.setSuperEntity(e.superEntity)
+        for(subEntity <- e.subEntities)
+          subEntity.setSuperEntity(e.superEntity)
         e.setSuperEntity(null)(d)
       }
     }
-    def propogateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
+    def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
       var e = entity.superEntity
       while(e!=null){
         e.attr[TrueBow].add(entity.attr[TrueBow].value)(d)
         e = e.superEntity
       }
     }
-    def propogateRemoveBagFromEntity(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit ={
+    def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit ={
       var e = formerParent
       while(e!=null){
         e.attr[TrueBow].remove(parting.attr[TrueBow].value)
@@ -272,6 +282,10 @@ object Coref3 {
         }
       }
       entities ++= newEntities
+      if(proposal.diff.size>0){
+        println("\nNEW WORLD")
+        printEntities(entities)
+      }
     }
   }
   def isMention(e:Entity):Boolean = e.isObserved
