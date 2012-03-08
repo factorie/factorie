@@ -21,6 +21,7 @@ object Coref3 {
   class Bow(val entity:Entity) extends SetVariable[String] {
     def this(e:Entity, ss:Iterable[String]) = { this(e); ss.foreach(this.add(_)(null)) }
   }
+  class TrueBow(val entity:Entity,ss:Iterable[String]=Nil) extends BagOfWordsVariable(ss)
   /**Entity variables*/
   var nextId = -1
   var entityCount = 0
@@ -29,6 +30,7 @@ object Coref3 {
     //val idCubbie = new IntSlot
     isObserved=isMention
     attr += new Bow(this, b)
+    attr += new TrueBow(this,b)
     attr += new EntityExists(this,this.isConnected)
     attr += new IsEntity(this,this.isRoot)
     attr += new IsMention(this,this.isObserved)
@@ -45,6 +47,7 @@ object Coref3 {
   class MyEntityCubbie extends NamedEntityCubbie {
     _map = new HashMap[String,Any]
     val bow = StringListSlot("bow")
+    val bowVar = CubbieSlot("bowVar", () => new BagOfWordsCubbie)
     val isMention = BooleanSlot("isMention")
     //val name = StringSlot("name")
     /**TODO: where to set these? They are determined by the graph structure which is incomplete at the time this cubbie is loaded.
@@ -57,6 +60,7 @@ object Coref3 {
     override def finishStoreEntity(e:Entity): Unit = {
       super.finishStoreEntity(e)
       bow := e.attr[Bow].value.toSeq
+      bowVar := new BagOfWordsCubbie().store(e.attr[TrueBow].value)
       isMention := e.attr[IsMention].booleanValue
     }
     override def finishFetchEntity(e:Entity): Unit = {
@@ -64,8 +68,27 @@ object Coref3 {
       //e.attr += new Bow(e, Nil) //this is necessary because e is an Entity not a "MyEntity"
       e.attr[EntityName].set(name.value)(null)
       e.attr[Bow] ++= bow.value
+      e.attr[TrueBow] ++= bowVar.value.fetch
       e.attr[IsMention].set(isMention.value)(null)
       e.isObserved=isMention.value
+    }
+  }
+  class BagOfWordsCubbie extends Cubbie{
+    _map = new HashMap[String,Any]
+    val words = StringListSlot("words")
+    val weights = DoubleListSlot("weights")
+    def store(bag:BagOfWords):BagOfWordsCubbie ={
+      words := bag.iterator.map(_._1).toSeq
+      weights := bag.iterator.map(_._2).toSeq
+      this
+    }
+    def fetch:HashMap[String,Double] ={
+      //val result = new BagOfWordsVariable
+      val result = new HashMap[String,Double]
+      val wordSeq = words.value
+      val weightSeq = weights.value
+      for(i<-0 until wordSeq.size)result += wordSeq(i) -> weightSeq(i)
+      result
     }
   }
 
@@ -82,6 +105,7 @@ object Coref3 {
       }
     },
     // compatibility between parent/child bows
+  /*
     new TemplateWithStatistics3[EntityRef,Bow,Bow] {
       def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[Bow], er.dst.attr[Bow]) else Nil
       def unroll2(childBow:Bow) = Factor(childBow.entity.superEntityRef, childBow, childBow.entity.superEntity.attr[Bow])
@@ -92,6 +116,24 @@ object Coref3 {
         childBow.intersect(parentBow).size
       }
     },
+    */
+    new TemplateWithStatistics3[EntityRef,TrueBow,TrueBow] {
+      def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[TrueBow], er.dst.attr[TrueBow]) else Nil
+      def unroll2(childBow:TrueBow) = if(childBow.entity.superEntity!=null)Factor(childBow.entity.superEntityRef, childBow, childBow.entity.superEntity.attr[TrueBow]) else Nil
+      def unroll3(parentBow:TrueBow) = for(e<-parentBow.entity.subEntities) yield Factor(e.superEntityRef,e.attr[TrueBow],parentBow)
+      def score(s:Stat): Double = {
+        val childBow = s._2
+        val parentBow = s._3
+        //childBow.intersect(parentBow).size
+        var result = childBow.cosineSimilarity(parentBow)
+        println("result: "+result)
+        println("  bag1:"+childBow)
+        println("  bag2:"+parentBow)
+        result
+      }
+    },
+
+
     //structural priors
     new TemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
       val entityExistenceCost = 8.0
@@ -179,6 +221,8 @@ object Coref3 {
       val oldParent2 = e2.superEntity
       e1.setSuperEntity(result)(d)
       e2.setSuperEntity(result)(d)
+      result.attr[TrueBow].add(e1.attr[TrueBow].value)(d)
+      result.attr[TrueBow].add(e2.attr[TrueBow].value)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent1)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent2)(d)
       result
@@ -243,7 +287,7 @@ object Coref3 {
 
   def testBags:Unit ={
     val bag1 = new ComposableBagOfWords(Seq("ICML", "NIPS", "UAI", "AAAI", "KDD"))
-    val bag2 = new ComposableBagOfWords(Seq("ACL","EMNLP","HLT","KDD"))
+    val bag2 = new ComposableBagOfWords(Seq("ICML","ACL","EMNLP","HLT","KDD"))
     val bag3 = new ComposableBagOfWords(Seq("KDD"))
     val combined = new ComposableBagOfWords(Seq("IJCAI"))
     printBag(combined,"CombinedInitial")
@@ -255,14 +299,16 @@ object Coref3 {
     printBag(combined,"removedBag3")
     combined.incorporateBags
     printBag(combined,"incorporated all")
-    combined.removeBag(bag1)
-    combined.removeBag(bag2)
     combined.addBag(bag3)
+    printBag(combined,"add1")
+    combined.removeBag(bag2)
+    printBag(combined,"rem1")
+    combined.removeBag(bag1)
     printBag(combined,"undoAll")
     combined.incorporateBags
     printBag(combined,"undoAllIncorporated")
     def printBag(b:ComposableBagOfWords,str:String):Unit ={
-      println(str+":"+b)
+      println(str+":"+b.getCombinedBag)
       println("  l2a: "+b.l2Norm)
       println("  l2b: "+b.l2NormBruteForce)
     }
@@ -307,6 +353,7 @@ object Coref3 {
   }
 
   def main(args:Array[String]): Unit = {
+    testBags
     populateDB
     val mentions = Entities.nextBatch
     for(m <- mentions){
@@ -363,6 +410,7 @@ object Coref3 {
     }else{
       result.append("SubEntity["+e.attr[EntityName].value+"]")
     }
+    result.append("{"+e.attr[TrueBow].value.toString+"}")
     result.append("\n")
     for(subEntity <- e.subEntitiesIterator)entityString(subEntity,result,depth+1)
   }
@@ -393,34 +441,50 @@ trait BagOfWords{ // extends scala.collection.Map[String,Double]{
     scala.math.sqrt(result)
   }
 }
-
-class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,Double]=null) extends BagOfWords{
-  /*Only works if one bag is added or removed... otherwise computation becomes expensive. Solution
-  *   change addBags and removeBags to "addBag" and "removeBag", allow just one.
-  *   If more bags are to be added or removed simultaneously, then revert to the old brute force way.
-  *   Do this in a way so that undo/redo operations result in the correct final bag*/
+trait ProposeAndCombineBags extends BagOfWords{
+  def addBag(that:BagOfWords):Unit
+  def removeBag(that:BagOfWords):Unit
+  def incorporateBags:Unit
+}
+/**Efficient implementation for bags of words where proposals temporarily hypothesize new bags, and these proposals are efficiently undone/redone.*/
+class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,Double]=null) extends ProposeAndCombineBags{
   val _bag = new HashMap[String,Double]
-  var addBags = new HashSet[BagOfWords]
-  var removeBags = new HashSet[BagOfWords]
+  var addBag:Option[BagOfWords] = None
+  var removeBag:Option[BagOfWords] = None
   protected var _l2Norm2 = 0.0
 
   if(initialWords!=null)for(w<-initialWords)this += (w,1.0)
   if(initialBag!=null)for((k,v)<-initialBag)this += (k,v)
-  override def toString = _bag.toString
+  override def toString = getCombinedBag.toString //_bag.toString
   def incorporateBags:Unit = {
-    addBags.foreach(this ++= _)
-    removeBags.foreach(this --= _)
-    addBags = new HashSet[BagOfWords]
-    removeBags = new HashSet[BagOfWords]
+    addBag.foreach(this ++= _)
+    removeBag.foreach(this --= _)
+    addBag = None
+    removeBag = None
   }
-  def discardBags:Unit ={
-    addBags = new HashSet[BagOfWords]
-    removeBags = new HashSet[BagOfWords]
+  @deprecated def discardBags:Unit ={
+    addBag = None
+    removeBag = None
   }
-  def addBag(that:BagOfWords):Unit = addBags += that
-  def removeBag(that:BagOfWords):Unit = removeBags += that
-  def size = _bag.size
-  def iterator = _bag.iterator
+  def addBag(that:BagOfWords):Unit ={
+    if(addBag == None)addBag = Some(that)
+    else if(removeBag!=None && removeBag.get.eq(that))removeBag=None
+    else this ++= that
+  }
+  def removeBag(that:BagOfWords):Unit ={
+    if(removeBag == None)removeBag = Some(that)
+    else if(addBag!=None && addBag .get.eq(that))addBag=None
+    else this --= that
+  }
+  def getCombinedBag:HashMap[String,Double] ={
+    val combined = new HashMap[String,Double]
+    for((k,v)<-this.iterator)combined(k) = combined.getOrElse(k,0.0)+v
+    for(bag<-addBag)for((k,v)<-bag.iterator)combined(k) = combined.getOrElse(k,0.0)+v
+    for(bag<-removeBag)for((k,v)<-bag.iterator)combined(k) = combined.getOrElse(k,0.0)-v
+    combined
+  }
+  def size = {var r =_bag.size;for(b<-addBag)r+=b.size;for(b<-removeBag)r+=b.size;r}
+  def iterator = _bag.iterator //this is technical wrong, oh well. Tricky to think about the semantics of this in the context of "removeBag"
   def apply(s:String):Double = _bag.getOrElse(s,0.0)
   def contains(s:String):Boolean = _bag.contains(s)
   def *(that:BagOfWords):Double = {
@@ -428,8 +492,8 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
     var result = 0.0
     for((word,weight) <- iterator)
       result += weight * that(word)
-    addBags.foreach(result += _ * this)
-    removeBags.foreach(result += _ * this)
+    for(bag<-addBag)result += bag  * this
+    for(bag<-removeBag)result -= bag * this
     result
   }
   def +=(s:String,w:Double=1.0):Unit ={
@@ -443,16 +507,82 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
   }
   def l2Norm:Double ={
     var result = _l2Norm2
-    addBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result += l2*l2+bow*this})
-    removeBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result += -l2*l2-bow*this})
+    val addL2Norm2 = getOptionBagL2Norm2(addBag)
+    val removeL2Norm2 = getOptionBagL2Norm2(removeBag)
+    result += addL2Norm2 + removeL2Norm2 + 2 * (this * addBag - this * removeBag  - mult (addBag,removeBag))
     scala.math.sqrt(result)
   }
-  override def l2NormBruteForce:Double = {
-    var result=super.l2NormBruteForce
-    result = result * result
-    addBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result += l2*l2})
-    removeBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result -= l2*l2})
+  protected def getOptionBagL2Norm2(bag:Option[BagOfWords]):Double = if(bag==None)0.0 else bag.get.l2Norm * bag.get.l2Norm
+  protected def *(that:Option[BagOfWords]):Double = if(that==None)0.0 else that.get * this
+  protected def mult(b1:Option[BagOfWords],b2:Option[BagOfWords]):Double = if(b1==None || b2==None)0.0 else b1.get * b2.get
+  override def l2NormBruteForce:Double ={
+    var result = 0.0
+    val combined = getCombinedBag
+    for((k,v)<-combined)result += v*v
+    //System.out.println("BRUTE FORCE: "+this.iterator.toSeq.toString)
+    //println("  v: "+result)
     scala.math.sqrt(result)
+  }
+}
+trait BagOfWordsVar extends Variable with VarAndValueGenericDomain[BagOfWordsVar,ProposeAndCombineBags] with Iterable[(String,Double)]
+class BagOfWordsVariable(initialWords:Iterable[String]=Nil) extends BagOfWordsVar with VarAndValueGenericDomain[BagOfWordsVariable,ProposeAndCombineBags] {
+  // Note that the returned value is not immutable.
+  def value = _members
+  private val _members:ProposeAndCombineBags = new ComposableBagOfWords(initialWords)
+  def members: ProposeAndCombineBags = _members
+  def iterator = _members.iterator
+  override def size = _members.size
+  def contains(x:String) = _members.contains(x)
+  def accept:Unit = _members.incorporateBags
+  def add(x:String,w:Double=1.0)(implicit d:DiffList):Unit = {
+    if(d!=null) d += new BagOfWordsVariableAddStringDiff(x,w)
+    _members += (x,w)
+  }
+  def remove(x:String,w:Double = 1.0)(implicit d:DiffList):Unit = {
+    if(d!=null) d += new BagOfWordsVariableRemoveStringDiff(x,w)
+    _members -= (x,w)
+  }
+  def add(x:BagOfWords)(implicit d: DiffList): Unit =  {
+    if (d != null) d += new BagOfWordsVariableAddBagDiff(x)
+    _members.addBag(x)
+  }
+  def remove(x: BagOfWords)(implicit d: DiffList): Unit = {
+    if (d != null) d += new BagOfWordsVariableRemoveBagDiff(x)
+    _members.removeBag(x)
+  }
+  final def +=(x:BagOfWords): Unit = add(x)(null)
+  final def -=(x:BagOfWords): Unit = remove(x)(null)
+  final def ++=(xs:Iterable[String]): Unit = xs.foreach(add(_)(null))
+  final def --=(xs:Iterable[String]): Unit = xs.foreach(remove(_)(null))
+  final def ++=(xs:HashMap[String,Double]): Unit = for((k,v)<-xs)add(k,v)(null)
+  final def --=(xs:HashMap[String,Double]): Unit = for((k,v)<-xs)remove(k,v)(null)
+  case class BagOfWordsVariableAddStringDiff(added: String,w:Double) extends Diff {
+    // Console.println ("new SetVariableAddDiff added="+added)
+    def variable: BagOfWordsVariable = BagOfWordsVariable.this
+    def redo = _members += (added,w)
+    def undo = _members -= (added,w)
+    override def toString = "BagOfWordsVariableAddStringDiff of " + added + " to " + BagOfWordsVariable.this
+  }
+  case class BagOfWordsVariableRemoveStringDiff(removed: String,w:Double) extends Diff {
+    //        Console.println ("new SetVariableRemoveDiff removed="+removed)
+    def variable: BagOfWordsVariable = BagOfWordsVariable.this
+    def redo = _members -= (removed,w)
+    def undo = _members += (removed,w)
+    override def toString = "BagOfWordsVariableRemoveStringDiff of " + removed + " from " + BagOfWordsVariable.this
+  }
+  case class BagOfWordsVariableAddBagDiff(added:BagOfWords) extends Diff {
+    // Console.println ("new SetVariableAddDiff added="+added)
+    def variable: BagOfWordsVariable = BagOfWordsVariable.this
+    def redo = _members.addBag(added)
+    def undo = _members.removeBag(added)
+    override def toString = "BagOfWordsVariableAddBagDiff of " + added + " to " + BagOfWordsVariable.this
+  }
+  case class BagOfWordsVariableRemoveBagDiff(removed: BagOfWords) extends Diff {
+    //        Console.println ("new SetVariableRemoveDiff removed="+removed)
+    def variable: BagOfWordsVariable = BagOfWordsVariable.this
+    def redo = _members.removeBag(removed)
+    def undo = _members.addBag(removed)
+    override def toString = "BagOfWordsVariableRemoveBagDiff of " + removed + " from " + BagOfWordsVariable.this
   }
 }
 
