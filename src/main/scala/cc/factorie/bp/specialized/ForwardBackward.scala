@@ -63,7 +63,7 @@ object ForwardBackward {
         i += 1
       }
 
-      // normalize the node marginal
+      // normalize the edge marginal
       i = 0
       while (i < marginal(vi).length) {
         marginal(vi)(i) = exp(marginal(vi)(i) - logsum)
@@ -100,7 +100,7 @@ object ForwardBackward {
   private def getTransScores[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
          transTemplate: TemplateWithDotStatistics2[LV, LV]
        ): (Int,Int) => Double = {
-    val ds = transTemplate.statisticsDomains(0).dimensionSize // optimization
+    val ds = transTemplate.statisticsDomains(1).dimensionSize // optimization
     (i: Int, j: Int) => transTemplate.weights(i * ds + j)
   }
   
@@ -136,7 +136,7 @@ object ForwardBackward {
             biasTemplate: TemplateWithDotStatistics1[LV] = null
           ): (Map[DotFamily, Vector], Double) = {
 
-    val (alpha, beta, alphaZs) = search(vs, localTemplate, transTemplate, biasTemplate)
+    val (alpha, beta) = search(vs, localTemplate, transTemplate, biasTemplate)
 
     val nodeMargs = nodeMarginals(alpha, beta)
     val edgeMargs = edgeMarginals(alpha, beta, getTransScores(transTemplate))
@@ -168,7 +168,7 @@ object ForwardBackward {
             localTemplate: TemplateWithDotStatistics2[LV, OV],
             transTemplate: TemplateWithDotStatistics2[LV, LV],
             biasTemplate: TemplateWithDotStatistics1[LV] = null
-          ): (Array[Array[Double]], Array[Array[Double]], Array[Double]) = {
+          ): (Array[Array[Double]], Array[Array[Double]]) = {
 
     if (vs.isEmpty) throw new Error("Can't run forwardBackward without variables.")
 
@@ -180,8 +180,6 @@ object ForwardBackward {
     val alpha = Array.fill(vs.size)(Array.fill(ds)(Double.NaN))
     val beta = Array.fill(vs.size)(Array.fill(ds)(Double.NaN))
     
-    val alphaNormalizers = Array.fill(vs.size)(Double.NaN)
-
     // forward
     var vi = 0
     var i = 0
@@ -189,7 +187,6 @@ object ForwardBackward {
       alpha(vi)(i) = localScores(vi)(i)
       i += 1
     }
-    //normalizeLogProb(alpha(vi))
     vi += 1
     while (vi < vs.size) {
       i = 0
@@ -198,14 +195,12 @@ object ForwardBackward {
         var di = 0
         while (di < ds) {
           val prev = alpha(vi-1)(di)
-          //if (!prev.isNaN)
           newAlpha = sumLogProb(newAlpha, prev + transScores(di,i) + localScores(vi)(i))
           di += 1
         }
         alpha(vi)(i) = newAlpha
         i += 1
       }
-      //alphaNormalizers(vi) = math.log(normalizeLogProb(alpha(vi)))
       vi += 1
     }
 
@@ -224,19 +219,17 @@ object ForwardBackward {
         var di = 0
         while (di < ds) {
           val prev = beta(vi+1)(di)
-          //if (!prev.isNaN)
           newBeta = sumLogProb(newBeta, prev + transScores(i, di) + localScores(vi)(i))
           di += 1
         }
         beta(vi)(i) = newBeta
         i += 1
       }
-      //normalizeLogProb(beta(vi))
       vi -= 1
     }
 
 
-    (alpha, beta, alphaNormalizers)
+    (alpha, beta)
   }
 
 }
