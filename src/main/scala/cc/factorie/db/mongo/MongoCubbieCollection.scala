@@ -7,6 +7,7 @@ import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection
 import org.bson.types.BasicBSONList
 import collection.mutable.{ArrayBuffer, HashMap}
 import collection.mutable.{Map => MutableMap}
+import collection.JavaConversions
 
 /**
  * A MongoCubbieCollection stores cubbies in a Mongo collection.
@@ -59,8 +60,16 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
    * Inserts a cubbie into the collection.
    * @param c the cubbie to add.
    */
-  def +=(c: C) {
+  def +=(c: C) = {
     coll.insert(eagerDBO(c))
+  }
+
+  /**
+   * Batch insert of a collection of cubbies.
+   * @param c collection to insert.
+   */
+  def ++=(c: TraversableOnce[C]) =  {
+    coll.insert(JavaConversions.seqAsJavaList(c.map(eagerDBO(_)).toSeq))
   }
 
   case class Modification(op: String, value: Any)
@@ -423,7 +432,6 @@ object CubbieMongoTest {
     println("****")
     println(persons.query(_.idsIn(Seq(1, 2))).mkString("\n"))
     println(persons.query(_.idIs(1)).mkString("\n"))
-
 
 
   }
