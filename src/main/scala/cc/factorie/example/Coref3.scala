@@ -55,6 +55,11 @@ object Coref3 {
     attr += new IsEntity(this,this.isRoot)
     attr += new IsMention(this,this.isObserved)
    */
+    def fetchMyEntity(cr:CubbieRefs): MyEntity = {
+      val ne = fetchEntity(cr).asInstanceOf[MyEntity]
+      ne.name.set(name.value)(null)
+      ne
+    }
     override def newEntity:NamedEntity = new MyEntity("UNINITIALIZED")
     override def newEntityCubbie:NamedEntityCubbie = new NamedEntityCubbie
     override def finishStoreEntity(e:Entity): Unit = {
@@ -282,81 +287,16 @@ object Coref3 {
         }
       }
       entities ++= newEntities
-      if(proposal.diff.size>0){
-        println("\nNEW WORLD")
-        printEntities(entities)
-      }
     }
   }
   def isMention(e:Entity):Boolean = e.isObserved
 
 
 
-/*
-  def testBags:Unit = {
-    val d = new DiffList
-    val bag1 = new BagOfWordsHashMap(Seq("ICML", "NIPS", "UAI", "AAAI", "KDD"))
-    val bag2 = new BagOfWordsHashMap(Seq("ACL","EMNLP","HLT","KDD"))
-    val bagVar = new BagOfWordsVariable[BagOfWordsProposeAndDecide]
-    bagVar.add(bag1)(d)
-    bagVar.add(bag2)(d)
-
-    printBag(bag1,"Bag1")
-    printBag(bag2,"Bag2")
-    printBag(bagVar.value,"BagCombineDo")
-    d.undo
-    printBag(bagVar.value,"BagCombineUndo")
-    d.redo
-    printBag(bagVar.value,"BagCombineRedo")
-    for(diff <- d){
-      diff.variable match{
-        case bag:BagOfWordsVariable[BagOfWordsProposeAndDecide] => {
-          bag.accept
-          println("accepting bag")
-        }
-      }
-    }
-    printBag(bagVar.value,"BagCombineAccept")
-    def printBag(b:BagOfWordsHashMap,str:String):Unit ={
-      println(str)
-      println("  l2a: "+b.l2Norm)
-      println("  l2b: "+b.l2Norm)
-    }
-  }
-  */
-
-  def testBags:Unit ={
-    val bag1 = new ComposableBagOfWords(Seq("ICML", "NIPS", "UAI", "AAAI", "KDD"))
-    val bag2 = new ComposableBagOfWords(Seq("ICML","ACL","EMNLP","HLT","KDD"))
-    val bag3 = new ComposableBagOfWords(Seq("KDD"))
-    val combined = new ComposableBagOfWords(Seq("IJCAI"))
-    printBag(combined,"CombinedInitial")
-    combined.addBag(bag1)
-    printBag(combined,"addedBag1")
-    combined.addBag(bag2)
-    printBag(combined,"addedBag2")
-    combined.removeBag(bag3)
-    printBag(combined,"removedBag3")
-    combined.incorporateBags
-    printBag(combined,"incorporated all")
-    combined.addBag(bag3)
-    printBag(combined,"add1")
-    combined.removeBag(bag2)
-    printBag(combined,"rem1")
-    combined.removeBag(bag1)
-    printBag(combined,"undoAll")
-    combined.incorporateBags
-    printBag(combined,"undoAllIncorporated")
-    def printBag(b:ComposableBagOfWords,str:String):Unit ={
-      println(str+":"+b.getCombinedBag)
-      println("  l2a: "+b.l2Norm)
-      println("  l2b: "+b.l2NormBruteForce)
-    }
-  }
-
   object Entities {
     import MongoCubbieConverter._
     private var cache = new CubbieRefs
+    private var oldCubbies:HashMap[Any,MyEntityCubbie]=null
     private val mongoConn = new Mongo("localhost", 27017)
     private val mongoDB = mongoConn.getDB("mongocubbie-test")
     private val coll = mongoDB.getCollection("persons")
@@ -369,20 +309,28 @@ object Coref3 {
       else None
     }*/
     def ++= (es:Iterable[MyEntity]) = for(ec<-es.map((new MyEntityCubbie).storeNamedEntity(_)))entities += ec
-    def getAll:Seq[Entity] = {
-      //val result = entities.map(MongoCubbieConverter.toCubbie(_))
-     // result
+    protected def getAll:Seq[(MyEntityCubbie,MyEntity)] = {
       val result = for(ec <- entities) yield {
-        val e = ec.fetchEntity(cache)
+        val e = ec.fetchMyEntity(cache)
         ec.finishFetchEntity(e)
-        e
+        (ec,e)
       }
       result.toSeq
     }
-    def nextBatch:Seq[Entity] ={
+    def nextBatch:Seq[MyEntity] ={
+      cache = new CubbieRefs
+      oldCubbies = new HashMap[Any,MyEntityCubbie]
       val result = getAll
-      result.map(_.initializeAttributesOfStructure)
-      result.toSeq
+      for((ec,e)<-result)oldCubbies += e.id -> ec
+      result.map(_._2.initializeAttributesOfStructure)
+      result.map(_._2).toSeq
+    }
+    def store(entitiesToStore:Iterable[MyEntity]):Unit ={
+      val a = new MyEntityCubbie
+      val deletedByInference = entitiesToStore.filter(!_.isConnected)
+      val updatedOrAddedByInference = entitiesToStore.filter(_.isConnected)
+      for(deleted <- deletedByInference)entities.updateDelta(oldCubbies.getOrElse(deleted.id,null),null)
+      for(updatedOrAdded <- updatedOrAddedByInference)entities.updateDelta(oldCubbies.getOrElse(updatedOrAdded.id,null),(new MyEntityCubbie).storeNamedEntity(updatedOrAdded))
     }
   }
 
@@ -393,7 +341,6 @@ object Coref3 {
   }
 
   def main(args:Array[String]): Unit = {
-    testBags
     populateDB
     val mentions = Entities.nextBatch
     for(m <- mentions){
@@ -410,6 +357,8 @@ object Coref3 {
     println("\nPRINTING ENTITIES")
     printEntities(predictor.getEntities)
     println("Inferred entities: "+predictor.getEntities.size)
+    predictor.performMaintenance
+    Entities.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[MyEntity]))
     // priority queue
     // get next n entities from db, and their canopy
     // how much of tree substructure to retrieve, how to represent the "fringe"
