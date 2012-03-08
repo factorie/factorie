@@ -94,7 +94,7 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
     require(oldCubbie.id == newCubbie.id)
     val keys = oldCubbie._map.keySet ++ newCubbie._map.keySet
     val insertDBO = new BasicDBObject()
-    for (key <- keys) {
+    for (key <- keys; if (key != "_id")) {
       val mod = modification(oldCubbie._map.get(key), newCubbie._map.get(key))
       val bag = insertDBO.getOrElseUpdate(mod.op, new BasicDBObject()).asInstanceOf[DBObject]
       bag.put(key, mod.value)
