@@ -54,8 +54,8 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
   def init = {
     _weights = new ArrayFromVectors(families.map(_.weights))
     println("Number of pieces: " + pieces.length)
-    println("Number of active weights: " + _weights.vectorsArraySize)
-    println("Number of total weights: " + families.foldLeft(0)(_ + _.weights.length))
+    println("Number of active weights: %s (%d)".format(families.map(_.weights.activeDomainSize).mkString(", "), _weights.vectorsArraySize))
+    println("Number of total weights:  %s (%d)".format(families.map(_.weights.length).mkString(", "), families.foldLeft(0)(_ + _.weights.length)))
   }
 
   def numOptimizableParameters = _weights.vectorsArraySize
@@ -188,105 +188,109 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
 
 
 class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
-                 val minibatchSize: Int,  var initialLearningRate: Double,
+                 val minibatchSize: Int, var initialLearningRate: Double,
                  val decayDamping: Double, val l2: Double,
                  val l1: Double = 0.0, val verbose: Boolean = true,
-                 val calibrateLrSteps : Int = 10) {
- var t = 0.0
- def lrate(t: Double) = initialLearningRate/(1 + l2*t)
+                 val calibrateLrSteps: Int = 10) {
+  var t = 0.0
 
- families.foreach(_.freezeDomains)
- val gradients = families.map(f => {new DenseVector(f.weights.length)}).toArray
+  def lrate(t: Double) = initialLearningRate / (1 + l2 * t)
 
- var batches : Seq[Seq[Piece]] = null
- val rng = new util.Random()
- def initializeBatches() {
-   rng.shuffle(pieces)
-   batches = pieces.grouped(minibatchSize).toSeq
- }
+  families.foreach(_.freezeDomains)
+  val gradients = families.map(f => {
+    new DenseVector(f.weights.length)
+  }).toArray
 
- def updateGradients(batch: Int) = {
-   var obj = 0.0
-   for (vg <- batches(batch).map(_.valueAndGradient)) {
-     obj += vg._1
-     val pg = vg._2
-     var i = 0
-     families.foreach(f => {
-       gradients(i) += pg(f) * (1.0/batches(batch).length)
-       i += 1
-     })
-   }
-   obj
- }
+  var batches: Seq[Seq[Piece]] = null
+  val rng = new util.Random()
 
- def truncate(x: Double) = math.signum(x)*math.max(0.0, math.abs(x) - l1)
+  def initializeBatches() {
+    rng.shuffle(pieces)
+    batches = pieces.grouped(minibatchSize).toSeq
+  }
 
- def addGradients() {
-   var f = 0
-   val lr = lrate(t)
-   while (f < families.length) {
-     val fam = families(f)
-     val grad = gradients(f)
-     var i = 0
-     while (i < fam.weights.length) {
-       fam.weights(i) = truncate(fam.weights(i) + lr*(grad(i) - l2*fam.weights(i)))
-       grad(i) = 0.0
-       i += 1
-     }
-     f += 1
-   }
- }
+  def updateGradients(batch: Int) = {
+    var obj = 0.0
+    for (vg <- batches(batch).map(_.valueAndGradient)) {
+      obj += vg._1
+      val pg = vg._2
+      var i = 0
+      families.foreach(f => {
+        gradients(i) += pg(f) * (1.0 / batches(batch).length)
+        i += 1
+      })
+    }
+    obj
+  }
 
- def doStep(i: Int) = {
-   t += 1
-   val r = updateGradients(i)
-   addGradients()
-   r
- }
+  def truncate(x: Double) = math.signum(x) * math.max(0.0, math.abs(x) - l1)
 
- def testLr(eta: Double) = {
-   val oldLr = initialLearningRate
-   initialLearningRate = eta
-   val oldWeights = families.map(f => {
-     val a = Array.ofDim[Double](f.weights.size)
-     f.weights.copyToArray(a)
-     a
-   }).toArray
-   var obj = 0.0
-   var i = 0
-   while (i < calibrateLrSteps) {
-     obj += doStep(i)
-     i += 1
-   }
-   t -= calibrateLrSteps
-   initialLearningRate = oldLr
-   i = 0
-   obj -= (5.0*l2/batches.length) * families.sumDoubles(f => f.weights.dot(f.weights))
-   while (i < families.length) {
-     val fam = families(i)
-     val ws = oldWeights(i)
-     var j = 0
-     while (j < fam.weights.length) {
-       fam.weights(j) = ws(j)
-       j += 1
-     }
-     i += 1
-   }
-   if (verbose) println("lr: "+eta+" obj: "+obj)
-   obj
- }
+  def addGradients() {
+    var f = 0
+    val lr = lrate(t)
+    while (f < families.length) {
+      val fam = families(f)
+      val grad = gradients(f)
+      var i = 0
+      while (i < fam.weights.length) {
+        fam.weights(i) = truncate(fam.weights(i) + lr * (grad(i) - l2 * fam.weights(i)))
+        grad(i) = 0.0
+        i += 1
+      }
+      f += 1
+    }
+  }
 
- def calibrateLearningRate() {
-   val eta = List(100.0, 10.0, 1.0, 0.1, 0.01).map(_*initialLearningRate).map(r => (r,testLr(r))).maxBy(x => (x._2))._1
-   initialLearningRate = eta
-   if (verbose) println("Using learning rate "+initialLearningRate)
- }
+  def doStep(i: Int) = {
+    t += 1
+    val r = updateGradients(i)
+    addGradients()
+    r
+  }
 
- def iterate() {
-   //t = 0
-   initializeBatches()
-   calibrateLearningRate()
-   for (i <- 0 until batches.length)
-     doStep(i)
- }
+  def testLr(eta: Double) = {
+    val oldLr = initialLearningRate
+    initialLearningRate = eta
+    val oldWeights = families.map(f => {
+      val a = Array.ofDim[Double](f.weights.size)
+      f.weights.copyToArray(a)
+      a
+    }).toArray
+    var obj = 0.0
+    var i = 0
+    while (i < calibrateLrSteps) {
+      obj += doStep(i)
+      i += 1
+    }
+    t -= calibrateLrSteps
+    initialLearningRate = oldLr
+    i = 0
+    obj -= (5.0 * l2 / batches.length) * families.sumDoubles(f => f.weights.dot(f.weights))
+    while (i < families.length) {
+      val fam = families(i)
+      val ws = oldWeights(i)
+      var j = 0
+      while (j < fam.weights.length) {
+        fam.weights(j) = ws(j)
+        j += 1
+      }
+      i += 1
+    }
+    if (verbose) println("lr: " + eta + " obj: " + obj)
+    obj
+  }
+
+  def calibrateLearningRate() {
+    val eta = List(100.0, 10.0, 1.0, 0.1, 0.01).map(_ * initialLearningRate).map(r => (r, testLr(r))).maxBy(x => (x._2))._1
+    initialLearningRate = eta
+    if (verbose) println("Using learning rate " + initialLearningRate)
+  }
+
+  def iterate() {
+    //t = 0
+    initializeBatches()
+    calibrateLearningRate()
+    for (i <- 0 until batches.length)
+      doStep(i)
+  }
 }
