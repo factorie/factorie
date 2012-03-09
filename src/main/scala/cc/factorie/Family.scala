@@ -119,7 +119,10 @@ trait VectorFamily extends Family {
 trait DotFamily extends VectorFamily {
   //type TemplateType <: DotFamily
   type FamilyType <: DotFamily
-  lazy val weights: Vector = { freezeDomains; newWeightsTypeVector } // Dense by default, may be override in sub-traits
+  var _weights: Vector = null // Dense by default, may be override in sub-traits
+  lazy val defaultWeights = { freezeDomains; newWeightsTypeVector }
+  def weights = { if (_weights != null) _weights else setWeights(defaultWeights) }
+  def setWeights(w: Vector) = { _weights = w; _weights }
   def newWeightsTypeVector: Vector = new DenseVector(statisticsVectorLength)
   def score(s:StatisticsType) = if (s eq null) 0.0 else weights match {
     case w:DenseVector => { w dot s.vector }
