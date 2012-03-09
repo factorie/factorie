@@ -212,7 +212,7 @@ object ForwardBackward {
     vi = vs.size-1
     i = 0
     while (i < ds) {
-      beta(vi)(i) = localScores(vi)(i)
+      beta(vi)(i) = 0.0
       i += 1
     }
     vi -= 1
