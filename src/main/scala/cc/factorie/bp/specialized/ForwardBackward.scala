@@ -30,11 +30,7 @@ object ForwardBackward {
       }
 
       // normalize the node marginal
-      i = 0
-      while (i < ds) {
-        marginal(vi)(i) = exp(marginal(vi)(i) - logsum)
-        i += 1
-      }
+      logNormalize(marginal(vi), logsum)
       vi += 1
     }
 
@@ -62,17 +58,24 @@ object ForwardBackward {
       }
 
       // normalize the edge marginal
-      i = 0
-      while (i < marginal(vi).length) {
-        marginal(vi)(i) = exp(marginal(vi)(i) - logsum)
-        i += 1
-      }
+      logNormalize(marginal(vi), logsum)
       vi += 1
     }
 
     marginal
   }
-  
+
+  private def logNormalize(a: Array[Double], logsum: Double) {
+    var i = 0
+    var sum = 0.0
+    while (i < a.length) {
+      a(i) = exp(a(i) - logsum)
+        sum += a(i)
+        i += 1
+      }
+      assert(math.abs(sum - 1.0) < 0.0001, "sum is "+sum)
+  }
+
   private def getLocalScores[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
          vs: Seq[LV],
          localTemplate: TemplateWithDotStatistics2[LV, OV],
