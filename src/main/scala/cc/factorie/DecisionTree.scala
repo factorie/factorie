@@ -53,11 +53,11 @@ trait DecisionTreeStatistics2[S1<:DiscreteValue,S2<:DiscreteVectorValue] extends
     dtree
   }
   protected def  bestInfoGain(stats:Iterable[StatisticsType]): Int = throw new Error("Implement me.") // Be clever to make this efficient
-  override def save(dirname:String, gzip: Boolean = true): Unit = {
+  override def save(dirname:String, gzip: Boolean = false): Unit = {
     super.save(dirname, gzip)
     throw new Error("Not yet implemented")
   }
-  override def load(dirname:String, gzip: Boolean = true): Unit = {
+  override def load(dirname:String, gzip: Boolean = false): Unit = {
     super.load(dirname, gzip)
     throw new Error("Not yet implemented")
   }
