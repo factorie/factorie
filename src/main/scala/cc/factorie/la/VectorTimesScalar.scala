@@ -22,6 +22,8 @@ class VectorTimesScalar(val vector:Vector, val scalar:Double) extends Vector {
   def activeDomainSize: Int = vector.activeDomainSize
   def activeDomain: Iterable[Int] = vector.activeDomain
   def dot(v:Vector): Double = vector.dot(v) * scalar
+  override def *(scalar:Double) = new VectorTimesScalar(this.vector, scalar*this.scalar)
+  override def update(idx: Int, value: Double) { vector.update(idx, value/scalar) }
   def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] {
     val iter = vector.activeElements
     def hasNext = iter.hasNext
