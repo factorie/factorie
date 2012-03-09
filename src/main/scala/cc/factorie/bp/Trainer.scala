@@ -3,7 +3,7 @@ package cc.factorie.bp
 import cc.factorie.{DotFamily, Model}
 import cc.factorie.optimize.OptimizableByValueAndGradient
 import collection.mutable.{HashMap, Map}
-import cc.factorie.la.{ArrayFromVectors, Vector, DenseVector}
+import cc.factorie.la.{SparseVector, ArrayFromVectors, Vector, DenseVector}
 
 /**
  * @author sameer
@@ -198,7 +198,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
 
   families.foreach(_.freezeDomains)
   val gradients = families.map(f => {
-    new DenseVector(f.weights.length)
+    new SparseVector(f.weights.length)
   }).toArray
 
   var batches: Seq[Seq[Piece]] = null
@@ -227,15 +227,23 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
 
   def addGradients() {
     var f = 0
-    val lr = lrate(t)
+    val lr: Double = lrate(t)
     while (f < families.length) {
       val fam = families(f)
       val grad = gradients(f)
-      var i = 0
-      while (i < fam.weights.length) {
-        fam.weights(i) = truncate(fam.weights(i) + lr * (grad(i) - l2 * fam.weights(i)))
-        grad(i) = 0.0
-        i += 1
+      if (l1 == 0.0) {
+        val mult = 1.0-l2*lr
+        val scaledWeights = fam.weights * mult
+        fam.setWeights(scaledWeights)
+        fam.weights += grad * lr
+        gradients(f) = new SparseVector(families(f).weights.length)
+      } else {
+        var i = 0
+        while (i < fam.weights.length) {
+          fam.weights(i) = truncate(fam.weights(i) + lr * (grad(i) - l2 * fam.weights(i)))
+          grad(i) = 0.0
+          i += 1
+        }
       }
       f += 1
     }

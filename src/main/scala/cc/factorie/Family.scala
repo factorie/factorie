@@ -126,6 +126,7 @@ trait DotFamily extends VectorFamily {
   def newWeightsTypeVector: Vector = new DenseVector(statisticsVectorLength)
   def score(s:StatisticsType) = if (s eq null) 0.0 else weights match {
     case w:DenseVector => { w dot s.vector }
+    case w:VectorTimesScalar => {w.scalar * (w.vector dot s.vector)}
     //case w:SparseHashVector => w dot s.vector // TODO Uncomment this.  It was only commented because latest version of scalala didn't seem to have this class any more
     case w:SparseVector => w dot s.vector
   }
