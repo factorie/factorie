@@ -191,17 +191,17 @@ class ForwardBackwardPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
     result
   }
 
-
   val m = new TemplateModel(localTemplate, transTemplate)
   def truthScore: Double = m.score(vars)
 
   def valueAndGradient: (Double,  Map[DotFamily, Vector]) = {
     val (exps, logZ) = ForwardBackward.featureExpectationsAndLogZ(vars, localTemplate, transTemplate)
     val gradient = new HashMap[DotFamily, Vector]
-    for ((family, expectation) <- exps) {
-      val grad = empiricalCounts(family.asInstanceOf[DotFamily with Template])
-      grad += expectation * -1.0
-      gradient(family) = grad
+    for (df <- families) {
+      val vector = new SparseVector(df.statisticsVectorLength)
+      vector += (exps(df) * -1.0)
+      vector += empiricalCounts(df)
+      gradient(df) = vector
     }
     (truthScore - logZ, gradient)
   }

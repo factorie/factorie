@@ -1,7 +1,7 @@
 package cc.factorie.bp.optimized
 
 import cc.factorie._
-import cc.factorie.maths.{sumLogProb, sumLogProbs, normalizeLogProb}
+import cc.factorie.maths.{sumLogProb, sumLogProbs}
 import la.{SparseVector, DenseVector, Vector}
 import scala.math.exp
 import collection.mutable.Map
@@ -88,12 +88,13 @@ object ForwardBackward {
         new DenseVector(localTemplate.statisticsDomains(0).dimensionSize) // todo: this allocation is unnecessary, and the domain size is awkward
     }
 
-    val arrays = Array.fill[Array[Double]](vs.size)(Array.ofDim[Double](vs.head.domain.size))
+    val arrays = Array.fill(vs.size)(Array.fill(vs.head.domain.size)(Double.NaN))
     for ((v,vi) <- vs.zipWithIndex) {
       val localFactor = localTemplate.factors(v).head
       for ((_,di) <- v.settings.zipWithIndex)
         arrays(vi)(di) = localFactor.score + biasScores(di)
     }
+
     arrays
   }
 
