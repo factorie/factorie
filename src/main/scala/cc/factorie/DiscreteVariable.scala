@@ -34,23 +34,25 @@ trait MutableDiscreteVar extends DiscreteVar with MutableVar {
 
 // TODO Consider the following
 abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with IterableSettings {
-  def this(initialValue:Int) = { this(); _value = initialValue }
-  def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _value = initialValue.intValue }
-  private var _value: Int = 0
+  def this(initialValue:Int) = { this(); _value(initialValue) }
+  def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _value(initialValue.intValue) }
+  protected var _thisValue: Int = 0
+  protected def _value = _thisValue
+  protected def _value(i: Int) { _thisValue = i }
   override def intValue = _value
   def value: Value = domain.getValue(_value)
   def set(newValue:ValueType)(implicit d:DiffList): Unit = if (newValue.intValue != _value) {
     assert((newValue eq null) || newValue.domain == domain)
     if (d ne null) d += new DiscreteVariableDiff(_value, newValue.intValue)
-    _value = newValue.intValue
+    _value(newValue.intValue)
   }
   override def set(newValue:Int)(implicit d:DiffList): Unit = if (newValue != _value) {
     assert(newValue < domain.size)
     if (d ne null) d += new DiscreteVariableDiff(_value, newValue)
-    _value = newValue
+    _value(newValue)
   }
   final def :=(i:Int): Unit = set(i)(null)
-  @inline protected final def _set(newValue:ValueType): Unit = _value = newValue.intValue
+  @inline protected final def _set(newValue:ValueType): Unit = _value(newValue.intValue)
   def settings = new SettingIterator {
     // TODO Base this on a domain.iterator instead, for efficiency
     var i = -1
@@ -77,8 +79,8 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
 
   case class DiscreteVariableDiff(oldValue: Int, newValue: Int) extends Diff {
     @inline final def variable: DiscreteVariable = DiscreteVariable.this
-    @inline final def redo = _value = newValue
-    @inline final def undo = _value = oldValue
+    @inline final def redo = _value(newValue)
+    @inline final def undo = _value(oldValue)
     override def toString = variable match { 
       case cv:CategoricalVar[_] if (oldValue >= 0) => "DiscreteVariableDiff("+cv.domain.getCategory(oldValue)+"="+oldValue+","+cv.domain.getCategory(newValue)+"="+newValue+")"
       case _ => "DiscreteVariableDiff("+oldValue+","+newValue+")"
@@ -86,3 +88,11 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
   }
 }
 
+trait HookedVariable extends DiscreteVariable {
+  def valueChangeHook(old: Int, newValue: Int)
+
+  override def _value(newValue : Int) {
+    valueChangeHook(_value, newValue)
+    super._value(newValue)
+  }
+}
