@@ -2,10 +2,9 @@ package cc.factorie.bp
 
 import cc.factorie._
 import collection.mutable.{Map, HashMap}
-import cc.factorie.bp.optimized._
+import cc.factorie.bp.specialized._
 import la.{SparseVector, Vector}
 import specialized.Viterbi
-
 
 /**
  * @author sameer
@@ -192,7 +191,10 @@ class ForwardBackwardPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
   }
 
   val m = new TemplateModel(localTemplate, transTemplate)
-  def truthScore: Double = m.score(vars)
+  def truthScore: Double = {
+    vars.foreach(_.setToTarget(null))
+    m.score(vars)
+  }
 
   def valueAndGradient: (Double,  Map[DotFamily, Vector]) = {
     val (exps, logZ) = ForwardBackward.featureExpectationsAndLogZ(vars, localTemplate, transTemplate)

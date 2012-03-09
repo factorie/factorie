@@ -8,9 +8,8 @@ package cc.factorie.example
 import cc.factorie._
 import cc.factorie.bp._
 import cc.factorie.app.nlp._
-import cc.factorie.bp.optimized._
+import cc.factorie.bp.specialized._
 import cc.factorie.app.nlp.pos._
-import specialized.Viterbi
 
 object TestModel extends TemplateModel {
   // Bias term on each individual label
