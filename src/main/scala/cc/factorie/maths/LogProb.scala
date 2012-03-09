@@ -83,9 +83,9 @@ trait LogProb {
     else if (b == Double.NegativeInfinity)
       a
     else if (b < a)
-      a + math.log (1 + math.exp(b-a))
+      a + math.log1p(math.exp(b-a))
     else
-      b + math.log (1 + math.exp(a-b))
+      b + math.log1p(math.exp(a-b))
   }
 
   // Below adapted from Stanford NLP package, SloppyMath.java
