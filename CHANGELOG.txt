@@ -1,3 +1,27 @@
+New in version 0.10.2:
+* NLP
+  - Customized forward-backward and viterbi for chain models
+  - changes to the coreference data structures that support hierarchical models
+  - new data loaders
+
+* BP
+  - Refactoring to be faster and cleaner interface, with bugfixes
+  - MaxProduct works even when multiple MAP states
+  - TimingBP to compare performance of the different variants of BP in the codebase
+  - maxMarginal with threshold, to support PR curves
+
+* Max likelihood training
+  - convenience constructors for selecting which families to update
+  - pieces can use families for inference that are not updated
+
+* Trainer that uses Stochastic gradient descent
+* Cubbie
+  - new united interface for serialization/persistence (including mongodb support)
+
+* Gzip saving/loading of models
+* Better support for limitedValues and sparse domains on factors
+* Code cleanup, including deletion of inner/outer factors
+
 New in version 0.10.1:
 
 * Many renames, new features and refactors; the list below is partially complete.
