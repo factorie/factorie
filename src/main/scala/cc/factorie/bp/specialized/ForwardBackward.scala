@@ -161,7 +161,7 @@ object ForwardBackward {
     }
 
     // sum edge marginals
-    val edgeExp = vectorFromArray(elementwiseSum(edgeMargs))
+    val edgeExp = if (vs.length > 1) vectorFromArray(elementwiseSum(edgeMargs)) else new SparseVector(vs(0).domain.size*vs(0).domain.size)
 
     val logZ = sumLogProbs(alpha(alpha.length-1))
 
