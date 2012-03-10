@@ -537,7 +537,7 @@ abstract class LatticeBP(val varying: Set[DiscreteVariable]) extends Lattice[Var
       mf.receiveFromAll
       val factorLogZ = mf.logZ
       logZ += factorLogZ
-      if (debug) println("factor: " + factorLogZ + ", logZ: " + logZ)
+      if (debug) println("factor: " + factorLogZ + ", logZ: " + logZ + ", in: " + mf._incoming)
       // compensate for double counting <incoming, mu>
       for (e <- mf.edges) {
         // dot product of node marginals and incoming from node

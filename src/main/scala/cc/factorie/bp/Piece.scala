@@ -84,7 +84,7 @@ class ModelPiece(val vars: Seq[DiscreteVariable with VarWithTargetValue],
       gradient(df) = vector
     }
     val value = truthScore - fg.logZ()
-    assert(!value.isNaN && !value.isInfinity && value < 0.0, {
+    assert(!value.isNaN && !value.isInfinity && value <= 0.0, {
       val sb = new StringBuffer
       sb append ("value: %f\n".format(value))
       sb append ("truthScore: %f\n".format(truthScore))
