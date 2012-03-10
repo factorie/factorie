@@ -7,6 +7,8 @@ import cc.factorie.app.nlp.coref._
 import cc.factorie.db.mongo._
 import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
 import cc.factorie.util.CubbieRefs
+import java.io.File
+
 //import example.Coref3.MyEntityCubbie
 
 /**
@@ -18,65 +20,78 @@ object Coref3 {
   class EntityExists(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
   class IsEntity(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
   class IsMention(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
-  class Bow(val entity:Entity) extends SetVariable[String] {
-    def this(e:Entity, ss:Iterable[String]) = { this(e); ss.foreach(this.add(_)(null)) }
+  class Bow(val entity:Entity,ss:Iterable[String]=Nil) extends BagOfWordsVariable(ss)
+  /**Attributes specific to REXA authors*/
+  class FullName(val entity:Entity,f:String,m:String,l:String) extends SeqVariable[String](Seq(f,m,l)){
+    def setFirst(s:String)(implicit d:DiffList) = update(0,s)
+    def setMiddle(s:String)(implicit d:DiffList) = update(1,s)
+    def setLast(s:String)(implicit d:DiffList) = update(2,s)
+    def firstName = value(0)
+    def middleName = value(1)
+    def lastName = value(2)
+    def domain = GenericDomain
   }
-  class TrueBow(val entity:Entity,ss:Iterable[String]=Nil) extends BagOfWordsVariable(ss)
+  class BagOfTopics(val entity:Entity, topicBag:Map[String,Double]) extends BagOfWordsVariable(Nil, topicBag)
+  class BagOfVenues(val entity:Entity, venues:Map[String,Double]) extends BagOfWordsVariable(Nil, venues)
   /**Entity variables*/
   var nextId = -1
   var entityCount = 0
-  class MyEntity(s:String, b:Iterable[String] = Nil, isMention:Boolean=false) extends NamedEntity(s){
+  /**An entity with the necessary variables/coordination to implement hierarchical coreference.*/
+  abstract class HierarchicalEntity(isMent:Boolean=false) extends Entity{
+    isObserved=isMent
+    def isEntity = attr[IsEntity]
+    def isMention = attr[IsMention]
+    def exists = attr[EntityExists]
+    attr += new EntityExists(this,this.isConnected)
+    attr += new IsEntity(this,this.isRoot)
+    attr += new IsMention(this,this.isObserved)
+    println("IS MENTION?" + attr[IsMention].booleanValue)
+    override def removedChildHook(entity:Entity)(implicit d:DiffList)={super.removedChildHook(entity);exists.set(this.isConnected)(d)}
+    override def addedChildHook(entity:Entity)(implicit d:DiffList)={super.addedChildHook(entity);exists.set(this.isConnected)(d)}
+    override def changedSuperEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList){super.changedSuperEntityHook(oldEntity,newEntity);isEntity.set(this.isRoot)(d);exists.set(this.isConnected)(d);println("CHANGED: isMention="+isMention.booleanValue)}
+  }
+  class AuthorEntity(f:String,m:String,l:String, isMention:Boolean = false) extends HierarchicalEntity(isMention){
+    attr += new FullName(this,f,m,l)
+    def string = f+" "+m+" "+l
+  }
+
+  class MyEntity(s:String, b:Iterable[String] = Nil, isMention:Boolean=false) extends HierarchicalEntity(isMention){
     override val id = { entityCount += 1; entityCount } //new IntCubbie(id)
     //val idCubbie = new IntSlot
-    isObserved=isMention
-    attr += new Bow(this, b)
-    attr += new TrueBow(this,b)
-    attr += new EntityExists(this,this.isConnected)
-    attr += new IsEntity(this,this.isRoot)
-    attr += new IsMention(this,this.isObserved)
-    removedChildHooks += ((removed:Entity, d:DiffList) => {attr[EntityExists].set(this.isConnected)(d)})
-    addedChildHooks += ((added:Entity, d:DiffList) => {attr[EntityExists].set(this.isConnected)(d)})
-    changedSuperEntityHooks += ((oldSuper:Entity,newSuper:Entity, d:DiffList) => {attr[IsEntity].set(this.isRoot)(d);attr[EntityExists].set(this.isConnected)(d);})
-    /**Should only be called once context of the entire tree this entity belongs to has been connected together.*/
-    override def initializeAttributesOfStructure:Unit={
-      attr[EntityExists].set(this.isConnected)(null)
-      attr[IsEntity].set(this.isRoot)(null)
-    }
+    attr += new EntityName(this,s)
+    attr += new Bow(this,b)
+    def name = attr[EntityName]
+    def bow = attr[Bow]
+    def string = name.value
   }
   // Cubbie storage
-  class MyEntityCubbie extends NamedEntityCubbie {
+  class MyEntityCubbie extends EntityCubbie {
     _map = new HashMap[String,Any]
-    val bow = StringListSlot("bow")
-    val bowVar = CubbieSlot("bowVar", () => new BagOfWordsCubbie)
+    val bow = CubbieSlot("bow", () => new BagOfWordsCubbie)
     val isMention = BooleanSlot("isMention")
-    //val name = StringSlot("name")
-    /**TODO: where to set these? They are determined by the graph structure which is incomplete at the time this cubbie is loaded.
-    attr += new EntityExists(this,this.isConnected)
-    attr += new IsEntity(this,this.isRoot)
-    attr += new IsMention(this,this.isObserved)
-   */
+    val name = StringSlot("name")
     def fetchMyEntity(cr:CubbieRefs): MyEntity = {
       val ne = fetchEntity(cr).asInstanceOf[MyEntity]
       ne.name.set(name.value)(null)
       ne
     }
-    override def newEntity:NamedEntity = new MyEntity("UNINITIALIZED")
-    override def newEntityCubbie:NamedEntityCubbie = new NamedEntityCubbie
+    override def newEntity:Entity = new MyEntity("UNINITIALIZED")
+    override def newEntityCubbie:EntityCubbie = new MyEntityCubbie
     override def finishStoreEntity(e:Entity): Unit = {
       super.finishStoreEntity(e)
-      bow := e.attr[Bow].value.toSeq
-      bowVar := new BagOfWordsCubbie().store(e.attr[TrueBow].value)
+      bow := new BagOfWordsCubbie().store(e.attr[Bow].value)
       isMention := e.attr[IsMention].booleanValue
+      name := e.attr[EntityName].value
     }
     override def finishFetchEntity(e:Entity): Unit = {
       super.finishFetchEntity(e)
-      //println("Beig called twice? "+e.id)
-      //e.attr += new Bow(e, Nil) //this is necessary because e is an Entity not a "MyEntity"
+      println("Beig called twice? "+e.id)
       e.attr[EntityName].set(name.value)(null)
-      e.attr[Bow] ++= bow.value
-      if(e.attr[TrueBow].size==0)e.attr[TrueBow] ++= bowVar.value.fetch
+      if(e.attr[Bow].size==0)e.attr[Bow] ++= bow.value.fetch
       e.attr[IsMention].set(isMention.value)(null)
       e.isObserved=isMention.value
+      e.attr[IsEntity].set(e.isRoot)(null)
+      e.attr[EntityExists].set(e.isConnected)(null)
     }
   }
   class BagOfWordsCubbie extends Cubbie{
@@ -93,10 +108,7 @@ object Coref3 {
       val result = new HashMap[String,Double]
       val wordSeq = words.value
       val weightSeq = weights.value
-      println("WORDS: "+words)
-      println("WEIGHTS: "+weights)
       for(i<-0 until wordSeq.size)result += wordSeq(i) -> weightSeq(i)
-      println("RESULT: "+result)
       result
     }
   }
@@ -110,39 +122,27 @@ object Coref3 {
         val childString = s._2
         val parentString = s._3
         var result = -cc.factorie.app.strings.editDistance(childString, parentString)
+        println("EntityName:"+result)
         result
       }
     },
     // compatibility between parent/child bows
-  /*
     new TemplateWithStatistics3[EntityRef,Bow,Bow] {
       def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[Bow], er.dst.attr[Bow]) else Nil
-      def unroll2(childBow:Bow) = Factor(childBow.entity.superEntityRef, childBow, childBow.entity.superEntity.attr[Bow])
-      def unroll3(parentBow:Bow) = for (e <- parentBow.entity.subEntities) yield Factor(e.superEntityRef, e.attr[Bow], parentBow)
-      def score(s:Stat): Double = {
-        val childBow = s._2
-        val parentBow = s._3
-        childBow.intersect(parentBow).size
-      }
-    },
-    */
-    new TemplateWithStatistics3[EntityRef,TrueBow,TrueBow] {
-      def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[TrueBow], er.dst.attr[TrueBow]) else Nil
-      def unroll2(childBow:TrueBow) = if(childBow.entity.superEntity!=null)Factor(childBow.entity.superEntityRef, childBow, childBow.entity.superEntity.attr[TrueBow]) else Nil
-      def unroll3(parentBow:TrueBow) = for(e<-parentBow.entity.subEntities) yield Factor(e.superEntityRef,e.attr[TrueBow],parentBow)
+      def unroll2(childBow:Bow) = if(childBow.entity.superEntity!=null)Factor(childBow.entity.superEntityRef, childBow, childBow.entity.superEntity.attr[Bow]) else Nil
+      def unroll3(parentBow:Bow) = for(e<-parentBow.entity.subEntities) yield Factor(e.superEntityRef,e.attr[Bow],parentBow)
       def score(s:Stat): Double = {
         val childBow = s._2
         val parentBow = s._3
         //childBow.intersect(parentBow).size
         var result = childBow.cosineSimilarity(parentBow)
+        println("Bow: "+result)
         println("result: "+result)
         println("  bag1:"+childBow)
         println("  bag2:"+parentBow)
         result
       }
     },
-
-
     //structural priors
     new TemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
       val entityExistenceCost = 8.0
@@ -158,9 +158,29 @@ object Coref3 {
         var result = 0.0
         if(exists && isEntity) result -= entityExistenceCost
         if(exists && !isEntity && !isMention)result -= subEntityExistenceCost
+        println("STRUCTURE PRIOR: "+result)
         result
       }
     }
+    //bags of words priors
+    /*
+    new TemplateWithStatistics1[BagOfWordsVariable]{
+      var temperature=0.1
+      def symmetricDirichletAlpha=temperature+1.0
+      def score(s:Stat):Double ={
+        val bag = s._1
+        var result = -dirichletKernel(bag)
+        result
+      }
+      def dirichletKernel(bag:BagOfWords):Double ={
+        var result = 0.0
+        var l1Norm = 0.0
+        //val iterator = bag.iterator
+        for((k,v) <- bag.iterator)l1Norm += v
+        for((k,v) <- bag.iterator)result += scala.math.pow(v/l1Norm,symmetricDirichletAlpha-1.0)
+        result
+      }
+    }*/
   )
   class HierarchicalCorefSampler(model:HierCorefModel) extends SettingsSampler[Null](model, null) {
     protected var entities:ArrayBuffer[Entity] = null
@@ -178,6 +198,15 @@ object Coref3 {
       while({tries-= 1;tries} >= 0 && (e==null || !e.isConnected)){e = entities(random.nextInt(entities.size));if(tries==1)performMaintenance}
       e
     }
+    override def pickProposal(proposals:Seq[Proposal]): Proposal = {
+      println("JUMPS")
+      for(p <- proposals){
+        println("  *SCORE: "+p.modelScore)
+      }
+      super.pickProposal(proposals)
+    }
+
+
     def setEntities(ents:Iterable[Entity]) = {entities = new ArrayBuffer[Entity];entities ++= ents;deletedEntities = new ArrayBuffer[Entity]}
     /**Garbage collects all the deleted entities from the master list of entities*/
     def performMaintenance:Unit = {val cleanEntities = new ArrayBuffer[Entity];cleanEntities ++= entities.filter(_.isConnected);deletedEntities ++= entities.filter(!_.isConnected);entities=cleanEntities}
@@ -239,12 +268,13 @@ object Coref3 {
       val oldParent2 = e2.superEntity
       e1.setSuperEntity(result)(d)
       e2.setSuperEntity(result)(d)
-      result.attr[TrueBow].add(e1.attr[TrueBow].value)(d)
-      result.attr[TrueBow].add(e2.attr[TrueBow].value)(d)
+      result.attr[Bow].add(e1.attr[Bow].value)(d)
+      result.attr[Bow].add(e2.attr[Bow].value)(d)
       propagateRemoveBag(e1,oldParent1)(d)
       propagateRemoveBag(e2,oldParent2)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent1)(d)
       structurePreservationForEntityThatLostSubEntity(oldParent2)(d)
+      println("MERGING UP: "+d.size)
       result
     }
     /**Ensure that chains are not created in our tree. No dangling sub-entities either.*/
@@ -258,14 +288,14 @@ object Coref3 {
     def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
       var e = entity.superEntity
       while(e!=null){
-        e.attr[TrueBow].add(entity.attr[TrueBow].value)(d)
+        e.attr[Bow].add(entity.attr[Bow].value)(d)
         e = e.superEntity
       }
     }
     def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit ={
       var e = formerParent
       while(e!=null){
-        e.attr[TrueBow].remove(parting.attr[TrueBow].value)
+        e.attr[Bow].remove(parting.attr[Bow].value)
         e = e.superEntity
       }
     }
@@ -287,6 +317,8 @@ object Coref3 {
           case _ => {}
         }
       }
+      println("Created: "+newEntities.size)
+      println("DiffList: "+proposal.diff.size)
       entities ++= newEntities
     }
   }
@@ -297,7 +329,7 @@ object Coref3 {
   object Entities {
     import MongoCubbieConverter._
     private var cache = new CubbieRefs
-    private var oldCubbies:HashMap[Any,MyEntityCubbie]=null
+    private var oldCubbies:HashMap[Any,MyEntityCubbie]=null //same as cache?
     private val mongoConn = new Mongo("localhost", 27017)
     private val mongoDB = mongoConn.getDB("mongocubbie-test")
     private val coll = mongoDB.getCollection("persons")
@@ -309,11 +341,11 @@ object Coref3 {
       if(result.size==1)Some(result(0))
       else None
     }*/
-    def ++= (es:Iterable[MyEntity]) = for(ec<-es.map((new MyEntityCubbie).storeNamedEntity(_)))entities += ec
+    def ++= (es:Iterable[MyEntity]) = for(ec<-es.map((new MyEntityCubbie).storeEntity(_)))entities += ec
     protected def getAll:Seq[(MyEntityCubbie,MyEntity)] = {
       val result = for(ec <- entities) yield {
         val e = ec.fetchMyEntity(cache)
-        ec.finishFetchEntity(e)
+        //ec.finishFetchEntity(e)
         (ec,e)
       }
       result.toSeq
@@ -330,18 +362,46 @@ object Coref3 {
       val a = new MyEntityCubbie
       val deletedByInference = entitiesToStore.filter(!_.isConnected)
       val updatedOrAddedByInference = entitiesToStore.filter(_.isConnected)
-      for(deleted <- deletedByInference)entities.updateDelta(oldCubbies.getOrElse(deleted.id,null),null)
-      for(updatedOrAdded <- updatedOrAddedByInference)entities.updateDelta(oldCubbies.getOrElse(updatedOrAdded.id,null),(new MyEntityCubbie).storeNamedEntity(updatedOrAdded))
+      for(deleted <- deletedByInference)entities.updateDelta(oldCubbies.getOrElse(deleted.id,null),null)//todo: modify api to mongo cubbies to delete
+      for(updatedOrAdded <- updatedOrAddedByInference)entities.updateDelta(oldCubbies.getOrElse(updatedOrAdded.id,null),(new MyEntityCubbie).storeEntity(updatedOrAdded)) //update delta code to handle null
     }
   }
 
   def populateDB:Unit = {
     val mentions = for (t <- data) yield new MyEntity(t._1, t._2,true)
+    //val mentions = for(t <- load20News(new java.io.File("/Users/mwick/data/20news/")))yield new MyEntity(t._1, t._2,true)
     Entities ++= mentions
     println("ENTITIES: "+Entities.entities.size)
   }
 
+  def test:Unit ={
+    val bags = new ArrayBuffer[BagOfWords]
+    bags += new ComposableBagOfWords(Seq("KDD"))
+    bags += new ComposableBagOfWords(Seq("KDD","ICML"))
+    bags += new ComposableBagOfWords(Seq("KDD","ICML","KDD"))
+    bags += new ComposableBagOfWords(Seq("KDD","ICML","NIPS"))
+    val temps = Seq(0.01,0.1,0.0,1.0,10.0)
+
+    for(tmp <- temps){
+      println("TEMPERATURE: "+tmp)
+      for(bag <- bags){
+        println("  BAG:"+bag)
+        println("  score: "+dirichletKernel(bag,tmp+1.0))
+      }
+    }
+
+
+    def dirichletKernel(bag:BagOfWords,symmetricDirichletAlpha:Double):Double ={
+      var result = 0.0
+      var l1Norm = 0.0
+      //val iterator = bag.iterator
+      for((k,v) <- bag.iterator)l1Norm += v
+      for((k,v) <- bag.iterator)result += scala.math.pow(v/l1Norm,symmetricDirichletAlpha-1.0)
+      result
+    }
+  }
   def main(args:Array[String]): Unit = {
+    test
     populateDB
     val mentions = Entities.nextBatch
     for(m <- mentions){
@@ -364,7 +424,6 @@ object Coref3 {
     // get next n entities from db, and their canopy
     // how much of tree substructure to retrieve, how to represent the "fringe"
   }
-  
   val data = List(
     ("Andrew McCallum", List("nips", "icml", "acl")),
     ("Andrew MacCallum", List("acl", "emnlp")),
@@ -377,10 +436,25 @@ object Coref3 {
     ("Wick", List("siam", "kdd")),
     ("Wick", List("uai"))
   )
+
+  def load20News(dir:java.io.File):ArrayBuffer[(String,ArrayBuffer[String])] ={
+    var result = new ArrayBuffer[(String,ArrayBuffer[String])]
+    for(subdir <- dir.listFiles){
+      for(file <- subdir.listFiles){
+        val tokens = new ArrayBuffer[String]
+        for(line <- io.Source.fromFile(file).getLines){
+          tokens ++= line.split("[^A-Za-z]+")
+        }
+        result += subdir.getName -> tokens
+      }
+    }
+    result
+  }
+
   def printEntities(entities:Seq[Entity]):Unit = {
     var count = 0
     for(e <- entities.filter((e:Entity) => {e.isRoot && e.isConnected})){
-      println(entityString(e)+"\n")
+      println(entityString(e))
       count += 1
     }
     println("Printed " + count + " entities.")
@@ -400,11 +474,27 @@ object Coref3 {
     }else{
       result.append("SubEntity["+e.attr[EntityName].value+"]")
     }
-    result.append("{"+e.attr[TrueBow].value.toString+"}")
+    result.append("{"+bagToString(e.attr[Bow].value)+"}")
     result.append("\n")
     for(subEntity <- e.subEntitiesIterator)entityString(subEntity,result,depth+1)
   }
+  def bagToString(bag:BagOfWords,k:Int=8):String = {
+    val map = new HashMap[String,Double]
+    for((k,v) <- bag.iterator)map += k -> v
+    topk(map,k)
+  }
+  def topk(bag:HashMap[String,Double], k:Int=18) : String ={
+    val result = new StringBuffer
+    val sorted = bag.toList.sortBy(_._2).reverse.take(k)
+    for(i<-0 until sorted.length){
+      result.append(sorted(i)._1+" -> "+sorted(i)._2)
+      if(i<sorted.length-1)
+        result.append(", ")
+    }
+    result.toString
+  }
 }
+
 
 /**Basic trait for doing operations with bags of words*/
 trait BagOfWords{ // extends scala.collection.Map[String,Double]{
@@ -469,7 +559,7 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
   }
   def getCombinedBag:HashMap[String,Double] ={
     val combined = new HashMap[String,Double]
-    for((k,v)<-this.iterator)combined(k) = combined.getOrElse(k,0.0)+v
+    for((k,v)<-_bag.iterator)combined(k) = combined.getOrElse(k,0.0)+v
     for(bag<-addBag)for((k,v)<-bag.iterator)combined(k) = combined.getOrElse(k,0.0)+v
     for(bag<-removeBag)for((k,v)<-bag.iterator)combined(k) = combined.getOrElse(k,0.0)-v
     val result = new HashMap[String,Double]
@@ -477,7 +567,7 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
     //result ++= combined.filter((k,v):(String,Double) => {v != 0.0})
   }
   def size = {var r =_bag.size;for(b<-addBag)r+=b.size;for(b<-removeBag)r+=b.size;r}
-  def iterator = _bag.iterator //this is technical wrong, oh well. Tricky to think about the semantics of this in the context of "removeBag"
+  def iterator = getCombinedBag.iterator //this will be slow
   def apply(s:String):Double = {
     var result = _bag.getOrElse(s,0.0)
     for(bag<-addBag)result += bag(s)
@@ -488,18 +578,10 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
   def *(that:BagOfWords):Double = {
     //if(this.size > that.size)return that * this
     var result = 0.0
-    println("corebag:" + _bag)
-    println("addbag:"+addBag)
-    println("removebag:"+removeBag)
-    for((word,weight) <- iterator)
+    for((word,weight) <- _bag.iterator)
       result += weight * that(word)
-    println("iresult:"+result)
     for(bag<-addBag)result += bag  * this
-    println("iresult:"+result)
     for(bag<-removeBag)result -= bag * this
-    println("dot: "+result)
-    println("   that: "+that)
-    println("   this: "+this)
     result
   }
   def +=(s:String,w:Double=1.0):Unit ={
@@ -532,10 +614,15 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
   }
 }
 trait BagOfWordsVar extends Variable with VarAndValueGenericDomain[BagOfWordsVar,ProposeAndCombineBags] with Iterable[(String,Double)]
-class BagOfWordsVariable(initialWords:Iterable[String]=Nil) extends BagOfWordsVar with VarAndValueGenericDomain[BagOfWordsVariable,ProposeAndCombineBags] {
+class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=Map()) extends BagOfWordsVar with VarAndValueGenericDomain[BagOfWordsVariable,ProposeAndCombineBags] {
   // Note that the returned value is not immutable.
   def value = _members
-  private val _members:ProposeAndCombineBags = new ComposableBagOfWords(initialWords)
+  private val _members:ProposeAndCombineBags = {
+    val result = new ComposableBagOfWords(initialWords)
+    for((k,v) <- initialMap)result += (k,v)
+    result
+  }
+  println("MYBAG: "+_members)
   def members: ProposeAndCombineBags = _members
   def iterator = _members.iterator
   override def size = _members.size
@@ -592,180 +679,3 @@ class BagOfWordsVariable(initialWords:Iterable[String]=Nil) extends BagOfWordsVa
     override def toString = "BagOfWordsVariableRemoveBagDiff of " + removed + " from " + BagOfWordsVariable.this
   }
 }
-
-
-/**Efficient implementation for bags of words where proposals temporarily hypothesize new bags, and these proposals are efficiently undone/redone.*/
-/*
-trait BagOfWordsProposeAndDecide extends BagOfWords{
-  var addBags = new HashSet[BagOfWords]
-  var removeBags = new HashSet[BagOfWords]
-
-  def proposeAddBag(moreWords:BagOfWords):Unit = addBags += moreWords
-  def proposeRemoveBag(lessWords:BagOfWords):Unit = removeBags += lessWords
-  def rejectProposal:Unit = {addBags = new HashSet[BagOfWords];removeBags = new HashSet[BagOfWords]}
-  def acceptProposal:Unit = {
-    addBags.foreach(this ++= _)
-    removeBags.foreach(this --= _)
-    addBags = new HashSet[BagOfWords]
-    removeBags = new HashSet[BagOfWords]
-  }
-  /*
-  abstract override def *(that:BagOfWords):Double ={
-    var result = that * this
-    addBags.foreach(result += _ * this)
-    removeBags.foreach(result += _ * this)
-    result
-  }
-  abstract override def l2Norm:Double ={
-    val myL2Norm = l2Norm
-    var result = myL2Norm * myL2Norm
-    addBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result += l2*l2+bow*this})
-    removeBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result += (l2*l2-bow*this)})
-    scala.math.sqrt(result)
-    result
-  }
-  */
-}
-
-class BagOfWordsHashMap(initialBag:Iterable[String] = null) extends BagOfWordsProposeAndDecide{
-  private val _bag = new HashMap[String,Double]
-  if(initialBag!=null)for(w<-initialBag)_bag += w->1.0
-  private var _l2Norm2:Double = 0.0
-  def size = _bag.size
-  def iterator = _bag.iterator
-  def apply(word:String):Double = _bag.getOrElse(word,0.0)
-  override def l2Norm:Double = {
-    var result = _l2Norm2
-    addBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result += l2*l2+bow*this})
-    removeBags.foreach((bow:BagOfWords)=>{val l2=bow.l2Norm;result += l2*l2-bow*this})
-    scala.math.sqrt(result)
-  }
-  def *(that:BagOfWords):Double = {
-    if(this.size > that.size)return that * this
-    var result = 0.0
-    for((word,weight) <- iterator)
-      result += weight * that(word)
-    addBags.foreach(result += _ * this)
-    removeBags.foreach(result += _ * this)
-    result
-  }
-  def +=(s:String,w:Double=1.0):Unit ={
-    _bag(s) = _bag.getOrElse(s,0.0)+w
-     _l2Norm2 += w*w + 2*this(s)*w
-  }
-  def -=(s:String,w:Double=1.0):Unit ={
-    if(_bag(s)==w)_bag.remove(s)
-    else _bag(s) = _bag(s) - w
-    _l2Norm2 +=  w*w - 2*this(s)*w
-  }
-  //def ++=(that:BagOfWords):Unit = for((s,w) <- that.iterator)this += (s,w)
-  //def --=(that:BagOfWords):Unit = for((s,w) <- that.iterator)this -= (s,w)
-  def contains(s:String):Boolean = _bag.contains(s)
-}
-
-
-trait BagOfWordsVar extends Variable with VarAndValueGenericDomain[BagOfWordsVar,BagOfWordsHashMap] with Iterable[(String,Double)]
-class BagOfWordsVariable[BagOfWordsProposeAndDecide] extends BagOfWordsVar with VarAndValueGenericDomain[BagOfWordsVariable[BagOfWordsProposeAndDecide],BagOfWordsHashMap] {
-  // Note that the returned value is not immutable.
-  def value = _members
-  private val _members = new BagOfWordsHashMap
-  def members: BagOfWordsHashMap = _members
-  def iterator = _members.iterator
-  override def size = _members.size
-  def contains(x:String) = _members.contains(x)
-  def accept:Unit = _members.acceptProposal
-  def expose:BagOfWordsHashMap = _members
-  def add(x:String,w:Double=1.0)(implicit d:DiffList):Unit = {
-    if(d!=null) d += new BagOfWordsVariableAddStringDiff(x,w)
-    _members += (x,w)
-  }
-  def remove(x:String,w:Double = 1.0)(implicit d:DiffList):Unit = {
-    if(d!=null) d += new BagOfWordsVariableRemoveStringDiff(x,w)
-    _members -= (x,w)
-  }
-  def add(x:BagOfWords)(implicit d: DiffList): Unit =  {
-    if (d != null) d += new BagOfWordsVariableAddBagDiff(x)
-    _members.proposeAddBag(x)
-  }
-  def remove(x: BagOfWords)(implicit d: DiffList): Unit = {
-    if (d != null) d += new BagOfWordsVariableRemoveBagDiff(x)
-    _members.proposeRemoveBag(x)
-  }
-
-  final def +=(x:BagOfWords): Unit = add(x)(null)
-  final def -=(x:BagOfWords): Unit = remove(x)(null)
-  final def ++=(xs:Iterable[String]): Unit = xs.foreach(add(_)(null))
-  final def --=(xs:Iterable[String]): Unit = xs.foreach(remove(_)(null))
-  case class BagOfWordsVariableAddStringDiff(added: String,w:Double) extends Diff {
-    // Console.println ("new SetVariableAddDiff added="+added)
-    def variable: BagOfWordsVariable[BagOfWordsProposeAndDecide] = BagOfWordsVariable.this
-    def redo = _members += (added,w)
-    def undo = _members -= (added,w)
-    override def toString = "BagOfWordsVariableAddStringDiff of " + added + " to " + BagOfWordsVariable.this
-  }
-  case class BagOfWordsVariableRemoveStringDiff(removed: String,w:Double) extends Diff {
-    //        Console.println ("new SetVariableRemoveDiff removed="+removed)
-    def variable: BagOfWordsVariable[BagOfWordsProposeAndDecide] = BagOfWordsVariable.this
-    def redo = _members -= (removed,w)
-    def undo = _members += (removed,w)
-    override def toString = "BagOfWordsVariableRemoveStringDiff of " + removed + " from " + BagOfWordsVariable.this
-  }
-  case class BagOfWordsVariableAddBagDiff(added:BagOfWords) extends Diff {
-    // Console.println ("new SetVariableAddDiff added="+added)
-    def variable: BagOfWordsVariable[BagOfWordsProposeAndDecide] = BagOfWordsVariable.this
-    def redo = _members.addBags += added
-    def undo = _members.addBags -= added
-    override def toString = "BagOfWordsVariableAddBagDiff of " + added + " to " + BagOfWordsVariable.this
-  }
-  case class BagOfWordsVariableRemoveBagDiff(removed: BagOfWords) extends Diff {
-    //        Console.println ("new SetVariableRemoveDiff removed="+removed)
-    def variable: BagOfWordsVariable[BagOfWordsProposeAndDecide] = BagOfWordsVariable.this
-    def redo = _members.removeBags += removed
-    def undo = _members.removeBags -= removed
-    override def toString = "BagOfWordsVariableRemoveBagDiff of " + removed + " from " + BagOfWordsVariable.this
-  }
-
-}
-*/
-
-/*
-trait MultisetVar[A,Double] extends Variable with VarAndValueGenericDomain[MultisetVar[A,Double],scala.collection.Map[A,B]] with Iterable[(A,Double)]
-class MultisetVariable[A,Double]() extends MultisetVar[A,Double] with VarAndValueGenericDomain[MultisetVariable[A,Double],scala.collection.Map[A,Double]] {
-  // Note that the returned value is not immutable.
-  def value = _members
-  private val _members = new HashMap[A,Double]
-  def members: scala.collection.Map[A,Double] = _members
-  def iterator = _members.iterator
-  override def size = _members.size
-  def contains(x:A) = _members.contains(x)
-  def add(x:A)(implicit d: DiffList): Unit = if (!_members.contains(x)) {
-    if (d != null) d += new MultisetVariableAddDiff(x)
-    inc(x)
-  }
-  def remove(x: A)(implicit d: DiffList): Unit = if (_members.contains(x)) {
-    if (d != null) d += new MultisetVariableRemoveDiff(x)
-    dec(x)
-  }
-  protected def inc(x:A):Unit = _members(x) = _members.getOrElse(x,0.0)+1
-  protected def dec(x:A):Unit = if(_members(x)==1)_members.remove(x) else _members(x) = _members.getOrElse(x,0.0)-1
-
-  final def +=(x:A): Unit = add(x)(null)
-  final def -=(x:A): Unit = remove(x)(null)
-  final def ++=(xs:Iterable[A]): Unit = xs.foreach(add(_)(null))
-  final def --=(xs:Iterable[A]): Unit = xs.foreach(remove(_)(null))
-  case class MultisetVariableAddDiff(added: A) extends Diff {
-    // Console.println ("new SetVariableAddDiff added="+added)
-    def variable: MultisetVariable[A] = MultisetVariable.this
-    def redo = inc(added)
-    def undo = dec(added)
-    override def toString = "SetVariableAddDiff of " + added + " to " + MultisetVariable.this
-  }
-  case class MultisetVariableRemoveDiff(removed: A) extends Diff {
-    //        Console.println ("new SetVariableRemoveDiff removed="+removed)
-    def variable: MultisetVariable[A] = MultisetVariable.this
-    def redo = dec(removed)
-    def undo = inc(removed)
-    override def toString = "MultisetVariableRemoveDiff of " + removed + " from " + MultisetVariable.this
-  }
-}
-*/
