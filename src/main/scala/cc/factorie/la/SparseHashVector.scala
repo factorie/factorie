@@ -59,6 +59,8 @@ class SparseHashVector(theLength:Int) extends Vector {
     default += s
     h.keys.foreach(index => increment(index, s)) //h.update(index, h(index) + s))
   }
+
+  override def toString = getClass.getName + "(" + "len=" + length + " (" + h.mkString("[", ", ", "]") + "))"
 }
 
 class GrowableSparseVector(val sizeProxy: { def size:Int }) extends SparseHashVector(-1) {
