@@ -279,7 +279,7 @@ abstract class Messages[T](val neighbors: Seq[T]) extends Seq[GenericMessage] {
     (0 until length) foreach (i => set(i, BPUtil.uniformMessage))
   }
 
-  override def toString: String = (0 until length).map(i => "%-10s %s".format(neighbors(i), get(i))).mkString("\n")
+  override def toString: String = (0 until length).map(i => "%-10s -> %s".format(neighbors(i), get(i))).mkString("\n")
 }
 
 class FactorMessages(vars: Seq[Variable]) extends Messages[Variable](vars) {
