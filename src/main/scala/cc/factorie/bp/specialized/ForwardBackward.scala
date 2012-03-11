@@ -4,7 +4,7 @@ import cc.factorie._
 import cc.factorie.maths.{sumLogProb, sumLogProbs}
 import la.{SparseVector, DenseVector, Vector}
 import scala.math.exp
-import collection.mutable.Map
+import collection.mutable.{HashMap, Map}
 
 /**
  * Author: martin
@@ -146,9 +146,11 @@ object ForwardBackward {
     val nodeMargs = nodeMarginals(alpha, beta)
     val edgeMargs = edgeMarginals(alpha, beta, getTransScores(transTemplate))
 
-    val nodeExp = new SparseVector(localTemplate.statisticsVectorLength)
+    // sum edge marginals
+    val edgeExp = if (vs.length > 1) vectorFromArray(elementwiseSum(edgeMargs)) else new SparseVector(vs(0).domain.size*vs(0).domain.size)
 
     // get the node feature expectations
+    val nodeExp = new SparseVector(localTemplate.statisticsVectorLength)
     for ((v, vi) <- vs.zipWithIndex) { // for variables
       var i = 0
       while (i < nodeMargs(vi).length) {
@@ -160,12 +162,11 @@ object ForwardBackward {
       }
     }
 
-    // sum edge marginals
-    val edgeExp = if (vs.length > 1) vectorFromArray(elementwiseSum(edgeMargs)) else new SparseVector(vs(0).domain.size*vs(0).domain.size)
+    val expMap: Map[DotFamily, Vector] = Map(localTemplate -> nodeExp, transTemplate -> edgeExp)
 
     val logZ = sumLogProbs(alpha(alpha.length-1))
 
-    (Map(localTemplate -> nodeExp, transTemplate -> edgeExp), logZ)
+    (expMap, logZ)
   }
 
   def search[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
