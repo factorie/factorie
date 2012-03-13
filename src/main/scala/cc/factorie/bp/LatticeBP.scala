@@ -49,6 +49,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   val nodes = edges.map(_.n).toSeq
   // number of possible values
   protected val _valuesSize: Int = discreteVarying.foldLeft(1)(_ * _._1.domain.size)
+  val values: Seq[Values] = factor.valuesIterator(varyingNeighbors).toSeq
 
   protected val _marginal: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
   protected var _remarginalize: Boolean = true
@@ -62,6 +63,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   def clearCache = _cache = Array.fill(_valuesSize)(Double.NaN)
 
   def resetMessages = {
+    if (fg.usesScoreCaching) clearCache
     _incoming.reset
     _outgoing.reset
     (0 until _valuesSize).foreach(i => _marginal(i) = Double.NaN)
@@ -69,7 +71,10 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   }
 
   protected def getScore(assignment: Values, index: Int = -1): Double = {
-    assignment.statistics.score
+    if (index >= 0 && fg.usesScoreCaching) {
+      if(_cache(index).isNaN) _cache(index) = assignment.statistics.score
+      _cache(index)
+    } else assignment.statistics.score
   }
 
   def incoming(e: Edge): GenericMessage = _incoming.get(e)
@@ -136,7 +141,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   def logZ: Double = {
     var Z = 0.0
     var maxScore = Double.NegativeInfinity
-    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
+    for (assignment: Values <- values) {
       var num: Double = getScore(assignment)
       for (e <- edges) {
         val mess = incoming(e)
@@ -153,7 +158,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
 
   def foldMarginals[A](init: A)(f: (A, Values, Double) => A): A = {
     var a: A = init
-    for (value: Values <- factor.valuesIterator(varyingNeighbors)) {
+    for (value: Values <- values) {
       val prob = marginal(value)
       a = f(a, value, prob)
     }
@@ -164,7 +169,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
     factor match {
       case f: DotFamily#Factor => {
         if (!exps.contains(f.family)) exps(f.family) = new SparseVector(f.family.statisticsVectorLength)
-        for (assignment: Values <- f.valuesIterator(varyingNeighbors)) {
+        for (assignment: Values <- values) {
           val prob = marginal(assignment)
           val vector = assignment.statistics.asInstanceOf[DotFamily#StatisticsType].vector
           exps(f.family) += (vector * prob)
@@ -205,7 +210,7 @@ trait SumFactor extends MessageFactor {
 
   def sumNeighbors(incoming: FactorMessages) = {
     var maxLogScore = Double.NegativeInfinity
-    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
+    for (assignment: Values <- values) {
       val index = assignment.index(varyingNeighbors)
       var num: Double = getScore(assignment, index)
       for (dv <- discreteVarying) {
@@ -220,7 +225,7 @@ trait SumFactor extends MessageFactor {
 
   def computeZ(maxLogScore: Double) = {
     var Z = 0.0
-    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
+    for (assignment: Values <- values) {
       val index = assignment.index(varyingNeighbors)
       val num = tmpScore(index) - maxLogScore
       val expnum = exp(num)
@@ -285,7 +290,7 @@ trait MaxFactor extends MessageFactor {
       override def default(key: Any) = 0.0
     }
     // previously we used new AllAssignmentIterator(variables)
-    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
+    for (assignment: Values <- values) {
       var num: Double = getScore(assignment)
       for (variable <- variables) {
         if (variable != target) {
@@ -310,7 +315,7 @@ trait MaxFactor extends MessageFactor {
       scores(i) = Array.fill(discreteVarying(i)._1.domain.size)(Double.NegativeInfinity)
     }
     // go through all the assignments of the varying variables
-    for (assignment: Values <- factor.valuesIterator(varyingNeighbors)) {
+    for (assignment: Values <- values) {
       val index = assignment.index(varyingNeighbors)
       var num: Double = getScore(assignment, index)
       for (dv <- discreteVarying) {
@@ -462,6 +467,12 @@ abstract class LatticeBP(val varying: Set[DiscreteVariable]) extends Lattice[Var
   val _nodes = new HashMap[Variable, MessageNode]
   val _factors = new HashMap[Factor, MessageFactor]
 
+  private var _useScoreCaching = true
+
+  def setScoreCaching(bool: Boolean) = _useScoreCaching = bool
+
+  def usesScoreCaching = _useScoreCaching
+
   def createFactor(potential: Factor)
 
   def createFactors(factorsToAdd: Seq[Factor]) {
@@ -517,7 +528,7 @@ abstract class LatticeBP(val varying: Set[DiscreteVariable]) extends Lattice[Var
 
   override def marginal(f: Factor) = if (_factors.contains(f)) {
     val mf = mfactor(f)
-    Some(new DiscreteFactorMarginal(f, f.valuesIterator(mf.varying.toSet).map(mf marginal _).toArray))
+    Some(new DiscreteFactorMarginal(f, mf.values.map(mf marginal _).toArray))
   } else None
 
   def currentMaxDelta: Double = {

@@ -53,5 +53,6 @@ trait SingletonBinaryVec extends Vector {
 /** A Vector that has all zeros, except one position containing a 1.0.
     @author Andrew McCallum */
 class SingletonBinaryVector(val theLength:Int, val singleIndex:Int) extends SingletonBinaryVec {
+  assert(singleIndex < theLength, "index %d should be less than length %d".format(singleIndex, theLength))
   def length = theLength
 }
