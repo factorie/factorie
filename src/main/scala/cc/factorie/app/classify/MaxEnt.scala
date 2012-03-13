@@ -16,6 +16,7 @@ package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.generative.Proportions
 import cc.factorie.er._
+import cc.factorie.la.Vector
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 
 class MaxEntSampleRankTrainer extends ClassifierTrainer {
@@ -35,9 +36,10 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
   }
 }
 
-class MaxEntLikelihoodTrainer(val l2: Double = 10.0) extends ClassifierTrainer {
+class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Vector = null) extends ClassifierTrainer {
   def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures)
+    if (warmStart != null) cmodel.templates(1).asInstanceOf[DotFamily].setWeights(warmStart)
     val trainer = new LogLinearMaximumLikelihood(cmodel)
     trainer.gaussianPriorVariance = l2
     // Do the training by BFGS
