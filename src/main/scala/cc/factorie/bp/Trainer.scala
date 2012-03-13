@@ -257,8 +257,8 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
     val oldLr = initialLearningRate
     initialLearningRate = eta
     val oldWeights = families.map(f => {
-      val a = Array.ofDim[Double](f.weights.size)
-      f.weights.copyToArray(a)
+      val a = f.newWeightsTypeVector
+      a += f.weights
       a
     }).toArray
     var obj = 0.0
@@ -274,10 +274,9 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
     while (i < families.length) {
       val fam = families(i)
       val ws = oldWeights(i)
-      var j = 0
-      while (j < fam.weights.length) {
+      assert(fam.weights.activeDomainSize == ws.activeDomainSize)
+      for (j <- fam.weights.activeDomain) {
         fam.weights(j) = ws(j)
-        j += 1
       }
       i += 1
     }
