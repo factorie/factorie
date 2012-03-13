@@ -35,10 +35,11 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
   }
 }
 
-class MaxEntLikelihoodTrainer extends ClassifierTrainer {
+class MaxEntLikelihoodTrainer(val l2: Double = 10.0) extends ClassifierTrainer {
   def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures)
     val trainer = new LogLinearMaximumLikelihood(cmodel)
+    trainer.gaussianPriorVariance = l2
     // Do the training by BFGS
     trainer.processAll(il.map(List(_)))
     new Classifier[L] { val model = cmodel; val labelDomain = il.head.domain }
