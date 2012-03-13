@@ -210,6 +210,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
   def updateGradients(batch: Int) = {
     var obj = 0.0
     for (vg <- batches(batch).map(_.valueAndGradient)) {
+      vg._2.foreach(g => projectGradient(g._1,g._2))
       obj += vg._1
       val pg = vg._2
       var i = 0
@@ -297,4 +298,6 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
     for (i <- 0 until batches.length)
       doStep(i)
   }
+
+  def projectGradient(df: DotFamily, grad: Vector): Unit = {}
 }
