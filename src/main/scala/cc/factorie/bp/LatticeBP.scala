@@ -50,6 +50,8 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   // number of possible values
   protected val _valuesSize: Int = discreteVarying.foldLeft(1)(_ * _._1.domain.size)
   val values: Seq[Values] = factor.valuesIterator(varyingNeighbors).toSeq
+  val indices: Seq[Int] = values.map(_.index(varyingNeighbors)).toSeq
+  assert(values.size <= _valuesSize, "%s (%d) has more elements than %s (%d)".format(values, values.size, discreteVarying.map(_._1.domain.size).mkString(" "), _valuesSize))
 
   protected val _marginal: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
   protected var _remarginalize: Boolean = true
@@ -72,7 +74,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
 
   protected def getScore(assignment: Values, index: Int = -1): Double = {
     if (index >= 0 && fg.usesScoreCaching) {
-      if(_cache(index).isNaN) _cache(index) = assignment.statistics.score
+      if (_cache(index).isNaN) _cache(index) = assignment.statistics.score
       _cache(index)
     } else assignment.statistics.score
   }
@@ -124,9 +126,10 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   }
 
   // return the stored marginal probability for the given value
-  def marginal(values: Values): Double = {
+  def marginal(values: Values, index: Int = -1): Double = {
     incomingToOutgoing
-    _marginal(values.index(varyingNeighbors))
+    val i = if (index < 0) values.index(varyingNeighbors) else index
+    _marginal(i)
   }
 
   def currentMaxDelta: Double = {
@@ -141,8 +144,10 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   def logZ: Double = {
     var Z = 0.0
     var maxScore = Double.NegativeInfinity
-    for (assignment: Values <- values) {
-      var num: Double = getScore(assignment)
+    for (i <- 0 until values.length) {
+      val index = indices(i)
+      val assignment = values(i)
+      var num: Double = getScore(assignment, index)
       for (e <- edges) {
         val mess = incoming(e)
         num += mess.score(assignment(e.n.variable))
@@ -158,9 +163,11 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
 
   def foldMarginals[A](init: A)(f: (A, Values, Double) => A): A = {
     var a: A = init
-    for (value: Values <- values) {
-      val prob = marginal(value)
-      a = f(a, value, prob)
+    for (i <- 0 until values.length) {
+      val index = indices(i)
+      val assignment = values(i)
+      val prob = marginal(assignment, index)
+      a = f(a, assignment, prob)
     }
     a
   }
@@ -169,8 +176,10 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
     factor match {
       case f: DotFamily#Factor => {
         if (!exps.contains(f.family)) exps(f.family) = new SparseVector(f.family.statisticsVectorLength)
-        for (assignment: Values <- values) {
-          val prob = marginal(assignment)
+        for (i <- 0 until values.length) {
+          val index = indices(i)
+          val assignment = values(i)
+          val prob = marginal(assignment, index)
           val vector = assignment.statistics.asInstanceOf[DotFamily#StatisticsType].vector
           exps(f.family) += (vector * prob)
         }
@@ -210,8 +219,9 @@ trait SumFactor extends MessageFactor {
 
   def sumNeighbors(incoming: FactorMessages) = {
     var maxLogScore = Double.NegativeInfinity
-    for (assignment: Values <- values) {
-      val index = assignment.index(varyingNeighbors)
+    for (i <- 0 until values.length) {
+      val index = indices(i)
+      val assignment = values(i)
       var num: Double = getScore(assignment, index)
       for (dv <- discreteVarying) {
         val mess = incoming.get(dv._2)
@@ -315,8 +325,9 @@ trait MaxFactor extends MessageFactor {
       scores(i) = Array.fill(discreteVarying(i)._1.domain.size)(Double.NegativeInfinity)
     }
     // go through all the assignments of the varying variables
-    for (assignment: Values <- values) {
-      val index = assignment.index(varyingNeighbors)
+    for (i <- 0 until values.length) {
+      val index = indices(i)
+      val assignment = values(i)
       var num: Double = getScore(assignment, index)
       for (dv <- discreteVarying) {
         val mess = _incoming.get(dv._2)
