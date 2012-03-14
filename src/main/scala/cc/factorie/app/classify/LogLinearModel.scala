@@ -21,12 +21,8 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteVectorVar](lf:L=>F, fl:F=>L)(impl
   this += evidenceTemplate
   val factorCache = HashMap[Variable, Seq[Factor]]()
   override def factors(vs:Iterable[Variable]): Seq[Factor] =  {
-    assert(vs.size == 1)
-    val v = vs.head
-    if (!factorCache.contains(v)) {
-      factorCache(v) = super.factors(vs)
-    }
-    factorCache(v)
+    if (vs.size == 1) factors1(vs.head)
+    else vs.flatMap(factors1).toSeq
   }
   override def factors1(v:Variable): Seq[Factor] = {
     if (!factorCache.contains(v)) {
@@ -34,6 +30,16 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteVectorVar](lf:L=>F, fl:F=>L)(impl
     }
     factorCache(v)
   }
+  override def factorsOfFamilies[F<:Family](variables:Iterable[Variable], families:Seq[F]): Seq[F#Factor] = {
+    if ((families.length == 2) &&
+        (families(0) == biasTemplate || families(1) == biasTemplate) &&
+        (families(0) == evidenceTemplate || families(1) == evidenceTemplate))
+      factors(variables).asInstanceOf[Seq[F#Factor]]
+    else {
+      filterByFamilies(factors(variables), families)
+    }
+  }
+
 }
 
 // TODO consider requiring the statisticsDomains for label and features when creating the model.
