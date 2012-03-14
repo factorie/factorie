@@ -1,6 +1,6 @@
 package cc.factorie.bp
 
-import cc.factorie.{DotFamily, Model}
+import cc.factorie._
 import cc.factorie.optimize.OptimizableByValueAndGradient
 import cc.factorie.la.{SparseVector, ArrayFromVectors, Vector, DenseVector}
 import collection.mutable.{ArrayBuffer, HashMap, Map}
@@ -200,11 +200,9 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
   val gradients = families.map(f => ArrayBuffer[Vector]()).toArray
 
   var batches: Seq[Seq[Piece]] = null
-  val rng = new util.Random()
 
   def initializeBatches() {
-    rng.shuffle(pieces)
-    batches = pieces.grouped(minibatchSize).toSeq
+    batches = pieces.shuffle.grouped(minibatchSize).toSeq
   }
 
   def updateGradients(batch: Int) = {
