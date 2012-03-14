@@ -28,7 +28,7 @@ class EntityName(val entity:Entity, s:String) extends StringVariable(s)
 class NamedEntity(s:String) extends Entity {
   attr += new EntityName(this, s)
   def name = attr[EntityName]
-  @deprecated("Use name.value instead") def string = name.value  
+  @deprecated("Use name.value instead") def string = name.value
 }
 
 @deprecated("Use NamedEntity instead.") class EntityVariable(s:String) extends NamedEntity(s) 

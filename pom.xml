@@ -72,6 +72,12 @@
       <version>2.7.3</version>
     </dependency>
 
+    <dependency>
+      <groupId>bibtex</groupId>
+      <artifactId>bibtex</artifactId>
+      <version>20040801</version>
+    </dependency>
+
   </dependencies>
 
   <distributionManagement>
@@ -151,8 +157,8 @@
                   </jvmArgs>
                 </launcher>
                 <launcher>
-                  <id>ChainNER4</id>
-                  <mainClass>cc.factorie.example.ChainNER4</mainClass>
+                  <id>ChainNER</id>
+                  <mainClass>cc.factorie.example.ChainNER_Wick</mainClass>
                   <jvmArgs>
                     <jvmArg>-Xmx4g</jvmArg>
                   </jvmArgs>

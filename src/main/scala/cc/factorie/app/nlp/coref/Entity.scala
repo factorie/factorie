@@ -54,6 +54,7 @@ trait Entity extends Attr {
   def removedChildHook(entity:Entity)(implicit d:DiffList)={}
   def addedChildHook(entity:Entity)(implicit d:DiffList)={}
   def changedSuperEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList)={}
+  def newEntity:Entity = null
   //val removedChildHooks = new cc.factorie.util.Hooks2[Entity,DiffList]
   //val addedChildHooks = new cc.factorie.util.Hooks2[Entity,DiffList]
   //val changedSuperEntityHooks = new cc.factorie.util.Hooks3[Entity,Entity,DiffList]
