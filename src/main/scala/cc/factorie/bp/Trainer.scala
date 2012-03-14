@@ -262,7 +262,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
     }).toArray
     var obj = 0.0
     var i = 0
-    while (i < calibrateLrSteps) {
+    while (i < math.min(batches.length, calibrateLrSteps)) {
       obj += doStep(i)
       i += 1
     }
