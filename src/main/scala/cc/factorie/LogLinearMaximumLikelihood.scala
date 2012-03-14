@@ -20,6 +20,123 @@ import cc.factorie.la._
 import cc.factorie.optimize._
 import scala.collection.mutable.HashMap
 
+class SuffStats extends HashMap[DotFamily, Vector] {
+  override def default(template: DotFamily) = {
+    template.freezeDomains
+    val vector: Vector = template.weights match {
+      case w: SparseVector => new SparseVector(w.length)
+      case w: DenseVector => new DenseVector(w.length)
+      case w: SparseOuter1DenseVector1 => new SparseOuter1DenseVector1(w.length1, w.length2)
+      case w: SparseOuter2DenseVector1 => new SparseOuter2DenseVector1(w.length1, w.length2, w.length3)
+    }
+    this(template) = vector
+    vector
+  }
+  // To help make sure sort order of vectors matches
+  def sortedKeys = keys.toSeq.sortWith(_.hashCode > _.hashCode)
+}
+
+class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordination](val templates: Seq[DotFamily],
+                                                                                   val model: Model,
+                                                                                   val variableSets: Seq[Seq[V]],
+                                                                                   val gaussianPriorVariance: Double,
+                                                                                   val familiesToUpdate: Seq[DotFamily],
+                                                                                   val constraints: SuffStats)
+          extends OptimizableFamilies(templates) with OptimizableByValueAndGradient {
+  // Cached values
+  private var oValue = Double.NaN
+  private var oGradient: Array[Double] = new Array[Double](numOptimizableParameters)
+  // Flush cache when parameters change
+  override def setOptimizableParameters(a: Array[Double]): Unit = {
+    oValue = Double.NaN
+    model.families.foreach(_.clearCachedStatistics) // Parameter changing, so cache no longer valid
+    super.setOptimizableParameters(a)
+  }
+
+  override def optimizableParameter_=(index: Int, d: Double): Unit = {oValue = Double.NaN; super.optimizableParameter_=(index, d)}
+  // Calculation of value and gradient
+  def setOptimizableValueAndGradient: Unit = {
+    if (variableSets.forall(_.size == 1)) setOptimizableValueAndGradientIID
+    else setOptimizableValueAndGradientBP
+  }
+
+  def setOptimizableValueAndGradientBP: Unit = {
+    val expectations = new SuffStats
+    oValue = 0.0
+    java.util.Arrays.fill(oGradient, 0.0)
+    variableSets.foreach(variables => {
+      if (variables.size > 0) {
+        val lattice = new BPLattice(variables, model)
+        // Do inference on the tree
+        lattice.updateTreewise(expectations)
+        // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
+        // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
+        variables.foreach(_.asInstanceOf[VarWithTargetValue].setToTarget(null))
+        // oValue += model.factors(variables).foldLeft(0.0)(_+_.cachedStatistics.score) - logZ
+        for (bpfactor <- lattice.bpFactors.values) oValue += bpfactor.factor.cachedStatistics.score
+        oValue -= lattice.sumLogZ
+      }
+    })
+    val invVariance = -1.0 / gaussianPriorVariance
+    familiesToUpdate.foreach {
+      t =>
+        oValue += 0.5 * t.weights.dot(t.weights) * invVariance
+        // sum positive constraints into (previously negated) expectations
+        expectations(t) += constraints(t)
+        //vecPlusEq(expectations(t), constraints(t), 1.0)
+        // subtract weights due to regularization
+        expectations(t) += t.weights * invVariance
+    }
+    // constraints.keys.foreach(t => expectations(t) += constraints(t))
+    oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
+  }
+
+  def setOptimizableValueAndGradientIID: Unit = {
+    val expectations = new SuffStats
+    oValue = 0.0
+    java.util.Arrays.fill(oGradient, 0.0)
+    var distribution = Array.fill(0)(0.0)
+    variableSets.foreach(_.foreach(v => {
+      if (v.domain.size != distribution.length) distribution = new Array[Double](v.domain.size)
+      forIndex(distribution.length)(i => {
+        v.set(i)(null)
+        distribution(i) = model.score(Seq(v))
+      })
+
+      maths.expNormalize(distribution)
+
+      forIndex(distribution.length)(i => {
+        v.set(i)(null)
+        // put negative expectations into 'expectations' StatMap
+        model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => expectations(f.family) +=  f.statistics.vector *(-distribution(i)))
+      })
+
+      oValue += math.log(distribution(v.targetIntValue))
+    }))
+    val invVariance = -1.0 / gaussianPriorVariance
+    familiesToUpdate.foreach {
+      t =>
+        oValue += 0.5 * t.weights.dot(t.weights) * invVariance
+        // sum positive constraints into (previously negated) expectations
+        expectations(t) += constraints(t)
+        // subtract weights due to regularization
+        expectations(t) += t.weights * invVariance
+    }
+    // constraints.keys.foreach(t => expectations(t) += constraints(t))
+    oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
+  }
+
+  def optimizableValue: Double = {
+    if (oValue.isNaN) setOptimizableValueAndGradient
+    oValue
+  }
+
+  def getOptimizableGradient(a: Array[Double]) = {
+    if (oValue.isNaN) setOptimizableValueAndGradient
+    Array.copy(oGradient, 0, a, 0, oGradient.length)
+  }
+}
+
 // TODO preliminary: currently only supports trivial inference on IID discrete variables
 // and inference on tree-shaped graphs of discrete variables.
 // In the future there will be a choice of different inference methods over arbitrary graphical model structures
@@ -43,21 +160,7 @@ class LogLinearMaximumLikelihood(model: Model) {
   /**First argument is a collection of collections-of-variables.  The former are considered iid.  The later may have dependencies.  */
   def processAll[V <: DiscreteVarWithTarget with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Int.MaxValue): Unit = {
     // Data structure for holding per-template constraints and expectations
-    class SuffStats extends HashMap[DotFamily, Vector] {
-      override def default(template: DotFamily) = {
-        template.freezeDomains
-        val vector: Vector = template.weights match {
-          case w: SparseVector => new SparseVector(w.length)
-          case w: DenseVector => new DenseVector(w.length)
-          case w: SparseOuter1DenseVector1 => new SparseOuter1DenseVector1(w.length1, w.length2)
-          case w: SparseOuter2DenseVector1 => new SparseOuter2DenseVector1(w.length1, w.length2, w.length3)
-        }
-        this(template) = vector
-        vector
-      }
-      // To help make sure sort order of vectors matches
-      def sortedKeys = keys.toSeq.sortWith(_.hashCode > _.hashCode)
-    }
+
     val constraints = new SuffStats
     // Add all model dot templates to constraints
     //familiesToUpdate.foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
@@ -68,100 +171,7 @@ class LogLinearMaximumLikelihood(model: Model) {
     def templates = constraints.sortedKeys
 
     // Currently only supports iid single DiscreteVariables
-    val optimizable = new OptimizableFamilies(templates) with OptimizableByValueAndGradient {
-      // Cached values
-      private var oValue = Double.NaN
-      private var oGradient: Array[Double] = new Array[Double](numOptimizableParameters)
-      // Flush cache when parameters change
-      override def setOptimizableParameters(a: Array[Double]): Unit = {
-        oValue = Double.NaN
-        model.families.foreach(_.clearCachedStatistics) // Parameter changing, so cache no longer valid
-        super.setOptimizableParameters(a)
-      }
-
-      override def optimizableParameter_=(index: Int, d: Double): Unit = {oValue = Double.NaN; super.optimizableParameter_=(index, d)}
-      // Calculation of value and gradient
-      def setOptimizableValueAndGradient: Unit = {
-        if (variableSets.forall(_.size == 1)) setOptimizableValueAndGradientIID
-        else setOptimizableValueAndGradientBP
-      }
-
-      def setOptimizableValueAndGradientBP: Unit = {
-        val expectations = new SuffStats
-        oValue = 0.0
-        java.util.Arrays.fill(oGradient, 0.0)
-        variableSets.foreach(variables => {
-          if (variables.size > 0) {
-            val lattice = new BPLattice(variables, model)
-            // Do inference on the tree
-            lattice.updateTreewise(expectations)
-            // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
-            // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
-            variables.foreach(_.asInstanceOf[VarWithTargetValue].setToTarget(null))
-            // oValue += model.factors(variables).foldLeft(0.0)(_+_.cachedStatistics.score) - logZ
-            for (bpfactor <- lattice.bpFactors.values) oValue += bpfactor.factor.cachedStatistics.score
-            oValue -= lattice.sumLogZ
-          }
-        })
-        val invVariance = -1.0 / gaussianPriorVariance
-        familiesToUpdate.foreach {
-          t =>
-            oValue += 0.5 * t.weights.dot(t.weights) * invVariance
-            // sum positive constraints into (previously negated) expectations
-            expectations(t) += constraints(t)
-            //vecPlusEq(expectations(t), constraints(t), 1.0)
-            // subtract weights due to regularization
-            expectations(t) += t.weights * invVariance
-        }
-        // constraints.keys.foreach(t => expectations(t) += constraints(t))
-        oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
-      }
-
-      def setOptimizableValueAndGradientIID: Unit = {
-        val expectations = new SuffStats
-        oValue = 0.0
-        java.util.Arrays.fill(oGradient, 0.0)
-        variableSets.foreach(_.foreach(v => {
-          val distribution = new Array[Double](v.domain.size) // TODO Are we concerned about all this garbage collection?
-          forIndex(distribution.length)(i => {
-            v.set(i)(null)
-            // compute score of variable with value 'i'
-            distribution(i) = model.score(Seq(v))
-          })
-
-          maths.expNormalize(distribution)
-
-          forIndex(distribution.length)(i => {
-            v.set(i)(null)
-            // put negative expectations into 'expectations' StatMap
-            model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => expectations(f.family) +=  f.statistics.vector *(-distribution(i)))
-          })
-
-          oValue += math.log(distribution(v.targetIntValue))
-        }))
-        val invVariance = -1.0 / gaussianPriorVariance
-        familiesToUpdate.foreach {
-          t =>
-            oValue += 0.5 * t.weights.dot(t.weights) * invVariance
-            // sum positive constraints into (previously negated) expectations
-            expectations(t) += constraints(t)
-            // subtract weights due to regularization
-            expectations(t) += t.weights * invVariance
-        }
-        // constraints.keys.foreach(t => expectations(t) += constraints(t))
-        oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
-      }
-
-      def optimizableValue: Double = {
-        if (oValue.isNaN) setOptimizableValueAndGradient
-        oValue
-      }
-
-      def getOptimizableGradient(a: Array[Double]) = {
-        if (oValue.isNaN) setOptimizableValueAndGradient
-        Array.copy(oGradient, 0, a, 0, oGradient.length)
-      }
-    }
+    val optimizable = new LogLinearOptimizable(templates, model, variableSets, gaussianPriorVariance, familiesToUpdate, constraints)
 
     // Do the gradient-climbing optimization!
     try {
