@@ -39,6 +39,16 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteVectorVar](lf:L=>F, fl:F=>L)(impl
       filterByFamilies(factors(variables), families)
     }
   }
+  override def score(variables:Iterable[Variable]): Double = {
+    val f = factors(variables)
+    var s = 0.0
+    var i = 0
+    while (i < f.length) {
+      s += f(i).score
+      i += 1
+    }
+    s
+  }
 
 }
 
