@@ -50,7 +50,8 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   // number of possible values
   protected val _valuesSize: Int = discreteVarying.foldLeft(1)(_ * _._1.domain.size)
   val values: Array[Values] = factor.valuesIterator(varyingNeighbors).toArray
-  val indices: Array[Int] = values.map(_.index(varyingNeighbors)).toArray
+  val indices: Array[Int] = new Array[Int](values.length)
+  (0 until values.length).foreach(i => indices(i) = values(i).index(varyingNeighbors))
   assert(values.length <= _valuesSize, "%s (%d) has more elements than %s (%d)".format(values, values.length, discreteVarying.map(_._1.domain.size).mkString(" "), _valuesSize))
 
   protected val _marginal: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
