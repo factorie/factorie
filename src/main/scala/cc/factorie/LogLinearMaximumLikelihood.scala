@@ -86,8 +86,6 @@ class LogLinearMaximumLikelihood(model: Model) {
         else setOptimizableValueAndGradientBP
       }
 
-      def vecPlusEq(v1: Vector, v2: Vector, scale: Double): Unit = v2.forActiveDomain(i => v1(i) += v2(i) * scale)
-
       def setOptimizableValueAndGradientBP: Unit = {
         val expectations = new SuffStats
         oValue = 0.0
@@ -110,11 +108,10 @@ class LogLinearMaximumLikelihood(model: Model) {
           t =>
             oValue += 0.5 * t.weights.dot(t.weights) * invVariance
             // sum positive constraints into (previously negated) expectations
-            // expectations(t) += constraints(t)
-            vecPlusEq(expectations(t), constraints(t), 1.0)
+            expectations(t) += constraints(t)
+            //vecPlusEq(expectations(t), constraints(t), 1.0)
             // subtract weights due to regularization
-            // expectations(t) += t.weights * invVariance
-            vecPlusEq(expectations(t), t.weights, invVariance)
+            expectations(t) += t.weights * invVariance
         }
         // constraints.keys.foreach(t => expectations(t) += constraints(t))
         oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
@@ -137,7 +134,7 @@ class LogLinearMaximumLikelihood(model: Model) {
           forIndex(distribution.length)(i => {
             v.set(i)(null)
             // put negative expectations into 'expectations' StatMap
-            model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => vecPlusEq(expectations(f.family), f.statistics.vector, -distribution(i)))
+            model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => expectations(f.family) +=  f.statistics.vector *(-distribution(i)))
           })
 
           oValue += math.log(distribution(v.targetIntValue))
@@ -147,11 +144,9 @@ class LogLinearMaximumLikelihood(model: Model) {
           t =>
             oValue += 0.5 * t.weights.dot(t.weights) * invVariance
             // sum positive constraints into (previously negated) expectations
-            // expectations(t) += constraints(t)
-            vecPlusEq(expectations(t), constraints(t), 1.0)
+            expectations(t) += constraints(t)
             // subtract weights due to regularization
-            // expectations(t) += t.weights * invVariance
-            vecPlusEq(expectations(t), t.weights, invVariance)          
+            expectations(t) += t.weights * invVariance
         }
         // constraints.keys.foreach(t => expectations(t) += constraints(t))
         oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
