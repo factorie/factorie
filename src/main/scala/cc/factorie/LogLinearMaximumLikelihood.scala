@@ -55,15 +55,12 @@ class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordinatio
 
   override def optimizableParameter_=(index: Int, d: Double): Unit = {oValue = Double.NaN; super.optimizableParameter_=(index, d)}
   // Calculation of value and gradient
-  def setOptimizableValueAndGradient: Unit = {
-    if (variableSets.forall(_.size == 1)) setOptimizableValueAndGradientIID
-    else setOptimizableValueAndGradientBP
-  }
 
-  def setOptimizableValueAndGradientBP: Unit = {
-    val expectations = new SuffStats
-    oValue = 0.0
-    java.util.Arrays.fill(oGradient, 0.0)
+  val doSetOptimizableValueAndGradient = if (variableSets.forall(_.size == 1)) { () => setOptimizableValueAndGradientIID  } else { () => setOptimizableValueAndGradientBP}
+
+  def setOptimizableValueAndGradient: Unit = doSetOptimizableValueAndGradient()
+
+  def updateOValueBP(expectations: SuffStats) {
     variableSets.foreach(variables => {
       if (variables.size > 0) {
         val lattice = new BPLattice(variables, model)
@@ -77,7 +74,10 @@ class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordinatio
         oValue -= lattice.sumLogZ
       }
     })
-    val invVariance = -1.0 / gaussianPriorVariance
+  }
+
+  val invVariance = -1.0 / gaussianPriorVariance
+  def updateExpectations(expectations: SuffStats, constraints: SuffStats) {
     familiesToUpdate.foreach {
       t =>
         oValue += 0.5 * t.weights.dot(t.weights) * invVariance
@@ -87,41 +87,48 @@ class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordinatio
         // subtract weights due to regularization
         expectations(t) += t.weights * invVariance
     }
+  }
+
+  def setOptimizableValueAndGradientBP: Unit = {
+    val expectations = new SuffStats
+    oValue = 0.0
+    //java.util.Arrays.fill(oGradient, 0.0)
+    updateOValueBP(expectations)
+    updateExpectations(expectations, constraints)
     // constraints.keys.foreach(t => expectations(t) += constraints(t))
     oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
+  }
+
+  var distribution = Array.fill(0)(0.0)
+  def doOValueIID(expectations: SuffStats) {
+    variableSets.foreach(_.foreach(v => {
+      if (v.domain.size != distribution.length) distribution = new Array[Double](v.domain.size)
+      var i = 0
+      while (i < distribution.length) {
+        v.set(i)(null)
+        distribution(i) = model.score(Seq(v))
+        i += 1
+      }
+
+      maths.expNormalize(distribution)
+      i = 0
+      while (i < distribution.length) {
+        v.set(i)(null)
+        // put negative expectations into 'expectations' StatMap
+        model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => expectations(f.family) +=  f.statistics.vector *(-distribution(i)))
+        i += 1
+      }
+
+      oValue += math.log(distribution(v.targetIntValue))
+    }))
   }
 
   def setOptimizableValueAndGradientIID: Unit = {
     val expectations = new SuffStats
     oValue = 0.0
     java.util.Arrays.fill(oGradient, 0.0)
-    var distribution = Array.fill(0)(0.0)
-    variableSets.foreach(_.foreach(v => {
-      if (v.domain.size != distribution.length) distribution = new Array[Double](v.domain.size)
-      forIndex(distribution.length)(i => {
-        v.set(i)(null)
-        distribution(i) = model.score(Seq(v))
-      })
-
-      maths.expNormalize(distribution)
-
-      forIndex(distribution.length)(i => {
-        v.set(i)(null)
-        // put negative expectations into 'expectations' StatMap
-        model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => expectations(f.family) +=  f.statistics.vector *(-distribution(i)))
-      })
-
-      oValue += math.log(distribution(v.targetIntValue))
-    }))
-    val invVariance = -1.0 / gaussianPriorVariance
-    familiesToUpdate.foreach {
-      t =>
-        oValue += 0.5 * t.weights.dot(t.weights) * invVariance
-        // sum positive constraints into (previously negated) expectations
-        expectations(t) += constraints(t)
-        // subtract weights due to regularization
-        expectations(t) += t.weights * invVariance
-    }
+    doOValueIID(expectations)
+    updateExpectations(expectations, constraints)
     // constraints.keys.foreach(t => expectations(t) += constraints(t))
     oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
   }
