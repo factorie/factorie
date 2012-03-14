@@ -48,13 +48,17 @@ trait ArrayOps {
   /** Exponentiate the elements of the array, and then normalize them to sum to one. */
   def expNormalize(a:Array[Double]): Double = {
     var max = Double.MinValue
-    for (i <- 0 until a.length) if (max < a(i)) max = a(i)
+    var i = 0
+    while (i < a.length) { if (max < a(i)) max = a(i); i += 1 }
     var sum = 0.0
-    for (i <- 0 until a.length) {
+    i = 0
+    while (i < a.length) {
       a(i) = math.exp(a(i) - max)
       sum += a(i)
+      i += 1
     }
-    for (i <- 0 until a.length) a(i) /= sum
+    i = 0
+    while (i < a.length) { a(i) /= sum; i += 1 }
     sum
   }
 
