@@ -293,7 +293,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
   def iterate() {
     //t = 0
     initializeBatches()
-    calibrateLearningRate()
+    if (calibrateLrSteps > 0) calibrateLearningRate()
     for (i <- 0 until batches.length)
       doStep(i)
   }
