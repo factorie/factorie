@@ -49,9 +49,9 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
   val nodes = edges.map(_.n).toSeq
   // number of possible values
   protected val _valuesSize: Int = discreteVarying.foldLeft(1)(_ * _._1.domain.size)
-  val values: Seq[Values] = factor.valuesIterator(varyingNeighbors).toSeq
-  val indices: Seq[Int] = values.map(_.index(varyingNeighbors)).toSeq
-  assert(values.size <= _valuesSize, "%s (%d) has more elements than %s (%d)".format(values, values.size, discreteVarying.map(_._1.domain.size).mkString(" "), _valuesSize))
+  val values: Array[Values] = factor.valuesIterator(varyingNeighbors).toArray
+  val indices: Array[Int] = values.map(_.index(varyingNeighbors)).toArray
+  assert(values.length <= _valuesSize, "%s (%d) has more elements than %s (%d)".format(values, values.length, discreteVarying.map(_._1.domain.size).mkString(" "), _valuesSize))
 
   protected val _marginal: Array[Double] = Array.fill(_valuesSize)(Double.NaN)
   protected var _remarginalize: Boolean = true
@@ -235,8 +235,9 @@ trait SumFactor extends MessageFactor {
 
   def computeZ(maxLogScore: Double) = {
     var Z = 0.0
-    for (assignment: Values <- values) {
-      val index = assignment.index(varyingNeighbors)
+    for (j <- 0 until values.length) {
+      val index = indices(j)
+      val assignment = values(j)
       val num = tmpScore(index) - maxLogScore
       val expnum = exp(num)
       assert(!expnum.isInfinity)
