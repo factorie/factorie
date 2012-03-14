@@ -69,22 +69,26 @@ class SamplingMaximizerLattice[V<:Variable](val diff:DiffList, val diffScore:Dou
     @since 0.8
  */
 // TODO Update this for the new separated "modelScore" and "acceptScore" in Proposal.
-class SamplingMaximizer[V<:Variable with IterableSettings](val sampler:ProposalSampler[V]) extends VariableInferencer[V] {
-  def this(model:TemplateModel) = this(new VariableSettingsSampler[V](model))
+object SamplingMaximizer {
+  def apply[V<:Variable with IterableSettings](model: TemplateModel) = new SamplingMaximizer[V, V](new VariableSettingsSampler[V](model)) with VariableInferencer[V] {
+    def infer(variables:Iterable[V], numIterations:Int): LatticeType = {
+      val origIterations = iterations; iterations = numIterations
+      val result = inferd(variables, variables)(null)
+      iterations = origIterations
+      result
+    }
+  }
+  def apply[C](sampler: ProposalSampler[C]) = new SamplingMaximizer[Variable, C](sampler)
+}
+class SamplingMaximizer[V <: Variable, C](val sampler:ProposalSampler[C]) extends Inferencer[V,C] {
   type LatticeType = SamplingMaximizerLattice[V]
   var iterations = 50 // TODO What should these be by default?
   var rounds = 3
   var initialTemperature = 1.0
   var finalTemperature = 0.01
-  def infer(variables:Iterable[V], numIterations:Int): LatticeType = {
-    val origIterations = iterations; iterations = numIterations
-    val result = inferd(variables, variables)(null)
-    iterations = origIterations
-    result
-  }
-  def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = inferd(variables, varying)(null)
+  def infer(variables:Iterable[V], varying:Iterable[C]): LatticeType = inferd(variables, varying)(null)
   // TODO I really want Scala 2.8 default parameters: (implicit diff:DiffList = null)  !!!
-  def inferd(variables:Iterable[V], varying:Iterable[V])(implicit diff:DiffList): LatticeType = {
+  def inferd(variables:Iterable[V], varying:Iterable[C])(implicit diff:DiffList): LatticeType = {
     var currentScore = 0.0
     var maxScore = currentScore
     val maxdiff = new DiffList
