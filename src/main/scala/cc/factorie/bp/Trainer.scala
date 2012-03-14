@@ -207,8 +207,9 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
 
   def updateGradients(batch: Int) = {
     var obj = 0.0
+    assert(batch < batches.length, "%d should be less than %d".format(batch, batches.length))
     for (vg <- batches(batch).map(_.valueAndGradient)) {
-      vg._2.foreach(g => projectGradient(g._1,g._2))
+      vg._2.foreach(g => projectGradient(g._1, g._2))
       obj += vg._1
       val pg = vg._2
       var i = 0
@@ -229,7 +230,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
       val fam = families(f)
       val grad = gradients(f)
       if (l1 == 0.0) {
-        val mult = 1.0-l2*lr
+        val mult = 1.0 - l2 * lr
         val scaledWeights = fam.weights * mult
         fam.setWeights(scaledWeights)
         grad.foreach(g => fam.weights += g * lr)
@@ -266,7 +267,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
       obj += doStep(i)
       i += 1
     }
-    t -= calibrateLrSteps
+    t -= math.min(batches.length, calibrateLrSteps)
     initialLearningRate = oldLr
     i = 0
     obj -= (5.0 * l2 / batches.length) * families.sumDoubles(f => f.weights.dot(f.weights))
