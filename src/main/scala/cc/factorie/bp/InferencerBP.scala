@@ -100,4 +100,15 @@ class InferencerBPWorker(lattice: LatticeBP) {
     }
   }
 
+  def inferParallelLoopyBP(iterations: Int = 1) {
+    for (iteration <- 0 until iterations) {
+      lattice.mfactors.toSeq.shuffle(cc.factorie.random).par.foreach(factor => {
+        //for every factor first calculate all incoming beliefs
+        factor.receiveFromAll
+        //synchronous belief updates on all send edges
+        factor.sendToAll
+      })
+      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+    }
+  }
 }
