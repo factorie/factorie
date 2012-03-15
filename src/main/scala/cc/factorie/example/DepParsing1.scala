@@ -162,6 +162,7 @@ object DepParsing1 {
   val factorModel = new Model {
     def factors(vars: Iterable[Variable]): Seq[Factor] = Seq(new Factor {
       def variable(i: Int): Variable = null
+      def variables: Seq[Variable] = throw new Error("Not yet implemented")
       val statistics = new Statistics {
         override def score: Double = {
           var ret = 0.0

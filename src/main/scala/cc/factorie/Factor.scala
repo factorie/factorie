@@ -25,9 +25,9 @@ import java.io._
 
 /** A single factor in a factor graph:  neighboring variables and methods for getting values and their score.
     @author Andrew McCallum */
-trait Factor extends Model with Ordered[Factor] {
-  // FIXME: Alex: it's not clear to me whether Factor.factors should return this or Nil
-  def factors(variables: Iterable[Variable]): Seq[Factor] = Nil
+trait Factor extends Ordered[Factor] {
+  // FIXME: Alex: it's not clear to me whether Factor.factors should return this or Nil // Now that we no longer have inner factors, Factor isn't a model at all
+  //def factors(variables: Iterable[Variable]): Seq[Factor] = Nil
   /** Returns the collection of variables neighboring this factor. */
   def variables: Seq[Variable] // = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
   /** The number of variables neighboring this factor. */
@@ -38,7 +38,7 @@ trait Factor extends Model with Ordered[Factor] {
   def touches(variable:Variable): Boolean = this.variables.contains(variable)
   def touchesAny(variables:Iterable[Variable]): Boolean = variables.exists(touches(_))
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
-  override def score: Double = statistics.score
+  def score: Double = statistics.score
   def values: Values                   
   def statistics: Statistics // = values.statistics
   def valuesIterator(varying:Set[Variable]): Iterator[Values]
