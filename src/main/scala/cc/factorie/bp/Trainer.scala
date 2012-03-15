@@ -1,9 +1,9 @@
 package cc.factorie.bp
 
-import cc.factorie.{DotFamily, Model}
+import cc.factorie._
 import cc.factorie.optimize.OptimizableByValueAndGradient
-import collection.mutable.{HashMap, Map}
-import cc.factorie.la.{ArrayFromVectors, Vector, DenseVector}
+import cc.factorie.la.{SparseVector, ArrayFromVectors, Vector, DenseVector}
+import collection.mutable.{ArrayBuffer, HashMap, Map}
 
 /**
  * @author sameer
@@ -54,8 +54,8 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
   def init = {
     _weights = new ArrayFromVectors(families.map(_.weights))
     println("Number of pieces: " + pieces.length)
-    println("Number of active weights: " + _weights.vectorsArraySize)
-    println("Number of total weights: " + families.foldLeft(0)(_ + _.weights.length))
+    println("Number of active weights: %s (%d)".format(families.map(_.weights.activeDomainSize).mkString(", "), _weights.vectorsArraySize))
+    println("Number of total weights:  %s (%d)".format(families.map(_.weights.length).mkString(", "), families.foldLeft(0)(_ + _.weights.length)))
   }
 
   def numOptimizableParameters = _weights.vectorsArraySize
@@ -186,166 +186,117 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
   }
 }
 
-/*
 
-class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily], val minibatchSize: Int,
-                 val initialLearningRate: Double, val decayDamping: Double, val l2: Double, val l1: Double) {
+class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
+                 val minibatchSize: Int, var initialLearningRate: Double,
+                 val decayDamping: Double, val l2: Double,
+                 val l1: Double = 0.0, val verbose: Boolean = true,
+                 val calibrateLrSteps: Int = 10) {
   var t = 0.0
 
-  def lrate(t: Double) = initialLearningRate / math.sqrt(decayDamping + t)
+  def lrate(t: Double) = initialLearningRate / (1 + l2 * t)
 
   families.foreach(_.freezeDomains)
-  val gradients = families.map(f => f.newWeightsTypeVector).toArray
+  val gradients = families.map(f => ArrayBuffer[Vector]()).toArray
 
   var batches: Seq[Seq[Piece]] = null
-  val rng = new util.Random()
 
   def initializeBatches() {
-    rng.shuffle(pieces)
-    batches = pieces.grouped(minibatchSize).toSeq
+    batches = pieces.shuffle.grouped(minibatchSize).toSeq
   }
 
-  def updateGradients(batch: Int) {
-    for (pg <- batches(batch).map(_.valueAndGradient._2).seq) {
+  def updateGradients(batch: Int) = {
+    var obj = 0.0
+    assert(batch < batches.length, "%d should be less than %d".format(batch, batches.length))
+    for (vg <- batches(batch).map(_.valueAndGradient)) {
+      vg._2.foreach(g => projectGradient(g._1, g._2))
+      obj += vg._1
+      val pg = vg._2
       var i = 0
       families.foreach(f => {
-        gradients(i) += pg(f)
+        gradients(i).append(pg(f) * (1.0 / batches(batch).length))
         i += 1
       })
     }
+    obj
   }
 
   def truncate(x: Double) = math.signum(x) * math.max(0.0, math.abs(x) - l1)
 
   def addGradients() {
     var f = 0
-    val lr = lrate(t)
+    val lr: Double = lrate(t)
     while (f < families.length) {
       val fam = families(f)
       val grad = gradients(f)
-      for (i <- grad.activeDomain) {
-        fam.weights(i) = truncate(fam.weights(i) + lr * (grad(i) - l2 * fam.weights(i)))
-        grad(i) = 0.0
+      if (l1 == 0.0) {
+        val mult = 1.0 - l2 * lr
+        val scaledWeights = fam.weights * mult
+        fam.setWeights(scaledWeights)
+        grad.foreach(g => fam.weights += g * lr)
+      } else {
+        var i = 0
+        while (i < fam.weights.length) {
+          fam.weights(i) = truncate(fam.weights(i) + lr * (grad.map(_(i)).sum - l2 * fam.weights(i)))
+          i += 1
+        }
       }
+      grad.clear()
       f += 1
     }
   }
 
-  def doStep(i: Int) {
+  def doStep(i: Int) = {
     t += 1
-    updateGradients(i)
+    val r = updateGradients(i)
     addGradients()
+    r
+  }
+
+  def testLr(eta: Double) = {
+    val oldLr = initialLearningRate
+    initialLearningRate = eta
+    val oldWeights = families.map(f => {
+      val a = f.newWeightsTypeVector
+      a += f.weights
+      a
+    }).toArray
+    var obj = 0.0
+    var i = 0
+    while (i < math.min(batches.length, calibrateLrSteps)) {
+      obj += doStep(i)
+      i += 1
+    }
+    t -= math.min(batches.length, calibrateLrSteps)
+    initialLearningRate = oldLr
+    i = 0
+    obj -= (5.0 * l2 / batches.length) * families.sumDoubles(f => f.weights.dot(f.weights))
+    while (i < families.length) {
+      val fam = families(i)
+      val ws = oldWeights(i)
+      assert(fam.weights.activeDomainSize == ws.activeDomainSize)
+      for (j <- fam.weights.activeDomain) {
+        fam.weights(j) = ws(j)
+      }
+      i += 1
+    }
+    if (verbose) println("lr: " + eta + " obj: " + obj)
+    obj
+  }
+
+  def calibrateLearningRate() {
+    val eta = List(100.0, 10.0, 1.0, 0.1, 0.01).map(_ * initialLearningRate).map(r => (r, testLr(r))).maxBy(x => (x._2))._1
+    initialLearningRate = eta
+    if (verbose) println("Using learning rate " + initialLearningRate)
   }
 
   def iterate() {
+    //t = 0
     initializeBatches()
+    if (calibrateLrSteps > 0) calibrateLearningRate()
     for (i <- 0 until batches.length)
       doStep(i)
   }
-}
 
-*/
-
-class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
-                 val minibatchSize: Int,  var initialLearningRate: Double,
-                 val decayDamping: Double, val l2: Double,
-                 val l1: Double = 0.0, val verbose: Boolean = true,
-                 val calibrateLrSteps : Int = 10) {
- var t = 0.0
- def lrate(t: Double) = initialLearningRate/(1 + l2*t)
-
- families.foreach(_.freezeDomains)
- val gradients = families.map(f => {new DenseVector(f.weights.length)}).toArray
-
- var batches : Seq[Seq[Piece]] = null
- val rng = new util.Random()
- def initializeBatches() {
-   rng.shuffle(pieces)
-   batches = pieces.grouped(minibatchSize).toSeq
- }
-
- def updateGradients(batch: Int) = {
-   var obj = 0.0
-   for (vg <- batches(batch).map(_.valueAndGradient)) {
-     obj += vg._1
-     val pg = vg._2
-     var i = 0
-     families.foreach(f => {
-       gradients(i) += pg(f) * (1.0/batches(batch).length)
-       i += 1
-     })
-   }
-   obj
- }
-
- def truncate(x: Double) = math.signum(x)*math.max(0.0, math.abs(x) - l1)
-
- def addGradients() {
-   var f = 0
-   val lr = lrate(t)
-   while (f < families.length) {
-     val fam = families(f)
-     val grad = gradients(f)
-     var i = 0
-     while (i < fam.weights.length) {
-       fam.weights(i) = truncate(fam.weights(i) + lr*(grad(i) - l2*fam.weights(i)))
-       grad(i) = 0.0
-       i += 1
-     }
-     f += 1
-   }
- }
-
- def doStep(i: Int) = {
-   t += 1
-   val r = updateGradients(i)
-   addGradients()
-   r
- }
-
- def testLr(eta: Double) = {
-   val oldLr = initialLearningRate
-   initialLearningRate = eta
-   val oldWeights = families.map(f => {
-     val a = Array.ofDim[Double](f.weights.size)
-     f.weights.copyToArray(a)
-     a
-   }).toArray
-   var obj = 0.0
-   var i = 0
-   while (i < calibrateLrSteps) {
-     obj += doStep(i)
-     i += 1
-   }
-   t -= calibrateLrSteps
-   initialLearningRate = oldLr
-   i = 0
-   obj -= (5.0*l2/batches.length) * families.sumDoubles(f => f.weights.dot(f.weights))
-   while (i < families.length) {
-     val fam = families(i)
-     val ws = oldWeights(i)
-     var j = 0
-     while (j < fam.weights.length) {
-       fam.weights(j) = ws(j)
-       j += 1
-     }
-     i += 1
-   }
-   if (verbose) println("lr: "+eta+" obj: "+obj)
-   obj
- }
-
- def calibrateLearningRate() {
-   val eta = List(100.0, 10.0, 1.0, 0.1, 0.01).map(_*initialLearningRate).map(r => (r,testLr(r))).maxBy(x => (x._2))._1
-   initialLearningRate = eta
-   if (verbose) println("Using learning rate "+initialLearningRate)
- }
-
- def iterate() {
-   t = 0
-   initializeBatches()
-   calibrateLearningRate()
-   for (i <- 0 until batches.length)
-     doStep(i)
- }
+  def projectGradient(df: DotFamily, grad: Vector): Unit = {}
 }

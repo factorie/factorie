@@ -180,7 +180,7 @@ class TemplateModel(initialTemplates:Template*) extends Model {
   override def factors1(variable:Variable): Seq[Factor] = normalize(templates.flatMap(template => template.factors(variable))) 
   override def factors(d:DiffList) : Seq[Factor] = if (d.size == 0) Nil else normalize(templates.flatMap(template => template.factors(d)))
   
-  def save(dirname:String, gzip: Boolean = true): Unit = {
+  def save(dirname:String, gzip: Boolean = false): Unit = {
     import java.io.File
     //println("Saving model "+getClass.getName+" to "+dirname)
     val f = new File(dirname)
@@ -191,7 +191,7 @@ class TemplateModel(initialTemplates:Template*) extends Model {
     templates.foreach(_.save(dirname, gzip))
   }
  
-  def load(dirname:String, gzip: Boolean = true): Unit = {
+  def load(dirname:String, gzip: Boolean = false): Unit = {
     templates.foreach(_.load(dirname, gzip))
   }
 }

@@ -24,7 +24,7 @@ class SparseHashVector(theLength:Int) extends Vector {
   private val h = new scala.collection.mutable.HashMap[Int,Double] { override def default(index:Int) = SparseHashVector.this.default }
   def apply(index:Int) = h(index)
   override def update(index:Int, value:Double) = {
-    assert(index < length)
+    assert(index < length, "index %d should be less than length %d".format(index, length))
     if(value == default) h.remove(index)
     else h(index) = value
   }
@@ -33,7 +33,7 @@ class SparseHashVector(theLength:Int) extends Vector {
   def activeDomain: Iterable[Int] = h.keys
   override def forActiveDomain(f: (Int)=>Unit): Unit = h.keys.foreach(f(_))
   override def increment(index:Int, incr:Double): Unit = {
-    assert(index < length)
+    assert(index < length, "index %d should be less than length %d".format(index, length))
     h(index) = h(index) + incr
   }
   def dot(v:Vector): Double = v match {
@@ -59,6 +59,8 @@ class SparseHashVector(theLength:Int) extends Vector {
     default += s
     h.keys.foreach(index => increment(index, s)) //h.update(index, h(index) + s))
   }
+
+  override def toString = getClass.getName + "(" + "len=" + length + " (" + h.mkString("[", ", ", "]") + "))"
 }
 
 class GrowableSparseVector(val sizeProxy: { def size:Int }) extends SparseHashVector(-1) {

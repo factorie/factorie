@@ -50,12 +50,15 @@ class InferencerBPWorker(lattice: LatticeBP) {
     // perform BFS
     val bfsOrdering: Seq[(Edge, Boolean)] = _bfs(root, checkLoops)
     // send messages leaf to root
-    for ((e, varRoot) <- bfsOrdering.reverse) {
+    var i = bfsOrdering.length - 1
+    while (i >= 0) {
+      val (e, varRoot) = bfsOrdering(i)
       if (varRoot) {
         e.fToV
       } else {
         e.vToF
       }
+      i -= 1
     }
     lattice match {
       case l: MaxProductLattice => {
@@ -64,13 +67,16 @@ class InferencerBPWorker(lattice: LatticeBP) {
       }
       case _ =>
     }
+    i = 0
     // send root to leaves
-    for ((e, varRoot) <- bfsOrdering) {
+    while (i < bfsOrdering.length) {
+      val (e, varRoot) = bfsOrdering(i)
       if (varRoot) {
         e.vToF
       } else {
         e.fToV
       }
+      i += 1
     }
   }
 
@@ -100,4 +106,15 @@ class InferencerBPWorker(lattice: LatticeBP) {
     }
   }
 
+  def inferParallelLoopyBP(iterations: Int = 1) {
+    for (iteration <- 0 until iterations) {
+      lattice.mfactors.toSeq.shuffle(cc.factorie.random).par.foreach(factor => {
+        //for every factor first calculate all incoming beliefs
+        factor.receiveFromAll
+        //synchronous belief updates on all send edges
+        factor.sendToAll
+      })
+      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+    }
+  }
 }

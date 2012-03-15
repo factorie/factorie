@@ -142,7 +142,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   override def toString = "CategoricalDomain[]("+size+")"
   override def dimensionName(i:Int): String = getCategory(i).toString
 
-  override def save(dirname:String, gzip: Boolean = true): Unit = {
+  override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     if (f.exists) return // Already exists, don't write it again.  // TODO Careful about trying to re-write to the same location, though.
     val writer = new PrintWriter(new BufferedOutputStream({
@@ -159,7 +159,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
     writer.close
   }
 
-  override def load(dirname:String, gzip: Boolean = true): Unit = {
+  override def load(dirname:String, gzip: Boolean = false): Unit = {
     if (size > 0) return // Already initialized, don't read again
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     val reader = new BufferedReader(new InputStreamReader({

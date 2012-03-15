@@ -27,19 +27,22 @@ class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, 
       val old = dst
       if (dst ne null) {
         dst._removeSubEntity(src)
-        dst.removedChildHooks(src,d)
+        dst.removedChildHook(src)
       }
       super.set(e)
-      src.changedSuperEntityHooks(old,e,d)
+      src.changedSuperEntityHook(old,e)
       if(e!=null){
         e._addSubEntity(src)
-        e.addedChildHooks(src,d)
+        e.addedChildHook(src)
       }
     }
   }
   final def mention = src
   final def entity = dst
 }
+
+
+
 
 /** A trait for entities (and mentions, sub-entities and super-entities) in a coreference problem.
     Abstract classes here are string, superEntityRef, subEntities, _addSubEntity and _removeSubEntity. */
@@ -48,9 +51,9 @@ trait Entity extends Attr {
   def id: Any = this // Override to make some persistent id
   attr+=new EntityRef(this,null)
   def initializeAttributesOfStructure:Unit = {}
-  val removedChildHooks = new cc.factorie.util.Hooks2[Entity,DiffList]
-  val addedChildHooks = new cc.factorie.util.Hooks2[Entity,DiffList]
-  val changedSuperEntityHooks = new cc.factorie.util.Hooks3[Entity,Entity,DiffList]
+  def removedChildHook(entity:Entity)(implicit d:DiffList)={}
+  def addedChildHook(entity:Entity)(implicit d:DiffList)={}
+  def changedSuperEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList)={}
   /** Ensure that we return a non-null value. */
   private def _ensuredSubEntities: SubEntities = {
     var result = subEntities
@@ -71,7 +74,6 @@ trait Entity extends Attr {
   def superEntity: Entity = { val ref = superEntityRef; if (ref eq null) null else superEntityRef.dst }
   def superEntityOption: Option[Entity] = { val ref = superEntityRef; if (ref eq null) None else if (ref.value eq null) None else Some(ref.dst) }
   final def setSuperEntity(e:Entity)(implicit d:DiffList): Unit = superEntityRef.set(e) // Just a convenient alias
-  @deprecated("Use isConnected instead") def exists: Boolean = isConnected
   def isConnected: Boolean = (superEntity ne null) || subEntitiesSize > 0 || isObserved
   //def entityRoot: Entity = { val s = superEntity; if (s eq null) this else this.entityRoot }©
   def entityRoot: Entity = if (isRoot) this else superEntity.entityRoot

@@ -428,6 +428,35 @@ class TestBP extends TestCase {
     assertEquals(v4.intValue, 0)
   }
 
+  def testParallelLoop4 = {
+    val v1 = new BinVar(1)
+    val v2 = new BinVar(0)
+    val v3 = new BinVar(1)
+    val v4 = new BinVar(0)
+    val vars: Set[DiscreteVariable] = Set(v1, v2, v3, v4)
+
+    val model = new FactorModel(
+      newFactor1(v4, 10, 0),
+      newFactor2(v1, v2, -5, 0), newFactor2(v1, v3, -5, 0),
+      newFactor2(v2, v4, -5, 0), newFactor2(v3, v4, -5, 0)
+    )
+    var fg = new LatticeBP(model, vars) with SumProductLattice
+    new InferencerBPWorker(fg).inferParallelLoopyBP(4)
+    println("v1 : " + fg.node(v1).marginal)
+    println("v2 : " + fg.node(v2).marginal)
+    println("v3 : " + fg.node(v3).marginal)
+    println("v4 : " + fg.node(v4).marginal)
+    fg.setToMaxMarginal()
+    println("v1 val : " + v1.value)
+    println("v2 val : " + v2.value)
+    println("v3 val : " + v3.value)
+    println("v4 val : " + v4.value)
+    assertEquals(v1.intValue, 0)
+    assertEquals(v2.intValue, 1)
+    assertEquals(v3.intValue, 1)
+    assertEquals(v4.intValue, 0)
+  }
+
   def testLoop4MAP = {
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)

@@ -108,7 +108,7 @@ object WordSegmenterDemo {
     if (args.length > 0) {
       println("Loading model parameters from "+args(0))
       model.load(args(0))
-      var predictor = new SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
+      var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
       predictor.infer(testVariables)
       println ("Test  accuracy = "+ objective.aveScore(testVariables))
       System.exit(0)
@@ -131,7 +131,7 @@ object WordSegmenterDemo {
     println ("Setting weights to average")
     //learner.setWeightsToAverage
     //(trainVariables ++ testVariables).foreach(_.setRandomly)
-    var predictor = new SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
+    var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
     predictor.infer(testVariables)
     println ("Test  accuracy = "+ objective.aveScore(testVariables))
 

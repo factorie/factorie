@@ -71,8 +71,8 @@ trait Family {
   
   /** The filename into which to save this factor.  If templateName is not the default, use it, otherwise use the class name. */
   protected def filename: String = factorName
-  def save(dirname:String, gzip: Boolean = true): Unit = {}
-  def load(dirname:String, gzip: Boolean = true): Unit = {}
+  def save(dirname:String, gzip: Boolean = false): Unit = {}
+  def load(dirname:String, gzip: Boolean = false): Unit = {}
 }
 
 
@@ -119,15 +119,19 @@ trait VectorFamily extends Family {
 trait DotFamily extends VectorFamily {
   //type TemplateType <: DotFamily
   type FamilyType <: DotFamily
-  lazy val weights: Vector = { freezeDomains; newWeightsTypeVector } // Dense by default, may be override in sub-traits
+  var _weights: Vector = null // Dense by default, may be override in sub-traits
+  lazy val defaultWeights = { freezeDomains; newWeightsTypeVector }
+  def weights = { if (_weights != null) _weights else setWeights(defaultWeights) }
+  def setWeights(w: Vector) = { _weights = w; _weights }
   def newWeightsTypeVector: Vector = new DenseVector(statisticsVectorLength)
   def score(s:StatisticsType) = if (s eq null) 0.0 else weights match {
     case w:DenseVector => { w dot s.vector }
+    case w:VectorTimesScalar => {w.scalar * (w.vector dot s.vector)}
     //case w:SparseHashVector => w dot s.vector // TODO Uncomment this.  It was only commented because latest version of scalala didn't seem to have this class any more
     case w:SparseVector => w dot s.vector
   }
 
-  override def save(dirname:String, gzip: Boolean = true): Unit = {
+  override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also
     if (f.exists) return // Already exists, don't write it again
     for (d <- statisticsDomains) d.save(dirname)
@@ -152,7 +156,7 @@ trait DotFamily extends VectorFamily {
     writer.close
   }
 
-  override def load(dirname: String, gzip: Boolean = true): Unit = {
+  override def load(dirname: String, gzip: Boolean = false): Unit = {
     for (d <- statisticsDomains) d.load(dirname)
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     val reader = new BufferedReader(new InputStreamReader({

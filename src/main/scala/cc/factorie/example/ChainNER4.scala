@@ -99,7 +99,6 @@ object ChainNER4 {
       println ("Train accuracy = "+ objective.aveScore(trainLabels))
       println ("Test  accuracy = "+ objective.aveScore(testLabels))
     }
-    //learner.setWeightsToAverage
     predictor.temperature *= 0.1
     predictor.processAll(testLabels, 2)
     println ("Final Test  accuracy = "+ objective.aveScore(testLabels))

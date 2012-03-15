@@ -1,10 +1,10 @@
-package cc.factorie.bp.optimized
+package cc.factorie.bp.specialized
 
 import cc.factorie._
-import cc.factorie.maths.{sumLogProb, sumLogProbs, normalizeLogProb}
+import cc.factorie.maths.{sumLogProb, sumLogProbs}
 import la.{SparseVector, DenseVector, Vector}
 import scala.math.exp
-import collection.mutable.Map
+import collection.mutable.{HashMap, Map}
 
 /**
  * Author: martin
@@ -16,27 +16,21 @@ object ForwardBackward {
   private def nodeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]]): Array[Array[Double]] = {
     val ds = alpha(0).size
 
-    val marginal = Array.fill(alpha.size)(Array.ofDim[Double](ds))
+    val marginal = Array.fill(alpha.size)(Array.fill(ds)(Double.NaN))
 
     // exponentiate all alphas and betas, normalize them, and then multiply them together, normalize, and store as marginals
     var vi = 0
     while (vi < alpha.size) {
-
-      var i = 0
       var logsum = Double.NegativeInfinity
+      var i = 0
       while (i < ds) {
         marginal(vi)(i) = alpha(vi)(i) + beta(vi)(i)
-        logsum = sumLogProb (logsum, marginal(vi)(i))
+        logsum = sumLogProb(logsum, marginal(vi)(i))
         i += 1
       }
 
       // normalize the node marginal
-      i = 0
-      while (i < ds) {
-        marginal(vi)(i) = exp(marginal(vi)(i) - logsum)
-        i += 1
-      }
-
+      logNormalize(marginal(vi), logsum)
       vi += 1
     }
 
@@ -46,7 +40,7 @@ object ForwardBackward {
   private def edgeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]], transWeights: (Int,Int) => Double): Array[Array[Double]] = {
     val ds = alpha(0).size
 
-    val marginal = Array.fill(alpha.size-1)(Array.ofDim[Double](ds * ds))
+    val marginal = Array.fill(alpha.size-1)(Array.fill(ds * ds)(Double.NaN))
 
     var vi = 0
     while (vi < alpha.size - 1) {
@@ -64,36 +58,47 @@ object ForwardBackward {
       }
 
       // normalize the edge marginal
-      i = 0
-      while (i < marginal(vi).length) {
-        marginal(vi)(i) = exp(marginal(vi)(i) - logsum)
-        i += 1
-      }
+      logNormalize(marginal(vi), logsum)
       vi += 1
     }
 
     marginal
   }
-  
-  private def getlocalScores[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
+
+  private def logNormalize(a: Array[Double], logsum: Double) {
+    var i = 0
+    var sum = 0.0
+    while (i < a.length) {
+      a(i) = exp(a(i) - logsum)
+        sum += a(i)
+        i += 1
+      }
+      assert(math.abs(sum - 1.0) < 0.0001, "sum is "+sum)
+  }
+
+  private def getLocalScores[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
          vs: Seq[LV],
          localTemplate: TemplateWithDotStatistics2[LV, OV],
          biasTemplate: TemplateWithDotStatistics1[LV] = null
        ): Array[Array[Double]] = {
 
-    val biasScores: Vector = {
-      if (biasTemplate ne null)
-        biasTemplate.weights
-      else
-        new DenseVector(localTemplate.statisticsDomains(0).dimensionSize) // todo: this allocation is unnecessary, and the domain size is awkward
+    val arrays = Array.fill(vs.size)(Array.fill(vs.head.domain.size)(Double.NaN))
+    if (biasTemplate ne null) {
+      val biasScores = biasTemplate.weights
+      for ((v,vi) <- vs.zipWithIndex) {
+        val localFactor = localTemplate.factors(v).head
+        for ((_,di) <- v.settings.zipWithIndex)
+          arrays(vi)(di) = localFactor.score + biasScores(di)
+      }
+    }
+    else {
+      for ((v,vi) <- vs.zipWithIndex) {
+        val localFactor = localTemplate.factors(v).head
+        for ((_,di) <- v.settings.zipWithIndex)
+          arrays(vi)(di) = localFactor.score
+      }
     }
 
-    val arrays = Array.fill[Array[Double]](vs.size)(Array.ofDim[Double](vs.head.domain.size))
-    for ((v,vi) <- vs.zipWithIndex) {
-      val localFactor = localTemplate.factors(v).head
-      for ((_,di) <- v.settings.zipWithIndex)
-        arrays(vi)(di) = localFactor.score + biasScores(di)
-    }
     arrays
   }
 
@@ -141,26 +146,27 @@ object ForwardBackward {
     val nodeMargs = nodeMarginals(alpha, beta)
     val edgeMargs = edgeMarginals(alpha, beta, getTransScores(transTemplate))
 
-    val nodeExp = new SparseVector(localTemplate.statisticsVectorLength)
+    // sum edge marginals
+    val edgeExp = if (vs.length > 1) vectorFromArray(elementwiseSum(edgeMargs)) else new SparseVector(vs(0).domain.size*vs(0).domain.size)
 
     // get the node feature expectations
+    val nodeExp = new SparseVector(localTemplate.statisticsVectorLength)
     for ((v, vi) <- vs.zipWithIndex) { // for variables
       var i = 0
       while (i < nodeMargs(vi).length) {
         v.set(i)(null)
         val m = nodeMargs(vi)(i)
-        val stats = localTemplate.unroll1(v).head.values.statistics.vector
+        val stats = localTemplate.factors(v).head.values.statistics.vector
         nodeExp += (stats * m)
         i += 1
       }
     }
 
-    // sum edge marginals
-    val edgeExp = vectorFromArray(elementwiseSum(edgeMargs))
+    val expMap: Map[DotFamily, Vector] = Map(localTemplate -> nodeExp, transTemplate -> edgeExp)
 
     val logZ = sumLogProbs(alpha(alpha.length-1))
 
-    (Map(localTemplate -> nodeExp, transTemplate -> edgeExp), logZ)
+    (expMap, logZ)
   }
 
   def search[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
@@ -174,7 +180,7 @@ object ForwardBackward {
 
     val ds = vs.head.domain.size
 
-    val localScores = getlocalScores(vs, localTemplate, biasTemplate)
+    val localScores = getLocalScores(vs, localTemplate, biasTemplate)
     val transScores = getTransScores(transTemplate)
 
     val alpha = Array.fill(vs.size)(Array.fill(ds)(Double.NaN))
@@ -191,12 +197,11 @@ object ForwardBackward {
     while (vi < vs.size) {
       i = 0
       while(i < ds) {
-        var newAlpha = 0.0
-        var di = 0
-        while (di < ds) {
-          val prev = alpha(vi-1)(di)
-          newAlpha = sumLogProb(newAlpha, prev + transScores(di,i) + localScores(vi)(i))
-          di += 1
+        var newAlpha = Double.NegativeInfinity
+        var j = 0
+        while (j < ds) {
+          newAlpha = sumLogProb(newAlpha, alpha(vi-1)(j) + transScores(j,i) + localScores(vi)(i))
+          j += 1
         }
         alpha(vi)(i) = newAlpha
         i += 1
@@ -215,12 +220,11 @@ object ForwardBackward {
     while (vi >= 0) {
       i = 0
       while (i < ds) {
-        var newBeta = 0.0
-        var di = 0
-        while (di < ds) {
-          val prev = beta(vi+1)(di)
-          newBeta = sumLogProb(newBeta, prev + transScores(i, di) + localScores(vi)(i))
-          di += 1
+        var newBeta = Double.NegativeInfinity
+        var j = 0
+        while (j < ds) {
+          newBeta = sumLogProb(newBeta, localScores(vi)(i) + transScores(i, j) + beta(vi+1)(j))
+          j += 1
         }
         beta(vi)(i) = newBeta
         i += 1
