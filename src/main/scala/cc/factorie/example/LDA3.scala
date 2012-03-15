@@ -9,7 +9,7 @@ import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 
 object LDA3 {
-  val numTopics = 10
+  val numTopics = 15
   val beta1 = 0.1
   val alpha1 = 0.1
   val fitDirichlet = false
@@ -35,7 +35,7 @@ object LDA3 {
   def main(args: Array[String]): Unit = {
     val directories = 
       if (args.length > 0) args.toList 
-      else if (true) List("11", "12", "10", "09", "08").take(1).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
+      else if (true) List("11", "12", "10", "09", "08").take(4).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
       else if (false) List("acq", "earn", "money-fx").map("/Users/mccallum/research/data/text/reuters/reuters-parsed/modapte/"+_)
       else List("comp.graphics", "comp.os.ms-windows.misc", "comp.sys.ibm.pc.hardware", "comp.sys.mac.hardware").map("/Users/mccallum/research/data/text/20_newsgroups/"+_)
     val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(WordDomain) ~ Dirichlet(beta))
@@ -61,7 +61,7 @@ object LDA3 {
     val sampler = new SparseLDAInferencer(numTopics, documents, alphas, beta1)
 
     val startTime = System.currentTimeMillis
-    for (i <- 1 to 20) {
+    for (i <- 1 to 30) {
       for (doc <- documents) sampler.process(doc.zs)
       if (i % 5 == 0) {
         println("Iteration " + i)
