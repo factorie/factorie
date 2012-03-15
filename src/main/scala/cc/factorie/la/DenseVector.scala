@@ -52,7 +52,7 @@ class DenseVector(val length:Int) extends Vector {
 object DenseVector {
   def apply(size:Int)(default:Double) = { 
     val result = new DenseVector(size)
-    result.set(default)
+    if(default != 0.0) result.set(default)
     result
   }
   def apply(values:Seq[Double]) = {

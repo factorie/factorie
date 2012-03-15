@@ -123,7 +123,7 @@ trait DotFamily extends VectorFamily {
   lazy val defaultWeights = { freezeDomains; newWeightsTypeVector }
   def weights = { if (_weights != null) _weights else setWeights(defaultWeights) }
   def setWeights(w: Vector) = { _weights = w; _weights }
-  def newWeightsTypeVector: Vector = new DenseVector(statisticsVectorLength)
+  def newWeightsTypeVector(default:Double = 0.0): Vector = DenseVector(statisticsVectorLength)(default)
   def score(s:StatisticsType) = if (s eq null) 0.0 else weights match {
     case w:DenseVector => { w dot s.vector }
     case w:VectorTimesScalar => {w.scalar * (w.vector dot s.vector)}
@@ -188,13 +188,15 @@ trait DotFamily extends VectorFamily {
 /** A DotTemplate that stores its parameters in a Scalala SparseVector instead of a DenseVector
     @author Andrew McCallum */
 trait SparseWeights extends DotFamily {
-  override def newWeightsTypeVector: Vector = new SparseVector(statisticsVectorLength)
+  override def newWeightsTypeVector(defaultVal:Double): Vector =
+    new SparseVector(statisticsVectorLength) { override var default = defaultVal }
 }
 
 /** A DotTemplate that stores its parameters in a SparseHashVector instead of a DenseVector
     @author Sameer Singh */
 trait SparseHashWeights extends DotFamily {
-  override def newWeightsTypeVector: Vector = new SparseHashVector(statisticsVectorLength)
+  override def newWeightsTypeVector(default:Double): Vector =
+    new SparseHashVector(statisticsVectorLength) { override var default = defaultVal }
 }
 
 trait SparseOuter1Dense1Weights extends DotStatistics2[DiscreteVectorValue,DiscreteVectorValue] {

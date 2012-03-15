@@ -55,12 +55,11 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
   /**Function of the confidence (it is more intuitive to express eta than the gaussian deviate directly). */
   var gaussDeviate = maths.probit(eta);
 
-  def setConfidence(aeta:Double) : Unit = 
-    {
-      assert(aeta>0.5 && aeta<1.0)
-      eta=aeta
-      gaussDeviate = maths.probit(eta)
-    }
+  def setConfidence(aeta:Double) : Unit = {
+    assert(aeta > 0.5 && aeta < 1.0)
+    eta = aeta
+    gaussDeviate = maths.probit(eta)
+  }
 
   /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
   val initialVariance = 0.1;
@@ -68,7 +67,8 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
     override def default(template:DotFamily) = { 
       template.freezeDomains
       //val vector = DenseVector(template.statsize)(initialVariance)
-      val vector = if (template.isInstanceOf[SparseWeights]) { val sv = new SparseVector(template.statisticsVectorLength); sv.default = initialVariance; sv } else DenseVector(template.statisticsVectorLength)(initialVariance)
+      val vector = template.newWeightsTypeVector(initialVariance)
+      // if (template.isInstanceOf[SparseWeights]) { val sv = new SparseVector(template.statisticsVectorLength); sv.default = initialVariance; sv } else DenseVector(template.statisticsVectorLength)(initialVariance)
       this(template) = vector
       vector
     }
@@ -93,57 +93,48 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
     super.updateWeights //increments the updateCount
   }
 
-
- 
-  def kktMultiplier(gradient:HashMap[DotFamily,SparseVector]) : Double =
-    {
-      val marginMean =predictedScore.abs
-      val v = 1.0 + 2.0 * gaussDeviate * marginMean
-      val marginVar = marginVariance(gradient)
-      var lambda = 0.0
-     if(marginMean >= gaussDeviate * marginVar)
-       return 0.0
-      if(marginVar > zeroEpsilon || marginVar < -zeroEpsilon)
-  lambda = (-v + math.sqrt(v*v - 8*gaussDeviate*(marginMean - gaussDeviate*marginVar))) / (4*gaussDeviate*marginVar);
-      math.max(0, lambda);
-    }
-
-
-  def marginVariance(gradient:HashMap[DotFamily,SparseVector]):Double =
-    {
-      var result : Double = 0
-      for((template,templateGradient)<-gradient)
-  {
-    val templateSigma = sigma(template)
-    for((index,value)<-templateGradient.activeElements)
-            result += value*value*templateSigma(index)
+  def kktMultiplier(gradient: HashMap[DotFamily, SparseVector]): Double = {
+    val marginMean = predictedScore.abs
+    val v = 1.0 + 2.0 * gaussDeviate * marginMean
+    val marginVar = marginVariance(gradient)
+    var lambda = 0.0
+    if (marginMean >= gaussDeviate * marginVar)
+      return 0.0
+    if (marginVar > zeroEpsilon || marginVar < -zeroEpsilon)
+      lambda = (-v + math.sqrt(v * v - 8 * gaussDeviate * (marginMean - gaussDeviate * marginVar))) / (4 * gaussDeviate * marginVar);
+    math.max(0, lambda);
   }
-      result
-    }
 
-  def updateSigma(gradient: HashMap[DotFamily,SparseVector]) : Unit =
-    {
-      for((template,templateGrad)<-gradient)
-  {
-    val ratesTemplate = sigma(template)
-    for((index,value)<-templateGrad.activeElements)
-            ratesTemplate(index) = 1.0 / ((1.0 / ratesTemplate(index)) 
-            + 2*learningRate*gaussDeviate*value*value)
-  }
+
+  def marginVariance(gradient: HashMap[DotFamily, SparseVector]): Double = {
+    var result: Double = 0
+    for ((template, templateGradient) <- gradient) {
+      val templateSigma = sigma(template)
+      for ((index, value) <- templateGradient.activeElements)
+        result += value * value * templateSigma(index)
     }
+    result
+  }
+
+  def updateSigma(gradient: HashMap[DotFamily, SparseVector]): Unit = {
+    for ((template, templateGrad) <- gradient) {
+      val ratesTemplate = sigma(template)
+      for ((index, value) <- templateGrad.activeElements)
+        ratesTemplate(index) = 1.0 / ((1.0 / ratesTemplate(index))
+              + 2 * learningRate * gaussDeviate * value * value)
+    }
+  }
 
   /**Cannot use the default 'addGradient' method because this update requires a separate learning rate for each parameter*/
-  def updateParameters(gradient:HashMap[DotFamily,SparseVector]) : Unit =
-    {
-      //TODO replace with elementwise product?
-      for((template,templateGradient)<-gradient)
-  {
-    val templateSigma = sigma(template)
-    for((index,value)<-templateGradient.activeElements)
-      template.weights(index) += 
-          templateGradient(index)*templateSigma(index)*learningRate
+  def updateParameters(gradient: HashMap[DotFamily, SparseVector]): Unit = {
+    //TODO replace with elementwise product?
+    for ((template, templateGradient) <- gradient) {
+      val templateSigma = sigma(template)
+      for ((index, value) <- templateGradient.activeElements)
+        template.weights(index) +=
+              templateGradient(index) * templateSigma(index) * learningRate
+    }
   }
-    } 
 
 }
 
