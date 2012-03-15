@@ -115,6 +115,7 @@ object Coref3 {
     def bagOfCoAuthors = attr[BagOfCoAuthors]
     def string = f+" "+m+" "+l
     var paper:PaperEntity = null
+    def defaultCanopy = canopyAttributes.head.canopyName
   }
   class AuthorEntityCubbie(author:AuthorEntity=null) extends HierEntityCubbie{
     _map = new HashMap[String,Any]
@@ -262,7 +263,17 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
 }
 */
   class AuthorSampler(model:TemplateModel) extends HierCorefSampler[AuthorEntity](model){
+    protected var canopies = new HashMap[String,ArrayBuffer[AuthorEntity]]
     def newEntity = new AuthorEntity
+    override def setEntities(ents:Iterable[AuthorEntity]):Unit ={
+      canopies = new HashMap[String,ArrayBuffer[AuthorEntity]]
+      super.setEntities(ents)
+      for(e<-ents){
+        val cname = e.defaultCanopy
+        canopies.getOrElse(cname,{val a = new ArrayBuffer[AuthorEntity];canopies(cname)=a;a}) += e
+      }
+    }
+    override def nextEntity(context:AuthorEntity=null):AuthorEntity=if(context==null)sampleEntity(entities) else sampleEntity(canopies(context.defaultCanopy))
     override def mergeLeft(left:AuthorEntity,right:AuthorEntity)(implicit d:DiffList):Unit ={
       val oldParent = right.superEntity
       right.setSuperEntity(left)(d)
