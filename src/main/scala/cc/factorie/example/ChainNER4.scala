@@ -81,9 +81,9 @@ object ChainNER4 {
     println("Using "+TokenDomain.dimensionSize+" observable features.")
     
     // Print some significant features
-    println("Most predictive features:")
-    val pllo = new cc.factorie.app.classify.PerLabelLogOdds(trainSentences.flatMap(_.map(_.label)), (label:Label) => label.token)
-    for (label <- LabelDomain.values) println(label.category+": "+pllo.top(label, 20))
+    //println("Most predictive features:")
+    //val pllo = new cc.factorie.app.classify.PerLabelLogOdds(trainSentences.flatMap(_.map(_.label)), (label:Label) => label.token)
+    //for (label <- LabelDomain.values) println(label.category+": "+pllo.top(label, 20))
     
     // Sample and Learn!
     val startTime = System.currentTimeMillis

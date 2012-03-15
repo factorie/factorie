@@ -75,7 +75,7 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
   }
 
   // Serialization
-  override def save(dirname:String, gzip: Boolean = true): Unit = {
+  override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     val writer = new PrintWriter(new BufferedOutputStream({
       if (gzip)
@@ -88,7 +88,7 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
     writer.close
   }
 
-  override def load(dirname:String, gzip: Boolean = true): Unit = {
+  override def load(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     val reader = new BufferedReader(new InputStreamReader({
       if (gzip)

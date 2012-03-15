@@ -20,31 +20,38 @@ import java.io.{InputStreamReader, FileInputStream, BufferedReader, File}
  * Consider a set-up where cosine distance is computed between arrays of bags of words, and each bag is a variable that can go on the diff list.
  */
 
+class FullName(val entity:Entity,f:String,m:String,l:String) extends SeqVariable[String](Seq(f,m,l)){
+  def setFirst(s:String)(implicit d:DiffList) = update(0,s)
+  def setMiddle(s:String)(implicit d:DiffList) = update(1,s)
+  def setLast(s:String)(implicit d:DiffList) = update(2,s)
+  def setFullName(that:FullName)(implicit d:DiffList) = {setFirst(that.firstName)(null);setMiddle(that.middleName)(null);setLast(that.lastName)(null)}
+  def firstName = value(0)
+  def middleName = value(1)
+  def lastName = value(2)
+  def domain = GenericDomain
+  override def toString:String = {
+    val result = new StringBuffer
+    if(firstName!=null)result.append(firstName+" ")
+    if(middleName!=null)result.append(middleName+" ")
+    if(lastName!=null)result.append(lastName+" ")
+    result.toString
+  }
+}
+
+
 object Coref3 {
+  trait HasCanopyAttributes[T<:Entity]{
+    val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
+  }
+  trait CanopyAttribute[T<:Entity]{def entity:T;def canopyName:String}
+  class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity]{
+    def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
+    def initial(s:String):String = if(s!=null && s.length>0)s.substring(0,1) else ""
+  }
   /**Attributes/Features of entities*/
-  class EntityExists(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
-  class IsEntity(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
-  class IsMention(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
   class Bow(val entity:Entity,ss:Iterable[String]=Nil) extends BagOfWordsVariable(ss)
   /**Attributes specific to REXA authors*/
   class Title(val entity:Entity,title:String) extends StringVariable(title)
-  class FullName(val entity:Entity,f:String,m:String,l:String) extends SeqVariable[String](Seq(f,m,l)){
-    def setFirst(s:String)(implicit d:DiffList) = update(0,s)
-    def setMiddle(s:String)(implicit d:DiffList) = update(1,s)
-    def setLast(s:String)(implicit d:DiffList) = update(2,s)
-    def setFullName(that:FullName)(implicit d:DiffList) = {setFirst(that.firstName)(null);setMiddle(that.middleName)(null);setLast(that.lastName)(null)}
-    def firstName = value(0)
-    def middleName = value(1)
-    def lastName = value(2)
-    def domain = GenericDomain
-    override def toString:String = {
-      val result = new StringBuffer
-      if(firstName!=null)result.append(firstName+" ")
-      if(middleName!=null)result.append(middleName+" ")
-      if(lastName!=null)result.append(lastName+" ")
-      result.toString
-    }
-  }
   class Bags extends HashMap[String,BagOfWords]
   class BagOfTopics(val entity:Entity, topicBag:Map[String,Double]=null) extends BagOfWordsVariable(Nil, topicBag)
   class BagOfVenues(val entity:Entity, venues:Map[String,Double]=null) extends BagOfWordsVariable(Nil, venues)
@@ -53,21 +60,6 @@ object Coref3 {
   var nextId = -1
   var entityCount = 0
   /**An entity with the necessary variables/coordination to implement hierarchical coreference.*/
-  abstract class HierarchicalEntity(isMent:Boolean=false) extends Entity{
-    isObserved=isMent
-    def isEntity = attr[IsEntity]
-    def isMention = attr[IsMention]
-    def exists = attr[EntityExists]
-    attr += new EntityExists(this,this.isConnected)
-    attr += new IsEntity(this,this.isRoot)
-    attr += new IsMention(this,this.isObserved)
-    //attr += new Bags
-    override def removedChildHook(entity:Entity)(implicit d:DiffList)={super.removedChildHook(entity);exists.set(this.isConnected)(d)}
-    override def addedChildHook(entity:Entity)(implicit d:DiffList)={super.addedChildHook(entity);exists.set(this.isConnected)(d)}
-    override def changedSuperEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList){super.changedSuperEntityHook(oldEntity,newEntity);isEntity.set(this.isRoot)(d);exists.set(this.isConnected)(d)}
-    //def bags = attr[Bags]
-    //def newEntity:HierarchicalEntity
-  }
   object HierarchicalEntity{
     def structurePreservationForEntityThatLostSubEntity(e:Entity)(implicit d:DiffList):Unit ={
       if(e!=null && e.subEntitiesSize<=1){
@@ -105,16 +97,16 @@ object Coref3 {
       }
     }
   }
-  class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierarchicalEntity(isMention){
+  class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity(isMention){
     attr += new Title(this,s)
     def title = attr[Title]
     def string = title.toString
     var authors = new ArrayBuffer[AuthorEntity]
-    override def newEntity:HierarchicalEntity = new PaperEntity
     def propagateAddBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
     def propagateRemoveBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
   }
-  class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierarchicalEntity(isMention){
+  class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity]{
+    canopyAttributes += new AuthorFLNameCanopy(this)
     attr += new FullName(this,f,m,l)
     attr += new BagOfTopics(this)
     attr += new BagOfVenues(this)
@@ -125,37 +117,9 @@ object Coref3 {
     def bagOfCoAuthors = attr[BagOfCoAuthors]
     def string = f+" "+m+" "+l
     var paper:PaperEntity = null
-    override def newEntity:HierarchicalEntity = new AuthorEntity
-
-    /*
-    override def changedSuperEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList){
-      super.changedSuperEntityHook(oldEntity,newEntity)(d)
-      if(oldEntity!=null){
-        println("OLD ENTITY BAG: "+oldEntity.attr[BagOfCoAuthors])
-        println("  me: "+this.attr[BagOfCoAuthors])
-      }
-      //HierarchicalEntity.propagateBagUp[BagOfTopics](this,newEntity,d)
-      HierarchicalEntity.propagateBagUp[BagOfCoAuthors](this,newEntity,d)
-      //HierarchicalEntity.propagateBagUp[BagOfVenues](this,newEntity,d)
-      //HierarchicalEntity.propagateRemoveBag[BagOfTopics](this,oldEntity,d)
-      HierarchicalEntity.propagateRemoveBag[BagOfCoAuthors](this,oldEntity,d)
-      //HierarchicalEntity.propagateRemoveBag[BagOfVenues](this,oldEntity,d)
-    }
-    */
-/*
-    def propagateAddBagsUp()(implicit d:DiffList):Unit ={
-      HierarchicalEntity.propagateBagUp[BagOfTopics](this,d)
-      HierarchicalEntity.propagateBagUp[BagOfCoAuthors](this,d)
-      HierarchicalEntity.propagateBagUp[BagOfVenues](this,d)
-    }
-    def propagateRemoveBagsUp()(implicit d:DiffList):Unit ={
-      HierarchicalEntity.propagateRemoveBag[BagOfTopics](this,d)
-      HierarchicalEntity.propagateRemoveBag[BagOfCoAuthors](this,d)
-      HierarchicalEntity.propagateRemoveBag[BagOfVenues](this,d)
-    }
- */
+    def defaultCanopy = canopyAttributes.head.canopyName
   }
-  class AuthorEntityCubbie(author:AuthorEntity=null) extends HierarchicalEntityCubbie{
+  class AuthorEntityCubbie(author:AuthorEntity=null) extends HierEntityCubbie{
     _map = new HashMap[String,Any]
     //val name = new StringListSlot("name")
     val firstName = new StringSlot("firstName")
@@ -164,6 +128,7 @@ object Coref3 {
     val bagOfTopics = new CubbieSlot("bagOfTopics", () => new BagOfWordsCubbie)
     val bagOfVenues = new CubbieSlot("bagOfVenues", () => new BagOfWordsCubbie)
     val bagOfCoAuthors = new CubbieSlot("bagOfCoAuthors", () => new BagOfWordsCubbie)
+    val canopies = new StringListSlot("canopies")
     if(author!=null)storeEntity(author)
     def fetchAuthorEntity(cr:CubbieRefs):AuthorEntity = fetchEntity(cr).asInstanceOf[AuthorEntity]
     override def newEntity:Entity = new AuthorEntity
@@ -185,20 +150,9 @@ object Coref3 {
       bagOfTopics := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
       bagOfVenues := new BagOfWordsCubbie().store(e.attr[BagOfVenues].value)
       bagOfCoAuthors := new BagOfWordsCubbie().store(e.attr[BagOfCoAuthors].value)
+      canopies := e.asInstanceOf[AuthorEntity].canopyAttributes.map(_.canopyName).toSeq
     }
 
-  }
-  abstract class HierarchicalEntityCubbie extends EntityCubbie{
-    val isMention = BooleanSlot("isMention")
-    override def finishFetchEntity(e:Entity):Unit ={
-      e.attr[IsMention].set(isMention.value)(null)
-      e.isObserved=isMention.value
-      e.attr[IsEntity].set(e.isRoot)(null)
-      e.attr[EntityExists].set(e.isConnected)(null)
-    }
-    override def finishStoreEntity(e:Entity):Unit ={
-      isMention := e.attr[IsMention].booleanValue
-    }
   }
   class BagOfWordsCubbie extends Cubbie{
     _map = new HashMap[String,Any]
@@ -255,10 +209,10 @@ object Coref3 {
         val parentBow = s._3
         //childBow.intersect(parentBow).size
         var result = childBow.cosineSimilarity(parentBow)
-        println("Bow: "+result)
-        println("result: "+result)
-        println("  bag1:"+childBow)
-        println("  bag2:"+parentBow)
+        //println("Bow: "+result)
+        //println("result: "+result)
+        //println("  bag1:"+childBow)
+        //println("  bag2:"+parentBow)
         result
       }
     },
@@ -277,7 +231,7 @@ object Coref3 {
         var result = 0.0
         if(exists && isEntity) result -= entityExistenceCost
         if(exists && !isEntity && !isMention)result -= subEntityExistenceCost
-        println("STRUCTURE PRIOR: "+result)
+        //println("STRUCTURE PRIOR: "+result)
         result
       }
     }
@@ -301,8 +255,93 @@ object Coref3 {
       }
     }*/
   )
-class HierarchicalCorefSampler(model:HierCorefModel) extends SettingsSampler[Null](model, null) {
-  //def newENtity:T
+  /*
+class CanopySampler[T<:Entity](model:HierCorefModel){
+  var proposers = new HashMap[String,HierarchicalCorefSampler]
+  def setEntities(ents:T):Unit ={
+    proposers = new HashMap[String,HierarchicalCorefSampler]
+        
+  }
+}
+*/
+  class AuthorSampler(model:TemplateModel) extends HierCorefSampler[AuthorEntity](model){
+    protected var canopies = new HashMap[String,ArrayBuffer[AuthorEntity]]
+    def newEntity = new AuthorEntity
+    override def setEntities(ents:Iterable[AuthorEntity]):Unit ={
+      canopies = new HashMap[String,ArrayBuffer[AuthorEntity]]
+      super.setEntities(ents)
+      for(e<-ents){
+        val cname = e.defaultCanopy
+        canopies.getOrElse(cname,{val a = new ArrayBuffer[AuthorEntity];canopies(cname)=a;a}) += e
+      }
+    }
+    override def nextEntity(context:AuthorEntity=null):AuthorEntity={
+      var result = if(context==null)sampleEntity(entities) else sampleEntity(canopies(context.defaultCanopy))
+      result
+    }
+    override def mergeLeft(left:AuthorEntity,right:AuthorEntity)(implicit d:DiffList):Unit ={
+      val oldParent = right.superEntity
+      right.setSuperEntity(left)(d)
+      propagateBagUp(right)(d)
+      propagateRemoveBag(right,oldParent)(d)
+      structurePreservationForEntityThatLostSubEntity(oldParent)(d)
+    }
+    /**Jump function that proposes merge: entity1--->NEW-SUPER-ENTITY<---entity2 */
+    override def mergeUp(e1:AuthorEntity,e2:AuthorEntity)(implicit d:DiffList):AuthorEntity = {
+      val oldParent1 = e1.superEntity
+      val oldParent2 = e2.superEntity
+      val result = newEntity
+      e1.setSuperEntity(result)(d)
+      e2.setSuperEntity(result)(d)
+      result.attr[FullName].setFullName(e1.attr[FullName])
+      //result.attr[BagOfTopics].add(e1.attr[BagOfTopics].value)(d)
+      //result.attr[BagOfTopics].add(e2.attr[BagOfTopics].value)(d)
+      result.attr[BagOfCoAuthors].add(e1.attr[BagOfCoAuthors].value)(d)
+      result.attr[BagOfCoAuthors].add(e2.attr[BagOfCoAuthors].value)(d)
+      //result.attr[BagOfVenues].add(e1.attr[BagOfVenues].value)(d)
+      //result.attr[BagOfVenues].add(e2.attr[BagOfVenues].value)(d)
+      propagateRemoveBag(e1,oldParent1)(d)
+      propagateRemoveBag(e2,oldParent2)(d)
+      structurePreservationForEntityThatLostSubEntity(oldParent1)(d)
+      structurePreservationForEntityThatLostSubEntity(oldParent2)(d)
+      result
+    }
+    /**Peels off the entity "right", does not really need both arguments unless we want to error check.*/
+    override def splitRight(left:AuthorEntity,right:AuthorEntity)(implicit d:DiffList):Unit ={
+      val oldParent = right.superEntity
+      right.setSuperEntity(null)(d)
+      propagateRemoveBag(right,oldParent)(d)
+      structurePreservationForEntityThatLostSubEntity(oldParent)(d)
+    }
+    def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
+      var e = entity.superEntity
+      while(e!=null){
+        e.attr[BagOfCoAuthors].add(entity.attr[BagOfCoAuthors].value)(d)
+        e = e.superEntity
+      }
+    }
+    def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit ={
+      var e = formerParent
+      while(e!=null){
+        e.attr[BagOfCoAuthors].remove(parting.attr[BagOfCoAuthors].value)
+        e = e.superEntity
+      }
+    }
+    override def proposalHook(proposal:Proposal) = {
+      super.proposalHook(proposal)
+      for(diff<-proposal.diff){
+        diff.variable match{
+          case bag:BagOfWordsVariable => bag.accept
+          //case bag:TrueBow => bag.accept
+          case _ => {}
+        }
+      }
+    }
+  }
+
+  /*
+abstract class HierCorefSampler[T<:Entity](model:TemplateModel) extends SettingsSampler[Null](model, null) {
+    def newEntity:T
     protected var entities:ArrayBuffer[Entity] = null
     protected var deletedEntities:ArrayBuffer[Entity] = null
     def getEntities = entities.filter(_.isConnected)
@@ -319,10 +358,10 @@ class HierarchicalCorefSampler(model:HierCorefModel) extends SettingsSampler[Nul
       e
     }
     override def pickProposal(proposals:Seq[Proposal]): Proposal = {
-      println("JUMPS")
-      for(p <- proposals){
-        println("  *SCORE: "+p.modelScore)
-      }
+      //println("JUMPS")
+      //for(p <- proposals){
+      //  println("  *SCORE: "+p.modelScore)
+      //}
       super.pickProposal(proposals)
     }
     def setEntities(ents:Iterable[Entity]) = {entities = new ArrayBuffer[Entity];entities ++= ents;deletedEntities = new ArrayBuffer[Entity]}
@@ -455,12 +494,13 @@ class HierarchicalCorefSampler(model:HierCorefModel) extends SettingsSampler[Nul
           case _ => {}
         }
       }
-      println("Created: "+newEntities.size)
-      println("DiffList: "+proposal.diff.size)
+      //println("Created: "+newEntities.size)
+      //println("DiffList: "+proposal.diff.size)
       entities ++= newEntities
     }
     def isMention(e:Entity):Boolean = e.isObserved
   }
+  */
 
   /*
   object Entities {
@@ -520,6 +560,9 @@ class HierarchicalCorefSampler(model:HierCorefModel) extends SettingsSampler[Nul
       val coll = mongoDB.getCollection("authors")
       coll.drop()
       new MongoCubbieCollection(coll,() => new AuthorEntityCubbie)
+    }
+    def populateREXAFromDir(bibDir:File):Unit ={
+      for(f<-bibDir.listFiles)populateREXA(f)
     }
     def populateREXA(bibFile:File):Unit ={
       import MongoCubbieConverter._
@@ -693,22 +736,24 @@ class HierarchicalCorefSampler(model:HierCorefModel) extends SettingsSampler[Nul
 
 
   def main(args:Array[String]): Unit = {
-    val numSteps=100000
+    val numSteps=1000000
     val rexa2 = new Rexa2
+    //rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/all3/"))
     rexa2.populateREXA(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
-
-    //populateDB
+    var time = System.currentTimeMillis
     val mentions =rexa2.nextBatch
+    println("Loading " + mentions.size + " took " + (System.currentTimeMillis -time)/1000L+"s.")
+    /*
     for(m <- mentions){
       println(this.entityString(m))
       println("   *properties:  (exists?="+m.isConnected+" mention?="+m.isObserved+" #children:"+m.subEntitiesSize+")")
-    }
+    }*/
     println("Coref mentions: "+data)
     println("Number of mentions: "+mentions.size)
     val model = new HierCorefModel
-    val predictor = new HierarchicalCorefSampler(model)
+    val predictor = new AuthorSampler(model)
     predictor.setEntities(mentions)
-    var time = System.currentTimeMillis
+    time = System.currentTimeMillis
     predictor.process(numSteps)
     System.out.println(numSteps+" of inference took "+(System.currentTimeMillis-time)/1000L + "s.")
     //println("Entities:\n"+predictor.getEntities)
