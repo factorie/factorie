@@ -20,36 +20,38 @@ import java.io.{InputStreamReader, FileInputStream, BufferedReader, File}
  * Consider a set-up where cosine distance is computed between arrays of bags of words, and each bag is a variable that can go on the diff list.
  */
 
+class FullName(val entity:Entity,f:String,m:String,l:String) extends SeqVariable[String](Seq(f,m,l)){
+  def setFirst(s:String)(implicit d:DiffList) = update(0,s)
+  def setMiddle(s:String)(implicit d:DiffList) = update(1,s)
+  def setLast(s:String)(implicit d:DiffList) = update(2,s)
+  def setFullName(that:FullName)(implicit d:DiffList) = {setFirst(that.firstName)(null);setMiddle(that.middleName)(null);setLast(that.lastName)(null)}
+  def firstName = value(0)
+  def middleName = value(1)
+  def lastName = value(2)
+  def domain = GenericDomain
+  override def toString:String = {
+    val result = new StringBuffer
+    if(firstName!=null)result.append(firstName+" ")
+    if(middleName!=null)result.append(middleName+" ")
+    if(lastName!=null)result.append(lastName+" ")
+    result.toString
+  }
+}
+
+
 object Coref3 {
   trait HasCanopyAttributes[T<:Entity]{
     val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
   }
   trait CanopyAttribute[T<:Entity]{def entity:T;def canopyName:String}
   class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity]{
-    def canopyName:String=initial(entity.fullName.firstName)+entity.fullName.lastName
+    def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
     def initial(s:String):String = if(s!=null && s.length>0)s.substring(0,1) else ""
   }
   /**Attributes/Features of entities*/
   class Bow(val entity:Entity,ss:Iterable[String]=Nil) extends BagOfWordsVariable(ss)
   /**Attributes specific to REXA authors*/
   class Title(val entity:Entity,title:String) extends StringVariable(title)
-  class FullName(val entity:Entity,f:String,m:String,l:String) extends SeqVariable[String](Seq(f,m,l)){
-    def setFirst(s:String)(implicit d:DiffList) = update(0,s)
-    def setMiddle(s:String)(implicit d:DiffList) = update(1,s)
-    def setLast(s:String)(implicit d:DiffList) = update(2,s)
-    def setFullName(that:FullName)(implicit d:DiffList) = {setFirst(that.firstName)(null);setMiddle(that.middleName)(null);setLast(that.lastName)(null)}
-    def firstName = value(0)
-    def middleName = value(1)
-    def lastName = value(2)
-    def domain = GenericDomain
-    override def toString:String = {
-      val result = new StringBuffer
-      if(firstName!=null)result.append(firstName+" ")
-      if(middleName!=null)result.append(middleName+" ")
-      if(lastName!=null)result.append(lastName+" ")
-      result.toString
-    }
-  }
   class Bags extends HashMap[String,BagOfWords]
   class BagOfTopics(val entity:Entity, topicBag:Map[String,Double]=null) extends BagOfWordsVariable(Nil, topicBag)
   class BagOfVenues(val entity:Entity, venues:Map[String,Double]=null) extends BagOfWordsVariable(Nil, venues)
@@ -273,7 +275,10 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
         canopies.getOrElse(cname,{val a = new ArrayBuffer[AuthorEntity];canopies(cname)=a;a}) += e
       }
     }
-    override def nextEntity(context:AuthorEntity=null):AuthorEntity=if(context==null)sampleEntity(entities) else sampleEntity(canopies(context.defaultCanopy))
+    override def nextEntity(context:AuthorEntity=null):AuthorEntity={
+      var result = if(context==null)sampleEntity(entities) else sampleEntity(canopies(context.defaultCanopy))
+      result
+    }
     override def mergeLeft(left:AuthorEntity,right:AuthorEntity)(implicit d:DiffList):Unit ={
       val oldParent = right.superEntity
       right.setSuperEntity(left)(d)

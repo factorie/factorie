@@ -48,7 +48,7 @@ abstract class HierCorefSampler[T<:Entity](model:TemplateModel) extends Settings
   protected def sampleEntity(samplePool:Seq[T]) = {
     var tries = 4
     var e:T = null.asInstanceOf[T]
-    while({tries-= 1;tries} >= 0 && (e==null || !e.isConnected)){e = entities(random.nextInt(entities.size));if(tries==1)performMaintenance}
+    while({tries-= 1;tries} >= 0 && (e==null || !e.isConnected)){e = samplePool(random.nextInt(samplePool.size));if(tries==1)performMaintenance}
     e
   }
   /*
