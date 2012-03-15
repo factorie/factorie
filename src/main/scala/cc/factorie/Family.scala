@@ -120,7 +120,7 @@ trait DotFamily extends VectorFamily {
   //type TemplateType <: DotFamily
   type FamilyType <: DotFamily
   var _weights: Vector = null // Dense by default, may be override in sub-traits
-  lazy val defaultWeights = { freezeDomains; newWeightsTypeVector }
+  lazy val defaultWeights = { freezeDomains; newWeightsTypeVector() }
   def weights = { if (_weights != null) _weights else setWeights(defaultWeights) }
   def setWeights(w: Vector) = { _weights = w; _weights }
   def newWeightsTypeVector(default:Double = 0.0): Vector = DenseVector(statisticsVectorLength)(default)
@@ -189,14 +189,14 @@ trait DotFamily extends VectorFamily {
     @author Andrew McCallum */
 trait SparseWeights extends DotFamily {
   override def newWeightsTypeVector(defaultVal:Double): Vector =
-    new SparseVector(statisticsVectorLength) { override var default = defaultVal }
+    new SparseVector(statisticsVectorLength) { default = defaultVal }
 }
 
 /** A DotTemplate that stores its parameters in a SparseHashVector instead of a DenseVector
     @author Sameer Singh */
 trait SparseHashWeights extends DotFamily {
-  override def newWeightsTypeVector(default:Double): Vector =
-    new SparseHashVector(statisticsVectorLength) { override var default = defaultVal }
+  override def newWeightsTypeVector(defaultVal:Double): Vector =
+    new SparseHashVector(statisticsVectorLength) { default = defaultVal }
 }
 
 trait SparseOuter1Dense1Weights extends DotStatistics2[DiscreteVectorValue,DiscreteVectorValue] {
