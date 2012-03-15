@@ -12,10 +12,11 @@ import collection.JavaConversions
 /**
  * A MongoCubbieCollection stores cubbies in a Mongo collection.
  *
- * @param coll the mongo collection that will be used to store the cubbies
- * @param constructor the constructor to use when creating cubbies based on mongo objects
+ * @param coll the mongo collection that will be used to store the cubbies.
+ * @param constructor the constructor to use when creating cubbies based on mongo objects.
  * @param indices A sequence of sequences of slots. Each slot sequence represents one
- * multifield index
+ * multi-field index.
+ * @tparam C the type of the cubbies this collection stores.
  * @author sriedel
  */
 class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
@@ -68,7 +69,7 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
    * Batch insert of a collection of cubbies.
    * @param c collection to insert.
    */
-  def ++=(c: TraversableOnce[C]) =  {
+  def ++=(c: TraversableOnce[C]) = {
     coll.insert(JavaConversions.seqAsJavaList(c.map(eagerDBO(_)).toSeq))
   }
 
@@ -113,7 +114,7 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
     coll.update(queryDBO, insertDBO)
   }
 
-  def safeDbo(f: C => C) = if (f == null) null else eagerDBO(f(constructor()))
+  private def safeDbo(f: C => C) = if (f == null) null else eagerDBO(f(constructor()))
 
   /**
    * Finds all cubbies that match the given queries and instantiates the selected slots of these cubbies.
@@ -163,6 +164,15 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
     def setNoTimeOut() {
       underlying.setOptions(16)
     }
+
+    def sort(fields: C => C) = {
+      val fieldsDBo = safeDbo(fields)
+      new CursorIterator(underlying.sort(fieldsDBo))
+    }
+
+//    def sort() {
+//      underlying.sort()
+//    }
 
     def close() {
       underlying.close()
