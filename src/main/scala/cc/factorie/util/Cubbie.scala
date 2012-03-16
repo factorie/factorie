@@ -15,6 +15,7 @@
 package cc.factorie.util
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.{Map => MutableMap}
+import cc.factorie.db.mongo.{GraphLoader, MongoCubbieCollection}
 
 // Property, ala NeXTStep PropertyLists, used for JSON-like serialization©
 // Call it "Tyson" for "Typed JSON"
@@ -57,6 +58,7 @@ class Cubbie { thisCubbie =>
   trait AbstractSlot[+T] {
     def value:T
     def name:String
+    def opt:Option[T]
   }
 
 
@@ -64,6 +66,7 @@ class Cubbie { thisCubbie =>
   abstract class Slot[T](val name:String) extends AbstractSlot[T] {
     def value: T
     def :=(value:T): Unit
+    def opt = if (_map.isDefinedAt(name)) Some(value) else None
     def raw: Any = _rawGet(name)
     def rawPut(value:Any) {_rawPut(name,value)}
     def isDefined: Boolean = null != _rawGet(name)
@@ -108,11 +111,16 @@ class Cubbie { thisCubbie =>
     }
     def :=(value:Seq[A]) = _rawPut(name, value.map(c => c._map)) // Actually put in the sequence of Maps, not sequence of Cubbies
   }
-  case class RefSlot[A<:Cubbie](override val name:String, constructor:()=>A) extends Slot[Any](name) {
+
+  trait AbstractRefSlot[+A<:Cubbie] extends AbstractSlot[Any] {
+    def deref(implicit tr:scala.collection.Map[Any,Cubbie]) = tr(value).asInstanceOf[A]
+//    def ->(coll:MongoCubbieCollection[A]):GraphLoader.SlotInCollection[A] = GraphLoader.SlotInCollection(this,coll)
+  }
+
+  case class RefSlot[A<:Cubbie](override val name:String, constructor:()=>A) extends Slot[Any](name) with AbstractRefSlot[A] {
     def value = _rawGet(name)
     def :=(ref:Any): Unit = { if (ref.isInstanceOf[Cubbie]) throw new Error("Use ::= to set RefSlot by a Cubbie"); _rawPut(name, ref) }
     def ::=(value:A): Unit = _rawPut(name, value.id)
-    def deref(implicit tr:CubbieRefs) = tr(value).asInstanceOf[A]
   }
   case class CubbieSlot[A<:Cubbie](override val name:String, constructor: ()=>A) extends Slot[A](name) {
     def value: A = { val a = constructor(); a._map = _rawGet(name).asInstanceOf[MapType]; a }

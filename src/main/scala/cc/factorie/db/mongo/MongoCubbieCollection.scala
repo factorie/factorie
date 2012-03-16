@@ -8,6 +8,18 @@ import org.bson.types.BasicBSONList
 import collection.mutable.{ArrayBuffer, HashMap}
 import collection.mutable.{Map => MutableMap}
 import collection.JavaConversions
+import cc.factorie.util.CubbieRefs
+import annotation.tailrec
+
+
+/**
+ * Covariant interface to cubbie collection
+ * @tparam C
+ */
+trait AbstractMongoCubbieCollection[+C <: Cubbie] extends Iterable[C] {
+
+  def findByIds(ids: Seq[Any]): Iterator[C]
+}
 
 /**
  * A MongoCubbieCollection stores cubbies in a Mongo collection.
@@ -22,7 +34,7 @@ import collection.JavaConversions
 class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
                                          val constructor: () => C,
                                          val indices: C => Seq[Seq[C#AbstractSlot[Any]]] = (c: C) => Seq.empty[Seq[C#AbstractSlot[Any]]])
-  extends Iterable[C] with MongoCubbieConverter[C] {
+  extends AbstractMongoCubbieCollection[C] with MongoCubbieConverter[C] {
 
   import MongoCubbieConverter._
 
@@ -129,6 +141,10 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
     new CursorIterator(coll.find(queryDBO, selectDBO))
   }
 
+  def findByIds(ids: Seq[Any]) = {
+    query(new MongoCubbie(_).idsIn(ids))
+  }
+
   /**
    * Updates the collection as specified.
    * @param query a function that returns a cubbie to match
@@ -170,9 +186,9 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
       new CursorIterator(underlying.sort(fieldsDBo))
     }
 
-//    def sort() {
-//      underlying.sort()
-//    }
+    //    def sort() {
+    //      underlying.sort()
+    //    }
 
     def close() {
       underlying.close()
@@ -317,6 +333,11 @@ class MongoSlot[C <: Cubbie, V](val slot: C#Slot[V]) {
 
 }
 
+class MongoRefSlot[C <: Cubbie, A <: Cubbie](val slot: C#AbstractRefSlot[A]) {
+  def in (coll: MongoCubbieCollection[A]): GraphLoader.SlotInCollection[A] = GraphLoader.SlotInCollection(slot, coll)
+
+}
+
 /**
  * Lazy scala seq wrapper around bson sequence.
  * @param bson the bson list to wrap around.
@@ -359,6 +380,8 @@ class BSONMap(val bson: BSONObject) extends collection.mutable.Map[String, Any] 
 object MongoCubbieImplicits {
 
   implicit def toMongoSlot[C <: Cubbie, V](slot: C#Slot[V]) = new MongoSlot(slot)
+
+  implicit def toMongoRefSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractRefSlot[A]) = new MongoRefSlot(slot)
 
   implicit def toMongoCubbie[C <: Cubbie](cubbie: C) = new MongoCubbie(cubbie)
 
@@ -444,36 +467,59 @@ object CubbieMongoTest {
     println(persons.query(_.idIs(1)).mkString("\n"))
 
 
+    implicit val refs = GraphLoader.load(Seq(james), {
+      case p:Person => Seq(p.spouse in persons)
+    })
+
+    println("James' spouse")
+    println(james.spouse.deref)
+    println("James' spouse's spouse")
+    println(james.spouse.deref.spouse.deref)
+
+    
   }
 }
 
-class NestedDiffMap(arg1: collection.Map[String, Any], arg2: collection.Map[String, Any]) extends collection.mutable.Map[String, Any] {
 
-  def toDiff(arg1: Any, arg2: Any): Any = {
-    null
-    //
-    //    arg2 match {
-    //      case m:Map[_,_] => new NestedDiffMap(null,m.asInstanceOf[collection.Map[String,Any]])
-    //      case s:Seq[_] => s.map(toDiff(_))
-    //      case _ => value2
-    //    }
-  }
+object GraphLoader {
 
-  def get(key: String) = {
-    val value1 = arg1.get(key)
-    val value2 = arg2.get(key)
-    if (value1 != value2) {
-      value2 match {
-        case Some(m: Map[_, _]) => Some(new NestedDiffMap(null, m.asInstanceOf[collection.Map[String, Any]]))
-        case _ => value2
+  case class SlotInCollection[+R <: Cubbie](slot: Cubbie#AbstractRefSlot[R], coll: AbstractMongoCubbieCollection[R])
+
+  type Refs = scala.collection.Map[Any,Cubbie]
+
+  @tailrec
+  def load(roots: TraversableOnce[Cubbie], 
+           neighbors: PartialFunction[Cubbie, Seq[SlotInCollection[Cubbie]]],
+           oldRefs: Refs = Map.empty): Refs = {
+    //fill-up roots into refs
+    var refs = oldRefs ++ roots.map(c => c.id -> c).toMap
+
+    //mapping from collections to the ids that need to be loaded
+    val colls2ids = new HashMap[AbstractMongoCubbieCollection[Cubbie],List[Any]]
+
+    //gather ids to load for each collection
+    for (c <- roots) {
+      for (slots <- neighbors.lift(c)) {
+        for (slot <- slots) {
+          for (idRef <- slot.slot.opt) {
+            if (!refs.isDefinedAt(idRef)) {
+              colls2ids(slot.coll) = colls2ids.getOrElse(slot.coll, Nil) :+ idRef
+            }
+          }
+        }
       }
-    } else None
+    }
+
+    //now do loading
+    var loaded:List[Cubbie] = Nil
+    for ((coll,ids) <- colls2ids) {
+      loaded = loaded ++ coll.findByIds(ids).toList
+    }
+    
+    //instantiate the yield
+    if (loaded.size > 0) load(loaded, neighbors, refs) else refs
+
   }
 
 
-  def iterator = null
-
-  def +=(kv: (String, Any)) = null
-
-  def -=(key: String) = null
 }
