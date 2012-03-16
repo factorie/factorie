@@ -18,7 +18,7 @@ abstract class HierEntity(isMent:Boolean=false) extends Entity{
   attr += new Dirty(this)
   override def removedChildHook(entity:Entity)(implicit d:DiffList)={super.removedChildHook(entity);exists.set(this.isConnected)(d);dirty++}
   override def addedChildHook(entity:Entity)(implicit d:DiffList)={super.addedChildHook(entity);exists.set(this.isConnected)(d);dirty++}
-  override def changedSuperEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList){super.changedSuperEntityHook(oldEntity,newEntity);isEntity.set(this.isRoot)(d);exists.set(this.isConnected)(d)}
+  override def changedParentEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList){super.changedParentEntityHook(oldEntity,newEntity);isEntity.set(this.isRoot)(d);exists.set(this.isConnected)(d)}
 }
 
 abstract class HierEntityCubbie extends EntityCubbie{
@@ -79,14 +79,14 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
       if(!isMention(entity1)){
         changes += {(d:DiffList) => mergeLeft(entity1,entity2)(d)} //what if entity2 is a mention?
         if(entity1.id != entity1.entityRoot.id) //avoid adding the same jump to the list twice
-          changes += {(d:DiffList) => mergeLeft(entity1.entityRoot.asInstanceOf[T],entity2)(d)} //unfortunately casting is necessary unless we want to type entityRef/superEntity/subEntity
+          changes += {(d:DiffList) => mergeLeft(entity1.entityRoot.asInstanceOf[T],entity2)(d)} //unfortunately casting is necessary unless we want to type entityRef/parentEntity/childEntities
       }
-      if(entity1.superEntity==null && entity2.superEntity==null)
+      if(entity1.parentEntity==null && entity2.parentEntity==null)
         changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
     } else { //sampled nodes refer to same entity
       changes += {(d:DiffList) => splitRight(entity1,entity2)(d)}
       changes += {(d:DiffList) => splitRight(entity2,entity1)(d)}
-      if(entity1.superEntity != null && !entity1.isObserved)
+      if(entity1.parentEntity != null && !entity1.isObserved)
         changes += {(d:DiffList) => {collapse(entity1)(d)}}
     }
     if(entity1.dirty.value>0)changes += {(d:DiffList) => sampleAttributes(entity1)(d)}
@@ -100,40 +100,40 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
   }
   /**Removes an intermediate node in the tree, merging that nodes children to their grandparent.*/
   def collapse(entity:T)(implicit d:DiffList):Unit ={
-    if(entity.superEntity==null)throw new Exception("Can't collapse a node that is the root of a tree.")
-    val oldParent = entity.superEntity
-    entity.subEntitiesIterator.foreach(_.setSuperEntity(entity.superEntity)(d))
-    entity.setSuperEntity(null)(d)
+    if(entity.parentEntity==null)throw new Exception("Can't collapse a node that is the root of a tree.")
+    val oldParent = entity.parentEntity
+    entity.childEntitiesIterator.foreach(_.setParentEntity(entity.parentEntity)(d))
+    entity.setParentEntity(null)(d)
   }
   /**Peels off the entity "right", does not really need both arguments unless we want to error check.*/
   def splitRight(left:T,right:T)(implicit d:DiffList):Unit ={
-    val oldParent = right.superEntity
-    right.setSuperEntity(null)(d)
-    structurePreservationForEntityThatLostSubEntity(oldParent)(d)
+    val oldParent = right.parentEntity
+    right.setParentEntity(null)(d)
+    structurePreservationForEntityThatLostChild(oldParent)(d)
   }
   /**Jump function that proposes merge: entity1<----entity2*/
   def mergeLeft(entity1:T,entity2:T)(implicit d:DiffList):Unit ={
-    val oldParent = entity2.superEntity
-    entity2.setSuperEntity(entity1)(d)
-    structurePreservationForEntityThatLostSubEntity(oldParent)(d)
+    val oldParent = entity2.parentEntity
+    entity2.setParentEntity(entity1)(d)
+    structurePreservationForEntityThatLostChild(oldParent)(d)
   }
-  /**Jump function that proposes merge: entity1--->NEW-SUPER-ENTITY<---entity2 */
+  /**Jump function that proposes merge: entity1--->NEW-PARENT-ENTITY<---entity2 */
   def mergeUp(e1:T,e2:T)(implicit d:DiffList):T = {
-    val oldParent1 = e1.superEntity
-    val oldParent2 = e2.superEntity
+    val oldParent1 = e1.parentEntity
+    val oldParent2 = e2.parentEntity
     val result = newEntity
-    e1.setSuperEntity(result)(d)
-    e2.setSuperEntity(result)(d)
-    structurePreservationForEntityThatLostSubEntity(oldParent1)(d)
-    structurePreservationForEntityThatLostSubEntity(oldParent2)(d)
+    e1.setParentEntity(result)(d)
+    e2.setParentEntity(result)(d)
+    structurePreservationForEntityThatLostChild(oldParent1)(d)
+    structurePreservationForEntityThatLostChild(oldParent2)(d)
     result
   }
-  /**Ensure that chains are not created in our tree. No dangling sub-entities either.*/
-  protected def structurePreservationForEntityThatLostSubEntity(e:Entity)(implicit d:DiffList):Unit ={
-    if(e!=null && e.subEntitiesSize<=1){
-      for(subEntity <- e.subEntities)
-        subEntity.setSuperEntity(e.superEntity)
-      e.setSuperEntity(null)(d)
+  /**Ensure that chains are not created in our tree. No dangling children-entities either.*/
+  protected def structurePreservationForEntityThatLostChild(e:Entity)(implicit d:DiffList):Unit ={
+    if(e!=null && e.childEntitiesSize<=1){
+      for(childEntity <- e.childEntities)
+        childEntity.setParentEntity(e.parentEntity)
+      e.setParentEntity(null)(d)
     }
   }
   /**Identify entities that are created by accepted jumps so we can add them to our master entity list.*/
@@ -143,7 +143,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
     proposal.diff.undo //an entity that does not exit in the current world is one that was newly created by the jump
     for(diff<-proposal.diff){
       diff.variable match{
-        case sub:SubEntities => if(!sub.entity.isConnected)newEntities += sub.entity.asInstanceOf[T] //cast could be avoided if sub entities were typed
+        case children:ChildEntities => if(!children.entity.isConnected)newEntities += children.entity.asInstanceOf[T] //cast could be avoided if children entities were typed
         case _ => {}
       }
     }
