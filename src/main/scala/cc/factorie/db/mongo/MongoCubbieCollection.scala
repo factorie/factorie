@@ -152,6 +152,16 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
 
 
   /**
+   * Removes all items in the collection that match the given query.
+   * @param query a function that maps a cubbie to a cubbie that should be matched.
+   * @return unit
+   */
+  def remove(query:C => C) ={
+    val queryDBO = safeDbo(query)
+    coll.remove(queryDBO)
+  }
+
+  /**
    * Updates the collection as specified.
    * @param query a function that returns a cubbie to match
    * @param modification a function that returns the modification cubbie.
