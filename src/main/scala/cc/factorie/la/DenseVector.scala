@@ -40,7 +40,38 @@ class DenseVector(val length:Int) extends Vector {
     }
     case _ => v dot this
   }
-  override def +=(v:Vector): Unit = for ((index,value) <- v.activeElements) a(index) += value
+  def addTo(v: Vector,  s: Double) {
+    for ((index,value) <- v.activeElements) a(index) += s*value
+  }
+  def addTo1(v: DenseVector, s: Double) {
+    var i = 0
+    assert(a.length == v.length, "Cannot add vectors of different lengths")
+    while (i < a.length) {
+      a(i) += v(i)*s
+      i += 1
+    }
+  }
+  def toArray = a
+  override def +=(vector:Vector): Unit = {
+    vector match {
+      case v : DenseVector => {
+        assert(v.length == this.length, "Cannot add vectors of different lengths")
+        var i = 0
+        val vv = v.toArray
+        while (i < a.length) {
+          a(i) += vv(i)
+          i += 1
+        }
+      }
+      case v : VectorTimesScalar => {
+        v.vector match {
+          case vec : DenseVector => addTo1(vec, v.scalar)
+          case vec : Vector => addTo(vec, v.scalar)
+        }
+      }
+      case _ => for ((index,value) <- vector.activeElements) a(index) += value
+    }
+  }
   override def +=(s:Double): Unit = {
     var i = 0
     while (i < a.size) { a(i) += s; i += 1 }
