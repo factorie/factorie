@@ -86,7 +86,7 @@ class Cubbie {
 
   def newId = java.util.UUID.randomUUID.timestamp
 
-  var slots:List[AbstractSlot[Any]] = Nil
+//  var slots:List[AbstractSlot[Any]] = Nil
   
   final def id: Any = {
     // "final" because we need to ensure that the _id gets inserted into the
@@ -108,7 +108,7 @@ class Cubbie {
 
   trait AbstractSlot[+T] {
 
-    slots = slots :+ this
+//    slots = slots :+ this
 
     def value: T
 
@@ -144,7 +144,7 @@ class Cubbie {
 
     def :=(value: T): Unit
 
-    def :=!(value: T)(implicit preHook:Function2[Cubbie#AbstractSlot[Any],T,Unit]) {
+    def :=!(value: T)(implicit preHook:Function2[Cubbie#AbstractSlot[Any],Any,Unit]) {
       preHook(this,value)
       this := value
     }

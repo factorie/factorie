@@ -530,6 +530,16 @@ object CubbieMongoTest {
 
     println(james.children.value(indexedInverter))
 
+    //in memory caching
+    implicit val indexer = new Indexer({
+      case p:Person => Seq(p.name, p.age)
+    })
+
+    //these :=! calls inform the indexer of changes
+    james.age :=! 51
+    james.name :=! "Jamison"
+
+    println(indexer.index)
 
   }
 }
@@ -606,6 +616,28 @@ class LazyMongoInverter(val cubbies: PartialFunction[Manifest[Cubbie], AbstractM
       raw.map(c => cache.getOrElse(c.id, c)).toSeq
     }
     found.getOrElse(Nil)
+  }
+}
+
+class Indexer(val indices:Cubbie=>Seq[Cubbie#AbstractSlot[Any]]) extends Function2[Cubbie#AbstractSlot[Any],Any,Unit] {
+
+  case class SlotKey(cubbieClass:Class[Cubbie],name:String, value:Any) {
+  }
+
+  def slotKey(slot:Cubbie#AbstractSlot[Any], value:Any) = {
+    SlotKey(slot.cubbie.getClass.asInstanceOf[Class[Cubbie]],slot.name, value)
+  }
+
+  val index = new HashMap[SlotKey,List[Cubbie]]
+
+  //val index = new HashMap[]
+  def apply(slot: Cubbie#AbstractSlot[Any], value: Any) {
+    //todo: odd cast
+    val typed = slot.cubbie.asInstanceOf[Cubbie]
+    if (indices(typed).contains(slot)) {
+      val key = slotKey(slot,value)
+      index(key) = index.getOrElse(key,Nil) :+ typed
+    }
   }
 }
 
