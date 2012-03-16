@@ -57,6 +57,7 @@ class Cubbie { thisCubbie =>
 
   trait AbstractSlot[+T] {
     def value:T
+    def apply() = value
     def name:String
     def opt:Option[T]
   }
