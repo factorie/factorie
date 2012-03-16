@@ -68,7 +68,7 @@ class EntityMentionModel extends TemplateModel(
       if (editDistance <= 4) affinity += CorefAffinityDimensionDomain.EditDistance4
       if (normalizedEditDistance > .5) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance5
       if (normalizedEditDistance > .9) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance9
-      if (entity.subEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
+      if (entity.childEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
       val result = Stat(affinity.value)
       val str = result.toString
       //println("### EntityMentionModel Stat="+str)
@@ -102,7 +102,7 @@ class PairwiseModel extends TemplateModel(
       if (editDistance <= 4) affinity += CorefAffinityDimensionDomain.EditDistance4
       if (normalizedEditDistance > .5) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance5
       if (normalizedEditDistance > .9) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance9
-      if (entity.subEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
+      if (entity.childEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
       val result = Stat(affinity.value)
       val str = result.toString
       //println("### PairwiseModel Stat="+str)

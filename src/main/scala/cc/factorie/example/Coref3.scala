@@ -60,8 +60,9 @@ object Coref3 {
   class BagOfCoAuthors(val entity:Entity,coAuthors:Map[String,Double]=null) extends BagOfWordsVariable(Nil, coAuthors)
   /**Entity variables*/
   /**An entity with the necessary variables/coordination to implement hierarchical coreference.*/
+/*
   object HierarchicalEntity{
-    def structurePreservationForEntityThatLostSubEntity(e:Entity)(implicit d:DiffList):Unit ={
+    def structurePreservationForEntityThatLostChild(e:Entity)(implicit d:DiffList):Unit ={
       if(e!=null && e.subEntitiesSize<=1){
         for(subEntity <- e.subEntities)
           subEntity.setSuperEntity(e.superEntity)
@@ -97,6 +98,7 @@ object Coref3 {
       }
     }
   }
+  */
   class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity(isMention){
     attr += new Title(this,s)
     attr += new Year(this,-1)
@@ -188,8 +190,8 @@ object Coref3 {
   class HierCorefModel extends TemplateModel(
     new TemplateWithStatistics3[EntityRef,FullName,FullName] {
       def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[FullName], er.dst.attr[FullName]) else Nil
-      def unroll2(childName:FullName) = Factor(childName.entity.superEntityRef, childName, childName.entity.superEntity.attr[FullName])
-      def unroll3(parentName:FullName) = for (e <- parentName.entity.subEntities) yield Factor(e.superEntityRef, e.attr[FullName], parentName)
+      def unroll2(childName:FullName) = Factor(childName.entity.parentEntityRef, childName, childName.entity.parentEntity.attr[FullName])
+      def unroll3(parentName:FullName) = for (e <- parentName.entity.childEntities) yield Factor(e.parentEntityRef, e.attr[FullName], parentName)
       def score(s:Stat): Double = {
         var result = 0.0
         val childName = s._2
@@ -214,8 +216,8 @@ object Coref3 {
     // compatibility between parent/child bows
     new TemplateWithStatistics3[EntityRef,BagOfCoAuthors,BagOfCoAuthors] {
       def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfCoAuthors], er.dst.attr[BagOfCoAuthors]) else Nil
-      def unroll2(childBow:BagOfCoAuthors) = if(childBow.entity.superEntity!=null)Factor(childBow.entity.superEntityRef, childBow, childBow.entity.superEntity.attr[BagOfCoAuthors]) else Nil
-      def unroll3(parentBow:BagOfCoAuthors) = for(e<-parentBow.entity.subEntities) yield Factor(e.superEntityRef,e.attr[BagOfCoAuthors],parentBow)
+      def unroll2(childBow:BagOfCoAuthors) = if(childBow.entity.parentEntity!=null)Factor(childBow.entity.parentEntityRef, childBow, childBow.entity.parentEntity.attr[BagOfCoAuthors]) else Nil
+      def unroll3(parentBow:BagOfCoAuthors) = for(e<-parentBow.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[BagOfCoAuthors],parentBow)
       def score(s:Stat): Double = {
         val childBow = s._2
         val parentBow = s._3
@@ -230,8 +232,8 @@ object Coref3 {
     },
     new TemplateWithStatistics3[EntityRef,BagOfVenues,BagOfVenues] {
       def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfVenues], er.dst.attr[BagOfVenues]) else Nil
-      def unroll2(childBow:BagOfVenues) = if(childBow.entity.superEntity!=null)Factor(childBow.entity.superEntityRef, childBow, childBow.entity.superEntity.attr[BagOfVenues]) else Nil
-      def unroll3(parentBow:BagOfVenues) = for(e<-parentBow.entity.subEntities) yield Factor(e.superEntityRef,e.attr[BagOfVenues],parentBow)
+      def unroll2(childBow:BagOfVenues) = if(childBow.entity.parentEntity!=null)Factor(childBow.entity.parentEntityRef, childBow, childBow.entity.parentEntity.attr[BagOfVenues]) else Nil
+      def unroll3(parentBow:BagOfVenues) = for(e<-parentBow.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[BagOfVenues],parentBow)
       def score(s:Stat): Double = {
         val childBow = s._2
         val parentBow = s._3
@@ -339,9 +341,9 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     }
     */
     def sampleAttributes(author:AuthorEntity)(implicit d:DiffList) = {
-      val representative = author.subEntities.sampleUniformly(random)
+      val representative = author.childEntities.sampleUniformly(random)
       author.attr[Dirty].reset
-      if(author.superEntity != null)author.superEntity.attr[Dirty].++()(d)
+      if(author.parentEntity != null)author.parentEntity.attr[Dirty].++()(d)
       //println("RESAMPLING ATTRIBUTE")
       /*
       author.fullName.set(representative.fullName)
@@ -366,19 +368,19 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       result
     }
     override def mergeLeft(left:AuthorEntity,right:AuthorEntity)(implicit d:DiffList):Unit ={
-      val oldParent = right.superEntity
-      right.setSuperEntity(left)(d)
+      val oldParent = right.parentEntity
+      right.setParentEntity(left)(d)
       propagateBagUp(right)(d)
       propagateRemoveBag(right,oldParent)(d)
-      structurePreservationForEntityThatLostSubEntity(oldParent)(d)
+      structurePreservationForEntityThatLostChild(oldParent)(d)
     }
-    /**Jump function that proposes merge: entity1--->NEW-SUPER-ENTITY<---entity2 */
+    /**Jump function that proposes merge: entity1--->NEW-PARENT-ENTITY<---entity2 */
     override def mergeUp(e1:AuthorEntity,e2:AuthorEntity)(implicit d:DiffList):AuthorEntity = {
-      val oldParent1 = e1.superEntity
-      val oldParent2 = e2.superEntity
+      val oldParent1 = e1.parentEntity
+      val oldParent2 = e2.parentEntity
       val result = newEntity
-      e1.setSuperEntity(result)(d)
-      e2.setSuperEntity(result)(d)
+      e1.setParentEntity(result)(d)
+      e2.setParentEntity(result)(d)
       result.attr[FullName].setFullName(e1.attr[FullName])
       //result.attr[BagOfTopics].add(e1.attr[BagOfTopics].value)(d)
       //result.attr[BagOfTopics].add(e2.attr[BagOfTopics].value)(d)
@@ -388,29 +390,29 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       result.attr[BagOfVenues].add(e2.attr[BagOfVenues].value)(d)
       propagateRemoveBag(e1,oldParent1)(d)
       propagateRemoveBag(e2,oldParent2)(d)
-      structurePreservationForEntityThatLostSubEntity(oldParent1)(d)
-      structurePreservationForEntityThatLostSubEntity(oldParent2)(d)
+      structurePreservationForEntityThatLostChild(oldParent1)(d)
+      structurePreservationForEntityThatLostChild(oldParent2)(d)
       result
     }
     /**Peels off the entity "right", does not really need both arguments unless we want to error check.*/
     override def splitRight(left:AuthorEntity,right:AuthorEntity)(implicit d:DiffList):Unit ={
-      val oldParent = right.superEntity
-      right.setSuperEntity(null)(d)
+      val oldParent = right.parentEntity
+      right.setParentEntity(null)(d)
       propagateRemoveBag(right,oldParent)(d)
-      structurePreservationForEntityThatLostSubEntity(oldParent)(d)
+      structurePreservationForEntityThatLostChild(oldParent)(d)
     }
     def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
-      var e = entity.superEntity
+      var e = entity.parentEntity
       while(e!=null){
         e.attr[BagOfCoAuthors].add(entity.attr[BagOfCoAuthors].value)(d)
-        e = e.superEntity
+        e = e.parentEntity
       }
     }
     def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit ={
       var e = formerParent
       while(e!=null){
         e.attr[BagOfCoAuthors].remove(parting.attr[BagOfCoAuthors].value)
-        e = e.superEntity
+        e = e.parentEntity
       }
     }
     override def proposalHook(proposal:Proposal) = {
@@ -731,12 +733,12 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       result.append("Mention["+e.attr[FullName]+"]")
     }else{
       result.append("SubEntity["+e.attr[FullName]+"]")
-      if(e.subEntitiesSize==0)result.append("-SUBENTITY ERROR")//throw new Exception("ERROR SUB ENTITY IS EMPTY")
+      if(e.childEntitiesSize==0)result.append("-SUBENTITY ERROR")//throw new Exception("ERROR SUB ENTITY IS EMPTY")
       //if(e.subEntitySize==1)throw new Exception("ERROR SUB ENTITY HAS ONE CHILD)
     }
     result.append("{"+bagToString(e.attr[BagOfCoAuthors].value)+"}")
     result.append("\n")
-    for(subEntity <- e.subEntitiesIterator)entityString(subEntity,result,depth+1)
+    for(childEntity <- e.childEntitiesIterator)entityString(childEntity,result,depth+1)
   }
   def bagToString(bag:BagOfWords,k:Int=8):String = {
     val map = new HashMap[String,Double]
