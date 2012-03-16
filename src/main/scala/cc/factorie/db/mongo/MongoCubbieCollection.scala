@@ -407,18 +407,21 @@ object CubbieMongoTest {
       val address = CubbieSlot("address", () => new Address)
       val hobbies = StringListSlot("hobbies")
       val spouse = RefSlot("spouse", () => new Person)
+      val children = InverseSlot("children", (p:Person) => p.father)
+      val father = RefSlot("father", () => new Person)
     }
     class Address extends Cubbie {
       val street = StringSlot("street")
       val zip = StringSlot("zip")
     }
 
-
     val address = new Address
     address.street := "Mass Ave."
 
     val james = new Person
     val laura = new Person
+    val kid = new Person
+
     james.name := "James"
     james.id = 1
     james.age := 50
@@ -431,8 +434,11 @@ object CubbieMongoTest {
     laura.hobbies := Seq("James")
     laura.address := address
 
+    kid.name := "Kid"
+
     james.spouse ::= laura
     laura.spouse ::= james
+    kid.father ::= james
 
 
     val mongoConn = new Mongo("localhost", 27017)
@@ -450,7 +456,7 @@ object CubbieMongoTest {
       println(p._map)
     }
 
-    val queryResult = persons.query(_.age.set(50), _.age.select.name.select)
+    val queryResult = persons.query(_.age(50), _.age.select.name.select)
     //    val queryResult = persons.query(_.age.set(50))
     for (p <- queryResult) {
       println(p._map)
@@ -487,7 +493,20 @@ object CubbieMongoTest {
     //    import DerefImplicits._
     //    println(james.spouse-->spouse-->name.value)
 
+    implicit val inverter = new LazyInverter(Map(manifest[Person]-> Seq(james,laura,kid)))
 
+    println(james.children.value)
+    
+
+  }
+}
+
+
+class LazyInverter(val cubbies:PartialFunction[Manifest[Cubbie],Iterable[Cubbie]]) extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
+  def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
+    val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
+    val result = cubbies.lift(slot.manifest).getOrElse(Nil).filter(c => typed.slot(c).opt == Some(typed.cubbie.id))
+    result
   }
 }
 
