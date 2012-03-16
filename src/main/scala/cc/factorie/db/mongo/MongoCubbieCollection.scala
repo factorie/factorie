@@ -7,19 +7,20 @@ import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection
 import org.bson.types.BasicBSONList
 import collection.mutable.{ArrayBuffer, HashMap}
 import collection.mutable.{Map => MutableMap}
-import collection.{Map => GenericMap}
-import collection.JavaConversions
 import cc.factorie.util.CubbieRefs
 import annotation.tailrec
+import collection.{MapProxy, Map => GenericMap, JavaConversions}
 
 
 /**
  * Covariant interface to cubbie collection
- * @tparam C
+ * @tparam C Cubbie type of collection.
  */
 trait AbstractMongoCubbieCollection[+C <: Cubbie] extends Iterable[C] {
 
   def findByIds(ids: Seq[Any]): Iterator[C]
+  
+  def findBySlot[T](field:C => Cubbie#Slot[T], values:Seq[T]): Iterator[C]
 }
 
 /**
@@ -145,6 +146,11 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
   def findByIds(ids: Seq[Any]) = {
     query(new MongoCubbie(_).idsIn(ids))
   }
+
+  def findBySlot[T](field: (C) => Cubbie#Slot[T], values:Seq[T]) = {
+    query(c => new MongoSlot[Cubbie,T](field(c)).valuesIn(values).asInstanceOf[C])
+  }
+
 
   /**
    * Updates the collection as specified.
@@ -332,6 +338,12 @@ class MongoSlot[C <: Cubbie, V](val slot: C#Slot[V]) {
     slot.cubbie
   }
 
+  def valuesIn(values: Seq[V]): C = {
+    slot.cubbie._map(slot.name) = Map("$in" -> values)
+    slot.cubbie
+  }
+
+
 }
 
 class MongoRefSlot[C <: Cubbie, A <: Cubbie](val slot: C#AbstractRefSlot[A]) {
@@ -435,6 +447,7 @@ object CubbieMongoTest {
     laura.address := address
 
     kid.name := "Kid"
+    kid.id = 3
 
     james.spouse ::= laura
     laura.spouse ::= james
@@ -449,6 +462,7 @@ object CubbieMongoTest {
 
     persons += james
     persons += laura
+    persons += kid
 
     persons.update(_.name.set("James"), _.name.update("Jamie"))
 
@@ -493,22 +507,63 @@ object CubbieMongoTest {
     //    import DerefImplicits._
     //    println(james.spouse-->spouse-->name.value)
 
-    implicit val inverter = new LazyInverter(Map(manifest[Person]-> Seq(james,laura,kid)))
+    kid.name := "Kid 2"
+
+    implicit val inverter = new CachedFunction(new LazyInverter(Map(manifest[Person]-> Seq(james,laura,kid))))
 
     println(james.children.value)
+    
+    val mongoInverter = new CachedFunction(new LazyMongoInverter(Map(manifest[Person] -> persons)))
+
+    println(james.children.value(mongoInverter))
     
 
   }
 }
 
+class CachedFunction[F,T](val delegate:F=>T) extends Map[F, T] {
+  val cache = new HashMap[F,T]
 
-class LazyInverter(val cubbies:PartialFunction[Manifest[Cubbie],Iterable[Cubbie]]) extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
+  def get(key: F) = Some(cache.getOrElseUpdate(key, delegate(key)))
+  def iterator = cache.iterator
+
+  def -(key: F) = {
+    val result = new CachedFunction(delegate)
+    result.cache ++= cache
+    result.cache -= key
+    result
+  }
+
+  def +[B1 >: T](kv: (F, B1)) = {
+    val result = new CachedFunction(delegate)
+    result.cache ++= cache
+    result.cache += kv.asInstanceOf[(F,T)]
+    result
+  }
+}
+
+class LazyInverter(val cubbies:PartialFunction[Manifest[Cubbie],Iterable[Cubbie]]) 
+  extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
     val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
     val result = cubbies.lift(slot.manifest).getOrElse(Nil).filter(c => typed.slot(c).opt == Some(typed.cubbie.id))
     result
   }
 }
+
+class LazyMongoInverter(val cubbies:PartialFunction[Manifest[Cubbie],AbstractMongoCubbieCollection[Cubbie]],
+                        val cache:GenericMap[Any,Cubbie] = Map.empty)
+  extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
+  def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
+    val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
+    val found = for (coll <- cubbies.lift(slot.manifest)) yield {
+      val raw = coll.findBySlot(c => slot.slot(c).asInstanceOf[Cubbie#RefSlot[Cubbie]],Seq(typed.cubbie.id))
+      raw.map(c => cache.getOrElse(c.id,c)).toSeq
+    }
+    found.getOrElse(Nil)
+  }
+}
+
 
 
 object GraphLoader {

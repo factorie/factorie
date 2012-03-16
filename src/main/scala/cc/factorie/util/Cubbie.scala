@@ -110,6 +110,9 @@ class Cubbie {
     def name: String
 
     def opt: Option[T]
+
+    def cubbie:thisCubbie.type = thisCubbie
+
   }
 
   case class InverseSlot[A <: Cubbie](name: String, slot: A => A#AbstractRefSlot[Cubbie])(implicit m:Manifest[A]) {
@@ -159,8 +162,6 @@ class Cubbie {
       for (value <- opt) this := value;
       thisCubbie
     }
-
-    def cubbie: thisCubbie.type = thisCubbie
 
     override def toString = name + ":" + _rawGet(name)
   }
