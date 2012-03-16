@@ -258,7 +258,7 @@ trait SumFactor extends MessageFactor {
     while (i < discreteVarying.length) {
       val dv = discreteVarying(i)
       val vid = dv._2
-      result.set(vid, BPUtil.message(dv._1, scores(i).map(s => log(s)).toSeq))
+      result.set(vid, BPUtil.message(dv._1, scores(i).map(s => log(s)).toArray))
       i += 1
     }
     // deterministic messages for the fixed neighbors
@@ -350,8 +350,8 @@ trait MaxFactor extends MessageFactor {
         case l: MaxProductLattice =>
           if (l.finalPass) {
             BPUtil.deterministicMessage(dv._1, dv._1.domain.getValue(scores(i).toSeq.indexOfMaxByDouble(d => d)))
-          } else BPUtil.message(dv._1, scores(i).toSeq)
-        case _ => BPUtil.message(dv._1, scores(i).toSeq)
+          } else BPUtil.message(dv._1, scores(i))
+        case _ => BPUtil.message(dv._1, scores(i))
       }
       result.set(vid, msg)
     }

@@ -775,7 +775,7 @@ class TestBP extends TestCase {
       val score = random.nextGaussian()
       val prob = (1.0 / (e(score) + 1))
       print(score + ": " + prob + "\t")
-      val msg = BPUtil.message(v, Seq(score, 0.0))
+      val msg = BPUtil.message(v, Seq(score, 0.0).toArray)
       for (thresh <- 0.0 to(1.0, 0.1)) {
         val vl = msg.mapWithThreshold(thresh, BinDomain(0))
         print("%s ".format(vl))
