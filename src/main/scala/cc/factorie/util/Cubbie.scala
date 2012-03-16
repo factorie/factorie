@@ -13,9 +13,8 @@
    limitations under the License. */
 
 package cc.factorie.util
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.{Map => MutableMap}
 import cc.factorie.db.mongo.{GraphLoader, MongoCubbieCollection}
+import collection.mutable.{HashMap, ArrayBuffer, Map => MutableMap}
 
 // Property, ala NeXTStep PropertyLists, used for JSON-like serialization©
 // Call it "Tyson" for "Typed JSON"
@@ -28,13 +27,25 @@ import cc.factorie.db.mongo.{GraphLoader, MongoCubbieCollection}
 //  although other direction: cubbie._map => DBObject will require some conversion
 class Cubbie { thisCubbie =>
   import scala.collection.mutable.Map
-  def this(map:scala.collection.mutable.HashMap[String,Any]) = { this(); this._map = map }
-//  def this(map:java.util.HashMap[String,Any]) = { this(); this._map = map }
+
+//  def this(map:scala.collection.mutable.HashMap[String,Any]) = { this(); this._map = map }
   // Managing raw underlying map that hold the data
   def setMap(map: MapType): this.type = { _map = map; this }
   type MapType = MutableMap[String, Any]
-  var _map: MapType = null
-  def _newDefaultMap: AnyRef = new scala.collection.mutable.HashMap[String,Any]
+  def this(map:MutableMap[String, Any]) = { this(); this._map = map }
+
+  //todo: fix naming one day
+  private var __map: MapType = null
+  def _map = {
+    if (__map == null) __map = new HashMap[String,Any]
+    __map
+  }
+  def _map_=(map:MutableMap[String, Any]) {
+    __map = map
+  }
+
+//  var _map: MapType = null
+  def _newDefaultMap: MapType = new scala.collection.mutable.HashMap[String,Any]
   def _rawGet(name:String): Any = {_map(name)}
   def _rawGetOrElse(name:String, default: =>Any) = _map.getOrElse(name, default)
   def _rawGetOrElseUpdate(name:String, default: =>Any) = _map.getOrElseUpdate(name, default)

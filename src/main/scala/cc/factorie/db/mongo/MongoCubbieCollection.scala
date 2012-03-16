@@ -402,7 +402,6 @@ object CubbieMongoTest {
   def main(args: Array[String]) {
 
     class Person extends Cubbie {
-      _map = new HashMap[String, Any]
       val name = StringSlot("name")
       val age = IntSlot("age")
       val address = CubbieSlot("address", () => new Address)
@@ -410,10 +409,11 @@ object CubbieMongoTest {
       val spouse = RefSlot("spouse", () => new Person)
     }
     class Address extends Cubbie {
-      _map = new HashMap[String, Any]
       val street = StringSlot("street")
       val zip = StringSlot("zip")
     }
+
+
     val address = new Address
     address.street := "Mass Ave."
 
