@@ -5,11 +5,10 @@ import org.bson.BSONObject
 import collection.JavaConversions._
 import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
 import org.bson.types.BasicBSONList
-import collection.mutable.{ArrayBuffer, HashMap}
-import collection.mutable.{Map => MutableMap}
 import cc.factorie.util.CubbieRefs
 import annotation.tailrec
 import collection.{MapProxy, Map => GenericMap, JavaConversions}
+import collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
 
 
 /**
@@ -19,8 +18,8 @@ import collection.{MapProxy, Map => GenericMap, JavaConversions}
 trait AbstractMongoCubbieCollection[+C <: Cubbie] extends Iterable[C] {
 
   def findByIds(ids: Seq[Any]): Iterator[C]
-  
-  def findBySlot[T](field:C => Cubbie#Slot[T], values:Seq[T]): Iterator[C]
+
+  def findBySlot[T](field: C => Cubbie#Slot[T], values: Seq[T]): Iterator[C]
 }
 
 /**
@@ -147,8 +146,8 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
     query(new MongoCubbie(_).idsIn(ids))
   }
 
-  def findBySlot[T](field: (C) => Cubbie#Slot[T], values:Seq[T]) = {
-    query(c => new MongoSlot[Cubbie,T](field(c)).valuesIn(values).asInstanceOf[C])
+  def findBySlot[T](field: (C) => Cubbie#Slot[T], values: Seq[T]) = {
+    query(c => new MongoSlot[Cubbie, T](field(c)).valuesIn(values).asInstanceOf[C])
   }
 
 
@@ -419,7 +418,7 @@ object CubbieMongoTest {
       val address = CubbieSlot("address", () => new Address)
       val hobbies = StringListSlot("hobbies")
       val spouse = RefSlot("spouse", () => new Person)
-      val children = InverseSlot("children", (p:Person) => p.father)
+      val children = InverseSlot("children", (p: Person) => p.father)
       val father = RefSlot("father", () => new Person)
     }
     class Address extends Cubbie {
@@ -509,22 +508,27 @@ object CubbieMongoTest {
 
     kid.name := "Kid 2"
 
-    implicit val inverter = new CachedFunction(new LazyInverter(Map(manifest[Person]-> Seq(james,laura,kid))))
+    implicit val inverter = new CachedFunction(new LazyInverter(Map(manifest[Person] -> Seq(james, laura, kid))))
 
     println(james.children.value)
-    
+
     val mongoInverter = new CachedFunction(new LazyMongoInverter(Map(manifest[Person] -> persons)))
 
     println(james.children.value(mongoInverter))
-    
+
+    val indexedInverter = new CachedFunction(new IndexedLazyInverter(Map(manifest[Person] -> Seq(james, laura, kid))))
+
+    println(james.children.value(indexedInverter))
+
 
   }
 }
 
-class CachedFunction[F,T](val delegate:F=>T) extends Map[F, T] {
-  val cache = new HashMap[F,T]
+class CachedFunction[F, T](val delegate: F => T) extends Map[F, T] {
+  val cache = new HashMap[F, T]
 
   def get(key: F) = Some(cache.getOrElseUpdate(key, delegate(key)))
+
   def iterator = cache.iterator
 
   def -(key: F) = {
@@ -537,12 +541,12 @@ class CachedFunction[F,T](val delegate:F=>T) extends Map[F, T] {
   def +[B1 >: T](kv: (F, B1)) = {
     val result = new CachedFunction(delegate)
     result.cache ++= cache
-    result.cache += kv.asInstanceOf[(F,T)]
+    result.cache += kv.asInstanceOf[(F, T)]
     result
   }
 }
 
-class LazyInverter(val cubbies:PartialFunction[Manifest[Cubbie],Iterable[Cubbie]]) 
+class LazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterable[Cubbie]])
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
     val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
@@ -551,19 +555,49 @@ class LazyInverter(val cubbies:PartialFunction[Manifest[Cubbie],Iterable[Cubbie]
   }
 }
 
-class LazyMongoInverter(val cubbies:PartialFunction[Manifest[Cubbie],AbstractMongoCubbieCollection[Cubbie]],
-                        val cache:GenericMap[Any,Cubbie] = Map.empty)
+class IndexedLazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterable[Cubbie]])
+  extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
+
+
+  val index = new HashMap[(Cubbie#AbstractRefSlot[Cubbie],Any), Seq[Cubbie]]
+  val indexed = new HashSet[Cubbie#AbstractRefSlot[Cubbie]]
+  val prototypes = new HashMap[Manifest[Cubbie],Option[Cubbie]]//cubbies.map(p => p._1 -> p._2.headOption)
+
+  def findCubbiesWhereRefSlotIs(refSlotFunction:Cubbie => Cubbie#AbstractRefSlot[Cubbie],
+                                id:Any,
+                                inWhere:Iterable[Cubbie],
+                                ofType:Manifest[Cubbie]) = {
+    {for (prototype <- prototypes.getOrElseUpdate(ofType, cubbies(ofType).headOption);
+         refSlot = refSlotFunction(prototype)) yield {
+      if (!indexed(refSlot)) {
+        for (c <- cubbies.lift(ofType).getOrElse(Nil); if (refSlotFunction(c).opt == Some(id))) {
+          index(refSlot -> id) = index.getOrElse(refSlot -> id, Nil) :+ c
+        }
+        indexed += refSlot
+      }
+      index.getOrElse(refSlot -> id, Nil)
+    }}.getOrElse(Nil)
+  }
+  
+  def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
+    val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
+    findCubbiesWhereRefSlotIs(typed.slot,typed.cubbie.id, cubbies.lift(typed.manifest).getOrElse(Nil), typed.manifest)
+  }
+}
+
+
+class LazyMongoInverter(val cubbies: PartialFunction[Manifest[Cubbie], AbstractMongoCubbieCollection[Cubbie]],
+                        val cache: GenericMap[Any, Cubbie] = Map.empty)
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
     val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
     val found = for (coll <- cubbies.lift(slot.manifest)) yield {
-      val raw = coll.findBySlot(c => slot.slot(c).asInstanceOf[Cubbie#RefSlot[Cubbie]],Seq(typed.cubbie.id))
-      raw.map(c => cache.getOrElse(c.id,c)).toSeq
+      val raw = coll.findBySlot(c => slot.slot(c).asInstanceOf[Cubbie#RefSlot[Cubbie]], Seq(typed.cubbie.id))
+      raw.map(c => cache.getOrElse(c.id, c)).toSeq
     }
     found.getOrElse(Nil)
   }
 }
-
 
 
 object GraphLoader {

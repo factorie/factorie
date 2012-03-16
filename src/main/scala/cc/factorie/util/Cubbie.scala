@@ -86,6 +86,8 @@ class Cubbie {
 
   def newId = java.util.UUID.randomUUID.timestamp
 
+  var slots:List[AbstractSlot[Any]] = Nil
+  
   final def id: Any = {
     // "final" because we need to ensure that the _id gets inserted into the
     var result = _rawGet(idName) // avoid getOrElseUpdate because it will allocate a closure object
@@ -98,13 +100,16 @@ class Cubbie {
   }
 
   //todo: maps throw exceptions when key is not defined, need to adapt requirement
-  def id_=(i: Any): Unit = {
+  def id_=(i: Any) {
     /*require(_rawGet(idName) == null); */ _rawPut(idName, i)
   }
 
   // Classes for holding key:value pairs
 
   trait AbstractSlot[+T] {
+
+    slots = slots :+ this
+
     def value: T
 
     def name: String
@@ -138,6 +143,11 @@ class Cubbie {
     def value: T
 
     def :=(value: T): Unit
+
+    def :=!(value: T)(implicit preHook:Function2[Cubbie#AbstractSlot[Any],T,Unit]) {
+      preHook(this,value)
+      this := value
+    }
 
     def apply(value: T): thisCubbie.type = set(value)
 
