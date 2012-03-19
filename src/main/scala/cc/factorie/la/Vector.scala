@@ -39,7 +39,7 @@ trait Vector  {
   def map[B](p: Double => B) = toSeq.map(p)
   def min = toSeq.min
   def max = toSeq.max
-  def oneNorm: Double = activeElements.foldLeft(0.0)(_ + _._2)
+  def oneNorm: Double = activeElements.foldLeft(0.0)(_ + _._2.abs)
   def update(index:Int, value:Double): Unit = throw new Error("Method update not defined on class "+getClass.getName)
   def increment(index:Int, incr:Double): Unit = update(index, apply(index) + incr)
   def +=(v:Vector): Unit = throw new Error("Method +=(Vector) not defined on class "+getClass.getName)
