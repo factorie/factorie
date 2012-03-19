@@ -66,6 +66,8 @@ trait GenericMessage extends cc.factorie.Marginal {
 
   def ranked: Seq[(Any, Double)] = domain.map(v => v -> score(v)).sortBy(-_._2)
 
+  def normalized: GenericMessage = this
+
   def isUniform = false
 
   def isDeterministic = false
@@ -169,6 +171,12 @@ class DiscreteMessage[DV <: DiscreteVariable](val variable: DV, val scores: Vect
       result -= prob * log(prob)
     }
     result
+  }
+
+  override def normalized = {
+    val m = scores.max
+    scores += (-m)
+    this
   }
 
   lazy val Z = scores.map(exp(_)).sum

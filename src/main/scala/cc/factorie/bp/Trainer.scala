@@ -208,7 +208,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
   def updateGradients(batch: Int) = {
     var obj = 0.0
     assert(batch < batches.length, "%d should be less than %d".format(batch, batches.length))
-    for (vg <- batches(batch).map(_.valueAndGradient)) {
+    for (vg <- batches(batch).par.map(_.valueAndGradient).seq) {
       vg._2.foreach(g => projectGradient(g._1, g._2))
       obj += vg._1
       val pg = vg._2
