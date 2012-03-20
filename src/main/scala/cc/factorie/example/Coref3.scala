@@ -134,6 +134,7 @@ object Coref3 {
   class AuthorEntityCubbie(author:AuthorEntity=null) extends HierEntityCubbie{
     //_map = new HashMap[String,Any]
     //val name = new StringListSlot("name")
+    protected var _author:AuthorEntity = author
     val firstName = new StringSlot("firstName")
     val middleName = new StringSlot("middleName")
     val lastName = new StringSlot("lastName")
@@ -142,6 +143,7 @@ object Coref3 {
     val bagOfCoAuthors = new CubbieSlot("bagOfCoAuthors", () => new BagOfWordsCubbie)
     val canopies = new StringListSlot("canopies")
     val priority = new DoubleSlot("priority")
+    val children = new InverseSlot("children",(a:AuthorEntityCubbie) => a.entityRef)
     if(author!=null)storeEntity(author)
     def fetchAuthorEntity(cr:CubbieRefs):AuthorEntity = fetchEntity(cr).asInstanceOf[AuthorEntity]
     override def newEntity:Entity = new AuthorEntity
@@ -155,6 +157,7 @@ object Coref3 {
       e.attr[BagOfVenues] ++= bagOfVenues.value.fetch
       e.attr[BagOfCoAuthors] ++= bagOfCoAuthors.value.fetch
       e.asInstanceOf[AuthorEntity].priority = priority.value
+      _author=e.asInstanceOf[AuthorEntity]
     }
     override def finishStoreEntity(e:Entity) : Unit = {
       super.finishStoreEntity(e)
@@ -167,6 +170,7 @@ object Coref3 {
       canopies := e.asInstanceOf[AuthorEntity].canopyAttributes.map(_.canopyName).toSeq
       priority := e.asInstanceOf[AuthorEntity].priority
     }
+    def getAuthor:AuthorEntity=_author
   }
   class BagOfWordsCubbie extends Cubbie{
     //_map = new HashMap[String,Any]
@@ -213,11 +217,11 @@ object Coref3 {
       def initialsMisMatch(c:String,p:String):Boolean = (c!=null && p!=null && c.length>0 && p.length>0 && c.charAt(0)!=p.charAt(0))
       def nameMisMatch(c:String,p:String):Boolean = (c!=null && p!=null && c.length>1 && p.length>1 && c != p)
     },
-    // compatibility between parent/child bows
+    // Compatibility between parent/child co-author bags. Currently an approximation, but well worth the speed.
     new TemplateWithStatistics3[EntityRef,BagOfCoAuthors,BagOfCoAuthors] {
       def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfCoAuthors], er.dst.attr[BagOfCoAuthors]) else Nil
-      def unroll2(childBow:BagOfCoAuthors) = if(childBow.entity.parentEntity!=null)Factor(childBow.entity.parentEntityRef, childBow, childBow.entity.parentEntity.attr[BagOfCoAuthors]) else Nil
-      def unroll3(parentBow:BagOfCoAuthors) = for(e<-parentBow.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[BagOfCoAuthors],parentBow)
+      def unroll2(childBow:BagOfCoAuthors) = Nil//if(childBow.entity.parentEntity!=null)Factor(childBow.entity.parentEntityRef, childBow, childBow.entity.parentEntity.attr[BagOfCoAuthors]) else Nil
+      def unroll3(parentBow:BagOfCoAuthors) = Nil // for(e<-parentBow.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[BagOfCoAuthors],parentBow)
       def score(s:Stat): Double = {
         val childBow = s._2
         val parentBow = s._3
@@ -230,10 +234,11 @@ object Coref3 {
         result
       }
     },
+    // Compatibility between parent/child venue bags. Currently an approximation, but well worth the speed.
     new TemplateWithStatistics3[EntityRef,BagOfVenues,BagOfVenues] {
       def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfVenues], er.dst.attr[BagOfVenues]) else Nil
-      def unroll2(childBow:BagOfVenues) = if(childBow.entity.parentEntity!=null)Factor(childBow.entity.parentEntityRef, childBow, childBow.entity.parentEntity.attr[BagOfVenues]) else Nil
-      def unroll3(parentBow:BagOfVenues) = for(e<-parentBow.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[BagOfVenues],parentBow)
+      def unroll2(childBow:BagOfVenues) = Nil//if(childBow.entity.parentEntity!=null)Factor(childBow.entity.parentEntityRef, childBow, childBow.entity.parentEntity.attr[BagOfVenues]) else Nil
+      def unroll3(parentBow:BagOfVenues) = Nil//for(e<-parentBow.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[BagOfVenues],parentBow)
       def score(s:Stat): Double = {
         val childBow = s._2
         val parentBow = s._3
@@ -264,7 +269,7 @@ object Coref3 {
     }
     */
     new TemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
-      val entityExistenceCost = 2.0 //8
+      val entityExistenceCost = 4.0 //2 //8
       val subEntityExistenceCost = 0.5
       def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[IsMention])
       def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[IsMention])
@@ -308,6 +313,19 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
         
   }
 }
+*/
+  /*
+  class ParallelAuthorSampler(model:TemplateModel){
+    val samplers = new ArrayBuffer(String,AuthorSampler)
+    protected def createBatches(ents:Seq[AuthorEntity], numBatches:Int):Unit ={
+      val canopies = new HashMap[String,AuthorEntity]
+      for(e<-ents)canopies.getOrElse(cname,{val a = new ArrayBuffer[AuthorEntity];canopies(cname)=a;a}) += e
+      var largestBatch = canopies.foldLeft()
+    }
+    def process(ents:Seq[AuthorEntity],a:Int,b:Int,c:Int):Unit ={
+      
+    }
+  }
 */
   class AuthorSampler(model:TemplateModel) extends HierCorefSampler[AuthorEntity](model){
     protected var canopies = new HashMap[String,ArrayBuffer[AuthorEntity]]
@@ -355,18 +373,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       }
       */
     }
-    override def nextEntity(context:AuthorEntity=null):AuthorEntity={
-      var result = if(context==null)sampleEntity(entities) else sampleEntity(canopies(context.defaultCanopy))
-      /*
-      if(context!=null){
-        println("canopy size: "+canopies(context.defaultCanopy).size)
-        println("canopy name: "+context.defaultCanopy)
-        println("e1: "+context.attr[FullName].lastName)
-        println("e2: "+result.attr[FullName].lastName)
-      }
-      */
-      result
-    }
+    override def nextEntity(context:AuthorEntity=null):AuthorEntity=if(context==null)sampleEntity(entities) else sampleEntity(canopies(context.defaultCanopy))
     override def mergeLeft(left:AuthorEntity,right:AuthorEntity)(implicit d:DiffList):Unit ={
       val oldParent = right.parentEntity
       right.setParentEntity(left)(d)
@@ -405,6 +412,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       var e = entity.parentEntity
       while(e!=null){
         e.attr[BagOfCoAuthors].add(entity.attr[BagOfCoAuthors].value)(d)
+        e.attr[BagOfVenues].add(entity.attr[BagOfVenues].value)(d)
         e = e.parentEntity
       }
     }
@@ -412,6 +420,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       var e = formerParent
       while(e!=null){
         e.attr[BagOfCoAuthors].remove(parting.attr[BagOfCoAuthors].value)
+        e.attr[BagOfVenues].remove(parting.attr[BagOfVenues].value)
         e = e.parentEntity
       }
     }
@@ -443,7 +452,21 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     }*/
   }
 
+/*
+  class Rexa2Canopy(rexa2:Rexa2, name:String){
+    protected val col = rexa2.mongoDB.getCollection(name)
+    protected val canopyCollection = new MongoCubbieCollection(coll,() => new CanopyCubbie, (c:CanopyCubbie) => Seq(Seq(c.canopies)))
+    var canopyCollections = new ArrayBuffer[MongoCubbieCollection]
+    def addCanopyCollection[T<:HasCanopyAttributes](entityWithCanopy:T,name:String):Unit ={
+      val coll = rexa2.mongoDB.getCollection(name)
+      val mcoll = new MongoCubbieCollection[](coll,)
+    }
+  }
+  */
   class Rexa2(mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie"){
+    import MongoCubbieImplicits._
+    import MongoCubbieConverter._
+    protected var _author2cubbie = new HashMap[Any,AuthorEntityCubbie]
     protected var cache = new CubbieRefs
     protected var authorCache = new HashMap[Any,AuthorEntity]
     protected val mongoConn = new Mongo(mongoServer,mongoPort)
@@ -452,7 +475,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       val coll = mongoDB.getCollection("authors")
       coll.drop()
       //new MongoCubbieCollection(coll,() => new AuthorEntityCubbie)
-      new MongoCubbieCollection(coll,() => new AuthorEntityCubbie,(a:AuthorEntityCubbie) => Seq(Seq(a.canopies),Seq(a.priority),Seq(a.entityRef)))
+      new MongoCubbieCollection(coll,() => new AuthorEntityCubbie,(a:AuthorEntityCubbie) => Seq(Seq(a.canopies),Seq(a.priority),Seq(a.entityRef))) with LazyCubbieConverter[AuthorEntityCubbie]
     }
     def populateREXAFromDir(bibDir:File):Unit ={
       for(f<-bibDir.listFiles)populateREXA(f)
@@ -467,35 +490,89 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
         }
       }
     }
-    /*
-    def nextBatch:Seq[AuthorEntity]={
-      cache = new CubbieRefs
-      authorCache = new HashMap[Any,AuthorEntity]
-      var topk = topK(100)
-      var result = new ArrayBuffer[]
-      for(author <- topk)
+    def wasLoadedFromDB(author:AuthorEntity):Boolean = _author2cubbie.contains(author.id)
+    def author2cubbie(author:AuthorEntity):AuthorEntityCubbie = _author2cubbie.getOrElse(author.id,null)
+    protected def reset:Unit ={
+      var author2cubbie = new HashMap[Any,AuthorEntityCubbie]
+      var cache = new CubbieRefs
     }
-    protected def topK(k:Int):Seq[AuthorEntity]={
-      var count = 0
-      var result = new ArrayBuffer[AuthorEntity]
-      val iter = authors.coll.find().sort(Map("priority" -> -1))
-      while(count<k && iter.hasNext){
-        result += iter.next
-        count += 1
+    def nextBatch(n:Int=10):Seq[AuthorEntity] ={
+      reset
+      //val canopies = authors.query(_.entityRef(null)).sort(_.priority)
+      val canopyHash = new HashSet[String]
+      var result = new ArrayBuffer[AuthorEntityCubbie]
+      var topPriority = new ArrayBuffer[AuthorEntityCubbie]
+      val sorted = authors.query(null,_.canopies.select.priority.select).sort(_.priority(-1))
+      for(i <- 0 until n)topPriority += sorted.next
+      sorted.close
+      for(author <- topPriority){
+        println("priority: "+author.priority)
+        for(name <- author.canopies.value){
+          if(!canopyHash.contains(name)){
+            result ++= authors.query(_.canopies(Seq(name)))
+            canopyHash += name
+            println("added canopy name: "+author.canopies)
+            println("  result size: "+result.size)
+          }
+        }
       }
+      val initialAuthors = (for(authorCubbie<-result) yield authorCubbie.fetchAuthorEntity(cache)).toSeq
+      for(cubbie <- result){
+        cache += cubbie.id -> cubbie
+        _author2cubbie += cubbie.getAuthor -> cubbie
+      }
+      initialAuthors
+      /*
+      cache = new CubbieRefs
+      val inverter = new CachedFunction(new LazyMongoInverter(Map(manifest[AuthorEntityCubbie] -> authors)))
+      def loadChildren(author:AuthorEntityCubbie):Unit ={
+        for(childCubbie <- author.children.value)
+          loadChildren(childCubbie)
+      }
+
+      implicit val refs = GraphLoader.load(result,{
+        case a:AuthorEntityCubbie => Seq()
+        case a:AuthorEntityCubbie => a.children.value(inverter).toSeq//.map(GraphLoader.SlotInCollection(_,authors)).toSeq
+        //case a:AuthorEntityCubbie => a.children.value(inverter).map(GraphLoader.SlotInCollection(_.entityRef,authors)).toSeq
+        //case a:AuthorEntityCubbie => a.children.value(inverter).map((entityRef:AuthorEntityCubbie#RefSlot)=>GraphLoader.SlotInCollection(entityRef,authors)).toSeq
+        //case a:AuthorEntityCubbie => a.children.value(inverter).map((aec:AuthorEntityCubbie)=>MongoCubbieImplicits.toMongoRefSlot(aec)).toSeq
+      })
+      //todo: de-ref
+      //def cubbie2slot(c:AuthorEntityCubbie):RefSlot = {}
+      println("REF SIZE: "+refs.size)
+      refs.map(_._2).toSeq
+*/
     }
-  */
+    /*
     def nextBatch:Seq[AuthorEntity]={
       cache = new CubbieRefs
       val result = for(authorCubbie<-authors) yield authorCubbie.fetchAuthorEntity(cache)
       result.toSeq
-    }
+    }*/
     def store(entitiesToStore:Iterable[AuthorEntity]):Unit ={
       changePriorities(entitiesToStore)
       val deletedByInference = entitiesToStore.filter(!_.isConnected)
       val updatedOrAddedByInference = entitiesToStore.filter(_.isConnected)
-      for(deleted <- deletedByInference)authors.updateDelta(cache.getOrElse(deleted.id,null).asInstanceOf[AuthorEntityCubbie],null)//todo: modify api to mongo cubbies to delete
-      for(updatedOrAdded <- updatedOrAddedByInference)authors.updateDelta(cache.getOrElse(updatedOrAdded.id,null).asInstanceOf[AuthorEntityCubbie],new AuthorEntityCubbie(updatedOrAdded)) //update delta code to handle null
+      for(deleted <- deletedByInference){
+        if(wasLoadedFromDB(deleted)){
+          println("deleting...")
+          authors.remove(_.idIs(author2cubbie(deleted).id))
+          //authors.remove(_.idIs(cache(author2cubbie(deleted.id).id)))
+          //authors.remove(_.idIs(deleted.id))
+          //authors.remove(cache.getOrElse(deleted.id,null).asInstanceOf[AuthorEntityCubbie],null)
+        }
+      }
+      //todo: modify api to mongo cubbies to delete
+      for(updatedOrAdded <- updatedOrAddedByInference){
+        val old = cache.getOrElse(updatedOrAdded.id,null).asInstanceOf[AuthorEntityCubbie]
+        val newAuthor = new AuthorEntityCubbie(updatedOrAdded)
+        println("OLD AUTHOR: "+old)
+        println("NEW AUTHOR: "+newAuthor)
+        println("NEW AUTHOR: "+eagerDBO(newAuthor))
+        if(old==null)authors += newAuthor
+        else authors.updateDelta(old,newAuthor)
+        //authors.updateDelta(cache.getOrElse(updatedOrAdded.id,null).asInstanceOf[AuthorEntityCubbie],new AuthorEntityCubbie(updatedOrAdded))
+      } //update delta code to handle null
     }
     def changePriorities(entities:Iterable[AuthorEntity]):Unit ={
       for(e<-entities)e.priority = scala.math.exp(e.priority - random.nextDouble)
@@ -649,13 +726,13 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
 
 
   def main(args:Array[String]): Unit = {
-    val numSteps=500000
+    val numSteps=100000
     val rexa2 = new Rexa2
-    //rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/all3/"))
-    //rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
+//    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/all3/"))
+//    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
     rexa2.populateREXA(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
     var time = System.currentTimeMillis
-    val mentions =rexa2.nextBatch
+    val mentions =rexa2.nextBatch(10)
     println("Loading " + mentions.size + " took " + (System.currentTimeMillis -time)/1000L+"s.")
     //for(m <- mentions)if(!m.isObserved) throw new Exception("DB is singletons, should be entirely mentions.")
     /*
@@ -674,6 +751,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     //println("Entities:\n"+predictor.getEntities)
     println("\nPRINTING ENTITIES")
     printEntities(predictor.getEntities)
+    checkIntegrity(predictor.getEntities)
     println("Inferred entities: "+predictor.getEntities.size)
     //predictor.performMaintenance
     rexa2.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[AuthorEntity]))
@@ -709,6 +787,41 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     result
   }
 
+  def checkIntegrity(entities:Seq[Entity]):Unit ={
+    var numErrors = 0
+    for(e<-entities){
+      if(checkIntegrity(e))
+        numErrors += 1
+    }
+    println("Number of errors: "+numErrors)
+  }
+  def checkIntegrity(e:Entity):Boolean ={
+    var result = false
+    if(e.isRoot && e.isConnected){
+      val bag = new ComposableBagOfWords
+      //println("NUM DESC: "+e.descendantsOfClass[Entity].size)
+      for(m <- e.descendantsOfClass[Entity]){
+        if(m.isObserved || m.childEntitiesSize==0)
+          bag.addBag(m.attr[BagOfCoAuthors].value)
+      }
+      if(e.isObserved)bag.addBag(e.attr[BagOfCoAuthors].value)
+      bag.incorporateBags
+      val actualBag = e.attr[BagOfCoAuthors].value.asHashMap
+      var count = 0.0
+      for((k,v) <- actualBag){
+        count += scala.math.abs(bag(k)-v)
+      }
+      if(count!=0.0){
+        println("ERROR COUNT: "+count)
+        println("computed exhaustively: "+bag)
+        println("taken from entity    : "+actualBag)
+        println("ENTITY\n")
+        println(entityString(e))
+        result=true
+      }
+    }
+    result
+  }
   def printEntities(entities:Seq[Entity]):Unit = {
     var count = 0
     for(e <- entities.filter((e:Entity) => {e.isRoot && e.isConnected})){
@@ -731,6 +844,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       //result.append("(exists?="+e.isConnected+" mention?="+e.isObserved+" #children:"+e.subEntitiesSize+")")
     }else if(e.isObserved){
       result.append("Mention["+e.attr[FullName]+"]")
+      //result.append(" Title="+e.asInstanceOf[AuthorEntity].paper.title)
     }else{
       result.append("SubEntity["+e.attr[FullName]+"]")
       if(e.childEntitiesSize==0)result.append("-SUBENTITY ERROR")//throw new Exception("ERROR SUB ENTITY IS EMPTY")

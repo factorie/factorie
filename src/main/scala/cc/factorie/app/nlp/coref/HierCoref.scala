@@ -41,9 +41,12 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
   protected var deletedEntities:ArrayBuffer[T] = null
   def getEntities = entities.filter(_.isConnected)
   def getDeletedEntities = {
+    val deleted = new HashSet[T]
+    for(d<-deletedEntities)deleted += d
+    for(d<-entities)if(!d.isConnected)deleted += d
     //performMaintenance(entities)
     //deletedEntities
-    null
+    deleted.toSeq
   }
   def infer(numSamples:Int):Unit ={}
   /**Returns a random entity that 'exists'*/
@@ -101,9 +104,24 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
   /**Removes an intermediate node in the tree, merging that nodes children to their grandparent.*/
   def collapse(entity:T)(implicit d:DiffList):Unit ={
     if(entity.parentEntity==null)throw new Exception("Can't collapse a node that is the root of a tree.")
+    val root = entity.entityRoot
+    //println("ROOT1:"+cc.factorie.example.Coref3.entityString(root))
+    //println("entity:"+cc.factorie.example.Coref3.entityString(entity))
+    //println("checking 1")
+    //cc.factorie.example.Coref3.checkIntegrity(entity)
     val oldParent = entity.parentEntity
-    entity.childEntitiesIterator.foreach(_.setParentEntity(entity.parentEntity)(d))
+    //entity.childEntitiesIterator.foreach(_.setParentEntity(entity.parentEntity)(d))
+    //println("  num children: "+entity.childEntitiesSize)
+//    val childrenCopy = new ArrayBuffer[Entity];childrenCopy ++= entity.childEntitiesIterator
+//    for(child <- childrenCopy)child.setParentEntity(entity.parentEntity)(d)
+    for(child <- entity.safeChildEntitiesSeq)child.setParentEntity(entity.parentEntity)(d)
+    //println("checking 2")
+    //cc.factorie.example.Coref3.checkIntegrity(entity)
     entity.setParentEntity(null)(d)
+    //println("checking 3")
+    //cc.factorie.example.Coref3.checkIntegrity(root)
+    //println("ROOT3:"+cc.factorie.example.Coref3.entityString(root))
+
   }
   /**Peels off the entity "right", does not really need both arguments unless we want to error check.*/
   def splitRight(left:T,right:T)(implicit d:DiffList):Unit ={

@@ -15,7 +15,7 @@
 package cc.factorie.app.nlp.coref
 import cc.factorie._
 import cc.factorie.app.nlp._
-import scala.collection.mutable.{ArrayBuffer,ListBuffer}
+import scala.collection.mutable.{ArrayBuffer,ListBuffer,LinkedList}
 import cc.factorie.util.{Cubbie,CubbieRefs}
 import cc.factorie.util.Attr
 
@@ -67,6 +67,8 @@ trait Entity extends Attr {
   // The following two methods will work even if childEntities is null
   def childEntitiesSize: Int = { val se = childEntities; if (se eq null) 0 else se.size }
   def childEntitiesIterator: Iterator[Entity] = { val se = childEntities; if (se eq null) Iterator.empty else se.iterator }
+  //the other iterator will break if you call setParentEntity(someEntity)(d) on a child while you are iterating over it, a common use case in MCMC.
+  def safeChildEntitiesSeq: Seq[Entity]={val r = new ArrayBuffer[Entity];for(e<-childEntitiesIterator)r += e;r}
   // Next two methods should only be called in EntityRef
   def _addChildEntity(e:Entity)(implicit d:DiffList): Unit = _ensuredChildEntities.add(e)
   def _removeChildEntity(e:Entity)(implicit d:DiffList): Unit = _ensuredChildEntities.remove(e)
