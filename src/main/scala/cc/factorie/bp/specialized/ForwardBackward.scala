@@ -1,7 +1,7 @@
 package cc.factorie.bp.specialized
 
 import cc.factorie._
-import cc.factorie.maths.{sumLogProb, sumLogProbs}
+import cc.factorie.maths.sumLogProbs
 import la.{SparseVector, DenseVector, Vector}
 import scala.math.exp
 import collection.mutable.{HashMap, Map}
@@ -21,16 +21,14 @@ object ForwardBackward {
     // exponentiate all alphas and betas, normalize them, and then multiply them together, normalize, and store as marginals
     var vi = 0
     while (vi < alpha.size) {
-      var logsum = Double.NegativeInfinity
       var i = 0
       while (i < ds) {
         marginal(vi)(i) = alpha(vi)(i) + beta(vi)(i)
-        logsum = sumLogProb(logsum, marginal(vi)(i))
         i += 1
       }
 
       // normalize the node marginal
-      logNormalize(marginal(vi), logsum)
+      logNormalize(marginal(vi), sumLogProbs(marginal(vi)))
       vi += 1
     }
 
@@ -44,36 +42,33 @@ object ForwardBackward {
 
     var vi = 0
     while (vi < alpha.size - 1) {
-      var logsum = Double.NegativeInfinity
       var i = 0
       while (i < ds) {
         var j = 0
         while (j < ds) {
-          val tmp = alpha(vi)(i) + transWeights(i,j) + beta(vi+1)(j)
-          marginal(vi)(i * ds + j) = tmp
-          logsum = sumLogProb(logsum, tmp)
+          marginal(vi)(i * ds + j) = alpha(vi)(i) + transWeights(i,j) + beta(vi+1)(j)
           j += 1
         }
         i += 1
       }
 
       // normalize the edge marginal
-      logNormalize(marginal(vi), logsum)
+      logNormalize(marginal(vi), sumLogProbs(marginal(vi)))
       vi += 1
     }
 
     marginal
   }
 
-  private def logNormalize(a: Array[Double], logsum: Double) {
+  private def logNormalize(a: Array[Double], logSum: Double) {
     var i = 0
     var sum = 0.0
     while (i < a.length) {
-      a(i) = exp(a(i) - logsum)
-        sum += a(i)
-        i += 1
-      }
-      assert(math.abs(sum - 1.0) < 0.0001, "sum is "+sum)
+      a(i) = exp(a(i) - logSum)
+      sum += a(i)
+      i += 1
+    }
+    assert(math.abs(sum - 1.0) < 0.0001, "sum is "+sum)
   }
 
   private def getLocalScores[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
@@ -82,20 +77,34 @@ object ForwardBackward {
          biasTemplate: TemplateWithDotStatistics1[LV] = null
        ): Array[Array[Double]] = {
 
-    val arrays = Array.fill(vs.size)(Array.fill(vs.head.domain.size)(Double.NaN))
+    val arrays = Array.fill(vs.size)(Array.ofDim[Double](vs.head.domain.size))
     if (biasTemplate ne null) {
       val biasScores = biasTemplate.weights
-      for ((v,vi) <- vs.zipWithIndex) {
-        val localFactor = localTemplate.factors(v).head
-        for ((_,di) <- v.settings.zipWithIndex)
+      var vi = 0
+      while (vi < vs.size) {
+        val localFactor = localTemplate.factors(vs(vi)).head
+        val settings = vs(vi).settings
+        var di = 0
+        while (settings.hasNext) {
+          settings.next()
           arrays(vi)(di) = localFactor.score + biasScores(di)
+          di += 1
+        }
+        vi += 1
       }
     }
     else {
-      for ((v,vi) <- vs.zipWithIndex) {
-        val localFactor = localTemplate.factors(v).head
-        for ((_,di) <- v.settings.zipWithIndex)
+      var vi = 0
+      while (vi < vs.size) {
+        val localFactor = localTemplate.factors(vs(vi)).head
+        val settings = vs(vi).settings
+        var di = 0
+        while (settings.hasNext) {
+          settings.next()
           arrays(vi)(di) = localFactor.score
+          di += 1
+        }
+        vi += 1
       }
     }
 
@@ -162,7 +171,7 @@ object ForwardBackward {
       }
     }
 
-    val expMap: Map[DotFamily, Vector] = Map(localTemplate -> nodeExp, transTemplate -> edgeExp)
+    val expMap: Map[DotFamily, Vector] = HashMap(localTemplate -> nodeExp, transTemplate -> edgeExp)
 
     val logZ = sumLogProbs(alpha(alpha.length-1))
 
