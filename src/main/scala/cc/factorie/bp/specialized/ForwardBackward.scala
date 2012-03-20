@@ -183,8 +183,9 @@ object ForwardBackward {
     val localScores = getLocalScores(vs, localTemplate, biasTemplate)
     val transScores = getTransScores(transTemplate)
 
-    val alpha = Array.fill(vs.size)(Array.fill(ds)(Double.NaN))
-    val beta = Array.fill(vs.size)(Array.fill(ds)(Double.NaN))
+    val alpha = Array.fill(vs.size)(Array.ofDim[Double](ds))
+    val beta = Array.fill(vs.size)(Array.ofDim[Double](ds))
+    val tmpCol = Array.ofDim[Double](ds)
     
     // forward
     var vi = 0
@@ -197,13 +198,12 @@ object ForwardBackward {
     while (vi < vs.size) {
       i = 0
       while(i < ds) {
-        var newAlpha = Double.NegativeInfinity
         var j = 0
         while (j < ds) {
-          newAlpha = sumLogProb(newAlpha, alpha(vi-1)(j) + transScores(j,i) + localScores(vi)(i))
+          tmpCol(j) = alpha(vi-1)(j) + transScores(j,i) + localScores(vi)(i)
           j += 1
         }
-        alpha(vi)(i) = newAlpha
+        alpha(vi)(i) = sumLogProbs(tmpCol)
         i += 1
       }
       vi += 1
@@ -220,18 +220,16 @@ object ForwardBackward {
     while (vi >= 0) {
       i = 0
       while (i < ds) {
-        var newBeta = Double.NegativeInfinity
         var j = 0
         while (j < ds) {
-          newBeta = sumLogProb(newBeta, localScores(vi)(i) + transScores(i, j) + beta(vi+1)(j))
+          tmpCol(j) = localScores(vi)(i) + transScores(i, j) + beta(vi+1)(j)
           j += 1
         }
-        beta(vi)(i) = newBeta
+        beta(vi)(i) = sumLogProbs(tmpCol)
         i += 1
       }
       vi -= 1
     }
-
 
     (alpha, beta)
   }
