@@ -42,7 +42,7 @@ trait GenericMessage extends cc.factorie.Marginal {
     var result = 0.0
     for (x <- domain) {
       val prob = probability(x)
-      result -= prob * log(prob)
+      if(prob > 0.0) result -= prob * log(prob)
     }
     assert(!result.isNaN, () => toString)
     assert(!result.isInfinity, () => toString)
