@@ -50,8 +50,8 @@ class ModelPiece(val vars: Seq[DiscreteVariable with VarWithTargetValue],
     vars.foreach(_.setToTarget(null))
     var score = 0.0
     // TODO currently fT, when f factors and T templates
-    for (dt <- families) {
-      for (factor <- fg.factors) {
+    for (factor <- fg.factors) {
+      for (dt <- families) {
         factor match {
           case f: DotFamily#Factor => {
             if (f.family == dt) score += f.score
