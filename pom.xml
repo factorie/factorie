@@ -34,7 +34,7 @@
     <repository>
       <id>iesl.cs.umass.edu</id>
       <name>IESL repository</name>
-      <url>http://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/</url>
+      <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/</url>
     </repository>
   </repositories>
 
