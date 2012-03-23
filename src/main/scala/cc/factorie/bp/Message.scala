@@ -42,7 +42,7 @@ trait GenericMessage extends cc.factorie.Marginal {
     var result = 0.0
     for (x <- domain) {
       val prob = probability(x)
-      if(prob > 0.0) result -= prob * log(prob)
+      if(prob > 0.0 && !log(prob).isNaN) result -= prob * log(prob)
     }
     assert(!result.isNaN, () => toString)
     assert(!result.isInfinity, () => toString)
@@ -163,7 +163,7 @@ class DiscreteMessage[DV <: DiscreteVariable](val variable: DV, val scores: Vect
     }
   }
 
-  override lazy val entropy = {
+  override def entropy = {
     var result = 0.0
     for (i <- 0 until scores.size) {
       val score = scores(i)
@@ -176,10 +176,20 @@ class DiscreteMessage[DV <: DiscreteVariable](val variable: DV, val scores: Vect
   override def normalized = {
     val m = scores.max
     scores += (-m)
+    _computeZ = true
     this
   }
 
-  lazy val Z = scores.map(exp(_)).sum
+  var _computeZ = true
+  var _Z: Double = Double.NaN
+
+  def Z = {
+    if(_computeZ) {
+      _Z = scores.map(exp(_)).sum
+      _computeZ = false
+    }
+    _Z
+  }
 
   def deterministicValue: Option[Value] =
     if (scores.exists(s => s.isPosInfinity)) {

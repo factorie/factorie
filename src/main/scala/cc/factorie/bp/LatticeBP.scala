@@ -138,7 +138,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
     else outgoingDeltas.map(m => {
       val dynamicRange = m.dynamicRange
       assert(!dynamicRange.isNaN)
-      log(dynamicRange)
+      if(m.isDeterministic) 0.0 else log(dynamicRange)
     }).max
   }
 
