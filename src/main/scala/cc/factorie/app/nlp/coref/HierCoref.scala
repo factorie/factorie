@@ -73,6 +73,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
     es++=cleanEntities
    // println("  removed "+(oldSize-es.size)+ " disconnected entities.")
   }
+  //def newDiffList2 = new cc.factorie.example.DebugDiffList
   /**This function randomly generates a list of jumps/proposals to choose from.*/
   def settings(c:Null) : SettingIterator = new SettingIterator {
     val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit];
@@ -98,7 +99,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
     changes += {(d:DiffList) => {}} //give the sampler an option to reject all other proposals
     var i = 0
     def hasNext = i < changes.length
-    def next(d:DiffList) = { val d = new DiffList; changes(i).apply(d); i += 1; d }
+    def next(d:DiffList) = {val d = newDiffList; changes(i).apply(d); i += 1; d }
     def reset = i = 0
   }
   /**Removes an intermediate node in the tree, merging that nodes children to their grandparent.*/
