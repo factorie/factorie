@@ -86,7 +86,7 @@ object PerceptronPOS {
     }
 
     val sentenceLabels: Array[Seq[PosLabel]] = documents.flatMap(_.sentences).map(_.posLabels).filter(_.size > 0).toArray
-    val learner = new AveragedStructuredPerceptron[PosLabel] {
+    val learner = new StructuredPerceptron[PosLabel] with ParameterAveraging {
       val model = PosModel
       def predict(vs: Seq[PosLabel]) = predictSentence(vs)
     }
@@ -106,29 +106,15 @@ object PerceptronPOS {
       testSavePrint("iteration=" + i)
       println("Done in " + (System.currentTimeMillis()-start)/1000.0 + "s\n")
 
-      learner.setToAveraged()
+      learner.setWeightsToAverage()
       println("Testing with averaged weights...")
       start = System.currentTimeMillis()
       testSavePrint("iteration=" + i + "-averaged")
       println("Done in " + (System.currentTimeMillis()-start)/1000.0 + "s\n")
       println("-----------------------")
 
-      learner.unsetAveraged()
+      learner.unsetWeightsToAverage
     }
-
-    /* The following is an example of how to use Stochastic Gradent updates with Perceptron gradients. */
-    /*
-    val pieces = sentenceLabels.map(vs => new PerceptronChainPiece(SGDPosModel.localTemplate, SGDPosModel.transTemplate, vs.toArray))
-    val SGDLearner = new SGDTrainer(pieces, SGDPosModel.familiesOfClass[DotFamily], 50, 0.01, 1, 1.0, 0.0)
-    for (i <- 0 until iterations) {
-      val t = System.currentTimeMillis()
-      SGDLearner.iterate()
-      println("Time per iter: "+(System.currentTimeMillis() - t)/1000.0)
-      val t2 = System.currentTimeMillis()
-      testSavePrint("foo")
-      println("Time per evaluation: "+(System.currentTimeMillis()-t2)/1000.0)
-    }
-    */
   }
 
   def test(documents: Seq[Document], label: String = "test"): Unit = {
