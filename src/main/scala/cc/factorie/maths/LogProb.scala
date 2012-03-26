@@ -106,25 +106,30 @@ trait LogProb {
     val LOGTOLERANCE = 30.0
 
     val len = vals.length
-    var max = Double.NegativeInfinity
+    var max = vals(0)
     var maxIdx = 0
-    for (i <- 0 until len if (vals(i) > max)) {
-      max = vals(i)
-      maxIdx = i
+    var i = 1
+    while (i < len) {
+      val v = vals(i)
+      if (v > max) {
+        max = v
+        maxIdx = i
+      }
+      i += 1
     }
     var anyAdded = false
     var intermediate = 0.0
     val cutoff = max - LOGTOLERANCE
-    for (i <- 0 until maxIdx if (vals(i) >= cutoff)) {
-      anyAdded = true
-      intermediate += math.exp(vals(i) - max)
-    }
-    for (i <- (maxIdx + 1) until len if (vals(i) >= cutoff)) {
-      anyAdded = true
-      intermediate += math.exp(vals(i) - max)
+    i = 0
+    while (i < len) {
+      if (vals(i) >= cutoff && i != maxIdx) {
+        anyAdded = true
+        intermediate += math.exp(vals(i) - max)
+      }
+      i += 1
     }
     if (anyAdded)
-      max + math.log(1.0 + intermediate)
+      max + math.log1p(intermediate)
     else
       max
   }

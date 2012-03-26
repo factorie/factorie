@@ -49,16 +49,8 @@ class ModelPiece(val vars: Seq[DiscreteVariable with VarWithTargetValue],
     //val diff = new DiffList
     vars.foreach(_.setToTarget(null))
     var score = 0.0
-    // TODO currently fT, when f factors and T templates
-    for (dt <- families) {
-      for (factor <- fg.factors) {
-        factor match {
-          case f: DotFamily#Factor => {
-            if (f.family == dt) score += f.score
-          }
-          case _ =>
-        }
-      }
+    for (factor <- fg.factors) {
+      score += factor.score
     }
 
     //diff.undo

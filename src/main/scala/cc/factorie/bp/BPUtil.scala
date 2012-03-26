@@ -11,7 +11,7 @@ import cc.factorie.la.DenseVector
 
 object BPUtil {
 
-  def message[V <: DiscreteVariable](v: V, scores: Seq[Double]): GenericMessage = new DiscreteMessage(v, DenseVector(scores))
+  def message[V <: DiscreteVariable](v: V, scores: Array[Double]): GenericMessage = new DiscreteMessage(v, DenseVector(scores))
 
   def uniformMessage: GenericMessage = UniformMessage
 

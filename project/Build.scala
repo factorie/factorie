@@ -30,9 +30,11 @@ object Build extends sbt.Build {
       scalaVersion  := "2.9.1",
       scalacOptions := Seq("-deprecation", "-unchecked", "-encoding", "utf8"),
       resolvers     ++= Dependencies.resolutionRepos,
+      checksums in update := Nil,  // todo: this is because bibtex.jar sha1 is incorrect in http://dev-iesl/../thirdparty repo
       libraryDependencies ++= Seq(
         Compile.jdom,
         Compile.mongodb,
+        Compile.bibtex,
         Test.junit,
         Test.scalatest
       )
@@ -40,20 +42,22 @@ object Build extends sbt.Build {
 }
 
 object Dependencies {
+
   val resolutionRepos = Seq(
     ScalaToolsSnapshots,
-    "IESL rel  repo"    at "http://iesl.cs.umass.edu:8081/nexus/content/repositories/releases/",
-    "IESL snap repo"    at "http://iesl.cs.umass.edu:8081/nexus/content/repositories/snapshots/"
+    "IESL rel  repo"    at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases/",
+    "IESL snap repo"    at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots/",
+    "IESL thirdparty"   at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/"
   )
-
-
   
+
   object Compile {
     val commonsIo    = "commons-io"                %  "commons-io"        % "2.0.1"
     val jettison     = "org.codehaus.jettison"     %  "jettison"          % "1.3"
     val jdom         = "org.jdom"                  %  "jdom"              % "1.1"
     val casbah       = "com.mongodb.casbah"        %% "casbah"            % "2.1.5-1"
     val mongodb      = "org.mongodb"               % "mongo-java-driver"  % "2.7.3"
+    val bibtex       = "bibtex"                    % "bibtex"             % "20040801"
   }
 
   object Test {

@@ -13,7 +13,6 @@
    limitations under the License. */
 
 package cc.factorie
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.la.SparseBinaryVector
 import cc.factorie.la.SparseIndexedVector
 
@@ -24,28 +23,28 @@ import cc.factorie.la.SparseIndexedVector
 trait CategoricalVectorVar[T] extends DiscreteVectorVar with VarAndValueType[CategoricalVectorVar[T],CategoricalVectorValue[T]] {
   type CategoryType = T
   def domain: CategoricalVectorDomain[T]
-   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
-       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
-   def skipNonCategories = false
-   protected def doWithIndexSafely(elt:T, v: Double, update: Boolean): Unit = {
-     val i = domain.dimensionDomain.index(elt)
-     if (i == CategoricalDomain.NULL_INDEX) {
-       if (!skipNonCategories)
-         throw new Error("CategoricalVectorVar += value " + value + " not found in domain " + domain)
-     } else {
-       if (update)
-         vector.update(i, v)
-       else
-         vector.increment(i, v)
-     }
-   }
-   def update(elt:T, newValue:Double): Unit = doWithIndexSafely(elt, newValue, true)
-   def increment(elt:T, incr:Double): Unit = doWithIndexSafely(elt, incr, false)
-   def +=(elt:T): Unit = increment(elt, 1.0)
-   def ++=(elts:Iterable[T]): Unit = elts.foreach(this.+=(_))
-   def activeCategories: Seq[T] = vector.activeDomain.toSeq.map(i => domain.dimensionDomain.getCategory(i))
-   //override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString+"="+i).mkString(printName+"(", ",", ")")
-   override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString).mkString(printName+"(", ",", ")")
+  /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
+      If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
+  def skipNonCategories = false
+  protected def doWithIndexSafely(elt:T, v: Double, update: Boolean): Unit = {
+    val i = domain.dimensionDomain.index(elt)
+    if (i == CategoricalDomain.NULL_INDEX) {
+      if (!skipNonCategories)
+        throw new Error("CategoricalVectorVar += value " + value + " not found in domain " + domain)
+    } else {
+      if (update)
+        vector.update(i, v)
+      else
+        vector.increment(i, v)
+    }
+  }
+  def update(elt:T, newValue:Double): Unit = doWithIndexSafely(elt, newValue, true)
+  def increment(elt:T, incr:Double): Unit = doWithIndexSafely(elt, incr, false)
+  def +=(elt:T): Unit = increment(elt, 1.0)
+  def ++=(elts:Iterable[T]): Unit = elts.foreach(this.+=(_))
+  def activeCategories: Seq[T] = vector.activeDomain.toSeq.map(i => domain.dimensionDomain.getCategory(i))
+  //override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString+"="+i).mkString(printName+"(", ",", ")")
+  override def toString = vector.activeDomain.map(i => domain.dimensionDomain.getCategory(i).toString).mkString(printName+"(", ",", ")")
 }
 
 abstract class CategoricalVectorVariable[T] extends VectorVariable with CategoricalVectorVar[T] {

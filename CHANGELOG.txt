@@ -6,6 +6,7 @@ New in version 0.10.2:
 
 * BP
   - Refactoring to be faster and cleaner interface, with bugfixes
+  - Caching of scores and values
   - MaxProduct works even when multiple MAP states
   - TimingBP to compare performance of the different variants of BP in the codebase
   - maxMarginal with threshold, to support PR curves

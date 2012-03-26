@@ -109,7 +109,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
       // val mess = marginalize(node.variable, incoming)
       for (e <- edges) {
         val mess = if (incoming(e).isDeterministic) incoming(e) else result.get(e) / incoming(e)
-        setOutgoing(e, mess)
+        setOutgoing(e, mess.normalized)
       }
       _remarginalize = false
     }
@@ -138,7 +138,7 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
     else outgoingDeltas.map(m => {
       val dynamicRange = m.dynamicRange
       assert(!dynamicRange.isNaN)
-      log(dynamicRange)
+      if(m.isDeterministic) 0.0 else log(dynamicRange)
     }).max
   }
 
@@ -258,7 +258,7 @@ trait SumFactor extends MessageFactor {
     while (i < discreteVarying.length) {
       val dv = discreteVarying(i)
       val vid = dv._2
-      result.set(vid, BPUtil.message(dv._1, scores(i).map(s => log(s)).toSeq))
+      result.set(vid, BPUtil.message(dv._1, scores(i).map(s => log(s)).toArray))
       i += 1
     }
     // deterministic messages for the fixed neighbors
@@ -350,8 +350,8 @@ trait MaxFactor extends MessageFactor {
         case l: MaxProductLattice =>
           if (l.finalPass) {
             BPUtil.deterministicMessage(dv._1, dv._1.domain.getValue(scores(i).toSeq.indexOfMaxByDouble(d => d)))
-          } else BPUtil.message(dv._1, scores(i).toSeq)
-        case _ => BPUtil.message(dv._1, scores(i).toSeq)
+          } else BPUtil.message(dv._1, scores(i))
+        case _ => BPUtil.message(dv._1, scores(i))
       }
       result.set(vid, msg)
     }
@@ -425,7 +425,7 @@ class MessageNode(val variable: Variable, val varying: Set[DiscreteVariable]) {
         for (other <- edges; if other != e) {
           msg = msg * _incoming.get(other)
         }
-        _outgoing.set(e, msg)
+        _outgoing.set(e, msg.normalized)
       }
       _remarginalize = false
     }

@@ -5,9 +5,22 @@ import org.bson.BSONObject
 import collection.JavaConversions._
 import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
 import org.bson.types.BasicBSONList
-import collection.mutable.{ArrayBuffer, HashMap}
-import collection.mutable.{Map => MutableMap}
-import collection.JavaConversions
+import cc.factorie.util.CubbieRefs
+import annotation.tailrec
+import collection.{MapProxy, Map => GenericMap, JavaConversions}
+import collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
+
+
+/**
+ * Covariant interface to cubbie collection
+ * @tparam C Cubbie type of collection.
+ */
+trait AbstractMongoCubbieCollection[+C <: Cubbie] extends Iterable[C] {
+
+  def findByIds(ids: Seq[Any]): Iterator[C]
+
+  def findBySlot[T](field: C => Cubbie#Slot[T], values: Seq[T]): Iterator[C]
+}
 
 /**
  * A MongoCubbieCollection stores cubbies in a Mongo collection.
@@ -22,7 +35,7 @@ import collection.JavaConversions
 class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
                                          val constructor: () => C,
                                          val indices: C => Seq[Seq[C#AbstractSlot[Any]]] = (c: C) => Seq.empty[Seq[C#AbstractSlot[Any]]])
-  extends Iterable[C] with MongoCubbieConverter[C] {
+  extends AbstractMongoCubbieCollection[C] with MongoCubbieConverter[C] {
 
   import MongoCubbieConverter._
 
@@ -129,6 +142,25 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
     new CursorIterator(coll.find(queryDBO, selectDBO))
   }
 
+  def findByIds(ids: Seq[Any]) = {
+    query(new MongoCubbie(_).idsIn(ids))
+  }
+
+  def findBySlot[T](field: (C) => Cubbie#Slot[T], values: Seq[T]) = {
+    query(c => new MongoSlot[Cubbie, T](field(c)).valuesIn(values).asInstanceOf[C])
+  }
+
+
+  /**
+   * Removes all items in the collection that match the given query.
+   * @param query a function that maps a cubbie to a cubbie that should be matched.
+   * @return unit
+   */
+  def remove(query:C => C) ={
+    val queryDBO = safeDbo(query)
+    coll.remove(queryDBO)
+  }
+
   /**
    * Updates the collection as specified.
    * @param query a function that returns a cubbie to match
@@ -170,9 +202,9 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
       new CursorIterator(underlying.sort(fieldsDBo))
     }
 
-//    def sort() {
-//      underlying.sort()
-//    }
+    //    def sort() {
+    //      underlying.sort()
+    //    }
 
     def close() {
       underlying.close()
@@ -315,6 +347,17 @@ class MongoSlot[C <: Cubbie, V](val slot: C#Slot[V]) {
     slot.cubbie
   }
 
+  def valuesIn(values: Seq[V]): C = {
+    slot.cubbie._map(slot.name) = Map("$in" -> values)
+    slot.cubbie
+  }
+
+
+}
+
+class MongoRefSlot[C <: Cubbie, A <: Cubbie](val slot: C#AbstractRefSlot[A]) {
+  def in(coll: MongoCubbieCollection[A]): GraphLoader.SlotInCollection[A] = GraphLoader.SlotInCollection(slot, coll)
+
 }
 
 /**
@@ -360,8 +403,16 @@ object MongoCubbieImplicits {
 
   implicit def toMongoSlot[C <: Cubbie, V](slot: C#Slot[V]) = new MongoSlot(slot)
 
+  implicit def toMongoRefSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractRefSlot[A]) = new MongoRefSlot(slot)
+
   implicit def toMongoCubbie[C <: Cubbie](cubbie: C) = new MongoCubbie(cubbie)
 
+}
+
+object DerefImplicits {
+  implicit def toMongoRefSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractRefSlot[A]) = new MongoRefSlot(slot) {
+    def -->(implicit cache: GenericMap[Any, Cubbie]): A = slot.deref(cache)
+  }
 }
 
 object CubbieMongoTest {
@@ -372,23 +423,26 @@ object CubbieMongoTest {
   def main(args: Array[String]) {
 
     class Person extends Cubbie {
-      _map = new HashMap[String, Any]
       val name = StringSlot("name")
       val age = IntSlot("age")
       val address = CubbieSlot("address", () => new Address)
       val hobbies = StringListSlot("hobbies")
       val spouse = RefSlot("spouse", () => new Person)
+      val children = InverseSlot("children", (p: Person) => p.father)
+      val father = RefSlot("father", () => new Person)
     }
     class Address extends Cubbie {
-      _map = new HashMap[String, Any]
       val street = StringSlot("street")
       val zip = StringSlot("zip")
     }
+
     val address = new Address
     address.street := "Mass Ave."
 
     val james = new Person
     val laura = new Person
+    val kid = new Person
+
     james.name := "James"
     james.id = 1
     james.age := 50
@@ -401,8 +455,12 @@ object CubbieMongoTest {
     laura.hobbies := Seq("James")
     laura.address := address
 
+    kid.name := "Kid"
+    kid.id = 3
+
     james.spouse ::= laura
     laura.spouse ::= james
+    kid.father ::= james
 
 
     val mongoConn = new Mongo("localhost", 27017)
@@ -413,6 +471,7 @@ object CubbieMongoTest {
 
     persons += james
     persons += laura
+    persons += kid
 
     persons.update(_.name.set("James"), _.name.update("Jamie"))
 
@@ -420,7 +479,7 @@ object CubbieMongoTest {
       println(p._map)
     }
 
-    val queryResult = persons.query(_.age.set(50), _.age.select.name.select)
+    val queryResult = persons.query(_.age(50), _.age.select.name.select)
     //    val queryResult = persons.query(_.age.set(50))
     for (p <- queryResult) {
       println(p._map)
@@ -444,36 +503,206 @@ object CubbieMongoTest {
     println(persons.query(_.idIs(1)).mkString("\n"))
 
 
+    implicit val refs = GraphLoader.load(Seq(james), {
+      case p: Person => Seq(p.spouse in persons)
+    })
+
+    println("James' spouse")
+    println(james.spouse.deref)
+    println("James' spouse's spouse")
+    println(james.spouse.deref.spouse.deref)
+
+    //or with fancy deref implicits
+    //    import DerefImplicits._
+    //    println(james.spouse-->spouse-->name.value)
+
+    kid.name := "Kid 2"
+
+    implicit val inverter = new CachedFunction(new LazyInverter(Map(manifest[Person] -> Seq(james, laura, kid))))
+
+    println(james.children.value)
+
+    val mongoInverter = new CachedFunction(new LazyMongoInverter(Map(manifest[Person] -> persons)))
+
+    println(james.children.value(mongoInverter))
+
+    val indexedInverter = new CachedFunction(new IndexedLazyInverter(Map(manifest[Person] -> Seq(james, laura, kid))))
+
+    println(james.children.value(indexedInverter))
+
+    //in memory caching
+    implicit val indexer = new Indexer({
+      case p:Person => Seq(p.name, p.age)
+    })
+
+    //these :=! calls inform the indexer of changes
+    james.age :=! 51
+    james.name :=! "Jamison"
+
+    println(indexer.index)
+
   }
 }
 
-class NestedDiffMap(arg1: collection.Map[String, Any], arg2: collection.Map[String, Any]) extends collection.mutable.Map[String, Any] {
+class CachedFunction[F, T](val delegate: F => T) extends Map[F, T] {
+  val cache = new HashMap[F, T]
 
-  def toDiff(arg1: Any, arg2: Any): Any = {
-    null
-    //
-    //    arg2 match {
-    //      case m:Map[_,_] => new NestedDiffMap(null,m.asInstanceOf[collection.Map[String,Any]])
-    //      case s:Seq[_] => s.map(toDiff(_))
-    //      case _ => value2
-    //    }
+  def get(key: F) = Some(cache.getOrElseUpdate(key, delegate(key)))
+
+  def iterator = cache.iterator
+
+  def -(key: F) = {
+    val result = new CachedFunction(delegate)
+    result.cache ++= cache
+    result.cache -= key
+    result
   }
 
-  def get(key: String) = {
-    val value1 = arg1.get(key)
-    val value2 = arg2.get(key)
-    if (value1 != value2) {
-      value2 match {
-        case Some(m: Map[_, _]) => Some(new NestedDiffMap(null, m.asInstanceOf[collection.Map[String, Any]]))
-        case _ => value2
+  def +[B1 >: T](kv: (F, B1)) = {
+    val result = new CachedFunction(delegate)
+    result.cache ++= cache
+    result.cache += kv.asInstanceOf[(F, T)]
+    result
+  }
+}
+
+class LazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterable[Cubbie]])
+  extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
+  def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
+    val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
+    val result = cubbies.lift(slot.manifest).getOrElse(Nil).filter(c => typed.slot(c).opt == Some(typed.cubbie.id))
+    result
+  }
+}
+
+class IndexedLazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterable[Cubbie]])
+  extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
+
+
+  val index = new HashMap[(Cubbie#AbstractRefSlot[Cubbie],Any), Seq[Cubbie]]
+  val indexed = new HashSet[Cubbie#AbstractRefSlot[Cubbie]]
+  val prototypes = new HashMap[Manifest[Cubbie],Option[Cubbie]]//cubbies.map(p => p._1 -> p._2.headOption)
+
+  def findCubbiesWhereRefSlotIs(refSlotFunction:Cubbie => Cubbie#AbstractRefSlot[Cubbie],
+                                id:Any,
+                                inWhere:Iterable[Cubbie],
+                                ofType:Manifest[Cubbie]) = {
+    {for (prototype <- prototypes.getOrElseUpdate(ofType, cubbies(ofType).headOption);
+         refSlot = refSlotFunction(prototype)) yield {
+      if (!indexed(refSlot)) {
+        for (c <- cubbies.lift(ofType).getOrElse(Nil); if (refSlotFunction(c).opt == Some(id))) {
+          index(refSlot -> id) = index.getOrElse(refSlot -> id, Nil) :+ c
+        }
+        indexed += refSlot
       }
-    } else None
+      index.getOrElse(refSlot -> id, Nil)
+    }}.getOrElse(Nil)
+  }
+  
+  def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
+    val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
+    findCubbiesWhereRefSlotIs(typed.slot,typed.cubbie.id, cubbies.lift(typed.manifest).getOrElse(Nil), typed.manifest)
+  }
+}
+
+
+class LazyMongoInverter(val cubbies: PartialFunction[Manifest[Cubbie], AbstractMongoCubbieCollection[Cubbie]],
+                        val cache: GenericMap[Any, Cubbie] = Map.empty)
+  extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
+  def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
+    val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
+    val found = for (coll <- cubbies.lift(slot.manifest)) yield {
+      val raw = coll.findBySlot(c => slot.slot(c).asInstanceOf[Cubbie#RefSlot[Cubbie]], Seq(typed.cubbie.id))
+      raw.map(c => cache.getOrElse(c.id, c)).toSeq
+    }
+    found.getOrElse(Nil)
+  }
+}
+
+class Indexer(val indices:Cubbie=>Seq[Cubbie#AbstractSlot[Any]]) extends Function2[Cubbie#AbstractSlot[Any],Any,Unit] {
+
+  case class SlotKey(cubbieClass:Class[Cubbie],name:String, value:Any) {
+  }
+
+  def slotKey(slot:Cubbie#AbstractSlot[Any], value:Any) = {
+    SlotKey(slot.cubbie.getClass.asInstanceOf[Class[Cubbie]],slot.name, value)
+  }
+
+  val index = new HashMap[SlotKey,List[Cubbie]]
+
+  //val index = new HashMap[]
+  def apply(slot: Cubbie#AbstractSlot[Any], value: Any) {
+    //todo: odd cast
+    val typed = slot.cubbie.asInstanceOf[Cubbie]
+    if (indices(typed).contains(slot)) {
+      val key = slotKey(slot,value)
+      index(key) = index.getOrElse(key,Nil) :+ typed
+    }
+  }
+}
+
+
+object GraphLoader {
+
+  case class SlotInCollection[+R <: Cubbie](slot: Cubbie#AbstractRefSlot[R], coll: AbstractMongoCubbieCollection[R])
+
+  type Refs = GenericMap[Any, Cubbie]
+
+
+  /**
+   * Loads a cache from ids to cubbies based on the root objects and a neighborhood function.
+   * @param roots the cubbies to start with.
+   * @param neighbors the neigborhood function from cubbies to (refslot,collection) pairs.
+   * @param maxDepth How far from the root are we allowed to travel. If maxDepth == 0 no ids are added to the cache, for
+   * maxDepth == 1 only the roots are added to the cache, for maxDeptn == 2 the roots immediate children etc.
+   * @param oldRefs an existing cache. Cubbies with ids in this cache will not be loaded/traversed.
+   * @return a cache that maps ids to the cubbie objects in the graph defined by the roots, neighborhood function and
+   * maximum depth.
+   */
+  @tailrec
+  def load(roots: TraversableOnce[Cubbie],
+           neighbors: PartialFunction[Cubbie, Seq[SlotInCollection[Cubbie]]],
+           maxDepth: Int = Int.MaxValue,
+           oldRefs: Refs = Map.empty): Refs = {
+
+    if (maxDepth == 0) {
+      oldRefs
+    }
+    else if (maxDepth == 1) {
+      //fill-up roots into refs
+      oldRefs ++ roots.map(c => c.id -> c).toMap
+    }
+    else {
+      //fill-up roots into refs
+      var refs = oldRefs ++ roots.map(c => c.id -> c).toMap
+
+      //mapping from collections to the ids that need to be loaded
+      val colls2ids = new HashMap[AbstractMongoCubbieCollection[Cubbie], List[Any]]
+
+      //gather ids to load for each collection
+      for (c <- roots) {
+        for (slots <- neighbors.lift(c)) {
+          for (slot <- slots) {
+            for (idRef <- slot.slot.opt) {
+              if (!refs.isDefinedAt(idRef)) {
+                colls2ids(slot.coll) = colls2ids.getOrElse(slot.coll, Nil) :+ idRef
+              }
+            }
+          }
+        }
+      }
+
+      //now do loading
+      var loaded: List[Cubbie] = Nil
+      for ((coll, ids) <- colls2ids) {
+        loaded = loaded ++ coll.findByIds(ids).toList
+      }
+
+      //instantiate the yield
+      if (loaded.size > 0) load(loaded, neighbors, maxDepth - 1, refs) else refs
+    }
+
   }
 
 
-  def iterator = null
-
-  def +=(kv: (String, Any)) = null
-
-  def -=(key: String) = null
 }

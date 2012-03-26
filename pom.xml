@@ -34,7 +34,7 @@
     <repository>
       <id>iesl.cs.umass.edu</id>
       <name>IESL repository</name>
-      <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/thirdparty/</url>
+      <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/</url>
     </repository>
   </repositories>
 
@@ -84,12 +84,12 @@
     <repository>
       <id>ieslnexus</id>
       <name>IESL Nexus repostory</name>
-      <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/releases</url>
+      <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases</url>
     </repository>
     <snapshotRepository>
       <id>ieslnexus</id>
       <name>IESL Nexus repostory</name>
-      <url>http://iesl.cs.umass.edu:8081/nexus/content/repositories/snapshots</url>
+      <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots</url>
     </snapshotRepository>
     <site>
       <id>ieslwww</id>
@@ -166,7 +166,7 @@
                 <launcher>
                   <id>hier-coref-demo</id>
                   <mainClass>cc.factorie.example.Coref3</mainClass>
-                  <jvmArgs><jvmArg>-Xmx1g</jvmArg></jvmArgs>
+                  <jvmArgs><jvmArg>-Xmx4g</jvmArg></jvmArgs>
                 </launcher>
                 <launcher>
                   <id>cubbie-test</id>

@@ -18,14 +18,28 @@ import cc.factorie._
 /** A vector, for holding a sequence of Doubles and performing various linear algebra operations.
     See also @see cc.factorie.generative.Counts
     @author Andrew McCallum */
-trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
+trait Vector  {
   def length: Int
   def activeDomainSize: Int
   def activeDomain: Iterable[Int]
   def forActiveDomain(f: (Int)=>Unit): Unit = activeDomain.foreach(f(_))
   def activeElements: Iterator[(Int,Double)]
   def dot(v:Vector): Double
-  def oneNorm: Double = activeElements.foldLeft(0.0)(_ + _._2)
+  def apply(i: Int): Double
+  class VectorSeq(v: Vector) extends collection.mutable.IndexedSeq[Double] {
+    def apply(i: Int) = v(i)
+    def length:Int = v.length
+    def update(i: Int, d: Double) { v.update(i, d) }
+  }
+  val _seq = new VectorSeq(this)
+  def toSeq = _seq
+  def iterator: Iterator[Double] = toSeq.iterator
+  def exists(P: Double => Boolean): Boolean = toSeq.exists(P)
+  def size = length
+  def map[B](p: Double => B) = toSeq.map(p)
+  def min = toSeq.min
+  def max = toSeq.max
+  def oneNorm: Double = activeElements.foldLeft(0.0)(_ + _._2.abs)
   def update(index:Int, value:Double): Unit = throw new Error("Method update not defined on class "+getClass.getName)
   def increment(index:Int, incr:Double): Unit = update(index, apply(index) + incr)
   def +=(v:Vector): Unit = throw new Error("Method +=(Vector) not defined on class "+getClass.getName)
@@ -41,6 +55,8 @@ trait Vector extends scala.collection.mutable.IndexedSeq[Double] {
     case ref:AnyRef => eq(ref)
     case _ => false
   }
+
+
 }
 
 
@@ -78,7 +94,7 @@ object OuterProductMath {
   }
   
   def outerProductArray(i1:Int, a1width:Int, a2:Array[Int], s2:Int, a2width:Int) = {
-    var arr = new Array[Int](s2)
+    val arr = new Array[Int](s2)
     var i = 0
     val offset = i1 * a2width
     while (i < s2) {

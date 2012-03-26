@@ -27,13 +27,13 @@ abstract class TokenSpanMentionCubbie extends TokenSpanCubbie {
   def newTokenSpanMention(doc:Document, start:Int, length:Int): TokenSpanMention
   def storeTokenSpanMention(tsm:TokenSpanMention): this.type = {
     storeTokenSpan(tsm)
-    entityRef := tsm.superEntity.id
+    entityRef := tsm.parentEntity.id
     this
   }
   def fetchTokenSpanMention(doc:Document): TokenSpanMention = {
     val tsm = newTokenSpanMention(doc, start.value, length.value)
     throw new Error("Not yet implemented")
-    tsm.superEntity.setSuperEntity(null)(null)
+    tsm.parentEntity.setParentEntity(null)(null)
     finishFetchTokenSpan(tsm)
     tsm
   }
