@@ -32,8 +32,8 @@
 
 
     <repository>
-      <id>iesl.cs.umass.edu</id>
-      <name>IESL repository</name>
+      <id>dev-iesl.cs.umass.edu</id>
+      <name>dev-iesl.cs.umass.edu</name>
       <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/</url>
     </repository>
   </repositories>
@@ -82,13 +82,13 @@
 
   <distributionManagement>
     <repository>
-      <id>ieslnexus</id>
-      <name>IESL Nexus repostory</name>
+      <id>dev-iesl.cs.umass.edu</id>
+      <name>dev-iesl.cs.umass.edu</name>
       <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases</url>
     </repository>
     <snapshotRepository>
-      <id>ieslnexus</id>
-      <name>IESL Nexus repostory</name>
+      <id>dev-iesl.cs.umass.edu</id>
+      <name>dev-iesl.cs.umass.edu</name>
       <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots</url>
     </snapshotRepository>
     <site>
