@@ -70,7 +70,7 @@ trait RandomDistributions {
   }
 
   /** Draw a single sample from multinomial "a".  Assumes that the elements of "a" already sum to 1.0. */
-  def nextDiscrete (a:IndexedSeq[Double])(implicit r:Random): Int = {
+  @deprecated("Very inefficient due to boxing") def nextDiscrete (a:IndexedSeq[Double])(implicit r:Random): Int = {
     var b = 0.0; val s = nextUniform(r); var i = 0
     while (b <= s && i < a.length) { b += a(i); i += 1 }
     assert(i > 0)

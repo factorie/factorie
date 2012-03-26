@@ -14,6 +14,7 @@
 
 package cc.factorie
 import cc.factorie.generative._
+import cc.factorie.generative.Proportions
 
 // BPInfer is a factory for BPInferencers
 // BPInferencer is specific to a model and some variables
@@ -49,7 +50,7 @@ object Infer extends InferVariables
 
 
 class IndependentDiscreteLattice extends GenerativeFactorModel {
-  def marginal(d:DiscreteVariable): Proportions = this.parentFactor(d) match {
+  def marginal(d:DiscreteVariable): cc.factorie.generative.Proportions = this.parentFactor(d) match {
     case f:Discrete.Factor => f._2
   }
 }
@@ -68,7 +69,7 @@ object InferIndependentDiscrete extends Infer[DiscreteVariable,Nothing] {
     d := origValue
     distribution
   }
-  def proportions(d:DiscreteVariable, model:Model): Proportions = new DenseProportions(array(d, model))
+  def proportions(d:DiscreteVariable, model:Model): cc.factorie.generative.Proportions = new DenseProportions(array(d, model))
   def apply(d:DiscreteVariable, model:Model): IndependentDiscreteLattice = {
     implicit val lattice = new IndependentDiscreteLattice
     d ~ Discrete(proportions(d, model))

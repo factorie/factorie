@@ -15,6 +15,9 @@
 package cc.factorie.maths
 import cc.factorie._
 
+// TODO All of these methods to boxing/unboxing.
+// They should be deleted. -akm
+
 trait IndexedSeqOps {
 
   private type IS = scala.collection.mutable.IndexedSeq[Double]

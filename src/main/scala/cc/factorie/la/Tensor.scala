@@ -14,85 +14,63 @@
 
 package cc.factorie.la
 import cc.factorie._
+import cc.factorie.util._
 
-// Just some preliminary notes on the upcoming "unflattening" of parameter and discrete statistics representations...
+// Preliminary version of the upcoming "unflattening" of parameter and discrete statistics representations...
 
-// TODO Beware of "equals" in IndexedSeq, though
-trait Tensor extends IndexedSeq[Double] {
+// Note: Many Tensor-like methods are actually implemented in DoubleSeq
+trait Tensor extends DoubleSeq {
+  def numDimensions: Int
   def dimensions: Array[Int]
-  private var _default = 0.0
-  def default: Double = _default
-  //def toDenseArray: Array[Double]
+  // For handling sparsity
+  def activeDomain: IntSeq
+  def activeDomains: Array[IntSeq]
+  def isDense: Boolean
+  def activeDomainSize: Int = activeDomain.length // Should be overridden for efficiency in many subclasses
+  /** The default value at indices not covered by activeDomain.  Subclasses may override this  */
+  def defaultValue: Double = 0.0
+  def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
+  def activeElements: Iterator[(Int,Double)] = (for (i <- activeDomain.toArray) yield (i, apply(i))).iterator
+  def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = throw new Error("Not yet implemented.")
+  // Override various methods that can use activeDomain for extra efficiency // TODO More of these should be overridden
+  override def sum: Double = 
+    if (isDense) super.sum
+    else { val d = activeDomain; var s = 0.0; var i = 0; while (i < d.length) { s += apply(d(i)); i += 1 }; s } // assumes non-active are zero
+  override def max: Double = 
+    if (isDense) super.max
+    else { val d = activeDomain; var m = defaultValue; var i = 0; while (i < d.length) { if (!(m >= apply(d(i)))) m = apply(d(i)); i += 1 }; m }
+  // TODO Consider methods like +, -, *, /
+  def stringPrefix = "Tensor"
+  override def toString = this.asSeq.mkString(stringPrefix+"(", ",", ")")
 }
 
-object Tensor {
-  def outer(t1:Tensor, t2:Tensor): Tensor = null
-  def outer(t1:Tensor, t2:Tensor, t3:Tensor): Tensor = null
-  def outer(t1:Tensor, t2:Tensor, t3:Tensor, t4:Tensor): Tensor = null
-}
+/** Used by Proportions, where apply() is specially defined to make update() dangerous; hence this isn't fully Mutable. */
+trait IncrementableTensor extends Tensor with IncrementableDoubleSeq
 
-trait Tensor1 extends Tensor {
-  def dim1: Int
-  def dimensions = Array(dim1)
-  final def length: Int = dim1
-  def apply(i:Int): Double
-  def update(i:Int, v:Double): Unit
-}
+trait MutableTensor extends IncrementableTensor with MutableDoubleSeq
 
-trait Tensor2 extends Tensor with IndexedSeq[Double] {
-  def dim1: Int
-  def dim2: Int
-  def dimensions = Array(dim1, dim2)
-  def apply(i:Int, j:Int): Double
-  def apply(i:Int): Double = apply(i % dim1, i / dim2)
-  def length = dim1 * dim2
-  def update(i:Int, j:Int, v:Double): Unit
-  def update(i:Int, v:Double): Unit = update(i % dim1, i / dim2, v)
-}
-
-trait Tensor3 extends Tensor {
-  def dim1: Int
-  def dim2: Int
-  def dim3: Int
-  def dimensions = Array(dim1, dim2, dim3)
-  def apply(i:Int, j:Int, k:Int): Double
-  def update(i:Int, j:Int, k:Int, v:Double): Unit
-}
-
-trait Tensor4 extends Tensor {
-  def dim1: Int
-  def dim2: Int
-  def dim3: Int
-  def dim4: Int
-  def dimensions = Array(dim1, dim2, dim3, dim4)
-  def apply(i:Int, j:Int, k:Int, l:Int): Double
-  def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit
+trait TensorWithMutableDefaultValue extends Tensor {
+  def defaultValue_=(v:Double): Unit
+  def defaultValue_+=(v:Double): Unit = defaultValue_=(defaultValue + v)
+  def defaultValue_*=(v:Double): Unit = defaultValue_=(defaultValue * v)
 }
 
 
-trait DenseTensorLike1 extends Tensor1 {
-  private var _values = new Array[Double](dim1)
-  def apply(i:Int) = _values(i)
-  def update(i:Int, v:Double): Unit = _values(i) = v
-  def outer(t1:Tensor1): Tensor2 = {
-    val t2 = new DenseTensor2(dim1, t1.dim1)
-    for (i <- 0 until dim1; j <- 0 until t1.dim1) t2(i,j) = this(i) * t1(j)
-    t2
-  }
+/** A lazy product of a Vector and a scalar.
+    @author Andrew McCallum */
+class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor {
+  def numDimensions: Int = tensor numDimensions
+  def dimensions: Array[Int] = tensor.dimensions
+  // For handling sparsity
+  def activeDomain: IntSeq = tensor.activeDomain
+  def activeDomains: Array[IntSeq] = tensor.activeDomains
+  def isDense: Boolean = tensor.isDense
+  def length = tensor.length
+  //def activeDomainSize: Int = vector.activeDomainSize
+  def dot(t:Tensor): Double = tensor.dot(t) * scalar
+  def *(scalar:Double) = new TensorTimesScalar(tensor, scalar*this.scalar)
+  //override def update(i:Int, v:Double): Unit = tensor.update(idx, value/scalar)
+  //override def +=(v: Vector) { vector += v*(1.0/scalar) }
+  def apply(index:Int) = tensor.apply(index) * scalar
 }
-class DenseTensor1(val dim1:Int) extends DenseTensorLike1
-class SparseTensor1(dim1:Int) extends DenseTensor1(dim1) // TODO Fix this later
-
-trait DenseTensorLike2 extends Tensor2 {
-  private var _values = new Array[Double](dim1*dim2)
-  def apply(i:Int, j:Int): Double = _values(i*dim2+j)
-  def update(i:Int, j:Int, v:Double): Unit = _values(i*dim2+j) = v
-}
-class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2
-class DenseTensor2b(val dim1:Int, val dim2:Int) extends Tensor2 {
-  private var values = Array.fill(dim1)(new DenseTensor1(dim2))
-  def apply(i:Int, j:Int): Double = values(i).apply(j)
-  def update(i:Int, j:Int, v:Double): Unit = values(i).update(j, v)
-}
-
 

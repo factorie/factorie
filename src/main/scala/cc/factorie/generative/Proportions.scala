@@ -14,6 +14,7 @@
 
 package cc.factorie.generative
 import cc.factorie._
+import cc.factorie.util.DoubleSeq
 
 // Proportions is a Seq[Double] that sums to 1.0
 // e.g. DiscreteVariable ~ Discrete(Proportions)
@@ -26,6 +27,8 @@ trait ProportionGeneratingFactor extends GenerativeFactor {
 
 
 trait ProportionsValue extends IndexedSeq[Double] {
+  def length: Int
+  def apply(i:Int): Double
   def sampleInt: Int = maths.nextDiscrete(this)
   def maxInt: Int = { 
     var i = 0; var maxi = 0; var maxd = 0.0
@@ -46,7 +49,7 @@ class ProportionsArrayValue(value:Array[Double]) extends ProportionsValue {
   final def update(i:Int, v:Double) = array(i) = v
 }
 
-trait Proportions extends Variable /*with DiscreteGenerating*/ with IndexedSeqEqualsEq[Double] with ProportionsValue
+trait Proportions extends Variable /*with DiscreteGenerating with IndexedSeqEqualsEq[Double]*/ with ProportionsValue
 with VarAndValueGenericDomain[Proportions,ProportionsValue]
 /*with VarAndValueGenericDomain[Proportions,Seq[Double]]*/ 
 {
@@ -260,8 +263,8 @@ class DenseCountsProportions(len:Int) extends MutableProportions with CountsProp
   def increment(incrs:Seq[Double])(implicit d:DiffList): Unit = {
     forIndex(incrs.length)(i => increment(i, incrs(i)))
   }
-  def set(p:ProportionsValue)(implicit d:DiffList): Unit = { zero(); increment(p) }
-  def set(p:Seq[Double])(implicit d:DiffList): Unit = { zero(); increment(p) }
+  def set(p:ProportionsValue)(implicit d:DiffList): Unit = { zero(); increment(p.toSeq) }
+  def set(p:Seq[Double])(implicit d:DiffList): Unit = { zero(); increment(p.toSeq) }
   def apply(index:Int): Double = { // TODO ! Remove this check below.
     if (index >= _counts.length) 0.0 // This can happen in GrowableDenseCountsProportions when the domain grows but _counts doesn't
     //if (index >= _counts.length) throw new Error("index="+index+" length="+this.length+" _counts.length="+_counts.length)
@@ -290,6 +293,7 @@ class DenseCountsProportions(len:Int) extends MutableProportions with CountsProp
     def redo = { _counts(index) += incr; _countsTotal += incr; assert(_counts(index) >= 0.0) }
   }
 }
+
 
 class GrowableDenseCountsProportions(val dimensionDomain:DiscreteDomain, initialCapacity:Int) extends DenseCountsProportions(initialCapacity) {
   def this(dd:DiscreteDomain) = this (dd, 32)

@@ -14,6 +14,7 @@
 
 package cc.factorie.generative
 import cc.factorie._
+import cc.factorie.util.DoubleSeq
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
@@ -21,7 +22,9 @@ import scala.util.Random
 object PlatedDiscreteMixture extends GenerativeFamily3[DiscreteSeqVar,Mixture[Proportions],DiscreteSeqVariable] {
   self =>
   def pr(ds:Seq[DiscreteValue], mixture:Seq[IndexedSeq[Double]], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => mixture(tuple._2.intValue).apply(tuple._1.intValue)).product
+  //def pr(ds:Seq[DiscreteValue], mixture:Seq[DoubleSeq], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => mixture(tuple._2.intValue).apply(tuple._1.intValue)).product
   def logpr(ds:Seq[DiscreteValue], mixture:Seq[IndexedSeq[Double]], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => math.log(mixture(tuple._2.intValue).apply(tuple._1.intValue))).sum  
+  //def logpr(ds:Seq[DiscreteValue], mixture:Seq[DoubleSeq], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => math.log(mixture(tuple._2.intValue).apply(tuple._1.intValue))).sum  
   def sampledValue(d:DiscreteDomain, mixture:Seq[ProportionsValue], gates:Seq[DiscreteValue]): Seq[DiscreteValue] = 
     for (i <- 0 until gates.length) yield d.getValue(mixture(gates(i).intValue).sampleInt) 
   case class Factor(_1:DiscreteSeqVar, _2:Mixture[Proportions], _3:DiscreteSeqVariable) extends super.Factor with MixtureFactor {

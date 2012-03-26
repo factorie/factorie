@@ -14,6 +14,7 @@
 
 package cc.factorie.generative
 import cc.factorie._
+import cc.factorie.util.DoubleSeq
 import scala.collection.mutable.ArrayBuffer
 
 /*
@@ -26,6 +27,7 @@ trait PlatedDiscreteGeneratingFactor extends GenerativeFactor {
 object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVar,Proportions] {
   self =>
   def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
+  def pr(ds:Seq[DiscreteValue], p:DoubleSeq): Double = ds.map(dv => p(dv.intValue)).product
   def logpr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => math.log(p(dv.intValue))).sum
   def sampledValue(d:DiscreteDomain, length:Int, p:ProportionsValue): Seq[DiscreteValue] = 
     Vector.fill(length)(d.getValue(p.sampleInt))

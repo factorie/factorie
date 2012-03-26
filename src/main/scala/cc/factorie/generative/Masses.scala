@@ -15,6 +15,10 @@
 
 package cc.factorie.generative
 import cc.factorie._
+import cc.factorie.la._
+import cc.factorie.util.{DoubleSeq,IntSeq}
+
+
 
 /** Masses is a Seq[Double] with all elements non-negative.
     Proportions ~ Dirichlet(Masses)
@@ -25,6 +29,7 @@ trait Masses extends Variable with IndexedSeqEqualsEq[Double] with VarAndValueGe
   override def toString = this.mkString(printName+"(", ",", ")")
   def activeDomain: Iterable[Int]
   def massesTotal: Double
+  def apply(i:Int): Double
   //def vector: Vector // TODO Consider IncrementableMasses that actually store the counts in a Vector, ala BinaryVectorVariable
   /*
   def generatedChildValues: Iterable[DiscreteValue] = {
