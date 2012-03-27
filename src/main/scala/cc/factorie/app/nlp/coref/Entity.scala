@@ -100,7 +100,8 @@ trait Entity extends Attr {
 /** This variable should not be changed directly.  Change EntityRef variables, and they will automatically coordinate with ChildEntities variables. */
 class ChildEntities(val entity:Entity) extends SetVariable[Entity]
 
-
+/**An attribute that knows what entity it belongs to*/
+trait EntityAttr extends Variable {def entity:Entity}
 
 // Cubbie storage
 abstract class EntityCubbie extends Cubbie {
@@ -113,9 +114,9 @@ abstract class EntityCubbie extends Cubbie {
     this
   }
   def finishStoreEntity(e:Entity): Unit = {}
-  def fetchEntity(cr:CubbieRefs): Entity = {
-    val e = newEntity //mwick: shouldn't we consult cubbierefs?
-    if(entityRef.cubbie._map.contains(entityRef.name)) //mwick: is there a better way?
+  def fetchEntity(cr:CubbieRefs=null): Entity = {
+    val e = newEntity
+    if(cr!=null && entityRef.cubbie._map.contains(entityRef.name))
       e.setParentEntity(cr(entityRef.value).asInstanceOf[Entity])(null)
     finishFetchEntity(e)
     e

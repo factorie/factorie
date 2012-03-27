@@ -11,8 +11,6 @@ import cc.factorie.app.nlp.coref._
 import cc.factorie.db.mongo._
 import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
 import cc.factorie.util.CubbieRefs
-import example.Coref3.{AuthorEntity, Year}
-import scala.util.parsing.combinator.Parsers
 import java.io.{InputStreamReader, FileInputStream, BufferedReader, File}
 /**
  * Consider a set-up where cosine distance is computed between arrays of bags of words, and each bag is a variable that can go on the diff list.
@@ -143,25 +141,6 @@ object Coref3 {
     }
     def getAuthor:AuthorEntity=_author
   }
-  class BagOfWordsCubbie extends Cubbie{
-    //_map = new HashMap[String,Any]
-    val words = StringListSlot("words")
-    val weights = DoubleListSlot("weights")
-    def store(bag:BagOfWords):BagOfWordsCubbie ={
-      words := bag.iterator.map(_._1).toSeq
-      weights := bag.iterator.map(_._2).toSeq
-      this
-    }
-    def fetch:HashMap[String,Double] ={
-      //val result = new BagOfWordsVariable
-      val result = new HashMap[String,Double]
-      val wordSeq = words.value
-      val weightSeq = weights.value
-      for(i<-0 until wordSeq.size)result += wordSeq(i) -> weightSeq(i)
-      result
-    }
-  }
-
   class HierCorefModel extends TemplateModel(
     new TemplateWithStatistics3[EntityRef,FullName,FullName] {
       def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[FullName], er.dst.attr[FullName]) else Nil
@@ -711,7 +690,6 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       println(this.entityString(m))
       println("   *properties:  (exists?="+m.isConnected+" mention?="+m.isObserved+" #children:"+m.subEntitiesSize+")")
     }*/
-    println("Coref mentions: "+data)
     println("Number of mentions: "+mentions.size)
     val model = new HierCorefModel
     val predictor = new AuthorSampler(model)
@@ -731,18 +709,6 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     // get next n entities from db, and their canopy
     // how much of tree substructure to retrieve, how to represent the "fringe"
   }
-  val data = List(
-    ("Andrew McCallum", List("nips", "icml", "acl")),
-    ("Andrew MacCallum", List("acl", "emnlp")),
-    ("Angrew McCallum", List("emnlp", "kdd")),
-    ("McCallum", List("kdd")),
-    ("A. McCallum", List("uai")),
-    ("Michael Wick", List("kdd", "uai")),
-    ("Mike Wick", List("kdd", "nips")),
-    ("Michael Andrew Wick", List("icml", "nips")),
-    ("Wick", List("siam", "kdd")),
-    ("Wick", List("uai"))
-  )
 
   def load20News(dir:java.io.File):ArrayBuffer[(String,ArrayBuffer[String])] ={
     var result = new ArrayBuffer[(String,ArrayBuffer[String])]
@@ -1135,6 +1101,23 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
   }
 }
 
+class BagOfWordsCubbie extends Cubbie{
+  //_map = new HashMap[String,Any]
+  val words = StringListSlot("words")
+  val weights = DoubleListSlot("weights")
+  def store(bag:BagOfWords):BagOfWordsCubbie ={
+    words := bag.iterator.map(_._1).toSeq
+    weights := bag.iterator.map(_._2).toSeq
+    this
+  }
+  def fetch:HashMap[String,Double] ={
+    val result = new HashMap[String,Double]
+    val wordSeq = words.value
+    val weightSeq = weights.value
+    for(i<-0 until wordSeq.size)result += wordSeq(i) -> weightSeq(i)
+    result
+  }
+}
 //trait BagOfWordsVar extends Variable with VarAndValueGenericDomain[BagOfWordsVar,ProposeAndCombineBags] with Iterable[(String,Double)]
 //class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVar with VarAndValueGenericDomain[BagOfWordsVariable,ProposeAndCombineBags] {
 trait BagOfWordsVar extends Variable with VarAndValueGenericDomain[BagOfWordsVar,SparseBagOfWords] with Iterable[(String,Double)]
