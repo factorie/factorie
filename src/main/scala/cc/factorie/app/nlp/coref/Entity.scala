@@ -49,7 +49,7 @@ class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, 
 trait Entity extends Attr {
   @deprecated("Will be removed.  Entities are not guaranteed to have string names.") def string: String
   def id: Any = this // Override to make some persistent id
-  attr+=new EntityRef(this,null)
+  attr += new EntityRef(this,null)
   def initializeAttributesOfStructure:Unit = {}
   def removedChildHook(entity:Entity)(implicit d:DiffList)={}
   def addedChildHook(entity:Entity)(implicit d:DiffList)={}
@@ -100,7 +100,9 @@ trait Entity extends Attr {
 /** This variable should not be changed directly.  Change EntityRef variables, and they will automatically coordinate with ChildEntities variables. */
 class ChildEntities(val entity:Entity) extends SetVariable[Entity]
 
-
+trait EntityAttr extends Variable {
+  def entity: Entity
+}
 
 // Cubbie storage
 abstract class EntityCubbie extends Cubbie {

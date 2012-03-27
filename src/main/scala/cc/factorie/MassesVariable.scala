@@ -76,11 +76,13 @@ class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSpa
 
 // Masses Variables 
 
-trait MassesVar extends TensorVar with VarAndValueType[MassesVar,Masses] 
-class MassesVariable extends TensorVariable with MassesVar {
-  def this(initialValue:Masses) = { this(); _set(initialValue) }
+trait MassesVar[T<:Masses] extends TensorVar[T] with VarAndValueType[MassesVar[T],T] 
+class MassesVariable[T<:Masses] extends TensorVariable[T] with MassesVar[T] {
+  def this(initialValue:T) = { this(); _set(initialValue) }
+  def domain = TensorDomain
 }
 
+/*
 trait IncrementableMassesVar extends MassesVar with VarAndValueType[IncrementableMassesVar,IncrementableMasses] 
 class IncrementableMassesVariable extends MassesVariable with IncrementableMassesVar { 
   def this(initialValue:IncrementableMasses) = { this(); _set(initialValue) }
@@ -114,3 +116,4 @@ class IncrementableMassesVariable extends MassesVariable with IncrementableMasse
   }
 
 }
+*/

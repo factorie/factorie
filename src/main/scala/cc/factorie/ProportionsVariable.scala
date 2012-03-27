@@ -112,11 +112,12 @@ class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1
 
 // Proportions Variables
 
-trait ProportionsVar extends MassesVar with VarAndValueType[ProportionsVar,Proportions]
-class ProportionsVariable extends MassesVariable with ProportionsVar {
+trait ProportionsVar extends MassesVar[Masses] with VarAndValueType[ProportionsVar,Proportions]
+class ProportionsVariable extends MassesVariable[Masses] with ProportionsVar {
   def this(initialValue:Proportions) = { this(); _set(initialValue) }
 }
 
+/*
 trait IncrementableProportionsVar extends IncrementableMassesVar with VarAndValueType[IncrementableProportionsVar,IncrementableProportions]
 class IncrementableProportionsVariable extends IncrementableMassesVariable with IncrementableProportionsVar {
   def this(initialValue:IncrementableProportions) = { this(); _set(initialValue) }
@@ -130,3 +131,4 @@ class IncrementableProportionsVariable extends IncrementableMassesVariable with 
 object ProportionsVariable {
   def dense1(dim1:Int) = new IncrementableProportionsVariable(new DenseProportions1(dim1)) 
 }
+*/

@@ -76,6 +76,7 @@ trait ArrayOps {
 object ArrayOps extends ArrayOps
 
 trait ArrayWrapper {
+  type A = Array[Double]
   def s: Array[Double]
   //def length = s.length
   //def apply(i:Int) = s(i)

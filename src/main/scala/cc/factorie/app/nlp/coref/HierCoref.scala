@@ -172,3 +172,12 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
   def addEntity(e:T):Unit ={entities += e}
   def isMention(e:Entity):Boolean = e.isObserved
 }
+
+
+
+abstract class HierChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends TemplateWithStatistics3[EntityRef,A,A] {
+  def unroll1(er:EntityRef) = if (er.dst!=null) Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
+  def unroll2(childAttr:A) = Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A])
+  def unroll3(parentAttr:A) = for (e <- parentAttr.entity.childEntities) yield Factor(e.parentEntityRef, e.attr[A], parentAttr)
+}
+

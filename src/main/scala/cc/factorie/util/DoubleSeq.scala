@@ -46,8 +46,13 @@ trait DoubleSeq {
   def oneNorm: Double = { var result = 0.0; var i = 0; while (i < length) { result += math.abs(apply(i)); i += 1}; result }
   //def absNorm: Double = { var result = 0.0; var i = 0; while (i < length) { result += math.abs(apply(i)); i += 1}; result }
   def twoNormSquared: Double = { var result = 0.0; var i = 0; var v = 0.0; while (i < length) { v = apply(i); result += v * v; i += 1}; result }
-  final def twoNorm: Double = math.sqrt(twoNormSquared)
+  def twoNorm: Double = math.sqrt(twoNormSquared)
   final def infinityNorm = max
+  def cosineSimilarity(t:DoubleSeq): Double = {
+    val numerator:Double = this dot t
+    val denominator:Double = this.twoNorm * t.twoNorm
+    if (denominator == 0.0 || denominator != denominator) 0.0 else numerator/denominator
+  }
   def different(t:DoubleSeq, threshold:Double): Boolean = { require(length == t.length); var i = 0; while (i < length) { if (math.abs(apply(i) - t(i)) > threshold) return true; i += 1}; return false }
   def dot(t:DoubleSeq): Double = { assert(length == t.length); var result = 0.0; var i = 0; while (i < length) { result += apply(i) * t(i); i += 1 }; result }
   def maxIndex: Int = { var i = 0; var j = 0; for (i <- 0 until length) if (apply(j) < apply(i)) j = i; j }

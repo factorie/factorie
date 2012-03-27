@@ -18,7 +18,7 @@ import java.io.{InputStreamReader, FileInputStream, BufferedReader, File}
  * Consider a set-up where cosine distance is computed between arrays of bags of words, and each bag is a variable that can go on the diff list.
  */
 
-class FullName(val entity:Entity,f:String,m:String,l:String) extends SeqVariable[String](Seq(f,m,l)){
+class FullName(val entity:Entity,f:String,m:String,l:String) extends SeqVariable[String](Seq(f,m,l)) with EntityAttr {
   def setFirst(s:String)(implicit d:DiffList) = update(0,s)
   def setMiddle(s:String)(implicit d:DiffList) = update(1,s)
   def setLast(s:String)(implicit d:DiffList) = update(2,s)
@@ -44,20 +44,20 @@ object Coref3 {
     val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
   }
   trait CanopyAttribute[T<:Entity]{def entity:T;def canopyName:String}
-  class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity]{
+  class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity] {
     def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
     def initial(s:String):String = if(s!=null && s.length>0)s.substring(0,1) else ""
   }
   /**Attributes/Features of entities*/
-  class Bow(val entity:Entity,ss:Iterable[String]=Nil) extends BagOfWordsVariable(ss)
+  class Bow(val entity:Entity,ss:Iterable[String]=Nil) extends BagOfWordsVariable(ss) with EntityAttr 
   /**Attributes specific to REXA authors*/
-  class Title(val entity:Entity,title:String) extends StringVariable(title)
-  class Year(val entity:Entity,year:Int) extends IntegerVariable(year)
-  class VenueName(val entity:Entity,venueName:String) extends StringVariable(venueName)
+  class Title(val entity:Entity,title:String) extends StringVariable(title) with EntityAttr
+  class Year(val entity:Entity,year:Int) extends IntegerVariable(year) with EntityAttr
+  class VenueName(val entity:Entity,venueName:String) extends StringVariable(venueName) with EntityAttr
   class Bags extends HashMap[String,BagOfWords]
-  class BagOfTopics(val entity:Entity, topicBag:Map[String,Double]=null) extends BagOfWordsVariable(Nil, topicBag)
-  class BagOfVenues(val entity:Entity, venues:Map[String,Double]=null) extends BagOfWordsVariable(Nil, venues)
-  class BagOfCoAuthors(val entity:Entity,coAuthors:Map[String,Double]=null) extends BagOfWordsVariable(Nil, coAuthors)
+  class BagOfTopics(val entity:Entity, topicBag:Map[String,Double]=null) extends BagOfWordsVariable(Nil, topicBag) with EntityAttr
+  class BagOfVenues(val entity:Entity, venues:Map[String,Double]=null) extends BagOfWordsVariable(Nil, venues) with EntityAttr
+  class BagOfCoAuthors(val entity:Entity,coAuthors:Map[String,Double]=null) extends BagOfWordsVariable(Nil, coAuthors) with EntityAttr
   /**Entity variables*/
   /**An entity with the necessary variables/coordination to implement hierarchical coreference.*/
   class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity(isMention){
@@ -213,12 +213,12 @@ object Coref3 {
     },
 
     // Compatibility between parent/child venue bags. Currently an approximation, but well worth the speed.
-    new TemplateWithStatistics3[EntityRef,BagOfVenues,BagOfVenues] {
+    new HierChildParentTemplate[BagOfVenues] {
       val strength = 8.0
       val shift = -0.25
-      def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfVenues], er.dst.attr[BagOfVenues]) else Nil
-      def unroll2(childBow:BagOfVenues) = Nil//if(childBow.entity.parentEntity!=null)Factor(childBow.entity.parentEntityRef, childBow, childBow.entity.parentEntity.attr[BagOfVenues]) else Nil
-      def unroll3(parentBow:BagOfVenues) = Nil//for(e<-parentBow.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[BagOfVenues],parentBow)
+      //def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfVenues], er.dst.attr[BagOfVenues]) else Nil
+      //def unroll2(childBow:BagOfVenues) = Nil//if(childBow.entity.parentEntity!=null)Factor(childBow.entity.parentEntityRef, childBow, childBow.entity.parentEntity.attr[BagOfVenues]) else Nil
+      //def unroll3(parentBow:BagOfVenues) = Nil//for(e<-parentBow.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[BagOfVenues],parentBow)
       def score(s:Stat): Double = {
         val childBow = s._2
         val parentBow = s._3
@@ -243,7 +243,7 @@ object Coref3 {
       }
     }
     */
-    new TemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
+    new TemplateWithStatistics3[EntityExists,IsEntity,IsMention] {
       val entityExistenceCost = 2.0 //2 //8
       val subEntityExistenceCost = 0.5
       def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[IsMention])
