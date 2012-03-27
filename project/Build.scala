@@ -7,7 +7,7 @@ object Build extends sbt.Build {
   lazy val overrideSettings = {
     lazy val publishSetting = publishTo <<= (version) {
       version: String =>
-        def repo(name: String) = name at "http://iesl.cs.umass.edu:8081/nexus/content/repositories/" + name
+        def repo(name: String) = name at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/" + name
       val isSnapshot = version.trim.endsWith("SNAPSHOT")
       val repoName   = if(isSnapshot) "snapshots" else "releases"
       Some(repo(repoName))
@@ -30,7 +30,6 @@ object Build extends sbt.Build {
       scalaVersion  := "2.9.1",
       scalacOptions := Seq("-deprecation", "-unchecked", "-encoding", "utf8"),
       resolvers     ++= Dependencies.resolutionRepos,
-      checksums in update := Nil,  // todo: this is because bibtex.jar sha1 is incorrect in http://dev-iesl/../thirdparty repo
       libraryDependencies ++= Seq(
         Compile.jdom,
         Compile.mongodb,
@@ -42,12 +41,11 @@ object Build extends sbt.Build {
 }
 
 object Dependencies {
-
   val resolutionRepos = Seq(
     ScalaToolsSnapshots,
-    "IESL rel  repo"    at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases/",
-    "IESL snap repo"    at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots/",
-    "IESL thirdparty"   at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/"
+    //"IESL rel  repo"    at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases/",
+    //"IESL"    at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots/",
+    "IESL repo"    at "https://dev-iesl.cs.umass.edu/nexus/content/groups/public/"
   )
   
 
