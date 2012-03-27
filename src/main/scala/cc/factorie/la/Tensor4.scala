@@ -29,17 +29,13 @@ trait Tensor4 extends Tensor {
   def activeDomains = Array(activeDomain1, activeDomain2)
   def dimensions = Array(dim1, dim2, dim3, dim4)
   def apply(i:Int, j:Int, k:Int, l:Int): Double = apply(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l)
+  def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = update(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l, v)
   @inline final def length = dim1 * dim2 * dim3 * dim4
   @inline final def singleIndex(i:Int, j:Int, k:Int, l:Int): Int = i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l 
   @inline final def multiIndex(i:Int): (Int, Int, Int, Int) = (i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
 }
 
-trait IncrementableTensor4 extends Tensor4 with IncrementableTensor
-trait MutableTensor4 extends IncrementableTensor4 with MutableTensor {
-  def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = update(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l, v)
-}
-
-trait DenseTensorLike4 extends MutableTensor4 {
+trait DenseTensorLike4 extends Tensor4 {
   private var _values = new Array[Double](dim1*dim2*dim3*dim4)
   def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
@@ -49,9 +45,9 @@ trait DenseTensorLike4 extends MutableTensor4 {
   def activeDomain = new RangeIntSeq(0, dim1*dim2*dim3*dim4)
   def apply(i:Int): Double = _values(i)
   override def apply(i:Int, j:Int, k:Int, l:Int): Double = _values(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l)
-  def update(i:Int, v:Double): Unit = _values(i) = v
+  override def update(i:Int, v:Double): Unit = _values(i) = v
   override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = _values(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l) = v
-  def +=(i:Int, v:Double): Unit = _values(i) += v
-  def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
+  override def +=(i:Int, v:Double): Unit = _values(i) += v
+  override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
 }
 class DenseTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4

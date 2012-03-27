@@ -22,7 +22,7 @@ trait TensorVar[+A<:Tensor] extends Variable with VarAndValueType[TensorVar[A],A
   def domain: TensorDomain
 }
 
-trait MutableTensorVar[+A<:MutableTensor] extends TensorVar[A] with MutableVar with VarAndValueType[MutableTensorVar[A],A]
+//trait MutableTensorVar[+A<:MutableTensor] extends TensorVar[A] with MutableVar with VarAndValueType[MutableTensorVar[A],A]
 
 /** A variable whose value is a cc.factorie.la.MutableTensor.
     The zero-arg constructor should only be used by subclasses
@@ -45,18 +45,6 @@ abstract class TensorVariable[A<:Tensor] extends TensorVar[A] {
     if (d ne null) d += SetTensorDiff(_value, newValue)
     _value = newValue
   }
-
-  case class SetTensorDiff(oldValue:Value, newValue:Value) extends Diff {
-    def variable = TensorVariable.this
-    def undo = _value = oldValue
-    def redo = _value = newValue
-  }
-}
-
-
-abstract class MutableTensorVariable[A<:MutableTensor] extends TensorVariable[A] with MutableTensorVar[A] {
-  def this(initialValue:A) = { this(); _set(initialValue) } 
-  // TODO Make Diff-creating versions of the two methods below
   def update(index:Int, newValue:Double)(implicit d:DiffList): Unit = {
     if (d ne null) throw new Error("Not yet implemented")
     tensor.update(index, newValue)
@@ -74,17 +62,46 @@ abstract class MutableTensorVariable[A<:MutableTensor] extends TensorVariable[A]
     if (d ne null) throw new Error("Not yet implemented")
     tensor.zero()
   }
+  
+  case class SetTensorDiff(oldValue:Value, newValue:Value) extends Diff {
+    def variable = TensorVariable.this
+    def undo = _value = oldValue
+    def redo = _value = newValue
+  }
 }
+
+
+//abstract class MutableTensorVariable[A<:MutableTensor] extends TensorVariable[A] with MutableTensorVar[A] {
+//  def this(initialValue:A) = { this(); _set(initialValue) } 
+//  // TODO Make Diff-creating versions of the two methods below
+//  def update(index:Int, newValue:Double)(implicit d:DiffList): Unit = {
+//    if (d ne null) throw new Error("Not yet implemented")
+//    tensor.update(index, newValue)
+//  }
+//  def increment(index:Int, incr:Double)(implicit d:DiffList): Unit = {
+//    if (d ne null) throw new Error("Not yet implemented")
+//    tensor.+=(index, incr)
+//  }
+//  def increment(incr:Tensor)(implicit d:DiffList): Unit = {
+//    require(incr.length == tensor.length)
+//    if (d ne null) throw new Error("Not yet implemented")
+//    tensor += incr
+//  }
+//  def zero(implicit d:DiffList): Unit = {
+//    if (d ne null) throw new Error("Not yet implemented")
+//    tensor.zero()
+//  }
+//}
 
 object TensorVariable {
   def apply(dim1:Int) = new TensorVariable(new DenseTensor1(dim1)) { def domain = TensorDomain }
 }
 
 
-trait TensorVariableWithCategoricalDomain[A<:AnyRef] extends Tensor {
-  def domain: CategoricalDomain[A]
-  def apply(category:A): Double
-}
-trait MutableTensorVariableWithCategoricalDomain[A<:AnyRef] extends TensorVariableWithCategoricalDomain[A] {
-  def +=(category:A, v:Double = 1.0): Unit
-}
+//trait TensorVariableWithCategoricalDomain[A<:AnyRef] extends Tensor {
+//  def domain: CategoricalDomain[A]
+//  def apply(category:A): Double
+//}
+//trait MutableTensorVariableWithCategoricalDomain[A<:AnyRef] extends TensorVariableWithCategoricalDomain[A] {
+//  def +=(category:A, v:Double = 1.0): Unit
+//}

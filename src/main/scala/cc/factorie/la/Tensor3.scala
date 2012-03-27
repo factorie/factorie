@@ -27,17 +27,13 @@ trait Tensor3 extends Tensor {
   def activeDomains = Array(activeDomain1, activeDomain2)
   def dimensions = Array(dim1, dim2, dim3)
   def apply(i:Int, j:Int, k:Int): Double = apply(i*dim2*dim3 + j*dim2 + k)
+  def update(i:Int, j:Int, k:Int, v:Double): Unit = update(i*dim2*dim3 + j*dim2 + k, v)
   @inline final def length = dim1 * dim2 * dim3
   @inline final def singleIndex(i:Int, j:Int, k:Int): Int = i*dim2*dim3 + j*dim2 + k 
   @inline final def multiIndex(i:Int): (Int, Int, Int) = (i/dim2/dim3, (i/dim3)%dim2, i%dim3)
 }
 
-trait IncrementableTensor3 extends Tensor3 with IncrementableTensor
-trait MutableTensor3 extends IncrementableTensor3 with MutableTensor {
-  def update(i:Int, j:Int, k:Int, v:Double): Unit = update(i*dim2*dim3 + j*dim2 + k, v)
-}
-
-trait DenseTensorLike3 extends MutableTensor3 {
+trait DenseTensorLike3 extends Tensor3 {
   private var _values = new Array[Double](dim1*dim2*dim3)
   def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
@@ -46,9 +42,9 @@ trait DenseTensorLike3 extends MutableTensor3 {
   def activeDomain = new RangeIntSeq(0, dim1*dim2*dim3)
   def apply(i:Int): Double = _values(i)
   override def apply(i:Int, j:Int, k:Int): Double = _values(i*dim2*dim3 + j*dim2 + k)
-  def update(i:Int, v:Double): Unit = _values(i) = v
+  override def update(i:Int, v:Double): Unit = _values(i) = v
   override def update(i:Int, j:Int, k:Int, v:Double): Unit = _values(i*dim2*dim3 + j*dim2 + k) = v
-  def +=(i:Int, v:Double): Unit = _values(i) += v
-  def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
+  override def +=(i:Int, v:Double): Unit = _values(i) += v
+  override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
 }
 class DenseTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3
