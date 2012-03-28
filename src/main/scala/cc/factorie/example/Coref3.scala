@@ -192,7 +192,7 @@ object Coref3 {
     },
 
     // Compatibility between parent/child venue bags. Currently an approximation, but well worth the speed.
-    new HierChildParentTemplate[BagOfVenues] {
+    new ChildParentTemplateWithStatistics[BagOfVenues] {
       val strength = 8.0
       val shift = -0.25
       //def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfVenues], er.dst.attr[BagOfVenues]) else Nil
