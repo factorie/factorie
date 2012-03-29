@@ -23,7 +23,7 @@ class POS1 {
   object PosFeaturesDomain extends CategoricalVectorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = PosFeaturesDomain
-    override def skipNonCategories = true
+    //override def skipNonCategories = true
   }
 
   def useSentenceBoundaries = false
