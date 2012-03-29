@@ -74,7 +74,7 @@ object Coref4{
       result
     }
   }
-  /**Sampler*/
+  /**Inference: a kinetic MCMC ampler*/
   class MyEntitySampler(model:TemplateModel) extends HierCorefSampler[MyEntity](model){
     def newEntity = new MyEntity
     override def mergeUp(e1:MyEntity,e2:MyEntity)(implicit d:DiffList):MyEntity = {

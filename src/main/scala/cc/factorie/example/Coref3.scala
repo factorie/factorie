@@ -15,7 +15,6 @@ import java.io.{InputStreamReader, FileInputStream, BufferedReader, File}
 /**
  * Consider a set-up where cosine distance is computed between arrays of bags of words, and each bag is a variable that can go on the diff list.
  */
-
 class FullName(val entity:Entity,f:String,m:String,l:String) extends SeqVariable[String](Seq(f,m,l)) with EntityAttr {
   def setFirst(s:String)(implicit d:DiffList) = update(0,s)
   def setMiddle(s:String)(implicit d:DiffList) = update(1,s)
@@ -74,16 +73,8 @@ object Coref3 {
   var nextId = -1
   var entityCount = 0
   class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity]{
-    //var lid:Long = java.util.UUID.randomUUID.timestamp //"a:"+entityCount;entityCount += 1//(new Cubbie).id+"" //java.util.UUID.randomUUID.timestamp.toString + "" //"a:"+entityCount;entityCount += 1
-//    var _id = ""+java.util.UUID.randomUUID.timestamp //"a:"+entityCount;entityCount += 1//(new Cubbie).id+"" //java.util.UUID.randomUUID.timestamp.toString + "" //"a:"+entityCount;entityCount += 1
-    //val ccc = new Cubbie
-    //val lid = ccc.newId
-    //var _id = ""+lid
     var _id = java.util.UUID.randomUUID.toString+""
     override def id = _id
-    //override def id = {entityCount+=1;entityCount-1}
-    //override def id = {entityCount+=1;entityCount-1}
-    //println("id: "+id)
     var priority:Double=scala.math.exp(random.nextDouble)
     canopyAttributes += new AuthorFLNameCanopy(this)
     attr += new FullName(this,f,m,l)
@@ -99,8 +90,6 @@ object Coref3 {
     def defaultCanopy = canopyAttributes.head.canopyName
   }
   class AuthorEntityCubbie(author:AuthorEntity=null) extends HierEntityCubbie{
-    //_map = new HashMap[String,Any]
-    //val name = new StringListSlot("name")
     protected var _author:AuthorEntity = author
     val firstName = new StringSlot("firstName")
     val middleName = new StringSlot("middleName")
@@ -324,9 +313,6 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     override def mergeUp(e1:AuthorEntity,e2:AuthorEntity)(implicit d:DiffList):AuthorEntity = {
       val oldParent1 = e1.parentEntity
       val oldParent2 = e2.parentEntity
-//      println("mergeUp(")
-//      println("  e1: "+entityString(e1))
-//      println("  e2: "+entityString(e1))
       val result = newEntity
       e1.setParentEntity(result)(d)
       e2.setParentEntity(result)(d)
@@ -334,8 +320,6 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
         result.attr[FullName].setFullName(e1.attr[FullName])
       else
         result.attr[FullName].setFullName(e2.attr[FullName])
-      //result.attr[BagOfTopics].add(e1.attr[BagOfTopics].value)(d)
-      //result.attr[BagOfTopics].add(e2.attr[BagOfTopics].value)(d)
       result.attr[BagOfCoAuthors].add(e1.attr[BagOfCoAuthors].value)(d)
       result.attr[BagOfCoAuthors].add(e2.attr[BagOfCoAuthors].value)(d)
       result.attr[BagOfVenues].add(e1.attr[BagOfVenues].value)(d)
@@ -344,7 +328,6 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       propagateRemoveBag(e2,oldParent2)(d)
       structurePreservationForEntityThatLostChild(oldParent1)(d)
       structurePreservationForEntityThatLostChild(oldParent2)(d)
-//      println("COMBINED: "+entityString(result))
       result
     }
     /**Peels off the entity "right", does not really need both arguments unless we want to error check.*/
