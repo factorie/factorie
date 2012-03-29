@@ -147,7 +147,7 @@ object POS1 extends POS1 {
       (trainLabels ++ testLabels).foreach(_.setRandomly())
       val learner = new VariableSettingsSampler[PosLabel](PosModel, HammingLossObjective) with SampleRank with GradientAscentUpdates
       val predictor = new VariableSettingsSampler[PosLabel](PosModel)
-      for (i <- 1 until 10) {
+      for (i <- 1 until 2) {
         learner.processAll(trainLabels)
         predictor.processAll(testLabels)
         printEvaluation(i.toString)
@@ -168,7 +168,9 @@ object POS1 extends POS1 {
     def run(): Unit = {
       PosModel.load(opts.modelDir.value)
       for (filename <- opts.runFiles.value) {
-        val document = LoadPlainText.fromFile(new java.io.File(filename), segmentSentences=false)
+        val document = new Document("", io.Source.fromFile(filename).getLines.mkString("\n"))
+        segment.Tokenizer.process(document)
+        segment.SentenceSegmenter.process(document)
         initPosFeatures(document)
         process(document)
         for (token <- document)
