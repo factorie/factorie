@@ -136,7 +136,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   def randomCategory: T = randomCategory(cc.factorie.random)
   def randomValue(random:Random): ValueType = getValue(random.nextInt(size))
   def randomValue: ValueType = randomValue(cc.factorie.random)
-  def +=(x:T) : Unit = this.index(x)
+  def +=(x:T): Unit = this.index(x)
   def ++=(xs:Traversable[T]) : Unit = xs.foreach(this.index(_))
  
   override def toString = "CategoricalDomain[]("+size+")"
@@ -160,7 +160,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   }
 
   override def load(dirname:String, gzip: Boolean = false): Unit = {
-    if (size > 0) return // Already initialized, don't read again
+    if (frozen) return // Already initialized, don't read again
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     val reader = new BufferedReader(new InputStreamReader({
       if (gzip)

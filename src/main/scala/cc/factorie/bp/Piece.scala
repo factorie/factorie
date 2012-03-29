@@ -175,10 +175,10 @@ class PerceptronChainPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
 }
 
 class ForwardBackwardPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
-                                                                                 vars: Array[LV],
-                                                                                 localTemplate: TemplateWithDotStatistics2[LV, OV],
-                                                                                 transTemplate: TemplateWithDotStatistics2[LV, LV])
-      extends Piece {
+     vars: Array[LV],
+     localTemplate: TemplateWithDotStatistics2[LV, OV],
+     transTemplate: TemplateWithDotStatistics2[LV, LV])
+    extends Piece {
 
   assert(vars.size > 0, "Piece has no variables.")
 

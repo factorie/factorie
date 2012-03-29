@@ -171,43 +171,75 @@ class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model = c
 
 class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
   def settings(variables:Seq[V]): SettingIterator = new SettingIterator {
-    val vs = variables.map(_.settings).toList
-    val vds = variables.map(v => new DiffList).toList // maintains a list of changes for each variable
-    var initialized = false
-    //println("VariablesSettingsSampler.settings "+variables)
-    var _hasNext = true
-    var prevDiffList: DiffList = null
-    /**Iterate through all combinations of values in Variables given their `SettingIterators */
-    def nextValues(vs: List[IterableSettings#SettingIterator], vds: List[DiffList]): Boolean = {
-      if (vs == Nil) false
-      else if (vs.head.hasNext) {
-        val vd = vs.head.next(vds.head); vds.head.clear(); vds.head ++= vd; // update the changelist for the variable
-        //println("nextValues changed "+vs.map(_.variable));
-        true /*(vs.head.hasNext || vs.tail != Nil)*/
-      } else if (vs.tail != Nil) {
-        vs.head.reset; val vd = vs.head.next(vds.head); vds.head.clear(); vds.head ++= vd; // update the changelist for the variable
-        //println("nextValues changed "+vs.map(_.variable));
-        nextValues(vs.tail, vds.tail)
-      }
-      else false
+
+    val vs = Array.ofDim[SettingIterator](variables.size)
+    val vds = Array.ofDim[DiffList](variables.size)
+    var i = 0
+    for (v <- variables) {
+      vs(i) = v.settings
+      vds(i) = new DiffList
+      i += 1
     }
+
+    var initialized = false
+    var prevDiffList: DiffList = null
+
+    @inline final def _nextSetting(i: Int): Unit = {
+      val vd = vs(i).next(vds(i))
+      vds(i).clear()
+      vds(i) ++= vd // update the changelist for the variable
+    }
+
+    /**Iterate through all combinations of values in Variables given their SettingIterators */
+    def nextValues(): Unit = {
+      var i = 0
+      while(i < vs.size) {
+        if (vs(i).hasNext) {
+          _nextSetting(i)
+          return
+        }
+        else if (i < vs.size-1) {
+          vs(i).reset
+          _nextSetting(i)
+          i += 1
+        }
+      }
+    }
+
     def next(d:DiffList): DiffList = {
-      // TODO Should we instead let result = d ?  But what if it is null?
       val result = newDiffList
       if (!initialized) {
-        vs.foreach(setting => { setting.reset; setting.next(result) })
+        var i = 0
+        while (i < vs.size) {
+          val v = vs(i)
+          v.reset
+          v.next(result)
+          i += 1
+        }
         initialized = true
-        _hasNext = true
-      } else {
-        //if (prevDiffList ne null) { prevDiffList.redo; prevDiffList.done = false } // TODO  Ug!  Ugly hack that will not generalize!
-        _hasNext = nextValues(vs, vds)
-        // copy over the difflist for each variable to the result
-        vds.foreach(vd => { vd.done = false; vd.redo; result ++= vd })
+      }  else {
+        nextValues()
+        var i = 0
+        while (i < vds.size) {
+          val vd = vds(i)
+          vd.done = false
+          vd.redo
+          result ++= vd
+          i += 1
+        }
       }
-      //println("VariablesSettingsSampler.next "+vs.map(_.variable)+" hasNext="+this.hasNext)
       result
     }
-    def reset: Unit = { vs.foreach(_.reset); prevDiffList = null }
+
+    def reset: Unit = {
+      var i = 0
+      while (i < vs.size) {
+        vs(i).reset
+        i += 1
+      }
+      prevDiffList = null
+    }
+
     def hasNext: Boolean = vs.exists(_.hasNext)
   }
 }

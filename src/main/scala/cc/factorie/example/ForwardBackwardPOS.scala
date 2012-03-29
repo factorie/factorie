@@ -1,11 +1,12 @@
 package cc.factorie.example
 
 import cc.factorie._
+import bp._
 import bp.specialized.Viterbi
-import bp.{ParallelTrainer, ForwardBackwardPiece}
 import app.nlp._
 import app.nlp.pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
 import app.chain.Observations.addNeighboringFeatureConjunctions
+import app.strings.stringShape
 import optimize.LimitedMemoryBFGS
 
 /**
@@ -32,8 +33,17 @@ object ForwardBackwardPOS {
       def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
     }
 
+//    val tripleTemp = new TemplateWithDotStatistics3[PosLabel, PosLabel, PosFeatures] {
+//      factorName = "observation"
+//      override def statisticsDomains = List(PosDomain, PosDomain, PosFeaturesDomain)
+//      def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label, label.token.attr[PosFeatures]) else Nil
+//      def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel, label.token.sentenceNext.attr[PosFeatures]) else Nil
+//      def unroll3(features: PosFeatures) = if (features.token.sentenceHasNext) Factor(features.token.sentencePrev.posLabel, features.token.posLabel, features) else Nil
+//    }
+
     this += localTemplate
     this += transTemplate
+//    this += tripleTemp
   }
 
   def initPosFeatures(documents: Seq[Document]): Unit = documents.map(initPosFeatures(_))
@@ -42,13 +52,13 @@ object ForwardBackwardPOS {
       val rawWord = token.string
       val word = cc.factorie.app.strings.simplifyDigits(rawWord)
       val features = new PosFeatures(token)
-      // val features = token.attr += new PosFeatures(token)
       token.attr += features
       features += "W=" + word
-      features += "SHAPE3=" + cc.factorie.app.strings.stringShape(rawWord, 3)
-      val i = 3
-      features += "SUFFIX" + i + "=" + word.takeRight(i)
-      features += "PREFIX" + i + "=" + word.take(i)
+      for (i <- 1 to 9) {
+        features += "SUFFIX" + i + "=" + word.takeRight(i)
+        features += "PREFIX" + i + "=" + word.take(i)
+        features += "SHAPE" + i + "=" + stringShape(rawWord, i)
+      }
       if (token.isCapitalized) features += "CAPITALIZED"
       if (token.string.matches("[A-Z]")) features += "CONTAINS_CAPITAL"
       if (token.string.matches("-")) features += "CONTAINS_DASH"
@@ -89,8 +99,18 @@ object ForwardBackwardPOS {
     val sentences: Seq[Sentence] = documents.flatMap(_.sentences)
     val sentenceLabels = sentences.map(_.posLabels).filter(_.size > 0)
 
+    //val pieces = sentenceLabels.map(vs => ModelPiece(PosModel, vs))
     val pieces = sentenceLabels.map(vs => new ForwardBackwardPiece(vs.toArray, PosModel.localTemplate, PosModel.transTemplate))
-    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
+    val trainer = new Trainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
+//    val trainer = new SGDTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]),
+//                                 minibatchSize = 50,
+//                                 initialLearningRate = 0.01,
+//                                 decayDamping = 1.0,
+//                                 l2 =  1.0)
+//    for (iter <- 1 to 100) {
+//      trainer.iterate()
+//      testSavePrint(iter + "")
+//    }
     val optimizer = new LimitedMemoryBFGS(trainer) {
       override def postIteration(iter: Int): Unit = { testSavePrint(iter + "") }
     }

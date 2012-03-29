@@ -83,6 +83,14 @@ object TimingBP {
       println("Time was: "+mean+"+-"+2*(std/math.sqrt(nIterations)))
     }
 
+    test("forward-backward (sum)", l => {
+      ForwardBackward.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
+    })
+
+    test("viterbi (max)", l => {
+      Viterbi.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
+    })
+
     test("new BP (sum)", l => {
       assert(l.head.token.hasNext)
       val fg = new LatticeBP(TestModel,  l.toSet) with SumProductLattice
@@ -95,13 +103,6 @@ object TimingBP {
       new InferencerBPWorker(fg).inferTreewise()
     })
 
-    test("forward-backward (sum)", l => {
-      ForwardBackward.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
-    })
-
-    test("viterbi (max)", l => {
-      Viterbi.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
-    })
 
     test("old BP (sum)", l => {
       new BPInferencer[PosLabel](TestModel).inferTreewise(l)

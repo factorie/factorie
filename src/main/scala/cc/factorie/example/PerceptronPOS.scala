@@ -40,13 +40,13 @@ object PerceptronPOS {
       val rawWord = token.string
       val word = cc.factorie.app.strings.simplifyDigits(rawWord)
       val features = new PosFeatures(token)
-      // val features = token.attr += new PosFeatures(token)
       token.attr += features
       features += "W=" + word
-      features += "SHAPE3=" + cc.factorie.app.strings.stringShape(rawWord, 3)
-      val i = 3
-      features += "SUFFIX" + i + "=" + word.takeRight(i)
-      features += "PREFIX" + i + "=" + word.take(i)
+      for (i <- 1 to 9) {
+        features += "SHAPE" + i + "=" + cc.factorie.app.strings.stringShape(rawWord, 3)
+        features += "SUFFIX" + i + "=" + word.takeRight(i)
+        features += "PREFIX" + i + "=" + word.take(i)
+      }
       if (token.isCapitalized) features += "CAPITALIZED"
       if (token.string.matches("[A-Z]")) features += "CONTAINS_CAPITAL"
       if (token.string.matches("-")) features += "CONTAINS_DASH"
