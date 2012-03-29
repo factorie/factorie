@@ -16,7 +16,6 @@ package cc.factorie.app.nlp.pos
 
 import cc.factorie._
 import cc.factorie.app.nlp._
-//import cc.factorie.VariableSettingsGreedyMaximizer
 
 class POS1 {
   def this(savedModelDir:String) = { this(); PosModel.load(savedModelDir)}
@@ -28,30 +27,40 @@ class POS1 {
   }
 
   def useSentenceBoundaries = false
-  object PosModel extends TemplateModel(
+  object PosModel extends TemplateModel {
     // Bias term on each individual label 
-    new TemplateWithDotStatistics1[PosLabel],
+    val biasTemplate = new TemplateWithDotStatistics1[PosLabel] {
+      override def statisticsDomains = Seq(PosDomain)
+    }
     // Factor between label and observed token
-    new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
+    val localTemplate = new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
+      override def statisticsDomains = Seq(PosDomain, PosFeaturesDomain)
       def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
       def unroll2(tf: PosFeatures) = Factor(tf.token.attr[PosLabel], tf)
-    },
+    }
     // Transition factors between two successive labels
-    new TemplateWithDotStatistics2[PosLabel, PosLabel] {
-      def unroll1(label: PosLabel) = 
+    val transTemplate = new TemplateWithDotStatistics2[PosLabel, PosLabel] {
+      override def statisticsDomains = Seq(PosDomain, PosDomain)
+      def unroll1(label: PosLabel) = {
         if (useSentenceBoundaries) {
           if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[PosLabel], label) else Nil
         } else {
           if (label.token.hasPrev) Factor(label.token.prev.attr[PosLabel], label) else Nil
-        } 
-      def unroll2(label: PosLabel) = 
+        }
+      }
+      def unroll2(label: PosLabel) = {
         if (useSentenceBoundaries) {
           if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.attr[PosLabel]) else Nil
         } else {
           if (label.token.hasNext) Factor(label, label.token.next.attr[PosLabel]) else Nil
         }
+      }
     }
-  )
+
+    this += biasTemplate
+    this += localTemplate
+    this += transTemplate
+  }
   
   def initPosFeatures(document:Document): Unit = {
     for (token <- document) {
@@ -92,8 +101,8 @@ class POS1 {
 object POS1 extends POS1 {
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
-      val trainFile =    new CmdOption("train", "eng.train", "FILE", "CoNLL 2003 format file from which to get training data.") { override def required = true }
-      val testFile =     new CmdOption("test", "eng.testa", "FILE", "CoNLL 2003 format file from which to get testing data.") { override def required = true }
+      val trainFile =    new CmdOption("train", "eng.train", "FILE", "CoNLL 2003 format file from which to get training data.")
+      val testFile =     new CmdOption("test", "eng.testa", "FILE", "CoNLL 2003 format file from which to get testing data.")
       val modelDir =     new CmdOption("model", "pos.fac", "DIR", "Directory in which to save the trained model.")
       val runFiles =     new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
     }
