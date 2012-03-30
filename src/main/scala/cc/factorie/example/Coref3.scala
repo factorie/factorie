@@ -1242,6 +1242,7 @@ object DBLPLoader{
             authorMention.flagAsMention
             //authorMention.firstName="";authorMention.middleName="";authorMention.lastName=""
             paperMention.authors += authorMention
+            authorMention.paper = paperMention
             val authorNode = node.getChildNodes.item(i)
             val split = text.replaceAll("(Jr\\.|Sr\\.)","").split(" ")
             if(split.length>1){
