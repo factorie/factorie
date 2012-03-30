@@ -668,7 +668,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     val dropDB = opts.getOrElse("dropDB","false").toBoolean
     val numToPop = opts.getOrElse("numToPop","10000").toInt
 
-    val rexa2 = new Rexa2
+    val rexa2 = new Rexa2(dbServer,dbPort,dbName)
 //    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/all3/"))
 //    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
 //    rexa2.populateREXA(new File("/Users/mwick/data/thesis/rexa2/test.bib"))
