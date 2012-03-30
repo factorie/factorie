@@ -8,6 +8,7 @@ class IsMention(val entity:Entity,initialValue:Boolean) extends BooleanVariable(
 class Dirty(val entity:Entity) extends IntegerVariable(0){def reset()(implicit d:DiffList):Unit=this.set(0)(d);def ++()(implicit d:DiffList):Unit=this.set(intValue+1)(d)} //convenient for determining whether an entity needs its attributes recomputed
 abstract class HierEntity(isMent:Boolean=false) extends Entity{
   isObserved=isMent
+  def flagAsMention:Unit = {isObserved=true;isMention.set(true)(null)}
   def isEntity = attr[IsEntity]
   def isMention = attr[IsMention]
   def exists = attr[EntityExists]
