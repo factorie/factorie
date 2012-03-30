@@ -85,7 +85,7 @@ package object factorie {
   }
   implicit def file2Source(f:java.io.File): scala.io.Source = scala.io.Source.fromFile(f)
 
-  implicit def boolean2BooleanValue(b:Boolean): BooleanValue = if (b) BooleanDomain.trueValue else BooleanDomain.falseValue
+  //implicit def boolean2BooleanValue(b:Boolean): BooleanValue = if (b) BooleanDomain.trueValue else BooleanDomain.falseValue
   // TODO Consider making implicit conversions for IntegerVariable and RealVariable also
 
 }

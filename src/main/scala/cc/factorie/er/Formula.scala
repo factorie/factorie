@@ -187,25 +187,25 @@ object Forany {
         // Original version, per "statistics with values"
         //def statistics(n1:I) = { val s = new FormulaArgs; s+=n1; Stat(formula.eval(s)) }
         // We should re-implement formula.eval to take BooleanValue instead of BooleanVar
-        def statistics(v:Values) = { val s = new FormulaArgs; s+=v._1; Stat(formula.eval(s)) }
+        def statistics(v:Values) = { val s = new FormulaArgs; s+=v._1; Stat(BooleanDomain.getValue(formula.eval(s))) }
       }
       case 2 => new Template2[I,I]()(manifests(0), manifests(1)) with LogicStatistics {
         def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root)) yield Factor(n1,n2) }
         def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root)) yield Factor(n1,n2) }
-        def statistics(v:Values) = { val s = new FormulaArgs; s+=v._2; s+=v._1; Stat(formula.eval(s)) }
+        def statistics(v:Values) = { val s = new FormulaArgs; s+=v._2; s+=v._1; Stat(BooleanDomain.getValue(formula.eval(s))) }
       }
       case 3 => new Template3[I,I,I]()(manifests(0), manifests(1), manifests(2)) with LogicStatistics {
         def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3) } 
         def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3) } 
         def unroll3(n3:I) = { val roots = getters(2).reverse(n3); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root)) yield Factor(n1,n2,n3) } 
-        def statistics(v:Values) = { val s = new FormulaArgs; s+=v._3; s+=v._2; s+=v._1; Stat(formula.eval(s)) }
+        def statistics(v:Values) = { val s = new FormulaArgs; s+=v._3; s+=v._2; s+=v._1; Stat(BooleanDomain.getValue(formula.eval(s))) }
       }
       case 4 => new Template4[I,I,I,I]()(manifests(0), manifests(1), manifests(2), manifests(3)) with LogicStatistics {
         def unroll1(n1:I) = { val roots = getters(0).reverse(n1); for (root <- roots; n2 <- getters(1).forward(root); n3 <- getters(2).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
         def unroll2(n2:I) = { val roots = getters(1).reverse(n2); for (root <- roots; n1 <- getters(0).forward(root); n3 <- getters(2).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
         def unroll3(n3:I) = { val roots = getters(2).reverse(n3); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root); n4 <- getters(3).forward(root)) yield Factor(n1,n2,n3,n4) } 
         def unroll4(n4:I) = { val roots = getters(3).reverse(n4); for (root <- roots; n1 <- getters(0).forward(root); n2 <- getters(1).forward(root); n3 <- getters(2).forward(root)) yield Factor(n1,n2,n3,n4) } 
-        def statistics(v:Values) = { val s = new FormulaArgs; s+=v._4; s+=v._3; s+=v._2; s+=v._1; Stat(formula.eval(s)) }
+        def statistics(v:Values) = { val s = new FormulaArgs; s+=v._4; s+=v._3; s+=v._2; s+=v._1; Stat(BooleanDomain.getValue(formula.eval(s))) }
       }
     }
   }

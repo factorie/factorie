@@ -17,7 +17,7 @@ object PragBot4 {
 
   class Location(val name:String) {
     def cardsHere = allCards.filter(_.value == this)
-    val wins = new BooleanVar { def value: Value = hasSuitRun(cardsHere, 3) }
+    val wins = new BooleanVar { def value: Value = BooleanDomain.getValue(hasSuitRun(cardsHere, 3)) }
   }
 
   def main(args:Array[String]): Unit = {
