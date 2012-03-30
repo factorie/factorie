@@ -390,12 +390,9 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     protected var authorCache = new HashMap[Any,AuthorEntity]
     protected val mongoConn = new Mongo(mongoServer,mongoPort)
     protected val mongoDB = mongoConn.getDB(mongoDBName)
-    protected val authors = {
-      val coll = mongoDB.getCollection("authors")
-      coll.drop()
-      //new MongoCubbieCollection(coll,() => new AuthorEntityCubbie)
-      new MongoCubbieCollection(coll,() => new AuthorEntityCubbie,(a:AuthorEntityCubbie) => Seq(Seq(a.canopies),Seq(a.priority),Seq(a.entityRef))) with LazyCubbieConverter[AuthorEntityCubbie]
-    }
+    protected val coll = mongoDB.getCollection("authors")
+    protected val authors = new MongoCubbieCollection(coll,() => new AuthorEntityCubbie,(a:AuthorEntityCubbie) => Seq(Seq(a.canopies),Seq(a.priority),Seq(a.entityRef))) with LazyCubbieConverter[AuthorEntityCubbie]
+    def drop = coll.drop
     def populateREXAFromDir(bibDir:File):Unit ={
       for(f<-bibDir.listFiles)populateREXA(f)
     }
@@ -411,6 +408,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       }
     }
     def insertMentionsFromDBLP(location:String):Unit ={
+      var time = System.currentTimeMillis
       import MongoCubbieConverter._
       val paperEntities = DBLPLoader.loadDBLPData(location)
       for(paper <- paperEntities){
@@ -419,6 +417,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
           authors += new AuthorEntityCubbie(author)
         }
       }
+      println("Inserting " + authors.size + " author mentions took " + (System.currentTimeMillis -time)/1000L+"s.")
     }
     def wasLoadedFromDB(author:AuthorEntity):Boolean = _author2cubbie.contains(author.id)
     def author2cubbie(author:AuthorEntity):AuthorEntityCubbie = _author2cubbie.getOrElse(author.id,null)
@@ -657,13 +656,26 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
   val tokenizer = "[^A-Za-z0-9]"
 
   def main(args:Array[String]): Unit = {
-    val numSteps=1000000
+    val opts = new HashMap[String,String]
+    args.foreach((s:String) => {val sp=s.split("=");opts += sp(0) -> sp(1)})
+    opts.foreach(p => println(p._1 + ": " + p._2))
+    val dblpFile = opts.getOrElse("dblpFile", "/Users/mwick/data/dblp/small.xml")
+    val numSteps = opts.getOrElse("numSteps","1000000").toInt
+    val dbName = opts.getOrElse("mongoDBName","rexa2-cubbie")
+    val dbServer = opts.getOrElse("mongoServer","localhost")
+    val dbPort = opts.getOrElse("mongoPort","27017").toInt
+    val populateDB = opts.getOrElse("populateDB","true").toBoolean
+    val dropDB = opts.getOrElse("dropDB","false").toBoolean
+    val numToPop = opts.getOrElse("numToPop","10000").toInt
+
     val rexa2 = new Rexa2
 //    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/all3/"))
 //    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
 //    rexa2.populateREXA(new File("/Users/mwick/data/thesis/rexa2/test.bib"))
 //    rexa2.populateREXA(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
-    rexa2.insertMentionsFromDBLP("/Users/mwick/data/dblp/small.xml")
+//    rexa2.insertMentionsFromDBLP("/Users/mwick/data/dblp/small.xml")
+    if(dropDB)rexa2.drop
+    if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
     var time = System.currentTimeMillis
     val mentions =rexa2.nextBatch(10)
     println("Loading " + mentions.size + " took " + (System.currentTimeMillis -time)/1000L+"s.")
