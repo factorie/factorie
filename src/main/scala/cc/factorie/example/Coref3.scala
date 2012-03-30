@@ -392,6 +392,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     protected val mongoDB = mongoConn.getDB(mongoDBName)
     protected val coll = mongoDB.getCollection("authors")
     protected val authors = new MongoCubbieCollection(coll,() => new AuthorEntityCubbie,(a:AuthorEntityCubbie) => Seq(Seq(a.canopies),Seq(a.priority),Seq(a.entityRef))) with LazyCubbieConverter[AuthorEntityCubbie]
+    println("Created a rexa2 database: "+mongoDBName+"@"+mongoServer+":"+mongoPort)
     def drop = coll.drop
     def populateREXAFromDir(bibDir:File):Unit ={
       for(f<-bibDir.listFiles)populateREXA(f)
@@ -667,8 +668,8 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     val populateDB = opts.getOrElse("populateDB","true").toBoolean
     val dropDB = opts.getOrElse("dropDB","false").toBoolean
     val numToPop = opts.getOrElse("numToPop","10000").toInt
-
-    val rexa2 = new Rexa2
+    println("Rexa2 database: "+dbName+"@"+dbServer+":"+dbPort)
+    val rexa2 = new Rexa2(dbServer,dbPort,dbName)
 //    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/all3/"))
 //    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
 //    rexa2.populateREXA(new File("/Users/mwick/data/thesis/rexa2/test.bib"))
@@ -1241,6 +1242,7 @@ object DBLPLoader{
             authorMention.flagAsMention
             //authorMention.firstName="";authorMention.middleName="";authorMention.lastName=""
             paperMention.authors += authorMention
+            authorMention.paper = paperMention
             val authorNode = node.getChildNodes.item(i)
             val split = text.replaceAll("(Jr\\.|Sr\\.)","").split(" ")
             if(split.length>1){
