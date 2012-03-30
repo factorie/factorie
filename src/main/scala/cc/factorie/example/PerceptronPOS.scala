@@ -30,6 +30,8 @@ object PerceptronPOS {
       def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
     }
 
+    var skipNonCategories = false
+
     this += localTemplate
     this += transTemplate
   }
@@ -39,8 +41,7 @@ object PerceptronPOS {
     for (token <- document) {
       val rawWord = token.string
       val word = cc.factorie.app.strings.simplifyDigits(rawWord)
-      val features = new PosFeatures(token)
-      // val features = token.attr += new PosFeatures(token)
+      val features = new PosFeatures(token) { override def skipNonCategories = PosModel.skipNonCategories }
       token.attr += features
       features += "W=" + word
       features += "SHAPE3=" + cc.factorie.app.strings.stringShape(rawWord, 3)
@@ -140,7 +141,7 @@ object PerceptronPOS {
   }
 
   var modelLoaded = false
-  def load(modelFile: String) = { PosModel.load(modelFile); modelLoaded = true }
+  def load(modelFile: String) = { PosModel.load(modelFile); PosModel.skipNonCategories = true; modelLoaded = true }
 
   def process(documents: Seq[Document]): Unit = documents.map(process(_))
   def process(document: Document): Unit = {
@@ -163,10 +164,11 @@ object PerceptronPOS {
 
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
-      val trainFile = new CmdOption("train", "", "FILE", "An OWPL train file.") { override def required = true }
-      val devFile =   new CmdOption("dev", "", "FILE", "An OWPL dev file") { override def required = true }
-      val testFile =  new CmdOption("test", "", "FILE", "An OWPL test file.") { override def required = true }
+      val trainFile = new CmdOption("train", "", "FILE", "An OWPL train file.")
+      val devFile =   new CmdOption("dev", "", "FILE", "An OWPL dev file")
+      val testFile =  new CmdOption("test", "", "FILE", "An OWPL test file.")
       val takeOnly =  new CmdOption("takeOnly", "-1", "INT", "A limit on the number of sentences loaded from each file.")
+      val runFiles =  new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
       val iterations =new CmdOption("iterations", "10", "INT", "The number of iterations to train for.")
       val modelDir =  new CmdOption("model", "", "DIR", "Directory in which to save the trained model.")
       val extraId =   new CmdOption("label", "", "STRING", "An extra identifier.  Useful for testing different sets of features.")
@@ -195,6 +197,18 @@ object PerceptronPOS {
         modelFile = modelDir.value,
         extraId = extraId.value
       )
+    }
+    else if (runFiles.wasInvoked) {
+      load(opts.modelDir.value)
+      for (filename <- opts.runFiles.value) {
+        val document = new Document("", io.Source.fromFile(filename).getLines.mkString("\n"))
+        segment.Tokenizer.process(document)
+        segment.SentenceSegmenter.process(document)
+        initPosFeatures(document)
+        process(document)
+        for (token <- document)
+          println("%s %s".format(token.string, token.attr[PosLabel].categoryValue))
+      }
     }
   }
 

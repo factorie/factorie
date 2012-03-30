@@ -27,10 +27,6 @@ trait Tensor1 extends Tensor {
   override def stringPrefix = "Tensor1"
 }
 
-// TODO Or let users just mix these themselves, and keep name space smaller? -akm
-trait IncrementableTensor1 extends Tensor1 with IncrementableTensor
-trait MutableTensor1 extends IncrementableTensor1 with MutableTensor
-
 
 
 trait DenseTensorLike1 extends Tensor1 {
@@ -47,6 +43,10 @@ trait DenseTensorLike1 extends Tensor1 {
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def apply(i:Int) = _values(i)
   override def asArray = _values
+  override def +=(i:Int, incr:Double): Unit = _values(i) += incr
+  override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
+  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { _values(i) += ds(i); i += 1 } }
+  override def update(i:Int, v:Double): Unit = _values(i) = v
   def outer(t1:Tensor1): Tensor2 = t1 match {
     case t1:SingletonBinaryTensor1 => {
       throw new Error("Not yet implemented; needs SparseTensor2")
@@ -61,19 +61,13 @@ trait DenseTensorLike1 extends Tensor1 {
     }
   }
 }
-trait IncrementableDenseTensorLike1 extends IncrementableTensor with DenseTensorLike1 {
-  def +=(i:Int, incr:Double): Unit = _values(i) += incr
-  def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
-}
-trait MutableDenseTensorLike1 extends IncrementableDenseTensorLike1 with MutableTensor {
-  def update(i:Int, v:Double): Unit = _values(i) = v
-  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { _values(i) += ds(i); i += 1 } }
-}
-class DenseTensor1(val dim1:Int) extends MutableDenseTensorLike1 {
+
+
+class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
   def this(t:Tensor) = { this(t.length); this := t }
 }
 
-trait GrowableDenseTensorLike1 extends IncrementableDenseTensorLike1 {
+trait GrowableDenseTensorLike1 extends DenseTensorLike1 {
   def sizeProxy: Iterable[Any]
   private var _size: Int = 0
   def dim1: Int = math.max(_size, sizeProxy.size)
@@ -85,7 +79,7 @@ trait GrowableDenseTensorLike1 extends IncrementableDenseTensorLike1 {
     super.+=(index, incr)
   }
 }
-class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends MutableDenseTensorLike1 with GrowableDenseTensorLike1
+class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends DenseTensorLike1 with GrowableDenseTensorLike1
 
 
 class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends Tensor1 {
@@ -134,7 +128,7 @@ class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
 
 
 
-trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer with MutableTensor1 {
+trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer with Tensor1 {
   def activeDomain1 = new ArrayIntSeq(_array)
   def isDense = false
   def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
@@ -149,13 +143,13 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSorted(is(j)); j += 1} }
   def ++=(is:Iterable[Int]): Unit = { _ensureCapacity(_length + is.size); is.foreach(_insertSorted(_)) }
 
-  def update(i:Int, v:Double): Unit = {
+  override def update(i:Int, v:Double): Unit = {
     if (i < 0 || i >= length) throw new Error("Tensor index out of range: "+i)
     if (v == 1.0) this += i else if (v == 0.0) this -= i else throw new Error(getClass.getName+" cannot update with values other than 0.0 or 1.0.")
   }
   /** In SparseBinary, this is equivalent to update(i,v) */
-  def +=(i:Int, v:Double): Unit = update(i, v)
-  def zero(): Unit = _clear() // TODO I think _clear should be renamed _zero -akm
+  override def +=(i:Int, v:Double): Unit = update(i, v)
+  override def zero(): Unit = _clear() // TODO I think _clear should be renamed _zero -akm
   override def dot(v:DoubleSeq): Double = v match {
     case s:SingletonBinaryTensor1 => s dot this
     case s:SingletonTensor1 => s dot this
@@ -169,14 +163,14 @@ class SparseBinaryTensor1(val dim1:Int) extends SparseBinaryTensorLike1 {
 }
 
 
-
+// Just an alias
 class SparseTensor1(dim1:Int) extends SparseIndexedTensor1(dim1)
 
 
 /** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory,
     implemented as a HashMap from Int indices to Double values.
     @author Andrew McCallum */
-class SparseHashTensor1(val dim1:Int) extends MutableTensor1 {
+class SparseHashTensor1(val dim1:Int) extends Tensor1 {
   def isDense = false
   var default = 0.0
   private val h = new scala.collection.mutable.HashMap[Int,Double] { override def default(index:Int) = SparseHashTensor1.this.default }
@@ -194,7 +188,7 @@ class SparseHashTensor1(val dim1:Int) extends MutableTensor1 {
     assert(index < length, "index %d should be less than length %d".format(index, length))
     h(index) = h(index) + incr
   }
-  def zero(): Unit = h.clear()
+  override def zero(): Unit = h.clear()
   override def dot(v:DoubleSeq): Double = v match {
     case v:SparseBinaryTensor1 => v dot this
     case v:TensorTimesScalar => v dot this
@@ -221,7 +215,7 @@ class SparseHashTensor1(val dim1:Int) extends MutableTensor1 {
   override def toString = getClass.getName + "(" + "len=" + length + " (" + h.mkString("[", ", ", "]") + "))"
 }
 
-class SparseIndexedTensor1(len:Int) extends MutableTensor1 {
+class SparseIndexedTensor1(len:Int) extends Tensor1 {
   def this(sizeProxy:Iterable[Any]) = { this(-1); _sizeProxy = sizeProxy }
   def isDense = false
   private val _length: Int = len
@@ -254,7 +248,7 @@ class SparseIndexedTensor1(len:Int) extends MutableTensor1 {
       def next = { i += 1 ; (_indexs(i-1), _values(i-1)) }
     }
   }
-  def zero(): Unit = _npos = 0
+  override def zero(): Unit = _npos = 0
 
   /** Return the position at which index occurs, or -1 if index does not occur. */
   def position(index:Int): Int = { // Just linear search for now; consider binary search with memory of last position
@@ -341,7 +335,7 @@ class SparseIndexedTensor1(len:Int) extends MutableTensor1 {
     else +=(index, value) 
   }
   // Efficiently support multiple sequential additions
-  def +=(index:Int, incr:Double): Unit = {
+  override def +=(index:Int, incr:Double): Unit = {
     ensureCapacity(_npos+1)
     _indexs(_npos) = index
     _values(_npos) = incr

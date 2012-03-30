@@ -19,7 +19,7 @@ import cc.factorie.util._
 // Preliminary version of the upcoming "unflattening" of parameter and discrete statistics representations...
 
 // Note: Many Tensor-like methods are actually implemented in DoubleSeq
-trait Tensor extends DoubleSeq {
+trait Tensor extends MutableDoubleSeq {
   def numDimensions: Int
   def dimensions: Array[Int]
   // For handling sparsity
@@ -39,15 +39,16 @@ trait Tensor extends DoubleSeq {
   override def max: Double = 
     if (isDense) super.max
     else { val d = activeDomain; var m = defaultValue; var i = 0; while (i < d.length) { if (!(m >= apply(d(i)))) m = apply(d(i)); i += 1 }; m }
+  // Methods for mutability not implemented in all Tensors
+  def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
+  def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName)
+  def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
+
   // TODO Consider methods like +, -, *, /
   def stringPrefix = "Tensor"
   override def toString = this.asSeq.mkString(stringPrefix+"(", ",", ")")
 }
 
-/** Used by Proportions, where apply() is specially defined to make update() dangerous; hence this isn't fully Mutable. */
-trait IncrementableTensor extends Tensor with IncrementableDoubleSeq
-
-trait MutableTensor extends IncrementableTensor with MutableDoubleSeq
 
 trait TensorWithMutableDefaultValue extends Tensor {
   def defaultValue_=(v:Double): Unit

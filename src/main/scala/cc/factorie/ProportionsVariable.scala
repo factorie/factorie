@@ -23,6 +23,7 @@ import scala.util.Random
 
 // TODO Rename Proportions when we make the full substitution!
 //  Then also create a separate Proportions1 that inherits from Masses1 and Tensor1
+// TODO Perhaps instead Proportions should contain a Masses, but not inherit from Masses?  (Suggested by Alexandre)  -akm
 trait Proportions extends Masses {
   abstract override def apply(i:Int): Double = super.apply(i) / massTotal
   override def sampleIndex(implicit r:Random): Int = {
@@ -65,7 +66,6 @@ trait Proportions extends Masses {
   }
   def top(n:Int): Seq[DiscretePr] = new DiscretePrSeq(n, this.toSeq)
 }
-trait IncrementableProportions extends IncrementableMasses with Proportions
 
 
 // Proportions Values of dimensionality 1
@@ -76,7 +76,7 @@ class SingletonProportions1(dim1:Int, singleIndex:Int) extends SingletonMasses1(
 class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0) with Proportions {
   @inline override final def apply(i:Int): Double = 1.0 / dim1
 }
-class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double) extends GrowableUniformMasses1(sizeProxy, uniformValue) with Proportions {
+class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends GrowableUniformMasses1(sizeProxy, uniformValue) with Proportions {
   @inline final override def apply(index:Int) = {
     val result = 1.0 / length
     assert(result > 0 && result != Double.PositiveInfinity, "GrowableUniformProportions domain size is negative or zero.")
@@ -84,10 +84,10 @@ class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double) 
   }
 }
 
-class DenseProportions1(override val dim1:Int) extends DenseMasses1(dim1) with IncrementableProportions
-class GrowableDenseProportions1(sizeProxy:Iterable[Any]) extends GrowableDenseMasses1(sizeProxy) with IncrementableProportions
+class DenseProportions1(override val dim1:Int) extends DenseMasses1(dim1) with Proportions
+class GrowableDenseProportions1(sizeProxy:Iterable[Any]) extends GrowableDenseMasses1(sizeProxy) with Proportions
 
-class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1(dim1) with IncrementableProportions {
+class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1(dim1) with Proportions {
   // TODO We need somehow to say that this isDeterministic function of this.prior.
   var prior: Masses = null
   
@@ -101,7 +101,7 @@ class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1
       else countOfIndex(index).toDouble / countsTotal
     }
   }
-  //override def zero(): Unit = counts.zero() // Note that this doesn't zero the prior
+  // Note that "def zero()" defined in SortedSparseCountsMasses1 does not zero this.prior
   override def top(n:Int): Seq[DiscretePr] =
     for (i <- 0 until math.min(n, numPositions)) yield 
       new DiscretePr(indexAtPosition(i), countAtPosition(i).toDouble / countsTotal)
@@ -110,23 +110,17 @@ class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1
 
 
 
-// Proportions Variables
+// Proportions Variable
 
-trait ProportionsVar extends MassesVar with VarAndValueType[ProportionsVar,Proportions]
-class ProportionsVariable extends MassesVariable with ProportionsVar {
-  def this(initialValue:Proportions) = { this(); _set(initialValue) }
+trait ProportionsVar[P<:Proportions] extends MassesVar[P] with VarAndValueType[ProportionsVar[P],P]
+class ProportionsVariable[P<:Proportions] extends MassesVariable[P] with ProportionsVar[P] {
+  def this(initialValue:P) = { this(); _set(initialValue) }
 }
 
-trait IncrementableProportionsVar extends IncrementableMassesVar with VarAndValueType[IncrementableProportionsVar,IncrementableProportions]
-class IncrementableProportionsVariable extends IncrementableMassesVariable with IncrementableProportionsVar {
-  def this(initialValue:IncrementableProportions) = { this(); _set(initialValue) }
-  def setUniform(implicit d:DiffList): Unit = {
-    if (d ne null) throw new Error("Not yet implemented.")
-    tensor.zero(); tensor += 1.0
-  }
-}
-
-// We should provide some way to construct these things that are more concise... but how? -akm
 object ProportionsVariable {
-  def dense1(dim1:Int) = new IncrementableProportionsVariable(new DenseProportions1(dim1)) 
+  def uniform(dim:Int) = new ProportionsVariable(new UniformProportions1(dim))
+  def dense(dim:Int) = new ProportionsVariable(new DenseProportions1(dim))
+  def growableDense(sizeProxy:Iterable[Any]) = new ProportionsVariable(new GrowableDenseProportions1(sizeProxy))
+  def growableUniform(sizeProxy:Iterable[Any]) = new ProportionsVariable(new GrowableUniformProportions1(sizeProxy))
+  def sparseCounts(dim:Int) = new ProportionsVariable(new SortedSparseCountsProportions1(dim))
 }

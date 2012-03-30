@@ -26,16 +26,11 @@ trait Tensor2 extends Tensor {
   def dimensions = Array(dim1, dim2)
   def apply(i:Int, j:Int): Double = apply(i*dim2 + j)
   def apply(i:Int): Double //= apply(i % dim1, i / dim2)
+  def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
   @inline final def length = dim1 * dim2
   @inline final def singleIndex(i:Int, j:Int): Int = i*dim2 + j
   @inline final def multiIndex(i:Int): (Int, Int) = (i/dim2, i%dim2)
 }
-
-trait IncrementableTensor2 extends Tensor2 with IncrementableTensor
-trait MutableTensor2 extends IncrementableTensor2 with MutableTensor {
-  def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
-}
-
 
 
 trait DenseTensorLike2 extends Tensor2 {
@@ -47,17 +42,14 @@ trait DenseTensorLike2 extends Tensor2 {
   def activeDomain = new RangeIntSeq(0, dim1*dim2)
   def apply(i:Int): Double = __values(i)
   override def apply(i:Int, j:Int): Double = __values(i*dim2+j)
-}
-trait IncrementableDenseTensorLike2 extends IncrementableTensor2 with DenseTensorLike2 {
-  def +=(i:Int, v:Double): Unit = _values(i) += v
-  def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
+  override def +=(i:Int, v:Double): Unit = _values(i) += v
+  override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
   override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { _values(i) += ds(i); i += 1 } }
-}
-trait MutableDenseTensorLike2 extends IncrementableDenseTensorLike2 with MutableTensor2 {
-  def update(i:Int, v:Double): Unit = _values(i) = v
+  override def update(i:Int, v:Double): Unit = _values(i) = v
   override def update(i:Int, j:Int, v:Double): Unit = _values(i*dim2+j) = v
 }
-class DenseTensor2(val dim1:Int, val dim2:Int) extends MutableDenseTensorLike2 {
+
+class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   def this(t:Tensor2) = { this(t.dim1, t.dim2); this := t }
 }
 
@@ -65,11 +57,11 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends MutableDenseTensorLike2 {
 
 
 trait LayeredTensorLike2 extends Tensor2 {
-  def newTensor1(dim:Int): Tensor1 // TODO Need mutable version of this also
+  def newTensor1(dim:Int): Tensor1
   private var _inners = Array.fill(dim1)(newTensor1(dim2))
   override def apply(i:Int, j:Int): Double = _inners(i).apply(j)
   def apply(i:Int): Double = apply(i/dim1, i%dim2)
-  //def update(i:Int, j:Int, v:Double): Unit = values(i).update(j, v)
+  override def update(i:Int, j:Int, v:Double): Unit = _inners(i).update(j, v)
 }
 // TODO Move these next three traits to the file Tensor1.scala
 trait InnerDenseTensor1 {

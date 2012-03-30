@@ -176,7 +176,7 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
     }
   }
   // Next method for CountsProportions trait
-  def zero(): Unit = {
+  def clear(): Unit = {
     siz = 0
     _countsTotal = 0
     if (dbuf ne null) java.util.Arrays.fill(dbuf, 0)

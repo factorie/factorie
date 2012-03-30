@@ -23,26 +23,25 @@ trait Masses extends Tensor {
   def massTotal: Double
   override def sampleIndex(implicit r:Random): Int = sampleIndex(massTotal)(r) //cc.factorie.maths.nextDiscrete(this.asArray, massTotal)(r)
 }
-trait IncrementableMasses extends IncrementableTensor with Masses 
+
 /** Provides a protected var for holding the massTotal */
-trait IncrementableMassesWithTotal extends IncrementableMasses {
+trait MassesWithTotal extends Masses {
   protected var _massTotal: Double = 0.0
   //def resetMassTotal: Unit = _massTotal = super.sum
   def massTotal = _massTotal
   final override def sum = _massTotal
+  override def update(i:Int, v:Double): Unit = throw new Error("Masses cannot be modified by udpate; use += instead.")
 }
 
 // TODO Should we get rid of all these combinations and make users extend the combinations themselves? -akm
 trait Masses1 extends Tensor1 with Masses
 trait Masses2 extends Tensor2 with Masses
-trait IncrementableMasses1 extends IncrementableTensor1 with IncrementableMasses with Masses1
-trait IncrementableMasses2 extends IncrementableTensor2 with IncrementableMasses with Masses2
 
 //trait DenseMasses extends ... (gather += in here, but we need a DenseTensor class also)
-class DenseMasses1(val dim1:Int) extends IncrementableDenseTensorLike1 with IncrementableMasses1 with IncrementableMassesWithTotal {
+class DenseMasses1(val dim1:Int) extends DenseTensorLike1 with Masses1 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
 }
-class DenseMasses2(val dim1:Int, val dim2:Int) extends IncrementableDenseTensorLike2 with IncrementableMasses2 with IncrementableMassesWithTotal {
+class DenseMasses2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 with Masses2 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
 }
 class UniformMasses1(dim1:Int, uniformValue:Double) extends UniformTensor1(dim1, uniformValue) with Masses1 {
@@ -52,7 +51,7 @@ class SingletonMasses1(dim1:Int, singleIndex:Int, singleValue:Double) extends Si
   def massTotal = singleValue
 }
 
-class GrowableDenseMasses1(val sizeProxy:Iterable[Any]) extends GrowableDenseTensorLike1 with IncrementableMasses1 with IncrementableMassesWithTotal {
+class GrowableDenseMasses1(val sizeProxy:Iterable[Any]) extends GrowableDenseTensorLike1 with Masses1 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
 }
 class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends UniformTensorLike1 with Masses1 {
@@ -60,57 +59,26 @@ class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
   def massTotal = sizeProxy.size * uniformValue
 }
 
-class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSparseCounts(dim1, 4, false) with IncrementableMasses1 {
+class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSparseCounts(dim1, 4, false) with Masses1 {
   def isDense = false
   def activeDomain1 = throw new Error("Not implemented")
   def apply(index:Int): Double = {
     if (countsTotal == 0) 0.0
     else countOfIndex(index).toDouble
   }
-  def +=(index:Int, incr:Double): Unit = {
+  override def +=(index:Int, incr:Double): Unit = {
     assert(incr.floor == incr)
     incrementCountAtIndex(index, incr.toInt) 
   }
+  override def zero(): Unit = clear()
   def massTotal = countsTotal.toDouble
 }
 
 // Masses Variables 
 
-trait MassesVar extends TensorVar with VarAndValueType[MassesVar,Masses] 
-class MassesVariable extends TensorVariable with MassesVar {
-  def this(initialValue:Masses) = { this(); _set(initialValue) }
+trait MassesVar[T<:Masses] extends TensorVar[T] with VarAndValueType[MassesVar[T],T] 
+class MassesVariable[T<:Masses] extends TensorVariable[T] with MassesVar[T] {
+  def this(initialValue:T) = { this(); _set(initialValue) }
+  def domain = TensorDomain
 }
 
-trait IncrementableMassesVar extends MassesVar with VarAndValueType[IncrementableMassesVar,IncrementableMasses] 
-class IncrementableMassesVariable extends MassesVariable with IncrementableMassesVar { 
-  def this(initialValue:IncrementableMasses) = { this(); _set(initialValue) }
-  def increment(index:Int, incr:Double)(implicit d:DiffList): Unit = {
-    if (d ne null) d += new IncrementableMassesDiff(index, incr)
-    tensor.+=(index, incr)
-  }
-  def increment(incr:DoubleSeq)(implicit d:DiffList): Unit = {
-    require(incr.length == tensor.length)
-    if (d ne null) d += new IncrementableMassesDoubleSeqDiff(incr) // TODO perhaps for safety we should copy it first?
-    tensor += incr
-  }
-  def zero(implicit d:DiffList): Unit = {
-    if (d ne null) d += new IncrementableMassesZeroDiff(DoubleSeq(tensor.toArray))
-    tensor.zero()
-  }
-  case class IncrementableMassesDiff(index:Int, incr:Double) extends Diff {
-    def variable = IncrementableMassesVariable.this
-    def undo = { tensor += (index, -incr); assert(tensor(index) >= 0.0); assert(tensor.massTotal >= 0.0) }
-    def redo = { tensor += (index, incr);  assert(tensor(index) >= 0.0); assert(tensor.massTotal >= 0.0) }
-  }
-  case class IncrementableMassesDoubleSeqDiff(t: DoubleSeq) extends Diff {
-    def variable = IncrementableMassesVariable.this
-    def undo = tensor -= t
-    def redo = tensor += t
-  }
-  case class IncrementableMassesZeroDiff(t: DoubleSeq) extends Diff {
-    def variable = IncrementableMassesVariable.this
-    def undo = tensor += t
-    def redo = tensor.zero()
-  }
-
-}

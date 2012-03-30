@@ -172,3 +172,25 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
   def addEntity(e:T):Unit ={entities += e}
   def isMention(e:Entity):Boolean = e.isObserved
 }
+
+abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends TemplateWithStatistics3[EntityRef,A,A] {
+  def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
+  def unroll2(childAttr:A) = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
+  def unroll3(parentAttr:A) = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
+}
+
+class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExistenceCost:Double=0.5) extends TemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
+  def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[IsMention])
+  def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[IsMention])
+  def unroll3(isMention:IsMention) = throw new Exception("An entitie's status as a mention should never change.")
+  def score(s:Stat):Double ={
+    val exists:Boolean = s._1.booleanValue
+    val isEntity:Boolean = s._2.booleanValue
+    val isMention:Boolean = s._3.booleanValue
+    var result = 0.0
+    if(exists && isEntity) result -= entityExistenceCost
+    if(exists && !isEntity && !isMention)result -= subEntityExistenceCost
+    result
+  }
+}
+
