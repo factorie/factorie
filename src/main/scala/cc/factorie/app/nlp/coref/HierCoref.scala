@@ -35,6 +35,13 @@ abstract class HierEntityCubbie extends EntityCubbie{
   }
 }
 
+/**Mix this into the sampler and it will automatically propagate the bags that you define in the appropriate method*/
+/*
+trait AutomaticBagPropagation{
+  def bagsToPropgate(e:Entity):Seq[BagOfWordsVariable]
+}
+*/
+
 abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends SettingsSampler[Null](model, null) {
   def newEntity:T
   //def reestimateAttributes(e:T):Unit 

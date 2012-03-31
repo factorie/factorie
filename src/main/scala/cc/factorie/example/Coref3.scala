@@ -20,7 +20,8 @@ trait HasCanopyAttributes[T<:Entity]{
 }
 trait CanopyAttribute[T<:Entity]{def entity:T;def canopyName:String}
 class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity] {
-  def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
+  def canopyName:String=(initial(entity.entityRoot.asInstanceOf[AuthorEntity].fullName.firstName)+entity.entityRoot.asInstanceOf[AuthorEntity].fullName.lastName).toLowerCase
+  //def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
   def initial(s:String):String = if(s!=null && s.length>0)s.substring(0,1) else ""
 }
 /**Attributes specific to REXA authors*/
@@ -334,32 +335,11 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       }
     }
     def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit ={
-      var oldBagOfC:String = ""
-      var oldBagOFV:String = ""
-      try{
       var e = formerParent
       while(e!=null){
-        oldBagOfC = formerParent.attr[BagOfCoAuthors].value.toString
-        oldBagOFV = formerParent.attr[BagOfVenues].value.toString
         e.attr[BagOfCoAuthors].remove(parting.attr[BagOfCoAuthors].value)
         e.attr[BagOfVenues].remove(parting.attr[BagOfVenues].value)
         e = e.parentEntity
-      }
-      }catch{
-        case e:java.util.NoSuchElementException => {
-          println("FORMER PARENT:" + formerParent.id)
-          println("PARTING: "+parting.id)
-          println("BagOfCO")
-          println("  parting: "+parting.attr[BagOfCoAuthors].value)
-          println("  parent : "+oldBagOfC)
-          println("  parent : "+formerParent.attr[BagOfCoAuthors].value)
-          println("BagOfVen")
-          println("  parting: "+parting.attr[BagOfVenues].value)
-          println("  parent : "+oldBagOFV)
-          println("  parent : "+formerParent.attr[BagOfVenues].value)
-          e.printStackTrace(System.out)
-          System.exit(1)
-        }
       }
     }
     override def proposalHook(proposal:Proposal) = {
@@ -418,10 +398,13 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     def insertMentionsFromBibDir(bibDir:File):Unit ={
       for(f<-bibDir.listFiles)insertMentionsFromBibFile(f)
     }
-    def insertMentionsFromBibFile(bibFile:File):Unit ={
+    def insertMentionsFromBibFile(bibFile:File,numEntries:Int = Integer.MAX_VALUE):Unit ={
       import MongoCubbieConverter._
       val paperEntities = loadBibTeXFile(bibFile)
-      for(paper <- paperEntities){
+      var count = -1
+      while({count;count+=1;count} < scala.math.min(numEntries,paperEntities.size)){
+       val paper = paperEntities(count)
+      //for(paper <- paperEntities){
         for(author <- paper.authors){
           addFeatures(author)
           authors += new AuthorEntityCubbie(author)
@@ -470,7 +453,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       val initialAuthors = (for(authorCubbie<-result) yield authorCubbie.fetchAuthorEntity(null)).toSeq
       for(cubbie <- result){
         cache += cubbie.id -> cubbie
-        _author2cubbie += cubbie.getAuthor -> cubbie
+        _author2cubbie += cubbie.getAuthor.id -> cubbie
       }
       assembleEntities(result, (id:Any)=>{cache(id).getAuthor}, (e:AuthorEntityCubbie)=>{e.getAuthor})
       //println("DONE ASSEMBLING AUTHORS")
@@ -514,29 +497,36 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       }
     }
     def store(entitiesToStore:Iterable[AuthorEntity]):Unit ={
+      var timer = System.currentTimeMillis
+      var numdeleted=0
+      var numadded=0
+      var nummodified=0
       changePriorities(entitiesToStore)
       val deletedByInference = entitiesToStore.filter(!_.isConnected)
       val updatedOrAddedByInference = entitiesToStore.filter(_.isConnected)
+      println("deleted by inference size: "+deletedByInference.size)
       for(deleted <- deletedByInference){
         if(wasLoadedFromDB(deleted)){
-          println("deleting...")
+          numdeleted+=1
           authors.remove(_.idIs(author2cubbie(deleted).id))
-          //authors.remove(_.idIs(cache(author2cubbie(deleted.id).id)))
-          //authors.remove(_.idIs(deleted.id))
-          //authors.remove(cache.getOrElse(deleted.id,null).asInstanceOf[AuthorEntityCubbie],null)
         }
       }
       //todo: modify api to mongo cubbies to delete
       for(updatedOrAdded <- updatedOrAddedByInference){
         val old = cache.getOrElse(updatedOrAdded.id,null).asInstanceOf[AuthorEntityCubbie]
         val newAuthor = new AuthorEntityCubbie(updatedOrAdded)
-        //println("OLD AUTHOR: "+old)
-        //println("NEW AUTHOR: "+newAuthor)
-        //println("NEW AUTHOR: "+eagerDBO(newAuthor))
-        if(old==null)authors += newAuthor
-        else authors.updateDelta(old,newAuthor)
+        if(old==null){
+          authors += newAuthor
+          numadded += 1
+        }
+        else{
+          authors.updateDelta(old,newAuthor)
+          nummodified +=1
+        }
         //authors.updateDelta(cache.getOrElse(updatedOrAdded.id,null).asInstanceOf[AuthorEntityCubbie],new AuthorEntityCubbie(updatedOrAdded))
       } //update delta code to handle null
+      timer = (System.currentTimeMillis-timer)/1000L
+      println("Store summary: adding "+numadded + ", removing "+numdeleted + " and modified "+nummodified+" entities took "+timer+"s.")
     }
     def changePriorities(entities:Iterable[AuthorEntity]):Unit ={
       for(e<-entities)e.priority = scala.math.exp(e.priority - random.nextDouble)
@@ -708,7 +698,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
 //    rexa2.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/all3/"))
 //    rexa2.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
 //    rexa2.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/test.bib"))
-
+/*
     if(1+1==2){
       rexa2.drop
       rexa2.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
@@ -716,9 +706,9 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       if(dropDB)rexa2.drop
       if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
     }
+*/
     val model = new HierCorefModel
     val predictor = new AuthorSampler(model)
-
     for(i<-0 until numIterations){
       println("\n=============")
       println("BATCH NO. "+i)
@@ -745,10 +735,6 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       //predictor.performMaintenance
       rexa2.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[AuthorEntity]))
     }
-//    Entities.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[MyEntity]))
-    // priority queue
-    // get next n entities from db, and their canopy
-    // how much of tree substructure to retrieve, how to represent the "fringe"
   }
 
   def load20News(dir:java.io.File):ArrayBuffer[(String,ArrayBuffer[String])] ={
