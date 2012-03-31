@@ -707,6 +707,12 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
     }
 */
+    var storingTime:Long = 0L
+    var loadingTime:Long = 0L
+    var inferenceTime:Long = 0L
+    var totalSamples:Long = 0L
+    var totalLoaded:Long = 0L
+    def totalTime:Long =loadingTime+inferenceTime+storingTime
     val model = new HierCorefModel
     val predictor = new AuthorSampler(model)
     for(i<-0 until numIterations){
@@ -714,19 +720,15 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       println("BATCH NO. "+i)
       println("==============")
       var time = System.currentTimeMillis
-      val mentions =rexa2.nextBatch(100)
-      println("Loading " + mentions.size + " took " + (System.currentTimeMillis -time)/1000L+"s.")
-      //for(m <- mentions)if(!m.isObserved) throw new Exception("DB is singletons, should be entirely mentions.")
-      /*
-    for(m <- mentions){
-      println(this.entityString(m))
-      println("   *properties:  (exists?="+m.isConnected+" mention?="+m.isObserved+" #children:"+m.subEntitiesSize+")")
-    }*/
+      val mentions =rexa2.nextBatch(numToPop)
+      time = System.currentTimeMillis - time;loadingTime += time;println("Loading " + mentions.size + " took " + (time/1000L)+"s.")
       println("Number of mentions: "+mentions.size)
+      totalLoaded += mentions.size.toLong
+      totalSamples += numSteps.toLong
       predictor.setEntities(mentions)
       time = System.currentTimeMillis
       predictor.process(numSteps)
-      System.out.println(numSteps+" of inference took "+(System.currentTimeMillis-time)/1000L + "s.")
+      time = System.currentTimeMillis - time;inferenceTime += time;System.out.println(numSteps+" of inference took "+(time/1000L) + "s.")
       //println("Entities:\n"+predictor.getEntities)
       println("\nPRINTING ENTITIES")
       printEntities(predictor.getEntities)
@@ -734,9 +736,11 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       println("Inferred entities: "+predictor.getEntities.size)
       //predictor.performMaintenance
       rexa2.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[AuthorEntity]))
+      time = System.currentTimeMillis - time;inferenceTime += time;
+      storingTime += time
+      System.out.println("Batch "+i+" total times. Load: "+(loadingTime/1000L)+" Store: "+(storingTime/1000L)+" Inference: "+(inferenceTime/1000L)+" s. Total loaded: "+totalLoaded + " total samples: "+totalSamples)
     }
   }
-
   def load20News(dir:java.io.File):ArrayBuffer[(String,ArrayBuffer[String])] ={
     var result = new ArrayBuffer[(String,ArrayBuffer[String])]
     for(subdir <- dir.listFiles){
