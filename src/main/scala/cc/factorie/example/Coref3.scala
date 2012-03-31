@@ -437,7 +437,9 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       var result = new ArrayBuffer[AuthorEntityCubbie]
       var topPriority = new ArrayBuffer[AuthorEntityCubbie]
       val sorted = authors.query(null,_.canopies.select.priority.select).sort(_.priority(-1))
-      for(i <- 0 until n)if(sorted.hasNext)topPriority += sorted.next
+      for(i <- 0 until n)if(sorted.hasNext){
+        topPriority += sorted.next
+      }
       sorted.close
       for(author <- topPriority){
         //println("priority: "+author.priority)
@@ -445,7 +447,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
           if(!canopyHash.contains(name)){
             result ++= authors.query(_.canopies(Seq(name)))
             canopyHash += name
-            println("    added canopy name: "+author.canopies+ " result.size="+result.size)
+            println("    added canopy name: "+name+ " result.size="+result.size)
           }
         }
       }
@@ -698,7 +700,8 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
 //    rexa2.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/all3/"))
 //    rexa2.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
 //    rexa2.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/test.bib"))
-/*
+
+    /*
     if(1+1==2){
       rexa2.drop
       rexa2.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
@@ -706,7 +709,8 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       if(dropDB)rexa2.drop
       if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
     }
-*/
+    */
+
     var storingTime:Long = 0L
     var loadingTime:Long = 0L
     var inferenceTime:Long = 0L
@@ -729,12 +733,14 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       time = System.currentTimeMillis
       predictor.process(numSteps)
       time = System.currentTimeMillis - time;inferenceTime += time;System.out.println(numSteps+" of inference took "+(time/1000L) + "s.")
+      println("TIME: "+time + " inferenceTime: "+ inferenceTime)
       //println("Entities:\n"+predictor.getEntities)
-      println("\nPRINTING ENTITIES")
-      printEntities(predictor.getEntities)
-      checkIntegrity(predictor.getEntities)
+//      println("\nPRINTING ENTITIES")
+//      printEntities(predictor.getEntities)
+//      checkIntegrity(predictor.getEntities)
       println("Inferred entities: "+predictor.getEntities.size)
       //predictor.performMaintenance
+      time = System.currentTimeMillis
       rexa2.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[AuthorEntity]))
       time = System.currentTimeMillis - time;inferenceTime += time;
       storingTime += time
