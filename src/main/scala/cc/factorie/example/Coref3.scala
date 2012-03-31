@@ -334,11 +334,32 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       }
     }
     def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit ={
+      var oldBagOfC:String = ""
+      var oldBagOFV:String = ""
+      try{
       var e = formerParent
       while(e!=null){
+        oldBagOfC = formerParent.attr[BagOfCoAuthors].value.toString
+        oldBagOFV = formerParent.attr[BagOfVenues].value.toString
         e.attr[BagOfCoAuthors].remove(parting.attr[BagOfCoAuthors].value)
         e.attr[BagOfVenues].remove(parting.attr[BagOfVenues].value)
         e = e.parentEntity
+      }
+      }catch{
+        case e:java.util.NoSuchElementException => {
+          println("FORMER PARENT:" + formerParent.id)
+          println("PARTING: "+parting.id)
+          println("BagOfCO")
+          println("  parting: "+parting.attr[BagOfCoAuthors].value)
+          println("  parent : "+oldBagOfC)
+          println("  parent : "+formerParent.attr[BagOfCoAuthors].value)
+          println("BagOfVen")
+          println("  parting: "+parting.attr[BagOfVenues].value)
+          println("  parent : "+oldBagOFV)
+          println("  parent : "+formerParent.attr[BagOfVenues].value)
+          e.printStackTrace(System.out)
+          System.exit(1)
+        }
       }
     }
     override def proposalHook(proposal:Proposal) = {
@@ -386,19 +407,18 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     import MongoCubbieImplicits._
     import MongoCubbieConverter._
     protected var _author2cubbie = new HashMap[Any,AuthorEntityCubbie]
-    protected var cache = new CubbieRefs
-    protected var authorCache = new HashMap[Any,AuthorEntity]
+    protected var cache = new HashMap[Any,AuthorEntityCubbie]
+    //protected var authorCache = new HashMap[Any,AuthorEntity]
     protected val mongoConn = new Mongo(mongoServer,mongoPort)
     protected val mongoDB = mongoConn.getDB(mongoDBName)
     protected val coll = mongoDB.getCollection("authors")
     protected val authors = new MongoCubbieCollection(coll,() => new AuthorEntityCubbie,(a:AuthorEntityCubbie) => Seq(Seq(a.canopies),Seq(a.priority),Seq(a.entityRef))) with LazyCubbieConverter[AuthorEntityCubbie]
     println("Created a rexa2 database: "+mongoDBName+"@"+mongoServer+":"+mongoPort)
     def drop = coll.drop
-    def populateREXAFromDir(bibDir:File):Unit ={
-      for(f<-bibDir.listFiles)populateREXA(f)
+    def insertMentionsFromBibDir(bibDir:File):Unit ={
+      for(f<-bibDir.listFiles)insertMentionsFromBibFile(f)
     }
-        
-    def populateREXA(bibFile:File):Unit ={
+    def insertMentionsFromBibFile(bibFile:File):Unit ={
       import MongoCubbieConverter._
       val paperEntities = loadBibTeXFile(bibFile)
       for(paper <- paperEntities){
@@ -428,6 +448,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     }
     def nextBatch(n:Int=10):Seq[AuthorEntity] ={
       reset
+      println("  Popping "+n+" off the priority queue.")
       //val canopies = authors.query(_.entityRef(null)).sort(_.priority)
       val canopyHash = new HashSet[String]
       var result = new ArrayBuffer[AuthorEntityCubbie]
@@ -436,21 +457,26 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       for(i <- 0 until n)if(sorted.hasNext)topPriority += sorted.next
       sorted.close
       for(author <- topPriority){
-        println("priority: "+author.priority)
+        //println("priority: "+author.priority)
         for(name <- author.canopies.value){
           if(!canopyHash.contains(name)){
             result ++= authors.query(_.canopies(Seq(name)))
             canopyHash += name
-            println("added canopy name: "+author.canopies)
-            println("  result size: "+result.size)
+            println("    added canopy name: "+author.canopies+ " result.size="+result.size)
           }
         }
       }
-      val initialAuthors = (for(authorCubbie<-result) yield authorCubbie.fetchAuthorEntity(cache)).toSeq
+      
+      val initialAuthors = (for(authorCubbie<-result) yield authorCubbie.fetchAuthorEntity(null)).toSeq
       for(cubbie <- result){
         cache += cubbie.id -> cubbie
         _author2cubbie += cubbie.getAuthor -> cubbie
       }
+      assembleEntities(result, (id:Any)=>{cache(id).getAuthor}, (e:AuthorEntityCubbie)=>{e.getAuthor})
+      //println("DONE ASSEMBLING AUTHORS")
+      //printEntities(initialAuthors,false)
+      //println("DONE PRINTING ASSEMBELD AUTHORS")
+      checkIntegrity(initialAuthors)
       initialAuthors
       /*
       cache = new CubbieRefs
@@ -479,6 +505,14 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       val result = for(authorCubbie<-authors) yield authorCubbie.fetchAuthorEntity(cache)
       result.toSeq
     }*/
+    def assembleEntities[C<:EntityCubbie,E<:Entity](toAssemble:Seq[C],id2entity:Any=>E, cubbie2entity:C=>E):Unit ={
+      for(c<-toAssemble){
+        val child = cubbie2entity(c)
+        val parent = if(c.entityRef.isDefined)id2entity(c.entityRef.value) else null.asInstanceOf[E]
+        //println("entityRef defined? = "+entityRef.isDefined+" in id list? = "+id2entity)
+        child.setParentEntity(parent)(null)
+      }
+    }
     def store(entitiesToStore:Iterable[AuthorEntity]):Unit ={
       changePriorities(entitiesToStore)
       val deletedByInference = entitiesToStore.filter(!_.isConnected)
@@ -661,45 +695,56 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     args.foreach((s:String) => {val sp=s.split("=");opts += sp(0) -> sp(1)})
     opts.foreach(p => println(p._1 + ": " + p._2))
     val dblpFile = opts.getOrElse("dblpFile", "/Users/mwick/data/dblp/small.xml")
-    val numSteps = opts.getOrElse("numSteps","1000000").toInt
+    val numSteps = opts.getOrElse("numSteps","10000").toInt
     val dbName = opts.getOrElse("mongoDBName","rexa2-cubbie")
     val dbServer = opts.getOrElse("mongoServer","localhost")
     val dbPort = opts.getOrElse("mongoPort","27017").toInt
     val populateDB = opts.getOrElse("populateDB","true").toBoolean
     val dropDB = opts.getOrElse("dropDB","false").toBoolean
-    val numToPop = opts.getOrElse("numToPop","10000").toInt
+    val numToPop = opts.getOrElse("numToPop","10").toInt
+    val numIterations = opts.getOrElse("numIterations","100").toInt
     println("Rexa2 database: "+dbName+"@"+dbServer+":"+dbPort)
     val rexa2 = new Rexa2(dbServer,dbPort,dbName)
-//    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/all3/"))
-//    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
-//    rexa2.populateREXA(new File("/Users/mwick/data/thesis/rexa2/test.bib"))
-//    rexa2.populateREXA(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
-//    rexa2.insertMentionsFromDBLP("/Users/mwick/data/dblp/small.xml")
-    if(dropDB)rexa2.drop
-    if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
-    var time = System.currentTimeMillis
-    val mentions =rexa2.nextBatch(10)
-    println("Loading " + mentions.size + " took " + (System.currentTimeMillis -time)/1000L+"s.")
-    //for(m <- mentions)if(!m.isObserved) throw new Exception("DB is singletons, should be entirely mentions.")
-    /*
+//    rexa2.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/all3/"))
+//    rexa2.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
+//    rexa2.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/test.bib"))
+
+    if(1+1==2){
+      rexa2.drop
+      rexa2.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
+    }else{
+      if(dropDB)rexa2.drop
+      if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
+    }
+    val model = new HierCorefModel
+    val predictor = new AuthorSampler(model)
+
+    for(i<-0 until numIterations){
+      println("\n=============")
+      println("BATCH NO. "+i)
+      println("==============")
+      var time = System.currentTimeMillis
+      val mentions =rexa2.nextBatch(100)
+      println("Loading " + mentions.size + " took " + (System.currentTimeMillis -time)/1000L+"s.")
+      //for(m <- mentions)if(!m.isObserved) throw new Exception("DB is singletons, should be entirely mentions.")
+      /*
     for(m <- mentions){
       println(this.entityString(m))
       println("   *properties:  (exists?="+m.isConnected+" mention?="+m.isObserved+" #children:"+m.subEntitiesSize+")")
     }*/
-    println("Number of mentions: "+mentions.size)
-    val model = new HierCorefModel
-    val predictor = new AuthorSampler(model)
-    predictor.setEntities(mentions)
-    time = System.currentTimeMillis
-    predictor.process(numSteps)
-    System.out.println(numSteps+" of inference took "+(System.currentTimeMillis-time)/1000L + "s.")
-    //println("Entities:\n"+predictor.getEntities)
-    println("\nPRINTING ENTITIES")
-    printEntities(predictor.getEntities)
-    checkIntegrity(predictor.getEntities)
-    println("Inferred entities: "+predictor.getEntities.size)
-    //predictor.performMaintenance
-    rexa2.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[AuthorEntity]))
+      println("Number of mentions: "+mentions.size)
+      predictor.setEntities(mentions)
+      time = System.currentTimeMillis
+      predictor.process(numSteps)
+      System.out.println(numSteps+" of inference took "+(System.currentTimeMillis-time)/1000L + "s.")
+      //println("Entities:\n"+predictor.getEntities)
+      println("\nPRINTING ENTITIES")
+      printEntities(predictor.getEntities)
+      checkIntegrity(predictor.getEntities)
+      println("Inferred entities: "+predictor.getEntities.size)
+      //predictor.performMaintenance
+      rexa2.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[AuthorEntity]))
+    }
 //    Entities.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[MyEntity]))
     // priority queue
     // get next n entities from db, and their canopy
@@ -759,10 +804,11 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     //for(c <- e.childEntitiesIterator)if(checkIntegrity(c))result=true
     result
   }
-  def printEntities(entities:Seq[Entity]):Unit = {
+  def printEntities(entities:Seq[Entity],includeSingletons:Boolean=true):Unit = {
     var count = 0
     for(e <- entities.filter((e:Entity) => {e.isRoot && e.isConnected})){
-      println(entityString(e))
+      if(!e.isObserved || includeSingletons)
+        println(entityString(e))
       count += 1
     }
     println("Printed " + count + " entities.")
@@ -1240,7 +1286,7 @@ object DBLPLoader{
           for(j<-0 until node.getChildNodes.getLength){
             val authorMention = new AuthorEntity
             authorMention.flagAsMention
-            //authorMention.firstName="";authorMention.middleName="";authorMention.lastName=""
+            authorMention.fullName.setFirst("")(null);authorMention.fullName.setMiddle("")(null);authorMention.fullName.setLast("")(null)
             paperMention.authors += authorMention
             authorMention.paper = paperMention
             val authorNode = node.getChildNodes.item(i)
