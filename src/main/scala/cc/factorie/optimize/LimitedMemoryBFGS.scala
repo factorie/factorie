@@ -102,7 +102,8 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
         logger.error("Line search could not step in the current direction. " +
                 "(This is not necessarily cause for alarm. Sometimes this happens close to the maximum," +
                 " where the function may be very flat.)")
-        throw new StepTooSmallException("Line search could not step in current direction.")
+        //throw new StepTooSmallException("Line search could not step in current direction.")
+        return false
       }
 
       optimizable.getOptimizableParameters(params)
