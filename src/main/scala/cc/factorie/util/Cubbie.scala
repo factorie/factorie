@@ -159,7 +159,7 @@ class Cubbie {
       _rawPut(name, value)
     }
 
-    def isDefined: Boolean = null != _rawGet(name)
+    def isDefined: Boolean = null != _rawGetOrElse(name,null)
 
     def :=(opt: Option[T]): Unit = for (value <- opt) this := (value)
 

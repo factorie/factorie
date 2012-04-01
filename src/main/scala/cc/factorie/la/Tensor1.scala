@@ -94,7 +94,8 @@ class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double
   override def dot(v:DoubleSeq): Double = v(singleIndex) * singleValue
 } 
 
-class SingletonBinaryTensor1(val dim1:Int, val singleIndex:Int) extends Tensor1 {
+trait SingletonBinaryTensorLike1 extends Tensor1 {
+  def singleIndex: Int
   def activeDomain1 = new SingletonIntSeq(singleIndex)
   def apply(i:Int) = if (i == singleIndex) 1.0 else 0.0
   def isDense = false
@@ -105,6 +106,10 @@ class SingletonBinaryTensor1(val dim1:Int, val singleIndex:Int) extends Tensor1 
   override def containsNaN: Boolean = false
   override def dot(v:DoubleSeq): Double = v(singleIndex)
   //override def copy = this // safe because it is immutable
+}
+class SingletonBinaryTensor1(val dim1:Int, val singleIndex:Int) extends SingletonBinaryTensorLike1 
+class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], val singleIndex:Int) extends SingletonBinaryTensorLike1 {
+  def dim1 = sizeProxy.size
 }
 
 trait UniformTensorLike1 extends Tensor1 {
@@ -251,10 +256,17 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
   override def zero(): Unit = _npos = 0
 
   /** Return the position at which index occurs, or -1 if index does not occur. */
-  def position(index:Int): Int = { // Just linear search for now; consider binary search with memory of last position
+  def position(index:Int): Int = {
     makeReadable
-    var i = 0
-    while (i < _npos) { if (_indexs(i) == index) return i; i += 1 }
+    var i = 0; var ii = 0
+    while (i < _npos) { ii = _indexs(i); if (ii == index) return i else if (ii > index) return -1; i += 1 }
+    //while (i < _npos) { if (_indexs(i) == index) return i; i += 1 }
+    -1
+  }
+  def position(index:Int, start:Int): Int = { // Just linear search for now; consider binary search with memory of last position
+    makeReadable
+    var i = start; var ii = 0
+    while (i < _npos) { ii = _indexs(i); if (ii == index) return i else if (ii > index) return -1; i += 1 }
     -1
   }
 
@@ -269,6 +281,18 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     v match {
       case v:SingletonBinaryTensor1 => apply(v.singleIndex)
       case v:SingletonTensor1 => apply(v.singleIndex) * v.singleValue
+      case v:SparseIndexedTensor1 => {
+        val v1 = if (this._npos < v._npos) this else v
+        val v2 = if (v._npos< this._npos) v else this
+        var i = 0; var j = -1; var j2 = 0
+        var result = 0.0
+        while (i < v1._npos) {
+          j2 = v2.position(v1._indexs(i), j+1)
+          if (j2 >= 0) { result += v1._values(i) * v2._values(j2); j = j2 }
+          i += 1
+        }
+        result
+      }
       case v:DoubleSeq => { var result = 0.0; var p = 0; while (p < _npos) { result += v(_indexs(p)) * _values(p); p += 1 }; result }
     }
   }
