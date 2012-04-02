@@ -22,6 +22,7 @@ import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01)(implicit val model:MutableGenerativeModel) {
+  var diagnosticName = ""
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
@@ -128,7 +129,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       val timeSecs = (System.currentTimeMillis - startIterationTime)/1000.0
       if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush
       if (i % diagnosticInterval == 0) {
-        println ("\nIteration "+i)
+        println ("\n"+diagnosticName+"\nIteration "+i)
         sampler.export(phis)
         if (diagnosticShowPhrases) println(topicsWordsAndPhrasesSummary(10,10)) else println(topicsSummary(10))
       }

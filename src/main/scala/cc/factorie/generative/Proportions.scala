@@ -49,7 +49,7 @@ class ProportionsArrayValue(value:Array[Double]) extends ProportionsValue {
   final def update(i:Int, v:Double) = array(i) = v
 }
 
-trait Proportions extends Variable /*with DiscreteGenerating with IndexedSeqEqualsEq[Double]*/ with ProportionsValue
+trait Proportions extends Variable /*with DiscreteGenerating*/ with IndexedSeqEqualsEq[Double] with ProportionsValue
 with VarAndValueGenericDomain[Proportions,ProportionsValue]
 /*with VarAndValueGenericDomain[Proportions,Seq[Double]]*/ 
 {
