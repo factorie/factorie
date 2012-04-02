@@ -20,7 +20,8 @@ trait HasCanopyAttributes[T<:Entity]{
 }
 trait CanopyAttribute[T<:Entity]{def entity:T;def canopyName:String}
 class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity] {
-  def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
+  def canopyName:String=(initial(entity.entityRoot.asInstanceOf[AuthorEntity].fullName.firstName)+entity.entityRoot.asInstanceOf[AuthorEntity].fullName.lastName).toLowerCase
+  //def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
   def initial(s:String):String = if(s!=null && s.length>0)s.substring(0,1) else ""
 }
 /**Attributes specific to REXA authors*/
@@ -386,22 +387,24 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     import MongoCubbieImplicits._
     import MongoCubbieConverter._
     protected var _author2cubbie = new HashMap[Any,AuthorEntityCubbie]
-    protected var cache = new CubbieRefs
-    protected var authorCache = new HashMap[Any,AuthorEntity]
+    protected var cache = new HashMap[Any,AuthorEntityCubbie]
+    //protected var authorCache = new HashMap[Any,AuthorEntity]
     protected val mongoConn = new Mongo(mongoServer,mongoPort)
     protected val mongoDB = mongoConn.getDB(mongoDBName)
     protected val coll = mongoDB.getCollection("authors")
     protected val authors = new MongoCubbieCollection(coll,() => new AuthorEntityCubbie,(a:AuthorEntityCubbie) => Seq(Seq(a.canopies),Seq(a.priority),Seq(a.entityRef))) with LazyCubbieConverter[AuthorEntityCubbie]
     println("Created a rexa2 database: "+mongoDBName+"@"+mongoServer+":"+mongoPort)
     def drop = coll.drop
-    def populateREXAFromDir(bibDir:File):Unit ={
-      for(f<-bibDir.listFiles)populateREXA(f)
+    def insertMentionsFromBibDir(bibDir:File):Unit ={
+      for(f<-bibDir.listFiles)insertMentionsFromBibFile(f)
     }
-        
-    def populateREXA(bibFile:File):Unit ={
+    def insertMentionsFromBibFile(bibFile:File,numEntries:Int = Integer.MAX_VALUE):Unit ={
       import MongoCubbieConverter._
       val paperEntities = loadBibTeXFile(bibFile)
-      for(paper <- paperEntities){
+      var count = -1
+      while({count;count+=1;count} < scala.math.min(numEntries,paperEntities.size)){
+       val paper = paperEntities(count)
+      //for(paper <- paperEntities){
         for(author <- paper.authors){
           addFeatures(author)
           authors += new AuthorEntityCubbie(author)
@@ -428,29 +431,37 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     }
     def nextBatch(n:Int=10):Seq[AuthorEntity] ={
       reset
+      println("  Popping "+n+" off the priority queue.")
       //val canopies = authors.query(_.entityRef(null)).sort(_.priority)
       val canopyHash = new HashSet[String]
       var result = new ArrayBuffer[AuthorEntityCubbie]
       var topPriority = new ArrayBuffer[AuthorEntityCubbie]
       val sorted = authors.query(null,_.canopies.select.priority.select).sort(_.priority(-1))
-      for(i <- 0 until n)if(sorted.hasNext)topPriority += sorted.next
+      for(i <- 0 until n)if(sorted.hasNext){
+        topPriority += sorted.next
+      }
       sorted.close
       for(author <- topPriority){
-        println("priority: "+author.priority)
+        //println("priority: "+author.priority)
         for(name <- author.canopies.value){
           if(!canopyHash.contains(name)){
             result ++= authors.query(_.canopies(Seq(name)))
             canopyHash += name
-            println("added canopy name: "+author.canopies)
-            println("  result size: "+result.size)
+            println("    added canopy name: "+name+ " result.size="+result.size)
           }
         }
       }
-      val initialAuthors = (for(authorCubbie<-result) yield authorCubbie.fetchAuthorEntity(cache)).toSeq
+      
+      val initialAuthors = (for(authorCubbie<-result) yield authorCubbie.fetchAuthorEntity(null)).toSeq
       for(cubbie <- result){
         cache += cubbie.id -> cubbie
-        _author2cubbie += cubbie.getAuthor -> cubbie
+        _author2cubbie += cubbie.getAuthor.id -> cubbie
       }
+      assembleEntities(result, (id:Any)=>{cache(id).getAuthor}, (e:AuthorEntityCubbie)=>{e.getAuthor})
+      //println("DONE ASSEMBLING AUTHORS")
+      //printEntities(initialAuthors,false)
+      //println("DONE PRINTING ASSEMBELD AUTHORS")
+      checkIntegrity(initialAuthors)
       initialAuthors
       /*
       cache = new CubbieRefs
@@ -479,30 +490,45 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       val result = for(authorCubbie<-authors) yield authorCubbie.fetchAuthorEntity(cache)
       result.toSeq
     }*/
+    def assembleEntities[C<:EntityCubbie,E<:Entity](toAssemble:Seq[C],id2entity:Any=>E, cubbie2entity:C=>E):Unit ={
+      for(c<-toAssemble){
+        val child = cubbie2entity(c)
+        val parent = if(c.entityRef.isDefined)id2entity(c.entityRef.value) else null.asInstanceOf[E]
+        //println("entityRef defined? = "+entityRef.isDefined+" in id list? = "+id2entity)
+        child.setParentEntity(parent)(null)
+      }
+    }
     def store(entitiesToStore:Iterable[AuthorEntity]):Unit ={
+      var timer = System.currentTimeMillis
+      var numdeleted=0
+      var numadded=0
+      var nummodified=0
       changePriorities(entitiesToStore)
       val deletedByInference = entitiesToStore.filter(!_.isConnected)
       val updatedOrAddedByInference = entitiesToStore.filter(_.isConnected)
+      println("deleted by inference size: "+deletedByInference.size)
       for(deleted <- deletedByInference){
         if(wasLoadedFromDB(deleted)){
-          println("deleting...")
+          numdeleted+=1
           authors.remove(_.idIs(author2cubbie(deleted).id))
-          //authors.remove(_.idIs(cache(author2cubbie(deleted.id).id)))
-          //authors.remove(_.idIs(deleted.id))
-          //authors.remove(cache.getOrElse(deleted.id,null).asInstanceOf[AuthorEntityCubbie],null)
         }
       }
       //todo: modify api to mongo cubbies to delete
       for(updatedOrAdded <- updatedOrAddedByInference){
         val old = cache.getOrElse(updatedOrAdded.id,null).asInstanceOf[AuthorEntityCubbie]
         val newAuthor = new AuthorEntityCubbie(updatedOrAdded)
-        //println("OLD AUTHOR: "+old)
-        //println("NEW AUTHOR: "+newAuthor)
-        //println("NEW AUTHOR: "+eagerDBO(newAuthor))
-        if(old==null)authors += newAuthor
-        else authors.updateDelta(old,newAuthor)
+        if(old==null){
+          authors += newAuthor
+          numadded += 1
+        }
+        else{
+          authors.updateDelta(old,newAuthor)
+          nummodified +=1
+        }
         //authors.updateDelta(cache.getOrElse(updatedOrAdded.id,null).asInstanceOf[AuthorEntityCubbie],new AuthorEntityCubbie(updatedOrAdded))
       } //update delta code to handle null
+      timer = (System.currentTimeMillis-timer)/1000L
+      println("Store summary: adding "+numadded + ", removing "+numdeleted + " and modified "+nummodified+" entities took "+timer+"s.")
     }
     def changePriorities(entities:Iterable[AuthorEntity]):Unit ={
       for(e<-entities)e.priority = scala.math.exp(e.priority - random.nextDouble)
@@ -661,51 +687,68 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     args.foreach((s:String) => {val sp=s.split("=");opts += sp(0) -> sp(1)})
     opts.foreach(p => println(p._1 + ": " + p._2))
     val dblpFile = opts.getOrElse("dblpFile", "/Users/mwick/data/dblp/small.xml")
-    val numSteps = opts.getOrElse("numSteps","1000000").toInt
+    val numSteps = opts.getOrElse("numSteps","10000").toInt
     val dbName = opts.getOrElse("mongoDBName","rexa2-cubbie")
     val dbServer = opts.getOrElse("mongoServer","localhost")
     val dbPort = opts.getOrElse("mongoPort","27017").toInt
     val populateDB = opts.getOrElse("populateDB","true").toBoolean
     val dropDB = opts.getOrElse("dropDB","false").toBoolean
-    val numToPop = opts.getOrElse("numToPop","10000").toInt
+    val numToPop = opts.getOrElse("numToPop","10").toInt
+    val numIterations = opts.getOrElse("numIterations","100").toInt
     println("Rexa2 database: "+dbName+"@"+dbServer+":"+dbPort)
     val rexa2 = new Rexa2(dbServer,dbPort,dbName)
-//    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/all3/"))
-//    rexa2.populateREXAFromDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
-//    rexa2.populateREXA(new File("/Users/mwick/data/thesis/rexa2/test.bib"))
-//    rexa2.populateREXA(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
-//    rexa2.insertMentionsFromDBLP("/Users/mwick/data/dblp/small.xml")
+//    rexa2.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/all3/"))
+//    rexa2.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
+//    rexa2.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/test.bib"))
+
+    /*
+    if(1+1==2){
+      rexa2.drop
+      rexa2.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
+    }else{
+      if(dropDB)rexa2.drop
+      if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
+    }
+    */
     if(dropDB)rexa2.drop
     if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
-    var time = System.currentTimeMillis
-    val mentions =rexa2.nextBatch(10)
-    println("Loading " + mentions.size + " took " + (System.currentTimeMillis -time)/1000L+"s.")
-    //for(m <- mentions)if(!m.isObserved) throw new Exception("DB is singletons, should be entirely mentions.")
-    /*
-    for(m <- mentions){
-      println(this.entityString(m))
-      println("   *properties:  (exists?="+m.isConnected+" mention?="+m.isObserved+" #children:"+m.subEntitiesSize+")")
-    }*/
-    println("Number of mentions: "+mentions.size)
+
+    var storingTime:Long = 0L
+    var loadingTime:Long = 0L
+    var inferenceTime:Long = 0L
+    var totalSamples:Long = 0L
+    var totalLoaded:Long = 0L
+    def totalTime:Long =loadingTime+inferenceTime+storingTime
     val model = new HierCorefModel
     val predictor = new AuthorSampler(model)
-    predictor.setEntities(mentions)
-    time = System.currentTimeMillis
-    predictor.process(numSteps)
-    System.out.println(numSteps+" of inference took "+(System.currentTimeMillis-time)/1000L + "s.")
-    //println("Entities:\n"+predictor.getEntities)
-    println("\nPRINTING ENTITIES")
-    printEntities(predictor.getEntities)
-    checkIntegrity(predictor.getEntities)
-    println("Inferred entities: "+predictor.getEntities.size)
-    //predictor.performMaintenance
-    rexa2.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[AuthorEntity]))
-//    Entities.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[MyEntity]))
-    // priority queue
-    // get next n entities from db, and their canopy
-    // how much of tree substructure to retrieve, how to represent the "fringe"
+    for(i<-0 until numIterations){
+      println("\n=============")
+      println("BATCH NO. "+i)
+      println("==============")
+      var time = System.currentTimeMillis
+      val mentions =rexa2.nextBatch(numToPop)
+      time = System.currentTimeMillis - time;loadingTime += time;println("Loading " + mentions.size + " took " + (time/1000L)+"s.")
+      println("Number of mentions: "+mentions.size)
+      totalLoaded += mentions.size.toLong
+      totalSamples += numSteps.toLong
+      predictor.setEntities(mentions)
+      time = System.currentTimeMillis
+      predictor.process(numSteps)
+      time = System.currentTimeMillis - time;inferenceTime += time;System.out.println(numSteps+" of inference took "+(time/1000L) + "s.")
+      println("TIME: "+time + " inferenceTime: "+ inferenceTime)
+      //println("Entities:\n"+predictor.getEntities)
+//      println("\nPRINTING ENTITIES")
+//      printEntities(predictor.getEntities)
+//      checkIntegrity(predictor.getEntities)
+      println("Inferred entities: "+predictor.getEntities.size)
+      //predictor.performMaintenance
+      time = System.currentTimeMillis
+      rexa2.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[AuthorEntity]))
+      time = System.currentTimeMillis - time;inferenceTime += time;
+      storingTime += time
+      System.out.println("Batch "+i+" total times. Load: "+(loadingTime/1000L)+" Store: "+(storingTime/1000L)+" Inference: "+(inferenceTime/1000L)+" s. Total loaded: "+totalLoaded + " total samples: "+totalSamples)
+    }
   }
-
   def load20News(dir:java.io.File):ArrayBuffer[(String,ArrayBuffer[String])] ={
     var result = new ArrayBuffer[(String,ArrayBuffer[String])]
     for(subdir <- dir.listFiles){
@@ -759,10 +802,11 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     //for(c <- e.childEntitiesIterator)if(checkIntegrity(c))result=true
     result
   }
-  def printEntities(entities:Seq[Entity]):Unit = {
+  def printEntities(entities:Seq[Entity],includeSingletons:Boolean=true):Unit = {
     var count = 0
     for(e <- entities.filter((e:Entity) => {e.isRoot && e.isConnected})){
-      println(entityString(e))
+      if(!e.isObserved || includeSingletons)
+        println(entityString(e))
       count += 1
     }
     println("Printed " + count + " entities.")
@@ -1240,7 +1284,7 @@ object DBLPLoader{
           for(j<-0 until node.getChildNodes.getLength){
             val authorMention = new AuthorEntity
             authorMention.flagAsMention
-            //authorMention.firstName="";authorMention.middleName="";authorMention.lastName=""
+            authorMention.fullName.setFirst("")(null);authorMention.fullName.setMiddle("")(null);authorMention.fullName.setLast("")(null)
             paperMention.authors += authorMention
             authorMention.paper = paperMention
             val authorNode = node.getChildNodes.item(i)
