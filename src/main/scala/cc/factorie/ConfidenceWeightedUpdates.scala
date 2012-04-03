@@ -78,14 +78,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
 //    val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
     //if (!shouldUpdate) return; //this should be determined outside this class
     numUpdates += 1
-    val gradient = new HashMap[DotFamily,SparseVector] {
-      override def default(template:DotFamily) = {
-        template.freezeDomains
-        val vector = new SparseVector(template.statisticsVectorLength)
-        this(template) = vector
-        vector
-      }
-    }
+    val gradient = newGradientAccumulator
     addGradient(gradient, 1.0)
     learningRate = kktMultiplier(gradient)
     updateParameters(gradient)
@@ -167,37 +160,29 @@ trait StdDevConfidenceWeightedUpdates extends ConfidenceWeightedUpdates
 */
 }
 
-  /**Given a gradient, change the parameters according to the diagonal version of "second order perceptron", citation comoing soon.
-    @author Michael Wick
-    @see ConfidenceWeightedUpdates
-    @see StdDevConfidenceWeightedUpdates
-    @see AROWUpdates
-    @see GradientAscentUpdates
-    @WeightUpdates
-    @since 0.8
+/**Given a gradient, change the parameters according to the diagonal version of "second order perceptron", citation comoing soon.
+  @author Michael Wick
+  @see ConfidenceWeightedUpdates
+  @see StdDevConfidenceWeightedUpdates
+  @see AROWUpdates
+  @see GradientAscentUpdates
+  @WeightUpdates
+  @since 0.8
 */
-trait SecondOrderGradientAscentUpdates extends ConfidenceWeightedUpdates
-{
+trait SecondOrderGradientAscentUpdates extends ConfidenceWeightedUpdates {
   this: ProposalSampler[_] =>
-  override def updateWeights : Unit =
-    {
-      //val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
-      //if (!shouldUpdate) return;
-      numUpdates += 1
-      
-      val gradient = new HashMap[DotFamily,SparseVector] {
-      override def default(template:DotFamily) = {
-        template.freezeDomains
-        val vector = new SparseVector(template.statisticsVectorLength)
-        this(template) = vector
-        vector
-      }
-      }
-      addGradient(gradient, 1.0)	 
-      updateParameters(gradient)
-      updateSigma(gradient)
-      super.updateWeights //increments the updateCount
-    }
+  override def updateWeights : Unit = {
+    //val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
+    //if (!shouldUpdate) return;
+    numUpdates += 1
+
+    val gradient = newGradientAccumulator
+
+    addGradient(gradient, 1.0)
+    updateParameters(gradient)
+    updateSigma(gradient)
+    super.updateWeights //increments the updateCount
+  }
 }
 
 
