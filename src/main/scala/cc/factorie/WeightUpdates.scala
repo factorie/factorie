@@ -16,7 +16,6 @@
 
 package cc.factorie
 import cc.factorie.la._
-import collection.mutable.HashMap
 
 /** For parameter estimation methods that use a gradient to update weight parameters.
     Subclasses will create and store a gradient.  
@@ -35,15 +34,4 @@ trait WeightUpdates {
   def updateWeights : Unit = updateCount += 1
   /** Adds the current gradient (as calculated by the recipient) to the accumulator, scaled by 'rate'. */
   def addGradient(accumulator:UpdateFamilyType=>Vector, rate:Double): Unit
-
-  def newGradientAccumulator: HashMap[DotFamily, Vector] = {
-    new HashMap[DotFamily,Vector] {
-      override def default(template:DotFamily) = {
-        template.freezeDomains
-        val vector = template.newWeightsTypeVector(0.0)
-        this(template) = vector
-        vector
-      }
-    }
-  }
 }

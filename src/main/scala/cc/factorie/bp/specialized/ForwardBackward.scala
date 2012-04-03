@@ -12,7 +12,7 @@ import collection.mutable.{HashMap, Map}
  */
 
 object ForwardBackward {
-  
+
   private def nodeMarginals(alpha: Array[Array[Double]], beta: Array[Array[Double]]): Array[Array[Double]] = {
     val ds = alpha(0).size
 
@@ -68,7 +68,7 @@ object ForwardBackward {
       sum += a(i)
       i += 1
     }
-    assert(math.abs(sum - 1.0) < 0.0001, "sum is "+sum + " ; a.length=" + a.length + "; logSum=" + logSum )
+    assert(math.abs(sum - 1.0) < 0.0001, "sum is "+sum)
   }
 
   private def getLocalScores[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](

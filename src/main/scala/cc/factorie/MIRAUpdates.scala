@@ -13,69 +13,75 @@
    limitations under the License. */
 
 
-package cc.factorie
 
+package cc.factorie
+import scala.collection.mutable.HashMap
 import cc.factorie.la._
-import collection.mutable.HashMap
 
 // TODO Generalized this so that it doesn't require SampleRank
 
-/** Changes parameters in the direction of the gradient, selecting jump size based on
- *   passive-aggressive MIRA method of Crammer and Singer.
- *
- *  @author Michael Wick
+/** Changes parameters in the direction of the gradient, selecting jump size based on passive-aggressive MIRA method of Crammer and Singer. 
+    @author Michael Wick
  */
 trait MIRAUpdates extends GradientAscentUpdates with SampleRank {
   this: ProposalSampler[_] =>
+  //override type TemplatesToUpdate = DotFamily
+  //def templateClassToUpdate = classOf[DotTemplate]
+  def learningRate : Double
+  def learningRate_=(x:Double) : Unit
+  def model : Model
+  def learningMargin : Double
+  def useObjectiveDiffAsMargin : Boolean = true
+  val boxConstraint : Double = 1.0//Math.POS_INF_DOUBLE
 
-  def learningRate: Double
-  def learningRate_=(x:Double): Unit
-  def model: Model
-  def learningMargin: Double
-  def useObjectiveDiffAsMargin: Boolean = true
-  val aggressiveness: Double = 1.0
 
-  // TODO: not sure about learning margin violations
+  //
+  //TODO: not sure about learning margin violations
   // TODO  This needs a careful code review.  -akm
-  abstract override def updateWeights: Unit = {
-
+  abstract override def updateWeights : Unit = {
     val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
-
-    val gradient = newGradientAccumulator
-
-    addGradient(gradient, 1.0)
-
-    if (useObjectiveDiffAsMargin)
-      learningMargin = changeProposal.objectiveScore.abs
-    else 1
-
-    learningRate = math.min(kktMultiplier(changeProposal, gradient), aggressiveness)
-
-    if (learningRate != 0)
-      super.updateWeights
+    val gradient = new HashMap[DotFamily,SparseVector] {
+      override def default(template:DotFamily) = {
+    template.freezeDomains
+    val vector = new SparseVector(template.statisticsVectorLength)
+    this(template) = vector
+    vector
+      }
+    }
+    addGradient(gradient,1.0)
+    if(useObjectiveDiffAsMargin)
+      learningMargin = changeProposal.objectiveScore.abs else 1
+    learningRate=math.min(kktMultiplier(changeProposal,gradient),boxConstraint)
+    if(learningRate!=0)
+      super.updateWeights //let perceptron do the work and increment count
+    //addGradient((template:Template) => template match {case t:TemplatesToUpdate => t.weights}, learningRate)
+    //super.asInstanceOf[WeightUpdates].updateWeights
   }
 
-  protected val epsilon: Double = 1e-9 // 0.000000001
+  protected val epsilon: Double = 0.000000001
 
-  def kktMultiplier(changeProposal: Proposal, gradient: HashMap[DotFamily, Vector]): Double = {
-    val margin = -(changeProposal.modelScore.abs)
-    val l2sqrd: Double = computeSumL2Squared(gradient)
-    val error: Double = learningMargin - margin
-    var lambda: Double = 0
-
-    if (l2sqrd < 0 - epsilon || 0 + epsilon < l2sqrd)
-      lambda = error / l2sqrd
-
-    if (lambda < 0) lambda = 0 // no error (the passive part of passive-aggressive)
-
-    lambda
+  def kktMultiplier(changeProposal:Proposal, gradient:HashMap[DotFamily,SparseVector]): Double = {
+    val modelScoreRatio = changeProposal.modelScore
+    var margin = -(changeProposal.modelScore.abs)
+    val l2sqrd : Double = computeL2Diff(gradient)
+    val error: Double = learningMargin - margin;
+    var lambda: Double = 0;
+    //System.out.println("margin: " + margin)
+    //System.out.println("l2 grad: " + l2sqrd)
+    //System.out.println("err: " + error)
+    
+    if (l2sqrd > 0 + epsilon || l2sqrd < 0 - epsilon)
+      lambda = error / l2sqrd;
+    if (lambda < 0) lambda = 0 //no error (the passive part of passive-aggressive)
+    lambda;
   }
-
-  def computeSumL2Squared(vectorsMap: HashMap[DotFamily, Vector]): Double = {
-    var result = 0.0
-    for((t, v) <- vectorsMap)
-      result += v dot v
-    result
-  }
-
+  def computeL2Diff(nabla:HashMap[DotFamily,SparseVector]) : Double =
+    {
+      var result : Double = 0
+      for(t <- nabla.keySet)
+        result += nabla(t) dot nabla(t)
+      return result
+    }
 }
+
+

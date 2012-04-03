@@ -53,8 +53,15 @@ trait AROWUpdates extends ConfidenceWeightedUpdates {
       //if (!shouldUpdate) return;
       numUpdates += 1
       
-      val gradient = newGradientAccumulator
-
+      val gradient = new HashMap[DotFamily,SparseVector] {
+        override def default(template:DotFamily) = {
+          template.freezeDomains
+          val vector = new SparseVector(template.statisticsVectorLength)
+          this(template) = vector
+          vector
+        }
+      }
+      
       addGradient(gradient, 1.0)
       learningRate = alpha(predictedScore,gradient)
       updateParameters(gradient)

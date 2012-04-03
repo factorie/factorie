@@ -27,7 +27,7 @@ class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
 
 object PosModel extends TemplateModel {
   // Bias term on each individual label
-  //val bias = new TemplateWithDotStatistics1[PosLabel] { override def statisticsDomains = Seq(PosDomain) }
+  val bias = new TemplateWithDotStatistics1[PosLabel] { override def statisticsDomains = Seq(PosDomain) }
   // Factor between label and observed token
   val local = new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
     override def statisticsDomains = Seq(PosDomain, PosFeaturesDomain)
@@ -42,17 +42,9 @@ object PosModel extends TemplateModel {
   }
 
   // Add the templates
-  //this += bias
   this += local
+  this += bias
   this += trans
-  
-  def loadFromClassPath(): Unit = {
-    println(this.getClass.getResource("/resources/pos-model/cc.factorie.app.nlp.pos.PosDomain$.gz"))
-  }
-}
-
-object LoadPos extends App {
-  PosModel.loadFromClassPath()
 }
 
 object PosObjective extends TemplateModel(new HammingLossTemplate[PosLabel])
@@ -70,10 +62,11 @@ object POS {
       features += "SHAPE2=" + cc.factorie.app.strings.stringShape(rawWord, 2)
       features += "SHAPE3=" + cc.factorie.app.strings.stringShape(rawWord, 3)
       // pre/suf of length 1..9
-      for (i <- 1 to 9) {
+      //for (i <- 1 to 9) {
+      val i = 3
         features += "SUFFIX" + i + "=" + word.takeRight(i)
         features += "PREFIX" + i + "=" + word.take(i)
-      }
+      //}
       if (token.isCapitalized) features += "CAPITALIZED"
       if (token.string.matches("[A-Z]")) features += "CONTAINS_CAPITAL"
       if (token.string.matches("-")) features += "CONTAINS_DASH"
@@ -92,8 +85,8 @@ object POS {
 
     val sentences = documents.flatMap(_.sentences.filter(s => s.size > 0))
     val labels = sentences.map(_.posLabels)
+
     val pieces = labels.map(ls => ModelPiece(PosModel, ls))
-    //val pieces = labels.map(ls => new ForwardBackwardPiece(ls.toArray, PosModel.local, PosModel.trans))
     val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
     val optimizer = new LimitedMemoryBFGS(trainer) {
       override def postIteration(iter: Int): Unit = {
@@ -114,13 +107,13 @@ object POS {
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.map(_.posLabel))
   def predictSentence(vs: Seq[PosLabel], oldBp: Boolean = false): Unit =
-    if (vs.nonEmpty) Viterbi.searchAndSetToMax(vs, PosModel.local, PosModel.trans)
+    if (vs.nonEmpty) Viterbi.searchAndSetToMax(vs, PosModel.local, PosModel.trans, PosModel.bias)
 
   def test(documents: Seq[Document], label: String): Unit = {
     val sentences = documents.flatMap(_.sentences)
     val labels = sentences.flatMap(s => s.map(_.posLabel))
     labels.map(_.setRandomly())
-    sentences.par.map(predictSentence(_))
+    sentences.map(predictSentence(_))
     println(label + " accuracy: " + PosObjective.aveScore(labels) + "%")
   }
 

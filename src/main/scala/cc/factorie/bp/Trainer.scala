@@ -186,57 +186,6 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
   }
 }
 
-//class MoreParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
-//  extends Trainer(pieces, families) {
-//
-//  def this(model: Model, pieces: Seq[Piece]) = this(pieces, model.familiesOfClass[DotFamily].toSeq)
-//
-//
-//  var piecesIterator = pieces.iterator // this is var so it can be reset
-//  case class NextChunk()
-//  case class Chunk(a: ArrayBuffer[Piece])
-//  val pieceChunkActor = actor {
-//    loop {
-//      react {
-//        case NextChunk() => {
-//          val a = new ArrayBuffer[Piece];
-//          for (p <- piecesIterator.take(100)) a + pieces.ne
-//          reply(Chunk(a))
-//        }
-//      }
-//    }
-//  }
-//
-//  def updateValueAndGradient: Unit = {
-//    piecesIterator = pieces.iterator
-//    _value = 0.0
-//    val grads = new HashMap[DotFamily, Vector]
-//    // compute total grad and value of the pieces
-//    println("Computing value and gradient")
-//    var i = 0
-//    for (piece <- pieces) {
-//      i += 1
-//      val (pv, pg) = piece.valueAndGradient
-//      _value += pv
-//      for (df <- pg.keys) {
-//        grads.getOrElseUpdate(df, df.newWeightsTypeVector()) += pg(df)
-//      }
-//      if (pieces.length >= 10000 && i % (pieces.length / 25) == 0)
-//        println("Done %d of %d pieces".format(i, pieces.length))
-//    }
-//    //println("--- Normalizing ---")
-//    //_value *= (1.0 / pieces.length)
-//    //grads.values.foreach(g => g.activeDomain.foreach(i => g(i) = g(i) * (1.0 / pieces.length)))
-//    println("Regularizing")
-//    // include the regularization
-//    _value += regValue
-//    regGradients(grads)
-//    // project the gradient
-//    grads.foreach(p => projectGradient(p._1, p._2))
-//    // create the gradient
-//    _gradients = new ArrayFromVectors(families.map(grads(_)))
-//  }
-//}
 
 class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
                  val minibatchSize: Int, var initialLearningRate: Double,

@@ -44,11 +44,10 @@ object PerceptronPOS {
       val features = new PosFeatures(token) { override def skipNonCategories = PosModel.skipNonCategories }
       token.attr += features
       features += "W=" + word
-      for (i <- 1 to 9) {
-        features += "SHAPE" + i + "=" + cc.factorie.app.strings.stringShape(rawWord, 3)
-        features += "SUFFIX" + i + "=" + word.takeRight(i)
-        features += "PREFIX" + i + "=" + word.take(i)
-      }
+      features += "SHAPE3=" + cc.factorie.app.strings.stringShape(rawWord, 3)
+      val i = 3
+      features += "SUFFIX" + i + "=" + word.takeRight(i)
+      features += "PREFIX" + i + "=" + word.take(i)
       if (token.isCapitalized) features += "CAPITALIZED"
       if (token.string.matches("[A-Z]")) features += "CONTAINS_CAPITAL"
       if (token.string.matches("-")) features += "CONTAINS_DASH"
@@ -88,7 +87,7 @@ object PerceptronPOS {
     }
 
     val sentenceLabels: Array[Seq[PosLabel]] = documents.flatMap(_.sentences).map(_.posLabels).filter(_.size > 0).toArray
-    val learner = new StructuredPerceptron[PosLabel] with ParameterAveraging {
+    val learner = new AveragedStructuredPerceptron[PosLabel] {
       val model = PosModel
       def predict(vs: Seq[PosLabel]) = predictSentence(vs)
     }
@@ -108,15 +107,29 @@ object PerceptronPOS {
       testSavePrint("iteration=" + i)
       println("Done in " + (System.currentTimeMillis()-start)/1000.0 + "s\n")
 
-      learner.setWeightsToAverage()
+      learner.setToAveraged()
       println("Testing with averaged weights...")
       start = System.currentTimeMillis()
       testSavePrint("iteration=" + i + "-averaged")
       println("Done in " + (System.currentTimeMillis()-start)/1000.0 + "s\n")
       println("-----------------------")
 
-      learner.unsetWeightsToAverage
+      learner.unsetAveraged()
     }
+
+    /* The following is an example of how to use Stochastic Gradent updates with Perceptron gradients. */
+    /*
+    val pieces = sentenceLabels.map(vs => new PerceptronChainPiece(SGDPosModel.localTemplate, SGDPosModel.transTemplate, vs.toArray))
+    val SGDLearner = new SGDTrainer(pieces, SGDPosModel.familiesOfClass[DotFamily], 50, 0.01, 1, 1.0, 0.0)
+    for (i <- 0 until iterations) {
+      val t = System.currentTimeMillis()
+      SGDLearner.iterate()
+      println("Time per iter: "+(System.currentTimeMillis() - t)/1000.0)
+      val t2 = System.currentTimeMillis()
+      testSavePrint("foo")
+      println("Time per evaluation: "+(System.currentTimeMillis()-t2)/1000.0)
+    }
+    */
   }
 
   def test(documents: Seq[Document], label: String = "test"): Unit = {
