@@ -36,6 +36,8 @@ trait MassesWithTotal extends Masses {
 // TODO Should we get rid of all these combinations and make users extend the combinations themselves? -akm
 trait Masses1 extends Tensor1 with Masses
 trait Masses2 extends Tensor2 with Masses
+trait Masses3 extends Tensor3 with Masses
+trait Masses4 extends Tensor4 with Masses
 
 //trait DenseMasses extends ... (gather += in here, but we need a DenseTensor class also)
 class DenseMasses1(val dim1:Int) extends DenseTensorLike1 with Masses1 with MassesWithTotal {
@@ -44,9 +46,17 @@ class DenseMasses1(val dim1:Int) extends DenseTensorLike1 with Masses1 with Mass
 class DenseMasses2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 with Masses2 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
 }
+class DenseMasses3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3 with Masses3 with MassesWithTotal {
+  override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+}
+class DenseMasses4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4 with Masses4 with MassesWithTotal {
+  override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+}
+
 class UniformMasses1(dim1:Int, uniformValue:Double) extends UniformTensor1(dim1, uniformValue) with Masses1 {
   def massTotal = dim1 * uniformValue
 }
+
 class SingletonMasses1(dim1:Int, singleIndex:Int, singleValue:Double) extends SingletonTensor1(dim1, singleIndex, singleValue) with Masses1 {
   def massTotal = singleValue
 }
@@ -54,6 +64,7 @@ class SingletonMasses1(dim1:Int, singleIndex:Int, singleValue:Double) extends Si
 class GrowableDenseMasses1(val sizeProxy:Iterable[Any]) extends GrowableDenseTensorLike1 with Masses1 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
 }
+
 class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends UniformTensorLike1 with Masses1 {
   def dim1 = sizeProxy.size
   def massTotal = sizeProxy.size * uniformValue

@@ -54,6 +54,8 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
 }
 
 
+// TODO Make a GrowableDenseTensor2
+
 
 
 trait LayeredTensorLike2 extends Tensor2 {

@@ -21,11 +21,11 @@ import scala.util.Random
 
 // Proportions Values
 
-// TODO Rename Proportions when we make the full substitution!
-//  Then also create a separate Proportions1 that inherits from Masses1 and Tensor1
 // TODO Perhaps instead Proportions should contain a Masses, but not inherit from Masses?  (Suggested by Alexandre)  -akm
+// But I think this would lead to inefficiencies, and the current set-up isn't bad. -akm
 trait Proportions extends Masses {
   abstract override def apply(i:Int): Double = super.apply(i) / massTotal
+  def mass(i:Int): Double = super.apply(i)
   override def sampleIndex(implicit r:Random): Int = {
     var b = 0.0; val s = r.nextDouble; var i = 0
     while (b <= s && i < length) { assert (apply(i) >= 0.0); b += apply(i); i += 1 }
@@ -38,6 +38,7 @@ trait Proportions extends Masses {
   override def stringPrefix = "Proportions"
   override def toString = this.toSeq.take(10).mkString(stringPrefix+"(", ",", ")")
 
+  // Consider moving this to Tensor (and renaming appropriately) -akm
   class DiscretePr(val index:Int, val pr:Double)
   class DiscretePrSeq(val maxLength:Int) extends Seq[DiscretePr] {
     def this(maxLength:Int, contents:Seq[Double]) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
@@ -67,16 +68,20 @@ trait Proportions extends Masses {
   def top(n:Int): Seq[DiscretePr] = new DiscretePrSeq(n, this.toSeq)
 }
 
+trait Proportions1 extends Masses1 with Proportions
+trait Proportions2 extends Masses2 with Proportions
+trait Proportions3 extends Masses3 with Proportions
+trait Proportions4 extends Masses4 with Proportions
 
 // Proportions Values of dimensionality 1
 
-class SingletonProportions1(dim1:Int, singleIndex:Int) extends SingletonMasses1(dim1, singleIndex, 1.0) with Proportions {
+class SingletonProportions1(dim1:Int, singleIndex:Int) extends SingletonMasses1(dim1, singleIndex, 1.0) with Proportions1 {
   @inline final override def apply(index:Int) = if (index == singleIndex) 1.0 else 0.0
 }
-class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0) with Proportions {
+class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0) with Proportions1 {
   @inline override final def apply(i:Int): Double = 1.0 / dim1
 }
-class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends GrowableUniformMasses1(sizeProxy, uniformValue) with Proportions {
+class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends GrowableUniformMasses1(sizeProxy, uniformValue) with Proportions1 {
   @inline final override def apply(index:Int) = {
     val result = 1.0 / length
     assert(result > 0 && result != Double.PositiveInfinity, "GrowableUniformProportions domain size is negative or zero.")
@@ -84,10 +89,14 @@ class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double =
   }
 }
 
-class DenseProportions1(override val dim1:Int) extends DenseMasses1(dim1) with Proportions
+class DenseProportions1(override val dim1:Int) extends DenseMasses1(dim1) with Proportions1
+class DenseProportions2(override val dim1:Int, override val dim2:Int) extends DenseMasses2(dim1, dim2) with Proportions2
+class DenseProportions3(override val dim1:Int, override val dim2:Int, override val dim3:Int) extends DenseMasses3(dim1, dim2, dim3) with Proportions3
+class DenseProportions4(override val dim1:Int, override val dim2:Int, override val dim3:Int, override val dim4:Int) extends DenseMasses4(dim1, dim2, dim3, dim4) with Proportions4
+
 class GrowableDenseProportions1(sizeProxy:Iterable[Any]) extends GrowableDenseMasses1(sizeProxy) with Proportions
 
-class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1(dim1) with Proportions {
+class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1(dim1) with Proportions1 {
   // TODO We need somehow to say that this isDeterministic function of this.prior.
   var prior: Masses = null
   
@@ -121,6 +130,7 @@ object ProportionsVariable {
   def uniform(dim:Int) = new ProportionsVariable(new UniformProportions1(dim))
   def dense(dim:Int) = new ProportionsVariable(new DenseProportions1(dim))
   def growableDense(sizeProxy:Iterable[Any]) = new ProportionsVariable(new GrowableDenseProportions1(sizeProxy))
-  def growableUniform(sizeProxy:Iterable[Any]) = new ProportionsVariable(new GrowableUniformProportions1(sizeProxy))
+  def growableUniform(sizeProxy:Iterable[Any]) = new ProportionsVariable(new GrowableUniformProportions1(sizeProxy, 1.0))
   def sparseCounts(dim:Int) = new ProportionsVariable(new SortedSparseCountsProportions1(dim))
+  //def growableSparseCounts(sizeProxy:Iterable[Any]) = new ProportionsVariable(new SortedSparseCountsProportions1(sizeProxy)) // Not yet implemented
 }

@@ -29,6 +29,7 @@ trait ProtectedIntArrayBuffer {
   @inline final protected def _length = _size
   @inline final protected def _apply(index:Int): Int = _arr(index)
   @inline final protected def _update(index:Int, value:Int): Unit = _arr(index) = value
+  @inline final protected def _increment(index:Int, incr:Int): Unit = _arr(index) += incr
   @inline final protected def _append(elem: Int): this.type = { _ensureCapacity(_size + 1); _arr(_size) = elem; _size += 1; this }
   protected def _copyToArray(a:Array[Int]): Unit = arraycopy(_arr, 0, a, 0, _size)
   protected def _mapToArray[A](a:Array[A], f:Int=>A): Unit = { var i = 0; while (i < _size) { a(i) = f(_arr(i)); i += 1 }; a }
@@ -42,6 +43,7 @@ trait ProtectedIntArrayBuffer {
     final def apply(i:Int) = arr(i)
   }
   protected def _toArray: Array[Int] = { val a = new Array[Int](_size); arraycopy(_arr, 0, a, 0, _size); a }
+  protected def _sum: Int = { var s = 0; var i = 0; while (i < _size) { s += _arr(i); i += 1 }; s }
   /** Return the index containing the value i, or -1 if i is not found. */
   protected def _indexOf(i:Int): Int = { var j = 0; while (j < _size) { if (_arr(j) == i) return j; j += 1 }; -1 }
   /** Return the index containing the value i, or -1 if i is not found.  Do so more efficiently by assuming that the contents are sorted in ascending order. */
@@ -117,7 +119,7 @@ trait ProtectedIntArrayBuffer {
     else _contains(x, middle+1, end)
   }
 
-  protected def _clear(): Unit = { _reduceToSize(0) }
+  protected def _clear(): Unit = { _arr = new Array[Int](_initialCapacity); _size = 0; _lastIndex = 0 }
   protected def _sizeHint(len: Int) = if (len >= _size && len >= 1) _setCapacity(len)
   protected def _set(elts: Array[Int]): Unit = { _ensureCapacity(elts.length); arraycopy(elts, 0, _arr, 0, elts.length); _size = elts.length }
   protected def _set(elts: Seq[Int]): Unit = { _ensureCapacity(elts.length); var i = elts.length; while (i >= 0) { _arr(i) = elts(i); i += 1 }; _size = elts.length }

@@ -34,17 +34,18 @@ trait Tensor3 extends Tensor {
 }
 
 trait DenseTensorLike3 extends Tensor3 {
-  private var _values = new Array[Double](dim1*dim2*dim3)
+  private var __values = new Array[Double](dim1*dim2*dim3)
+  protected def _values = __values
   def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain2 = new RangeIntSeq(0, dim2)
   def activeDomain3 = new RangeIntSeq(0, dim3)
   def activeDomain = new RangeIntSeq(0, dim1*dim2*dim3)
-  def apply(i:Int): Double = _values(i)
-  override def apply(i:Int, j:Int, k:Int): Double = _values(i*dim2*dim3 + j*dim2 + k)
-  override def update(i:Int, v:Double): Unit = _values(i) = v
-  override def update(i:Int, j:Int, k:Int, v:Double): Unit = _values(i*dim2*dim3 + j*dim2 + k) = v
-  override def +=(i:Int, v:Double): Unit = _values(i) += v
-  override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
+  def apply(i:Int): Double = __values(i)
+  override def apply(i:Int, j:Int, k:Int): Double = __values(i*dim2*dim3 + j*dim2 + k)
+  override def update(i:Int, v:Double): Unit = __values(i) = v
+  override def update(i:Int, j:Int, k:Int, v:Double): Unit = __values(i*dim2*dim3 + j*dim2 + k) = v
+  override def +=(i:Int, v:Double): Unit = __values(i) += v
+  override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
 }
 class DenseTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3

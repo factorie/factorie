@@ -18,6 +18,7 @@ package cc.factorie.util
 
 // List of (index,count), sorted in descending order by count, stored sparsely
 // Useful in Proportions where sampling is efficient because outcomes are considered in order of highest-count first.
+// TODO Consider making a Growable version of this.
 class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = false) {
   /** Initialize counts from an unsorted list of indices */
   def this(dim:Int, initial:Array[Int], keepDense: Boolean) = {
@@ -50,7 +51,7 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
   def this(dim:Int, initial:Array[Int]) = this(dim, initial, false)
   require(dim > 1)
 
-  //val length: Int = dim
+  val _length: Int = dim
   def numPositions: Int = siz
   private var _countsTotal: Int = 0 // total of all counts in buf
   def countsTotal = _countsTotal
@@ -78,9 +79,9 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
   }
   require (dim < Math.MAX_SHORT)
   //private val _posIndex: Array[Short] = if (keepIndex) Array.fill[Short](dim)(-1) else null
-  private def ti(coti:Int) = coti & topicMask // topic from packed count&index 
-  private def co(coti:Int) = coti >> topicBits // count from packed count&index
-  private def coti(count:Int, index:Int): Int = { assert(index < dim); (count << topicBits) | index }
+  @inline private def ti(coti:Int) = coti & topicMask // topic from packed count&index 
+  @inline private def co(coti:Int) = coti >> topicBits // count from packed count&index
+  @inline private def coti(count:Int, index:Int): Int = { assert(index < dim); (count << topicBits) | index }
   protected def bubbleDownFrom(pos:Int): Unit = {
     val newb = buf(pos)
     var i = pos - 1
