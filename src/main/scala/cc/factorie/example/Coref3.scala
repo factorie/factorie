@@ -63,7 +63,6 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
   def title = attr[Title]
   def year = attr[Year]
   def venueName = attr[VenueName]
-
   def string = title.toString
   var authors = new ArrayBuffer[AuthorEntity]
   def propagateAddBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
