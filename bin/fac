@@ -1,0 +1,62 @@
+#!/bin/bash
+
+factoriedir=`dirname $0`
+factoriedir=`dirname $factoriedir`
+
+cp=$factoriedir/target/classes:$CLASSPATH
+#echo $cp
+
+# Make this command-line changeable
+MEMORY=2g
+
+# Make this a scala command
+JAVA_COMMAND="java -Xmx$MEMORY -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -classpath $cp"
+
+CMD=$1
+shift
+
+help()
+{
+cat <<EOF
+Factorie commands: 
+
+  import-dir         load the contents of a directory into factorie instances (one per file)
+  import-file        load a single file into factorie instances (one per line)
+  import-svmlight    load SVMLight format data files into Factorie instances
+  train-classifier   train a classifier from Factorie data files
+  classify-dir       classify data from a single file with a saved classifier
+  classify-file      classify the contents of a directory with a saved classifier
+  classify-svmlight  classify data from a single file in SVMLight format
+  train-topics       train a topic model from Factorie data files
+  infer-topics       use a trained topic model to infer topics for new documents
+  evaluate-topics    estimate the probability of new documents under a trained model
+  hlda               train a topic model using Hierarchical LDA
+  prune              remove features based on frequency or information gain
+  split              divide data into testing, training, and validation portions
+
+Include --help with any option for more information
+EOF
+}
+
+CLASS=
+
+case $CMD in
+	import-dir) CLASS=cc.factorie.classify.tui.Text2Vectors;;
+	import-file) CLASS=cc.factorie.classify.tui.Csv2Vectors;;
+        import-svmlight) CLASS=cc.factorie.classify.tui.SvmLight2Vectors;;
+	train-classifier) CLASS=cc.factorie.classify.tui.Vectors2Classify;;
+        classify-dir) CLASS=cc.factorie.classify.tui.Text2Classify;;
+        classify-file) CLASS=cc.factorie.classify.tui.Csv2Classify;;
+        classify-svmlight) CLASS=cc.factorie.classify.tui.SvmLight2Classify;;
+	train-topics) CLASS=cc.factorie.topics.tui.Vectors2Topics;;
+	infer-topics) CLASS=cc.factorie.topics.tui.InferTopics;;
+	evaluate-topics) CLASS=cc.factorie.topics.tui.EvaluateTopics;;
+	hlda) CLASS=cc.factorie.topics.tui.HierarchicalLDATUI;;
+	prune) CLASS=cc.factorie.classify.tui.Vectors2Vectors;;
+	split) CLASS=cc.factorie.classify.tui.Vectors2Vectors;;
+	bulk-load) CLASS=cc.factorie.util.BulkLoader;;
+	run) CLASS=$1; shift;;
+	*) echo "Unrecognized command: $CMD"; help; exit 1;;
+esac
+
+$JAVA_COMMAND $CLASS $*
