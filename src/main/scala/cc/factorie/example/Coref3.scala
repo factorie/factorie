@@ -53,6 +53,7 @@ class Bags extends HashMap[String,BagOfWords]
 class BagOfTopics(val entity:Entity, topicBag:Map[String,Double]=null) extends BagOfWordsVariable(Nil, topicBag) with EntityAttr
 class BagOfVenues(val entity:Entity, venues:Map[String,Double]=null) extends BagOfWordsVariable(Nil, venues) with EntityAttr
 class BagOfCoAuthors(val entity:Entity,coAuthors:Map[String,Double]=null) extends BagOfWordsVariable(Nil, coAuthors) with EntityAttr
+class BagOfKeywords(val entity:Entity,keywords:Map[String,Double]=null) extends BagOfWordsVariable(Nil,keywords) with EntityAttr
 /**Entity variables*/
 /**An entity with the necessary variables/coordination to implement hierarchical coreference.*/
 class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity(isMention){
@@ -77,10 +78,12 @@ class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isM
   attr += new BagOfTopics(this)
   attr += new BagOfVenues(this)
   attr += new BagOfCoAuthors(this)
+  attr += new BagOfKeywords(this)
   def fullName = attr[FullName]
   def bagOfTopics = attr[BagOfTopics]
   def bagOfVenues = attr[BagOfVenues]
   def bagOfCoAuthors = attr[BagOfCoAuthors]
+  def bagOfKeywords = attr[BagOfKeywords]
   def string = f+" "+m+" "+l
   var paper:PaperEntity = null
   def defaultCanopy = canopyAttributes.head.canopyName
@@ -93,6 +96,7 @@ class AuthorEntityCubbie(author:AuthorEntity=null) extends HierEntityCubbie{
   val bagOfTopics = new CubbieSlot("bagOfTopics", () => new BagOfWordsCubbie)
   val bagOfVenues = new CubbieSlot("bagOfVenues", () => new BagOfWordsCubbie)
   val bagOfCoAuthors = new CubbieSlot("bagOfCoAuthors", () => new BagOfWordsCubbie)
+  val bagOfKeywords = new CubbieSlot("bagOfKeywords", () => new BagOfWordsCubbie)
   val canopies = new StringListSlot("canopies")
   val priority = new DoubleSlot("priority")
   val children = new InverseSlot("children",(a:AuthorEntityCubbie) => a.entityRef)
@@ -108,6 +112,7 @@ class AuthorEntityCubbie(author:AuthorEntity=null) extends HierEntityCubbie{
     e.attr[BagOfTopics] ++= bagOfTopics.value.fetch
     e.attr[BagOfVenues] ++= bagOfVenues.value.fetch
     e.attr[BagOfCoAuthors] ++= bagOfCoAuthors.value.fetch
+    e.attr[BagOfKeywords] ++= bagOfKeywords.value.fetch
     e.asInstanceOf[AuthorEntity].priority = priority.value
     e.asInstanceOf[AuthorEntity]._id = this.id.toString
     _author=e.asInstanceOf[AuthorEntity]
@@ -120,6 +125,7 @@ class AuthorEntityCubbie(author:AuthorEntity=null) extends HierEntityCubbie{
     bagOfTopics := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
     bagOfVenues := new BagOfWordsCubbie().store(e.attr[BagOfVenues].value)
     bagOfCoAuthors := new BagOfWordsCubbie().store(e.attr[BagOfCoAuthors].value)
+    bagOfKeywords := new BagOfWordsCubbie().store(e.attr[BagOfKeywords].value)
     canopies := e.asInstanceOf[AuthorEntity].canopyAttributes.map(_.canopyName).toSeq
     priority := e.asInstanceOf[AuthorEntity].priority
     this.id=e.id
@@ -129,10 +135,10 @@ class AuthorEntityCubbie(author:AuthorEntity=null) extends HierEntityCubbie{
 
 object Coref3 {
   class HierCorefModel extends TemplateModel(
-    new TemplateWithStatistics3[EntityRef,FullName,FullName] {
-      def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[FullName], er.dst.attr[FullName]) else Nil
-      def unroll2(childName:FullName) = Factor(childName.entity.parentEntityRef, childName, childName.entity.parentEntity.attr[FullName])
-      def unroll3(parentName:FullName) = for (e <- parentName.entity.childEntities) yield Factor(e.parentEntityRef, e.attr[FullName], parentName)
+    new ChildParentTemplateWithStatistics[FullName] {
+      //def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[FullName], er.dst.attr[FullName]) else Nil
+      //def unroll2(childName:FullName) = Factor(childName.entity.parentEntityRef, childName, childName.entity.parentEntity.attr[FullName])
+      //def unroll3(parentName:FullName) = for (e <- parentName.entity.childEntities) yield Factor(e.parentEntityRef, e.attr[FullName], parentName)
       def score(s:Stat): Double = {
         var result = 0.0
         val childName = s._2
@@ -158,33 +164,24 @@ object Coref3 {
       def nameMisMatch(c:String,p:String):Boolean = (c!=null && p!=null && c.length>1 && p.length>1 && c != p)
     },
     // Compatibility between parent/child co-author bags. Currently an approximation, but well worth the speed.
-    new TemplateWithStatistics3[EntityRef,BagOfCoAuthors,BagOfCoAuthors] {
+    new ChildParentTemplateWithStatistics[BagOfCoAuthors] {
       val strength = 16.0
       val shift = -0.25
-      def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfCoAuthors], er.dst.attr[BagOfCoAuthors]) else Nil
-      def unroll2(childBow:BagOfCoAuthors) = Nil//if(childBow.entity.parentEntity!=null)Factor(childBow.entity.parentEntityRef, childBow, childBow.entity.parentEntity.attr[BagOfCoAuthors]) else Nil
-      def unroll3(parentBow:BagOfCoAuthors) = Nil // for(e<-parentBow.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[BagOfCoAuthors],parentBow)
+      override def unroll2(childBow:BagOfCoAuthors) = Nil
+      override def unroll3(parentBow:BagOfCoAuthors) = Nil
       def score(s:Stat): Double = {
         val childBow = s._2
         val parentBow = s._3
-        //System.out.flush
         var result = childBow.cosineSimilarity(parentBow,childBow)
-//        var result = childBow.cosineSimilarity(parentBow)
-//        println("  BowCoAuth: "+result)
-//        println("  scaled: "+(result+shift)*strength)
-//        println("    childBag :"+childBow)
-//        println("    parentBag:"+parentBow)
         (result+shift)*strength
       }
     },
-
     // Compatibility between parent/child venue bags. Currently an approximation, but well worth the speed.
     new ChildParentTemplateWithStatistics[BagOfVenues] {
+      override def unroll2(b:BagOfVenues) = Nil
+      override def unroll3(b:BagOfVenues) = Nil
       val strength = 8.0
       val shift = -0.25
-      //def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[BagOfVenues], er.dst.attr[BagOfVenues]) else Nil
-      //def unroll2(childBow:BagOfVenues) = Nil//if(childBow.entity.parentEntity!=null)Factor(childBow.entity.parentEntityRef, childBow, childBow.entity.parentEntity.attr[BagOfVenues]) else Nil
-      //def unroll3(parentBow:BagOfVenues) = Nil//for(e<-parentBow.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[BagOfVenues],parentBow)
       def score(s:Stat): Double = {
         val childBow = s._2
         val parentBow = s._3
@@ -192,6 +189,13 @@ object Coref3 {
         (result+shift)*strength
       }
     },
+    new TemplateWithStatistics1[BagOfKeywords]{
+      def score(s:Stat):Double ={
+        val bagOfNames = s._1
+        -4*(bagOfNames.size*bagOfNames.size)
+      }
+    },
+    new StructuralPriorsTemplate(8.0,-0.25)
 
     //structural priors
 /*
@@ -208,7 +212,6 @@ object Coref3 {
         result
       }
     }
-    */
     new TemplateWithStatistics3[EntityExists,IsEntity,IsMention] {
       val entityExistenceCost = 2.0 //2 //8
       val subEntityExistenceCost = 0.5
@@ -226,7 +229,7 @@ object Coref3 {
 //        println("  STRUCTURE PRIOR: "+result)
         result
       }
-    }/*,
+    },
     //bags of words priors
     new TemplateWithStatistics1[BagOfWordsVariable]{
       var temperature=0.1
@@ -447,7 +450,6 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
           if(!canopyHash.contains(name)){
             result ++= authors.query(_.canopies(Seq(name)))
             canopyHash += name
-            println("    added canopy name: "+name+ " result.size="+result.size)
           }
         }
       }
@@ -701,7 +703,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
 //    rexa2.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/rexa2/bibs/"))
 //    rexa2.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/test.bib"))
 
-    /*
+/*
     if(1+1==2){
       rexa2.drop
       rexa2.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
@@ -709,44 +711,40 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       if(dropDB)rexa2.drop
       if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
     }
-    */
+  */
     if(dropDB)rexa2.drop
     if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
-
-    var storingTime:Long = 0L
-    var loadingTime:Long = 0L
-    var inferenceTime:Long = 0L
     var totalSamples:Long = 0L
     var totalLoaded:Long = 0L
-    def totalTime:Long =loadingTime+inferenceTime+storingTime
     val model = new HierCorefModel
     val predictor = new AuthorSampler(model)
     for(i<-0 until numIterations){
       println("\n=============")
       println("BATCH NO. "+i)
       println("==============")
-      var time = System.currentTimeMillis
-      val mentions =rexa2.nextBatch(numToPop)
-      time = System.currentTimeMillis - time;loadingTime += time;println("Loading " + mentions.size + " took " + (time/1000L)+"s.")
+
+      StopWatch.start("Loading")
+      val mentions = rexa2.nextBatch(numToPop)
+      val loadingTime = StopWatch.stop
       println("Number of mentions: "+mentions.size)
       totalLoaded += mentions.size.toLong
       totalSamples += numSteps.toLong
       predictor.setEntities(mentions)
-      time = System.currentTimeMillis
+
+      StopWatch.start("Inference")
       predictor.process(numSteps)
-      time = System.currentTimeMillis - time;inferenceTime += time;System.out.println(numSteps+" of inference took "+(time/1000L) + "s.")
-      println("TIME: "+time + " inferenceTime: "+ inferenceTime)
-      //println("Entities:\n"+predictor.getEntities)
-//      println("\nPRINTING ENTITIES")
+      val inferenceTime = StopWatch.stop
 //      printEntities(predictor.getEntities)
 //      checkIntegrity(predictor.getEntities)
       println("Inferred entities: "+predictor.getEntities.size)
-      //predictor.performMaintenance
-      time = System.currentTimeMillis
-      rexa2.store((predictor.getEntities ++ predictor.getDeletedEntities).map(_.asInstanceOf[AuthorEntity]))
-      time = System.currentTimeMillis - time;inferenceTime += time;
-      storingTime += time
-      System.out.println("Batch "+i+" total times. Load: "+(loadingTime/1000L)+" Store: "+(storingTime/1000L)+" Inference: "+(inferenceTime/1000L)+" s. Total loaded: "+totalLoaded + " total samples: "+totalSamples)
+
+      StopWatch.start("Storing")
+      rexa2.store(predictor.getEntities ++ predictor.getDeletedEntities.map(_.asInstanceOf[AuthorEntity]))
+      val storingTime = StopWatch.stop
+      println("Loaded "+mentions.size + " in " + (loadingTime/1000L)+ "sec. Inference took "+(inferenceTime/1000L) + " sec. Storing took "+(storingTime/1000L)+"sec.")
+      println("Total loaded: "+totalLoaded + " total samples: "+totalSamples)
+      StopWatch.printTimes
+      //System.out.println("Batch "+i+" total times. Load: "+(loadingTime/1000L)+" Store: "+(storingTime/1000L)+" Inference: "+(inferenceTime/1000L)+" s. Total loaded: "+totalLoaded + " total samples: "+totalSamples)
     }
   }
   def load20News(dir:java.io.File):ArrayBuffer[(String,ArrayBuffer[String])] ={
@@ -762,7 +760,6 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
     }
     result
   }
-
   def checkIntegrity(entities:Seq[Entity]):Unit ={
     var numErrors = 0
     for(e<-entities){
@@ -928,6 +925,41 @@ object FeatureUtils{
   }
 }
 
+
+object StopWatch{
+  val timeRecords = new HashMap[String,Long]
+  protected val timers = new HashMap[String,Long]
+  protected var lastName:String = null
+  def time(name:String,code:Unit=>Unit) = timeAndReturn[Unit](name,code)
+  def timeAndReturn[O](name:String,code:Unit=>O):(O,Long) ={
+    var t = System.currentTimeMillis
+    val result = code.apply()
+    t = System.currentTimeMillis - t
+    timeRecords(name) = timeRecords.getOrElse(name,0L) + t
+    (result,t)
+  }
+  def start(name:String):Unit = {
+    timers(name) = System.currentTimeMillis
+    lastName = name
+  }
+  def stop:Long = stop(null.asInstanceOf[String])
+  def stop(s:String):Long = {
+    val name:String = if(s==null)lastName else s
+    if(!timers.contains(name))throw new Exception("Cannot stop the watch because start(\""+name+"\") has not been called.")
+    timers.remove(s)
+    val elapsed = System.currentTimeMillis() - timers(name)
+    timeRecords(name) = timeRecords.getOrElse(name,0L)+elapsed
+    elapsed
+  }
+
+  def printTimes:Unit = {
+    println("Total time")
+    for ((k,v) <- timeRecords){
+      println("  "+k+":"+(v/1000L)+" sec.")
+    }
+  }
+}
+
 /*** Consider a set-up where cosine distance is computed between arrays of bags of words, and each bag is a variable that can go on the diff list.*/
 /**Basic trait for doing operations with bags of words*/
 trait BagOfWords{ // extends scala.collection.Map[String,Double]{
@@ -937,6 +969,7 @@ trait BagOfWords{ // extends scala.collection.Map[String,Double]{
   def apply(word:String):Double
   def iterator:Iterator[(String,Double)]
   def l2Norm:Double
+  def l1Norm:Double
   def *(that:BagOfWords):Double
   def cosineSimilarity(that:BagOfWords,deduct:BagOfWords):Double ={
     //println("  (1) bag: "+that)
@@ -975,10 +1008,12 @@ trait BagOfWords{ // extends scala.collection.Map[String,Double]{
 
 class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,Double]=null) extends BagOfWords{
   protected var _l2Norm = 0.0
+  protected var _l1Norm = 0.0
   protected var _bag = new HashMap[String,Double]
   if(initialWords!=null)for(w<-initialWords)this += (w,1.0)
   if(initialBag!=null)for((k,v)<-initialBag)this += (k,v)
   def l2Norm = _l2Norm
+  def l1Norm = _l1Norm
   def asHashMap:HashMap[String,Double] = {val result = new HashMap[String,Double];result ++= _bag;result}
   override def toString = _bag.toString
   def apply(s:String):Double = _bag.getOrElse(s,0.0)
@@ -992,10 +1027,12 @@ class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,
     result
   }
   def += (s:String, w:Double=1.0):Unit ={
+    _l1Norm += w
     _l2Norm += w*w + 2*this(s)*w
     _bag(s) = _bag.getOrElse(s,0.0) + w
   }
   def -= (s:String, w:Double=1.0):Unit ={
+    _l1Norm -= w
     _l2Norm += w*w - 2.0*this(s)*w
     if(w == _bag(s))_bag.remove(s)
     else _bag(s) = _bag.getOrElse(s,0.0) - w
@@ -1014,7 +1051,7 @@ class ComposableBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[Str
   var addBag:Option[BagOfWords] = None
   var removeBag:Option[BagOfWords] = None
   protected var _l2Norm2 = 0.0
-
+  def l1Norm:Double = throw new Exception("Not implemented.")
   if(initialWords!=null)for(w<-initialWords)this += (w,1.0)
   if(initialBag!=null)for((k,v)<-initialBag)this += (k,v)
   override def toString = {

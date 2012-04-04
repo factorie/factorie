@@ -58,15 +58,10 @@ object PerceptronPOS {
       addNeighboringFeatureConjunctions(sentence, (t: Token) => t.attr[PosFeatures], "W=", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 
-  def percentageSetToTarget[L <: VarWithTarget](ls: Seq[L]): Double = {
-    val numCorrect = ls.foldLeft(0.0)((partialSum, label) => partialSum + {if (label.valueIsTarget) 1 else 0})
-    numCorrect / ls.size * 100
-  }
-
+  def percentageSetToTarget[L <: VarWithTarget](ls: Seq[L]): Double = HammingLossObjective.aveScore(ls)
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.map(_.posLabel))
-  def predictSentence(vs: Seq[PosLabel], oldBp: Boolean = false): Unit =
-    Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
+  def predictSentence(vs: Seq[PosLabel]): Unit = Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
 
   def train(
         documents: Seq[Document],
