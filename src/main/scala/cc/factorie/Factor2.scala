@@ -148,10 +148,10 @@ trait FactorWithStatistics2[N1<:Variable,N2<:Variable] extends Factor2[N1,N2] {
 trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2
-  protected var _neighborDomain1: Domain[N1#Value] = null
-  protected var _neighborDomain2: Domain[N2#Value] = null
-  def neighborDomain1: Domain[N1#Value] = if (_neighborDomain1 eq null) throw new Error("You must override neighborDomain1 if you want to access it before creating any Factor objects") else _neighborDomain1
-  def neighborDomain2: Domain[N2#Value] = if (_neighborDomain2 eq null) throw new Error("You must override neighborDomain2 if you want to access it before creating any Factor objects") else _neighborDomain2
+    /** Override this if you want to matchNeighborDomains */
+  def neighborDomain1: Domain[N1#Value] = null
+  def neighborDomain2: Domain[N2#Value] = null
+  def neighborDomains = Seq(neighborDomain1, neighborDomain2)
 
   type FactorType = Factor
   type ValuesType = Factor#Values
@@ -164,13 +164,6 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
   
   final case class Factor(_1:N1, _2:N2) extends super.Factor with Factor2[N1,N2] {
     type StatisticsType = Family2.this.StatisticsType
-    if (_neighborDomains eq null) {
-      _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
-      _neighborDomain2 = _2.domain.asInstanceOf[Domain[N2#Value]]
-      _neighborDomains = _newNeighborDomains
-      _neighborDomains += _neighborDomain1
-      _neighborDomains += _neighborDomain2
-    }
     override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
     override def isLimitingValuesIterator = Family2.this.isLimitingValuesIterator
     override def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = limitedDiscreteValues.iterator
@@ -186,7 +179,7 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
         case v2:DiscreteValue => {
           //println("Template2.cachedStatistics")
           if (cachedStatisticsArray eq null) cachedStatisticsArray = new Array[Statistics](v1.domain.size * v2.domain.size).asInstanceOf[Array[StatisticsType]]
-          val i = v1.intValue * _neighborDomain2.asInstanceOf[DiscreteVectorDomain].dimensionSize + v2.intValue
+          val i = v1.intValue * v2.domain.dimensionSize + v2.intValue
           if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = values.statistics
           cachedStatisticsArray(i)
         }

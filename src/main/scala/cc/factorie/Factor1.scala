@@ -93,13 +93,9 @@ trait FactorWithStatistics1[N1<:Variable] extends Factor1[N1] {
 
 trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
-  protected var _neighborDomain1: Domain[N1#Value] = null
-  def neighborDomain1: Domain[N1#Value] = 
-    if (_neighborDomain1 eq null) 
-      throw new Error("You must override neighborDomain1 if you want to access it before creating any Factor objects")
-    else
-      _neighborDomain1
-      
+  /** Override this if you want to matchNeighborDomains */
+  def neighborDomain1: Domain[N1#Value] = null
+  def neighborDomains = Seq(neighborDomain1)
   type FactorType = Factor
   type ValuesType = Factor#Values
 
@@ -110,11 +106,6 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
   
   final case class Factor(_1:N1) extends super.Factor with Factor1[N1] {
     type StatisticsType = Family1.this.StatisticsType
-    if (_neighborDomains eq null) {
-      _neighborDomain1 = _1.domain.asInstanceOf[Domain[N1#Value]]
-      _neighborDomains = _newNeighborDomains
-      _neighborDomains += _neighborDomain1
-    }
     override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
     override def isLimitingValuesIterator = Family1.this.isLimitingValuesIterator
     override def limitedDiscreteValuesIterator: Iterator[Int] = limitedDiscreteValues.iterator

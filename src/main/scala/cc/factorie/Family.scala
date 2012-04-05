@@ -78,13 +78,7 @@ trait Family {
 
 
 trait FamilyWithNeighborDomains extends Family {
-  protected var _neighborDomains: ArrayBuffer[Domain[_]] = null
-  protected def _newNeighborDomains = new ArrayBuffer[Domain[_]]
-  def neighborDomains: Seq[Domain[_]] = 
-    if (_neighborDomains eq null)
-      throw new IllegalStateException("You must override neighborDomains if you want to access them before creating any Factor objects.")
-    else
-      _neighborDomains
+  def neighborDomains: Seq[Domain[_]] 
 }
 
 

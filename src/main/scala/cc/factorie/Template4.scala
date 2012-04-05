@@ -35,10 +35,10 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
 
   override def factors(v: Variable): Iterable[FactorType] = {
     var ret = new ListBuffer[FactorType]
-    if (neighborClass1.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain1 eq v.domain) || (_neighborDomain1 eq null))) ret ++= unroll1(v.asInstanceOf[N1])
-    if (neighborClass2.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain2 eq v.domain) || (_neighborDomain2 eq null))) ret ++= unroll2(v.asInstanceOf[N2])
-    if (neighborClass3.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain3 eq v.domain) || (_neighborDomain3 eq null))) ret ++= unroll3(v.asInstanceOf[N3])
-    if (neighborClass4.isAssignableFrom(v.getClass) && (!matchNeighborDomains || (_neighborDomain4 eq v.domain) || (_neighborDomain4 eq null))) ret ++= unroll4(v.asInstanceOf[N4])
+    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
+    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
+    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) ret ++= unroll3(v.asInstanceOf[N3])
+    if (neighborClass4.isAssignableFrom(v.getClass) && ((neighborDomain4 eq null) || (neighborDomain4 eq v.domain))) ret ++= unroll4(v.asInstanceOf[N4])
     if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
     if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
     if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])

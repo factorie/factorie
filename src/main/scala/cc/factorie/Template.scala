@@ -43,8 +43,6 @@ object Template {
 */
 trait Template extends FamilyWithNeighborDomains { thisTemplate =>
   //type FamilyType <: Template // like a self-type
-  /** If true, method "factors" will only create Factors for variables whose domains match neighborDomains. */
-  var matchNeighborDomains = true
   def factors(v: Variable): Iterable[FactorType] // TODO Consider returning Iterable[Factor]
   /**A version of factors that takes the Diff object instead of just the variable */
   def factors(d: Diff): Iterable[FactorType] = if (d.variable == null) Nil else factors(d.variable)
