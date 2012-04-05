@@ -99,7 +99,7 @@ trait Model {
   // TODO Consider making a Model trait for these methods.  Yes!
   def variables: Seq[Variable] = Nil
   def factors: Seq[Factor] = Nil
-  def score: Double = factors.foldLeft(0.0)((sum, f) => sum + f.score)
+  def score: Double = factors.foldLeft(0.0)((sum, f) => sum + f.score) // TODO re-implement to avoid boxing the Double
 }
 
 

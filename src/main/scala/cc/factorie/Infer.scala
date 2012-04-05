@@ -26,7 +26,11 @@ import cc.factorie.generative.Proportions
 
 // TODO What methods should go in a generic Lattice?
 // If none, then delete this and just use "Model" instead.
-//trait Lattice2 extends Model
+trait Lattice2 extends Model {
+  def marginal(vs:Variable*): Option[Expectations]
+  //def marginal(d:DiscreteVar): DiscreteExpectations1[DiscreteVar]
+  //def marginal(values:Values): Double
+}
 
 trait Infer[-V1<:Variable,-V2<:Variable] {
   type LatticeType <: Model
@@ -49,6 +53,21 @@ class InferVariables extends Infer[Variable,Variable] {
 object Infer extends InferVariables
 
 
+class IndepDiscreteLattice[V<:DiscreteVar] extends Lattice2 {
+  def this(vs:Iterable[V]) = { this(); ++=(vs) }
+  private val _expectations = new scala.collection.mutable.HashMap[Variable,DiscreteExpectations1[V]]
+  def factors(variables:Iterable[Variable]): Seq[DiscreteExpectations1[V]] = variables.flatMap(v => _expectations.get(v)).toSeq
+  override def factors1(variable:Variable): Seq[DiscreteExpectations1[V]] = _expectations.get(variable).toSeq
+  def marginal(vs:Variable*): Option[DiscreteExpectations1[V]] = vs match {
+    case Seq(v) => Option(marginal(v.asInstanceOf[V]))
+  }
+  def marginal(v:V): DiscreteExpectations1[V] = _expectations(v)
+  def +=(e:DiscreteExpectations1[V]): Unit = _expectations(e._1) = e
+  //def ++=(es:Iterable[DiscreteExpectations1[V]]): Unit = es.foreach(+=(_))
+  def +=(v:V): Unit = +=(new DiscreteExpectations1(v, null)) // but not yet initialized
+  def ++=(vs:Iterable[V]): Unit = vs.foreach(+=(_))
+}
+
 class IndependentDiscreteLattice extends GenerativeFactorModel {
   def marginal(d:DiscreteVariable): cc.factorie.generative.Proportions = this.parentFactor(d) match {
     case f:Discrete.Factor => f._2
@@ -60,9 +79,9 @@ object InferIndependentDiscrete extends Infer[DiscreteVariable,Nothing] {
   def array(d:DiscreteVariable, model:Model): Array[Double] = {
     val distribution = new Array[Double](d.domain.size)
     val origValue = d.intValue
-    val factors = model.factors1(d)
+    val factors = model.factors1(d) // Note that this doens't handle value-specific factor unrolling
     for (i <- 0 until distribution.size) {
-      d := i
+      d := i // Note that this doesn't handle variable-value coordination, and if this is present, undo'ing won't happen properly.
       factors.foreach(f => distribution(i) += f.score)
     }
     maths.expNormalize(distribution)

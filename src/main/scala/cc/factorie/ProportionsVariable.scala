@@ -89,7 +89,10 @@ class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double =
   }
 }
 
-class DenseProportions1(override val dim1:Int) extends DenseMasses1(dim1) with Proportions1
+class DenseProportions1(override val dim1:Int) extends DenseMasses1(dim1) with Proportions1 {
+  def this(ds:DoubleSeq) = { this(ds.length); this += ds }
+  def this(a:Array[Double]) = { this(a.length); this += a }
+}
 class DenseProportions2(override val dim1:Int, override val dim2:Int) extends DenseMasses2(dim1, dim2) with Proportions2
 class DenseProportions3(override val dim1:Int, override val dim2:Int, override val dim3:Int) extends DenseMasses3(dim1, dim2, dim3) with Proportions3
 class DenseProportions4(override val dim1:Int, override val dim2:Int, override val dim3:Int, override val dim4:Int) extends DenseMasses4(dim1, dim2, dim3, dim4) with Proportions4

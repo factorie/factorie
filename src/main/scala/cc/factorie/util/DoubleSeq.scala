@@ -93,7 +93,9 @@ trait IncrementableDoubleSeq extends DoubleSeq {
   def zero(): Unit
   def +=(d:Double): Unit = { var i = 0; while (i < length) { +=(i, d); i += 1 }}
   def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { +=(i, ds(i)); i += 1 }}
+  def +=(a:Array[Double]): Unit = { require(a.length == length); var i = 0; while (i < length) { +=(i, a(i)); i += 1 }}
   def +=(ds:DoubleSeq, factor:Double): Unit = { require(ds.length == length); var i = 0; while (i < length) { +=(i, factor*ds(i)); i += 1 }}
+  def +=(a:Array[Double], factor:Double): Unit = { require(a.length == length); var i = 0; while (i < length) { +=(i, factor*a(i)); i += 1 }}
   def -=(i:Int, incr:Double): Unit = +=(i, -incr)
   def -=(d:Double): Unit = +=(-d)
   def -=(ds:DoubleSeq): Unit = +=(ds, -1.0)
