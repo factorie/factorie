@@ -27,10 +27,10 @@ class PersonCubbie extends EntityCubbie // Split from AuthorCubbie eventually
 
 class AuthorCubbie extends EntityCubbie {
   val isMention = BooleanSlot("mention")
-  val fn = StringSlot("fn")
-  val mn = StringSlot("mn")
-  val ln = StringSlot("ln")
-  val nn = StringSlot("nn") // nickname  e.g. William Bruce Croft, nickname=Bruce; or William Freeman, nickname=Bill 
+  val firstName = StringSlot("fn")
+  val middleName = StringSlot("mn")
+  val lastName = StringSlot("ln")
+  val nickName = StringSlot("nn") // nickname  e.g. William Bruce Croft, nickname=Bruce; or William Freeman, nickname=Bill
   val emails = new CubbieSlot("emails", () => new BagOfWordsCubbie)
   val topics = new CubbieSlot("topics", () => new BagOfWordsCubbie)
   val keywords = new CubbieSlot("keywords", () => new BagOfWordsCubbie)

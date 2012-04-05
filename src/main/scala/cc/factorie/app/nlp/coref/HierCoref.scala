@@ -170,7 +170,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
     proposal.diff.undo //an entity that does not exit in the current world is one that was newly created by the jump
     for(diff<-proposal.diff){
       diff.variable match{
-        case children:ChildEntities => if(!children.entity.isConnected)newEntities += children.entity.asInstanceOf[T] //cast could be avoided if children entities were typed
+        case children:ChildEntities => if(!children.entity.isConnected && !children.entity.isObserved)newEntities += children.entity.asInstanceOf[T] //cast could be avoided if children entities were typed
         case _ => {}
       }
     }
