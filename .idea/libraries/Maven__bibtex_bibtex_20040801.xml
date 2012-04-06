@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: bibtex:bibtex:20040801">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/bibtex/bibtex/20040801/bibtex-20040801.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/bibtex/bibtex/20040801/bibtex-20040801-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/bibtex/bibtex/20040801/bibtex-20040801-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

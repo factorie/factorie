@@ -164,6 +164,24 @@
                   </jvmArgs>
                 </launcher>
                 <launcher>
+                  <id>ChainNER2</id>
+                  <mainClass>cc.factorie.app.nlp.ner.ChainNer2</mainClass>
+                  <jvmArgs>
+                    <jvmArg>-Xmx4g</jvmArg>
+                  </jvmArgs>
+		  <args>
+	   	    <arg>--justTest</arg>
+		    <arg>--train=eng.train</arg>
+		    <arg>--test=eng.testb</arg>
+		    <arg>--aggregate</arg>
+		    <arg>--twoagg</arg>
+		    <arg>--extended</arg>
+		    <arg>--brown=brownBllipClusters</arg>
+		    <arg>--lexicons=KnownLists</arg>
+		    <arg>--model=ChainNER2</arg>
+		  </args>
+                </launcher>
+                <launcher>
                   <id>hier-coref-demo</id>
                   <mainClass>cc.factorie.example.Coref3</mainClass>
                   <jvmArgs><jvmArg>-Xmx4g</jvmArg></jvmArgs>

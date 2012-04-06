@@ -24,11 +24,11 @@ class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[Stri
 }
 
 class ChainNerModel extends TemplateModel(
-  // Bias term on each individual label 
+  /*// Bias term on each individual label 
   new TemplateWithDotStatistics1[ChainNerLabel] {
     factorName = "bias"
     override def statisticsDomains = List(Conll2003NerDomain)
-  },
+  },*/
   // Factor between label and observed token
   new TemplateWithDotStatistics2[ChainNerLabel,ChainNerFeatures] {
     factorName = "observation"
