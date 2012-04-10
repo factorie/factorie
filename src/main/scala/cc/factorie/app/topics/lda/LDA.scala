@@ -34,21 +34,21 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
   def wordDomain = wordSeqDomain.elementDomain
   /** The prior over per-topic word distribution */
-  val betas = new GrowableUniformMasses(wordDomain, beta1)
+  val betas = MassesVariable.growableUniform(wordDomain.values, beta1)
   /** The prior over per-document topic distribution */
-  val alphas = new DenseMasses(numTopics, alpha1)
+  val alphas = MassesVariable.dense(numTopics, alpha1)
   
   /** The collection of all documents used to fit the parameters of this LDA model. */
   protected val documentMap = new HashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
   def documents: Iterable[Doc] = documentMap.values
   def getDocument(name:String) : Doc = documentMap.getOrElse(name, null)
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
-  val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(wordDomain) ~ Dirichlet(betas))
+  val phis = Mixture(numTopics)(ProportionsVariable.growableDense(wordDomain.values) ~ Dirichlet(betas))
   
   protected def setupDocument(doc:Doc, m:MutableGenerativeModel): Unit = {
     require(wordSeqDomain eq doc.ws.domain)
     require(doc.ws.length > 0)  // was > 1
-    if (doc.theta eq null) doc.theta = new SortedSparseCountsProportions(numTopics)
+    if (doc.theta eq null) doc.theta = ProportionsVariable.sortedSparseCounts(numTopics)
     else require (doc.theta.length == numTopics)
     doc.theta.~(Dirichlet(alphas))(m) // was DenseCountsProportions
     if (doc.zs eq null) doc.zs = new Zs(Array.tabulate(doc.ws.length)(i => random.nextInt(numTopics))) // Could also initialize to all 0 for more efficient sparse inference
@@ -119,7 +119,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
     /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
   def inferTopics(iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
-    val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas, beta1, model)
+    val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.tensor, beta1, model)
     println("Collapsing finished.  Starting sampling iterations:")
     //sampler.debug = debug
     val startTime = System.currentTimeMillis
@@ -136,8 +136,8 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       if (i % fitAlphaInterval == 0) {
         sampler.exportThetas(documents)
         DirichletMomentMatching.estimate(alphas, model)
-        sampler.resetSmoothing(alphas, beta1)
-        println("alpha = " + alphas.mkString(" "))
+        sampler.resetSmoothing(alphas.tensor, beta1)
+        println("alpha = " + alphas.tensor.toSeq.mkString(" "))
       }
     } 
     //println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
@@ -153,7 +153,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     //println("Subsets = "+docSubsets.size)
     for (i <- 1 to iterations) {
       docSubsets.par.foreach(docSubset => {
-        val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas, beta1, model)
+        val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.tensor, beta1, model)
         for (doc <- docSubset) sampler.process(doc.zs.asInstanceOf[Zs])
       })
       if (i % diagnosticInterval == 0) {
@@ -165,8 +165,8 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     maximizePhisAndThetas
   }
   
-  def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).top(numWords).map(dp => wordDomain.getCategory(dp.index))
-  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).countsTotal.toInt, alphas(topicIndex))
+  def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).tensor.top(numWords).map(dp => wordDomain.getCategory(dp.index))
+  def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).tensor.massTotal.toInt, alphas(topicIndex))
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_)).mkString("\n")
 
   def topicsPhraseCounts = new TopicPhraseCounts(numTopics) ++= documents
@@ -184,16 +184,16 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   
   @deprecated("Will be removed eventually")
   def printTopics : Unit = {
-    phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => wordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt+"  "+alphas(phis.indexOf(t))))
+    phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => wordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
     println
   }
 
   def maximizePhisAndThetas: Unit = {
-    phis.foreach(_.zero())
+    phis.foreach(_.tensor.zero())
     for (doc <- documents; i <- 0 until doc.ws.length) {
       val zi = doc.zs.intValue(i)
-      phis(zi).increment(doc.ws.intValue(i), 1.0)(null)
-      doc.theta.increment(zi, 1.0)(null)
+      phis(zi).tensor.+=(doc.ws.intValue(i), 1.0)
+      doc.theta.tensor.+=(zi, 1.0)
     }
   }
   
@@ -408,7 +408,7 @@ class LDACmd {
     return lda
   }
 
-  def testSaveLoad(lda:LDA) {
+  /*def testSaveLoad(lda:LDA) {
     val testLoc = "/Users/kschultz/dev/backedup/models/ldatestsave/ldatestsave"
     lda.saveModel(testLoc)
 
@@ -461,6 +461,6 @@ class LDACmd {
       println
     })
     println
-  }
+  }*/
 }
 

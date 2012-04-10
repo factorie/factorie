@@ -66,8 +66,8 @@ object LogicDemo1 {
     val inferencer = new VariableSamplingInferencer(new VariableSettingsSampler[BooleanVariable](model))
     inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
     val marginals = inferencer.infer(List(don.cancer, don.smokes))
-    println("p(don.smokes == true) = "+marginals(don.smokes).pr(1))
-    println("p(don.cancer == true) = "+marginals(don.cancer).pr(1))
+    println("p(don.smokes == true) = "+marginals(don.smokes).proportions(1))
+    println("p(don.cancer == true) = "+marginals(don.cancer).proportions(1))
   }
 }
 

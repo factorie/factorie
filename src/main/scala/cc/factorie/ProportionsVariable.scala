@@ -32,7 +32,7 @@ trait Proportions extends Masses {
     assert(i > 0)
     i - 1
   } 
-  def sampleIndex: Int = sampleIndex(cc.factorie.random)
+  //def sampleIndex: Int = sampleIndex(cc.factorie.random)
   @inline final def pr(index:Int) = apply(index)
   @inline final def logpr(index:Int) = math.log(apply(index))
   override def stringPrefix = "Proportions"
@@ -124,16 +124,95 @@ class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1
 
 // Proportions Variable
 
-trait ProportionsVar[P<:Proportions] extends MassesVar[P] with VarAndValueType[ProportionsVar[P],P]
-class ProportionsVariable[P<:Proportions] extends MassesVariable[P] with ProportionsVar[P] {
-  def this(initialValue:P) = { this(); _set(initialValue) }
+trait ProportionsVar extends MassesVar with VarAndValueType[ProportionsVar,Proportions] {
+  // Just a few short-cuts that reach into the value, for the most common operations, already defined in TensorVar
+  //final def size = tensor.size
 }
+class ProportionsVariable extends MassesVariable with ProportionsVar {
+  def this(initialValue:Proportions) = { this(); _set(initialValue) }
+}
+// In the future, we might also need a ProportionsVar1, ProportionsVar2, etc. -akm
 
 object ProportionsVariable {
   def uniform(dim:Int) = new ProportionsVariable(new UniformProportions1(dim))
   def dense(dim:Int) = new ProportionsVariable(new DenseProportions1(dim))
   def growableDense(sizeProxy:Iterable[Any]) = new ProportionsVariable(new GrowableDenseProportions1(sizeProxy))
   def growableUniform(sizeProxy:Iterable[Any]) = new ProportionsVariable(new GrowableUniformProportions1(sizeProxy, 1.0))
-  def sparseCounts(dim:Int) = new ProportionsVariable(new SortedSparseCountsProportions1(dim))
+  def sortedSparseCounts(dim:Int) = new ProportionsVariable(new SortedSparseCountsProportions1(dim))
   //def growableSparseCounts(sizeProxy:Iterable[Any]) = new ProportionsVariable(new SortedSparseCountsProportions1(sizeProxy)) // Not yet implemented
+}
+
+
+object MaximizeProportions extends Maximize[ProportionsVariable,Nothing] {
+  import cc.factorie.generative.{GenerativeModel,Dirichlet,Discrete,Mixture,DiscreteMixture,PlatedDiscreteMixture}
+  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): Boolean = {
+    if (varying.size != 0) return false
+    if (variables.size != 1) return false
+    variables.head match {
+      case mp: ProportionsVariable => {
+        model match {
+          case model:GenerativeModel => apply(mp, model, qModel)
+          case _ => return false
+        }
+      }
+      case _ => return false
+    }
+    true
+  }
+  def apply(variables:Iterable[ProportionsVariable], varying:Iterable[Nothing], model:Model, qModel:Model): Unit = {
+    if (variables.size != 1) throw new Error
+    apply(variables.head, model.asInstanceOf[GenerativeModel], qModel)
+  }
+  //def apply(p:MutableProportions, model:GenerativeModel, qModel:Model = null): Unit = if (apply(p, model.factors(Seq(p)), qModel) == false) throw new Error("Not handled.")
+  def apply(p:ProportionsVariable, model:GenerativeModel, qModel:Model): Unit = {
+    // Zero an accumulator
+    var e: DenseProportions1 = null
+    p match {
+      case p:DenseProportions1 => { e = p; e.zero() }
+      case _ => e = new DenseProportions1(p.tensor.length)
+    }
+    // Initialize with prior; find the factor that is the parent of "p", and use its Dirichlet masses for initialization
+    model.parentFactor(p) match {
+      //case f:Dirichlet.Factor => e := f._2.tensor // TODO Uncomment this once Masses have been converted
+      case _ => throw new Error
+    }
+    //factors.collectFirst({case f:Dirichlet.Factor if (f.child == p) => e.set(f._2)(null)})
+    // Incorporate children
+    @inline def incrementForDiscreteVar(dv:DiscreteVar, incr:Double): Unit = {
+      val qFactors = if (qModel eq null) Nil else qModel.factors(Seq(dv))
+      if (qFactors.size == 0)
+        e.+=(dv.intValue, 1.0)
+      else qFactors.head match {
+        // The child has a Q distribution
+        //case qd:Discrete.Factor => e += qd._2.tensor // forIndex(qd._2.length)(i => e.increment(i, qd._2(i))(null)) // TODO Uncomment this one Proportions have been converted
+        case _ => throw new Error
+      } // TODO We should check that qFactors.size == 1
+    }
+    for (factor <- model.extendedChildFactors(p)) factor match {
+      //case parent:GenerativeFactor if (parent.child == p) => {} // Parent factor of the Proportions we are estimating already incorporated above
+      // The array holding the mixture components; the individual components (DiscreteMixture.Factors) will also be among the extendedChildFactors
+      case m:Mixture.Factor => {}
+      // A simple DiscreteVar child of the Proportions
+      case d:Discrete.Factor => incrementForDiscreteVar(d._1, 1.0)
+      // A DiscreteVar child of a Mixture[Proportions]
+      case dm:DiscreteMixture.Factor => {
+        val gate = dm._2
+        val qFactors = if (qModel eq null) Nil else qModel.factors(Seq(gate))
+        val mixtureIndex = dm._2.indexOf(e) // Yipes!  Linear search.
+        if (qFactors.size == 0) {
+          if (dm._3.intValue == mixtureIndex) incrementForDiscreteVar(dm._1, 1.0)
+        } else qFactors.head match {
+          // The gate has a Q distribution
+          case qd:Discrete.Factor => incrementForDiscreteVar(dm._1, qd._2.tensor(mixtureIndex))
+        }
+      }
+      case pdm:PlatedDiscreteMixture.Factor => {
+        require(qModel.factors(pdm.variables).size == 0) // We don't yet handle variational qModel of PlatedDiscreteMixture.Factor
+        val mixtureIndex = pdm._2.indexOf(e)
+        var i = 0; val len = pdm._1.length
+        while (i < len) { if (pdm._3.intValue(i) == mixtureIndex) e.+=(pdm._3.intValue(i), 1.0); i += 1 }
+      }
+    }
+    if (p ne e) p.set(e)(null)
+  }
 }

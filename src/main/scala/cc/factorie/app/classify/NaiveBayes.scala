@@ -14,7 +14,6 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
-import cc.factorie.generative.Proportions
 import cc.factorie.er._
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 
@@ -27,19 +26,19 @@ class NaiveBayesTrainer extends ClassifierTrainer {
     val featureDomain = il.featureDomain
     val numLabels = labelDomain.size
     val numFeatures = featureDomain.size
-    val bias = new cc.factorie.generative.DenseCountsProportions(labelDomain.size)
-    val evid = Seq.tabulate(labelDomain.size)(i => new cc.factorie.generative.DenseCountsProportions(featureDomain.size))
+    val bias = new DenseProportions1(labelDomain.size)
+    val evid = Seq.tabulate(labelDomain.size)(i => new DenseProportions1(featureDomain.size))
     // Note: this doesn't actually build the graphical model, it just gathers smoothed counts, never creating factors
     // Incorporate smoothing, with simple +m smoothing
-    for (li <- 0 until numLabels) bias.increment(li, biasSmoothingMass)(null)
-    for (li <- 0 until numLabels; fi <- 0 until numFeatures) evid(li).increment(fi, evidenceSmoothingMass)(null)
+    for (li <- 0 until numLabels) bias.+=(li, biasSmoothingMass)
+    for (li <- 0 until numLabels; fi <- 0 until numFeatures) evid(li).+=(fi, evidenceSmoothingMass)
     // Incorporate evidence
     for (label <- il) {
       val targetIndex = label.target.intValue
-      bias.increment(targetIndex, 1.0)(null)
+      bias.+=(targetIndex, 1.0)
       val features = il.labelToFeatures(label)
       for (featureIndex <- features.activeDomain)
-        evid(targetIndex).increment(featureIndex, features.vector(featureIndex))(null)
+        evid(targetIndex).+=(featureIndex, features.vector(featureIndex))
     }
     // Put results into the model templates
     forIndex(numLabels)(i => cmodel.biasTemplate.weights(i) = math.log(bias(i)))

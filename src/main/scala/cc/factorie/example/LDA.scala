@@ -31,10 +31,10 @@ object LDA {
   class Z(value: Int = 0) extends DiscreteVariable(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
   class Word(value: String) extends CategoricalVariable(value) { def domain = WordDomain; def z = model.parentFactor(this).asInstanceOf[DiscreteMixture.Factor]._3 }
-  class Document(val file: String) extends ArrayBuffer[Word] {var theta: DenseCountsProportions = null}
-  val beta = new GrowableUniformMasses(WordDomain, 0.1)
-  val alphas = new DenseMasses(numTopics, 0.1)
-  val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(WordDomain) ~ Dirichlet(beta))
+  class Document(val file: String) extends ArrayBuffer[Word] {var theta: ProportionsVar = null}
+  val beta = MassesVariable.growableUniform(WordDomain.values, 0.1)
+  val alphas = MassesVariable.dense(numTopics, 0.1)
+  val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain.values) ~ Dirichlet(beta))
 
   def main(args: Array[String]): Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
@@ -44,7 +44,7 @@ object LDA {
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         print("."); Console.flush
         val doc = new Document(file.toString)
-        doc.theta = new DenseCountsProportions(numTopics) ~ Dirichlet(alphas)
+        doc.theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
         for (word <- alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
           val z = new Z :~ Discrete(doc.theta)
           doc += new Word(word) ~ DiscreteMixture(phis, z)
@@ -66,7 +66,7 @@ object LDA {
         // Turned off hyperparameter optimization
         //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
+        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.value.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")))
         println
       }
     }

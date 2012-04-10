@@ -41,29 +41,19 @@ object DenseCountsProportionsCollapser extends Collapser {
   def collapse(variables:Seq[Variable], factors:Seq[Factor], model:GenerativeModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
-      case p:DenseCountsProportions => {
-        p.zero()
+      case p:ProportionsVar => {
+        p.tensor.zero()
         for (f <- factors) f match {
           //case f:Discrete.Factor if (f.family == Discrete) => p.increment(f._1.intValue, 1.0)(null)
-          case f:Discrete.Factor => p.increment(f._1.intValue, 1.0)(null)
+          case f:Discrete.Factor => p.tensor.+=(f._1.intValue, 1.0)
           //case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => f._2.asInstanceOf[DenseCountsProportions].increment(f._1(i).intValue, 1.0)(null))
-          case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => p.increment(f._1(i).intValue, 1.0)(null))
+          case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => p.tensor.+=(f._1(i).intValue, 1.0))
           //case f:Dirichlet.Factor if (f.family == Dirichlet) => p.increment(f._2)(null)
-          case f:Dirichlet.Factor => p.increment(f._2)(null)
+          case f:Dirichlet.Factor => p.tensor match {
+            case pt:DenseProportions1 => pt.+=(f._2.tensor)
+            case pt:SortedSparseCountsProportions1 if (model.parentFactor(p) eq f) => pt.prior = f._2.tensor
+          }
           case _ => { println("DenseCountsProportionsCollapser unexpected factor "+f); return false }
-        }
-        true
-      }
-      case p:SortedSparseCountsProportions => {
-        p.zero()
-        for (f <- factors) f match {
-          //case f:Discrete.Factor if (f.family == Discrete) => p.increment(f._1.intValue, 1.0)(null)
-          case f:Discrete.Factor => p.increment(f._1.intValue, 1.0)(null)
-          //case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => f._2.asInstanceOf[DenseCountsProportions].increment(f._1(i).intValue, 1.0)(null))
-          case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => p.increment(f._1(i).intValue, 1.0)(null))
-          case f:Dirichlet.Factor if (model.parentFactor(p) eq f) => p.prior = f._2 //p.increment(f._2, 1)(null)
-          //case f:Dirichlet.Factor => { println("DenseCountsProportionsCollapser p.parentFactor "+p.parentFactor.getClass); p.prior = f._2 } //p.increment(f._2, 1)(null)
-          case _ => { println("DenseCountsProportionsCollapser unexpected factor "+f.getClass); return false }
         }
         true
       }
@@ -76,17 +66,17 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
   def collapse(variables:Seq[Variable], factors:Seq[Factor], model:GenerativeModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
-      case m:Mixture[DenseCountsProportions] => {
-        if (!m(0).isInstanceOf[DenseCountsProportions]) return false // Because JVM erasure doesn't actually check the [DenseCountsProportions] above
-        m.foreach(p => { p.zero(); model.parentFactor(p) match { case f:Dirichlet.Factor => p.increment(f._2)(null) } } )
+      case m:Mixture[ProportionsVar] => {
+        if (!m(0).isInstanceOf[ProportionsVar]) return false // Because JVM erasure doesn't actually check the [DenseCountsProportions] above
+        m.foreach(p => { p.tensor.zero(); model.parentFactor(p) match { case f:Dirichlet.Factor => p.tensor.+=(f._2.tensor) } } )
         // TODO We really should create a mechanism indicating that a variable/factor is deterministic 
         //  and GenerativeModel.normalize should expand the factors to include neighbors of these,
         //  then include Dirichlet.factor in the match statement below.
         for (f <- factors) f match {
           //case f:MixtureComponent.Factor => {}
           case f:Mixture.Factor => {}
-          case f:DiscreteMixture.Factor => m(f._3.intValue).increment(f._1.intValue, 1.0)(null)
-          case f:PlatedDiscreteMixture.Factor => forIndex(f._1.size)(i => m(f._3(i).intValue).increment(f._1(i).intValue, 1.0)(null))
+          case f:DiscreteMixture.Factor => m(f._3.intValue).tensor.+=(f._1.intValue, 1.0)
+          case f:PlatedDiscreteMixture.Factor => forIndex(f._1.size)(i => m(f._3(i).intValue).tensor.+=(f._1(i).intValue, 1.0))
           case f:Factor => { println("DenseCountsProportionsMixtureCollapser unexpected factor "+f); return false }
         }
         true

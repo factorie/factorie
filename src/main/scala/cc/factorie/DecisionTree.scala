@@ -13,8 +13,6 @@
    limitations under the License. */
 
 package cc.factorie
-import cc.factorie.generative.Proportions
-import cc.factorie.generative.DenseCountsProportions
 
 /** Statistics for factors who scores are the log-probability of 
     label S1 given feature vector S2, according to a decision tree.
@@ -22,7 +20,7 @@ import cc.factorie.generative.DenseCountsProportions
 trait DecisionTreeStatistics2[S1<:DiscreteValue,S2<:DiscreteVectorValue] extends VectorStatistics2[S1,S2] {
   // Number of different values taken on by s._1
   val numOutcomes: Int = statisticsDomains(0).asInstanceOf[DiscreteDomain].size
-  case class DTNode(parent:DTNode, var yesChild:DTNode = null, var noChild:DTNode = null, var index:Int = -1, var p:cc.factorie.generative.Proportions = null) {
+  case class DTNode(parent:DTNode, var yesChild:DTNode = null, var noChild:DTNode = null, var index:Int = -1, var p:Proportions = null) {
     def isLeaf = ((yesChild eq null) || (noChild eq null))
   }
   var root: DTNode = null
@@ -40,8 +38,8 @@ trait DecisionTreeStatistics2[S1<:DiscreteValue,S2<:DiscreteVectorValue] extends
     val dtree = new DTNode(parent)
     if (stats.size < 5) {  // TODO Have a more sophisticated stopping criterion
       // We will make this dtree a leaf
-      val p = new DenseCountsProportions(numOutcomes)
-      stats.foreach(stat => p.increment(stat._1.intValue, 1.0)(null))
+      val p = new DenseProportions1(numOutcomes)
+      stats.foreach(stat => p.+=(stat._1.intValue, 1.0))
       dtree.p = p
       return dtree
     }

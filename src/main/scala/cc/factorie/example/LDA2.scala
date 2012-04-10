@@ -36,19 +36,19 @@ object LDA2 {
     def domain = WordSeqDomain
     def zs = model.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3
   }
-  class Document(val file:String, val theta:CountsProportions, strings:Seq[String]) extends Words(strings)
-  val beta = new GrowableUniformMasses(WordDomain, 0.1)
-  val alphas = new DenseMasses(numTopics, 0.1)
+  class Document(val file:String, val theta:ProportionsVar, strings:Seq[String]) extends Words(strings)
+  val beta = MassesVariable.growableUniform(WordDomain.values, 0.1)
+  val alphas = MassesVariable.dense(numTopics, 0.1)
 
   def main(args: Array[String]): Unit = {
     val directories = if (args.length > 0) args.toList else List("12", "11", "10", "09", "08").take(1).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
-    val phis = Mixture(numTopics)(new GrowableDenseCountsProportions(WordDomain) ~ Dirichlet(beta))
+    val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain.values) ~ Dirichlet(beta))
     val documents = new ArrayBuffer[Document]
     for (directory <- directories) {
       println("Reading files from directory " + directory)
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         print("."); Console.flush
-        val theta = new DenseCountsProportions(numTopics) ~ Dirichlet(alphas)
+        val theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
         documents += new Document(file.toString, theta, tokens) ~ PlatedDiscreteMixture(phis, zs)
@@ -71,8 +71,8 @@ object LDA2 {
         // Turned off hyperparameter optimization
         //DirichletMomentMatching.estimate(alphaMean, alphaPrecision)
         //println("alpha = " + alphaMean.map(_ * alphaPrecision.doubleValue).mkString(" "))
-        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.countsTotal.toInt))
-        println("Total words "+phis.map(_.countsTotal).sum.toInt)
+        phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.value.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.value.massTotal.toInt))
+        println("Total words "+phis.map(_.value.massTotal).sum.toInt)
         println
       }
     }

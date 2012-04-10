@@ -24,27 +24,22 @@ trait PlatedDiscreteGeneratingFactor extends GenerativeFactor {
 }
 */
 
-object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVar,Proportions] {
+object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVar,ProportionsVar] {
   self =>
-  def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
-  def pr(ds:Seq[DiscreteValue], p:DoubleSeq): Double = ds.map(dv => p(dv.intValue)).product
-  def logpr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => math.log(p(dv.intValue))).sum
-  def sampledValue(d:DiscreteDomain, length:Int, p:ProportionsValue): Seq[DiscreteValue] = 
-    Vector.fill(length)(d.getValue(p.sampleInt))
-  case class Factor(_1:DiscreteSeqVar, _2:Proportions) extends super.Factor {
+  //def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
+  def pr(ds:Seq[DiscreteValue], p:Proportions): Double = ds.map(dv => p(dv.intValue)).product // TODO Make this more efficient; this current boxes
+  def logpr(ds:Seq[DiscreteValue], p:Proportions): Double = ds.map(dv => math.log(p(dv.intValue))).sum // TODO Make this more efficient
+  def sampledValue(d:DiscreteDomain, length:Int, p:Proportions): Seq[DiscreteValue] = 
+    Vector.fill(length)(d.getValue(p.sampleIndex))
+  case class Factor(_1:DiscreteSeqVar, _2:ProportionsVar) extends super.Factor {
     def pr(s:Statistics): Double = self.pr(s._1, s._2)
     override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
-    override def sampledValue: Any = self.sampledValue(_1.first.domain, _1.length, _2) // Avoid creating a Statistics
+    override def sampledValue: Any = self.sampledValue(_1.first.domain, _1.length, _2.value) // Avoid creating a Statistics
     def sampledValue(s:Statistics): Seq[DiscreteValue] = {
       if (s._1.length == 0) Nil
       else self.sampledValue(s._1.first.domain, s._1.length, s._2)
     }
-    def updateCollapsedParents(index:Int, weight:Double): Unit = {
-      _2 match {
-        case p:DenseCountsProportions => { p.increment(_1(index).intValue, weight)(null); true }
-        case _ => false
-      }
-    }
+    def updateCollapsedParents(index:Int, weight:Double): Boolean = { _2.tensor.+=(_1(index).intValue, weight); true }
   }
-  def newFactor(a:DiscreteSeqVar, b:Proportions) = Factor(a, b)
+  def newFactor(a:DiscreteSeqVar, b:ProportionsVar) = Factor(a, b)
 }

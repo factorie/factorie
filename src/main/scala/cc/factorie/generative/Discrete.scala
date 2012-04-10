@@ -24,27 +24,22 @@ trait DiscreteGeneratingFactor extends GenerativeFactor {
   def prValue(s:StatisticsType, value:Int): Double
 }
 
-object Discrete extends GenerativeFamily2[DiscreteVar,Proportions] {
-  case class Factor(_1:DiscreteVar, _2:Proportions) extends super.Factor with DiscreteGeneratingFactor {
+object Discrete extends GenerativeFamily2[DiscreteVar,ProportionsVar] {
+  case class Factor(_1:DiscreteVar, _2:ProportionsVar) extends super.Factor with DiscreteGeneratingFactor {
     //def proportions: Proportions = _2 // Just an alias
     def pr(s:Statistics) = s._2.apply(s._1.intValue)
-    override def pr: Double = _2.apply(_1.intValue)
+    override def pr: Double = _2.value.apply(_1.intValue)
     def prValue(s:Statistics, intValue:Int): Double = s._2.apply(intValue)
-    override def prValue(intValue:Int): Double = _2.apply(intValue)
-    def sampledValue(s:Statistics): DiscreteValue = s._1.domain.getValue(s._2.sampleInt)
-    override def sampledValue: DiscreteValue = _1.domain.getValue(_2.sampleInt)
-    def maxIntValue(s:Statistics): Int = s._2.maxInt
-    override def updateCollapsedParents(weight:Double): Boolean = {
-      _2 match {
-        case p:DenseCountsProportions => { p.increment(_1.intValue, weight)(null); true }
-        case _ => false
-      }
-    }
+    override def prValue(intValue:Int): Double = _2.value.apply(intValue)
+    def sampledValue(s:Statistics): DiscreteValue = s._1.domain.getValue(s._2.sampleIndex)
+    override def sampledValue: DiscreteValue = _1.domain.getValue(_2.value.sampleIndex)
+    def maxIntValue(s:Statistics): Int = s._2.maxIndex
+    @deprecated("May be deleted") override def updateCollapsedParents(weight:Double): Boolean = { _2.tensor.+=(_1.intValue, weight); true }
   }
-  def newFactor(a:DiscreteVar, b:Proportions) = Factor(a, b)
+  def newFactor(a:DiscreteVar, b:ProportionsVar) = Factor(a, b)
   // TODO Arrange to call this in Factor construction.
   def factorHook(factor:Factor): Unit =
-    if (factor._1.domain.size != factor._2.size) throw new Error("Discrete child domain size different from parent Proportions size.")
+    if (factor._1.domain.size != factor._2.tensor.length) throw new Error("Discrete child domain size different from parent Proportions size.")
 }
 
 object MaximizeGeneratedDiscrete extends Maximize[DiscreteVariable,Nothing] {
@@ -55,7 +50,7 @@ object MaximizeGeneratedDiscrete extends Maximize[DiscreteVariable,Nothing] {
       val dFactors = model.factors1(d)
       require(dFactors.size == 1)
       dFactors.head match {
-      	case factor:Discrete.Factor => d.set(factor._2.value.maxInt)(null)
+      	case factor:Discrete.Factor => d.set(factor._2.tensor.maxIndex)(null)
         case _ => throw new Error("This Maximizer only handles factors of type Discrete.Factor.")
       }
     }
@@ -68,7 +63,7 @@ object MaximizeGeneratedDiscrete extends Maximize[DiscreteVariable,Nothing] {
         val dFactors = model.factors1(d)
         if (dFactors.size != 1) return false
         dFactors.head match {
-          case factor:Discrete.Factor => d.asInstanceOf[MutableDiscreteVar].set(factor._2.value.maxInt)(null)
+          case factor:Discrete.Factor => d.asInstanceOf[MutableDiscreteVar].set(factor._2.tensor.maxIndex)(null)
           case _ => return false
         }
       }
@@ -92,8 +87,10 @@ object MaximizeGeneratedDiscrete extends Maximize[DiscreteVariable,Nothing] {
 class Flip(value:Boolean = false) extends BooleanVariable(value)  
 
 /** A coin, with Multinomial distribution over outcomes, which are Flips. */
-class Coin(p:Double) extends DenseProportions(Seq(1.0-p, p)) {
+class Coin(p:Double) extends ProportionsVariable(new DenseProportions1(2)) {
   def this() = this(0.5)
+  tensor(0) = 1.0 - p
+  tensor(1) = p
   assert (p >= 0.0 && p <= 1.0)
   //def flip: Flip = { new Flip :~ Discrete(this) }
   //def flip(n:Int) : Seq[Flip] = for (i <- 0 until n) yield flip

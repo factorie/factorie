@@ -6,6 +6,7 @@ import cc.factorie._
 import cc.factorie.generative._
 import cc.factorie.app.topics.lda._
 
+// For FUSE research abstracts in XML
 object LDA4 extends cc.factorie.maths.ArrayImplicits {
   
   class Document(domain:CategoricalSeqDomain[String], name:String, contents:Seq[String]) extends cc.factorie.app.topics.lda.Document(domain, name, contents) {
@@ -68,11 +69,11 @@ object LDA4 extends cc.factorie.maths.ArrayImplicits {
     println("minYear=%d maxYear=%d".format(minYear, maxYear))
     val numYears = maxYear - minYear + 1
     val histogram = Array.ofDim[Double](numYears, numTopics)
-    for (doc <- lda.documents.asInstanceOf[Iterable[Document]]) histogram(doc.year - minYear).incr(doc.theta.toArray, 1.0)
+    for (doc <- lda.documents.asInstanceOf[Iterable[Document]]) histogram(doc.year - minYear).incr(doc.theta.tensor.toArray, 1.0)
     for (year <- 0 until histogram.length) histogram(year).normalize
     for (phi <- lda.phis) {
       val phiIndex = lda.phis.indexOf(phi)
-      println(phi.top(20).map(dp => WordSeqDomain.elementDomain.getCategory(dp.index)).mkString(" ")+"  "+Range(0, numYears).map(year => histogram(year)(phiIndex)).mkString(" "))
+      println(phi.tensor.top(20).map(dp => WordSeqDomain.elementDomain.getCategory(dp.index)).mkString(" ")+"  "+Range(0, numYears).map(year => histogram(year)(phiIndex)).mkString(" "))
     }
     
   }

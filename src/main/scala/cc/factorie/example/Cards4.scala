@@ -41,7 +41,7 @@ object PragBot4 {
     })
     inferencer.burnIn = 1; inferencer.iterations = 10000; inferencer.thinning = 100
     val marginals = inferencer.infer(List(jane.wins), cards)
-    println ("\np(jane.wins)="+marginals(jane.wins).pr(1))
+    println ("\np(jane.wins)="+marginals(jane.wins).proportions(1))
   }
 
 

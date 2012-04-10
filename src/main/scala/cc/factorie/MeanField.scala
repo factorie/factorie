@@ -22,7 +22,7 @@ class MeanField(variables:Iterable[Variable]) extends Model {
   private val _factor = new HashMap[Variable,Factor]
   def init(variables:Iterable[Variable]): Unit = {
     for (v <- variables) v match {
-      case d:DiscreteVar => _factor(v) = new Discrete.Factor(d, new DenseProportions(d.domain.size))
+      case d:DiscreteVar => _factor(v) = new Discrete.Factor(d, new ProportionsVariable(new DenseProportions1(d.domain.size)))
       case r:RealVar => _factor(v) = new Gaussian.Factor(r, new RealVariable, new RealVariable)
     }
   }
@@ -40,9 +40,9 @@ class MeanFieldInferencer(val variables:Iterable[Variable], val model:Model, val
     qFactors.head match {
       case f:Discrete.Factor => {
         val d = f._1.asInstanceOf[DiscreteVariable]
-        val p = f._2.asInstanceOf[DenseProportions]
-        val distribution = new Array[Double](p.size)
-        for (i <- 0 until p.size) {
+        val p = f._2.asInstanceOf[ProportionsVariable]
+        val distribution = new Array[Double](p.tensor.size)
+        for (i <- 0 until p.tensor.size) {
           val diff = new DiffList
           d.set(i)(diff)
           val factors = model.factors(diff)
@@ -51,7 +51,7 @@ class MeanFieldInferencer(val variables:Iterable[Variable], val model:Model, val
           distribution(i) = diff.scoreAndUndo(model)
         }
         maths.expNormalize(distribution)
-        p.set(distribution)(null)
+        p.tensor.:=(distribution)
       }
       case f:Factor => throw new Error("MeanFieldInferencer does not know how to handle factors of type "+f.getClass)
     }

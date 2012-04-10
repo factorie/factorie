@@ -21,38 +21,34 @@ import scala.collection.mutable.ArrayBuffer
 /** A single discrete variable */
 trait DiscreteVar extends DiscreteVectorVar with VarAndValueType[DiscreteVar,DiscreteValue] {
   def domain: DiscreteDomain
-  /*@inline final*/ def intValue = value.intValue
-  //def activeDomain = List(intValue) // TODO try to make this implementation possible: = value
+  def intValue = value.intValue
 }
 
+/** A single discrete variable whose value can be changed. */
 trait MutableDiscreteVar extends DiscreteVar with MutableVar {
   def set(newValue:ValueType)(implicit d:DiffList): Unit
   def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt))(d)
+  @inline final def :=(i:Int): Unit = set(i)(null)
   def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
 }
 
 
-// TODO Consider the following
+/** A concrete single discrete variable whose value can be changed. */
 abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with IterableSettings {
-  def this(initialValue:Int) = { this(); _value(initialValue) }
-  def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _value(initialValue.intValue) }
-  protected var _thisValue: Int = 0
-  protected def _value = _thisValue
-  protected def _value(i: Int) { _thisValue = i }
-  override def intValue = _value
-  def value: Value = domain.getValue(_value)
-  def set(newValue:ValueType)(implicit d:DiffList): Unit = if (newValue.intValue != _value) {
-    assert((newValue eq null) || newValue.domain == domain)
-    if (d ne null) d += new DiscreteVariableDiff(_value, newValue.intValue)
-    _value(newValue.intValue)
-  }
-  override def set(newValue:Int)(implicit d:DiffList): Unit = if (newValue != _value) {
+  def this(initialValue:Int) = { this(); __value = initialValue }
+  def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue.intValue) }
+  private var __value: Int = 0
+  protected def _value = __value
+  protected def _set(newValue:Int): Unit = __value = newValue
+  //final protected def _set(newValue:ValueType): Unit = _set(newValue.intValue)
+  override def intValue = __value
+  def value: Value = domain.getValue(__value)
+  @inline final def set(newValue:ValueType)(implicit d:DiffList): Unit = set(newValue.intValue)(d)
+  override def set(newValue:Int)(implicit d:DiffList): Unit = if (newValue != __value) {
     assert(newValue < domain.size)
-    if (d ne null) d += new DiscreteVariableDiff(_value, newValue)
-    _value(newValue)
+    if (d ne null) d += new DiscreteVariableDiff(__value, newValue)
+    __value = newValue
   }
-  final def :=(i:Int): Unit = set(i)(null)
-  @inline protected final def _set(newValue:ValueType): Unit = _value(newValue.intValue)
   def settings = new SettingIterator {
     // TODO Base this on a domain.iterator instead, for efficiency
     var i = -1
@@ -62,25 +58,27 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
     def reset = i = -1
     override def variable: DiscreteVariable.this.type = DiscreteVariable.this
   }
-  // TODO Keep this?  Or replace later by appropriate methods somewhere among the "Inferencer"s?
-  def proportions(model:Model): cc.factorie.generative.Proportions = {
+  /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
+  def proportions(model:Model): Proportions = {
     val origIntValue = intValue
-    val distribution = new Array[Double](domain.size)
-    forIndex(distribution.length)(i => {
+    val l = domain.size 
+    val distribution = new Array[Double](l)
+    var i = 0
+    while (i < l) {
       //model.factors(Seq(this)).sumBy(_.values.set(this, i).score) // a version that doesn't change the value of this variable
-      this.set(i)(null)
-      // compute score of variable with value 'i'
-      distribution(i) = model.score(Seq(this))
-    })
+      __value = i
+      distribution(i) = model.score1(this)  // compute score of variable with value 'i'
+      i += 1
+    }
     maths.expNormalize(distribution)
-    set(origIntValue)(null)
-    new cc.factorie.generative.DenseProportions(distribution)
+    __value = origIntValue
+    new DenseProportions1(distribution)
   }
 
   case class DiscreteVariableDiff(oldValue: Int, newValue: Int) extends Diff {
     @inline final def variable: DiscreteVariable = DiscreteVariable.this
-    @inline final def redo = _value(newValue)
-    @inline final def undo = _value(oldValue)
+    @inline final def redo = DiscreteVariable.this.set(newValue)(null)
+    @inline final def undo = DiscreteVariable.this.set(oldValue)(null)
     override def toString = variable match { 
       case cv:CategoricalVar[_] if (oldValue >= 0) => "DiscreteVariableDiff("+cv.domain.getCategory(oldValue)+"="+oldValue+","+cv.domain.getCategory(newValue)+"="+newValue+")"
       case _ => "DiscreteVariableDiff("+oldValue+","+newValue+")"
@@ -88,11 +86,12 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
   }
 }
 
-trait HookedVariable extends DiscreteVariable {
-  def valueChangeHook(old: Int, newValue: Int)
-
-  override def _value(newValue : Int) {
+// Why can't this be accomplished merely by overriding set(Int)(DiffList)?  -akm
+// I think we should just get rid of this trait. -akm
+trait HookedDiscreteVariable extends DiscreteVariable { // Changed class name from "HookedVariable" because non-DiscreteVariables might also want to be hooked.
+  def valueChangeHook(old: Int, newValue: Int): Unit
+  override def set(newValue:Int)(implicit d:DiffList) {
     valueChangeHook(_value, newValue)
-    super._value(newValue)
+    super.set(newValue)(d)
   }
 }

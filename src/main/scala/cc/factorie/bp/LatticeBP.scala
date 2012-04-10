@@ -533,7 +533,7 @@ abstract class LatticeBP(val varying: Set[DiscreteVariable]) extends Lattice[Var
   }
 
   type VariableMarginalType = GenericMessage
-  type FactorMarginalType = DiscreteFactorMarginal
+  type FactorMarginalType = Proportions // DiscreteFactorMarginal
 
   override def marginal(v: Variable) = {
     if (_nodes.contains(v)) Some(node(v).marginal) else None
@@ -541,7 +541,7 @@ abstract class LatticeBP(val varying: Set[DiscreteVariable]) extends Lattice[Var
 
   override def marginal(f: Factor) = if (_factors.contains(f)) {
     val mf = mfactor(f)
-    Some(new DiscreteFactorMarginal(f, mf.values.map(mf marginal _).toArray))
+    Some(new DenseProportions1(mf.values.map(mf marginal _).toArray)) // Some(new DiscreteFactorMarginal(f, mf.values.map(mf marginal _).toArray))
   } else None
 
   def currentMaxDelta: Double = {

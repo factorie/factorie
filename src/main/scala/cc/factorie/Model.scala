@@ -73,7 +73,8 @@ trait Model {
   def factorsOfFamilies[F<:Family](variables:Iterable[Variable], families:Seq[F]): Seq[F#Factor] = filterByFamilies(factors(variables), families)
   def factorsOfFamilies[F<:Family](d:DiffList, families:Seq[F]): Seq[F#Factor] = filterByFamilies(factors(d), families)
   
-  def score(variables:Iterable[Variable]): Double = factors(variables).foldLeft(0.0)((sum, f) => sum + f.score)
+  def score(variables:Iterable[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.score; sum } // factors(variables).foldLeft(0.0)((sum, f) => sum + f.score)
+  def score1(variable:Variable): Double = { var sum = 0.0; for (f <- factors1(variable)) sum += f.score; sum }
   def score(d:DiffList) : Double = {
     var result = 0.0
     for (f <- factors(d)) result += f.statistics.score
