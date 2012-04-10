@@ -41,8 +41,8 @@ trait Classifier[L<:DiscreteVariable] {
 /** An "instance list" for iid classification, except it actually holds labels, each of which is associated with a feature vector. */
 class LabelList[L<:DiscreteVar](val labelToFeatures:L=>DiscreteVectorVar)(implicit lm:Manifest[L]) extends ArrayBuffer[L] {
   def this(labels:Iterable[L], l2f:L=>DiscreteVectorVar)(implicit lm:Manifest[L]) = { this(l2f); this ++= labels }
-  val instanceWeights: HashMap[L,Double] = null
-  def labelDomain = head.domain // TODO Perhaps we should verify that all labels in the list have the same domain
+  val instanceWeights: HashMap[L,Double] = null // TODO Implement this! -akm
+  def labelDomain = head.domain // TODO Perhaps we should verify that all labels in the list have the same domain?
   def instanceDomain = labelToFeatures(head).domain // TODO Likewise
   def featureDomain = instanceDomain.dimensionDomain
 }
@@ -60,6 +60,7 @@ class Classification[L<:DiscreteVar](val label:L, val model:Model, val proportio
 
 /** A collection of Classification results, along with methods for calculating several evaluation measures.
     You can subclass Trial to add new evaluation measures. */
+// TODO Make this work for arbitrary category type, not just String; needs existential type argument.
 class Trial[L<:LabelVariable[String]](val classifier:Classifier[L]) extends LabelEvaluation(classifier.labelDomain.asInstanceOf[CategoricalDomain[String]]) with IndexedSeq[Classification[L]] {
   private val classifications = new ArrayBuffer[Classification[L]]
   def length = classifications.length

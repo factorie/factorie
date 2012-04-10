@@ -27,14 +27,14 @@ trait CategoricalVar[A] extends CategoricalVectorVar[A] with DiscreteVar with Va
   override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
 }
 
-trait MutableCategoricalVar[A] extends CategoricalVar[A] with MutableVar {
-  def setCategory(newCategory:A)(implicit d: DiffList): Unit = set(domain.getValue(newCategory))
+trait MutableCategoricalVar[A] extends CategoricalVar[A] with MutableDiscreteVar {
+  def setCategory(newCategory:A)(implicit d: DiffList): Unit = set(domain.index(newCategory))(d)
 }
 
 /** A DiscreteVariable whose integers 0...N are associated with an object of type A. 
     @author Andrew McCallum */
 abstract class CategoricalVariable[A] extends DiscreteVariable with MutableCategoricalVar[A] {
-  def this(initialCategory:A) = { this(); _set(domain.getValue(initialCategory)) }
+  def this(initialCategory:A) = { this(); _set(domain.index(initialCategory)) }
   //def this(initalValue:ValueType) = { this(); _set(initialValue) }
 }
 
