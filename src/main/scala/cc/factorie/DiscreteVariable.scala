@@ -63,7 +63,7 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
     override def variable: DiscreteVariable.this.type = DiscreteVariable.this
   }
   // TODO Keep this?  Or replace later by appropriate methods somewhere among the "Inferencer"s?
-  def proportions(model:Model): cc.factorie.generative.Proportions = {
+  def proportions(model:Model): Proportions = {
     val origIntValue = intValue
     val distribution = new Array[Double](domain.size)
     forIndex(distribution.length)(i => {
@@ -74,7 +74,7 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
     })
     maths.expNormalize(distribution)
     set(origIntValue)(null)
-    new cc.factorie.generative.DenseProportions(distribution)
+    new DenseProportions1(distribution)
   }
 
   case class DiscreteVariableDiff(oldValue: Int, newValue: Int) extends Diff {

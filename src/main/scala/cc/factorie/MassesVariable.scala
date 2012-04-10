@@ -41,7 +41,9 @@ trait Masses4 extends Tensor4 with Masses
 
 //trait DenseMasses extends ... (gather += in here, but we need a DenseTensor class also)
 class DenseMasses1(val dim1:Int) extends DenseTensorLike1 with Masses1 with MassesWithTotal {
+  def this(dim1:Int, uniformValue:Double) = { this(dim1); this := uniformValue } 
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+  override def :=(v:Double): Unit = { java.util.Arrays.fill(_values, v); _massTotal = v * length }
 }
 class DenseMasses2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 with Masses2 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
@@ -62,7 +64,7 @@ class SingletonMasses1(dim1:Int, singleIndex:Int, singleValue:Double) extends Si
 }
 
 class GrowableDenseMasses1(val sizeProxy:Iterable[Any]) extends GrowableDenseTensorLike1 with Masses1 with MassesWithTotal {
-  override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+  override def +=(i:Int, v:Double): Unit = { _massTotal += v; super.+=(i, v); assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
 }
 
 class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends UniformTensorLike1 with Masses1 {
@@ -87,9 +89,16 @@ class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSpa
 
 // Masses Variables 
 
-trait MassesVar[T<:Masses] extends TensorVar[T] with VarAndValueType[MassesVar[T],T] 
-class MassesVariable[T<:Masses] extends TensorVariable[T] with MassesVar[T] {
-  def this(initialValue:T) = { this(); _set(initialValue) }
+trait MassesVar extends TensorVar[Masses] with VarAndValueType[MassesVar,Masses] 
+class MassesVariable extends TensorVariable[Masses] with MassesVar {
+  def this(initialValue:Masses) = { this(); _set(initialValue) }
   def domain = TensorDomain
 }
 
+object MassesVariable {
+  def dense(dim1:Int) = new MassesVariable(new DenseMasses1(dim1))
+  def dense(dim1:Int, uniformValue:Double) = new MassesVariable(new DenseMasses1(dim1, uniformValue))
+  def growableDense(sizeProxy:Iterable[Any]) = new MassesVariable(new GrowableDenseMasses1(sizeProxy))
+  def growableUniform(sizeProxy:Iterable[Any], uniformValue:Double) = new MassesVariable(new GrowableUniformMasses1(sizeProxy, uniformValue))
+  def sortedSparseCounts(dim1:Int) = new MassesVariable(new SortedSparseCountsMasses1(dim1))
+}

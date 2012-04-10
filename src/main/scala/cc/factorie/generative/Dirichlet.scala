@@ -18,24 +18,19 @@ import cc.factorie._
 // Proportions ~ Dirichlet(Masses)
 // Proportions ~ Dirichlet(Proportions, Precision)
 
-object Dirichlet extends GenerativeFamily2[Proportions,Masses] {
+object Dirichlet extends GenerativeFamily2[ProportionsVar,MassesVar] {
   self =>
-  def pr(value:ProportionsValue, alpha:Seq[Double]): Double = {
+  def pr(value:Proportions, alpha:Masses): Double = {
     require(value.length == alpha.length)
     var result = maths.logGamma(alpha.sum)
     forIndex(value.length)((i:Int) => result -= maths.logGamma(alpha(i)))
     forIndex(value.length)((i:Int) => result += (alpha(i) - 1.0) * math.log(value(i)))
-    assert(result == result, "alpha="+alpha.toList+" p="+value.toList) // NaN?
+    assert(result == result, "alpha="+alpha.toSeq+" p="+value.toSeq) // NaN?
     result
   }
-  def sampledValue(masses:Seq[Double], children:Iterable[DiscreteVar] = Nil): ProportionsValue = 
-    new ProportionsValue {
-      private val array = sampledArray(masses, children)
-      def apply(i:Int) = array(i)
-      def length = array.length
-    }
+  def sampledValue(masses:Masses, children:Iterable[DiscreteVar] = Nil): Proportions = new DenseProportions1(sampledArray(masses, children))
   // TODO Make a more general argument type than Iterable[DiscreteVar], like Iterable[Int] (but I'm concerned about boxing)
-  def sampledArray(alpha:Seq[Double], children:Iterable[DiscreteVar] = Nil): Array[Double] = {
+  def sampledArray(alpha:Masses, children:Iterable[DiscreteVar] = Nil): Array[Double] = {
     var norm = 0.0
     val p = new Array[Double](alpha.length)
     val c = new Array[Double](alpha.length)
@@ -48,57 +43,54 @@ object Dirichlet extends GenerativeFamily2[Proportions,Masses] {
     forIndex(alpha.length)(i => p(i) /= norm)
     p
   }
-  case class Factor(_1:Proportions, _2:Masses) extends super.Factor {
+  case class Factor(_1:ProportionsVar, _2:MassesVar) extends super.Factor {
     def pr(s:StatisticsType) = self.pr(s._1, s._2)
     override def pr: Double = self.pr(_1.value, _2.value)
-    def sampledValue(s:StatisticsType): ProportionsValue = self.sampledValue(s._2, Nil)
-    override def sampledValue: ProportionsValue = self.sampledValue(_2.value, Nil)
-    override def updateCollapsedChild(): Boolean = _1 match {
-      case p:DenseCountsProportions => { p.increment(_2.value)(null); true }
-      case _ => false
-    }
+    def sampledValue(s:StatisticsType): Proportions = self.sampledValue(s._2, Nil)
+    override def sampledValue: Proportions = self.sampledValue(_2.tensor, Nil)
+    override def updateCollapsedChild(): Boolean = { _1.tensor.+=(_2.value); true }
   }
-  def newFactor(a:Proportions, b:Masses) = Factor(a, b)
+  def newFactor(a:ProportionsVar, b:MassesVar) = Factor(a, b)
 }
 
 object DirichletMomentMatching {
-  def estimate(masses:MutableMasses, model:GenerativeModel): Unit = {
+  def estimate(masses:MassesVariable, model:GenerativeModel): Unit = {
     val numChildren = model.childFactors(masses).size
     //val massesChildren = masses.children //mean.generatedChildren // TODO Without "generatedChildren" this no longer works for Dirichlet mixtures.
     assert(numChildren > 1)
     //val factors = model.factors(List(mean, precision)); assert(factors.size == mean.children.size); assert(factors.size == precision.children.size)
     // Calculcate and set the mean
-    val m = new ProportionsArrayValue(new Array[Double](masses.length))
+    val m = new DenseProportions1(new Array[Double](masses.tensor.length))
     for (factor <- model.childFactors(masses)) factor match { 
       case f:Dirichlet.Factor => {
-        require(masses.length == f._1.length) // Make sure that each child Proportions has same length as parent masses
-        forIndex(m.size)(i => m(i) += f._1(i))
+        require(masses.tensor.length == f._1.tensor.length) // Make sure that each child Proportions has same length as parent masses
+        forIndex(m.size)(i => m(i) += f._1.tensor(i))
       }
     }
     forIndex(m.size)(m(_) /= numChildren)
     //mean.set(m)(null)
     // Calculate variance = E[x^2] - E[x]^2 for each dimension
-    val variance = new Array[Double](masses.length)
+    val variance = new Array[Double](masses.tensor.length)
     for (factor <- model.childFactors(masses)) factor match { 
-      case f:Dirichlet.Factor => forIndex(masses.length)(i => { val diff = f._1(i) - m(i); variance(i) += diff * diff })
+      case f:Dirichlet.Factor => forIndex(masses.tensor.length)(i => { val diff = f._1.tensor(i) - m(i); variance(i) += diff * diff })
     }
     //for (child <- meanChildren) child match { case p:Proportions => forIndex(mean.length)(i => variance(i) += p(i) * p(i)) }
     //println("variance1="+variance.toList)
-    forIndex(masses.length)(i => variance(i) /= (numChildren - 1.0))
+    forIndex(masses.tensor.length)(i => variance(i) /= (numChildren - 1.0))
     //forIndex(mean.length)(i => variance(i) = (variance(i) / meanChildren.size - 1.0) - (m(i) * m(i)))
     //println("variance2="+variance.toList)
     var alphaSum = 0.0
-    forIndex(masses.length)(i => if (m(i) != 0.0) alphaSum += math.log((m(i) * (1.0 - m(i)) / variance(i)) - 1.0))
-    val precision = math.exp(alphaSum / (masses.length - 1))
-    assert(precision == precision, "alphaSum="+alphaSum+" variance="+variance.toList+" mean="+m.toList) // Check for NaN
+    forIndex(masses.tensor.length)(i => if (m(i) != 0.0) alphaSum += math.log((m(i) * (1.0 - m(i)) / variance(i)) - 1.0))
+    val precision = math.exp(alphaSum / (masses.tensor.length - 1))
+    assert(precision == precision, "alphaSum="+alphaSum+" variance="+variance.toList+" mean="+m.toSeq) // Check for NaN
     forIndex(m.size)(i => m(i) = m(i) * precision)
     masses.set(m)(null)
   }
 }
 
 /** Alternative style of Dirichlet parameterized by 2 parents (mean,precision) rather than 1 (masses). */
-object Dirichlet2 extends GenerativeFamily3[Proportions,Proportions,RealVar] {
-  def newFactor(a:Proportions, b:Proportions, c:RealVar) = throw new Error("Not yet implemented")
+object Dirichlet2 extends GenerativeFamily3[ProportionsVar,ProportionsVar,RealVar] {
+  def newFactor(a:ProportionsVar, b:ProportionsVar, c:RealVar) = throw new Error("Not yet implemented")
 }
   
 

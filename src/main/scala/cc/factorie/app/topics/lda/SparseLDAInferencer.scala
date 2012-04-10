@@ -1,12 +1,13 @@
 package cc.factorie.app.topics.lda
 import cc.factorie._
 import cc.factorie.generative._
+import cc.factorie.util.DoubleSeq
 
 class SparseLDAInferencer(
     val zDomain:DiscreteDomain, 
     val wordDomain:CategoricalDomain[String], 
     docs:Iterable[Doc], 
-    initialAlphas:Seq[Double], 
+    initialAlphas:DoubleSeq, 
     initialBeta1:Double,
     model:GenerativeModel) 
 {
@@ -35,7 +36,7 @@ class SparseLDAInferencer(
   def addDocument(doc:Doc): Unit =
     phiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedDiscreteMixture.Factor], 1)
 
-  def resetSmoothing(newAlphas:Seq[Double], newBeta1:Double): Unit = {
+  def resetSmoothing(newAlphas:DoubleSeq, newBeta1:Double): Unit = {
     require(numTopics == newAlphas.length)
     require(newBeta1 > 0.0)
     require(newAlphas.forall(_ >= 0.0))
@@ -57,17 +58,17 @@ class SparseLDAInferencer(
     sm
   }
       
-  def export(phis:Seq[DenseCountsProportions]): Unit = {
-    phis.foreach(_.zero())
+  def export(phis:Seq[ProportionsVar]): Unit = {
+    phis.foreach(_.tensor.zero())
     for (wi <- 0 until wordDomain.size)
-      phiCounts(wi).forCounts((ti,count) => phis(ti).increment(wi, count)(null))
+      phiCounts(wi).forCounts((ti,count) => phis(ti).tensor.+=(wi, count))
   }
     
   def exportThetas(docs:Iterable[Doc]): Unit = {
     for (doc <- docs) {
       val theta = doc.theta
-      theta.zero()
-      for (dv <- doc.zs) theta.increment(dv.intValue, 1.0)(null)
+      theta.tensor.zero()
+      for (dv <- doc.zs) theta.tensor.+=(dv.intValue, 1.0)
     }
   }
     
@@ -81,7 +82,7 @@ class SparseLDAInferencer(
     //println("process doc "+zs.words.asInstanceOf[Document].file)
     val ws = model.childFactors(zs).head.asInstanceOf[PlatedDiscreteMixture.Factor]._1 //words
     assert(ws.length == zs.length)
-    val docTopicCounts = new SortedSparseCounts(numTopics, zs.intValues, keepDense = true)
+    val docTopicCounts = new cc.factorie.util.SortedSparseCounts(numTopics, zs.intValues, keepDense = true)
     // r = sum_t ( \beta n_{t|d} ) ( n_t + |V| \beta )  [Mimno "Sparse LDA"]
     var topicBetaMass = 0.0
     forIndex(docTopicCounts.numPositions)(p => {

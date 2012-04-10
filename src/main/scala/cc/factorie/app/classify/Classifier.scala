@@ -14,7 +14,6 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
-import cc.factorie.generative.Proportions
 import cc.factorie.er._
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 
@@ -51,7 +50,7 @@ class LabelList[L<:DiscreteVar](val labelToFeatures:L=>DiscreteVectorVar)(implic
 // TODO Consider including labelToFeatures here also?
 /** The result of applying a Classifier to a Label. */
 class Classification[L<:DiscreteVar](val label:L, val model:Model, val proportions:Proportions) {
-  val bestLabelIndex = proportions.maxPrIndex
+  val bestLabelIndex = proportions.maxIndex
   def bestLabelValue = label.domain.getValue(bestLabelIndex)
   def bestCategoryValue: String = bestLabelValue match {
     case cv:CategoricalValue[String] => cv.category

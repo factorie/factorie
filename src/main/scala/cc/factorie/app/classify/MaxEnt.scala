@@ -14,7 +14,6 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
-import cc.factorie.generative.Proportions
 import cc.factorie.er._
 import cc.factorie.la.Vector
 import scala.collection.mutable.{HashMap,ArrayBuffer}

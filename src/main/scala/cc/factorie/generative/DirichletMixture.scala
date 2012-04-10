@@ -15,14 +15,14 @@
 package cc.factorie.generative
 import cc.factorie._
 
-object DirichletMixture extends GenerativeFamily3[Proportions,Mixture[Masses],DiscreteVariable] {
-  case class Factor(_1:Proportions, _2:Mixture[Masses], _3:DiscreteVariable) extends super.Factor with MixtureFactor {
+object DirichletMixture extends GenerativeFamily3[ProportionsVar,Mixture[MassesVar],DiscreteVariable] {
+  case class Factor(_1:ProportionsVar, _2:Mixture[MassesVar], _3:DiscreteVariable) extends super.Factor with MixtureFactor {
     def gate = _3
     def pr(s:StatisticsType) = Dirichlet.pr(s._1, s._2(s._3.intValue))
-    def sampledValue(s:StatisticsType): ProportionsValue = Dirichlet.sampledValue(s._2(s._3.intValue))
+    def sampledValue(s:StatisticsType): Proportions = Dirichlet.sampledValue(s._2(s._3.intValue))
     def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = Dirichlet.pr(s._1, s._2(mixtureIndex))
-    def sampledValueChoosing(s:Statistics, mixtureIndex:Int): ProportionsValue = Dirichlet.sampledValue(s._2(mixtureIndex))
+    def sampledValueChoosing(s:Statistics, mixtureIndex:Int): Proportions = Dirichlet.sampledValue(s._2(mixtureIndex))
   }
-  def newFactor(a:Proportions, b:Mixture[Masses], c:DiscreteVariable) = Factor(a, b, c)
+  def newFactor(a:ProportionsVar, b:Mixture[MassesVar], c:DiscreteVariable) = Factor(a, b, c)
 }
 

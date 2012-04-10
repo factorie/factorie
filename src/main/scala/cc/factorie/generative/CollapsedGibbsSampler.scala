@@ -182,9 +182,9 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
       val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
       val domainSize = gates(0).domain.size
       val distribution = new Array[Double](domainSize)
-      val gParent = gFactor._2.asInstanceOf[CountsProportions]
+      val gParent = gFactor._2.asInstanceOf[ProportionsVariable]
       val gParentCollapsed = sampler.isCollapsed(gParent)
-      val mixture = mFactor._2.asInstanceOf[Mixture[CountsProportions]]
+      val mixture = mFactor._2.asInstanceOf[Mixture[ProportionsVariable]]
       val mixtureCollapsed = sampler.isCollapsed(mixture)
       for (index <- 0 until gates.length) {
         val outcomeIntValue = mFactor._1(index).intValue
@@ -198,7 +198,7 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
         var sum = 0.0
         java.util.Arrays.fill(distribution, 0.0)
         forIndex(domainSize)(i => {
-          distribution(i) = gParent(i) * mixture(i)(outcomeIntValue)
+          distribution(i) = gParent.tensor(i) * mixture(i).tensor(outcomeIntValue)
           sum += distribution(i)
         })
         assert(sum == sum, "Distribution sum is NaN")

@@ -19,17 +19,17 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 
 // TODO This is over variables.  We want something over Factors... and perhaps also something separate over Variables
 class SamplingLattice[V<:DiscreteVectorVar](variables:Iterable[V]) extends Lattice[V] {
-  type VariableMarginalType = DiscreteMarginal[V]
-  val map = new HashMap[V,DiscreteMarginal[V]]
-  variables.foreach(v => map(v) = new DiscreteMarginal(v))
+  type VariableMarginalType = DiscreteExpectations1[V]
+  val map = new HashMap[V,DiscreteExpectations1[V]]
+  throw new Error() //variables.foreach(v => map(v) = new DiscreteExpectations1(v))
   override def marginal(v:V) = map.get(v)
   override def marginal(f:Factor) = throw new Error("Not yet implemented") // TODO
   def apply(v:V) = map(v)
-  def marginals: Iterator[DiscreteMarginal[V]] = map.valuesIterator
+  def marginals: Iterator[DiscreteExpectations1[V]] = map.valuesIterator
 }
 
 // A simple special case, to be generalized later
-class SamplingInferencer[V<:DiscreteVar,C](val sampler:Sampler[C]) extends Inferencer[V,C] {
+class SamplingInferencer[V<:DiscreteVar,C](val sampler:Sampler[C]) /*extends Inferencer[V,C]*/ {
   type LatticeType = SamplingLattice[V]
   var burnIn = 100 // I really want these to be  the default-values for parameters to infer, in Scala 2.8.
   var thinning = 20
@@ -58,10 +58,10 @@ class VariableSamplingInferencer[V<:DiscreteVar](sampler:Sampler[V]) extends Sam
     'diff' is the list the changes from the initial configuration.  It may be null if no DiffList is provided to 'infer'.
     'diffScore' is the relative change in model score from the initial configuration. */
 class SamplingMaximizerLattice[V<:Variable](val diff:DiffList, val diffScore:Double) extends Lattice[V] {
-  type VariableMarginalType = Marginal
-  type FactorMarginalType = Marginal
-  override def marginal(v:V): Option[Marginal] = throw new Error // TODO
-  override def marginal(f:Factor): Option[Marginal] = throw new Error // TODO
+  //type VariableMarginalType = Marginal
+  //type FactorMarginalType = Marginal
+  //override def marginal(v:V): Option[Marginal] = throw new Error // TODO
+  //override def marginal(f:Factor): Option[Marginal] = throw new Error // TODO
 }
 
 /** Provide 'infer' method that uses the 'sampler' to search for the best-scoring configuration.
@@ -69,6 +69,7 @@ class SamplingMaximizerLattice[V<:Variable](val diff:DiffList, val diffScore:Dou
     @since 0.8
  */
 // TODO Update this for the new separated "modelScore" and "acceptScore" in Proposal.
+// TODO Update this for new Infer traits
 object SamplingMaximizer {
   def apply[V<:Variable with IterableSettings](model: TemplateModel) = new SamplingMaximizer[V, V](new VariableSettingsSampler[V](model)) with VariableInferencer[V] {
     def infer(variables:Iterable[V], numIterations:Int): LatticeType = {

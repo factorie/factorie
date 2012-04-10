@@ -134,9 +134,9 @@ object LogicDemo2 {
     val inferencer = new VariableSamplingInferencer(new VariableSettingsSampler[BooleanVariable](model))
     inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
     val marginals = inferencer.infer(List(don.cancer, friend(don,cas), friend(cas,don)))
-    println("p(don.cancer == true) = "+marginals(don.cancer).pr(1))
-    println("p(friend(don,cas) == true) = "+marginals(friend(don,cas)).pr(1))
-    println("p(friend(cas,don) == true) = "+marginals(friend(cas,don)).pr(1))
+    println("p(don.cancer == true) = "+marginals(don.cancer).proportions(1))
+    println("p(friend(don,cas) == true) = "+marginals(friend(don,cas)).proportions(1))
+    println("p(friend(cas,don) == true) = "+marginals(friend(cas,don)).proportions(1))
   }
 }
 

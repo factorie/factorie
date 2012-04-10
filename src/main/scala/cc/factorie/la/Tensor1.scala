@@ -71,7 +71,7 @@ trait GrowableDenseTensorLike1 extends DenseTensorLike1 {
   def sizeProxy: Iterable[Any]
   private var _size: Int = 0
   def dim1: Int = math.max(_size, sizeProxy.size)
-  override def apply(index:Int):Double = if (index < _valuesSize) apply(index) else 0.0
+  override def apply(index:Int):Double = if (index < _valuesSize) _values(index) else 0.0
   // This is currently the only method that supports capacity expansion
   override def +=(index:Int, incr:Double): Unit = {
     ensureCapacity(index+1)

@@ -14,27 +14,24 @@
 
 package cc.factorie.generative
 import cc.factorie._
+import cc.factorie.util.SortedSparseCounts
 import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-object DiscreteMixture extends GenerativeFamily3[DiscreteVar,Mixture[Proportions],DiscreteVariable] {
-  case class Factor(_1:DiscreteVar, _2:Mixture[Proportions], _3:DiscreteVariable) extends DiscreteGeneratingFactor with MixtureFactor with super.Factor {
+object DiscreteMixture extends GenerativeFamily3[DiscreteVar,Mixture[ProportionsVar],DiscreteVariable] {
+  case class Factor(_1:DiscreteVar, _2:Mixture[ProportionsVar], _3:DiscreteVariable) extends DiscreteGeneratingFactor with MixtureFactor with super.Factor {
     def gate = _3
     def pr(s:StatisticsType) = s._2(s._3.intValue).apply(s._1.intValue)
-    def sampledValue(s:StatisticsType): DiscreteValue = s._1.domain.getValue(s._2(s._3.intValue).sampleInt)
+    def sampledValue(s:StatisticsType): DiscreteValue = s._1.domain.getValue(s._2(s._3.intValue).sampleIndex)
     def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = s._2(mixtureIndex).apply(s._1.intValue)
-    override def prChoosing(mixtureIndex:Int): Double = _2(mixtureIndex).apply(_1.intValue)
-    def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value = s._1.domain.getValue(s._2(mixtureIndex).sampleInt)
+    override def prChoosing(mixtureIndex:Int): Double = _2(mixtureIndex).tensor.apply(_1.intValue)
+    def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value = s._1.domain.getValue(s._2(mixtureIndex).sampleIndex)
     def prValue(f:Statistics, intValue:Int): Double = f._2.apply(f._3.intValue).apply(intValue)
-    override def updateCollapsedParents(weight:Double): Boolean = {
-      _2(_3.intValue) match {
-        case p:DenseCountsProportions => { p.increment(_1.intValue, weight)(null); true }
-        case _ => false // Just throw Error instead; change API to return Unit also and always throw Error for unsupported cases
-      }
-    }
+    override def updateCollapsedParents(weight:Double): Boolean = { _2(_3.intValue).tensor.+=(_1.intValue, weight); true }
+      //_2(_3.intValue) match case p:DenseCountsProportions => { p.increment(_1.intValue, weight)(null); true }
   }
-  def newFactor(a:DiscreteVar, b:Mixture[Proportions], c:DiscreteVariable) = Factor(a, b, c)
+  def newFactor(a:DiscreteVar, b:Mixture[ProportionsVar], c:DiscreteVariable) = Factor(a, b, c)
 }
 
 abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
@@ -79,7 +76,7 @@ object MaximizeGate extends Maximize[DiscreteVariable,Nothing] {
     var maxi = 0
     val statistics = dmf.statistics(dmf.values)
     forIndex(gate.domain.size)(i => {
-      val pr = df._2(i) * dmf.prChoosing(statistics, i)
+      val pr = df._2.tensor(i) * dmf.prChoosing(statistics, i)
       if (pr > max) { max = pr; maxi = i }
     })
     gate.set(maxi)(null)

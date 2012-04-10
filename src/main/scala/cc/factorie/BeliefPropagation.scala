@@ -302,6 +302,8 @@ abstract class BPFactor(val factor: Family#Factor) {
     maths.expNormalize(result)
     result
   }
+  
+  def marginalProportions(v:V): Proportions1 = throw new Error("Not yet implemented.")
 
   /**The marginal probability distribution over all settings of the neighbor variables of this factor.
   If you want access to the entries by indicies of individual neighbors' values, @see marginalMap.  */
@@ -317,6 +319,11 @@ abstract class BPFactor(val factor: Family#Factor) {
     } while (nextValues(variableSettings))
     maths.expNormalize(result)
     result
+  }
+  
+  /** Analogous to marginal:Array[Double], but return type is Proportions */
+  def marginalProportions: Proportions = {
+    throw new Error("Not yet implemented")
   }
 
   def marginalMap: HashMap[List[Int], Double] = {
@@ -362,10 +369,10 @@ abstract class BPFactor(val factor: Family#Factor) {
 
 /** A Lattice representing the result of belief propagation inference.  Results can be further updated by calls to various "update" methods.
     @author Andrew McCallum, Kedar Bellare, Greg Druck */
-class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], model: Model) extends Lattice[V] {
+class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], model: Model) /*extends Lattice[V]*/ {
   //type V = BeliefPropagation.BPVariable
-  type VariableMarginalType = DiscreteMarginal[V]
-  type FactorMarginalType = DiscreteFactorMarginal
+  type VariableMarginalType = DiscreteExpectations1[V] //DiscreteMarginal[V]
+  type FactorMarginalType = DiscreteExpectations //DiscreteFactorMarginal
 
   // TODO Consider moving this further out, for even more efficiency?  But then the cache could get very big.
   model.families.foreach(_.clearCachedStatistics)
@@ -429,15 +436,15 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
     factors.foreach(_.updateTreewise())
   }
   /** Provide outside access to a BPFactor marginal given is associated Factor */
-  override def marginal(f: Factor): Option[DiscreteFactorMarginal] = {
+  /*override*/ def marginal(f: Factor): Option[DiscreteExpectations] = {
     val bpFactor = bpFactors(f)
     if (bpFactor ne null)
-      Some(new DiscreteFactorMarginal(f, bpFactors(f).marginal))
+      Some(DiscreteExpectations(f, bpFactors(f).marginalProportions))
     else
       None
   }
   def marginalMap(f: Factor): HashMap[List[Int], Double] = bpFactors(f).marginalMap
-  override def marginal(v: V): Option[DiscreteMarginal[V]] = { // TODO Consider caching these?
+  /*override*/ def marginal(v: V): Option[DiscreteExpectations1[V]] = { // TODO Consider caching these?
     val factors = bpFactorsOf(v)
     if ((factors ne null) && factors.size > 0) {
       val m = new Array[Double](v.domain.size)
@@ -447,14 +454,14 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
         for (i <- 0 until m.length) { m(i) += message(i); sum += message(i) }
       }
       maths.expNormalize(m)
-      Some(new DiscreteMarginal(v, m))
+      Some(new DiscreteExpectations1(v, new DenseProportions1(m)))
     } else
       None
   }
   /* def sample(v:UncoordinatedCategoricalVariable): DiffList  // TODO: implement this */
   /* def sample: Unit   // TODO: implement this */
   //def setVariablesToMarginalMax(vs:Iterable[V] = variables)(implicit d:DiffList = null): Unit = vs.foreach(v => v.set(marginal(v).get.maxIndex)(d))
-  def setVariablesToMax(vs:Iterable[V] = variables)(implicit d:DiffList = null): Unit = vs.foreach(v => v.set(marginal(v).get.maxPrIndex)(d))
+  def setVariablesToMax(vs:Iterable[V] = variables)(implicit d:DiffList = null): Unit = throw new Error("Not yet implemented.") //vs.foreach(v => v.set(marginalProportions(v).maxIndex)(d))
   // TODO Why is this called "sumLogZ" instead of just "logZ"? -akm
   def sumLogZ: Double = {
     var result = 0.0
@@ -468,8 +475,8 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
     @author Andrew McCallum, Kedar Bellare, Tim Vieira
     @since 0.8
  */
-class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) extends VariableInferencer[V] {
-  override type LatticeType = BPLattice[V]
+class BPInferencer[V<:BeliefPropagation.BPVariable](model:Model) /*extends VariableInferencer[V]*/ {
+  type LatticeType = BPLattice[V]
   def infer(variables:Iterable[V], varying:Iterable[V]): LatticeType = infer(variables, varying, 1) // TODO Make a more sensible default
   def infer(variables:Iterable[V], varying:Iterable[V], numIterations:Int): LatticeType = {
     val result = new BPLattice(varying, model)

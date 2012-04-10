@@ -114,7 +114,7 @@ object TokenLDA {
         for (feature <- t.attr[ChainNerFeatures].activeCategories)
           ldaDoc.appendCategory(feature)
         lda.inferDocumentTheta(ldaDoc, 2)
-        ldaDoc.theta.toSeq.zipWithIndex.sortBy(t => -t._1).take(10).foreach(t => {
+        ldaDoc.theta.tensor.toSeq.zipWithIndex.sortBy(t => -t._1).take(10).foreach(t => {
           feats += "topic:"+t._2
         })
       })

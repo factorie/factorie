@@ -21,7 +21,7 @@ import java.io.{File,Reader,StringReader,InputStreamReader,FileInputStream,Buffe
 /** The abstract document variable required by LDA. */
 trait Doc extends SeqBreaks {
   var name: String
-  var theta: CountsProportions
+  var theta: ProportionsVar
   var zs: DiscreteSeqVariable
   def ws: CategoricalSeqVariable[String]
   
@@ -71,7 +71,7 @@ trait Doc extends SeqBreaks {
 
 /** A simple concrete implementation of DocumentVar. */
 class Document(val domain:CategoricalSeqDomain[String], var name:String, tokens:Seq[String]) extends CategoricalSeqVariable(tokens) with Doc {
-  var theta: CountsProportions = null
+  var theta: ProportionsVar = null
   var zs: DiscreteSeqVariable = null
   def ws = this
 }

@@ -50,12 +50,12 @@ package object generative {
   // -akm 17 Jan 2012
   //implicit val defaultGenerativeModel = new GenerativeFactorModel
 
-  implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
+  /*implicit def seqDouble2ProportionsValue(s:Seq[Double]): ProportionsValue = new ProportionsValue {
     val value: IndexedSeq[Double] = s.toIndexedSeq
     def apply(i:Int) = value(i)
     def length = value.length
     //def sampleInt = maths.nextDiscrete(value)(cc.factorie.random)
-  }
+  }*/
   
   //implicit val denseDirichletEstimator = new DenseDirichletEstimator
   //implicit val mutableProportionsEstimator = new MutableProportionsEstimator

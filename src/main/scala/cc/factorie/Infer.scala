@@ -14,7 +14,6 @@
 
 package cc.factorie
 import cc.factorie.generative._
-import cc.factorie.generative.Proportions
 
 // BPInfer is a factory for BPInferencers
 // BPInferencer is specific to a model and some variables
@@ -69,8 +68,8 @@ class IndepDiscreteLattice[V<:DiscreteVar] extends Lattice2 {
 }
 
 class IndependentDiscreteLattice extends GenerativeFactorModel {
-  def marginal(d:DiscreteVariable): cc.factorie.generative.Proportions = this.parentFactor(d) match {
-    case f:Discrete.Factor => f._2
+  def marginal(d:DiscreteVariable): Proportions = this.parentFactor(d) match {
+    case f:Discrete.Factor => f._2.tensor
   }
 }
 
@@ -88,17 +87,17 @@ object InferIndependentDiscrete extends Infer[DiscreteVariable,Nothing] {
     d := origValue
     distribution
   }
-  def proportions(d:DiscreteVariable, model:Model): cc.factorie.generative.Proportions = new DenseProportions(array(d, model))
+  def proportions(d:DiscreteVariable, model:Model): Proportions = new DenseProportions1(array(d, model))
   def apply(d:DiscreteVariable, model:Model): IndependentDiscreteLattice = {
     implicit val lattice = new IndependentDiscreteLattice
-    d ~ Discrete(proportions(d, model))
+    d ~ Discrete(new ProportionsVariable(proportions(d, model)))
     lattice
   }
   def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Nothing], model:Model, qModel:Model): IndependentDiscreteLattice = {
     if (varying.size > 0) return null
     if (qModel ne null) return null
     implicit val lattice = new IndependentDiscreteLattice
-    for (d <- variables) d ~ Discrete(proportions(d, model))
+    for (d <- variables) d ~ Discrete(new ProportionsVariable(proportions(d, model)))
     lattice
   }
   override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): IndependentDiscreteLattice = {
@@ -106,7 +105,7 @@ object InferIndependentDiscrete extends Infer[DiscreteVariable,Nothing] {
     if (qModel ne null) return null
     implicit val lattice = new IndependentDiscreteLattice
     for (d <- variables) d match {
-      case d:DiscreteVariable => d ~ Discrete(proportions(d, model))
+      case d:DiscreteVariable => d ~ Discrete(new ProportionsVariable(proportions(d, model)))
       case _ => return null
     }
     lattice
@@ -115,11 +114,11 @@ object InferIndependentDiscrete extends Infer[DiscreteVariable,Nothing] {
 
 
 class DiscreteSamplingLattice(variables:Iterable[DiscreteVariable]) extends IndependentDiscreteLattice {
-  for (d <- variables) d.~(Discrete(new DenseCountsProportions(d.domain.size)))(this)
-  def proportions(d:DiscreteVariable): DenseCountsProportions = this.parentFactor(d) match {
-    case df: Discrete.Factor => df._2.asInstanceOf[DenseCountsProportions]
+  for (d <- variables) d.~(Discrete(new ProportionsVariable(new DenseProportions1(d.domain.size))))(this)
+  def proportions(d:DiscreteVariable): Proportions = this.parentFactor(d) match {
+    case df: Discrete.Factor => df._2.tensor //asInstanceOf[DenseCountsProportions]
   }
-  def increment(d:DiscreteVariable): Unit = proportions(d).increment(d.intValue, 1.0)(null) 
+  def increment(d:DiscreteVariable): Unit = proportions(d).+=(d.intValue, 1.0) 
 }
 
 class SamplingInferencer2[C](val sampler:Sampler[C]) {

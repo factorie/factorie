@@ -20,6 +20,9 @@ object TensorDomain extends TensorDomain
 
 trait TensorVar[+A<:Tensor] extends Variable with VarAndValueType[TensorVar[A],A] {
   def domain: TensorDomain
+  def tensor: Value
+  def length: Int = tensor.length
+  def apply(i:Int): Double = tensor.apply(i)
 }
 
 //trait MutableTensorVar[+A<:MutableTensor] extends TensorVar[A] with MutableVar with VarAndValueType[MutableTensorVar[A],A]
@@ -36,8 +39,8 @@ abstract class TensorVariable[A<:Tensor] extends TensorVar[A] {
   def value: Value = _value // TODO Should this make a copy?
   @inline final def tensor: Value = _value // This method will definitely not make a copy
   // Some methods for direct access
-  def length: Int = _value.length
-  def apply(i:Int): Double = _value.apply(i)
+  @inline final override def length: Int = _value.length
+  @inline final override def apply(i:Int): Double = _value.apply(i)
   // Why is this necessary?  Why not use set()(null)?  I think there was a reason... -akm
   @inline protected final def _set(newValue:Value): Unit = _value = newValue 
   // Methods that track modifications on a DiffList
@@ -50,16 +53,16 @@ abstract class TensorVariable[A<:Tensor] extends TensorVar[A] {
     tensor.update(index, newValue)
   }
   def increment(index:Int, incr:Double)(implicit d:DiffList): Unit = {
-    if (d ne null) throw new Error("Not yet implemented")
+    if (d ne null) d += IncrementTensorIndexDiff(index, incr)
     tensor.+=(index, incr)
   }
   def increment(incr:Tensor)(implicit d:DiffList): Unit = {
     require(incr.length == tensor.length)
-    if (d ne null) throw new Error("Not yet implemented")
+    if (d ne null) d += IncrementTensorDiff(incr)
     tensor += incr
   }
   def zero(implicit d:DiffList): Unit = {
-    if (d ne null) throw new Error("Not yet implemented")
+    if (d ne null) d += ZeroTensorDiff(tensor.toArray)
     tensor.zero()
   }
   
@@ -67,6 +70,21 @@ abstract class TensorVariable[A<:Tensor] extends TensorVar[A] {
     def variable = TensorVariable.this
     def undo = _value = oldValue
     def redo = _value = newValue
+  }
+  case class IncrementTensorIndexDiff(index:Int, incr:Double) extends Diff {
+    def variable = TensorVariable.this
+    def undo = tensor.+=(index, -incr)
+    def redo = tensor.+=(index, incr)
+  }
+  case class IncrementTensorDiff(t: Tensor) extends Diff {
+    def variable = TensorVariable.this
+    def undo = tensor -= t // Note this relies on Tensor t not having changed.
+    def redo = tensor += t
+  }
+  case class ZeroTensorDiff(prev: Array[Double]) extends Diff {
+    def variable = TensorVariable.this
+    def undo = tensor += prev
+    def redo = tensor.zero()
   }
 }
 
