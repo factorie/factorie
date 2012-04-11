@@ -13,10 +13,10 @@
    limitations under the License. */
 
 package cc.factorie.app.classify
+
 import cc.factorie._
 import cc.factorie.er._
 import cc.factorie.la.Vector
-import scala.collection.mutable.{HashMap,ArrayBuffer}
 
 class MaxEntSampleRankTrainer extends ClassifierTrainer {
   var iterations = 10
@@ -35,14 +35,75 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
   }
 }
 
-class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Vector = null) extends ClassifierTrainer {
+// => Train
+class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Vector = null, modelFile: String = null) extends ClassifierTrainer {
+  def trainer(): LogLinearMaximumLikelihood
+  // => apply()
   def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures)
     if (warmStart != null) cmodel.evidenceTemplate.setWeights(warmStart)
-    val trainer = new LogLinearMaximumLikelihood(cmodel)
+    val trainer = trainer() // new LogLinearMaximumLikelihood(cmodel, modelFile = modelFile)
     trainer.gaussianPriorVariance = l2
     // Do the training by BFGS
     trainer.processAll(il.map(List(_)))
     new Classifier[L] { val model = cmodel; val labelDomain = il.head.domain; val weights = cmodel.evidenceTemplate.weights }
   }
+}
+
+class LibLinearTrainer(val l2: Double = 10.0) extends ClassifierTrainer { // TODO: actually use this l2
+  import de.bwaldvogel.liblinear
+
+  def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
+    val p = new liblinear.Problem
+
+    p.bias = -1.0 // no bias
+    //val biasIdx = il.featureDomain.size
+    
+    p.l = il.size
+    p.n = il.featureDomain.size // +1 for bias
+
+    println("liblinear: filling feature vectors")
+    def makeLibLinearFeatureVector(label: L): Array[liblinear.FeatureNode] = {
+      val featureVector = label.vector
+      val fnArr = Array.fill[liblinear.FeatureNode](featureVector.activeDomainSize)(null) // +1 for bias, if used
+      var j = 0
+      for ((idx, value) <- featureVector.activeElements) {
+        fnArr(j) = new liblinear.FeatureNode(idx + 1, value) // 1-indexing, gahh!
+        j += 1
+      }
+      //fnArr(j) = new liblinear.FeatureNode(biasIdx + 1, p.bias)
+      fnArr
+    }
+    
+    p.x = Array.fill[Array[liblinear.FeatureNode]](il.size)(null)
+    for ((l,i) <- il.zipWithIndex)
+      p.x(i) = makeLibLinearFeatureVector(l)
+
+    println("liblinear: filling target value vector")
+    p.y = Array.fill[Int](p.l)(-1)
+    for ((l, i) <- il.zipWithIndex)
+      p.y(i) = l.targetIntValue
+
+    println("liblinear: starting training")
+    val m = liblinear.Linear.train(p, new liblinear.Parameter(liblinear.SolverType.L2R_LR, 1, .1))
+    println("liblinear: finished training")
+
+    println("liblinear: done")
+    new Classifier[L] {
+      val labelDomain = il.labelDomain
+      val model = new TemplateModel
+      override def classify(label:L): Classification[L] = {
+        require(label.domain eq labelDomain)
+        val probs = Array.fill[Double](labelDomain.size)(0.0)
+        liblinear.Linear.predictProbability(m, makeLibLinearFeatureVector(label), probs)
+        val proportions = Array.fill[Double](labelDomain.size)(0.0)
+        label.settings.foreach(_ => proportions(label.intValue) = probs(label.intValue))
+
+        val result = new Classification(label, model, new generative.DenseProportions(proportions))
+        label.set(result.bestLabelIndex)(null)
+        result
+      }
+    }
+  }
+
 }

@@ -10,6 +10,13 @@ class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteVectorVar](lf:L=>F, fl:F=>L)(
   def this(lf:L=>F)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."))
   def unroll1(label: L) = Factor(label, lf(label))
   def unroll2(features: F) = Factor(fl(features), features)
+  var __statisticsDomains = Seq.empty[DiscreteVectorDomain]
+  override def statisticsDomains = {
+    if (__statisticsDomains.isEmpty)
+      super.statisticsDomains
+    else
+      __statisticsDomains
+  }
 }
 
 
