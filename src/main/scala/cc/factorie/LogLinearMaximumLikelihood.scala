@@ -152,7 +152,7 @@ class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordinatio
  * Maximum likelihood parameter estimation for the weights of DotTemplate.
  * @author Andrew McCallum, Kedar Bellare, Gregory Druck
  */
-class LogLinearMaximumLikelihood(model: Model, modelFile: String = null) {
+class LogLinearMaximumLikelihood(model: Model) {
   //type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 10.0
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
@@ -168,10 +168,6 @@ class LogLinearMaximumLikelihood(model: Model, modelFile: String = null) {
   def processAll[V <: DiscreteVarWithTarget with NoVariableCoordination](variableSets: Seq[Seq[V]], numIterations: Int = Int.MaxValue): Unit = {
     // Data structure for holding per-template constraints and expectations
 
-    println("free memory: " + scala.sys.runtime.freeMemory())
-    println("used memory: " + (scala.sys.runtime.totalMemory() - scala.sys.runtime.freeMemory()))
-    println("total memory: " + scala.sys.runtime.totalMemory())
-
     val constraints = new SuffStats
     // Add all model dot templates to constraints
     //familiesToUpdate.foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
@@ -181,33 +177,25 @@ class LogLinearMaximumLikelihood(model: Model, modelFile: String = null) {
 
     def templates = constraints.sortedKeys
 
-    println("added all constraints")
-    println("free memory: " + scala.sys.runtime.freeMemory())
-    println("used memory: " + (scala.sys.runtime.totalMemory() - scala.sys.runtime.freeMemory()))
-    println("total memory: " + scala.sys.runtime.totalMemory())
-
     // Currently only supports iid single DiscreteVariables
     val optimizable = new LogLinearOptimizable(templates, model, variableSets, gaussianPriorVariance, familiesToUpdate, constraints)
-    
-    def runOptimizer() {
-      try {
-        val optimizer = new LimitedMemoryBFGS(optimizable) {
-          override def postIteration(i: Int) {
-            if (model.isInstanceOf[TemplateModel] && (modelFile ne null))
-              model.asInstanceOf[TemplateModel].save(modelFile + "-iter=" + i, gzip = true)
-          }
-        }
-        optimizer.optimize(numIterations)
-      }
-      catch {
-        case e : Error => e.printStackTrace
-      }
-    }
 
     // Do the gradient-climbing optimization!
-    runOptimizer()
+    try {
+      val optimizer = new LimitedMemoryBFGS(optimizable)
+      optimizer.optimize(numIterations)
+    }
+    catch {
+      case e : Error => e.printStackTrace
+    }
     // Resetting and running again sometimes improves results
-    runOptimizer()
+    try {
+      val optimizer = new LimitedMemoryBFGS(optimizable)
+      optimizer.optimize(numIterations)
+    }
+    catch {
+      case e : Error => e.printStackTrace
+    }
   }
 }
 

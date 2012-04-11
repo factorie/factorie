@@ -16,7 +16,6 @@ package cc.factorie.app.nlp.parse
 import cc.factorie._
 import cc.factorie.app.nlp._
 
-/*
 class Parser {
   
   object ParserModel extends TemplateModel(
@@ -45,4 +44,3 @@ class Parser {
     }
   }
 }
-*/
