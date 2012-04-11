@@ -18,6 +18,8 @@ import scala.io.Source
 import cc.factorie.app.nlp.pos.PosLabel
 import cc.factorie.app.nlp.parse.ParseTree
 
+import java.io.PrintWriter
+
 /*
  * Loader for the CoNLL 2008 closed-track shared task data.
  * Details on the format are available at http://barcelona.research.yahoo.net/dokuwiki/doku.php?id=conll2008:format
@@ -76,5 +78,62 @@ object LoadConll2008 {
   def main(args: Array[String]) =
     for (filename <- args)
       printDocument(fromFilename(filename).head)
+
+}
+
+
+object WriteConll2008 {
+
+  // if the source file is given, then include the fields that we don't know anything about
+  // otherwise just give underscores for info we don't know.
+  def toFile(outputFile: String, document: Document, sourceFile: String = null): Unit = {
+    val source = { if (sourceFile eq null) None else Some(Source.fromFile(sourceFile).getLines)}
+    val sentences = document.sentences.iterator
+    val writer = new PrintWriter(outputFile)
+    var sentence: Sentence = sentences.next()
+    var currTokenIdx = 0
+    var tree: ParseTree = sentence.parse
+    while (true) {
+      if (currTokenIdx == sentence.size) {
+        writer.println()
+        if (sentences.hasNext) {
+          source match {
+            case Some(source) => source.next()
+            case _ => ()
+          }
+          sentence = sentences.next()
+          tree = sentence.parse
+          currTokenIdx = 0
+        }
+        else {
+          writer.close()
+          return
+        }
+      }
+      else {
+        val field8 = "" + (tree.parentIndex(currTokenIdx) + 1)
+        val field9 = "" + { val category = tree.label(currTokenIdx).categoryValue; if (category == "") "_" else category }
+        val fields = source match {
+          case None => {
+            val x = Array.fill[String](10)("_")
+            x(0) = "" + (currTokenIdx + 1)
+            x(1) = sentence.tokens(currTokenIdx).string
+            x(3) = sentence.tokens(currTokenIdx).posLabel.categoryValue
+            x(8) = field8
+            x(9) = field9
+            x
+          }
+          case Some(source) => {
+            val x = source.next().split("\t")
+            x(8) = field8
+            x(9) = field9
+            x
+          }
+        }
+        currTokenIdx += 1
+        writer.println(fields.mkString("\t"))
+      }
+    }
+  }
 
 }
