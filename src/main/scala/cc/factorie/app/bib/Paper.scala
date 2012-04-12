@@ -14,22 +14,42 @@
 
 package cc.factorie.app.bib
 import cc.factorie.util.Cubbie
+import cc.factorie.app.nlp.coref.{Entity, HasCanopyAttributes, Prioritizable}
+import collection.mutable.HashMap
 
 trait EntityCubbie extends Cubbie {
   val canopies = new StringListSlot("canopies")
   val inferencePriority = new DoubleSlot("ipriority")
+  val parentRef = RefSlot("parentRef", () => newEntityCubbie)
+  def newEntityCubbie:EntityCubbie
+  def fetch(e:Entity with HasCanopyAttributes[_] with Prioritizable) ={
+    e.priority = inferencePriority.value
+  }
+  def store[T<:Entity with HasCanopyAttributes[T] with Prioritizable](e:T) ={
+    canopies := e.canopyAttributes.map(_.canopyName).toSeq
+    inferencePriority := e.priority
+  }
 }
-
-class BagOfWordsCubbie extends Cubbie
+class BagOfWordsCubbie extends Cubbie{
+  def store(bag:BagOfWords) = {_map ++= bag.asHashMap;this}
+  def fetch:HashMap[String,Double] = {
+    val result = new HashMap[String,Double]
+    for((k,v) <- _map)result += k -> v.toString.toDouble
+    result
+  }
+}
 class FieldsCubbie extends Cubbie
-
-class PersonCubbie extends EntityCubbie // Split from AuthorCubbie eventually
-
+class PersonCubbie extends EntityCubbie{ // Split from AuthorCubbie eventually
+  def newEntityCubbie:EntityCubbie = new PersonCubbie
+}
 class AuthorCubbie extends EntityCubbie {
+  protected var _author:AuthorEntity=null
   val isMention = BooleanSlot("mention")
   val firstName = StringSlot("fn")
   val middleName = StringSlot("mn")
   val lastName = StringSlot("ln")
+  val suffix = StringSlot("sf")
+  //TODO: maybe name should be a bag, there may be multiple nick names
   val nickName = StringSlot("nn") // nickname  e.g. William Bruce Croft, nickname=Bruce; or William Freeman, nickname=Bill
   val emails = new CubbieSlot("emails", () => new BagOfWordsCubbie)
   val topics = new CubbieSlot("topics", () => new BagOfWordsCubbie)
@@ -37,8 +57,35 @@ class AuthorCubbie extends EntityCubbie {
   val venues = new CubbieSlot("venues", () => new BagOfWordsCubbie)
   val coauthors = new CubbieSlot("coauthors", () => new BagOfWordsCubbie)
   val pid = RefSlot("pid", () => new PaperCubbie) // paper id; set in author mentions, propagated up into entities
+  def fetch(e:AuthorEntity) ={
+    super.fetch(e)
+    e.attr[FullName].setFirst(firstName.value)(null)
+    e.attr[FullName].setMiddle(middleName.value)(null)
+    e.attr[FullName].setLast(lastName.value)(null)
+    e.attr[FullName].setSuffix(suffix.value)(null)
+    //e.attr[FullName].setNickName(nickName.value)(null)
+    e.attr[BagOfTopics] ++= topics.value.fetch
+    e.attr[BagOfVenues] ++= venues.value.fetch
+    e.attr[BagOfCoAuthors] ++= coauthors.value.fetch
+    e.attr[BagOfKeywords] ++= keywords.value.fetch
+    e.attr[BagOfEmails] ++= emails.value.fetch
+    e._id = this.id.toString
+    _author=e
+  }
+  def store(e:AuthorEntity) ={
+    firstName := e.attr[FullName].firstName
+    middleName := e.attr[FullName].middleName
+    lastName := e.attr[FullName].lastName
+    topics := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
+    venues := new BagOfWordsCubbie().store(e.attr[BagOfVenues].value)
+    coauthors := new BagOfWordsCubbie().store(e.attr[BagOfCoAuthors].value)
+    keywords := new BagOfWordsCubbie().store(e.attr[BagOfKeywords].value)
+    emails := new BagOfWordsCubbie().store(e.attr[BagOfEmails].value)
+    this.id=e.id
+  }
+  def author:AuthorEntity=_author
+  override def newEntityCubbie:EntityCubbie = new AuthorCubbie
 }
-
 // superclass of PaperCubbie and CommentCubbie
 class EssayCubbie extends Cubbie {
   val created = DateSlot("created")
@@ -46,11 +93,12 @@ class EssayCubbie extends Cubbie {
   val kind = StringSlot("kind") // article, inproceedings, patent, synthetic (for creating author coref edit), comment, review,...
   val title = StringSlot("title")
   val abs = StringSlot("abs") // abstract
+  //should authors go up here?
 }
-
 // Articles, Patents, Proposals,...
 class PaperCubbie extends EssayCubbie with EntityCubbie {
-  val authors = StringListSlot("authors") // 
+  protected var _paper:PaperEntity=null
+  val authors = StringListSlot("authors") // should this be in essay cubbie?
   val institution = StringSlot("institution")
   val venue = StringSlot("venue") // booktitle, journal,...
   val series = StringSlot("series")
@@ -65,9 +113,12 @@ class PaperCubbie extends EssayCubbie with EntityCubbie {
   val edition = StringSlot("edition")
   val url = StringSlot("url") // But we want to be able to display multiple URLs in the web interface
   val pid = RefSlot("pid", () => new PaperCubbie) // paper id; the paper mention chosen as the canonical child
-  
+  def paper:PaperEntity=_paper
+  def newEntityCubbie:EntityCubbie = new PaperCubbie
 }
-
+class BibTeXCubbie{
+  //all bibtex
+}
 class VenueCubbie extends Cubbie {
   
 }

@@ -1,13 +1,10 @@
 package cc.factorie.app.bib
-import cc.factorie.util.Cubbie
 import cc.factorie._
 import cc.factorie.app.nlp.coref._
+import db.mongo._
 import scala.collection.mutable.{HashMap, ArrayBuffer}
+import com.mongodb.{DB, Mongo}
 
-trait HasCanopyAttributes[T<:Entity]{
-  val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
-}
-trait CanopyAttribute[T<:Entity]{def entity:T;def canopyName:String}
 class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity] {
   def canopyName:String=(initial(entity.entityRoot.asInstanceOf[AuthorEntity].fullName.firstName)+entity.entityRoot.asInstanceOf[AuthorEntity].fullName.lastName).toLowerCase
   //def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
@@ -18,10 +15,11 @@ class PaperTitleCanopy(val entity:PaperEntity) extends CanopyAttribute[PaperEnti
   def canopyName:String = cleanTitle(entity.entityRoot.asInstanceOf[PaperEntity].title.value)
 }
 /**Attributes specific to REXA authors*/
-class FullName(val entity:Entity,f:String,m:String,l:String) extends SeqVariable[String](Seq(f,m,l)) with EntityAttr {
+class FullName(val entity:Entity,f:String,m:String,l:String,su:String=null) extends SeqVariable[String](Seq(f,m,l,su)) with EntityAttr {
   def setFirst(s:String)(implicit d:DiffList) = update(0,s)
   def setMiddle(s:String)(implicit d:DiffList) = update(1,s)
   def setLast(s:String)(implicit d:DiffList) = update(2,s)
+  def setSuffix(s:String)(implicit d:DiffList) = update(3,s)
   def setFullName(that:FullName)(implicit d:DiffList) = {
     if(firstName!=that.firstName)setFirst(that.firstName)(null)
     if(middleName!=that.middleName)setMiddle(that.middleName)(null)
@@ -30,13 +28,15 @@ class FullName(val entity:Entity,f:String,m:String,l:String) extends SeqVariable
   def firstName = value(0)
   def middleName = value(1)
   def lastName = value(2)
+  def suffix = value(3)
   def domain = GenericDomain
   override def toString:String = {
     val result = new StringBuffer
-    if(firstName!=null)result.append(firstName+" ")
-    if(middleName!=null)result.append(middleName+" ")
-    if(lastName!=null)result.append(lastName+" ")
-    result.toString
+    if(firstName!=null && firstName.length>0)result.append(firstName+" ")
+    if(middleName!=null && middleName.length>0)result.append(middleName+" ")
+    if(lastName!=null && lastName.length>0)result.append(lastName+" ")
+    if(suffix!=null && suffix.length>0)result.append(suffix)
+    result.toString.trim
   }
 }
 class Title(val entity:Entity,title:String) extends StringVariable(title) with EntityAttr
@@ -46,9 +46,11 @@ class BagOfTopics(val entity:Entity, topicBag:Map[String,Double]=null) extends B
 class BagOfVenues(val entity:Entity, venues:Map[String,Double]=null) extends BagOfWordsVariable(Nil, venues) with EntityAttr
 class BagOfCoAuthors(val entity:Entity,coAuthors:Map[String,Double]=null) extends BagOfWordsVariable(Nil, coAuthors) with EntityAttr
 class BagOfKeywords(val entity:Entity,keywords:Map[String,Double]=null) extends BagOfWordsVariable(Nil,keywords) with EntityAttr
+class BagOfEmails(val entity:Entity,keywords:Map[String,Double]=null) extends BagOfWordsVariable(Nil,keywords) with EntityAttr
 /**Entity variables*/
 /**An entity with the necessary variables/coordination to implement hierarchical coreference.*/
-class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity(isMention){
+
+class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity(isMention) with HasCanopyAttributes[PaperEntity] with Prioritizable{
   attr += new Title(this,s)
   attr += new Year(this,-1)
   attr += new VenueName(this,"")
@@ -60,10 +62,10 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
   def propagateAddBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
   def propagateRemoveBagsUp()(implicit d:DiffList):Unit = {throw new Exception("not implemented")}
 }
-class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity]{
+class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity] with Prioritizable{
   var _id = java.util.UUID.randomUUID.toString+""
   override def id = _id
-  var priority:Double=scala.math.exp(random.nextDouble)
+  priority = scala.math.exp(random.nextDouble)
   canopyAttributes += new AuthorFLNameCanopy(this)
   attr += new FullName(this,f,m,l)
   attr += new BagOfTopics(this)
@@ -78,6 +80,83 @@ class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isM
   def string = f+" "+m+" "+l
   var paper:PaperEntity = null
   def defaultCanopy = canopyAttributes.head.canopyName
+}
+
+/**Handles loading/storing issues generic to entity collections with canopies, ids, priorities, and hierarchical structure*/
+trait EntityCollection[E<:Entity with HasCanopyAttributes[E] with Prioritizable, C<:EntityCubbie]{
+  private var _id2cubbie:HashMap[Any,C] = null
+  protected def newEntityCubbie:C
+  protected def newEntity:E
+  protected def fetchFromCubbie(c:C,e:E):Unit
+  protected def register(entityCubbie:C) = _id2cubbie += entityCubbie.id->entityCubbie
+  protected def wasLoadedFromDB(entity:E) = _id2cubbie.contains(entity.id)
+  protected def putEntityInCubbie(e:E) = _id2cubbie(e.id)
+  protected def entityCubbieColl:MutableCubbieCollection[C]
+  protected def changePriority(e:E):Unit =e.priority = scala.math.exp(e.priority - random.nextDouble)
+  implicit def entity2cubbie(e:E):C = {val ec=newEntityCubbie;ec.store(e);ec}
+  def finishLoadAndReturnEntities(entityCubbies:Iterable[C]) = {
+    for(cubbie <- entityCubbies){
+      val entity:E = newEntity
+      fetchFromCubbie(cubbie,entity) 
+      register(cubbie)
+    }
+  }
+  def reset:Unit ={
+    _id2cubbie = new HashMap[Any,C]
+  }
+  def store(entitiesToStore:Iterable[E]):Unit ={
+    val deleted = new ArrayBuffer[E]
+    val updated = new ArrayBuffer[E]
+    val created = new ArrayBuffer[E]
+    for(e <- updated ++ created)changePriority(e)
+    for(e<-entitiesToStore){
+      if(e.isConnected){
+        if(wasLoadedFromDB(e))updated += e
+        else created += e
+      }
+      if(!e.isConnected && wasLoadedFromDB(e))deleted += e
+      //else if(!e.isConnected && wasLoadedFromDB(e))entityCubbieColl += {val ec=newEntityCubbie;ec.store(e);ec}
+    }
+    removeEntities(deleted)
+    for(e <- updated)entityCubbieColl.updateDelta(_id2cubbie.getOrElse(e.id,null).asInstanceOf[C],putEntityInCubbie(e))
+    for(e <- created)entityCubbieColl += e
+  }
+  /**This is database specific for example because mongo has a specialized _id field*/
+  protected def removeEntities(entitiesToRemove:Seq[E]):Unit
+  def assembleEntities(toAssemble:Seq[C],id2entity:Any=>E,cubbie2entity:C=>E):Unit ={
+    for(c<-toAssemble){
+      val child = cubbie2entity(c)
+      val parent = if(c.parentRef.isDefined)id2entity(c.parentRef.value) else null.asInstanceOf[E]
+      child.setParentEntity(parent)(null)
+    }
+  }
+}
+abstract class MongoEntityCollection[E<:Entity with HasCanopyAttributes[E] with Prioritizable,C<:EntityCubbie](val name:String, mongoDB:DB) extends EntityCollection[E,C]{
+  import MongoCubbieImplicits._
+  import MongoCubbieConverter._
+  protected val entityColl = mongoDB.getCollection(name)
+  protected val entityCubbieColl = new MongoCubbieCollection(entityColl,() => newEntityCubbie,(a:C) => Seq(Seq(a.canopies),Seq(a.inferencePriority),Seq(a.parentRef))) with LazyCubbieConverter[C]
+  protected def removeEntities(deleted:Seq[E]):Unit = for(e <- deleted)entityCubbieColl.remove(_.idIs(entity2cubbie(e).id))
+}
+trait BibDatabase{
+  def authorColl:EntityCollection[AuthorEntity,AuthorCubbie]
+  def paperColl:EntityCollection[PaperEntity,PaperCubbie]
+}
+abstract class BibMongoDatabase(mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie") extends BibDatabase{
+  import MongoCubbieImplicits._
+  import MongoCubbieConverter._
+  protected val mongoConn = new Mongo(mongoServer,mongoPort)
+  protected val mongoDB = mongoConn.getDB(mongoDBName)
+  val authorColl = new MongoEntityCollection[AuthorEntity,AuthorCubbie]("authors",mongoDB){
+    def newEntityCubbie:AuthorCubbie = new AuthorCubbie
+    def newEntity:AuthorEntity = new AuthorEntity
+    def fetchFromCubbie(authorCubbie:AuthorCubbie,author:AuthorEntity):Unit = authorCubbie.fetch(author)
+  }
+  val paperColl = new MongoEntityCollection[PaperEntity,PaperCubbie]("papers",mongoDB){
+    def newEntityCubbie:PaperCubbie = new PaperCubbie
+    def newEntity:PaperEntity = new PaperEntity
+    def fetchFromCubbie(paperCubbie:PaperCubbie,paper:PaperEntity):Unit = paperCubbie.fetch(paper)
+  }
 }
 
 /**Basic trait for doing operations with bags of words*/

@@ -15,11 +15,16 @@ import collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
  * Covariant interface to cubbie collection
  * @tparam C Cubbie type of collection.
  */
-trait AbstractMongoCubbieCollection[+C <: Cubbie] extends Iterable[C] {
-
+trait AbstractCubbieCollection[+C <: Cubbie] extends Iterable[C] {
   def findByIds(ids: Seq[Any]): Iterator[C]
-
   def findBySlot[T](field: C => Cubbie#Slot[T], values: Seq[T]): Iterator[C]
+}
+trait MutableCubbieCollection[C<:Cubbie] extends AbstractCubbieCollection[C]{
+  def updateDelta(oldCubbie: C, newCubbie: C) : Unit
+  def remove(query:C => C)
+  def +=(c: C):Unit
+  def ++=(c: TraversableOnce[C]):Unit
+  def drop:Unit
 }
 
 /**
@@ -35,7 +40,7 @@ trait AbstractMongoCubbieCollection[+C <: Cubbie] extends Iterable[C] {
 class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
                                          val constructor: () => C,
                                          val indices: C => Seq[Seq[C#AbstractSlot[Any]]] = (c: C) => Seq.empty[Seq[C#AbstractSlot[Any]]])
-  extends AbstractMongoCubbieCollection[C] with MongoCubbieConverter[C] {
+  extends MutableCubbieCollection[C] with MongoCubbieConverter[C] {
 
   import MongoCubbieConverter._
 
@@ -606,7 +611,7 @@ class IndexedLazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterabl
 }
 
 
-class LazyMongoInverter(val cubbies: PartialFunction[Manifest[Cubbie], AbstractMongoCubbieCollection[Cubbie]],
+class LazyMongoInverter(val cubbies: PartialFunction[Manifest[Cubbie], AbstractCubbieCollection[Cubbie]],
                         val cache: GenericMap[Any, Cubbie] = Map.empty)
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
@@ -644,7 +649,7 @@ class Indexer(val indices:Cubbie=>Seq[Cubbie#AbstractSlot[Any]]) extends Functio
 
 object GraphLoader {
 
-  case class SlotInCollection[+R <: Cubbie](slot: Cubbie#AbstractRefSlot[R], coll: AbstractMongoCubbieCollection[R])
+  case class SlotInCollection[+R <: Cubbie](slot: Cubbie#AbstractRefSlot[R], coll: AbstractCubbieCollection[R])
 
   type Refs = GenericMap[Any, Cubbie]
 
@@ -677,7 +682,7 @@ object GraphLoader {
       var refs = oldRefs ++ roots.map(c => c.id -> c).toMap
 
       //mapping from collections to the ids that need to be loaded
-      val colls2ids = new HashMap[AbstractMongoCubbieCollection[Cubbie], List[Any]]
+      val colls2ids = new HashMap[AbstractCubbieCollection[Cubbie], List[Any]]
 
       //gather ids to load for each collection
       for (c <- roots) {
