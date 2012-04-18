@@ -231,7 +231,7 @@ object ForwardBackward {
       while (i < ds) {
         var j = 0
         while (j < ds) {
-          tmpCol(j) = localScores(vi)(i) + transScores(i, j) + beta(vi+1)(j)
+          tmpCol(j) = transScores(i, j) + localScores(vi+1)(j) + beta(vi+1)(j)
           j += 1
         }
         beta(vi)(i) = sumLogProbs(tmpCol)
