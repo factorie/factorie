@@ -129,9 +129,9 @@ class Cubbie {
 
 //  val idSlot = new IdSlot
 
-  sealed trait AbstractInverseSlot[A<:Cubbie] {
+  sealed trait AbstractInverseSlot[+A<:Cubbie] {
     def name:String
-    def slot:A=> A#AbstractSlot[Any]
+    def foreignSlot:Cubbie=> A#AbstractSlot[Any]
     def unique:Boolean = false
     def target:Any
   }
@@ -142,6 +142,8 @@ class Cubbie {
       cache(this.asInstanceOf[InverseSlot[Cubbie]]).asInstanceOf[Iterable[A]]
     }
 
+
+    def foreignSlot = (c:Cubbie) => slot(c.asInstanceOf[A])
 
     def target = cubbie.id
 
@@ -267,6 +269,7 @@ class Cubbie {
 
     override def unique = true
 
+    def foreignSlot = _.asInstanceOf[A].IdSlot
 
     def target = value
 
