@@ -2,13 +2,14 @@ package cc.factorie.db.mongo
 
 import cc.factorie.Cubbie
 import org.bson.BSONObject
-import collection.JavaConversions._
+import scala.collection.JavaConversions._
 import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
 import org.bson.types.BasicBSONList
 import cc.factorie.util.CubbieRefs
-import annotation.tailrec
-import collection.{MapProxy, Map => GenericMap, JavaConversions}
-import collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
+import scala.annotation.tailrec
+import scala.collection.{MapProxy, Map => GenericMap, JavaConversions}
+import scala.collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
+import scala._
 
 
 /**
@@ -17,8 +18,16 @@ import collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
  */
 trait AbstractCubbieCollection[+C <: Cubbie] extends Iterable[C] {
   def findByIds(ids: Seq[Any]): Iterator[C]
+
+  def findByAttribute[T](name: String, values: Seq[T]): Iterator[C]
+
+  //  def findByAttribute[T](slot:C=>C#Slot, values:Seq[T]):Iterator[C]
+
   def findBySlot[T](field: C => Cubbie#Slot[T], values: Seq[T]): Iterator[C]
+
+  def prototype: C
 }
+
 trait MutableCubbieCollection[C<:Cubbie] extends AbstractCubbieCollection[C]{
   def updateDelta(oldCubbie: C, newCubbie: C) : Unit
   def remove(query:C => C)
@@ -71,6 +80,12 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
    */
   def drop() {
     coll.drop()
+  }
+
+  lazy val prototype = constructor()
+
+  def findByAttribute[T](name: String, values: Seq[T]):CursorIterator = {
+    new CursorIterator(coll.find(new BasicDBObject(name, new BasicDBObject("$in", toMongo(values)))))
   }
 
   //todo: should override other default implementations---how much is this like the casbah MongoCollection?

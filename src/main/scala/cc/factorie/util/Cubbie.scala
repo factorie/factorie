@@ -17,6 +17,7 @@ package cc.factorie.util
 import cc.factorie.db.mongo.{GraphLoader, MongoCubbieCollection}
 import collection.mutable.{HashMap, ArrayBuffer, Map => MutableMap}
 import collection.{Map => GenericMap}
+import util.parsing.json.JSON
 
 
 // Property, ala NeXTStep PropertyLists, used for JSON-like serialization©
@@ -119,11 +120,30 @@ class Cubbie {
     def cubbie:thisCubbie.type = thisCubbie
 
   }
+  
+  object IdSlot extends AbstractSlot[Any] {
+    def name = "_id"
+    def value = id
+    def opt = Some(id)
+  }
 
-  case class InverseSlot[A <: Cubbie](name: String, slot: A => A#AbstractRefSlot[Cubbie])(implicit m:Manifest[A]) {
+//  val idSlot = new IdSlot
+
+  sealed trait AbstractInverseSlot[A<:Cubbie] {
+    def name:String
+    def slot:A=> A#AbstractSlot[Any]
+    def unique:Boolean = false
+    def target:Any
+  }
+  
+  case class InverseSlot[A <: Cubbie](name: String, slot: A => A#AbstractRefSlot[Cubbie])(implicit m:Manifest[A])
+    extends AbstractInverseSlot[A] {
     def value(implicit cache: Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]): Iterable[A] = {
       cache(this.asInstanceOf[InverseSlot[Cubbie]]).asInstanceOf[Iterable[A]]
     }
+
+
+    def target = cubbie.id
 
     def manifest = m.asInstanceOf[Manifest[Cubbie]]
 
@@ -241,8 +261,16 @@ class Cubbie {
     //    def ->(coll:MongoCubbieCollection[A]):GraphLoader.SlotInCollection[A] = GraphLoader.SlotInCollection(this,coll)
   }
 
-  case class RefSlot[A <: Cubbie](override val name: String, constructor: () => A) extends Slot[Any](name) with AbstractRefSlot[A] {
+  case class RefSlot[A <: Cubbie](override val name: String, constructor: () => A) 
+    extends Slot[Any](name) with AbstractRefSlot[A] with AbstractInverseSlot[A] {
     def value = _rawGet(name)
+
+    override def unique = true
+
+
+    def target = value
+
+    def slot = (a:A) => a.IdSlot
 
     def :=(ref: Any): Unit = {
       if (ref.isInstanceOf[Cubbie]) throw new Error("Use ::= to set RefSlot by a Cubbie");
@@ -262,6 +290,13 @@ class Cubbie {
     def :=(value: A) = _rawPut(name, value._map)
   }
 
+}
+
+object JSonTest {
+  def main(args: Array[String]) {
+    val json = JSON.parseFull("")
+
+  }
 }
 
 // Also make a version of this that caches objects as they come out of MongoDB
