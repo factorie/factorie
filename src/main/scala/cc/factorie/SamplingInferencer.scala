@@ -34,16 +34,16 @@ class SamplingInferencer[V<:DiscreteVar,C](val sampler:Sampler[C]) /*extends Inf
   var burnIn = 100 // I really want these to be  the default-values for parameters to infer, in Scala 2.8.
   var thinning = 20
   var iterations = 500
-  def infer(targets:Iterable[V], contexts:Iterable[C]): SamplingLattice[V] = {
-    val lat = new SamplingLattice(targets)
+  def infer(targets:Iterable[V], contexts:Iterable[C], lattice: SamplingLattice[V]): SamplingLattice[V] = {
     sampler.processAll(contexts, burnIn)
     for (i <- 0 until iterations/thinning) {
       sampler.processAll(contexts, thinning)
-      targets.foreach(v => lat.marginal(v).get.incrementCurrentValue)
+      targets.foreach(v => lattice.marginal(v).get.incrementCurrentValue)
       //postSample(targets)
     }
-    lat
+    lattice
   }
+  def infer(targets:Iterable[V], contexts:Iterable[C]): SamplingLattice[V] = infer(targets, contexts, new SamplingLattice(targets))
 }
 
 class VariableSamplingInferencer[V<:DiscreteVar](sampler:Sampler[V]) extends SamplingInferencer[V,V](sampler) with VariableInferencer[V] {
