@@ -380,6 +380,11 @@ class MongoRefSlot[C <: Cubbie, A <: Cubbie](val slot: C#AbstractRefSlot[A]) {
 
 }
 
+class MongoInvSlot[C <: Cubbie, A <: Cubbie](val slot: C#AbstractInverseSlot[A]) {
+  def of(coll: MongoCubbieCollection[A]): GraphLoader.InvSlotInCollection[A] = GraphLoader.InvSlotInCollection(slot, coll)
+}
+
+
 /**
  * Lazy scala seq wrapper around bson sequence.
  * @param bson the bson list to wrap around.
@@ -425,6 +430,8 @@ object MongoCubbieImplicits {
 
   implicit def toMongoRefSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractRefSlot[A]) = new MongoRefSlot(slot)
 
+  implicit def toMongoInvSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractInverseSlot[A]) = new MongoInvSlot(slot)
+
   implicit def toMongoCubbie[C <: Cubbie](cubbie: C) = new MongoCubbie(cubbie)
 
 }
@@ -433,6 +440,10 @@ object DerefImplicits {
   implicit def toMongoRefSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractRefSlot[A]) = new MongoRefSlot(slot) {
     def -->(implicit cache: GenericMap[Any, Cubbie]): A = slot.deref(cache)
   }
+  implicit def toMongoInvSlot[C <: Cubbie, A <: Cubbie](slot: C#InverseSlot[A]) = new MongoInvSlot(slot) {
+//    def -->(implicit cache: GenericMap[Any, Cubbie]): A = slot.deref(cache)
+  }
+
 }
 
 object CubbieMongoTest {
@@ -531,6 +542,12 @@ object CubbieMongoTest {
     println(james.spouse.deref)
     println("James' spouse's spouse")
     println(james.spouse.deref.spouse.deref)
+
+    val graph = GraphLoader.load2(Seq(kid), {
+      case p:Person => Seq(p.children of persons, p.father of persons)
+    })
+
+    println(graph)
 
     //or with fancy deref implicits
     //    import DerefImplicits._

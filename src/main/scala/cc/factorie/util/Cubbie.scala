@@ -135,7 +135,7 @@ class Cubbie {
     def name:String
     def foreignSlot:Cubbie=> A#AbstractSlot[Any]
     def unique:Boolean = false
-    def target:Any
+    def target:Option[Any]
   }
   
   case class InverseSlot[A <: Cubbie](name: String,
@@ -148,7 +148,7 @@ class Cubbie {
 
     def foreignSlot = (c:Cubbie) => slot(c.asInstanceOf[A])
 
-    def target = cubbie.id
+    def target = Some(cubbie.id)
 
     def manifest = m.asInstanceOf[Manifest[Cubbie]]
 
@@ -274,7 +274,7 @@ class Cubbie {
 
     def foreignSlot = _.asInstanceOf[A].IdSlot
 
-    def target = value
+    def target = opt
 
     def slot = (a:A) => a.IdSlot
 

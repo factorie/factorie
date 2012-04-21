@@ -97,17 +97,18 @@ object GraphLoader {
       //mapping from collections and attributes to the values that need to be queried for.
       val collsAttr2ids = new HashMap[(InvSlotInCollection[Cubbie], String), List[Any]]
 
-      //gather ids to load for each collection
+      //gather queries to execute
       for (c <- roots) {
         for (slots <- neighbors.lift(c)) {
           for (slotAndColl <- slots) {
             val invSlot = slotAndColl.invSlot
             val foreignSlot = invSlot.foreignSlot(slotAndColl.coll.prototype)
             val foreignCubbieClass = foreignSlot.cubbie.getClass.asInstanceOf[Class[Cubbie]]
-            val target = invSlot.target
-            val attrName = foreignSlot.name
-            if (!graph.isDefinedAt((foreignCubbieClass, attrName, target))) {
-              collsAttr2ids(slotAndColl -> attrName) = collsAttr2ids(slotAndColl -> attrName) :+ target
+            for (target <- invSlot.target) {
+              val attrName = foreignSlot.name
+              if (!graph.isDefinedAt((foreignCubbieClass, attrName, target))) {
+                collsAttr2ids(slotAndColl -> attrName) = collsAttr2ids.getOrElse(slotAndColl -> attrName, Nil) :+ target
+              }
             }
           }
         }
@@ -133,7 +134,7 @@ object GraphLoader {
         })
         graph = graph ++ grouped
       }
-      if (loaded.size > 0) load2(loaded,neighbors,maxDepth-1,graph) else graph
+      if (loaded.size > 0) load2(loaded, neighbors, maxDepth - 1, graph) else graph
     }
 
   }
