@@ -4,6 +4,7 @@ import cc.factorie.util.Cubbie
 import annotation.tailrec
 import scala.collection.{MapProxy, Map => GenericMap, JavaConversions}
 import collection.mutable.HashMap
+import cc.factorie.db.mongo.GraphLoader.IndexBasedInverter
 
 
 object GraphLoader {
@@ -14,7 +15,7 @@ object GraphLoader {
   type Invs = Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]
 
   //Map from (cubbie class, attribute name, value) to the cubbies of that class with that attribute value
-  type Graph = GenericMap[(Class[Cubbie], String, Any), Iterable[Cubbie]]
+  type Index = GenericMap[(Class[Cubbie], String, Any), Iterable[Cubbie]]
 
   /**
    * Loads a cache from ids to cubbies based on the root objects and a neighborhood function.
@@ -79,20 +80,20 @@ object GraphLoader {
   def load2(roots: TraversableOnce[Cubbie],
             neighbors: PartialFunction[Cubbie, Seq[InvSlotInCollection[Cubbie]]],
             maxDepth: Int = Int.MaxValue,
-            oldGraph: Graph = Map.empty): Graph = {
+            oldIndex: Index = Map.empty): Index = {
 
     if (maxDepth == 0) {
-      oldGraph
+      oldIndex
     }
     else if (maxDepth == 1) {
       //fill-up roots into refs
       //todo: does this need to fill up inverse links too?
-      oldGraph ++ roots.map(c => (c.cubbieClass, c.IdSlot.name, c.id) -> Seq(c))
+      oldIndex ++ roots.map(c => (c.cubbieClass, c.IdSlot.name, c.id) -> Seq(c))
       //oldGraph.copy(refs = oldGraph.refs ++ roots.map(c => c.id -> c).toMap)
     }
     else {
       //fill-up roots into refs
-      var graph = oldGraph ++ roots.map(c => (c.cubbieClass, c.IdSlot.name, c.id) -> Seq(c))
+      var graph = oldIndex ++ roots.map(c => (c.cubbieClass, c.IdSlot.name, c.id) -> Seq(c))
 
       //mapping from collections and attributes to the values that need to be queried for.
       val collsAttr2ids = new HashMap[(InvSlotInCollection[Cubbie], String), List[Any]]
@@ -114,6 +115,7 @@ object GraphLoader {
         }
       }
       //now do the loading
+      //todo: for every loaded cubbie we should also add the (cubbie.class,"_id", cubbie.id) -> cubbie mapping
       var loaded: List[Cubbie] = Nil
       for (((coll, attrName), targets) <- collsAttr2ids) {
         val prototype = coll.coll.prototype
@@ -123,8 +125,12 @@ object GraphLoader {
         val deduped = result.map(c => {
           val existing = graph.get((foreignClass, prototype.IdSlot.name, c.id))
           existing match {
-            case Some(refs) => refs.head
-            case _ => loaded = loaded :+ c; c
+            case Some(refs) =>
+              refs.head
+            case _ =>
+              loaded = loaded :+ c
+              graph = graph + ((foreignClass, prototype.IdSlot.name, c.id) -> List(c))
+              c
           }
         })
         val grouped = deduped.groupBy(c => {
@@ -138,6 +144,21 @@ object GraphLoader {
     }
 
   }
+
+  def toInverter(index:Index) = new IndexBasedInverter(index)
+  def toRefs(index:Index) = index.filter(_._1._2 == "_id").map(pair => pair._1._3 -> pair._2.head)
+
+  class IndexBasedInverter(index:Index) extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]){
+    val prototypeCache = new HashMap[Manifest[Cubbie],Cubbie]
+
+    def apply(v1: Cubbie#InverseSlot[Cubbie]) = {
+      val prototype = prototypeCache.getOrElseUpdate(v1.manifest, v1.manifest.erasure.newInstance().asInstanceOf[Cubbie])
+      val prototypeClass = prototype.cubbieClass
+      val attrName = v1.slot(prototype).name
+      index((prototypeClass,attrName,v1.target.get))
+    }
+  }
+
 
 
 }

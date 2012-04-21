@@ -543,11 +543,25 @@ object CubbieMongoTest {
     println("James' spouse's spouse")
     println(james.spouse.deref.spouse.deref)
 
-    val graph = GraphLoader.load2(Seq(kid), {
+    val index = GraphLoader.load2(Seq(kid), {
       case p:Person => Seq(p.children of persons, p.father of persons)
     })
 
-    println(graph)
+    println("Index:")
+    println(index)
+    println(james.children.value2(index))
+    println(james.children.value(GraphLoader.toInverter(index)))
+    println(kid.father.deref(GraphLoader.toRefs(index)))
+
+    println("Test Index 2")
+    val index2 = GraphLoader.load2(Seq(james), {
+      case p:Person => Seq(p.children of persons)
+    })
+    println(james.children.value(GraphLoader.toInverter(index2)))
+    println(kid.father.deref(GraphLoader.toRefs(index2)))
+
+
+
 
     //or with fancy deref implicits
     //    import DerefImplicits._

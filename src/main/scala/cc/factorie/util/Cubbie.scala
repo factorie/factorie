@@ -146,6 +146,13 @@ class Cubbie {
       cache(this.asInstanceOf[InverseSlot[Cubbie]]).asInstanceOf[Iterable[A]]
     }
 
+    //todo: this is probably very slow, as I need access the manifest, erasure, create new object etc.
+    def value2(implicit cache: collection.Map[(Class[Cubbie],String,Any),Iterable[Cubbie]]) = {
+      val foreignCubbie = m.erasure.newInstance().asInstanceOf[A]
+      val foreignSlot = slot(foreignCubbie)
+      cache((foreignCubbie.cubbieClass,foreignSlot.name,cubbie.id)).asInstanceOf[Iterable[A]]
+    }
+
     def foreignSlot = (c:Cubbie) => slot(c.asInstanceOf[A])
 
     def target = Some(cubbie.id)
@@ -262,6 +269,7 @@ class Cubbie {
 
   trait AbstractRefSlot[+A <: Cubbie] extends AbstractSlot[Any] {
     def deref(implicit tr: scala.collection.Map[Any, Cubbie]) = tr(value).asInstanceOf[A]
+
 
     //    def ->(coll:MongoCubbieCollection[A]):GraphLoader.SlotInCollection[A] = GraphLoader.SlotInCollection(this,coll)
   }
