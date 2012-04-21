@@ -115,6 +115,8 @@ class Cubbie {
 
     def value: T
 
+    def apply() = value
+
     def name: String
 
     def opt: Option[T]
