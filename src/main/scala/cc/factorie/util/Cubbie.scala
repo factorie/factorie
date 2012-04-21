@@ -85,6 +85,8 @@ class Cubbie {
   // Managing the "id"; aligns with MongoDB "_id"
   def idName = "_id"
 
+  def cubbieClass = getClass.asInstanceOf[Class[Cubbie]]
+
   def newId = java.util.UUID.randomUUID.timestamp
 
 //  var slots:List[AbstractSlot[Any]] = Nil
@@ -136,12 +138,13 @@ class Cubbie {
     def target:Any
   }
   
-  case class InverseSlot[A <: Cubbie](name: String, slot: A => A#AbstractRefSlot[Cubbie])(implicit m:Manifest[A])
+  case class InverseSlot[A <: Cubbie](name: String,
+                                      slot: A => A#AbstractRefSlot[Cubbie])(implicit m:Manifest[A])
     extends AbstractInverseSlot[A] {
+
     def value(implicit cache: Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]): Iterable[A] = {
       cache(this.asInstanceOf[InverseSlot[Cubbie]]).asInstanceOf[Iterable[A]]
     }
-
 
     def foreignSlot = (c:Cubbie) => slot(c.asInstanceOf[A])
 

@@ -13,6 +13,8 @@ object GraphLoader {
   type Refs = GenericMap[Any, Cubbie]
   type Invs = Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]
 
+  //Map from (cubbie class, attribute name, value) to the cubbies of that class with that attribute value
+  type Graph = GenericMap[(Class[Cubbie], String, Any), Iterable[Cubbie]]
 
   /**
    * Loads a cache from ids to cubbies based on the root objects and a neighborhood function.
@@ -72,14 +74,12 @@ object GraphLoader {
   case class InvSlotInCollection[+R <: Cubbie](invSlot: Cubbie#AbstractInverseSlot[R], coll: AbstractCubbieCollection[R])
 
 
-  case class Graph(inverters: Invs, refs: Refs)
-
   //
-  //@tailrec
+  @tailrec
   def load2(roots: TraversableOnce[Cubbie],
             neighbors: PartialFunction[Cubbie, Seq[InvSlotInCollection[Cubbie]]],
             maxDepth: Int = Int.MaxValue,
-            oldGraph: Graph = Graph(Map.empty, Map.empty)): Graph = {
+            oldGraph: Graph = Map.empty): Graph = {
 
     if (maxDepth == 0) {
       oldGraph
@@ -87,15 +87,15 @@ object GraphLoader {
     else if (maxDepth == 1) {
       //fill-up roots into refs
       //todo: does this need to fill up inverse links too?
-      Graph(refs = oldGraph.refs ++ roots.map(c => c.id -> c).toMap, inverters = oldGraph.inverters)
+      oldGraph ++ roots.map(c => (c.cubbieClass, c.IdSlot.name, c.id) -> Seq(c))
       //oldGraph.copy(refs = oldGraph.refs ++ roots.map(c => c.id -> c).toMap)
     }
     else {
       //fill-up roots into refs
-      var refs = oldGraph.refs ++ roots.map(c => c.id -> c).toMap
+      var graph = oldGraph ++ roots.map(c => (c.cubbieClass, c.IdSlot.name, c.id) -> Seq(c))
 
       //mapping from collections and attributes to the values that need to be queried for.
-      val collsAttr2ids = new HashMap[(AbstractCubbieCollection[Cubbie],String), List[Any]]
+      val collsAttr2ids = new HashMap[(InvSlotInCollection[Cubbie], String), List[Any]]
 
       //gather ids to load for each collection
       for (c <- roots) {
@@ -103,31 +103,37 @@ object GraphLoader {
           for (slotAndColl <- slots) {
             val invSlot = slotAndColl.invSlot
             val foreignSlot = invSlot.foreignSlot(slotAndColl.coll.prototype)
+            val foreignCubbieClass = foreignSlot.cubbie.getClass.asInstanceOf[Class[Cubbie]]
             val target = invSlot.target
             val attrName = foreignSlot.name
-            collsAttr2ids(slotAndColl.coll -> attrName) = collsAttr2ids(slotAndColl.coll -> attrName) :+ target
-            //check whether we already have the reverse
-            //            val inverseSlot.coll
-            //            for (idRef <- slotAndColl.invSlot.opt) {
-            //              if (!refs.isDefinedAt(idRef)) {
-            //                colls2ids(slotAndColl.coll) = colls2ids.getOrElse(slotAndColl.coll, Nil) :+ idRef
-            //              }
-            //            }
+            if (!graph.isDefinedAt((foreignCubbieClass, attrName, target))) {
+              collsAttr2ids(slotAndColl -> attrName) = collsAttr2ids(slotAndColl -> attrName) :+ target
+            }
           }
         }
       }
-
-      //now do loading
-      //      var loaded: List[Cubbie] = Nil
-      //      for ((coll, ids) <- colls2ids) {
-      //        loaded = loaded ++ coll.findByIds(ids).toList
-      //      }
-      //
-      //      val graph = oldGraph.copy(refs = refs)
-      //
-      //      //instantiate the yield
-      //      if (loaded.size > 0) load2(loaded, neighbors, maxDepth - 1, graph) else graph
-      null
+      //now do the loading
+      var loaded: List[Cubbie] = Nil
+      for (((coll, attrName), targets) <- collsAttr2ids) {
+        val prototype = coll.coll.prototype
+        val foreignClass = prototype.cubbieClass
+        val result = coll.coll.findByAttribute(attrName, targets).toList
+        //replace cubbies with already loaded cubbies with same id
+        val deduped = result.map(c => {
+          val existing = graph.get((foreignClass, prototype.IdSlot.name, c.id))
+          existing match {
+            case Some(refs) => refs.head
+            case _ => loaded = loaded :+ c; c
+          }
+        })
+        val grouped = deduped.groupBy(c => {
+          val foreignSlot = coll.invSlot.foreignSlot(c)
+          val foreignValue = foreignSlot.value
+          (foreignClass, attrName, foreignValue)
+        })
+        graph = graph ++ grouped
+      }
+      if (loaded.size > 0) load2(loaded,neighbors,maxDepth-1,graph) else graph
     }
 
   }
