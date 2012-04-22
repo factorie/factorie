@@ -10,6 +10,7 @@ import scala.annotation.tailrec
 import scala.collection.{MapProxy, Map => GenericMap, JavaConversions}
 import scala.collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
 import scala._
+import scala.Predef._
 
 
 /**
@@ -347,6 +348,8 @@ class MongoSlot[C <: Cubbie, V](val slot: C#Slot[V]) {
     slot.cubbie
   }
 
+
+
   def update(value: V): C = {
     //todo: need to fix cubbies to avoid try-catch
     val nestedMap = try {
@@ -372,6 +375,10 @@ class MongoSlot[C <: Cubbie, V](val slot: C#Slot[V]) {
     slot.cubbie
   }
 
+  def exists(yes:Boolean): C = {
+    slot.cubbie._map(slot.name) = Map("$exists" -> yes)
+    slot.cubbie
+  }
 
 }
 
@@ -492,6 +499,10 @@ object CubbieMongoTest {
     james.spouse ::= laura
     laura.spouse ::= james
     kid.father ::= james
+
+    println("apply method calls")
+    println(james.age())
+    println(kid.age(10))
 
 
     val mongoConn = new Mongo("localhost", 27017)
