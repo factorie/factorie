@@ -187,6 +187,11 @@
                   <jvmArgs><jvmArg>-Xmx4g</jvmArg></jvmArgs>
                 </launcher>
                 <launcher>
+                  <id>bib-demo</id>
+                  <mainClass>cc.factorie.app.bib.Coref</mainClass>
+                  <jvmArgs><jvmArg>-Xmx4g</jvmArg></jvmArgs>
+                </launcher>
+                <launcher>
                   <id>Coref4</id>
                   <mainClass>cc.factorie.example.Coref4</mainClass>
                   <jvmArgs><jvmArg>-Xmx1g</jvmArg></jvmArgs>
