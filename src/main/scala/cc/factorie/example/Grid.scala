@@ -96,10 +96,11 @@ object Grid {
     printImage(image)
     pixels.foreach(_.setRandomly())
     //*
-    val sampler = SamplingMaximizer[Pixel](gridModel)
-    sampler.iterations = 10
-    sampler.rounds = 10
-    sampler.infer(pixels)
+    val sampler = new SamplingMaximizer[Pixel](new VariableSettingsSampler(gridModel))
+    sampler.maximize(pixels, iterations=10, rounds=10)
+    //sampler.iterations = 10
+    //sampler.rounds = 10
+    //sampler.infer(pixels)
     //*/
     /*
     val lattice = new LatticeBP(gridModel, pixels.toSet) with MaxProductLattice
