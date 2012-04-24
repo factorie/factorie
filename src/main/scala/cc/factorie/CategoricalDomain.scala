@@ -159,8 +159,10 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
     writer.close
   }
 
+  private var _frozenByLoader = false
   override def load(dirname:String, gzip: Boolean = false): Unit = {
-    if (size > 0) return // Already initialized, don't read again
+    if (_frozenByLoader) return // Already initialized by loader, don't read again
+    else if (size > 0) throw new Error("Attempted to load a non-empty domain. Did you mean to load the model before creating variables?")
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     val reader = new BufferedReader(new InputStreamReader({
       if (gzip)
@@ -173,7 +175,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
     if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
     while ({line = reader.readLine; line != null})
       this.index(line.asInstanceOf[T]) // TODO What if T isn't a String?  Fix this.
-    if (willFreeze) freeze()
+    if (willFreeze) { freeze(); _frozenByLoader = true }
     reader.close
   }
   

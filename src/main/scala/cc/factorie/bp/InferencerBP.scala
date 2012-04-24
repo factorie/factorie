@@ -102,7 +102,7 @@ class InferencerBPWorker(lattice: LatticeBP) {
         //synchronous belief updates on all send edges
         factor.sendToAll
       }
-      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+      // println("Iteration %d max delta range: %f".format(iteration, lattice.currentMaxDelta))
     }
   }
 
@@ -114,7 +114,7 @@ class InferencerBPWorker(lattice: LatticeBP) {
         //synchronous belief updates on all send edges
         factor.sendToAll
       })
-      // println("Iteration %d max delta range: %f".format(iteration, currentMaxDelta))
+      // println("Iteration %d max delta range: %f".format(iteration, lattice.currentMaxDelta))
     }
   }
 }

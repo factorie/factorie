@@ -1,11 +1,13 @@
 package cc.factorie.app.nlp.coref
 import cc.factorie._
-import collection.mutable.{HashSet, ArrayBuffer}
+import collection.mutable.{HashMap, HashSet, ArrayBuffer}
+import com.mongodb.DB
+import db.mongo._
 
 class EntityExists(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
 class IsEntity(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
 class IsMention(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
-class Dirty(val entity:Entity) extends IntegerVariable(0){def reset()(implicit d:DiffList):Unit=this.set(0)(d);def ++()(implicit d:DiffList):Unit=this.set(intValue+1)(d)} //convenient for determining whether an entity needs its attributes recomputed
+class Dirty(val entity:Entity) extends IntegerVariable(0){def reset()(implicit d:DiffList):Unit=this.set(0)(d);def ++()(implicit d:DiffList):Unit=this.set(intValue+1)(d);def --()(implicit d:DiffList):Unit=this.set(intValue-1)(d)} //convenient for determining whether an entity needs its attributes recomputed
 abstract class HierEntity(isMent:Boolean=false) extends Entity{
   isObserved=isMent
   def flagAsMention:Unit = {isObserved=true;isMention.set(true)(null)}
@@ -34,6 +36,13 @@ abstract class HierEntityCubbie extends EntityCubbie{
     isMention := e.attr[IsMention].booleanValue
   }
 }
+trait Prioritizable{
+  var priority:Double=0.0
+}
+trait HasCanopyAttributes[T<:Entity]{
+  val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
+}
+trait CanopyAttribute[T<:Entity]{def entity:Entity;def canopyName:String}
 
 /**Mix this into the sampler and it will automatically propagate the bags that you define in the appropriate method*/
 /*
@@ -61,6 +70,11 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
   //def nextEntity:T = nextEntity(null.asInstanceOf[T])
   def nextEntity:T=nextEntity(null.asInstanceOf[T])
   def nextEntity(context:T):T=sampleEntity(entities)
+  def nextEntityPair:(T,T) = {
+    val e1 = nextEntity
+    val e2 = nextEntity(e1)
+    (e1,e2)
+  }
   def sampleAttributes(e:T)(implicit d:DiffList):Unit //= {e.dirty.reset}
   protected def sampleEntity(samplePool:ArrayBuffer[T]) = {
     var tries = 4
@@ -79,14 +93,13 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
     deletedEntities ++= es.filter(!_.isConnected)
     es.clear
     es++=cleanEntities
-   // println("  removed "+(oldSize-es.size)+ " disconnected entities.")
+    //println("  removed "+(oldSize-es.size)+ " disconnected entities. new size:"+es.size)
   }
   //def newDiffList2 = new cc.factorie.example.DebugDiffList
   /**This function randomly generates a list of jumps/proposals to choose from.*/
   def settings(c:Null) : SettingIterator = new SettingIterator {
-    val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit];
-    val entity1 = nextEntity
-    val entity2 = nextEntity(entity1)
+    val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
+    val (entity1,entity2) = nextEntityPair
     if (entity1.entityRoot.id != entity2.entityRoot.id) { //sampled nodes refer to different entities
       if(!isMention(entity1)){
         changes += {(d:DiffList) => mergeLeft(entity1,entity2)(d)} //what if entity2 is a mention?

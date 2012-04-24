@@ -53,7 +53,7 @@ class Classification[L<:DiscreteVar](val label:L, val model:Model, val proportio
   val bestLabelIndex = proportions.maxIndex
   def bestLabelValue = label.domain.getValue(bestLabelIndex)
   def bestCategoryValue: String = bestLabelValue match {
-    case cv:CategoricalValue[String] => cv.category
+    case cv:CategoricalValue[_] => cv.category.toString
     case dv:DiscreteValue => dv.intValue.toString
   }
 }

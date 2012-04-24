@@ -377,6 +377,7 @@ class ChainNer2 {
     val extendedPrediction = new scala.collection.mutable.HashMap[String, List[String]]
     val sequenceToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
     val subsequencesToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
+
     if(extraFeatures) {
     for (token <- document) {
       if(tokenToLabelMap.contains(token.string))
@@ -534,6 +535,9 @@ class ChainNer2 {
 		    }
 		      optimizer.optimize()
 		      optimizer.optimize()
+		    
+			  (trainLabels ++ testLabels).foreach(_.setRandomly())
+	    
 		      trainDocuments.foreach(process(_))
 		      testDocuments.foreach(process(_))
 			  printEvaluation(trainDocuments, testDocuments, "FINAL")			
@@ -594,6 +598,9 @@ class ChainNer2 {
 		    }
 		      optimizer1.optimize()
 		      optimizer1.optimize()
+		      
+			  (trainLabels ++ testLabels).foreach(_.setRandomly())
+	    
 		      trainDocuments.foreach(process(_))
 		      testDocuments.foreach(process(_))
 			  printEvaluation(trainDocuments, testDocuments, "FINAL")			

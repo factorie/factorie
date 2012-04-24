@@ -14,22 +14,52 @@
 
 package cc.factorie.app.bib
 import cc.factorie.util.Cubbie
+import collection.mutable.HashMap
+import cc.factorie.app.nlp.coref._
 
-trait EntityCubbie extends Cubbie {
+trait EntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable] extends Cubbie {
   val canopies = new StringListSlot("canopies")
   val inferencePriority = new DoubleSlot("ipriority")
+  val parentRef = RefSlot("parentRef", () => newEntityCubbie)
+  val isMention = BooleanSlot("isMention")
+  def newEntityCubbie:EntityCubbie[T]
+  def fetch(e:T) ={
+    e.priority = inferencePriority.value
+    e.attr[IsMention].set(isMention.value)(null)
+    e.isObserved=isMention.value
+    e.attr[IsEntity].set(e.isRoot)(null)
+    e.attr[EntityExists].set(e.isConnected)(null)
+    //note that entity parents are set externally not inside the cubbie
+  }
+  def store(e:T) ={
+    this.id=e.id      
+    canopies := e.canopyAttributes.map(_.canopyName).toSeq
+    inferencePriority := e.priority
+    isMention := e.attr[IsMention].booleanValue
+    if(e.parentEntity!=null)parentRef := e.parentEntity.id
+  }
 }
-
-class BagOfWordsCubbie extends Cubbie
+class BagOfWordsCubbie extends Cubbie{
+  def store(bag:BagOfWords) = {_map ++= bag.asHashMap;this}
+  def fetch:HashMap[String,Double] = {
+    val result = new HashMap[String,Double]
+    for((k,v) <- _map)result += k -> v.toString.toDouble
+    result
+  }
+}
 class FieldsCubbie extends Cubbie
-
-class PersonCubbie extends EntityCubbie // Split from AuthorCubbie eventually
-
-class AuthorCubbie extends EntityCubbie {
-  val isMention = BooleanSlot("mention")
+/*
+class PersonCubbie extends EntityCubbie{ // Split from AuthorCubbie eventually
+  def newEntityCubbie:EntityCubbie = new PersonCubbie
+}
+*/
+class AuthorCubbie extends EntityCubbie[AuthorEntity] {
+  protected var _author:AuthorEntity=null
   val firstName = StringSlot("fn")
   val middleName = StringSlot("mn")
   val lastName = StringSlot("ln")
+  val suffix = StringSlot("sf")
+  //TODO: maybe name should be a bag, there may be multiple nick names
   val nickName = StringSlot("nn") // nickname  e.g. William Bruce Croft, nickname=Bruce; or William Freeman, nickname=Bill
   val emails = new CubbieSlot("emails", () => new BagOfWordsCubbie)
   val topics = new CubbieSlot("topics", () => new BagOfWordsCubbie)
@@ -37,8 +67,41 @@ class AuthorCubbie extends EntityCubbie {
   val venues = new CubbieSlot("venues", () => new BagOfWordsCubbie)
   val coauthors = new CubbieSlot("coauthors", () => new BagOfWordsCubbie)
   val pid = RefSlot("pid", () => new PaperCubbie) // paper id; set in author mentions, propagated up into entities
+  override def fetch(e:AuthorEntity) ={
+    super.fetch(e)
+    e.attr[FullName].setFirst(firstName.value)(null)
+    e.attr[FullName].setMiddle(middleName.value)(null)
+    e.attr[FullName].setLast(lastName.value)(null)
+    e.attr[FullName].setSuffix(suffix.value)(null)
+    //e.attr[FullName].setNickName(nickName.value)(null)
+    e.attr[BagOfTopics] ++= topics.value.fetch
+    e.attr[BagOfVenues] ++= venues.value.fetch
+    e.attr[BagOfCoAuthors] ++= coauthors.value.fetch
+    e.attr[BagOfKeywords] ++= keywords.value.fetch
+    e.attr[BagOfEmails] ++= emails.value.fetch
+    e._id = this.id.toString
+    if(pid.isDefined)e.paperMentionId = pid.value.toString
+    _author=e
+  }
+  override def store(e:AuthorEntity) ={
+    super.store(e)
+    firstName := e.attr[FullName].firstName
+    middleName := e.attr[FullName].middleName
+    lastName := e.attr[FullName].lastName
+    suffix := e.attr[FullName].suffix
+    topics := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
+    venues := new BagOfWordsCubbie().store(e.attr[BagOfVenues].value)
+    coauthors := new BagOfWordsCubbie().store(e.attr[BagOfCoAuthors].value)
+    keywords := new BagOfWordsCubbie().store(e.attr[BagOfKeywords].value)
+    emails := new BagOfWordsCubbie().store(e.attr[BagOfEmails].value)
+    this.id=e.id
+    println("pid: "+e.paperMentionId)
+    if(e.paperMentionId != null)pid := e.paperMentionId
+    if(!e.isEntity && e.paperMentionId!=null)println("Warning: non-mention-author with id "+e.id+ " has a non-null promoted mention.")
+  }
+  def author:AuthorEntity=_author
+  override def newEntityCubbie:EntityCubbie[AuthorEntity] = new AuthorCubbie
 }
-
 // superclass of PaperCubbie and CommentCubbie
 class EssayCubbie extends Cubbie {
   val created = DateSlot("created")
@@ -46,11 +109,12 @@ class EssayCubbie extends Cubbie {
   val kind = StringSlot("kind") // article, inproceedings, patent, synthetic (for creating author coref edit), comment, review,...
   val title = StringSlot("title")
   val abs = StringSlot("abs") // abstract
+  //should authors go up here?
 }
-
 // Articles, Patents, Proposals,...
-class PaperCubbie extends EssayCubbie with EntityCubbie {
-  val authors = StringListSlot("authors") // 
+class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
+  protected var _paper:PaperEntity=null
+  val authors = StringListSlot("authors")
   val institution = StringSlot("institution")
   val venue = StringSlot("venue") // booktitle, journal,...
   val series = StringSlot("series")
@@ -65,9 +129,57 @@ class PaperCubbie extends EssayCubbie with EntityCubbie {
   val edition = StringSlot("edition")
   val url = StringSlot("url") // But we want to be able to display multiple URLs in the web interface
   val pid = RefSlot("pid", () => new PaperCubbie) // paper id; the paper mention chosen as the canonical child
-  
+  def paper:PaperEntity=_paper
+  def newEntityCubbie:EntityCubbie[PaperEntity] = new PaperCubbie
+  override def fetch(e:PaperEntity) ={
+    super.fetch(e)
+    e.attr[Title].set(title.value)(null)
+    if(pid.isDefined)e.promotedMention.set(pid.value.toString)(null) else e.promotedMention.set(null.asInstanceOf[String])(null)
+    //e.attr[BagOfAuthors] ++= authors.value.fetch
+    e._id = this.id.toString
+  }
+  override def store(e:PaperEntity) ={
+    super.store(e)
+    title := e.attr[Title].value
+    if(e.promotedMention.value!=null)pid := e.promotedMention.value
+    if(!e.isEntity && e.promotedMention.value!=null)println("Warning: non-entity-paper with id "+e.id+ " has a non-null promoted mention.")
+    //authors := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
+    this.id=e.id
+  }
 }
+class BibTeXCubbie{
 
+  //all bibtex
+  /*
+address: Publisher's address (usually just the city, but can be the full address for lesser-known publishers)
+annote: An annotation for annotated bibliography styles (not typical)
+author: The name(s) of the author(s) (in the case of more than one author, separated by and)
+booktitle: The title of the book, if only part of it is being cited
+chapter: The chapter number
+crossref: The key of the cross-referenced entry
+edition: The edition of a book, long form (such as "first" or "second")
+editor: The name(s) of the editor(s)
+eprint: A specification of an electronic publication, often a preprint or a technical report
+howpublished: How it was published, if the publishing method is nonstandard
+institution: The institution that was involved in the publishing, but not necessarily the publisher
+journal: The journal or magazine the work was published in
+key: A hidden field used for specifying or overriding the alphabetical order of entries (when the "author" and "editor" fields are missing). Note that this is very different from the key (mentioned just after this list) that is used to cite or cross-reference the entry.
+month: The month of publication (or, if unpublished, the month of creation)
+note: Miscellaneous extra information
+number: The "(issue) number" of a journal, magazine, or tech-report, if applicable. (Most publications have a "volume", but no "number" field.)
+organization: The conference sponsor
+pages: Page numbers, separated either by commas or double-hyphens.
+publisher: The publisher's name
+school: The school where the thesis was written
+series: The series of books the book was published in (e.g. "The Hardy Boys" or "Lecture Notes in Computer Science")
+title: The title of the work
+type: The field overriding the default type of publication (e.g. "Research Note" for techreport, "{PhD} dissertation" for phdthesis, "Section" for inbook/incollection)
+url: The WWW address
+volume: The volume of a journal or multi-volume book
+year: The year of publication (or, if unpublished, the year of creation)
+
+   */
+}
 class VenueCubbie extends Cubbie {
   
 }

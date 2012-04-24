@@ -15,10 +15,10 @@ import java.io.{InputStreamReader, FileInputStream, BufferedReader, File}
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import org.w3c.dom.{Node, NodeList, Document}
 
-trait HasCanopyAttributes[T<:Entity]{
-  val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
-}
-trait CanopyAttribute[T<:Entity]{def entity:T;def canopyName:String}
+//trait HasCanopyAttributes[T<:Entity]{
+//  val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
+//}
+//trait CanopyAttribute[T<:Entity]{def entity:T;def canopyName:String}
 class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity] {
   def canopyName:String=(initial(entity.entityRoot.asInstanceOf[AuthorEntity].fullName.firstName)+entity.entityRoot.asInstanceOf[AuthorEntity].fullName.lastName).toLowerCase
   //def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase

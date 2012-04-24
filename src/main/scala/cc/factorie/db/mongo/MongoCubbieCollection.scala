@@ -2,24 +2,39 @@ package cc.factorie.db.mongo
 
 import cc.factorie.Cubbie
 import org.bson.BSONObject
-import collection.JavaConversions._
+import scala.collection.JavaConversions._
 import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection, Mongo}
 import org.bson.types.BasicBSONList
 import cc.factorie.util.CubbieRefs
-import annotation.tailrec
-import collection.{MapProxy, Map => GenericMap, JavaConversions}
-import collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
+import scala.annotation.tailrec
+import scala.collection.{MapProxy, Map => GenericMap, JavaConversions}
+import scala.collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
+import scala._
+import scala.Predef._
 
 
 /**
  * Covariant interface to cubbie collection
  * @tparam C Cubbie type of collection.
  */
-trait AbstractMongoCubbieCollection[+C <: Cubbie] extends Iterable[C] {
-
+trait AbstractCubbieCollection[+C <: Cubbie] extends Iterable[C] {
   def findByIds(ids: Seq[Any]): Iterator[C]
 
+  def findByAttribute[T](name: String, values: Seq[T]): Iterator[C]
+
+  //  def findByAttribute[T](slot:C=>C#Slot, values:Seq[T]):Iterator[C]
+
   def findBySlot[T](field: C => Cubbie#Slot[T], values: Seq[T]): Iterator[C]
+
+  def prototype: C
+}
+
+trait MutableCubbieCollection[C<:Cubbie] extends AbstractCubbieCollection[C]{
+  def updateDelta(oldCubbie: C, newCubbie: C) : Unit
+  def remove(query:C => C)
+  def +=(c: C):Unit
+  def ++=(c: TraversableOnce[C]):Unit
+  def drop:Unit
 }
 
 /**
@@ -35,7 +50,7 @@ trait AbstractMongoCubbieCollection[+C <: Cubbie] extends Iterable[C] {
 class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
                                          val constructor: () => C,
                                          val indices: C => Seq[Seq[C#AbstractSlot[Any]]] = (c: C) => Seq.empty[Seq[C#AbstractSlot[Any]]])
-  extends AbstractMongoCubbieCollection[C] with MongoCubbieConverter[C] {
+  extends MutableCubbieCollection[C] with MongoCubbieConverter[C] {
 
   import MongoCubbieConverter._
 
@@ -66,6 +81,12 @@ class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
    */
   def drop() {
     coll.drop()
+  }
+
+  lazy val prototype = constructor()
+
+  def findByAttribute[T](name: String, values: Seq[T]):CursorIterator = {
+    new CursorIterator(coll.find(new BasicDBObject(name, new BasicDBObject("$in", toMongo(values)))))
   }
 
   //todo: should override other default implementations---how much is this like the casbah MongoCollection?
@@ -327,6 +348,8 @@ class MongoSlot[C <: Cubbie, V](val slot: C#Slot[V]) {
     slot.cubbie
   }
 
+
+
   def update(value: V): C = {
     //todo: need to fix cubbies to avoid try-catch
     val nestedMap = try {
@@ -352,6 +375,10 @@ class MongoSlot[C <: Cubbie, V](val slot: C#Slot[V]) {
     slot.cubbie
   }
 
+  def exists(yes:Boolean): C = {
+    slot.cubbie._map(slot.name) = Map("$exists" -> yes)
+    slot.cubbie
+  }
 
 }
 
@@ -359,6 +386,11 @@ class MongoRefSlot[C <: Cubbie, A <: Cubbie](val slot: C#AbstractRefSlot[A]) {
   def in(coll: MongoCubbieCollection[A]): GraphLoader.SlotInCollection[A] = GraphLoader.SlotInCollection(slot, coll)
 
 }
+
+class MongoInvSlot[C <: Cubbie, A <: Cubbie](val slot: C#AbstractInverseSlot[A]) {
+  def of(coll: MongoCubbieCollection[A]): GraphLoader.InvSlotInCollection[A] = GraphLoader.InvSlotInCollection(slot, coll)
+}
+
 
 /**
  * Lazy scala seq wrapper around bson sequence.
@@ -405,6 +437,8 @@ object MongoCubbieImplicits {
 
   implicit def toMongoRefSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractRefSlot[A]) = new MongoRefSlot(slot)
 
+  implicit def toMongoInvSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractInverseSlot[A]) = new MongoInvSlot(slot)
+
   implicit def toMongoCubbie[C <: Cubbie](cubbie: C) = new MongoCubbie(cubbie)
 
 }
@@ -413,6 +447,10 @@ object DerefImplicits {
   implicit def toMongoRefSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractRefSlot[A]) = new MongoRefSlot(slot) {
     def -->(implicit cache: GenericMap[Any, Cubbie]): A = slot.deref(cache)
   }
+  implicit def toMongoInvSlot[C <: Cubbie, A <: Cubbie](slot: C#InverseSlot[A]) = new MongoInvSlot(slot) {
+//    def -->(implicit cache: GenericMap[Any, Cubbie]): A = slot.deref(cache)
+  }
+
 }
 
 object CubbieMongoTest {
@@ -461,6 +499,10 @@ object CubbieMongoTest {
     james.spouse ::= laura
     laura.spouse ::= james
     kid.father ::= james
+
+    println("apply method calls")
+    println(james.age())
+    println(kid.age(10))
 
 
     val mongoConn = new Mongo("localhost", 27017)
@@ -511,6 +553,26 @@ object CubbieMongoTest {
     println(james.spouse.deref)
     println("James' spouse's spouse")
     println(james.spouse.deref.spouse.deref)
+
+    val index = GraphLoader.load2(Seq(kid), {
+      case p:Person => Seq(p.children of persons, p.father of persons)
+    })
+
+    println("Index:")
+    println(index)
+    println(james.children.value2(index))
+    println(james.children.value(GraphLoader.toInverter(index)))
+    println(kid.father.deref(GraphLoader.toRefs(index)))
+
+    println("Test Index 2")
+    val index2 = GraphLoader.load2(Seq(james), {
+      case p:Person => Seq(p.children of persons)
+    })
+    println(james.children.value(GraphLoader.toInverter(index2)))
+    println(kid.father.deref(GraphLoader.toRefs(index2)))
+
+
+
 
     //or with fancy deref implicits
     //    import DerefImplicits._
@@ -606,7 +668,7 @@ class IndexedLazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterabl
 }
 
 
-class LazyMongoInverter(val cubbies: PartialFunction[Manifest[Cubbie], AbstractMongoCubbieCollection[Cubbie]],
+class LazyMongoInverter(val cubbies: PartialFunction[Manifest[Cubbie], AbstractCubbieCollection[Cubbie]],
                         val cache: GenericMap[Any, Cubbie] = Map.empty)
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
@@ -642,67 +704,3 @@ class Indexer(val indices:Cubbie=>Seq[Cubbie#AbstractSlot[Any]]) extends Functio
 }
 
 
-object GraphLoader {
-
-  case class SlotInCollection[+R <: Cubbie](slot: Cubbie#AbstractRefSlot[R], coll: AbstractMongoCubbieCollection[R])
-
-  type Refs = GenericMap[Any, Cubbie]
-
-
-  /**
-   * Loads a cache from ids to cubbies based on the root objects and a neighborhood function.
-   * @param roots the cubbies to start with.
-   * @param neighbors the neigborhood function from cubbies to (refslot,collection) pairs.
-   * @param maxDepth How far from the root are we allowed to travel. If maxDepth == 0 no ids are added to the cache, for
-   * maxDepth == 1 only the roots are added to the cache, for maxDeptn == 2 the roots immediate children etc.
-   * @param oldRefs an existing cache. Cubbies with ids in this cache will not be loaded/traversed.
-   * @return a cache that maps ids to the cubbie objects in the graph defined by the roots, neighborhood function and
-   * maximum depth.
-   */
-  @tailrec
-  def load(roots: TraversableOnce[Cubbie],
-           neighbors: PartialFunction[Cubbie, Seq[SlotInCollection[Cubbie]]],
-           maxDepth: Int = Int.MaxValue,
-           oldRefs: Refs = Map.empty): Refs = {
-
-    if (maxDepth == 0) {
-      oldRefs
-    }
-    else if (maxDepth == 1) {
-      //fill-up roots into refs
-      oldRefs ++ roots.map(c => c.id -> c).toMap
-    }
-    else {
-      //fill-up roots into refs
-      var refs = oldRefs ++ roots.map(c => c.id -> c).toMap
-
-      //mapping from collections to the ids that need to be loaded
-      val colls2ids = new HashMap[AbstractMongoCubbieCollection[Cubbie], List[Any]]
-
-      //gather ids to load for each collection
-      for (c <- roots) {
-        for (slots <- neighbors.lift(c)) {
-          for (slot <- slots) {
-            for (idRef <- slot.slot.opt) {
-              if (!refs.isDefinedAt(idRef)) {
-                colls2ids(slot.coll) = colls2ids.getOrElse(slot.coll, Nil) :+ idRef
-              }
-            }
-          }
-        }
-      }
-
-      //now do loading
-      var loaded: List[Cubbie] = Nil
-      for ((coll, ids) <- colls2ids) {
-        loaded = loaded ++ coll.findByIds(ids).toList
-      }
-
-      //instantiate the yield
-      if (loaded.size > 0) load(loaded, neighbors, maxDepth - 1, refs) else refs
-    }
-
-  }
-
-
-}
