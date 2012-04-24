@@ -31,8 +31,10 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     result
   }
   def string: String = {
-    if (_string eq null) _string = _stringbuf.toString
-    _stringbuf = null
+    this.synchronized {
+      if (_string eq null) _string = _stringbuf.toString
+      _stringbuf = null
+    }
     _string
   }
   //def value: String = string
@@ -82,7 +84,8 @@ class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](va
     name := doc.name
     string := doc.string
     if (doc.tokens.length > 0) tokens := doc.tokens.map(t => tokens.constructor().storeToken(t))
-    //if (doc.spans.length > 0) spans := doc.spans.map(s => spans.constructor().store(s))
+//    if (doc.spans.length > 0) spans := doc.spans.map(s => spans.constructor().store(s))
+    if (doc.sentences.length > 0) sentences := doc.sentences.map(s => sentences.constructor().storeSentence(s))
     storeAttr(doc)
     this
   }
@@ -90,6 +93,7 @@ class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](va
     val doc = new Document(name.value, string.value)
     if (tokens.value ne null) tokens.value.foreach(tc => doc += tc.fetchToken)
     //if (spans.value ne null) spans.value.foreach(sc => doc += sc.fetch(doc))
+    if (sentences.value ne null) sentences.value.foreach(sc => doc += sc.fetchSentence(doc))
     fetchAttr(doc)
     doc
   }
