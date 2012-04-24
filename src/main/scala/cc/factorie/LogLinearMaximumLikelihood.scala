@@ -23,6 +23,7 @@ import scala.collection.mutable.HashMap
 class SuffStats extends HashMap[DotFamily, Vector] {
   override def default(template: DotFamily) = {
     template.freezeDomains
+    // Replace this with Tensor.copy method
     val vector: Vector = template.weights match {
       case w: SparseVector => new SparseVector(w.length)
       case w: DenseVector => new DenseVector(w.length)

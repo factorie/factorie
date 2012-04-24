@@ -63,11 +63,15 @@ object LogicDemo1 {
     //Friends(cas,don); Friends(don,cas)
     
     // Do 2000 iterations of sampling, gathering sample counts every 20 iterations
-    val inferencer = new VariableSamplingInferencer(new VariableSettingsSampler[BooleanVariable](model))
-    inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
-    val marginals = inferencer.infer(List(don.cancer, don.smokes))
-    println("p(don.smokes == true) = "+marginals(don.smokes).proportions(1))
-    println("p(don.cancer == true) = "+marginals(don.cancer).proportions(1))
+    
+    val summary = InferByGibbsSampling(List(don.cancer, don.smokes), model, iterations=2000, burnIn=100, thinning=20)
+//    val summary = new IndependentDiscreteSummary(List(don.cancer, don.smokes))
+//    val sampler = new VariableSettingsSampler[BooleanVariable](model)
+//    val inferencer = new SamplingInferencer(sampler, summary)
+//    inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
+//    val marginals = inferencer.infer(List(don.cancer, don.smokes))
+      println("p(don.smokes == true) = "+summary.marginal(don.smokes).proportions(1))
+      println("p(don.cancer == true) = "+summary.marginal(don.cancer).proportions(1))
   }
 }
 

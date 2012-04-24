@@ -2,7 +2,7 @@ package cc.factorie.example
 import cc.factorie._
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
-object PragBot4 {
+object Cards4 {
 
   object SuitDomain extends CategoricalDomain(List("H", "D", "C", "S"))
   class Suit(name:String) extends CategoricalVariable(name) {
@@ -36,12 +36,13 @@ object PragBot4 {
       }
     )
 
-    val inferencer = new SamplingInferencer[BooleanVar,Card](new VariableSettingsSampler[Card](model) {
+    val summary = new DiscreteSummary1[BooleanVar](List(jane.wins))
+    val sampler = new VariableSettingsSampler[Card](model) {
       override def postProcessHook(c:Card, d:DiffList): Unit = if (iterationCount % 500 == 0) println(jane.cardsHere.sorted.toString+"  wins="+jane.wins.value)
-    })
-    inferencer.burnIn = 1; inferencer.iterations = 10000; inferencer.thinning = 100
-    val marginals = inferencer.infer(List(jane.wins), cards)
-    println ("\np(jane.wins)="+marginals(jane.wins).proportions(1))
+    } 
+    val inferencer = new SamplingInferencer(sampler, summary)
+    inferencer.process(cards, iterations = 10000, thinning = 100, burnIn = 1)
+    println ("\np(jane.wins)="+summary.marginal(jane.wins).proportions(1))
   }
 
 

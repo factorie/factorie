@@ -42,11 +42,9 @@ object Discrete extends GenerativeFamily2[DiscreteVar,ProportionsVar] {
     if (factor._1.domain.size != factor._2.tensor.length) throw new Error("Discrete child domain size different from parent Proportions size.")
 }
 
-object MaximizeGeneratedDiscrete extends Maximize[DiscreteVariable,Nothing] {
-  def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Nothing], model:Model, qModel:Model): Unit = {
-    if (varying.size > 0) throw new Error
-    if (qModel ne null) throw new Error
-    for (d <- variables) {
+object MaximizeGeneratedDiscrete extends Maximize {
+  def apply(varying:Iterable[DiscreteVariable], model:Model): Unit = {
+    for (d <- varying) {
       val dFactors = model.factors1(d)
       require(dFactors.size == 1)
       dFactors.head match {
@@ -55,22 +53,27 @@ object MaximizeGeneratedDiscrete extends Maximize[DiscreteVariable,Nothing] {
       }
     }
   }
-  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): Boolean = {
-    if (varying.size != 0) return false
-    if (qModel ne null) return false 
-    for (d <- variables) d match {
-      case d:MutableDiscreteVar => {
-        val dFactors = model.factors1(d)
-        if (dFactors.size != 1) return false
-        dFactors.head match {
-          case factor:Discrete.Factor => d.asInstanceOf[MutableDiscreteVar].set(factor._2.tensor.maxIndex)(null)
-          case _ => return false
-        }
-      }
-      case _ => return false
+  def infer[V<:DiscreteVariable](varying:V, model:Model): Option[DiscreteMarginal1[V]] = {
+    val dFactors = model.factors1(varying)
+    require(dFactors.size == 1)
+    dFactors.head match {
+      case factor:Discrete.Factor => Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, factor._2.tensor.maxIndex)))
+      case _ => None
     }
-    true
   }
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
+    if (summary ne null) return None
+    if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
+    val result = new DiscreteSummary1[DiscreteVariable]
+    for (v <- variables) {
+      infer(v.asInstanceOf[DiscreteVariable], model) match {
+        case Some(dm) => result += dm
+        case _ => return None
+      }
+    }
+    Some(result)
+  }
+
 }
 
 

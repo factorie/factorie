@@ -30,6 +30,7 @@ trait Tensor4 extends Tensor {
   def dimensions = Array(dim1, dim2, dim3, dim4)
   def apply(i:Int, j:Int, k:Int, l:Int): Double = apply(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l)
   def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = update(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l, v)
+  def +=(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = +=(singleIndex(i, j, k, l), v)
   @inline final def length = dim1 * dim2 * dim3 * dim4
   @inline final def singleIndex(i:Int, j:Int, k:Int, l:Int): Int = i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l 
   @inline final def multiIndex(i:Int): (Int, Int, Int, Int) = (i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)

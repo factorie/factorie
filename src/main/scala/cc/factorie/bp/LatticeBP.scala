@@ -470,7 +470,7 @@ class MessageNode(val variable: Variable, val varying: Set[DiscreteVariable]) {
   override def toString = "M(%s)".format(variable)
 }
 
-abstract class LatticeBP(val varying: Set[DiscreteVariable]) extends Lattice[Variable] {
+abstract class LatticeBP(val varying: Set[DiscreteVariable]) /*extends Lattice[Variable]*/ {
 
   def this(model: Model, varying: Set[DiscreteVariable]) = {
     this(varying)
@@ -535,11 +535,11 @@ abstract class LatticeBP(val varying: Set[DiscreteVariable]) extends Lattice[Var
   type VariableMarginalType = GenericMessage
   type FactorMarginalType = Proportions // DiscreteFactorMarginal
 
-  override def marginal(v: Variable) = {
+  /*override*/ def marginal(v: Variable) = {
     if (_nodes.contains(v)) Some(node(v).marginal) else None
   }
 
-  override def marginal(f: Factor) = if (_factors.contains(f)) {
+  /*override*/ def marginal(f: Factor) = if (_factors.contains(f)) {
     val mf = mfactor(f)
     Some(new DenseProportions1(mf.values.map(mf marginal _).toArray)) // Some(new DiscreteFactorMarginal(f, mf.values.map(mf marginal _).toArray))
   } else None

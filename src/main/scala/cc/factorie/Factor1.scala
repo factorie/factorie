@@ -34,6 +34,7 @@ trait Factor1[N1<:Variable] extends Factor {
   override def variables = IndexedSeq(_1)
   def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
   override def values = new Values(_1.value)
+  // Should the next line read instead V<:N1 ?? -akm
   def valuesAssigning[V<:Variable](variable:V, value:V#Value): Unit = if (variable eq _1) new Values(value.asInstanceOf[N1#Value]) else throw new Error
   case class Values(_1:N1#Value) extends cc.factorie.Values {
     override def apply[B <: Variable](v: B) = get(v).get
@@ -55,7 +56,7 @@ trait Factor1[N1<:Variable] extends Factor {
 
   // For implementing sparsity in belief propagation
   def isLimitingValuesIterator = false
-  def limitedDiscreteValuesIterator: Iterator[Int] = Iterator.empty
+  def limitedDiscreteValuesIterator: Iterator[Int] = Iterator.empty // TODO Replace with IntSeq for efficiency
 
   /** valuesIterator in style of specifying fixed neighbors */
   def valuesIterator(fixed: Assignment): Iterator[Values] = {

@@ -15,9 +15,19 @@
 package cc.factorie.generative
 import cc.factorie._
 
-class EMInferencer(val maximize:Iterable[Variable], val varying:Iterable[DiscreteVariable], model:Model) extends MeanFieldInferencer(varying, model) {
-  def eStep: Unit = updateQ // qModel is automatically filled in with a naive mean field
-  def mStep: Unit = maximize.foreach(v => Maximize(Seq(v), model, qModel))
+/** A simple, preliminary expectation-maximization implementation.
+    Currently it only works for discrete expectations and maximizing things handled by the default Maximizer. */
+class EMInferencer(val maximize:Iterable[Variable], val varying:Iterable[DiscreteVariable], model:Model) {
+  val meanField = new DiscreteMeanFieldInferencer(varying, model)
+  def eStep: Unit = meanField.updateQ
+  def mStep: Unit = maximize.foreach(v => Maximize(Seq(v), model, meanField.summary))
   def process(iterations:Int): Unit = for (i <- 0 until iterations) { mStep; eStep }
 }
 
+object InferByEM {
+  def apply(maximize:Iterable[Variable], varying:Iterable[DiscreteVariable], model:Model): DiscreteSummary1[DiscreteVariable] = {
+    val inferencer = new EMInferencer(maximize, varying, model)
+    inferencer.process(100) // TODO Make a clever convergence criteria.
+    inferencer.meanField.summary
+  } 
+}

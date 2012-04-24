@@ -68,55 +68,52 @@ abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
   }
 }
 
-
-object MaximizeGate extends Maximize[DiscreteVariable,Nothing] {
+// TODO Currently only handles Gates of a DiscreteMixture; we should make it handle GaussianMixture also.
+object MaximizeGate extends Maximize {
   // Underlying workhorse
-  def apply(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Unit = {
+  def maxIndex(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Int = {
     var max = Double.NegativeInfinity
     var maxi = 0
     val statistics = dmf.statistics(dmf.values)
-    forIndex(gate.domain.size)(i => {
+    var i = 0; val size = gate.domain.size
+    while (i < size) {
       val pr = df._2.tensor(i) * dmf.prChoosing(statistics, i)
       if (pr > max) { max = pr; maxi = i }
-    })
-    gate.set(maxi)(null)
+      i += 1
+    }
+    maxi
   }
-  // For typical direct callers
-  def apply(gate:DiscreteVariable, model:Model): Unit = {
+  /** Returns -1 on failure. */
+  def maxIndex(gate:DiscreteVariable, model:Model): Int = {
     val factors = model.factors(Seq(gate))
     if (factors.size != 2) throw new Error
     (factors(0), factors(1)) match {
-      case (df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
-      case (dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
-      case _ => throw new Error
+      case (df:Discrete.Factor, dmf:DiscreteMixture.Factor) => maxIndex(gate, df, dmf)
+      case (dmf:DiscreteMixture.Factor, df:Discrete.Factor) => maxIndex(gate, df, dmf)
+      case _ => -1
     }
   }
-  // For the Maximize interface
-  def apply(variables:Iterable[DiscreteVariable], varying:Iterable[Nothing], model:Model, qModel:Model): Unit = {
-    if (varying.size != 0) throw new Error
-    if (variables.size != 1) throw new Error
-    if (qModel ne null) throw new Error
-    val gate = variables.head
-    val factors = model.factors1(gate)
-    if (factors.size != 2) throw new Error
-    (factors(0), factors(1)) match {
-      case (df:Discrete.Factor, dmf:DiscreteMixture.Factor) => apply(gate, df, dmf)
-      case (dmf:DiscreteMixture.Factor, df:Discrete.Factor) => apply(gate, df, dmf)
-      case _ => throw new Error
-    }
+  // For typical direct callers
+  def apply(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Unit = gate.set(maxIndex(gate, df, dmf))(null)
+  def apply(gate:DiscreteVariable, model:Model): Unit = {
+    val maxi = maxIndex(gate, model)
+    if (maxi >= 0) gate.set(maxi)(null) else throw new Error("MaximizeGate unable to handle model factors.")
   }
-  override def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): Boolean = {
-    if (varying.size != 0) return false
-    if (variables.size != 1) return false
-    if (!variables.head.isInstanceOf[DiscreteVariable]) return false
-    if (qModel ne null) return false
-    val factors = model.factors1(variables.head)
-    if (factors.size != 2) return false
-    (variables.head, factors(0), factors(1)) match {
-      case (gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor) => { apply(gate, df, dmf); true }
-      case (gate:DiscreteVariable, dmf:DiscreteMixture.Factor, df:Discrete.Factor) => { apply(gate, df, dmf); true }
-      case _ => false
+  // For generic inference engines
+  def infer[V<:DiscreteVariable](varying:V, model:Model): Option[DiscreteMarginal1[V]] = {
+    val maxi = maxIndex(varying, model)
+    if (maxi >= 0) Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxi)))
+    else None
+  }
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
+    if (summary ne null) return None
+    if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
+    val result = new DiscreteSummary1[DiscreteVariable]
+    for (v <- variables.asInstanceOf[Iterable[DiscreteVariable]]) infer(v, model) match {
+      case Some(m) => result += m
+      case None => return None
     }
+    Some(result)
   }
   
 }

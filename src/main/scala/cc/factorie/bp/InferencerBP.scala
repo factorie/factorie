@@ -8,7 +8,7 @@ import collection.mutable.{Queue, ArrayBuffer, HashSet}
  * @date 2/7/12
  */
 
-class InferencerBP extends VariableInferencer[Variable] {
+class InferencerBP extends /*VariableInferencer[Variable]*/ {
   type LatticeType = LatticeBP
 
   def infer(variables: Iterable[Variable], varying: Iterable[Variable]) = {

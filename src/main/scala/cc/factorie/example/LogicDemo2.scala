@@ -130,13 +130,13 @@ object LogicDemo2 {
     //System.exit(0)
     
     // Do 2000 iterations of sampling, gathering sample counts every 20 iterations
-    println("\ninference don.smokes="+don.smokes+" cas.smokes="+cas.smokes)
-    val inferencer = new VariableSamplingInferencer(new VariableSettingsSampler[BooleanVariable](model))
-    inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
-    val marginals = inferencer.infer(List(don.cancer, friend(don,cas), friend(cas,don)))
-    println("p(don.cancer == true) = "+marginals(don.cancer).proportions(1))
-    println("p(friend(don,cas) == true) = "+marginals(friend(don,cas)).proportions(1))
-    println("p(friend(cas,don) == true) = "+marginals(friend(cas,don)).proportions(1))
+//    println("\ninference don.smokes="+don.smokes+" cas.smokes="+cas.smokes)
+//    val inferencer = new VariableSamplingInferencer(new VariableSettingsSampler[BooleanVariable](model))
+//    inferencer.burnIn = 100; inferencer.iterations = 2000; inferencer.thinning = 20
+//    val marginals = inferencer.infer(List(don.cancer, friend(don,cas), friend(cas,don)))
+//    println("p(don.cancer == true) = "+marginals(don.cancer).proportions(1))
+//    println("p(friend(don,cas) == true) = "+marginals(friend(don,cas)).proportions(1))
+//    println("p(friend(cas,don) == true) = "+marginals(friend(cas,don)).proportions(1))
   }
 }
 

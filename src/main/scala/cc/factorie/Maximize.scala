@@ -14,36 +14,89 @@
 
 package cc.factorie
 import cc.factorie.generative._
+import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 
-
-// TODO consider making this inherit from Infer, but the return type is different.
-// TODO consider returning an Assignment instead of true/false.
-trait Maximize[-V1<:Variable,-V2<:Variable] {
-  /** Set the variables to values that maximize some criteria, usually maximum likelihood. */
-  def apply(variables:Iterable[V1], varying:Iterable[V2], model:Model, qModel:Model): Unit // Abstract implemented in subclasses
-  def apply(variables:Iterable[V1], varying:Iterable[V2], model:Model): Unit = apply(variables, varying, model, null)
-  def apply(variables:Iterable[V1], model:Model, qModel:Model): Unit = apply(variables, Nil, model, qModel)
-  def apply(variables:Iterable[V1], model:Model): Unit = apply(variables, Nil, model, null)
-  /** Called by generic maximize engines that manages a suite of Infer objects, allowing each to attempt an maximize request.
-      If you want your Maximize subclass to support such usage by a suite, override this method to check types as a appropriate
-      and return a true on success, or false on failure. */
-  def attempt(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): Boolean = false
-}
+/** An inference engine that finds score-maximizing values.  
+    The "infer" method returns a summary holding the maximizing assignment, but does not change the current variable values.
+    By convention, subclass-implemented "apply" methods should change the current variable values to those that maximize;
+    this convention differs from other Infer instances, which do not typically change variable values.  */
+trait Maximize extends Infer
 
 
 /* A suite containing various recipes to maximize the value of variables to maximize some objective, 
    usually maximum likelihood. 
    @author Andrew McCallum */
-class MaximizeVariables extends Maximize[Variable,Variable] {
-  def defaultSuite = Seq(MaximizeGeneratedDiscrete, MaximizeGate, MaximizeProportions)
-  val suite = new scala.collection.mutable.ArrayBuffer[Maximize[Variable,Variable]] ++ defaultSuite
-  def apply(variables:Iterable[Variable], varying:Iterable[Variable], model:Model, qModel:Model): Unit = {
+class MaximizeSuite extends Maximize {
+  def defaultSuite = Seq(MaximizeGeneratedDiscrete, MaximizeGate, MaximizeProportions, cc.factorie.generative.MaximizeGaussianMean, cc.factorie.generative.MaximizeGaussianVariance)
+  val suite = new scala.collection.mutable.ArrayBuffer[Maximize]
+  suite ++= defaultSuite
+  //def infer(variables:Iterable[Variable], model:Model): Option[Summary[Marginal]] = None
+  override def infer(varying:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = {
     // The handlers can be assured that the Seq[Factor] will be sorted alphabetically by class name
     // This next line does the maximization
-    val option = suite.find(_.attempt(variables, varying, model, qModel))
-    if (option == None) throw new Error("No maximizer found for factors "+model.factors(variables).take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString)
+    var option: Option[Summary[Marginal]] = None
+    val iterator = suite.iterator
+    while (option == None && iterator.hasNext) {
+      option = iterator.next.infer(varying, model, summary)
+    }
+    option
+  }
+  def apply(varying:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Summary[Marginal] = {
+    val option = infer(varying, model, summary)
+    if (option == None) throw new Error("No maximizer found for factors "+model.factors(varying).take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString)
+    option.get.setToMaximize(null)
+    option.get
   }
 }
-object Maximize extends MaximizeVariables // A default instance of this class
+object Maximize extends MaximizeSuite // A default instance of this class
 
 
+class SamplingMaximizer[C](val sampler:ProposalSampler[C]) {
+  def maximize(varying:Iterable[C], iterations:Int): Iterable[Variable] = {
+    var currentScore = 0.0
+    var maxScore = currentScore
+    val maxdiff = new DiffList
+    val origSamplerTemperature = sampler.temperature
+    val variablesTouched = new HashSet[Variable]
+    def updateMaxScore(p:Proposal): Unit = {
+      currentScore += p.modelScore // TODO Check proper handling of fbRatio
+      //println("SamplingMaximizer modelScore="+p.modelScore+" currentScore="+currentScore)
+      variablesTouched ++= p.diff.map(_.variable)
+      if (currentScore > maxScore) {
+        maxScore = currentScore
+        maxdiff.clear
+        //println("SamplingMaximizer maxScore="+maxScore)
+      } else if (p.diff.size > 0) {
+        maxdiff appendAll p.diff
+        //println("SamplingMaximizer diff.size="+diff.size)
+      }
+    }
+    val updateHook: Proposal=>Unit = updateMaxScore _ 
+    sampler.proposalHooks += updateHook // Add temporary hook
+    sampler.processAll(varying, iterations)
+    sampler.proposalHooks -= updateHook // Remove our temporary hook
+    sampler.temperature = origSamplerTemperature // Put back the sampler's temperature where we found it
+    maxdiff.undo // Go back to maximum scoring configuration so we return having changed the config to the best
+    variablesTouched
+  }
+  def maximize(varying:Iterable[C], iterations:Int = 50, initialTemperature: Double = 1.0, finalTemperature: Double = 0.01, rounds:Int = 5): Iterable[Variable] = {
+    //sampler.proposalsHooks += { (props:Seq[Proposal]) => { props.foreach(p => println(p.modelScore)) }}
+    val iterationsPerRound = if (iterations < rounds) 1 else iterations/rounds
+    var iterationsRemaining = iterations
+    if (iterationsRemaining == 1) sampler.temperature = finalTemperature
+    val variablesTouched = new HashSet[Variable]
+    sampler.temperature = initialTemperature
+    while (iterationsRemaining > 0) {
+      val iterationsNow = math.min(iterationsPerRound, iterationsRemaining)
+      variablesTouched ++= maximize(varying, iterationsNow)
+      iterationsRemaining -= iterationsNow
+      sampler.temperature += (finalTemperature-initialTemperature)/rounds // Adding a negative number
+      //println("Reducing temperature to "+sampler.temperature)
+    }
+    variablesTouched
+    //new SamplingMaximizerLattice[V](diff, maxScore)
+  }
+  def apply(varying:Iterable[C], iterations:Int = 50, initialTemperature: Double = 1.0, finalTemperature: Double = 0.01, rounds:Int = 5): AssignmentSummary = {
+    new AssignmentSummary(new MapAssignment(maximize(varying, iterations, initialTemperature, finalTemperature, rounds)))
+  }
+}

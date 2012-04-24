@@ -17,34 +17,34 @@ package cc.factorie.example
 import cc.factorie._
 import cc.factorie.generative._
 
-/*
+
 object GaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
     val numComponents = 5
+    implicit val model = GenerativeModel()
     object ZDomain extends DiscreteDomain { def size = numComponents }
-    class Z(p:Proportions) extends MixtureChoice(p, random.nextInt(numComponents)) { def domain = ZDomain }
-    val meanComponents = FiniteMixture(numComponents)(new GaussianMeanVariable(random.nextDouble * 10))
-    val varianceComponents = new UnaryMixture(new RealVariableParameter(1.0))
-    val mixtureProportions = new UniformProportions(numComponents)
+    class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
+    val meanComponents = Mixture(numComponents)(new RealVariable(random.nextDouble * 10))
+    val varianceComponents = Mixture(numComponents)(new RealVariable(1.0))
+    val mixtureProportions = ProportionsVariable.uniform(numComponents)
     val data = for (i <- 1 to 1000) yield {
-      val z = new Z(mixtureProportions)
-      val m = new GaussianMixture(meanComponents, varianceComponents, z)
-      m.sampleFromParents() // Generate value from current mixture components
-      m
+      val z = new Z
+      new RealVariable() :~ GaussianMixture(meanComponents, varianceComponents, z)
     }
 
-    println("Original means")
     //data.foreach(println(_))
     val origMeans = meanComponents.map(_.doubleValue)
+    println("Original means")
+    origMeans.foreach(println(_))
 
-    val zs = data.map(_.choice)
+    val zs = data.map(x => model.parentFactor(x).asInstanceOf[GaussianMixture.Factor]._4)
 
     // now randomly re-assign variable values
     zs.foreach(_.set(random.nextInt(numComponents))(null))
     meanComponents.foreach(_.set(random.nextDouble)(null))
 
     // Estimate by EM
-    val em = new EMLattice(zs, meanComponents)
+    val em = new EMInferencer(meanComponents, zs, model)
     for (i <- 1 to 30) {
       em.process(1)
       println("Estimated means "+i)
@@ -54,7 +54,7 @@ object GaussianMixtureDemo {
     origMeans.foreach(println(_))
   }
 }  
-*/
+
 
   
 //  // The Gaussian mixture components and their mixture weights

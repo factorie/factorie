@@ -11,7 +11,7 @@ import collection.mutable.{ArrayBuffer, HashMap}
  * will reduce type clutter, and should be sufficient for
  * all operations we need.
  */
-trait GenericMessage extends cc.factorie.Marginal {
+trait GenericMessage /*extends cc.factorie.Marginal*/ { // TODO uncomment to make this a Marginal again after the new Marginal is implemented
   self =>
 
   import StrictMath._

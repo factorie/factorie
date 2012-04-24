@@ -15,14 +15,12 @@
 package cc.factorie
 import cc.factorie.la._
 
-//@deprecated("Will be removed.  See instead Lattice2 in Infer.scala.")
-//trait NewLattice {
-//  def marginal(v:Variable*): Expectations // TODO ???
-//  def marginal(values:Values): Double // ???
-//}
 
 trait Expectations {
   // What goes here?
+}
+trait TensorExpectations extends Expectations {
+  def tensor: Tensor
 }
 
 

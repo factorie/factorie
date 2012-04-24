@@ -35,33 +35,115 @@ object Gaussian extends GenerativeFamily3[RealVar,RealVar,RealVar] {
 }
 
 // TODO Complete something like this
-//object PlatedGaussian extends GenerativeFamilyWithStatistics3[GeneratedRealVar,RealVarParameter,RealVarParameter] 
+//object PlatedGaussian extends GenerativeFamilyWithStatistics3[RealSeqVar,RealVar,RealVar] 
 
-object GaussianEstimator {
-  def minSamplesForVarianceEstimate = 5
-  /** This implements a moment-matching estimator. */
-  def estimate(meanVar:MutableRealVar, varianceVar:MutableRealVar)(implicit model:GenerativeModel): Unit = {
-    // TODO Ignores the parents of 'mean' and 'variance'.  Fix this.
-    require(Set(model.childFactors(meanVar)) == Set(model.childFactors(varianceVar))) // Expensive check may be unnecessary?
+
+
+object MaximizeGaussianMean extends Maximize {
+  def maxMean(meanVar:MutableRealVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
     var mean = 0.0
     var sum = 0.0
-    for (factor <- model.childFactors(meanVar)) factor match {
+    for (factor <- model.extendedChildFactors(meanVar)) factor match {
       case g:Gaussian.Factor if (g._2 == meanVar) => { mean += g._1.doubleValue; sum += 1.0 }
-      //case gm:GaussianMixture.Factor
+      case gm:GaussianMixture.Factor => {
+        val gate = gm._4
+        val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
+        val mixtureIndex = gm._2.indexOf(meanVar) // Yipes!  Linear search.
+        if (mixtureIndex >= 0) { // This substitutes for "if (gm._3.contains(varianceVar))" in the "case" above
+          if (gateMarginal eq null) {
+            if (gm._4.intValue == mixtureIndex) { mean += gm._1.doubleValue; sum += 1.0 }
+          } else {
+            val p = gateMarginal.proportions(mixtureIndex)
+            mean += p * gm._1.doubleValue; sum += p
+          }
+        }
+      }
+      case f:Factor => return Double.NaN
+    }
+    mean / sum
+  }
+  def apply(meanVar:MutableRealVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Unit = {
+    meanVar.set(maxMean(meanVar, model, summary))(null)
+  }
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[AssignmentSummary] = {
+    val gModel = model match { case m:GenerativeModel => m ; case _ => return None }
+    val dSummary = summary match { case s:DiscreteSummary1[DiscreteVar] => s ; case null => null ; case _ => return None }
+    lazy val assignment = new MapAssignment
+    for (v <- variables) v match {
+      case r:MutableRealVar => { val m = maxMean(r, gModel, dSummary); if (m.isNaN) return None else assignment.update[RealVar](r, m) } 
+      case _ => return None
+    }
+    Option(new AssignmentSummary(assignment))
+  }
+}
+
+object MaximizeGaussianVariance extends Maximize {
+  def minSamplesForVarianceEstimate = 5
+  def maxVariance(varianceVar:MutableRealVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
+    var mean = 0.0
+    var sum = 0.0
+    val factors = model.extendedChildFactors(varianceVar)
+    if (factors.size < minSamplesForVarianceEstimate) return 1.0
+    for (factor <- factors) factor match {
+      case g:Gaussian.Factor if (g._2 == varianceVar) => { mean += g._1.doubleValue; sum += 1.0 }
+      case gm:GaussianMixture.Factor => {
+        val gate = gm._4
+        val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
+        val mixtureIndex = gm._3.indexOf(varianceVar) // Yipes!  Linear search.
+        if (mixtureIndex >= 0) { // This substitutes for "if (gm._3.contains(varianceVar))" in the "case" above
+          if (gateMarginal eq null) {
+            if (gm._4.intValue == mixtureIndex) { mean += gm._1.doubleValue; sum += 1.0 }
+          } else {
+            val p = gateMarginal.proportions(mixtureIndex)
+            mean += p * gm._1.doubleValue; sum += p
+          }
+        }
+      }
+      case f:Factor => return Double.NaN
     }
     mean /= sum
-    meanVar.set(mean)(null)
-    if (sum < minSamplesForVarianceEstimate) 
-      varianceVar.set(1.0)(null)
-    else {
-      var v = 0.0
-      for (factor <- model.childFactors(varianceVar)) factor match {
-        case g:Gaussian.Factor if (g._3 == varianceVar) => { val diff = mean - g._1.doubleValue; v += diff * diff }
-        //  case gm:GaussianMixture.Factor
+    var v = 0.0
+    sum = 0.0
+    for (factor <- factors) factor match {
+      case g:Gaussian.Factor if (g._3 == varianceVar) => { val diff = mean - g._1.doubleValue; v += diff * diff; sum += 1 }
+      case gm:GaussianMixture.Factor if (gm._3 == varianceVar) => {
+        val gate = gm._4
+        val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
+        val mixtureIndex = gm._3.indexOf(varianceVar) // Yipes!  Linear search.
+        if (mixtureIndex >= 0) { // This substitutes for "if (gm._3.contains(varianceVar))" in the "case" above
+          if (gateMarginal eq null) {
+            if (gm._4.intValue == mixtureIndex) { val diff = mean - gm._1.doubleValue; v += diff * diff; sum += 1 }
+          } else {
+            val p = gateMarginal.proportions(mixtureIndex)
+            val diff = mean - gm._1.doubleValue; v += diff * diff * p; sum += p
+          }
+        }
       }
-      v = math.sqrt(v / (sum - 1))
-      varianceVar.set(v)(null)
-      // TODO Note this doesn't work for weighted children
     }
+    assert(sum >= minSamplesForVarianceEstimate)
+    // TODO Does this work for weighted children?
+    math.sqrt(v / (sum - 1))
+  }
+  def apply(varianceVar:MutableRealVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Unit = {
+    varianceVar.set(maxVariance(varianceVar, model, summary))(null)
+  }
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[AssignmentSummary] = {
+    val gModel = model match { case m:GenerativeModel => m ; case _ => return None }
+    val dSummary = summary match { case s:DiscreteSummary1[DiscreteVar] => s ; case null => null ; case _ => return None }
+    lazy val assignment = new MapAssignment
+    for (v <- variables) v match {
+      case r:MutableRealVar => { val va = maxVariance(r, gModel, dSummary); if (va.isNaN) return None else assignment.update[RealVar](r, va) } 
+      case _ => return None
+    }
+    Option(new AssignmentSummary(assignment))
+  }
+}
+
+// More efficient to maximize them all at once.
+object MaximizeGaussianMixture extends Maximize {
+  def minSamplesForVarianceEstimate = 5
+  def maxMeanMixture(mixture:Mixture[MutableRealVar], model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
+    throw new Error("Not yet implemented")
+    0.0
   }
 }

@@ -18,10 +18,12 @@ package cc.factorie
     Alternatively, variable values can be stored in an Assignment: a
     mapping from variables to their values.
     
+    An Assignment is also a Marginal, with all its probability on one set of values.
+    
     Note that this trait doesn't inherit directly from scala.collection.Map
     because we need a special type signature for 'apply' and 'get'.
     @author Andrew McCallum */
-trait TypedAssignment[A<:Variable] {
+trait TypedAssignment[A<:Variable] extends Marginal {
   /** All variables with values in this Assignment */
   def variables: Seq[A]
   /** Return the value assigned to variable v. */
@@ -32,14 +34,14 @@ trait TypedAssignment[A<:Variable] {
   def contains(v:A): Boolean
   def getOrElse[B<:A](v:B, default: => B#Value): B#Value = if (contains(v)) apply(v) else default
   /** Set variables to the values specified in this assignment */
-  def globalize: DiffList = {
-    implicit val d = new DiffList
+  def globalize(implicit d:DiffList): Unit = {
     for (v <- variables) v match {
       case v:MutableVar => v.set(this.apply(v.asInstanceOf[A]).asInstanceOf[v.Value])
       case _ => throw new Error
     }
-    d
   }
+  // For Marginal trait
+  def setToMaximize(implicit d:DiffList): Unit = this.globalize
 }
 
 trait Assignment extends TypedAssignment[Variable]
@@ -54,6 +56,7 @@ trait MutableAssignment extends Assignment {
 /** A MutableAssignment backed by a HashMap.
     @author Andrew McCallum */
 class MapAssignment extends MutableAssignment {
+  def this(variables:Iterable[Variable]) = { this(); variables.foreach(v => update(v, v.value)) }
   private val map = new scala.collection.mutable.HashMap[Variable,Any]
   val _variables = map.keys.toSeq
   def variables = _variables
@@ -69,6 +72,7 @@ class Assignment1[A<:Variable](val variable:A, var value:A#Value) extends TypedA
   def apply[B<:A](v:B): B#Value = if (v eq variable) value.asInstanceOf[B#Value] else null.asInstanceOf[B#Value]
   def get[B<:A](v:B): Option[B#Value] = if (v eq variable) Some(value.asInstanceOf[B#Value]) else None
   def contains(v:A): Boolean = if (v eq variable) true else false
+  override def globalize(implicit d:DiffList): Unit = variable match { case v:MutableVar => v.set(value.asInstanceOf[v.Value]) }
 }
 
 /** An efficient Assignment of two variables. */
@@ -87,6 +91,7 @@ object GlobalAssignment extends Assignment {
   def apply[V<:Variable](v:V): V#Value = v.value
   def get[V<:Variable](v:V): Option[V#Value] = Some(v.value)
   def contains(v:Variable) = true
+  override def globalize(implicit d:DiffList): Unit = {}
 }
 
 /** An Assignment backed by a sequence of assignments.  

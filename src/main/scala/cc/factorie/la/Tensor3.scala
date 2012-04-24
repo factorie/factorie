@@ -28,6 +28,7 @@ trait Tensor3 extends Tensor {
   def dimensions = Array(dim1, dim2, dim3)
   def apply(i:Int, j:Int, k:Int): Double = apply(i*dim2*dim3 + j*dim2 + k)
   def update(i:Int, j:Int, k:Int, v:Double): Unit = update(i*dim2*dim3 + j*dim2 + k, v)
+  def +=(i:Int, j:Int, k:Int, v:Double): Unit = +=(singleIndex(i, j, k), v)
   @inline final def length = dim1 * dim2 * dim3
   @inline final def singleIndex(i:Int, j:Int, k:Int): Int = i*dim2*dim3 + j*dim2 + k 
   @inline final def multiIndex(i:Int): (Int, Int, Int) = (i/dim2/dim3, (i/dim3)%dim2, i%dim3)

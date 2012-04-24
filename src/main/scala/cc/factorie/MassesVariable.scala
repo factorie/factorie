@@ -47,12 +47,15 @@ class DenseMasses1(val dim1:Int) extends DenseTensorLike1 with Masses1 with Mass
 }
 class DenseMasses2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 with Masses2 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+  override def +=(i:Int, j:Int, v:Double): Unit = { _massTotal += v; val index = singleIndex(i, j); _values(index) += v; assert(_massTotal >= 0.0); assert(_values(index) >= 0.0) }
 }
 class DenseMasses3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3 with Masses3 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+  override def +=(i:Int, j:Int, k:Int, v:Double): Unit = { _massTotal += v; val index = singleIndex(i, j, k); _values(index) += v; assert(_massTotal >= 0.0); assert(_values(index) >= 0.0) }
 }
 class DenseMasses4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4 with Masses4 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+  override def +=(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = { _massTotal += v; val index = singleIndex(i, j, k, l); _values(index) += v; assert(_massTotal >= 0.0); assert(_values(index) >= 0.0) }
 }
 
 class UniformMasses1(dim1:Int, uniformValue:Double) extends UniformTensor1(dim1, uniformValue) with Masses1 {

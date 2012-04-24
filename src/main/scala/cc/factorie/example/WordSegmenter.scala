@@ -98,25 +98,26 @@ object WordSegmenterDemo {
     val (testSet, trainSet) = sentences.shuffle(random).split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
     var trainVariables = trainSet.flatMap(_.map(_.label))
     var testVariables = testSet.flatMap(_.map(_.label))
-
+    var sampler = new VariableSettingsSampler[Label](model)
+    val predictor = new SamplingMaximizer(sampler)
+    
     testVariables.foreach(_.setRandomly())
     println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
     println ("Initial test accuracy = "+ objective.aveScore(testVariables))
   
-    // If a saved model was specified on the command-line, theni instead of training, take parameters from there, test and exit
+    // If a saved model was specified on the command-line, then instead of training, take parameters from there, test and exit
     if (args.length > 0) {
       println("Loading model parameters from "+args(0))
       model.load(args(0))
-      var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
-      predictor.infer(testVariables)
+      //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
+      predictor.maximize(testVariables, iterations=6, rounds=2)
       println ("Test  accuracy = "+ objective.aveScore(testVariables))
       System.exit(0)
     }
 
     // Sample and Learn!
     var learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
-    var sampler = new VariableSettingsSampler[Label](model)
     learner.learningRate = 1.0
     for (i <- 0 until 7) {
       learner.processAll(trainVariables, 2)
@@ -131,8 +132,9 @@ object WordSegmenterDemo {
     println ("Setting weights to average")
     //learner.setWeightsToAverage
     //(trainVariables ++ testVariables).foreach(_.setRandomly)
-    var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
-    predictor.infer(testVariables)
+    //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
+    //val predictor = new SamplingMaximizer(sampler)
+    predictor.maximize(testVariables, iterations=6, rounds=2)
     println ("Test  accuracy = "+ objective.aveScore(testVariables))
 
 
