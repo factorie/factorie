@@ -12,6 +12,15 @@ import pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
  *
  * A simple chain POS tagger trained using Viterbi inference
  * and averaged, structured perceptron learning.
+ *
+ * The model is available via maven by adding the following dependency to the pom.xml:
+ *
+ *    <dependency>
+ *        <groupId>cc.factorie</groupId>
+ *        <artifactId>model-pos-perceptron</artifactId>
+ *        <version>0.10.2</version>
+ *    </dependency>
+ *
  */
 
 object PerceptronPOS {
@@ -136,7 +145,14 @@ object PerceptronPOS {
   }
 
   var modelLoaded = false
-  def load(modelFile: String) = { PosModel.load(modelFile); PosModel.skipNonCategories = true; modelLoaded = true }
+  def load(modelFile: String, fromJar: Boolean = false): Unit = {
+    if (fromJar)
+      PosModel.loadFromJar(modelFile)
+    else
+      PosModel.load(modelFile)
+    PosModel.skipNonCategories = true
+    modelLoaded = true
+  }
 
   def process(documents: Seq[Document]): Unit = documents.map(process(_))
   def process(document: Document): Unit = {
@@ -165,7 +181,7 @@ object PerceptronPOS {
       val takeOnly =  new CmdOption("takeOnly", "-1", "INT", "A limit on the number of sentences loaded from each file.")
       val runFiles =  new CmdOption("run", List("input.txt"), "FILE...", "Plain text files from which to get data on which to run.")
       val iterations =new CmdOption("iterations", "10", "INT", "The number of iterations to train for.")
-      val modelDir =  new CmdOption("model", "", "DIR", "Directory in which to save the trained model.")
+      val modelDir =  new CmdOption("model", "perceptron-pos.fac", "DIR", "Directory in which to save the trained model.")
       val extraId =   new CmdOption("label", "", "STRING", "An extra identifier.  Useful for testing different sets of features.")
     }
     opts.parse(args)
@@ -194,7 +210,8 @@ object PerceptronPOS {
       )
     }
     else if (runFiles.wasInvoked) {
-      load(opts.modelDir.value)
+      load(opts.modelDir.value, fromJar = true)
+      println("Loaded model...")
       for (filename <- opts.runFiles.value) {
         val document = new Document("", io.Source.fromFile(filename).getLines.mkString("\n"))
         segment.Tokenizer.process(document)

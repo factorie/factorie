@@ -156,7 +156,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
       if (e.toString.contains("\n")) throw new Error("Cannot save Domain with category String containing newline.")
       writer.println(e.toString)
     }
-    writer.close
+    writer.close()
   }
 
   private var _frozenByLoader = false
@@ -170,13 +170,17 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
       else
         new FileInputStream(f)
     }))
+    this.loadFromReader(reader)
+    reader.close()
+  }
+
+  override def loadFromReader(reader: BufferedReader): Unit = {
     var line = reader.readLine
     var willFreeze = false
     if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
     while ({line = reader.readLine; line != null})
       this.index(line.asInstanceOf[T]) // TODO What if T isn't a String?  Fix this.
     if (willFreeze) { freeze(); _frozenByLoader = true }
-    reader.close
   }
   
   // Code for managing occurrence counts

@@ -195,4 +195,8 @@ class TemplateModel(initialTemplates:Template*) extends Model {
   def load(dirname:String, gzip: Boolean = false): Unit = {
     templates.foreach(_.load(dirname, gzip))
   }
+  
+  def loadFromJar(dirname: String): Unit = {
+    templates.foreach(_.loadFromJar(dirname))
+  }
 }

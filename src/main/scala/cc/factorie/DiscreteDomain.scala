@@ -85,7 +85,7 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
     }))
 
     writer.println(size)
-    writer.close
+    writer.close()
   }
 
   override def load(dirname:String, gzip: Boolean = false): Unit = {
@@ -96,9 +96,14 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
       else
         new FileInputStream(f)
     }))
+    loadFromReader(reader)
+  }
+
+  def loadFromReader(reader: BufferedReader): Unit = {
     val line = reader.readLine
     val readSize = Integer.parseInt(line)
     require(size == readSize)
+    reader.close()
   }
 }
 

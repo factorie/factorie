@@ -73,6 +73,7 @@ trait Family {
   protected def filename: String = factorName
   def save(dirname:String, gzip: Boolean = false): Unit = {}
   def load(dirname:String, gzip: Boolean = false): Unit = {}
+  def loadFromJar(dirname:String): Unit = { throw new Error("Unsupported") }
 }
 
 
@@ -159,8 +160,8 @@ trait DotFamily extends VectorFamily {
       else
         new FileInputStream(f)
     }))
-
     loadFromReader(reader)
+    reader.close()
   }
 
   def loadFromReader(reader: BufferedReader): Unit = {
@@ -174,8 +175,20 @@ trait DotFamily extends VectorFamily {
       val value = java.lang.Double.parseDouble(fields(1))
       weights(index) = value
     }
-    reader.close
+    reader.close()
   }
+
+  // does not support gzipped models
+  override def loadFromJar(dirname: String): Unit = {
+    val cl = this.getClass.getClassLoader
+    def readerFromResourcePath(path: String) =
+      new BufferedReader(new InputStreamReader(cl.getResourceAsStream(path)))
+
+    for (d <- statisticsDomains.map(_.dimensionDomain))
+      d.loadFromReader(readerFromResourcePath(dirname + "/" + d.filename))
+    loadFromReader(readerFromResourcePath(dirname + "/" + filename))
+  }
+
 }
 
 
