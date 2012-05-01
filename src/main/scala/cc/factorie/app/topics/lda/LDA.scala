@@ -119,7 +119,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
     /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
   def inferTopics(iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
-    val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.tensor, beta1, model)
+    val sampler = SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.tensor, beta1, model)
     println("Collapsing finished.  Starting sampling iterations:")
     //sampler.debug = debug
     val startTime = System.currentTimeMillis
@@ -153,7 +153,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     //println("Subsets = "+docSubsets.size)
     for (i <- 1 to iterations) {
       docSubsets.par.foreach(docSubset => {
-        val sampler = new SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.tensor, beta1, model)
+        val sampler = SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.tensor, beta1, model)
         for (doc <- docSubset) sampler.process(doc.zs.asInstanceOf[Zs])
       })
       if (i % diagnosticInterval == 0) {

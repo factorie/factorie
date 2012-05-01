@@ -94,10 +94,8 @@ object LDA3 {
     private val cachedCoefficients = new Array[Double](numTopics)
 
     // Create and populate the (word,topic) counts
-    val phiCounts = new DiscreteMixtureCounts { // phi counts, indexed by (wi,ti)
-      def discreteDomain = WordDomain
-      def mixtureDomain = ZDomain
-    }
+    val phiCounts = new DiscreteMixtureCounts(WordDomain, ZDomain)
+
     for (doc <- docs) addDocument(doc) 
     if (verbosity > 0) println("Finished initializing phiCounts")
     if (verbosity > 0) println("nt "+phiCounts.mixtureCounts.mkString(" "))

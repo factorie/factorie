@@ -132,6 +132,98 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
     //assert(countsTotal == calculatedCountsTotal) // TODO Remove this
     //assert(check, "\npos="+pos+" incr="+incr+" newCount="+newCount+"\n"+prevCounts+"\n"+counts.toString) // TODO Remove this
   }
+
+  def incrementCountsAtPositions(pos1:Int, incr1:Int, pos2:Int, incr2:Int) {
+
+    assert(pos1 != pos2, "Positions should be different!")
+
+    val ti1 = ti(buf(pos1))
+    val ti2 = ti(buf(pos2))
+
+    if (dbuf ne null) {
+      dbuf(ti1) += incr1
+      dbuf(ti2) += incr2
+    }
+
+    val newCount1 = co(buf(pos1)) + incr1
+    val newCount2 = co(buf(pos2)) + incr2
+
+    val newb1 = coti(newCount1, ti1)
+    val newb2 = coti(newCount2, ti2)
+
+    //buf(pos1) = newb1
+    //buf(pos2) = newb2
+
+    _countsTotal += (incr1 + incr2)
+    assert(newCount1 >= 0 && newCount2 >= 0)
+
+    //TODO: deletePosition() requires the element getting deleted to be equal to 0.
+    // That's why we are currently setting the values even though they will be deleted. Fix this.
+    if (newCount1 == 0 & newCount2 ==0){
+      buf(pos1) = newb1
+      deletePosition(pos1)
+
+      val newPos2 = if(pos2 > pos1) pos2 - 1 else pos2
+      buf(newPos2) = newb2
+      deletePosition(newPos2)
+
+    } else if(newCount1 == 0 && newCount2 != 0){
+      buf(pos2) = newb2
+      val changeInPos1 = if (incr2 > 0) bubbleDownFrom(pos2, pos1) else if (incr2 < 0) bubbleUpFrom(pos2, pos1) else 0
+
+      val newPos1 = pos1 + changeInPos1
+      buf(newPos1) = newb1
+      deletePosition(newPos1)
+
+    } else if(newCount1 != 0 && newCount2 == 0){
+      buf(pos1) = newb1
+      val changeInPos2 = if (incr1 > 0) bubbleDownFrom(pos1, pos2) else if (incr1 < 0) bubbleUpFrom(pos1, pos2) else 0
+
+      val newPos2 = pos2 + changeInPos2
+      buf(newPos2) = newb2
+      deletePosition(newPos2)
+
+    } else {
+      buf(pos1)  = newb1
+      val changeInPos2 = if (incr1 > 0) bubbleDownFrom(pos1, pos2) else if (incr1 < 0) bubbleUpFrom(pos1, pos2) else 0
+
+      val newPos2 = pos2 + changeInPos2
+      buf(newPos2) = newb2
+      if (incr2 > 0) bubbleDownFrom(newPos2) else if (incr2 < 0) bubbleUpFrom(newPos2)
+    }
+
+  }
+
+  //TODO: merge this function with the other bubbleDownFrom()
+  protected def bubbleDownFrom(pos:Int, otherPos:Int): Int = {
+    val newb = buf(pos)
+    var i = pos - 1
+    var changeInOtherPos = if (otherPos < pos && buf(otherPos) < newb) 1 else 0
+    while (i >= 0 && buf(i) < newb) {
+      val tmp = buf(i); buf(i) = newb; buf(i+1) = tmp // swap
+      i -= 1
+    }
+
+    changeInOtherPos
+  }
+
+  //TODO: merge this function with the other bubbleUpFrom()
+  protected def bubbleUpFrom(pos:Int, otherPos:Int): Int = {
+    //assert(check, counts.toString)
+    //val prevCounts = new scala.collection.mutable.ArrayBuffer[String]; prevCounts += counts.toString
+    val newb = buf(pos)
+    var i = pos + 1
+    var changeInOtherPos = if(otherPos > pos && buf(otherPos) > newb) -1 else 0
+    while (i < siz && buf(i) > newb) {
+      val tmp = buf(i); buf(i) = newb; buf(i-1) = tmp // swap
+      //prevCounts += counts.toString
+      i += 1
+    }
+
+    //assert(check, "pos="+pos+" newb=("+ti(newb)+","+co(newb)+")\n"+prevCounts.mkString("\n")+"\n"+counts.toString)
+    changeInOtherPos
+  }
+
   // TODO Make this do binary search instead of linear search
   def positionOfIndex(index:Int): Int = {
     var i = 0

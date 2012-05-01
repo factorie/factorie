@@ -34,9 +34,8 @@ object DiscreteMixture extends GenerativeFamily3[DiscreteVar,Mixture[Proportions
   def newFactor(a:DiscreteVar, b:Mixture[ProportionsVar], c:DiscreteVariable) = Factor(a, b, c)
 }
 
-abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
-  def discreteDomain: DiscreteDomain
-  def mixtureDomain: DiscreteDomain
+class DiscreteMixtureCounts(val discreteDomain: DiscreteDomain, val mixtureDomain: DiscreteDomain) extends Seq[SortedSparseCounts] {
+
   // counts(wordIndex).countOfIndex(topicIndex)
   private val counts = Array.fill(discreteDomain.size)(new SortedSparseCounts(mixtureDomain.size))
   val mixtureCounts = new Array[Int](mixtureDomain.size)
@@ -65,6 +64,17 @@ abstract class DiscreteMixtureCounts extends Seq[SortedSparseCounts] {
       increment(discretes(i).intValue, gates(i).intValue, incr)
       i -= 1
     }
+  }
+
+  def incrementCountsAtPositions(discrete:Int, mixture1:Int, incr1:Int, pos1:Int,
+                                               mixture2:Int, incr2:Int, pos2:Int) {
+    mixtureCounts(mixture1) += incr1
+    mixtureCounts(mixture2) += incr2
+
+    assert(mixtureCounts(mixture1) >= 0)
+    assert(mixtureCounts(mixture2) >= 0)
+
+    counts(discrete).incrementCountsAtPositions(pos1, incr1, pos2, incr2)
   }
 }
 
