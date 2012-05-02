@@ -17,13 +17,24 @@ import cc.factorie._
 
 /** A lazy product of a Vector and a scalar.
     @author Andrew McCallum */
-class VectorTimesScalar(val vector:Vector, val scalar:Double) extends Vector {
+class VectorTimesScalar(val vector:Vector, var scalar:Double) extends Vector {
   def length = vector.length
   def activeDomainSize: Int = vector.activeDomainSize
   def activeDomain: Iterable[Int] = vector.activeDomain
   def dot(v:Vector): Double = vector.dot(v) * scalar
-  override def *(scalar:Double) = new VectorTimesScalar(this.vector, scalar*this.scalar)
-  override def update(idx: Int, value: Double) { vector.update(idx, value/scalar) }
+  override def *(scalar:Double) = {
+    // renormalize if the scalar gets too small or too big
+      new VectorTimesScalar(this.vector, scalar*this.scalar)
+  }
+  override def update(idx: Int, value: Double) {
+    if (math.abs(scalar) < 1e-20 || math.abs(scalar) > 1e20) {
+      for (i <- this.vector.activeDomain) {
+        this.vector(i) *= this.scalar
+      }
+      this.scalar = 1.0
+    }
+    vector.update(idx, value/scalar)
+  }
   override def +=(v: Vector) { vector += v*(1.0/scalar) }
   def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] {
     val iter = vector.activeElements
