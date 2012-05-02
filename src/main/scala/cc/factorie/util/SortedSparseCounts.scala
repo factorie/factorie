@@ -81,7 +81,7 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
   //private val _posIndex: Array[Short] = if (keepIndex) Array.fill[Short](dim)(-1) else null
   @inline private def ti(coti:Int) = coti & topicMask // topic from packed count&index 
   @inline private def co(coti:Int) = coti >> topicBits // count from packed count&index
-  @inline private def coti(count:Int, index:Int): Int = { assert(index < dim); (count << topicBits) | index }
+  @inline private def coti(count:Int, index:Int): Int = { assert(index < _length); (count << topicBits) | index }
   protected def bubbleDownFrom(pos:Int): Unit = {
     val newb = buf(pos)
     var i = pos - 1

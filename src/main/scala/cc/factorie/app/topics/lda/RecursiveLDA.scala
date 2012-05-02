@@ -136,6 +136,7 @@ object RecursiveLDA {
     var documents1 = lda.documents.toSeq
     val summaries1 = Seq.tabulate(numTopics)(i => lda.topicSummary(i, 10))
     lda = null
+    for (doc <- documents1) doc.theta = null
     System.gc()
     
     var documents2 = new ArrayBuffer[RecursiveDocument]
@@ -178,7 +179,6 @@ object RecursiveLDA {
     }
     
     // Build single flat LDA
-    lda = null
     val bigNumTopics = numTopics * numTopics
     val lda3 = new RecursiveLDA(WordSeqDomain, bigNumTopics, opts.alpha.value, opts.beta.value)(GenerativeModel())
     while (documents2.size > 0) {
