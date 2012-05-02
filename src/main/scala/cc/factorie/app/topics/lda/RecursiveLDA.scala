@@ -5,7 +5,7 @@ import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
-class RecursiveDocument(superDoc:Doc, superTopic:Int) extends Document(superDoc.ws.domain, superDoc.name+superTopic, Nil)
+class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(superDoc.ws.domain, superDoc.name+superTopic, Nil)
 {
   for (i <- 0 until superDoc.ws.length)
     if (superDoc.zs.intValue(i) == superTopic) ws.appendInt(superDoc.ws.intValue(i))
@@ -27,7 +27,7 @@ object RecursiveLDA {
       val numTopics =     new CmdOption("num-topics", 't', 10, "N", "Number of topics at each of the two recursive levels; total number of topics will be N*N.")
       val alpha =         new CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
       val beta =          new CmdOption("beta", 0.01, "N", "Dirichlet parameter for per-topic word proportions.")
-      //val numThreads =    new CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
+      val numThreads =    new CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
       val numIterations = new CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
       val diagnostic =    new CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
       val diagnosticPhrases= new CmdOption("diagnostic-phrases", false, "true|false", "If true diagnostic printing will include multi-word phrases.")
@@ -128,43 +128,84 @@ object RecursiveLDA {
     if (lda.documents.size == 0) { System.err.println("You must specific either the --input-dirs or --input-lines options to provide documents."); System.exit(-1) }
     println("\nRead "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
     
-    
-    println("Read "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
-    
+    // Fit top-level LDA model    
     val startTime = System.currentTimeMillis
     lda.inferTopics(opts.numIterations.value, opts.fitAlpha.value, 10)
-    // Each with its own GenerativeModel
-    var lda2 = Seq.tabulate(numTopics)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(GenerativeModel()))
-    for (i <- 0 until numTopics) lda2(i).diagnosticName = "Super-topic: "+lda.topicSummary(i, 10) // So that the super-topic gets printed before each diagnostic list of subtopics
-    for (doc <- lda.documents) {
-      for (ti <- doc.zs.uniqueIntValues) {
-        val rdoc = new RecursiveDocument(doc, ti)
-        if (rdoc.ws.length > 0) lda2(ti).addDocument(rdoc)
+    
+    // Clear memory of parameters; we only need the documents (their words and zs)
+    var documents1 = lda.documents.toSeq
+    val summaries1 = Seq.tabulate(numTopics)(i => lda.topicSummary(i, 10))
+    lda = null
+    for (doc <- documents1) doc.theta = null
+    System.gc()
+    
+    var documents2 = new ArrayBuffer[RecursiveDocument]
+        
+    // Create next-level LDA models, each with its own GenerativeModel, in chunks of size opts.numThreads
+    if (false) {
+      for (topicRange <- Range(0, numTopics).grouped(opts.numThreads.value)) {
+        val topicRangeStart: Int = topicRange.head
+        var lda22 = Seq.tabulate(topicRange.size)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(GenerativeModel()))
+        for (i <- topicRange) lda22(i).diagnosticName = "Super-topic: "+summaries1(i) // So that the super-topic gets printed before each diagnostic list of subtopics
+        for (doc <- documents1) {
+          for (ti <- doc.zs.uniqueIntValues) if (topicRange.contains(ti)) {
+            val rdoc = new RecursiveDocument(doc, ti)
+            if (rdoc.ws.length > 0) { lda22(ti - topicRangeStart).addDocument(rdoc); documents2 += rdoc }
+          }
+        }
+        documents1 = null // To allow garbage collection, but note that we now loose word order in lda3 documents 
+        println("Starting second-layer parallel inference for "+topicRange)
+        lda22.par.foreach(_.inferTopics(opts.numIterations.value, opts.fitAlpha.value, 10))
       }
+    } else {
+      var lda2 = Seq.tabulate(numTopics)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(GenerativeModel()))
+      for (i <- 0 until numTopics) lda2(i).diagnosticName = "Super-topic: "+summaries1(i) // So that the super-topic gets printed before each diagnostic list of subtopics
+      for (doc <- documents1) {
+        for (ti <- doc.zs.uniqueIntValues) {
+          val rdoc = new RecursiveDocument(doc, ti)
+          if (rdoc.ws.length > 0) { lda2(ti).addDocument(rdoc); documents2 += rdoc }
+        }
+      }
+      documents1 = null // To allow garbage collection, but note that we now loose word order in lda3 documents 
+      println("Starting second-layer parallel inference.")
+      lda2.par.foreach(_.inferTopics(opts.numIterations.value, opts.fitAlpha.value, 10))
+      println("Second-layer topics")
+      for (i <- 0 until lda2.length) {
+        println()
+        println(summaries1(i))
+        println("  "+lda2(i).topicsSummary().replace("\n", "\n  "))
+      }
+      println("Finished in "+(System.currentTimeMillis - startTime)+" ms.")
     }
-    println("Starting second-layer parallel inference.")
-    lda2.par.foreach(_.inferTopics(opts.numIterations.value, opts.fitAlpha.value, 10))
-    println("Second-layer topics")
-    for (i <- 0 until lda2.length) {
-      println()
-      println(lda.topicSummary(i, 10))
-      println("  "+lda2(i).topicsSummary().replace("\n", "\n  "))
-    }
-    println("Finished in "+(System.currentTimeMillis - startTime)+" ms.")
     
     // Build single flat LDA
-    lda = null
-    val bigNumTopics = numTopics* numTopics
+    val bigNumTopics = numTopics * numTopics
     val lda3 = new RecursiveLDA(WordSeqDomain, bigNumTopics, opts.alpha.value, opts.beta.value)(GenerativeModel())
-    for (ldaIndex <- 0 until numTopics; doc <- lda2(ldaIndex).documents) {
-      doc.theta = null
-      val oldZs = doc.zs
-      val innerLda = lda2(ldaIndex)
-      doc.zs = new lda3.Zs(oldZs.map(i => i.intValue + ldaIndex*numTopics))
-      lda3.addDocument(doc)
+    while (documents2.size > 0) {
+      val doc = documents2.last
+      val doc3 = lda3.documentMap.getOrElse(doc.name, { val d = new Document(WordSeqDomain, doc.name, Nil); d.zs = new lda3.Zs; d })
+      val ws = doc.ws; val zs = doc.zs
+      var i = 0; val len = doc.length
+      while (i < len) {
+        val zi = doc.superTopic * numTopics + zs.intValue(i)
+        val wi = ws.intValue(i)
+        lda3.phis(zi).tensor.+=(wi, 1.0) // This avoids? the need for estimating phis later; note that we are not setting thetas here.
+        doc3.ws.appendInt(wi)
+        doc3.zs.appendInt(zi)
+        i += 1
+      }
+      if (!lda3.documentMap.contains(doc3.name)) lda3.addDocument(doc3)
+      documents2.remove(documents2.size-1) // Do this to enable garbage collection as we create more doc3's
     }
-    lda2 = null // To allow garbage collection
-    lda3.maximizePhisAndThetas
+//    for (ldaIndex <- 0 until numTopics; doc <- lda2(ldaIndex).documents) {
+//      doc.theta = null
+//      val oldZs = doc.zs
+//      val innerLda = lda2(ldaIndex)
+//      doc.zs = new lda3.Zs(oldZs.map(i => i.intValue + ldaIndex*numTopics))
+//      lda3.addDocument(doc)
+//    }
+//    lda2 = null // To allow garbage collection
+//    lda3.maximizePhisAndThetas
     println("Flat LDA")
     println(lda3.topicsSummary(10))
     

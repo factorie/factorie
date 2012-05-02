@@ -26,6 +26,7 @@ trait Doc extends SeqBreaks {
   def ws: CategoricalSeqVariable[String]
   
   // Experimental thoughts about serialization with Facades
+  // No, don't use duck-typing here; too slow because it uses reflection! -akm
   type WordsZs = { def words: Seq[String]; def zInts: Array[Int] } 
   def toFacade: WordsZs = {
     new {

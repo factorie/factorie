@@ -38,10 +38,12 @@ trait Proportions extends Masses {
   override def stringPrefix = "Proportions"
   override def toString = this.toSeq.take(10).mkString(stringPrefix+"(", ",", ")")
 
-  // Consider moving this to Tensor (and renaming appropriately) -akm
+  // TODO Move this to Tensor (and rename appropriately)!  -akm  
+  // (Don't make it an inner class, though)
   class DiscretePr(val index:Int, val pr:Double)
   class DiscretePrSeq(val maxLength:Int) extends Seq[DiscretePr] {
-    def this(maxLength:Int, contents:Seq[Double]) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
+    @deprecated("May be removed") def this(maxLength:Int, contents:Seq[Double]) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
+    def this(maxLength:Int, contents:DoubleSeq) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
     private val _seq = new Array[DiscretePr](maxLength)
     private var _length: Int = 0
     def length = _length
@@ -65,7 +67,7 @@ trait Proportions extends Masses {
       }
     }
   }
-  def top(n:Int): Seq[DiscretePr] = new DiscretePrSeq(n, this.toSeq)
+  def top(n:Int): Seq[DiscretePr] = new DiscretePrSeq(n, this)
 }
 
 trait Proportions1 extends Masses1 with Proportions
