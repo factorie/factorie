@@ -26,8 +26,10 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain { def size = numTopics }
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
-  class Zs(intValues:Seq[Int]) extends DiscreteSeqVariable(intValues) {
-    def this(len:Int) = this(Seq.fill(len)(0))
+  class Zs extends DiscreteSeqVariable {
+    def this(initial:Seq[Int]) = { this(); this.appendInts(initial) }
+    def this(initial:Array[Int]) = { this(); this.appendInts(initial) }
+    def this(len:Int) = this(new Array[Int](len)) // relies on new Array being filled with 0s 
     def domain = ZSeqDomain
     //def words: Document = childFactors.first.asInstanceOf[PlatedDiscreteMixture.Factor]._1.asInstanceOf[Document]
   }
@@ -173,12 +175,12 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   def topicsWordsAndPhrasesSummary(numWords: Int = 10, numPhrases: Int = 10): String = {
     val sb = new StringBuffer
     val tpc = topicsPhraseCounts
-    forIndex(numTopics)(i => {
+    for (i <- 0 until numTopics) {
       sb.append(topicSummary(i, numWords))
       sb.append("\n           ") // Matching "Topic 333  ", plus one extra space for indentation
       sb.append(tpc.topicPhrases(i, numPhrases).mkString(" "))
       sb.append("\n")
-    })
+    }
     sb.toString
   }
   
@@ -190,10 +192,16 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
   def maximizePhisAndThetas: Unit = {
     phis.foreach(_.tensor.zero())
-    for (doc <- documents; i <- 0 until doc.ws.length) {
-      val zi = doc.zs.intValue(i)
-      phis(zi).tensor.+=(doc.ws.intValue(i), 1.0)
-      doc.theta.tensor.+=(zi, 1.0)
+    // TODO What about the priors on phis and theta?? -akm
+    for (doc <- documents) {
+      val len = doc.ws.length
+      var i = 0
+      while (i < len) {
+        val zi = doc.zs.intValue(i)
+        phis(zi).tensor.+=(doc.ws.intValue(i), 1.0)
+        doc.theta.tensor.+=(zi, 1.0)
+        i += 1
+      }
     }
   }
   

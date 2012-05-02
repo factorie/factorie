@@ -32,6 +32,7 @@ trait DiscreteSeqVar extends IndexedSeqVar[DiscreteValue] {
 //abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] 
 abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with DiscreteSeqVar {
   def this(initialValue:Seq[Int]) = { this(); /*_setCapacity(if (initialValue.length > 0) initialValue.length else 1);*/ if (initialValue.length > 0) _appendAll(initialValue.toArray) }
+  def this(initialValue:Array[Int]) = { this(); if (initialValue.length > 0) _appendAll(initialValue) }
   def this(len:Int) = { this(); _setCapacity(len); _appendAll(Array.fill(len)(0)) }
   def length = _length
   def apply(index: Int): ElementType = domain.elementDomain.getValue(_apply(index))
@@ -56,6 +57,7 @@ abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.Prot
   def +=(e:VariableType#ElementType): Unit = appendInt(e.intValue)
   def ++=(es:Iterable[VariableType#ElementType]): Unit = _appendAll(es.map(_.intValue))
   def appendInts(xs:Iterable[Int]) = _appendAll(xs)
+  def appendInts(xs:Array[Int]) = _appendAll(xs)
   def intValue(seqIndex:Int): Int = _apply(seqIndex)
   def intValues: Array[Int] = _array
   def uniqueIntValues: Array[Int] = _array.distinct.sorted
