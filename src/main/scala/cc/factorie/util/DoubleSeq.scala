@@ -17,8 +17,6 @@ import scala.util.Random
 
 /** We are so desperate for efficient @specialized Seq[Double], that we created our own. 
     This could inherit from IndexedSeq[Double] but we would pass on significant risk of inefficiencies hidden to the user. */
-// TODO Consider if we should move activeDomain from Tensor to here, so that there could be more efficient implementations centralized here.
-//  But my current thinking is not to do this because many methods should have even more highly specialized implementations anyway. -akm
 trait DoubleSeq {
   def apply(i:Int): Double
   def length: Int
@@ -29,6 +27,7 @@ trait DoubleSeq {
   def contains(d:Double): Boolean = { val l = length; var i = 0; while (i < l) { if (d == apply(i)) return true; i += 1 }; false }
   def forall(f:Double=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(apply(i))) return false; i += 1 }; true }
   def foldLeft[B<:AnyRef](z:B)(f:(B,Double)=>B): B = throw new Error("Not yet implemented.")
+  def map(f:(Double)=>Double): DoubleSeq = { val l = length; val a = new Array[Double](l); var i = 0; while (i < l) { a(i) = f(apply(i)); i += 1 }; new ArrayDoubleSeq(a) }
   def indexOf(d:Double): Int = { val l = length; var i = 0; while (i < l) { if (d == apply(i)) return i; i += 1 }; -1 }
   def max: Double = { var m = Double.NaN; val l = length; var i = 0; while (i < l) { if (!(m >= apply(i))) m = apply(i); i += 1 }; m }
   def min: Double = { var m = Double.NaN; val l = length; var i = 0; while (i < l) { if (!(m <= apply(i))) m = apply(i); i += 1 }; m }
@@ -47,6 +46,8 @@ trait DoubleSeq {
   def dot(t:DoubleSeq): Double = { assert(length == t.length); val l = length; var result = 0.0; var i = 0; while (i < l) { result += apply(i) * t(i); i += 1 }; result }
   def maxIndex: Int = { val l = length; var i = 1; var j = 0; while (i < l) { if (apply(j) < apply(i)) j = i; i += 1 }; j }
   def containsNaN: Boolean = { val l = length; var i = 0; while (i < l) { if (apply(i) != apply(i)) return true; i += 1 }; false }  // TODO Why wouldn't apply(i).isNaN compile?
+  /** Return records for the n elements with the largest values. */
+  def top(n:Int): TopN[String] = new cc.factorie.util.TopN(n, this)
   // For proportions
   def sampleIndex(normalizer:Double)(implicit r:Random): Int = {
     assert(normalizer > 0.0, "normalizer = "+normalizer)
@@ -117,9 +118,10 @@ trait DoubleSeq {
   def toSeq: Seq[Double] = new ArrayIndexedSeqDouble(toArray)
 }
 
+/** An IndexedSeq[Double] backed by an array, just used as a return type for DoubleSeq.toSeq. */
 class ArrayIndexedSeqDouble(val array:Array[Double]) extends IndexedSeq[Double] {
-  def length = array.length
-  def apply(i:Int) = array(i)
+  def length: Int = array.length
+  def apply(i:Int): Double = array(i)
 }
 
 object DoubleSeq {
@@ -136,7 +138,66 @@ object DoubleSeq {
     def zero(): Unit = java.util.Arrays.fill(a, 0.0)
     def update(i:Int, v:Double) = a(i) = v
   }
+  def apply(contents:Double*): ArrayDoubleSeq = new ArrayDoubleSeq(contents.toArray) 
   def apply(len:Int): MutableDoubleSeq = apply(new Array[Double](len))
+}
+
+trait SparseDoubleSeq extends DoubleSeq {
+  def activeDomain: IntSeq
+  def activeDomainSize: Int
+  // We are relying on "f" getting properly @specialized
+  def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
+  // TODO Should we also override def map(f:(Double)=>Double): DoubleSeq  ???
+  //override def max:  Double = { var m = Double.NaN; val d = activeDomain; val l = d.length; var i = 0; while (i < l) { val v = apply(d(i)); if (!(m >= v)) m = v; i += 1 }; m }
+  override def max: Double = { var m = Double.NaN; foreachActiveElement((i,v) => { if (!(m >= v)) m = v }); m }
+  override def min: Double = { var m = Double.NaN; foreachActiveElement((i,v) => { if (!(m <= v)) m = v }); m }
+  override def sum: Double = { var s = 0.0; foreachActiveElement((i,v) => { s += v }); s }
+  override def oneNorm: Double = { var s = 0.0; foreachActiveElement((i,v) => { s += math.abs(v) }); s }
+  override def twoNormSquared: Double = { var s = 0.0; foreachActiveElement((i,v) => { s += v * v }); s }
+  override def contains(d:Double): Boolean = { var s = 0.0; foreachActiveElement((i,v) => if (d == v) return true); false } 
+  override def different(t:DoubleSeq, threshold:Double): Boolean = t match {
+    case t:SparseDoubleSeq => super.different(t, threshold) // TODO Do something clever here
+    case t:DoubleSeq => super.different(t, threshold)
+  }
+  override def dot(t:DoubleSeq): Double = t match {
+    case t:SparseDoubleSeq => if (t.activeDomainSize < this.activeDomainSize) t.dot(this) else { var d = 0.0; foreachActiveElement((i,v) => d += v * t(i)); d }
+    case t:DoubleSeq => { var d = 0.0; foreachActiveElement((i,v) => d += v * t(i)); d }
+  } 
+  override def maxIndex: Int = { var j = 0; var m = Double.NaN; foreachActiveElement((i,v) => { if (!(m >= v)) { m = v; j = i } }); j }
+  override def containsNaN: Boolean = { foreachActiveElement((i,v) => if (v != v) return true); false } 
+  override def sampleIndex(normalizer:Double)(implicit r:Random): Int = {
+    assert(normalizer > 0.0, "normalizer = "+normalizer)
+    val l = length; var b = 0.0; val s = r.nextDouble * normalizer
+    foreachActiveElement((i,v) => { assert(v >= 0.0); if (b > s) return i - 1; b += v })
+    length - 1
+  }
+  /** Assumes that the values are already normalized to sum to 1. */
+  override def entropy: Double = {
+    var result = 0.0; var sum = 0.0; var pv = 0.0
+    foreachActiveElement((i,v) => { sum += v; require(v >= 0.0, v); require(v <= 1.000001); if (v > 0.0) result -= v * math.log(pv) })
+    assert(sum > 0.9999 && sum < 1.0001)
+    result / cc.factorie.maths.log2
+  }
+  /** Assumes that the values in both DoubleSeq are already normalized to sum to 1. */
+  override def klDivergence(p:DoubleSeq): Double = {
+    assert(length == p.length)
+    var klDiv = 0.0
+    var sum1 = 0.0
+    val l = length; var i = 0; var p1 = 0.0; var p2 = 0.0
+    foreachActiveElement((i,p1) => { p2 = p(i); sum1 += p1; if (p1 != 0.0) klDiv += p1 * math.log(p1 / p2) })
+    assert(sum1 > 0.9999 && sum1 < 1.0001)
+    klDiv / cc.factorie.maths.log2
+  }
+  /** Assumes that the values are already normalized to sum to 1. */
+  override def jsDivergence(p:DoubleSeq): Double = {
+    // TODO We should make this efficient for sparsity
+    assert(length == p.length);
+    val average = DoubleSeq(length)
+    var i = 0
+    while (i < length) average(i) += (apply(i) + p(i)) / 2.0
+    (this.klDivergence(average) + p.klDivergence(average)) / 2.0
+  }
+
 }
 
 trait IncrementableDoubleSeq extends DoubleSeq {
@@ -199,3 +260,13 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
   }
 }
 
+// Some simple concrete classes
+
+final class ArrayDoubleSeq(override val asArray:Array[Double]) extends MutableDoubleSeq {
+  def this(contents:Double*) = this(contents.toArray)
+  def length: Int = asArray.length
+  def apply(i:Int) = asArray(i)
+  def update(i:Int, v:Double): Unit = asArray(i) = v
+  def zero(): Unit = java.util.Arrays.fill(asArray, 0.0)
+  def +=(i:Int, v:Double): Unit = asArray(i) += v
+}

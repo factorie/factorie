@@ -16,9 +16,10 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
-// Preliminary version of the upcoming "unflattening" of parameter and discrete statistics representations...
 
 // Note: Many Tensor-like methods are actually implemented in DoubleSeq
+
+/** An N-dimensional collection of Doubles. */
 trait Tensor extends MutableDoubleSeq {
   def numDimensions: Int
   def dimensions: Array[Int]
@@ -28,10 +29,11 @@ trait Tensor extends MutableDoubleSeq {
   def isDense: Boolean
   def activeDomainSize: Int = activeDomain.length // Should be overridden for efficiency in many subclasses
   /** The default value at indices not covered by activeDomain.  Subclasses may override this  */
-  def defaultValue: Double = 0.0
+  def defaultValue: Double = 0.0 // TODO This is not actually yet properly used by subclasses
   def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
   def activeElements: Iterator[(Int,Double)] = (for (i <- activeDomain.toArray) yield (i, apply(i))).iterator
   def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = throw new Error("Not yet implemented.")
+  // TODO No, replace the following override with SparseDoubleSeq when it is finished
   // Override various methods that can use activeDomain for extra efficiency // TODO More of these should be overridden
   override def sum: Double = 
     if (isDense) super.sum

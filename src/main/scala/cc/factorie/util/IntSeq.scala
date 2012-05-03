@@ -36,6 +36,10 @@ trait IntSeq {
     final def length = a.length
     final def apply(i:Int): Int = a(i)
   }
+  def asDoubleSeq: DoubleSeq = new DoubleSeq {
+    final def length = IntSeq.this.length
+    final def apply(i:Int): Double = IntSeq.this.apply(i)
+  }
 }
 
 trait MutableIntSeq extends IntSeq {
@@ -58,9 +62,9 @@ final class SingletonIntSeq(val value:Int) extends IntSeq {
 }
 
 final class ArrayIntSeq(val array:Array[Int]) extends IntSeq {
-  def length = array.length
-  def apply(i:Int): Int = array(i)
-  def toArray = array
+  @inline def length = array.length
+  @inline def apply(i:Int): Int = array(i)
+  @inline def toArray = array
 }
 
 final class TruncatedArrayIntSeq(val array:Array[Int], val length:Int) extends IntSeq {

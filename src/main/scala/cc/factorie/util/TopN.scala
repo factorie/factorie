@@ -6,7 +6,7 @@ class TopEntry[A<:AnyRef](val index:Int, val score:Double, val category:A) {
 
 /** For gathering a sorted list of at most N indexed entries, sorted by a floating-point score. */
 class TopN[A<:AnyRef](maxLength:Int) extends Seq[TopEntry[A]] {
-  def this(maxLength:Int, contents:Seq[Double], categories:Seq[A] = null) = {
+  /*def this(maxLength:Int, contents:Seq[Double], categories:Seq[A] = null) = {
     this(maxLength)
     //println("TopN %d %d".format(contents.length, categories.length))
     var i = 0
@@ -14,7 +14,25 @@ class TopN[A<:AnyRef](maxLength:Int) extends Seq[TopEntry[A]] {
       this += (i, contents(i), if (categories ne null) categories(i) else null.asInstanceOf[A])
       i += 1
     }
+  }*/
+  def this(maxLength:Int, contents:DoubleSeq, categories:Seq[A]) = {
+    this(maxLength)
+    var i = 0
+    while (i < contents.length) {
+      this += (i, contents(i), if (categories ne null) categories(i) else null.asInstanceOf[A])
+      i += 1
+    }
   }
+  def this(maxLength:Int, contents:DoubleSeq) = this(maxLength, contents, null)
+  def this(maxLength:Int, contents:Array[Double], categories:Seq[A]) = {
+    this(maxLength)
+    var i = 0
+    while (i < contents.length) {
+      this += (i, contents(i), if (categories ne null) categories(i) else null.asInstanceOf[A])
+      i += 1
+    }
+  }
+  def this(maxLength:Int, contents:Array[Double]) = this(maxLength, contents, null)
   private val _seq = new Array[TopEntry[A]](maxLength)
   private var _length: Int = 0
   def length = _length

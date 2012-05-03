@@ -20,7 +20,7 @@ import cc.factorie.util.TopN
     @author Andrew McCallum
     @since 0.10
  */
-class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteVectorVar) extends IndexedSeq[Double] {
+class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteVectorVar) extends cc.factorie.util.DoubleSeq {
   def this(labels:LabelList[L]) = this(labels, labels.labelToFeatures)
   def apply(i:Int) = infogains(i)
   def length = infogains.length
@@ -30,7 +30,7 @@ class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteVectorVar) exten
   init(labels)
   
   // TODO Currently only works for CategoricalDomain, not DiscreteDomain
-  def top(n:Int): TopN[String] = new TopN[String](n, this, domain.asInstanceOf[CategoricalDomain[String]].categoryValues)
+  override def top(n:Int): TopN[String] = new TopN[String](n, this, domain.asInstanceOf[CategoricalDomain[String]].categoryValues)
   
   protected def init(labels:Iterable[L]) {
     val numInstances = labels.size

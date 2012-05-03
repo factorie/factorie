@@ -198,7 +198,8 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   }
   def count(i:Int): Int = _counts(i)
   def count(category:T): Int = _counts(indexOnly(category))
-  def counts: Seq[Int] = _counts.toIndexedSeq.take(length)
+  //def counts: Seq[Int] = _counts.toIndexedSeq.take(length)
+  def counts: cc.factorie.util.IntSeq = new cc.factorie.util.TruncatedArrayIntSeq(_counts, length) 
   def countsTotal: Int = _counts.sum    
   def incrementCount(i:Int): Unit = { ensureSize(i); _counts(i) += 1 }
   def incrementCount(category:T): Unit = incrementCount(indexOnly(category))

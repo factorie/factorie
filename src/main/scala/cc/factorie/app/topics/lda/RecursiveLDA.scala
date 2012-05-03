@@ -25,9 +25,10 @@ object RecursiveLDA {
     var verbose = false
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val numTopics =     new CmdOption("num-topics", 't', 10, "N", "Number of topics at each of the two recursive levels; total number of topics will be N*N.")
+      val numLayers =     new CmdOption("num-layers", 'l', 2, "N", "Number of layers of recursion in topic tree; currently only values accepted are 1 and 2.")
       val alpha =         new CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
       val beta =          new CmdOption("beta", 0.01, "N", "Dirichlet parameter for per-topic word proportions.")
-      val numThreads =    new CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
+      val numThreads =    new CmdOption("num-threads", 2, "N", "Number of threads for multithreaded topic inference.")
       val numIterations = new CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
       val diagnostic =    new CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
       val diagnosticPhrases= new CmdOption("diagnostic-phrases", false, "true|false", "If true diagnostic printing will include multi-word phrases.")
@@ -142,22 +143,22 @@ object RecursiveLDA {
     var documents2 = new ArrayBuffer[RecursiveDocument]
         
     // Create next-level LDA models, each with its own GenerativeModel, in chunks of size opts.numThreads
-    if (false) {
+    if (opts.numLayers.value > 1) {
       for (topicRange <- Range(0, numTopics).grouped(opts.numThreads.value)) {
         val topicRangeStart: Int = topicRange.head
-        var lda22 = Seq.tabulate(topicRange.size)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(GenerativeModel()))
-        for (i <- topicRange) lda22(i).diagnosticName = "Super-topic: "+summaries1(i) // So that the super-topic gets printed before each diagnostic list of subtopics
+        var lda2 = Seq.tabulate(topicRange.size)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(GenerativeModel()))
+        for (i <- topicRange) lda2(i-topicRangeStart).diagnosticName = "Super-topic: "+summaries1(i) // So that the super-topic gets printed before each diagnostic list of subtopics
         for (doc <- documents1) {
           for (ti <- doc.zs.uniqueIntValues) if (topicRange.contains(ti)) {
             val rdoc = new RecursiveDocument(doc, ti)
-            if (rdoc.ws.length > 0) { lda22(ti - topicRangeStart).addDocument(rdoc); documents2 += rdoc }
+            if (rdoc.ws.length > 0) { lda2(ti - topicRangeStart).addDocument(rdoc); documents2 += rdoc }
           }
         }
-        documents1 = null // To allow garbage collection, but note that we now loose word order in lda3 documents 
         println("Starting second-layer parallel inference for "+topicRange)
-        lda22.par.foreach(_.inferTopics(opts.numIterations.value, opts.fitAlpha.value, 10))
+        lda2.par.foreach(_.inferTopics(opts.numIterations.value, opts.fitAlpha.value, 10))
       }
-    } else {
+      documents1 = null // To allow garbage collection, but note that we now loose word order in lda3 documents 
+    } else if (false) {
       var lda2 = Seq.tabulate(numTopics)(i => new RecursiveLDA(WordSeqDomain, numTopics, opts.alpha.value, opts.beta.value)(GenerativeModel()))
       for (i <- 0 until numTopics) lda2(i).diagnosticName = "Super-topic: "+summaries1(i) // So that the super-topic gets printed before each diagnostic list of subtopics
       for (doc <- documents1) {
@@ -175,8 +176,9 @@ object RecursiveLDA {
         println(summaries1(i))
         println("  "+lda2(i).topicsSummary().replace("\n", "\n  "))
       }
-      println("Finished in "+(System.currentTimeMillis - startTime)+" ms.")
     }
+    println("Finished in "+(System.currentTimeMillis - startTime)+" ms.")
+    if (opts.numLayers.value == 1) System.exit(0)
     
     // Build single flat LDA
     val bigNumTopics = numTopics * numTopics

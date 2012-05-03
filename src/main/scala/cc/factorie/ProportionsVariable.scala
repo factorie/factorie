@@ -40,34 +40,34 @@ trait Proportions extends Masses {
 
   // TODO Move this to Tensor (and rename appropriately)!  -akm  
   // (Don't make it an inner class, though)
-  class DiscretePr(val index:Int, val pr:Double)
-  class DiscretePrSeq(val maxLength:Int) extends Seq[DiscretePr] {
-    @deprecated("May be removed") def this(maxLength:Int, contents:Seq[Double]) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
-    def this(maxLength:Int, contents:DoubleSeq) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
-    private val _seq = new Array[DiscretePr](maxLength)
-    private var _length: Int = 0
-    def length = _length
-    def apply(i:Int) = _seq(i)
-    def iterator: Iterator[DiscretePr] = new Iterator[DiscretePr] {
-      var i = 0
-      def hasNext = i < _length
-      def next = { i += 1; _seq(i-1) }
-    }
-    def +=(index:Int, pr:Double): Unit = {
-      if (_length < maxLength || (pr > _seq(_length-1).pr && pr > 0.0)) {
-       if (_length < maxLength) { _seq(_length) = new DiscretePr(index, pr); _length += 1 }
-       else if (pr > _seq(_length-1).pr) _seq(_length-1) = new DiscretePr(index, pr)
-       var i = _length - 1
-       while (i > 0 && _seq(i).pr > _seq(i-1).pr) {
-         val tmp = _seq(i)
-         _seq(i) = _seq(i-1)
-         _seq(i-1) = tmp
-         i -= 1
-       }
-      }
-    }
-  }
-  def top(n:Int): Seq[DiscretePr] = new DiscretePrSeq(n, this)
+//  class DiscretePr(val index:Int, val pr:Double)
+//  class DiscretePrSeq(val maxLength:Int) extends Seq[DiscretePr] {
+//    @deprecated("May be removed") def this(maxLength:Int, contents:Seq[Double]) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
+//    def this(maxLength:Int, contents:DoubleSeq) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
+//    private val _seq = new Array[DiscretePr](maxLength)
+//    private var _length: Int = 0
+//    def length = _length
+//    def apply(i:Int) = _seq(i)
+//    def iterator: Iterator[DiscretePr] = new Iterator[DiscretePr] {
+//      var i = 0
+//      def hasNext = i < _length
+//      def next = { i += 1; _seq(i-1) }
+//    }
+//    def +=(index:Int, pr:Double): Unit = {
+//      if (_length < maxLength || (pr > _seq(_length-1).pr && pr > 0.0)) {
+//       if (_length < maxLength) { _seq(_length) = new DiscretePr(index, pr); _length += 1 }
+//       else if (pr > _seq(_length-1).pr) _seq(_length-1) = new DiscretePr(index, pr)
+//       var i = _length - 1
+//       while (i > 0 && _seq(i).pr > _seq(i-1).pr) {
+//         val tmp = _seq(i)
+//         _seq(i) = _seq(i-1)
+//         _seq(i-1) = tmp
+//         i -= 1
+//       }
+//      }
+//    }
+//  }
+//  def top(n:Int): Seq[DiscretePr] = new DiscretePrSeq(n, this)
 }
 
 trait Proportions1 extends Masses1 with Proportions
@@ -116,9 +116,14 @@ class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1
     }
   }
   // Note that "def zero()" defined in SortedSparseCountsMasses1 does not zero this.prior
-  override def top(n:Int): Seq[DiscretePr] =
-    for (i <- 0 until math.min(n, numPositions)) yield 
-      new DiscretePr(indexAtPosition(i), countAtPosition(i).toDouble / countsTotal)
+  override def top(n:Int): cc.factorie.util.TopN[String] = {
+    val len = math.min(n, numPositions)
+    val result = new cc.factorie.util.TopN[String](len)
+    var i = 0
+    while (i < len) result += (indexAtPosition(i), countAtPosition(i).toDouble / countsTotal) 
+    result
+  }
+  //for (i <- 0 until math.min(n, numPositions)) yield new DiscretePr(indexAtPosition(i), countAtPosition(i).toDouble / countsTotal)
 
 }
 
