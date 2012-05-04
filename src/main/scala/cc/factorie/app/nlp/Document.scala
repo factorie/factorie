@@ -93,7 +93,7 @@ class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](va
     val doc = new Document(name.value, string.value)
     if (tokens.value ne null) tokens.value.foreach(tc => doc += tc.fetchToken)
     //if (spans.value ne null) spans.value.foreach(sc => doc += sc.fetch(doc))
-    if (sentences.value ne null) sentences.value.foreach(sc => doc += sc.fetchSentence(doc))
+    if (sentences.value ne null) sentences.value.foreach(sc =>  sc.fetchSentence(doc))
     fetchAttr(doc)
     doc
   }

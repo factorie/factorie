@@ -24,7 +24,8 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
     var i = 0 // TODO Implement as faster binary search
     while (i < this.length && this(i).stringStart <= charOffset) {
       val token = this(i)
-      if (token.stringStart <= charOffset && token.stringEnd <= charOffset) return token
+      //if (token.stringStart <= charOffset && token.stringEnd <= charOffset) return token
+      if (token.stringStart <= charOffset && token.stringEnd >= charOffset) return token
       i += 1
     }
     return null
