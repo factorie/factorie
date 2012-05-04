@@ -100,6 +100,7 @@ trait Factor extends Ordered[Factor] {
 /** A container for all the values of the variables neighboring a factor.
     These are necessary to construct a Statistics object. */
 trait Values extends Statistics with Assignment {
+  override def variables: Seq[Variable] // Assignment has return type of only Iterable[Variable]
   // def factor: Factor // TODO Consider adding this method
   override def inner: Seq[Values] = Nil
   //def apply[B <: Variable](v: B): B#Value = { new Error("Never call apply() on values"); null.asInstanceOf[B#Value] }

@@ -25,6 +25,8 @@ import scala.util.Random
 // But I think this would lead to inefficiencies, and the current set-up isn't bad. -akm
 trait Proportions extends Masses {
   abstract override def apply(i:Int): Double = super.apply(i) / massTotal
+  // TODO Should we have the following instead?  It would be slower... :-(
+  //abstract override def apply(i:Int): Double = if (massTotal == 0.0) 1.0/length else super.apply(i) / massTotal
   def mass(i:Int): Double = super.apply(i)
   override def sampleIndex(implicit r:Random): Int = {
     var b = 0.0; val s = r.nextDouble; var i = 0
@@ -183,7 +185,7 @@ object MaximizeProportions extends Maximize {
     if (variables.size != 1) return None
     (variables.head, model, summary) match {
       case (mp:ProportionsVariable, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]) => {
-        Some(new SingleSummary(new ProportionsAssignment(mp, maxProportions(mp, model, summary))))
+        Some(new SingletonSummary(new ProportionsAssignment(mp, maxProportions(mp, model, summary))))
       }
       case _ => None
     }

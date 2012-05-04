@@ -59,7 +59,8 @@ trait BooleanVar extends CategoricalVar[Boolean] with VarAndValueType[BooleanVar
 
 /** A class for mutable Boolean variables. 
     @author Andrew McCallum */
-class BooleanVariable(initialValue:Boolean = false) extends CategoricalVariable(initialValue) with BooleanVar {
+class BooleanVariable(initialValue:Boolean) extends CategoricalVariable(initialValue) with BooleanVar {
+  def this() = this(false)
   // Avoid CategoricalVariable's HashMap lookup
   final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   override final def setCategory(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)

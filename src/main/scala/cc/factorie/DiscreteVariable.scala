@@ -22,6 +22,7 @@ import scala.collection.mutable.ArrayBuffer
 trait DiscreteVar extends DiscreteVectorVar with VarAndValueType[DiscreteVar,DiscreteValue] {
   def domain: DiscreteDomain
   def intValue = value.intValue
+  override def toString = printName+"("+intValue+")"
 }
 
 /** A single discrete variable whose value can be changed. */

@@ -20,37 +20,39 @@ import cc.factorie.generative._
 
 object GaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
-    val numComponents = 5
+    val numComponents = 2
     implicit val model = GenerativeModel()
     object ZDomain extends DiscreteDomain { def size = numComponents }
     class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
     val meanComponents = Mixture(numComponents)(new RealVariable(random.nextDouble * 10))
     val varianceComponents = Mixture(numComponents)(new RealVariable(1.0))
     val mixtureProportions = ProportionsVariable.uniform(numComponents)
-    val data = for (i <- 1 to 1000) yield {
-      val z = new Z
+    // Generate some data
+    val data = for (i <- 1 to 100) yield {
+      val z = new Z :~ Discrete(mixtureProportions)
       new RealVariable() :~ GaussianMixture(meanComponents, varianceComponents, z)
     }
+    // A convenience function for getting the Z for a particular RealVar data variable x
+    def z(x:RealVar): Z = model.parentFactor(x).asInstanceOf[GaussianMixture.Factor]._4.asInstanceOf[Z]
+    // Get the list of Z variables, so we can pass it into the EMInferencer
+    val zs = data.map(z(_))
 
-    //data.foreach(println(_))
+    // Show a little example data
+    data.take(50).foreach(x => println(x+"  z="+z(x).intValue))
     val origMeans = meanComponents.map(_.doubleValue)
-    println("Original means")
-    origMeans.foreach(println(_))
 
-    val zs = data.map(x => model.parentFactor(x).asInstanceOf[GaussianMixture.Factor]._4)
-
-    // now randomly re-assign variable values
+    // Now randomly re-assign variable values so we can do the work of re-estimating them
     zs.foreach(_.set(random.nextInt(numComponents))(null))
     meanComponents.foreach(_.set(random.nextDouble)(null))
 
-    // Estimate by EM
-    val em = new EMInferencer(meanComponents, zs, model)
-    for (i <- 1 to 30) {
+    // Estimate means and zs by EM
+    val em = EMInferencer(meanComponents, zs, model, MaximizeGaussianMean)
+    for (i <- 1 to 10) {
       em.process(1)
-      println("Estimated means "+i)
-      meanComponents.foreach(println(_))
+      println("Estimated means at iteration "+i)
+      meanComponents.foreach(m => println(m.doubleValue))
     }
-    println("Original means")
+    println("\nOriginal means")
     origMeans.foreach(println(_))
   }
 }  

@@ -16,24 +16,17 @@ package cc.factorie
 import cc.factorie.generative._
 import scala.collection.mutable.HashMap
 
-// This is actually a "naive mean field"
-/** A model with independent generative factors for each of a collection of variables. */
-//class MeanField(variables:Iterable[Variable]) extends Model {
-//  private val _factor = new HashMap[Variable,Factor]
-//  def init(variables:Iterable[Variable]): Unit = {
-//    for (v <- variables) v match {
-//      case d:DiscreteVar => _factor(v) = new Discrete.Factor(d, new ProportionsVariable(new DenseProportions1(d.domain.size)))
-//      case r:RealVar => _factor(v) = new Gaussian.Factor(r, new RealVariable, new RealVariable)
-//    }
-//  }
-//  init(variables)
-//  def factors(variables:Iterable[Variable]): Seq[Factor] = variables.flatMap(v => _factor.get(v)).toSeq
-//  def factor(v:Variable): Factor = _factor(v)
-//}
+/** An inferencer for mean field inference.
+    Note that this is not just the set of marginals for the Q distribution (that is the embedded Summary);
+    It is also the procedure for updating the Q. */
+trait MeanField {
+  def updateQ: Unit
+  def summary: Summary[Marginal]
+}
 
-/** Performs naive mean field inference */
-class DiscreteMeanFieldInferencer[V<:DiscreteVariable](val variables:Iterable[V], val model:Model, val summary:DiscreteSummary1[V]) {
-  def this(vs:Iterable[V], model:Model) = this(vs, model, new DiscreteSummary1(vs))
+/** Performs naive mean field inference with a Q Summary that is a set of independent Discrete distributions */
+class DiscreteMeanField[V<:DiscreteVariable](val model:Model, val summary:DiscreteSummary1[V]) extends MeanField {
+  def this(vs:Iterable[V], model:Model) = this(model, new DiscreteSummary1(vs))
   def updateQ(d:V): Unit = {
     val marginal = summary.marginal(d)
     val p = marginal.proportions
@@ -43,17 +36,17 @@ class DiscreteMeanFieldInferencer[V<:DiscreteVariable](val variables:Iterable[V]
       d.set(i)(diff)
       val factors = model.factors(diff)
       // Inefficient to have this in inner loop; but what is the alternative?
-      if (factors.flatMap(_.variables).exists(v => summary.marginal(v) != None)) throw new Error("Not yet implemented neighboring mean fields")
+      //if (factors.flatMap(_.variables).exists(v => summary.marginal(v) != None)) throw new Error("Not yet implemented neighboring mean fields")
       distribution(i) = diff.scoreAndUndo(model)
     }
     distribution.expNormalize()
     p := distribution
   }
-  def updateQ: Unit = variables.foreach(updateQ(_))
+  def updateQ: Unit = summary.variables.foreach(updateQ(_))
 }
 
 class InferByMeanField {
-  def inferencer[V<:DiscreteVariable](variables:Iterable[V], model:Model): DiscreteMeanFieldInferencer[V] = new DiscreteMeanFieldInferencer(variables, model)
+  def inferencer[V<:DiscreteVariable](variables:Iterable[V], model:Model): DiscreteMeanField[V] = new DiscreteMeanField(variables, model)
   def apply[V<:DiscreteVariable](variables:Iterable[V], model:Model): DiscreteSummary1[V] = {
     val inf = inferencer(variables, model)
     for (i <- 0 until 50) inf.updateQ // TODO Replace with a proper convergence criterion!!!

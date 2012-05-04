@@ -97,6 +97,6 @@ class SamplingMaximizer[C](val sampler:ProposalSampler[C]) {
     //new SamplingMaximizerLattice[V](diff, maxScore)
   }
   def apply(varying:Iterable[C], iterations:Int = 50, initialTemperature: Double = 1.0, finalTemperature: Double = 0.01, rounds:Int = 5): AssignmentSummary = {
-    new AssignmentSummary(new MapAssignment(maximize(varying, iterations, initialTemperature, finalTemperature, rounds)))
+    new AssignmentSummary(new HashMapAssignment(maximize(varying, iterations, initialTemperature, finalTemperature, rounds)))
   }
 }

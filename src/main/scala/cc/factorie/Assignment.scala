@@ -25,7 +25,7 @@ package cc.factorie
     @author Andrew McCallum */
 trait TypedAssignment[A<:Variable] extends Marginal {
   /** All variables with values in this Assignment */
-  def variables: Seq[A]
+  def variables: Iterable[A]
   /** Return the value assigned to variable v. */
   def apply[B<:A](v:B): B#Value
   /** Return the an Option for the value assigned to variable v.  If v is not contained in this Assignment return None. */
@@ -55,11 +55,11 @@ trait MutableAssignment extends Assignment {
 
 /** A MutableAssignment backed by a HashMap.
     @author Andrew McCallum */
-class MapAssignment extends MutableAssignment {
+class HashMapAssignment extends MutableAssignment {
   def this(variables:Iterable[Variable]) = { this(); variables.foreach(v => update(v, v.value)) }
   private val map = new scala.collection.mutable.HashMap[Variable,Any]
-  val _variables = map.keys.toSeq
-  def variables = _variables
+  //val _variables = map.keys.toSeq
+  def variables = map.keys //_variables
   def apply[V<:Variable](v:V): V#Value = map(v).asInstanceOf[V#Value]
   def get[V<:Variable](v:V): Option[V#Value] = map.get(v).map(_.asInstanceOf[V#Value])
   def update[V<:Variable](variable:V, value:V#Value): Unit = map(variable) = value
@@ -77,7 +77,7 @@ class Assignment1[A<:Variable](val variable:A, var value:A#Value) extends TypedA
 
 /** An efficient Assignment of two variables. */
 class Assignment2[A<:Variable,B<:Variable](val var1:A, var value1:A#Value, val var2:B, value2:B#Value) extends Assignment {
-  def variables = Array(var1, var2)
+  def variables = Seq(var1, var2)
   def apply[C<:Variable](v:C): C#Value = if (v eq var1) value1.asInstanceOf[C#Value] else if (v eq var2) value2.asInstanceOf[C#Value] else null.asInstanceOf[C#Value]
   def get[C<:Variable](v:C): Option[C#Value] = if (v eq var1) Some(value1.asInstanceOf[C#Value]) else if (v eq var2) Some(value2.asInstanceOf[C#Value]) else None
   def contains(v:Variable): Boolean = if ((v eq var1) || (v eq var2)) true else false

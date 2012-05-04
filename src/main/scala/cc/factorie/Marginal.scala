@@ -16,13 +16,13 @@ package cc.factorie
 import cc.factorie.la._
 
 trait Marginal {
-  def variables: Seq[Variable]
+  def variables: Iterable[Variable]
   def setToMaximize(implicit d:DiffList): Unit
 }
 
 trait DiscreteMarginal extends Marginal {
   def _1: DiscreteVectorVar
-  def variables: Seq[DiscreteVectorVar]
+  def variables: Iterable[DiscreteVectorVar]
   def proportions: Proportions
 }
 //trait DiscreteMar1[V1<:DiscreteVectorVar] extends DiscreteMar { def _1: V1; def proportions: Proportions1 }

@@ -15,8 +15,7 @@
 package cc.factorie
 import cc.factorie.generative._
 
-/** The result of inference: a collection of Marginal objects.
-    Note that are some some Summary objects that don't have marginals; for example MapAssignment is a Summary. */
+/** The result of inference: a collection of Marginal objects. */
 trait Summary[+M<:Marginal] {
   def marginals: Iterable[M]
   def getMarginal(vs:Variable*): Option[M] = { val m = marginal(vs:_*); if (m eq null) None else Some(m) } 
@@ -31,8 +30,9 @@ trait IncrementableSummary[+M<:Marginal] extends Summary[M] {
 }
 
 /** A Summary containing only one Marginal. */
-class SingleSummary[M<:Marginal](val marginal:M) extends Summary[M] {
+class SingletonSummary[M<:Marginal](val marginal:M) extends Summary[M] {
   def marginals = Seq(marginal)
+  // TODO In the conditional below, order shouldn't matter!
   def marginal(vs:Variable*): M = if (vs == marginal.variables) marginal else null.asInstanceOf[M]
 }
 
@@ -53,7 +53,7 @@ class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary[DiscreteMarg
   def variables = _marginals1.keys
   def marginal1(v1:V) = _marginals1(v1)
   def marginal(vs:Variable*): DiscreteMarginal1[V] = vs match {
-    case Seq(v:V) => _marginals1(v) // TODO This doesn't actually check for a type match on V, because of erasure
+    case Seq(v:V) => _marginals1(v) // Note, this doesn't actually check for a type match on V, because of erasure, but it shoudn't matter
     case _ => null
   }
   def +=(v:V): Unit = _marginals1(v) = new DiscreteMarginal1(v, null) // but not yet initialized

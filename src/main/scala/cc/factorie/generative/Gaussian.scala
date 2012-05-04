@@ -40,44 +40,55 @@ object Gaussian extends GenerativeFamily3[RealVar,RealVar,RealVar] {
 
 
 object MaximizeGaussianMean extends Maximize {
+  var debug = false
   def maxMean(meanVar:MutableRealVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
     var mean = 0.0
     var sum = 0.0
-    for (factor <- model.extendedChildFactors(meanVar)) factor match {
-      case g:Gaussian.Factor if (g._2 == meanVar) => { mean += g._1.doubleValue; sum += 1.0 }
-      case gm:GaussianMixture.Factor => {
-        val gate = gm._4
-        val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
-        val mixtureIndex = gm._2.indexOf(meanVar) // Yipes!  Linear search.
-        if (mixtureIndex >= 0) { // This substitutes for "if (gm._3.contains(varianceVar))" in the "case" above
+    //println("MaximizeGaussianMean var="+meanVar)
+    for (factor <- model.extendedChildFactors(meanVar)) {
+      //println(" MaximizeGaussianMean factor="+factor)
+      //println(" MaximizeGaussianMean mean="+mean)
+      factor match {
+      	case g:Gaussian.Factor if (g._2 == meanVar) => { mean += g._1.doubleValue; sum += 1.0 }
+      	case gm:GaussianMixture.Factor if (gm._2.contains(meanVar)) => {
+          val gate = gm._4
+          val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
+          val mixtureIndex = gm._2.indexOf(meanVar) // Yipes!  Linear search.  And we are doing it twice because of "contains" above
           if (gateMarginal eq null) {
             if (gm._4.intValue == mixtureIndex) { mean += gm._1.doubleValue; sum += 1.0 }
           } else {
             val p = gateMarginal.proportions(mixtureIndex)
+            assert(p == p); assert(p >= 0.0); assert(p <= 1.0)
             mean += p * gm._1.doubleValue; sum += p
+            //println("MaximizeGaussianMean mean="+mean+" sum="+sum+" p="+p+" proportions="+gateMarginal.proportions)
           }
         }
+        case m:Mixture.Factor => {}
+        case f:Factor => { if (debug) println("MaximizeGaussianMean can't handle factor "+f.getClass.getName+"="+f); return Double.NaN }
       }
-      case f:Factor => return Double.NaN
+      if (mean != mean) return Double.NaN
     }
+    //println("MaximizeGaussianMean mean="+(mean/sum))
     mean / sum
   }
-  def apply(meanVar:MutableRealVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Unit = {
+  def apply(meanVar:MutableRealVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     meanVar.set(maxMean(meanVar, model, summary))(null)
   }
   override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[AssignmentSummary] = {
     val gModel = model match { case m:GenerativeModel => m ; case _ => return None }
     val dSummary = summary match { case s:DiscreteSummary1[DiscreteVar] => s ; case null => null ; case _ => return None }
-    lazy val assignment = new MapAssignment
+    lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
       case r:MutableRealVar => { val m = maxMean(r, gModel, dSummary); if (m.isNaN) return None else assignment.update[RealVar](r, m) } 
       case _ => return None
     }
+    //println("MaximizeGaussianMean assignment "+assignment(variables.head))
     Option(new AssignmentSummary(assignment))
   }
 }
 
 object MaximizeGaussianVariance extends Maximize {
+  var debug = false
   def minSamplesForVarianceEstimate = 5
   def maxVariance(varianceVar:MutableRealVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Double = {
     var mean = 0.0
@@ -85,52 +96,52 @@ object MaximizeGaussianVariance extends Maximize {
     val factors = model.extendedChildFactors(varianceVar)
     if (factors.size < minSamplesForVarianceEstimate) return 1.0
     for (factor <- factors) factor match {
-      case g:Gaussian.Factor if (g._2 == varianceVar) => { mean += g._1.doubleValue; sum += 1.0 }
-      case gm:GaussianMixture.Factor => {
+      case g:Gaussian.Factor if (g._3 == varianceVar) => { mean += g._1.doubleValue; sum += 1.0 }
+      case gm:GaussianMixture.Factor if (gm._3.contains(varianceVar)) => {
         val gate = gm._4
         val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
-        val mixtureIndex = gm._3.indexOf(varianceVar) // Yipes!  Linear search.
-        if (mixtureIndex >= 0) { // This substitutes for "if (gm._3.contains(varianceVar))" in the "case" above
-          if (gateMarginal eq null) {
-            if (gm._4.intValue == mixtureIndex) { mean += gm._1.doubleValue; sum += 1.0 }
-          } else {
-            val p = gateMarginal.proportions(mixtureIndex)
-            mean += p * gm._1.doubleValue; sum += p
-          }
+        val mixtureIndex = gm._3.indexOf(varianceVar) // Yipes!  Linear search.  And we are doing it twice, because of "contains" above
+        if (gateMarginal eq null) {
+          if (gm._4.intValue == mixtureIndex) { mean += gm._1.doubleValue; sum += 1.0 }
+        } else {
+          val p = gateMarginal.proportions(mixtureIndex)
+          mean += p * gm._1.doubleValue; sum += p
         }
-      }
-      case f:Factor => return Double.NaN
+       }
+      case m:Mixture.Factor => {}
+      case f:Factor => { if (debug) println("MaximizeGaussianVariance can't handle factor "+f.getClass.getName+"="+f); return Double.NaN }
     }
+    if (sum == 0.0) { if (debug) println("MaximizeGaussianVariance found no child factors"); return Double.NaN }
     mean /= sum
-    var v = 0.0
+    //println("MaximizeGaussianVariance mean="+mean)
+    var v = 0.0 // accumulates the variance
     sum = 0.0
     for (factor <- factors) factor match {
       case g:Gaussian.Factor if (g._3 == varianceVar) => { val diff = mean - g._1.doubleValue; v += diff * diff; sum += 1 }
-      case gm:GaussianMixture.Factor if (gm._3 == varianceVar) => {
+      case gm:GaussianMixture.Factor if (gm._3.contains(varianceVar)) => {
         val gate = gm._4
         val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
-        val mixtureIndex = gm._3.indexOf(varianceVar) // Yipes!  Linear search.
-        if (mixtureIndex >= 0) { // This substitutes for "if (gm._3.contains(varianceVar))" in the "case" above
-          if (gateMarginal eq null) {
-            if (gm._4.intValue == mixtureIndex) { val diff = mean - gm._1.doubleValue; v += diff * diff; sum += 1 }
-          } else {
-            val p = gateMarginal.proportions(mixtureIndex)
-            val diff = mean - gm._1.doubleValue; v += diff * diff * p; sum += p
-          }
+        val mixtureIndex = gm._3.indexOf(varianceVar) // Yipes!  Linear search.  And we are doing it twice, because of "contains" above
+        if (gateMarginal eq null) {
+          if (gm._4.intValue == mixtureIndex) { val diff = mean - gm._1.doubleValue; v += diff * diff; sum += 1 }
+        } else {
+          val p = gateMarginal.proportions(mixtureIndex)
+          val diff = mean - gm._1.doubleValue; v += diff * diff * p; sum += p
         }
       }
+      case _ => { return Double.NaN }
     }
     assert(sum >= minSamplesForVarianceEstimate)
     // TODO Does this work for weighted children?
     math.sqrt(v / (sum - 1))
   }
-  def apply(varianceVar:MutableRealVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Unit = {
+  def apply(varianceVar:MutableRealVar, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar] = null): Unit = {
     varianceVar.set(maxVariance(varianceVar, model, summary))(null)
   }
   override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[AssignmentSummary] = {
     val gModel = model match { case m:GenerativeModel => m ; case _ => return None }
     val dSummary = summary match { case s:DiscreteSummary1[DiscreteVar] => s ; case null => null ; case _ => return None }
-    lazy val assignment = new MapAssignment
+    lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
       case r:MutableRealVar => { val va = maxVariance(r, gModel, dSummary); if (va.isNaN) return None else assignment.update[RealVar](r, va) } 
       case _ => return None

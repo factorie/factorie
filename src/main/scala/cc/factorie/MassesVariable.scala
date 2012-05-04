@@ -44,6 +44,7 @@ class DenseMasses1(val dim1:Int) extends DenseTensorLike1 with Masses1 with Mass
   def this(dim1:Int, uniformValue:Double) = { this(dim1); this := uniformValue } 
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
   override def :=(v:Double): Unit = { java.util.Arrays.fill(_values, v); _massTotal = v * length }
+  override def :=(ds:DoubleSeq): Unit = { _massTotal = 0.0; var l = length; var v = 0.0; var i = 0; while (i < l) { v = ds(i); assert(v >= 0.0); _values(i) = v; _massTotal += v; i += 1 } }
 }
 class DenseMasses2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 with Masses2 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }

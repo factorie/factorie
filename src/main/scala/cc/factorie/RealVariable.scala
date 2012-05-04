@@ -18,7 +18,7 @@ import cc.factorie.la.SingletonVector
 trait RealDomain extends Domain[Double]
 object RealDomain extends RealDomain
 
-// TODO Consider instead ValueType[Double] and making a different class for SingletonVector.
+// Because this has ValueType[Double] this is not unified with RealSingletonVectorVar
 /** A Variable with a real (double) value. */
 trait RealVar extends VarWithNumericValue with VarAndValueType[RealVar,Double] {
   def domain = RealDomain
@@ -31,7 +31,8 @@ trait RealVar extends VarWithNumericValue with VarAndValueType[RealVar,Double] {
 trait MutableRealVar extends RealVar with MutableVar
 
 /** A Variable with a mutable real (double) value. */
-class RealVariable(initialValue: Double = 0.0) extends MutableRealVar {
+class RealVariable(initialValue: Double) extends MutableRealVar {
+  def this() = this(0.0)
   private var _value: Double = initialValue
   @inline final def doubleValue = _value
   def +=(x:Double) = set(_value + x)(null) // Should we allow non-null DiffLists?
@@ -56,17 +57,16 @@ class RealVariable(initialValue: Double = 0.0) extends MutableRealVar {
 // TODO Create an implicit conversion from Double to RealSingletonVector
 // So that we can use them as sufficient statistics in a VectorTemplate
 trait RealSingletonVectorDomain extends DiscreteVectorDomain {
-  //def maxVectorLength = 1
   def dimensionDomain = RealSingletonDiscreteDomain
   def size = 1
 }
 object RealSingletonDiscreteDomain extends DiscreteDomain { def size = 1 }
 object RealSingletonVectorDomain extends RealSingletonVectorDomain
 
+/** A variable holding a single real (Double) value, but the value encased in a DiscreteVector, 
+    so that it can be among the Statistics of a VectorTemplate. */
 trait RealSingletonVectorVar extends VarWithNumericValue with DiscreteVectorVar with VarAndValueType[RealSingletonVectorVar,SingletonVector with DiscreteVectorValue] {
   thisVariable =>
-  //type VariableType <: RealVar
-  //type ValueType = SingletonVector with DiscreteVectorValue
   def domain = RealSingletonVectorDomain
   /** A Vector representation of this Variable's value. */
   @inline final def value = new SingletonVector(1, 0, doubleValue) with DiscreteVectorValue {
