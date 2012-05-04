@@ -20,6 +20,23 @@ import cc.factorie.generative._
 object DirichletDemo {
 
   def main(args:Array[String]): Unit = {
+    object WordDomain extends EnumDomain { val a, b, c, d, e, f = Value }
+    class Word extends CategoricalVariable[String] { def domain = WordDomain }
+    implicit val model = GenerativeModel()
+    
+    val m = new MassesVariable(new DenseMasses1(WordDomain.size, 2.0))
+    val p = new ProportionsVariable(new DenseProportions1(WordDomain.size))
+    p :~ Dirichlet(m)
+    
+    // TODO Implement mkString in DoubleSeq
+    println("Initial Proportions "+p.value.asSeq.mkString(" "))
+    
+    val data = for (i <- 0 until 100) yield new Word :~ Discrete(p)
+    
+    Maximize(Seq(p), model)
+
+    println("Estimated Proportions "+p.value.asSeq.mkString(" "))
+
     /*
     object WordDomain extends EnumDomain {
       val one, two, three, four, five, six = Value

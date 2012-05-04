@@ -27,11 +27,11 @@ trait TensorVar[+A<:Tensor] extends Variable with VarAndValueType[TensorVar[A],A
 
 //trait MutableTensorVar[+A<:MutableTensor] extends TensorVar[A] with MutableVar with VarAndValueType[MutableTensorVar[A],A]
 
-/** A variable whose value is a cc.factorie.la.MutableTensor.
+/** A variable whose value is a cc.factorie.la.Tensor.
     The zero-arg constructor should only be used by subclasses
     (e.g. so that CategoricalVariable can use its domain for value lookup),
     and should never be called by users. */
-abstract class TensorVariable[A<:Tensor] extends TensorVar[A] {
+abstract class TensorVariable[A<:Tensor] extends TensorVar[A] with MutableVar {
   def this(initialValue:A) = { this(); set(initialValue)(null) } 
   //def init(initialValue:Value) = { _set(initialValue) }
   //def domain: TensorDomain = TensorDomain // TODO Really?  What about future DiscreteVariable and CategoricalVariable?
