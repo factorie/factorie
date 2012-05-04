@@ -159,6 +159,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
     writer.close()
   }
 
+  var string2T: (String) => T = null  // if T is not string, this should be overridden to provide deserialization
   private var _frozenByLoader = false
   override def load(dirname:String, gzip: Boolean = false): Unit = {
     if (_frozenByLoader) return // Already initialized by loader, don't read again
@@ -178,8 +179,14 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
     var line = reader.readLine
     var willFreeze = false
     if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
-    while ({line = reader.readLine; line != null})
-      this.index(line.asInstanceOf[T]) // TODO What if T isn't a String?  Fix this.
+    if (string2T eq null) {
+      while ({line = reader.readLine; line != null})
+        this.index(line.asInstanceOf[T]) // this cast shouldn't be necessary
+    }
+    else {
+      while ({line = reader.readLine; line != null})
+        this.index(string2T(line))
+    }
     if (willFreeze) { freeze(); _frozenByLoader = true }
   }
   
