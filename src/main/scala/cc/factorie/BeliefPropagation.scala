@@ -371,8 +371,8 @@ abstract class BPFactor(val factor: Family#Factor) {
     @author Andrew McCallum, Kedar Bellare, Greg Druck */
 class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], model: Model) /*extends Lattice[V]*/ {
   //type V = BeliefPropagation.BPVariable
-  type VariableMarginalType = DiscreteExpectations1[V] //DiscreteMarginal[V]
-  type FactorMarginalType = DiscreteExpectations //DiscreteFactorMarginal
+  type VariableMarginalType = DiscreteMarginal1[V] //DiscreteMarginal[V]
+  type FactorMarginalType = DiscreteMarginal //DiscreteFactorMarginal
 
   // TODO Consider moving this further out, for even more efficiency?  But then the cache could get very big.
   model.families.foreach(_.clearCachedStatistics)
@@ -436,15 +436,15 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
     factors.foreach(_.updateTreewise())
   }
   /** Provide outside access to a BPFactor marginal given is associated Factor */
-  /*override*/ def marginal(f: Factor): Option[DiscreteExpectations] = {
+  /*override*/ def marginal(f: Factor): Option[DiscreteMarginal] = {
     val bpFactor = bpFactors(f)
     if (bpFactor ne null)
-      Some(DiscreteExpectations(f, bpFactors(f).marginalProportions))
+      Some(DiscreteMarginal(f, bpFactors(f).marginalProportions))
     else
       None
   }
   def marginalMap(f: Factor): HashMap[List[Int], Double] = bpFactors(f).marginalMap
-  /*override*/ def marginal(v: V): Option[DiscreteExpectations1[V]] = { // TODO Consider caching these?
+  /*override*/ def marginal(v: V): Option[DiscreteMarginal1[V]] = { // TODO Consider caching these?
     val factors = bpFactorsOf(v)
     if ((factors ne null) && factors.size > 0) {
       val m = new Array[Double](v.domain.size)
@@ -454,7 +454,7 @@ class BPLattice[V<:BeliefPropagation.BPVariable](val variables: Iterable[V], mod
         for (i <- 0 until m.length) { m(i) += message(i); sum += message(i) }
       }
       maths.expNormalize(m)
-      Some(new DiscreteExpectations1(v, new DenseProportions1(m)))
+      Some(new DiscreteMarginal1(v, new DenseProportions1(m)))
     } else
       None
   }

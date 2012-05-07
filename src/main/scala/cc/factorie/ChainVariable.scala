@@ -114,7 +114,7 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends IndexedSeqEqualsEq
   private val _chainseq = new scala.collection.mutable.ArrayBuffer[E]
   def apply(i:Int): E = _chainseq(i)
   def length = _chainseq.length
-  def value = _chainseq // TODO But this isn't actually immutable. :-(  Inefficient to copy whole seq though. 
+  def value: IndexedSeq[E] = _chainseq // TODO But this isn't actually immutable. :-(  Inefficient to copy whole seq though. 
   def +=(e:E): Unit = {
     e._setChainPosition(this, _chainseq.length)
     _chainseq += e

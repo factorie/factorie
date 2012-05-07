@@ -64,6 +64,7 @@ trait DenseTensorLike1 extends Tensor1 with DenseTensorLike {
 
 class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
   def this(t:Tensor) = { this(t.length); this := t }
+  override def copy: DenseTensor1 = { val c = new DenseTensor1(dim1); System.arraycopy(_values, 0, c._values, 0, length); c }
 }
 
 trait GrowableDenseTensorLike1 extends DenseTensorLike1 {
@@ -91,6 +92,7 @@ class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double
   override def maxIndex: Int = if (singleValue >= 0.0) singleIndex else if (singleIndex != 0) 0 else 1
   override def containsNaN: Boolean = false
   override def dot(v:DoubleSeq): Double = v(singleIndex) * singleValue
+  override def copy: SingletonTensor1 = new SingletonTensor1(dim1, singleIndex, singleValue)
 } 
 
 trait SingletonBinaryTensorLike1 extends Tensor1 {
@@ -106,7 +108,10 @@ trait SingletonBinaryTensorLike1 extends Tensor1 {
   override def dot(v:DoubleSeq): Double = v(singleIndex)
   //override def copy = this // safe because it is immutable
 }
-class SingletonBinaryTensor1(val dim1:Int, val singleIndex:Int) extends SingletonBinaryTensorLike1 
+class SingletonBinaryTensor1(val dim1:Int, val singleIndex:Int) extends SingletonBinaryTensorLike1 {
+  override def copy: SingletonBinaryTensor1 = new SingletonBinaryTensor1(dim1, singleIndex)
+}
+
 class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], val singleIndex:Int) extends SingletonBinaryTensorLike1 {
   def dim1 = sizeProxy.size
 }
@@ -124,10 +129,11 @@ trait UniformTensorLike1 extends Tensor1 {
   override def dot(v:DoubleSeq): Double = v.sum * uniformValue
 }
 class UniformTensor1(val dim1:Int, val uniformValue:Double) extends UniformTensorLike1 {
-  //override def copy = this // safe because it is immutable
+  override def copy = this // safe because it is immutable
 }
 class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends UniformTensorLike1 {
   def dim1 = sizeProxy.size
+  override def copy = this // safe because it is immutable
 }
 
 

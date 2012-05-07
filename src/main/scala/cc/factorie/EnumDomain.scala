@@ -14,12 +14,12 @@
 
 package cc.factorie
 
-/** To be used to avoid re-reading the data, as described in above comment, 
+/** To be used to avoid re-reading the data after CategoricalDomain trimming, 
     but not yet implemented. */
 //trait CategoricalRemapping { def remapCategories(fn:(Int)=>Int) }
 
 
-/** A Categorical domain with enumerated values.  Provides convenient intialization to known values, 
+/** A Categorical domain with enumerated values.  Provides convenient initialization to known values, 
     with value members holding those known values.  For example:
     object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value }
     Each of the defined val will have Int type.  Their corresponding String category values 

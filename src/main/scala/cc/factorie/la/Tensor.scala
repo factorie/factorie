@@ -37,7 +37,7 @@ trait Tensor extends MutableDoubleSeq {
   def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
   def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName)
   def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
-
+  def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
   // TODO Consider methods like +, -, *, /
   def stringPrefix = "Tensor"
   override def toString = this.asSeq.mkString(stringPrefix+"(", ",", ")")

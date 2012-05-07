@@ -77,6 +77,7 @@ trait CategoricalValue2[C] extends DiscreteValue2 {
   def category: C
 }
 
+// Because DiscreteDomain2 is an IndexedSeq it can be passed as a sizeProxy
 class DiscreteDomain2(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue2] with DiscreteTensorDomain[DiscreteValue2] with ValueType[DiscreteValue2] {
   thisDomain =>
   def this(size:Int) = { this(null.asInstanceOf[Iterable[Any]]); _size = size }

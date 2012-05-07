@@ -15,22 +15,20 @@
 package cc.factorie.generative
 import cc.factorie._
 
-// TODO Consider creating PostiveReal, and then Gamma extends 
-
-//trait GeneratedRealVar extends IntegerVar with GeneratedVar
-//abstract class Real(initial: Double = 0.0) extends RealVariable(initial) with GeneratedRealVar with MutableGeneratedVar
-
-object Gamma extends GenerativeFamily3[RealVar,RealVar,RealVar] {
+/** Beta distribution.
+    http://en.wikipedia.org/wiki/Beta_distribution */
+object Beta extends GenerativeFamily3[RealVar,RealVar,RealVar] {
   self =>
-  def logpr(value:Double, mean:Double, variance:Double): Double = {
-    val diff = value - mean
-    return - diff * diff / (2 * variance) - 0.5 * math.log(2.0 * math.Pi * variance)
+  def logpr(value:Double, alpha:Double, beta:Double): Double = math.log(pr(value, alpha, beta))
+  def pr(value:Double, alpha:Double, beta:Double): Double = {
+    require(value >= 0.0 && value <= 1.0)
+    math.pow(value, alpha-1.0) * math.pow(1.0-value, beta-1.0) / maths.beta(alpha, beta) 
   }
-  def pr(x:Double, alpha:Double, beta:Double): Double = {
-    require(x > 0)
-    math.pow(beta, alpha) / maths.gamma(alpha) * math.pow(x, alpha - 1) * math.exp(- beta * x)
+  def sampledValue(alpha:Double, beta:Double): Double = {
+    val x = maths.nextGamma(alpha, 1.0)(cc.factorie.random) 
+    val y = maths.nextGamma(beta, 1.0)(cc.factorie.random)
+    x / (x + y)
   }
-  def sampledValue(alpha:Double, beta:Double): Double = maths.nextGamma(alpha, beta)(cc.factorie.random)
   case class Factor(_1:RealVar, _2:RealVar, _3:RealVar) extends super.Factor {
     def pr(s:Statistics): Double = self.pr(s._1, s._2, s._3)
     def sampledValue(s:Statistics): Double = self.sampledValue(s._2, s._3)
@@ -38,7 +36,8 @@ object Gamma extends GenerativeFamily3[RealVar,RealVar,RealVar] {
   def newFactor(_1:RealVar, _2:RealVar, _3:RealVar) = Factor(_1, _2, _3)
 }
 
-
-
-// TODO Finish this.
-//class GammaGamma(alphaGamma:Gamma, betaGamma:Gamma, value:Double = 0) extends Gamma(alphaGamma, betaGamma, value)
+object MaximizeBetaByMomentMatching {
+  def apply(alpha:RealVariable, beta:RealVariable, model:GenerativeModel): Unit = {
+    throw new Error("Not yet implemented.") // TODO Finish this.
+  }
+}
