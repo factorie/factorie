@@ -24,47 +24,27 @@ object DirichletDemo {
     class Word extends CategoricalVariable[String] { def domain = WordDomain }
     implicit val model = GenerativeModel()
     
-    val m = new MassesVariable(new DenseMasses1(WordDomain.size, 2.0))
-    val p = new ProportionsVariable(new DenseProportions1(WordDomain.size))
-    p :~ Dirichlet(m)
-    
-    // TODO Implement mkString in DoubleSeq
-    println("Initial Proportions "+p.value.asSeq.mkString(" "))
-    
-    val data = for (i <- 0 until 100) yield new Word :~ Discrete(p)
-    
-    Maximize(Seq(p), model)
+    val masses = new MassesVariable(new DenseMasses1(WordDomain.size, 2.0))
+    val p1 = new ProportionsVariable(new DenseProportions1(WordDomain.size))
+    p1 :~ Dirichlet(masses)
 
-    println("Estimated Proportions "+p.value.asSeq.mkString(" "))
+    println("Demonstrating Proportions estimation")
+    println("Initial Proportions "+p1.value)
+    val data = for (i <- 0 until 500) yield new Word :~ Discrete(p1)
+    //MaximizeProportions(p1, model)
+    Maximize(Seq(p1), model)
+    println("Estimated Proportions "+p1.value)
+    
+    println("Demonstrating Dirichlet parameter estimation")
+    println("Initial Masses "+masses.value)
+    val ps = for (i <- 0 until 1000) yield ProportionsVariable.dense(WordDomain.size) :~ Dirichlet(masses)
+    MaximizeDirichletByMomentMatching(masses, model)
+    println("Estimated Masses "+masses.value)
+    
+    // TODO I'm seeing consistent over-estimates of precision from MaximizeDirichletByMomentMatching
+    // It could be a problem in the estimator, or in the Dirichlet.sample implementations.
+    // Needs investigation -akm
 
-    /*
-    object WordDomain extends EnumDomain {
-      val one, two, three, four, five, six = Value
-    }
-    class Word(p: Proportions, s:String) extends Categorical(p, s) {
-      def domain = WordDomain
-    }
-   
-    val dirmean = new DenseProportions(WordDomain.size)
-    val dirprec = new RealParameter(1.0)
-    println("Dirichlet1 mean = "+dirmean.toSeq)
-    println("Dirichlet1 prec = "+dirprec.doubleValue)
-   
-    val n = 10000
-    println("Sampling "+n+" proportions")
-    val proportions = for (i <- 1 to 10000) yield 
-      new DenseDirichlet(dirmean, dirprec).sampleFromParents()
-   
-    println("Example multinomials")
-    proportions.take(4).foreach(m => {
-      print("prop "); m.foreach(p => print("%8f ".format(p))); println
-    })
-  
-    println("Estimating Dirichlet2 parameters from sampled Multinomials")
-    DirichletMomentMatching.estimate(dirmean, dirprec)
-    println("Dirichlet2 mean = "+dirmean.toSeq)
-    println("Dirichlet2 prec = "+dirprec.doubleValue)
-*/
   }
   
 }

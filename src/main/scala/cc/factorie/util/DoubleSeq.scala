@@ -116,6 +116,20 @@ trait DoubleSeq {
   }
   /** With copied contents */
   def toSeq: Seq[Double] = new ArrayIndexedSeqDouble(toArray)
+  /** Append a string representation of this DoubleSeq to the StringBuilder. */
+  def addString(b:StringBuilder, start:String, sep:String, end:String): StringBuilder = {
+    var first = true
+    b.append(start)
+    val len = length; var i = 0
+    while (i < len) {
+      if (first) { b.append(apply(i)); first = false } else { b.append(sep); b.append(apply(i)) }
+      i += 1
+    }
+    b.append(end); b
+  }
+  def mkString(start:String, sep:String, end:String): String =  addString(new StringBuilder(), start, sep, end).toString
+  def mkString(sep:String): String = mkString("", sep, "")
+  def mkString: String = mkString("")
 }
 
 /** An IndexedSeq[Double] backed by an array, just used as a return type for DoubleSeq.toSeq. */

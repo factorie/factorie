@@ -43,7 +43,7 @@ class MaximizeSuite extends Maximize {
   }
   def apply(varying:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Summary[Marginal] = {
     val option = infer(varying, model, summary)
-    if (option == None) throw new Error("No maximizer found for factors "+model.factors(varying).take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString)
+    if (option == None) throw new Error("No maximizer found for factors "+model.factors(varying).take(10).map(_ match { case f:Family#Factor => f.family.getClass.getName; case f:Factor => f.getClass.getName }).mkString(" "))
     option.get.setToMaximize(null)
     option.get
   }
