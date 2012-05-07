@@ -124,6 +124,93 @@ object ModelPiece {
 
 }
 
+
+// Identical to ModelPiece except fg is not kept around after the gradient calculation
+class TransientModelPiece (
+          val vars: Seq[DiscreteVariable with VarWithTargetValue],
+          val families: Seq[DotFamily with Template],
+          val model: Model,
+          val infer: (LatticeBP) => Unit)
+    extends Piece {
+
+  def newFG() = new LatticeBP(model, vars.toSet) with SumProductLattice
+
+  // compute the empirical counts of the model
+  def empiricalCounts(): Map[DotFamily, Vector] = {
+    //val diff = new DiffList
+    vars.foreach(_.setToTarget(null))
+    val result: Map[DotFamily, Vector] = new HashMap
+    // TODO currently fT, when f factors and T templates
+    for (dt <- families) {
+      val vector = new SparseVector(dt.statisticsVectorLength)
+      for (factor <- newFG().factors) {
+        factor match {
+          case f: DotFamily#Factor => {
+            if (f.family == dt)
+              vector += f.statistics.vector
+          }
+          case _ =>
+        }
+      }
+      result(dt) = vector
+    }
+    // undo the change
+    //diff.undo
+    result
+  }
+
+  def truthScore(fg: LatticeBP): Double = {
+    //val diff = new DiffList
+    vars.foreach(_.setToTarget(null))
+    var score = 0.0
+    for (factor <- fg.factors) {
+      score += factor.score
+    }
+
+    //diff.undo
+    score
+  }
+
+  def valueAndGradient: (Double, Map[DotFamily, Vector]) = {
+    var fg = newFG
+
+    // perform BP
+    infer(fg)
+
+    // compute the gradient
+    val exps = fg.statExpectations
+
+    // compute logZ
+    val value = truthScore(fg) - fg.logZ()
+
+    fg = null // ensure garbage collection
+
+    val gradient: Map[DotFamily, Vector] = new HashMap[DotFamily, Vector]
+    val ec = empiricalCounts()
+    for (df <- families) {
+      val vector = new SparseVector(df.statisticsVectorLength)
+      val expv = exps.get(df)
+      if (expv.isDefined) {
+        assert(expv.get.length == df.statisticsVectorLength)
+        vector += (expv.get * -1.0)
+      }
+      vector += ec(df)
+      gradient(df) = vector
+    }
+    (value, gradient)
+  }
+}
+
+object TransientModelPiece {
+  def apply(model: Model, vars: Seq[DiscreteVariable with VarWithTargetValue]) =
+    new TransientModelPiece(
+      vars,
+      model.familiesOfClass[DotFamily with Template],
+      model,
+      (fg: LatticeBP) => new InferencerBPWorker(fg).inferTreewise()
+    )
+}
+
 /**
  * @author brian martin
  * @date 2/24/11
