@@ -69,7 +69,7 @@ object LDA3 {
         sampler.export(phis)
         if (fitDirichlet) {
           sampler.exportThetas(documents)
-          DirichletMomentMatching.estimate(alphas, model)
+          MaximizeDirichletByMomentMatching(alphas, model)
           sampler.resetSmoothing(alphas.tensor, beta1)
           println("alpha = " + alphas.tensor.toSeq.mkString(" "))
           phis.zipWithIndex.map({case (phi:ProportionsVar, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).reverse.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))

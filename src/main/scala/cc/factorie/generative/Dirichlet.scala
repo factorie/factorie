@@ -36,7 +36,7 @@ object Dirichlet extends GenerativeFamily2[ProportionsVar,MassesVar] {
     val c = new Array[Double](alpha.length)
     for (child <- children) c(child.intValue) += 1.0
     forIndex(alpha.length)(i => {
-      p(i) = maths.nextGamma(alpha(i) + c(i), 1)(cc.factorie.random)
+      p(i) = maths.nextGamma(alpha(i) + c(i), 1)(cc.factorie.random) 
       if (p(i) <= 0.0) p(i) = 0.0001
       norm += p(i)
     })
@@ -53,38 +53,70 @@ object Dirichlet extends GenerativeFamily2[ProportionsVar,MassesVar] {
   def newFactor(a:ProportionsVar, b:MassesVar) = Factor(a, b)
 }
 
-object DirichletMomentMatching {
-  def estimate(masses:MassesVariable, model:GenerativeModel): Unit = {
-    val numChildren = model.childFactors(masses).size
-    //val massesChildren = masses.children //mean.generatedChildren // TODO Without "generatedChildren" this no longer works for Dirichlet mixtures.
-    assert(numChildren > 1)
-    //val factors = model.factors(List(mean, precision)); assert(factors.size == mean.children.size); assert(factors.size == precision.children.size)
-    // Calculcate and set the mean
-    val m = new DenseProportions1(new Array[Double](masses.tensor.length))
-    for (factor <- model.childFactors(masses)) factor match { 
+object MaximizeDirichletByMomentMatching {
+  def apply(masses:MassesVariable, model:GenerativeModel): Unit = {
+    // Calculate and set the mean
+    val m = new cc.factorie.DenseMasses1(masses.tensor.length)
+    val childFactors = model.childFactors(masses)
+    val numChildren = childFactors.size; assert(numChildren > 1)
+    for (factor <- childFactors) factor match { 
       case f:Dirichlet.Factor => {
-        require(masses.tensor.length == f._1.tensor.length) // Make sure that each child Proportions has same length as parent masses
-        forIndex(m.size)(i => m(i) += f._1.tensor(i))
+        m += f._1.tensor
+        //assert(!f._1.tensor.contains(Double.PositiveInfinity)) // TODO Remove this line
+        //println("tensor.class="+f._1.tensor.getClass.getName+" tensor.sum="+f._1.tensor.sum+" tensor.max="+f._1.tensor.max+" sum="+m.sum+" max="+m.max)
+        //forIndex(m.size)(i => m(i) += f._1.tensor(i))
       }
     }
-    forIndex(m.size)(m(_) /= numChildren)
-    //mean.set(m)(null)
+    m.normalize
+    //assert(m.forall(_ >= 0.0))
+    //println("MaximizeDirichletByMomentMatching mean max="+m.max)
+    //forIndex(m.size)(m(_) /= numChildren)
     // Calculate variance = E[x^2] - E[x]^2 for each dimension
-    val variance = new Array[Double](masses.tensor.length)
-    for (factor <- model.childFactors(masses)) factor match { 
-      case f:Dirichlet.Factor => forIndex(masses.tensor.length)(i => { val diff = f._1.tensor(i) - m(i); variance(i) += diff * diff })
+    val variance = new cc.factorie.la.DenseTensor1(masses.tensor.length)
+    for (factor <- childFactors) factor match { 
+      case f:Dirichlet.Factor => {
+        val len = m.length
+        var i = 0
+        while (i < len) {
+          val diff = f._1.tensor(i) - m(i); variance(i) += diff * diff
+          i += 1
+        }
+      }
+      //forIndex(masses.tensor.length)(i => { val diff = f._1.tensor(i) - m(i); variance(i) += diff * diff })
     }
+    //assert(m.forall(_ >= 0.0))
+    //assert(!m.containsNaN)
+    //println("MaximizeDirichletByMomentMatching variance max="+variance.max)
+    //println("MaximizeDirichletByMomentMatching numChildren="+numChildren)
     //for (child <- meanChildren) child match { case p:Proportions => forIndex(mean.length)(i => variance(i) += p(i) * p(i)) }
     //println("variance1="+variance.toList)
-    forIndex(masses.tensor.length)(i => variance(i) /= (numChildren - 1.0))
-    //forIndex(mean.length)(i => variance(i) = (variance(i) / meanChildren.size - 1.0) - (m(i) * m(i)))
+    variance /= (numChildren - 1.0)
+    //println("MaximizeDirichletByMomentMatching variance max="+variance.max)
+    //assert(!variance.containsNaN)
+    //forIndex(masses.tensor.length)(i => variance(i) /= (numChildren - 1.0))
     //println("variance2="+variance.toList)
     var alphaSum = 0.0
-    forIndex(masses.tensor.length)(i => if (m(i) != 0.0) alphaSum += math.log((m(i) * (1.0 - m(i)) / variance(i)) - 1.0))
+    //assert(m.forall(_ >= 0.0))
+    //assert(!m.containsNaN)
+    m.foreachElement((i,v) => { if (v != 0.0) alphaSum += math.log((v * (1.0 - v) / variance(i)) - 1.0); assert(alphaSum == alphaSum, "culprit: v="+v+" variance="+variance(i)+" incr="+math.log((v * (1.0 - v) / variance(i)) - 1.0)) })
+    //assert(m.forall(_ >= 0.0))
+    //assert(!m.containsNaN)
+    //forIndex(masses.tensor.length)(i => if (m(i) != 0.0) alphaSum += math.log((m(i) * (1.0 - m(i)) / variance(i)) - 1.0))
+    // ... alphaSum += math.log((m(i) * (1.0 - m(i)) / variance(i)) - 1.0))
     val precision = math.exp(alphaSum / (masses.tensor.length - 1))
-    assert(precision == precision, "alphaSum="+alphaSum+" variance="+variance.toList+" mean="+m.toSeq) // Check for NaN
-    forIndex(m.size)(i => m(i) = m(i) * precision)
-    masses.set(m)(null)
+    //println("MaximizeDirichletByMomentMatching precision="+precision)
+    assert(precision > 0)
+    assert(precision == precision, "alphaSum="+alphaSum+" variance="+variance.asSeq+" mean="+m.asSeq) // Check for NaN
+    //assert(m.forall(_ >= 0.0))
+    //assert(!m.containsNaN)
+    //println("MaximizeDirichletByMomentMatching m="+m)
+    m *= precision
+    //println("MaximizeDirichletByMomentMatching m="+m)
+    //assert(!m.containsNaN)
+    //forIndex(m.size)(i => m(i) = m(i) * precision)
+    m.foreachElement((i,v) => if (v < 0.0) println("i,v="+i+", "+v))
+    //assert(m.forall(_ >= 0.0))
+    masses := m
   }
 }
 

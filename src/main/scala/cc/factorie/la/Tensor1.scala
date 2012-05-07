@@ -27,26 +27,25 @@ trait Tensor1 extends Tensor {
   override def stringPrefix = "Tensor1"
 }
 
-
-
-trait DenseTensorLike1 extends Tensor1 {
-  protected var _values = new Array[Double](dim1)
-  protected def _valuesSize: Int = _values.size
+trait DenseTensorLike1 extends Tensor1 with DenseTensorLike {
+  private var __values = new Array[Double](dim1)
+  protected def _values = __values
+  protected def _valuesSize: Int = __values.size
   // Used by subclass GrowableDenseTensor1
-  protected def ensureCapacity(size:Int): Unit = if (_values.size < size) {
-    val newSize = math.max(_values.size * 2, size)
+  protected def ensureCapacity(size:Int): Unit = if (__values.size < size) {
+    val newSize = math.max(__values.size * 2, size)
     val newCounts = new Array[Double](newSize)
-    Array.copy(_values, 0, newCounts, 0, _values.size)
-    _values = newCounts
+    Array.copy(_values, 0, newCounts, 0, __values.size)
+    __values = newCounts
   }
   def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
-  def apply(i:Int) = _values(i)
-  override def asArray = _values
-  override def +=(i:Int, incr:Double): Unit = _values(i) += incr
-  override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
-  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { _values(i) += ds(i); i += 1 } }
-  override def update(i:Int, v:Double): Unit = _values(i) = v
+  def apply(i:Int) = __values(i)
+  override def asArray = __values
+  override def +=(i:Int, incr:Double): Unit = __values(i) += incr
+  override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
+  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } }
+  override def update(i:Int, v:Double): Unit = __values(i) = v
   def outer(t1:Tensor1): Tensor2 = t1 match {
     case t1:SingletonBinaryTensor1 => {
       throw new Error("Not yet implemented; needs SparseTensor2")
