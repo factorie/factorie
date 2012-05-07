@@ -32,20 +32,12 @@ trait Tensor extends MutableDoubleSeq {
   def defaultValue: Double = 0.0 // TODO This is not actually yet properly used by subclasses
   def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
   def activeElements: Iterator[(Int,Double)] = (for (i <- activeDomain.toArray) yield (i, apply(i))).iterator
-  def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = throw new Error("Not yet implemented.")
-  // TODO No, replace the following override with SparseDoubleSeq when it is finished
-  // Override various methods that can use activeDomain for extra efficiency // TODO More of these should be overridden
-  override def sum: Double = 
-    if (isDense) super.sum
-    else { val d = activeDomain; var s = 0.0; var i = 0; while (i < d.length) { s += apply(d(i)); i += 1 }; s } // assumes non-active are zero
-  override def max: Double = 
-    if (isDense) super.max
-    else { val d = activeDomain; var m = defaultValue; var i = 0; while (i < d.length) { if (!(m >= apply(d(i)))) m = apply(d(i)); i += 1 }; m }
+  def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f) // To be override for efficiency in subclasses
   // Methods for mutability not implemented in all Tensors
   def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
   def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName)
   def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
-
+  def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
   // TODO Consider methods like +, -, *, /
   def stringPrefix = "Tensor"
   override def toString = this.asSeq.mkString(stringPrefix+"(", ",", ")")
@@ -77,3 +69,7 @@ class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor {
   def apply(index:Int) = tensor.apply(index) * scalar
 }
 
+trait DenseTensorLike extends Tensor {
+  protected def _values: Array[Double]
+  override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
+}

@@ -22,10 +22,10 @@ trait DoubleSeq {
   def length: Int
   final def size = length // Just an alias
   def foreach(f:(Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(apply(i)); i += 1 } }
-  def forElements(f:(Int,Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(i, apply(i)); i += 1 } }
+  def foreachElement(f:(Int,Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(i, apply(i)); i += 1 } }
   def forallElements(f:(Int,Double)=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(i, apply(i))) return false; i += 1 }; return true }
   def contains(d:Double): Boolean = { val l = length; var i = 0; while (i < l) { if (d == apply(i)) return true; i += 1 }; false }
-  def forall(f:Double=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(apply(i))) return false; i += 1 }; true }
+  def forall(f:Double=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(apply(i))) { println("DoubleSeq.forall "+apply(i)); return false }; i += 1 }; true }
   def foldLeft[B<:AnyRef](z:B)(f:(B,Double)=>B): B = throw new Error("Not yet implemented.")
   def map(f:(Double)=>Double): DoubleSeq = { val l = length; val a = new Array[Double](l); var i = 0; while (i < l) { a(i) = f(apply(i)); i += 1 }; new ArrayDoubleSeq(a) }
   def indexOf(d:Double): Int = { val l = length; var i = 0; while (i < l) { if (d == apply(i)) return i; i += 1 }; -1 }
@@ -116,6 +116,20 @@ trait DoubleSeq {
   }
   /** With copied contents */
   def toSeq: Seq[Double] = new ArrayIndexedSeqDouble(toArray)
+  /** Append a string representation of this DoubleSeq to the StringBuilder. */
+  def addString(b:StringBuilder, start:String, sep:String, end:String): StringBuilder = {
+    var first = true
+    b.append(start)
+    val len = length; var i = 0
+    while (i < len) {
+      if (first) { b.append(apply(i)); first = false } else { b.append(sep); b.append(apply(i)) }
+      i += 1
+    }
+    b.append(end); b
+  }
+  def mkString(start:String, sep:String, end:String): String =  addString(new StringBuilder(), start, sep, end).toString
+  def mkString(sep:String): String = mkString("", sep, "")
+  def mkString: String = mkString("")
 }
 
 /** An IndexedSeq[Double] backed by an array, just used as a return type for DoubleSeq.toSeq. */

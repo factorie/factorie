@@ -24,6 +24,12 @@ trait Masses extends Tensor {
   override def sampleIndex(implicit r:Random): Int = sampleIndex(massTotal)(r) //cc.factorie.maths.nextDiscrete(this.asArray, massTotal)(r)
 }
 
+// TODO Should we get rid of all these combinations and make users extend the combinations themselves? -akm
+trait Masses1 extends Tensor1 with Masses
+trait Masses2 extends Tensor2 with Masses
+trait Masses3 extends Tensor3 with Masses
+trait Masses4 extends Tensor4 with Masses
+
 /** Provides a protected var for holding the massTotal */
 trait MassesWithTotal extends Masses {
   protected var _massTotal: Double = 0.0
@@ -33,29 +39,28 @@ trait MassesWithTotal extends Masses {
   override def update(i:Int, v:Double): Unit = throw new Error("Masses cannot be modified by udpate; use += instead.")
 }
 
-// TODO Should we get rid of all these combinations and make users extend the combinations themselves? -akm
-trait Masses1 extends Tensor1 with Masses
-trait Masses2 extends Tensor2 with Masses
-trait Masses3 extends Tensor3 with Masses
-trait Masses4 extends Tensor4 with Masses
-
-//trait DenseMasses extends ... (gather += in here, but we need a DenseTensor class also)
-class DenseMasses1(val dim1:Int) extends DenseTensorLike1 with Masses1 with MassesWithTotal {
-  def this(dim1:Int, uniformValue:Double) = { this(dim1); this := uniformValue } 
+trait DenseMassesWithTotal extends DenseTensorLike with MassesWithTotal {
+  override def zero(): Unit = { super.zero(); _massTotal = 0.0 }
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+  override def *=(d:Double): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)*d; _massTotal += v; _values(i) = v; i += 1 }}
+  override def *=(ds:DoubleSeq): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)*ds(i); _massTotal += v; _values(i) = v; i += 1 }}
+  override def /=(ds:DoubleSeq): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)/ds(i); _massTotal += v; _values(i) = v; i += 1 }}
+  override def +=(ds:DoubleSeq): Unit = ds.foreachElement((i,v) => { _values(i) += v; _massTotal += v })
   override def :=(v:Double): Unit = { java.util.Arrays.fill(_values, v); _massTotal = v * length }
   override def :=(ds:DoubleSeq): Unit = { _massTotal = 0.0; var l = length; var v = 0.0; var i = 0; while (i < l) { v = ds(i); assert(v >= 0.0); _values(i) = v; _massTotal += v; i += 1 } }
 }
-class DenseMasses2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 with Masses2 with MassesWithTotal {
-  override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+
+//trait DenseMasses extends ... (gather += in here, but we need a DenseTensor class also)
+class DenseMasses1(val dim1:Int) extends DenseTensorLike1 with Masses1 with DenseMassesWithTotal {
+  def this(dim1:Int, uniformValue:Double) = { this(dim1); this := uniformValue }
+}
+class DenseMasses2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 with Masses2 with DenseMassesWithTotal {
   override def +=(i:Int, j:Int, v:Double): Unit = { _massTotal += v; val index = singleIndex(i, j); _values(index) += v; assert(_massTotal >= 0.0); assert(_values(index) >= 0.0) }
 }
-class DenseMasses3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3 with Masses3 with MassesWithTotal {
-  override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+class DenseMasses3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3 with Masses3 with DenseMassesWithTotal {
   override def +=(i:Int, j:Int, k:Int, v:Double): Unit = { _massTotal += v; val index = singleIndex(i, j, k); _values(index) += v; assert(_massTotal >= 0.0); assert(_values(index) >= 0.0) }
 }
-class DenseMasses4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4 with Masses4 with MassesWithTotal {
-  override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+class DenseMasses4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4 with Masses4 with DenseMassesWithTotal {
   override def +=(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = { _massTotal += v; val index = singleIndex(i, j, k, l); _values(index) += v; assert(_massTotal >= 0.0); assert(_values(index) >= 0.0) }
 }
 

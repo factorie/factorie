@@ -137,7 +137,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       }
       if (i % fitAlphaInterval == 0) {
         sampler.exportThetas(documents)
-        DirichletMomentMatching.estimate(alphas, model)
+        MaximizeDirichletByMomentMatching(alphas, model)
         sampler.resetSmoothing(alphas.tensor, beta1)
         println("alpha = " + alphas.tensor.toSeq.mkString(" "))
       }

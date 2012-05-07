@@ -184,6 +184,9 @@ object MaximizeProportions extends Maximize {
     // override def infer(variables:Iterable[Variable], model:Model): Option[Summary[ProportionsAssignment]] = 
     if (variables.size != 1) return None
     (variables.head, model, summary) match {
+      case (mp:ProportionsVariable, model:GenerativeModel, null) => {
+        Some(new SingletonSummary(new ProportionsAssignment(mp, maxProportions(mp, model, null))))
+      }
       case (mp:ProportionsVariable, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]) => {
         Some(new SingletonSummary(new ProportionsAssignment(mp, maxProportions(mp, model, summary))))
       }

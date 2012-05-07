@@ -34,7 +34,7 @@ trait Tensor3 extends Tensor {
   @inline final def multiIndex(i:Int): (Int, Int, Int) = (i/dim2/dim3, (i/dim3)%dim2, i%dim3)
 }
 
-trait DenseTensorLike3 extends Tensor3 {
+trait DenseTensorLike3 extends Tensor3 with DenseTensorLike {
   private var __values = new Array[Double](dim1*dim2*dim3)
   protected def _values = __values
   def isDense = true
@@ -47,6 +47,5 @@ trait DenseTensorLike3 extends Tensor3 {
   override def update(i:Int, v:Double): Unit = __values(i) = v
   override def update(i:Int, j:Int, k:Int, v:Double): Unit = __values(i*dim2*dim3 + j*dim2 + k) = v
   override def +=(i:Int, v:Double): Unit = __values(i) += v
-  override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
 }
 class DenseTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3

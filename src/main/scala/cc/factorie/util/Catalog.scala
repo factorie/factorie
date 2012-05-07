@@ -53,8 +53,7 @@ object Catalog {
   def size(c:Class[_]): Int = cache(c).size
   /** Make c2 also act as a key for looking up the catalog for class c1.
       Note that you will get a casting error if you then try Catalog.apply[C2](3);
-      you must instead use Catalog.get[C1](classOf[C2], 3).
-      This somewhat odd functionality helps us save memory in MixtureComponentRef. */
+      you must instead use Catalog.get[C1](classOf[C2], 3). */
   def alias(c1:Class[_], c2:Class[_]): Unit = if (cache.contains(c1)) require(cache(c1) == cache(c2)) else cache(c1) = cache(c2)
 }
 

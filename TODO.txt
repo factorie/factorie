@@ -1,103 +1,48 @@
-Architecture issues:
+Pre 1.0 release:
 
-1. updateChildStats 
-
-Parameter.updateChildStats currently takes argument of type Variable.  
-If it were the variable.value instead then we could use updateChildStats for PlatedDirichlet.
-But!  
-The generative distribution is stored in the child variable.
-A RealVariable may be a parent of both a Gaussian-generated variable and a Poisson-generated variable.
-If a RealParameter gets a updateChildStats(Double) it won't know what to do with it.
-So
-Perhaps we should return to the days of "GaussianDistribution extends Distribution"
-as the parent of a GeneratedVariable instead of RealParameter.
-This would certainly ease parameter estimation.
-But
-In practice I've started to create things like GaussianMeanParameter extends RealParameter anyway.
-Is this a reasonable alternative?
-But then how would a tied GaussianMeanParameter and PoissonMeanParameter work.
-
-Example of new scheme with Distribution:
-val gm = new RealVariable(0.0)
-val gv = new RealVariable(1.0)
-val gd = new GaussianDistribution(gm, gv)
-val g1 = new Gaussian(gd)
-Not great.
-
-But!
-updateChildStats is actually a method on CollapsedParameter, not Parameter.
-So
-We could have CollapsedDistribution instead of CollapsedParameter.
-Work out CollapsedGaussianDistribution as an example.
-No
-In a Gaussian distribution we could collapse the mean but not the variance,
-so we need CollapsedParmeters not CollapsedDistributions.
-
-Perhaps each Parameter should have a separate list of children for each of its distributions.
-Something like a util.TypeMap.
-Then we could have updateChildStats(value, childVariableClass), 
-but then we'd have to be careful about DiscreteVariable and PlatedDiscreteVariable
-
-This is an awful lot of trouble for updateChildStats.  
-Perhaps this method should be removed and individual CollapsedInferencer will then need to be 
- sufficiently specially-cased to know the collapsed parents and make the correct underlying detailed calls.
- Consider this carefully. 
-
-Perhaps instead we should have an updateCollapsedParameter(Factor).  
- But this still doesn't solve the above problem concerning PlatedDirichlet.
-So we could consider instead updateChildStats(Stat)
- but then PlatedDiscreteMixture would have to generate a DiscreteMixture.Statistic object---a little odd.
- 
+Finish BP and move to cc.factorie package.  Make it fast!
+Get rid of la.Vector and use la.Tensor instead.  Make corresponding changes in Factors/Templates, etc.
+Make VectorFamily require "def statisticsDomain"
+Consider moving generative.GibbsSampler up to cc.factorie?
+Consider making cc.factorie.optimize take DoubleSeq instead of Array[Double]
+Consider changes to generative.Collapse infrastructure
+Consider making no variable inherit from Seq.  (Seq would come from value instead.)  Remove SeqEqualsEq and friends.  
+ Then allow Model.factors and Infer and Maximize to have apply(Iterable[Variable]) and Apply(Variable).
+ Then, e.g. change "for (token <- document)" to "for (token <- document.tokens)".
+Re-consider if variable.value should always make an immutable copy.
+Look at Gaussian.logpr, Beta.logpr, etc, and ensure these scores are correct
+Implement generative.CollapsedVariationalBayes and make sure it works for LDA
+Re-consider type arguments in Sampler and descendants, get AROW Perceptron training working, and look at SampleRank interaction
+Get rid of Seq[Double] everywhere, including cc.factorie.maths.  Get rid of IndexedSeqOps completely.
+Look at app.nlp.relation
+Make reasonable command-line tools for MALLET functionality, and document
+Get rid of dependency on Java bibtex parser library
+Sanity-check pass through all code
+Package documentation
 
 
-2. Gate and GatedRefVariable, etc.  Never use it again for Mixtures?
-Look at updateChildStats for mixtures and EM.
-Can we implement BP for Gates the way that Minka and Winn recommend?
+More examples:
+Implement TopicsOverTime (needs Beta distribution)
+Finish/fix DecisionTree implementation, and make example
+Make an HMM example and show that BP inference and EM training work on it
 
 
-
-3. Make most variables traits instead of classes.
-Initial value is set by ":=" or "init", not in constructor arguments.
-Those variables that need initialization beyond their initial value can be classes.
-Examples:
- val b = new BooleanVariable := true
- val b = new BooleanVariable init(true)
- class Word(s:String) extends CategoricalVariable[String] {
-   this.setCategory(s)
-   def domain = WordDomain
- }
-  
- 
- 4. Make Template.unroll enforce a match on variable class AND ON domain
- This would allow multiple new Templates to be put into the same model without creating new classes for them.
- It would also provide more error checking for the existing use-case; 
-  (or perhaps it would just return no factors?  This wouldn't be good.)
- 
- 
-
-
-Coding:
-Finish belief propagation message-passing 
-Re-consider type arguments in Sampler and descendants
-Implement VariationalBayes
 
 Low Priority Coding:
-Implement Forany2 in er
-Fix IntTerm in er
-Support inference over relations in er
+Replace cc.factorie.er with something better that uses Scala 2.10 macros.
+-Implement Forany2 in er
+-Fix IntTerm in er
+-Support inference over relations in er
 Create simple infrastructure for non-relational generative Bayes nets
 
 Testing:
 Create more unit tests!
-Why does LDA get much slower when you tell the sampler not to create DiffLists.  I expected the opposite! 
 Profile everything, especially BP and LDA.
 
 Documentation:
 Clean up all examples
 Put in ACE coref example
 Put in final spanner example
-Create a Gaussian mixture example
-Write README.txt
 Write manual in package.html
 Document how to get a FACTORIE interpreter prompt
 
