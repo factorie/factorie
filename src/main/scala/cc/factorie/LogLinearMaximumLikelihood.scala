@@ -153,7 +153,7 @@ class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordinatio
  * Maximum likelihood parameter estimation for the weights of DotTemplate.
  * @author Andrew McCallum, Kedar Bellare, Gregory Druck
  */
-class LogLinearMaximumLikelihood(model: Model) {
+class LogLinearMaximumLikelihood(model: Model, modelFile: String = null) {
   //type TemplatesToUpdate = DotTemplate
   var gaussianPriorVariance = 10.0
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
@@ -181,21 +181,27 @@ class LogLinearMaximumLikelihood(model: Model) {
     // Currently only supports iid single DiscreteVariables
     val optimizable = new LogLinearOptimizable(templates, model, variableSets, gaussianPriorVariance, familiesToUpdate, constraints)
 
+    def runOptimizer() {
+      try {
+        createOptimizer(optimizable).optimize(numIterations)
+      }
+      catch {
+        case e : Error => e.printStackTrace
+      }
+    }
+
     // Do the gradient-climbing optimization!
-    try {
-      val optimizer = new LimitedMemoryBFGS(optimizable)
-      optimizer.optimize(numIterations)
-    }
-    catch {
-      case e : Error => e.printStackTrace
-    }
+    runOptimizer()
     // Resetting and running again sometimes improves results
-    try {
-      val optimizer = new LimitedMemoryBFGS(optimizable)
-      optimizer.optimize(numIterations)
-    }
-    catch {
-      case e : Error => e.printStackTrace
+    runOptimizer()
+  }
+
+  def createOptimizer(optimizable: OptimizableByValueAndGradient): Optimizer = {
+    new LimitedMemoryBFGS(optimizable) {
+      override def postIteration(i: Int) {
+        if (model.isInstanceOf[TemplateModel] && (modelFile ne null))
+          model.asInstanceOf[TemplateModel].save(modelFile + "-iter=" + i, gzip = true)
+      }
     }
   }
 }
