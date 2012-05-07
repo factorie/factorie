@@ -20,7 +20,7 @@ import java.lang.StringBuffer
 // Representation for a dependency parse
 
 object ParseLabelDomain extends CategoricalDomain[String]
-class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabelVariable(targetValue) { def domain = ParseLabelDomain } 
+class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabelVariable(targetValue) { def domain = ParseLabelDomain }
 
 object ParseFeaturesDomain extends CategoricalVectorDomain[String]
 class ParseFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = ParseFeaturesDomain }
@@ -65,7 +65,15 @@ object ParseTree {
   val noIndex = -2
 }
 class ParseTree(val sentence:Sentence) {
-  private val _parents = new Array[Int](sentence.length)
+  def copy: ParseTree = {
+    val newTree = new ParseTree(sentence)
+    for ((p,i) <- parents.zipWithIndex)
+      newTree.setParent(i, p)
+    for ((l,i) <- labels.map(_.intValue).zipWithIndex)
+      newTree.label(i).set(l)(null)
+    newTree
+  }
+  private val _parents = Array.fill[Int](sentence.length)(ParseTree.noIndex)
   private val _labels = Array.tabulate(sentence.length)(i => new ParseTreeLabel(this))
   def parents: Seq[Int] = _parents
   def labels: Seq[ParseTreeLabel] = _labels
@@ -76,7 +84,7 @@ class ParseTree(val sentence:Sentence) {
   /** Make the argument the root of the tree.  This method does not prevent their being two roots. */
   def setRootChild(token:Token): Unit = setParent(token.position - sentence.start, -1)
   /** Returns the sentence position of the parent of the token at position childIndex */
-  def parentIndex(childIndex:Int): Int = _parents(childIndex)
+  def parentIndex(childIndex:Int): Int = if (childIndex == ParseTree.rootIndex) ParseTree.noIndex else _parents(childIndex)
   /** Returns the parent token of the token at position childIndex (or null if the token at childIndex is the root) */
   def parent(childIndex:Int): Token = {
     val idx = _parents(childIndex)
