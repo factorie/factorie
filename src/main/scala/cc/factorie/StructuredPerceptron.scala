@@ -90,28 +90,3 @@ abstract class AveragedStructuredPerceptron[V<:VarWithTargetValue] extends Struc
   }
 }
 
-// TODO: would actually like to have BooleanVariable here, but it does not have a target value -- brian
-// TODO: also, VarWithTargetValue does not have settings
-abstract class MarginPerceptron[V<:LabelVariable[_]] extends AveragedStructuredPerceptron[V] {
-  import math.{signum, abs}
-
-  var perceptronMargin = 1.0
-
-  def predict(vs:Seq[V]): Unit = { vs.foreach{ v => v.set(v.proportions(model).maxIndex)(null) } }
-
-  override def process(vs:Seq[V]): Unit = {
-    assert(vs.length == 1)
-
-    val v = vs.head
-    val scores = v.settings.map(_ => model.score(vs)).toSeq
-
-    if (signum(scores(0)) == signum(scores(1)) || abs(scores(0)) < perceptronMargin || abs(scores(1)) < perceptronMargin) {
-      difflist = new DiffList
-      v.setToTarget(difflist)
-      difflist.undo
-      updateWeights
-    }
-    super.process(vs)
-  }
-
-}

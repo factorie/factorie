@@ -37,6 +37,9 @@ object LoadConll2008 {
     s.attr += tree
   }
 
+  var loadLemma = true
+  case class Lemma(lemma: String)
+
   def fromFilename(filename:String): Seq[Document] = {
     var document: Document = new Document("Conll2008", "")
     val source = Source.fromFile(filename)
@@ -55,12 +58,15 @@ object LoadConll2008 {
         assert(fields.length >= 10)
         val currTokenIdx = fields(0).toInt - 1
         val word = fields(1)
+        val lemma = fields(2)
         val partOfSpeech = fields(3)
         val parentIdx = fields(8).toInt - 1
         val depLabel = fields(9)
         document.appendString(" ")
         val token = new Token(sentence, word)
         token.attr += new PosLabel(token, partOfSpeech)
+        if (loadLemma)
+          token.attr += new Lemma(lemma)
         depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
     }
