@@ -243,5 +243,6 @@ trait FamilyWithVectorStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar] e
 
 trait FamilyWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar] extends Family2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
   def statistics(values:Values) = Stat(values._1, values._2)
+  // TODO add method:  score(t:Tensor2): Double
 }
 

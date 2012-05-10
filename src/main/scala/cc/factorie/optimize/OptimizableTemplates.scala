@@ -24,7 +24,7 @@ import cc.factorie.la.ArrayFromVectors
     be provided in the same order in order to make the resulting arrays compatible with each other.
     @see ArrayFromVectors 
     @author Andrew McCallum */
-class OptimizableTemplates(theTemplates:Seq[DotTemplate]) extends ArrayFromVectors(theTemplates.map(_.weights)) with Optimizable {
+class OptimizableTemplates(theTemplates:Seq[DotFamily]) extends ArrayFromVectors(theTemplates.map(_.weights)) with Optimizable {
   def numOptimizableParameters = vectorsArraySize
   def getOptimizableParameters(a:Array[Double]) = getVectorsInArray(a)
   def setOptimizableParameters(a:Array[Double]): Unit = setVectorsFromArray(a)

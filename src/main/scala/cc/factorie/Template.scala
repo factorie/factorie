@@ -36,7 +36,7 @@ object Template {
 */
 trait Template extends FamilyWithNeighborDomains { thisTemplate =>
   //type FamilyType <: Template // like a self-type
-  def factors(v: Variable): Iterable[FactorType] // TODO Consider returning Iterable[Factor]
+  def factors(v: Variable): Iterable[FactorType]
   /**A version of factors that takes the Diff object instead of just the variable */
   def factors(d: Diff): Iterable[FactorType] = if (d.variable == null) Nil else factors(d.variable)
   def factors(difflist: DiffList): Iterable[FactorType] = {
@@ -63,13 +63,11 @@ trait Template extends FamilyWithNeighborDomains { thisTemplate =>
 }
 
 // TODO Remove this
-trait VectorTemplate extends VectorFamily with Template
+//trait VectorTemplate extends VectorFamily with Template
 
 
 // TODO Remove this
-trait DotTemplate extends DotFamily with Template {
-  //type FamilyType <: DotTemplate
-}
+//trait DotTemplate extends DotFamily with Template
 
 
 
