@@ -53,29 +53,58 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   def this(t:Tensor2) = { this(t.dim1, t.dim2); this := t }
 }
 
-
 // TODO Make a GrowableDenseTensor2
 
 
+class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int) extends Tensor2 with SingletonBinaryTensor {
+  def activeDomain1 = new SingletonIntSeq(singleIndex1)
+  def activeDomain2 = new SingletonIntSeq(singleIndex2)
+  val singleIndex = singleIndex1*dim2 + singleIndex2
+}
 
-trait LayeredTensorLike2 extends Tensor2 {
+class SingletonTensor2(dim1:Int, dim2:Int, singleIndex1:Int, singleIndex2:Int, val singleValue:Double) extends SingletonBinaryTensor2(dim1, dim2, singleIndex1, singleIndex2) with SingletonTensor
+
+trait DenseLayeredTensorLike2 extends Tensor2 {
   def newTensor1(dim:Int): Tensor1
-  private var _inners = Array.fill(dim1)(newTensor1(dim2))
-  override def apply(i:Int, j:Int): Double = _inners(i).apply(j)
+  private var _inners = new Array[Tensor1](dim1) // Array.fill(dim1)(newTensor1(dim2))
+  override def apply(i:Int, j:Int): Double = { val in = _inners(i); if (in ne null) in.apply(j) else 0.0 }
   def apply(i:Int): Double = apply(i/dim1, i%dim2)
-  override def update(i:Int, j:Int, v:Double): Unit = _inners(i).update(j, v)
+  override def update(i:Int, j:Int, v:Double): Unit = { var in = _inners(i); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in.update(j, v) }
+  def update(i:Int, t:Tensor1): Unit = _inners(i) = t
 }
-// TODO Move these next three traits to the file Tensor1.scala
-trait InnerDenseTensor1 {
-  def newTensor1(dim:Int) = new DenseTensor1(dim) 
-}
-trait InnerSparseTensor1 {
-  def newTensor1(dim:Int) = new SparseTensor1(dim) 
-}
-trait InnerSparseBinaryTensor1 {
-  def newTensor1(dim:Int) = new SparseBinaryTensor1(dim) 
-}
-abstract class LayeredTensor2(val dim1:Int, val dim2:Int) extends LayeredTensorLike2
+abstract class DenseLayeredTensor2(val dim1:Int, val dim2:Int) extends DenseLayeredTensorLike2
 // e.g. new LayeredTensor2(20,30) with InnerDenseTensor1
 
+
+trait SingletonLayeredTensorLike2 extends Tensor2 {
+  def singleIndex1: Int
+  def singleValue1: Double
+  def inner: Tensor1
+  def isDense = false
+  def activeDomain1 = new SingletonIntSeq(singleIndex1)
+  def activeDomain2 = inner.activeDomain1
+  def activeDomain = { val offset = singleIndex1 * dim2; inner.activeDomain1.map(_ + offset) }
+  override def apply(i:Int, j:Int): Double = if (i == singleIndex1) inner.apply(j) * singleValue1 else 0.0
+  def apply(i:Int): Double = apply(i/dim1, i%dim2)
+  override def update(i:Int, j:Int, v:Double): Unit = if (i == singleIndex1) inner.update(j, v/singleValue1) else throw new Error("Outer index out of bounds: "+i)
+}
+class SingletonLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleValue1:Double, val inner:Tensor1) extends SingletonLayeredTensorLike2
+
+trait SingletonBinaryLayeredTensorLike2 extends Tensor2 {
+  def singleIndex1: Int
+  def inner: Tensor1
+  def isDense = false
+  def activeDomain1 = new SingletonIntSeq(singleIndex1)
+  def activeDomain2 = inner.activeDomain1
+  def activeDomain = { val offset = singleIndex1 * dim2; inner.activeDomain1.map(_ + offset) }
+  override def apply(i:Int, j:Int): Double = if (i == singleIndex1) inner.apply(j) else 0.0
+  def apply(i:Int): Double = apply(i/dim1, i%dim2)
+  override def update(i:Int, j:Int, v:Double): Unit = if (i == singleIndex1) inner.update(j, v) else throw new Error("Outer index out of bounds: "+i)
+}
+class SingletonBinaryLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val inner:Tensor1) extends SingletonBinaryLayeredTensorLike2
+
+trait SparseLayeredTensorLike2 extends Tensor2 {
+  def newTensor1(dim:Int): Tensor1
+  // TODO Finish this
+}
 
