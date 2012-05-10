@@ -45,6 +45,7 @@ trait DoubleSeq {
   def different(t:DoubleSeq, threshold:Double): Boolean = { require(length == t.length); val l = length; var i = 0; while (i < l) { if (math.abs(apply(i) - t(i)) > threshold) return true; i += 1}; return false }
   def dot(t:DoubleSeq): Double = { assert(length == t.length); val l = length; var result = 0.0; var i = 0; while (i < l) { result += apply(i) * t(i); i += 1 }; result }
   def maxIndex: Int = { val l = length; var i = 1; var j = 0; while (i < l) { if (apply(j) < apply(i)) j = i; i += 1 }; j }
+  def maxIndex2: (Int,Int) = throw new Error("Not yet implemented")
   def containsNaN: Boolean = { val l = length; var i = 0; while (i < l) { if (apply(i) != apply(i)) return true; i += 1 }; false }  // TODO Why wouldn't apply(i).isNaN compile?
   /** Return records for the n elements with the largest values. */
   def top(n:Int): TopN[String] = new cc.factorie.util.TopN(n, this)
