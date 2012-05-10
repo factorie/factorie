@@ -55,7 +55,7 @@ abstract class StructuredSVMSGD[V <: VarWithTargetValue](lambda: Double) extends
   familiesToRegularize ++= familiesToUpdate
   lambdas ++= familiesToRegularize.map(f => lambda)
 
-  def learningRate = 1.0/((updateCount + 1.0)* lambda)
+  override def learningRate = 1.0/((updateCount + 1.0)* lambda)
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
   //def learningMargin : Double
   override def updateWeights : Unit = {
