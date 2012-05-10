@@ -11,7 +11,7 @@ import collection.mutable.HashMap
  */
 
 abstract class MarginPerceptron [V<:VarWithTargetValue] extends WeightUpdates {
-  val model: TemplateModel
+  def model: TemplateModel
   var learningMargin = 1.0 // can be used by predictSecondBest
   protected[this] var difflist: DiffList = null
   var actualMargin = 0.0
@@ -51,7 +51,7 @@ abstract class MarginPerceptron [V<:VarWithTargetValue] extends WeightUpdates {
 
 }
 
-abstract class StructuredSVMSGD(lambda: Double) extends MarginPerceptron with L2Regularization  {
+abstract class StructuredSVMSGD[V <: VarWithTargetValue](lambda: Double) extends MarginPerceptron[V] with L2Regularization  {
   familiesToRegularize ++= familiesToUpdate
   lambdas ++= familiesToRegularize.map(f => lambda)
 
