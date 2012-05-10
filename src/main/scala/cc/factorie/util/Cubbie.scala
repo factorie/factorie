@@ -132,11 +132,11 @@ class Cubbie {
     def :=(newId:Any) {
       cubbie.id = newId
     }
-    def set(newId:Any):this.type = {
+    def set(newId:Any):thisCubbie.type = {
       this := newId
-      this
+      thisCubbie
     }
-    def apply(newId:Any):this.type = {
+    def apply(newId:Any):thisCubbie.type = {
       set(newId)
     }
   }
