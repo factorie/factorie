@@ -52,3 +52,44 @@ trait DenseTensorLike4 extends Tensor4 with DenseTensorLike {
   override def +=(i:Int, v:Double): Unit = __values(i) += v
 }
 class DenseTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4
+
+class SingletonBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleIndex4:Int) extends Tensor4 with SingletonBinaryTensor {
+  def activeDomain1 = new SingletonIntSeq(singleIndex1)
+  def activeDomain2 = new SingletonIntSeq(singleIndex2)
+  def activeDomain3 = new SingletonIntSeq(singleIndex3)
+  def activeDomain4 = new SingletonIntSeq(singleIndex4)
+  val singleIndex = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4 + singleIndex4
+}
+
+class SingletonTensor4(dim1:Int, dim2:Int, dim3:Int, dim4:Int, singleIndex1:Int, singleIndex2:Int, singleIndex3:Int, singleIndex4:Int, val singleValue:Double) extends SingletonBinaryTensor4(dim1, dim2, dim3, dim4, singleIndex1, singleIndex2, singleIndex3, singleIndex4) with SingletonTensor
+
+
+
+
+
+
+trait Dense3LayeredTensorLike4 extends Tensor4 {
+  def newTensor1(dim:Int): Tensor1
+  private var _inners = Array.fill(dim1*dim2*dim3)(newTensor1(dim3))
+  override def apply(i:Int, j:Int, k:Int, l:Int): Double = _inners(i*dim2*dim3 + j*dim2 + k).apply(l)
+  def apply(i:Int): Double = apply(i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
+  override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = _inners(i*dim2*dim3 + j*dim2 + k).update(l, v)
+}
+abstract class Dense3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int) extends Dense3LayeredTensorLike4
+
+trait Singleton3LayeredTensorLike4 extends Tensor4 {
+  def singleIndex1: Int
+  def singleIndex2: Int
+  def singleIndex3: Int
+  def inner: Tensor1
+  def isDense = false
+  def activeDomain1 = new SingletonIntSeq(singleIndex1)
+  def activeDomain2 = new SingletonIntSeq(singleIndex2)
+  def activeDomain3 = new SingletonIntSeq(singleIndex3)
+  def activeDomain4 = inner.activeDomain1
+  def activeDomain = { val offset = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4; inner.activeDomain1.map(_ * offset) }
+  override def apply(i:Int, j:Int, k:Int, l:Int): Double = if (i == singleIndex1 && j == singleIndex2 && k == singleIndex3) inner.apply(l) else 0.0
+  def apply(i:Int): Double = apply(i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
+  override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = if (i == singleIndex1 && j == singleIndex2 && k == singleIndex3) inner.update(l, v) else throw new Error("Outer indices out of bounds: "+List(i,j,k))
+}
+class Singleton3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val inner:Tensor1) extends Singleton3LayeredTensorLike4
