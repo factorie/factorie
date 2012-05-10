@@ -21,7 +21,6 @@ trait Tensor1 extends Tensor {
   def activeDomain1: IntSeq
   def numDimensions: Int = 1
   def activeDomains = Array(activeDomain1)
-  @inline final def activeDomain = activeDomain1
   def dimensions = Array(dim1)
   @inline final def length: Int = dim1
   override def stringPrefix = "Tensor1"
@@ -40,28 +39,14 @@ trait DenseTensorLike1 extends Tensor1 with DenseTensorLike {
   }
   def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
+  def activeDomain = activeDomain1
   def apply(i:Int) = __values(i)
   override def asArray = __values
   override def +=(i:Int, incr:Double): Unit = __values(i) += incr
   override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
   override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } }
   override def update(i:Int, v:Double): Unit = __values(i) = v
-  def outer(t1:Tensor1): Tensor2 = t1 match {
-    case t1:SingletonBinaryTensor1 => {
-      throw new Error("Not yet implemented; needs SparseTensor2")
-    }
-    case t1:SparseBinaryTensor1 => {
-      throw new Error("Not yet implemented; needs SparseTensor2")
-    }
-    case t1:Tensor1 => {
-      val t2 = new DenseTensor2(dim1, t1.dim1) //with LayeredTensorInnerDense1
-      for (i <- 0 until dim1; j <- 0 until t1.dim1) t2(i,j) = this(i) * t1(j)
-      t2
-    }
-  }
 }
-
-
 class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
   def this(t:Tensor) = { this(t.length); this := t }
   override def copy: DenseTensor1 = { val c = new DenseTensor1(dim1); System.arraycopy(_values, 0, c._values, 0, length); c }
@@ -82,64 +67,34 @@ trait GrowableDenseTensorLike1 extends DenseTensorLike1 {
 class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends DenseTensorLike1 with GrowableDenseTensorLike1
 
 
-class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends Tensor1 {
+class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends Tensor1 with SingletonTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex)
-  def apply(i:Int) = if (i == singleIndex) 1.0 else 0.0
-  def isDense = false
-  override def sum: Double = singleValue
-  override def max: Double = if (singleValue > 0.0) singleValue else 0.0 
-  override def min: Double = if (singleValue < 0.0) singleValue else 0.0 
-  override def maxIndex: Int = if (singleValue >= 0.0) singleIndex else if (singleIndex != 0) 0 else 1
-  override def containsNaN: Boolean = false
-  override def dot(v:DoubleSeq): Double = v(singleIndex) * singleValue
-  override def copy: SingletonTensor1 = new SingletonTensor1(dim1, singleIndex, singleValue)
 } 
 
-trait SingletonBinaryTensorLike1 extends Tensor1 {
+trait SingletonBinaryTensorLike1 extends Tensor1 with SingletonBinaryTensor {
   def singleIndex: Int
   def activeDomain1 = new SingletonIntSeq(singleIndex)
-  def apply(i:Int) = if (i == singleIndex) 1.0 else 0.0
-  def isDense = false
-  override def sum: Double = 1.0
-  override def max: Double = 1.0
-  override def min: Double = 0.0
-  override def maxIndex: Int = singleIndex
-  override def containsNaN: Boolean = false
-  override def dot(v:DoubleSeq): Double = v(singleIndex)
-  //override def copy = this // safe because it is immutable
 }
 class SingletonBinaryTensor1(val dim1:Int, val singleIndex:Int) extends SingletonBinaryTensorLike1 {
   override def copy: SingletonBinaryTensor1 = new SingletonBinaryTensor1(dim1, singleIndex)
 }
-
 class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], val singleIndex:Int) extends SingletonBinaryTensorLike1 {
   def dim1 = sizeProxy.size
 }
 
-trait UniformTensorLike1 extends Tensor1 {
-  def uniformValue: Double
+class UniformTensor1(val dim1:Int, val uniformValue:Double) extends Tensor1 with UniformTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
-  def apply(i:Int) = { /* Too slow?  assert(i < dim1);*/ uniformValue }
-  def isDense = true
-  override def sum: Double = dim1 * uniformValue
-  override def max: Double = uniformValue
-  override def min: Double = uniformValue
-  override def maxIndex: Int = 0
-  override def containsNaN: Boolean = false
-  override def dot(v:DoubleSeq): Double = v.sum * uniformValue
 }
-class UniformTensor1(val dim1:Int, val uniformValue:Double) extends UniformTensorLike1 {
-  override def copy = this // safe because it is immutable
-}
-class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends UniformTensorLike1 {
+class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends Tensor1 with UniformTensor {
+  def activeDomain1 = new RangeIntSeq(0, dim1)
   def dim1 = sizeProxy.size
-  override def copy = this // safe because it is immutable
 }
 
 
 
 trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer with Tensor1 {
   def activeDomain1 = new ArrayIntSeq(_array)
+  def activeDomain = activeDomain1
   def isDense = false
   def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
   override def sum: Double = _length.toDouble
@@ -193,6 +148,7 @@ class SparseHashTensor1(val dim1:Int) extends Tensor1 {
   override def activeElements = h.iterator
   override def activeDomainSize = h.size
   def activeDomain1: IntSeq = new SeqIntSeq(h.keys.toIndexedSeq) // TODO This is currently really inefficient
+  def activeDomain = activeDomain1
   override def foreachActiveElement(f: (Int,Double)=>Unit): Unit = h.foreach(t => f(t._1, t._2))
   override def +=(index:Int, incr:Double): Unit = {
     assert(index < length, "index %d should be less than length %d".format(index, length))
@@ -249,6 +205,7 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
   def dim1: Int = if (_length < 0) _sizeProxy.size else _length
   override def activeDomainSize: Int = { makeReadable; _npos }
   def activeDomain1: IntSeq = { makeReadable ; new TruncatedArrayIntSeq(_indexs, _npos) } // TODO Consider making more efficient
+  def activeDomain = activeDomain1
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { var i = 0; while (i < _npos) { f(_indexs(i), _values(i)); i += 1 } }
   override def activeElements: Iterator[(Int,Double)] = {
     makeReadable
@@ -385,28 +342,20 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     v
   }
 
-  // TODO Should this be deleted? -akm
-  /*def flatOuter(that:Tensor): Tensor = {
-    makeReadable
-    that match {
-      case v: SingletonBinaryVec => {
-        val vlength = v.length
-        val vi = v.singleIndex
-        val result = this.clone
-        var i = 0
-        while (i < _npos) {
-          result._indexs(i) = result._indexs(i) * vlength + vi
-          i += 1
-        }
-        result
-      }
-      // TODO Add more cases
-    }
-  }*/
-
 }
 
 
 class GrowableSparseTensor1(sizeProxy: Iterable[Any]) extends SparseIndexedTensor1(sizeProxy)
 
+
+// Used by various LayeredTensors
+trait InnerDenseTensor1 {
+  def newTensor1(dim:Int) = new DenseTensor1(dim) 
+}
+trait InnerSparseTensor1 {
+  def newTensor1(dim:Int) = new SparseTensor1(dim) 
+}
+trait InnerSparseBinaryTensor1 {
+  def newTensor1(dim:Int) = new SparseBinaryTensor1(dim) 
+}
 
