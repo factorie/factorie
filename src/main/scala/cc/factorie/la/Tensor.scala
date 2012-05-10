@@ -40,6 +40,14 @@ trait Tensor extends MutableDoubleSeq {
   def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
   def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
   // TODO Consider methods like +, -, *, /
+  def +(that:Tensor): Tensor = throw new Error
+  def -(that:Tensor): Tensor = throw new Error
+  def *(that:Tensor): Tensor = throw new Error
+  def /(that:Tensor): Tensor = throw new Error
+  def normalized: Tensor = throw new Error
+  def expNormalized: Tensor = throw new Error
+  def expNormalizer: Double = throw new Error
+  def isUniform = false // TODO Fix this for the Uniform Tensors!!
   def stringPrefix = "Tensor"
   override def toString = this.asSeq.mkString(stringPrefix+"(", ",", ")")
 }

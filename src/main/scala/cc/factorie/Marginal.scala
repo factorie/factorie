@@ -29,28 +29,32 @@ trait DiscreteMarginal extends Marginal {
 class DiscreteMarginal1[V1<:DiscreteVectorVar](val _1:V1, proportions1:Proportions1 = null) extends DiscreteMarginal {
   def this(f:Factor1[V1]) = this (f._1, null)
   def variables = Seq(_1)
-  val proportions = if (proportions1 eq null) new DenseProportions1(_1.domain.dimensionDomain.size) else proportions1 // must do this here because no access to _1 in default argument values
+  protected var _proportions = if (proportions1 eq null) new DenseProportions1(_1.domain.dimensionDomain.size) else proportions1 // must do this here because no access to _1 in default argument values
+  def proportions: Proportions1 = _proportions
   def incrementCurrentValue(w:Double): Unit = _1 match { case d:DiscreteVar => proportions.+=(d.intValue, w); case d:DiscreteVectorVar => throw new Error("Not yet implemented") }
   def setToMaximize(implicit d:DiffList): Unit = _1 match { case v:DiscreteVariable => v.set(proportions1.maxIndex); case _ => throw new Error }
 }
 class DiscreteMarginal2[V1<:DiscreteVectorVar,V2<:DiscreteVectorVar](val _1:V1, val _2:V2, proportions2:Proportions2 = null) extends DiscreteMarginal {
   def this(f:Factor2[V1,V2]) = this (f._1, f._2, null)
   def variables = Seq(_1, _2)
-  val proportions = if (proportions2 eq null) new DenseProportions2(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size) else proportions2 // must do this here because no access to _1 in default argument values
+  protected var _proportions = if (proportions2 eq null) new DenseProportions2(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size) else proportions2 // must do this here because no access to _1 in default argument values
+  def proportions: Proportions2 = _proportions
   def incrementCurrentValue(w:Double): Unit = (_1,_2) match { case (d1:DiscreteVar,d2:DiscreteVar) => proportions.+=(d1.intValue, d2.intValue, w); case d:DiscreteVectorVar => throw new Error("Not yet implemented") }
   def setToMaximize(implicit d:DiffList): Unit = throw new Error("Not yet implemented")
 }
 class DiscreteMarginal3[V1<:DiscreteVectorVar,V2<:DiscreteVectorVar,V3<:DiscreteVectorVar](val _1:V1, val _2:V2, val _3:V3, proportions3:Proportions3 = null) extends DiscreteMarginal {
   def this(f:Factor3[V1,V2,V3]) = this (f._1, f._2, f._3, null)
   def variables = Seq(_1, _2, _3)
-  val proportions: Proportions3 = if (proportions3 eq null) new DenseProportions3(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size, _3.domain.dimensionDomain.size) else proportions3 // must do this here because no access to _1 in default argument values
+  protected var _proportions: Proportions3 = if (proportions3 eq null) new DenseProportions3(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size, _3.domain.dimensionDomain.size) else proportions3 // must do this here because no access to _1 in default argument values
+  def proportions: Proportions3 = _proportions
   def incrementCurrentValue(w:Double): Unit = (_1,_2,_3) match { case (d1:DiscreteVar,d2:DiscreteVar,d3:DiscreteVar) => proportions.+=(d1.intValue, d2.intValue, d3.intValue, w); case d:DiscreteVectorVar => throw new Error("Not yet implemented") }
   def setToMaximize(implicit d:DiffList): Unit = throw new Error("Not yet implemented")
 }
 class DiscreteMarginal4[V1<:DiscreteVectorVar,V2<:DiscreteVectorVar,V3<:DiscreteVectorVar,V4<:DiscreteVectorVar](val _1:V1, val _2:V2, val _3:V3, val _4:V4, proportions4:Proportions4 = null) extends DiscreteMarginal {
   def this(f:Factor4[V1,V2,V3,V4]) = this (f._1, f._2, f._3, f._4, null)
   def variables = Seq(_1, _2, _3, _4)
-  val proportions: Proportions4 = if (proportions4 eq null) new DenseProportions4(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size, _3.domain.dimensionDomain.size, _4.domain.dimensionDomain.size) else proportions4 // must do this here because no access to _1 in default argument values
+  protected var _proportions: Proportions4 = if (proportions4 eq null) new DenseProportions4(_1.domain.dimensionDomain.size, _2.domain.dimensionDomain.size, _3.domain.dimensionDomain.size, _4.domain.dimensionDomain.size) else proportions4 // must do this here because no access to _1 in default argument values
+  def proportions: Proportions4 = _proportions
   def incrementCurrentValue(w:Double): Unit = (_1,_2,_3,_4) match { case (d1:DiscreteVar,d2:DiscreteVar,d3:DiscreteVar,d4:DiscreteVar) => proportions.+=(d1.intValue, d2.intValue, d3.intValue, d4.intValue, w); case d:DiscreteVectorVar => throw new Error("Not yet implemented") }
   def setToMaximize(implicit d:DiffList): Unit = throw new Error("Not yet implemented")
 }
