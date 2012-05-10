@@ -88,12 +88,12 @@ object GraphLoader {
     else if (maxDepth == 1) {
       //fill-up roots into refs
       //todo: does this need to fill up inverse links too?
-      oldIndex ++ roots.map(c => (c.cubbieClass, c.IdSlot.name, c.id) -> Seq(c))
+      oldIndex ++ roots.map(c => (c.cubbieClass, c.Id.name, c.id) -> Seq(c))
       //oldGraph.copy(refs = oldGraph.refs ++ roots.map(c => c.id -> c).toMap)
     }
     else {
       //fill-up roots into refs
-      var graph = oldIndex ++ roots.map(c => (c.cubbieClass, c.IdSlot.name, c.id) -> Seq(c))
+      var graph = oldIndex ++ roots.map(c => (c.cubbieClass, c.Id.name, c.id) -> Seq(c))
 
       //mapping from collections and attributes to the values that need to be queried for.
       val collsAttr2ids = new HashMap[(InvSlotInCollection[Cubbie], String), List[Any]]
@@ -123,13 +123,13 @@ object GraphLoader {
         val result = coll.coll.findByAttribute(attrName, targets).toList
         //replace cubbies with already loaded cubbies with same id
         val deduped = result.map(c => {
-          val existing = graph.get((foreignClass, prototype.IdSlot.name, c.id))
+          val existing = graph.get((foreignClass, prototype.Id.name, c.id))
           existing match {
             case Some(refs) =>
               refs.head
             case _ =>
               loaded = loaded :+ c
-              graph = graph + ((foreignClass, prototype.IdSlot.name, c.id) -> List(c))
+              graph = graph + ((foreignClass, prototype.Id.name, c.id) -> List(c))
               c
           }
         })

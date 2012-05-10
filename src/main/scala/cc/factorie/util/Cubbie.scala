@@ -125,10 +125,20 @@ class Cubbie {
 
   }
   
-  object IdSlot extends AbstractSlot[Any] {
+  object Id extends AbstractSlot[Any] {
     def name = "_id"
     def value = id
     def opt = Some(id)
+    def :=(newId:Any) {
+      cubbie.id = newId
+    }
+    def set(newId:Any):this.type = {
+      this := newId
+      this
+    }
+    def apply(newId:Any):this.type = {
+      set(newId)
+    }
   }
 
 //  val idSlot = new IdSlot
@@ -282,11 +292,11 @@ class Cubbie {
 
     override def unique = true
 
-    def foreignSlot = _.asInstanceOf[A].IdSlot
+    def foreignSlot = _.asInstanceOf[A].Id
 
     def target = opt
 
-    def slot = (a:A) => a.IdSlot
+    def slot = (a:A) => a.Id
 
     def :=(ref: Any): Unit = {
       if (ref.isInstanceOf[Cubbie]) throw new Error("Use ::= to set RefSlot by a Cubbie");
