@@ -52,7 +52,7 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     case s:TokenSpan => super.-=(s)
   }
   
-  def tokens: IndexedSeq[ElementType] = this
+  def tokens: IndexedSeq[Token] = links
   private var _sentences = new ArrayBuffer[Sentence]
   def sentences: Seq[Sentence] = _sentences
   // potentially very slow for large documents.
@@ -60,7 +60,7 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
 
   def sgmlString: String = {
     val buf = new StringBuffer
-    for (token <- this) {
+    for (token <- tokens) {
       if (token.isSentenceStart) buf.append("<sentence>")
       token.startsSpans.foreach(span => buf.append("<"+span.name+">"))
       print(token.string)
@@ -83,7 +83,7 @@ class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](va
   def storeDocument(doc:Document): this.type = {
     name := doc.name
     string := doc.string
-    if (doc.tokens.length > 0) tokens := doc.tokens.map(t => tokens.constructor().storeToken(t))
+    if (doc.length > 0) tokens := doc.tokens.map(t => tokens.constructor().storeToken(t))
 //    if (doc.spans.length > 0) spans := doc.spans.map(s => spans.constructor().store(s))
     if (doc.sentences.length > 0) sentences := doc.sentences.map(s => sentences.constructor().storeSentence(s))
     storeAttr(doc)

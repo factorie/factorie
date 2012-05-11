@@ -28,7 +28,7 @@ object TokenLDA {
   
   def initFeatures(document:Document): Unit = {
     import cc.factorie.app.strings.simplifyDigits
-    for (token <- document) {
+    for (token <- document.tokens) {
       val rawWord = token.string
       val word = simplifyDigits(rawWord).toLowerCase
       val features = token.attr += new ChainNerFeatures(token)
@@ -45,14 +45,14 @@ object TokenLDA {
       }
     }
     for (sentence <- document.sentences)
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[ChainNerFeatures], List(0), List(1), List(2), List(-1), List(-2))
+      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[ChainNerFeatures], List(0), List(1), List(2), List(-1), List(-2))
     // If the sentence contains no lowercase letters, tell all tokens in the sentence they are part of an uppercase sentence
     //document.sentences.foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t.attr[ChainNerFeatures] += "SENTENCEUPPERCASE"))
     // Add features for character n-grams between sizes 2 and 5
     //document.foreach(t => if (t.string.matches("[A-Za-z]+")) t.attr[ChainNerFeatures] ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
     // Add features from window of 4 words before and after
-    document.foreach(t => t.attr[ChainNerFeatures] ++= t.prevWindow(6).dropRight(2).filter(t2 => t2.string.length > 1 && !Stopwords.contains(t2.string)).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
-    document.foreach(t => t.attr[ChainNerFeatures] ++= t.nextWindow(6).drop(2).     filter(t2 => t2.string.length > 1 && !Stopwords.contains(t2.string)).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
+    document.tokens.foreach(t => t.attr[ChainNerFeatures] ++= t.prevWindow(6).dropRight(2).filter(t2 => t2.string.length > 1 && !Stopwords.contains(t2.string)).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
+    document.tokens.foreach(t => t.attr[ChainNerFeatures] ++= t.nextWindow(6).drop(2).     filter(t2 => t2.string.length > 1 && !Stopwords.contains(t2.string)).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
   }
   
   def main(args:Array[String]): Unit = {
@@ -73,7 +73,7 @@ object TokenLDA {
     val lda = new cc.factorie.app.topics.lda.LDA(WordSeqDomain, numTopics)(model)
 
     var i = 0
-    for (doc <- docs; token <- doc; if (token.isCapitalized)) {
+    for (doc <- docs; token <- doc.tokens; if (token.isCapitalized)) {
       val ldaDoc = new cc.factorie.app.topics.lda.Document(WordSeqDomain, doc.name+":"+token.position+"::"+i, Nil)
       i += 1
       for (feature <- token.attr[ChainNerFeatures].activeCategories)

@@ -26,7 +26,7 @@ class Conll2003SpanNerLabel(span:NerSpan, initialValue:String) extends SpanNerLa
 
 class NerSpan(doc:Document, labelString:String, start:Int, length:Int)(implicit d:DiffList) extends TokenSpan(doc, start, length) with cc.factorie.app.nlp.coref.TokenSpanMention {
   val label = new Conll2003SpanNerLabel(this, labelString)
-  def isCorrect = this.forall(token => token.nerLabel.intValue == label.intValue) &&
+  def isCorrect = this.tokens.forall(token => token.nerLabel.intValue == label.intValue) &&
     (!hasPredecessor(1) || predecessor(1).nerLabel.intValue != label.intValue) && 
     (!hasSuccessor(1) || successor(1).nerLabel.intValue != label.intValue)
   override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
@@ -259,7 +259,7 @@ class SpanNER {
     println("FeaturesDomain size="+SpanNerFeaturesDomain.dimensionSize)
     println("LabelDomain "+Conll2003NerDomain.values.toList)
     
-    if (verbose) trainDocuments.take(10).flatten.take(500).foreach(token => { print(token.string+"\t"); printFeatures(token) })
+    if (verbose) trainDocuments.take(10).map(_.tokens).flatten.take(500).foreach(token => { print(token.string+"\t"); printFeatures(token) })
     
     // The learner
     val learner = new TokenSpanSampler(model, objective) with SampleRank with ConfidenceWeightedUpdates {
@@ -286,9 +286,9 @@ class SpanNER {
       println("Iteration "+i) 
       // Every third iteration remove all the predictions
       if (i % 3 == 0) { println("Removing all spans"); (trainDocuments ++ testDocuments).foreach(_.clearSpans(null)) }
-      learner.processAll(trainDocuments.flatten)
+      learner.processAll(trainDocuments.map(_.tokens).flatten)
       //learner.learningRate *= 0.9
-      predictor.processAll(testDocuments.flatten)
+      predictor.processAll(testDocuments.map(_.tokens).flatten)
       println("*** TRAIN OUTPUT *** Iteration "+i); if (verbose) { trainDocuments.foreach(printDocument _); println; println }
       println("*** TEST OUTPUT *** Iteration "+i); if (verbose) { testDocuments.foreach(printDocument _); println; println }
       println ("Iteration %2d TRAIN EVAL ".format(i)+evalString(trainDocuments))
@@ -306,12 +306,12 @@ class SpanNER {
         //print("Reading ***"+(article\"head"\"title").text+"***")
         print("Read ***"+file.getCanonicalPath+"***")
         documents += LoadNYTimesXML.fromFile(file, false)
-        println("  "+documents.last.size)
+        println("  "+documents.last.length)
         documents.last.foreach(t=> print(t.string+" ")); println
       }
     }
     documents.foreach(addFeatures(_))
-    val testTokens = documents.flatten
+    val testTokens = documents.map(_.tokens).flatten
     println("Have "+testTokens.length+" tokens")
     println("TokenDomain size="+SpanNerFeaturesDomain.dimensionSize)
     println("LabelDomain "+Conll2003NerDomain.values.toList)
@@ -339,7 +339,7 @@ class SpanNER {
     }
     // Make features of offset conjunctions
     for (sentence <- document.sentences)
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[SpanNerFeatures], List(0), List(0,0), List(-1), List(-1,0), List(1))
+      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[SpanNerFeatures], List(0), List(0,0), List(-1), List(-1,0), List(1))
     // The remaining features will not be put into conjunctions
 
     // For documents that have a "-" within the first three words, the first word is a HEADER feature; apply it to all words in the document

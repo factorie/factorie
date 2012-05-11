@@ -73,8 +73,8 @@ object ChainNER2 {
     val testSentences = load(args(1))
 
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainSentences.flatten.take(10000)
-    val testLabels = testSentences.flatten.take(2000)
+    val trainLabels = trainSentences.map(_.links).flatten.take(10000)
+    val testLabels = testSentences.map(_.links).flatten.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     
     // Train for 5 iterations

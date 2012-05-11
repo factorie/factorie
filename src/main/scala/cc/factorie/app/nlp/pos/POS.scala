@@ -53,7 +53,7 @@ object POS {
 
   def initPosFeatures(documents: Seq[Document]): Unit = documents.map(initPosFeatures(_))
   def initPosFeatures(document: Document): Unit = {
-    for (token <- document) {
+    for (token <- document.tokens) {
       val rawWord = token.string
       val word = cc.factorie.app.strings.simplifyDigits(rawWord)
       val features = token.attr += new PosFeatures(token)
@@ -75,7 +75,7 @@ object POS {
     }
     // add conjunctions of word features
     for (sentence <- document.sentences)
-      addNeighboringFeatureConjunctions(sentence, (t: Token) => t.attr[PosFeatures], "W=", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
+      addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 
   def train(documents: Seq[Document],
@@ -83,8 +83,8 @@ object POS {
             testDocuments: Seq[Document] = Seq.empty[Document],
             modelFile: String = ""): Unit = {
 
-    val sentences = documents.flatMap(_.sentences.filter(s => s.size > 0))
-    val labels = sentences.map(_.posLabels)
+    val sentences = documents.flatMap(_.sentences.filter(s => s.length > 0))
+    val labels = sentences.map(s => s.posLabels) // was flatMap -akm
 
     val pieces = labels.map(ls => ModelPiece(PosModel, ls))
     val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
@@ -105,13 +105,13 @@ object POS {
     test(devDocuments, "dev")
   }
 
-  def predictSentence(s: Sentence): Unit = predictSentence(s.map(_.posLabel))
+  def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
   def predictSentence(vs: Seq[PosLabel], oldBp: Boolean = false): Unit =
     if (vs.nonEmpty) Viterbi.searchAndSetToMax(vs, PosModel.local, PosModel.trans, PosModel.bias)
 
   def test(documents: Seq[Document], label: String): Unit = {
     val sentences = documents.flatMap(_.sentences)
-    val labels = sentences.flatMap(s => s.map(_.posLabel))
+    val labels = sentences.flatMap(s => s.tokens.map(_.posLabel))
     labels.map(_.setRandomly())
     sentences.map(predictSentence(_))
     println(label + " accuracy: " + PosObjective.aveScore(labels) + "%")
@@ -125,9 +125,9 @@ object POS {
     if (!modelLoaded) throw new Error("First call PosModel.load(\"path/to/model\")")
 
     // add the labels and features if they aren't there already.
-    if (document.head.attr.get[PosLabel] == None) {
+    if (document.tokens.head.attr.get[PosLabel] == None) {
       val defaultCategory = PosDomain.categoryValues.head
-      document.foreach(t => t.attr += new PosLabel(t, defaultCategory))
+      document.tokens.foreach(t => t.attr += new PosLabel(t, defaultCategory))
       initPosFeatures(document)
     }
 

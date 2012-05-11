@@ -76,7 +76,7 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
           //case f:MixtureComponent.Factor => {}
           case f:Mixture.Factor => {}
           case f:DiscreteMixture.Factor => m(f._3.intValue).tensor.+=(f._1.intValue, 1.0)
-          case f:PlatedDiscreteMixture.Factor => forIndex(f._1.size)(i => m(f._3(i).intValue).tensor.+=(f._1(i).intValue, 1.0))
+          case f:PlatedDiscreteMixture.Factor => forIndex(f._1.length)(i => m(f._3(i).intValue).tensor.+=(f._1(i).intValue, 1.0))
           case f:Factor => { println("DenseCountsProportionsMixtureCollapser unexpected factor "+f); return false }
         }
         true

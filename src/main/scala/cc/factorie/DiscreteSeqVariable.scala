@@ -27,6 +27,9 @@ trait DiscreteSeqVar extends IndexedSeqVar[DiscreteValue] {
   def intValue(seqIndex:Int): Int
   def intValues: Array[Int]
   def uniqueIntValues: Array[Int]
+  def discreteValues: IndexedSeq[DiscreteValue]
+  def length: Int
+  def apply(index:Int): DiscreteValue
 }
 
 //abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] 
@@ -36,12 +39,11 @@ abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.Prot
   def this(len:Int) = { this(); _setCapacity(len); _appendAll(Array.fill(len)(0)) }
   def length = _length
   def apply(index: Int): ElementType = domain.elementDomain.getValue(_apply(index))
-  override def iterator = new Iterator[ElementType] {
-    var i = 0
-    def hasNext = i < _length
-    def next = { i += 1; domain.elementDomain.getValue(_apply(i-1)) }
-  }
   def domain: DiscreteSeqDomain
+  def discreteValues: IndexedSeq[DiscreteValue] = new IndexedSeq[DiscreteValue] {
+    def length = _length
+    def apply(index:Int) = domain.elementDomain.getValue(_apply(index))
+  }
   def value: Value = new IndexedSeq[ElementType] {
     private val arr = new Array[ElementType](_length)
     _mapToArray(arr, (i:Int) => domain.elementDomain.getValue(i)) // Do this so that it stays constant even if _array changes later

@@ -66,8 +66,8 @@ object ChainNER2b {
     val testSentences = load(args(1))
 
     // Get the variables to be inferred
-    val trainLabels = trainSentences.flatten.take(10000)
-    val testLabels = testSentences.flatten.take(2000)
+    val trainLabels = trainSentences.map(_.links).flatten.take(10000)
+    val testLabels = testSentences.map(_.links).flatten.take(2000)
     val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
 
     // Add features from next and previous tokens

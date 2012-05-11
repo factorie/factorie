@@ -80,7 +80,7 @@ class ParseTree(val sentence:Sentence) {
   /** Returns the position in the sentence of the root token. */ 
   def rootChildIndex: Int = firstChild(-1)
   /** Return the token at the root of the parse tree.  The parent of this token is null.  The parentIndex of this position is -1. */
-  def rootChild: Token = sentence(rootChildIndex)
+  def rootChild: Token = sentence.tokens(rootChildIndex)
   /** Make the argument the root of the tree.  This method does not prevent their being two roots. */
   def setRootChild(token:Token): Unit = setParent(token.position - sentence.start, -1)
   /** Returns the sentence position of the parent of the token at position childIndex */
@@ -89,7 +89,7 @@ class ParseTree(val sentence:Sentence) {
   def parent(childIndex:Int): Token = {
     val idx = _parents(childIndex)
     if (idx == -1) null // -1 is rootIndex
-    else sentence(idx)
+    else sentence.tokens(idx)
   }
   /** Returns the parent token of the given token */
   def parent(token:Token): Token = { require(token.sentence eq sentence); parent(token.position - sentence.start) }
@@ -119,7 +119,7 @@ class ParseTree(val sentence:Sentence) {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = 0
     while (i < _parents.length) {
-      if (_parents(i) == parentIndex) result += sentence(i)
+      if (_parents(i) == parentIndex) result += sentence.tokens(i)
       i += 1
     }
     result
@@ -128,7 +128,7 @@ class ParseTree(val sentence:Sentence) {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = 0
     while (i < parentIndex) {
-      if (_parents(i) == parentIndex) result += sentence(i)
+      if (_parents(i) == parentIndex) result += sentence.tokens(i)
       i += 1
     }
     result
@@ -137,7 +137,7 @@ class ParseTree(val sentence:Sentence) {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = parentIndex+1
     while (i > _parents.length) {
-      if (_parents(i) == parentIndex) result += sentence(i)
+      if (_parents(i) == parentIndex) result += sentence.tokens(i)
       i += 1
     }
     result
@@ -149,7 +149,7 @@ class ParseTree(val sentence:Sentence) {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = 0
     while (i < _parents.length) {
-      if (_parents(i) == index && _labels(i).intValue == labelIntValue) result += sentence(i)
+      if (_parents(i) == index && _labels(i).intValue == labelIntValue) result += sentence.tokens(i)
       i += 1
     }
     result
@@ -158,7 +158,7 @@ class ParseTree(val sentence:Sentence) {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = 0
     while (i < parentIndex) {
-      if (_parents(i) == parentIndex && _labels(i).intValue == labelIntValue) result += sentence(i)
+      if (_parents(i) == parentIndex && _labels(i).intValue == labelIntValue) result += sentence.tokens(i)
       i += 1
     }
     result
@@ -167,7 +167,7 @@ class ParseTree(val sentence:Sentence) {
     val result = new scala.collection.mutable.ArrayBuffer[Token]
     var i = parentIndex+1
     while (i > _parents.length) {
-      if (_parents(i) == parentIndex && _labels(i).intValue == labelIntValue) result += sentence(i)
+      if (_parents(i) == parentIndex && _labels(i).intValue == labelIntValue) result += sentence.tokens(i)
       i += 1
     }
     result
@@ -183,7 +183,7 @@ class ParseTree(val sentence:Sentence) {
     val tokenStrings = sentence.tokens.map(_.string)
     val labelStrings = _labels.map(_.value.toString())
     val buff = new StringBuffer()
-    for (i <- 0 until sentence.size)
+    for (i <- 0 until sentence.length)
       buff.append(i + " " + _parents(i) + " " + tokenStrings(i) + " " + labelStrings(i) + "\n")
     buff.toString()
   }

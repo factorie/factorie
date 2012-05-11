@@ -144,7 +144,7 @@ trait Statistics  {
   def statistics: Statistics = this
   // def factor: Factor // TODO Consider adding this method
   //def outer: Statistics = null // TODO Remove this
-  def inner: Seq[Statistics] = Nil
+  def inner: Seq[Statistics] = Nil // TODO Remove this.
   def score: Double
 }
 

@@ -18,12 +18,12 @@ import scala.collection.mutable.ArrayBuffer
 
 class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends TokenSpan(doc, initialStart, initialLength) {
   def this(doc:Document)(implicit d:DiffList = null) = this(doc, doc.length, 0)
-  def tokens: IndexedSeq[Token] = this
+  //def tokens: IndexedSeq[Token] = links
   def tokenAtCharIndex(charOffset:Int): Token = {
-    require(charOffset >= first.stringStart && charOffset <= last.stringEnd)
+    require(charOffset >= tokens.first.stringStart && charOffset <= tokens.last.stringEnd)
     var i = 0 // TODO Implement as faster binary search
-    while (i < this.length && this(i).stringStart <= charOffset) {
-      val token = this(i)
+    while (i < this.length && tokens(i).stringStart <= charOffset) {
+      val token = tokens(i)
       //if (token.stringStart <= charOffset && token.stringEnd <= charOffset) return token
       if (token.stringStart <= charOffset && token.stringEnd >= charOffset) return token
       i += 1
@@ -38,8 +38,8 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
   def parseRootChild: Token = attr[cc.factorie.app.nlp.parse.ParseTree].rootChild
 
   // common labels
-  def posLabels = this.map(_.posLabel)
-  def nerLabels = this.map(_.nerLabel)
+  def posLabels = tokens.map(_.posLabel)
+  def nerLabels = tokens.map(_.nerLabel)
 }
 
 

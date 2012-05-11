@@ -56,8 +56,8 @@ object ChainNER1a {
       features += "SHAPE="+cc.factorie.app.strings.stringShape(token.string, 2)
       token.attr += features
     }
-    val trainLabels = trainDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(10000)
-    val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(2000)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     val learner = new VariableSettingsSampler[ChainNerLabel](model) with SampleRank with GradientAscentUpdates
     val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)

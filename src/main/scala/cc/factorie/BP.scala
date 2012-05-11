@@ -16,46 +16,61 @@ package cc.factorie
 import cc.factorie.la._
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
-trait BPMessage extends Tensor1 {
-  def Z: Double // expNormalizer
-} 
+trait BPRing {
+  def +(t1:Tensor, t2:Tensor): Tensor
+  def *(t1:Tensor, t2:Tensor): Tensor
+  def /(t1:Tensor, t2:Tensor): Tensor
+}
+
+object BPSumProductRing extends BPRing {
+  def +(t1:Tensor, t2:Tensor): Tensor = null
+  def *(t1:Tensor, t2:Tensor): Tensor = null
+  def /(t1:Tensor, t2:Tensor): Tensor = null
+}
+
+object BPMaxProductRing extends BPRing {
+  def +(t1:Tensor, t2:Tensor): Tensor = null
+  def *(t1:Tensor, t2:Tensor): Tensor = null
+  def /(t1:Tensor, t2:Tensor): Tensor = null
+}
 
 class BPEdge(val bpVariable:BPVariable) {
   var bpFactor:_BPFactor = null
   var factorNeighborIndex: Int = -1 // ???
   def variable = bpVariable.variable
   def factor = bpFactor.factor
-  var messageFromVariable: BPMessage = null
-  var messageFromFactor: BPMessage = null
+  var messageFromVariable: Tensor = null
+  var messageFromFactor: Tensor = null
 }
 
-class BPVariable(val variable:DiscreteVar, val scores:Tensor1) extends DiscreteMarginal1(variable, null) {
+class BPVariable(val variable:DiscreteVar, val ring:BPRing, val scores:Tensor1) extends DiscreteMarginal1(variable, null) {
   val edges = new ArrayBuffer[BPEdge]
-  def outgoing(e:BPEdge): BPMessage = throw new Error("This is where calculation happens")
+  def outgoing(e:BPEdge): Tensor = throw new Error("This is where calculation happens")
   def updateOutgoing(e:BPEdge): Unit = e.messageFromVariable = outgoing(e)
   def updateOutgoing: Unit = edges.foreach(updateOutgoing(_))
   override def proportions = throw new Error("Needs implementation")
 }
-// class BPMarginal2 would be used for cluster graphs
+// class BPVariable2 would be used for cluster graphs
 
 trait _BPFactor extends DiscreteMarginal {
   def factor: Factor
   def edges: Seq[BPEdge]
+  def ring: BPRing
   def updateOutgoing(e:BPEdge): Unit
   def updateOutgoing: Unit = edges.foreach(updateOutgoing(_))
 }
 
-class BPFactor1(val factor:Factor, val edge1:BPEdge, val scores:Tensor1) extends DiscreteMarginal1(edge1.bpVariable.variable, null) with _BPFactor {
+class BPFactor1(val factor:Factor, val edge1:BPEdge, val ring:BPRing, val scores:Tensor1) extends DiscreteMarginal1(edge1.bpVariable.variable, null) with _BPFactor {
   edge1.bpFactor = this
   val edges = Seq(edge1)
   def updateOutgoing(e:BPEdge): Unit = e match {
     case edge1 => updateOutgoing1
   }
   def updateOutgoing1: Unit = edge1.messageFromFactor = calculateOutgoing1
-  def calculateOutgoing1: BPMessage = null // do the work of normalization
+  def calculateOutgoing1: Tensor = null // do the work of normalization
 }
 
-class BPFactor2(val factor:Factor, val edge1:BPEdge, val edge2:BPEdge, val scores:Tensor2) extends DiscreteMarginal2(edge1.bpVariable.variable, edge2.bpVariable.variable, null) with _BPFactor {
+class BPFactor2(val factor:Factor, val edge1:BPEdge, val edge2:BPEdge, val ring:BPRing, val scores:Tensor2) extends DiscreteMarginal2(edge1.bpVariable.variable, edge2.bpVariable.variable, null) with _BPFactor {
   edge1.bpFactor = this
   edge2.bpFactor = this
   val edges = Seq(edge1, edge2)
@@ -66,8 +81,8 @@ class BPFactor2(val factor:Factor, val edge1:BPEdge, val edge2:BPEdge, val score
   }
   def updateOutgoing1: Unit = edge1.messageFromFactor = calculateOutgoing1
   def updateOutgoing2: Unit = edge2.messageFromFactor = calculateOutgoing2
-  def calculateOutgoing1: BPMessage = null // do the work of normalization
-  def calculateOutgoing2: BPMessage = null
+  def calculateOutgoing1: Tensor = null // do the work of normalization
+  def calculateOutgoing2: Tensor = null
 }
 
 class BPSummary(varying:Set[DiscreteVar], model:Model) extends Summary[DiscreteMarginal] {
@@ -75,7 +90,7 @@ class BPSummary(varying:Set[DiscreteVar], model:Model) extends Summary[DiscreteM
   private val _bpVariables = new HashMap[DiscreteVectorVar,BPVariable]
   def bpVariable(v:DiscreteVar): BPVariable = {
     var result = _bpVariables(v)
-    if (result eq null) { result = new BPVariable(v, new DenseTensor1(v.domain.size)); _bpVariables(v) = result }
+    if (result eq null) { result = new BPVariable(v, BPSumProductRing, new DenseTensor1(v.domain.size)); _bpVariables(v) = result }
     result
   }
   
@@ -83,8 +98,8 @@ class BPSummary(varying:Set[DiscreteVar], model:Model) extends Summary[DiscreteM
     val factorVarying = factor.variables.filter(_ match { case v:DiscreteVar => varying.contains(v); case _ => false }).asInstanceOf[Seq[DiscreteVar]]
     val edges = factorVarying.map(v => new BPEdge(bpVariable(v)))
     val bpFactor = edges.size match {
-      case 1 => new BPFactor1(factor, edges(0), new DenseTensor1(edges(0).variable.domain.size))
-      case 2 => new BPFactor2(factor, edges(0), edges(1), new DenseTensor2(edges(0).variable.domain.size, edges(1).variable.domain.size))
+      case 1 => new BPFactor1(factor, edges(0), BPSumProductRing, new DenseTensor1(edges(0).variable.domain.size))
+      case 2 => new BPFactor2(factor, edges(0), edges(1), BPSumProductRing, new DenseTensor2(edges(0).variable.domain.size, edges(1).variable.domain.size))
     }
     _bpFactors(factor) = bpFactor
   }

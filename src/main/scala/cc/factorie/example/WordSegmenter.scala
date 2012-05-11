@@ -60,7 +60,7 @@ object WordSegmenterDemo {
   val skipTemplate = new Template2[Label,Label] with DotStatistics1[BooleanValue] {
     def unroll1 (label:Label) =  
       // could cache this search in label.similarSeq for speed
-      for (other <- label.token.chain; if label.token.char == other.char) yield
+      for (other <- label.token.chain.links; if label.token.char == other.char) yield
         if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
     def unroll2 (label:Label) = Nil // We handle symmetric case above
     def statistics(values:Values) = Stat(BooleanDomain.getValue(values._1 == values._2))
@@ -87,7 +87,7 @@ object WordSegmenterDemo {
         } else
           beginword = true
       }
-      for (token <- sentence) {
+      for (token <- sentence.links) {
         if (token.hasPrev) token += (token.prev.char+"@-1") else token += "START@-1"
         if (token.hasNext) token += (token.next.char+"@1") else token += "END@+1"
       }
@@ -96,8 +96,8 @@ object WordSegmenterDemo {
 
     // Make a test/train split
     val (testSet, trainSet) = sentences.shuffle(random).split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
-    var trainVariables = trainSet.flatMap(_.map(_.label))
-    var testVariables = testSet.flatMap(_.map(_.label))
+    var trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
+    var testVariables = testSet.map(_.links).flatMap(_.map(_.label))
     var sampler = new VariableSettingsSampler[Label](model)
     val predictor = new SamplingMaximizer(sampler)
     

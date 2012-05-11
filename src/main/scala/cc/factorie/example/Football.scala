@@ -133,28 +133,28 @@ object Football {
         else {
           print("Reading ***"+(article\\"head"\\"title").text+"***")
           documents += LoadPlainText.fromString(file.getName, Source.fromString((article \\ "body" \\ "body.content").text).mkString, false)
-          for (token <- documents.last) {
+          for (token <- documents.last.tokens) {
             token.attr += new Label("O", token)
             token.attr += new TokenFeatures(token) ++= featureFunction(token.string)
           }
-          println("  "+documents.last.size)
-          documents.last.foreach(t=> print(t.string+" ")); println
+          println("  "+documents.last.length)
+          documents.last.tokens.foreach(t=> print(t.string+" ")); println
         }  
       }
     }
     if (printLexiconsOnly) System.exit(0)
-    documents.foreach(d => Observations.addNeighboringFeatureConjunctions(d, (t:Token) => t.attr[TokenFeatures], List(-1), List(-1,0), List(0), List(1)))
-    documents.foreach(d => d.foreach(t => t.attr[TokenFeatures] ++= cc.factorie.app.strings.charNGrams(t.string, 2,5).map(g => "NGRAMS="+g)))
+    documents.foreach(d => Observations.addNeighboringFeatureConjunctions(d.tokens, (t:Token) => t.attr[TokenFeatures], List(-1), List(-1,0), List(0), List(1)))
+    documents.foreach(d => d.tokens.foreach(t => t.attr[TokenFeatures] ++= cc.factorie.app.strings.charNGrams(t.string, 2,5).map(g => "NGRAMS="+g)))
     
     // Train and print diagnostics
-    val labels = documents.flatMap(seq => seq.map(_.attr[Label]))
+    val labels = documents.map(_.tokens).flatMap(seq => seq.map(_.attr[Label]))
     val learner = new VariableSettingsSampler[Label](model,objective) with SampleRank with GradientAscentUpdates {
       override def postIterationHook(): Boolean = {
         println("Iteration "+iterationCount)
         var docCount = 1
         for (doc <- documents) {
           println("Document "+docCount)
-          for (entity <- Observations.extractContiguous(doc, (t:Token) => t.attr[Label].categoryValue)) { 
+          for (entity <- Observations.extractContiguous(doc.tokens, (t:Token) => t.attr[Label].categoryValue)) { 
             println(entity._1+" "+entity._2.map(t=>t.string).mkString(" "))
           }
           docCount += 1

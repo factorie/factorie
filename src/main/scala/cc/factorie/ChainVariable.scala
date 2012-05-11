@@ -74,8 +74,8 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
     val i = _position - n
     if (i >= 0 && i < _chain.length) chain(i) else null.asInstanceOf[This]
   }
-  def chainAfter = _chain.drop(_position+1)
-  def chainBefore = _chain.take(_position)
+  def chainAfter: IndexedSeq[This] = _chain.links.drop(_position+1)
+  def chainBefore: IndexedSeq[This] = _chain.links.take(_position)
   def prevWindow(n:Int): Seq[This] = {
     var i = math.max(_position-n,  0)
     val res = new collection.mutable.ListBuffer[This]
@@ -109,12 +109,12 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
 }
 
 /** A chain of elements, each of which has methods "next", "prev", etc */
-trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends IndexedSeqEqualsEq[E] with ThisType[This] with ElementType[E] {
+trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] with ElementType[E] {
   this: This =>
   private val _chainseq = new scala.collection.mutable.ArrayBuffer[E]
   def apply(i:Int): E = _chainseq(i)
   def length = _chainseq.length
-  def value: IndexedSeq[E] = _chainseq // TODO But this isn't actually immutable. :-(  Inefficient to copy whole seq though. 
+  @inline final def links: IndexedSeq[E] = _chainseq
   def +=(e:E): Unit = {
     e._setChainPosition(this, _chainseq.length)
     _chainseq += e
@@ -125,6 +125,7 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends IndexedSeqEqualsEq
 /** A Chain that is also a Variable, with value IndexedSeq[ElementType] */
 trait ChainVar[This<:ChainVar[This,E],E<:ChainLink[E,This]] extends Chain[This,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[ChainVar[This,E],IndexedSeq[E]] {
   this: This =>
+  def value: IndexedSeq[E] = links // TODO But this isn't actually immutable. :-(  Inefficient to copy whole seq though. 
 }
 
 class ChainVariable[This<:ChainVariable[This,E],E<:ChainLink[E,This]] extends ChainVar[This,E] {

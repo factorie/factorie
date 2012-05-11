@@ -16,9 +16,10 @@ package cc.factorie.app.nlp
 import cc.factorie._
 
 class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends SpanVariable[TokenSpan,Document,Token](doc, initialStart, initialLength) with Attr {
-  def document = chain // Just a convenient alias
-  def sentence = this(0).sentence
-  def phrase: String = if (length == 1) this.head.string else doc.string.substring(head.stringStart, last.stringEnd)
+  @inline final def document = chain // Just a convenient alias
+  @inline final def tokens = links
+  def sentence = tokens(0).sentence
+  def phrase: String = if (length == 1) tokens.head.string else doc.string.substring(tokens.head.stringStart, tokens.last.stringEnd)
   def string: String = phrase
   /** Returns true if this span contain the words of argument span in order. */
   def containsStrings(span:TokenSpan): Boolean = {
@@ -27,7 +28,7 @@ class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Di
       var result = true
       var i2 = i; var j = 0
       while (j < span.length && i2 < this.length && result) {
-        if (span(j).string != this(i2)) result = false
+        if (span.tokens(j).string != tokens(i2)) result = false
         j += 1; i2 += 1
       }
       if (result == true) return true 

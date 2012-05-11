@@ -100,7 +100,7 @@ object WriteConll2008 {
     var currTokenIdx = 0
     var tree: ParseTree = sentence.parse
     while (true) {
-      if (currTokenIdx == sentence.size) {
+      if (currTokenIdx == sentence.length) {
         writer.println()
         if (sentences.hasNext) {
           source match {

@@ -287,8 +287,8 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       for((k,v) <- canopies)println("  -"+k+":"+v.size)
     }
     def sampleAttributes(author:AuthorEntity)(implicit d:DiffList) = {
-      val representative = author.childEntities.sampleUniformly(random)
-      author.attr[FullName].set(representative.attr[FullName])
+      val representative = author.childEntities.members.sampleUniformly(random)
+      author.attr[FullName].set(representative.attr[FullName].value)
       author.attr[Dirty].reset
       if(author.parentEntity != null)author.parentEntity.attr[Dirty].++()(d)
     }

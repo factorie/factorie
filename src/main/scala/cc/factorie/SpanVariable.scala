@@ -28,19 +28,19 @@ trait SpanType[+S<:AnyRef] {
 }
 
 /** The value of a SpanVar */
-trait SpanValue[T] extends IndexedSeq[T] {
-  def apply(i:Int) = chain(start + i)
-  def chain: IndexedSeq[T]
+trait SpanValue[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeq[E] {
+  def apply(i:Int) = chain.links(start + i)
+  def chain: C // Chain[Chain[_,T],T] // ChainWithSpans[_,_,T] //IndexedSeq[T]
   def start: Int
   def length: Int
   def hasSuccessor(i: Int) = (start + length - 1 + i) < chain.length
   def hasPredecessor(i: Int) = (start - i) >= 0
-  def successor(i: Int): T = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[T]
-  def predecessor(i: Int): T = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[T]
+  def successor(i: Int): E = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[E]
+  def predecessor(i: Int): E = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[E]
 }
 
 /** A Span that is not necessarily a Variable. */
-trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] extends SpanValue[E] with ThisType[This] with ElementType[E] {
+trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] extends ThisType[This] with ElementType[E] {
   this: This =>
   protected var _start = 0
   protected var _length = 0
@@ -50,14 +50,23 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
   def present = _present
   def start: Int = _start
   def length: Int = _length
-  def chain: C = _chain
   def end = start + length - 1
-  override def iterator = new Iterator[E] {
+  val links: SpanValue[C,E] = new SpanValue[C,E] {
+    def chain: C = _chain
+    def start = _start
+    def length = _length
+  }
+  def chain: C = _chain
+  def hasSuccessor(i: Int) = (start + length - 1 + i) < chain.length
+  def hasPredecessor(i: Int) = (start - i) >= 0
+  def successor(i: Int): E = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[E]
+  def predecessor(i: Int): E = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[E]
+  /*def iterator = new Iterator[E] {
     var i = start
     def hasNext = i < start + _length
     def next: ElementType = { i += 1; Span.this.chain.apply(i - 1) }
-  }
-  //def apply(i: Int) = chain(i + start)
+  }*/
+  def apply(i: Int) = _chain(i + start)
   def isAtStart = start == 0
   def overlaps(that: Span[_,_<:AnyRef,_<:AnyRef]) = {
     assert(this.chain eq that.chain)
@@ -82,9 +91,9 @@ trait Span[This<:Span[This,C,E],C<:ChainWithSpans[C,This,E],E<:ChainLink[E,C]] e
 }
 
 
-trait SpanVar[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:ChainLink[E,C]] extends Span[This,C,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[SpanVar[This,C,E],SpanValue[E]] {
+trait SpanVar[This<:SpanVar[This,C,E],C<:ChainWithSpansVar[C,This,E],E<:ChainLink[E,C]] extends Span[This,C,E] with IndexedSeqVar[E] with VarAndValueGenericDomain[SpanVar[This,C,E],SpanValue[C,E]] {
   this: This =>
-  def value: SpanValue[E] = this
+  def value: SpanValue[C,E] = links
   /** If true, this SpanVariable will be scored by a difflist, even if it is in its deleted non-"present" state. */
   def diffIfNotPresent = false
   def preChange(implicit d:DiffList): Unit = {}

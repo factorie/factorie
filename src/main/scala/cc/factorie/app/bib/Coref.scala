@@ -276,7 +276,7 @@ class AuthorCorefModel extends TemplateModel{
 class AuthorSampler(model:TemplateModel) extends BibSampler[AuthorEntity](model){
   def newEntity = new AuthorEntity
   def sampleAttributes(author:AuthorEntity)(implicit d:DiffList) = {
-    val representative = author.childEntities.sampleUniformly(random)
+    val representative = author.childEntities.members.sampleUniformly(random)
     author.attr[FullName].setFullName(representative.attr[FullName])
     //author.attr[Dirty].reset
     if(author.attr[Dirty].value>0)author.attr[Dirty].--()(d)
@@ -330,7 +330,7 @@ class PaperSampler(model:TemplateModel) extends BibSampler[PaperEntity](model){
     if(paper.isEntity.booleanValue)paper.promotedMention.set(canonical.id.toString) else paper.promotedMention.set(null.asInstanceOf[String])
   }
   def sampleAttributes(author:PaperEntity)(implicit d:DiffList) = {
-    val representative = author.childEntities.sampleUniformly(random)
+    val representative = author.childEntities.members.sampleUniformly(random)
     author.attr[Title].set(representative.attr[Title].value)
     author.attr[Dirty].reset
     if(author.parentEntity != null)author.parentEntity.attr[Dirty].++()(d)

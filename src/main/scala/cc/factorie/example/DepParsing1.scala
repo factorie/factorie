@@ -36,7 +36,7 @@ object DepParsing1 {
 
   class Node(val token:Token, val truePosition:Int, trueLabelString:String) extends RefVariable[Token] with VarWithTargetValue with IterableSettings {
     lazy val trueValue: Token = seq(truePosition)
-    def seq: Seq[Token] = token.chain
+    def seq: Seq[Token] = token.chain.links
     val label = new Label(trueLabelString)
     def valueIsTarget = value == trueValue
     def setToTarget(implicit d:DiffList): Unit = set(trueValue)
@@ -240,13 +240,13 @@ object DepParsing1 {
     println("Domain[POS] size = "+POSDomain.size)
     println("Domain[Distance] size = "+DistanceDomain.size)
     
-    val nodes = sentences.flatMap(_.map(_.node))
+    val nodes = sentences.flatMap(_.links.map(_.node))
     //nodes.foreach(n => n.set(n.token.seq.head)(null))
     nodes.foreach(n => n.setRandomly)
     val learner = new VariableSettingsSampler[Node](model, objective) with SampleRank with AROWUpdates {
       temperature = 0.01
       override def postIterationHook(): Boolean = {
-        for (sentence <- sentences.take(20)) printSentence(sentence)
+        for (sentence <- sentences.take(20)) printSentence(sentence.links)
         println("Average score = "+objective.aveScore(nodes))
         super.postIterationHook
       }
@@ -266,7 +266,7 @@ object DepParsing1 {
       }
       val rng = new java.util.Random()
       override def postProcessHook(n:Node, d:DiffList): Unit = {
-        printSentence(n.token.chain)
+        printSentence(n.token.chain.links)
         super.postProcessHook(n,d)
       }
     }

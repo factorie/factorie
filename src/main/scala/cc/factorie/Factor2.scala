@@ -143,6 +143,7 @@ trait FactorWithStatistics2[N1<:Variable,N2<:Variable] extends Factor2[N1,N2] {
   }
   def statistics(v:Values) = new Statistics(v._1, v._2).asInstanceOf[StatisticsType]
   def score(s:Statistics): Double
+  //def score(t:Tensor2): Double = throw new Error("")
 }
 
 trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
@@ -167,7 +168,9 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
     override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
     override def isLimitingValuesIterator = Family2.this.isLimitingValuesIterator
     override def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = limitedDiscreteValues.iterator
+    //override def score(t:Tensor2): Double = Family2.this.score(t)
   }
+  //def score(t:Tensor2): Double = throw new Error()
   // Cached Statistics
   private var cachedStatisticsArray: Array[StatisticsType] = null
   private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null

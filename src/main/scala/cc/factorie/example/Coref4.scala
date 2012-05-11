@@ -91,7 +91,7 @@ object Coref4{
       result
     }
     def sampleAttributes(entity:MyEntity)(implicit d:DiffList) = {
-      val representative = entity.childEntities.sampleUniformly(random)
+      val representative = entity.childEntities.members.sampleUniformly(random)
       entity.attr[Name].set(representative.attr[Name].value)
       entity.attr[Dirty].reset
       if(entity.parentEntity != null)entity.parentEntity.attr[Dirty].++()(d)

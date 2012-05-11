@@ -34,7 +34,7 @@ object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVar,ProportionsVar] {
   case class Factor(_1:DiscreteSeqVar, _2:ProportionsVar) extends super.Factor {
     def pr(s:Statistics): Double = self.pr(s._1, s._2)
     override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
-    override def sampledValue: Any = self.sampledValue(_1.first.domain, _1.length, _2.value) // Avoid creating a Statistics
+    override def sampledValue: Any = self.sampledValue(_1.discreteValues.first.domain, _1.length, _2.value) // Avoid creating a Statistics
     def sampledValue(s:Statistics): Seq[DiscreteValue] = {
       if (s._1.length == 0) Nil
       else self.sampledValue(s._1.first.domain, s._1.length, s._2)

@@ -36,7 +36,7 @@ class ChainNerBP {
 
   def initFeatures(document:Document): Unit = {
     import cc.factorie.app.strings.simplifyDigits
-    for (token <- document) {
+    for (token <- document.tokens) {
       val rawWord = token.string
       val word = simplifyDigits(rawWord).toLowerCase
       val features = token.attr += new ChainNerFeatures(token)
@@ -51,16 +51,16 @@ class ChainNerBP {
         for (lexicon <- lexicons) if (lexicon.contains(token)) features += "LEX="+lexicon.name
     }
     for (sentence <- document.sentences)
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[ChainNerFeatures], List(0), List(0,0), List(0,0,-1), List(0,0,1), List(1), List(2), List(-1), List(-2))
+      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[ChainNerFeatures], List(0), List(0,0), List(0,0,-1), List(0,0,1), List(1), List(2), List(-1), List(-2))
     // If the sentence contains no lowercase letters, tell all tokens in the sentence they are part of an uppercase sentence
-    document.sentences.foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t.attr[ChainNerFeatures] += "SENTENCEUPPERCASE"))
+    document.sentences.foreach(s => if (!s.tokens.exists(_.containsLowerCase)) s.tokens.foreach(t => t.attr[ChainNerFeatures] += "SENTENCEUPPERCASE"))
     // Add features for character n-grams between sizes 2 and 5
-    document.foreach(t => if (t.string.matches("[A-Za-z]+")) t.attr[ChainNerFeatures] ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
+    document.tokens.foreach(t => if (t.string.matches("[A-Za-z]+")) t.attr[ChainNerFeatures] ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
     // Add features from window of 4 words before and after
-    document.foreach(t => t.attr[ChainNerFeatures] ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
-    document.foreach(t => t.attr[ChainNerFeatures] ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
+    document.tokens.foreach(t => t.attr[ChainNerFeatures] ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
+    document.tokens.foreach(t => t.attr[ChainNerFeatures] ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
     // Put features of first mention on later mentions
-    document.foreach(t => {
+    document.tokens.foreach(t => {
       if (t.isCapitalized && t.string.length > 1 && !t.attr[ChainNerFeatures].activeCategories.exists(f => f.matches(".*FIRSTMENTION.*"))) {
         //println("Looking for later mentions of "+t.word)
         var t2 = t
@@ -76,10 +76,10 @@ class ChainNerBP {
   }
   
   def hasFeatures(token:Token): Boolean = token.attr.contains(classOf[ChainNerFeatures])
-  def hasFeatures(document:Document): Boolean = hasFeatures(document.head)
+  def hasFeatures(document:Document): Boolean = hasFeatures(document.tokens.head)
   
   def hasLabel(token:Token): Boolean = token.attr.contains(classOf[NerLabel])
-  def hasLabels(document:Document): Boolean = hasLabel(document.head)
+  def hasLabels(document:Document): Boolean = hasLabel(document.tokens.head)
 
   def train(trainFilename:String, testFilename:String): Unit = {
     // Read in the data
@@ -94,8 +94,8 @@ class ChainNerBP {
     println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(10000)
-    val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(2000)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
  
     // Train for 5 iterations
     val vars = for(td <- trainDocuments; sentence <- td.sentences) yield sentence.tokens.map(_.attr[ChainNerLabel])
@@ -124,9 +124,9 @@ class ChainNerBP {
     //println(" Test Token accuracy = "+ NerObjective.aveScore(testLabels))
     val buf = new StringBuffer
     // Per-token evaluation
-    buf.append(new LabelEvaluation(documents.flatMap(_.map(_.attr[ChainNerLabel]))))
+    buf.append(new LabelEvaluation(documents.flatMap(_.tokens.map(_.attr[ChainNerLabel]))))
     val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categoryValues.filter(_.length > 2).map(_.substring(2)))
-    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.map(_.attr[ChainNerLabel])
+    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[ChainNerLabel])
     println("Segment evaluation")
     println(segmentEvaluation)
   }
@@ -135,7 +135,7 @@ class ChainNerBP {
   def process(document:Document): Unit = {
     if (document.length == 0) return
     if (!hasFeatures(document)) initFeatures(document)
-    if (!hasLabels(document)) document.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
+    if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
 	    val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
 	    val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
@@ -222,8 +222,8 @@ object ChainNerBP extends ChainNerBP {
         process(document)
         println()
         println(filename)
-        printEntities(document)
-        printSGML(document)
+        printEntities(document.tokens)
+        printSGML(document.tokens)
       }
     } else if (opts.runXmlDir.wasInvoked) {
       //println("statClasses "+model.templatesOf[VectorTemplate].toList.map(_.statClasses))

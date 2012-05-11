@@ -22,21 +22,21 @@ import java.util.Arrays
 
 /** Revert equals/hashCode behavior of Seq[A] to the default Object.
     WARNING: This doesn't actually satisfy == commutativity with a Seq[A]. :-( */
-trait SeqEqualsEq[+A] extends scala.collection.Seq[A] {
-  override def equals(that:Any): Boolean = that match {
-    case that:AnyRef => this eq that
-    case _ => false
-  }
-  override def hashCode: Int = java.lang.System.identityHashCode(this)
-}
-
-trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A] {
-  override def equals(that:Any): Boolean = that match {
-    case that:AnyRef => this eq that
-    case _ => false
-  }
-  override def hashCode: Int = java.lang.System.identityHashCode(this)
-}
+//trait SeqEqualsEq[+A] extends scala.collection.Seq[A] {
+//  override def equals(that:Any): Boolean = that match {
+//    case that:AnyRef => this eq that
+//    case _ => false
+//  }
+//  override def hashCode: Int = java.lang.System.identityHashCode(this)
+//}
+//
+//trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A] {
+//  override def equals(that:Any): Boolean = that match {
+//    case that:AnyRef => this eq that
+//    case _ => false
+//  }
+//  override def hashCode: Int = java.lang.System.identityHashCode(this)
+//}
 
 trait ElementType[+ET] {
   type ElementType = ET
@@ -45,13 +45,52 @@ trait ElementType[+ET] {
 @deprecated("Will be removed")
 trait VarAndElementType[+This<:Variable,+ET] extends VarAndValueType[This,IndexedSeq[ET]] with ElementType[ET]
 
-trait SeqVar[+E] extends Variable with SeqEqualsEq[E] with VarAndValueType[SeqVar[E],Seq[E]] with ElementType[E]
-trait IndexedSeqVar[+E] extends Variable with IndexedSeqEqualsEq[E] with VarAndValueType[IndexedSeqVar[E],IndexedSeq[E]] with ElementType[E]
+/** A variable whose value is a Seq[E].  
+    Note that this trait itself does not actually inherit from Seq[E] 
+    because Seq defines "equals" based on same contents, 
+    but all variables must have equals based on identity. */
+trait SeqVar[+E] extends Variable with VarAndValueType[SeqVar[E],Seq[E]] with ElementType[E] {
+  def iterator: Iterator[E]
+  def foreach[U](f:(E)=>U): Unit
+  def length: Int
+  def apply(index:Int): E
+  def exists(f:E=>Boolean): Boolean = { val iter = iterator; while (iter.hasNext) if (f(iter.next)) return true; return false }
+  def contains(elem: Any): Boolean = exists(_ == elem)
+  def toSeq: Seq[E] = value
+}
+
+/** A variable whose value is an IndexedSeq[E].  
+    Note that this trait itself does not actually inherit from IndexedSeq[E] 
+    because Seq defines "equals" based on same contents, 
+    but all variables must have equals based on identity. */
+trait IndexedSeqVar[+E] extends SeqVar[E] with VarAndValueType[IndexedSeqVar[E],IndexedSeq[E]] with ElementType[E] {
+  // Some of the methods of Seq, for convenience
+  def iterator: Iterator[E] = new Iterator[E] {
+    var i = 0
+    def hasNext: Boolean = i < length
+    def next: E = { i += 1; apply(i-1) }
+  }
+  def foreach[U](f:(E)=>U): Unit = {
+    var i = 0; val len = length
+    while (i < 0) { f(apply(i)); i += 1 }
+  }
+  def map[B](f:E=>B): IndexedSeq[B] = {
+    val len = length; val result = new ArrayBuffer[B](len); var i = 0
+    while (i < 0) { result += f(apply(i)); i += 1 }; result
+  }
+  def head: E = apply(0)
+  def last: E = apply(length-1)
+  override def toSeq: IndexedSeq[E] = value
+  def indexWhere(p:E => Boolean, from: Int): Int = { val len = length; var i = from; while (i < len) { if (p(apply(i))) return i; i += 1 }; return -1 }
+  def indexWhere(p:E => Boolean): Int = indexWhere(p, 0)
+  def indexOf[B>:E](elem:B): Int = indexOf(elem, 0)
+  def indexOf[B>:E](elem:B, from:Int): Int = indexWhere(elem ==, from)
+}
 
 /** A variable containing a mutable sequence of other variables.  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
     @author Andrew McCallum */
-trait MutableSeqVar[X] extends SeqVar[X] with MutableVar {
+trait MutableSeqVar[X] extends IndexedSeqVar[X] with MutableVar { // TODO This could be an IndexedSeqVar
   //type ElementType <: AnyRef
   type Element = VariableType#ElementType
   protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that SeqVar[Int] is efficient.
@@ -73,9 +112,9 @@ trait MutableSeqVar[X] extends SeqVar[X] with MutableVar {
   case class TrimEndDiff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val s = _seq.drop(_seq.length - n); def undo = _seq appendAll (s); def redo = _seq.trimEnd(n)}
   case class Remove1Diff(n:Int)(implicit d:DiffList) extends SeqVariableDiff {val e = _seq(n); def undo = _seq.insert(n,e); def redo = _seq.remove(n)}
   case class Swap1Diff(i:Int,j:Int)(implicit d:DiffList) extends SeqVariableDiff { def undo = {val e = _seq(i); _seq(i) = _seq(j); _seq(j) = e}; def redo = undo }
-  // for Seq trait
+  // Limited support for Seq-related messages, but this object is not a scala.collection.Seq[] // TODO Consider removing these
   def length = _seq.length
-  def iterator = _seq.iterator
+  override def iterator = _seq.iterator
   def apply(index: Int) = _seq(index)
   // for changes without Diff tracking
   def +=(x:Element) = _seq += x

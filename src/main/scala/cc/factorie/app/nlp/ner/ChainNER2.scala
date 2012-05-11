@@ -259,7 +259,7 @@ class ChainNer2 {
     //println("Count" + count)
     count=count+1
     import cc.factorie.app.strings.simplifyDigits
-    for (token <- document) {
+    for (token <- document.tokens) {
       didagg = false
 	  val features = vf(token)
       val rawWord = token.string
@@ -294,18 +294,18 @@ class ChainNer2 {
     for (sentence <- document.sentences)
       //cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[ChainNerFeatures], "^[^@]*$", List(0), List(0,0), List(0,-1), List(0,1), List(1), List(2), List(-1), List(-2))
 
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, vf, "^[^@]*$", List(0), List(1), List(2), List(-1), List(-2))
+      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, "^[^@]*$", List(0), List(1), List(2), List(-1), List(-2))
       // If the sentence contains no lowercase letters, tell all tokens in the sentence they are part of an uppercase sentence
       // document.sentences.foreach(s => if (!s.exists(_.containsLowerCase)) s.foreach(t => t.attr[ChainNerFeatures] += "SENTENCEUPPERCASE"))
       // Add features for character n-grams between sizes 2 and 5
-      document.foreach(t => if (t.string.matches("[A-Za-z]+")) vf(t) ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
+      document.tokens.foreach(t => if (t.string.matches("[A-Za-z]+")) vf(t) ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
       // Add features from window of 4 words before and after
       // document.foreach(t => t.attr[ChainNerFeatures] ++= t.prevWindowNum(4).map(t2 => "PREVWINDOW" + t2._1 + "="+simplifyDigits(t2._2.string).toLowerCase))
       // document.foreach(t => t.attr[ChainNerFeatures] ++= t.nextWindowNum(4).map(t2 => "NEXTWINDOW" + t2._1 + "="+simplifyDigits(t2._2.string).toLowerCase))
-      document.foreach(t => vf(t) ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
-      document.foreach(t => vf(t) ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
+      document.tokens.foreach(t => vf(t) ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
+      document.tokens.foreach(t => vf(t) ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
 
-    for(token <- document) {
+    for(token <- document.tokens) {
       if(aggregate) aggregateContext(token, vf)
      }
   }
@@ -330,7 +330,7 @@ class ChainNer2 {
   def getSequences(document : Document) : List[TokenSequence] = {
     var sequences = List[TokenSequence]()
     var seq : TokenSequence = null
-    for(token <- document) {
+    for(token <- document.tokens) {
       val categoryVal = token.attr[ChainNerLabel].categoryValue
       if(categoryVal.length() > 0) {
         categoryVal.substring(0,1) match {
@@ -363,9 +363,9 @@ class ChainNer2 {
 
   def initSecondaryFeatures(document:Document, extraFeatures : Boolean = false): Unit = {
   
-    document.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABEL" + t2._1 + "="+t2._2.attr[ChainNerLabel].categoryValue))
-    document.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,1).map(t2 => "PREVLABELCON="+t2._2.attr[ChainNerLabel].categoryValue+"&"+t.string))
-    for(t <- document) {
+    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABEL" + t2._1 + "="+t2._2.attr[ChainNerLabel].categoryValue))
+    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,1).map(t2 => "PREVLABELCON="+t2._2.attr[ChainNerLabel].categoryValue+"&"+t.string))
+    for(t <- document.tokens) {
 	if(t.sentenceHasPrev) {
 		t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[ChainNerLabel].categoryValue+"&"+t2._2.string)
     		t.attr[ChainNer2Features] ++= nextWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[ChainNerLabel].categoryValue+"&"+t2._2.string)
@@ -379,7 +379,7 @@ class ChainNer2 {
     val subsequencesToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
 
     if(extraFeatures) {
-    for (token <- document) {
+    for (token <- document.tokens) {
       if(tokenToLabelMap.contains(token.string))
         tokenToLabelMap(token.string) = tokenToLabelMap(token.string) ++ List(token.attr[ChainNerLabel].categoryValue)
       else
@@ -404,7 +404,7 @@ class ChainNer2 {
 		}
 	}
   
-  	for (token <- document) {
+  	for (token <- document.tokens) {
       		val tokenVote = tokenToLabelMap(token.string)
       		token.attr[ChainNer2Features] += "CLASSIFIERLABEL="+mode(tokenVote)
     	}
@@ -420,7 +420,7 @@ class ChainNer2 {
 		}
 	}
 	}
-	for(token <- document) {
+	for(token <- document.tokens) {
 		if(extendedPrediction.contains(token.string)) {
 			//println("EXTENDED")	
         		//Conll2003NerDomain.categoryValues.map(str => println(str + "=" + history(extendedPrediction(token.string), str)) )
@@ -431,7 +431,7 @@ class ChainNer2 {
         	else
         		extendedPrediction(token.string) = List(token.attr[ChainNerLabel].categoryValue)
 	}
-	for(token <- document) {
+	for(token <- document.tokens) {
 		val rawWord = token.string
 		if (token.hasPrev && clusters.size > 0) {
 			if(clusters.contains(rawWord)) {
@@ -466,10 +466,10 @@ class ChainNer2 {
   }
   
   def hasFeatures(token:Token): Boolean = token.attr.contains(classOf[ChainNerFeatures])
-  def hasFeatures(document:Document): Boolean = hasFeatures(document.head)
+  def hasFeatures(document:Document): Boolean = hasFeatures(document.tokens.head)
   
   def hasLabel(token:Token): Boolean = token.attr.contains(classOf[NerLabel])
-  def hasLabels(document:Document): Boolean = hasLabel(document.head)
+  def hasLabels(document:Document): Boolean = hasLabel(document.tokens.head)
 
   def getLabel(string : String) : String = {
 	if(string.contains("-"))
@@ -502,7 +502,7 @@ class ChainNer2 {
     // Add features for NER                 \
     println("Initializing training features")
 	
-  	(trainDocuments ++ testDocuments).foreach( _.map(token => token.attr += new ChainNerFeatures(token)))
+  	(trainDocuments ++ testDocuments).foreach(_.tokens.map(token => token.attr += new ChainNerFeatures(token)))
 
     trainDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
     println("Initializing testing features")
@@ -515,8 +515,8 @@ class ChainNer2 {
     println("Num TokenFeatures = "+ChainNerFeaturesDomain.dimensionDomain.size)
     
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(100)
-    val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(20)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(100)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(20)
  
 		if(bP) {
 			
@@ -572,7 +572,7 @@ class ChainNer2 {
 		}
       if(twoStage) {
 		 
-		(trainDocuments ++ testDocuments).foreach( _.map(token => token.attr += new ChainNer2Features(token)))
+		(trainDocuments ++ testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNer2Features(token)))
 		
 	    for(document <- (trainDocuments ++ testDocuments)) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
   		for(document <- (trainDocuments ++ testDocuments)) initSecondaryFeatures(document)
@@ -637,11 +637,11 @@ class ChainNer2 {
 	
     println("Initializing testing features")
 	
-	(testDocuments).foreach( _.map(token => token.attr += new ChainNerFeatures(token)))
+	(testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNerFeatures(token)))
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
     // Add secondary features to domain before it gets frozen
    
-    val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(20)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(20)
     
       (testLabels).foreach(_.setRandomly())
       
@@ -657,7 +657,7 @@ class ChainNer2 {
 
       printEvaluation(testDocuments, testDocuments, "FINAL")
 
-  	  (testDocuments).foreach( _.map(token => token.attr += new ChainNer2Features(token)))
+  	  (testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNer2Features(token)))
       testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNer2Features]))
 
   	  for(document <- (testDocuments)) initSecondaryFeatures(document)	   
@@ -680,7 +680,7 @@ class ChainNer2 {
 
   def convertToIOB(docs : Seq[Document]) : Unit = {
 	for(doc <- docs) {
-		for (token <- doc) {
+		for (token <- doc.tokens) {
 		  val IOBLabel = BILOUtoIOB(token)
 		  val targetIOBLabel = BILOUtoIOB(token, true)
           token.attr.remove[ChainNerLabel]
@@ -747,7 +747,7 @@ class ChainNer2 {
       	corpus.next()
       //writer.write("\n")
       for(sentence <- document.sentences) {
-        for(token <- sentence) {
+        for(token <- sentence.tokens) {
           var BILOUSplit : Array[String] = null
           var prevSplit : Array[String] = null
           if(token.sentenceHasPrev) {
@@ -816,9 +816,9 @@ class ChainNer2 {
     //println(" Test Token accuracy = "+ NerObjective.aveScore(testLabels))
     val buf = new StringBuffer
     // Per-token evaluation
-    buf.append(new LabelEvaluation(documents.flatMap(_.map(_.attr[ChainNerLabel]))))
+    buf.append(new LabelEvaluation(documents.flatMap(_.tokens.map(_.attr[ChainNerLabel]))))
     val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categoryValues.filter(_.length > 2).map(_.substring(2)))
-    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.map(_.attr[ChainNerLabel])
+    for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[ChainNerLabel])
     println("Segment evaluation")
     println(segmentEvaluation)
   }
@@ -832,7 +832,7 @@ class ChainNer2 {
 	  		Viterbi.searchAndSetToMax(vars, model.localTemplate, model.transitionTemplate)
     	}
     } else {
-      for (token <- document) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.getCategory(0)) // init value doens't matter
+      for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.getCategory(0)) // init value doens't matter
       val localModel = new TemplateModel(model.templates(0), model.templates(1))
       val localPredictor = new VariableSettingsGreedyMaximizer[ChainNerLabel](localModel, null)
       for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)
@@ -950,8 +950,8 @@ object ChainNer2 extends ChainNer2 {
         process(document)
         println()
         println(filename)
-        printEntities(document)
-        printSGML(document)
+        printEntities(document.tokens)
+        printSGML(document.tokens)
       }
     } else if(opts.justTest.wasInvoked) { 
 		model.load(opts.modelDir.value)

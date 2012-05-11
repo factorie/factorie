@@ -47,8 +47,8 @@ object LoadACE {
 
     // trailing tokens should be in a sentence
     val end = doc.sentences.last.end
-    if (end != doc.size - 1)
-      new Sentence(doc, end + 1, doc.size - 1 - end)(null)
+    if (end != doc.length - 1)
+      new Sentence(doc, end + 1, doc.length - 1 - end)(null)
     doc
   }
 

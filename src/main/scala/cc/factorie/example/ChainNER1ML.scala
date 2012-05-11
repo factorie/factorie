@@ -47,24 +47,24 @@ object ChainNER1ML {
     if (args.length != 2) throw new Error("Usage: ChainNER1 trainfile testfile")
     val trainDocuments = LoadConll2003.fromFilename(args(0))
     val testDocuments = LoadConll2003.fromFilename(args(1))
-    for (document <- (trainDocuments ++ testDocuments); token <- document) {
+    for (document <- (trainDocuments ++ testDocuments); token <- document.tokens) {
       val features = new TokenFeatures(token)
       features += "W="+token.string
       features += "SHAPE="+cc.factorie.app.strings.stringShape(token.string, 2)
       token.attr += features
     }
-    val trainLabels = trainDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(10000)
-    val testLabels = testDocuments.flatten.map(_.attr[ChainNerLabel]) //.take(2000)
+    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
+    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     
     // Get the variables to be inferred
-    val trainLabelsSentences: Seq[Seq[NerLabel]] = trainDocuments.map(_.map(_.nerLabel))
-    val  testLabelsSentences: Seq[Seq[NerLabel]] =  testDocuments.map(_.map(_.nerLabel))
+    val trainLabelsSentences: Seq[Seq[NerLabel]] = trainDocuments.map(_.tokens.map(_.nerLabel))
+    val  testLabelsSentences: Seq[Seq[NerLabel]] =  testDocuments.map(_.tokens.map(_.nerLabel))
     //val trainVariables = trainLabels
     //val testVariables = testLabels
     //val allTestVariables = testVariables.flatMap(l => l)
     //val allTokens: Seq[Token] = (trainSentences ++ testSentences).flatten
     // To enable Template.cachedStatistics
-    for (doc <- (trainDocuments ++ testDocuments); token <- doc) token.attr[TokenFeatures].freeze
+    for (doc <- (trainDocuments ++ testDocuments); token <- doc.tokens) token.attr[TokenFeatures].freeze
 
     // Train and test
     println("*** Starting training (#sentences=%d)".format(trainDocuments.map(_.sentences.size).sum))

@@ -47,7 +47,7 @@ object RelationVariables {
       this += "BIAS"
       // TODO compute relation features using "first" and "arg"
       // TODO convert Lexicons (from refectorie.proj.jntinf) to app.chain.Lexicon
-      for (tok <- arg) {
+      for (tok <- arg.tokens) {
         this += "POS_" + tok.posLabel.categoryValue
         if (tok.string(0).isLower)
           this += "STEM_" + tok.string.replaceAll("\\s+", " ").take(5)

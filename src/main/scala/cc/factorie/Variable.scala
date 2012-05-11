@@ -46,6 +46,10 @@ trait VarAndValueType[+This<:Variable,+VT] extends ValueType[VT] {
    constructor arguments; but the FACTORIE library depends on being
    able to distinguish individual Variable instances based on their
    machine address (i.e. System.identityHashCode).
+   <p>
+   Similarly no Variable should ever inherit from scala.collection.Iterable,
+   even though its value may do so.  This prevents confusion between
+   Model.factors(Variable) and Model.factors(Iterable[Variable]).
    @author Andrew McCallum */
 trait Variable {
   /** The type of this variable, used specially in the definition

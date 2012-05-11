@@ -15,11 +15,18 @@
 package cc.factorie
 import scala.collection.mutable.HashSet
 
-trait SetVar[A] extends Variable with VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]] with Iterable[A]
+trait SetVar[A] extends Variable with VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]] {
+  def iterator: Iterator[A] = value.iterator
+  def foreach[U](f:A=>U): Unit = iterator.foreach(f)
+  def map[B](f:A=>B): scala.collection.Set[B] = new HashSet[B] ++= iterator.map(f)
+  def forall(f:A=>Boolean): Boolean = iterator.forall(f)
+  def exists(f:A=>Boolean): Boolean = iterator.exists(f)
+  def size: Int
+}
 
 class EmptySetVar[A] extends SetVar[A] {
-  def iterator = Iterator.empty
-  override def size = 0
+  override def iterator = Iterator.empty
+  def size = 0
   def value = Set.empty[A]
 }
 
@@ -29,8 +36,8 @@ class SetVariable[A]() extends SetVar[A] with VarAndValueGenericDomain[SetVariab
   def value = _members
   private val _members = new HashSet[A];
   def members: scala.collection.Set[A] = _members
-  def iterator = _members.iterator
-  override def size = _members.size
+  override def iterator = _members.iterator
+  def size = _members.size
   def contains(x:A) = _members.contains(x)
   def add(x:A)(implicit d: DiffList): Unit = if (!_members.contains(x)) {
     if (d != null) d += new SetVariableAddDiff(x)

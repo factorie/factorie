@@ -63,7 +63,7 @@ class POS1 {
   }
   
   def initPosFeatures(document:Document): Unit = {
-    for (token <- document) {
+    for (token <- document.tokens) {
       val rawWord = token.string
       val word = cc.factorie.app.strings.simplifyDigits(rawWord)
       val features = token.attr += new PosFeatures(token)
@@ -76,12 +76,12 @@ class POS1 {
       if (token.isPunctuation) features += "PUNCTUATION"
     }
     for (sentence <- document.sentences)
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence, (t:Token)=>t.attr[PosFeatures], List(1), List(-1))
+      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[PosFeatures], List(1), List(-1))
   }
 
   // TODO Change this to use Viterbi! -akm
   def process(document:Document): Unit = {
-    for (token <- document) if (token.attr[PosLabel] == null) token.attr += new PosLabel(token, PosDomain.getCategory(0)) // init value doens't matter
+    for (token <- document.tokens) if (token.attr[PosLabel] == null) token.attr += new PosLabel(token, PosDomain.getCategory(0)) // init value doens't matter
     val localModel = new TemplateModel(PosModel.templates(0), PosModel.templates(1))
     val localPredictor = new VariableSettingsGreedyMaximizer[PosLabel](localModel)
     for (label <- document.tokens.map(_.attr[PosLabel])) localPredictor.process(label)
@@ -128,8 +128,8 @@ object POS1 extends POS1 {
       println("Num TokenFeatures = "+PosFeaturesDomain.dimensionDomain.size)
     
       // Get the variables to be inferred (for now, just operate on a subset)
-      val trainLabels = trainDocuments.flatten.map(_.attr[PosLabel]) //.take(10000)
-      val testLabels = testDocuments.flatten.map(_.attr[PosLabel]) //.take(2000)
+      val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[PosLabel]) //.take(10000)
+      val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[PosLabel]) //.take(2000)
     
       def printEvaluation(iteration:String): Unit = {
         println("Iteration "+iteration)
@@ -173,7 +173,7 @@ object POS1 extends POS1 {
         segment.SentenceSegmenter.process(document)
         initPosFeatures(document)
         process(document)
-        for (token <- document)
+        for (token <- document.tokens)
           println("%s %s".format(token.string, token.attr[PosLabel].categoryValue))
       }
     }

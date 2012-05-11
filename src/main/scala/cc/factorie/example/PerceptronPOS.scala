@@ -47,7 +47,7 @@ object PerceptronPOS {
 
   def initPosFeatures(documents: Seq[Document]): Unit = documents.map(initPosFeatures(_))
   def initPosFeatures(document: Document): Unit = {
-    for (token <- document) {
+    for (token <- document.tokens) {
       val rawWord = token.string
       val word = cc.factorie.app.strings.simplifyDigits(rawWord)
       val features = new PosFeatures(token) { override def skipNonCategories = PosModel.skipNonCategories }
@@ -64,12 +64,12 @@ object PerceptronPOS {
       if (token.isPunctuation) features += "PUNCTUATION"
     }
     for (sentence <- document.sentences)
-      addNeighboringFeatureConjunctions(sentence, (t: Token) => t.attr[PosFeatures], "W=", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
+      addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 
   def percentageSetToTarget[L <: VarWithTarget](ls: Seq[L]): Double = HammingLossObjective.aveScore(ls)
 
-  def predictSentence(s: Sentence): Unit = predictSentence(s.map(_.posLabel))
+  def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
   def predictSentence(vs: Seq[PosLabel]): Unit = Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
 
   def train(
@@ -138,7 +138,7 @@ object PerceptronPOS {
 
   def test(documents: Seq[Document], label: String = "test"): Unit = {
     val sentences = documents.flatMap(_.sentences)
-    val labels = sentences.flatMap(_.map(t => t.posLabel))
+    val labels = sentences.flatMap(_.tokens.map(t => t.posLabel))
     labels.map(_.setRandomly())
     sentences.map(predictSentence(_))
     println(label + " accuracy: " + percentageSetToTarget(labels) + "%")
@@ -159,8 +159,8 @@ object PerceptronPOS {
     if (!modelLoaded) throw new Error("The model should be loaded before documents are processed.")
 
     // add the labels and features if they aren't there already.
-    if (document.head.attr.get[PosLabel] == None) {
-      document.foreach(t => t.attr += labelMaker(t))
+    if (document.tokens.head.attr.get[PosLabel] == None) {
+      document.tokens.foreach(t => t.attr += labelMaker(t))
       initPosFeatures(document)
     }
 
@@ -218,7 +218,7 @@ object PerceptronPOS {
         segment.SentenceSegmenter.process(document)
         initPosFeatures(document)
         process(document)
-        for (token <- document)
+        for (token <- document.tokens)
           println("%s %s".format(token.string, token.attr[PosLabel].categoryValue))
       }
     }

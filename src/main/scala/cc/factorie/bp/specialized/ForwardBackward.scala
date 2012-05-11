@@ -87,7 +87,7 @@ object ForwardBackward {
         var di = 0
         while (settings.hasNext) {
           settings.next()
-          arrays(vi)(di) = localFactor.score + biasScores(di)
+          arrays(vi)(di) = biasScores(di) + localFactor.score 
           di += 1
         }
         vi += 1

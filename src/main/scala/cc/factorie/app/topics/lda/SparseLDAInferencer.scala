@@ -61,7 +61,7 @@ class SparseLDAInferencer(
     for (doc <- docs) {
       val theta = doc.theta
       theta.tensor.zero()
-      for (dv <- doc.zs) theta.tensor.+=(dv.intValue, 1.0)
+      for (dv <- doc.zs.discreteValues) theta.tensor.+=(dv.intValue, 1.0)
     }
   }
 

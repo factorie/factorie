@@ -62,7 +62,7 @@ object TimingBP {
       d
     })
 
-    val labels = documents.map(_.map(_.posLabel))
+    val labels = documents.map(_.tokens).map(_.map(_.posLabel))
 
     println("Initializing the weights")
     List(TestModel.localTemplate,TestModel.transTemplate, TestModel.biasTemplate).foreach(t => {

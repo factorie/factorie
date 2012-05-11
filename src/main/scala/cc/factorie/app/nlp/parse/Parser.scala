@@ -39,7 +39,7 @@ class Parser {
 
   def parse(sentence:Sentence): Unit = {
     val stack = new scala.collection.mutable.Stack[Token]
-    for (token <- sentence) {
+    for (token <- sentence.tokens) {
       token.attr += new ParseEdge(token, if (token.sentenceHasPrev) token.prev else null, "SUBJ")
     }
   }

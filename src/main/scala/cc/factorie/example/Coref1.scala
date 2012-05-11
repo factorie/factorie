@@ -20,7 +20,7 @@ object Coref1 {
 
   object spanner extends cc.factorie.app.nlp.ner.SpanNerPredictor(new java.io.File("/Users/mccallum/tmp/spanner.factorie"))
   def nerMentionExtraction(doc:Document): Unit = {
-    for (iteration <- 1 to 3; token <- doc) spanner.process(token)
+    for (iteration <- 1 to 3; token <- doc.tokens) spanner.process(token)
   }
 
   def corefInit(doc:Document): Unit = {
