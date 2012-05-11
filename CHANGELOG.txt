@@ -3,6 +3,8 @@ New in version 0.10.2:
   - Customized forward-backward and viterbi for chain models
   - changes to the coreference data structures that support hierarchical models
   - new data loaders
+  - models can be loaded from JARs (POS model in IESL Nexus)
+  - initial dependency parser
 
 * BP
   - Refactoring to be faster and cleaner interface, with bugfixes
@@ -10,16 +12,22 @@ New in version 0.10.2:
   - MaxProduct works even when multiple MAP states
   - TimingBP to compare performance of the different variants of BP in the codebase
   - maxMarginal with threshold, to support PR curves
+  - some initial parallelization
 
 * Max likelihood training
   - convenience constructors for selecting which families to update
   - pieces can use families for inference that are not updated
 
 * Trainer that uses Stochastic gradient descent
+
 * Cubbie
   - new united interface for serialization/persistence (including mongodb support)
 
+* Hierarchical Coref Model
+  - added model that supports arbitrarily deep and wide hierarchy of entites, aka Wick, Singh, McCallum, ACL 2012
+
 * Gzip saving/loading of models
+* Data loaders for bibtex, dblp, etc.
 * Better support for limitedValues and sparse domains on factors
 * Code cleanup, including deletion of inner/outer factors
 
@@ -53,8 +61,6 @@ etc.
 * Models independent of Templates
 
 * Redesigned cc.factorie.generative package
-
-
 
 New in version 0.10.0:
 
