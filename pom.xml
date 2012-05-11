@@ -8,7 +8,7 @@
   <name>Factorie</name>
   <artifactId>factorie</artifactId>
   <groupId>cc.factorie</groupId>
-  <version>0.10.2</version>
+  <version>1.0-SNAPSHOT</version>
   <inceptionYear>2009</inceptionYear>
 
   <url>http://factorie.googlecode.com</url>
