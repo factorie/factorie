@@ -34,25 +34,28 @@ object Template {
 /** The template for creating factors, given on of its variables, finding the other neighboring variables.
     @Andrew McCallum
 */
-trait Template extends FamilyWithNeighborDomains { thisTemplate =>
-  //type FamilyType <: Template // like a self-type
-  def factors(v: Variable): Iterable[FactorType]
-  /**A version of factors that takes the Diff object instead of just the variable */
-  def factors(d: Diff): Iterable[FactorType] = if (d.variable == null) Nil else factors(d.variable)
-  def factors(difflist: DiffList): Iterable[FactorType] = {
-    //var result = new LinkedHashSet[Factor]()
-    var result = new HashSet[FactorType]()
-    for (diff <- difflist; factor <- factors(diff)) { if (factor eq null) throw new Error("Template.factors returned null Factor") else result += factor }
-    //difflist.foreach(diff => result ++= factors(diff))
-    result
-  }
-  def factors(variables:Iterable[Variable]): Iterable[FactorType] = {
-    if (variables.size == 1) return factors(variables.head) // Efficiently avoids the HashSet.
-    //var result = new LinkedHashSet[FactorType]()
-    var result = new HashSet[FactorType]()
-    for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("Template.factors returned null Factor") else result += factor }
-    result
-  }
+trait Template extends FamilyWithNeighborDomains with Model { thisTemplate =>
+  // Override so they will know the Factor type, which enables code like "factor.statistics.vector"
+  override def factorsWithDuplicates(v:Variable): Iterable[FactorType]
+  override def factorsWithDuplicates(vs:Iterable[Variable]): Iterable[FactorType] = super.factorsWithDuplicates(vs).asInstanceOf[Iterable[FactorType]]
+  override def factorsWithDuplicates(d:Diff): Iterable[FactorType] = super.factorsWithDuplicates(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
+  override def factorsWithDuplicates(difflist:DiffList): Iterable[FactorType] = super.factorsWithDuplicates(difflist).asInstanceOf[Iterable[FactorType]]
+  override def factors(v:Variable): Iterable[FactorType] = super.factors(v).asInstanceOf[FactorType]
+  override def factors(variables:Iterable[Variable]): Iterable[FactorType] = super.factors(variables).asInstanceOf[Iterable[FactorType]]
+  override def factors(d:Diff): Iterable[FactorType] = super.factors(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
+  override def factors(difflist:DiffList): Iterable[FactorType] = super.factors(difflist).asInstanceOf[Iterable[FactorType]]
+//  override def factors(difflist:DiffList): Iterable[FactorType] = {
+//    var result = new scala.collection.mutable.LinkedHashSet[FactorType]()
+//    //for (diff <- difflist; factor <- factors(diff)) { if (factor eq null) throw new Error("Template.factors returned null Factor") else result += factor }
+//    difflist.foreach(diff => result ++= factors(diff))
+//    result
+//  }
+//  override def factors(variables:Iterable[Variable]): Iterable[FactorType] = {
+//    if (variables.size == 1) return factors(variables.head) // Efficiently avoids the HashSet.
+//    var result = new scala.collection.mutable.LinkedHashSet[FactorType]()
+//    for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("Template.factors returned null Factor") else result += factor }
+//    result
+//  }
   /** Called in implementations of factors(Variable) to give the variable a chance
       to specify additional dependent variables on which factors(Variable) should also be called. */
   def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade
@@ -61,13 +64,6 @@ trait Template extends FamilyWithNeighborDomains { thisTemplate =>
       those value combinations seen in the current values of the variables in factors touching "vars". */
   def limitDiscreteValuesIteratorAsIn(vars:Iterable[DiscreteVar]): Unit = {}
 }
-
-// TODO Remove this
-//trait VectorTemplate extends VectorFamily with Template
-
-
-// TODO Remove this
-//trait DotTemplate extends DotFamily with Template
 
 
 

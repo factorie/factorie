@@ -48,7 +48,7 @@ class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:GenerativeMod
       closures(v.head).sample(d)
     } else {
       // Get factors, no guarantees about their order
-      val factors: Seq[Factor] = model.factors(v)
+      val factors: Iterable[Factor] = model.factors(v)
       //println("CollapsedGibbsSampler.process1 factors = "+factors.map(_.template.getClass).mkString)
       var done = false
       val handlerIterator = handlers.iterator
@@ -79,7 +79,7 @@ class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:GenerativeMod
 
 
 trait CollapsedGibbsSamplerHandler {
-  def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure
+  def sampler(v:Iterable[Variable], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure
 }
 
 trait CollapsedGibbsSamplerClosure {
@@ -89,8 +89,8 @@ trait CollapsedGibbsSamplerClosure {
 
 
 object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
-  def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
-    if (v.size != 1 || factors.length != 1) return null
+  def sampler(v:Iterable[Variable], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
+    if (v.size != 1 || factors.size != 1) return null
     val pFactor = factors.collectFirst({case f:GenerativeFactor => f}) // TODO Yipes!  Clean up these tests!
     if (pFactor == None) return null
     // Make sure all parents are collapsed?
@@ -113,8 +113,8 @@ object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHan
 
 // TODO This the "one outcome" and "one outcome parent" case for now.
 object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
-  def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
-    if (v.size != 1 || factors.length != 2) return null
+  def sampler(v:Iterable[Variable], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
+    if (v.size != 1 || factors.size != 2) return null
     //println("GateCollapsedGibbsSamplerHander: "+factors.map(_.asInstanceOf[Family#Factor].family.getClass).mkString)
     //val gFactor = factors.collectFirst({case f:Discrete.Factor if (f.family == Discrete) => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
     val gFactor = factors.collectFirst({case f:DiscreteGeneratingFactor => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
@@ -167,8 +167,8 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
 }
 
 object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
-  def sampler(v:Iterable[Variable], factors:Seq[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
-    if (v.size != 1 || factors.length != 2) return null
+  def sampler(v:Iterable[Variable], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
+    if (v.size != 1 || factors.size != 2) return null
     val gFactor = factors.collectFirst({case f:PlatedDiscrete.Factor => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
     val mFactor = factors.collectFirst({case f:PlatedDiscreteMixture.Factor => f})
     if (gFactor == None || mFactor == None) return null

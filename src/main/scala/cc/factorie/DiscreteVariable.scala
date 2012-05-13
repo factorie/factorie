@@ -68,7 +68,7 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
     while (i < l) {
       //model.factors(Seq(this)).sumBy(_.values.set(this, i).score) // a version that doesn't change the value of this variable
       __value = i
-      distribution(i) = model.score1(this)  // compute score of variable with value 'i'
+      distribution(i) = model.score(this)  // compute score of variable with value 'i'
       i += 1
     }
     maths.expNormalize(distribution)

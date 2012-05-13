@@ -6,12 +6,6 @@ Make VectorFamily require "def statisticsDomain"
 Consider moving generative.GibbsSampler up to cc.factorie?
 Consider making cc.factorie.optimize take DoubleSeq instead of Array[Double]
 Consider changes to generative.Collapse infrastructure
-Consider making no variable inherit from Seq.  (Seq would come from value instead.)  Remove SeqEqualsEq and friends.
- Consider making any current Variable that *could* have more than one different value type be not a Variable.  
- Then allow Model.factors and Infer and Maximize to have apply(Iterable[Variable]) and Apply(Variable).
- Then, e.g. change "for (token <- document)" to "for (token <- document.tokens)".
-Re-consider if variable.value should always make an immutable copy.
-Look at Gaussian.logpr, Beta.logpr, etc, and ensure these scores are correct.
 Implement generative.CollapsedVariationalBayes and make sure it works for LDA
 Re-consider type arguments in Sampler and descendants, get AROW Perceptron training working, and look at SampleRank interaction
 Get rid of Seq[Double] everywhere, including cc.factorie.maths.  Get rid of IndexedSeqOps completely.
@@ -26,6 +20,16 @@ More examples:
 Implement TopicsOverTime (needs Beta distribution)
 Finish/fix DecisionTree implementation, and make example
 Make an HMM example and show that BP inference and EM training work on it
+
+
+DONE:
+Consider making no variable inherit from Seq.  (Seq would come from value instead.)  Remove SeqEqualsEq and friends.
+ Consider making any current Variable that *could* have more than one different value type be not a Variable.  
+ Then allow Model.factors and Infer and Maximize to have apply(Iterable[Variable]) and Apply(Variable).
+ Then, e.g. change "for (token <- document)" to "for (token <- document.tokens)". [done]
+Re-consider if variable.value should always make an immutable copy.  [no]
+Look at Gaussian.logpr, Beta.logpr, etc, and ensure these scores are correct.  [yes]
+
 
 
 

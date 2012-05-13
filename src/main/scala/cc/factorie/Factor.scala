@@ -59,6 +59,7 @@ trait Factor extends Ordered[Factor] {
                           && forallIndex(numVariables)(i =>
                             (this.variable(i) eq other.variable(i)) ||
                             (this.variable(i).isInstanceOf[Vars[_]] && this.variable(i) == other.variable(i))))
+                            // TODO with the == above, some Vars classes should implement equals based on sameContents
     case _ => false
   }
   var _hashCode = -1

@@ -35,15 +35,15 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Famil
   }
 
   // Factors
-  def factors(v:Variable): Iterable[FactorType] = {
+  def factorsWithDuplicates(v:Variable): Iterable[FactorType] = {
     // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
     // When I substituted "isAssignable" for HashMap caching in GenericSampler I got 42.8 versus 44.4 seconds ~ 3.7%  Perhaps worth considering?
-    var ret = new ListBuffer[FactorType]
+    val ret = new ArrayBuffer[FactorType]
     // Create Factor iff variable class matches and the variable domain matches
     if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
     if ((neighborClass1a ne null) && neighborClass1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
     // TODO It would be so easy for the user to define Variable.unrollCascade to cause infinite recursion.  Can we make better checks for this?
-    val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factors(_))
+    val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))
     ret
   }
   def unroll1(v:N1): Iterable[FactorType] = new Factor(v)

@@ -34,11 +34,11 @@ class Collapse(val model:GenerativeModel) {
 
 trait Collapser {
   /** Returns true on success, false if this recipe was unable to handle the relevant factors. */
-  def collapse(variables:Seq[Variable], factors:Seq[Factor], model:GenerativeModel): Boolean
+  def collapse(variables:Seq[Variable], factors:Iterable[Factor], model:GenerativeModel): Boolean
 }
 
 object DenseCountsProportionsCollapser extends Collapser {
-  def collapse(variables:Seq[Variable], factors:Seq[Factor], model:GenerativeModel): Boolean = {
+  def collapse(variables:Seq[Variable], factors:Iterable[Factor], model:GenerativeModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
       case p:ProportionsVar => {
@@ -63,7 +63,7 @@ object DenseCountsProportionsCollapser extends Collapser {
 }
 
 object DenseCountsProportionsMixtureCollapser extends Collapser {
-  def collapse(variables:Seq[Variable], factors:Seq[Factor], model:GenerativeModel): Boolean = {
+  def collapse(variables:Seq[Variable], factors:Iterable[Factor], model:GenerativeModel): Boolean = {
     if (variables.size != 1) return false
     variables.head match {
       case m:Mixture[ProportionsVar] => {

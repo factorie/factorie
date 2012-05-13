@@ -45,7 +45,7 @@ object Discrete extends GenerativeFamily2[DiscreteVar,ProportionsVar] {
 object MaximizeGeneratedDiscrete extends Maximize {
   def apply(varying:Iterable[DiscreteVariable], model:Model): Unit = {
     for (d <- varying) {
-      val dFactors = model.factors1(d)
+      val dFactors = model.factors(d)
       require(dFactors.size == 1)
       dFactors.head match {
       	case factor:Discrete.Factor => d.set(factor._2.tensor.maxIndex)(null)
@@ -54,7 +54,7 @@ object MaximizeGeneratedDiscrete extends Maximize {
     }
   }
   def infer[V<:DiscreteVariable](varying:V, model:Model): Option[DiscreteMarginal1[V]] = {
-    val dFactors = model.factors1(varying)
+    val dFactors = model.factors(varying)
     require(dFactors.size == 1)
     dFactors.head match {
       case factor:Discrete.Factor => Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, factor._2.tensor.maxIndex)))

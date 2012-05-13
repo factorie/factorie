@@ -107,6 +107,7 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
   
   final case class Factor(_1:N1) extends super.Factor with Factor1[N1] {
     type StatisticsType = Family1.this.StatisticsType
+    override def equalityPrerequisite: AnyRef = Family1.this
     override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
     override def isLimitingValuesIterator = Family1.this.isLimitingValuesIterator
     override def limitedDiscreteValuesIterator: Iterator[Int] = limitedDiscreteValues.iterator

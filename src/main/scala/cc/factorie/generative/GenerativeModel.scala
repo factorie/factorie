@@ -5,15 +5,15 @@ import scala.collection.mutable.ArrayBuffer
 
 trait GenerativeModel extends Model {
   def getParentFactor(v:Variable): Option[GenerativeFactor]
-  def getChildFactors(v:Variable): Option[Seq[GenerativeFactor]]
+  def getChildFactors(v:Variable): Option[Iterable[GenerativeFactor]]
   def parentFactor(v:Variable): GenerativeFactor
-  def childFactors(v:Variable): Seq[GenerativeFactor]
-  def extendedParentFactors(v:Variable): Seq[GenerativeFactor]
-  def extendedChildFactors(v:Variable): Seq[GenerativeFactor]
-  def extendedParents(v:Variable): Seq[Variable]
-  def extendedChildren(v:Variable): Seq[Variable]
+  def childFactors(v:Variable): Iterable[GenerativeFactor]
+  def extendedParentFactors(v:Variable): Iterable[GenerativeFactor]
+  def extendedChildFactors(v:Variable): Iterable[GenerativeFactor]
+  def extendedParents(v:Variable): Iterable[Variable]
+  def extendedChildren(v:Variable): Iterable[Variable]
   def parents(v:Variable): Seq[Variable] 
-  def children(v:Variable): Seq[Variable]
+  def children(v:Variable): Iterable[Variable]
   def sampleFromParents(v:MutableVar)(implicit d:DiffList): Unit
 }
 
@@ -30,7 +30,7 @@ object GenerativeModel {
 class GenerativeFactorModel extends MutableGenerativeModel {
   private val _parentFactor = new HashMap[Variable,GenerativeFactor]
   private val _childFactors = new HashMap[Variable,ArrayBuffer[GenerativeFactor]]
-  def factors(variables:Iterable[Variable]): Seq[Factor] = {
+  override def factorsWithDuplicates(variables:Iterable[Variable]): Iterable[Factor] = {
     val result = new ArrayBuffer[GenerativeFactor]
     variables.foreach(v => {
       if (_parentFactor.contains(v)) result += _parentFactor(v)
@@ -39,29 +39,29 @@ class GenerativeFactorModel extends MutableGenerativeModel {
       if (_childFactors.contains(v)) result ++= extendedChildFactors(v)
       // TODO special handling of ContainerVariable[_]??
     })
-    normalize(result)
+    result
   }
-  override def factors1(v:Variable): Seq[Factor] = {
+  def factorsWithDuplicates(v:Variable): Iterable[Factor] = {
     val result = new ArrayBuffer[GenerativeFactor]
     if (_parentFactor.contains(v)) result += _parentFactor(v)
     // TODO Do we need to use extendedParentFactors also?
     //if (_childFactors.contains(v)) result ++= _childFactors(v)
     if (_childFactors.contains(v)) result ++= extendedChildFactors(v)
     // TODO special handling of ContainerVariable[_]??
-    normalize(result)
+    result
   }
   def allFactors: Iterable[Factor] = _parentFactor.values ++ _childFactors.values.flatten
   def getParentFactor(v:Variable): Option[GenerativeFactor] = _parentFactor.get(v)
-  def getChildFactors(v:Variable): Option[Seq[GenerativeFactor]] = _childFactors.get(v)
+  def getChildFactors(v:Variable): Option[Iterable[GenerativeFactor]] = _childFactors.get(v)
   def parentFactor(v:Variable): GenerativeFactor = _parentFactor.getOrElse(v, null)
-  def childFactors(v:Variable): Seq[GenerativeFactor] = _childFactors.getOrElse(v, Nil)
-  def extendedParentFactors(v:Variable): Seq[GenerativeFactor] = {
+  def childFactors(v:Variable): Iterable[GenerativeFactor] = _childFactors.getOrElse(v, Nil)
+  def extendedParentFactors(v:Variable): Iterable[GenerativeFactor] = {
     val result = new ArrayBuffer[GenerativeFactor]
     result ++= getParentFactor(v)
     for (parent <- parents(v); if (parent.isDeterministic)) result ++= extendedParentFactors(parent)
     result
   }
-  def extendedChildFactors(v:Variable): Seq[GenerativeFactor] = {
+  def extendedChildFactors(v:Variable): Iterable[GenerativeFactor] = {
     if (!_childFactors.contains(v)) return Nil
     val result = new ArrayBuffer[GenerativeFactor]
     for (factor <- childFactors(v)) {
@@ -70,11 +70,11 @@ class GenerativeFactorModel extends MutableGenerativeModel {
     }
     result
   }
-  def extendedParents(v:Variable): Seq[Variable] = extendedParentFactors(v).flatMap(_.parents)
-  def extendedChildren(v:Variable): Seq[Variable] = extendedChildFactors(v).map(_.child)
+  def extendedParents(v:Variable): Iterable[Variable] = extendedParentFactors(v).flatMap(_.parents)
+  def extendedChildren(v:Variable): Iterable[Variable] = extendedChildFactors(v).map(_.child)
   def parents(v:Variable): Seq[Variable] = 
     if (_parentFactor.contains(v)) _parentFactor(v).parents else Nil
-  def children(v:Variable): Seq[Variable] = childFactors(v).map(_.child)
+  def children(v:Variable): Iterable[Variable] = childFactors(v).map(_.child)
 
   def sampleFromParents(v:MutableVar)(implicit d:DiffList): Unit = v.set(parentFactor(v).sampledValue.asInstanceOf[v.Value])
 

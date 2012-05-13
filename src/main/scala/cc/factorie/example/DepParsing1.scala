@@ -160,7 +160,8 @@ object DepParsing1 {
   )
 
   val factorModel = new Model {
-    def factors(vars: Iterable[Variable]): Seq[Factor] = Seq(new Factor {
+    def factorsWithDuplicates(v:Variable): Iterable[Factor] = factors(Seq(v)) // TODO Inefficient.  Fix this.
+    override def factorsWithDuplicates(vars: Iterable[Variable]): Seq[Factor] = Seq(new Factor {
       def variable(i: Int): Variable = null
       def variables: Seq[Variable] = throw new Error("Not yet implemented")
       val statistics = new Statistics {

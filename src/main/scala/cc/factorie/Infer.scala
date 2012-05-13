@@ -46,7 +46,7 @@ object InferDiscrete1 extends Infer {
   def array(d:DiscreteVariable, model:Model): Array[Double] = {
     val distribution = new Array[Double](d.domain.size)
     val origValue = d.intValue
-    val factors = model.factors1(d) // Note that this doens't handle value-specific factor unrolling
+    val factors = model.factors(d) // Note that this doens't handle value-specific factor unrolling
     for (i <- 0 until distribution.size) {
       d := i // Note that this doesn't handle variable-value coordination, and if this is present, undo'ing won't happen properly.
       factors.foreach(f => distribution(i) += f.score)

@@ -95,7 +95,7 @@ object MaximizeGate extends Maximize {
   }
   /** Returns -1 on failure. */
   def maxIndex(gate:DiscreteVariable, model:Model): Int = {
-    val factors = model.factors(Seq(gate))
+    val factors = model.factors(Seq(gate)).toSeq
     if (factors.size != 2) throw new Error
     (factors(0), factors(1)) match {
       case (df:Discrete.Factor, dmf:DiscreteMixture.Factor) => maxIndex(gate, df, dmf)

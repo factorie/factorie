@@ -488,7 +488,7 @@ abstract class LatticeBP(val varying: Set[DiscreteVariable]) /*extends Lattice[V
 
   def createFactor(potential: Factor)
 
-  def createFactors(factorsToAdd: Seq[Factor]) {
+  def createFactors(factorsToAdd: Iterable[Factor]) {
     for (f <- factorsToAdd) createFactor(f)
   }
 

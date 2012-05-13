@@ -92,6 +92,7 @@ trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Famil
   type ValuesType = Factor#Values
   final case class Factor(_1:N1, _2:N2, _3:N3, _4:N4) extends super.Factor with Factor4[N1,N2,N3,N4] {
     type StatisticsType = Family4.this.StatisticsType
+    override def equalityPrerequisite: AnyRef = Family4.this
     override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
   }
 }

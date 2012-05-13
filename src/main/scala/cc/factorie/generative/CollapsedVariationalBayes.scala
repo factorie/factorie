@@ -45,7 +45,7 @@ class CollapsedVariationalBayes(collapse:Iterable[Variable], marginalize:Iterabl
   def process(v:MutableVar): DiffList = {
     //assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable
     // Get factors, in sorted order of the their classname
-    val factors = model.factors(Seq(v)).sortWith((f1:Factor,f2:Factor) => f1.factorName < f2.factorName)
+    val factors = model.factors(Seq(v)).toSeq.sortWith((f1:Factor,f2:Factor) => f1.factorName < f2.factorName)
     var done = false
     val handlerIterator = handlers.iterator
     val d = new DiffList
