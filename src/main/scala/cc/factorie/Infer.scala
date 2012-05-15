@@ -42,6 +42,7 @@ trait Infer {
   def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = None
 }
 
+// TODO Rename simply InferDiscrete?  Multiple DiscreteVariables could be handled by a "InferDiscretes"
 object InferDiscrete1 extends Infer {
   def array(d:DiscreteVariable, model:Model): Array[Double] = {
     val distribution = new Array[Double](d.domain.size)

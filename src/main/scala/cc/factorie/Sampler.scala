@@ -131,7 +131,7 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) ext
       Provides access to all different possible worlds we will evaluate for each call to 'process' */ 
   def settings(context:C) : SettingIterator
 
-  val proposalsCache = collection.mutable.ArrayBuffer[Proposal]()
+  val proposalsCache = collection.mutable.ArrayBuffer[Proposal]() // TODO This is not thread-safe; remove it
   def proposals(context:C): Seq[Proposal] = {
     // the call to 'next' is actually what causes the change in state to happen
     var i = 0

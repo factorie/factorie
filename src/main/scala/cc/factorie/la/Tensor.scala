@@ -50,10 +50,24 @@ trait Tensor extends MutableDoubleSeq {
   def expNormalizer: Double = throw new Error
   def isUniform = false // TODO Fix this for the Uniform Tensors!!
   def stringPrefix = "Tensor"
-  override def toString = this.asSeq.mkString(stringPrefix+"(", ",", ")")
+  override def toString = { val suffix = if (length > 50) "...)" else ")"; this.asSeq.mkString(stringPrefix+"(", ",", suffix) }
 }
 
 object Tensor {
+  
+  // Support for creating new empty Tensors with dimensions matching an argument
+  def newDense(t:Tensor): Tensor = t match {
+    case t:Tensor1 => new DenseTensor1(t.dim1)
+    case t:Tensor2 => new DenseTensor2(t.dim1, t.dim2)
+    case t:Tensor3 => new DenseTensor3(t.dim1, t.dim2, t.dim3)
+    case t:Tensor4 => new DenseTensor4(t.dim1, t.dim2, t.dim3, t.dim4)
+  }
+  def newSparse(t:Tensor): Tensor = t match {
+    case t:Tensor1 => new SparseTensor1(t.dim1)
+    case t:Tensor2 => new DenseLayeredTensor2(t.dim1, t.dim2) with InnerSparseTensor1
+    case t:Tensor3 => new Dense2LayeredTensor3(t.dim1, t.dim2, t.dim3) with InnerSparseTensor1
+    case t:Tensor4 => new Dense3LayeredTensor4(t.dim1, t.dim2, t.dim3, t.dim4) with InnerSparseTensor1
+  }
   
   // Support for dot inner products with dense tensors
   def dot(t1:DenseTensor, t2:DenseTensor): Double = {

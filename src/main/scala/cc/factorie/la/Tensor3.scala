@@ -90,8 +90,13 @@ class Singleton2BinaryLayeredTensor3(val dim1:Int, val dim2:Int, val dim3:Int, v
 
 trait Dense2LayeredTensorLike3 extends Tensor3 {
   def newTensor1(dim:Int): Tensor1
+  def activeDomain1 = new RangeIntSeq(0, dim1)
+  def activeDomain2 = new RangeIntSeq(0, dim2)
+  def activeDomain3 = new RangeIntSeq(0, dim3)
+  def activeDomain = new RangeIntSeq(0, length) // Actually more sparse than this
   private var _inners = Array.fill(dim1*dim2)(newTensor1(dim3))
   override def apply(i:Int, j:Int, k:Int): Double = _inners(i*dim2+j).apply(k)
+  def isDense = false
   def apply(i:Int): Double = apply(i/dim2/dim3, (i/dim3)%dim2, i%dim3)
   override def update(i:Int, j:Int, k:Int, v:Double): Unit = _inners(i*dim2+j).update(j, v)
 }

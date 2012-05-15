@@ -82,6 +82,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 {
   def activeDomain = { val b = new IntArrayBuffer; for (i <- 0 until dim1; j <- 0 until dim2) { if (apply(i,j) != 0.0) b += singleIndex(i,j) }; new ArrayIntSeq(b.toArray) } // Not very efficient; use _inner().activeDomain intead
   override def apply(i:Int, j:Int): Double = { val in = _inners(i); if (in ne null) in.apply(j) else 0.0 }
   def apply(i:Int): Double = apply(i/dim1, i%dim2)
+  def isDense = false
   override def update(i:Int, j:Int, v:Double): Unit = { var in = _inners(i); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in.update(j, v) }
   def update(i:Int, t:Tensor1): Unit = _inners(i) = t
   override def dot(t:DoubleSeq): Double = t match {

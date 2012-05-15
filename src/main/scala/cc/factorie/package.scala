@@ -30,6 +30,7 @@ package object factorie {
   var randomSeed = 0
   implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
   
+  // TODO Remove both of these
   val defaultModel = new TemplateModel
   val defaultObjective = HammingLossObjective
 
@@ -54,6 +55,7 @@ package object factorie {
   }
   def printTime(f: =>Unit) : Unit = println(time(f)/1000.0+" seconds")
 
+  // TODO Remove these.  They aren't actually very efficient
   // Faster alternatives to for (i <- 0 until n)
   def forIndex(n:Int)(f:Int=>Any): Unit = { 
     var i = 0
@@ -83,6 +85,7 @@ package object factorie {
     override def size = 1
     override def head = f
   }
+  // TODO Remove this
   implicit def file2Source(f:java.io.File): scala.io.Source = scala.io.Source.fromFile(f)
 
   //implicit def boolean2BooleanValue(b:Boolean): BooleanValue = if (b) BooleanDomain.trueValue else BooleanDomain.falseValue
