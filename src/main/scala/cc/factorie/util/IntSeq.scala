@@ -19,11 +19,15 @@ trait IntSeq {
   def length: Int
   def toArray: Array[Int]
   final def size = length
-  def map(f:(Int)=>Int): IntSeq = throw new Error("Not yet implemented.")
-  def foreach(f:(Int)=>Unit): Unit = { var i = 0; while (i < length) { f(apply(i)); i += 1 } }
+  def map(f:Int=>Int): IntSeq = {
+    val len = length; val a = new Array[Int](len); var i = 0
+    while (i < 0) { a(i) = f(i); i += 1 }
+    new ArrayIntSeq(a)
+  }
+  def foreach(f:Int=>Unit): Unit = { var i = 0; while (i < length) { f(apply(i)); i += 1 } }
   def forElements(f:(Int,Int)=>Unit): Unit = { var i = 0; while (i < length) { f(i, apply(i)); i += 1 } }
   def contains(d:Int): Boolean = { var i = length; while (i >= 0) if (d == apply(i)) return true; false }
-  def forall(f:(Int)=>Boolean): Boolean = { var i = length; while (i >= 0) if (!f(apply(i))) return false; true } 
+  def forall(f:Int=>Boolean): Boolean = { var i = length; while (i >= 0) if (!f(apply(i))) return false; true } 
   def foldLeft[B<:AnyRef](z:B)(f:(B,Int)=>B): B = throw new Error
   def indexOf(d:Int): Int = { var i = 0; while (i < length) { if (d == apply(i)) return i }; -1 }
   def max: Int = { var m = Int.MinValue; var i = 0; while (i < length) { if (!(m >= apply(i))) m = apply(i) }; m }
@@ -53,13 +57,14 @@ trait MutableIntSeq extends IntSeq {
 final class RangeIntSeq (val start:Int, val end:Int) extends IntSeq {
   val length = end - start
   def apply(i:Int) = i
-  def toArray = Array.range(start, end) 
+  def toArray = Array.range(start, end)
 }
 
 final class SingletonIntSeq(val value:Int) extends IntSeq {
   def length = 1
   def apply(i:Int): Int = if (i == 0) value else throw new Error("Index out of range: "+i)
   def toArray = Array(value)
+  override def map(f:Int=>Int): IntSeq = new SingletonIntSeq(f(value))
 }
 
 final class ArrayIntSeq(val array:Array[Int]) extends IntSeq {

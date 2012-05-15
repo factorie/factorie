@@ -34,6 +34,7 @@ trait Tensor extends MutableDoubleSeq {
   def activeElements: Iterator[(Int,Double)] = (for (i <- activeDomain.toArray) yield (i, apply(i))).iterator
   def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f) // To be override for efficiency in subclasses
   def outer(t:Tensor): Tensor = Tensor.outer(this, t)
+  override def dot(ds:DoubleSeq): Double = throw new Error("Subclasses should override dot with specialized efficient versions.")
   // Methods for mutability not implemented in all Tensors
   def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
   def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName)
@@ -53,6 +54,14 @@ trait Tensor extends MutableDoubleSeq {
 }
 
 object Tensor {
+  
+  // Support for dot inner products with dense tensors
+  def dot(t1:DenseTensor, t2:DenseTensor): Double = {
+    val len = t1.length; assert(len == t2.length); var result = 0.0; var i = 0
+    while (i < len) { result += t1(i) * t2(i); i += 1 }; result
+  }
+  
+  // Support for outer products between tensors
   def outer(t1:Tensor, t2:Tensor): Tensor = t1 match {
     case t1:Tensor1 => t2 match {
       case t2:Tensor1 => outer(t1, t2)
@@ -159,9 +168,23 @@ class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor {
   def apply(index:Int) = tensor.apply(index) * scalar
 }
 
-trait DenseTensorLike extends Tensor {
+trait DenseTensor extends Tensor {
   protected def _values: Array[Double]
   override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
+  override def dot(t2:DoubleSeq): Double = t2 match {
+    case t2:SingletonTensor => apply(t2.singleIndex) * t2.singleValue
+    case t2:SingletonBinaryTensor => apply(t2.singleIndex)
+    // TODO Any other special cases here?
+    case t2:DenseTensor => {
+      val len = length; assert(len == t2.length); var result = 0.0; var i = 0
+      while (i < len) { result += apply(i) * t2(i); i += 1 }; result
+    }
+    case t2:DoubleSeq => { // TODO Consider removing this to catch inefficiency
+      val len = length; assert(len == t2.length); var result = 0.0; var i = 0
+      while (i < len) { result += apply(i) * t2(i); i += 1 }; result
+    }
+  }
+
 }
 
 trait SingletonBinaryTensor extends Tensor {
@@ -208,4 +231,21 @@ trait UniformTensor extends Tensor {
   override def containsNaN: Boolean = false
   override def dot(v:DoubleSeq): Double = v.sum * uniformValue
   override def copy = this // safe because it is immutable
+}
+
+// To be used eventually for getting a TemplateModel into cc.factorie.optimize
+class DenseConcatenatedTensor(ts:DenseTensor*) extends Tensor {
+  val tensors = ts.toIndexedSeq
+  val length = tensors.map(_.length).sum
+  def apply(i:Int): Double = throw new Error
+  val numDimensions: Int = tensors.map(_.numDimensions).sum
+  val dimensions: Array[Int] = { val a = new Array[Int](numDimensions); throw new Error }
+  // For handling sparsity
+  def activeDomain: IntSeq = throw new Error("Not yet implemented.")
+  def activeDomains: Array[IntSeq] = throw new Error("Not yet implemented.")
+  def isDense: Boolean = false
+}
+
+abstract class SparseConcatenatedTensor(ts:DenseTensor*) extends Tensor {
+  // Unfinished
 }

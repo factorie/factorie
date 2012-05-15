@@ -39,7 +39,7 @@ trait MassesWithTotal extends Masses {
   override def update(i:Int, v:Double): Unit = throw new Error("Masses cannot be modified by udpate; use += instead.")
 }
 
-trait DenseMassesWithTotal extends DenseTensorLike with MassesWithTotal {
+trait DenseMassesWithTotal extends DenseTensor with MassesWithTotal {
   override def zero(): Unit = { super.zero(); _massTotal = 0.0 }
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
   override def *=(d:Double): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)*d; _massTotal += v; _values(i) = v; i += 1 }}

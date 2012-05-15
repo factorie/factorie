@@ -42,6 +42,14 @@ trait DoubleSeq {
     val denominator:Double = this.twoNorm * t.twoNorm
     if (denominator == 0.0 || denominator != denominator) 0.0 else numerator/denominator
   }
+  def l2Similarity(t:DoubleSeq): Double = {
+    var sum = 0.0; var i = 0; var diff = 0.0; val len = length; assert(len == t.length)
+    while (i < len) {
+      diff = apply(i) - t(i)
+      sum += diff * diff
+    }
+    math.sqrt(sum)
+  }
   def different(t:DoubleSeq, threshold:Double): Boolean = { require(length == t.length); val l = length; var i = 0; while (i < l) { if (math.abs(apply(i) - t(i)) > threshold) return true; i += 1}; return false }
   def dot(t:DoubleSeq): Double = { assert(length == t.length); val l = length; var result = 0.0; var i = 0; while (i < l) { result += apply(i) * t(i); i += 1 }; result }
   def maxIndex: Int = { val l = length; var i = 1; var j = 0; while (i < l) { if (apply(j) < apply(i)) j = i; i += 1 }; j }
@@ -277,6 +285,7 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
 
 // Some simple concrete classes
 
+// TODO For Scala 2.10 make this implicit final class ArrayDoubleSeq
 final class ArrayDoubleSeq(override val asArray:Array[Double]) extends MutableDoubleSeq {
   def this(contents:Double*) = this(contents.toArray)
   def length: Int = asArray.length

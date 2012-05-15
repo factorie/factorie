@@ -36,7 +36,7 @@ trait Tensor4 extends Tensor {
   @inline final def multiIndex(i:Int): (Int, Int, Int, Int) = (i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
 }
 
-trait DenseTensorLike4 extends Tensor4 with DenseTensorLike {
+trait DenseTensorLike4 extends Tensor4 with DenseTensor {
   private var __values = new Array[Double](dim1*dim2*dim3*dim4)
   protected def _values = __values
   def isDense = true
@@ -47,9 +47,15 @@ trait DenseTensorLike4 extends Tensor4 with DenseTensorLike {
   def activeDomain = new RangeIntSeq(0, dim1*dim2*dim3*dim4)
   def apply(i:Int): Double = __values(i)
   override def apply(i:Int, j:Int, k:Int, l:Int): Double = __values(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l)
+  override def +=(i:Int, v:Double): Unit = __values(i) += v
+  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } }
   override def update(i:Int, v:Double): Unit = __values(i) = v
   override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = __values(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l) = v
-  override def +=(i:Int, v:Double): Unit = __values(i) += v
+  override def dot(t:DoubleSeq): Double = t match {
+    case t:SingletonTensor4 => apply(t.singleIndex) * t.singleValue
+    case t:SingletonBinaryTensor4 => apply(t.singleIndex)
+    case t:DenseTensorLike4 => Tensor.dot(this, t)
+  }
 }
 class DenseTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4
 
@@ -59,12 +65,16 @@ class SingletonBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
   def activeDomain4 = new SingletonIntSeq(singleIndex4)
   val singleIndex = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4 + singleIndex4
+  def singleValue = 1.0
 }
 
-class SingletonTensor4(dim1:Int, dim2:Int, dim3:Int, dim4:Int, singleIndex1:Int, singleIndex2:Int, singleIndex3:Int, singleIndex4:Int, val singleValue:Double) extends SingletonBinaryTensor4(dim1, dim2, dim3, dim4, singleIndex1, singleIndex2, singleIndex3, singleIndex4) with SingletonTensor
-
-
-
+class SingletonTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleIndex4:Int, val singleValue:Double) extends Tensor4 with SingletonTensor {
+  def activeDomain1 = new SingletonIntSeq(singleIndex1)
+  def activeDomain2 = new SingletonIntSeq(singleIndex2)
+  def activeDomain3 = new SingletonIntSeq(singleIndex3)
+  def activeDomain4 = new SingletonIntSeq(singleIndex4)
+  val singleIndex = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4 + singleIndex4
+}
 
 
 
@@ -91,5 +101,10 @@ trait Singleton3LayeredTensorLike4 extends Tensor4 {
   override def apply(i:Int, j:Int, k:Int, l:Int): Double = if (i == singleIndex1 && j == singleIndex2 && k == singleIndex3) inner.apply(l) else 0.0
   def apply(i:Int): Double = apply(i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
   override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = if (i == singleIndex1 && j == singleIndex2 && k == singleIndex3) inner.update(l, v) else throw new Error("Outer indices out of bounds: "+List(i,j,k))
+  override def dot(t:DoubleSeq): Double = t match {
+    case t:SingletonBinaryTensor4 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2 && singleIndex3 == t.singleIndex3) inner(t.singleIndex4) else 0.0
+    case t:SingletonTensor4 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2 && singleIndex3 == t.singleIndex3) inner(t.singleIndex4) * t.singleValue else 0.0
+    case t:Singleton3LayeredTensorLike4 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2 && singleIndex3 == t.singleIndex3) inner.dot(t.inner) else 0.0
+  }
 }
 class Singleton3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val inner:Tensor1) extends Singleton3LayeredTensorLike4

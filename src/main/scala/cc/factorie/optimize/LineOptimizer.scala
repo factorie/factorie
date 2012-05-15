@@ -68,9 +68,9 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
     var fold = f2
 
     // If gradient is too steep, bring it down to gradientNormMax
-    var sum = line.twoNorm
-    if (sum > gradientNormMax) gradient *= (gradientNormMax / sum)
-    var slope = gradient dot line
+    var sum = ArrayOps.twoNorm(line)
+    if (sum > gradientNormMax) ArrayOps.*=(gradient, (gradientNormMax / sum))
+    var slope = ArrayOps.dot(gradient, line)
     if (slope <= 0.0) throw new Error("Slope=" + slope + " is negative or zero.")
     // Find maximum lambda; converge when (delta x) / x < REL_TOLX for all coordinates.
     // Largest step size that triggers this threshold is saved in alamin
@@ -87,7 +87,8 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
     var alam2 = 0.0
     for (iteration <- 0 until maxIterations) {
       assert(alam != oldAlam)
-      params.incr(line, alam - oldAlam) // Move parameters in direction of line
+      ArrayOps.incr(params, line, alam - oldAlam)
+      //params.incr(line, alam - oldAlam) // Move parameters in direction of line
       // Check for convergence
       if (alam < alamin || smallAbsDiff(oldParams, params)) {
         optimizable.setOptimizableParameters(oldParams)

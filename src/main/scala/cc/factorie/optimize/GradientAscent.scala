@@ -42,8 +42,8 @@ class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Opt
     for (iteration <- 0 until numIterations) {
       logger.info("GradientAscent: At iteration " + iteration + ", value = " + value);
       // Ensure step size not to large
-      val sum = gradient.twoNorm
-      if (sum > gradientNormMax) gradient *= (gradientNormMax / sum)
+      val sum = ArrayOps.twoNorm(gradient)
+      if (sum > gradientNormMax) ArrayOps.*=(gradient, (gradientNormMax / sum))
       step = lineOptimizer.optimize(gradient, step)
       val newValue = optimizable.optimizableValue
       optimizable.getOptimizableGradient(gradient)

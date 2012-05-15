@@ -123,7 +123,7 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
       // negative or 0.
       // TODO Implement GradientBracketLineMaximizer (used in Numerical Recipes)
       // which should avoid this problem!
-      if ((xi dot h) > 0) {
+      if ((ArrayOps.dot(xi,h)) > 0) {
         maths.set(xi, h)
       }
       else {

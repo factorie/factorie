@@ -63,7 +63,7 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
   def proportions(model:Model): Proportions = {
     val origIntValue = intValue
     val l = domain.size 
-    val distribution = new Array[Double](l)
+    val distribution = new DenseTensor1(l)
     var i = 0
     while (i < l) {
       //model.factors(Seq(this)).sumBy(_.values.set(this, i).score) // a version that doesn't change the value of this variable
@@ -71,7 +71,7 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
       distribution(i) = model.score(this)  // compute score of variable with value 'i'
       i += 1
     }
-    maths.expNormalize(distribution)
+    distribution.expNormalize()
     __value = origIntValue
     new DenseProportions1(distribution)
   }

@@ -26,7 +26,7 @@ trait Tensor1 extends Tensor {
   override def stringPrefix = "Tensor1"
 }
 
-trait DenseTensorLike1 extends Tensor1 with DenseTensorLike {
+trait DenseTensorLike1 extends Tensor1 with DenseTensor {
   private var __values = new Array[Double](dim1)
   protected def _values = __values
   protected def _valuesSize: Int = __values.size
@@ -37,20 +37,33 @@ trait DenseTensorLike1 extends Tensor1 with DenseTensorLike {
     Array.copy(_values, 0, newCounts, 0, __values.size)
     __values = newCounts
   }
+  protected def _setArray(a:Array[Double]): Unit = { assert(a.length == dim1); __values = a }
   def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain = activeDomain1
   def apply(i:Int) = __values(i)
   override def asArray = __values
   override def +=(i:Int, incr:Double): Unit = __values(i) += incr
-  override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
   override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } }
+  override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
   override def update(i:Int, v:Double): Unit = __values(i) = v
+  override def dot(t:DoubleSeq): Double = t match {
+    case t:SingletonTensor => apply(t.singleIndex) * t.singleValue
+    case t:SingletonBinaryTensor => apply(t.singleIndex)
+    case t:DenseTensorLike1 => Tensor.dot(this, t)
+    case t:SparseBinaryTensorLike1 => t dot this
+    case t:SparseIndexedTensor1 => t dot this
+    case t:UniformTensor => sum * t.uniformValue
+  }
 }
 class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
   def this(t:Tensor) = { this(t.length); this := t }
   override def copy: DenseTensor1 = { val c = new DenseTensor1(dim1); System.arraycopy(_values, 0, c._values, 0, length); c }
 }
+// TODO Consider something like the following for Scala 2.10:
+// implicit class DenseTensor1(override val asArray:Array[Double]) extends DenseTensorLike1 {
+//   _setArray(asArray)  
+// }
 
 trait GrowableDenseTensorLike1 extends DenseTensorLike1 {
   def sizeProxy: Iterable[Any]
@@ -69,11 +82,21 @@ class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends DenseTensorLike1
 
 class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends Tensor1 with SingletonTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex)
+  override def dot(t:DoubleSeq): Double = t match {
+    case t:SingletonBinaryTensor1 => if (singleIndex == t.singleIndex) singleValue else 0.0
+    case t:SingletonTensor1 => if (singleIndex == t.singleIndex) singleValue * t.singleValue else 0.0
+    case t:DoubleSeq => t(singleIndex) * singleValue
+  }
 } 
 
 trait SingletonBinaryTensorLike1 extends Tensor1 with SingletonBinaryTensor {
   def singleIndex: Int
   def activeDomain1 = new SingletonIntSeq(singleIndex)
+  override def dot(t:DoubleSeq): Double = t match {
+    case t:SingletonBinaryTensor1 => if (singleIndex == t.singleIndex) 1.0 else 0.0
+    case t:SingletonTensor1 => if (singleIndex == t.singleIndex) 1.0 * t.singleValue else 0.0
+    case t:DoubleSeq => t(singleIndex) * 1.0
+  }
 }
 class SingletonBinaryTensor1(val dim1:Int, val singleIndex:Int) extends SingletonBinaryTensorLike1 {
   override def copy: SingletonBinaryTensor1 = new SingletonBinaryTensor1(dim1, singleIndex)
@@ -96,7 +119,8 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   def activeDomain1 = new ArrayIntSeq(_array)
   def activeDomain = activeDomain1
   def isDense = false
-  def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
+  @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
+  @inline final def contains(index:Int): Boolean = _containsSorted(index)
   override def sum: Double = _length.toDouble
   override def max: Double = if (_length > 0) 1.0 else 0.0
   override def min: Double = if (_length == 0) 0.0 else 1.0
@@ -116,8 +140,8 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   override def +=(i:Int, v:Double): Unit = update(i, v)
   override def zero(): Unit = _clear() // TODO I think _clear should be renamed _zero -akm
   override def dot(v:DoubleSeq): Double = v match {
-    case s:SingletonBinaryTensor1 => s dot this
-    case s:SingletonTensor1 => s dot this
+    case t:SingletonBinaryTensor1 => if (contains(t.singleIndex)) 1.0 else 0.0
+    case t:SingletonTensor1 => if (contains(t.singleIndex)) t.singleValue else 0.0
     // TODO Any other special cases here?
     case ds:DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
   }
@@ -156,7 +180,7 @@ class SparseHashTensor1(val dim1:Int) extends Tensor1 {
   }
   override def zero(): Unit = h.clear()
   override def dot(v:DoubleSeq): Double = v match {
-    case v:SparseBinaryTensor1 => v dot this
+    case t:SparseBinaryTensor1 => t dot this
     case v:TensorTimesScalar => v dot this
     case v:SingletonBinaryTensor1 => v dot this
     case v:SingletonTensor1 => v dot this

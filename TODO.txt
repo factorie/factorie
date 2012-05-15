@@ -7,8 +7,8 @@ Consider moving generative.GibbsSampler up to cc.factorie?
 Consider making cc.factorie.optimize take DoubleSeq instead of Array[Double]
 Consider changes to generative.Collapse infrastructure
 Implement generative.CollapsedVariationalBayes and make sure it works for LDA
-Re-consider type arguments in Sampler and descendants, get AROW Perceptron training working, and look at SampleRank interaction
-Get rid of Seq[Double] everywhere, including cc.factorie.maths.  Get rid of IndexedSeqOps completely.
+Re-consider type arguments in Sampler and descendants
+Get AROW Perceptron training working, and look at SampleRank interaction
 Look at app.nlp.relation
 Make reasonable command-line tools for MALLET functionality, and document
 Get rid of dependency on Java bibtex parser library
@@ -29,6 +29,7 @@ Consider making no variable inherit from Seq.  (Seq would come from value instea
  Then, e.g. change "for (token <- document)" to "for (token <- document.tokens)". [done]
 Re-consider if variable.value should always make an immutable copy.  [no]
 Look at Gaussian.logpr, Beta.logpr, etc, and ensure these scores are correct.  [yes]
+Get rid of Seq[Double] everywhere, including cc.factorie.maths.  Get rid of IndexedSeqOps completely.
 
 
 

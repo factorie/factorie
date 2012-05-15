@@ -84,13 +84,13 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
       maths.set(oldg, g)
       maths.set(direction, g)
 
-      if (direction.absNormalize == 0) {
+      if (ArrayOps.absNormalize(direction) == 0) {
         logger.info("L-BFGS initial gradient is zero; saying converged");
         g = null
         isConverged = true
         return true;
       }
-      direction *= 1.0 / direction.twoNorm
+      ArrayOps.*=(direction, 1.0 / ArrayOps.twoNorm(direction))
 
       // take a step in the direction
       step = lineMaximizer.optimize(direction, step)
@@ -164,13 +164,13 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
       // calculate new direction
       assert(s.size == y.size)
       forReverseIndex(s.size)(i => {
-        alpha(i) = rho(i) * direction.dot(s(i))
-        direction.incr(y(i), -1.0 * alpha(i))
+        alpha(i) = rho(i) * ArrayOps.dot(direction, s(i))
+        ArrayOps.incr(direction, y(i), -1.0 * alpha(i))
       })
-      direction *= gamma
+      ArrayOps.*=(direction, gamma)
       forIndex(s.size)(i => {
-        val beta = rho(i) * direction.dot(y(i))
-        direction.incr(s(i), alpha(i) - beta)
+        val beta = rho(i) * ArrayOps.dot(direction, y(i))
+        ArrayOps.incr(direction, s(i), alpha(i) - beta)
       })
 
       forIndex(oldg.length)(i => {
@@ -200,7 +200,7 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
         isConverged = true
         return true;
       }
-      val gg = g.twoNorm
+      val gg = ArrayOps.twoNorm(g)
       if (gg < gradientTolerance) {
         logger.trace("Exiting L-BFGS on termination #2: \ngradient=" + gg + " < " + gradientTolerance)
         isConverged = true

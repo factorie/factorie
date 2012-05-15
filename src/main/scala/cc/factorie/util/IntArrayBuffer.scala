@@ -107,7 +107,7 @@ trait ProtectedIntArrayBuffer {
     else _positionLte(x, middle+1, end)
   }
   /** Return true iff the integer 'index' is contained in _arr.  */
-  private def _contains(x:Int, start:Int, end:Int): Boolean = {
+  private def _containsSorted(x:Int, start:Int, end:Int): Boolean = {
     // /println("SparseBinaryVector._contains "x+" "+start+" "+end+" diff="+diff)
     val diff = end - start
     if (diff == 0) return false
@@ -115,9 +115,10 @@ trait ProtectedIntArrayBuffer {
     val middle = start + (diff / 2)
     val midval = _arr(middle)
     if (midval == x) return true
-    else if (x < midval) _contains(x, start, middle)
-    else _contains(x, middle+1, end)
+    else if (x < midval) _containsSorted(x, start, middle)
+    else _containsSorted(x, middle+1, end)
   }
+  protected def _containsSorted(x:Int): Boolean = _containsSorted(x, 0, _size)
 
   protected def _clear(): Unit = { _arr = new Array[Int](_initialCapacity); _size = 0; _lastIndex = 0 }
   protected def _sizeHint(len: Int) = if (len >= _size && len >= 1) _setCapacity(len)
