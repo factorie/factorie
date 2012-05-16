@@ -43,16 +43,15 @@ object Discrete extends GenerativeFamily2[DiscreteVar,ProportionsVar] {
 }
 
 object MaximizeGeneratedDiscrete extends Maximize {
-  def apply(varying:Iterable[DiscreteVariable], model:Model): Unit = {
-    for (d <- varying) {
-      val dFactors = model.factors(d)
-      require(dFactors.size == 1)
-      dFactors.head match {
-      	case factor:Discrete.Factor => d.set(factor._2.tensor.maxIndex)(null)
-        case _ => throw new Error("This Maximizer only handles factors of type Discrete.Factor.")
-      }
+  def apply(d:DiscreteVariable, model:Model): Unit = {
+    val dFactors = model.factors(d)
+    require(dFactors.size == 1)
+    dFactors.head match {
+      case factor:Discrete.Factor => d.set(factor._2.tensor.maxIndex)(null)
+      case _ => throw new Error("This Maximizer only handles factors of type Discrete.Factor.")
     }
   }
+  def apply(varying:Iterable[DiscreteVariable], model:Model): Unit = for (d <- varying) apply(d, model)
   def infer[V<:DiscreteVariable](varying:V, model:Model): Option[DiscreteMarginal1[V]] = {
     val dFactors = model.factors(varying)
     require(dFactors.size == 1)

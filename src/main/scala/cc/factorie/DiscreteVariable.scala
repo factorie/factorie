@@ -89,6 +89,8 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
 
 // Why can't this be accomplished merely by overriding set(Int)(DiffList)?  -akm
 // I think we should just get rid of this trait. -akm
+// TODO Remove this
+@deprecated("Will be removed")
 trait HookedDiscreteVariable extends DiscreteVariable { // Changed class name from "HookedVariable" because non-DiscreteVariables might also want to be hooked.
   def valueChangeHook(old: Int, newValue: Int): Unit
   override def set(newValue:Int)(implicit d:DiffList) {

@@ -15,7 +15,6 @@
 package cc.factorie
 
 // Categorical variables that have target values are referred to as 'Labels'
-// TODO Consider renaming all other "setting" names to "value" also
 
 /** Sets the TargetType, which is the type of the container of another variable's target value,
     doing so in a way that the type is both concrete and can be overridden in subclasses. */

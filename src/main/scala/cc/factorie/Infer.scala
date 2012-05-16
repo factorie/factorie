@@ -30,10 +30,10 @@ import cc.factorie.generative._
 // InferByBP.apply takes DiscreteVariables as an argument creates an inferencer and runs it to convergence
 // InferByBP.infer takes Variables as an argument, and if able to handle the arguments returns Some[Summary]; otherwise None.
 
-// Infer.apply() does the work and returns a Lattice on success or null on failure. 
+// Infer.apply() does the work and returns a Summary on success or null on failure. 
 //  if the inference is complicated and may be incrementally, it may create a Inferencer 
 // An Inferencer is specific to a model and some variables and may be run incrementally;
-//  it may also hold on to or be initialized with a Lattice (which is a type of Model)
+//  it may also hold on to or be initialized with a Summary (which is a container for Marginals)
 
 trait Infer {
   /** Called by generic inference engines that manages a suite of Infer objects, allowing each to attempt an inference request.

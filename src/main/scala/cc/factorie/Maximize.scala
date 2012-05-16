@@ -50,7 +50,12 @@ class MaximizeSuite extends Maximize {
 }
 object Maximize extends MaximizeSuite // A default instance of this class
 
-object SamplingMaximizer{
+
+//trait Maximizer[C] {
+//  def maximize(c:C)
+//}
+
+object SamplingMaximizer {
   def apply[V <: Variable with IterableSettings](model: Model) = new SamplingMaximizer[V](new VariableSettingsSampler[V](model))
 }
 
