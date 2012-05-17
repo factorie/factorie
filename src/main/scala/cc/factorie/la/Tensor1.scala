@@ -145,16 +145,17 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
     // TODO Any other special cases here?
     case ds:DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
   }
-
 }
 class SparseBinaryTensor1(val dim1:Int) extends SparseBinaryTensorLike1 {
   def this(t:Tensor) = { this(t.length); throw new Error("Not yet implemented.") }
 }
+class GrowableSparseBinaryTensor1(val sizeProxy:Iterable[Any]) extends SparseBinaryTensorLike1 {
+  def dim1: Int = sizeProxy.size
+}
 
-
-// Just an alias
+// Just aliases
 class SparseTensor1(dim1:Int) extends SparseIndexedTensor1(dim1)
-
+class GrowableSparseTensor1(val sizeProxy:Iterable[Any]) extends SparseIndexedTensor1(sizeProxy)
 
 /** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory,
     implemented as a HashMap from Int indices to Double values.
@@ -369,7 +370,7 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
 }
 
 
-class GrowableSparseTensor1(sizeProxy: Iterable[Any]) extends SparseIndexedTensor1(sizeProxy)
+//class GrowableSparseTensor1(sizeProxy: Iterable[Any]) extends SparseIndexedTensor1(sizeProxy)
 
 
 // Used by various LayeredTensors

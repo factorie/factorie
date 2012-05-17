@@ -30,7 +30,7 @@ object ChainNer2FeaturesDomain extends CategoricalVectorDomain[String]
 class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[String] {
   def domain = ChainNer2FeaturesDomain
   override def skipNonCategories = true
-}
+} 
 
 class ChainNer21Model extends TemplateModel{
   

@@ -87,7 +87,7 @@ abstract class SparseIndexedCategoricalVectorVariable[T] extends VectorVariable 
 }
 
 // TODO Finish this.
-abstract class FeatureVectorVariable2[T] extends SparseIndexedCategoricalVectorVariable[T] {
-  def this(initVals:Iterable[T]) = { this(); initVals.foreach(t => this.increment(domain.dimensionDomain.index(t), 1.0)) }
-}
+//abstract class FeatureVectorVariable2[T] extends SparseIndexedCategoricalVectorVariable[T] {
+//  def this(initVals:Iterable[T]) = { this(); initVals.foreach(t => this.increment(domain.dimensionDomain.index(t), 1.0)) }
+//}
 

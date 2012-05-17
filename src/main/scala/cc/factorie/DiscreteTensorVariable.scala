@@ -46,22 +46,53 @@ trait CategoricalTensorDomain[+T<:Tensor,C] extends DiscreteTensorDomain[T] {
 
 trait DiscreteTensorVar[+A<:Tensor] extends TensorVar[A] with VarAndValueType[DiscreteTensorVar[A],A] {
   def domain: DiscreteTensorDomain[A]
+  def contains(index:Int): Boolean = tensor.apply(index) != 0.0
 }
 
 /** A vector with dimensions corresponding to a DiscreteDomain, and with Double weights for each dimension, represented by a sparse vector. */
 abstract class DiscreteTensorVariable[A<:Tensor] extends TensorVariable[A] with DiscreteTensorVar[A] {
+  def this(initialValue:A) = { this(); _set(initialValue) }
   //thisVariable =>
   //_set(new SparseVector(domain.dimensionSize) with DiscreteVectorValue { def domain = thisVariable.domain })
 }
 
 trait CategoricalTensorVar[+T<:Tensor,C] extends DiscreteTensorVar[T] {
   def domain: CategoricalTensorDomain[T,C]
+  /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
+      If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
+  def skipNonCategories = false
+  protected def doWithIndexSafely(elt:C, v:Double, update:Boolean): Unit = {
+    val i = domain.dimensionDomain.index(elt)
+    if (i == CategoricalDomain.NULL_INDEX) {
+      if (!skipNonCategories) throw new Error("CategoricalTensorVar += value " + value + " not found in domain " + domain)
+    } else {
+      if (update) tensor.update(i, v)
+      else tensor.+=(i, v)
+    }
+  }
+  def update(elt:C, newValue:Double): Unit = doWithIndexSafely(elt, newValue, true)
+  def +=(elt:C, incr:Double): Unit = doWithIndexSafely(elt, incr, false)
+  def +=(elt:C): Unit = +=(elt, 1.0)
+  def ++=(elts:Iterable[C]): Unit = elts.foreach(this.+=(_))
+  @deprecated("This method may be removed.") def zero(): Unit = tensor.zero()
+  def activeCategories: Seq[C] = tensor.activeDomain.toSeq.map(i => domain.dimensionDomain.category(i))
 }
-abstract class CategoricalTensorVariable[T<:Tensor,C] extends DiscreteTensorVariable[T] with CategoricalTensorVar[T,C]
+abstract class CategoricalTensorVariable[A<:Tensor,C] extends DiscreteTensorVariable[A] with CategoricalTensorVar[A,C] {
+  def this(initialValue:A) = { this(); _set(initialValue) }
+}
 
-abstract class SparseCategoricalTensorVariable1[C] extends CategoricalTensorVariable[GrowableSparseTensor1,C] {
+// TODO rename BinaryFeatureVectorVariable
+abstract class BinaryFeatureVectorVariable2[C] extends CategoricalTensorVariable[GrowableSparseBinaryTensor1,C] {
+  def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
+  _set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))
+}
+
+// TODO rename FeatureVectorVariable
+abstract class FeatureVectorVariable2[C] extends CategoricalTensorVariable[GrowableSparseTensor1,C] {
+  def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   _set(new GrowableSparseTensor1(domain.dimensionDomain))
 }
+
 
 
 // A sketch for the future:
@@ -77,8 +108,103 @@ trait CategoricalValue2[C] extends DiscreteValue2 {
   def category: C
 }
 
+
+/** A single discrete variable */
+trait DiscreteVar2 extends DiscreteTensorVar[DiscreteValue2] with VarAndValueType[DiscreteVar2,DiscreteValue2] {
+  def domain: DiscreteDomain2
+  def intValue = value.intValue
+  override def toString = printName+"("+intValue+")"
+}
+
+/** A single discrete variable whose value can be changed. */
+trait MutableDiscreteVar2 extends DiscreteVar2 with MutableVar {
+  def set(newValue:Value)(implicit d:DiffList): Unit
+  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.apply(newInt)/*.asInstanceOf[ValueType]*/)(d)
+  @inline final def :=(i:Int): Unit = set(i)(null)
+  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
+}
+
+
+/** A concrete single discrete variable whose value can be changed. */
+abstract class DiscreteVariable2 extends MutableDiscreteVar2 with IterableSettings {
+  def this(initialValue:Int) = { this(); __value = initialValue }
+  def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue.intValue) }
+  private var __value: Int = 0
+  protected def _value = __value
+  protected def _set(newValue:Int): Unit = __value = newValue
+  //final protected def _set(newValue:ValueType): Unit = _set(newValue.intValue)
+  override def intValue = __value
+  def value: Value = domain.apply(__value)
+  @inline final def set(newValue:ValueType)(implicit d:DiffList): Unit = set(newValue.intValue)(d)
+  override def set(newValue:Int)(implicit d:DiffList): Unit = if (newValue != __value) {
+    assert(newValue < domain.size)
+    if (d ne null) d += new DiscreteVariableDiff(__value, newValue)
+    __value = newValue
+  }
+  def settings = new SettingIterator {
+    // TODO Base this on a domain.iterator instead, for efficiency
+    var i = -1
+    val max = domain.size - 1
+    def hasNext = i < max
+    def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(i)(d); d }
+    def reset = i = -1
+    override def variable: DiscreteVariable2.this.type = DiscreteVariable2.this
+  }
+  /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
+  def proportions(model:Model): Proportions = {
+    val origIntValue = intValue
+    val l = domain.size 
+    val distribution = new DenseTensor1(l)
+    var i = 0
+    while (i < l) {
+      //model.factors(Seq(this)).sumBy(_.values.set(this, i).score) // a version that doesn't change the value of this variable
+      __value = i
+      distribution(i) = model.score(this)  // compute score of variable with value 'i'
+      i += 1
+    }
+    distribution.expNormalize()
+    __value = origIntValue
+    new DenseProportions1(distribution)
+  }
+
+  case class DiscreteVariableDiff(oldValue: Int, newValue: Int) extends Diff {
+    @inline final def variable: DiscreteVariable2 = DiscreteVariable2.this
+    @inline final def redo = DiscreteVariable2.this.set(newValue)(null)
+    @inline final def undo = DiscreteVariable2.this.set(oldValue)(null)
+    override def toString = variable match { 
+      case cv:CategoricalVar2[_] if (oldValue >= 0) => "DiscreteVariableDiff("+cv.domain.category(oldValue)+"="+oldValue+","+cv.domain.category(newValue)+"="+newValue+")"
+      case _ => "DiscreteVariableDiff("+oldValue+","+newValue+")"
+    }
+  }
+}
+
+
+/** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.
+    Concrete implementations include CategoricalVariable and CategoricalObservation. 
+    @author Andrew McCallum */
+trait CategoricalVar2[A] extends DiscreteVar2 with CategoricalTensorVar[CategoricalValue2[A],A] with VarAndValueType[CategoricalVar2[A],CategoricalValue2[A]] {
+  def domain: CategoricalDomain2[A]
+  def categoryValue: A = if (value ne null) value.category else null.asInstanceOf[A]
+  override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
+}
+
+trait MutableCategoricalVar2[A] extends CategoricalVar2[A] with MutableDiscreteVar2 {
+  def setCategory(newCategory:A)(implicit d: DiffList): Unit = set(domain.index(newCategory))(d)
+}
+
+/** A DiscreteVariable whose integers 0...N are associated with an object of type A. 
+    @author Andrew McCallum */
+abstract class CategoricalVariable2[A] extends DiscreteVariable2 with MutableCategoricalVar2[A] {
+  def this(initialCategory:A) = { this(); _set(domain.index(initialCategory)) }
+  //def this(initalValue:ValueType) = { this(); _set(initialValue) }
+}
+
+
+
+
+
 // Because DiscreteDomain2 is an IndexedSeq it can be passed as a sizeProxy
-class DiscreteDomain2(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue2] with DiscreteTensorDomain[DiscreteValue2] with ValueType[DiscreteValue2] {
+class DiscreteDomain2(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue2] with DiscreteTensorDomain[DiscreteValue2] /*with ValueType[DiscreteValue2]*/ {
   thisDomain =>
   def this(size:Int) = { this(null.asInstanceOf[Iterable[Any]]); _size = size }
   def dimensionDomain: DiscreteDomain2 = this
@@ -178,7 +304,7 @@ class CategoricalDomain2[C] extends DiscreteDomain2(0) with IndexedSeq[Categoric
     }
   }
   override def apply(i:Int): ValueType = _elements(i)
-  def category(i:Int): C = _elements(i).category
+  def category(i:Int): C = _elements(i).category.asInstanceOf[C]
   def categories: Seq[C] = _elements.map(_.category)
   /** Return the integer associated with the category, do not increment the count of category, even if gatherCounts is true. */
   def indexOnly(category:C): Int = {
