@@ -114,20 +114,20 @@ object Tensor {
     }
   }
   def outer(t1:Tensor1, t2:Tensor1): Tensor2 = t1 match {
-    case t1:SingletonBinaryTensor1 => t2 match {
-      case t2:SingletonBinaryTensor1 => new SingletonBinaryTensor2(t1.dim1, t2.dim1, t1.singleIndex, t2.singleIndex)
+    case t1:SingletonBinaryTensorLike1 => t2 match {
+      case t2:SingletonBinaryTensorLike1 => new SingletonBinaryTensor2(t1.dim1, t2.dim1, t1.singleIndex, t2.singleIndex)
       case t2:SingletonTensor1 => new SingletonTensor2(t1.dim1, t2.dim1, t1.singleIndex, t2.singleIndex, t2.singleValue)
       case t2:Tensor1 => new SingletonBinaryLayeredTensor2(t1.dim1, t2.dim1, t1.singleIndex, t2)
     }
     case t1:SingletonTensor1 => t2 match {
-      case t2:SingletonBinaryTensor1 => new SingletonTensor2(t1.dim1, t2.dim1, t1.singleIndex, t2.singleIndex, t1.singleValue)
+      case t2:SingletonBinaryTensorLike1 => new SingletonTensor2(t1.dim1, t2.dim1, t1.singleIndex, t2.singleIndex, t1.singleValue)
       case t2:Tensor1 => new SingletonLayeredTensor2(t1.dim1, t2.dim1, t1.singleIndex, t1.singleValue, t2)
     }
     case t1:DenseTensor1 => t2 match {
-      case t2:SingletonBinaryTensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1) t(i,t2.singleIndex) = t1(i); t }
+      case t2:SingletonBinaryTensorLike1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1) t(i,t2.singleIndex) = t1(i); t }
       case t2:SingletonTensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1) t(i,t2.singleIndex) = t1(i) * t2.singleValue; t }
-      case t2:SparseBinaryTensor1 => throw new Error("Not yet implemented; needs SparseTensor2")
-      case t2:DenseTensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1; j <- 0 until t2.dim1) t(i,j) = t1(i) * t2(j); t }
+      case t2:SparseBinaryTensorLike1 => throw new Error("Not yet implemented; needs SparseTensor2")
+      case t2:DenseTensorLike1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1; j <- 0 until t2.dim1) t(i,j) = t1(i) * t2(j); t }
       case t2:Tensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1; j <- t2.activeDomain.asSeq) t(i,j) = t1(i) * t2(j); t }
       //case t2:DenseTensor2 => { val t = new DenseTensor3(t1.dim1, t2.dim1, t2.dim2); for (i <- 0 until t1.dim1; j <- 0 until t2.dim1; k <- 0 until t2.dim2) t(i,j,k) = t1(i) * t2(j,k); t }
     }
@@ -136,23 +136,26 @@ object Tensor {
     }
   }
   def outer(t1:Tensor1, t2:Tensor2): Tensor3 = t1 match {
-    case t1:DenseTensor1 => t2 match {
-      case t2:DenseTensor2 => { val t = new DenseTensor3(t1.dim1, t2.dim1, t2.dim2); for (i <- 0 until t1.dim1; j <- 0 until t2.dim1; k <- 0 until t2.dim2) t(i,j,k) = t1(i) * t2(j,k); t }
+    case t1:DenseTensorLike1 => t2 match {
+      case t2:DenseTensorLike2 => { val t = new DenseTensor3(t1.dim1, t2.dim1, t2.dim2); for (i <- 0 until t1.dim1; j <- 0 until t2.dim1; k <- 0 until t2.dim2) t(i,j,k) = t1(i) * t2(j,k); t }
     }
   }
   def outer(t1:Tensor1, t2:Tensor1, t3:Tensor1): Tensor3 = t1 match {
-    case t1:SingletonBinaryTensor1 => t2 match {
-      case t2:SingletonBinaryTensor1 => t3 match {
-        case t3:SingletonBinaryTensor1 => new SingletonBinaryTensor3(t1.dim1, t2.dim1, t3.dim1, t1.singleIndex, t2.singleIndex, t3.singleIndex)
+    case t1:SingletonBinaryTensorLike1 => t2 match {
+      case t2:SingletonBinaryTensorLike1 => t3 match {
+        case t3:SingletonBinaryTensorLike1 => new SingletonBinaryTensor3(t1.dim1, t2.dim1, t3.dim1, t1.singleIndex, t2.singleIndex, t3.singleIndex)
         case t3:SingletonTensor1 => new SingletonTensor3(t1.dim1, t2.dim1, t3.dim1, t1.singleIndex, t2.singleIndex, t3.singleIndex, t3.singleValue)
         case t3:Tensor1 => new Singleton2BinaryLayeredTensor3(t1.dim1, t2.dim1, t3.dim1, t1.singleIndex, t2.singleIndex, t3)
       }
       case t2:SingletonTensor1 => t3 match {
         case t3:Tensor1 => new Singleton2LayeredTensor3(t1.dim1, t2.dim1, t3.dim1, t1.singleIndex, t2.singleIndex, 1.0, t2.singleValue, t3)
       }
+      case t2:SparseBinaryTensorLike1 => t3 match {
+        case _ => throw new Error("Not yet implemented.")// { val t = new SparseBinaryTensor3...} 
+      }
     }
     case t1:SingletonTensor1 => t2 match {
-      case t2:SingletonBinaryTensor1 => t3 match {
+      case t2:SingletonBinaryTensorLike1 => t3 match {
         case t3:Tensor1 => new Singleton2LayeredTensor3(t1.dim1, t2.dim1, t3.dim1, t1.singleIndex, t2.singleIndex, t1.singleValue, 1.0, t3)
       }
       case t2:SingletonTensor1 => t3 match {
@@ -161,10 +164,10 @@ object Tensor {
     }
   }
   def outer(t1:Tensor1, t2:Tensor1, t3:Tensor1, t4:Tensor1): Tensor4 = t1 match {
-    case t1:SingletonBinaryTensor1 => t2 match {
-      case t2:SingletonBinaryTensor1 => t3 match {
-        case t3:SingletonBinaryTensor1 => t4 match {
-          case t4:SingletonBinaryTensor1 => new SingletonBinaryTensor4(t1.dim1, t2.dim1, t3.dim1, t4.dim1, t1.singleIndex, t2.singleIndex, t3.singleIndex, t4.singleIndex)
+    case t1:SingletonBinaryTensorLike1 => t2 match {
+      case t2:SingletonBinaryTensorLike1 => t3 match {
+        case t3:SingletonBinaryTensorLike1 => t4 match {
+          case t4:SingletonBinaryTensorLike1 => new SingletonBinaryTensor4(t1.dim1, t2.dim1, t3.dim1, t4.dim1, t1.singleIndex, t2.singleIndex, t3.singleIndex, t4.singleIndex)
           case t4:Tensor1 => new Singleton3LayeredTensor4(t1.dim1, t2.dim1, t3.dim1, t4.dim1, t1.singleIndex, t2.singleIndex, t3.singleIndex, t4)
         }
       }
