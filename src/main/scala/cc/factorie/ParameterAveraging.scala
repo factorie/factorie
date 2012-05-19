@@ -38,22 +38,22 @@ trait ParameterAveraging extends WeightUpdates {
   def familiesToUpdate: Seq[DotFamily] // provided in some "*Update" trait
   def perceptronIteration = updateCount //other options: updateCount, iterationCount
   val initialIteration = perceptronIteration
-  val lastUpdateIteration = new HashMap[DotFamily,Vector] {
+  val lastUpdateIteration = new HashMap[DotFamily,Tensor] {
     override def default(template:DotFamily) = {
-      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {
+      val tensor = if (template.isInstanceOf[SparseWeights]) template.weights.blankCopy else {
         template.freezeDomains
-        new DenseVector(template.statisticsVectorLength)
+        template.weights.blankCopy
       }
-      vector += initialIteration // Make the default value be the iteration count at which we started learning
-      this(template) = vector
-      vector
+      tensor += initialIteration // Make the default value be the iteration count at which we started learning
+      this(template) = tensor
+      tensor
     }
   }
-  val weightsSum = new HashMap[DotFamily,Vector] {
+  val weightsSum = new HashMap[DotFamily,Tensor] {
     override def default(template:DotFamily) = {
-      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {
+      val vector = if (template.isInstanceOf[SparseWeights]) template.weights.blankCopy else {
         template.freezeDomains
-        new DenseVector(template.statisticsVectorLength)
+        template.weights.blankCopy
       }
       vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
       this(template) = vector
@@ -63,11 +63,11 @@ trait ParameterAveraging extends WeightUpdates {
 
 
   //Store the model weights in here before accumulated weights are injected into model, this way they can be recovered if necessary
-  var _backupWeights : HashMap[DotFamily,Vector] = null
+  var _backupWeights : HashMap[DotFamily,Tensor] = null
   def backupWeights {
-    _backupWeights = new HashMap[DotFamily,Vector] {
+    _backupWeights = new HashMap[DotFamily,Tensor] {
       override def default(template:DotFamily) = {
-        val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {template.freezeDomains; new DenseVector(template.statisticsVectorLength)}
+        val vector = if (template.isInstanceOf[SparseWeights]) template.weights.blankCopy else {template.freezeDomains; template.weights.blankCopy }
         vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
         this(template) = vector
         vector
@@ -126,11 +126,11 @@ trait ParameterAveraging extends WeightUpdates {
   /** This method is agnostic to how the weights were originally updated */
   abstract override def updateWeights: Unit = {
     //Get the gradient to identify the locations of weights changed by update
-    val metaGradient = new HashMap[UpdateFamilyType,SparseVector] {
+    val metaGradient = new HashMap[UpdateFamilyType,Tensor] {
       override def default(template:UpdateFamilyType) = {
         //SR: is freezing necessary?
         //template.freezeDomains
-        val vector = new SparseVector(template.statisticsVectorLength)
+        val vector = template.weights.blankCopy
         this(template) = vector
         vector
       }
@@ -161,7 +161,7 @@ trait ParameterAveraging extends WeightUpdates {
       // First do it for the template's weights
       //templateWeights += vector //already done in super.updateWeights
       // Now maintain templateWeightsSum
-      for (i <- vector.activeDomain) {
+      for (i <- vector.activeDomain.asSeq) {
         val iterationDiff = perceptronIteration - templateLastUpdateIteration(i) // Note avoiding off-by-one relies on when iterationCount is incremented!
         assert(iterationDiff >= 0)
         if (iterationDiff > 0) {
@@ -174,7 +174,7 @@ trait ParameterAveraging extends WeightUpdates {
     }
   }
 
-  def l2Norm(grad : HashMap[UpdateFamilyType,SparseVector]) : Double = {
+  def l2Norm(grad : HashMap[UpdateFamilyType,Tensor]) : Double = {
     var result : Double = 0.0
     for ((t,v) <- grad)
       result += v dot v

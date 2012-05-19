@@ -8,16 +8,16 @@ import cc.factorie.util.TopN
     @author Andrew McCallum
     @since 0.10
  */
-class PerLabelInfoGain[L<:DiscreteVar](labels:Iterable[L], labelToFeatures:L=>DiscreteVectorVar) {
+class PerLabelInfoGain[L<:DiscreteVar](labels:Iterable[L], labelToFeatures:L=>DiscreteTensorVar) {
   def this(labels:LabelList[L]) = this(labels, labels.labelToFeatures)
-  val instanceDomain: DiscreteVectorDomain = labelToFeatures(labels.head).domain
+  val instanceDomain: DiscreteTensorDomain = labelToFeatures(labels.head).domain
   val featureDomain: DiscreteDomain = instanceDomain.dimensionDomain
   val labelDomain: DiscreteDomain = labels.head.domain
   private val infogains = Array.ofDim[Double](labelDomain.size, featureDomain.size)
   var labelEntropies = new Array[Double](labelDomain.size)
   init(labels)
   
-  def top(labelIndex:Int, n:Int): TopN[String] = new TopN[String](n, infogains(labelIndex), featureDomain.asInstanceOf[CategoricalDomain[String]].categoryValues)
+  def top(labelIndex:Int, n:Int): TopN[String] = new TopN[String](n, infogains(labelIndex), featureDomain.asInstanceOf[CategoricalDomain[String]].categories)
   def top(labelValue:DiscreteValue, n:Int): TopN[String] = {
     require(labelValue.domain == labelDomain)
     top(labelValue.intValue, n)
@@ -38,10 +38,11 @@ class PerLabelInfoGain[L<:DiscreteVar](labels:Iterable[L], labelToFeatures:L=>Di
       assert(label.domain == labelDomain)
       val labelIndex = label.intValue
       labelCounts(labelIndex) += 1
-      for (featureIndex <- instance.activeDomain) {
+      // for (featureIndex <- instance.activeDomain) 
+      instance.tensor.foreachActiveElement((featureIndex,featureValue) => {
         labelFeatureCounts(labelIndex)(featureIndex) += 1
         featureCounts(featureIndex) += 1
-      }
+      })
     }
     
     for (labelIndex <- 0 until numLabels) {

@@ -2,7 +2,7 @@ package cc.factorie.bp
 
 import collection.mutable.HashMap
 import cc.factorie.{DiscreteDomain, Variable, DiscreteVariable}
-import cc.factorie.la.DenseVector
+import cc.factorie.la._
 
 /**
  * @author sameer
@@ -11,7 +11,7 @@ import cc.factorie.la.DenseVector
 
 object BPUtil {
 
-  def message[V <: DiscreteVariable](v: V, scores: Array[Double]): GenericMessage = new DiscreteMessage(v, DenseVector(scores))
+  def message[V <: DiscreteVariable](v: V, scores: Array[Double]): GenericMessage = new DiscreteMessage(v, new DenseTensor1(scores))
 
   def uniformMessage: GenericMessage = UniformMessage
 

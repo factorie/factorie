@@ -34,11 +34,11 @@ abstract class ContrastiveDivergence[C](model:Model) extends MHSampler[C](model)
     updateWeights // This will result in a call to addGradient
   }
 
-  def addGradient(accumulator:DotFamily=>Vector, rate:Double): Unit = {
-    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family) += (f.statistics.vector * -rate))
+  def addGradient(accumulator:DotFamily=>Tensor, rate:Double): Unit = {
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.statistics.tensor, -rate))
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += (f.statistics.vector * -rate))
     difflist.undo
-    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family) += (f.statistics.vector *  rate))
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.statistics.tensor, rate))
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += (f.statistics.vector *  rate))
   }  
 }

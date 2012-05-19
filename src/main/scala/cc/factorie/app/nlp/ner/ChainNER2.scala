@@ -26,7 +26,7 @@ import scala.io._
 import java.io.{FileWriter, BufferedWriter, File}
 import scala.math.round
 
-object ChainNer2FeaturesDomain extends CategoricalVectorDomain[String]
+object ChainNer2FeaturesDomain extends CategoricalTensorDomain[String]
 class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[String] {
   def domain = ChainNer2FeaturesDomain
   override def skipNonCategories = true
@@ -216,7 +216,7 @@ class ChainNer2 {
       return List()
   }
   
-  def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>BinaryCategoricalVectorVar[String]) : Unit = {
+  def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>CategoricalTensorVar[String]) : Unit = {
     didagg = true
     vf(t) ++= prevWindowNum(from,2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@-" + t2._1)
     vf(t) ++= nextWindowNum(from, 2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@" + t2._1)
@@ -235,7 +235,7 @@ class ChainNer2 {
     }
   }
   
-  def aggregateContext[A<:Observation[A]](token : Token, vf:Token=>BinaryCategoricalVectorVar[String]) : Unit = {
+  def aggregateContext[A<:Observation[A]](token : Token, vf:Token=>CategoricalTensorVar[String]) : Unit = {
     var count = 0
     var compareToken : Token = token
     while(count < 200 && compareToken.hasPrev) {
@@ -255,7 +255,7 @@ class ChainNer2 {
   }
   
 
-  def initFeatures(document:Document, vf:Token=>BinaryCategoricalVectorVar[String]): Unit = {
+  def initFeatures(document:Document, vf:Token=>CategoricalTensorVar[String]): Unit = {
     //println("Count" + count)
     count=count+1
     import cc.factorie.app.strings.simplifyDigits
@@ -424,7 +424,7 @@ class ChainNer2 {
 		if(extendedPrediction.contains(token.string)) {
 			//println("EXTENDED")	
         		//Conll2003NerDomain.categoryValues.map(str => println(str + "=" + history(extendedPrediction(token.string), str)) )
-        		Conll2003NerDomain.categoryValues.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string), str) )
+        		Conll2003NerDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string), str) )
 		}
 		if(extendedPrediction.contains(token.string))
         		extendedPrediction(token.string) = extendedPrediction(token.string) ++ List(token.attr[ChainNerLabel].categoryValue)
@@ -685,7 +685,7 @@ class ChainNer2 {
 		  val targetIOBLabel = BILOUtoIOB(token, true)
           token.attr.remove[ChainNerLabel]
           token.attr += new Conll2003ChainNerLabel(token, targetIOBLabel)
-          token.attr[ChainNerLabel].set(token.attr[ChainNerLabel].domain.getValue(IOBLabel))(null)
+          token.attr[ChainNerLabel].set(token.attr[ChainNerLabel].domain.value(IOBLabel))(null)
 		}
 	}
   }
@@ -817,7 +817,7 @@ class ChainNer2 {
     val buf = new StringBuffer
     // Per-token evaluation
     buf.append(new LabelEvaluation(documents.flatMap(_.tokens.map(_.attr[ChainNerLabel]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categoryValues.filter(_.length > 2).map(_.substring(2)))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categories.filter(_.length > 2).map(_.substring(2)))
     for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[ChainNerLabel])
     println("Segment evaluation")
     println(segmentEvaluation)
@@ -832,7 +832,7 @@ class ChainNer2 {
 	  		Viterbi.searchAndSetToMax(vars, model.localTemplate, model.transitionTemplate)
     	}
     } else {
-      for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.getCategory(0)) // init value doens't matter
+      for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.category(0)) // init value doens't matter
       val localModel = new TemplateModel(model.templates(0), model.templates(1))
       val localPredictor = new VariableSettingsGreedyMaximizer[ChainNerLabel](localModel, null)
       for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)

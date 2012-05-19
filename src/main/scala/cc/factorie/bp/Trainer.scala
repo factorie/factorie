@@ -2,7 +2,7 @@ package cc.factorie.bp
 
 import cc.factorie._
 import cc.factorie.optimize.OptimizableByValueAndGradient
-import cc.factorie.la.{SparseVector, ArrayFromVectors, Vector, DenseVector}
+import cc.factorie.la._
 import collection.mutable.{ArrayBuffer, HashMap, Map}
 
 /**
@@ -15,7 +15,7 @@ trait Regularizer {
 
   def regValue: Double = 0.0
 
-  def regGradients(gradients: Map[DotFamily, Vector]): Unit = {}
+  def regGradients(gradients: Map[DotFamily, Tensor]): Unit = {}
 }
 
 trait L2Regularizer extends Regularizer {
@@ -28,10 +28,10 @@ trait L2Regularizer extends Regularizer {
           (totw, v) => totw + math.pow(v._2, 2)))) / (2.0 * sigmaSq)
   }
 
-  override def regGradients(gradients: Map[DotFamily, Vector]) = {
+  override def regGradients(gradients: Map[DotFamily, Tensor]) = {
     for (df <- families) {
       val wv = df.weights
-      val gv = gradients.getOrElseUpdate(df, df.newWeightsTypeVector())
+      val gv = gradients.getOrElseUpdate(df, df.weights.blankCopy) //df.newWeightsTypeVector()
       for (i: Int <- wv.activeDomain) {
         val reg: Double = wv(i) / sigmaSq
         gv(i) = gv(i) - reg
@@ -45,38 +45,38 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
 
   def this(model: Model, pieces: Seq[Piece]) = this(pieces, model.familiesOfClass[DotFamily].toSeq)
 
-  var _weights: ArrayFromVectors = null
-  var _gradients: ArrayFromVectors = null
+  var _weights: ArrayFromTensors = null
+  var _gradients: ArrayFromTensors = null
   var _changed: Boolean = true
   var _value: Double = Double.NaN
   init
 
   def init = {
-    _weights = new ArrayFromVectors(families.map(_.weights))
+    _weights = new ArrayFromTensors(families.map(_.weights))
     println("Number of pieces: " + pieces.length)
-    println("Number of active weights: %s (%d)".format(families.map(_.weights.activeDomainSize).mkString(", "), _weights.vectorsArraySize))
+    println("Number of active weights: %s (%d)".format(families.map(_.weights.activeDomainSize).mkString(", "), _weights.tensorsArraySize))
     println("Number of total weights:  %s (%d)".format(families.map(_.weights.length).mkString(", "), families.foldLeft(0)(_ + _.weights.length)))
   }
 
-  def numOptimizableParameters = _weights.vectorsArraySize
+  def numOptimizableParameters = _weights.tensorsArraySize
 
-  def getOptimizableParameters(a: Array[Double]) = _weights.getVectorsInArray(a)
+  def getOptimizableParameters(a: Array[Double]) = _weights.getTensorsInArray(a)
 
   def setOptimizableParameters(a: Array[Double]): Unit = {
-    _weights.setVectorsFromArray(a)
+    _weights.setTensorsFromArray(a)
     _changed = true
   }
 
-  def optimizableParameter(index: Int): Double = _weights.vectorValueAtArrayIndex(index)
+  def optimizableParameter(index: Int): Double = _weights.tensorValueAtArrayIndex(index)
 
   def optimizableParameter_=(index: Int, d: Double): Unit = {
     _changed = true
-    _weights.vectorValueAtArrayIndex_=(index, d)
+    _weights.tensorValueAtArrayIndex_=(index, d)
   }
 
   def updateValueAndGradient: Unit = {
     _value = 0.0
-    val grads = new HashMap[DotFamily, Vector]
+    val grads = new HashMap[DotFamily, Tensor]
     // compute total grad and value of the pieces
     println("Computing value and gradient")
     var i = 0
@@ -85,7 +85,7 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
       val (pv, pg) = piece.valueAndGradient
       _value += pv
       for (df <- pg.keys) {
-        grads.getOrElseUpdate(df, df.newWeightsTypeVector()) += pg(df)
+        grads.getOrElseUpdate(df, df.weights.blankCopy /*df.newWeightsTypeVector()*/) += pg(df)
       }
       if (pieces.length >= 10000 && i % (pieces.length / 25) == 0)
         println("Done %d of %d pieces".format(i, pieces.length))
@@ -100,7 +100,7 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
     // project the gradient
     grads.foreach(p => projectGradient(p._1, p._2))
     // create the gradient
-    _gradients = new ArrayFromVectors(families.map(grads(_)))
+    _gradients = new ArrayFromTensors(families.map(grads(_)))
   }
 
   def getOptimizableGradient(g: Array[Double]) = {
@@ -109,7 +109,7 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
       updateValueAndGradient
       _changed = false
     }
-    _gradients.getVectorsInArray(g)
+    _gradients.getTensorsInArray(g)
   }
 
   def optimizableValue = {
@@ -120,7 +120,7 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
     _value
   }
 
-  def projectGradient(df: DotFamily, grad: Vector): Unit = {}
+  def projectGradient(df: DotFamily, grad: Tensor): Unit = {}
 }
 
 class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
@@ -131,13 +131,13 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
   var seqCalls = 0
   var combCalls = 0
 
-  class ValAndGrad(var value: Double = 0.0, val grad: HashMap[DotFamily, Vector] = new HashMap) {
+  class ValAndGrad(var value: Double = 0.0, val grad: HashMap[DotFamily, Tensor] = new HashMap) {
 
     def augment(piece: Piece): ValAndGrad = {
       val (pv, pg) = piece.valueAndGradient
-      val result = new HashMap[DotFamily, Vector]
+      val result = new HashMap[DotFamily, Tensor]
       for (df <- grad.keySet ++ pg.keySet) {
-        val v = if (grad contains df) grad(df) else df.newWeightsTypeVector()
+        val v = if (grad contains df) grad(df) else df.weights.blankCopy //newWeightsTypeVector()
         if (pg contains df) v += pg(df)
         result(df) = v
       }
@@ -148,11 +148,11 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
     }
 
     def combineWith(vandg: ValAndGrad): ValAndGrad = {
-      val a: HashMap[DotFamily, Vector] = grad
-      val b: HashMap[DotFamily, Vector] = vandg.grad
-      val c = new HashMap[DotFamily, Vector]
+      val a: HashMap[DotFamily, Tensor] = grad
+      val b: HashMap[DotFamily, Tensor] = vandg.grad
+      val c = new HashMap[DotFamily, Tensor]
       for (df <- a.keySet ++ b.keySet) {
-        val v = df.newWeightsTypeVector()
+        val v = df.weights.blankCopy // df.newWeightsTypeVector()
         if (a contains df) v += a(df)
         if (b contains df) v += b(df)
         c(df) = v
@@ -182,7 +182,7 @@ class ParallelTrainer(pieces: Seq[Piece], families: Seq[DotFamily])
     // project the gradient
     result.grad.foreach(p => projectGradient(p._1, p._2))
     // create the gradient
-    _gradients = new ArrayFromVectors(families.map(result.grad(_)))
+    _gradients = new ArrayFromTensors(families.map(result.grad(_)))
   }
 }
 
@@ -197,7 +197,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
   def lrate(t: Double) = initialLearningRate / (1 + l2 * t)
 
   families.foreach(_.freezeDomains)
-  val gradients = families.map(f => ArrayBuffer[Vector]()).toArray
+  val gradients = families.map(f => ArrayBuffer[Tensor]()).toArray
 
   var batches: Seq[Seq[Piece]] = null
 
@@ -257,7 +257,7 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
     val oldLr = initialLearningRate
     initialLearningRate = eta
     val oldWeights = families.map(f => {
-      val a = f.newWeightsTypeVector()
+      val a = f.weights.blankCopy // f.newWeightsTypeVector()
       a += f.weights
       a
     }).toArray
@@ -298,5 +298,5 @@ class SGDTrainer(val pieces: Seq[Piece], val families: Seq[DotFamily],
       doStep(i)
   }
 
-  def projectGradient(df: DotFamily, grad: Vector): Unit = {}
+  def projectGradient(df: DotFamily, grad: Tensor): Unit = {}
 }

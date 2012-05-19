@@ -13,7 +13,7 @@ import optimize.LimitedMemoryBFGS
 
 class TestPiecewiseTrainer extends JUnitSuite {
 
-  object FeaturesDomain extends CategoricalVectorDomain[String]
+  object FeaturesDomain extends CategoricalTensorDomain[String]
 
   class Features(ftrs: Seq[String], labelStr: String)
         extends BinaryFeatureVectorVariable[String](ftrs) {
@@ -47,10 +47,10 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val piece2 = ModelPiece(model, Seq(features2.label))
     val optimizer = new LimitedMemoryBFGS(new Trainer(Seq(piece1, piece2), Seq(localTemplate)))
     optimizer.optimize(10)
-    println("FD: " + FeaturesDomain.dimensionDomain.values)
-    println("LD: " + LabelDomain.values)
-    for (ftr <- FeaturesDomain.dimensionDomain.values)
-      for (label <- LabelDomain.values) {
+    println("FD: " + FeaturesDomain.dimensionDomain)
+    println("LD: " + LabelDomain)
+    for (ftr <- FeaturesDomain.dimensionDomain)
+      for (label <- LabelDomain) {
         println(ftr.category + " " + label.category + " : " + localTemplate.weight(label.intValue, ftr.intValue))
       }
 
@@ -72,10 +72,10 @@ class TestPiecewiseTrainer extends JUnitSuite {
       override def sigmaSq = 1
     })
     optimizer.optimize(10)
-    println("FD: " + FeaturesDomain.dimensionDomain.values)
-    println("LD: " + LabelDomain.values)
-    for (ftr <- FeaturesDomain.dimensionDomain.values)
-      for (label <- LabelDomain.values) {
+    println("FD: " + FeaturesDomain.dimensionDomain)
+    println("LD: " + LabelDomain)
+    for (ftr <- FeaturesDomain.dimensionDomain)
+      for (label <- LabelDomain) {
         println(ftr.category + " " + label.category + " : " + localTemplate.weight(label.intValue, ftr.intValue))
       }
 
@@ -95,10 +95,10 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val piece2 = ModelPiece(model, Seq(features2.label))
     val optimizer = new LimitedMemoryBFGS(new ParallelTrainer(Seq(piece1, piece2), Seq(localTemplate)))
     optimizer.optimize(10)
-    println("FD: " + FeaturesDomain.dimensionDomain.values)
-    println("LD: " + LabelDomain.values)
-    for (ftr <- FeaturesDomain.dimensionDomain.values)
-      for (label <- LabelDomain.values) {
+    println("FD: " + FeaturesDomain.dimensionDomain)
+    println("LD: " + LabelDomain)
+    for (ftr <- FeaturesDomain.dimensionDomain)
+      for (label <- LabelDomain) {
         println(ftr.category + " " + label.category + " : " + localTemplate.weight(label.intValue, ftr.intValue))
       }
     assertTrue("a A should be > a B",
@@ -120,8 +120,8 @@ class TestPiecewiseTrainer extends JUnitSuite {
     var initTime = System.currentTimeMillis()
     optimizerPar.optimize(1)
     println("Parallel Time: " + (System.currentTimeMillis() - initTime))
-    for (ftr <- FeaturesDomain.dimensionDomain.values)
-      for (label <- LabelDomain.values) {
+    for (ftr <- FeaturesDomain.dimensionDomain)
+      for (label <- LabelDomain) {
         println(ftr.category + " " + label.category + " : " + localTemplatePar.weight(label.intValue, ftr.intValue))
       }
 
@@ -133,8 +133,8 @@ class TestPiecewiseTrainer extends JUnitSuite {
     initTime = System.currentTimeMillis()
     optimizerSeq.optimize(1)
     println("Sequential Time: " + (System.currentTimeMillis() - initTime))
-    for (ftr <- FeaturesDomain.dimensionDomain.values)
-      for (label <- LabelDomain.values) {
+    for (ftr <- FeaturesDomain.dimensionDomain)
+      for (label <- LabelDomain) {
         println(ftr.category + " " + label.category + " : " + localTemplateSeq.weight(label.intValue, ftr.intValue))
         assertEquals(localTemplateSeq.weight(label.intValue, ftr.intValue), localTemplatePar.weight(label.intValue, ftr.intValue), 0.01)
       }

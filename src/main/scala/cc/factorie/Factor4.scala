@@ -106,23 +106,16 @@ trait Statistics4[S1,S2,S3,S4] extends Family {
   def score(s:Stat): Double
 }
 
-trait VectorStatistics4[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue,S4<:DiscreteVectorValue] extends VectorFamily {
+trait TensorStatistics4[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue,S4<:DiscreteTensorValue] extends TensorFamily {
   self =>
   type StatisticsType = Stat
-  final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends  { val vector: Vector = _1 flatOuter (_2 flatOuter (_3 flatOuter _4)) } with super.Statistics {
-    if (_statisticsDomains eq null) {
-      _statisticsDomains = _newStatisticsDomains
-      _statisticsDomains += _1.domain
-      _statisticsDomains += _2.domain
-      _statisticsDomains += _3.domain
-      _statisticsDomains += _4.domain
-    }
+  final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends  { val tensor: Tensor = Tensor.outer(_1, _2, _3, _4) } with super.Statistics {
     lazy val score = self.score(this)
   }
   def score(s:Stat): Double
 }
 
-trait DotStatistics4[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue,S4<:DiscreteVectorValue] extends VectorStatistics4[S1,S2,S3,S4] with DotFamily
+trait DotStatistics4[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue,S4<:DiscreteTensorValue] extends TensorStatistics4[S1,S2,S3,S4] with DotFamily
 
 trait FamilyWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Family4[N1,N2,N3,N4] with Statistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
   def statistics(values:Values) = Stat(values._1, values._2, values._3, values._4)

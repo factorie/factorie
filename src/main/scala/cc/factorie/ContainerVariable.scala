@@ -27,6 +27,7 @@ trait ContainerVariable[A<:Variable] extends Variable {
 }
 
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.
+// So this is the exception to the "rule" that Variable must have equals and hashCode based on unique memory address.
 trait Vars[A<:Variable] extends scala.collection.Seq[A] with ContainerVariable[A] with VarAndValueGenericDomain[Vars[A],scala.collection.Seq[A#Value]] {
   def value = this.map(_.value)
   override def toString = mkString("Vars(", ",",")")

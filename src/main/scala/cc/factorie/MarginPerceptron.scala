@@ -40,12 +40,12 @@ abstract class MarginPerceptron [V<:VarWithTargetValue] extends WeightUpdates {
     }
   }
 
-  def addGradient(accumulator:DotFamily=>Vector, rate:Double): Unit = {
+  def addGradient(accumulator:DotFamily=>Tensor, rate:Double): Unit = {
     if (!difflist.done) difflist.redo
-    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.statistics.tensor, rate))
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
     difflist.undo
-    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.statistics.tensor, -rate))
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
   }
 

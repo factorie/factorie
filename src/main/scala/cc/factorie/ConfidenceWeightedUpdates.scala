@@ -63,14 +63,15 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
 
   /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
   val initialVariance = 0.1;
-  lazy val sigma = new HashMap[DotFamily,Vector] {
+  lazy val sigma = new HashMap[DotFamily,Tensor] {
     override def default(template:DotFamily) = { 
       template.freezeDomains
       //val vector = DenseVector(template.statsize)(initialVariance)
-      val vector = template.newWeightsTypeVector(initialVariance)
+      //val vector = template.newWeightsTypeVector(initialVariance)
+      val tensor = template.newWeightsTypeTensor; tensor += initialVariance; throw new Error("This handling of initialVariance needs careful thought and verification")
       // if (template.isInstanceOf[SparseWeights]) { val sv = new SparseVector(template.statisticsVectorLength); sv.default = initialVariance; sv } else DenseVector(template.statisticsVectorLength)(initialVariance)
-      this(template) = vector
-      vector
+      this(template) = tensor
+      tensor
     }
   }
 
@@ -78,12 +79,13 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
 //    val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
     //if (!shouldUpdate) return; //this should be determined outside this class
     numUpdates += 1
-    val gradient = new HashMap[DotFamily,SparseVector] {
+    val gradient = new HashMap[DotFamily,Tensor] {
       override def default(template:DotFamily) = {
         template.freezeDomains
-        val vector = new SparseVector(template.statisticsVectorLength)
-        this(template) = vector
-        vector
+        //val vector = new SparseVector(template.statisticsVectorLength)
+        val tensor = template.newSparseTensor
+        this(template) = tensor
+        tensor
       }
     }
     addGradient(gradient, 1.0)
@@ -93,7 +95,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
     super.updateWeights //increments the updateCount
   }
 
-  def kktMultiplier(gradient: HashMap[DotFamily, SparseVector]): Double = {
+  def kktMultiplier(gradient: HashMap[DotFamily, Tensor]): Double = {
     val marginMean = predictedScore.abs
     val v = 1.0 + 2.0 * gaussDeviate * marginMean
     val marginVar = marginVariance(gradient)
@@ -106,7 +108,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
   }
 
 
-  def marginVariance(gradient: HashMap[DotFamily, SparseVector]): Double = {
+  def marginVariance(gradient: HashMap[DotFamily, Tensor]): Double = {
     var result: Double = 0
     for ((template, templateGradient) <- gradient) {
       val templateSigma = sigma(template)
@@ -116,7 +118,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
     result
   }
 
-  def updateSigma(gradient: HashMap[DotFamily, SparseVector]): Unit = {
+  def updateSigma(gradient: HashMap[DotFamily, Tensor]): Unit = {
     for ((template, templateGrad) <- gradient) {
       val ratesTemplate = sigma(template)
       for ((index, value) <- templateGrad.activeElements)
@@ -126,7 +128,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
   }
 
   /**Cannot use the default 'addGradient' method because this update requires a separate learning rate for each parameter*/
-  def updateParameters(gradient: HashMap[DotFamily, SparseVector]): Unit = {
+  def updateParameters(gradient: HashMap[DotFamily, Tensor]): Unit = {
     //TODO replace with elementwise product?
     for ((template, templateGradient) <- gradient) {
       val templateSigma = sigma(template)
@@ -185,12 +187,12 @@ trait SecondOrderGradientAscentUpdates extends ConfidenceWeightedUpdates
       //if (!shouldUpdate) return;
       numUpdates += 1
       
-      val gradient = new HashMap[DotFamily,SparseVector] {
+      val gradient = new HashMap[DotFamily,Tensor] {
       override def default(template:DotFamily) = {
         template.freezeDomains
-        val vector = new SparseVector(template.statisticsVectorLength)
-        this(template) = vector
-        vector
+        val tensor = template.newSparseTensor
+        this(template) = tensor
+        tensor
       }
       }
       addGradient(gradient, 1.0)	 

@@ -18,21 +18,23 @@ import cc.factorie.la._
 trait TensorDomain extends Domain[Tensor]
 object TensorDomain extends TensorDomain
 
-trait TensorVar[+A<:Tensor] extends Variable with VarAndValueType[TensorVar[A],A] {
+trait TensorVar extends Variable with VarAndValueType[TensorVar,Tensor] {
   def domain: TensorDomain
   def tensor: Value
   def length: Int = tensor.length
   def apply(i:Int): Double = tensor.apply(i)
 }
 
-//trait MutableTensorVar[+A<:MutableTensor] extends TensorVar[A] with MutableVar with VarAndValueType[MutableTensorVar[A],A]
+// TODO Consider also, just in case needed:
+// trait TypedTensorVar[+A<:Tensor] extends TensorVar with VarAndValueType[TypedTensorVar[A],A]
+// trait TensorVar extends TypedTensorVar[Tensor]
 
 /** A variable whose value is a cc.factorie.la.Tensor.
     The zero-arg constructor should only be used by subclasses
     (e.g. so that CategoricalVariable can use its domain for value lookup),
     and should never be called by users. */
-abstract class TensorVariable[A<:Tensor] extends TensorVar[A] with MutableVar {
-  def this(initialValue:A) = { this(); set(initialValue)(null) } 
+abstract class TensorVariable extends TensorVar with MutableVar {
+  def this(initialValue:Tensor) = { this(); set(initialValue)(null) } 
   //def init(initialValue:Value) = { _set(initialValue) }
   //def domain: TensorDomain = TensorDomain // TODO Really?  What about future DiscreteVariable and CategoricalVariable?
   private var _value: Value = null.asInstanceOf[Value]

@@ -13,7 +13,7 @@
    limitations under the License. */
 
 package cc.factorie
-import cc.factorie.la.SingletonVector
+import cc.factorie.la._
 
 trait RealDomain extends Domain[Double]
 object RealDomain extends RealDomain
@@ -56,22 +56,21 @@ class RealVariable(initialValue: Double) extends MutableRealVar {
 
 // TODO Create an implicit conversion from Double to RealSingletonVector
 // So that we can use them as sufficient statistics in a VectorTemplate
-trait RealSingletonVectorDomain extends DiscreteVectorDomain {
+trait RealSingletonTensorDomain extends DiscreteTensorDomain {
   def dimensionDomain = RealSingletonDiscreteDomain
   def size = 1
 }
-object RealSingletonDiscreteDomain extends DiscreteDomain { def size = 1 }
-object RealSingletonVectorDomain extends RealSingletonVectorDomain
+object RealSingletonDiscreteDomain extends DiscreteDomain(1)
+object RealSingletonTensorDomain extends RealSingletonTensorDomain
 
 /** A variable holding a single real (Double) value, but the value encased in a DiscreteVector, 
     so that it can be among the Statistics of a VectorTemplate. */
-trait RealSingletonVectorVar extends VarWithNumericValue with DiscreteVectorVar with VarAndValueType[RealSingletonVectorVar,SingletonVector with DiscreteVectorValue] {
+trait RealSingletonTensorVar extends VarWithNumericValue with DiscreteTensorVar with VarAndValueType[RealSingletonTensorVar,SingletonTensor1] {
   thisVariable =>
-  def domain = RealSingletonVectorDomain
+  def domain = RealSingletonTensorDomain
   /** A Vector representation of this Variable's value. */
-  @inline final def value = new SingletonVector(1, 0, doubleValue) with DiscreteVectorValue {
-    def domain = thisVariable.domain
-  }
+  @inline final def value = new SingletonTensor1(1, 0, doubleValue)
+  def tensor = value
   // TODO Consider rewriting above line to avoid constructing new object
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
@@ -80,7 +79,7 @@ trait RealSingletonVectorVar extends VarWithNumericValue with DiscreteVectorVar 
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
-class RealSingletonVectorVariable(initialValue:Double) extends RealSingletonVectorVar {
+class RealSingletonVectorVariable(initialValue:Double) extends RealSingletonTensorVar {
   private var _value = initialValue
   def doubleValue: Double = _value
 }

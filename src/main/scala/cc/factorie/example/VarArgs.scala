@@ -21,7 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 /** Demonstrate how to create a factor that has a varying number of neighbors. */
 object VarArgsDemo {
   def main(args:Array[String]): Unit = {
-    object XDomain extends DiscreteDomain { def size = 10 }
+    object XDomain extends DiscreteDomain(10) // { def size = 10 }
     class X(i:Int) extends DiscreteVariable(i) { 
       def domain = XDomain
       val ys = new ArrayBuffer[Y]
@@ -34,6 +34,7 @@ object VarArgsDemo {
     val model = new TemplateModel(
       // "Vars[]" indicates that there can be a variable number of these neighbors
       new Template2[X,Vars[Y]] with DotStatistics1[DiscreteValue] {
+        def statisticsDomains = Seq(XDomain)
         def unroll1(x:X) = Factor(x, Vars(x.ys))
         // The "Vars" container will not change...
         def unroll2(ys:Vars[Y]) = throw new Error
@@ -44,7 +45,7 @@ object VarArgsDemo {
         def statistics(values:Values) = {
           val x: Int = values._1.intValue
           val ys: Seq[Int] = values._2.map(_.intValue)
-          Stat(XDomain.getValue(x % ys.foldLeft(0)(_+_)))
+          Stat(XDomain.apply(x % ys.foldLeft(0)(_+_)))
         }
         //def statistics(x:DiscreteValue, ys:Seq[DiscreteValue]) = Stat(XDomain.getValue(x.index % ys.foldLeft(0)(_ + _.index)))
       }

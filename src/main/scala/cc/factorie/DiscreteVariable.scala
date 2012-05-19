@@ -17,9 +17,8 @@ import cc.factorie.la._
 import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
 
-
 /** A single discrete variable */
-trait DiscreteVar extends DiscreteVectorVar with VarAndValueType[DiscreteVar,DiscreteValue] {
+trait DiscreteVar extends DiscreteTensorVar with VarAndValueType[DiscreteVar,DiscreteValue] {
   def domain: DiscreteDomain
   def intValue = value.intValue
   override def toString = printName+"("+intValue+")"
@@ -27,15 +26,15 @@ trait DiscreteVar extends DiscreteVectorVar with VarAndValueType[DiscreteVar,Dis
 
 /** A single discrete variable whose value can be changed. */
 trait MutableDiscreteVar extends DiscreteVar with MutableVar {
-  def set(newValue:ValueType)(implicit d:DiffList): Unit
-  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.getValue(newInt))(d)
+  def set(newValue:Value)(implicit d:DiffList): Unit
+  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.apply(newInt).asInstanceOf[ValueType])(d)
   @inline final def :=(i:Int): Unit = set(i)(null)
   def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
 }
 
 
 /** A concrete single discrete variable whose value can be changed. */
-abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with IterableSettings {
+abstract class DiscreteVariable extends MutableDiscreteVar with IterableSettings {
   def this(initialValue:Int) = { this(); __value = initialValue }
   def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue.intValue) }
   private var __value: Int = 0
@@ -43,7 +42,8 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
   protected def _set(newValue:Int): Unit = __value = newValue
   //final protected def _set(newValue:ValueType): Unit = _set(newValue.intValue)
   override def intValue = __value
-  def value: Value = domain.getValue(__value)
+  def value: Value = domain.apply(__value).asInstanceOf[Value]
+  def tensor: Value = domain.apply(__value).asInstanceOf[Value]
   @inline final def set(newValue:ValueType)(implicit d:DiffList): Unit = set(newValue.intValue)(d)
   override def set(newValue:Int)(implicit d:DiffList): Unit = if (newValue != __value) {
     assert(newValue < domain.size)
@@ -81,7 +81,7 @@ abstract class DiscreteVariable extends VectorVar with MutableDiscreteVar with I
     @inline final def redo = DiscreteVariable.this.set(newValue)(null)
     @inline final def undo = DiscreteVariable.this.set(oldValue)(null)
     override def toString = variable match { 
-      case cv:CategoricalVar[_] if (oldValue >= 0) => "DiscreteVariableDiff("+cv.domain.getCategory(oldValue)+"="+oldValue+","+cv.domain.getCategory(newValue)+"="+newValue+")"
+      case cv:CategoricalVar[_] if (oldValue >= 0) => "DiscreteVariableDiff("+cv.domain.category(oldValue)+"="+oldValue+","+cv.domain.category(newValue)+"="+newValue+")"
       case _ => "DiscreteVariableDiff("+oldValue+","+newValue+")"
     }
   }

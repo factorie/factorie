@@ -4,7 +4,7 @@ import junit.framework._
 import Assert._
 import org.scalatest.junit.JUnitSuite
 import cc.factorie.maths.ArrayOps
-import cc.factorie.la.DenseVector
+import cc.factorie.la._
 import util.Random
 import cc.factorie.optimize._
 

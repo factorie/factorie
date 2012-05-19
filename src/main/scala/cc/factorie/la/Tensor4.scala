@@ -34,6 +34,10 @@ trait Tensor4 extends Tensor {
   @inline final def length = dim1 * dim2 * dim3 * dim4
   @inline final def singleIndex(i:Int, j:Int, k:Int, l:Int): Int = i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l 
   @inline final def multiIndex(i:Int): (Int, Int, Int, Int) = (i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
+  @inline final def index1(i:Int): Int = i/dim2/dim3/dim4
+  @inline final def index2(i:Int): Int = (i/dim3/dim4)%dim2
+  @inline final def index3(i:Int): Int = (i/dim4)%dim3
+  @inline final def index4(i:Int): Int = i%dim4
 }
 
 trait DenseTensorLike4 extends Tensor4 with DenseTensor {
@@ -57,13 +61,16 @@ trait DenseTensorLike4 extends Tensor4 with DenseTensor {
     case t:DenseTensorLike4 => Tensor.dot(this, t)
   }
 }
-class DenseTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4
+class DenseTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4 {
+  override def blankCopy: DenseTensor4 = new DenseTensor4(dim1, dim2, dim3, dim4)
+}
 
 class SingletonBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleIndex4:Int) extends Tensor4 with SingletonBinaryTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
   def activeDomain4 = new SingletonIntSeq(singleIndex4)
+  def activeDomain = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4 + singleIndex4
   def singleValue = 1.0
 }
@@ -73,13 +80,14 @@ class SingletonTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, v
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
   def activeDomain4 = new SingletonIntSeq(singleIndex4)
+  def activeDomain: IntSeq = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4 + singleIndex4
 }
 
 
 
 trait Dense3LayeredTensorLike4 extends Tensor4 {
-  def newTensor1(dim:Int): Tensor1
+  def newTensor1: Int=>Tensor1
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain2 = new RangeIntSeq(0, dim2)
   def activeDomain3 = new RangeIntSeq(0, dim3)
@@ -90,8 +98,12 @@ trait Dense3LayeredTensorLike4 extends Tensor4 {
   def isDense = false
   def apply(i:Int): Double = apply(i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
   override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = _inners(i*dim2*dim3 + j*dim2 + k).update(l, v)
+  protected def getInner(i:Int, j:Int, k:Int): Tensor1 = { var in = _inners(i*dim2*dim3 + j*dim2 + k); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
+  override def +=(i:Int, incr:Double): Unit = getInner(index1(i), index2(i), index3(i)).+=(index4(i), incr)
 }
-abstract class Dense3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends Dense3LayeredTensorLike4
+class Dense3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val newTensor1:Int=>Tensor1) extends Dense3LayeredTensorLike4 {
+  override def blankCopy = new Dense3LayeredTensor4(dim1, dim2, dim3, dim4, newTensor1)
+}
 
 trait Singleton3LayeredTensorLike4 extends Tensor4 {
   def singleIndex1: Int

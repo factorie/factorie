@@ -3,7 +3,7 @@ package cc.factorie.bp
 import StrictMath._
 import collection.mutable.{HashSet, ArrayBuffer, HashMap, Queue, Buffer}
 import cc.factorie._
-import cc.factorie.la.{DenseVector, SparseVector, Vector}
+import cc.factorie.la._
 
 /**
  * @author sameer, apassos, bmartin
@@ -173,16 +173,16 @@ abstract class MessageFactor(val factor: Factor, val varying: Set[DiscreteVariab
     a
   }
 
-  def updateStatExpectations(exps: HashMap[DotFamily, Vector]): Unit = {
+  def updateStatExpectations(exps: HashMap[DotFamily, Tensor]): Unit = {
     factor match {
       case f: DotFamily#Factor => {
-        if (!exps.contains(f.family)) exps(f.family) = new SparseVector(f.family.statisticsVectorLength)
+        if (!exps.contains(f.family)) exps(f.family) = Tensor.newSparse(f.family.weights) // new SparseVector(f.family.statisticsVectorLength)
         for (i <- 0 until values.length) {
           val index = indices(i)
           val assignment = values(i)
           val prob = marginal(assignment, index)
-          val vector = assignment.statistics.asInstanceOf[DotFamily#StatisticsType].vector
-          exps(f.family) += (vector * prob)
+          val vector = assignment.statistics.asInstanceOf[DotFamily#StatisticsType].tensor
+          exps(f.family).+=(vector, prob)
         }
       }
       case _ =>
@@ -349,7 +349,7 @@ trait MaxFactor extends MessageFactor {
       val msg = fg match {
         case l: MaxProductLattice =>
           if (l.finalPass) {
-            BPUtil.deterministicMessage(dv._1, dv._1.domain.getValue(scores(i).toSeq.indexOfMaxByDouble(d => d)))
+            BPUtil.deterministicMessage(dv._1, dv._1.domain.apply(scores(i).toSeq.indexOfMaxByDouble(d => d)))
           } else BPUtil.message(dv._1, scores(i))
         case _ => BPUtil.message(dv._1, scores(i))
       }
@@ -574,8 +574,8 @@ abstract class LatticeBP(val varying: Set[DiscreteVariable]) /*extends Lattice[V
     logZ
   }
 
-  def statExpectations: HashMap[DotFamily, Vector] = {
-    val exps = new HashMap[DotFamily, Vector]
+  def statExpectations: HashMap[DotFamily, Tensor] = {
+    val exps = new HashMap[DotFamily, Tensor]
     for (mf <- mfactors) {
       mf.updateStatExpectations(exps)
     }

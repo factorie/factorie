@@ -14,14 +14,13 @@
 
 package cc.factorie
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.la.SparseBinaryVector
-import cc.factorie.la.SparseIndexedVector
+import cc.factorie.la._
 
 
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.
     Concrete implementations include CategoricalVariable and CategoricalObservation. 
     @author Andrew McCallum */
-trait CategoricalVar[A] extends CategoricalVectorVar[A] with DiscreteVar with VarAndValueType[CategoricalVar[A],CategoricalValue[A]] {
+trait CategoricalVar[A] extends DiscreteVar with CategoricalTensorVar[A] with VarAndValueType[CategoricalVar[A],CategoricalValue[A]] {
   def domain: CategoricalDomain[A]
   def categoryValue: A = if (value ne null) value.category else null.asInstanceOf[A]
   override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
@@ -40,13 +39,6 @@ abstract class CategoricalVariable[A] extends DiscreteVariable with MutableCateg
 
 
 
-/** When mixed in to a CategoricalVariable, the variable's Domain will count the number of calls to 'index'.  
-    Then you can reduce the size of the Domain by calling 'trimBelowCount' or 'trimBelowSize', 
-    which will recreate the new mapping from categories to densely-packed non-negative integers. 
-    In typical usage you would (1) read in the data, (2) trim the domain, (3) re-read the data with the new mapping, creating variables. 
- */
-
-
 
 
 
@@ -56,7 +48,7 @@ abstract class CategoricalVariable[A] extends DiscreteVariable with MutableCateg
 // But then we couldn't use syntax like:  PersonDomain.size
 // But this doesn't matter any more.
 
-// Can we make this ItemizedVar
+// TODO make this ItemizedVar
 
 /** An Observation put into an index, and whose value is the Observation variable itself.  
     For example, you can create 10 'Person extends ItemizedObservation[Person]' objects, 
@@ -67,7 +59,8 @@ trait ItemizedObservation[This <: ItemizedObservation[This]] extends Categorical
   this: This =>
   def domain: CategoricalDomain[This]
   // Put the variable in the CategoricalDomain and remember it.
-  override val value = domain.getValue(this)
-  override def categoryValue = this // TODO Ug.  Not a great method name here.
+  override val value = domain.value(this)
+  def tensor = value
+  override def categoryValue = this
 }
 

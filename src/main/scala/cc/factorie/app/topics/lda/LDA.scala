@@ -24,7 +24,7 @@ import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01)(implicit val model:MutableGenerativeModel) {
   var diagnosticName = ""
   /** The per-word variable that indicates which topic it comes from. */
-  object ZDomain extends DiscreteDomain { def size = numTopics }
+  object ZDomain extends DiscreteDomain(numTopics)
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
   class Zs extends DiscreteSeqVariable {
     def this(initial:Seq[Int]) = { this(); this.appendInts(initial) }
@@ -36,7 +36,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
   def wordDomain = wordSeqDomain.elementDomain
   /** The prior over per-topic word distribution */
-  val betas = MassesVariable.growableUniform(wordDomain.values, beta1)
+  val betas = MassesVariable.growableUniform(wordDomain, beta1)
   /** The prior over per-document topic distribution */
   val alphas = MassesVariable.dense(numTopics, alpha1)
   
@@ -45,7 +45,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   def documents: Iterable[Doc] = documentMap.values
   def getDocument(name:String) : Doc = documentMap.getOrElse(name, null)
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
-  val phis = Mixture(numTopics)(ProportionsVariable.growableDense(wordDomain.values) ~ Dirichlet(betas))
+  val phis = Mixture(numTopics)(ProportionsVariable.growableDense(wordDomain) ~ Dirichlet(betas))
   
   protected def setupDocument(doc:Doc, m:MutableGenerativeModel): Unit = {
     require(wordSeqDomain eq doc.ws.domain)
@@ -167,7 +167,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     maximizePhisAndThetas
   }
   
-  def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).tensor.top(numWords).map(dp => wordDomain.getCategory(dp.index))
+  def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).tensor.top(numWords).map(dp => wordDomain.category(dp.index))
   def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).tensor.massTotal.toInt, alphas(topicIndex))
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_)).mkString("\n")
 
@@ -186,7 +186,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   
   @deprecated("Will be removed eventually")
   def printTopics : Unit = {
-    phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => wordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
+    phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => wordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
     println
   }
 

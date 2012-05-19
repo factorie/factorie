@@ -20,7 +20,7 @@ import cc.factorie.app.nlp._
 class POS1 {
   def this(savedModelDir:String) = { this(); PosModel.load(savedModelDir)}
   
-  object PosFeaturesDomain extends CategoricalVectorDomain[String]
+  object PosFeaturesDomain extends CategoricalTensorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = PosFeaturesDomain
     //override def skipNonCategories = true
@@ -81,7 +81,7 @@ class POS1 {
 
   // TODO Change this to use Viterbi! -akm
   def process(document:Document): Unit = {
-    for (token <- document.tokens) if (token.attr[PosLabel] == null) token.attr += new PosLabel(token, PosDomain.getCategory(0)) // init value doens't matter
+    for (token <- document.tokens) if (token.attr[PosLabel] == null) token.attr += new PosLabel(token, PosDomain.category(0)) // init value doens't matter
     val localModel = new TemplateModel(PosModel.templates(0), PosModel.templates(1))
     val localPredictor = new VariableSettingsGreedyMaximizer[PosLabel](localModel)
     for (label <- document.tokens.map(_.attr[PosLabel])) localPredictor.process(label)

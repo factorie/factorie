@@ -23,9 +23,9 @@ import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 // For single categorical values
 
 /** A value in a CategoricalDomain */
-trait CategoricalValue[T] extends CategoricalVectorValue[T] with DiscreteValue {
-  def domain: CategoricalDomain[T]
-  def category: T
+trait CategoricalValue[C] extends DiscreteValue {
+  def domain: CategoricalDomain[C]
+  def category: C
 }
 
 /** A domain for categorical variables.  It stores not only a size,
@@ -43,53 +43,25 @@ trait CategoricalValue[T] extends CategoricalVectorValue[T] with DiscreteValue {
 
     @author Andrew McCallum
     */
-class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[CategoricalValue[T]] with CategoricalVectorDomain[T] with ValueType[CategoricalValue[T]] {
+class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[CategoricalValue[C]] with CategoricalTensorDomain[C] with ValueType[CategoricalValue[C]] with cc.factorie.util.ProtectedIntArrayBuffer {
   thisDomain =>
-  def this(values:Iterable[T]) = { this(); values.foreach(getValue(_)); freeze() }
-  override lazy val dimensionDomain = this
-  /** The size others might want to allocate to hold data relevant to this Index.  
-      If maxSize is set can be bigger than size. 
-      @see maxSize */
-  override def allocSize = if (maxSize < 0) size else maxSize
-  override def length = _indices.size // TODO Necessary?
-  def size = _indices.size
+  def this(values:Iterable[C]) = { this(); values.foreach(value(_)) }
+  //private val _elements = new ArrayBuffer[ValueType]
+  private val _indices = new HashMap[C,ValueType] with collection.mutable.SynchronizedMap[C, ValueType] //new HashMap[C,ValueType]
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
       override this method with the largest you think your growable domain will get. */
   var maxSize = -1
-  // TODO consider putting the following method back in later -akm
-  //override def maxSize_=(s:Int) : Unit = if (maxSize >= size) maxSize = s else throw new Error("Trying to set maxSize smaller than size.")
-
-  /** Map from category back to int index */
-  private var _indices = Map[T, ValueType]()
-  /** Wipe the domain and its indices clean */
-  def reset(): Unit = {
-    _frozen = false
-    _elements.clear()
-    _indices = new HashMap[T,ValueType] with collection.mutable.SynchronizedMap[T, ValueType]
-  }
-  /** An alias for reset(). */
-  def clear() = reset()
-
-  class CategoricalValue(override val intValue:Int, val category:T) extends DiscreteValue(intValue) with cc.factorie.CategoricalValue[T] {
-    override def toString = category.toString
-    override def domain = thisDomain
-  }
-  protected def newCategoricalValue(i:Int, e:T): ValueType = new CategoricalValue(i, e) //.asInstanceOf[Value]
-
-  def contains(category: Any) = _indices.contains(category.asInstanceOf[T])
-
-  /** Return an object at the given position or throws an exception if it's not found. */
-  def getCategory(index: Int): T = _elements(index).category.asInstanceOf[T]
-  override def getValue(index: Int): ValueType = _elements(index)
-  def getValue(category:T): ValueType = {
+  override def dimensionDomain: CategoricalDomain[C] = this
+  @inline final override def length = _elements.length
+  def value(category:C): ValueType = {
     if (_frozen) _indices.getOrElse(category, null.asInstanceOf[ValueType])
     else {
-      if (_indices.get(category).isEmpty) { // double-tap locking necessary to ensure only one thread adds to _indices
+      if (!_indices.contains(category)) { // double-tap locking necessary to ensure only one thread adds to _indices
         _indices.synchronized({
           if (_indices.get(category).isEmpty) {
             val m = _elements.size
             if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
-            val e: ValueType = newCategoricalValue(m, category)
+            val e: ValueType = newCategoricalValue(m, category).asInstanceOf[ValueType]
             _elements += e
             _indices(category) = e
           }
@@ -98,49 +70,40 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
       _indices.getOrElse(category, null)
     }
   }
-
-  /** Return a densely-packed positive integer index for the given object.  
-      By default, allocate a new index (at the end) if the object was not found, 
-      but if immutable may return -1 */
-  // TODO Is this the right interface choice for gatherCounts?  What if some code (inefficiently) indexes more than once for the same data point?
-  def indexOnly(category: T): Int = {
-    val value = getValue(category)
-    if (value eq null) -1 else value.intValue
+  override def apply(i:Int): ValueType = _elements(i)
+  def category(i:Int): C = _elements(i).category.asInstanceOf[C]
+  def categories: Seq[C] = _elements.map(_.category)
+  /** Return the integer associated with the category, do not increment the count of category, even if gatherCounts is true. */
+  def indexOnly(category:C): Int = {
+    val v = value(category)
+    if (v eq null) -1 else v.intValue
   }
-  def index(category: T): Int = {
+  /** Return the integer associated with the category, and also, if gatherCounts is true, also increment the count of category. */
+  def index(category:C): Int = {
     val i = indexOnly(category)
     if (gatherCounts && i != -1) incrementCount(i)
     i
   }
-
   /** Like index, but throw an exception if the category is not already there. */
-  def getIndex(category:T) : Int = _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue
-
-  //def indexOf[B >: Value](elem: B): Int = elem.index // elem.asInstanceOf[Value].index //index(elem.asInstanceOf[T]) // TODO Try to get rid of this cast!!!
-
-  def categoryValues: Seq[T] = values.map(_.category)
+  def getIndex(category:C): Int = _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue
   
+  def +=(x:C) : Unit = this.value(x)
+  def ++=(xs:Traversable[C]) : Unit = xs.foreach(this.index(_))
+  /** Wipe the domain and its indices clean */
+  def clear(): Unit = { _frozen = false; _elements.clear(); _indices.clear() }
   // Separate argument types preserves return collection type
-  def indexAll(c: Iterator[T]) = c map index;
-  def indexAll(c: List[T]) = c map index;
-  def indexAll(c: Array[T]) = c map index;
-  def indexAll(c: Set[T]) = c map index;
-  def getAllValues(c: Iterator[Int]) = c map getValue
-  def getAllValues(c: List[Int]) = c map getValue
-  def getAllValues(c: Array[Int]) = c map getValue
-  def getAllValues(c: Set[Int]) = c map getValue
-  //def indexKeys[V](c: scala.collection.Map[T, V]) = Map[T, V]() ++ c.map {case (a, b) => (index(a), b)}
-  //def indexValues[K](c: scala.collection.Map[K, T]) = Map[K, T]() ++ c.map {case (a, b) => (a, index(b))}
+  def indexAll(c: Iterator[C]) = c map index;
+  def indexAll(c: List[C]) = c map index;
+  def indexAll(c: Array[C]) = c map index;
+  def indexAll(c: Set[C]) = c map index;
 
-  def randomCategory(random:Random): T = getCategory(random.nextInt(size))
-  def randomCategory: T = randomCategory(cc.factorie.random)
-  def randomValue(random:Random): ValueType = getValue(random.nextInt(size))
-  def randomValue: ValueType = randomValue(cc.factorie.random)
-  def +=(x:T) : Unit = this.index(x)
-  def ++=(xs:Traversable[T]) : Unit = xs.foreach(this.index(_))
- 
+  override def dimensionName(i:Int): String = category(i).toString
   override def toString = "CategoricalDomain[]("+size+")"
-  override def dimensionName(i:Int): String = getCategory(i).toString
+
+  protected def newCategoricalValue(i:Int, e:C) = new CategoricalValue(i, e)
+  protected class CategoricalValue(val singleIndex:Int, val category:C) extends cc.factorie.CategoricalValue[C] {
+    def domain = thisDomain
+  }
 
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
@@ -156,10 +119,10 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
       if (e.toString.contains("\n")) throw new Error("Cannot save Domain with category String containing newline.")
       writer.println(e.toString)
     }
-    writer.close()
+    writer.close
   }
 
-  var string2T: (String) => T = null  // if T is not string, this should be overridden to provide deserialization
+  var string2T: (String) => C = null  // if T is not string, this should be overridden to provide deserialization
   private var _frozenByLoader = false
   override def load(dirname:String, gzip: Boolean = false): Unit = {
     if (_frozenByLoader) return // Already initialized by loader, don't read again
@@ -181,7 +144,7 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
     if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
     if (string2T eq null) {
       while ({line = reader.readLine; line != null})
-        this.index(line.asInstanceOf[T]) // this cast shouldn't be necessary
+        this.index(line.asInstanceOf[C]) // this cast shouldn't be necessary
     }
     else {
       while ({line = reader.readLine; line != null})
@@ -189,38 +152,26 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
     }
     if (willFreeze) { freeze(); _frozenByLoader = true }
   }
-  
+
   // Code for managing occurrence counts
   var gatherCounts = false
-  private val _countsInitialSize = 64
-  private var _counts = new Array[Int](_countsInitialSize)
-  protected def ensureSize(n:Int): Unit = {
-    if (_counts.length - 1 < n) {
-      var newsize = _counts.length * 2
-      while (newsize < n) newsize *= 2
-      val new_counts = new Array[Int](newsize)
-      Array.copy(_counts, 0, new_counts, 0, _counts.size)
-      _counts = new_counts
-    }
-  }
-  def count(i:Int): Int = _counts(i)
-  def count(category:T): Int = _counts(indexOnly(category))
-  //def counts: Seq[Int] = _counts.toIndexedSeq.take(length)
-  def counts: cc.factorie.util.IntSeq = new cc.factorie.util.TruncatedArrayIntSeq(_counts, length) 
-  def countsTotal: Int = _counts.sum    
-  def incrementCount(i:Int): Unit = { ensureSize(i); _counts(i) += 1 }
-  def incrementCount(category:T): Unit = incrementCount(indexOnly(category))
-  private def someCountsGathered: Boolean = { for (i <- 0 until _counts.size) if (_counts(i) > 0) return true; return false }
+  def count(i:Int): Int = _apply(i)
+  def count(category:C): Int = _apply(indexOnly(category))
+  def counts: cc.factorie.util.IntSeq = _takeAsIntSeq(length) // _toSeq.take(length)
+  def countsTotal: Int = _sum    
+  def incrementCount(i:Int): Unit = _increment(i, 1)
+  def incrementCount(category:C): Unit = incrementCount(indexOnly(category))
+  private def someCountsGathered: Boolean = { var i = 0; while (i < _length) { if (_apply(i) > 0) return true; i += 1 }; return false }
   /** Returns the number of unique entries trimmed */
   def trimBelowCount(threshold:Int): Int = {
     assert(!frozen)
     if (!someCountsGathered) throw new Error("Can't trim without first gathering any counts.")
     val origEntries = _elements.clone
-    reset() // TODO Should we override reset to also set gatherCounts = true?  I don't think so.
+    clear() // TODO Should we override reset to also set gatherCounts = true?  I don't think so.
     gatherCounts = false
     for (i <- 0 until origEntries.size)
-      if (_counts(i) >= threshold) indexOnly(origEntries(i).category.asInstanceOf[T])
-    _counts = null // We don't need counts any more; allow it to be garbage collected.  Note that if
+      if (_apply(i) >= threshold) indexOnly(origEntries(i).category.asInstanceOf[C])
+    _clear // We don't need counts any more; allow it to be garbage collected.
     freeze()
     origEntries.size - size
   }
@@ -228,8 +179,8 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   def sizeAtCount(c:Int): Int = {
     if (!someCountsGathered) throw new Error("No counts gathered.")
     var ret = 0
-    val min = math.min(size, _counts.size)
-    for (i <- 0 until min) if (_counts(i) == c) ret += 1
+    val min = math.min(size, _length)
+    for (i <- 0 until min) if (_apply(i) == c) ret += 1
     ret
   }
   /** Return the number of unique entries with count greater than or equal to 'threshold'. 
@@ -237,8 +188,8 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
   def sizeAtOrAboveCount(threshold:Int): Int = {
     if (!someCountsGathered) throw new Error("No counts gathered.")
     var ret = 0
-    val min = math.min(size, _counts.size)
-    for (i <- 0 until min) if (_counts(i) >= threshold) ret += 1
+    val min = math.min(size, _length)
+    for (i <- 0 until min) if (_apply(i) >= threshold) ret += 1
     ret
   }
   /** Return the number of unique entries with count below 'threshold'. */
@@ -252,6 +203,8 @@ class CategoricalDomain[T] extends DiscreteDomain with IterableDomain[Categorica
     threshold
   }
 }
+
+
 
 
 

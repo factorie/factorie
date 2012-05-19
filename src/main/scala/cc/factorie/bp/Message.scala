@@ -122,20 +122,20 @@ object UniformMessage extends GenericUniformMessage {
  * @param variable - The variable that the message is defined over
  * @tparam DV - Type of the variable that the message is defined over
  */
-class DiscreteMessage[DV <: DiscreteVariable](val variable: DV, val scores: Vector) extends GenericMessage {
+class DiscreteMessage[DV <: DiscreteVariable](val variable: DV, val scores: Tensor1) extends GenericMessage {
   assert(!scores.exists(_.isNaN), "Nan in scores: " + scores)
   assert(!scores.exists(_.isPosInfinity), "Pos Inf in scores: " + scores)
   assert(scores.length == variable.domain.size, "Message score should be defined on the whole domain")
 
   type Value = DV#ValueType
 
-  override def domain: Seq[Value] = variable.domain.values
+  override def domain: Seq[Value] = variable.domain
 
   override def *(that: GenericMessage) = that match {
     case m if (m.isUniform) => this
     case d: DeterministicMessage[_] => d * this
     case d: DiscreteMessage[DV] => new DiscreteMessage(variable, {
-      val dv = new DenseVector(scores.length)
+      val dv = new DenseTensor1(scores.length)
       dv += scores
       dv += d.scores
       dv
@@ -147,9 +147,9 @@ class DiscreteMessage[DV <: DiscreteVariable](val variable: DV, val scores: Vect
     case m if (m.isUniform) => this
     case d: DeterministicMessage[_] => sys.error("Cannot divide regular message with Deterministic Message")
     case d: DiscreteMessage[DV] => new DiscreteMessage(variable, {
-      val dv = new DenseVector(scores.length)
+      val dv = new DenseTensor1(scores.length)
       dv += scores
-      dv += (d.scores * -1)
+      dv -= d.scores
       dv
     })
     case _ => sys.error("Need compatible messages")
@@ -198,11 +198,12 @@ class DiscreteMessage[DV <: DiscreteVariable](val variable: DV, val scores: Vect
       domain.find(score(_) != Double.NegativeInfinity)
     } else None
 
-  lazy val inverse = new DiscreteMessage(variable, scores * -1)
+  //lazy val inverse = new DiscreteMessage(variable, scores * -1)
+  lazy val inverse = new DiscreteMessage(variable, { val t = scores.copy; t *= -1; t }.asInstanceOf[Tensor1])
 
   def defaultValue = domain.head
 
-  override lazy val isDeterministic = scores.exists(s => s.isPosInfinity || s.isNegInfinity)
+  override lazy val isDeterministic = scores.exists(s => (s.isPosInfinity || s.isNegInfinity))
 
   override lazy val isUniform = scores.min == scores.max
 }

@@ -25,88 +25,88 @@ import cc.factorie._
     @see Optimizable
     @see OptimizableTemplates
     @author Andrew McCallum */
-class ArrayFromVectors(theVectors:Seq[Vector]) {
-  //def this(theTemplates:Iterable[DotTemplate]) = this(theTemplates.map(_.weights))
-  val vectors = theVectors.toArray // Save a copy, in case theVectors would be changed
-  //templates.foreach(_.freeze)
-
-  val vectorsArraySize = vectors.foldLeft(0)(_+_.activeDomain.size)
-  def getVectorsInArray(a:Array[Double]) = {
-    var i = 0
-    //vectors.foreach(v => for (j <- v.activeDomain) { a(i) = v(j); i += 1 })
-    vectors.foreach(v => v.forActiveDomain(j => { a(i) = v(j); i += 1 }))
-    a
-  }
-  def setVectorsFromArray(a:Array[Double]): Unit = {
-    var i = 0
-    //vectors.foreach(v => for (j <- v.activeDomain) { v(j) = a(i); i += 1 })
-    vectors.foreach(v => v.forActiveDomain(j => { v(j) = a(i); i += 1 }))
-  }
-  def incrArrayWithVectors(a:Array[Double]): Unit = {
-    var i = 0
-    //vectors.foreach(v => for (j <- v.activeDomain) { a(i) += v(j); i += 1 })
-    vectors.foreach(v => v.forActiveDomain(j => { a(i) += v(j); i += 1 }))
-  }
-  def incrArrayWithVectors(a:Array[Double], factor:Double): Unit = {
-    var i = 0
-    //vectors.foreach(v => for (j <- v.activeDomain) { a(i) += v(j) * factor; i += 1 })
-    vectors.foreach(v => v.forActiveDomain(j => { a(i) += v(j) * factor; i += 1 }))
-  }
-  private lazy val vectorsSizes = vectors.map(_.activeDomain.size).toArray
-  private lazy val vectorsActiveDomain = vectors.map(_.activeDomain.toArray)
-  def vectorValueAtArrayIndex(index:Int): Double = {
-    var i = index
-    var j = 0
-    while (i > vectorsSizes(j)) { i += vectorsSizes(j); j += 1 }
-    vectors(j)(vectorsActiveDomain(j)(i))
-  }
-  def vectorValueAtArrayIndex_=(index:Int, d:Double): Unit = {
-    var i = index
-    var j = 0
-    while (i > vectorsSizes(j)) { i += vectorsSizes(j); j += 1 }
-    vectors(j)(vectorsActiveDomain(j)(i)) = d
-  }
-}
+//class ArrayFromVectors(theVectors:Seq[Vector]) {
+//  //def this(theTemplates:Iterable[DotTemplate]) = this(theTemplates.map(_.weights))
+//  val vectors = theVectors.toArray // Save a copy, in case theVectors would be changed
+//  //templates.foreach(_.freeze)
+//
+//  val vectorsArraySize = vectors.foldLeft(0)(_+_.activeDomain.size)
+//  def getVectorsInArray(a:Array[Double]) = {
+//    var i = 0
+//    //vectors.foreach(v => for (j <- v.activeDomain) { a(i) = v(j); i += 1 })
+//    vectors.foreach(v => v.forActiveDomain(j => { a(i) = v(j); i += 1 }))
+//    a
+//  }
+//  def setVectorsFromArray(a:Array[Double]): Unit = {
+//    var i = 0
+//    //vectors.foreach(v => for (j <- v.activeDomain) { v(j) = a(i); i += 1 })
+//    vectors.foreach(v => v.forActiveDomain(j => { v(j) = a(i); i += 1 }))
+//  }
+//  def incrArrayWithVectors(a:Array[Double]): Unit = {
+//    var i = 0
+//    //vectors.foreach(v => for (j <- v.activeDomain) { a(i) += v(j); i += 1 })
+//    vectors.foreach(v => v.forActiveDomain(j => { a(i) += v(j); i += 1 }))
+//  }
+//  def incrArrayWithVectors(a:Array[Double], factor:Double): Unit = {
+//    var i = 0
+//    //vectors.foreach(v => for (j <- v.activeDomain) { a(i) += v(j) * factor; i += 1 })
+//    vectors.foreach(v => v.forActiveDomain(j => { a(i) += v(j) * factor; i += 1 }))
+//  }
+//  private lazy val vectorsSizes = vectors.map(_.activeDomain.size).toArray
+//  private lazy val vectorsActiveDomain = vectors.map(_.activeDomain.toArray)
+//  def vectorValueAtArrayIndex(index:Int): Double = {
+//    var i = index
+//    var j = 0
+//    while (i > vectorsSizes(j)) { i += vectorsSizes(j); j += 1 }
+//    vectors(j)(vectorsActiveDomain(j)(i))
+//  }
+//  def vectorValueAtArrayIndex_=(index:Int, d:Double): Unit = {
+//    var i = index
+//    var j = 0
+//    while (i > vectorsSizes(j)) { i += vectorsSizes(j); j += 1 }
+//    vectors(j)(vectorsActiveDomain(j)(i)) = d
+//  }
+//}
 
 class ArrayFromTensors(theTensors:Seq[Tensor]) {
   //def this(theTemplates:Iterable[DotTemplate]) = this(theTemplates.map(_.weights))
   val tensors = theTensors.toIndexedSeq // Save a copy, in case theVectors would be changed
   //templates.foreach(_.freeze)
 
-  val vectorsArraySize = tensors.foldLeft(0)(_+_.activeDomain.size)
-  def getVectorsInArray(a:Array[Double]) = {
+  val tensorsArraySize = tensors.foldLeft(0)(_+_.activeDomain.size)
+  def getTensorsInArray(a:Array[Double]) = {
     var i = 0
     //vectors.foreach(v => for (j <- v.activeDomain) { a(i) = v(j); i += 1 })
     tensors.foreach(v => v.foreachActiveElement((j,d) => { a(i) = v(j); i += 1 }))
     a
   }
-  def setVectorsFromArray(a:Array[Double]): Unit = {
+  def setTensorsFromArray(a:Array[Double]): Unit = {
     var i = 0
     //vectors.foreach(v => for (j <- v.activeDomain) { v(j) = a(i); i += 1 })
     tensors.foreach(v => v.foreachActiveElement((j,d) => { v(j) = a(i); i += 1 }))
   }
-  def incrArrayWithVectors(a:Array[Double]): Unit = {
+  def incrArrayWithTensors(a:Array[Double]): Unit = {
     var i = 0
     //vectors.foreach(v => for (j <- v.activeDomain) { a(i) += v(j); i += 1 })
     tensors.foreach(v => v.foreachActiveElement((j,d) => { a(i) += v(j); i += 1 }))
   }
-  def incrArrayWithVectors(a:Array[Double], factor:Double): Unit = {
+  def incrArrayWithTensors(a:Array[Double], factor:Double): Unit = {
     var i = 0
     //vectors.foreach(v => for (j <- v.activeDomain) { a(i) += v(j) * factor; i += 1 })
     tensors.foreach(v => v.foreachActiveElement((j,d) => { a(i) += v(j) * factor; i += 1 }))
   }
-  private lazy val vectorsSizes = tensors.map(_.activeDomain.size).toArray
-  private lazy val vectorsActiveDomain = tensors.map(_.activeDomain.toArray)
-  def vectorValueAtArrayIndex(index:Int): Double = {
+  private lazy val tensorsSizes = tensors.map(_.activeDomain.size).toArray
+  private lazy val tensorsActiveDomain = tensors.map(_.activeDomain.toArray)
+  def tensorValueAtArrayIndex(index:Int): Double = {
     var i = index
     var j = 0
-    while (i > vectorsSizes(j)) { i += vectorsSizes(j); j += 1 }
-    tensors(j)(vectorsActiveDomain(j)(i))
+    while (i > tensorsSizes(j)) { i += tensorsSizes(j); j += 1 }
+    tensors(j)(tensorsActiveDomain(j)(i))
   }
-  def vectorValueAtArrayIndex_=(index:Int, d:Double): Unit = {
+  def tensorValueAtArrayIndex_=(index:Int, d:Double): Unit = {
     var i = index
     var j = 0
-    while (i > vectorsSizes(j)) { i += vectorsSizes(j); j += 1 }
-    tensors(j)(vectorsActiveDomain(j)(i)) = d
+    while (i > tensorsSizes(j)) { i += tensorsSizes(j); j += 1 }
+    tensors(j)(tensorsActiveDomain(j)(i)) = d
   }
 }

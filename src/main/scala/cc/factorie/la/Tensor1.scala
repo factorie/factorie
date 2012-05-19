@@ -19,6 +19,7 @@ import cc.factorie.util._
 trait Tensor1 extends Tensor {
   def dim1: Int
   def activeDomain1: IntSeq
+  def activeDomain: IntSeq = activeDomain1
   def numDimensions: Int = 1
   def activeDomains = Array(activeDomain1)
   def dimensions = Array(dim1)
@@ -40,11 +41,19 @@ trait DenseTensorLike1 extends Tensor1 with DenseTensor {
   protected def _setArray(a:Array[Double]): Unit = { assert(a.length == dim1); __values = a }
   def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
-  def activeDomain = activeDomain1
+  //def activeDomain = activeDomain1
   def apply(i:Int) = __values(i)
   override def asArray = __values
   override def +=(i:Int, incr:Double): Unit = __values(i) += incr
-  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } }
+  override def :=(ds:DoubleSeq): Unit = ds match {
+    case ds:DenseTensorLike1 => System.arraycopy(__values, 0, ds.__values, 0, length)
+    case ds:DoubleSeq => super.:=(ds)
+  }
+//  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); ds match {
+//    case t:Tensor => 
+//      if (t.isDense) { var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } } 
+//    case ds:DoubleSeq => { var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } } 
+//  }
   override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
   override def update(i:Int, v:Double): Unit = __values(i) = v
   override def dot(t:DoubleSeq): Double = t match {
@@ -57,8 +66,10 @@ trait DenseTensorLike1 extends Tensor1 with DenseTensor {
   }
 }
 class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
-  def this(t:Tensor) = { this(t.length); this := t }
+  def this(t:DoubleSeq) = { this(t.length); this := t }
+  def this(a:Array[Double]) = { this(a.length); this := a }
   override def copy: DenseTensor1 = { val c = new DenseTensor1(dim1); System.arraycopy(_values, 0, c._values, 0, length); c }
+  override def blankCopy: DenseTensor1 = new DenseTensor1(dim1)
 }
 // TODO Consider something like the following for Scala 2.10:
 // implicit class DenseTensor1(override val asArray:Array[Double]) extends DenseTensorLike1 {
@@ -77,7 +88,10 @@ trait GrowableDenseTensorLike1 extends DenseTensorLike1 {
     super.+=(index, incr)
   }
 }
-class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends DenseTensorLike1 with GrowableDenseTensorLike1
+class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends DenseTensorLike1 with GrowableDenseTensorLike1 {
+  override def copy: GrowableDenseTensor1 = { val c = new GrowableDenseTensor1(sizeProxy); c := this; c }
+  override def blankCopy: GrowableDenseTensor1 = new GrowableDenseTensor1(sizeProxy)
+}
 
 
 class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends Tensor1 with SingletonTensor {
@@ -110,6 +124,7 @@ class UniformTensor1(val dim1:Int, val uniformValue:Double) extends Tensor1 with
 }
 class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends Tensor1 with UniformTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
+  //def activeDomain = activeDomain1
   def dim1 = sizeProxy.size
 }
 
@@ -117,7 +132,7 @@ class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
 
 trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer with Tensor1 {
   def activeDomain1 = new ArrayIntSeq(_array)
-  def activeDomain = activeDomain1
+  //def activeDomain = activeDomain1
   def isDense = false
   @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
   @inline final def contains(index:Int): Boolean = _containsSorted(index)
@@ -148,14 +163,21 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
 }
 class SparseBinaryTensor1(val dim1:Int) extends SparseBinaryTensorLike1 {
   def this(t:Tensor) = { this(t.length); throw new Error("Not yet implemented.") }
+  override def blankCopy: SparseBinaryTensor1 = new SparseBinaryTensor1(dim1)
+
 }
 class GrowableSparseBinaryTensor1(val sizeProxy:Iterable[Any]) extends SparseBinaryTensorLike1 {
   def dim1: Int = sizeProxy.size
+  override def blankCopy: GrowableSparseBinaryTensor1 = new GrowableSparseBinaryTensor1(sizeProxy)
 }
 
 // Just aliases
-class SparseTensor1(dim1:Int) extends SparseIndexedTensor1(dim1)
-class GrowableSparseTensor1(val sizeProxy:Iterable[Any]) extends SparseIndexedTensor1(sizeProxy)
+class SparseTensor1(dim1:Int) extends SparseIndexedTensor1(dim1) {
+  override def blankCopy: SparseTensor1 = new SparseTensor1(dim1)
+}
+class GrowableSparseTensor1(val sizeProxy:Iterable[Any]) extends SparseIndexedTensor1(sizeProxy) {
+  override def blankCopy: GrowableSparseTensor1 = new GrowableSparseTensor1(sizeProxy)
+}
 
 /** A Vector that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory,
     implemented as a HashMap from Int indices to Double values.
@@ -173,7 +195,7 @@ class SparseHashTensor1(val dim1:Int) extends Tensor1 {
   override def activeElements = h.iterator
   override def activeDomainSize = h.size
   def activeDomain1: IntSeq = new SeqIntSeq(h.keys.toIndexedSeq) // TODO This is currently really inefficient
-  def activeDomain = activeDomain1
+  //def activeDomain = activeDomain1
   override def foreachActiveElement(f: (Int,Double)=>Unit): Unit = h.foreach(t => f(t._1, t._2))
   override def +=(index:Int, incr:Double): Unit = {
     assert(index < length, "index %d should be less than length %d".format(index, length))
@@ -230,7 +252,7 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
   def dim1: Int = if (_length < 0) _sizeProxy.size else _length
   override def activeDomainSize: Int = { makeReadable; _npos }
   def activeDomain1: IntSeq = { makeReadable ; new TruncatedArrayIntSeq(_indexs, _npos) } // TODO Consider making more efficient
-  def activeDomain = activeDomain1
+  //def activeDomain = activeDomain1
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { var i = 0; while (i < _npos) { f(_indexs(i), _values(i)); i += 1 } }
   override def activeElements: Iterator[(Int,Double)] = {
     makeReadable
@@ -370,17 +392,4 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
 }
 
 
-//class GrowableSparseTensor1(sizeProxy: Iterable[Any]) extends SparseIndexedTensor1(sizeProxy)
-
-
-// Used by various LayeredTensors
-trait InnerDenseTensor1 {
-  def newTensor1(dim:Int) = new DenseTensor1(dim) 
-}
-trait InnerSparseTensor1 {
-  def newTensor1(dim:Int) = new SparseTensor1(dim) 
-}
-trait InnerSparseBinaryTensor1 {
-  def newTensor1(dim:Int) = new SparseBinaryTensor1(dim) 
-}
 

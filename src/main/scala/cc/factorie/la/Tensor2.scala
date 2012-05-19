@@ -31,6 +31,8 @@ trait Tensor2 extends Tensor {
   @inline final def length = dim1 * dim2
   @inline final def singleIndex(i:Int, j:Int): Int = i*dim2 + j
   @inline final def multiIndex(i:Int): (Int, Int) = (i/dim2, i%dim2)
+  @inline final def index1(i:Int): Int = i/dim2
+  @inline final def index2(i:Int): Int = i%dim2
 }
 
 
@@ -56,6 +58,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
 
 class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   def this(t:Tensor2) = { this(t.dim1, t.dim2); this := t }
+  override def blankCopy: DenseTensor2 = new DenseTensor2(dim1, dim2)
 }
 
 // TODO Make a GrowableDenseTensor2
@@ -64,6 +67,7 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
 class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int) extends Tensor2 with SingletonBinaryTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
+  def activeDomain = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2 + singleIndex2
   def singleValue = 1.0
 }
@@ -71,11 +75,12 @@ class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, v
 class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int, val singleValue:Double) extends Tensor2 with SingletonTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
+  def activeDomain: IntSeq = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2 + singleIndex2
 }
 
 trait DenseLayeredTensorLike2 extends Tensor2 {
-  def newTensor1(dim:Int): Tensor1
+  def newTensor1:Int=>Tensor1
   private var _inners = new Array[Tensor1](dim1) // Array.fill(dim1)(newTensor1(dim2))
   def activeDomain1 = { val a = new Array[Int](dim1); var i = 0; var j = 0; while (i < dim1) { if (_inners(i) ne null) { a(j) = i; j += 1 }; i += 1 }; new TruncatedArrayIntSeq(a, j) }
   def activeDomain2 = new RangeIntSeq(0, dim2) // This could perhaps be more sparse
@@ -83,8 +88,16 @@ trait DenseLayeredTensorLike2 extends Tensor2 {
   override def apply(i:Int, j:Int): Double = { val in = _inners(i); if (in ne null) in.apply(j) else 0.0 }
   def apply(i:Int): Double = apply(i/dim1, i%dim2)
   def isDense = false
-  override def update(i:Int, j:Int, v:Double): Unit = { var in = _inners(i); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in.update(j, v) }
+  override def update(i:Int, j:Int, v:Double): Unit = getInner(i).update(j, v)
   def update(i:Int, t:Tensor1): Unit = _inners(i) = t
+  protected def getInner(i:Int): Tensor1 = { var in = _inners(i); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
+  override def +=(i:Int, incr:Double): Unit = getInner(index1(i)).+=(index2(i), incr)
+  override def +=(ds:DoubleSeq): Unit = ds match {
+    case t:SingletonLayeredTensorLike2 => { getInner(t.singleIndex1) += t.inner }
+    case t:DenseLayeredTensorLike2 => { val len = t._inners.length; var i = 0; while (i < len) { if (t._inners(i) ne null) getInner(i) += t._inners(i); i += 1 } }
+    case t:DoubleSeq => throw new Error("Not yet implemented for class "+t.getClass.getName)
+    //case t:DoubleSeq => super.+=(ds)
+  }
   override def dot(t:DoubleSeq): Double = t match {
     case t:SingletonBinaryLayeredTensorLike2 => { val inner = _inners(t.singleIndex1); if (inner ne null) inner.dot(t.inner) else 0.0 } // This is a common case, and should be fast
     case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
@@ -93,8 +106,9 @@ trait DenseLayeredTensorLike2 extends Tensor2 {
     case t:DenseTensorLike2 => { var s = 0.0; this.foreachActiveElement((i,v) => s += t(i)*v); s }
   }
 }
-abstract class DenseLayeredTensor2(val dim1:Int, val dim2:Int) extends DenseLayeredTensorLike2
-// e.g. new LayeredTensor2(20,30) with InnerDenseTensor1
+class DenseLayeredTensor2(val dim1:Int, val dim2:Int, val newTensor1:Int=>Tensor1) extends DenseLayeredTensorLike2 {
+  override def blankCopy: DenseLayeredTensor2 = new DenseLayeredTensor2(dim1, dim2, newTensor1)
+}
 
 
 trait SingletonLayeredTensorLike2 extends Tensor2 {
@@ -140,7 +154,7 @@ trait SingletonBinaryLayeredTensorLike2 extends Tensor2 {
 class SingletonBinaryLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val inner:Tensor1) extends SingletonBinaryLayeredTensorLike2
 
 trait SparseLayeredTensorLike2 extends Tensor2 {
-  def newTensor1(dim:Int): Tensor1
+  def newTensor1: Int=>Tensor1
   // TODO Finish this
 }
 

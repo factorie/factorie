@@ -55,11 +55,11 @@ abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) 
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
 
-abstract class TemplateWithVectorStatistics1[N1<:DiscreteVectorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with VectorStatistics1[N1#Value] {
+abstract class TemplateWithTensorStatistics1[N1<:DiscreteTensorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with TensorStatistics1[N1#Value] {
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
 
-class TemplateWithDotStatistics1[N1<:DiscreteVectorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with DotStatistics1[N1#Value] {
+abstract class TemplateWithDotStatistics1[N1<:DiscreteTensorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with DotStatistics1[N1#Value] {
   type FamilyType <: TemplateWithDotStatistics1[N1]
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }

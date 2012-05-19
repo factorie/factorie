@@ -27,7 +27,7 @@ object WordSegmenterDemo {
   class Label(b:Boolean, val token:Token) extends LabelVariable(b) {
     def domain = LabelDomain
   }
-  object TokenDomain extends CategoricalVectorDomain[String]
+  object TokenDomain extends CategoricalTensorDomain[String]
   class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
     def domain = TokenDomain
     val label = new Label(isWordStart, this)
@@ -39,31 +39,37 @@ object WordSegmenterDemo {
     // The factor templates that define the model
   val model = new TemplateModel
   /** Bias term just on labels */
-  model += new TemplateWithDotStatistics1[Label] 
+  model += new TemplateWithDotStatistics1[Label] {
+    def statisticsDomains = Seq(LabelDomain)
+  }
   /** Factor between label and observed token */
   model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
+    def statisticsDomains = Seq(LabelDomain,TokenDomain)
     def unroll1 (label:Label) = Factor(label, label.token)
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
   }
   /** A token bi-gram conjunction  */
   model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
+    def statisticsDomains = Seq(LabelDomain,LabelDomain,TokenDomain)
     def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
     def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
   }
   /** Factor between two successive labels */
   model += new TemplateWithDotStatistics2[Label,Label] {
+    def statisticsDomains = Seq(LabelDomain,LabelDomain)
     def unroll1 (label:Label) = if (label.token.hasNext) Factor(label, label.token.next.label) else Nil
     def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
   }
   /** Skip edge */
   val skipTemplate = new Template2[Label,Label] with DotStatistics1[BooleanValue] {
+    def statisticsDomains = Seq(BooleanDomain)
     def unroll1 (label:Label) =  
       // could cache this search in label.similarSeq for speed
       for (other <- label.token.chain.links; if label.token.char == other.char) yield
         if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
     def unroll2 (label:Label) = Nil // We handle symmetric case above
-    def statistics(values:Values) = Stat(BooleanDomain.getValue(values._1 == values._2))
+    def statistics(values:Values) = Stat(BooleanDomain.value(values._1 == values._2))
     //def statistics(label1:Label#Value, label2:Label#Value) = Stat(label1 ==label2)
   }
   //model += skipTemplate

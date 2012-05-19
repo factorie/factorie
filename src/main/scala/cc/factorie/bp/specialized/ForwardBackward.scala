@@ -2,7 +2,7 @@ package cc.factorie.bp.specialized
 
 import cc.factorie._
 import cc.factorie.maths.sumLogProbs
-import la.{SparseVector, DenseVector, Vector}
+import cc.factorie.la._
 import scala.math.exp
 import collection.mutable.{HashMap, Map}
 
@@ -71,7 +71,7 @@ object ForwardBackward {
     assert(math.abs(sum - 1.0) < 0.0001, "sum is "+sum)
   }
 
-  private def getLocalScores[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
+  private def getLocalScores[OV <: DiscreteTensorVar, LV <: LabelVariable[_]](
          vs: Seq[LV],
          localTemplate: TemplateWithDotStatistics2[LV, OV],
          biasTemplate: TemplateWithDotStatistics1[LV] = null
@@ -111,7 +111,7 @@ object ForwardBackward {
     arrays
   }
 
-  private def getTransScores[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
+  private def getTransScores[OV <: DiscreteTensorVar, LV <: LabelVariable[_]](
          transTemplate: TemplateWithDotStatistics2[LV, LV]
        ): (Int,Int) => Double = {
     val ds = transTemplate.statisticsDomains(1).dimensionSize // optimization
@@ -133,8 +133,8 @@ object ForwardBackward {
     result
   }
 
-  private def vectorFromArray(a: Array[Double]): Vector = {
-    val v = new DenseVector(a.size)
+  private def vectorFromArray(a: Array[Double]): Tensor = {
+    val v = new DenseTensor1(a.size)
     var i = 0
     while (i < a.size) {
       v.update(i, a(i))
@@ -143,12 +143,12 @@ object ForwardBackward {
     v
   }
 
-  def featureExpectationsAndLogZ[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
+  def featureExpectationsAndLogZ[OV <: DiscreteTensorVar, LV <: LabelVariable[_]](
             vs: Seq[LV],
             localTemplate: TemplateWithDotStatistics2[LV, OV],
             transTemplate: TemplateWithDotStatistics2[LV, LV],
             biasTemplate: TemplateWithDotStatistics1[LV] = null
-          ): (Map[DotFamily, Vector], Double) = {
+          ): (Map[DotFamily, Tensor], Double) = {
 
     val (alpha, beta) = search(vs, localTemplate, transTemplate, biasTemplate)
 
@@ -156,29 +156,30 @@ object ForwardBackward {
     val edgeMargs = edgeMarginals(alpha, beta, getTransScores(transTemplate))
 
     // sum edge marginals
-    val edgeExp = if (vs.length > 1) vectorFromArray(elementwiseSum(edgeMargs)) else new SparseVector(vs(0).domain.size*vs(0).domain.size)
+    // TODO Instead of new SparseTensor1 consider something like Tensor.newSparse(transTemplate.weights)
+    val edgeExp = if (vs.length > 1) vectorFromArray(elementwiseSum(edgeMargs)) else new SparseTensor1(vs(0).domain.size*vs(0).domain.size)
 
     // get the node feature expectations
-    val nodeExp = new SparseVector(localTemplate.statisticsVectorLength)
+    val nodeExp = new SparseTensor1(localTemplate.weights.length) // statisticsVectorLength
     for ((v, vi) <- vs.zipWithIndex) { // for variables
       var i = 0
       while (i < nodeMargs(vi).length) {
         v.set(i)(null)
         val m = nodeMargs(vi)(i)
-        val stats = localTemplate.factors(v).head.values.statistics.vector
+        val stats = localTemplate.factors(v).head.values.statistics.tensor
         nodeExp += (stats * m)
         i += 1
       }
     }
 
-    val expMap: Map[DotFamily, Vector] = HashMap(localTemplate -> nodeExp, transTemplate -> edgeExp)
+    val expMap: Map[DotFamily, Tensor] = HashMap(localTemplate -> nodeExp, transTemplate -> edgeExp)
 
     val logZ = sumLogProbs(alpha(alpha.length-1))
 
     (expMap, logZ)
   }
 
-  def search[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
+  def search[OV <: DiscreteTensorVar, LV <: LabelVariable[_]](
             vs: Seq[LV],
             localTemplate: TemplateWithDotStatistics2[LV, OV],
             transTemplate: TemplateWithDotStatistics2[LV, LV],

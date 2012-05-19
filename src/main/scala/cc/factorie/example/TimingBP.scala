@@ -103,13 +103,13 @@ object TimingBP {
       Viterbi.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
     })
 
-    test("old BP (sum)", l => {
-      new BPInferencer[PosLabel](TestModel).inferTreewise(l)
-    })
-
-    test("old BP (max)", l => {
-      new BPInferencer[PosLabel](TestModel).inferTreewiseMax(l)
-    })
+//    test("old BP (sum)", l => {
+//      new BPInferencer[PosLabel](TestModel).inferTreewise(l)
+//    })
+//
+//    test("old BP (max)", l => {
+//      new BPInferencer[PosLabel](TestModel).inferTreewiseMax(l)
+//    })
 
   }
 }

@@ -17,7 +17,7 @@ object Cards4 {
 
   class Location(val name:String) {
     def cardsHere = allCards.filter(_.value == this)
-    val wins = new BooleanVar { def value: Value = BooleanDomain.getValue(hasSuitRun(cardsHere, 3)) }
+    val wins = new BooleanVar { def value: Value = BooleanDomain.value(hasSuitRun(cardsHere, 3)); def tensor = value }
   }
 
   def main(args:Array[String]): Unit = {
@@ -25,7 +25,7 @@ object Cards4 {
     val floor = new Location("floor")
     val locations = List(floor, jane)
     //val suits = List("H", "D", "C", "S").map(new Suit(_))
-    val cards = SuitDomain.values.flatMap(suit => for (i <- 0 until 13) yield new Card(i, suit, floor))
+    val cards = SuitDomain.flatMap(suit => for (i <- 0 until 13) yield new Card(i, suit, floor))
     val card = new HashMap[String,Card] ++= cards.map(c => (c.toString, c))
     allLocations = locations
     allCards = cards

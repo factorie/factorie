@@ -15,7 +15,7 @@
 package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.er._
-import cc.factorie.la.Vector
+import cc.factorie.la.Tensor
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 
 class MaxEntSampleRankTrainer extends ClassifierTrainer {
@@ -35,7 +35,7 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
   }
 }
 
-class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Vector = null) extends ClassifierTrainer {
+class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
   def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures)
     if (warmStart != null) cmodel.evidenceTemplate.setWeights(warmStart)

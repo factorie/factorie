@@ -63,7 +63,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
         val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
         val d3 = _3.domain.asInstanceOf[DiscreteDomain]
-        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._2 == intVal2)).map(t => new Values(val1, val2, d3.getValue(t._3).asInstanceOf[N3#Value]))
+        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._2 == intVal2)).map(t => new Values(val1, val2, d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
         val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
@@ -76,7 +76,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
         val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
-        limitedDiscreteValuesIterator.filter(t => (t._2 == intVal2) && (t._3 == intVal3)).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2, val3))
+        limitedDiscreteValuesIterator.filter(t => (t._2 == intVal2) && (t._3 == intVal3)).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], val2, val3))
       }
       else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
@@ -89,7 +89,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
         val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
-        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._3 == intVal3)).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value], val3))
+        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._3 == intVal3)).map(t => new Values(val1, d2.apply(t._2).asInstanceOf[N2#Value], val3))
       }
       else {
         val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
@@ -101,7 +101,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
         val d3 = _3.domain.asInstanceOf[DiscreteDomain]
-        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value], d3.getValue(t._3).asInstanceOf[N3#Value]))
+        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.apply(t._2).asInstanceOf[N2#Value], d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
         val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
@@ -114,7 +114,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
         val d3 = _3.domain.asInstanceOf[DiscreteDomain]
-        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2, d3.getValue(t._3).asInstanceOf[N3#Value]))
+        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], val2, d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
@@ -127,7 +127,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
         val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
-        limitedDiscreteValuesIterator.filter(t => t._3 == intVal3).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value], val3))
+        limitedDiscreteValuesIterator.filter(t => t._3 == intVal3).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], d2.apply(t._2).asInstanceOf[N2#Value], val3))
       }
       else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
@@ -139,7 +139,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
         val d3 = _3.domain.asInstanceOf[DiscreteDomain]
-        limitedDiscreteValuesIterator.map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value], d3.getValue(t._3).asInstanceOf[N3#Value]))
+        limitedDiscreteValuesIterator.map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], d2.apply(t._2).asInstanceOf[N2#Value], d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
@@ -160,7 +160,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
         val d3 = _3.domain.asInstanceOf[DiscreteDomain]
-        limitedDiscreteValuesIterator.map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value], d3.getValue(t._3).asInstanceOf[N3#Value]))
+        limitedDiscreteValuesIterator.map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], d2.apply(t._2).asInstanceOf[N2#Value], d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
@@ -174,7 +174,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
         val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
-        limitedDiscreteValuesIterator.filter(t => t._3 == intVal3).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value], val3))
+        limitedDiscreteValuesIterator.filter(t => t._3 == intVal3).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], d2.apply(t._2).asInstanceOf[N2#Value], val3))
       }
       else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
@@ -187,7 +187,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
         val d3 = _3.domain.asInstanceOf[DiscreteDomain]
-        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value], d3.getValue(t._3).asInstanceOf[N3#Value]))
+        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.apply(t._2).asInstanceOf[N2#Value], d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
         val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
@@ -200,7 +200,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
         val d3 = _3.domain.asInstanceOf[DiscreteDomain]
-        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2, d3.getValue(t._3).asInstanceOf[N3#Value]))
+        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], val2, d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
@@ -214,7 +214,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
         val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
-        limitedDiscreteValuesIterator.filter(t => (t._2 == intVal2) && (t._3 == intVal3)).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2, val3))
+        limitedDiscreteValuesIterator.filter(t => (t._2 == intVal2) && (t._3 == intVal3)).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], val2, val3))
       }
       else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
@@ -227,7 +227,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
         val intVal3 = val3.asInstanceOf[DiscreteVar].intValue
-        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._3 == intVal3)).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value], val3))
+        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._3 == intVal3)).map(t => new Values(val1, d2.apply(t._2).asInstanceOf[N2#Value], val3))
       }
       else {
         val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
@@ -240,7 +240,7 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
         val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
         val d3 = _3.domain.asInstanceOf[DiscreteDomain]
-        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._2 == intVal2)).map(t => new Values(val1, val2, d3.getValue(t._3).asInstanceOf[N3#Value]))
+        limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._2 == intVal2)).map(t => new Values(val1, val2, d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
         val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
@@ -296,10 +296,10 @@ trait Family3[N1<:Variable,N2<:Variable,N3<:Variable] extends FamilyWithNeighbor
   override def cachedStatistics(values:Values): StatisticsType =
     if (Template.enableCachedStatistics) {
     //println("Template3.cachedStatistics")
-    if (values._1.isInstanceOf[DiscreteValue] && values._2.isInstanceOf[DiscreteValue] && values._3.isInstanceOf[DiscreteVectorValue] /*&& f._3.isConstant*/ ) {
+    if (values._1.isInstanceOf[DiscreteValue] && values._2.isInstanceOf[DiscreteValue] && values._3.isInstanceOf[DiscreteTensorValue] /*&& f._3.isConstant*/ ) {
       val v1 = values._1.asInstanceOf[DiscreteValue]
       val v2 = values._2.asInstanceOf[DiscreteValue]
-      val v3 = values._3.asInstanceOf[DiscreteVectorValue]
+      val v3 = values._3.asInstanceOf[DiscreteTensorValue]
       if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
       val i = ((v1.intValue, v2.intValue, v3))
       //print(" "+((v1.intValue, v2.intValue))); if (cachedStatisticsHash.contains(i)) println("*") else println(".")
@@ -320,22 +320,16 @@ trait Statistics3[S1,S2,S3] extends Family {
   def score(s:Stat): Double
 }
 
-trait VectorStatistics3[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue] extends VectorFamily {
+trait TensorStatistics3[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue] extends TensorFamily {
   self =>
   type StatisticsType = Stat
-  final case class Stat(_1:S1, _2:S2, _3:S3) extends { val vector: Vector = _1 flatOuter (_2 flatOuter _3) } with super.Statistics {
-    if (_statisticsDomains eq null) {
-      _statisticsDomains = _newStatisticsDomains
-      _statisticsDomains += _1.domain
-      _statisticsDomains += _2.domain
-      _statisticsDomains += _3.domain
-    }
+  final case class Stat(_1:S1, _2:S2, _3:S3) extends { val tensor: Tensor = Tensor.outer(_1, _2, _3) } with super.Statistics {
     lazy val score = self.score(this)
   }
   def score(s:Stat): Double
 }
 
-trait DotStatistics3[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue,S3<:DiscreteVectorValue] extends VectorStatistics3[S1,S2,S3] with DotFamily
+trait DotStatistics3[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue] extends TensorStatistics3[S1,S2,S3] with DotFamily
 
 trait FamilyWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable] extends Family3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)

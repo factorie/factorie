@@ -22,7 +22,7 @@ import cc.factorie.app.classify
 object DocumentClassifier1 {
   
   // Define variable classes
-  object DocumentDomain extends CategoricalVectorDomain[String];
+  object DocumentDomain extends CategoricalTensorDomain[String];
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     val label = new Label(file.getParentFile.getName, this)
@@ -55,10 +55,10 @@ object DocumentClassifier1 {
     println(infogains.top(20).mkString)
     println()
     val plig = new classify.PerLabelInfoGain(documents)
-    for (label <- LabelDomain.values) println(label.category+": "+plig.top(label, 20))
+    for (label <- LabelDomain) println(label.category+": "+plig.top(label, 20))
     println()
     val pllo = new classify.PerLabelLogOdds(documents)
-    for (label <- LabelDomain.values) println(label.category+": "+pllo.top(label, 20))
+    for (label <- LabelDomain) println(label.category+": "+pllo.top(label, 20))
     println()
 
     // Make a test/train split

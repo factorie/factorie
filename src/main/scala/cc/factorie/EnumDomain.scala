@@ -30,6 +30,7 @@ class EnumDomain extends CategoricalDomain[String] {
      object MyLabels extends StringDomain[MyLabel] { val PER, ORG, LOC, O = Value } */
   private def stringFields = this.getClass.getDeclaredFields.filter(f => { /* println("stringFields "+f); */  f.getType == classOf[Int] })
   private var stringFieldsIterator: Iterator[java.lang.reflect.Field] = _
+  // TODO Should this return Int or ValueType?
   def Value: Int = {
     if (stringFieldsIterator == null) stringFieldsIterator = stringFields.iterator
     assert(stringFieldsIterator.hasNext)
@@ -46,7 +47,7 @@ class EnumDomain extends CategoricalDomain[String] {
       val fieldMethod = getClass.getMethod(fieldName) // was with ,null)
       val fieldValue = fieldMethod.invoke(this).asInstanceOf[Int]
       //println("Field "+fieldName+" has value "+fieldValue)
-      if (fieldValue != 0 && this.getCategory(fieldValue) != fieldName) throw new Error("Somehow StringDomain category "+fieldName+" got the wrong String value "+fieldValue+" ("+this.getCategory(fieldValue)+").")
+      if (fieldValue != 0 && this.category(fieldValue) != fieldName) throw new Error("Somehow StringDomain category "+fieldName+" got the wrong String value "+fieldValue+" ("+this.category(fieldValue)+").")
     }
   }
 }

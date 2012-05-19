@@ -21,8 +21,11 @@ trait L2Regularization extends WeightUpdates {
     super.updateWeights
     var fi = 0
     familiesToRegularize.foreach(f => {
-      f.setWeights(f.weights * (1.0 - learningRate*lambdas(fi)))
-      f.weights(0) = f.weights(0) // make sure update is caled, hacky
+      val newWeights = f.weights.copy 
+      newWeights *= (1.0 - learningRate*lambdas(fi))
+      //f.setWeights(f.weights * (1.0 - learningRate*lambdas(fi)))
+      f.weights(0) = f.weights(0) // make sure update is called, hacky
+      // TODO Yipes.  Clean this up.
       fi += 1
     })
   }

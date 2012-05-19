@@ -13,31 +13,30 @@
    limitations under the License. */
 
 package cc.factorie
-
+import cc.factorie.la._
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 // For variables that hold a single discrete value
 
 /** A value in a DiscreteDomain. */
-trait DiscreteValue extends DiscreteVectorValue with cc.factorie.la.SingletonBinaryVec {
+trait DiscreteValue extends SingletonBinaryTensorLike1 {
   def domain: DiscreteDomain
-  def intValue: Int
+  @inline final def intValue: Int = singleIndex // TODO Consider swapping singleIndex <-> intValue
+  @inline final def dim1 = domain.size
 }
 
-trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteValue] with ValueType[DiscreteValue] {
+
+// Because DiscreteDomain is an IndexedSeq it can be passed as a sizeProxy
+class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] with DiscreteTensorDomain with ValueType[DiscreteValue] {
   thisDomain =>
-  // Make method 'size' abstract again.
-  // Note that we are reversing the order of the traditional size/length dependency
-  // Note that this only works if DiscreteDomain is a class, not a trait.
-  def size: Int
-  def dimensionDomain = this
+  def this(size:Int) = { this(null.asInstanceOf[Iterable[Any]]); _size = size }
+  def dimensionDomain: DiscreteDomain = this
   /** If true, do not allow this domain to change. */
   protected var _frozen = false
   override def freeze(): Unit = _frozen = true
   /** Can new category values be added to this Domain? */
   def frozen = _frozen
-
   def allocSize = size // TODO Remove this?
   var maxRequestedInt: Int = 0
 
@@ -45,27 +44,11 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
   private val __elements = new scala.collection.mutable.ArrayBuffer[ValueType]
   def _elements = __elements // Define this way so that _elements can be overridden
 
-  def values: IndexedSeq[ValueType] = __elements
-  // Access sort of like a collection
-  //def values: scala.collection.Seq[ValueType] = _elements
-  def length = size
-  def apply(index:Int): ValueType  = getValue(index)
-  def unapply(value:ValueType): Option[Int] = if (value.domain == this) Some(value.intValue) else None
-  def iterator = _elements.iterator
-
-  // TODO Make this 'protected' so that only the 'getValue' method should construct these objects?
-  class DiscreteValue(val intValue:Int) extends cc.factorie.DiscreteValue {
-    //type DomainType = cc.factorie.DiscreteDomain
-    final def singleIndex = intValue // needed for SingletonBainaryVec
-    final def length = thisDomain.size // needed for SingletonBinaryVec
-    def domain = thisDomain
-    override def toString = intValue.toString
-    override def equals(other:Any): Boolean = 
-      other match { case other:DiscreteValue => this.intValue == other.intValue; case _ => false }
-  }
-
-  // TODO Consider renaming this method to something without the 'get'.  Perhaps valueAtIndex()
-  def getValue(index:Int): ValueType = {
+  // If _size >= 0 it is used to determine DiscreteDomain.size, otherwise _sizeProxy.size is used. 
+  private var _size = -1
+  private val _sizeProxy = sizeProxy
+  def length = if (_size >= 0) _size else _sizeProxy.size
+  def apply(index:Int): ValueType = {
     if (index > maxRequestedInt) maxRequestedInt = index
     if (index >= size) throw new IllegalArgumentException("DiscreteDomain.getValue: index "+index+" larger than size "+size)
     if (index >= _elements.size) {
@@ -73,7 +56,23 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
     } //.asInstanceOf[Value] // Here new a DiscreteValue gets created
     _elements(index)
   }
+  def unapply(value:ValueType): Option[Int] = value match {
+    case dv:DiscreteValue => Some(dv.intValue)
+    case _ => None
+  }//if (value.domain == this) Some(value.intValue) else None
+  override def iterator: Iterator[ValueType] = _elements.iterator
+  def getAll(c: Iterator[Int]) = c map apply
+  def getAll(c: List[Int]) = c map apply
+  def getAll(c: Array[Int]) = c map apply
+  def getAll(c: Set[Int]) = c map apply
 
+  protected class DiscreteValue(val singleIndex:Int) extends cc.factorie.DiscreteValue {
+    def domain = thisDomain
+    override def toString = intValue.toString
+    override def equals(other:Any): Boolean = 
+      other match { case other:DiscreteValue => this.intValue == other.intValue; case _ => false }
+  }
+  
   // Serialization
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
@@ -85,7 +84,7 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
     }))
 
     writer.println(size)
-    writer.close()
+    writer.close
   }
 
   override def load(dirname:String, gzip: Boolean = false): Unit = {
@@ -105,6 +104,5 @@ trait DiscreteDomain extends DiscreteVectorDomain with IterableDomain[DiscreteVa
     require(size == readSize)
     reader.close()
   }
+  
 }
-
-

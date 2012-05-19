@@ -74,7 +74,7 @@ object CorefMentionsDemo {
   object AffinityDomain extends EnumDomain {
     val streq, nstreq, prefix1, nprefix1, prefix2, nprefix2, prefix3, nprefix3, substring, nsubstring, lengtheq, containsword = Value
   }
-  object AffinityVectorDomain extends CategoricalVectorDomain[String] {
+  object AffinityVectorDomain extends CategoricalTensorDomain[String] {
     override lazy val dimensionDomain = AffinityDomain
   }
 
@@ -110,6 +110,7 @@ object CorefMentionsDemo {
   
       // Pairwise affinity factor between Mentions in the same partition
       model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#ValueType] {
+        def statisticsDomains = Seq(AffinityVectorDomain)
         def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield 
           if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
           else Factor(er, other.entityRef, other.entityRef.mention, er.mention)
@@ -121,6 +122,7 @@ object CorefMentionsDemo {
 
       // Pairwise repulsion factor between Mentions in different partitions
       model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#ValueType] {
+        def statisticsDomains = Seq(AffinityVectorDomain)
         /*override def factors(d:Diff) = d.variable match {
           case mention: Mention => d match {
             case mention.entityRef.RefVariableDiff(oldEntity:Entity, newEntity:Entity) => 
@@ -143,6 +145,7 @@ object CorefMentionsDemo {
   
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature.
       model += new Template1[Entity] with DotStatistics1[BooleanValue] {
+        def statisticsDomains = Seq(BooleanDomain)
         def statistics(values:Values) = {
           val mentions: Entity#ValueType = values._1
           if (mentions.isEmpty) Stat(BooleanDomain.trueValue)

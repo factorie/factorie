@@ -3,7 +3,7 @@ package cc.factorie.bp
 import cc.factorie._
 import collection.mutable.{Map, HashMap}
 import cc.factorie.bp.specialized._
-import la.{SparseVector, Vector}
+import cc.factorie.la._
 import specialized.Viterbi
 
 /**
@@ -13,7 +13,7 @@ import specialized.Viterbi
 
 trait Piece {
 
-  def valueAndGradient: (Double, Map[DotFamily, Vector])
+  def valueAndGradient: (Double, Map[DotFamily, Tensor])
 }
 
 class ModelPiece(val vars: Seq[DiscreteVariable with VarWithTargetValue],
@@ -22,18 +22,18 @@ class ModelPiece(val vars: Seq[DiscreteVariable with VarWithTargetValue],
                  val fg: LatticeBP) extends Piece {
 
   // compute the empirical counts of the model
-  val empiricalCounts: Map[DotFamily, Vector] = {
+  val empiricalCounts: Map[DotFamily, Tensor] = {
     //val diff = new DiffList
     vars.foreach(_.setToTarget(null))
-    val result: Map[DotFamily, Vector] = new HashMap
+    val result: Map[DotFamily, Tensor] = new HashMap
     // TODO currently fT, when f factors and T templates
     for (dt <- families) {
-      val vector = new SparseVector(dt.statisticsVectorLength)
+      val vector = Tensor.newSparse(dt.weights) // new SparseVector(dt.statisticsVectorLength)
       for (factor <- fg.factors) {
         factor match {
           case f: DotFamily#Factor => {
             if (f.family == dt)
-              vector += f.statistics.vector
+              vector += f.statistics.tensor
           }
           case _ =>
         }
@@ -57,20 +57,20 @@ class ModelPiece(val vars: Seq[DiscreteVariable with VarWithTargetValue],
     score
   }
 
-  def valueAndGradient: (Double, Map[DotFamily, Vector]) = {
+  def valueAndGradient: (Double, Map[DotFamily, Tensor]) = {
     // reset Messages
     fg.resetMessages
     // perform BP
     infer(fg)
     // compute the gradient
     val exps = fg.statExpectations
-    val gradient: Map[DotFamily, Vector] = new HashMap[DotFamily, Vector]
+    val gradient: Map[DotFamily, Tensor] = new HashMap[DotFamily, Tensor]
     for (df <- families) {
-      val vector = new SparseVector(df.statisticsVectorLength)
+      val vector = Tensor.newSparse(df.weights) //new SparseVector(df.statisticsVectorLength)
       val expv = exps.get(df)
       if (expv.isDefined) {
-        assert(expv.get.length == df.statisticsVectorLength)
-        vector += (expv.get * -1.0)
+        assert(expv.get.length == df.weights.length) //statisticsVectorLength
+        vector -= expv.get //* -1.0
       }
       vector += empiricalCounts(df)
       gradient(df) = vector
@@ -136,18 +136,18 @@ class TransientModelPiece (
   def newFG() = new LatticeBP(model, vars.toSet) with SumProductLattice
 
   // compute the empirical counts of the model
-  def empiricalCounts(): Map[DotFamily, Vector] = {
+  def empiricalCounts(): Map[DotFamily, Tensor] = {
     //val diff = new DiffList
     vars.foreach(_.setToTarget(null))
-    val result: Map[DotFamily, Vector] = new HashMap
+    val result: Map[DotFamily, Tensor] = new HashMap
     // TODO currently fT, when f factors and T templates
     for (dt <- families) {
-      val vector = new SparseVector(dt.statisticsVectorLength)
+      val vector = Tensor.newSparse(dt.weights) //new SparseVector(dt.statisticsVectorLength)
       for (factor <- newFG().factors) {
         factor match {
           case f: DotFamily#Factor => {
             if (f.family == dt)
-              vector += f.statistics.vector
+              vector += f.statistics.tensor
           }
           case _ =>
         }
@@ -171,7 +171,7 @@ class TransientModelPiece (
     score
   }
 
-  def valueAndGradient: (Double, Map[DotFamily, Vector]) = {
+  def valueAndGradient: (Double, Map[DotFamily, Tensor]) = {
     var fg = newFG
 
     // perform BP
@@ -185,13 +185,13 @@ class TransientModelPiece (
 
     fg = null // ensure garbage collection
 
-    val gradient: Map[DotFamily, Vector] = new HashMap[DotFamily, Vector]
+    val gradient: Map[DotFamily, Tensor] = new HashMap[DotFamily, Tensor]
     val ec = empiricalCounts()
     for (df <- families) {
-      val vector = new SparseVector(df.statisticsVectorLength)
+      val vector = Tensor.newSparse(df.weights) //new SparseVector(df.statisticsVectorLength)
       val expv = exps.get(df)
       if (expv.isDefined) {
-        assert(expv.get.length == df.statisticsVectorLength)
+        assert(expv.get.length == df.weights.length) //statisticsVectorLength
         vector += (expv.get * -1.0)
       }
       vector += ec(df)
@@ -221,7 +221,7 @@ object TransientModelPiece {
  *
  * It also assumes that vars are given in the same order as they appear in the chain.
  */
-class PerceptronChainPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
+class PerceptronChainPiece[LV <: LabelVariable[_], OV <: DiscreteTensorVar](
                                                                                  localTemplate: TemplateWithDotStatistics2[LV, OV],
                                                                                  transTemplate: TemplateWithDotStatistics2[LV, LV],
                                                                                  vars: Array[LV])
@@ -229,29 +229,29 @@ class PerceptronChainPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
 
   def search(vs: Seq[LV]): Unit = Viterbi.searchAndSetToMax(vs, localTemplate, transTemplate)
 
-  def valueAndGradient: (Double, Map[DotFamily, Vector]) = {
+  def valueAndGradient: (Double, Map[DotFamily, Tensor]) = {
     // do beam search
     vars.foreach(_.setRandomly())
     search(vars)
-    val localGradient = new SparseVector(localTemplate.statisticsVectorLength)
-    val transGradient = new SparseVector(transTemplate.statisticsVectorLength)
+    val localGradient = Tensor.newSparse(localTemplate.weights) // new SparseVector(localTemplate.statisticsVectorLength)
+    val transGradient = Tensor.newSparse(transTemplate.weights) // new SparseVector(transTemplate.statisticsVectorLength)
 
     // get local gradient
     for (v <- vars) {
-      val localStats = localTemplate.unroll1(v).head.asInstanceOf[DotFamily#Factor].statistics.vector
-      localGradient += localStats * -1.0
+      val localStats = localTemplate.unroll1(v).head.asInstanceOf[DotFamily#Factor].statistics.tensor
+      localGradient -= localStats //* -1.0
       if (!transTemplate.unroll2(v).isEmpty) {
-        val transStats = transTemplate.unroll2(v).head.asInstanceOf[DotFamily#Factor].statistics.vector
-        transGradient += transStats * -1.0
+        val transStats = transTemplate.unroll2(v).head.asInstanceOf[DotFamily#Factor].statistics.tensor
+        transGradient -= transStats //* -1.0
       }
     }
     val d = new DiffList()
     vars.foreach(_.setToTarget(d))
     for (v <- vars) {
-      val localStats2 = localTemplate.unroll1(v).head.asInstanceOf[DotFamily#Factor].statistics.vector
-      localGradient += localStats2 * 1.0
+      val localStats2 = localTemplate.unroll1(v).head.asInstanceOf[DotFamily#Factor].statistics.tensor
+      localGradient += localStats2 // * 1.0
       if (!transTemplate.unroll2(v).isEmpty) {
-        val transStats2 = transTemplate.unroll2(v).head.asInstanceOf[DotFamily#Factor].statistics.vector
+        val transStats2 = transTemplate.unroll2(v).head.asInstanceOf[DotFamily#Factor].statistics.tensor
         transGradient += transStats2
       }
     }
@@ -261,7 +261,7 @@ class PerceptronChainPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
   }
 }
 
-class ForwardBackwardPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
+class ForwardBackwardPiece[LV <: LabelVariable[_], OV <: DiscreteTensorVar](
                                                                                  vars: Array[LV],
                                                                                  localTemplate: TemplateWithDotStatistics2[LV, OV],
                                                                                  transTemplate: TemplateWithDotStatistics2[LV, LV])
@@ -271,13 +271,13 @@ class ForwardBackwardPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
 
   val families = Seq(localTemplate, transTemplate).map(_.asInstanceOf[DotFamily with Template])
 
-  val empiricalCounts: Map[DotFamily, Vector] = {
+  val empiricalCounts: Map[DotFamily, Tensor] = {
     vars.foreach(_.setToTarget(null))
-    val result: Map[DotFamily, Vector] = new HashMap
+    val result: Map[DotFamily, Tensor] = new HashMap
     for (dt <- families) {
-      val vector = new SparseVector(dt.statisticsVectorLength)
+      val vector = Tensor.newSparse(dt.weights) //new SparseVector(dt.statisticsVectorLength)
       for (factor <- dt.factors(vars))
-        vector += factor.statistics.vector
+        vector += factor.statistics.tensor
       result(dt) = vector
     }
     result
@@ -290,11 +290,11 @@ class ForwardBackwardPiece[LV <: LabelVariable[_], OV <: DiscreteVectorVar](
     m.score(vars)
   }
 
-  def valueAndGradient: (Double, Map[DotFamily, Vector]) = {
+  def valueAndGradient: (Double, Map[DotFamily, Tensor]) = {
     val (exps, logZ) = ForwardBackward.featureExpectationsAndLogZ(vars, localTemplate, transTemplate)
-    val gradient = new HashMap[DotFamily, Vector]
+    val gradient = new HashMap[DotFamily, Tensor]
     for (df <- families) {
-      val vector = new SparseVector(df.statisticsVectorLength)
+      val vector = Tensor.newSparse(df.weights) // new SparseVector(df.statisticsVectorLength)
       vector += (exps(df) * -1.0)
       vector += empiricalCounts(df)
       gradient(df) = vector

@@ -87,7 +87,7 @@ class BPFactor2(val factor:Factor, val edge1:BPEdge, val edge2:BPEdge, val ring:
 
 class BPSummary(varying:Set[DiscreteVar], model:Model) extends Summary[DiscreteMarginal] {
   private val _bpFactors = new HashMap[Factor,_BPFactor]
-  private val _bpVariables = new HashMap[DiscreteVectorVar,BPVariable]
+  private val _bpVariables = new HashMap[DiscreteTensorVar,BPVariable]
   def bpVariable(v:DiscreteVar): BPVariable = {
     var result = _bpVariables(v)
     if (result eq null) { result = new BPVariable(v, BPSumProductRing, new DenseTensor1(v.domain.size)); _bpVariables(v) = result }

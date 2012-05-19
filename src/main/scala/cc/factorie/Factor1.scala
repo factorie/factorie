@@ -63,7 +63,7 @@ trait Factor1[N1<:Variable] extends Factor {
     if (fixed.contains(_1)) Iterator.single(Values(fixed(_1)))
     else if (isLimitingValuesIterator) {
       val d = _1.domain.asInstanceOf[DiscreteDomain]
-      limitedDiscreteValuesIterator.map(i => Values(d.getValue(i).asInstanceOf[N1#Value]))
+      limitedDiscreteValuesIterator.map(i => Values(d.apply(i).asInstanceOf[N1#Value]))
     } else _1.domain match {
       case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
     }
@@ -74,7 +74,7 @@ trait Factor1[N1<:Variable] extends Factor {
       throw new Error("Factor1.valuesIterator cannot vary arguments.")
     else if (isLimitingValuesIterator) {
       val d = _1.domain.asInstanceOf[DiscreteDomain]
-      limitedDiscreteValuesIterator.map(i => Values(d.getValue(i).asInstanceOf[N1#Value]))
+      limitedDiscreteValuesIterator.map(i => Values(d.apply(i).asInstanceOf[N1#Value]))
     } else _1.domain match {
       case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
     }
@@ -139,24 +139,20 @@ trait Statistics1[S1] extends Family {
   def score(s:Stat): Double
 }
 
-trait VectorStatistics1[S1<:DiscreteVectorValue] extends VectorFamily {
+trait TensorStatistics1[S1<:DiscreteTensorValue] extends TensorFamily {
   self =>
   type StatisticsType = Stat
   // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
-  final case class Stat(_1:S1) extends { val vector: Vector = _1 } with super.Statistics {
-    if (_statisticsDomains eq null) {
-      _statisticsDomains = _newStatisticsDomains
-      _statisticsDomains += _1.domain
-    } else if (_1.domain != _statisticsDomains(0)) throw new Error("Domain doesn't match previously cached domain.")
+  final case class Stat(_1:S1) extends { val tensor: Tensor = _1 } with super.Statistics {
     lazy val score = self.score(this)
   }
   def score(s:Stat): Double
 }
 
-trait DotStatistics1[S1<:DiscreteVectorValue] extends VectorStatistics1[S1] with DotFamily {
+trait DotStatistics1[S1<:DiscreteTensorValue] extends TensorStatistics1[S1] with DotFamily {
   def setWeight(entry:S1, w:Double) = entry match {
     case d:DiscreteValue => weights(d.intValue) = w
-    case ds:DiscreteVectorValue => ds.activeDomain.foreach(i => weights(i) = w)
+    case ds:DiscreteTensorValue => ds.activeDomain.foreach(i => weights(i) = w)
   }
 }
 
@@ -164,11 +160,11 @@ trait FamilyWithStatistics1[N1<:Variable] extends Family1[N1] with Statistics1[N
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
 
-trait FamilyWithVectorStatistics1[N1<:DiscreteVectorVar] extends Family1[N1] with VectorStatistics1[N1#Value] {
+trait FamilyWithVectorStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with TensorStatistics1[N1#Value] {
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
 
-trait FamilyWithDotStatistics1[N1<:DiscreteVectorVar] extends Family1[N1] with DotStatistics1[N1#Value] {
+trait FamilyWithDotStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with DotStatistics1[N1#Value] {
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
 

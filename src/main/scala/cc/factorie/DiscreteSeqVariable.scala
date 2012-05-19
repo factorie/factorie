@@ -38,15 +38,15 @@ abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.Prot
   def this(initialValue:Array[Int]) = { this(); if (initialValue.length > 0) _appendAll(initialValue) }
   def this(len:Int) = { this(); _setCapacity(len); _appendAll(Array.fill(len)(0)) }
   def length = _length
-  def apply(index: Int): ElementType = domain.elementDomain.getValue(_apply(index))
+  def apply(index: Int): ElementType = domain.elementDomain.apply(_apply(index))
   def domain: DiscreteSeqDomain
   def discreteValues: IndexedSeq[DiscreteValue] = new IndexedSeq[DiscreteValue] {
     def length = _length
-    def apply(index:Int) = domain.elementDomain.getValue(_apply(index))
+    def apply(index:Int) = domain.elementDomain.apply(_apply(index))
   }
   def value: Value = new IndexedSeq[ElementType] {
     private val arr = new Array[ElementType](_length)
-    _mapToArray(arr, (i:Int) => domain.elementDomain.getValue(i)) // Do this so that it stays constant even if _array changes later
+    _mapToArray(arr, (i:Int) => domain.elementDomain.apply(i)) // Do this so that it stays constant even if _array changes later
     def length = arr.length
     def apply(i:Int) = arr(i)
    //_toSeq.map(i => domain.elementDomain.getValue(i)) // TODO make this more efficient 
@@ -82,12 +82,12 @@ abstract class CategoricalSeqVariable[C] extends DiscreteSeqVariable with VarAnd
     this()
     _setCapacity(if (initialValue.length > 0) initialValue.length else 1)
     val d = domain.elementDomain
-    initialValue.foreach(c => this += d.getValue(c))
+    initialValue.foreach(c => this += d.value(c))
   }
   def domain: CategoricalSeqDomain[C]
-  def appendCategory(x:C): Unit = this += domain.elementDomain.getValue(x)
+  def appendCategory(x:C): Unit = this += domain.elementDomain.value(x)
   def appendCategories(xs:Iterable[C]): Unit = _appendAll(xs.map(c => domain.elementDomain.index(c)).toArray)
-  def categoryValue(seqIndex:Int): C = domain.elementDomain.getCategory(_apply(seqIndex))
+  def categoryValue(seqIndex:Int): C = domain.elementDomain.category(_apply(seqIndex))
   def categoryValues: Seq[C] = Seq.tabulate(length)(i => categoryValue(i))
 }
 

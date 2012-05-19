@@ -22,7 +22,7 @@ object GaussianMixtureDemo {
   def main(args:Array[String]): Unit = {
     val numComponents = 2
     implicit val model = GenerativeModel()
-    object ZDomain extends DiscreteDomain { def size = numComponents }
+    object ZDomain extends DiscreteDomain(numComponents)
     class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
     val meanComponents = Mixture(numComponents)(new RealVariable(random.nextDouble * 10))
     val varianceComponents = Mixture(numComponents)(new RealVariable(1.0))

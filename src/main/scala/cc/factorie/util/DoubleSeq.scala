@@ -43,6 +43,7 @@ trait DoubleSeq {
     if (denominator == 0.0 || denominator != denominator) 0.0 else numerator/denominator
   }
   def l2Similarity(t:DoubleSeq): Double = {
+    // TODO This will be inefficient for sparse this or t
     var sum = 0.0; var i = 0; var diff = 0.0; val len = length; assert(len == t.length)
     while (i < len) {
       diff = apply(i) - t(i)
@@ -50,8 +51,11 @@ trait DoubleSeq {
     }
     math.sqrt(sum)
   }
-  def different(t:DoubleSeq, threshold:Double): Boolean = { require(length == t.length); val l = length; var i = 0; while (i < l) { if (math.abs(apply(i) - t(i)) > threshold) return true; i += 1}; return false }
-  def dot(t:DoubleSeq): Double = { assert(length == t.length); val l = length; var result = 0.0; var i = 0; while (i < l) { result += apply(i) * t(i); i += 1 }; result }
+  def different(t:DoubleSeq, threshold:Double): Boolean = { require(length == t.length); val l = length; var i = 0; while (i < l) { if (math.abs(apply(i) - t(i)) > threshold) return true; i += 1}; return false } // TODO Inefficient when sparse
+  def dot(ds:DoubleSeq): Double = ds match {
+    case t:SparseDoubleSeq => { assert(length == t.length); var result = 0.0; t.foreachActiveElement((i,v) => result += apply(i)*v); result}
+    case t:DoubleSeq => { assert(length == t.length); val l = length; var result = 0.0; var i = 0; while (i < l) { result += apply(i) * t(i); i += 1 }; result }
+  }
   def maxIndex: Int = { val l = length; var i = 1; var j = 0; while (i < l) { if (apply(j) < apply(i)) j = i; i += 1 }; j }
   def maxIndex2: (Int,Int) = throw new Error("Not yet implemented")
   def containsNaN: Boolean = { val l = length; var i = 0; while (i < l) { if (apply(i) != apply(i)) return true; i += 1 }; false }  // TODO Why wouldn't apply(i).isNaN compile?
@@ -165,6 +169,8 @@ object DoubleSeq {
   def apply(len:Int): MutableDoubleSeq = apply(new Array[Double](len))
 }
 
+
+// TODO Find out if it is faster to use "foreachActiveElement" or "activeDomain...while" 
 trait SparseDoubleSeq extends DoubleSeq {
   def activeDomain: IntSeq
   def activeDomainSize: Int
@@ -227,9 +233,15 @@ trait IncrementableDoubleSeq extends DoubleSeq {
   def +=(i:Int, incr:Double): Unit
   def zero(): Unit
   def +=(d:Double): Unit = { val l = length; var i = 0; while (i < l) { +=(i, d); i += 1 }}
-  def +=(ds:DoubleSeq): Unit = { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, ds(i)); i += 1 }}
+  def +=(ds:DoubleSeq): Unit = ds match {
+    case ds:SparseDoubleSeq => { ds.foreachActiveElement((i,v) => +=(i,v)) }
+    case ds:DoubleSeq => { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, ds(i)); i += 1 }}
+  }
   def +=(a:Array[Double]): Unit = { val l = length; require(a.length == l); var i = 0; while (i < l) { +=(i, a(i)); i += 1 }}
-  def +=(ds:DoubleSeq, factor:Double): Unit = { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor*ds(i)); i += 1 }}
+  def +=(ds:DoubleSeq, factor:Double): Unit = ds match {
+    case ds:SparseDoubleSeq => { ds.foreachActiveElement((i,v) => +=(i,v*factor)) }
+    case ds:DoubleSeq => { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor*ds(i)); i += 1 }} 
+  }
   def +=(a:Array[Double], factor:Double): Unit = { val l = length; require(a.length == l); var i = 0; while (i < l) { +=(i, factor*a(i)); i += 1 }}
   def -=(i:Int, incr:Double): Unit = +=(i, -incr)
   def -=(d:Double): Unit = +=(-d)
@@ -269,9 +281,9 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
       sum += apply(i)
       i += 1
     }
-    i = 0
-    while (i < l) { apply(i) /= sum; i += 1 }
+    this /= sum
     sum
+    //i = 0; while (i < l) { apply(i) /= sum; i += 1 }; sum
   }
   /** expNormalize, then put back into log-space. */
   def normalizeLogProb(): Double = {

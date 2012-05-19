@@ -26,7 +26,7 @@ import cc.factorie._
     Note that it also does not use any of the facilities of cc.factorie.app.classify.document */
 object DocumentClassifier4 {
   
-  object DocumentDomain extends CategoricalVectorDomain[String]
+  object DocumentDomain extends CategoricalTensorDomain[String]
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)
@@ -40,6 +40,7 @@ object DocumentClassifier4 {
 
   /** Factor between label and observed document */
   val dtree = new DecisionTreeTemplateWithStatistics2[Label,Document] {
+    def statisticsDomains = Seq(LabelDomain, DocumentDomain)
     def unroll1 (label:Label) = Factor(label, label.document)
     def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
   }

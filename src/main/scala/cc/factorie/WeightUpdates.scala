@@ -33,5 +33,5 @@ trait WeightUpdates {
       When you override it, you should call super.updateWeights, which will increment updateCount. */
   def updateWeights : Unit = updateCount += 1
   /** Adds the current gradient (as calculated by the recipient) to the accumulator, scaled by 'rate'. */
-  def addGradient(accumulator:UpdateFamilyType=>Vector, rate:Double): Unit
+  def addGradient(accumulator:UpdateFamilyType=>Tensor, rate:Double): Unit
 }

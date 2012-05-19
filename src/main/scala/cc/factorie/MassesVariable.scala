@@ -85,7 +85,7 @@ class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
 class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSparseCounts(dim1, 4, false) with Masses1 {
   def isDense = false
   def activeDomain1 = throw new Error("Not implemented")
-  def activeDomain = activeDomain1
+  //def activeDomain = activeDomain1
   def apply(index:Int): Double = {
     if (countsTotal == 0) 0.0
     else countOfIndex(index).toDouble
@@ -100,8 +100,11 @@ class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSpa
 
 // Masses Variables 
 
-trait MassesVar extends TensorVar[Masses] with VarAndValueType[MassesVar,Masses] 
-class MassesVariable extends TensorVariable[Masses] with MassesVar {
+//trait MassesVar extends TensorVar[Masses] with VarAndValueType[MassesVar,Masses] 
+//class MassesVariable extends TensorVariable[Masses] with MassesVar {
+
+trait MassesVar extends TensorVar with VarAndValueType[MassesVar,Masses] 
+class MassesVariable extends TensorVariable with MassesVar {
   def this(initialValue:Masses) = { this(); _set(initialValue) }
   def domain = TensorDomain
 }

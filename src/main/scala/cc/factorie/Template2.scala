@@ -55,11 +55,11 @@ abstract class TemplateWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:M
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
 }
 
-abstract class TemplateWithVectorStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with VectorStatistics2[N1#Value,N2#Value] {
+abstract class TemplateWithTensorStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with TensorStatistics2[N1#Value,N2#Value] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
 }
 
-abstract class TemplateWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotFamily with DotStatistics2[N1#Value,N2#Value] {
+abstract class TemplateWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotFamily with DotStatistics2[N1#Value,N2#Value] {
   type FamilyType <: TemplateWithDotStatistics2[N1,N2]
   def weight(index0:Int, index1:Int): Double = weights(index0 * statisticsDomains(1).dimensionDomain.size + index1)
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2)

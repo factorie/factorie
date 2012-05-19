@@ -80,9 +80,9 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
     }
   }
 
-  def projectGradient(f: DotFamily, g: Vector): Unit = {}
+  def projectGradient(f: DotFamily, g: Tensor): Unit = {}
  
-  def addGradient(accumulator:DotFamily=>Vector, rate:Double): Unit = {
+  def addGradient(accumulator:DotFamily=>Tensor, rate:Double): Unit = {
 
     /*
     List(bestModel1, bestModel2, bestObjective1, bestObjective2).foreach(p => println(p))
@@ -105,11 +105,11 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
     // It would not have a preference if the variable in question is unlabeled
     // TODO Is this the right way to test this though?  Could there be no preference at the top, but the model is selecting something else that is worse?
     if (shouldUpdate) {
-      val gradient = new HashMap[DotFamily,SparseVector] {
+      val gradient = new HashMap[DotFamily,Tensor] {
         override def default(f: DotFamily) = {
-          val vector = new SparseVector(f.statisticsVectorLength)
-          this(f) = vector
-          vector
+          val tensor = f.newSparseTensor // new SparseVector(f.statisticsVectorLength)
+          this(f) = tensor
+          tensor
         }
       }
     	//val templatesToUpdate = templateClassToUpdate
@@ -121,19 +121,19 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
         //println (" Updating bestObjective1 "+(bestObjective1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
         //println (" Updating bestModel1 "+(bestModel1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
         bestObjective1.diff.redo
-        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, rate))
         //model.factorsOfFamilyClass(bestObjective1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         //bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         bestObjective1.diff.undo
-        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient(f.family) += f.statistics.vector *  -rate)
+        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, -rate))
         //model.factorsOfFamilyClass(bestObjective1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         //bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel1.diff.redo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family) += f.statistics.vector *  -rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, -rate))
         //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel1.diff.undo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, rate))
         //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
       }
@@ -142,19 +142,19 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
         //println ("SampleRank learning from margin")
         // TODO Note This is changed from previous version, where it was bestTruth.  Think again about this.
         bestObjective1.diff.redo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, rate))
         //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         bestObjective1.diff.undo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family) += f.statistics.vector *  -rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, -rate))
         //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
         //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel2.diff.redo
-        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => gradient(f.family) += f.statistics.vector *  -rate)
+        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, -rate))
         //model.factorsOfFamilyClass(bestModel2.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
         //bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
         bestModel2.diff.undo
-        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => gradient(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, rate))
         //model.factorsOfFamilyClass(bestModel2.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
         //bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
       }

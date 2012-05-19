@@ -64,7 +64,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
       if (isLimitingValuesIterator) {
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
         val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
-        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value]))
+        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.apply(t._2).asInstanceOf[N2#Value]))
       } else {
         val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
         d2.values.iterator.map(value => new Values(val1, value))
@@ -74,7 +74,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
       if (isLimitingValuesIterator) {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
-        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2))
+        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], val2))
       } else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
         d1.values.iterator.map(value => new Values(value, val2)) 
@@ -83,7 +83,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
       if (isLimitingValuesIterator) {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
-        limitedDiscreteValuesIterator.map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value])) 
+        limitedDiscreteValuesIterator.map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], d2.apply(t._2).asInstanceOf[N2#Value])) 
       } else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
         val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
@@ -100,7 +100,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
       if (isLimitingValuesIterator) {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
-        limitedDiscreteValuesIterator.map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], d2.getValue(t._2).asInstanceOf[N2#Value])) 
+        limitedDiscreteValuesIterator.map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], d2.apply(t._2).asInstanceOf[N2#Value])) 
       } else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
         val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
@@ -111,7 +111,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
       if (isLimitingValuesIterator) {
         val d1 = _1.domain.asInstanceOf[DiscreteDomain]
         val intVal2 = val2.asInstanceOf[DiscreteVar].intValue
-        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.getValue(t._1).asInstanceOf[N1#Value], val2))
+        limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], val2))
       } else {
         val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
         d1.values.iterator.map(value => new Values(value, val2))
@@ -121,7 +121,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
       if (isLimitingValuesIterator) {
         val d2 = _2.domain.asInstanceOf[DiscreteDomain]
         val intVal1 = val1.asInstanceOf[DiscreteVar].intValue
-        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.getValue(t._2).asInstanceOf[N2#Value]))
+        limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.apply(t._2).asInstanceOf[N2#Value]))
       } else {
         val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
         d2.values.iterator.map(value => new Values(val1, value))
@@ -187,7 +187,7 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
           if (cachedStatisticsArray(i) eq null) cachedStatisticsArray(i) = values.statistics
           cachedStatisticsArray(i)
         }
-        case v2:DiscreteVectorValue if (true /*v2.isConstant*/) => {
+        case v2:DiscreteTensorValue if (true /*v2.isConstant*/) => {
           //println("Template2.cachedStatistics")
           if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType] { override protected def initialSize = 512 }
           val i = ((v1.intValue,v2))
@@ -196,7 +196,7 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
         case _ => values.statistics
       }
     }
-    case v1:DiscreteVectorValue if (true /*v1.isConstant*/) => {
+    case v1:DiscreteTensorValue if (true /*v1.isConstant*/) => {
       values._2 match {
         case v2:DiscreteValue => {
           if (cachedStatisticsHash eq null) cachedStatisticsHash = new HashMap[Product,StatisticsType]
@@ -221,31 +221,26 @@ trait Statistics2[S1,S2] extends Family {
   def score(s:Stat): Double
 }
 
-trait VectorStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorFamily {
+trait TensorStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorFamily {
   self =>
   type StatisticsType = Stat
-  final case class Stat(_1:S1, _2:S2) extends { val vector: Vector = _1 flatOuter _2 } with super.Statistics {
-    if (_statisticsDomains eq null) { 
-      _statisticsDomains = _newStatisticsDomains
-      _statisticsDomains += _1.domain
-      _statisticsDomains += _2.domain
-    }
+  final case class Stat(_1:S1, _2:S2) extends { val tensor: Tensor = Tensor.outer(_1, _2) } with super.Statistics {
     lazy val score = self.score(this)
   }
   def score(s:Stat): Double
 }
 
-trait DotStatistics2[S1<:DiscreteVectorValue,S2<:DiscreteVectorValue] extends VectorStatistics2[S1,S2] with DotFamily
+trait DotStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorStatistics2[S1,S2] with DotFamily
 
 trait FamilyWithStatistics2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] with Statistics2[N1#Value,N2#Value] {
   def statistics(values:Values) = Stat(values._1, values._2)
 }
 
-trait FamilyWithVectorStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar] extends Family2[N1,N2] with VectorStatistics2[N1#Value,N2#Value] {
+trait FamilyWithVectorStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] extends Family2[N1,N2] with TensorStatistics2[N1#Value,N2#Value] {
   def statistics(values:Values) = Stat(values._1, values._2)
 }
 
-trait FamilyWithDotStatistics2[N1<:DiscreteVectorVar,N2<:DiscreteVectorVar] extends Family2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
+trait FamilyWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] extends Family2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
   def statistics(values:Values) = Stat(values._1, values._2)
   // TODO add method:  score(t:Tensor2): Double
 }

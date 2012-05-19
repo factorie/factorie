@@ -11,7 +11,7 @@ import ner.ChainNerLabel
 
 object TokenLDA {
   
-  object ChainNerFeaturesDomain extends CategoricalVectorDomain[String]
+  object ChainNerFeaturesDomain extends CategoricalTensorDomain[String]
   val lexicons = new scala.collection.mutable.ArrayBuffer[Lexicon]
   
   
@@ -96,7 +96,7 @@ object TokenLDA {
       println(lda.topicWords(ti, 200).filter(s => s.startsWith("W=") && !s.contains("@")).take(20).mkString(" "))
     }
 
-    object ChainNerFeaturesDomain2 extends CategoricalVectorDomain[String]
+    object ChainNerFeaturesDomain2 extends CategoricalTensorDomain[String]
     class ChainNerFeatures2(t: Token) extends BinaryFeatureVectorVariable[String] {
       def domain = ChainNerFeaturesDomain2
       override def skipNonCategories = true
@@ -121,11 +121,13 @@ object TokenLDA {
     })
 
     val transTemplate = new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel]  {
+       def statisticsDomains = Seq(Conll2003NerDomain, Conll2003NerDomain) 
        factorName = "LabelLabelToken"
        override def unroll1(l: ChainNerLabel) = if (l.token.sentenceHasNext) List(Factor(l, l.token.sentenceNext.nerLabel)) else Nil
        override def unroll2(l: ChainNerLabel) = if (l.token.sentenceHasPrev) List(Factor(l.token.sentencePrev.nerLabel, l)) else Nil
      }
      val localTemplate = new TemplateWithDotStatistics2[ChainNerLabel, ChainNerFeatures2] {
+       def statisticsDomains = Seq(Conll2003NerDomain, ChainNerFeaturesDomain2)
        override def unroll1(l: ChainNerLabel) = List(Factor(l, l.token.attr[ChainNerFeatures2]))
        override def unroll2(t: ChainNerFeatures2) = throw new Error("Do not change the token variables")
      }
@@ -152,7 +154,7 @@ object TokenLDA {
        })
        val learner2 = new VariableSettingsSampler[ChainNerLabel](MyModel, obj) with SampleRank with AROWUpdates
        learner2.processAll(trainLabels, 5)
-       val ld = d.categoryValues.filter(_.length > 2).map(_.substring(2))
+       val ld = d.categories.filter(_.length > 2).map(_.substring(2))
        //val searcher = new BeamSearch with FullBeam
        //testDocs.foreach(d => d.sentences.foreach(s=>searcher.searchAndSetToMax(localTemplate, transTemplate, s.tokens.map(_.nerLabel))))
        val tee = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](ld)

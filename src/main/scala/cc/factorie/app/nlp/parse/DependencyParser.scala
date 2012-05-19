@@ -79,10 +79,10 @@ class ActionLabel(targetAction: (Int, String), stack: ArrayBuffer[Int], input: A
   )
 
   override def settings = new SettingIterator {
-    private var validActionList: Iterator[ActionLabel.this.ValueType] = domain.values.filter(a => isAllowedCategory(a.category._1)).toSeq.iterator
+    private var validActionList: Iterator[ActionLabel.this.ValueType] = domain.filter(a => isAllowedCategory(a.category._1)).toSeq.iterator
     def hasNext = validActionList.hasNext
     def next(difflist:DiffList) = { val d = new DiffList; set(validActionList.next)(d); d }
-    def reset = validActionList = domain.values.filter(a => isAllowedCategory(a.category._1)).toSeq.iterator
+    def reset = validActionList = domain.filter(a => isAllowedCategory(a.category._1)).toSeq.iterator
     override def variable: ActionLabel.this.type = ActionLabel.this
   }
 
@@ -112,7 +112,7 @@ object ParseFeatureExtractors {
 }
 
 // define the model
-object ParserFeaturesDomain extends CategoricalVectorDomain[(String, Int)] {
+object ParserFeaturesDomain extends CategoricalTensorDomain[(String, Int)] {
   // for deserialization
   dimensionDomain.string2T = {
     (s: String) => {
@@ -294,7 +294,7 @@ object ShiftReduceDependencyParser {
       val score = model.score(Seq(actionLabel))
       if (score > maxScore) { maxScore = score; maxSetting = actionLabel.categoryValue }
     }
-    actionLabel.set(actionLabel.domain.getValue(maxSetting))(null)
+    actionLabel.set(actionLabel.domain.value(maxSetting))(null)
     actionLabel
   }
 

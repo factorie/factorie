@@ -17,15 +17,16 @@ package cc.factorie
 /** The value of a BooleanDomain.  A subclass of CategoricalValue. */
 trait BooleanValue extends CategoricalValue[Boolean] {
   def domain: BooleanDomain = BooleanDomain
-  def booleanValue = if (this eq BooleanDomain.trueValue) true else false
+  //def booleanValue = if (this eq BooleanDomain.trueValue) true else false
+  def booleanValue = if (intValue == 1) true else false
 }
 
 /** The Domain for BooleanVar, of size two, containing a falseValue
     (with intValue = 0) and a trueValue (with intValue = 1). */
 class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanValue] {
   thisDomain =>
-  val falseValue = super.getValue(false)
-  val trueValue = super.getValue(true)
+  val falseValue = super.value(false)
+  val trueValue = super.value(true)
   freeze
   class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with cc.factorie.BooleanValue {
     override def domain = thisDomain
@@ -36,10 +37,11 @@ class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanVal
   override def size = 2
   override def allocSize = 2
   //override def apply(index:Int) = index == 1
-  override def getCategory(index:Int) = index == 1
+  override def category(index:Int) = index == 1
   override def index(bool:Boolean) = if (bool) 1 else 0
-  override def getIndex(bool:Boolean) = if (bool) 1 else 0
-  override def getValue(bool:Boolean) = if (bool) trueValue else falseValue
+  //override def index(bool:Boolean) = if (bool) 1 else 0
+  override def value(bool:Boolean) = if (bool) trueValue else falseValue
+  override def apply(index:Int) = if (index == 1) trueValue else falseValue
 }
 object BooleanDomain extends BooleanDomain
 

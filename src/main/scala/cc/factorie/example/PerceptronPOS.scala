@@ -168,7 +168,7 @@ object PerceptronPOS {
   }
 
   lazy val defaultCategory = {
-    try { PosDomain.categoryValues.head }
+    try { PosDomain.categories.head }
     catch { case e: NoSuchElementException => throw new Error("The domain must be loaded before it is accessed.") }
   }
   def labelMaker(t: Token, l: String = defaultCategory) = new PosLabel(t, l)

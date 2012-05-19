@@ -36,7 +36,7 @@ abstract class PairwiseTransitivityTemplate extends Template3[PairwiseLabel,Pair
 object CorefAffinityDimensionDomain extends EnumDomain {
   val Bias, ExactMatch, SuffixMatch, EntityContainsMention, EditDistance2, EditDistance4, NormalizedEditDistance9, NormalizedEditDistance5, Singleton = Value
 }
-object CorefAffinityDomain extends CategoricalVectorDomain[String] {
+object CorefAffinityDomain extends CategoricalTensorDomain[String] {
   override lazy val dimensionDomain = CorefAffinityDimensionDomain
 }
 class CorefAffinity extends BinaryFeatureVectorVariable[String] {
@@ -47,6 +47,7 @@ class EntityMentionModel extends TemplateModel(
   new Template1[EntityRef] with DotStatistics1[CorefAffinity#Value] {
     override def statisticsDomains = List(CorefAffinityDimensionDomain)
     //println("*** EntityMentionModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
+    //weights.update(CorefAffinityDimensionDomain.Bias, -1)
     weights(CorefAffinityDimensionDomain.Bias) = -1
     weights(CorefAffinityDimensionDomain.ExactMatch) = 10
     weights(CorefAffinityDimensionDomain.SuffixMatch) = 2

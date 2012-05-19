@@ -16,6 +16,10 @@ package cc
 import scala.util.Random
 
 package object factorie {
+  
+  // TODO Consider removing these
+  type DiscreteTensorValue = cc.factorie.la.Tensor
+  type CategoricalTensorValue = cc.factorie.la.Tensor
 
   // TODO Should we have this?  Is there a more Java-standard way to provide this?
   // TODO If we keep it, find a way to automatically maintain this string value

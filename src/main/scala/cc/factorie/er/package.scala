@@ -119,8 +119,8 @@ implicit def getter2IntTerm[X<:Variable,A<:FormulaArg](g:GetterHead[X,A])(implic
 
 // Score support:
 
-type ScorableValues[X] = DiscreteVectorVar // CategoricalValues //with GetterType[X]
-type ScorableValues0 = DiscreteVectorVar // CategoricalValues //with GetterType[CategoricalValues]
+type ScorableValues[X] = DiscreteTensorVar // CategoricalValues //with GetterType[X]
+type ScorableValues0 = DiscreteTensorVar // CategoricalValues //with GetterType[CategoricalValues]
 
 implicit def getter2scoreneighbor[X<:Variable,Y<:ScorableValues[Y]](a:Getter[Y] { type A = X})(implicit ma:Manifest[Y]): ScoreNeighbor0[X] = { 
   //println("getter2scoreneighbor ma="+ma+" a="+a)

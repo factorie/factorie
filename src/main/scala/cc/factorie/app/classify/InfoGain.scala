@@ -20,7 +20,7 @@ import cc.factorie.util.TopN
     @author Andrew McCallum
     @since 0.10
  */
-class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteVectorVar) extends cc.factorie.util.DoubleSeq {
+class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteTensorVar) extends cc.factorie.util.DoubleSeq {
   def this(labels:LabelList[L]) = this(labels, labels.labelToFeatures)
   def apply(i:Int) = infogains(i)
   def length = infogains.length
@@ -30,7 +30,7 @@ class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteVectorVar) exten
   init(labels)
   
   // TODO Currently only works for CategoricalDomain, not DiscreteDomain
-  override def top(n:Int): TopN[String] = new TopN[String](n, this, domain.asInstanceOf[CategoricalDomain[String]].categoryValues)
+  override def top(n:Int): TopN[String] = new TopN[String](n, this, domain.asInstanceOf[CategoricalDomain[String]].categories)
   
   protected def init(labels:Iterable[L]) {
     val numInstances = labels.size
@@ -43,16 +43,17 @@ class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteVectorVar) exten
     val targetProportions = new DenseProportions1(numLabels)
     var targetCountSum = 0.0
     for (label <- labels) {
-      val instance = f(label)
+      val instance: DiscreteTensorVar = f(label)
       assert(instance.domain == instanceDomain)
       assert(label.domain == labelDomain)
       val labelIndex = label.intValue
       targetProportions.+=(labelIndex, 1.0)
       //println("InfoGain "+instance.activeDomain.toSeq)
-      for (featureIndex <- instance.activeDomain) {
+      //for (featureIndex <- instance.activeDomain.asSeq)
+      instance.tensor.activeDomain.foreach(featureIndex => {
         featureTargetProportions(featureIndex).+=(labelIndex, 1.0)
         featureCount(featureIndex) += 1
-      }
+      })
     }
     baseEntropy = targetProportions.entropy
     forIndex(numFeatures)(featureIndex => {

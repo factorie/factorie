@@ -23,7 +23,7 @@ import cc.factorie.generative._
 
 object MultinomialDemo {
   val numSides = 6
-  object RollDomain extends DiscreteDomain { def size = numSides }
+  object RollDomain extends DiscreteDomain(numSides)
   class Roll extends DiscreteVariable { def domain = RollDomain }
   implicit val model = new GenerativeFactorModel
 

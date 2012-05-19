@@ -22,7 +22,7 @@ import bp._
 import bp.specialized.Viterbi
 import util._
 
-object PosFeaturesDomain extends CategoricalVectorDomain[String]
+object PosFeaturesDomain extends CategoricalTensorDomain[String]
 class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 
 object PosModel extends TemplateModel {
@@ -126,7 +126,7 @@ object POS {
 
     // add the labels and features if they aren't there already.
     if (document.tokens.head.attr.get[PosLabel] == None) {
-      val defaultCategory = PosDomain.categoryValues.head
+      val defaultCategory = PosDomain.categories.head
       document.tokens.foreach(t => t.attr += new PosLabel(t, defaultCategory))
       initPosFeatures(document)
     }

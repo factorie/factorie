@@ -73,7 +73,7 @@ object LDA4 extends cc.factorie.maths.ArrayImplicits {
     for (year <- 0 until histogram.length) histogram(year).normalize
     for (phi <- lda.phis) {
       val phiIndex = lda.phis.indexOf(phi)
-      println(phi.tensor.top(20).map(dp => WordSeqDomain.elementDomain.getCategory(dp.index)).mkString(" ")+"  "+Range(0, numYears).map(year => histogram(year)(phiIndex)).mkString(" "))
+      println(phi.tensor.top(20).map(dp => WordSeqDomain.elementDomain.category(dp.index)).mkString(" ")+"  "+Range(0, numYears).map(year => histogram(year)(phiIndex)).mkString(" "))
     }
     
   }

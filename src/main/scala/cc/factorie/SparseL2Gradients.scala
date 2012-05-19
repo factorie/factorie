@@ -74,11 +74,11 @@ trait SparseL2Gradients[C] extends Sampler[C] with WeightUpdates{ //Want Proposa
     modelScale = (1.0 - learningRate * 1/penalty) * modelScale
     //
     //Get the gradient to identify the locations of weights changed by update
-    val metaGradient = new HashMap[DotFamily,SparseVector] {
+    val metaGradient = new HashMap[DotFamily,Tensor] {
       override def default(template:DotFamily) = {
-        val vector = new SparseVector(template.statisticsVectorLength)
-        this(template) = vector
-        vector
+        val tensor = template.weights.blankCopy //new SparseVector(template.statisticsVectorLength)
+        this(template) = tensor
+        tensor
       }
     }
     //
@@ -90,16 +90,16 @@ trait SparseL2Gradients[C] extends Sampler[C] with WeightUpdates{ //Want Proposa
       //println("0 EXH NORM: "+this.l2Norm)
       //println("0 WEIGHT NORM: "+weightNorm)
       weightNorm=weightNorm*weightNorm
-      for((template,vector)<-metaGradient)
-        for(i<-vector.activeDomain)
+      for((template,tensor)<-metaGradient)
+        for(i<-tensor.activeDomain.asSeq)
           weightNorm -= template.weights(i) * template.weights(i)
       //
       //perform the update
       super.updateWeights
       //
       //add the new portion of the norm (after update)
-      for((template,vector)<-metaGradient)
-        for(i<-vector.activeDomain)
+      for((template,tensor)<-metaGradient)
+        for(i<-tensor.activeDomain.asSeq)
           weightNorm += template.weights(i) * template.weights(i)
       weightNorm=scala.math.sqrt(weightNorm)
       //
@@ -173,6 +173,22 @@ class ScaledDiffList(val scale:Double) extends DiffList{
 }
 
 trait IterateAveraging extends WeightUpdates {
+  class Weights extends HashMap[DotFamily,Tensor] {
+    def this(initialValue:Double) = { this(); initialDouble = initialValue }
+    def this(initialValues:Tensor) = { this(); initialTensor = initialValues }
+    private var initialDouble = 0.0
+    private var initialTensor: Tensor = null
+    override def default(template:DotFamily) = {
+      if (!template.isInstanceOf[SparseWeights]) template.freezeDomains
+      val tensor = template.weights.blankCopy
+      init(template, tensor)
+      this(template) = tensor
+      tensor
+    }
+    def init(template:DotFamily, t:Tensor): Unit = {
+      if (initialTensor ne null) t += initialTensor else if (initialDouble != 0.0) t += initialDouble
+    }
+  }
   def familiesToUpdate: Seq[DotFamily]
   //type TemplatesToUpdate = DotFamily
   // To apply this learning to just a subset of the WeightedLinearTemplates, you can define "model" to be a subset of the original model.
@@ -183,51 +199,14 @@ trait IterateAveraging extends WeightUpdates {
   var summedModelScale:Double = 0
   //def computeModelScale:Unit
   val initialIteration = perceptronIteration
-  val lastUpdateIteration = new HashMap[DotFamily,Vector] {
-    override def default(template:DotFamily) = {
-      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {
-        template.freezeDomains
-        new DenseVector(template.statisticsVectorLength)
-      }
-      vector += initialIteration // Make the default value be the iteration count at which we started learning
-      this(template) = vector
-      vector
-    }
-  }
+  val lastUpdateIteration = new Weights(initialIteration) // Make the default value be the iteration count at which we started learning
   //stores the model scale at the time the param was last updated
-  val lastModelScale = new HashMap[DotFamily,Vector] {
-    override def default(template:DotFamily) = {
-      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {
-        template.freezeDomains
-        new DenseVector(template.statisticsVectorLength)
-      }
-      vector += 1.0 // Make the default value be the iteration count at which we started learning
-      this(template) = vector
-      vector
-    }
-  }
-  val weightsSum = new HashMap[DotFamily,Vector] {
-    override def default(template:DotFamily) = {
-      val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else {
-        template.freezeDomains
-        new DenseVector(template.statisticsVectorLength)
-      }
-      vector += initialIteration // Make the default value be the iteration count at which we started learning
-      this(template) = vector
-      vector
-    }
-  }
+  val lastModelScale = new Weights(1.0)  // Make the default value be the iteration count at which we started learning 
+  val weightsSum = new Weights(initialIteration)  // Make the default value be the iteration count at which we started learning
   //Store the model weights in here before accumulated weights are injected into model, this way they can be recovered if necessary
-  var _backupWeights : HashMap[DotFamily,Vector] = null
-  def backupWeights : Unit ={
-    _backupWeights = new HashMap[DotFamily,Vector]{
-      override def default(template:DotFamily) ={
-        val vector = if (template.isInstanceOf[SparseWeights]) new SparseVector(template.statisticsVectorLength) else{template.freezeDomains;new DenseVector(template.statisticsVectorLength)}
-        vector += template.weights // Be sure to start the sum at the initial value of the weights, so we can re-train
-        this(template) = vector
-        vector
-      }
-    }
+  var _backupWeights : HashMap[DotFamily,Tensor] = null
+  def backupWeights: Unit = {
+    _backupWeights = new Weights { override def init(template:DotFamily, t:Tensor) = t += template.weights }
     for(template <- familiesToUpdate)
       _backupWeights(template)
   }
@@ -286,30 +265,22 @@ trait IterateAveraging extends WeightUpdates {
   /**This method is agnostic to how the weights were originally updated**/
   abstract override def updateWeights: Unit = {
     //Get the gradient to identify the locations of weights changed by update
-    val metaGradient = new HashMap[DotFamily,SparseVector] {
-      override def default(template:DotFamily) = {
-        //SR: is freezing necessary?
-        //template.freezeDomains
-        val vector = new SparseVector(template.statisticsVectorLength)
-        this(template) = vector
-        vector
-      }
-    }
+    val metaGradient = new Weights 
     //computeModelScale
     addGradient(metaGradient, modelScale)
     //put on gradient the values of these weights before the update (negated)
-    for((template,vector) <- metaGradient) {
+    for((template,tensor) <- metaGradient) {
       val templateWeights = template.weights
-      for(i <- vector.activeDomain)
-        vector(i) = -templateWeights(i)
+      for(i <- tensor.activeDomain.asSeq)
+        tensor(i) = -templateWeights(i)
     }
     //perform the update
     super.updateWeights
     //add the values of these weights after the update
-    for((template,vector) <- metaGradient) {
+    for((template,tensor) <- metaGradient) {
       val templateWeights = template.weights
-      for(i <- vector.activeDomain)
-        vector(i) += templateWeights(i)
+      for(i <- tensor.activeDomain.asSeq)
+        tensor(i) += templateWeights(i)
     }
     //at this point I have "modelScale" computed
     summedModelScale += modelScale
@@ -322,7 +293,7 @@ trait IterateAveraging extends WeightUpdates {
       val templateLastUpdateIteration = lastUpdateIteration(template)
       val templateLastModelScale = lastModelScale(template)
       val templateWeights = template.weights
-      for (i <- vector.activeDomain) {
+      for (i <- vector.activeDomain.asSeq) {
         val iterationDiff = perceptronIteration - templateLastUpdateIteration(i
         ) // Note avoiding off-by-one relies on when iterationCount is incremented!
         val summationDiff = summedModelScale - templateLastModelScale(i)
@@ -337,7 +308,7 @@ trait IterateAveraging extends WeightUpdates {
       }
     }
   }
-  def l2Norm(grad : HashMap[DotFamily,SparseVector]) : Double = {
+  def l2Norm(grad : HashMap[DotFamily,Tensor]) : Double = {
     var result : Double = 0.0
     for((t,v) <- grad)
       result += v dot v

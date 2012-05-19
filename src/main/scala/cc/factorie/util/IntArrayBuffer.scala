@@ -43,6 +43,8 @@ trait ProtectedIntArrayBuffer {
     final def apply(i:Int) = arr(i)
   }
   protected def _toArray: Array[Int] = { val a = new Array[Int](_size); arraycopy(_arr, 0, a, 0, _size); a }
+  protected def _asIntSeq: IntSeq = new TruncatedArrayIntSeq(_arr, _size)
+  protected def _takeAsIntSeq(len:Int): IntSeq = new TruncatedArrayIntSeq(_arr, math.min(len, _size))
   protected def _sum: Int = { var s = 0; var i = 0; while (i < _size) { s += _arr(i); i += 1 }; s }
   /** Return the index containing the value i, or -1 if i is not found. */
   protected def _indexOf(i:Int): Int = { var j = 0; while (j < _size) { if (_arr(j) == i) return j; j += 1 }; -1 }
@@ -150,11 +152,12 @@ trait ProtectedIntArrayBuffer {
     _size += 1
   }
   protected def _insertSorted(elt:Int): Unit = {
-    val index = _indexOfSorted(elt) 
+    val index = _indexForInsertSorted(elt)
+    //assert(index >= 0 && index <= _size, index)
     _insert(index, elt)
   }
   protected def _insertSortedNoDuplicates(elt:Int): Unit = {
-    val index = _indexOfSorted(elt)
+    val index = _indexForInsertSorted(elt)
     if (_arr(index) != elt) _insert(index, elt)
   }
   // TODO Make another version of this that works on IntSeq instead of Traversable[Int] 

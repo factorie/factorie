@@ -17,7 +17,7 @@ object LDA3 {
   cc.factorie.random.setSeed(0)
   
   implicit val model = GenerativeModel()
-  object ZDomain extends DiscreteDomain { def size = numTopics }
+  object ZDomain extends DiscreteDomain(numTopics)
   object ZSeqDomain extends DiscreteSeqDomain { def elementDomain = ZDomain }
   class Zs(len:Int) extends DiscreteSeqVariable(len) { 
     def domain = ZSeqDomain
@@ -30,7 +30,7 @@ object LDA3 {
     def zs = model.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3.asInstanceOf[Zs]
   }
   class Document(val file:String, val theta:ProportionsVar, strings:Seq[String]) extends Words(strings)
-  val beta = MassesVariable.growableUniform(WordDomain.values, beta1)
+  val beta = MassesVariable.growableUniform(WordDomain, beta1)
   val alphas = MassesVariable.dense(numTopics, alpha1)
 
   def main(args: Array[String]): Unit = {
@@ -39,7 +39,7 @@ object LDA3 {
       else if (true) List("11", "12", "10", "09", "08").take(4).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
       else if (false) List("acq", "earn", "money-fx").map("/Users/mccallum/research/data/text/reuters/reuters-parsed/modapte/"+_)
       else List("comp.graphics", "comp.os.ms-windows.misc", "comp.sys.ibm.pc.hardware", "comp.sys.mac.hardware").map("/Users/mccallum/research/data/text/20_newsgroups/"+_)
-    val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain.values) ~ Dirichlet(beta))
+    val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain) ~ Dirichlet(beta))
     val documents = new ArrayBuffer[Document]
     val stopwords = new Stopwords; stopwords += "rainbownum"
     for (directory <- directories) {
@@ -72,9 +72,9 @@ object LDA3 {
           MaximizeDirichletByMomentMatching(alphas, model)
           sampler.resetSmoothing(alphas.tensor, beta1)
           println("alpha = " + alphas.tensor.toSeq.mkString(" "))
-          phis.zipWithIndex.map({case (phi:ProportionsVar, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).reverse.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
+          phis.zipWithIndex.map({case (phi:ProportionsVar, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).reverse.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
         } else {
-          phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.getCategory(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
+          phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
         }
         println
       }

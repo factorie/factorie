@@ -17,7 +17,7 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 
-object ChainNerFeaturesDomain extends CategoricalVectorDomain[String]
+object ChainNerFeaturesDomain extends CategoricalTensorDomain[String]
 class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
   def domain = ChainNerFeaturesDomain
   override def skipNonCategories = true
@@ -159,7 +159,7 @@ class ChainNer {
     val buf = new StringBuffer
     // Per-token evaluation
     buf.append(new LabelEvaluation(documents.flatMap(_.tokens.map(_.attr[ChainNerLabel]))))
-    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categoryValues.filter(_.length > 2).map(_.substring(2)))
+    val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categories.filter(_.length > 2).map(_.substring(2)))
     for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[ChainNerLabel])
     println("Segment evaluation")
     println(segmentEvaluation)
@@ -171,9 +171,10 @@ class ChainNer {
     if (!hasFeatures(document)) initFeatures(document)
     if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
     if (true) {
-      new BPInferencer[ChainNerLabel](model).inferTreewiseMax(document.tokens.map(_.attr[ChainNerLabel]))
+      throw new Error("BP training not yet implemented.")
+      //new BPInferencer[ChainNerLabel](model).inferTreewiseMax(document.tokens.map(_.attr[ChainNerLabel]))
     } else {
-      for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.getCategory(0)) // init value doens't matter
+      for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.category(0)) // init value doens't matter
       val localModel = new TemplateModel(model.templates(0), model.templates(1))
       val localPredictor = new VariableSettingsGreedyMaximizer[ChainNerLabel](localModel, null)
       for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)

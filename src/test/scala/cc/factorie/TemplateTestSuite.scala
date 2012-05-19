@@ -23,7 +23,7 @@ class TemplateTestSuite extends JUnitSuite  {
 
   @Test
   def testFactorsOfDiffList {
-    val template = new TemplateWithDotStatistics1[BooleanVariable]
+    val template = new TemplateWithDotStatistics1[BooleanVariable] { def statisticsDomains = Seq(BooleanDomain) }
     val b = new BooleanVariable(true)
     val diff = new DiffList
     b.set(false)(diff)
@@ -42,7 +42,7 @@ class TemplateTestSuite extends JUnitSuite  {
       }
     }
     val diff = new DiffList
-    val template = new TemplateWithDotStatistics1[BooleanVariable]
+    val template = new TemplateWithDotStatistics1[BooleanVariable] { def statisticsDomains = Seq(BooleanDomain) }
     Aggregate.b1.set(true)(diff)
     val factors = template.factors(diff)
     assert(factors.exists(factor => factor.variables.head == Aggregate.b1))
@@ -59,6 +59,7 @@ class TemplateTestSuite extends JUnitSuite  {
     }
     val aggregate = new Aggregate
     val template = new Template2[Aggregate,Vars[Aggregate#Member]] with DotStatistics1[RealSingletonVectorVariable#ValueType] {
+      def statisticsDomains = Seq(RealSingletonDiscreteDomain)
       def unroll2(v: Vars[Aggregate#Member]) = sys.error("Not needed")
       def unroll1(v: Aggregate) = Factor(v,Vars(v.members))
       override def unroll2s(v: Aggregate#Member) = Factor(v.owner,Vars(v.owner.members))
@@ -90,14 +91,14 @@ class SettingIteratorTests extends TestCase {
   //TODO: test fixed assignments
 
   def testLimitedSettingsIterator1 {
-    val template = new TemplateWithDotStatistics1[BooleanVariable]
+    val template = new TemplateWithDotStatistics1[BooleanVariable] { def statisticsDomains = Seq(BooleanDomain) }
     val factor = template.unroll1(v1).head
     assert(factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).size == 2)
     println("Template1 valuesIterator:")
     factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).foreach(println(_))
     println("--------------------------------")
 
-    template.addLimitedDiscreteValues(Seq(BooleanDomain.values.head.intValue))
+    template.addLimitedDiscreteValues(Seq(BooleanDomain.head.intValue))
     template.isLimitingValuesIterator = true
     assert(factor.valuesIterator(Set(factor._1.asInstanceOf[Variable])).size == 1)
     println("Template1 limitedValuesIterator:")
@@ -107,6 +108,7 @@ class SettingIteratorTests extends TestCase {
 
   def testLimitedSettingsIterator2 {
     val template = new TemplateWithDotStatistics2[BooleanVariable, BooleanVariable] {
+      def statisticsDomains = Seq(BooleanDomain, BooleanDomain)
       def unroll1(v: BooleanVariable) = Factor(v1, v2)
       def unroll2(v: BooleanVariable) = sys.error("Not needed")
     }
@@ -128,6 +130,7 @@ class SettingIteratorTests extends TestCase {
 
   def testLimitedSettingsIterator3 {
     val template = new TemplateWithDotStatistics3[BooleanVariable, BooleanVariable, BooleanVariable] {
+      def statisticsDomains = Seq(BooleanDomain, BooleanDomain, BooleanDomain)
       def unroll1(v: BooleanVariable) = Factor(v1, v2, v3)
       def unroll2(v: BooleanVariable) = sys.error("Not needed")
       def unroll3(v: BooleanVariable) = sys.error("Not needed")

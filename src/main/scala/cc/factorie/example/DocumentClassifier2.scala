@@ -26,7 +26,7 @@ import cc.factorie._
  and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */
 object DocumentClassifier2 {
 
-  object DocumentDomain extends CategoricalVectorDomain[String]
+  object DocumentDomain extends CategoricalTensorDomain[String]
   class Document(file:File) extends BinaryFeatureVectorVariable[String] {
     def domain = DocumentDomain
     var label = new Label(file.getParentFile.getName, this)
@@ -40,9 +40,12 @@ object DocumentClassifier2 {
 
   val model = new TemplateModel(
     /** Bias term just on labels */
-    new TemplateWithDotStatistics1[Label], 
+    new TemplateWithDotStatistics1[Label] {
+      def statisticsDomains = Seq(LabelDomain)
+    }, 
     /** Factor between label and observed document */
     new TemplateWithDotStatistics2[Label,Document] {
+      def statisticsDomains = Seq(LabelDomain, DocumentDomain)
       def unroll1 (label:Label) = Factor(label, label.document)
       def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
     }

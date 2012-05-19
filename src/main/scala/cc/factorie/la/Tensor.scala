@@ -33,6 +33,7 @@ trait Tensor extends MutableDoubleSeq {
   def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
   def activeElements: Iterator[(Int,Double)] = (for (i <- activeDomain.toArray) yield (i, apply(i))).iterator
   def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f) // To be override for efficiency in subclasses
+  def exists(f:(Double)=>Boolean): Boolean = !forallActiveElements((i,v) => !f(v))
   def outer(t:Tensor): Tensor = Tensor.outer(this, t)
   override def dot(ds:DoubleSeq): Double = throw new Error("Subclasses should override dot with specialized efficient versions.")
   // Methods for mutability not implemented in all Tensors
@@ -40,14 +41,17 @@ trait Tensor extends MutableDoubleSeq {
   def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName)
   def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
   def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
-  // TODO Consider methods like +, -, *, /
-  def +(that:Tensor): Tensor = throw new Error
-  def -(that:Tensor): Tensor = throw new Error
-  def *(that:Tensor): Tensor = throw new Error
-  def /(that:Tensor): Tensor = throw new Error
-  def normalized: Tensor = throw new Error
-  def expNormalized: Tensor = throw new Error
-  def expNormalizer: Double = throw new Error
+  def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
+  def *(v:Double): Tensor = new TensorTimesScalar(this, v)
+  def /(v:Double): Tensor = new TensorTimesScalar(this, 1.0/v)
+  //def +(v:Double): Tensor = { val t = copy; t += v; t } // TODO This wouldn't properly obey sparsity
+  //def -(v:Double): Tensor = { val t = copy; t -= v; t } // TODO This wouldn't properly obey sparsity
+  def +(that:Tensor): Tensor = throw new Error("Not yet implemented")
+  def -(that:Tensor): Tensor = throw new Error("Not yet implemented")
+  def *(that:Tensor): Tensor = throw new Error("Not yet implemented")
+  def /(that:Tensor): Tensor = throw new Error("Not yet implemented")
+  def normalized: Tensor = { val t = copy; t.normalize; t }
+  def expNormalized: Tensor = { val t = copy; t.expNormalize; t }
   def isUniform = false // TODO Fix this for the Uniform Tensors!!
   def stringPrefix = "Tensor"
   override def toString = { val suffix = if (length > 50) "...)" else ")"; this.asSeq.mkString(stringPrefix+"(", ",", suffix) }
@@ -62,13 +66,25 @@ object Tensor {
     case t:Tensor3 => new DenseTensor3(t.dim1, t.dim2, t.dim3)
     case t:Tensor4 => new DenseTensor4(t.dim1, t.dim2, t.dim3, t.dim4)
   }
+  def newDense(dims:Int*): Tensor = dims match {
+    case Seq(d1) => new DenseTensor1(d1)
+    case Seq(d1, d2) => new DenseTensor2(d1, d2)
+    case Seq(d1, d2, d3) => new DenseTensor3(d1, d2, d3)
+    case Seq(d1, d2, d3, d4) => new DenseTensor4(d1, d2, d3, d4)
+  }
   def newSparse(t:Tensor): Tensor = t match {
     case t:Tensor1 => new SparseTensor1(t.dim1)
-    case t:Tensor2 => new DenseLayeredTensor2(t.dim1, t.dim2) with InnerSparseTensor1
-    case t:Tensor3 => new Dense2LayeredTensor3(t.dim1, t.dim2, t.dim3) with InnerSparseTensor1
-    case t:Tensor4 => new Dense3LayeredTensor4(t.dim1, t.dim2, t.dim3, t.dim4) with InnerSparseTensor1
+    case t:Tensor2 => new DenseLayeredTensor2(t.dim1, t.dim2, (dim1:Int) => new SparseTensor1(dim1))
+    case t:Tensor3 => new Dense2LayeredTensor3(t.dim1, t.dim2, t.dim3, new SparseTensor1(_)) // with InnerSparseTensor1
+    case t:Tensor4 => new Dense3LayeredTensor4(t.dim1, t.dim2, t.dim3, t.dim4, new SparseTensor1(_)) // with InnerSparseTensor1
   }
-  
+  def newSparse(dims:Int*): Tensor = dims match {
+    case Seq(d1) => new SparseTensor1(d1)
+    case Seq(d1, d2) => new DenseLayeredTensor2(d1, d2, new SparseTensor1(_)) // with InnerSparseTensor1
+    case Seq(d1, d2, d3) => new Dense2LayeredTensor3(d1, d2, d3, new SparseTensor1(_)) // with InnerSparseTensor1
+    case Seq(d1, d2, d3, d4) => new Dense3LayeredTensor4(d1, d2, d3, d4, new SparseTensor1(_)) // with InnerSparseTensor1
+  }
+
   // Support for dot inner products with dense tensors
   def dot(t1:DenseTensor, t2:DenseTensor): Double = {
     val len = t1.length; assert(len == t2.length); var result = 0.0; var i = 0
@@ -164,7 +180,8 @@ trait TensorWithMutableDefaultValue extends Tensor {
 }
 
 
-/** A lazy product of a Vector and a scalar.
+/** An lazy product of a Vector and a scalar.
+    Note that changes in the underlying Tensor will also show up here. 
     @author Andrew McCallum */
 class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor {
   def numDimensions: Int = tensor numDimensions
@@ -174,9 +191,9 @@ class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor {
   def activeDomains: Array[IntSeq] = tensor.activeDomains
   def isDense: Boolean = tensor.isDense
   def length = tensor.length
-  //def activeDomainSize: Int = vector.activeDomainSize
-  def dot(t:Tensor): Double = tensor.dot(t) * scalar
-  def *(scalar:Double) = new TensorTimesScalar(tensor, scalar*this.scalar)
+  override def activeDomainSize: Int = tensor.activeDomainSize
+  override def dot(t:DoubleSeq): Double = tensor.dot(t) * scalar
+  override def *(scalar:Double) = new TensorTimesScalar(tensor, scalar*this.scalar)
   //override def update(i:Int, v:Double): Unit = tensor.update(idx, value/scalar)
   //override def +=(v: Vector) { vector += v*(1.0/scalar) }
   def apply(index:Int) = tensor.apply(index) * scalar
@@ -204,7 +221,7 @@ trait DenseTensor extends Tensor {
 trait SingletonBinaryTensor extends Tensor {
   def singleIndex: Int
   def isDense = false
-  def activeDomain: IntSeq = new SingletonIntSeq(singleIndex)
+  //def activeDomain: IntSeq = new SingletonIntSeq(singleIndex) // Can't be here and in Tensor1
   def apply(i:Int) = if (i == singleIndex) 1.0 else 0.0
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = f(singleIndex, 1.0)
   override def activeElements: Iterator[(Int,Double)] = Iterator.single((singleIndex, 1.0))
@@ -237,7 +254,7 @@ trait UniformTensor extends Tensor {
   def uniformValue: Double
   def apply(i:Int) = uniformValue
   def isDense = true
-  def activeDomain: IntSeq = new RangeIntSeq(0, length)
+  //def activeDomain: IntSeq = new RangeIntSeq(0, length) // Can't be both here an Tensor1
   override def sum: Double = length * uniformValue
   override def max: Double = uniformValue
   override def min: Double = uniformValue

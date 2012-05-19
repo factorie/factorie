@@ -23,20 +23,24 @@ import cc.factorie.app.nlp.ner._
 import collection.mutable.ArrayBuffer
 
 object ChainNER1ML {
-  object TokenFeaturesDomain extends CategoricalVectorDomain[String]
+  object TokenFeaturesDomain extends CategoricalTensorDomain[String]
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenFeaturesDomain
   }
   val model = new TemplateModel(
     // Bias term on each individual label 
-    new TemplateWithDotStatistics1[ChainNerLabel], 
+    new TemplateWithDotStatistics1[ChainNerLabel] {
+      def statisticsDomains = Seq(Conll2003NerDomain)
+    }, 
     // Factor between label and observed token
     new TemplateWithDotStatistics2[ChainNerLabel,TokenFeatures] {
+      def statisticsDomains = Seq(Conll2003NerDomain, TokenFeaturesDomain)
       def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[TokenFeatures])
       def unroll2(tf: TokenFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
     },
     // Transition factors between two successive labels
     new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel] {
+      def statisticsDomains = Seq(Conll2003NerDomain, Conll2003NerDomain)
       def unroll1(label: ChainNerLabel) = if (label.token.hasPrev) Factor(label.token.prev.attr[ChainNerLabel], label) else Nil
       def unroll2(label: ChainNerLabel) = if (label.token.hasNext) Factor(label, label.token.next.attr[ChainNerLabel]) else Nil
     }
@@ -80,7 +84,8 @@ object ChainNER1ML {
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))
     testLabelsSentences.foreach {
-      variables => new BPInferencer(model).inferTreewiseMax(variables)
+      throw new Error("Not yet implemented.")
+//      variables => new BPInferencer(model).inferTreewiseMax(variables)
     }
     println("test token accuracy=" + objective.aveScore(testLabelsSentences.flatten))
 

@@ -1,7 +1,7 @@
 package cc.factorie.bp.specialized
 
 import cc.factorie._
-import cc.factorie.la.{Vector, SparseVector}
+import cc.factorie.la._
 import collection.mutable.ListBuffer
 
 /**
@@ -16,7 +16,7 @@ trait BeamSearch {
   // the contract here is: null out array elements you don't like
   def threshold(domainScores: Array[(Int, Double)]): Unit = ()
 
-  def searchAndSetToMax[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
+  def searchAndSetToMax[OV <: DiscreteTensorVar, LV <: LabelVariable[_]](
             vs: Seq[LV],
             localTemplate: TemplateWithDotStatistics2[LV, OV],
             transTemplate: TemplateWithDotStatistics2[LV, LV],
@@ -31,7 +31,7 @@ trait BeamSearch {
     }
   }
 
-  def search[OV <: DiscreteVectorVar, LV <: LabelVariable[_]](
+  def search[OV <: DiscreteTensorVar, LV <: LabelVariable[_]](
              vs: Seq[LV],
              localTemplate: TemplateWithDotStatistics2[LV, OV],
              transTemplate: TemplateWithDotStatistics2[LV, LV],
@@ -56,11 +56,11 @@ trait BeamSearch {
 
     def transScores(i: Int, j: Int): Double = transTemplate.weights(i * ds + j)
 
-    val biasScores: Vector = {
+    val biasScores: Tensor = {
       if (biasTemplate ne null)
         biasTemplate.weights
       else
-        new SparseVector(localScores(0).size)
+        Tensor.newSparse(localScores(0).size)
     }
 
     // the int is the intValue of the previous variable, the double is the alpha

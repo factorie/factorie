@@ -26,7 +26,7 @@ object PlatedDiscreteMixture extends GenerativeFamily3[DiscreteSeqVar,Mixture[Pr
   def logpr(ds:Seq[DiscreteValue], mixture:Seq[Proportions], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => math.log(mixture(tuple._2.intValue).apply(tuple._1.intValue))).sum  
   //def logpr(ds:Seq[DiscreteValue], mixture:Seq[DoubleSeq], gates:Seq[DiscreteValue]): Double = ds.zip(gates).map(tuple => math.log(mixture(tuple._2.intValue).apply(tuple._1.intValue))).sum  
   def sampledValue(d:DiscreteDomain, mixture:Seq[Proportions], gates:Seq[DiscreteValue]): Seq[DiscreteValue] = 
-    for (i <- 0 until gates.length) yield d.getValue(mixture(gates(i).intValue).sampleIndex) 
+    for (i <- 0 until gates.length) yield d.apply(mixture(gates(i).intValue).sampleIndex) 
   case class Factor(_1:DiscreteSeqVar, _2:Mixture[ProportionsVar], _3:DiscreteSeqVariable) extends super.Factor with MixtureFactor {
     def gate = throw new Error("Not yet implemented. Need to make PlatedGate be a Gate?") // f._3
     def pr(s:Statistics): Double = self.pr(s._1, s._2, s._3)

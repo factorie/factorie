@@ -37,12 +37,12 @@ abstract class StructuredPerceptron[V<:VarWithTargetValue] extends GradientAscen
       updateWeights // This will result in a call to "addGradient"
   }
 
-  def addGradient(accumulator:DotFamily=>Vector, rate:Double): Unit = {
+  def addGradient(accumulator:DotFamily=>Tensor, rate:Double): Unit = {
     if (!difflist.done) difflist.redo
-    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.statistics.tensor, rate))
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
     difflist.undo
-    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
+    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.statistics.tensor, -rate))
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
   }
 
@@ -60,11 +60,11 @@ abstract class StructuredPerceptron[V<:VarWithTargetValue] extends GradientAscen
  */
 abstract class AveragedStructuredPerceptron[V<:VarWithTargetValue] extends StructuredPerceptron[V] {
 
-  private val wa = new HashMap[DotFamily, Vector]
+  private val wa = new HashMap[DotFamily, Tensor]
   private var c = 0
   def incrementIteration(): Unit = c += 1
-  def setToAveraged(): Unit = wa.foreach { case (f, v) => f.weights += (v * (-1.0/c)) }
-  def unsetAveraged(): Unit = wa.foreach { case (f, v) => f.weights += (v * (1.0/c)) }
+  def setToAveraged(): Unit = wa.foreach { case (f, v) => f.weights.+=(v, (-1.0/c)) }
+  def unsetAveraged(): Unit = wa.foreach { case (f, v) => f.weights.+=(v, (1.0/c)) }
   def clear(): Unit = { c = 0; wa.clear() }
 
   override def process(vs: Seq[V]): Unit = {
@@ -72,20 +72,20 @@ abstract class AveragedStructuredPerceptron[V<:VarWithTargetValue] extends Struc
     super.process(vs)
   }
 
-  override def addGradient(accumulator:DotFamily=>Vector, rate:Double): Unit = {
+  override def addGradient(accumulator:DotFamily=>Tensor, rate:Double): Unit = {
     // for some reason familiesToUpdate and model.familiesOfClass(classOf[DotTemplate])
     // give null pointer when outside this fn.
-    if (wa.size == 0) familiesToUpdate.foreach(f => wa(f) = new DenseVector(f.statisticsVectorLength))
+    if (wa.size == 0) familiesToUpdate.foreach(f => wa(f) = f.weights.blankCopy) //new DenseVector(f.statisticsVectorLength)
 
     if (!difflist.done) difflist.redo
     model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => {
-      wa(f.family) += f.statistics.vector * (rate * c)
-      accumulator(f.family) += f.statistics.vector * rate
+      wa(f.family).+=(f.statistics.tensor, (rate * c))
+      accumulator(f.family).+=(f.statistics.tensor, rate)
     })
     difflist.undo
     model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => {
-      wa(f.family) += f.statistics.vector * (-rate * c)
-      accumulator(f.family) += f.statistics.vector * -rate
+      wa(f.family).+=(f.statistics.tensor, (-rate * c))
+      accumulator(f.family).+=(f.statistics.tensor, -rate)
     })
   }
 }

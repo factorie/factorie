@@ -31,8 +31,8 @@ object Discrete extends GenerativeFamily2[DiscreteVar,ProportionsVar] {
     override def pr: Double = _2.value.apply(_1.intValue)
     def prValue(s:Statistics, intValue:Int): Double = s._2.apply(intValue)
     override def prValue(intValue:Int): Double = _2.value.apply(intValue)
-    def sampledValue(s:Statistics): DiscreteValue = s._1.domain.getValue(s._2.sampleIndex)
-    override def sampledValue: DiscreteValue = _1.domain.getValue(_2.value.sampleIndex)
+    def sampledValue(s:Statistics): DiscreteValue = s._1.domain.apply(s._2.sampleIndex)
+    override def sampledValue: DiscreteValue = _1.domain.apply(_2.value.sampleIndex)
     def maxIntValue(s:Statistics): Int = s._2.maxIndex
     @deprecated("May be deleted") override def updateCollapsedParents(weight:Double): Boolean = { _2.tensor.+=(_1.intValue, weight); true }
   }

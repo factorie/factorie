@@ -105,12 +105,12 @@ object RelationVariables {
     def domain = RelationFeaturesDomain
 
     def +=(feats: FeatureVectorVariable[String]) =
-      for (i <- feats.vector.activeDomain)
-        this.increment(i, feats.vector(i))
+      for (i <- feats.tensor.activeDomain.toSeq)
+        this.tensor.+=(i, feats.tensor(i)) // TODO Use Tensor.+= to make this much faster
 
     def normalize(feats: FeatureVectorVariable[String]) =
-      for (i <- feats.vector.activeDomain)
-        feats.update(i, feats.vector(i) / vector(i))
+      for (i <- feats.tensor.activeDomain.toSeq)
+        feats.tensor.update(i, feats.tensor(i) / tensor(i)) // TODO Use Tensor./= to make this much faster
   }
 
   class Features(val mention: RelationMention) extends FeatureVectorVariable[String] {
@@ -124,7 +124,7 @@ object RelationVariables {
       this += prefix + "POS_" + tok.posLabel.categoryValue
     }
 
-    override def +=(elt: String) = update(elt, 1.0)
+    override def +=(elt: String) = if (!tensor.contains(domain.index(elt))) this.+=(elt, 1.0)  // was: elt.update(elt, 1.0)
 
     def compute = {
       val m1 = mention.arg1

@@ -43,8 +43,8 @@ trait AROWUpdates extends ConfidenceWeightedUpdates {
   //helpful misc vars/members
   var _beta : Double = -1.0 //always must be positive
   def r : Double = 2*lambda //for convenience
-  def alpha(modelScore:Double,gradient:HashMap[DotFamily,SparseVector]) : Double = math.max(0,1-modelScore) * beta(gradient)
-  def beta(gradient:HashMap[DotFamily,SparseVector]) : Double = {if(_beta == -1.0)_beta = 1/(marginVariance(gradient) + r);_beta}
+  def alpha(modelScore:Double,gradient:HashMap[DotFamily,Tensor]) : Double = math.max(0,1-modelScore) * beta(gradient)
+  def beta(gradient:HashMap[DotFamily,Tensor]) : Double = {if(_beta == -1.0)_beta = 1/(marginVariance(gradient) + r);_beta}
   
   override def updateWeights : Unit =
     {
@@ -53,12 +53,12 @@ trait AROWUpdates extends ConfidenceWeightedUpdates {
       //if (!shouldUpdate) return;
       numUpdates += 1
       
-      val gradient = new HashMap[DotFamily,SparseVector] {
+      val gradient = new HashMap[DotFamily,Tensor] {
         override def default(template:DotFamily) = {
           template.freezeDomains
-          val vector = new SparseVector(template.statisticsVectorLength)
-          this(template) = vector
-          vector
+          val tensor = template.newWeightsTypeTensor // = new SparseVector(template.statisticsVectorLength)
+          this(template) = tensor
+          tensor
         }
       }
       
@@ -70,7 +70,7 @@ trait AROWUpdates extends ConfidenceWeightedUpdates {
     }
   
   //approximating outer product with inner product and justifying as a projection of covariance matrix onto the diagonal (may be grossly conservative)
-  override def updateSigma(gradient:HashMap[DotFamily,SparseVector]) : Unit =
+  override def updateSigma(gradient:HashMap[DotFamily,Tensor]) : Unit =
     {
       for((template,templateGrad)<-gradient)
         {

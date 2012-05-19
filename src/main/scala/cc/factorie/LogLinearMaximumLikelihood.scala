@@ -20,18 +20,13 @@ import cc.factorie.la._
 import cc.factorie.optimize._
 import scala.collection.mutable.HashMap
 
-class SuffStats extends HashMap[DotFamily, Vector] {
+class SuffStats extends HashMap[DotFamily,Tensor] {
   override def default(template: DotFamily) = {
     template.freezeDomains
     // Replace this with Tensor.copy method
-    val vector: Vector = template.weights match {
-      case w: SparseVector => new SparseVector(w.length)
-      case w: DenseVector => new DenseVector(w.length)
-      case w: SparseOuter1DenseVector1 => new SparseOuter1DenseVector1(w.length1, w.length2)
-      case w: SparseOuter2DenseVector1 => new SparseOuter2DenseVector1(w.length1, w.length2, w.length3)
-    }
-    this(template) = vector
-    vector
+    val tensor: Tensor = template.weights.blankCopy
+    this(template) = tensor
+    tensor
   }
   // To help make sure sort order of vectors matches
   def sortedKeys = keys.toSeq.sortWith(_.hashCode > _.hashCode)
@@ -64,15 +59,16 @@ class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordinatio
   def updateOValueBP(expectations: SuffStats) {
     variableSets.foreach(variables => {
       if (variables.size > 0) {
-        val lattice = new BPLattice(variables, model)
-        // Do inference on the tree
-        lattice.updateTreewise(expectations)
-        // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
-        // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
-        variables.foreach(_.asInstanceOf[VarWithTargetValue].setToTarget(null))
-        // oValue += model.factors(variables).foldLeft(0.0)(_+_.cachedStatistics.score) - logZ
-        for (bpfactor <- lattice.bpFactors.values) oValue += bpfactor.factor.cachedStatistics.score
-        oValue -= lattice.sumLogZ
+        throw new Error("BP parameter estimation not yet implemented.")
+//        val lattice = new BPLattice(variables, model)
+//        // Do inference on the tree
+//        lattice.updateTreewise(expectations)
+//        // For all factors // TODO Here skip factors that would have been left out in the TRP spanning tree of a loopy graph
+//        // TODO Note that this will only work for variables with TrueSetting.  Where to enforce this?
+//        variables.foreach(_.asInstanceOf[VarWithTargetValue].setToTarget(null))
+//        // oValue += model.factors(variables).foldLeft(0.0)(_+_.cachedStatistics.score) - logZ
+//        for (bpfactor <- lattice.bpFactors.values) oValue += bpfactor.factor.cachedStatistics.score
+//        oValue -= lattice.sumLogZ
       }
     })
   }
@@ -86,7 +82,7 @@ class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordinatio
         expectations(t) += constraints(t)
         //vecPlusEq(expectations(t), constraints(t), 1.0)
         // subtract weights due to regularization
-        expectations(t) += t.weights * invVariance
+        expectations(t).+=(t.weights, invVariance)
     }
   }
 
@@ -97,7 +93,7 @@ class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordinatio
     updateOValueBP(expectations)
     updateExpectations(expectations, constraints)
     // constraints.keys.foreach(t => expectations(t) += constraints(t))
-    oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
+    oGradient = (new ArrayFromTensors(expectations.sortedKeys.map(expectations(_)))).getTensorsInArray(oGradient)
   }
 
   var distribution = Array.fill(0)(0.0)
@@ -111,12 +107,12 @@ class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordinatio
         i += 1
       }
 
-      maths.expNormalize(distribution)
+      maths.ArrayOps.expNormalize(distribution) // Why is ArrayOps necessary?
       i = 0
       while (i < distribution.length) {
         v.set(i)(null)
         // put negative expectations into 'expectations' StatMap
-        model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => expectations(f.family) +=  f.statistics.vector *(-distribution(i)))
+        model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => expectations(f.family).+=(f.statistics.tensor, -distribution(i)))
         i += 1
       }
 
@@ -131,7 +127,8 @@ class LogLinearOptimizable[V <: DiscreteVarWithTarget with NoVariableCoordinatio
     doOValueIID(expectations)
     updateExpectations(expectations, constraints)
     // constraints.keys.foreach(t => expectations(t) += constraints(t))
-    oGradient = (new ArrayFromVectors(expectations.sortedKeys.map(expectations(_)))).getVectorsInArray(oGradient)
+    
+    oGradient = (new ArrayFromTensors(expectations.sortedKeys.map(expectations(_)))).getTensorsInArray(oGradient)
   }
 
   def optimizableValue: Double = {
@@ -174,7 +171,7 @@ class LogLinearMaximumLikelihood(model: Model, modelFile: String = null) {
     //familiesToUpdate.foreach(t => constraints(t) = constraints.default(t)) // TODO Why is this line necessary? Delete it? -akm
     // Gather constraints
     variableSets.foreach(_.foreach(_.setToTarget(null)))
-    variableSets.foreach(vars => model.factorsOfFamilies(vars, familiesToUpdate).foreach(f => { val vector = f.cachedStatistics.vector ; constraints(f.family) += vector }))
+    variableSets.foreach(vars => model.factorsOfFamilies(vars, familiesToUpdate).foreach(f => { val tensor = f.cachedStatistics.tensor; constraints(f.family) += tensor }))
 
     def templates = constraints.sortedKeys
 

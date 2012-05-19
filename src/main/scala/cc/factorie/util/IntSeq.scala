@@ -37,7 +37,7 @@ trait IntSeq {
     final def apply(i:Int): Int = IntSeq.this.apply(i)
   }
   def toSeq: IndexedSeq[Int] = new IndexedSeq[Int] {
-    private val a = toArray
+    private val a = IntSeq.this.toArray
     final def length = a.length
     final def apply(i:Int): Int = a(i)
   }
