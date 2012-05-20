@@ -23,6 +23,7 @@ trait DoubleSeq {
   final def size = length // Just an alias
   def foreach(f:(Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(apply(i)); i += 1 } }
   def foreachElement(f:(Int,Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(i, apply(i)); i += 1 } }
+  def foreachActiveElement(f:(Int,Double)=>Unit): Unit = foreachElement(f) // To be overridden by sparse subclasses
   def forallElements(f:(Int,Double)=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(i, apply(i))) return false; i += 1 }; return true }
   def contains(d:Double): Boolean = { val l = length; var i = 0; while (i < l) { if (d == apply(i)) return true; i += 1 }; false }
   def forall(f:Double=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(apply(i))) { println("DoubleSeq.forall "+apply(i)); return false }; i += 1 }; true }
@@ -175,7 +176,7 @@ trait SparseDoubleSeq extends DoubleSeq {
   def activeDomain: IntSeq
   def activeDomainSize: Int
   // We are relying on "f" getting properly @specialized
-  def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
+  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
   // TODO Should we also override def map(f:(Double)=>Double): DoubleSeq  ???
   //override def max:  Double = { var m = Double.NaN; val d = activeDomain; val l = d.length; var i = 0; while (i < l) { val v = apply(d(i)); if (!(m >= v)) m = v; i += 1 }; m }
   override def max: Double = { var m = Double.NaN; foreachActiveElement((i,v) => { if (!(m >= v)) m = v }); m }
@@ -256,7 +257,10 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
   // Concrete methods, efficient for dense representations
   def substitute(oldValue:Double, newValue:Double): Unit = { var i = 0; while (i < length) { if (apply(i) == oldValue) update(i, newValue); i += 1 } }
   def :=(d:Double): Unit = { val l = length; var i = 0; while (i < l) { update(i, d); i += 1 }}
-  def :=(ds:DoubleSeq): Unit = { val l = length; require(ds.length == l); var i = 0; while (i < l) { update(i, ds(i)); i += 1 }}
+  def :=(ds:DoubleSeq): Unit = ds match {
+    case ds:SparseDoubleSeq => { zero(); /* Use defaultValue instead? */ ds.foreachActiveElement((i,v) => update(i, v)) }
+    case ds:DoubleSeq => { val l = length; require(ds.length == l); var i = 0; while (i < l) { update(i, ds(i)); i += 1 }}
+  }
   def :=(a:Array[Double]): Unit = { val l = length; require(a.length == l); var i = 0; while (i < l) { update(i, a(i)); i += 1 }}
   def *=(i:Int, incr:Double): Unit = update(i, apply(i)*incr)
   final def /=(i:Int, incr:Double): Unit = *=(i, 1.0/incr)

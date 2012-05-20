@@ -30,12 +30,12 @@ trait Tensor extends MutableDoubleSeq {
   def activeDomainSize: Int = activeDomain.length // Should be overridden for efficiency in many subclasses
   /** The default value at indices not covered by activeDomain.  Subclasses may override this  */
   def defaultValue: Double = 0.0 // TODO This is not actually yet properly used by subclasses
-  def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
+  //def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
   def activeElements: Iterator[(Int,Double)] = (for (i <- activeDomain.toArray) yield (i, apply(i))).iterator
   def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f) // To be override for efficiency in subclasses
   def exists(f:(Double)=>Boolean): Boolean = !forallActiveElements((i,v) => !f(v))
   def outer(t:Tensor): Tensor = Tensor.outer(this, t)
-  override def dot(ds:DoubleSeq): Double = throw new Error("Subclasses should override dot with specialized efficient versions.")
+  override def dot(ds:DoubleSeq): Double = throw new Error("Subclasses should override dot with specialized efficient versions. t1="+this.getClass.getName+" t2="+ds.getClass.getName)
   // Methods for mutability not implemented in all Tensors
   def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
   def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName)
@@ -198,6 +198,7 @@ class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor {
   // For handling sparsity
   def activeDomain: IntSeq = tensor.activeDomain
   def activeDomains: Array[IntSeq] = tensor.activeDomains
+  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val d = tensor.activeDomain; var i = 0; while (i < d.length) { f(d(i), apply(d(i))); i += 1 } }
   def isDense: Boolean = tensor.isDense
   def length = tensor.length
   override def activeDomainSize: Int = tensor.activeDomainSize
@@ -212,13 +213,16 @@ trait DenseTensor extends Tensor {
   protected def _values: Array[Double]
   override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
   override def dot(t2:DoubleSeq): Double = t2 match {
-    case t2:SingletonTensor => apply(t2.singleIndex) * t2.singleValue
     case t2:SingletonBinaryTensor => apply(t2.singleIndex)
-    // TODO Any other special cases here?
+    case t2:SingletonTensor => apply(t2.singleIndex) * t2.singleValue
     case t2:DenseTensor => {
       val len = length; assert(len == t2.length); var result = 0.0; var i = 0
       while (i < len) { result += apply(i) * t2(i); i += 1 }; result
     }
+    case t2:SparseBinaryTensor => {
+      var s = 0.0; t2.foreachElement((i,v) => s += _values(i)); s
+    }
+    // TODO Any other special cases here?
     case t2:DoubleSeq => { // TODO Consider removing this to catch inefficiency
       val len = length; assert(len == t2.length); var result = 0.0; var i = 0
       while (i < len) { result += apply(i) * t2(i); i += 1 }; result
@@ -227,26 +231,12 @@ trait DenseTensor extends Tensor {
 
 }
 
-trait SingletonBinaryTensor extends Tensor {
+trait SingletonTensor extends Tensor with SparseDoubleSeq {
   def singleIndex: Int
-  def isDense = false
-  //def activeDomain: IntSeq = new SingletonIntSeq(singleIndex) // Can't be here and in Tensor1
-  def apply(i:Int) = if (i == singleIndex) 1.0 else 0.0
-  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = f(singleIndex, 1.0)
-  override def activeElements: Iterator[(Int,Double)] = Iterator.single((singleIndex, 1.0))
-  override def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = f(singleIndex, 1.0)
-  override def sum: Double = 1.0
-  override def max: Double = 1.0
-  override def min: Double = 0.0
-  override def containsNaN: Boolean = false
-  override def maxIndex: Int = singleIndex
-  override def dot(v:DoubleSeq): Double = v(singleIndex)
-  override def copy: SingletonBinaryTensor = this // immutable, but careful in the future we might make a mutable version
-}
-
-trait SingletonTensor extends SingletonBinaryTensor {
   def singleValue: Double
-  override def apply(i:Int) = if (i == singleIndex) singleValue else 0.0
+  //def activeDomain: IntSeq = new SingletonIntSeq(singleIndex) // Can't be here and in Tensor1
+  def isDense = false
+  def apply(i:Int) = if (i == singleIndex) singleValue else 0.0
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = f(singleIndex, singleValue)
   override def activeElements: Iterator[(Int,Double)] = Iterator.single((singleIndex, singleValue))
   override def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = f(singleIndex, singleValue)
@@ -257,6 +247,21 @@ trait SingletonTensor extends SingletonBinaryTensor {
   override def containsNaN: Boolean = false
   override def dot(v:DoubleSeq): Double = v(singleIndex) * singleValue
   override def copy: SingletonTensor = this // immutable, but careful in the future we might make a mutable version
+}
+
+trait SingletonBinaryTensor extends SingletonTensor {
+  def singleValue: Double = 1.0
+  override def apply(i:Int) = if (i == singleIndex) 1.0 else 0.0
+  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = f(singleIndex, 1.0)
+  override def activeElements: Iterator[(Int,Double)] = Iterator.single((singleIndex, 1.0))
+  override def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = f(singleIndex, 1.0)
+  override def sum: Double = 1.0
+  override def max: Double = 1.0
+  override def min: Double = 0.0
+  override def containsNaN: Boolean = false
+  override def maxIndex: Int = singleIndex
+  override def dot(v:DoubleSeq): Double = v(singleIndex)
+  override def copy: SingletonBinaryTensor = this // immutable, but careful in the future we might make a mutable version
 }
 
 trait UniformTensor extends Tensor {
@@ -273,11 +278,12 @@ trait UniformTensor extends Tensor {
   override def copy = this // safe because it is immutable
 }
 
-trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayBuffer {
+trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayBuffer with SparseDoubleSeq {
   def isDense = false
   def activeDomain = new ArrayIntSeq(_array)
   @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
   @inline final def contains(index:Int): Boolean = _containsSorted(index)
+  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val len = _length; var i = 0; while (i < len) { f(_array(i), 1.0); i += 1 }}
   override def sum: Double = _length.toDouble
   override def max: Double = if (_length > 0) 1.0 else 0.0
   override def min: Double = if (_length == 0) 0.0 else 1.0

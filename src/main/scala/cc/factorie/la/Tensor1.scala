@@ -57,8 +57,8 @@ trait DenseTensorLike1 extends Tensor1 with DenseTensor {
   override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
   override def update(i:Int, v:Double): Unit = __values(i) = v
   override def dot(t:DoubleSeq): Double = t match {
-    case t:SingletonTensor => apply(t.singleIndex) * t.singleValue
     case t:SingletonBinaryTensor => apply(t.singleIndex)
+    case t:SingletonTensor => apply(t.singleIndex) * t.singleValue
     case t:DenseTensorLike1 => Tensor.dot(this, t)
     case t:SparseBinaryTensorLike1 => t dot this
     case t:SparseIndexedTensor1 => t dot this

@@ -88,7 +88,8 @@ object ChainNER4 {
     // Sample and Learn!
     val startTime = System.currentTimeMillis
     (trainLabels ++ testLabels).foreach(_.setRandomly())
-    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with ConfidenceWeightedUpdates { temperature = 0.01 }
+    //val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with ConfidenceWeightedUpdates { temperature = 0.01 }
+    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
     val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.01 }
     for (i <- 1 to 3) {
       println("Iteration "+i) 

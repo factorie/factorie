@@ -46,13 +46,15 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
   def apply(i:Int): Double = __values(i)
   override def apply(i:Int, j:Int): Double = __values(i*dim2+j)
   override def +=(i:Int, v:Double): Unit = _values(i) += v
-  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { _values(i) += ds(i); i += 1 } }
+  //override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { _values(i) += ds(i); i += 1 } }
   override def update(i:Int, v:Double): Unit = _values(i) = v
   override def update(i:Int, j:Int, v:Double): Unit = _values(i*dim2+j) = v
   override def dot(t:DoubleSeq): Double = t match {
     case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
     case t:SingletonBinaryTensor2 => apply(t.singleIndex)
     case t:DenseTensorLike2 => Tensor.dot(this, t)
+    case t:SingletonLayeredTensorLike2 => t dot this
+    case t:SingletonBinaryLayeredTensorLike2 => t dot this
   }
 }
 
@@ -69,7 +71,6 @@ class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, v
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2 + singleIndex2
-  def singleValue = 1.0
 }
 
 class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int, val singleValue:Double) extends Tensor2 with SingletonTensor {
@@ -87,12 +88,15 @@ class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensor
   override def blankCopy: SparseBinaryTensor2 = new SparseBinaryTensor2(dim1, dim2)
 }
 
-trait DenseLayeredTensorLike2 extends Tensor2 {
+trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def newTensor1:Int=>Tensor1
   private var _inners = new Array[Tensor1](dim1) // Array.fill(dim1)(newTensor1(dim2))
   def activeDomain1 = { val a = new Array[Int](dim1); var i = 0; var j = 0; while (i < dim1) { if (_inners(i) ne null) { a(j) = i; j += 1 }; i += 1 }; new TruncatedArrayIntSeq(a, j) }
   def activeDomain2 = new RangeIntSeq(0, dim2) // This could perhaps be more sparse
   def activeDomain = { val b = new IntArrayBuffer; for (i <- 0 until dim1; j <- 0 until dim2) { if (apply(i,j) != 0.0) b += singleIndex(i,j) }; new ArrayIntSeq(b.toArray) } // Not very efficient; use _inner().activeDomain intead
+  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = {
+    for (i <- 0 until dim1; if _inners(i) ne null) _inners(i).foreachActiveElement((j,v) => f(i*dim2+j,v))
+  }
   override def apply(i:Int, j:Int): Double = { val in = _inners(i); if (in ne null) in.apply(j) else 0.0 }
   def apply(i:Int): Double = apply(i/dim2, i%dim2)
   def isDense = false
@@ -119,7 +123,7 @@ class DenseLayeredTensor2(val dim1:Int, val dim2:Int, val newTensor1:Int=>Tensor
 }
 
 
-trait SingletonLayeredTensorLike2 extends Tensor2 {
+trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def singleIndex1: Int
   def singleValue1: Double
   def inner: Tensor1
@@ -140,7 +144,7 @@ trait SingletonLayeredTensorLike2 extends Tensor2 {
 }
 class SingletonLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleValue1:Double, val inner:Tensor1) extends SingletonLayeredTensorLike2
 
-trait SingletonBinaryLayeredTensorLike2 extends Tensor2 {
+trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def singleIndex1: Int
   def inner: Tensor1
   def isDense = false
@@ -161,7 +165,7 @@ trait SingletonBinaryLayeredTensorLike2 extends Tensor2 {
 }
 class SingletonBinaryLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val inner:Tensor1) extends SingletonBinaryLayeredTensorLike2
 
-trait SparseLayeredTensorLike2 extends Tensor2 {
+trait SparseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def newTensor1: Int=>Tensor1
   // TODO Finish this
 }

@@ -72,7 +72,6 @@ class SingletonBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:
   def activeDomain4 = new SingletonIntSeq(singleIndex4)
   def activeDomain = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4 + singleIndex4
-  def singleValue = 1.0
 }
 
 class SingletonTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleIndex4:Int, val singleValue:Double) extends Tensor4 with SingletonTensor {
@@ -95,7 +94,7 @@ class SparseBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int
 }
 
 
-trait Dense3LayeredTensorLike4 extends Tensor4 {
+trait Dense3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
   def newTensor1: Int=>Tensor1
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain2 = new RangeIntSeq(0, dim2)
@@ -114,7 +113,7 @@ class Dense3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:In
   override def blankCopy = new Dense3LayeredTensor4(dim1, dim2, dim3, dim4, newTensor1)
 }
 
-trait Singleton3LayeredTensorLike4 extends Tensor4 {
+trait Singleton3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
   def singleIndex1: Int
   def singleIndex2: Int
   def singleIndex3: Int

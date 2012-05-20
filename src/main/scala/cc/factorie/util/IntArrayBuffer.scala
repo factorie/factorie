@@ -23,11 +23,9 @@ trait ProtectedIntArrayBuffer {
   protected def _considerShrinkingCapacity: Unit = if (_size > 0 && _arr.length > _size * 2) _setCapacity(_size)
   protected def _trimCapacity: Unit = _setCapacity(_size) // What if _size == 0?
   protected def _reduceToSize(newSize:Int): Unit = { _size = newSize; _considerShrinkingCapacity }
-  @inline final protected def _array: Array[Int] = // Carefully, dangerous to access directly 
-    if (_size == _arr.length) _arr 
-    else { val a = new Array[Int](_size); arraycopy(_arr, 0, a, 0, _size); a }
   @inline final protected def _length = _size
   @inline final protected def _apply(index:Int): Int = _arr(index)
+  protected def _foreach[U](f:Int=>U): Unit = { var i = 0; while (i < _size) f(_arr(i)); i += 1 }
   @inline final protected def _update(index:Int, value:Int): Unit = _arr(index) = value
   @inline final protected def _increment(index:Int, incr:Int): Unit = _arr(index) += incr
   @inline final protected def _append(elem: Int): this.type = { _ensureCapacity(_size + 1); _arr(_size) = elem; _size += 1; this }
@@ -42,6 +40,10 @@ trait ProtectedIntArrayBuffer {
     final def length = arr.length
     final def apply(i:Int) = arr(i)
   }
+  protected def _array: Array[Int] = _arr // Careful.  _array.length may not equal _length
+  @inline final protected def _asArray: Array[Int] = // Carefully, dangerous to access directly 
+    if (_size == _arr.length) _arr 
+    else { val a = new Array[Int](_size); arraycopy(_arr, 0, a, 0, _size); a }
   protected def _toArray: Array[Int] = { val a = new Array[Int](_size); arraycopy(_arr, 0, a, 0, _size); a }
   protected def _asIntSeq: IntSeq = new TruncatedArrayIntSeq(_arr, _size)
   protected def _takeAsIntSeq(len:Int): IntSeq = new TruncatedArrayIntSeq(_arr, math.min(len, _size))
