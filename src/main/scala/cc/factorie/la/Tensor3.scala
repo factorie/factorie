@@ -24,7 +24,7 @@ trait Tensor3 extends Tensor {
   def activeDomain2: IntSeq
   def activeDomain3: IntSeq
   def numDimensions: Int = 3
-  def activeDomains = Array(activeDomain1, activeDomain2)
+  def activeDomains = Array(activeDomain1, activeDomain2, activeDomain3)
   def dimensions = Array(dim1, dim2, dim3)
   def apply(i:Int, j:Int, k:Int): Double = apply(i*dim2*dim3 + j*dim2 + k)
   def update(i:Int, j:Int, k:Int, v:Double): Unit = update(i*dim2*dim3 + j*dim2 + k, v)
@@ -70,6 +70,15 @@ class SingletonTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
   def activeDomain: IntSeq = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2*dim3 + singleIndex2*dim3 + singleIndex3
+}
+
+trait SparseBinaryTensorLike3 extends Tensor3 with SparseBinaryTensor {
+  def activeDomain1 = throw new Error("Not yet implemented")
+  def activeDomain2 = throw new Error("Not yet implemented")
+  def activeDomain3 = throw new Error("Not yet implemented")
+}
+class SparseBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends SparseBinaryTensorLike3 {
+  override def blankCopy: SparseBinaryTensor3 = new SparseBinaryTensor3(dim1, dim2, dim3)
 }
 
 trait Singleton2BinaryLayeredTensorLike3 extends Tensor3 {

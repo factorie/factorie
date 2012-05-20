@@ -79,6 +79,14 @@ class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val sin
   val singleIndex = singleIndex1*dim2 + singleIndex2
 }
 
+trait SparseBinaryTensorLike2 extends Tensor2 with SparseBinaryTensor {
+  def activeDomain1 = throw new Error("Not yet implemented")
+  def activeDomain2 = throw new Error("Not yet implemented")
+}
+class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensorLike2 {
+  override def blankCopy: SparseBinaryTensor2 = new SparseBinaryTensor2(dim1, dim2)
+}
+
 trait DenseLayeredTensorLike2 extends Tensor2 {
   def newTensor1:Int=>Tensor1
   private var _inners = new Array[Tensor1](dim1) // Array.fill(dim1)(newTensor1(dim2))

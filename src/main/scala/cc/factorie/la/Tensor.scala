@@ -54,7 +54,7 @@ trait Tensor extends MutableDoubleSeq {
   def expNormalized: Tensor = { val t = copy; t.expNormalize; t }
   def isUniform = false // TODO Fix this for the Uniform Tensors!!
   def stringPrefix = "Tensor"
-  override def toString = { val suffix = if (length > 50) "...)" else ")"; this.asSeq.mkString(stringPrefix+"(", ",", suffix) }
+  override def toString = { val suffix = if (length > 50) "...)" else ")"; this.asSeq.take(50).mkString(stringPrefix+"(", ",", suffix) }
 }
 
 object Tensor {
@@ -151,6 +151,12 @@ object Tensor {
         case t3:Tensor1 => new Singleton2LayeredTensor3(t1.dim1, t2.dim1, t3.dim1, t1.singleIndex, t2.singleIndex, 1.0, t2.singleValue, t3)
       }
       case t2:SparseBinaryTensorLike1 => t3 match {
+        case t3:SparseBinaryTensorLike1 => {
+          val t = new SparseBinaryTensor3(t1.dim1, t2.dim1, t3.dim1)
+          // TODO This next line is inefficient
+          for (j <- t2.activeDomain1.asSeq; k <- t3.activeDomain1.asSeq) t.update(t1.singleIndex, j, k, 1.0)
+          t
+        }
         case _ => throw new Error("Not yet implemented.")// { val t = new SparseBinaryTensor3...} 
       }
     }
@@ -265,6 +271,36 @@ trait UniformTensor extends Tensor {
   override def containsNaN: Boolean = false
   override def dot(v:DoubleSeq): Double = v.sum * uniformValue
   override def copy = this // safe because it is immutable
+}
+
+trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayBuffer {
+  def isDense = false
+  def activeDomain = new ArrayIntSeq(_array)
+  @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
+  @inline final def contains(index:Int): Boolean = _containsSorted(index)
+  override def sum: Double = _length.toDouble
+  override def max: Double = if (_length > 0) 1.0 else 0.0
+  override def min: Double = if (_length == 0) 0.0 else 1.0
+  override def indexOf(d:Double): Int = if (d != 0.0 && d != 1.0) -1 else if (d == 1.0) { if (_length == 0) -1 else _apply(0) } else { if (_length == 0) 0 else throw new Error("Not yet implemented") }
+  override def maxIndex: Int = if (_length == 0) 0 else _apply(0)
+  override def containsNaN: Boolean = false
+  def +=(i:Int): Unit = _insertSorted(i)
+  def -=(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
+  def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSorted(is(j)); j += 1} }
+  def ++=(is:Iterable[Int]): Unit = { _ensureCapacity(_length + is.size); is.foreach(_insertSorted(_)) }
+  override def update(i:Int, v:Double): Unit = {
+    if (i < 0 || i >= length) throw new Error("Tensor index out of range: "+i)
+    if (v == 1.0) this += i else if (v == 0.0) this -= i else throw new Error(getClass.getName+" cannot update with values other than 0.0 or 1.0.")
+  }
+  /** In SparseBinary, this is equivalent to update(i,v) */
+  override def +=(i:Int, v:Double): Unit = update(i, v)
+  override def zero(): Unit = _clear() // TODO I think _clear should be renamed _zero -akm
+  override def dot(v:DoubleSeq): Double = v match {
+    case t:SingletonBinaryTensor1 => if (contains(t.singleIndex)) 1.0 else 0.0
+    case t:SingletonTensor1 => if (contains(t.singleIndex)) t.singleValue else 0.0
+    // TODO Any other special cases here?
+    case ds:DoubleSeq => { var result = 0.0; var i = 0; while (i < _length) { result += ds(_apply(i)); i += 1 }; result }
+  }
 }
 
 // To be used eventually for getting a TemplateModel into cc.factorie.optimize
