@@ -24,13 +24,17 @@ import scala.util.Random
 // TODO Perhaps instead Proportions should contain a Masses, but not inherit from Masses?  (Suggested by Alexandre)  -akm
 // But I think this would lead to inefficiencies, and the current set-up isn't bad. -akm
 trait Proportions extends Masses {
-  abstract override def apply(i:Int): Double = super.apply(i) / massTotal
+  abstract override def apply(i:Int): Double = {
+    val mt = massTotal
+    if (mt == 0.0) 1.0 / length
+    else super.apply(i) / mt
+  }
   // TODO Should we have the following instead?  It would be slower... :-(
   //abstract override def apply(i:Int): Double = if (massTotal == 0.0) 1.0/length else super.apply(i) / massTotal
   def mass(i:Int): Double = super.apply(i)
   override def sampleIndex(implicit r:Random): Int = {
     var b = 0.0; val s = r.nextDouble; var i = 0
-    while (b <= s && i < length) { assert (apply(i) >= 0.0); b += apply(i); i += 1 }
+    while (b <= s && i < length) { assert (apply(i) >= 0.0, "p="+apply(i)+" mt="+massTotal); b += apply(i); i += 1 }
     assert(i > 0)
     i - 1
   } 

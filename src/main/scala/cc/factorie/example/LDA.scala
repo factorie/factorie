@@ -52,6 +52,7 @@ object LDA {
         documents += doc
       }
     }
+    println("\nRead "+documents.size+" documents, containing "+documents.map(_.size).sum+" tokens.")
 
     val collapse = new ArrayBuffer[Variable]
     collapse += phis
