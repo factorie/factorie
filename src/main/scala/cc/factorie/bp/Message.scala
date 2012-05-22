@@ -163,7 +163,8 @@ class DiscreteMessage[DV <: DiscreteVariable](val variable: DV, val scores: Tens
     }
   }
 
-  override def entropy = {
+  override def entropy: Double = {
+    if(isDeterministic) return 0.0
     var result = 0.0
     for (i <- 0 until scores.size) {
       val score = scores(i)

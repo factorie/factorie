@@ -21,7 +21,7 @@ trait IntSeq {
   final def size = length
   def map(f:Int=>Int): IntSeq = {
     val len = length; val a = new Array[Int](len); var i = 0
-    while (i < 0) { a(i) = f(i); i += 1 }
+    while (i < len) { a(i) = f(apply(i)); i += 1 }
     new ArrayIntSeq(a)
   }
   def foreach(f:Int=>Unit): Unit = { var i = 0; while (i < length) { f(apply(i)); i += 1 } }

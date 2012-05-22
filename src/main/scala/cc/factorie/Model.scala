@@ -92,7 +92,7 @@ trait Model {
   def dedup[F<:Factor](factors:Iterable[F]): Iterable[F] = {
     if (factors.size == 1) factors
     else if (factors.size == 2) {
-      if (factors.head == factors.tail) factors.head
+      if (factors.head == factors.last) factors.head
       else factors
     } else {
       val result = new scala.collection.mutable.LinkedHashSet[F]

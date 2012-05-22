@@ -24,8 +24,7 @@ import cc.factorie._
     Demonstrates the use of RefVariable and SetVariable for representing mentions and entities. */
 object CorefMentionsDemo {
 
-  // The data
-
+  /** random variable that defines the entity each mention refers to */
   class EntityRef(val mention:Mention, initialEntity:Entity) extends RefVariable(initialEntity) {
     initialEntity.add(mention)(null)
     // When this mention is assigned to an entity, update the mention
@@ -42,7 +41,7 @@ object CorefMentionsDemo {
     def mention: Mention
   }
 
-  /** A random variable for a mention of an entity */
+  /** A observed properties of a mention */
   class Mention(val name:String, trueEntity:Int, initialEntity:Entity) extends StringVariable(name) {
     val trueEntityIndex = new TrueEntityIndex(trueEntity) {
       def mention = Mention.this

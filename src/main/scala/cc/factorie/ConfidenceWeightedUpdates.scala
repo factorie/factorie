@@ -68,7 +68,7 @@ trait ConfidenceWeightedUpdates extends WeightUpdates /*with SampleRank*/ {
       template.freezeDomains
       //val vector = DenseVector(template.statsize)(initialVariance)
       //val vector = template.newWeightsTypeVector(initialVariance)
-      val tensor = template.newWeightsTypeTensor; tensor += initialVariance; throw new Error("This handling of initialVariance needs careful thought and verification")
+      val tensor = template.newWeightsTypeTensor; tensor += initialVariance; //throw new Error("This handling of initialVariance needs careful thought and verification")
       // if (template.isInstanceOf[SparseWeights]) { val sv = new SparseVector(template.statisticsVectorLength); sv.default = initialVariance; sv } else DenseVector(template.statisticsVectorLength)(initialVariance)
       this(template) = tensor
       tensor

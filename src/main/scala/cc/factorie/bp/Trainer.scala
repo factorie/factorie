@@ -78,7 +78,7 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
     _value = 0.0
     val grads = new HashMap[DotFamily, Tensor]
     // compute total grad and value of the pieces
-    println("Computing value and gradient")
+    print("Computing value and gradient ")
     var i = 0
     for (piece <- pieces) {
       i += 1
@@ -90,6 +90,7 @@ class Trainer(val pieces: Seq[Piece], val families: Seq[DotFamily])
       if (pieces.length >= 10000 && i % (pieces.length / 25) == 0)
         println("Done %d of %d pieces".format(i, pieces.length))
     }
+    println("v:%f, g:%s".format(_value, grads.values.mkString))
     //println("--- Normalizing ---")
     //_value *= (1.0 / pieces.length)
     //grads.values.foreach(g => g.activeDomain.foreach(i => g(i) = g(i) * (1.0 / pieces.length)))

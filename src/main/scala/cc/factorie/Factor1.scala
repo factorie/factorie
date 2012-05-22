@@ -65,7 +65,7 @@ trait Factor1[N1<:Variable] extends Factor {
       val d = _1.domain.asInstanceOf[DiscreteDomain]
       limitedDiscreteValuesIterator.map(i => Values(d.apply(i).asInstanceOf[N1#Value]))
     } else _1.domain match {
-      case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
+      case d:Seq[N1#Value] => d.iterator.map(value => Values(value))
     }
   }
   /** valuesIterator in style of specifying varying neighbors */
@@ -76,7 +76,7 @@ trait Factor1[N1<:Variable] extends Factor {
       val d = _1.domain.asInstanceOf[DiscreteDomain]
       limitedDiscreteValuesIterator.map(i => Values(d.apply(i).asInstanceOf[N1#Value]))
     } else _1.domain match {
-      case d:IterableDomain[_] => d.asInstanceOf[IterableDomain[N1#Value]].values.iterator.map(value => Values(value))
+      case d:Seq[N1#Value] => d.iterator.map(value => Values(value))
     }
   }
 }

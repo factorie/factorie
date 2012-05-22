@@ -131,7 +131,7 @@ class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
 
 
 trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer with Tensor1 {
-  def activeDomain1 = new ArrayIntSeq(_array)
+  def activeDomain1 = new TruncatedArrayIntSeq(_array, _length)
   //def activeDomain = activeDomain1
   def isDense = false
   @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0

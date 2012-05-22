@@ -55,10 +55,10 @@ trait Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Facto
   def statistics(v:Values): StatisticsType
   /** valuesIterator in style of specifying varying neighbors */
   def valuesIterator(varying:Set[Variable]): Iterator[Values] = {
-    val values1 = if(varying.contains(_1)) _1.domain.asInstanceOf[IterableDomain[N1#Value]].values else Seq(_1.value)
-    val values2 = if(varying.contains(_2)) _2.domain.asInstanceOf[IterableDomain[N2#Value]].values else Seq(_2.value)
-    val values3 = if(varying.contains(_3)) _3.domain.asInstanceOf[IterableDomain[N3#Value]].values else Seq(_3.value)
-    val values4 = if(varying.contains(_4)) _4.domain.asInstanceOf[IterableDomain[N4#Value]].values else Seq(_4.value)
+    val values1 = if(varying.contains(_1)) _1.domain.asInstanceOf[Seq[N1#Value]] else Seq(_1.value)
+    val values2 = if(varying.contains(_2)) _2.domain.asInstanceOf[Seq[N2#Value]] else Seq(_2.value)
+    val values3 = if(varying.contains(_3)) _3.domain.asInstanceOf[Seq[N3#Value]] else Seq(_3.value)
+    val values4 = if(varying.contains(_4)) _4.domain.asInstanceOf[Seq[N4#Value]] else Seq(_4.value)
     (for (val1 <- values1; val2 <- values2; val3 <- values3; val4 <- values4) yield Values(val1, val2, val3, val4)).iterator
   }
 }

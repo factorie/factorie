@@ -47,8 +47,9 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val piece2 = ModelPiece(model, Seq(features2.label))
     val optimizer = new LimitedMemoryBFGS(new Trainer(Seq(piece1, piece2), Seq(localTemplate)))
     optimizer.optimize(10)
-    println("FD: " + FeaturesDomain.dimensionDomain)
-    println("LD: " + LabelDomain)
+    println("FD: " + FeaturesDomain.dimensionDomain.map(_.category))
+    println("LD: " + LabelDomain.map(_.category))
+    println("weights: " + localTemplate.weights)
     for (ftr <- FeaturesDomain.dimensionDomain)
       for (label <- LabelDomain) {
         println(ftr.category + " " + label.category + " : " + localTemplate.weight(label.intValue, ftr.intValue))
