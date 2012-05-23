@@ -178,7 +178,8 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     for (i <- 0 until numTopics) {
       sb.append(topicSummary(i, numWords))
       sb.append("\n           ") // Matching "Topic 333  ", plus one extra space for indentation
-      sb.append(tpc.topicPhrases(i, numPhrases).mkString(" "))
+      val tp = tpc.topicPhrases(i, numPhrases)
+      sb.append(tp.mkString(" "))
       sb.append("\n")
     }
     sb.toString

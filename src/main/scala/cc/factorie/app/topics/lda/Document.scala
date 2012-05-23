@@ -49,7 +49,7 @@ trait Doc extends SeqBreaks {
       p.println(zs.intValue(i))
     }
     p.println()
-    p.flush()
+    //p.flush()
   }
   def readNameWordsZs(p:BufferedReader): Int = {
     name = p.readLine()
@@ -108,7 +108,7 @@ object Document {
       wordCountMax:Int = Int.MaxValue): Iterator[String] = 
     segmenter(reader).map(_ toLowerCase).filter(!stopwords.contains(_)).take(wordCountMax)
   // Convenience methods for creating new documents
-  def fromStringIterator(domain:CategoricalSeqDomain[String], name:String, tokens:Iterator[String], stopwords:StringSet = EmptyStringSet) = new Document(domain, name, tokens.filter(stopwords.contains(_)).toIndexedSeq)
+  def fromStringIterator(domain:CategoricalSeqDomain[String], name:String, tokens:Iterator[String], stopwords:StringSet = EmptyStringSet) = new Document(domain, name, tokens.filter(stopwords.contains(_)).toIndexedSeq) // TODO create breaks here
   def fromReader(domain:CategoricalSeqDomain[String], name:String, reader:Reader, segmenter:StringSegmenter = alphaSegmenter, stopwords:StringSet = Stopwords, wordCountMax:Int = Int.MaxValue): Document = { val d = new Document(domain, name, Nil); addWords(d, reader, segmenter, stopwords, wordCountMax); d }
   def fromString(domain:CategoricalSeqDomain[String], name:String, contents:String, segmenter:StringSegmenter = alphaSegmenter, stopwords:StringSet = Stopwords, wordCountMax:Int = Int.MaxValue): Document = fromReader(domain, name, new StringReader(contents), segmenter, stopwords, wordCountMax)
   def fromFile(domain:CategoricalSeqDomain[String], file:File, encoding:String = "UTF-8", segmenter:StringSegmenter = alphaSegmenter, stopwords:StringSet = Stopwords, wordCountMax:Int = Int.MaxValue): Document = fromReader(domain, file.getPath, new BufferedReader(new InputStreamReader(new FileInputStream(file), encoding)), segmenter, stopwords, wordCountMax)

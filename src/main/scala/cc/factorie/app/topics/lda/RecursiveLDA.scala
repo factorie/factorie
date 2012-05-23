@@ -70,7 +70,7 @@ object RecursiveLDA {
     }
     if (opts.readNIPS.wasInvoked) {
       // A temporary hack for McCallum's development/debugging
-      val directories = Range(0,13).reverse.map(i => "%02d".format(i)).take(12).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
+      val directories = Range(0,13).reverse.map(i => "%02d".format(i)).take(8).map("/Users/mccallum/research/data/text/nipstxt/nips"+_)
       for (directory <- directories) {
         val dir = new File(directory); if (!dir.isDirectory) { System.err.println(directory+" is not a directory."); System.exit(-1) }
         println("Reading NIPS files from directory " + directory)
@@ -212,17 +212,21 @@ object RecursiveLDA {
     println(lda3.topicsSummary(10))
     
     if (opts.writeDocs.wasInvoked) {
+      println("\nWriting state to "+opts.writeDocs.value)
       val file = new File(opts.writeDocs.value)
       val pw = new PrintWriter(file)
       lda3.documents.foreach(_.writeNameWordsZs(pw))
       pw.close()
     }
     
-    if (opts.printTopics.wasInvoked) 
+    if (opts.printTopics.wasInvoked) {
+      println("\nFlat LDA toipc words")
       println(lda3.topicsSummary(opts.printTopics.value))
-    if (opts.printPhrases.wasInvoked) 
+    }
+    if (opts.printPhrases.wasInvoked) { 
+      println("\nFlat LDA topic phrases")
       println(lda3.topicsWordsAndPhrasesSummary(opts.printPhrases.value, opts.printPhrases.value))
-
+    }
   }
   
 }

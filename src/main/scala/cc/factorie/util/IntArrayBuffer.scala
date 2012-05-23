@@ -27,7 +27,7 @@ trait ProtectedIntArrayBuffer {
   @inline final protected def _apply(index:Int): Int = _arr(index)
   protected def _foreach[U](f:Int=>U): Unit = { var i = 0; while (i < _size) f(_arr(i)); i += 1 }
   @inline final protected def _update(index:Int, value:Int): Unit = _arr(index) = value
-  @inline final protected def _increment(index:Int, incr:Int): Unit = _arr(index) += incr
+  @inline final protected def _increment(index:Int, incr:Int): Unit = { _ensureCapacity(index+1); _arr(index) += incr; if (_size < index+1) _size = index+1 }
   @inline final protected def _append(elem: Int): this.type = { _ensureCapacity(_size + 1); _arr(_size) = elem; _size += 1; this }
   protected def _copyToArray(a:Array[Int]): Unit = arraycopy(_arr, 0, a, 0, _size)
   protected def _mapToArray[A](a:Array[A], f:Int=>A): Unit = { var i = 0; while (i < _size) { a(i) = f(_arr(i)); i += 1 }; a }
