@@ -286,6 +286,7 @@ object LogGamma {
 
   /** Return the entropy of the normalized distribution p.
       The log is w.r.t. base 2.  */
+  @deprecated("Will be removed because uses inefficient Seq[Double]")  
   def entropy(p:Seq[Double]): Double = {
     var result = 0.0
     var i = p.length - 1
@@ -293,7 +294,7 @@ object LogGamma {
     while (i >= 0) {
       pv = p(i)
       require(pv >= 0.0, pv)
-      require(pv <= 1.000001)
+      require(pv <= 1.000001, pv)
       if (pv > 0.0)
         result -= pv * math.log(pv)
       i -= 1
@@ -307,6 +308,7 @@ object LogGamma {
    * *Note*: If any value in <tt>p2</tt> is <tt>0.0</tt> then the KL-divergence
    * is <tt>infinite</tt>. 
    */
+  @deprecated("Will be removed because uses inefficient Seq[Double]")    
   def klDivergence(p1:Seq[Double], p2:Seq[Double]) = {
     assert(p1.length == p2.length);
     var klDiv = 0.0;
@@ -318,6 +320,7 @@ object LogGamma {
   }
 
   /** Returns the Jensen-Shannon divergence. */
+  @deprecated("Will be removed because uses inefficient Seq[Double]")    
   def jensenShannonDivergence(p1:Seq[Double], p2:Seq[Double]) = {
     assert(p1.length == p2.length);
     val average = new Array[Double](p1.length);

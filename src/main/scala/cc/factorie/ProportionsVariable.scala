@@ -42,41 +42,14 @@ trait Proportions extends Masses {
   @inline final def pr(index:Int) = apply(index)
   @inline final def logpr(index:Int) = math.log(apply(index))
   override def stringPrefix = "Proportions"
-  override def toString = this.toSeq.take(10).mkString(stringPrefix+"(", ",", ")")
-
-  // TODO Move this to Tensor (and rename appropriately)!  -akm  
-  // (Don't make it an inner class, though)
-//  class DiscretePr(val index:Int, val pr:Double)
-//  class DiscretePrSeq(val maxLength:Int) extends Seq[DiscretePr] {
-//    @deprecated("May be removed") def this(maxLength:Int, contents:Seq[Double]) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
-//    def this(maxLength:Int, contents:DoubleSeq) = { this(maxLength); var i = 0; while (i < contents.length) { this += (i, contents(i)); i += 1 } }
-//    private val _seq = new Array[DiscretePr](maxLength)
-//    private var _length: Int = 0
-//    def length = _length
-//    def apply(i:Int) = _seq(i)
-//    def iterator: Iterator[DiscretePr] = new Iterator[DiscretePr] {
-//      var i = 0
-//      def hasNext = i < _length
-//      def next = { i += 1; _seq(i-1) }
-//    }
-//    def +=(index:Int, pr:Double): Unit = {
-//      if (_length < maxLength || (pr > _seq(_length-1).pr && pr > 0.0)) {
-//       if (_length < maxLength) { _seq(_length) = new DiscretePr(index, pr); _length += 1 }
-//       else if (pr > _seq(_length-1).pr) _seq(_length-1) = new DiscretePr(index, pr)
-//       var i = _length - 1
-//       while (i > 0 && _seq(i).pr > _seq(i-1).pr) {
-//         val tmp = _seq(i)
-//         _seq(i) = _seq(i-1)
-//         _seq(i-1) = tmp
-//         i -= 1
-//       }
-//      }
-//    }
-//  }
-//  def top(n:Int): Seq[DiscretePr] = new DiscretePrSeq(n, this)
+  override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
 }
 
-trait Proportions1 extends Masses1 with Proportions
+trait Proportions1 extends Masses1 with Proportions {
+  // Preliminary thoughts on getting Masses out of Proportions
+  // Perhaps I should consider having inner Masses member in simpler? Proportions
+  def masses: Masses1 = { val m = new DenseMasses1(length); val len = length; var i = 0; while (i < len) { m.+=(i, mass(i)); i += 1 }; m }
+}
 trait Proportions2 extends Masses2 with Proportions
 trait Proportions3 extends Masses3 with Proportions
 trait Proportions4 extends Masses4 with Proportions

@@ -160,7 +160,7 @@ trait ProtectedIntArrayBuffer {
   }
   protected def _insertSortedNoDuplicates(elt:Int): Unit = {
     val index = _indexForInsertSorted(elt)
-    if (_arr(index) != elt) _insert(index, elt)
+    if (index >= _size || _arr(index) != elt) _insert(index, elt)
   }
   // TODO Make another version of this that works on IntSeq instead of Traversable[Int] 
   protected def _insertAll(index: Int, seq: scala.collection.Traversable[Int]): Unit = {

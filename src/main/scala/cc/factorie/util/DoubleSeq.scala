@@ -75,10 +75,7 @@ trait DoubleSeq {
   /** Assumes that the values are already normalized to sum to 1. */
   def entropy: Double = {
     var result = 0.0
-    var sum = 0.0
-    val l = length
-    var i = l - 1
-    var pv = 0.0
+    var sum = 0.0; val l = length; var i = 0; var pv = 0.0
     while (i < l) {
       pv = apply(i)
       sum += pv
@@ -88,7 +85,7 @@ trait DoubleSeq {
         result -= pv * math.log(pv)
       i += 1
     }
-    assert(sum > 0.9999 && sum < 1.0001)
+    assert(sum > 0.9999 && sum < 1.0001, sum)
     result / cc.factorie.maths.log2
   }
   /** Assumes that the values in both DoubleSeq are already normalized to sum to 1. */

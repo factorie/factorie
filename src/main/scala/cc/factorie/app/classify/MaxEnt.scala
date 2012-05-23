@@ -22,7 +22,7 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
   def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
-    val cmodel = new LogLinearModel(il.labelToFeatures)
+    val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)
     val learner = new VariableSettingsSampler[L](cmodel, HammingLossObjective) with SampleRank with GradientAscentUpdates {
       override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.head // which proposal is picked is irrelevant, so make it quick
     }
@@ -37,7 +37,7 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
 
 class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
   def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
-    val cmodel = new LogLinearModel(il.labelToFeatures)
+    val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)
     if (warmStart != null) cmodel.evidenceTemplate.setWeights(warmStart)
     val trainer = new LogLinearMaximumLikelihood(cmodel)
     trainer.gaussianPriorVariance = l2

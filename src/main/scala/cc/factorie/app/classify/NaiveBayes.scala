@@ -21,7 +21,7 @@ class NaiveBayesTrainer extends ClassifierTrainer {
   var biasSmoothingMass = 1.0
   var evidenceSmoothingMass = 1.0
   def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
-    val cmodel = new LogLinearModel(il.labelToFeatures)
+    val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)
     val labelDomain = il.labelDomain
     val featureDomain = il.featureDomain
     val numLabels = labelDomain.size

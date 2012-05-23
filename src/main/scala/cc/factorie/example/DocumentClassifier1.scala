@@ -34,7 +34,7 @@ object DocumentClassifier1 {
   }
  
   // The predefined model has factor templates for [Document,Label] and [Label] (the bias)
-  val model = new classify.LogLinearModel[Label,Document](_.document)
+  val model = new classify.LogLinearModel[Label,Document](_.document, LabelDomain, DocumentDomain)
 
   def main(args:Array[String]): Unit = {
     if (args.length < 2) 
@@ -52,7 +52,7 @@ object DocumentClassifier1 {
     }
     
     val infogains = new classify.InfoGain(documents)
-    println(infogains.top(20).mkString)
+    println(infogains.top(20).mkString(" "))
     println()
     val plig = new classify.PerLabelInfoGain(documents)
     for (label <- LabelDomain) println(label.category+": "+plig.top(label, 20))

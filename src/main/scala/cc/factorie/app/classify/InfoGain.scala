@@ -50,6 +50,8 @@ class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteTensorVar) exten
       targetProportions.+=(labelIndex, 1.0)
       //println("InfoGain "+instance.activeDomain.toSeq)
       //for (featureIndex <- instance.activeDomain.asSeq)
+      //println("InfoGain "+instance.tensor.asInstanceOf[cc.factorie.la.GrowableSparseBinaryTensor1].toIntArray.toSeq)
+      assert(instance.tensor.activeDomain.toSeq.distinct.length == instance.tensor.activeDomain.toSeq.length, instance.tensor.activeDomain.toSeq.toString)
       instance.tensor.activeDomain.foreach(featureIndex => {
         featureTargetProportions(featureIndex).+=(labelIndex, 1.0)
         featureCount(featureIndex) += 1
@@ -57,12 +59,20 @@ class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteTensorVar) exten
     }
     baseEntropy = targetProportions.entropy
     forIndex(numFeatures)(featureIndex => {
+      //println("InfoGain feature="+instanceDomain.dimensionDomain.asInstanceOf[CategoricalDomain[String]].category(featureIndex))
+      //println("InfoGain targetProportions="+targetProportions.masses)
+      //println("InfoGain featureTargetProp="+featureTargetProportions(featureIndex).masses)
       val entropyWithFeature = if (featureTargetProportions(featureIndex).massTotal > 0) featureTargetProportions(featureIndex).entropy else 0.0
       val normWithoutFeature = numInstances - featureCount(featureIndex)
       val entropyWithoutFeature = 
-        if (normWithoutFeature > 0)
-          maths.entropy((0 until numLabels).map(li => (targetProportions.mass(li) - featureTargetProportions(featureIndex).mass(li))/normWithoutFeature))
-        else 0.0
+        if (normWithoutFeature > 0) {
+          val noTargetProportions = new DenseMasses1(numLabels)
+          noTargetProportions += targetProportions.masses
+          noTargetProportions -= featureTargetProportions(featureIndex).masses
+          noTargetProportions.normalize
+          noTargetProportions.entropy
+          //maths.entropy((0 until numLabels).map(li => (targetProportions.mass(li) - featureTargetProportions(featureIndex).mass(li))/normWithoutFeature))
+        } else 0.0
       infogains(featureIndex) = baseEntropy - featureCount(featureIndex)/numInstances * entropyWithFeature - (numInstances-featureCount(featureIndex))/numInstances * entropyWithoutFeature
     })
   }

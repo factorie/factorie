@@ -3,23 +3,23 @@ import cc.factorie._
 import collection.mutable.HashMap
 
 // Bias weights
-class LogLinearTemplate1[L<:DiscreteVar](implicit lm:Manifest[L]) extends TemplateWithDotStatistics1[L]() {
-  def statisticsDomains = throw new Error("Not yet implemented")
+class LogLinearTemplate1[L<:DiscreteVar](val statisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends TemplateWithDotStatistics1[L]() {
+  def statisticsDomains = Seq(statisticsDomain)
 }
 
 // Label-Feature weights
-class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L)(implicit lm:Manifest[L], fm:Manifest[F]) extends TemplateWithDotStatistics2[L,F]() {
-  def this(lf:L=>F)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."))
-  def statisticsDomains = throw new Error("Not yet implemented")
+class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends TemplateWithDotStatistics2[L,F]() {
+  def this(lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
+  def statisticsDomains = Seq(labelStatisticsDomain, featureStatisticsDomain)
   def unroll1(label: L) = Factor(label, lf(label))
   def unroll2(features: F) = Factor(fl(features), features)
 }
 
 
-class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L)(implicit lm:Manifest[L], fm:Manifest[F]) extends TemplateModel {
-  def this(lf:L=>F)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."))
-  val biasTemplate = new LogLinearTemplate1[L]
-  val evidenceTemplate = new LogLinearTemplate2[L,F](lf, fl)
+class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends TemplateModel {
+  def this(lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
+  val biasTemplate = new LogLinearTemplate1[L](labelStatisticsDomain)
+  val evidenceTemplate = new LogLinearTemplate2[L,F](lf, fl, labelStatisticsDomain, featureStatisticsDomain)
   this += biasTemplate
   this += evidenceTemplate
   val factorCache = HashMap[Variable, Iterable[Factor]]()

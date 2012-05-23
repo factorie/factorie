@@ -22,6 +22,8 @@ import scala.util.Random
 trait Masses extends Tensor {
   def massTotal: Double
   override def sampleIndex(implicit r:Random): Int = sampleIndex(massTotal)(r) //cc.factorie.maths.nextDiscrete(this.asArray, massTotal)(r)
+  override def stringPrefix = "Masses"
+  override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
 }
 
 // TODO Should we get rid of all these combinations and make users extend the combinations themselves? -akm

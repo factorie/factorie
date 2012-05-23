@@ -142,11 +142,11 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   override def indexOf(d:Double): Int = if (d != 0.0 && d != 1.0) -1 else if (d == 1.0) { if (_length == 0) -1 else _apply(0) } else { if (_length == 0) 0 else throw new Error("Not yet implemented") }
   override def maxIndex: Int = if (_length == 0) 0 else _apply(0)
   override def containsNaN: Boolean = false
-  def +=(i:Int): Unit = _insertSorted(i)
+  def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
   def -=(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
-  def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSorted(is(j)); j += 1} }
-  def ++=(is:Iterable[Int]): Unit = { _ensureCapacity(_length + is.size); is.foreach(_insertSorted(_)) }
-
+  def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }
+  def ++=(is:Iterable[Int]): Unit = { _ensureCapacity(_length + is.size); is.foreach(_insertSortedNoDuplicates(_)) }
+  def toIntArray: Array[Int] = _toArray
   override def update(i:Int, v:Double): Unit = {
     if (i < 0 || i >= length) throw new Error("Tensor index out of range: "+i)
     if (v == 1.0) this += i else if (v == 0.0) this -= i else throw new Error(getClass.getName+" cannot update with values other than 0.0 or 1.0.")
