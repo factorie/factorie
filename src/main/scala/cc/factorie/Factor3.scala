@@ -66,8 +66,8 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._2 == intVal2)).map(t => new Values(val1, val2, d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
-        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-        d3.values.iterator.map(value => Values(val1, val2, value))
+        val d3 = _3.domain.asInstanceOf[Seq[N3#Value]]
+        d3.iterator.map(value => Values(val1, val2, value))
       }
     } else if (fixed2 && fixed3) {
       val val2 = fixed(_2)
@@ -79,8 +79,8 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => (t._2 == intVal2) && (t._3 == intVal3)).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], val2, val3))
       }
       else {
-        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-        d1.values.iterator.map(value => Values(value, val2, val3))
+        val d1 = _1.domain.asInstanceOf[Seq[N1#Value]]
+        d1.iterator.map(value => Values(value, val2, val3))
       }
     } else if (fixed1 && fixed3) {
       val val1 = fixed(_1)
@@ -92,8 +92,8 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._3 == intVal3)).map(t => new Values(val1, d2.apply(t._2).asInstanceOf[N2#Value], val3))
       }
       else {
-        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-        d2.values.iterator.map(value => Values(val1, value, val3))
+        val d2 = _2.domain.asInstanceOf[Seq[N2#Value]]
+        d2.iterator.map(value => Values(val1, value, val3))
       }
     } else if (fixed1) {
       val val1 = fixed(_1)
@@ -104,9 +104,9 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.apply(t._2).asInstanceOf[N2#Value], d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
-        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-        (for (val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+        val d2 = _2.domain.asInstanceOf[Seq[N2#Value]]
+        val d3 = _3.domain.asInstanceOf[Seq[N3#Value]]
+        (for (val2 <- d2; val3 <- d3) yield Values(val1, val2, val3)).iterator
       }
     } else if (fixed2) {
       val val2 = fixed(_2)
@@ -117,9 +117,9 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], val2, d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
-        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-        (for (val1 <- d1.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+        val d1 = _1.domain.asInstanceOf[Seq[N1#Value]]
+        val d3 = _3.domain.asInstanceOf[Seq[N3#Value]]
+        (for (val1 <- d1; val3 <- d3) yield Values(val1, val2, val3)).iterator
       }
     } else if (fixed3) {
       val val3 = fixed(_3)
@@ -130,9 +130,9 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => t._3 == intVal3).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], d2.apply(t._2).asInstanceOf[N2#Value], val3))
       }
       else {
-        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-        (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+        val d1 = _1.domain.asInstanceOf[Seq[N1#Value]]
+        val d2 = _2.domain.asInstanceOf[Seq[N2#Value]]
+        (for (val1 <- d1; val2 <- d2) yield Values(val1, val2, val3)).iterator
       }
     } else {
       if (isLimitingValuesIterator) {
@@ -142,10 +142,10 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], d2.apply(t._2).asInstanceOf[N2#Value], d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
-        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-        (for (val1 <- d1.values; val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+        val d1 = _1.domain.asInstanceOf[Seq[N1#Value]]
+        val d2 = _2.domain.asInstanceOf[Seq[N2#Value]]
+        val d3 = _3.domain.asInstanceOf[Seq[N3#Value]]
+        (for (val1 <- d1; val2 <- d2; val3 <- d3) yield Values(val1, val2, val3)).iterator
       }
     }
   }
@@ -163,10 +163,10 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], d2.apply(t._2).asInstanceOf[N2#Value], d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
-        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-        (for (val1 <- d1.values; val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+        val d1 = _1.domain.asInstanceOf[Seq[N1#Value]]
+        val d2 = _2.domain.asInstanceOf[Seq[N2#Value]]
+        val d3 = _3.domain.asInstanceOf[Seq[N3#Value]]
+        (for (val1 <- d1; val2 <- d2; val3 <- d3) yield Values(val1, val2, val3)).iterator
       }
     } else if (varying1 && varying2) {
       val val3 = _3.value
@@ -177,9 +177,9 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => t._3 == intVal3).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], d2.apply(t._2).asInstanceOf[N2#Value], val3))
       }
       else {
-        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-        (for (val1 <- d1.values; val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+        val d1 = _1.domain.asInstanceOf[Seq[N1#Value]]
+        val d2 = _2.domain.asInstanceOf[Seq[N2#Value]]
+        (for (val1 <- d1; val2 <- d2) yield Values(val1, val2, val3)).iterator
       }
     } else if (varying2 && varying3) {
       val val1 = _1.value
@@ -190,9 +190,9 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => t._1 == intVal1).map(t => new Values(val1, d2.apply(t._2).asInstanceOf[N2#Value], d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
-        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-        (for (val2 <- d2.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+        val d2 = _2.domain.asInstanceOf[Seq[N2#Value]]
+        val d3 = _3.domain.asInstanceOf[Seq[N3#Value]]
+        (for (val2 <- d2; val3 <- d3) yield Values(val1, val2, val3)).iterator
       }
     } else if (varying1 && varying3) {
       val val2 = _2.value
@@ -203,9 +203,9 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => t._2 == intVal2).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], val2, d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
-        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-        (for (val1 <- d1.values; val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+        val d1 = _1.domain.asInstanceOf[Seq[N1#Value]]
+        val d3 = _3.domain.asInstanceOf[Seq[N3#Value]]
+        (for (val1 <- d1; val3 <- d3) yield Values(val1, val2, val3)).iterator
       }
     } else if (varying1) {
       val val2 = _2.value
@@ -217,8 +217,8 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => (t._2 == intVal2) && (t._3 == intVal3)).map(t => new Values(d1.apply(t._1).asInstanceOf[N1#Value], val2, val3))
       }
       else {
-        val d1 = _1.domain.asInstanceOf[IterableDomain[N1#Value]]
-        (for (val1 <- d1.values) yield Values(val1, val2, val3)).iterator
+        val d1 = _1.domain.asInstanceOf[Seq[N1#Value]]
+        (for (val1 <- d1) yield Values(val1, val2, val3)).iterator
       }
     } else if (varying2) {
       val val1 = _1.value
@@ -230,8 +230,8 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._3 == intVal3)).map(t => new Values(val1, d2.apply(t._2).asInstanceOf[N2#Value], val3))
       }
       else {
-        val d2 = _2.domain.asInstanceOf[IterableDomain[N2#Value]]
-        (for (val2 <- d2.values) yield Values(val1, val2, val3)).iterator
+        val d2 = _2.domain.asInstanceOf[Seq[N2#Value]]
+        (for (val2 <- d2) yield Values(val1, val2, val3)).iterator
       }
     } else if (varying3) {
       val val1 = _1.value
@@ -243,8 +243,8 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
         limitedDiscreteValuesIterator.filter(t => (t._1 == intVal1) && (t._2 == intVal2)).map(t => new Values(val1, val2, d3.apply(t._3).asInstanceOf[N3#Value]))
       }
       else {
-        val d3 = _3.domain.asInstanceOf[IterableDomain[N3#Value]]
-        (for (val3 <- d3.values) yield Values(val1, val2, val3)).iterator
+        val d3 = _3.domain.asInstanceOf[Seq[N3#Value]]
+        (for (val3 <- d3) yield Values(val1, val2, val3)).iterator
       }
     } else {
       Iterator.single(Values(_1.value, _2.value, _3.value))
