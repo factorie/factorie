@@ -50,7 +50,7 @@ object WordSegmenterDemo {
   }
   /** A token bi-gram conjunction  */
   model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
-    def statisticsDomains = Seq(LabelDomain,LabelDomain,TokenDomain)
+    def statisticsDomains = Seq(LabelDomain,TokenDomain,TokenDomain)
     def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
     def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
@@ -99,6 +99,7 @@ object WordSegmenterDemo {
       }
       sentence
     }
+    println("TokenDomain.dimensionDomain.size="+TokenDomain.dimensionDomain.size)
 
     // Make a test/train split
     val (testSet, trainSet) = sentences.shuffle(random).split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)

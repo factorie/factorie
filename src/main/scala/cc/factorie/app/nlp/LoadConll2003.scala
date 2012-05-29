@@ -45,8 +45,8 @@ object LoadConll2003 {
       } else {
         val fields = line.split(' ')
         // fields = word part-of-speech shallow-parse(IOB) ner-label(IOB)
-        println(fields.mkString(","))
-	assert(fields.length == 4)
+        //println(fields.mkString(","))
+        assert(fields.length == 4)
         val word = fields(0)
         val partOfSpeech = fields(1)
         val ner = fields(3).stripLineEnd

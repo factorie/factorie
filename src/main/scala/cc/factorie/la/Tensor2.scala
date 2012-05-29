@@ -50,8 +50,8 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
   override def update(i:Int, v:Double): Unit = _values(i) = v
   override def update(i:Int, j:Int, v:Double): Unit = _values(i*dim2+j) = v
   override def dot(t:DoubleSeq): Double = t match {
-    case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
     case t:SingletonBinaryTensor2 => apply(t.singleIndex)
+    case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
     case t:DenseTensorLike2 => Tensor.dot(this, t)
     case t:SingletonLayeredTensorLike2 => t dot this
     case t:SingletonBinaryLayeredTensorLike2 => t dot this
@@ -108,6 +108,8 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   protected def getInner(i:Int): Tensor1 = { var in = _inners(i); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i)).+=(index2(i), incr)
   override def +=(ds:DoubleSeq): Unit = ds match {
+    case t:SingletonBinaryTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, 1.0)
+    case t:SingletonTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, t.singleValue)
     case t:SingletonLayeredTensorLike2 => { getInner(t.singleIndex1) += t.inner }
     case t:SingletonBinaryLayeredTensorLike2 => { getInner(t.singleIndex1) += t.inner }
     case t:DenseLayeredTensorLike2 => { val len = t._inners.length; var i = 0; while (i < len) { if (t._inners(i) ne null) getInner(i) += t._inners(i); i += 1 } }
@@ -119,7 +121,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:SingletonTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, f * t.singleValue)
     case t:SingletonLayeredTensorLike2 => { getInner(t.singleIndex1).+=(t.inner, f) }
     case t:SingletonBinaryLayeredTensorLike2 => { getInner(t.singleIndex1).+=(t.inner, f) }
-    case t:DenseLayeredTensorLike2 => { val len = t._inners.length; var i = 0; while (i < len) { if (t._inners(i) ne null) getInner(i) += t._inners(i)*f; i += 1 } }
+    case t:DenseLayeredTensorLike2 => { val len = t._inners.length; var i = 0; while (i < len) { if (t._inners(i) ne null) getInner(i).+=(t._inners(i), f); i += 1 } }
     case t:DoubleSeq => throw new Error("Not yet implemented for class "+t.getClass.getName)
     //case t:DoubleSeq => super.+=(ds)
   }

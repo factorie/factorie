@@ -111,11 +111,11 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
   def activeDomain = new RangeIntSeq(0, length) // Actually more sparse than this
   private var _inners = Array.fill(dim1*dim2)(newTensor1(dim3))
   override def apply(i:Int, j:Int, k:Int): Double = {
-    assert(i*dim2+j < dim1*dim2, "len="+length+"dim1="+dim1+" dim2="+dim2+" dim3="+dim3+" i="+i+" j="+j+" k="+k)
+    assert(i*dim2+j < dim1*dim2, "len="+length+" dim1="+dim1+" dim2="+dim2+" dim3="+dim3+" i="+i+" j="+j+" k="+k)
     val t1 = _inners(i*dim2+j)
     if (t1 ne null) t1.apply(k) else 0.0 }
   def isDense = false
-  def apply(i:Int): Double = { /*println("Dense2LayeredTensorLike3 apply i="+i);*/ apply(i/dim2/dim3, (i/dim3)%dim2, i%dim3) }
+  def apply(i:Int): Double = apply(i/dim2/dim3, (i/dim3)%dim2, i%dim3)
   override def update(i:Int, j:Int, k:Int, v:Double): Unit = _inners(i*dim2+j).update(j, v)
   protected def getInner(i:Int, j:Int): Tensor1 = { var in = _inners(i*dim2+j); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i), index2(i)).+=(index3(i), incr)
@@ -124,7 +124,7 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
     case t:SingletonTensor3 => apply(t.singleIndex1, t.singleIndex2, t.singleIndex3) * t.singleValue
     case t:Singleton2BinaryLayeredTensorLike3 => { val i = _inners(t.singleIndex1*dim2+t.singleIndex2); if (i ne null) i.dot(t.inner) else 0.0 }
     case t:Singleton2LayeredTensorLike3 => { val i = _inners(t.singleIndex1*dim2+t.singleIndex2); if (i ne null) i.dot(t.inner) * t.singleValue1 * t.singleValue2 else 0.0 }
-    case t:SparseBinaryTensor3 => { var s = 0.0; t.foreachActiveElement((i,v) => s += apply(i)); s }
+    case t:SparseBinaryTensor3 => { /*println("Dense2LayeredTensorLike3 this.length="+length+" t.length="+t.length+" dims="+t.dimensions.toSeq);*/ var s = 0.0; t.foreachActiveElement((i,v) => s += apply(i)); s }
   }
 }
 // TODO Consider also Dense1LayeredTensor3 with an InnerTensor2

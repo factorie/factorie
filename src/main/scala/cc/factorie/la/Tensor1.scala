@@ -68,6 +68,7 @@ trait DenseTensorLike1 extends Tensor1 with DenseTensor {
     case t:SingletonBinaryTensorLike1 => __values(t.singleIndex) += 1.0
     case t:SingletonTensor1 => __values(t.singleIndex) += t.singleValue
     case t:SparseBinaryTensorLike1 => t.=+(__values, f)
+    case t:SparseIndexedTensor1 => t.=+(__values, f)
     case t:DoubleSeq => super.+=(t, f)
   }
 }
@@ -384,8 +385,15 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     _npos += 1
   }
   
-  def +=(v:Tensor1): Unit = v.foreachActiveElement((i,v) => +=(i, v)) 
+  override def +=(t:DoubleSeq): Unit = +=(t, 1.0)
   override def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:SingletonBinaryTensorLike1 => +=(t.singleIndex, f)
+    case t:SingletonTensor1 => +=(t.singleIndex, f * t.singleValue)
+    case t:SparseBinaryTensorLike1 => { val a = t.asIntArray; val len = a.length; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
+    case t:SparseIndexedTensor1 => { val len = t._npos; var i = 0; while (i < len) { +=(t._indexs(i), f * t._values(i)); i += 1 }}
+  }
+  def =+(a:Array[Double], f:Double): Unit = { var i = 0; while (i < _npos) { a(_indexs(i)) += f * _values(i); i += 1 }}
   
   override def clone: SparseIndexedTensor1 = {
     val v: SparseIndexedTensor1 = if (_sizeProxy eq null) new SparseIndexedTensor1(_length) else new SparseIndexedTensor1(_sizeProxy)

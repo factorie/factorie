@@ -82,7 +82,7 @@ trait CategoricalTensorVar[C] extends DiscreteTensorVar {
   @deprecated("Use this.tensor.+= instead.") def +=(index:Int): Unit = tensor.+=(index, 1.0) // For handling EnumDomain Values
   def ++=(elts:Iterable[C]): Unit = elts.foreach(this.+=(_))
   @deprecated("This method may be removed.") def zero(): Unit = tensor.zero()
-  def activeCategories: Seq[C] = tensor.activeDomain.toSeq.map(i => domain.dimensionDomain.category(i))
+  def activeCategories: Seq[C] = tensor.activeDomain.map(i => domain.dimensionDomain.category(i))
 }
 abstract class CategoricalTensorVariable[C] extends DiscreteTensorVariable with CategoricalTensorVar[C] {
   def this(initialValue:Tensor) = { this(); _set(initialValue) }
@@ -91,10 +91,19 @@ abstract class CategoricalTensorVariable[C] extends DiscreteTensorVariable with 
 abstract class BinaryFeatureVectorVariable[C] extends CategoricalTensorVariable[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   _set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))
+  override def toString: String = activeCategories.mkString(printName+"(", ",", ")")
 }
 
 abstract class FeatureVectorVariable[C] extends CategoricalTensorVariable[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
   _set(new GrowableSparseTensor1(domain.dimensionDomain))
+  override def toString: String = {
+    val b = new StringBuilder; b append printName; b append "("
+    tensor.foreachActiveElement((i,v) => {
+      b append domain.dimensionDomain.category(i)
+      b append "="; b append v; b append ","
+    })
+    b.dropRight(1); b.append(")"); b.toString
+  } 
 }
 

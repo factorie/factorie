@@ -44,17 +44,16 @@ trait Tensor extends MutableDoubleSeq {
   def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
   def *(v:Double): Tensor = new TensorTimesScalar(this, v)
   def /(v:Double): Tensor = new TensorTimesScalar(this, 1.0/v)
-  //def +(v:Double): Tensor = { val t = copy; t += v; t } // TODO This wouldn't properly obey sparsity
-  //def -(v:Double): Tensor = { val t = copy; t -= v; t } // TODO This wouldn't properly obey sparsity
-  def +(that:Tensor): Tensor = { val t = this.copy; t += that; t } //throw new Error("Not yet implemented")
-  def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t } //throw new Error("Not yet implemented")
+  def +(that:Tensor): Tensor = { val t = this.copy; t += that; t }
+  def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t }
   def *(that:Tensor): Tensor = throw new Error("Not yet implemented")
   def /(that:Tensor): Tensor = throw new Error("Not yet implemented")
   def normalized: Tensor = { val t = copy; t.normalize; t }
   def expNormalized: Tensor = { val t = copy; t.expNormalize; t }
-  def isUniform = false // TODO Fix this for the Uniform Tensors!!
+  def isUniform = false
   def stringPrefix = getClass.getName // "Tensor"
-  override def toString = { val suffix = if (length > 50) "...)" else ")"; this.asSeq.take(50).mkString(stringPrefix+"(", ",", suffix) }
+  def printLength = 50
+  override def toString = { val suffix = if (length > printLength) "...)" else ")"; this.asSeq.take(printLength).mkString(stringPrefix+"(", ",", suffix) }
 }
 
 object Tensor {
@@ -123,6 +122,10 @@ object Tensor {
       case t2:SingletonBinaryTensorLike1 => new SingletonTensor2(t1.dim1, t2.dim1, t1.singleIndex, t2.singleIndex, t1.singleValue)
       case t2:Tensor1 => new SingletonLayeredTensor2(t1.dim1, t2.dim1, t1.singleIndex, t1.singleValue, t2)
     }
+    case t1:SparseBinaryTensorLike1 => t2 match {
+      case t2:SingletonBinaryTensorLike1 => { val t = new SparseBinaryTensor2(t1.dim1, t2.dim1); val a1 = t1.asIntArray; var i = 0; while (i < a1.length) { t(t2.singleIndex, a1(i)) = 1.0; i += 1 }; t }
+      case t2:SingletonTensor1 => throw new Error("SparseTensor2 not yet implemented.") //{ val t = new SparseTensor2(t1.dim1, t2.dim1); val a1 = t1.asIntArray; var i = 0; while (i < a1.length) { t(t2.singleIndex, a1(i)) = 1.0; i += 1 }; t }
+    }
     case t1:DenseTensor1 => t2 match {
       case t2:SingletonBinaryTensorLike1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1) t(i,t2.singleIndex) = t1(i); t }
       case t2:SingletonTensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1) t(i,t2.singleIndex) = t1(i) * t2.singleValue; t }
@@ -132,7 +135,20 @@ object Tensor {
       //case t2:DenseTensor2 => { val t = new DenseTensor3(t1.dim1, t2.dim1, t2.dim2); for (i <- 0 until t1.dim1; j <- 0 until t2.dim1; k <- 0 until t2.dim2) t(i,j,k) = t1(i) * t2(j,k); t }
     }
     case t1:Tensor1 => t2 match {
-      case t2:Tensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- t1.activeDomain.asSeq; j <- t2.activeDomain.asSeq) t(i,j) = t1(i) * t2(j); t }
+      //case t2:Tensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- t1.activeDomain.asSeq; j <- t2.activeDomain.asSeq) t(i,j) = t1(i) * t2(j); t }
+      case t2:Tensor1 => {
+        val t = new DenseTensor2(t1.dim1, t2.dim1); val ad1 = t1.activeDomain; val ad2 = t2.activeDomain; var ii = 0; var ji = 0
+        while (ii < ad1.length) {
+          ji = 0
+          while (ji < ad2.length) {
+            val i = ad1(ii); val j = ad2(ji)
+            t(i,j) = t1(i) * t2(j)
+            ji += 1
+          }
+          ii += 1
+        }
+        t
+      } 
     }
   }
   def outer(t1:Tensor1, t2:Tensor2): Tensor3 = t1 match {
@@ -152,6 +168,7 @@ object Tensor {
       }
       case t2:SparseBinaryTensorLike1 => t3 match {
         case t3:SparseBinaryTensorLike1 => {
+          //println("Tensor.outer3 dim1="+t1.dim1+" dim2="+t2.dim1+" dim3="+t3.dim1+"  t2="+t2)
           val t = new SparseBinaryTensor3(t1.dim1, t2.dim1, t3.dim1)
           // TODO This next line is inefficient
           for (j <- t2.activeDomain1.asSeq; k <- t3.activeDomain1.asSeq) t.update(t1.singleIndex, j, k, 1.0)
@@ -269,6 +286,7 @@ trait UniformTensor extends Tensor {
   def apply(i:Int) = uniformValue
   def isDense = true
   //def activeDomain: IntSeq = new RangeIntSeq(0, length) // Can't be both here an Tensor1
+  override def isUniform = true
   override def sum: Double = length * uniformValue
   override def max: Double = uniformValue
   override def min: Double = uniformValue

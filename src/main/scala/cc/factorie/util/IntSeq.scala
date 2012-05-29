@@ -24,6 +24,12 @@ trait IntSeq {
     while (i < len) { a(i) = f(apply(i)); i += 1 }
     new ArrayIntSeq(a)
   }
+  def map[A](f:Int=>A): Seq[A] = {
+    val len = length; var i = 0; if (len <= 0) return Nil
+    val a = new scala.collection.mutable.ArrayBuffer[A](len)
+    while (i < len) { a.append(f(apply(i))); i += 1 }
+    a
+  }
   def foreach(f:Int=>Unit): Unit = { var i = 0; while (i < length) { f(apply(i)); i += 1 } }
   def forElements(f:(Int,Int)=>Unit): Unit = { var i = 0; while (i < length) { f(i, apply(i)); i += 1 } }
   def contains(d:Int): Boolean = { var i = length; while (i >= 0) if (d == apply(i)) return true; false }
