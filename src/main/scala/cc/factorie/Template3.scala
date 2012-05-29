@@ -73,9 +73,9 @@ abstract class TemplateWithTensorStatistics3[N1<:DiscreteTensorVar,N2<:DiscreteT
 
 abstract class TemplateWithDotStatistics3[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with DotFamily with DotStatistics3[N1#Value,N2#Value,N3#Value]  {
   type FamilyType <: TemplateWithDotStatistics3[N1,N2,N3]
-  def weight(index0:Int, index1:Int, index2:Int): Double = weights(
-    index0 * statisticsDomains(1).dimensionDomain.size  * statisticsDomains(2).dimensionDomain.size +
-          index1 * statisticsDomains(2).dimensionDomain.size +
+  @deprecated("Use instead weights(i,j,k)") def weight(index0:Int, index1:Int, index2:Int): Double = weights(
+    index0 * statisticsDomains._2.dimensionDomain.size  * statisticsDomains._3.dimensionDomain.size +
+          index1 * statisticsDomains._3.dimensionDomain.size +
           index2)
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
 }

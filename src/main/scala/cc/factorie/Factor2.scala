@@ -224,6 +224,7 @@ trait Statistics2[S1,S2] extends Family {
 trait TensorStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorFamily {
   self =>
   type StatisticsType = Stat
+  override def statisticsDomains: Tuple2[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2]]
   final case class Stat(_1:S1, _2:S2) extends { val tensor: Tensor = Tensor.outer(_1, _2) } with super.Statistics {
     lazy val score = self.score(this)
   }

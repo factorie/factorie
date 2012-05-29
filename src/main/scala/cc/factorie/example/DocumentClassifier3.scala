@@ -40,10 +40,10 @@ object DocumentClassifier3 {
 
   val model = new TemplateModel(
     /** Bias term just on labels */
-    new TemplateWithDotStatistics1[Label] { override def statisticsDomains = Seq(LabelDomain) },
+    new TemplateWithDotStatistics1[Label] { override def statisticsDomains = Tuple(LabelDomain) },
     /** Factor between label and observed document */
     new TemplateWithDotStatistics2[Label,Document] {
-      override def statisticsDomains = Seq(LabelDomain, DocumentDomain)
+      override def statisticsDomains = Tuple(LabelDomain, DocumentDomain)
       def unroll1 (label:Label) = Factor(label, label.document)
       def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
     }

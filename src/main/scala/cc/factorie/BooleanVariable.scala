@@ -23,7 +23,7 @@ trait BooleanValue extends CategoricalValue[Boolean] {
 
 /** The Domain for BooleanVar, of size two, containing a falseValue
     (with intValue = 0) and a trueValue (with intValue = 1). */
-class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanValue] {
+class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanValue] with Domain[BooleanValue] {
   thisDomain =>
   val falseValue = super.value(false)
   val trueValue = super.value(true)

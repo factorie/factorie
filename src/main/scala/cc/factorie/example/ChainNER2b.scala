@@ -42,17 +42,17 @@ object ChainNER2b {
   val model = new TemplateModel(
     // Bias term on each individual label 
     new TemplateWithDotStatistics1[Label] {
-      def statisticsDomains = Seq(LabelDomain)
+      def statisticsDomains = Tuple(LabelDomain)
     }, 
     // Transition factors between two successive labels
     new TemplateWithDotStatistics2[Label, Label] {
-      def statisticsDomains = Seq(LabelDomain, LabelDomain)
+      def statisticsDomains = Tuple(LabelDomain, LabelDomain)
       def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
       def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
     },
     // Factor between label and observed token
     new TemplateWithDotStatistics2[Label, Token] {
-      def statisticsDomains = Seq(LabelDomain, TokenDomain)
+      def statisticsDomains = Tuple(LabelDomain, TokenDomain)
       def unroll1(label: Label) = Factor(label, label.token)
       def unroll2(token: Token) = throw new Error("Token values shouldn't change")
     }

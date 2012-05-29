@@ -40,30 +40,30 @@ object WordSegmenterDemo {
   val model = new TemplateModel
   /** Bias term just on labels */
   model += new TemplateWithDotStatistics1[Label] {
-    def statisticsDomains = Seq(LabelDomain)
+    def statisticsDomains = Tuple(LabelDomain)
   }
   /** Factor between label and observed token */
   model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
-    def statisticsDomains = Seq(LabelDomain,TokenDomain)
+    def statisticsDomains = Tuple(LabelDomain,TokenDomain)
     def unroll1 (label:Label) = Factor(label, label.token)
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
   }
   /** A token bi-gram conjunction  */
   model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
-    def statisticsDomains = Seq(LabelDomain,TokenDomain,TokenDomain)
+    def statisticsDomains = Tuple(LabelDomain,TokenDomain,TokenDomain)
     def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
     def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
   }
   /** Factor between two successive labels */
   model += new TemplateWithDotStatistics2[Label,Label] {
-    def statisticsDomains = Seq(LabelDomain,LabelDomain)
+    def statisticsDomains = Tuple(LabelDomain,LabelDomain)
     def unroll1 (label:Label) = if (label.token.hasNext) Factor(label, label.token.next.label) else Nil
     def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
   }
   /** Skip edge */
   val skipTemplate = new Template2[Label,Label] with DotStatistics1[BooleanValue] {
-    def statisticsDomains = Seq(BooleanDomain)
+    def statisticsDomains = Tuple(BooleanDomain)
     def unroll1 (label:Label) =  
       // could cache this search in label.similarSeq for speed
       for (other <- label.token.chain.links; if label.token.char == other.char) yield

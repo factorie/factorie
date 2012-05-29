@@ -40,7 +40,7 @@ object DocumentClassifier4 {
 
   /** Factor between label and observed document */
   val dtree = new DecisionTreeTemplateWithStatistics2[Label,Document] {
-    def statisticsDomains = Seq(LabelDomain, DocumentDomain)
+    def statisticsDomains = Tuple(LabelDomain, DocumentDomain)
     def unroll1 (label:Label) = Factor(label, label.document)
     def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
   }

@@ -56,11 +56,11 @@ class RealVariable(initialValue: Double) extends MutableRealVar {
 
 // TODO Create an implicit conversion from Double to RealSingletonVector
 // So that we can use them as sufficient statistics in a VectorTemplate
-trait RealSingletonTensorDomain extends DiscreteTensorDomain {
+trait RealSingletonTensorDomain extends DiscreteTensorDomain with Domain[SingletonTensor1] {
   def dimensionDomain = RealSingletonDiscreteDomain
   def size = 1
 }
-object RealSingletonDiscreteDomain extends DiscreteDomain(1)
+object RealSingletonDiscreteDomain extends DiscreteDomain(1) 
 object RealSingletonTensorDomain extends RealSingletonTensorDomain
 
 /** A variable holding a single real (Double) value, but the value encased in a DiscreteVector, 

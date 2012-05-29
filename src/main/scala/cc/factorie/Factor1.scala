@@ -142,6 +142,7 @@ trait Statistics1[S1] extends Family {
 trait TensorStatistics1[S1<:DiscreteTensorValue] extends TensorFamily {
   self =>
   type StatisticsType = Stat
+  override def statisticsDomains: Tuple1[DiscreteTensorDomain with Domain[S1]]
   // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
   final case class Stat(_1:S1) extends { val tensor: Tensor = _1 } with super.Statistics {
     lazy val score = self.score(this)

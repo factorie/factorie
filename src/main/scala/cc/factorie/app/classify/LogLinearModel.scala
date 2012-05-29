@@ -4,13 +4,13 @@ import collection.mutable.HashMap
 
 // Bias weights
 class LogLinearTemplate1[L<:DiscreteVar](val statisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends TemplateWithDotStatistics1[L]() {
-  def statisticsDomains = Seq(statisticsDomain)
+  def statisticsDomains = Tuple(statisticsDomain)
 }
 
 // Label-Feature weights
 class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends TemplateWithDotStatistics2[L,F]() {
   def this(lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
-  def statisticsDomains = Seq(labelStatisticsDomain, featureStatisticsDomain)
+  def statisticsDomains = Tuple(labelStatisticsDomain, featureStatisticsDomain)
   def unroll1(label: L) = Factor(label, lf(label))
   def unroll2(features: F) = Factor(fl(features), features)
 }

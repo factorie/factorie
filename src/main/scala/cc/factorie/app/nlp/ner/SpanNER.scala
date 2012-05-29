@@ -38,8 +38,8 @@ class SpanNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[Strin
   override def skipNonCategories = true
 }
 
-abstract class SpanNerTemplate extends Template2[NerSpan,SpanNerLabel] with DotStatistics2[SpanNerFeatures#Value,SpanNerLabel#Value] {
-  override def statisticsDomains = List(SpanNerFeaturesDomain, Conll2003NerDomain)
+abstract class SpanNerTemplate extends Template2[NerSpan,SpanNerLabel] with DotStatistics2[SpanNerFeatures#Value,Conll2003SpanNerLabel#Value] {
+  override def statisticsDomains = Tuple(SpanNerFeaturesDomain, Conll2003NerDomain)
   def unroll1(span:NerSpan) = Factor(span, span.label)
   def unroll2(label:SpanNerLabel) = Factor(label.span, label)
 }
@@ -47,7 +47,7 @@ abstract class SpanNerTemplate extends Template2[NerSpan,SpanNerLabel] with DotS
 class SpanNerModel extends TemplateModel(
     // Bias term on each individual label 
     new TemplateWithDotStatistics1[SpanNerLabel] {
-      override def statisticsDomains = List(Conll2003NerDomain)
+      override def statisticsDomains = Tuple(Conll2003NerDomain)
     },
     // Token-Label within Span
     new SpanNerTemplate { 
@@ -99,6 +99,7 @@ class SpanNerModel extends TemplateModel(
 // The training objective
 class SpanNerObjective extends TemplateModel(
   new TemplateWithStatistics2[NerSpan,SpanNerLabel] {
+    //def statisticsDomains = Tuple(NerSpanDomain, SpanNerLabelDomain)
     def unroll1(span:NerSpan) = Factor(span, span.label)
     def unroll2(label:SpanNerLabel) = Factor(label.span, label)
     def score(s:Stat) = {

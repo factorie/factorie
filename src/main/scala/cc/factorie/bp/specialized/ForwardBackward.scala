@@ -114,7 +114,7 @@ object ForwardBackward {
   private def getTransScores[OV <: DiscreteTensorVar, LV <: LabelVariable[_]](
          transTemplate: TemplateWithDotStatistics2[LV, LV]
        ): (Int,Int) => Double = {
-    val ds = transTemplate.statisticsDomains(1).dimensionSize // optimization
+    val ds = transTemplate.statisticsDomains._2.dimensionSize // optimization
     (i: Int, j: Int) => transTemplate.weights(i * ds + j)
   }
   

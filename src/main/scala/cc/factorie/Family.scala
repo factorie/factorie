@@ -96,14 +96,15 @@ trait TensorFamily extends Family {
   //protected def _newStatisticsDomains = new ArrayBuffer[DiscreteTensorDomain]
   //protected var _tensorDims: IntSeq
   //def tensorDims: Seq[Int]
-  def statisticsDomains: Seq[DiscreteTensorDomain]
+  def statisticsDomains: Product // [Domain[_]]  // Seq[DiscreteTensorDomain]
 //    = if (_statisticsDomains eq null)
 //      throw new IllegalStateException("You must override statisticsDomains if you want to access them before creating any Factor and Stat objects.")
 //    else
 //      _statisticsDomains
-  def freezeDomains: Unit = statisticsDomains.foreach(_.freeze)
+  def statisticsDomainsSeq: Seq[DiscreteTensorDomain] = statisticsDomains.productIterator.map(_.asInstanceOf[DiscreteTensorDomain]).toSeq
+  def freezeDomains: Unit = statisticsDomainsSeq.foreach(_.freeze)
   //lazy val statisticsVectorLength: Int = statisticsDomains.multiplyInts(_.dimensionSize)
-  lazy val statisticsTensorDimensions: Seq[Int] = statisticsDomains.map(_.dimensionSize)
+  lazy val statisticsTensorDimensions: Seq[Int] = statisticsDomainsSeq.map(_.dimensionSize)
   type StatisticsType <: Statistics
   trait Statistics extends super.Statistics {
     def tensor: Tensor
@@ -129,7 +130,7 @@ trait DotFamily extends TensorFamily {
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also
     if (f.exists) return // Already exists, don't write it again
-    for (d <- statisticsDomains) d.save(dirname)
+    for (d <- statisticsDomainsSeq) d.save(dirname)
 
     val writer = new PrintWriter(new BufferedOutputStream({
       if (gzip)
@@ -152,7 +153,7 @@ trait DotFamily extends TensorFamily {
   }
 
   override def load(dirname: String, gzip: Boolean = false): Unit = {
-    for (d <- statisticsDomains) d.load(dirname)
+    for (d <- statisticsDomainsSeq) d.load(dirname)
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     val reader = new BufferedReader(new InputStreamReader({
       if (gzip)
@@ -184,7 +185,7 @@ trait DotFamily extends TensorFamily {
     def readerFromResourcePath(path: String) =
       new BufferedReader(new InputStreamReader(cl.getResourceAsStream(path)))
 
-    for (d <- statisticsDomains.map(_.dimensionDomain))
+    for (d <- statisticsDomainsSeq.map(_.dimensionDomain))
       d.loadFromReader(readerFromResourcePath(dirname + "/" + d.filename))
     loadFromReader(readerFromResourcePath(dirname + "/" + filename))
   }
