@@ -62,8 +62,10 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
       println("bestModel1     "+bestModel1)
       println("bestModel2     "+bestModel2)
       if (shouldUpdate) println("SHOULDUPDATE") else println("NOTUPDATE")
+      println("families "+model.families)
+      println("familesToUpdate "+familiesToUpdate)
     }
-   
+    
     if (shouldUpdate) updateWeights
   }
   
@@ -109,10 +111,15 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
         override def default(f: DotFamily) = {
           val tensor = f.newSparseTensor // new SparseVector(f.statisticsVectorLength)
           this(f) = tensor
+          //println(" gradient before increment: "+tensor)
           tensor
         }
+        override def toString: String = keys.map((f:DotFamily) => {
+          val tensor = this(f)
+          f.defaultFactorName+" "+tensor.getClass+" dims="+tensor.dimensions.mkString(",")+" contents:"+tensor.toString
+        }).mkString("\n")
       }
-    	//val templatesToUpdate = templateClassToUpdate
+      //val templatesToUpdate = templateClassToUpdate
       // If the model doesn't score the truth highest, then update parameters
       if (bestModel1 ne bestObjective1) { // TODO  I changed != to "ne"  OK?  Should I be comparing values here instead?
         // ...update parameters by adding sufficient stats of truth, and subtracting error
@@ -121,48 +128,36 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
         //println (" Updating bestObjective1 "+(bestObjective1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
         //println (" Updating bestModel1 "+(bestModel1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
         bestObjective1.diff.redo
-        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, rate))
-        //model.factorsOfFamilyClass(bestObjective1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
-        //bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment1 "+f.statistics.tensor)*/; gradient(f.family).+=(f.statistics.tensor, rate) })
         bestObjective1.diff.undo
-        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, -rate))
-        //model.factorsOfFamilyClass(bestObjective1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
-        //bestObjective1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
+        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment2 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, -rate) })
         bestModel1.diff.redo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, -rate))
-        //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
-        //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment3 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, -rate) })
         bestModel1.diff.undo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, rate))
-        //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
-        //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment4 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, rate) })
       }
       else if (bestModel1.modelScore - bestModel2.modelScore < learningMargin) {
         // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
         //println ("SampleRank learning from margin")
         // TODO Note This is changed from previous version, where it was bestTruth.  Think again about this.
         bestObjective1.diff.redo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, rate))
-        //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
-        //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment5 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, rate) })
         bestObjective1.diff.undo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, -rate))
-        //model.factorsOfFamilyClass(bestModel1.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
-        //bestModel1.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment6 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, -rate) })
         bestModel2.diff.redo
-        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, -rate))
-        //model.factorsOfFamilyClass(bestModel2.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  -rate)
-        //bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
+        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment7 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, -rate) })
         bestModel2.diff.undo
-        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, rate))
-        //model.factorsOfFamilyClass(bestModel2.diff, templatesToUpdate).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
-        //bestModel2.diff.factorsOf(templatesToUpdate)(model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
+        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment8 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, rate) })
       }
       // project gradients
       gradient.foreach(g => {
         projectGradient(g._1,g._2)
         accumulator(g._1) += g._2
       })
+      if (logLevel > 2) {
+        println(" gradient after increment: "+gradient)
+        model.familiesOfClass[DotFamily].foreach(f => println(" weights:"+f.weights))
+      }
     } //else Console.println ("No preference unlabeled "+variable)
   }
 }

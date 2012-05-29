@@ -32,6 +32,7 @@ trait IntSeq {
   def indexOf(d:Int): Int = { var i = 0; while (i < length) { if (d == apply(i)) return i }; -1 }
   def max: Int = { var m = Int.MinValue; var i = 0; while (i < length) { if (!(m >= apply(i))) m = apply(i) }; m }
   def min: Int = { var m = Int.MinValue; var i = 0; while (i < length) { if (!(m <= apply(i))) m = apply(i) }; m }
+  def asArray: Array[Int] = toArray // To be overridden for efficiency in some subclasses
   def asSeq: IndexedSeq[Int] = new IndexedSeq[Int] {
     final def length = IntSeq.this.length
     final def apply(i:Int): Int = IntSeq.this.apply(i)
@@ -70,7 +71,8 @@ final class SingletonIntSeq(val value:Int) extends IntSeq {
 final class ArrayIntSeq(val array:Array[Int]) extends IntSeq {
   @inline def length = array.length
   @inline def apply(i:Int): Int = array(i)
-  @inline def toArray = array
+  @inline def toArray = { val a = new Array[Int](length); System.arraycopy(array, 0, a, 0, length); a }
+  @inline override def asArray = array
 }
 
 final class TruncatedArrayIntSeq(val array:Array[Int], val length:Int) extends IntSeq {

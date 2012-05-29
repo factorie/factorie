@@ -61,6 +61,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
 class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   def this(t:Tensor2) = { this(t.dim1, t.dim2); this := t }
   override def blankCopy: DenseTensor2 = new DenseTensor2(dim1, dim2)
+  override def stringPrefix = "DenseTensor2"
 }
 
 // TODO Make a GrowableDenseTensor2
@@ -71,6 +72,7 @@ class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, v
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2 + singleIndex2
+  override def stringPrefix = "SingletonBinaryTensor2"
 }
 
 class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int, val singleValue:Double) extends Tensor2 with SingletonTensor {
@@ -86,6 +88,7 @@ trait SparseBinaryTensorLike2 extends Tensor2 with SparseBinaryTensor {
 }
 class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensorLike2 {
   override def blankCopy: SparseBinaryTensor2 = new SparseBinaryTensor2(dim1, dim2)
+  override def stringPrefix = "SparseBinaryTensor2"
 }
 
 trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
@@ -111,6 +114,15 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:DoubleSeq => throw new Error("Not yet implemented for class "+t.getClass.getName)
     //case t:DoubleSeq => super.+=(ds)
   }
+  override def +=(ds:DoubleSeq, f:Double): Unit = ds match {
+    case t:SingletonBinaryTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, f)
+    case t:SingletonTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, f * t.singleValue)
+    case t:SingletonLayeredTensorLike2 => { getInner(t.singleIndex1).+=(t.inner, f) }
+    case t:SingletonBinaryLayeredTensorLike2 => { getInner(t.singleIndex1).+=(t.inner, f) }
+    case t:DenseLayeredTensorLike2 => { val len = t._inners.length; var i = 0; while (i < len) { if (t._inners(i) ne null) getInner(i) += t._inners(i)*f; i += 1 } }
+    case t:DoubleSeq => throw new Error("Not yet implemented for class "+t.getClass.getName)
+    //case t:DoubleSeq => super.+=(ds)
+  }
   override def dot(t:DoubleSeq): Double = t match {
     case t:SingletonBinaryLayeredTensorLike2 => { val inner = _inners(t.singleIndex1); if (inner ne null) inner.dot(t.inner) else 0.0 } // This is a common case, and should be fast
     case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
@@ -122,6 +134,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
 }
 class DenseLayeredTensor2(val dim1:Int, val dim2:Int, val newTensor1:Int=>Tensor1) extends DenseLayeredTensorLike2 {
   override def blankCopy: DenseLayeredTensor2 = new DenseLayeredTensor2(dim1, dim2, newTensor1)
+  override def stringPrefix = "DenseLayeredTensor2"
 }
 
 
@@ -134,7 +147,7 @@ trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def activeDomain2 = inner.activeDomain1
   def activeDomain = { val offset = singleIndex1 * dim2; inner.activeDomain1.map(_ + offset) }
   override def apply(i:Int, j:Int): Double = if (i == singleIndex1) inner.apply(j) * singleValue1 else 0.0
-  def apply(i:Int): Double = apply(i/dim1, i%dim2)
+  def apply(i:Int): Double = apply(i/dim2, i%dim2)
   override def update(i:Int, j:Int, v:Double): Unit = if (i == singleIndex1) inner.update(j, v/singleValue1) else throw new Error("Outer index out of bounds: "+i)
   override def dot(t:DoubleSeq): Double = t match {
     case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue * singleValue1
@@ -154,7 +167,7 @@ trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def activeDomain2 = inner.activeDomain1
   def activeDomain = { val offset = singleIndex1 * dim2; inner.activeDomain1.map(_ + offset) }
   override def apply(i:Int, j:Int): Double = if (i == singleIndex1) inner.apply(j) else 0.0
-  def apply(i:Int): Double = apply(i/dim1, i%dim2)
+  def apply(i:Int): Double = apply(i/dim2, i%dim2)
   override def update(i:Int, j:Int, v:Double): Unit = if (i == singleIndex1) inner.update(j, v) else throw new Error("Outer index out of bounds: "+i)
   override def dot(t:DoubleSeq): Double = t match {
     case t:SingletonBinaryTensor2 => apply(t.singleIndex)

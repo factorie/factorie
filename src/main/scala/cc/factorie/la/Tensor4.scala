@@ -28,11 +28,11 @@ trait Tensor4 extends Tensor {
   def numDimensions: Int = 4
   def activeDomains = Array(activeDomain1, activeDomain2, activeDomain3, activeDomain4)
   def dimensions = Array(dim1, dim2, dim3, dim4)
-  def apply(i:Int, j:Int, k:Int, l:Int): Double = apply(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l)
-  def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = update(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l, v)
+  def apply(i:Int, j:Int, k:Int, l:Int): Double = apply(i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l)
+  def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = update(i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l, v)
   def +=(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = +=(singleIndex(i, j, k, l), v)
   @inline final def length = dim1 * dim2 * dim3 * dim4
-  @inline final def singleIndex(i:Int, j:Int, k:Int, l:Int): Int = i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l 
+  @inline final def singleIndex(i:Int, j:Int, k:Int, l:Int): Int = i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l
   @inline final def multiIndex(i:Int): (Int, Int, Int, Int) = (i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
   @inline final def index1(i:Int): Int = i/dim2/dim3/dim4
   @inline final def index2(i:Int): Int = (i/dim3/dim4)%dim2
@@ -50,11 +50,11 @@ trait DenseTensorLike4 extends Tensor4 with DenseTensor {
   def activeDomain4 = new RangeIntSeq(0, dim4)
   def activeDomain = new RangeIntSeq(0, dim1*dim2*dim3*dim4)
   def apply(i:Int): Double = __values(i)
-  override def apply(i:Int, j:Int, k:Int, l:Int): Double = __values(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l)
+  override def apply(i:Int, j:Int, k:Int, l:Int): Double = __values(i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l)
   override def +=(i:Int, v:Double): Unit = __values(i) += v
   override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } }
   override def update(i:Int, v:Double): Unit = __values(i) = v
-  override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = __values(i*dim2*dim3*dim4 + j*dim2*dim3 + k*dim3 + l) = v
+  override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = __values(i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l) = v
   override def dot(t:DoubleSeq): Double = t match {
     case t:SingletonTensor4 => apply(t.singleIndex) * t.singleValue
     case t:SingletonBinaryTensor4 => apply(t.singleIndex)
@@ -102,11 +102,11 @@ trait Dense3LayeredTensorLike4 extends Tensor4 with SparseDoubleSeq {
   def activeDomain4 = new RangeIntSeq(0, dim4) // It probably could be more sparse than this
   def activeDomain = new RangeIntSeq(0, length) // Actually more sparse than this
   private var _inners = Array.fill(dim1*dim2*dim3)(newTensor1(dim3))
-  override def apply(i:Int, j:Int, k:Int, l:Int): Double = _inners(i*dim2*dim3 + j*dim2 + k).apply(l)
+  override def apply(i:Int, j:Int, k:Int, l:Int): Double = _inners(i*dim2*dim3 + j*dim3 + k).apply(l)
   def isDense = false
   def apply(i:Int): Double = apply(i/dim2/dim3/dim4, (i/dim3/dim4)%dim2, (i/dim4)%dim3, i%dim4)
-  override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = _inners(i*dim2*dim3 + j*dim2 + k).update(l, v)
-  protected def getInner(i:Int, j:Int, k:Int): Tensor1 = { var in = _inners(i*dim2*dim3 + j*dim2 + k); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
+  override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = _inners(i*dim2*dim3 + j*dim3 + k).update(l, v)
+  protected def getInner(i:Int, j:Int, k:Int): Tensor1 = { var in = _inners(i*dim2*dim3 + j*dim3 + k); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i), index2(i), index3(i)).+=(index4(i), incr)
 }
 class Dense3LayeredTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val newTensor1:Int=>Tensor1) extends Dense3LayeredTensorLike4 {

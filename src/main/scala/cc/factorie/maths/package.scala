@@ -742,6 +742,23 @@ object Probit {
     }
   }
 
+  
+  
+// Sample statistics
+  
+  def sampleMean(ds:cc.factorie.util.DoubleSeq): Double = ds.sum / ds.length
+  def sampleVariance(ds:cc.factorie.util.DoubleSeq): Double = sampleVariance(ds, sampleMean(ds))
+  def sampleVariance(ds:cc.factorie.util.DoubleSeq, mean:Double): Double = {
+    val len = ds.length; var i = 0
+    var variance = 0.0
+    while (i < len) {
+      val diff = mean - ds(i)
+      variance += diff * diff
+      i += 1
+    }
+    math.sqrt(variance / (len - 1))
+  }
+
 
 
 // Trig

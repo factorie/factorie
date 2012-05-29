@@ -53,7 +53,7 @@ trait Tensor extends MutableDoubleSeq {
   def normalized: Tensor = { val t = copy; t.normalize; t }
   def expNormalized: Tensor = { val t = copy; t.expNormalize; t }
   def isUniform = false // TODO Fix this for the Uniform Tensors!!
-  def stringPrefix = "Tensor"
+  def stringPrefix = getClass.getName // "Tensor"
   override def toString = { val suffix = if (length > 50) "...)" else ")"; this.asSeq.take(50).mkString(stringPrefix+"(", ",", suffix) }
 }
 

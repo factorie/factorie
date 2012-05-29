@@ -87,6 +87,39 @@ abstract class DiscreteVariable extends MutableDiscreteVar with IterableSettings
   }
 }
 
+
+object MaximizeDiscrete extends Maximize {
+  def maxIndex(d:DiscreteVariable, model:Model): Int = {
+    val origI = d.intValue
+    var maxScore = Double.MinValue
+    var maxI = -1
+    for (i <- 0 until d.domain.size) {
+      d := i // Careful!  Doesn't work if d has variable value coordination!
+      val score = model.score(d)
+      if (score > maxScore) { maxScore = score; maxI = i }
+    }
+    assert(maxI != -1)
+    d := origI
+    maxI
+  }
+  def apply(d:DiscreteVariable, model:Model): Unit = d := maxIndex(d, model)
+  def apply(varying:Iterable[DiscreteVariable], model:Model): Unit = for (d <- varying) apply(d, model)
+  def infer[V<:DiscreteVariable](varying:V, model:Model): Option[DiscreteMarginal1[V]] =
+    Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxIndex(varying, model))))
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
+    if (summary ne null) return None
+    if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
+    val result = new DiscreteSummary1[DiscreteVariable]
+    for (v <- variables) {
+      infer(v.asInstanceOf[DiscreteVariable], model) match {
+        case Some(dm) => result += dm
+        case _ => return None
+      }
+    }
+    Some(result)
+  }
+}
+
 // Why can't this be accomplished merely by overriding set(Int)(DiffList)?  -akm
 // I think we should just get rid of this trait. -akm
 // TODO Remove this

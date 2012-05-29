@@ -42,14 +42,14 @@ trait MassesWithTotal extends Masses {
 }
 
 trait DenseMassesWithTotal extends DenseTensor with MassesWithTotal {
-  override def zero(): Unit = { super.zero(); _massTotal = 0.0 }
-  override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
-  override def *=(d:Double): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)*d; _massTotal += v; _values(i) = v; i += 1 }}
-  override def *=(ds:DoubleSeq): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)*ds(i); _massTotal += v; _values(i) = v; i += 1 }}
-  override def /=(ds:DoubleSeq): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)/ds(i); _massTotal += v; _values(i) = v; i += 1 }}
-  override def +=(ds:DoubleSeq): Unit = ds.foreachElement((i,v) => { _values(i) += v; _massTotal += v })
-  override def :=(v:Double): Unit = { java.util.Arrays.fill(_values, v); _massTotal = v * length }
-  override def :=(ds:DoubleSeq): Unit = { _massTotal = 0.0; var l = length; var v = 0.0; var i = 0; while (i < l) { v = ds(i); assert(v >= 0.0); _values(i) = v; _massTotal += v; i += 1 } }
+  final override def zero(): Unit = { super.zero(); _massTotal = 0.0 }
+  final override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+  final override def *=(d:Double): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)*d; _massTotal += v; _values(i) = v; i += 1 }}
+  final override def *=(ds:DoubleSeq): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)*ds(i); _massTotal += v; _values(i) = v; i += 1 }}
+  final override def /=(ds:DoubleSeq): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)/ds(i); _massTotal += v; _values(i) = v; i += 1 }}
+  final override def +=(ds:DoubleSeq): Unit = ds.foreachElement((i,v) => { _values(i) += v; _massTotal += v })
+  final override def :=(v:Double): Unit = { java.util.Arrays.fill(_values, v); _massTotal = v * length }
+  final override def :=(ds:DoubleSeq): Unit = { _massTotal = 0.0; var l = length; var v = 0.0; var i = 0; while (i < l) { v = ds(i); assert(v >= 0.0); _values(i) = v; _massTotal += v; i += 1 } }
 }
 
 //trait DenseMasses extends ... (gather += in here, but we need a DenseTensor class also)

@@ -40,7 +40,7 @@ trait Template extends FamilyWithNeighborDomains with Model { thisTemplate =>
   override def factorsWithDuplicates(vs:Iterable[Variable]): Iterable[FactorType] = super.factorsWithDuplicates(vs).asInstanceOf[Iterable[FactorType]]
   override def factorsWithDuplicates(d:Diff): Iterable[FactorType] = super.factorsWithDuplicates(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
   override def factorsWithDuplicates(difflist:DiffList): Iterable[FactorType] = super.factorsWithDuplicates(difflist).asInstanceOf[Iterable[FactorType]]
-  override def factors(v:Variable): Iterable[FactorType] = super.factors(v).asInstanceOf[FactorType]
+  override def factors(v:Variable): Iterable[FactorType] = super.factors(v).asInstanceOf[Iterable[FactorType]]
   override def factors(variables:Iterable[Variable]): Iterable[FactorType] = super.factors(variables).asInstanceOf[Iterable[FactorType]]
   override def factors(d:Diff): Iterable[FactorType] = super.factors(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
   override def factors(difflist:DiffList): Iterable[FactorType] = super.factors(difflist).asInstanceOf[Iterable[FactorType]]
@@ -63,6 +63,7 @@ trait Template extends FamilyWithNeighborDomains with Model { thisTemplate =>
   /** Causes future calls to factor.valuesIterator to limit the returned values to 
       those value combinations seen in the current values of the variables in factors touching "vars". */
   def limitDiscreteValuesIteratorAsIn(vars:Iterable[DiscreteVar]): Unit = {}
+  override def families: Seq[Family] = Seq(this)
 }
 
 

@@ -197,10 +197,12 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
         //val gStat = gFactor.statistics
         var sum = 0.0
         java.util.Arrays.fill(distribution, 0.0)
-        forIndex(domainSize)(i => {
+        var i = 0
+        while (i < domainSize) {
           distribution(i) = gParent.tensor(i) * mixture(i).tensor(outcomeIntValue)
           sum += distribution(i)
-        })
+          i += 1
+        }
         assert(sum == sum, "Distribution sum is NaN")
         assert(sum != Double.PositiveInfinity, "Distrubtion sum is infinity.")
         // Sample

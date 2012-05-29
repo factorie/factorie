@@ -50,7 +50,8 @@ trait ProtectedIntArrayBuffer {
   protected def _sum: Int = { var s = 0; var i = 0; while (i < _size) { s += _arr(i); i += 1 }; s }
   /** Return the index containing the value i, or -1 if i is not found. */
   protected def _indexOf(i:Int): Int = { var j = 0; while (j < _size) { if (_arr(j) == i) return j; j += 1 }; -1 }
-  /** Return the index containing the value i, or -1 if i is not found.  Do so more efficiently by assuming that the contents are sorted in ascending order. */
+  /** Return the index containing the value i, or -1 if i is not found.  Do so more efficiently by assuming that the contents are sorted in ascending order. 
+      Look by starting near the last index as which a search was successful. */
   protected def _indexOfSorted(i:Int): Int = {
     if (_size == 0) return -1
     if (_lastIndex >= _size) _lastIndex = 0
@@ -61,7 +62,7 @@ trait ProtectedIntArrayBuffer {
       if (j < _size && _arr(j) == i) { _lastIndex = j; j } else -1 
     } else {
       var j = _lastIndex-1
-      while (j >= 0 && _arr(j) < i) { j -= 1 }
+      while (j >= 0 && _arr(j) > i) { j -= 1 }
       if (j >= 0 && _arr(j) == i) { _lastIndex = j; j } else -1
     }
   }
@@ -110,7 +111,7 @@ trait ProtectedIntArrayBuffer {
     else if (x < midval) _positionLte(x, start, middle)
     else _positionLte(x, middle+1, end)
   }
-  /** Return true iff the integer 'index' is contained in _arr.  */
+  /** Return true iff the integer 'index' is contained in _arr between positions 'start' and 'end-1' inclusive.  Look by recursive binary search.  */
   private def _containsSorted(x:Int, start:Int, end:Int): Boolean = {
     // /println("SparseBinaryVector._contains "x+" "+start+" "+end+" diff="+diff)
     val diff = end - start

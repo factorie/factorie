@@ -55,3 +55,18 @@ trait VarAndValueGenericDomain[+This<:Variable,+VT] extends VarAndValueType[This
   //type ValueType = VT
   def domain = GenericDomain.asInstanceOf[Domain[VT]]
 }
+
+
+
+//// Notes for possible future optional default association between variable classes and domains
+//
+//object DomainFromClass {
+//  val class2Domain = new HashMap[Class[_],Domain[Any]]
+//  def apply[A<:DomainFromClass](implicit m:Manifest[A]): A#DomainType = class2Domain(m.erasure).asInstanceOf[A#DomainType]
+//  def apply[A<:DomainFromClass](c:Class[A]): A#DomainType = class2Domain(c).asInstanceOf[A#DomainType]
+//}
+//
+//trait DomainFromClass { this: Variable =>
+//  type DomainType <: Domain[Any]
+//  def domain: DomainType = DomainFromClass(this.getClass).asInstanceOf[DomainType]
+//}

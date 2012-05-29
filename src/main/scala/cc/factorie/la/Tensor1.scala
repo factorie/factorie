@@ -64,6 +64,12 @@ trait DenseTensorLike1 extends Tensor1 with DenseTensor {
     case t:SparseIndexedTensor1 => t dot this
     case t:UniformTensor => sum * t.uniformValue
   }
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:SingletonBinaryTensorLike1 => __values(t.singleIndex) += 1.0
+    case t:SingletonTensor1 => __values(t.singleIndex) += t.singleValue
+    case t:SparseBinaryTensorLike1 => t.=+(__values, f)
+    case t:DoubleSeq => super.+=(t, f)
+  }
 }
 class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
   def this(t:DoubleSeq) = { this(t.length); this := t }
@@ -143,10 +149,14 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   override def maxIndex: Int = if (_length == 0) 0 else _apply(0)
   override def containsNaN: Boolean = false
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
+  def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
+  def =+(a:Array[Double], f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += f; i += 1 } }
   def -=(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }
+  def ++=(is:IntSeq): Unit = ++=(is.asArray)
   def ++=(is:Iterable[Int]): Unit = { _ensureCapacity(_length + is.size); is.foreach(_insertSortedNoDuplicates(_)) }
   def toIntArray: Array[Int] = _toArray
+  def asIntArray: Array[Int] = _asArray
   override def update(i:Int, v:Double): Unit = {
     if (i < 0 || i >= length) throw new Error("Tensor index out of range: "+i)
     if (v == 1.0) this += i else if (v == 0.0) this -= i else throw new Error(getClass.getName+" cannot update with values other than 0.0 or 1.0.")
@@ -224,8 +234,7 @@ class SparseHashTensor1(val dim1:Int) extends Tensor1 {
     default += s
     h.keys.foreach(index => +=(index, s)) //h.update(index, h(index) + s))
   }
-
-  override def toString = getClass.getName + "(" + "len=" + length + " (" + h.mkString("[", ", ", "]") + "))"
+  //override def toString = getClass.getName + "(" + "len=" + length + " (" + h.mkString("[", ", ", "]") + "))"
 }
 
 class SparseIndexedTensor1(len:Int) extends Tensor1 {

@@ -26,11 +26,11 @@ trait Tensor3 extends Tensor {
   def numDimensions: Int = 3
   def activeDomains = Array(activeDomain1, activeDomain2, activeDomain3)
   def dimensions = Array(dim1, dim2, dim3)
-  def apply(i:Int, j:Int, k:Int): Double = apply(i*dim2*dim3 + j*dim2 + k)
-  def update(i:Int, j:Int, k:Int, v:Double): Unit = update(i*dim2*dim3 + j*dim2 + k, v)
+  def apply(i:Int, j:Int, k:Int): Double = apply(i*dim2*dim3 + j*dim3 + k)
+  def update(i:Int, j:Int, k:Int, v:Double): Unit = update(i*dim2*dim3 + j*dim3 + k, v)
   def +=(i:Int, j:Int, k:Int, v:Double): Unit = +=(singleIndex(i, j, k), v)
   @inline final def length = dim1 * dim2 * dim3
-  @inline final def singleIndex(i:Int, j:Int, k:Int): Int = i*dim2*dim3 + j*dim2 + k 
+  @inline final def singleIndex(i:Int, j:Int, k:Int): Int = i*dim2*dim3 + j*dim3 + k 
   @inline final def multiIndex(i:Int): (Int, Int, Int) = (i/dim2/dim3, (i/dim3)%dim2, i%dim3)
   @inline final def index1(i:Int): Int = i/dim2/dim3
   @inline final def index2(i:Int): Int = (i/dim3)%dim2
@@ -46,9 +46,9 @@ trait DenseTensorLike3 extends Tensor3 with DenseTensor {
   def activeDomain3 = new RangeIntSeq(0, dim3)
   def activeDomain = new RangeIntSeq(0, dim1*dim2*dim3)
   def apply(i:Int): Double = __values(i)
-  override def apply(i:Int, j:Int, k:Int): Double = __values(i*dim2*dim3 + j*dim2 + k)
+  override def apply(i:Int, j:Int, k:Int): Double = __values(i*dim2*dim3 + j*dim3 + k)
   override def update(i:Int, v:Double): Unit = __values(i) = v
-  override def update(i:Int, j:Int, k:Int, v:Double): Unit = __values(i*dim2*dim3 + j*dim2 + k) = v
+  override def update(i:Int, j:Int, k:Int, v:Double): Unit = __values(i*dim2*dim3 + j*dim3 + k) = v
   override def +=(i:Int, v:Double): Unit = __values(i) += v
 }
 class DenseTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3 {
@@ -115,10 +115,7 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
     val t1 = _inners(i*dim2+j)
     if (t1 ne null) t1.apply(k) else 0.0 }
   def isDense = false
-  def apply(i:Int): Double = {
-    println("Dense2LayeredTensorLike3 apply i="+i)
-    apply(i/dim2/dim3, (i/dim3)%dim2, i%dim3)
-  }
+  def apply(i:Int): Double = { /*println("Dense2LayeredTensorLike3 apply i="+i);*/ apply(i/dim2/dim3, (i/dim3)%dim2, i%dim3) }
   override def update(i:Int, j:Int, k:Int, v:Double): Unit = _inners(i*dim2+j).update(j, v)
   protected def getInner(i:Int, j:Int): Tensor1 = { var in = _inners(i*dim2+j); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i), index2(i)).+=(index3(i), incr)

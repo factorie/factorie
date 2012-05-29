@@ -14,6 +14,10 @@ Make reasonable command-line tools for MALLET functionality, and document
 Get rid of dependency on Java bibtex parser library
 Sanity-check pass through all code
 Package documentation
+Sebastian: Make new kinds of Templates; current one: factors(Variable neighbor); new: factors(arbitrary context)
+ Consider naming the current Template something more specific, e.g. "NeighborTemplate"
+ Template[C] { def factors(context:C): Iterable[Factors] }
+ NeighborTemplate extends Template[Variable] { def unroll1(v:Variable): Iterable[Factors] }
 
 
 More examples:
@@ -23,7 +27,7 @@ Make an HMM example and show that BP inference and EM training work on it
 
 
 DONE:
-Consider making no variable inherit from Seq.  (Seq would come from value instead.)  Remove SeqEqualsEq and friends.
+Consider making no variable inherit from Iterable.  (Seq would come from value instead.)  Remove SeqEqualsEq and friends.
  Consider making any current Variable that *could* have more than one different value type be not a Variable.  
  Then allow Model.factors and Infer and Maximize to have apply(Iterable[Variable]) and Apply(Variable).
  Then, e.g. change "for (token <- document)" to "for (token <- document.tokens)". [done]

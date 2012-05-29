@@ -26,6 +26,7 @@ import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 trait CategoricalValue[C] extends DiscreteValue {
   def domain: CategoricalDomain[C]
   def category: C
+  override def toString: String = category.toString
 }
 
 /** A domain for categorical variables.  It stores not only a size,

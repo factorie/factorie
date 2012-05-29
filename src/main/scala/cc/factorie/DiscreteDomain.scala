@@ -24,6 +24,7 @@ trait DiscreteValue extends SingletonBinaryTensorLike1 {
   def domain: DiscreteDomain
   @inline final def intValue: Int = singleIndex // TODO Consider swapping singleIndex <-> intValue
   @inline final def dim1 = domain.size
+  override def toString: String = singleIndex.toString
 }
 
 

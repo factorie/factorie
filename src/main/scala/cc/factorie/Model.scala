@@ -102,14 +102,14 @@ trait Model {
   }
   
   // Some Model subclasses have a list of Families to which all its factors belong
-  def families: Seq[Family] = Nil
+  def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
   def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Seq[F]]
   def familiesOfClass[F<:Family]()(implicit m:Manifest[F]): Seq[F] = familiesOfClass[F](m.erasure.asInstanceOf[Class[F]])
 
   // Some Model subclasses that have a fixed set of factors and variables can override the methods below
   // TODO Consider making a Model trait for these methods.  Yes!
-  def variables: Iterable[Variable] = Nil
-  def factors: Iterable[Factor] = Nil
+  def variables: Iterable[Variable] = throw new Error("Model class does not implement method 'variables': "+ this.getClass.getName)
+  def factors: Iterable[Factor] = throw new Error("Model class does not implement method 'factors': "+ this.getClass.getName)
   def score: Double = { var s = 0.0; for (f <- factors) s += f.score; s } 
 }
 

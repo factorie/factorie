@@ -14,6 +14,7 @@
 
 package cc.factorie.generative
 import cc.factorie._
+import cc.factorie.util.DoubleSeq
 
 object Gaussian extends GenerativeFamily3[RealVar,RealVar,RealVar] {
   self =>
