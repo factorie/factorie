@@ -327,6 +327,24 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   }
 }
 
+// TODO Consider finishing this implementation
+abstract class ConcatenatedTensor(ts:Tensor*) extends Tensor {
+  val tensors = ts.toIndexedSeq
+  val lengths: Array[Int] = tensors.map(_.length).toArray
+  val lengthsSums: Array[Int] = null // TODO finish this
+  val length = lengths.sum
+  def apply(index:Int): Double = {
+    var i = 0
+    var sum = 0
+    while (i < lengths.length) {
+      if (index < sum) tensors(i-1).apply(index-lengthsSums(i-1))
+      sum += lengths(i)
+      i += 1
+    }
+    throw new Error("Index out of bounds: "+index)
+  }
+}
+
 // To be used eventually for getting a TemplateModel into cc.factorie.optimize
 class DenseConcatenatedTensor(ts:DenseTensor*) extends Tensor {
   val tensors = ts.toIndexedSeq

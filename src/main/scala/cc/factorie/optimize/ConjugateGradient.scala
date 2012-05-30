@@ -53,8 +53,8 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
     fp = optimizable.optimizableValue
     xi = new Array[Double](optimizable.numOptimizableParameters)
     optimizable.getOptimizableGradient(xi)
-    g = maths.copy(xi)
-    h = maths.copy(xi)
+    g = maths.ArrayOps.copy(xi)
+    h = maths.ArrayOps.copy(xi)
     step = initialStepSize
     iterations = 0
   }
@@ -84,9 +84,9 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
       fp = fret;
 
       // This termination provided by McCallum
-      if (maths.twoNorm(xi) < gradientTolerance) {
+      if (maths.ArrayOps.twoNorm(xi) < gradientTolerance) {
         logger.info("ConjugateGradient converged: maximum gradient component "
-          + maths.twoNorm(xi) + ", less than " + tolerance)
+          + maths.ArrayOps.twoNorm(xi) + ", less than " + tolerance)
         isConverged = true;
         return true;
       }
@@ -110,7 +110,7 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
         // and h(j) is the previous search direction
         h(j) = g(j) + gam * h(j)
       })
-      assert(!maths.isNaN(h))
+      assert(!maths.ArrayOps.isNaN(h))
 
       // gdruck
       // If using the BackTrackLineSearch, then the search stops whenever
@@ -124,10 +124,10 @@ class ConjugateGradient(val optimizable: OptimizableByValueAndGradient, initialS
       // TODO Implement GradientBracketLineMaximizer (used in Numerical Recipes)
       // which should avoid this problem!
       if ((ArrayOps.dot(xi,h)) > 0) {
-        maths.set(xi, h)
+        maths.ArrayOps.set(xi, h)
       }
       else {
-        maths.set(h, xi)
+        maths.ArrayOps.set(h, xi)
       }
 
       iterations += 1

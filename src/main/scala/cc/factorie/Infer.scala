@@ -52,7 +52,7 @@ object InferDiscrete1 extends Infer {
       d := i // Note that this doesn't handle variable-value coordination, and if this is present, undo'ing won't happen properly.
       factors.foreach(f => distribution(i) += f.score)
     }
-    maths.expNormalize(distribution)
+    maths.ArrayOps.expNormalize(distribution)
     d := origValue
     distribution
   }

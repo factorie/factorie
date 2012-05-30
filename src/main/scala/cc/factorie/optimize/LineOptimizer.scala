@@ -59,7 +59,7 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
     var params: Array[Double] = new Array[Double](optimizable.numOptimizableParameters)
     optimizable.getOptimizableParameters(params)
     var oldParams = new Array[Double](params.length)
-    maths.set(oldParams, params)
+    maths.ArrayOps.set(oldParams, params)
     var gradient: Array[Double] = new Array[Double](optimizable.numOptimizableParameters)
     optimizable.getOptimizableGradient(gradient)
 

@@ -77,12 +77,12 @@ class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends 
 
       // get the parameters
       optimizable.getOptimizableParameters(params)
-      maths.set(oldParams, params)
+      maths.ArrayOps.set(oldParams, params)
 
       // get the gradient
       optimizable.getOptimizableGradient(g)
-      maths.set(oldg, g)
-      maths.set(direction, g)
+      maths.ArrayOps.set(oldg, g)
+      maths.ArrayOps.set(direction, g)
 
       if (ArrayOps.absNormalize(direction) == 0) {
         logger.info("L-BFGS initial gradient is zero; saying converged");

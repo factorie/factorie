@@ -1,14 +1,13 @@
 Pre 1.0 release:
 
 Finish BP and move to cc.factorie package.  Make it fast!
-Get rid of la.Vector and use la.Tensor instead.  Make corresponding changes in Factors/Templates, etc.
-Make VectorFamily require "def statisticsDomain"
 Consider moving generative.GibbsSampler up to cc.factorie?
 Consider making cc.factorie.optimize take DoubleSeq instead of Array[Double]
 Consider changes to generative.Collapse infrastructure
 Implement generative.CollapsedVariationalBayes and make sure it works for LDA
 Re-consider type arguments in Sampler and descendants
 Get AROW Perceptron training working, and look at SampleRank interaction
+Make a Family.score(Tensor) method for use in higher efficiency situations (e.g. BP)
 Look at app.nlp.relation
 Make reasonable command-line tools for MALLET functionality, and document
 Get rid of dependency on Java bibtex parser library
@@ -34,6 +33,8 @@ Consider making no variable inherit from Iterable.  (Seq would come from value i
 Re-consider if variable.value should always make an immutable copy.  [no]
 Look at Gaussian.logpr, Beta.logpr, etc, and ensure these scores are correct.  [yes]
 Get rid of Seq[Double] everywhere, including cc.factorie.maths.  Get rid of IndexedSeqOps completely.
+Get rid of la.Vector and use la.Tensor instead.  Make corresponding changes in Factors/Templates, etc.
+Make VectorFamily require "def statisticsDomain"
 
 
 

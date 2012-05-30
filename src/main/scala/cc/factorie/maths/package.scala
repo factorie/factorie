@@ -34,7 +34,7 @@ import scala.util.Random
 
 // TODO Once cc.factorie.optimze uses la.Tensor, then remove "extends ArrayOps"
 // Consider also implicit class DenseTensor1(a:Array[Double])
-package object maths extends ArrayOps {
+package object maths {
   
   // TODO This will get removed also when cc.factorie.optimize uses la.Tensor
   trait ArrayWrapper {
@@ -75,7 +75,64 @@ package object maths extends ArrayOps {
 
   
   
+// ArrayOps
   
+trait ArrayOps {
+  type A = Array[Double]
+  def absNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += math.abs(s(i)); i += 1 }; result }
+  def oneNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i); i += 1 }; result }
+  def twoNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * s(i); i += 1 }; math.sqrt(result) }
+  def twoNormSquared(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * s(i); i += 1 }; result }
+  def infinityNorm(s:A): Double = { var result = s(0); var i = 0; while (i < s.length) { if (math.abs(s(i)) > result) result = math.abs(s(i)); i += 1 }; result }
+  def +=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) + d; i += 1 } }
+  def -=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) - d; i += 1 } }
+  def *=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) * d; i += 1 } }
+  def /=(s:A, d:Double): Unit = { var i = 0; while (i < s.length) { s(i) = s(i) / d; i += 1 } }
+  def incr(s:A, t:A): Unit = { require(s.length == t.length); var i = 0; while (i < s.length) { s(i) += t(i); i += 1 } }
+  def incr(s:A, t:A, factor:Double): Unit = { require(s.length == t.length); var i = 0; while (i < s.length) { s(i) += t(i) * factor; i += 1 } }
+  def different(s:A, t:A, threshold:Double): Boolean = { require(s.length == t.length); var i = 0; while (i < s.length) { if (math.abs(s(i) - t(i)) > threshold) return true; i += 1 }; return false }
+  def dot(s:A, t:A): Double = { assert(s.length == t.length); var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * t(i); i += 1 }; result }
+  /** Divide each element of the array by the sum of the elements. */
+  def normalize(s:A): Double = { val sum = oneNorm(s); var i = 0; while (i < s.length) { s(i) /= sum; i += 1 }; sum }
+  def oneNormalize(s:A): Double = normalize(s)
+  def twoNormalize(s:A): Double = { val norm = twoNorm(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
+  def twoSquaredNormalize(s:A): Double = { val norm = twoNormSquared(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
+  def absNormalize(s:A): Double = { val norm = absNorm(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
+  def contains(s:A, d:Double): Boolean = { var i = 0; while (i < s.length) { if (s(i) == d) return true; i += 1 }; false }
+  def maxIndex(a:Array[Double]): Int = { var i = 0; var j = 0; for (i <- 0 until a.length) if (a(j) < a(i)) j = i; j }
+  def isNaN(s:A): Boolean = contains(s, Double.NaN)
+  def substitute(s:A, oldValue:Double, newValue:Double): Unit = { var i = 0; while (i < s.length) { if (s(i) == oldValue) s(i) = newValue; i += 1 } }
+  def copy(s:A): Array[Double] = { val result = new Array[Double](s.length); set(result, s); result }
+  def set(s:A, t:A): Unit = { require(s.length == t.length); System.arraycopy(t, 0, s, 0, s.length) }
+  /** Exponentiate the elements of the array, and then normalize them to sum to one. */
+  def expNormalize(a:Array[Double]): Double = {
+    var max = Double.MinValue
+    var i = 0
+    while (i < a.length) { if (max < a(i)) max = a(i); i += 1 }
+    var sum = 0.0
+    i = 0
+    while (i < a.length) {
+      a(i) = math.exp(a(i) - max)
+      sum += a(i)
+      i += 1
+    }
+    i = 0
+    while (i < a.length) { a(i) /= sum; i += 1 }
+    sum
+  }
+
+  /** expNormalize, then put back into log-space. */
+  def normalizeLogProb(a:Array[Double]): Double = {
+    // normalizeLogProb: [log(a), log(b), log(c)] --> [log(a/Z), log(b/Z), log(c/Z)] where Z = a+b+c
+    // expNormalize: [log(a), log(b), log(c)] --> [a/Z, b/Z, c/Z] where Z=a+b+c
+    val n = expNormalize(a)
+    for (i <- 0 until a.length) a(i) = math.log(a(i))
+    n
+  }
+
+}
+
+object ArrayOps extends ArrayOps
   
   
   

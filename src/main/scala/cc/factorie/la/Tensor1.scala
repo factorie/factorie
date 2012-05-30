@@ -273,6 +273,7 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     }
   }
   override def zero(): Unit = _npos = 0
+  override def sum: Double = { var s = 0.0; var i = 0; while (i < _npos) { s += _values(i); i += 1 }; s }
 
   /** Return the position at which index occurs, or -1 if index does not occur. */
   def position(index:Int): Int = {
