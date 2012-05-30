@@ -44,11 +44,23 @@ class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Di
   
 }
 
+object TokenSpan {
+  def fromLexicon(lexicon:cc.factorie.app.chain.Lexicon, document:Document): Int = {
+    var spanCount = 0
+    for (token <- document.tokens) {
+      val len = lexicon.startsAt(token) 
+      if (len > 0) {
+        val span = new TokenSpan(document, token.position, len)(null)
+        span.attr += lexicon
+        spanCount += 1
+      }
+    }
+    spanCount
+  }
+}
+
 
 // Cubbie storage
-
-
-
 
 class TokenSpanCubbie extends Cubbie {
   val start = IntSlot("start")

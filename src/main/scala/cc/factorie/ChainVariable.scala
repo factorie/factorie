@@ -43,6 +43,8 @@ trait AbstractChainLink[+This<:AbstractChainLink[This]] {
     if (i == 0) result
     else null.asInstanceOf[This]
   }
+  def chainHead: This = { var result = this; while (result.hasPrev) result = prev; result }
+  def chainLast: This = { var result = this; while (result.hasPrev) result = prev; result }
 }
 
 /** An element or "link" of a Chain, having methods "next", "prev", etc. */

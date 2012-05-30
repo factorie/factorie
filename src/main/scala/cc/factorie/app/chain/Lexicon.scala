@@ -24,7 +24,7 @@ class Lexicon(val caseSensitive:Boolean) {
   /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */
   def this(filename:String) = { this(false); this.++=(Source.fromFile(new File(filename))(scala.io.Codec.UTF8)) }
   var lexer = cc.factorie.app.strings.nonWhitespaceClassesSegmenter // TODO Make this a choice
-  private class LexiconToken(val string:String) extends Observation[LexiconToken] {
+  class LexiconToken(val string:String) extends Observation[LexiconToken] {
     var next: LexiconToken = null
     var prev: LexiconToken = null
     def hasNext = next != null
@@ -51,7 +51,7 @@ class Lexicon(val caseSensitive:Boolean) {
     }
     result
   }
-  private val contents = new HashMap[String,List[LexiconToken]];
+  val contents = new HashMap[String,List[LexiconToken]];
   private def _key(s:String) = if (caseSensitive) s else s.toLowerCase
   private def +=(t:LexiconToken): Unit = {
     val key = _key(t.string)
@@ -65,6 +65,7 @@ class Lexicon(val caseSensitive:Boolean) {
   def +=(w:String): Unit = this.+=(new LexiconToken(w))
   def ++=(ws:Seq[String]): Unit = this.addAll(newLexiconTokens(if (caseSensitive) ws else ws.map(_.toLowerCase)))
   def ++=(source:Source): Unit = for (line <- source.getLines()) { this.++=(lexer.regex.findAllIn(line).toList); /*println("TokenSeqs.Lexicon adding "+line)*/ }
+  //def phrases: Seq[String] = contents.values.flatten.distinct
   /** Is 'query' in the lexicon, accounting for lexicon phrases and the context of 'query' */
   def contains[T<:Observation[T]](query:T): Boolean = {
     //println("contains "+query.word+" "+query.hasPrev+" "+query)
@@ -94,5 +95,28 @@ class Lexicon(val caseSensitive:Boolean) {
   }
   /** Is 'query' in the lexicon, ignoring context. */
   def containsSingle[T<:Observation[T]](query:T): Boolean = contents.contains(_key(query.string))
+  /** Return length of match, or -1 if no match. */
+  def startsAt[T<:Observation[T]](query:T): Int = {
+    val key = _key(query.string)
+    val entries = contents.getOrElse(key, Nil)
+    for (entry <- entries.filter(_.hasPrev == false).sortBy(entry => -entry.lengthToEnd)) { // Sort so that we look for long entries first
+      var te = entry
+      var tq = query
+      var len = 0
+      var found = true
+      // Query must be at the the beginning of this lexicon entry
+      // Check for match all the way to the end of this lexicon entry
+      do {
+        if ((!caseSensitive && te.string != tq.string.toLowerCase) || (caseSensitive && te.string != tq.string)) found = false
+        len += 1
+        te = te.next; tq = tq.next
+      } while (te != null && tq != null && found == true)   
+      if (found && te == null) {
+        //print(" contains length="+entry.length+"  "+entry.seq.map(_.word).toList)
+        return len
+      }
+    }
+    -1
+  }
 }
 
