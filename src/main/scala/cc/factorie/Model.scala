@@ -13,7 +13,7 @@
    limitations under the License. */
 
 package cc.factorie
-
+import cc.factorie.la._
 import scala.collection.mutable.{ArrayBuffer,HashMap,LinkedHashSet}
 import scala.collection.immutable.ListSet
 
@@ -130,7 +130,9 @@ class CombinedModel(theSubModels:Model*) extends Model {
     @author Andrew McCallum
     @since 0.11
  */
+// TODO Rename UnrolledModel ???  Or ExpandedModel  Or EnumeratedModel  Or ItemizedModel
 class FactorModel(initialFactors:Factor*) extends Model {
+  def this(initialFactors:Iterable[Factor]) = { this(initialFactors.toSeq:_*) }
   private val _factors = new HashMap[Variable,scala.collection.Set[Factor]] {
     override def default(v:Variable) = ListSet.empty[Factor]
   }
@@ -162,13 +164,11 @@ class TemplateModel(initialTemplates:Template*) extends Model {
   def templates: Seq[Template] = _templates
   def ++=(moreTemplates:Iterable[Template]) = _templates ++= moreTemplates
   def +=(template:Template) = _templates += template
-  @deprecated def clear = _templates.clear // TODO Consider removing this.
+  @deprecated("Will be removed") def clear = _templates.clear // TODO Consider removing this.
   override def families = _templates
   def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = _templates.foreach(_.limitDiscreteValuesIteratorAsIn(variables))
-  //override def dedup[F<:Factor](factors:Iterable[F]): Iterable[F] = factors // do nothing since templates are responsible for de-duplication
-  //override def factors(vs:Iterable[Variable]): Iterable[Factor] = normalize(templates.flatMap(template => template.factors(vs)))
   def factorsWithDuplicates(variable:Variable): Iterable[Factor] = templates.flatMap(template => template.factorsWithDuplicates(variable)) 
-  //override def factors(d:DiffList): Iterable[Factor] = if (d.size == 0) Nil else normalize(templates.flatMap(template => template.factors(d)))
+  def weightsTensor: ConcatenatedTensor = new ConcatenatedTensor(familiesOfClass[DotFamily].map(_.weights))
   
   def save(dirname:String, gzip: Boolean = false): Unit = {
     import java.io.File

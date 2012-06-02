@@ -14,7 +14,6 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
-import cc.factorie.er._
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 
 /** Infrastructure for independent classification of feature vectors with String-valued features. 
@@ -29,16 +28,24 @@ trait Classifier[L<:DiscreteVariable] {
   def labelDomain: DiscreteDomain
   def classify(label:L): Classification[L] = {
     require(label.domain eq labelDomain)
+    Classify(label, model)
+  }
+  def classify(labels:Iterable[L]): Seq[Classification[L]] = labels.toSeq.map(label => classify(label))
+}
+
+// TODO Consider putting a TUI here
+object Classify {
+  def apply[L<:DiscreteVariable](label:L, model:Model): Classification[L] = {
     val p = label.proportions(model) // Here the model's distribution over labels is calculated
     val result = new Classification(label, model, p)
     // In addition to recording the result in a Classification instance, also set the label to the most likely value
     label.set(result.bestLabelIndex)(null)
     result
   }
-  def classify(labels:Iterable[L]): Seq[Classification[L]] = labels.toSeq.map(label => classify(label))
 }
 
-/** An "instance list" for iid classification, except it actually holds labels, each of which is associated with a feature vector. */
+/** An "instance list" for iid classification, except it actually holds labels, 
+    each of which is associated with a feature vector through the provided function labelToFeatures. */
 class LabelList[L<:DiscreteVar](val labelToFeatures:L=>DiscreteTensorVar)(implicit lm:Manifest[L]) extends ArrayBuffer[L] {
   def this(labels:Iterable[L], l2f:L=>DiscreteTensorVar)(implicit lm:Manifest[L]) = { this(l2f); this ++= labels }
   val instanceWeights: HashMap[L,Double] = null // TODO Implement this! -akm
@@ -47,7 +54,8 @@ class LabelList[L<:DiscreteVar](val labelToFeatures:L=>DiscreteTensorVar)(implic
   def featureDomain = instanceDomain.dimensionDomain
 }
 
-// TODO Consider including labelToFeatures here also?
+// TODO Consider including labelToFeatures here also?  
+// TODO Should we store the Classifier instead of the Model?  But what if it doesn't come from a Classifier?
 /** The result of applying a Classifier to a Label. */
 class Classification[L<:DiscreteVar](val label:L, val model:Model, val proportions:Proportions) {
   val bestLabelIndex = proportions.maxIndex

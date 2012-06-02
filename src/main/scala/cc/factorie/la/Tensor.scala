@@ -229,6 +229,14 @@ class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor {
 trait DenseTensor extends Tensor {
   protected def _values: Array[Double]
   override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
+  override def asArray = _values
+  override def +=(i:Int, incr:Double): Unit = _values(i) += incr
+  override def :=(ds:DoubleSeq): Unit = ds match {
+    case ds:DenseTensor => System.arraycopy(_values, 0, ds._values, 0, length)
+    case ds:DoubleSeq => super.:=(ds)
+  }
+  override def :=(a:Array[Double]): Unit = { require(a.length == length); System.arraycopy(a, 0, _values, 0, a.length) }
+  override def :=(a:Array[Double], offset:Int): Unit = System.arraycopy(a, offset, _values, 0, length)
   override def dot(t2:DoubleSeq): Double = t2 match {
     case t2:SingletonBinaryTensor => apply(t2.singleIndex)
     case t2:SingletonTensor => apply(t2.singleIndex) * t2.singleValue
@@ -328,36 +336,40 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
 }
 
 // TODO Consider finishing this implementation
-abstract class ConcatenatedTensor(ts:Tensor*) extends Tensor {
-  val tensors = ts.toIndexedSeq
-  val lengths: Array[Int] = tensors.map(_.length).toArray
-  val lengthsSums: Array[Int] = null // TODO finish this
-  val length = lengths.sum
+class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
+  def tensors: Array[Tensor] = theTensors.toArray
+  def foreachTensor(f:Tensor=>Unit): Unit = { var i = 0; while (i < tensors.length) { f(tensors(i)); i += 1 }}
+  def isDense = throw new Error("Not yet implemented")
+  lazy val lengths: Array[Int] = { val a = new Array[Int](tensors.length); var i = 0; while (i < a.length) { a(i) = tensors(i).length; i += 1 }; a }
+  lazy val lengthsSums: Array[Int] = { val a = new Array[Int](lengths.length); a(0) = lengths(0); var i = 1; while (i < a.length) { a(i) = a(i-1) + lengths(i); i += 1 }; a }
+  lazy val offsets: Array[Int] = { val a = new Array[Int](lengths.length); a(0) = 0; var i = 1; while (i < a.length) { a(i) = a(i-1) + lengths(i); i += 1 }; a }
+  lazy val dim1 = lengths.sum
+  def activeDomain1: IntSeq = throw new Error("Not yet implemented")
+  // Careful!  This will be very slow.  You should really try to use the more specific methods, such as += 
   def apply(index:Int): Double = {
+    throw new Error("This is very slow.  I'm throwing an error here to find situations where this would be called, and then we should try to find a faster alternative.")
     var i = 0
     var sum = 0
     while (i < lengths.length) {
-      if (index < sum) tensors(i-1).apply(index-lengthsSums(i-1))
+      if (index < sum) return tensors(i-1).apply(index-lengthsSums(i-1))
       sum += lengths(i)
       i += 1
     }
     throw new Error("Index out of bounds: "+index)
   }
+  override def copy: ConcatenatedTensor = new ConcatenatedTensor(tensors.map(_.copy))
+  override def :=(a:Array[Double]): Unit = { var i = 0; while (i < tensors.length) { tensors(i).:=(a, offsets(i)); i += 1 } } 
+  override def toArray: Array[Double] = { val a = new Array[Double](length); var i = 0; while (i < tensors.length) { System.arraycopy(tensors(i).asArray, 0, a, offsets(i), tensors(i).length); i +=1 }; a }
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:ConcatenatedTensor => for (pair <- tensors.zip(t.tensors)) pair._1.+=(pair._2, f)
+  }
+  override def +=(d:Double): Unit = foreachTensor(_ += d)
+  override def *=(d:Double): Unit = foreachTensor(_ *= d)
+  protected def sumOverTensors(f:Tensor=>Double): Double = { val len = tensors.length; var s = 0.0; var i = 0; while (i < len) { s += f(tensors(i)); i += 1 }; s }
+  override def oneNorm: Double = sumOverTensors(_.twoNorm)
+  override def twoNorm: Double = sumOverTensors(_.twoNorm)
+  override def dot(t:DoubleSeq): Double = t match {
+    case t:ConcatenatedTensor => { var s = 0.0; for (pair <- tensors.zip(t.tensors)) s += pair._1 dot pair._2; s }
+  }
 }
 
-// To be used eventually for getting a TemplateModel into cc.factorie.optimize
-class DenseConcatenatedTensor(ts:DenseTensor*) extends Tensor {
-  val tensors = ts.toIndexedSeq
-  val length = tensors.map(_.length).sum
-  def apply(i:Int): Double = throw new Error
-  val numDimensions: Int = tensors.map(_.numDimensions).sum
-  val dimensions: Array[Int] = { val a = new Array[Int](numDimensions); throw new Error }
-  // For handling sparsity
-  def activeDomain: IntSeq = throw new Error("Not yet implemented.")
-  def activeDomains: Array[IntSeq] = throw new Error("Not yet implemented.")
-  def isDense: Boolean = false
-}
-
-abstract class SparseConcatenatedTensor(ts:DenseTensor*) extends Tensor {
-  // Unfinished
-}

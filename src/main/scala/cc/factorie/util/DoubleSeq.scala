@@ -242,7 +242,7 @@ trait IncrementableDoubleSeq extends DoubleSeq {
   }
   def +=(a:Array[Double], factor:Double): Unit = { val l = length; require(a.length == l); var i = 0; while (i < l) { +=(i, factor*a(i)); i += 1 }}
   def -=(i:Int, incr:Double): Unit = +=(i, -incr)
-  def -=(d:Double): Unit = +=(-d)
+  final def -=(d:Double): Unit = +=(-d)
   def -=(ds:DoubleSeq): Unit = +=(ds, -1.0)
 }
 
@@ -259,12 +259,14 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
     case ds:DoubleSeq => { val l = length; require(ds.length == l); var i = 0; while (i < l) { update(i, ds(i)); i += 1 }}
   }
   def :=(a:Array[Double]): Unit = { val l = length; require(a.length == l); var i = 0; while (i < l) { update(i, a(i)); i += 1 }}
+  def :=(a:Array[Double], offset:Int): Unit = { val len = length; var i = 0; while (i < len) { update(i, a(i+offset)); i += 1 }} 
   def *=(i:Int, incr:Double): Unit = update(i, apply(i)*incr)
   final def /=(i:Int, incr:Double): Unit = *=(i, 1.0/incr)
   def *=(d:Double): Unit = { val l = length; var i = 0; while (i < l) { *=(i, d); i += 1 }}
   final def /=(d:Double): Unit = *=(1.0/d)
   def *=(ds:DoubleSeq): Unit = { val l = length; require(ds.length == l); var i = 0; while (i < l) { *=(i, ds(i)); i += 1 }}
   def /=(ds:DoubleSeq): Unit = { val l = length; require(ds.length == l); var i = 0; while (i < l) { /=(i, ds(i)); i += 1 }}
+  def abs: Unit = { val l = length; var i = 0; while (i < l) { val d = apply(i); if (d < 0.0) update(i, math.abs(d)); i += 1 }}
   def normalize(): Double = { val n = oneNorm; /=(n); n }
   def oneNormalize(): Double = normalize
   def twoNormalize(): Double = { val n = twoNorm; /=(n); n }

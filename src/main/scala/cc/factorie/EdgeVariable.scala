@@ -14,6 +14,7 @@
 
 package cc.factorie
 
+/** A variable representing an edge between two nodes in a graph.  The value of the variable is a Tuple2 of the source and destination nodes. */
 trait EdgeVar[A,B] extends Variable with VarAndValueGenericDomain[EdgeVar[A,B],(A,B)] {
   def src: A
   def dst: B

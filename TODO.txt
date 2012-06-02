@@ -2,7 +2,6 @@ Pre 1.0 release:
 
 Finish BP and move to cc.factorie package.  Make it fast!
 Consider moving generative.GibbsSampler up to cc.factorie?
-Consider making cc.factorie.optimize take DoubleSeq instead of Array[Double]
 Consider changes to generative.Collapse infrastructure
 Implement generative.CollapsedVariationalBayes and make sure it works for LDA
 Re-consider type arguments in Sampler and descendants
@@ -13,11 +12,6 @@ Make reasonable command-line tools for MALLET functionality, and document
 Get rid of dependency on Java bibtex parser library
 Sanity-check pass through all code
 Package documentation
-Sebastian: Make new kinds of Templates; current one: factors(Variable neighbor); new: factors(arbitrary context)
- Consider naming the current Template something more specific, e.g. "NeighborTemplate"
- Template[C] { def factors(context:C): Iterable[Factors] }
- NeighborTemplate extends Template[Variable] { def unroll1(v:Variable): Iterable[Factors] }
-
 
 More examples:
 Implement TopicsOverTime (needs Beta distribution)
@@ -35,6 +29,13 @@ Look at Gaussian.logpr, Beta.logpr, etc, and ensure these scores are correct.  [
 Get rid of Seq[Double] everywhere, including cc.factorie.maths.  Get rid of IndexedSeqOps completely.
 Get rid of la.Vector and use la.Tensor instead.  Make corresponding changes in Factors/Templates, etc.
 Make VectorFamily require "def statisticsDomain"
+Consider making cc.factorie.optimize take DoubleSeq instead of Array[Double]
+
+Future:
+Sebastian: Make new kinds of Templates; current one: factors(Variable neighbor); new: factors(arbitrary context)
+ Consider naming the current Template something more specific, e.g. "NeighborTemplate"
+ Template[C] { def factors(context:C): Iterable[Factors] }
+ NeighborTemplate extends Template[Variable] { def unroll1(v:Variable): Iterable[Factors] }
 
 
 

@@ -16,6 +16,54 @@ package cc.factorie
 
 import collection.mutable.HashSet
 
+/** A template for creating Factors.  The creation of Factors is keyed by some context of arbitrary type C. */
+trait ContextTemplate[C] extends FamilyWithNeighborDomains {
+  def factors(c:C): Iterable[FactorType]
+  //def factors(cs:Iterable[C]): Iterable[FactorType] = dedup(cs.flatMap(factors(_))) // TODO Do we also want a method like this?
+  def itemizedModel(c:C): FactorModel = new FactorModel(factors(c))
+}
+
+/** A template for creating Factors, where there is a mapping from variables neighboring the factors to the contexts necessary to create those Factors. */
+trait NeighborAwareTemplate[C] extends ContextTemplate[C] with Model {
+  // Map from a variable back to a context from which we can get its neighboring factors
+  def contexts(v:Variable): Iterable[C]
+  //def factorsWithDuplicates(v:Variable): Iterable[FactorType] = context(v).flatMap(factors(_))
+}
+
+// Future:
+// class SymbolicTemplate extends NeighborAwareTemplate[SymbolicPredicate] 
+// Term (e.g. real-valued term), tree-based expression, sub-expressions
+//  depends on notion of state: each template/term takes a state and maps to double-valued score
+// SymbolicPredicate, SymbolicConstant, LogicalGroundAtom extends BooleanVariable with Seq[SymbolicConstant]
+
+// class Templates[C] extends scala.collection.mutable.ArrayBuffer[TemplateA[C]] { def factors(c:C) = flatMap(_.factors(c)) }
+
+// Example usage of ContextTemplate: 
+//class ChainTransitionTemplate[Y<:DiscreteVar](val yDomain:DiscreteDomain) extends FamilyWithDotStatistics2[Y,Y] with ContextTemplate[Seq[Y]] {
+//  def statisticsDomains = Tuple(yDomain , yDomain)
+//  def factors(c:Seq[Y]) = for (pair <- c.sliding(2).toSeq) yield Factor(pair(0), pair(1)) 
+//}
+//class ChainTransitionTemplateAlt[Y<:DiscreteVar](val yDomain:DiscreteDomain, val seq:Seq[Y]) extends FamilyWithDotStatistics2[Y,Y] with ContextTemplate[Int] {
+//  def statisticsDomains = Tuple(yDomain , yDomain)
+//  def factors(c:Int) = Factor(seq(c-1), seq(c)) 
+//}
+//class ChainObservationTemplate[Y<:DiscreteVar,X<:DiscreteTensorVar](val yDomain:DiscreteDomain, xDomain:DiscreteTensorDomain) extends FamilyWithDotStatistics2[Y,X] with ContextTemplate[(Seq[Y],Seq[X])] {
+//  def statisticsDomains = Tuple(yDomain , xDomain)
+//  def factors(c:(Seq[Y],Seq[X])) = for (pair <- c._1.zip(c._2)) yield Factor(pair._1, pair._2) 
+//}
+//object ContextTemplateTest {
+//  object LabelDomain extends CategoricalDomain[String]
+//  class Label(s:String) extends LabelVariable(s) { def domain = LabelDomain }
+//  object FeaturesDomain extends CategoricalTensorDomain[String]
+//  class Features(f:Seq[String]) extends BinaryFeatureVectorVariable(f) { def domain = FeaturesDomain }
+//  val tt = new ChainTransitionTemplate[Label](LabelDomain)
+//  val ot = new ChainObservationTemplate[Label,Features](LabelDomain, FeaturesDomain)
+//  val labels = for (i <- 0 until 10) yield new Label(i.toString)
+//  val features = for (i <- 0 until 10) yield new Features(Seq(i.toString))
+//  val model = new FactorModel(tt.factors(labels) ++ ot.factors((labels, features)))
+//}
+
+
 object Template {
   var enableCachedStatistics: Boolean = true
 }
@@ -31,11 +79,12 @@ object Template {
 //      or in some fixed way without learned parameters).
 
 
-/** The template for creating factors, given on of its variables, finding the other neighboring variables.
-    @Andrew McCallum
+/** The template for creating factors, using "unroll*" methods which given on of the Factor's variables, finding the other neighboring variables.
+    @author Andrew McCallum
 */
-trait Template extends FamilyWithNeighborDomains with Model { thisTemplate =>
-  // Override so they will know the Factor type, which enables code like "factor.statistics.vector"
+trait Template extends NeighborAwareTemplate[Variable] { thisTemplate =>
+  def contexts(v:Variable): Iterable[Variable] = Seq(v)
+  // Member type FactorType is defined so we will know the Factor type, which enables code like "factor.statistics.vector"
   override def factorsWithDuplicates(v:Variable): Iterable[FactorType]
   override def factorsWithDuplicates(vs:Iterable[Variable]): Iterable[FactorType] = super.factorsWithDuplicates(vs).asInstanceOf[Iterable[FactorType]]
   override def factorsWithDuplicates(d:Diff): Iterable[FactorType] = super.factorsWithDuplicates(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
@@ -44,18 +93,6 @@ trait Template extends FamilyWithNeighborDomains with Model { thisTemplate =>
   override def factors(variables:Iterable[Variable]): Iterable[FactorType] = super.factors(variables).asInstanceOf[Iterable[FactorType]]
   override def factors(d:Diff): Iterable[FactorType] = super.factors(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
   override def factors(difflist:DiffList): Iterable[FactorType] = super.factors(difflist).asInstanceOf[Iterable[FactorType]]
-//  override def factors(difflist:DiffList): Iterable[FactorType] = {
-//    var result = new scala.collection.mutable.LinkedHashSet[FactorType]()
-//    //for (diff <- difflist; factor <- factors(diff)) { if (factor eq null) throw new Error("Template.factors returned null Factor") else result += factor }
-//    difflist.foreach(diff => result ++= factors(diff))
-//    result
-//  }
-//  override def factors(variables:Iterable[Variable]): Iterable[FactorType] = {
-//    if (variables.size == 1) return factors(variables.head) // Efficiently avoids the HashSet.
-//    var result = new scala.collection.mutable.LinkedHashSet[FactorType]()
-//    for (v <- variables; factor <- factors(v)) { if (factor eq null) throw new Error("Template.factors returned null Factor") else result += factor }
-//    result
-//  }
   /** Called in implementations of factors(Variable) to give the variable a chance
       to specify additional dependent variables on which factors(Variable) should also be called. */
   def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade
@@ -81,18 +118,5 @@ abstract class Template3WithStatistics2[N1<:Variable:Manifest,N2<:Variable:Manif
   def statistics(v:Values) = Stat(v._2, v._3)
 }
 
-/*
-trait FooTemplate3 {
-  def valuesIterator(value1:Option[N1#Value], value2:Option[N2#Value], value3:Option[N3#Value]): Iterator[this.type.Values]
-  def discreteValuesIterator(valueOptions: Option[DiscreteValue]*): Iterator[Values]
-  def discreteValuesIterator(factor:Factor, fixed: (Variable,Any)*): Iterator[Values]
-  def discreteValuesIterator(factor:Factor, vary:Iterable[DiscreteVar]): Iterator[Values]
-  //def argMaxMessage(f:Factor, m1:N1#MessageType, m2:N2#MessageType)
-}
-*/
 
-//class TreeTemplate extends Template1[Vars[EdgePresence]] { }
 
-//class FooTemplate {}
-//val t1 = new FooTemplate
-//t1.statistics(values:t1.Values)

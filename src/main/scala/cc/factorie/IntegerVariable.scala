@@ -37,11 +37,14 @@ class IntegerVariable(initialValue:Int = 0) extends MutableIntegerVar with VarWi
   private var _value: Int = initialValue
   @inline final def value = _value
   @inline final override def intValue = _value
-  // Unnecessary.  Remove this: protected def _set(newValue:Int) = _value = newValue
   def set(newValue: Int)(implicit d: DiffList = null): Unit = if (newValue != _value) {
     if (d ne null) d += new IntegerVariableDiff(_value, newValue)
     _value = newValue
   }
+  def +=(x:Int) = set(_value + x)(null) // Should we allow non-null DiffLists?
+  def -=(x:Int) = set(_value - x)(null)
+  def *=(x:Int) = set(_value * x)(null)
+  def /=(x:Int) = set(_value / x)(null)
   case class IntegerVariableDiff(oldIndex: Int, newIndex: Int) extends Diff {
     @inline final def variable: IntegerVariable = IntegerVariable.this
     @inline final def redo = _value = newIndex

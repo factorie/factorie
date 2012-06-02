@@ -122,6 +122,7 @@ trait Chain[This<:Chain[This,E],E<:ChainLink[E,This]] extends ThisType[This] wit
     _chainseq += e
   }
   def ++=(es:Iterable[E]): Unit = es.foreach(+=(_))
+  def asSeq: IndexedSeq[E] = _chainseq
 }
 
 /** A Chain that is also a Variable, with value IndexedSeq[ElementType] */
