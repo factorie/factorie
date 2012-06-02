@@ -5,7 +5,8 @@ import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
-class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(superDoc.ws.domain, superDoc.name+superTopic, Nil)
+//class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(superDoc.ws.domain, superDoc.name+superTopic, Nil)
+class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(superDoc.ws.domain, superDoc.name, Nil)
 {
   for (i <- 0 until superDoc.ws.length)
     if (superDoc.zs.intValue(i) == superTopic) ws.appendInt(superDoc.ws.intValue(i))
@@ -197,6 +198,7 @@ object RecursiveLDA {
         i += 1
       }
       if (!lda3.documentMap.contains(doc3.name)) lda3.addDocument(doc3)
+      else println("RecursiveLDA appending to final flat model: "+doc.name+" superTopic="+doc.superTopic+" numWords="+doc.length)
       documents2.remove(documents2.size-1) // Do this to enable garbage collection as we create more doc3's
     }
 //    for (ldaIndex <- 0 until numTopics; doc <- lda2(ldaIndex).documents) {
@@ -220,7 +222,7 @@ object RecursiveLDA {
     }
     
     if (opts.printTopics.wasInvoked) {
-      println("\nFlat LDA toipc words")
+      println("\nFlat LDA topic words")
       println(lda3.topicsSummary(opts.printTopics.value))
     }
     if (opts.printPhrases.wasInvoked) { 
