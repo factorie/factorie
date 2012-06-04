@@ -74,14 +74,14 @@ object Tensor {
   def newSparse(t:Tensor): Tensor = t match {
     case t:Tensor1 => new SparseTensor1(t.dim1)
     case t:Tensor2 => new DenseLayeredTensor2(t.dim1, t.dim2, (dim1:Int) => new SparseTensor1(dim1))
-    case t:Tensor3 => new Dense2LayeredTensor3(t.dim1, t.dim2, t.dim3, new SparseTensor1(_)) // with InnerSparseTensor1
-    case t:Tensor4 => new Dense3LayeredTensor4(t.dim1, t.dim2, t.dim3, t.dim4, new SparseTensor1(_)) // with InnerSparseTensor1
+    case t:Tensor3 => new Dense2LayeredTensor3(t.dim1, t.dim2, t.dim3, new SparseTensor1(_))
+    case t:Tensor4 => new Dense3LayeredTensor4(t.dim1, t.dim2, t.dim3, t.dim4, new SparseTensor1(_))
   }
   def newSparse(dims:Int*): Tensor = dims match {
     case Seq(d1) => new SparseTensor1(d1)
-    case Seq(d1, d2) => new DenseLayeredTensor2(d1, d2, new SparseTensor1(_)) // with InnerSparseTensor1
-    case Seq(d1, d2, d3) => new Dense2LayeredTensor3(d1, d2, d3, new SparseTensor1(_)) // with InnerSparseTensor1
-    case Seq(d1, d2, d3, d4) => new Dense3LayeredTensor4(d1, d2, d3, d4, new SparseTensor1(_)) // with InnerSparseTensor1
+    case Seq(d1, d2) => new DenseLayeredTensor2(d1, d2, new SparseTensor1(_))
+    case Seq(d1, d2, d3) => new Dense2LayeredTensor3(d1, d2, d3, new SparseTensor1(_))
+    case Seq(d1, d2, d3, d4) => new Dense3LayeredTensor4(d1, d2, d3, d4, new SparseTensor1(_))
   }
 
   // Support for dot inner products with dense tensors
@@ -227,33 +227,52 @@ class TensorTimesScalar(val tensor:Tensor, val scalar:Double) extends Tensor {
 }
 
 trait DenseTensor extends Tensor {
-  protected def _values: Array[Double]
-  override def zero(): Unit = java.util.Arrays.fill(_values, 0.0)
-  override def asArray = _values
-  override def +=(i:Int, incr:Double): Unit = _values(i) += incr
+  private var __values = new Array[Double](length)
+  protected def _values = __values
+  protected def _valuesSize: Int = _values.size
+  // Used by subclass GrowableDenseTensor1
+  protected def ensureCapacity(size:Int): Unit = if (__values.size < size) {
+    val newSize = math.max(__values.size * 2, size)
+    val newCounts = new Array[Double](newSize)
+    Array.copy(_values, 0, newCounts, 0, __values.size)
+    __values = newCounts
+  }
+  protected def _setArray(a:Array[Double]): Unit = { assert(a.length == length); __values = a }
+  def isDense = true
+  def activeDomain = new RangeIntSeq(0, length)
+  def apply(i:Int): Double = __values(i)
+  override def update(i:Int, v:Double): Unit = __values(i) = v
+  override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
+  override def asArray = __values
+  override def +=(i:Int, incr:Double): Unit = __values(i) += incr
   override def :=(ds:DoubleSeq): Unit = ds match {
-    case ds:DenseTensor => System.arraycopy(_values, 0, ds._values, 0, length)
+    case ds:DenseTensor => System.arraycopy(__values, 0, ds.__values, 0, length)
     case ds:DoubleSeq => super.:=(ds)
   }
   override def :=(a:Array[Double]): Unit = { require(a.length == length); System.arraycopy(a, 0, _values, 0, a.length) }
-  override def :=(a:Array[Double], offset:Int): Unit = System.arraycopy(a, offset, _values, 0, length)
+  override def :=(a:Array[Double], offset:Int): Unit = System.arraycopy(a, offset, __values, 0, length)
   override def dot(t2:DoubleSeq): Double = t2 match {
     case t2:SingletonBinaryTensor => apply(t2.singleIndex)
     case t2:SingletonTensor => apply(t2.singleIndex) * t2.singleValue
     case t2:DenseTensor => {
       val len = length; assert(len == t2.length); var result = 0.0; var i = 0
-      while (i < len) { result += apply(i) * t2(i); i += 1 }; result
+      while (i < len) { result += __values(i) * t2.__values(i); i += 1 }; result
     }
     case t2:SparseBinaryTensor => {
-      var s = 0.0; t2.foreachElement((i,v) => s += _values(i)); s
+      var s = 0.0; t2.foreachElement((i,v) => s += __values(i)); s
     }
+    case t:UniformTensor => sum * t.uniformValue
     // TODO Any other special cases here?
     case t2:DoubleSeq => { // TODO Consider removing this to catch inefficiency
       val len = length; assert(len == t2.length); var result = 0.0; var i = 0
       while (i < len) { result += apply(i) * t2(i); i += 1 }; result
     }
   }
-
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:SingletonBinaryTensor => __values(t.singleIndex) += 1.0
+    case t:SingletonTensor => __values(t.singleIndex) += t.singleValue
+    case t:SparseBinaryTensor => t.=+(_values, f)
+  }
 }
 
 trait SingletonTensor extends Tensor with SparseDoubleSeq {
@@ -316,6 +335,8 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   override def indexOf(d:Double): Int = if (d != 0.0 && d != 1.0) -1 else if (d == 1.0) { if (_length == 0) -1 else _apply(0) } else { if (_length == 0) 0 else throw new Error("Not yet implemented") }
   override def maxIndex: Int = if (_length == 0) 0 else _apply(0)
   override def containsNaN: Boolean = false
+  def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
+  def =+(a:Array[Double], f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += f; i += 1 } }
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
   def -=(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }
@@ -335,7 +356,7 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   }
 }
 
-// TODO Consider finishing this implementation
+// TODO Finish this implementation
 class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
   def tensors: Array[Tensor] = theTensors.toArray
   def foreachTensor(f:Tensor=>Unit): Unit = { var i = 0; while (i < tensors.length) { f(tensors(i)); i += 1 }}
@@ -367,9 +388,30 @@ class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
   override def *=(d:Double): Unit = foreachTensor(_ *= d)
   protected def sumOverTensors(f:Tensor=>Double): Double = { val len = tensors.length; var s = 0.0; var i = 0; while (i < len) { s += f(tensors(i)); i += 1 }; s }
   override def oneNorm: Double = sumOverTensors(_.twoNorm)
-  override def twoNorm: Double = sumOverTensors(_.twoNorm)
+  override def twoNormSquared: Double = sumOverTensors(_.twoNormSquared)
   override def dot(t:DoubleSeq): Double = t match {
     case t:ConcatenatedTensor => { var s = 0.0; for (pair <- tensors.zip(t.tensors)) s += pair._1 dot pair._2; s }
   }
 }
 
+//* A Tensor to represent the weights in a sequence of DotFamilies in a HashMap from DotFamily to Tensor. */
+class WeightsTensor extends Tensor1 {
+  private val _map = new scala.collection.mutable.LinkedHashMap[DotFamily,Tensor] {
+    override def default(f:DotFamily) = { val t = f.newSparseTensor; this(f) = t; t }
+  }
+  def dim1: Int = throw new Error("Method dim1 not defined for WeightTensors.")
+  def apply(i:Int): Double = throw new Error("Method apply not defined for WeightTensors.")
+  def activeDomain1: IntSeq = throw new Error("Method activeDomain1 not defined for WeightTensors.")
+  def isDense = false
+  override def stringPrefix = "WeightsTensor"
+  def apply(f:DotFamily): Tensor = _map.apply(f)
+  protected def sumOverTensors(f:Tensor=>Double): Double = { var s = 0.0; _map.values.foreach(s += f(_)); s }
+  override def oneNorm: Double = sumOverTensors(_.twoNorm)
+  override def twoNormSquared: Double = sumOverTensors(_.twoNormSquared)
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:WeightsTensor => t._map.keys.foreach(k => apply(k).+=(t.apply(k), f))
+  }
+  override def dot(t:DoubleSeq): Double = t match {
+    case t:WeightsTensor => { var s = 0.0; for (k <- t._map.keys) { val t2 = apply(k); if (t2 ne null) s += t2 dot t.apply(k) }; s }
+  }
+}

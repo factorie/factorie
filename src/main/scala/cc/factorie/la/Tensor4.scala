@@ -41,25 +41,25 @@ trait Tensor4 extends Tensor {
 }
 
 trait DenseTensorLike4 extends Tensor4 with DenseTensor {
-  private var __values = new Array[Double](dim1*dim2*dim3*dim4)
-  protected def _values = __values
-  def isDense = true
+  //private var __values = new Array[Double](dim1*dim2*dim3*dim4)
+  //protected def _values = __values
+  //def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain2 = new RangeIntSeq(0, dim2)
   def activeDomain3 = new RangeIntSeq(0, dim3)
   def activeDomain4 = new RangeIntSeq(0, dim4)
-  def activeDomain = new RangeIntSeq(0, dim1*dim2*dim3*dim4)
-  def apply(i:Int): Double = __values(i)
-  override def apply(i:Int, j:Int, k:Int, l:Int): Double = __values(i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l)
-  override def +=(i:Int, v:Double): Unit = __values(i) += v
-  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } }
-  override def update(i:Int, v:Double): Unit = __values(i) = v
-  override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = __values(i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l) = v
-  override def dot(t:DoubleSeq): Double = t match {
-    case t:SingletonTensor4 => apply(t.singleIndex) * t.singleValue
-    case t:SingletonBinaryTensor4 => apply(t.singleIndex)
-    case t:DenseTensorLike4 => Tensor.dot(this, t)
-  }
+  //def activeDomain = new RangeIntSeq(0, dim1*dim2*dim3*dim4)
+  //def apply(i:Int): Double = __values(i)
+  //override def apply(i:Int, j:Int, k:Int, l:Int): Double = __values(i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l)
+  //override def +=(i:Int, v:Double): Unit = __values(i) += v
+  //override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } }
+  //override def update(i:Int, v:Double): Unit = __values(i) = v
+  //override def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = __values(i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l) = v
+  //override def dot(t:DoubleSeq): Double = t match {
+  //  case t:SingletonTensor4 => apply(t.singleIndex) * t.singleValue
+  //  case t:SingletonBinaryTensor4 => apply(t.singleIndex)
+  //  case t:DenseTensorLike4 => Tensor.dot(this, t)
+  //}
 }
 class DenseTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4 {
   override def blankCopy: DenseTensor4 = new DenseTensor4(dim1, dim2, dim3, dim4)

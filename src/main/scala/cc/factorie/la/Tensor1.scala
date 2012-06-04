@@ -28,47 +28,38 @@ trait Tensor1 extends Tensor {
 }
 
 trait DenseTensorLike1 extends Tensor1 with DenseTensor {
-  private var __values = new Array[Double](dim1)
-  protected def _values = __values
-  protected def _valuesSize: Int = __values.size
-  // Used by subclass GrowableDenseTensor1
-  protected def ensureCapacity(size:Int): Unit = if (__values.size < size) {
-    val newSize = math.max(__values.size * 2, size)
-    val newCounts = new Array[Double](newSize)
-    Array.copy(_values, 0, newCounts, 0, __values.size)
-    __values = newCounts
-  }
-  protected def _setArray(a:Array[Double]): Unit = { assert(a.length == dim1); __values = a }
-  def isDense = true
+  //private var __values = new Array[Double](dim1)
+  //protected def _values = __values
+  //def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
-  //def activeDomain = activeDomain1
-  def apply(i:Int) = __values(i)
-  override def asArray = __values
-  override def +=(i:Int, incr:Double): Unit = __values(i) += incr
-  override def :=(ds:DoubleSeq): Unit = ds match {
-    case ds:DenseTensorLike1 => System.arraycopy(__values, 0, ds.__values, 0, length)
-    case ds:DoubleSeq => super.:=(ds)
-  }
+  override def activeDomain = activeDomain1
+  //def apply(i:Int) = __values(i)
+  //override def asArray = __values
+  //override def +=(i:Int, incr:Double): Unit = __values(i) += incr
+  //override def :=(ds:DoubleSeq): Unit = ds match {
+  //  case ds:DenseTensorLike1 => System.arraycopy(__values, 0, ds.__values, 0, length)
+  //  case ds:DoubleSeq => super.:=(ds)
+  //}
 //  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); ds match {
 //    case t:Tensor => 
 //      if (t.isDense) { var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } } 
 //    case ds:DoubleSeq => { var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } } 
 //  }
-  override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
-  override def update(i:Int, v:Double): Unit = __values(i) = v
+  //override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
+  //override def update(i:Int, v:Double): Unit = __values(i) = v
   override def dot(t:DoubleSeq): Double = t match {
-    case t:SingletonBinaryTensor => apply(t.singleIndex)
-    case t:SingletonTensor => apply(t.singleIndex) * t.singleValue
-    case t:DenseTensorLike1 => Tensor.dot(this, t)
+    //case t:SingletonBinaryTensor => apply(t.singleIndex)
+    //case t:SingletonTensor => apply(t.singleIndex) * t.singleValue
+    //case t:DenseTensorLike1 => Tensor.dot(this, t)
     case t:SparseBinaryTensorLike1 => t dot this
     case t:SparseIndexedTensor1 => t dot this
-    case t:UniformTensor => sum * t.uniformValue
+    case t:DoubleSeq => super.dot(t)
   }
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
-    case t:SingletonBinaryTensorLike1 => __values(t.singleIndex) += 1.0
-    case t:SingletonTensor1 => __values(t.singleIndex) += t.singleValue
-    case t:SparseBinaryTensorLike1 => t.=+(__values, f)
-    case t:SparseIndexedTensor1 => t.=+(__values, f)
+    //case t:SingletonBinaryTensorLike1 => __values(t.singleIndex) += 1.0
+    //case t:SingletonTensor1 => __values(t.singleIndex) += t.singleValue
+    //case t:SparseBinaryTensorLike1 => t.=+(_values, f)
+    case t:SparseIndexedTensor1 => t.=+(_values, f)
     case t:DoubleSeq => super.+=(t, f)
   }
 }
@@ -136,7 +127,7 @@ class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
 }
 
 
-
+// TODO Use SparseBinaryTensor here
 trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer with Tensor1 {
   def activeDomain1 = new TruncatedArrayIntSeq(_array, _length)
   //def activeDomain = activeDomain1
@@ -238,6 +229,7 @@ class SparseHashTensor1(val dim1:Int) extends Tensor1 {
   //override def toString = getClass.getName + "(" + "len=" + length + " (" + h.mkString("[", ", ", "]") + "))"
 }
 
+// Pull this out into SparseIndexedTensor
 class SparseIndexedTensor1(len:Int) extends Tensor1 {
   def this(sizeProxy:Iterable[Any]) = { this(-1); _sizeProxy = sizeProxy }
   def isDense = false

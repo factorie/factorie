@@ -37,24 +37,18 @@ trait Tensor2 extends Tensor {
 
 
 trait DenseTensorLike2 extends Tensor2 with DenseTensor {
-  private var __values = new Array[Double](dim1*dim2)
-  protected def _values = __values
-  def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain2 = new RangeIntSeq(0, dim2)
-  def activeDomain = new RangeIntSeq(0, dim1*dim2)
-  def apply(i:Int): Double = __values(i)
-  override def apply(i:Int, j:Int): Double = __values(i*dim2+j)
-  override def +=(i:Int, v:Double): Unit = _values(i) += v
+  //override def apply(i:Int, j:Int): Double = __values(i*dim2+j)
   //override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); var i = 0; while (i < length) { _values(i) += ds(i); i += 1 } }
-  override def update(i:Int, v:Double): Unit = _values(i) = v
-  override def update(i:Int, j:Int, v:Double): Unit = _values(i*dim2+j) = v
+  //override def update(i:Int, j:Int, v:Double): Unit = __values(i*dim2+j) = v
   override def dot(t:DoubleSeq): Double = t match {
-    case t:SingletonBinaryTensor2 => apply(t.singleIndex)
-    case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
-    case t:DenseTensorLike2 => Tensor.dot(this, t)
+    //case t:SingletonBinaryTensor2 => apply(t.singleIndex)
+    //case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
+    //case t:DenseTensorLike2 => Tensor.dot(this, t)
     case t:SingletonLayeredTensorLike2 => t dot this
     case t:SingletonBinaryLayeredTensorLike2 => t dot this
+    case t:DoubleSeq => super.dot(t)
   }
 }
 

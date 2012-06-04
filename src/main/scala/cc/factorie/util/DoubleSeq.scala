@@ -20,7 +20,7 @@ import scala.util.Random
 trait DoubleSeq {
   def apply(i:Int): Double
   def length: Int
-  final def size = length // Just an alias
+  final def size = length // Just an alias // Not final so we can mix Tensor with FlatHashMap in WeightsTensor
   def foreach(f:(Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(apply(i)); i += 1 } }
   def foreachElement(f:(Int,Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(i, apply(i)); i += 1 } }
   def foreachActiveElement(f:(Int,Double)=>Unit): Unit = foreachElement(f) // To be overridden by sparse subclasses
@@ -36,7 +36,7 @@ trait DoubleSeq {
   def oneNorm: Double = { val l = length; var result = 0.0; var i = 0; while (i < l) { result += math.abs(apply(i)); i += 1}; result }
   //def absNorm: Double = { var result = 0.0; var i = 0; while (i < length) { result += math.abs(apply(i)); i += 1}; result }
   def twoNormSquared: Double = { val l = length; var result = 0.0; var i = 0; var v = 0.0; while (i < l) { v = apply(i); result += v * v; i += 1}; result }
-  def twoNorm: Double = math.sqrt(twoNormSquared)
+  final def twoNorm: Double = math.sqrt(twoNormSquared)
   final def infinityNorm = max
   def cosineSimilarity(t:DoubleSeq): Double = {
     val numerator:Double = this dot t
@@ -62,7 +62,7 @@ trait DoubleSeq {
   def containsNaN: Boolean = { val l = length; var i = 0; while (i < l) { if (apply(i) != apply(i)) return true; i += 1 }; false }  // TODO Why wouldn't apply(i).isNaN compile?
   /** Return records for the n elements with the largest values. */
   def top(n:Int): TopN[String] = new cc.factorie.util.TopN(n, this)
-  // For proportions
+  // For proportions; implemented here so that different Tensor subclasses can override it for efficiency
   def sampleIndex(normalizer:Double)(implicit r:Random): Int = {
     assert(normalizer > 0.0, "normalizer = "+normalizer)
     val l = length; var b = 0.0; val s = r.nextDouble * normalizer; var i = 0
