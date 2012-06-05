@@ -24,7 +24,7 @@ object LoadOWPL {
       else {
         val fields = line.split(" ")
         val label = fields(0)
-        val word = fields(1)
+        val word = fields(1).substring(5)
         val token = new Token(sentence, word)
         token.attr += labelMaker(token, label)
         doc.appendString(" ")
