@@ -66,7 +66,12 @@ class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, v
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2 + singleIndex2
-  override def stringPrefix = "SingletonBinaryTensor2"
+}
+class MutableSingletonBinaryTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var singleIndex2:Int) extends Tensor2 with SingletonBinaryTensor {
+  def activeDomain1 = new SingletonIntSeq(singleIndex1)
+  def activeDomain2 = new SingletonIntSeq(singleIndex2)
+  def activeDomain = new SingletonIntSeq(singleIndex)
+  def singleIndex = singleIndex1*dim2 + singleIndex2
 }
 
 class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int, val singleValue:Double) extends Tensor2 with SingletonTensor {
@@ -82,7 +87,7 @@ trait SparseBinaryTensorLike2 extends Tensor2 with SparseBinaryTensor {
 }
 class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensorLike2 {
   override def blankCopy: SparseBinaryTensor2 = new SparseBinaryTensor2(dim1, dim2)
-  override def stringPrefix = "SparseBinaryTensor2"
+  //override def stringPrefix = "SparseBinaryTensor2"
 }
 
 trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
@@ -175,9 +180,4 @@ trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   }
 }
 class SingletonBinaryLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val inner:Tensor1) extends SingletonBinaryLayeredTensorLike2
-
-trait SparseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
-  def newTensor1: Int=>Tensor1
-  // TODO Finish this
-}
 

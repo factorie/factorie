@@ -94,24 +94,16 @@ class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends DenseTensorLike1
 
 class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends Tensor1 with SingletonTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex)
-  override def dot(t:DoubleSeq): Double = t match {
-    case t:SingletonBinaryTensor1 => if (singleIndex == t.singleIndex) singleValue else 0.0
-    case t:SingletonTensor1 => if (singleIndex == t.singleIndex) singleValue * t.singleValue else 0.0
-    case t:DoubleSeq => t(singleIndex) * singleValue
-  }
 } 
 
 trait SingletonBinaryTensorLike1 extends Tensor1 with SingletonBinaryTensor {
-  def singleIndex: Int
   def activeDomain1 = new SingletonIntSeq(singleIndex)
-  override def dot(t:DoubleSeq): Double = t match {
-    case t:SingletonBinaryTensor1 => if (singleIndex == t.singleIndex) 1.0 else 0.0
-    case t:SingletonTensor1 => if (singleIndex == t.singleIndex) 1.0 * t.singleValue else 0.0
-    case t:DoubleSeq => t(singleIndex) * 1.0
-  }
 }
 class SingletonBinaryTensor1(val dim1:Int, val singleIndex:Int) extends SingletonBinaryTensorLike1 {
   override def copy: SingletonBinaryTensor1 = new SingletonBinaryTensor1(dim1, singleIndex)
+}
+class MutableSingletonBinaryTensor1(val dim1:Int, var singleIndex:Int) extends SingletonBinaryTensorLike1 {
+  override def copy = new MutableSingletonBinaryTensor1(dim1, singleIndex)
 }
 class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], val singleIndex:Int) extends SingletonBinaryTensorLike1 {
   def dim1 = sizeProxy.size

@@ -109,6 +109,8 @@ trait TensorFamily extends Family {
   trait Statistics extends super.Statistics {
     def tensor: Tensor
   }
+  def score(s:StatisticsType): Double = if (s eq null) 0.0 else score(s.tensor)
+  def score(t:Tensor): Double
 }
 
 
@@ -125,7 +127,8 @@ trait DotFamily extends TensorFamily {
   def newWeightsTypeTensor: Tensor = Tensor.newDense(statisticsTensorDimensions:_*) //(default)
   def newDenseTensor: Tensor = Tensor.newDense(statisticsTensorDimensions:_*) //(default)
   def newSparseTensor: Tensor = Tensor.newSparse(statisticsTensorDimensions:_*) //(default)
-  def score(s:StatisticsType) = if (s eq null) 0.0 else weights dot s.tensor
+  //def score(s:StatisticsType) = if (s eq null) 0.0 else weights dot s.tensor
+  def score(t:Tensor): Double = weights dot t
 
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also

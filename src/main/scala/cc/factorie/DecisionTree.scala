@@ -13,6 +13,7 @@
    limitations under the License. */
 
 package cc.factorie
+import cc.factorie.la.Tensor
 
 /** Statistics for factors who scores are the log-probability of 
     label S1 given feature vector S2, according to a decision tree.
@@ -27,7 +28,8 @@ trait DecisionTreeStatistics2[S1<:DiscreteValue,S2<:DiscreteTensorValue] extends
   def scoreScaling = 1.0
   // val s: StatisticsType;  s._1:DiscreteValue; s._2:Vector
   // Number of different values of s._1 == s._1.domain.size
-  def score(s:StatisticsType): Double = score(s, root)
+  override def score(s:StatisticsType): Double = score(s, root)
+  def score(t:Tensor): Double = throw new Error("Not yet implemented.")
   protected def score(s:StatisticsType, node:DTNode): Double = 
     if (node.isLeaf) math.log(node.p(s._1.intValue))
     else score(s, if (s._2.apply(node.index) != 0.0) node.yesChild else node.noChild)

@@ -42,8 +42,8 @@ trait Tensor extends MutableDoubleSeq {
   def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
   def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
   def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
-  def *(v:Double): Tensor = new TensorTimesScalar(this, v)
-  def /(v:Double): Tensor = new TensorTimesScalar(this, 1.0/v)
+  def *(v:Double): Tensor = new TensorTimesScalar(this, v) // TODO Should I use this.copy here?
+  def /(v:Double): Tensor = new TensorTimesScalar(this, 1.0/v) // TODO Should I use this.copy here?
   def +(that:Tensor): Tensor = { val t = this.copy; t += that; t }
   def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t }
   def *(that:Tensor): Tensor = throw new Error("Not yet implemented")
@@ -123,11 +123,11 @@ object Tensor {
       case t2:Tensor1 => new SingletonLayeredTensor2(t1.dim1, t2.dim1, t1.singleIndex, t1.singleValue, t2)
     }
     case t1:SparseBinaryTensorLike1 => t2 match {
-      case t2:SingletonBinaryTensorLike1 => { val t = new SparseBinaryTensor2(t1.dim1, t2.dim1); val a1 = t1.asIntArray; var i = 0; while (i < a1.length) { t(t2.singleIndex, a1(i)) = 1.0; i += 1 }; t }
+      case t2:SingletonBinaryTensorLike1 => { val t = new SparseBinaryTensor2(t1.dim1, t2.dim1); val a1 = t1.asIntArray; val t2si = t2.singleIndex; var i = 0; while (i < a1.length) { t(t2si, a1(i)) = 1.0; i += 1 }; t }
       case t2:SingletonTensor1 => throw new Error("SparseTensor2 not yet implemented.") //{ val t = new SparseTensor2(t1.dim1, t2.dim1); val a1 = t1.asIntArray; var i = 0; while (i < a1.length) { t(t2.singleIndex, a1(i)) = 1.0; i += 1 }; t }
     }
     case t1:DenseTensor1 => t2 match {
-      case t2:SingletonBinaryTensorLike1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1) t(i,t2.singleIndex) = t1(i); t }
+      case t2:SingletonBinaryTensorLike1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); val t2si = t2.singleIndex; for (i <- 0 until t1.dim1) t(i,t2si) = t1(i); t }
       case t2:SingletonTensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1) t(i,t2.singleIndex) = t1(i) * t2.singleValue; t }
       case t2:SparseBinaryTensorLike1 => throw new Error("Not yet implemented; needs SparseTensor2")
       case t2:DenseTensorLike1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1; j <- 0 until t2.dim1) t(i,j) = t1(i) * t2(j); t }
@@ -289,8 +289,13 @@ trait SingletonTensor extends Tensor with SparseDoubleSeq {
   override def min: Double = if (singleValue < 0.0) singleValue else 0.0 
   override def maxIndex: Int = if (singleValue >= 0.0) singleIndex else if (singleIndex != 0) 0 else 1
   override def containsNaN: Boolean = false
-  override def dot(v:DoubleSeq): Double = v(singleIndex) * singleValue
+  //override def dot(v:DoubleSeq): Double = v(singleIndex) * singleValue
   override def copy: SingletonTensor = this // immutable, but careful in the future we might make a mutable version
+  override def dot(t:DoubleSeq): Double = t match {
+    case t:SingletonBinaryTensor => if (singleIndex == t.singleIndex) singleValue else 0.0
+    case t:SingletonTensor => if (singleIndex == t.singleIndex) singleValue * t.singleValue else 0.0
+    case t:DoubleSeq => t(singleIndex) * singleValue
+  }
 }
 
 trait SingletonBinaryTensor extends SingletonTensor {
@@ -304,9 +309,14 @@ trait SingletonBinaryTensor extends SingletonTensor {
   override def min: Double = 0.0
   override def containsNaN: Boolean = false
   override def maxIndex: Int = singleIndex
-  override def dot(v:DoubleSeq): Double = v(singleIndex)
+  override def dot(t:DoubleSeq): Double = t match {
+    case t:SingletonBinaryTensor => if (singleIndex == t.singleIndex) 1.0 else 0.0
+    case t:SingletonTensor => if (singleIndex == t.singleIndex) t.singleValue else 0.0
+    case t:DoubleSeq => t(singleIndex)
+  }
   override def copy: SingletonBinaryTensor = this // immutable, but careful in the future we might make a mutable version
 }
+// TODO Make a mutable version of this to be used in BP with DotFamily.score(Tensor)
 
 trait UniformTensor extends Tensor {
   def uniformValue: Double
@@ -394,7 +404,7 @@ class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
   }
 }
 
-//* A Tensor to represent the weights in a sequence of DotFamilies in a HashMap from DotFamily to Tensor. */
+//* A Tensor to represent the weights in a collection of DotFamilies as the keys in a HashMap from DotFamily to Tensor. */
 class WeightsTensor extends Tensor1 {
   private val _map = new scala.collection.mutable.LinkedHashMap[DotFamily,Tensor] {
     override def default(f:DotFamily) = { val t = f.newSparseTensor; this(f) = t; t }

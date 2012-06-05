@@ -62,6 +62,13 @@ class SingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singl
   def activeDomain = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2*dim3 + singleIndex2*dim3 + singleIndex3
 }
+class MutableSingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, var singleIndex1:Int, var singleIndex2:Int, var singleIndex3:Int) extends Tensor3 with SingletonBinaryTensor {
+  def activeDomain1 = new SingletonIntSeq(singleIndex1)
+  def activeDomain2 = new SingletonIntSeq(singleIndex2)
+  def activeDomain3 = new SingletonIntSeq(singleIndex3)
+  def activeDomain = new SingletonIntSeq(singleIndex)
+  def singleIndex = singleIndex1*dim2*dim3 + singleIndex2*dim3 + singleIndex3
+}
 
 class SingletonTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleValue:Double) extends Tensor3 with SingletonTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
