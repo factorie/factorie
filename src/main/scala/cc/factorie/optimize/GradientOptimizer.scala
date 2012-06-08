@@ -7,6 +7,7 @@ trait GradientOptimizer {
   def weights: Tensor
   def step(gradient:Tensor, value:Double, margin:Double): Unit
   def isConverged: Boolean
+  def reset(): Unit
 }
 
 class StepwiseGradientAscent(val weights:Tensor, var rate: Double = 1.0) extends GradientOptimizer {
@@ -18,6 +19,7 @@ class StepwiseGradientAscent(val weights:Tensor, var rate: Double = 1.0) extends
   }
   def nextRate(oldRate:Double): Double = oldRate // TODO What should go here?
   def isConverged = false // TODO What to put here?
+  def reset(): Unit = {}
 }
 
 class LineSearchGradientAscent(val weights:Tensor, var stepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
@@ -31,6 +33,10 @@ class LineSearchGradientAscent(val weights:Tensor, var stepSize: Double = 1.0) e
   var eps = 1.0e-10
   var oldValue = Double.NaN
   var lineOptimizer: BackTrackLineOptimizer2 = null
+  def reset(): Unit = {
+    _isConverged = false
+    oldValue = Double.NaN
+  }
   def step(gradient:Tensor, value:Double, margin:Double): Unit = {
     if (_isConverged) return
     // Check for convergence by value
@@ -81,8 +87,20 @@ class BackTrackLineOptimizer2(val weights:Tensor, val gradient:Tensor, val line:
   var tmplam = 0.0;
   var alam2 = 0.0
 
+  def reset(): Unit = {
+    _isConverged = false
+    oldValue = Double.NaN
+    origValue = Double.NaN
+    slope = Double.NaN
+    alamin = Double.NaN
+    alam = initialStepSize
+    oldAlam = 0.0;
+    tmplam = 0.0;
+    alam2 = 0.0
+  }
+  
   def step(gradient:Tensor, value:Double, margin:Double): Unit = {
-    
+    logger.warn("BackTrackLineOptimizer step value="+value)
     // If first time in, do various initializations
     if (slope.isNaN) {
       // Set the slope
@@ -119,7 +137,7 @@ class BackTrackLineOptimizer2(val weights:Tensor, val gradient:Tensor, val line:
       // value is infinite; we have jumped into unstable territory.  Scale down jump
       tmplam =.2 * alam
       if (alam < alamin) {
-        logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold.");
+        logger.warn("BackTrackLineOptimizer EXITING BACKTRACK: Jump too small. Exiting and using xold.");
         _isConverged = true // Exiting backtrack: jump to small; using previous parameters
       }
     } else {
@@ -159,14 +177,14 @@ class BackTrackLineOptimizer2(val weights:Tensor, val gradient:Tensor, val line:
 
 
 class ConjugateGradient2(val weights:Tensor, val initialStepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
-  def this(model:TemplateModel) = this(model.weightsTensor)
+  def this(model:TemplateModel) = this(model.weightsTensor, 1.0)
   private var _isConverged = false
   def isConverged = _isConverged
    
   var tolerance = 0.0001
   var gradientTolerance = 0.001
   var maxIterations = 1000
-  val eps = 1.0e-10 // a small number to recitify the special case of converging to exactly zero function value
+  val eps = 1.0e-10 // a small number to rectify the special case of converging to exactly zero function value
 
   // The state of a conjugate gradient search
   //var fp = 0.0
@@ -202,7 +220,7 @@ class ConjugateGradient2(val weights:Tensor, val initialStepSize: Double = 1.0) 
     lineOptimizer.step(xi, value, margin)
     // If the lineOptimizer has not yet converged, then don't yet do any of the ConjugateGradient-specific things below
     if (!lineOptimizer.isConverged) return
-    lineOptimizer = null // So we great a new one next time around
+    lineOptimizer = null // So we create a new one next time around
 
     // This termination provided by "Numeric Recipes in C".
     if (2.0 * math.abs(value - oldValue) <= tolerance * (math.abs(value) + math.abs(oldValue) + eps)) {

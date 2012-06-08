@@ -9,6 +9,8 @@ class MIRA(val weights:Tensor, var learningMargin:Double = 1.0) extends Gradient
   //def useObjectiveChangeAsMargin: Boolean = true
   val boxConstraint: Double = 1.0 //Math.POS_INF_DOUBLE
 
+  def reset(): Unit = throw new Error("Not yet implemented")
+
   /** The "margin" is the difference between the best objective score and objective score of the model's choice. */
   def step(gradient:Tensor, value:Double, margin:Double): Unit = {
     //if (useObjectiveChangeAsMargin) learningMargin = changeProposal.objectiveScore.abs else 1

@@ -46,14 +46,20 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
     //case t:SingletonBinaryTensor2 => apply(t.singleIndex)
     //case t:SingletonTensor2 => apply(t.singleIndex) * t.singleValue
     //case t:DenseTensorLike2 => Tensor.dot(this, t)
-    case t:SingletonLayeredTensorLike2 => t dot this
     case t:SingletonBinaryLayeredTensorLike2 => t dot this
+    case t:SingletonLayeredTensorLike2 => t dot this
     case t:DoubleSeq => super.dot(t)
+  }
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:SingletonBinaryLayeredTensorLike2 => t.=+(_values, f)
+    case t:SingletonLayeredTensorLike2 => t.=+(_values, f)
+    case t:DoubleSeq => super.+=(t, f)
   }
 }
 
 class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   def this(t:Tensor2) = { this(t.dim1, t.dim2); this := t }
+  override def copy: DenseTensor2 = { val t = new DenseTensor2(dim1, dim2); System.arraycopy(_values, 0, t._values, 0, length); t }
   override def blankCopy: DenseTensor2 = new DenseTensor2(dim1, dim2)
   override def stringPrefix = "DenseTensor2"
 }
@@ -106,7 +112,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def update(i:Int, t:Tensor1): Unit = _inners(i) = t
   protected def getInner(i:Int): Tensor1 = { var in = _inners(i); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i)).+=(index2(i), incr)
-  override def +=(ds:DoubleSeq): Unit = ds match {
+  /*override def +=(ds:DoubleSeq): Unit = ds match {
     case t:SingletonBinaryTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, 1.0)
     case t:SingletonTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, t.singleValue)
     case t:SingletonLayeredTensorLike2 => { getInner(t.singleIndex1) += t.inner }
@@ -114,7 +120,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:DenseLayeredTensorLike2 => { val len = t._inners.length; var i = 0; while (i < len) { if (t._inners(i) ne null) getInner(i) += t._inners(i); i += 1 } }
     case t:DoubleSeq => throw new Error("Not yet implemented for class "+t.getClass.getName)
     //case t:DoubleSeq => super.+=(ds)
-  }
+  }*/
   override def +=(ds:DoubleSeq, f:Double): Unit = ds match {
     case t:SingletonBinaryTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, f)
     case t:SingletonTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, f * t.singleValue)
@@ -143,6 +149,7 @@ trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def singleIndex1: Int
   def singleValue1: Double
   def inner: Tensor1
+  def innerOffset: Int = singleIndex1 * dim2
   def isDense = false
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = inner.activeDomain1
@@ -163,6 +170,7 @@ class SingletonLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, 
 trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def singleIndex1: Int
   def inner: Tensor1
+  def innerOffset: Int = singleIndex1 * dim2
   def isDense = false
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = inner.activeDomain1

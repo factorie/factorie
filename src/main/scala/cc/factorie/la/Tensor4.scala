@@ -62,6 +62,7 @@ trait DenseTensorLike4 extends Tensor4 with DenseTensor {
   //}
 }
 class DenseTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4 {
+  override def copy: DenseTensor4 = { val t = new DenseTensor4(dim1, dim2, dim3, dim4); System.arraycopy(_values, 0, t._values, 0, length); t }
   override def blankCopy: DenseTensor4 = new DenseTensor4(dim1, dim2, dim3, dim4)
 }
 

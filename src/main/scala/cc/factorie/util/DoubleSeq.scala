@@ -29,6 +29,11 @@ trait DoubleSeq {
   def forall(f:Double=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(apply(i))) { println("DoubleSeq.forall "+apply(i)); return false }; i += 1 }; true }
   def foldLeft[B<:AnyRef](z:B)(f:(B,Double)=>B): B = throw new Error("Not yet implemented.")
   def map(f:(Double)=>Double): DoubleSeq = { val l = length; val a = new Array[Double](l); var i = 0; while (i < l) { a(i) = f(apply(i)); i += 1 }; new ArrayDoubleSeq(a) }
+  final def =+(a:Array[Double]): Unit = =+(a, 0, 1.0)
+  final def =+(a:Array[Double], offset:Int): Unit = =+(a, offset, 1.0)
+  final def =+(a:Array[Double], f:Double): Unit = =+(a, 0, f)
+  /** Increment given array (starting at offset index) with contents of this DoubleSeq, multiplied by factor f. */
+  def =+(a:Array[Double], offset:Int, f:Double): Unit = { val len = length+offset; var i = offset; while (i < len) { a(i) += f * apply(i); i += 1 } }
   def indexOf(d:Double): Int = { val l = length; var i = 0; while (i < l) { if (d == apply(i)) return i; i += 1 }; -1 }
   def max: Double = { var m = Double.NaN; val l = length; var i = 0; while (i < l) { if (!(m >= apply(i))) m = apply(i); i += 1 }; m }
   def min: Double = { var m = Double.NaN; val l = length; var i = 0; while (i < l) { if (!(m <= apply(i))) m = apply(i); i += 1 }; m }
@@ -231,10 +236,11 @@ trait IncrementableDoubleSeq extends DoubleSeq {
   def +=(i:Int, incr:Double): Unit
   def zero(): Unit
   def +=(d:Double): Unit = { val l = length; var i = 0; while (i < l) { +=(i, d); i += 1 }}
-  def +=(ds:DoubleSeq): Unit = ds match {
+  final def +=(ds:DoubleSeq): Unit = this +=(ds, 1.0) 
+  /*ds match {
     case ds:SparseDoubleSeq => { ds.foreachActiveElement((i,v) => +=(i,v)) }
     case ds:DoubleSeq => { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, ds(i)); i += 1 }}
-  }
+  }*/
   def +=(a:Array[Double]): Unit = { val l = length; require(a.length == l); var i = 0; while (i < l) { +=(i, a(i)); i += 1 }}
   def +=(ds:DoubleSeq, factor:Double): Unit = ds match {
     case ds:SparseDoubleSeq => { ds.foreachActiveElement((i,v) => +=(i,v*factor)) }

@@ -271,7 +271,8 @@ trait DenseTensor extends Tensor {
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensor => __values(t.singleIndex) += 1.0
     case t:SingletonTensor => __values(t.singleIndex) += t.singleValue
-    case t:SparseBinaryTensor => t.=+(_values, f)
+    case t:SparseBinaryTensor => t.=+(__values, f)
+    case t:DenseTensor => { val len = length; var i = 0; while (i < len) { __values(i) += t.__values(i); i += 1 }}
   }
 }
 
@@ -284,6 +285,7 @@ trait SingletonTensor extends Tensor with SparseDoubleSeq {
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = f(singleIndex, singleValue)
   override def activeElements: Iterator[(Int,Double)] = Iterator.single((singleIndex, singleValue))
   override def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = f(singleIndex, singleValue)
+  override def =+(a:Array[Double], offset:Int, f:Double): Unit = a(offset+singleIndex) += f * singleValue
   override def sum: Double = singleValue
   override def max: Double = if (singleValue > 0.0) singleValue else 0.0 
   override def min: Double = if (singleValue < 0.0) singleValue else 0.0 
@@ -304,6 +306,7 @@ trait SingletonBinaryTensor extends SingletonTensor {
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = f(singleIndex, 1.0)
   override def activeElements: Iterator[(Int,Double)] = Iterator.single((singleIndex, 1.0))
   override def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = f(singleIndex, 1.0)
+  override def =+(a:Array[Double], offset:Int, f:Double): Unit = a(offset+singleIndex) += f
   override def sum: Double = 1.0
   override def max: Double = 1.0
   override def min: Double = 0.0
@@ -345,8 +348,8 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   override def indexOf(d:Double): Int = if (d != 0.0 && d != 1.0) -1 else if (d == 1.0) { if (_length == 0) -1 else _apply(0) } else { if (_length == 0) 0 else throw new Error("Not yet implemented") }
   override def maxIndex: Int = if (_length == 0) 0 else _apply(0)
   override def containsNaN: Boolean = false
-  def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
-  def =+(a:Array[Double], f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += f; i += 1 } }
+  //def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
+  override def =+(a:Array[Double], offset:Int, f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)+offset) += f; i += 1 } }
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
   def -=(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }
@@ -405,19 +408,32 @@ class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
 }
 
 //* A Tensor to represent the weights in a collection of DotFamilies as the keys in a HashMap from DotFamily to Tensor. */
-class WeightsTensor extends Tensor1 {
+class WeightsTensor(val newTensor:DotFamily=>Tensor = _.newSparseTensor) extends Tensor1 {
+  // This functionality moved to TemplateModel
+  //def this(model:TemplateModel, newTensor:DotFamily=>Tensor) = { this(newTensor); val wt = this; model.familiesOfClass[DotFamily].foreach(f => wt(f) = newTensor(f)) } 
   private val _map = new scala.collection.mutable.LinkedHashMap[DotFamily,Tensor] {
-    override def default(f:DotFamily) = { val t = f.newSparseTensor; this(f) = t; t }
+    override def default(f:DotFamily) = { val t = newTensor(f); this(f) = t; t }
   }
-  def dim1: Int = throw new Error("Method dim1 not defined for WeightTensors.")
+  def dim1: Int = _map.values.map(_.length).sum
   def apply(i:Int): Double = throw new Error("Method apply not defined for WeightTensors.")
   def activeDomain1: IntSeq = throw new Error("Method activeDomain1 not defined for WeightTensors.")
   def isDense = false
   override def stringPrefix = "WeightsTensor"
   def apply(f:DotFamily): Tensor = _map.apply(f)
+  def update(f:DotFamily, t:Tensor) = _map(f) = t
+  override def *=(d:Double): Unit = _map.values.foreach(_.*=(d))
   protected def sumOverTensors(f:Tensor=>Double): Double = { var s = 0.0; _map.values.foreach(s += f(_)); s }
   override def oneNorm: Double = sumOverTensors(_.twoNorm)
   override def twoNormSquared: Double = sumOverTensors(_.twoNormSquared)
+  override def toArray: Array[Double] = { val a = new Array[Double](dim1); var offset = 0; _map.values.foreach(t => { System.arraycopy(t.asArray, 0, a, offset, t.length); offset += t.length }); a }
+  override def copy: WeightsTensor = { val t = new WeightsTensor(newTensor); _map.keys.foreach(k => t(k) = apply(k).copy); t }
+  override def different(t:DoubleSeq, threshold:Double): Boolean = t match {
+    case t:WeightsTensor => _map.keys.exists(k => _map(k).different(t._map(k), threshold))
+  }
+  override def containsNaN: Boolean = _map.values.exists(_.containsNaN)
+  override def :=(t:DoubleSeq): Unit = t match {
+    case t:WeightsTensor => _map.keys.foreach(k => if (t(k) eq null) apply(k).zero() else apply(k) := t(k))
+  }
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:WeightsTensor => t._map.keys.foreach(k => apply(k).+=(t.apply(k), f))
   }

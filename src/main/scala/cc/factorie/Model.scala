@@ -130,7 +130,7 @@ class CombinedModel(theSubModels:Model*) extends Model {
     @author Andrew McCallum
     @since 0.11
  */
-// TODO Rename UnrolledModel ???  Or ExpandedModel  Or EnumeratedModel  Or ItemizedModel
+// TODO Rename UnrolledModel ???  Or ExpandedModel  Or EnumeratedModel  Or ItemizedModel << YES, last one
 class FactorModel(initialFactors:Factor*) extends Model {
   def this(initialFactors:Iterable[Factor]) = { this(initialFactors.toSeq:_*) }
   private val _factors = new HashMap[Variable,scala.collection.Set[Factor]] {
@@ -167,8 +167,12 @@ class TemplateModel(initialTemplates:Template*) extends Model {
   @deprecated("Will be removed") def clear = _templates.clear // TODO Consider removing this.
   override def families = _templates
   def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = _templates.foreach(_.limitDiscreteValuesIteratorAsIn(variables))
-  def factorsWithDuplicates(variable:Variable): Iterable[Factor] = templates.flatMap(template => template.factorsWithDuplicates(variable)) 
-  def weightsTensor: ConcatenatedTensor = new ConcatenatedTensor(familiesOfClass[DotFamily].map(_.weights))
+  def factorsWithDuplicates(variable:Variable): Iterable[Factor] = templates.flatMap(template => template.factorsWithDuplicates(variable))
+  // TODO Consider moving these to Model?  but
+  //def weightsTensor: ConcatenatedTensor = new ConcatenatedTensor(familiesOfClass[DotFamily].map(_.weights))
+  def weightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t }
+  def newDenseWeightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.newDenseTensor); t }
+  def newSparseWeightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.newSparseTensor); t }
   
   def save(dirname:String, gzip: Boolean = false): Unit = {
     import java.io.File

@@ -133,8 +133,8 @@ trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer w
   override def maxIndex: Int = if (_length == 0) 0 else _apply(0)
   override def containsNaN: Boolean = false
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
-  def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
-  def =+(a:Array[Double], f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += f; i += 1 } }
+  //override def =+(a:Array[Double]): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)) += 1.0; i += 1 } }
+  override def =+(a:Array[Double], offset:Int, f:Double): Unit = { val len = _length; var i = 0; while (i < len) { a(_array(i)+offset) += f; i += 1 } }
   def -=(i:Int): Unit = { val index = _indexOfSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }
   def ++=(is:IntSeq): Unit = ++=(is.asArray)
@@ -370,7 +370,6 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     _npos += 1
   }
   
-  override def +=(t:DoubleSeq): Unit = +=(t, 1.0)
   override def +=(s:Double): Unit = throw new Error("Method +=(Double) not defined on class "+getClass.getName)
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensorLike1 => +=(t.singleIndex, f)
@@ -378,7 +377,7 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     case t:SparseBinaryTensorLike1 => { val a = t.asIntArray; val len = a.length; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
     case t:SparseIndexedTensor1 => { val len = t._npos; var i = 0; while (i < len) { +=(t._indexs(i), f * t._values(i)); i += 1 }}
   }
-  def =+(a:Array[Double], f:Double): Unit = { var i = 0; while (i < _npos) { a(_indexs(i)) += f * _values(i); i += 1 }}
+  override def =+(a:Array[Double], offset:Int, f:Double): Unit = { var i = 0; while (i < _npos) { a(_indexs(i)+offset) += f * _values(i); i += 1 }}
   
   override def clone: SparseIndexedTensor1 = {
     val v: SparseIndexedTensor1 = if (_sizeProxy eq null) new SparseIndexedTensor1(_length) else new SparseIndexedTensor1(_sizeProxy)
