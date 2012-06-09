@@ -125,7 +125,8 @@ object WordSegmenterDemo {
 
     // Sample and Learn!
     //var learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
-    var learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
+    //var learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
+    var learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
     //learner.learningRate = 1.0
     for (i <- 0 until 7) {
       learner.processAll(trainVariables, 2)

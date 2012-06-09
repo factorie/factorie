@@ -20,6 +20,19 @@ import scala.collection.mutable.{ListBuffer,ArrayBuffer,HashMap,PriorityQueue}
 //import scalala.tensor.Vector
 import cc.factorie.util.{Hooks0,Hooks1}
 
+// How to think about Proposals and MCMC:
+// Variables know their own range of values.  This needs to be coded on a per-variable basis
+// Scored preferences about different values are known only by using the model.
+// Sometimes we want to sample more than one variable together.  One variable cannot know how to do this on its own.
+// Sometimes we want to sample conditioned on other fixed values.  One variable cannot know about this either.  It must be something like a Template
+// Sometimes we want sampling to chain: sample v1, then v2 conditioned on the value of v1, etc.
+// Making proposals is sometimes keyed by a single variable, a list of variables, or nothing (proposer itself maintains context of what to change next)
+// Perhaps proposers should be in a list of Template-like objects; given a variable, first Template in the list to claim it gets to make the change.
+// To facilitate ease of use, perhaps variable classes could provide something like:
+//   class Label[T] { def defaultSampler = LabelSampler; def sample(model:Model) = defaultSampler.sample(this,model) }
+//   object LabelSampler extends Sampler1[Label]
+    
+
 /** Samplers that key off of particular contexts.  Subclasses implement "process1(context:C)" */
 trait Sampler[C] {
   type ContextType = C
@@ -91,6 +104,7 @@ trait ProposalSampler0 {
     Proposal objects come from abstract method "proposals". 
     @author Andrew McCallum */
 trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
+  def model: Model
   var temperature = 1.0 // Not used here, but used in subclasses; here for uniformity // TODO Consider moving use from SettingsSampler to this.process1
   def proposals(context:C): Seq[Proposal]
   def skipEmptyProposals = true

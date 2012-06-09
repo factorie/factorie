@@ -19,76 +19,64 @@ import cc.factorie._
 import scala.reflect.Manifest 
 import scala.collection.mutable.{HashMap, HashSet, PriorityQueue, ArrayBuffer}
 
-// How to think about Proposals and MCMC:
-// Variables know their own range of values.  This needs to be coded on a per-variable basis
-// Scored preferences about different values are known only by using the model.
-// Sometimes we want to sample more than one variable together.  One variable cannot know how to do this on its own.
-// Sometimes we want to sample conditioned on other fixed values.  One variable cannot know about this either.  It must be something like a Template
-// Sometimes we want sampling to chain: sample v1, then v2 conditioned on the value of v1, etc.
-// Making proposals is sometimes keyed by a single variable, a list of variables, or nothing (proposer itself maintains context of what to change next)
-// Perhaps proposers should be in a list of Template-like objects; given a variable, first Template in the list to claim it gets to make the change.
-// To facilitate ease of use, variable classes could provide something like:
-//   class Label[T] { def defaultSampler = LabelSampler; def sample(model:Model) = defaultSampler.sample(this,model) }
-//   object LabelSampler extends Sampler1[Label]
-    
-
-/** Simple GibbsSampler.
-    @author Andrew McCallum */
-class GibbsSampler(val model:Model) extends Sampler[Iterable[Variable]] {
-  var temperature = 1.0
-  val handlers = new ArrayBuffer[GibbsSamplerHandler]
-  def defaultHandlers = List(GeneratedVarGibbsSamplerHandler) //, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler
-  handlers ++= defaultHandlers
-  val cacheClosures = true
-  def closures = new HashMap[Variable, GibbsSamplerClosure]
-  // TODO Consider Either[] type checking instead of generative Sampler[Variable]
-  def process1(v:Iterable[Variable]): DiffList = {
-    val d = newDiffList
-    // If we have a cached closure, just use it and return
-    if (cacheClosures && v.size == 1 && closures.contains(v.head)) { closures(v.head).sample(d); return d }
-    // Get factors, in sorted order of the their classname
-    val factors = model.factors(v).toSeq.sortWith((f1:Factor,f2:Factor) => f1.getClass.getName < f2.getClass.getName).toList
-    var done = false
-    val handlerIterator = handlers.iterator
-    while (!done && handlerIterator.hasNext) {
-      val closure = handlerIterator.next.sampler(v, factors, this)
-      if (closure ne null) {
-        done = true
-        closure.sample(d)
-        if (cacheClosures && v.size == 1) closures(v.head) = closure
-      }
-    }
-    if (!done) throw new Error("GibbsSampler: No sampling method found for "+factors)
-    d
-  }
-  /** Special-case for one variable */
-  def process(v:Variable): DiffList = process(List(v))
-}
-
-trait GibbsSamplerHandler {
-  def sampler(v:Iterable[Variable], factors:List[Factor], sampler:GibbsSampler): GibbsSamplerClosure
-}
-trait GibbsSamplerClosure {
-  def sample(implicit d:DiffList = null): Unit
-}
-
-
-object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
-  class Closure(val variable:MutableVar, val factor:GenerativeFactor) extends GibbsSamplerClosure {
-    def sample(implicit d:DiffList = null): Unit = variable.set(factor.sampledValue.asInstanceOf[variable.Value])
-  }
-  def sampler(vs:Iterable[Variable], factors:List[Factor], sampler:GibbsSampler): GibbsSamplerClosure = {
-    factors match {
-      case List(factor:GenerativeFactor) => {
-        vs.head match {
-          case v:MutableVar => new Closure(v, factor)
-        }
-      }
-      case _ => null
-    }
-  }
-}
-
+//
+///** Simple GibbsSampler.
+//    @author Andrew McCallum */
+//class GibbsSampler(val model:Model) extends Sampler[Iterable[Variable]] {
+//  var temperature = 1.0
+//  val handlers = new ArrayBuffer[GibbsSamplerHandler]
+//  def defaultHandlers = List(GeneratedVarGibbsSamplerHandler) //, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler
+//  handlers ++= defaultHandlers
+//  val cacheClosures = true
+//  def closures = new HashMap[Variable, GibbsSamplerClosure]
+//  // TODO Consider Either[] type checking instead of generative Sampler[Variable]
+//  def process1(v:Iterable[Variable]): DiffList = {
+//    val d = newDiffList
+//    // If we have a cached closure, just use it and return
+//    if (cacheClosures && v.size == 1 && closures.contains(v.head)) { closures(v.head).sample(d); return d }
+//    // Get factors, in sorted order of the their classname
+//    val factors = model.factors(v).toSeq.sortWith((f1:Factor,f2:Factor) => f1.getClass.getName < f2.getClass.getName).toList
+//    var done = false
+//    val handlerIterator = handlers.iterator
+//    while (!done && handlerIterator.hasNext) {
+//      val closure = handlerIterator.next.sampler(v, factors, this)
+//      if (closure ne null) {
+//        done = true
+//        closure.sample(d)
+//        if (cacheClosures && v.size == 1) closures(v.head) = closure
+//      }
+//    }
+//    if (!done) throw new Error("GibbsSampler: No sampling method found for "+factors)
+//    d
+//  }
+//  /** Special-case for one variable */
+//  def process(v:Variable): DiffList = process(List(v))
+//}
+//
+//trait GibbsSamplerHandler {
+//  def sampler(v:Iterable[Variable], factors:List[Factor], sampler:GibbsSampler): GibbsSamplerClosure
+//}
+//trait GibbsSamplerClosure {
+//  def sample(implicit d:DiffList = null): Unit
+//}
+//
+//
+//object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
+//  class Closure(val variable:MutableVar, val factor:GenerativeFactor) extends GibbsSamplerClosure {
+//    def sample(implicit d:DiffList = null): Unit = variable.set(factor.sampledValue.asInstanceOf[variable.Value])
+//  }
+//  def sampler(vs:Iterable[Variable], factors:List[Factor], sampler:GibbsSampler): GibbsSamplerClosure = {
+//    factors match {
+//      case List(factor:GenerativeFactor) => {
+//        vs.head match {
+//          case v:MutableVar => new Closure(v, factor)
+//        }
+//      }
+//      case _ => null
+//    }
+//  }
+//}
+//
 
 
 

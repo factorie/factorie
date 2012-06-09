@@ -15,8 +15,8 @@ import cc.factorie.optimize._
 //}
 //
 //
-class SampleRank2[C](val model:Model, sampler:SettingsSampler[C], optimizer:GradientOptimizer) {
-  def this(sampler:SettingsSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
+class SampleRank2[C](val model:Model, sampler:ProposalSampler[C], optimizer:GradientOptimizer) {
+  def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
   var learningMargin = 1.0
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
   def gradientAndMargin(proposals:Seq[Proposal]): (Tensor,Double) = {
