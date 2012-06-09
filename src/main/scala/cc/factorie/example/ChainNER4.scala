@@ -89,7 +89,9 @@ object ChainNER4 {
     val startTime = System.currentTimeMillis
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     //val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with ConfidenceWeightedUpdates { temperature = 0.01 }
-    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
+    //val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
+    //val learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent(model))
+    val learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.MIRA)
     val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.01 }
     for (i <- 1 to 3) {
       println("Iteration "+i) 

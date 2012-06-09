@@ -2,17 +2,14 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 
-class MIRA(val weights:Tensor, var learningMargin:Double = 1.0) extends GradientOptimizer {
-  def this(model:TemplateModel) = this(model.weightsTensor, 1.0)
-  def this(model:TemplateModel, rate:Double) = this(model.weightsTensor, rate)
-  
+class MIRA(var learningMargin:Double = 1.0) extends GradientOptimizer {
   //def useObjectiveChangeAsMargin: Boolean = true
   val boxConstraint: Double = 1.0 //Math.POS_INF_DOUBLE
 
   def reset(): Unit = throw new Error("Not yet implemented")
 
   /** The "margin" is the difference between the best objective score and objective score of the model's choice. */
-  def step(gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     //if (useObjectiveChangeAsMargin) learningMargin = changeProposal.objectiveScore.abs else 1
     val learningRate = math.min(kktMultiplier(gradient, margin), boxConstraint)
     weights.+=(gradient, learningRate)

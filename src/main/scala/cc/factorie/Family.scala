@@ -101,10 +101,11 @@ trait TensorFamily extends Family {
 //      throw new IllegalStateException("You must override statisticsDomains if you want to access them before creating any Factor and Stat objects.")
 //    else
 //      _statisticsDomains
-  def statisticsDomainsSeq: Seq[DiscreteTensorDomain] = statisticsDomains.productIterator.map(_.asInstanceOf[DiscreteTensorDomain]).toSeq
-  def freezeDomains: Unit = statisticsDomainsSeq.foreach(_.freeze)
+  lazy val statisticsDomainsSeq: Seq[DiscreteTensorDomain] = statisticsDomains.productIterator.map(_.asInstanceOf[DiscreteTensorDomain]).toSeq
+  private var _frozenDomains = false
+  def freezeDomains: Unit = { statisticsDomainsSeq.foreach(_.freeze); _frozenDomains = true }
   //lazy val statisticsVectorLength: Int = statisticsDomains.multiplyInts(_.dimensionSize)
-  lazy val statisticsTensorDimensions: Seq[Int] = statisticsDomainsSeq.map(_.dimensionSize)
+  lazy val statisticsTensorDimensions: Array[Int] = { freezeDomains; statisticsDomainsSeq.map(_.dimensionSize).toArray }
   type StatisticsType <: Statistics
   trait Statistics extends super.Statistics {
     def tensor: Tensor
@@ -119,29 +120,26 @@ trait TensorFamily extends Family {
 trait DotFamily extends TensorFamily {
   //type TemplateType <: DotFamily
   type FamilyType <: DotFamily
-  var _weights: Tensor = null // Dense by default, may be override in sub-traits
-  lazy val defaultWeights = { freezeDomains; newWeightsTypeTensor }
-  def weights = { if (_weights != null) _weights else setWeights(defaultWeights) }
-  def setWeights(w: Tensor) = { _weights = w; _weights }
-  //def newWeightsTypeTensor(default:Double = 0.0): Tensor = Tensor.dense(statisticsTensorDimensions:_*) //(default)
-  def newWeightsTypeTensor: Tensor = Tensor.newDense(statisticsTensorDimensions:_*) //(default)
-  def newDenseTensor: Tensor = Tensor.newDense(statisticsTensorDimensions:_*) //(default)
-  def newSparseTensor: Tensor = Tensor.newSparse(statisticsTensorDimensions:_*) //(default)
-  //def score(s:StatisticsType) = if (s eq null) 0.0 else weights dot s.tensor
+  var _weights: Tensor = null
+  lazy val defaultWeights = { freezeDomains; newWeightsTypeTensor } // What is the use-case here? -akm
+  def weights: Tensor = { if (_weights != null) _weights else setWeights(defaultWeights); _weights }
+  def setWeights(w: Tensor): Unit = _weights = w
+  //def newWeightsTypeTensor(default:Double = 0.0): Tensor = Tensor.dense(statisticsTensorDimensions)
+  def newWeightsTypeTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)  // Dense by default, may be override in sub-traits
+  def newDenseTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)
+  def newSparseTensor: Tensor = Tensor.newSparse(statisticsTensorDimensions)
   def score(t:Tensor): Double = weights dot t
 
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also
     if (f.exists) return // Already exists, don't write it again
     for (d <- statisticsDomainsSeq) d.save(dirname)
-
     val writer = new PrintWriter(new BufferedOutputStream({
       if (gzip)
         new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
       else
         new FileOutputStream(f)
     }))
-
     saveToWriter(writer)
   }
 
@@ -199,7 +197,7 @@ trait DotFamily extends TensorFamily {
 /** A DotTemplate that stores its parameters in a Scalala SparseTensor instead of a DenseTensor
     @author Andrew McCallum */
 trait SparseWeights extends DotFamily {
-  override def newWeightsTypeTensor: Tensor = Tensor.newSparse(statisticsTensorDimensions:_*)
+  override def newWeightsTypeTensor: Tensor = Tensor.newSparse(statisticsTensorDimensions)
   //override def newWeightsTypeTensor(defaultVal:Double): Tensor = new SparseVector(statisticsVectorLength) { default = defaultVal }
 }
 
@@ -210,46 +208,4 @@ trait SparseWeights extends DotFamily {
 //    new SparseHashVector(statisticsVectorLength) { default = defaultVal }
 //}
 
-//trait SparseOuter1Dense1Weights extends DotStatistics2[DiscreteVectorValue,DiscreteVectorValue] {
-//  override lazy val weights: SparseOuter1DenseVector1 = {
-//    freezeDomains
-//    val d1 = statisticsDomains(0)
-//    val d2 = statisticsDomains(1)
-//    new SparseOuter1DenseVector1(d1.dimensionSize, d2.dimensionSize)
-//  }
-//
-//  override def score(s:StatisticsType) = {
-//    if (s eq null) 0.0
-//    else {
-//      val w = weights.inner(s._1.asInstanceOf[DiscreteValue].intValue)
-//      if (w eq null)
-//        0.0
-//      else
-//        w dot s._2
-//    }
-//  }
-//}
-//
-//
-//trait SparseOuter2Dense1Weights extends DotStatistics3[DiscreteVectorValue,DiscreteVectorValue,DiscreteVectorValue] {
-//// This is what we'd really like, but gives incompatible types:
-////   trait SparseOuter2Dense1Weights[S1<:DiscreteValue,S2<:DiscreteValue,S3<:DiscreteVectorValue] {
-//  override lazy val weights: SparseOuter2DenseVector1 = {
-//    freezeDomains
-//    val d1 = statisticsDomains(0)
-//    val d2 = statisticsDomains(1)
-//    val d3 = statisticsDomains(2)
-//    new SparseOuter2DenseVector1(d1.dimensionSize, d2.dimensionSize, d3.dimensionSize)
-//   }
-//
-//  override def score(s:StatisticsType) = {
-//    if (s eq null) 0.0
-//    else {
-//      val w = weights.inner(s._1.asInstanceOf[DiscreteValue].intValue, s._2.asInstanceOf[DiscreteValue].intValue)
-//      if (w eq null)
-//        0.0
-//      else
-//        w dot s._3
-//    }
-//  }
-//}
+

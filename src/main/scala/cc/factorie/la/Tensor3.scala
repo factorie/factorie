@@ -125,14 +125,23 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
   def isDense = false
   def apply(i:Int): Double = apply(i/dim2/dim3, (i/dim3)%dim2, i%dim3)
   override def update(i:Int, j:Int, k:Int, v:Double): Unit = _inners(i*dim2+j).update(j, v)
-  protected def getInner(i:Int, j:Int): Tensor1 = { var in = _inners(i*dim2+j); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
+  protected def getInner(i:Int, j:Int): Tensor1 = { var in = _inners(i*dim2+j); if (in eq null) { in = newTensor1(dim3); _inners(i*dim2+j) = in }; in }
+  protected def getInner(i:Int): Tensor1 = { var in = _inners(i); if (in eq null) { in = newTensor1(dim3); _inners(i) = in }; in }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i), index2(i)).+=(index3(i), incr)
+  override def +=(i1:Int, i2:Int, i3:Int, incr:Double): Unit = getInner(i1, i2).+=(i3, incr)
   override def dot(ds:DoubleSeq): Double = ds match {
     case t:SingletonBinaryTensor3 => apply(t.singleIndex1, t.singleIndex2, t.singleIndex3)
     case t:SingletonTensor3 => apply(t.singleIndex1, t.singleIndex2, t.singleIndex3) * t.singleValue
     case t:Singleton2BinaryLayeredTensorLike3 => { val i = _inners(t.singleIndex1*dim2+t.singleIndex2); if (i ne null) i.dot(t.inner) else 0.0 }
     case t:Singleton2LayeredTensorLike3 => { val i = _inners(t.singleIndex1*dim2+t.singleIndex2); if (i ne null) i.dot(t.inner) * t.singleValue1 * t.singleValue2 else 0.0 }
     case t:SparseBinaryTensor3 => { /*println("Dense2LayeredTensorLike3 this.length="+length+" t.length="+t.length+" dims="+t.dimensions.toSeq);*/ var s = 0.0; t.foreachActiveElement((i,v) => s += apply(i)); s }
+  }
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:SingletonBinaryTensor3 => +=(t.singleIndex1, t.singleIndex2, t.singleIndex3, f)
+    case t:SingletonTensor3 => +=(t.singleIndex1, t.singleIndex2, t.singleIndex3, f * t.singleValue)
+    case t:Singleton2LayeredTensorLike3 => { val in = getInner(t.singleIndex1, t.singleIndex2); in.+=(t.inner, f * t.singleValue1 * t.singleValue2) }
+    case t:Dense2LayeredTensorLike3 => { val len = t._inners.length; var i = 0; while (i < len) { val in = t._inners(i); if (in ne null) getInner(i).+=(in, f); i += 1 }}
+    case t:SparseBinaryTensor3 => { var s = 0.0; t.foreachActiveElement((i,v) => +=(i, 1.0)) }
   }
 }
 // TODO Consider also Dense1LayeredTensor3 with an InnerTensor2

@@ -53,6 +53,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryLayeredTensorLike2 => t.=+(_values, f)
     case t:SingletonLayeredTensorLike2 => t.=+(_values, f)
+    case t:DenseLayeredTensorLike2 => { val len = t.dim1; var i = 0; while (i < len) { val inner = t.inner(i); if (inner ne null) inner.=+(_values, i*dim2, f); i += 1 } }
     case t:DoubleSeq => super.+=(t, f)
   }
 }
@@ -98,7 +99,7 @@ class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensor
 
 trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def newTensor1:Int=>Tensor1
-  private var _inners = new Array[Tensor1](dim1) // Array.fill(dim1)(newTensor1(dim2))
+  private var _inners = new Array[Tensor1](dim1) // var because may need to grow in Growable version
   def activeDomain1 = { val a = new Array[Int](dim1); var i = 0; var j = 0; while (i < dim1) { if (_inners(i) ne null) { a(j) = i; j += 1 }; i += 1 }; new TruncatedArrayIntSeq(a, j) }
   def activeDomain2 = new RangeIntSeq(0, dim2) // This could perhaps be more sparse
   def activeDomain = { val b = new IntArrayBuffer; for (i <- 0 until dim1; j <- 0 until dim2) { if (apply(i,j) != 0.0) b += singleIndex(i,j) }; new ArrayIntSeq(b.toArray) } // Not very efficient; use _inner().activeDomain intead
@@ -110,6 +111,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def isDense = false
   override def update(i:Int, j:Int, v:Double): Unit = getInner(i).update(j, v)
   def update(i:Int, t:Tensor1): Unit = _inners(i) = t
+  def inner(i:Int): Tensor1 = _inners(i)
   protected def getInner(i:Int): Tensor1 = { var in = _inners(i); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i)).+=(index2(i), incr)
   /*override def +=(ds:DoubleSeq): Unit = ds match {

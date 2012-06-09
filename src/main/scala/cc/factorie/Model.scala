@@ -106,6 +106,14 @@ trait Model {
   def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Seq[F]]
   def familiesOfClass[F<:Family]()(implicit m:Manifest[F]): Seq[F] = familiesOfClass[F](m.erasure.asInstanceOf[Class[F]])
 
+  // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
+  //def weightsTensor: ConcatenatedTensor = new ConcatenatedTensor(familiesOfClass[DotFamily].map(_.weights))
+  def weightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t }
+  //def newDenseWeightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.newDenseTensor); t }
+  //def newSparseWeightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.newSparseTensor); t }
+  def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(_.newDenseTensor)
+  def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(_.newSparseTensor)
+
   // Some Model subclasses that have a fixed set of factors and variables can override the methods below
   // TODO Consider making a Model trait for these methods.  Yes!
   def variables: Iterable[Variable] = throw new Error("Model class does not implement method 'variables': "+ this.getClass.getName)
@@ -168,11 +176,6 @@ class TemplateModel(initialTemplates:Template*) extends Model {
   override def families = _templates
   def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = _templates.foreach(_.limitDiscreteValuesIteratorAsIn(variables))
   def factorsWithDuplicates(variable:Variable): Iterable[Factor] = templates.flatMap(template => template.factorsWithDuplicates(variable))
-  // TODO Consider moving these to Model?  but
-  //def weightsTensor: ConcatenatedTensor = new ConcatenatedTensor(familiesOfClass[DotFamily].map(_.weights))
-  def weightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t }
-  def newDenseWeightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.newDenseTensor); t }
-  def newSparseWeightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.newSparseTensor); t }
   
   def save(dirname:String, gzip: Boolean = false): Unit = {
     import java.io.File

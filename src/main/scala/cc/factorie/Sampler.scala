@@ -165,7 +165,7 @@ abstract class SettingsGreedyMaximizer[C](theModel:Model, theObjective:Model = n
     Because SampleRank requires Proposal objects, we use this intsead of GibbsSampler.
     @see generative.GibbsSampler
     @author Andrew McCallum */
-class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[V](model, objective) {
+class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsSampler[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 

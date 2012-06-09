@@ -27,6 +27,7 @@ trait Tensor extends MutableDoubleSeq {
   def activeDomain: IntSeq
   def activeDomains: Array[IntSeq]
   def isDense: Boolean
+  def dimensionsMatch(t:Tensor): Boolean = dimensions.toSeq equals t.dimensions.toSeq
   def activeDomainSize: Int = activeDomain.length // Should be overridden for efficiency in many subclasses
   /** The default value at indices not covered by activeDomain.  Subclasses may override this  */
   def defaultValue: Double = 0.0 // TODO This is not actually yet properly used by subclasses
@@ -42,8 +43,8 @@ trait Tensor extends MutableDoubleSeq {
   def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
   def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
   def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
-  def *(v:Double): Tensor = new TensorTimesScalar(this, v) // TODO Should I use this.copy here?
-  def /(v:Double): Tensor = new TensorTimesScalar(this, 1.0/v) // TODO Should I use this.copy here?
+  def *(v:Double): Tensor = new TensorTimesScalar(this.copy, v) // TODO Should I use this.copy here?
+  def /(v:Double): Tensor = new TensorTimesScalar(this.copy, 1.0/v) // TODO Should I use this.copy here?
   def +(that:Tensor): Tensor = { val t = this.copy; t += that; t }
   def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t }
   def *(that:Tensor): Tensor = throw new Error("Not yet implemented")
@@ -71,6 +72,12 @@ object Tensor {
     case Seq(d1, d2, d3) => new DenseTensor3(d1, d2, d3)
     case Seq(d1, d2, d3, d4) => new DenseTensor4(d1, d2, d3, d4)
   }
+  def newDense(dims:Array[Int]): Tensor = dims.length match {
+    case 1 => new DenseTensor1(dims(0))
+    case 2 => new DenseTensor2(dims(0), dims(1))
+    case 3 => new DenseTensor3(dims(0), dims(1), dims(2))
+    case 4 => new DenseTensor4(dims(0), dims(1), dims(2), dims(3))
+  }
   def newSparse(t:Tensor): Tensor = t match {
     case t:Tensor1 => new SparseTensor1(t.dim1)
     case t:Tensor2 => new DenseLayeredTensor2(t.dim1, t.dim2, (dim1:Int) => new SparseTensor1(dim1))
@@ -82,6 +89,12 @@ object Tensor {
     case Seq(d1, d2) => new DenseLayeredTensor2(d1, d2, new SparseTensor1(_))
     case Seq(d1, d2, d3) => new Dense2LayeredTensor3(d1, d2, d3, new SparseTensor1(_))
     case Seq(d1, d2, d3, d4) => new Dense3LayeredTensor4(d1, d2, d3, d4, new SparseTensor1(_))
+  }
+  def newSparse(dims:Array[Int]): Tensor = dims.length match {
+    case 1 => new SparseTensor1(dims(0))
+    case 2 => new DenseLayeredTensor2(dims(0), dims(1), new SparseTensor1(_))
+    case 3 => new Dense2LayeredTensor3(dims(0), dims(1), dims(2), new SparseTensor1(_))
+    case 4 => new Dense3LayeredTensor4(dims(0), dims(1), dims(2), dims(3), new SparseTensor1(_))
   }
 
   // Support for dot inner products with dense tensors
@@ -415,6 +428,10 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = _.newSparseTensor) extends
     override def default(f:DotFamily) = { val t = newTensor(f); this(f) = t; t }
   }
   def dim1: Int = _map.values.map(_.length).sum
+  override def dimensionsMatch(t:Tensor): Boolean = t match {
+    case t:WeightsTensor => _map.keys.toSeq equals t._map.keys.toSeq
+    case _ => false
+  }
   def apply(i:Int): Double = throw new Error("Method apply not defined for WeightTensors.")
   def activeDomain1: IntSeq = throw new Error("Method activeDomain1 not defined for WeightTensors.")
   def isDense = false
@@ -425,6 +442,7 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = _.newSparseTensor) extends
   protected def sumOverTensors(f:Tensor=>Double): Double = { var s = 0.0; _map.values.foreach(s += f(_)); s }
   override def oneNorm: Double = sumOverTensors(_.twoNorm)
   override def twoNormSquared: Double = sumOverTensors(_.twoNormSquared)
+  //override def toArray: Array[Double] = throw new Error("Cannot be implemented.")
   override def toArray: Array[Double] = { val a = new Array[Double](dim1); var offset = 0; _map.values.foreach(t => { System.arraycopy(t.asArray, 0, a, offset, t.length); offset += t.length }); a }
   override def copy: WeightsTensor = { val t = new WeightsTensor(newTensor); _map.keys.foreach(k => t(k) = apply(k).copy); t }
   override def different(t:DoubleSeq, threshold:Double): Boolean = t match {
@@ -440,4 +458,8 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = _.newSparseTensor) extends
   override def dot(t:DoubleSeq): Double = t match {
     case t:WeightsTensor => { var s = 0.0; for (k <- t._map.keys) { val t2 = apply(k); if (t2 ne null) s += t2 dot t.apply(k) }; s }
   }
+  override def toString: String = _map.keys.map((f:DotFamily) => {
+    val tensor = this(f)
+    f.defaultFactorName+" "+tensor.getClass+" dims="+tensor.dimensions.mkString(",")+" contents:"+tensor.toString
+  }).mkString("\n")
 }

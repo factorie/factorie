@@ -4,16 +4,14 @@ import cc.factorie.la._
 
 /** Repeatedly call "step" until "isConverged" is true. */
 trait GradientOptimizer {
-  def weights: Tensor
-  def step(gradient:Tensor, value:Double, margin:Double): Unit
+  //def step(gradient:Tensor, value:Double, margin:Double): Unit
+  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit
   def isConverged: Boolean
   def reset(): Unit
 }
 
-class StepwiseGradientAscent(val weights:Tensor, var rate: Double = 1.0) extends GradientOptimizer {
-  def this(model:TemplateModel) = this(model.weightsTensor, 1.0)
-  def this(model:TemplateModel, rate:Double) = this(model.weightsTensor, rate)
-  def step(gradient:Tensor, value:Double, margin:Double): Unit = {
+class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
+  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     weights.+=(gradient, rate)
     rate = nextRate(rate)
   }
@@ -22,9 +20,7 @@ class StepwiseGradientAscent(val weights:Tensor, var rate: Double = 1.0) extends
   def reset(): Unit = {}
 }
 
-class LineSearchGradientAscent(val weights:Tensor, var stepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
-  def this(model:TemplateModel) = this(model.weightsTensor, 1.0)
-  def this(model:TemplateModel, stepSize:Double) = this(model.weightsTensor, stepSize)
+class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged
   var gradientTolerance = 0.001
@@ -37,7 +33,7 @@ class LineSearchGradientAscent(val weights:Tensor, var stepSize: Double = 1.0) e
     _isConverged = false
     oldValue = Double.NaN
   }
-  def step(gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     if (_isConverged) return
     // Check for convergence by value
     if (2.0 * math.abs(value - oldValue) < valueTolerance * (math.abs(value) + math.abs(oldValue) + eps)) {
@@ -56,16 +52,16 @@ class LineSearchGradientAscent(val weights:Tensor, var stepSize: Double = 1.0) e
     if (lineOptimizer eq null) {
       // Before giving the BackTrackLineOptimizer a line direction to search, ensure it isn't too steep
       if (gradientTwoNorm > gradientNormMax) gradient.*=(gradientNormMax / gradientTwoNorm)
-      lineOptimizer = new BackTrackLineOptimizer2(weights, gradient, gradient, stepSize)
+      lineOptimizer = new BackTrackLineOptimizer2(gradient, gradient, stepSize)
       oldValue = value
     }
-    lineOptimizer.step(gradient, value, margin)
+    lineOptimizer.step(weights, gradient, value, margin)
     if (!lineOptimizer.isConverged) return
     lineOptimizer = null // So we create a new one next time
   }
 }
 
-class BackTrackLineOptimizer2(val weights:Tensor, val gradient:Tensor, val line:Tensor, val initialStepSize:Double = 1.0) extends GradientOptimizer with FastLogging {
+class BackTrackLineOptimizer2(val gradient:Tensor, val line:Tensor, val initialStepSize:Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged
   def stepSize = alam
@@ -76,7 +72,7 @@ class BackTrackLineOptimizer2(val weights:Tensor, val gradient:Tensor, val line:
   var ALF = 1e-4
   val EPS = 3.0e-12
   val stpmax = 100.0
-  val origWeights = weights.copy
+  var origWeights: Tensor = null //weights.copy
 
   var oldValue = Double.NaN
   var origValue = Double.NaN
@@ -89,6 +85,7 @@ class BackTrackLineOptimizer2(val weights:Tensor, val gradient:Tensor, val line:
 
   def reset(): Unit = {
     _isConverged = false
+    origWeights = null
     oldValue = Double.NaN
     origValue = Double.NaN
     slope = Double.NaN
@@ -99,14 +96,16 @@ class BackTrackLineOptimizer2(val weights:Tensor, val gradient:Tensor, val line:
     alam2 = 0.0
   }
   
-  def step(gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     logger.warn("BackTrackLineOptimizer step value="+value)
     // If first time in, do various initializations
     if (slope.isNaN) {
+      origWeights = weights.copy
       // Set the slope
       val sum = gradient.twoNorm
       if (sum > gradientNormMax) gradient *= (gradientNormMax / sum) // If gradient is too steep, bring it down to gradientNormMax
       slope = gradient dot line
+      logger.warn("BackTrackLineOptimizer slope="+slope)
       if (slope <= 0.0) throw new Error("Slope=" + slope + " is negative or zero.")
 
       // Set alamin
@@ -114,6 +113,8 @@ class BackTrackLineOptimizer2(val weights:Tensor, val gradient:Tensor, val line:
       // Largest step size that triggers this threshold is saved in alamin
       var test = 0.0;
       var temp = 0.0
+      if (!weights.dimensionsMatch(line)) throw new Error("line and weights do not have same dimensionality.")
+      // Do the check above because toArray will yield non-matching results if called on a WeightsTensor that has missing keys.
       val lineA = line.toArray
       val weightsA = weights.toArray
       var i = 0; val len = lineA.length
@@ -161,6 +162,7 @@ class BackTrackLineOptimizer2(val weights:Tensor, val gradient:Tensor, val line:
     }
     assert(alam != oldAlam)
     // Here we actually make the step, updating the weights in the direction of the line
+    logger.warn("BackTrackLineOptimizer line factor="+(alam-oldAlam))
     weights.+=(line, alam - oldAlam)
     // Check for convergence
     if (alam < alamin || origWeights.different(weights, absTolx)) {
@@ -176,8 +178,7 @@ class BackTrackLineOptimizer2(val weights:Tensor, val gradient:Tensor, val line:
 }
 
 
-class ConjugateGradient2(val weights:Tensor, val initialStepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
-  def this(model:TemplateModel) = this(model.weightsTensor, 1.0)
+class ConjugateGradient2(val initialStepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged
    
@@ -204,7 +205,7 @@ class ConjugateGradient2(val weights:Tensor, val initialStepSize: Double = 1.0) 
     _isConverged = false
   }
 
-  def step(gradient:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     if (_isConverged) return
     
     // If this is our first time in, then initialize
@@ -216,8 +217,8 @@ class ConjugateGradient2(val weights:Tensor, val initialStepSize: Double = 1.0) 
     }
     
     // Take a step in the current search direction, xi
-    if (lineOptimizer eq null) lineOptimizer = new BackTrackLineOptimizer2(weights, gradient, xi, stepSize)
-    lineOptimizer.step(xi, value, margin)
+    if (lineOptimizer eq null) lineOptimizer = new BackTrackLineOptimizer2(gradient, xi, stepSize)
+    lineOptimizer.step(weights, xi, value, margin)
     // If the lineOptimizer has not yet converged, then don't yet do any of the ConjugateGradient-specific things below
     if (!lineOptimizer.isConverged) return
     lineOptimizer = null // So we create a new one next time around

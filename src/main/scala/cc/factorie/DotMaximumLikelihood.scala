@@ -3,10 +3,11 @@ import cc.factorie.la._
 import cc.factorie.optimize._
 
 class DotMaximumLikelihood(val model:TemplateModel, val optimizer:GradientOptimizer) {
-  def this(model:TemplateModel) = this(model, new ConjugateGradient2(model))
+  def this(model:TemplateModel) = this(model, new ConjugateGradient2)
   var gaussianPriorVariance = 10.0
   var numRepeatConvergences = 2 // Number of times to re-run the optimizer to convergence
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
+  val weights = model.weightsTensor
   var logLikelihood: Double = Double.NaN
   // TODO For now, this only handles the case of IID DiscreteVars
   def process[V<:DiscreteVarWithTarget](variables: Iterable[V], numIterations:Int = Int.MaxValue): Unit = {
@@ -35,10 +36,10 @@ class DotMaximumLikelihood(val model:TemplateModel, val optimizer:GradientOptimi
 	  // Put +constraints into gradient
 	  gradient += constraints
 	  // Put prior into gradient and value
-	  gradient += (optimizer.weights, -1.0/gaussianPriorVariance)
-	  logLikelihood += -0.5 * 1.0/gaussianPriorVariance * optimizer.weights.dot(optimizer.weights)
+	  gradient += (weights, -1.0/gaussianPriorVariance)
+	  logLikelihood += -0.5 * 1.0/gaussianPriorVariance * weights.dot(weights)
 	  // Use gradient and value to make a step of optimization
-	  optimizer.step(gradient, logLikelihood, Double.NaN)
+	  optimizer.step(weights, gradient, logLikelihood, Double.NaN)
 	  if (optimizer.isConverged) { convergences += 1; optimizer.reset(); println("DotMaximumLikelihood converged "+convergences) }
 	  iterations += 1
 	}
