@@ -15,14 +15,14 @@
 
 
 package cc.factorie.example
+import cc.factorie._
+import cc.factorie.optimize._
+import cc.factorie.app.chain._
+import cc.factorie.app.nlp._
 import scala.xml._
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
-import cc.factorie._
-import cc.factorie.app.chain._
-import cc.factorie.app.nlp._
-//import cc.factorie.er._
 
 object Football {
   val printLexiconsOnly = false
@@ -153,7 +153,7 @@ object Football {
     
     // Train and print diagnostics
     val labels = documents.map(_.tokens).flatMap(seq => seq.map(_.attr[Label]))
-    val learner = new VariableSettingsSampler[Label](model,objective) with SampleRank with GradientAscentUpdates {
+    val sampler = new GibbsSampler(model, objective) {
       override def postIterationHook(): Boolean = {
         println("Iteration "+iterationCount)
         var docCount = 1
@@ -167,6 +167,7 @@ object Football {
         true
       }
     }
+    val learner = new SampleRank(sampler, new StepwiseGradientAscent)
     learner.processAll(labels, 40)
   }
   

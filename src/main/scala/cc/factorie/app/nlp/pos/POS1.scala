@@ -15,6 +15,7 @@
 package cc.factorie.app.nlp.pos
 
 import cc.factorie._
+import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 
 class POS1 {
@@ -145,7 +146,7 @@ object POS1 extends POS1 {
 
       // Train for 5 iterations
       (trainLabels ++ testLabels).foreach(_.setRandomly())
-      val learner = new VariableSettingsSampler[PosLabel](PosModel, HammingLossObjective) with SampleRank with GradientAscentUpdates
+      val learner = new SampleRank(new GibbsSampler(PosModel, HammingLossObjective), new MIRA)
       val predictor = new VariableSettingsSampler[PosLabel](PosModel)
       for (i <- 1 until 2) {
         learner.processAll(trainLabels)

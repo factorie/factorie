@@ -21,6 +21,7 @@ import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
+import cc.factorie.optimize._
 
 /** A raw document classifier without using any of the facilities of cc.factorie.app.classify.document,
  and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */
@@ -78,12 +79,10 @@ object DocumentClassifier2 {
     println(model.factors(Seq(trainVariables.head)))
 
     // Train and test
-    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
-    val predictor = new VariableSettingsSampler[Label](model)
-    learner.learningRate = 1.0
+    val learner = new SampleRank(new GibbsSampler(model, objective), new MIRA)
+    val predictor = new GibbsSampler(model)
     for (i <- 0 until 10) {
       learner.processAll(trainVariables)
-      learner.learningRate *= 0.9
       predictor.processAll(testVariables)
       println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
       println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))

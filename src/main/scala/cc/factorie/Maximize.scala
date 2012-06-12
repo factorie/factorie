@@ -20,7 +20,11 @@ import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
     The "infer" method returns a summary holding the maximizing assignment, but does not change the current variable values.
     By convention, subclass-implemented "apply" methods should change the current variable values to those that maximize;
     this convention differs from other Infer instances, which do not typically change variable values.  */
-trait Maximize extends Infer
+trait Maximize extends Infer {
+  def maximize(vs:Iterable[Variable], model:Model, summary:Summary[Marginal] = null) = infer(vs, model, summary).get.setToMaximize(null)
+  // TODO Consider adding the following
+  //def twoBest(vs:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): (Summary[Marginal], Summary[Marginal])
+}
 
 
 /* A suite containing various recipes to maximize the value of variables to maximize some objective, 

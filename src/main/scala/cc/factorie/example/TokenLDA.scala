@@ -1,11 +1,12 @@
 package cc.factorie.example
 
+import cc.factorie._
+import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import cc.factorie.app.nlp.ner._
 import cc.factorie.app.classify._
 import cc.factorie.app.strings.Stopwords
-import cc.factorie._
 //import bp.optimized.{FullBeam, BeamSearch}
 import ner.ChainNerLabel
 
@@ -152,7 +153,7 @@ object TokenLDA {
            i += 1
          }
        })
-       val learner2 = new VariableSettingsSampler[ChainNerLabel](MyModel, obj) with SampleRank with AROWUpdates
+       val learner2 = new SampleRank(new GibbsSampler(MyModel, obj), new MIRA)
        learner2.processAll(trainLabels, 5)
        val ld = d.categories.filter(_.length > 2).map(_.substring(2))
        //val searcher = new BeamSearch with FullBeam

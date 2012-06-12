@@ -70,6 +70,24 @@ class SampleRank2[C](val model:Model, sampler:ProposalSampler[C], optimizer:Grad
     } else ... */
 
 }
+
+/*
+  def shouldUpdate: Boolean = {
+    if (amIMetropolis) {
+      val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
+      !(changeProposal.modelScore * changeProposal.objectiveScore > 0 || changeProposal.objectiveScore == 0)      
+    } else {
+      // the objective function has some preference (e.g. we don't have an unlabeled example here)
+      (bestObjective1.objectiveScore > bestObjective2.objectiveScore || bestObjective1.objectiveScore > bestModel1.objectiveScore) &&
+      // the model got it wrong, or isn't confident enough about being right
+      // TODO should this be based on acceptanceScore instead of modelScore?
+      ((bestModel1 ne bestObjective1) || math.abs(bestModel1.modelScore - bestModel2.modelScore) < learningMargin)
+    }
+  }
+
+ */
+
+
 //
 //// TODO Shouldn't really be called "Perceptron".  This is for any method that gets a gradient by a different of truth-predicted
 //class Perceptron[C<:VarWithTargetValue](maximize:C=>Unit, updater:ChangeWeights) {

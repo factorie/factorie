@@ -14,6 +14,7 @@
 
 package cc.factorie.example
 import cc.factorie._
+import cc.factorie.optimize._
 import java.io.File
 
 /** Simple, introductory linear-chain CRF for named-entity recognition,
@@ -84,7 +85,7 @@ object ChainNER2b {
     
     // Train and test
     (trainLabels ++ testLabels).foreach(_.setRandomly())
-    val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
+    val learner = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent)
     val predictor = new VariableSettingsSampler[Label](model)
     for (i <- 1 to 4) {
       println("Iteration "+i) 

@@ -17,6 +17,7 @@ package cc.factorie.example
 import java.io.File
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
+import cc.factorie.optimize._
 import cc.factorie.app.classify
 
 object DocumentClassifier1 {
@@ -69,12 +70,10 @@ object DocumentClassifier1 {
     //println(model.factors(trainVariables.head))
 
     // Train and test
-    val learner = new VariableSettingsSampler[Label](model) with SampleRank with GradientAscentUpdates
-    val predictor = new VariableSettingsSampler[Label](model)
-    learner.learningRate = 1.0
+    val learner = new SampleRank(new GibbsSampler(model, HammingLossObjective), new MIRA)
+    val predictor = new GibbsSampler(model)
     for (i <- 0 until 10) {
       learner.processAll(trainVariables)
-      learner.learningRate *= 0.9
       predictor.processAll(testVariables)
       println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
       println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))

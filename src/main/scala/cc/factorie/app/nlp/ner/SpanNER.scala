@@ -15,6 +15,7 @@
 package cc.factorie.app.nlp.ner
 
 import cc.factorie._
+import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import cc.factorie.util.DefaultCmdOptions
@@ -263,9 +264,9 @@ class SpanNER {
     if (verbose) trainDocuments.take(10).map(_.tokens).flatten.take(500).foreach(token => { print(token.string+"\t"); printFeatures(token) })
     
     // The learner
-    val learner = new TokenSpanSampler(model, objective) with SampleRank with ConfidenceWeightedUpdates {
+    val sampler = new TokenSpanSampler(model, objective) {
+      //logLevel = 1
       temperature = 0.01
-      logLevel = 1
       override def preProcessHook(t:Token): Token = { 
         super.preProcessHook(t)
         if (t.isCapitalized) { // Skip tokens that are not capitalized
@@ -280,6 +281,7 @@ class SpanNER {
         super.proposalsHook(proposals)
       }
     }
+    val learner = new SampleRank(sampler, new MIRA)
     
     
     // Train!

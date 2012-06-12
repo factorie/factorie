@@ -2,15 +2,15 @@ package cc.factorie
 import cc.factorie.generative.{GenerativeFactor,GenerativeModel}
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
-class GibbsSampler(val model:Model, val objective:Model = null) extends ProposalSampler[Variable] {
+class TypedGibbsSampler[V<:Variable](val model:Model, val objective:Model = null) extends ProposalSampler[V] {
   val handlers = new ArrayBuffer[GibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVarGibbsSamplerHandler) //, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler
   handlers ++= defaultHandlers
   val cacheClosures = true
-  def closures = new HashMap[Variable, GibbsSamplerClosure]
+  def closures = new HashMap[V, GibbsSamplerClosure]
   val doProcessByHandlers = model.isInstanceOf[GenerativeModel]
-  override def process1(v:Variable): DiffList = if (doProcessByHandlers) processByHandlers(v) else processByProposals(v)
-  def processByHandlers(v:Variable): DiffList = {
+  override def process1(v:V): DiffList = if (doProcessByHandlers) processByHandlers(v) else processByProposals(v)
+  def processByHandlers(v:V): DiffList = {
     val d = newDiffList
     // If we have a cached closure, just use it and return
     if (cacheClosures && closures.contains(v)) { closures(v).sample(d); return d }
@@ -29,7 +29,7 @@ class GibbsSampler(val model:Model, val objective:Model = null) extends Proposal
     if (!done) throw new Error("GibbsSampler: No sampling handler found for "+factors)
     d
   }
-  def processByProposals(v:Variable): DiffList = {
+  def processByProposals(v:V): DiffList = {
     val props = proposals(v)
     proposalsHook(props)
     val proposal = props.size match {
@@ -42,7 +42,7 @@ class GibbsSampler(val model:Model, val objective:Model = null) extends Proposal
     proposal.diff
   }
 
-  def proposals(v:Variable): Seq[Proposal] = model match {
+  def proposals(v:V): Seq[Proposal] = model match {
     case m:GenerativeModel => throw new Error("Not yet implemented")
     case m:Model => v match {
       case v:DiscreteVariable => proposals(v)
@@ -65,8 +65,10 @@ class GibbsSampler(val model:Model, val objective:Model = null) extends Proposal
   }
 }
 
+class GibbsSampler(model:Model, objective:Model = null) extends TypedGibbsSampler[Variable](model, objective)
+
 trait GibbsSamplerHandler {
-  def sampler(v:Variable, factors:Seq[Factor], sampler:GibbsSampler): GibbsSamplerClosure
+  def sampler(v:Variable, factors:Seq[Factor], sampler:TypedGibbsSampler[_]): GibbsSamplerClosure
 }
 trait GibbsSamplerClosure {
   def sample(implicit d:DiffList = null): Unit
@@ -77,7 +79,7 @@ object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
   class Closure(val variable:MutableVar, val factor:GenerativeFactor) extends GibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = variable.set(factor.sampledValue.asInstanceOf[variable.Value])
   }
-  def sampler(v:Variable, factors:Seq[Factor], sampler:GibbsSampler): GibbsSamplerClosure = {
+  def sampler(v:Variable, factors:Seq[Factor], sampler:TypedGibbsSampler[_]): GibbsSamplerClosure = {
     factors match {
       case List(factor:GenerativeFactor) => {
         v match {

@@ -13,11 +13,11 @@
    limitations under the License. */
 
 package cc.factorie.example
-import java.io.File
 import cc.factorie._ 
-import cc.factorie.er._
+import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
+import java.io.File
 
 /** Simple, introductory linear-chain CRF for named-entity recognition,
     using FACTORIE's "entity-relationship" language to define model structure.
@@ -63,7 +63,7 @@ object ChainNER1a {
     val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
     val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly())
-    val learner = new VariableSettingsSampler[ChainNerLabel](model) with SampleRank with GradientAscentUpdates
+    val learner = new SampleRank(new GibbsSampler(model, HammingLossObjective), new StepwiseGradientAscent)
     val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
     for (iteration <- 1 until 5) {
       learner.processAll(trainLabels)

@@ -17,7 +17,6 @@
 package cc.factorie
 import scala.reflect.Manifest
 import scala.collection.mutable.{ListBuffer,ArrayBuffer,HashMap,PriorityQueue}
-//import scalala.tensor.Vector
 import cc.factorie.util.{Hooks0,Hooks1}
 
 // How to think about Proposals and MCMC:
@@ -45,13 +44,14 @@ trait Sampler[C] {
   var changeCount = 0
   /** Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount. */
   final def process(context:C): DiffList = {
+    val processingWithoutContext = (null == context)
     val c = preProcessHook(context)
     // The preProcessHook might return null to indicate it doesn't want to sample this context, so check for it:
     if (c == null && !processingWithoutContext) return null // TODO should we return newDiffList here instead?
     val d = process1(c)
     processCount += 1
     postProcessHook(c, d)
-    diffHook(d)
+    //diffHook(d)
     if (null != d && d.size > 0) changeCount += 1
     d
   }
@@ -64,18 +64,19 @@ trait Sampler[C] {
   /** The underlying protected method that actually does the work.  Use this.newDiffList to optionally create returned DiffList.
       Needs to be defined in subclasses. */
   def process1(context:C): DiffList // TODO Why isn't this 'protected'?  It should be... Oh, I see, GenericSampler needs to call this, but perhaps it should be removed.
-  protected final def processN(contexts:Iterable[C]): Unit = { 
+  final def processAll(contexts:Iterable[C]): Unit = { 
     contexts.foreach(process(_))
     iterationCount += 1
     postIterationHooks
     if (!postIterationHook) return 
   }
-  def processAll(contexts:Iterable[C], numIterations:Int = 1): Unit = for (i <- 0 until numIterations) processN(contexts)
-  private var processingWithoutContext = false
-  def process(count:Int): Unit = {
-    processingWithoutContext = true // examined in process()
+  final def processAll(contexts:Iterable[C], numIterations:Int): Unit = for (i <- 0 until numIterations) processAll(contexts)
+  final def process(context:C, repeat:Int): Unit = for (i <- 0 until repeat) process(context)
+  //private var processingWithoutContext = false
+  final def process(count:Int): Unit = {
+    //processingWithoutContext = true // examined in process()
     for (i <- 0 to count) process(null.asInstanceOf[C]) // TODO Why is this cast necessary?;
-    processingWithoutContext = false
+    //processingWithoutContext = false
   }
  
   // Hooks
@@ -85,7 +86,7 @@ trait Sampler[C] {
   /** Call just after each step of sampling. */
   def postProcessHook(context:C, difflist:DiffList): Unit = {}
   /** An alternative to postProcessHook that does not require the type C. */ // TODO Really have both?  Remove 'context:C' from postProcessHook?
-  def diffHook(difflist:DiffList): Unit = {}
+  //def diffHook(difflist:DiffList): Unit = {}
   /** Called after each iteration of sampling the full list of variables.  Return false if you want sampling to stop early. */
   def postIterationHook: Boolean = true
   def postIterationHooks = new Hooks0
@@ -183,6 +184,7 @@ class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model, ob
   def settings(v:V): SettingIterator = v.settings
 }
 
+// TODO Remove and recommend GibbsSampler instead
 class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
   def settings(variables:Seq[V]): SettingIterator = new SettingIterator {
     val vs = variables.map(_.settings).toList
@@ -226,7 +228,7 @@ class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model = 
   }
 }
 
-/* Besag's Iterated Conditional Modes */
+// TODO Rename IteratedConditionalModes /* Besag's Iterated Conditional Modes */
 class VariableSettingsGreedyMaximizer[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsGreedyMaximizer[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }

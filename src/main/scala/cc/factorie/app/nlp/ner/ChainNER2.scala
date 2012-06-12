@@ -14,6 +14,7 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
+import cc.factorie.optimize._
 import app.strings._
 import bp._
 import bp.specialized.Viterbi
@@ -548,7 +549,7 @@ class ChainNer2 {
 
       // Train primary (independent classifier) model
       // Train secondary (markov) model
-      val learner1 = new VariableSettingsSampler[ChainNerLabel](model, objective) with SampleRank with AROWUpdates { temperature = 0.01 }
+      val learner1 = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent)
       //val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       val predictor1 = new VariableSettingsSampler[ChainNerLabel](model) {temperature=0.01}
 
@@ -607,7 +608,7 @@ class ChainNer2 {
 	} else {
       
       // Train secondary (markov) model
-      	val learner = new VariableSettingsSampler[ChainNerLabel](model2, objective) with SampleRank with AROWUpdates { temperature = 0.01 }
+      	val learner = new SampleRank(new GibbsSampler(model2, objective), new MIRA)
       //val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       	val predictor = new VariableSettingsSampler[ChainNerLabel](model2) {temperature=0.01}
 

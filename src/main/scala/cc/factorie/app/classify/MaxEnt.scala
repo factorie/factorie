@@ -14,7 +14,7 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
-import cc.factorie.er._
+import cc.factorie.optimize._
 import cc.factorie.la.Tensor
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 
@@ -23,14 +23,11 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
   var learningRateDecay = 0.9
   def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)
-    val learner = new VariableSettingsSampler[L](cmodel, HammingLossObjective) with SampleRank with GradientAscentUpdates {
+    val sampler = new GibbsSampler(cmodel, HammingLossObjective) {
       override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.head // which proposal is picked is irrelevant, so make it quick
     }
-    learner.learningRate = 1.0
-    for (i <- 0 until iterations) {
-      learner.processAll(il)
-      learner.learningRate *= learningRateDecay
-    }
+    val learner = new SampleRank(sampler, new MIRA)
+    learner.processAll(il, iterations)
     new Classifier[L] { val model = cmodel; val labelDomain = il.head.domain }
   }
 }

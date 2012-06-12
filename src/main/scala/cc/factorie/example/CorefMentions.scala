@@ -16,9 +16,10 @@
 
 package cc.factorie.example
 
+import cc.factorie._
+import cc.factorie.optimize._
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie._
 
 /** A simple coreference engine on toy data.  
     Demonstrates the use of RefVariable and SetVariable for representing mentions and entities. */
@@ -176,13 +177,13 @@ object CorefMentionsDemo {
         }
       })
 
-      var sampler = new MHSampler[Null](model) with SampleRank with ConfidenceWeightedUpdates {
+      var sampler = new MHSampler[Null](model) {
         temperature = 0.001
         override val objective = objective1
-        def propose(context:Null)(implicit difflist:DiffList) : Double = {
+        def propose(context:Null)(implicit difflist:DiffList): Double = {
           // Pick a random mention
           val m = mentionList.sampleUniformly(cc.factorie.random)
-          //println("CorefMentions MHPerceptronLearner mention="+m)
+          //println("CorefMentions MHSampler mention="+m)
           // Pick a random place to move it, either an existing Entity or a newly created one
           var e: Entity = null
           // Pick an existing entity to move it to
@@ -202,9 +203,10 @@ object CorefMentionsDemo {
           // log-Q-ratio shows that forward and backward jumps are equally likely
           return 0.0
         }
-        override def postProcessHook(context:Null, difflist:DiffList) : Unit = {
-          super.postProcessHook(context, difflist)
-          if (processCount % 500 == 0) {
+        override def postProposalHook(difflist:DiffList) : Unit = {
+          super.postProposalHook(difflist)
+          //println("CorefMentions postProcessHook")
+          if (proposalsCount % 500 == 0) {
             //learningRate *= .9
             // TODO put back numUpdates   System.out.println("UPS: " + numUpdates);
 
@@ -216,10 +218,11 @@ object CorefMentionsDemo {
           }
         }
       }
+      val learner = new SampleRank(sampler, new MIRA)
 
       // Sample and learn, providing jump function, temperature, learning rate, #iterations, and diagnostic-printing-function
       Console.println ("Beginning inference and learning")
-      sampler.process(3000)
+      learner.process(null, 3000) // 3000
     }
     0;
 

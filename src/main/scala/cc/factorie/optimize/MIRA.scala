@@ -2,7 +2,8 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.la._
 
-class MIRA(var learningMargin:Double = 1.0) extends GradientOptimizer {
+class MIRA(var learningMargin:Double) extends GradientOptimizer {
+  def this() = this(1.0)
   //def useObjectiveChangeAsMargin: Boolean = true
   val boxConstraint: Double = 1.0 //Math.POS_INF_DOUBLE
 

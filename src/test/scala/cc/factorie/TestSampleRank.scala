@@ -63,8 +63,8 @@ object TestSampleRank {
     val labels = List("n", "y").map(s => new Instance(s)).map(_.label)
     println("feature domain: "+InstanceDomain.dimensionDomain.mkString(" "))
     println("feature tensors:\n"+labels.map(l => l.instance.tensor.toString+"\n"))
-    val learner = new VariableSettingsSampler[Label](model, HammingLossObjective) with SampleRank with GradientAscentUpdates
-    learner.logLevel = 10
+    val learner = new SampleRank(new GibbsSampler(model, HammingLossObjective), new cc.factorie.optimize.StepwiseGradientAscent)
+    //learner.logLevel = 10
     learner.processAll(labels)
     labels.foreach(l => l.set(0)(null)); println("Set to 0")
     labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.score(l)))

@@ -91,8 +91,7 @@ object PerceptronPOS {
     }
 
     val sentenceLabels: Array[Seq[PosLabel]] = documents.flatMap(_.sentences).map(_.posLabels).filter(_.size > 0).toArray
-    val learner = new AveragedStructuredPerceptron[PosLabel] {
-      val model = PosModel
+    val learner = new StructuredPerceptron[PosLabel](PosModel, new cc.factorie.optimize.MIRA) {
       def predict(vs: Seq[PosLabel]) = predictSentence(vs)
     }
 
@@ -111,14 +110,14 @@ object PerceptronPOS {
       testSavePrint("iteration=" + i)
       println("Done in " + (System.currentTimeMillis()-start)/1000.0 + "s\n")
 
-      learner.setToAveraged()
+      //learner.setToAveraged()
       println("Testing with averaged weights...")
       start = System.currentTimeMillis()
       testSavePrint("iteration=" + i + "-averaged")
       println("Done in " + (System.currentTimeMillis()-start)/1000.0 + "s\n")
       println("-----------------------")
 
-      learner.unsetAveraged()
+      //learner.unsetAveraged()
     }
 
     /* The following is an example of how to use Stochastic Gradent updates with Perceptron gradients. */

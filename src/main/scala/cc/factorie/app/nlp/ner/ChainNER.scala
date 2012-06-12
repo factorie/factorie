@@ -14,6 +14,7 @@
 
 package cc.factorie.app.nlp.ner
 import cc.factorie._
+import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 
@@ -129,7 +130,7 @@ class ChainNer {
       printEvaluation(trainDocuments, testDocuments, "FINAL")
     } else {
       (trainLabels ++ testLabels).foreach(_.setRandomly())
-      val learner = new VariableSettingsSampler[ChainNerLabel](model, objective) with SampleRank with GradientAscentUpdates //ConfidenceWeightedUpdates { temperature = 0.01 }
+      val learner = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent) //ConfidenceWeightedUpdates { temperature = 0.01 }
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       for (iteration <- 1 until 3) {
         learner.processAll(trainLabels)

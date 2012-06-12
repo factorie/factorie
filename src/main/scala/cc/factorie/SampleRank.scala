@@ -15,60 +15,63 @@
 
 
 package cc.factorie
-//import scalala.Scalala._
-//import scalala.tensor.Vector
 import cc.factorie.la._
+import cc.factorie.optimize.GradientOptimizer
 import collection.mutable.HashMap
 
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
-trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
-  this: ProposalSampler[_] =>
-  //type TemplatesToUpdate = DotTemplate  // was type TemplatesToUpdate <: DotTemplate, but this no longer provides a Manifest on Scala 2.8
-  //type TemplatesToUpdate <: DotFamily
-  //def templateClassToUpdate: Class[DotFamily]
-  def model: Model
-  def familiesToUpdate: Seq[DotFamily] // provided by GradientAscentUpdates
+class SampleRank[C](val model:Model, sampler:ProposalSampler[C], optimizer:GradientOptimizer) {
+  def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
   var learningMargin = 1.0
-  def updateWeights: Unit
-  val amIMetropolis = this.isInstanceOf[MHSampler[_/*Variable*/]] // TODO Can we find a way to avoid this special case?
-  var logLevel = 0
-
-  /** If objective has not yet been set non-null, get it from the cc.factorie.defaultObjective. */
-  abstract override def objective = if (super.objective == null) cc.factorie.defaultObjective else super.objective
-  
-  var bestModel1, bestModel2, bestObjective1, bestObjective2, changeProposal : Proposal = null
-
-  def predictedScore = changeProposal.modelScore
-  def targetScore = changeProposal.objectiveScore
-
-  abstract override def proposalsHook(proposals:Seq[Proposal]) : Unit = {
-    if (proposals.length < 2) return
-    super.proposalsHook(proposals)
-    //println("SampleRank proposalsHook "+proposals.toList.map(_.toString))
-    val bestModels = proposals.max2ByDouble(_ modelScore)
-    val bestObjectives = proposals.max2ByDouble(_ objectiveScore)
-    bestModel1 = bestModels._1
-    bestModel2 = bestModels._2
-    bestObjective1 = bestObjectives._1
-    bestObjective2 = bestObjectives._2
-    changeProposal = if(bestModel1.diff.size>0) bestModel1 else bestModel2
-    assert(bestObjective1.objectiveScore == bestObjective1.objectiveScore) // Check not NaN 
-    assert(bestObjective2.objectiveScore == bestObjective2.objectiveScore)  
-    //val props = List(bestModel1, bestModel2, bestObjective1, bestObjective2)
-    //println("SampleRank proposalsHook "+props.map(_.modelScore)+"  "+props.map(_.objectiveScore))
-    
-    if (logLevel > 0) {
-      println("bestObjective1 "+bestObjective1)
-      println("bestModel1     "+bestModel1)
-      println("bestModel2     "+bestModel2)
-      if (shouldUpdate) println("SHOULDUPDATE") else println("NOTUPDATE")
-      println("families "+model.families)
-      println("familesToUpdate "+familiesToUpdate)
+  def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
+  def gradientAndMargin(proposals:Seq[Proposal]): (Tensor,Double) = {
+    var g: WeightsTensor = null // model.newSparseWeightsTensor
+    //val g2 = new TensorMap; def gg(df:DotFamily): Tensor = g.getOrElseUpdate(df, Tensor.newSparse(df.weights)
+    val bestModels = proposals.max2ByDouble(_ modelScore); val bestModel1 = bestModels._1; val bestModel2 = bestModels._2
+    val bestObjectives = proposals.max2ByDouble(_ objectiveScore); val bestObjective1 = bestObjectives._1; val bestObjective2 = bestObjectives._2
+    val margin = bestModel1.modelScore - bestModel2.modelScore
+    if (bestModel1 ne bestObjective1) {
+      // ...update parameters by adding sufficient stats of truth, and subtracting error
+      g = model.newSparseWeightsTensor
+      bestObjective1.diff.redo
+      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics.tensor, 1.0))
+      bestObjective1.diff.undo
+      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics.tensor, -1.0))
+      bestModel1.diff.redo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics.tensor, -1.0))
+      bestModel1.diff.undo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics.tensor, 1.0))
     }
-    
-    if (shouldUpdate) updateWeights
+    else if (margin < learningMargin) {
+      // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
+      g = model.newSparseWeightsTensor
+      bestObjective1.diff.redo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics.tensor, 1.0))
+      bestObjective1.diff.undo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics.tensor, -1.0))
+      bestModel2.diff.redo
+      model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics.tensor, -1.0))
+      bestModel2.diff.undo
+      model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics.tensor, 1.0))
+    }
+    (g, margin)
   }
-  
+  def process(c:C): DiffList = {
+    val proposals = sampler.proposals(c)
+    val (gradient,margin) = gradientAndMargin(proposals)
+    if (gradient ne null)
+      optimizer.step(model.weightsTensor, gradient, Double.NaN, margin)
+    val bestProposal = proposals.maxByDouble(_.modelScore)
+    bestProposal.diff.redo
+    bestProposal.diff
+  }
+  def process(c:C, repeat:Int): Unit = for (i <- 0 until repeat) process(c)
+  def processAll(cs:Iterable[C]): Unit = cs.foreach(process(_))
+  def processAll(cs:Iterable[C], repeat:Int): Unit = for (i <- 0 until repeat) cs.foreach(process(_))
+}
+
+// In the old SampleRank there was something like the following.  Do we need this for any reason?
+/*
   def shouldUpdate: Boolean = {
     if (amIMetropolis) {
       val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
@@ -82,83 +85,5 @@ trait SampleRank extends ProposalSampler0 with SettingsSampler0 {
     }
   }
 
-  def projectGradient(f: DotFamily, g: Tensor): Unit = {}
- 
-  def addGradient(accumulator:DotFamily=>Tensor, rate:Double): Unit = {
-
-    /*
-    List(bestModel1, bestModel2, bestObjective1, bestObjective2).foreach(p => println(p))
-    println ("bestObjective1 objectiveScore = "+bestObjective1.objectiveScore)//+" value = "+bestTruth1.value)
-    println ("bestObjective2 objectiveScore = "+bestObjective2.objectiveScore)//+" value = "+bestTruth1.value)
-    println ("bestModel1     objectiveScore = "+bestModel1.objectiveScore)//+" value = "+bestScoring.value)
-    println ("bestObjective1 modelScore = "+bestObjective1.modelScore)
-    println ("bestObjective2 modelScore = "+bestObjective2.modelScore)
-    println ("bestModel1     modelScore = "+bestModel1.modelScore)
-    println ()
-    */
-    if (logLevel > 0) {
-      println ("bestObjective1 ms="+bestObjective1.modelScore+" os="+bestObjective1.objectiveScore+" diff="+bestObjective1.diff)
-      println ("bestObjective2 ms="+bestObjective2.modelScore+" os="+bestObjective2.objectiveScore+" diff="+bestObjective2.diff)
-      println ("bestModel1     ms="+bestModel1.modelScore+" os="+bestModel1.objectiveScore+" diff="+bestModel1.diff)
-      println ("bestModel2     ms="+bestModel2.modelScore+" os="+bestModel2.objectiveScore+" diff="+bestModel2.diff)
-    }
-
-    // Only do learning if the trueScore has a preference
-    // It would not have a preference if the variable in question is unlabeled
-    // TODO Is this the right way to test this though?  Could there be no preference at the top, but the model is selecting something else that is worse?
-    if (shouldUpdate) {
-      val gradient = new HashMap[DotFamily,Tensor] {
-        override def default(f: DotFamily) = {
-          val tensor = f.newSparseTensor // new SparseVector(f.statisticsVectorLength)
-          this(f) = tensor
-          //println(" gradient before increment: "+tensor)
-          tensor
-        }
-        override def toString: String = keys.map((f:DotFamily) => {
-          val tensor = this(f)
-          f.defaultFactorName+" "+tensor.getClass+" dims="+tensor.dimensions.mkString(",")+" contents:"+tensor.toString
-        }).mkString("\n")
-      }
-      //val templatesToUpdate = templateClassToUpdate
-      // If the model doesn't score the truth highest, then update parameters
-      if (bestModel1 ne bestObjective1) { // TODO  I changed != to "ne"  OK?  Should I be comparing values here instead?
-        // ...update parameters by adding sufficient stats of truth, and subtracting error
-        //println ("SampleRank learning from error")
-        //println (" Model #templates="+model.size)
-        //println (" Updating bestObjective1 "+(bestObjective1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
-        //println (" Updating bestModel1 "+(bestModel1.diff.factorsOf[WeightedLinearTemplate](model).size)+" factors")
-        bestObjective1.diff.redo
-        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment1 "+f.statistics.tensor)*/; gradient(f.family).+=(f.statistics.tensor, rate) })
-        bestObjective1.diff.undo
-        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment2 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, -rate) })
-        bestModel1.diff.redo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment3 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, -rate) })
-        bestModel1.diff.undo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment4 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, rate) })
-      }
-      else if (bestModel1.modelScore - bestModel2.modelScore < learningMargin) {
-        // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
-        //println ("SampleRank learning from margin")
-        // TODO Note This is changed from previous version, where it was bestTruth.  Think again about this.
-        bestObjective1.diff.redo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment5 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, rate) })
-        bestObjective1.diff.undo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment6 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, -rate) })
-        bestModel2.diff.redo
-        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment7 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, -rate) })
-        bestModel2.diff.undo
-        model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => { /*println("SampleRank gradient increment8 "+f.statistics.tensor);*/ gradient(f.family).+=(f.statistics.tensor, rate) })
-      }
-      // project gradients
-      gradient.foreach(g => {
-        projectGradient(g._1,g._2)
-        accumulator(g._1) += g._2
-      })
-      if (logLevel > 2) {
-        println(" gradient after increment: "+gradient)
-        model.familiesOfClass[DotFamily].foreach(f => println(" weights:"+f.weights))
-      }
-    } //else Console.println ("No preference unlabeled "+variable)
-  }
-}
+ */
 

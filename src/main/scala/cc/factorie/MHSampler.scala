@@ -60,7 +60,8 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
   /** Specialization of cc.factorie.Proposal that adds a MH forward-backward transition ratio, typically notated as a ratio of Qs. */
   case class Proposal(override val diff:DiffList, override val modelScore:Double, override val objectiveScore:Double, override val acceptanceScore:Double, val bfRatio:Double, val temperature:Double) extends cc.factorie.Proposal(diff, modelScore, objectiveScore,acceptanceScore)
   
-  def proposals(context:C) : Seq[Proposal] = {
+  var proposalsCount = 0
+  def proposals(context:C): Seq[Proposal] = {
     numProposedMoves += 1
     proposalAccepted = false
     val difflist = new DiffList
@@ -71,16 +72,18 @@ abstract class MHSampler[C](val model:Model) extends ProposalSampler[C] {
     var proposalAttemptCount = 0
     while (difflist.size == 0 && proposalAttemptCount < 10) {
       bfRatio = propose(context)(difflist)
+      //println("MHSampler propose diff "+difflist)
       proposalAttemptCount += 1
     }
     if (difflist.size == 0) throw new Error("No proposal made changes in 10 tries.")
+    proposalsCount += 1
     postProposalHook(difflist)
     val (modelScore, objectiveScore) = difflist.scoreAndUndo(model, objective)
     //val goProposal = new Proposal(difflist, modelScore/temperature + bfRatio, objectiveScore, bfRatio)x
 //    val goProposal = new Proposal(difflist,modelScore/temperature+bfRatio,objectiveScore,bfRatio,modelScore)
     //val stayProposal = new Proposal(new DiffList, 0.0, 0.0, Double.NaN,0.0)
     //List(goProposal,stayProposal)
-    //System.out.println("MODEL: " + modelScore+" objSCORE:" + objectiveScore)
+    //println("MHSampler modelScore="+modelScore+" objectiveScore="+objectiveScore)
     val logAcceptanceScore = modelScore/temperature+bfRatio
     val mirrorLogAcceptanceScore = if (logAcceptanceScore>=0) Double.NegativeInfinity else math.log(1-math.exp(logAcceptanceScore))
     val goProposal = new Proposal(difflist,modelScore,objectiveScore,logAcceptanceScore,bfRatio,temperature)
