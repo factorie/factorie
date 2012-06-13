@@ -18,7 +18,7 @@ import cc.factorie.generative._
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
-import collection.mutable.{ArrayBuffer, HashSet, HashMap}
+import collection.mutable.{ArrayBuffer, HashSet, HashMap, LinkedHashMap}
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01)(implicit val model:MutableGenerativeModel) {
@@ -41,7 +41,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   val alphas = MassesVariable.dense(numTopics, alpha1)
   
   /** The collection of all documents used to fit the parameters of this LDA model. */
-  protected val documentMap = new HashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
+  protected val documentMap = new LinkedHashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
   def documents: Iterable[Doc] = documentMap.values
   def getDocument(name:String) : Doc = documentMap.getOrElse(name, null)
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
@@ -52,7 +52,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     require(doc.ws.length > 0)  // was > 1
     if (doc.theta eq null) doc.theta = ProportionsVariable.sortedSparseCounts(numTopics)
     else require (doc.theta.length == numTopics)
-    doc.theta.~(Dirichlet(alphas))(m) // was DenseCountsProportions
+    doc.theta.~(Dirichlet(alphas))(m)
     if (doc.zs eq null) doc.zs = new Zs(Array.tabulate(doc.ws.length)(i => random.nextInt(numTopics))) // Could also initialize to all 0 for more efficient sparse inference
     else {
       require(doc.zs.length == doc.ws.length, "doc.ws.length=%d != doc.zs.length=%d".format(doc.ws.length, doc.zs.length))
@@ -76,15 +76,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     model -= model.parentFactor(doc.ws)
   }
 
-  /** Infer doc.theta, but to not adjust LDA.phis.  Document not added to LDA model. */
-  def inferDocumentThetaOld(doc:Doc, iterations:Int = 10): Unit = {
-    var tmp = false
-    if (model.parentFactor(doc.ws) eq null) { addDocument(doc); tmp = true }
-    val sampler = new CollapsedGibbsSampler(Seq(doc.theta), model)
-    for (i <- 1 to iterations) sampler.process(doc.zs)
-    if (tmp) removeDocument(doc)
-  }
-
+  /** Infer doc.theta.  If the document is not already part of this LDA, do not add it and do not collapse anything that would effect this LDA. */
   def inferDocumentTheta(doc:Doc, iterations:Int = 10): Unit = {
     if (model.parentFactor(doc.ws) ne null) {
       val sampler = new CollapsedGibbsSampler(Seq(doc.theta), model)
@@ -99,27 +91,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     }
   }
 
-  /** A batch based version of inferDocumentTheta, not yet complete. */
-  def inferMultipleDocumentThetas(newDocs:Seq[Doc], iterations:Int = 10) : Unit = {
-    val docsAdded = new HashSet[Doc]
-    val varsToSample = new ArrayBuffer[Variable]
-
-    for(doc <- newDocs) if(model.parentFactor(doc.ws) eq null) { addDocument(doc); docsAdded += doc; varsToSample ++= Seq(doc.theta) }
-    val sampler = new CollapsedGibbsSampler(varsToSample, model)
-    val startTime = System.currentTimeMillis()
-    for(i <- 1 to iterations) {
-      for(doc <- newDocs)
-        sampler.process(doc.zs)
-    }
-    println("Total inference time = " + (System.currentTimeMillis() - startTime)/1000.0 + " seconds")
-
-    // removal takes 150 times longer than inference ???
-    //val removeStartTime = System.currentTimeMillis()
-    //for(doc <- docsAdded) removeDocument(doc)
-    //println("Total doc removal time = " + (System.currentTimeMillis() - removeStartTime)/1000.0 + " seconds")
-  }
-
-    /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
+  /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
   def inferTopics(iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
     val sampler = SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.tensor, beta1, model)
     println("Collapsing finished.  Starting sampling iterations:")
@@ -264,8 +236,9 @@ class LDACmd {
       val readLinesRegex= new CmdOption("read-lines-regex", "", "REGEX", "Regular expression with parens around the portion of the line that should be read as the text of the document.")
       val readLinesRegexGroups= new CmdOption("read-lines-regex-groups", List(1), "GROUPNUMS", "The --read-lines-regex group numbers from which to grab the text of the document.")
       val readLinesRegexPrint = new CmdOption("read-lines-regex-print", false, "BOOL", "Print the --read-lines-regex match that will become the text of the document.")
-      val readDocs =      new CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments") 
       val writeDocs =     new CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments") 
+      val readDocs =      new CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments") 
+      val readPhis =      new CmdOption("read-phis", "lda-docs.txt", "FILENAME", "Read documents from filename, but only use them to increment topic word counts.")
       val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
       val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
       val printPhrases =  new CmdOption("print-topics-phrases", 20, "N", "Just before exiting print top N phrases for each topic.")
@@ -334,7 +307,28 @@ class LDACmd {
       //println(lda.documents.head.ws.categoryValues.mkString(" "))
       //println(lda.documents.head.zs.intValues.mkString(" "))
     }
-    if (lda.documents.size == 0) { System.err.println("You must specific either the --input-dirs or --input-lines options to provide documents."); System.exit(-1) }
+    if (opts.readPhis.wasInvoked) {
+      val file = new File(opts.readDocs.value)
+      val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+      breakable { while (true) {
+        if (lda.documents.size == opts.maxNumDocs.value) break
+        val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
+        doc.zs = new lda.Zs(Nil)
+        val numWords = doc.readNameWordsZs(reader)
+        if (numWords < 0) break
+        else if (numWords >= minDocLength) {
+          val len = doc.ws.length
+          var i = 0
+          while (i < len) {
+            val zi = doc.zs.intValue(i)
+            lda.phis(zi).tensor.+=(doc.ws.intValue(i), 1.0)
+            i += 1
+          }
+        } else System.err.println("--read-docs skipping document %s: only %d words found.".format(doc.name, numWords))  // Skip documents that have only one word because inference can't handle them
+      }}
+      reader.close()
+    }
+    else if (lda.documents.size == 0) { System.err.println("You must specific either the --input-dirs or --input-lines options to provide documents."); System.exit(-1) }
     println("\nRead "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
     
     // Run inference to discover topics

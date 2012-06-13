@@ -5,12 +5,19 @@ import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 
-//class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(superDoc.ws.domain, superDoc.name+superTopic, Nil)
+// Name here must match superDoc exactly, in order to enable stitching back together again at the end 
 class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(superDoc.ws.domain, superDoc.name, Nil)
 {
-  for (i <- 0 until superDoc.ws.length)
-    if (superDoc.zs.intValue(i) == superTopic) ws.appendInt(superDoc.ws.intValue(i))
-  ws.trimCapacity
+  {
+    var prevInTopic = false
+    for (i <- 0 until superDoc.ws.length)
+      if (superDoc.zs.intValue(i) == superTopic) {
+        ws.appendInt(superDoc.ws.intValue(i))
+        if (superDoc.breaks.contains(i) || !prevInTopic) this.breaks += (ws.length-1) // preserve phrase boundary breaks, which go at the end of each word that begins a phrase
+        prevInTopic = true
+      } else prevInTopic = false
+    ws.trimCapacity
+  }
 }
 
 
@@ -46,7 +53,7 @@ object RecursiveLDA {
       val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
       val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
       val printPhrases =  new CmdOption("print-topics-phrases", 20, "N", "Just before exiting print top N phrases for each topic.")
-      val verboseOpt =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = verbose = true }
+      val verboseOpt =    new CmdOption("verbose", "Turn on verbose output") { override def invoke = verbose = true }
       // TODO Add stopwords option
     }
     opts.parse(args)
@@ -129,7 +136,8 @@ object RecursiveLDA {
     }*/
     if (lda.documents.size == 0) { System.err.println("You must specific either the --input-dirs or --input-lines options to provide documents."); System.exit(-1) }
     println("\nRead "+lda.documents.size+" documents, "+WordSeqDomain.elementDomain.size+" word types, "+lda.documents.map(_.ws.length).sum+" word tokens.")
-    
+    //lda.documents.filter(_.name.endsWith("0003.txt")).foreach(d => println(d.toString)) // print example documents
+
     // Fit top-level LDA model    
     val startTime = System.currentTimeMillis
     lda.inferTopics(opts.numIterations.value, opts.fitAlpha.value, 10)
@@ -152,6 +160,7 @@ object RecursiveLDA {
         for (doc <- documents1) {
           for (ti <- doc.zs.uniqueIntValues) if (topicRange.contains(ti)) {
             val rdoc = new RecursiveDocument(doc, ti)
+            //if (rdoc.name.endsWith("0003.txt")) { println("topic="+ti+" super: "+doc.toString+"\nsub: "+rdoc.toString+"\n\n") }
             if (rdoc.ws.length > 0) { lda2(ti - topicRangeStart).addDocument(rdoc); documents2 += rdoc }
           }
         }
@@ -195,21 +204,14 @@ object RecursiveLDA {
         lda3.phis(zi).tensor.+=(wi, 1.0) // This avoids? the need for estimating phis later; note that we are not setting thetas here.
         doc3.ws.appendInt(wi)
         doc3.zs.appendInt(zi)
+        if (doc.breaks.contains(i)) doc3.breaks += (doc3.ws.length-1) // preserve phrase boundaries
         i += 1
       }
       if (!lda3.documentMap.contains(doc3.name)) lda3.addDocument(doc3)
-      else println("RecursiveLDA appending to final flat model: "+doc.name+" superTopic="+doc.superTopic+" numWords="+doc.length)
+      //else println("RecursiveLDA appending to final flat model: "+doc.name+" superTopic="+doc.superTopic+" numWords="+doc.length)
       documents2.remove(documents2.size-1) // Do this to enable garbage collection as we create more doc3's
     }
-//    for (ldaIndex <- 0 until numTopics; doc <- lda2(ldaIndex).documents) {
-//      doc.theta = null
-//      val oldZs = doc.zs
-//      val innerLda = lda2(ldaIndex)
-//      doc.zs = new lda3.Zs(oldZs.map(i => i.intValue + ldaIndex*numTopics))
-//      lda3.addDocument(doc)
-//    }
-//    lda2 = null // To allow garbage collection
-//    lda3.maximizePhisAndThetas
+
     println("Flat LDA")
     println(lda3.topicsSummary(10))
     

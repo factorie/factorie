@@ -46,7 +46,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
     s.setLength(this.position - s.start + 1)(null)
   }
   def document: Document = chain
-  @deprecated("Will be removed.  Use 'string' instead.") def value: String = string // abstract in StringVar
+  //@deprecated("Will be removed.  Use 'string' instead.") def value: String = string // abstract in StringVar
   def docSubstring = document.string.substring(stringStart, stringEnd)
   /** Return the string contents of this Token, either from its attr[TokenString] variable or ,if unset, directly as a substring of the Document */
   def string = { val ts = attr[TokenString]; if (ts ne null) ts.value else docSubstring }

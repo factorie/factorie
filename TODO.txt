@@ -1,12 +1,11 @@
 Pre 1.0 release:
 
 Finish BP and move to cc.factorie package.  Make it fast!
-Consider moving generative.GibbsSampler up to cc.factorie?
 Consider changes to generative.Collapse infrastructure
 Implement generative.CollapsedVariationalBayes and make sure it works for LDA
 Re-consider type arguments in Sampler and descendants
 Get AROW Perceptron training working, and look at SampleRank interaction
-Make a Family.score(Tensor) method for use in higher efficiency situations (e.g. BP)
+Implement parameter averaging
 Look at app.nlp.relation
 Make reasonable command-line tools for MALLET functionality, and document
 Get rid of dependency on Java bibtex parser library
@@ -20,6 +19,8 @@ Make an HMM example and show that BP inference and EM training work on it
 
 
 DONE:
+Make a Family.score(Tensor) method for use in higher efficiency situations (e.g. BP)
+Consider moving generative.GibbsSampler up to cc.factorie?
 Consider making no variable inherit from Iterable.  (Seq would come from value instead.)  Remove SeqEqualsEq and friends.
  Consider making any current Variable that *could* have more than one different value type be not a Variable.  
  Then allow Model.factors and Infer and Maximize to have apply(Iterable[Variable]) and Apply(Variable).

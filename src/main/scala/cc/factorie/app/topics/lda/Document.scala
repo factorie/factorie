@@ -24,28 +24,23 @@ trait Doc extends SeqBreaks {
   var theta: ProportionsVar
   var zs: DiscreteSeqVariable
   def ws: CategoricalSeqVariable[String]
-  
-  // Experimental thoughts about serialization with Facades
-  // No, don't use duck-typing here; too slow because it uses reflection! -akm
-  type WordsZs = { def words: Seq[String]; def zInts: Array[Int] } 
-  def toFacade: WordsZs = {
-    new {
-      val words = ws.categoryValues
-      val zInts = zs.intValues
+  override def toString: String = {
+    val sb = new StringBuilder
+    sb append name; sb += '\n'
+    for (i <- 0 until ws.length) {
+      if (breaks.contains(i)) sb += ' ' else sb += '_'
+      sb append ws.categoryValue(i)
+      //if (zs ne null) { sb += ':'; sb append zs.intValue(i) }
     }
+    sb.mkString
   }
-  def setFromFacade(f:WordsZs): Unit = {
-    ws.clear()
-    zs.clear()
-    ws.appendCategories(f.words)
-    zs.appendInts(f.zInts)
-  }
-  
+    
   // Serialization
   def writeNameWordsZs(p:PrintWriter): Unit = {
     p.println(name)
     for (i <- 0 until ws.length) {
       p.println(ws.categoryValue(i))
+      if (breaks.contains(i)) p.print("0") // Mark phrase break points with a (redundant) leading zero on the topic index
       p.println(zs.intValue(i))
     }
     p.println()
@@ -59,7 +54,9 @@ trait Doc extends SeqBreaks {
     var line: String = p.readLine()
     while (line != null && line.length > 0) {
       words += line
-      zints += p.readLine().toInt
+      val topicIndexString = p.readLine()
+      if (topicIndexString(0) == '0') breaks += (words.length-1) // Remember phrase break points
+      zints += topicIndexString.toInt
       line = p.readLine()
     }
     ws.clear(); ws.appendCategories(words)
@@ -90,7 +87,7 @@ object Document {
     breakable { for (word <- segmenter(reader)) {
       val w = word.toLowerCase
       //allWords += w
-      if (stopwords.contains(w)) doc.breaks += doc.length
+      if (stopwords.contains(w)) doc.breaks += doc.length // break goes at the index of the next word---the word that will begin the next phrase
       else doc.appendCategory(w)
       if (doc.length == wordCountMax) break
     }}
@@ -102,11 +99,12 @@ object Document {
       //println("Document %s %s".format(doc.name, doc.breaks.toString))
     }*/
   }
-  def wordIterator(reader:Reader, 
-      segmenter:StringSegmenter = alphaSegmenter, 
-      stopwords:Stopwords = Stopwords, 
-      wordCountMax:Int = Int.MaxValue): Iterator[String] = 
-    segmenter(reader).map(_ toLowerCase).filter(!stopwords.contains(_)).take(wordCountMax)
+//  def wordIterator(reader:Reader, 
+//      segmenter:StringSegmenter = alphaSegmenter, 
+//      stopwords:Stopwords = Stopwords, 
+//      wordCountMax:Int = Int.MaxValue): Iterator[String] = 
+//    segmenter(reader).map(_ toLowerCase).filter(!stopwords.contains(_)).take(wordCountMax)
+    
   // Convenience methods for creating new documents
   def fromStringIterator(domain:CategoricalSeqDomain[String], name:String, tokens:Iterator[String], stopwords:StringSet = EmptyStringSet) = new Document(domain, name, tokens.filter(stopwords.contains(_)).toIndexedSeq) // TODO create breaks here
   def fromReader(domain:CategoricalSeqDomain[String], name:String, reader:Reader, segmenter:StringSegmenter = alphaSegmenter, stopwords:StringSet = Stopwords, wordCountMax:Int = Int.MaxValue): Document = { val d = new Document(domain, name, Nil); addWords(d, reader, segmenter, stopwords, wordCountMax); d }

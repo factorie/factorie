@@ -282,10 +282,10 @@ trait DenseTensor extends Tensor {
     }
   }
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
-    case t:SingletonBinaryTensor => __values(t.singleIndex) += 1.0
-    case t:SingletonTensor => __values(t.singleIndex) += t.singleValue
+    case t:SingletonBinaryTensor => __values(t.singleIndex) += f
+    case t:SingletonTensor => __values(t.singleIndex) += f * t.singleValue
     case t:SparseBinaryTensor => t.=+(__values, f)
-    case t:DenseTensor => { val len = length; var i = 0; while (i < len) { __values(i) += t.__values(i); i += 1 }}
+    case t:DenseTensor => { val len = length; var i = 0; while (i < len) { __values(i) += f * t.__values(i); i += 1 }}
   }
 }
 
