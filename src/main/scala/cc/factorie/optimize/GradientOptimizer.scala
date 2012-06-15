@@ -164,7 +164,7 @@ class BackTrackLineOptimizer2(val gradient:Tensor, val line:Tensor, val initialS
     // Here we actually make the step, updating the weights in the direction of the line
     logger.warn("BackTrackLineOptimizer line factor="+(alam-oldAlam))
     weights.+=(line, alam - oldAlam)
-    // Check for convergence
+    // Check for convergence., i.e. weights vector barely changed
     if (alam < alamin || !origWeights.different(weights, absTolx)) {
       weights := origWeights
       logger.warn("EXITING BACKTRACK: Jump too small (alamin=" + alamin + "). Exiting and using xold.");
