@@ -17,10 +17,11 @@ class DotMaximumLikelihood(val model:TemplateModel, val optimizer:GradientOptimi
 	model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => {
 	  constraints(f.family) += f.cachedStatistics.tensor 
 	})
-	logLikelihood = 0.0 // log likelihood
+
 	var iterations = 0
 	var convergences = 0
 	while (iterations < numIterations && convergences < numRepeatConvergences) {
+	  logLikelihood = 0.0 // log likelihood
 	  val gradient = model.newDenseWeightsTensor
 	  // Put -expectations into gradient
 	  variables.foreach(v => {

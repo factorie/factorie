@@ -281,6 +281,7 @@ trait DenseTensor extends Tensor {
       while (i < len) { result += apply(i) * t2(i); i += 1 }; result
     }
   }
+
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensor => __values(t.singleIndex) += f
     case t:SingletonTensor => __values(t.singleIndex) += f * t.singleValue
