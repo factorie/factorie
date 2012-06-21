@@ -7,7 +7,7 @@ import com.mongodb.{BasicDBList, BasicDBObject, DBCursor, DBObject, DBCollection
 import org.bson.types.BasicBSONList
 import cc.factorie.util.CubbieRefs
 import scala.annotation.tailrec
-import scala.collection.{MapProxy, Map => GenericMap, JavaConversions}
+import collection.{Map => GenericMap, mutable, MapProxy, JavaConversions}
 import scala.collection.mutable.{HashSet, ArrayBuffer, HashMap, Map => MutableMap}
 import scala._
 import scala.Predef._
@@ -355,14 +355,14 @@ class MongoSlot[C <: Cubbie, V](val slot: C#Slot[V]) {
     val nestedMap = try {
       val oldMap = slot.cubbie._rawGet("$set").asInstanceOf[scala.collection.mutable.Map[String, Any]]
       if (oldMap == null) {
-        val map = new HashMap[String, Any];
-        slot.cubbie._rawPut("$set", map);
+        val map = new mutable.HashMap[String, Any]
+        slot.cubbie._map.update("$set", map)
         map
       } else oldMap
     } catch {
       case _ => {
-        val map = new HashMap[String, Any];
-        slot.cubbie._rawPut("$set", map);
+        val map = new mutable.HashMap[String, Any]
+        slot.cubbie._map.update("$set", map)
         map
       }
     }
