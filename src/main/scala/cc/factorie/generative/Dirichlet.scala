@@ -120,6 +120,64 @@ object MaximizeDirichletByMomentMatching {
   }
 }
 
+object LearnDirichletUsingFrequencyHistograms {
+
+  def apply(masses: MassesVariable, observations: Array[Array[Int]], observationLengths: Array[Int]){
+     apply(masses, observations, observationLengths, 1.001, 1.0, 1)
+  }
+
+  def apply(masses: MassesVariable, observations: Array[Array[Int]], observationLengths: Array[Int],
+            shape: Double, scale: Double, numIters: Int) {
+
+    val parameters = masses.tensor.toArray
+
+    var denominator = 0.0
+    var currentDigamma = 0.0
+    var paramSum = 0.0
+    parameters.foreach(param => paramSum += param)
+
+    // The histograms contain mostly zeros for large indices. To avoid looping over those indices,
+    // find the maximum index at which there is a non-zero entry.
+    val maxNonZeroIndices = Array.fill[Int](observations.length)(-1)
+    for (i <- 0 until observations.length; j <- 0 until observations(i).length) if (observations(i)(j) > 0) maxNonZeroIndices(i) = j
+
+    for (iterId <- 0 until numIters){
+      denominator = 0.0
+      currentDigamma = 0.0
+
+      for (i <- 1 until observationLengths.length){
+        currentDigamma += 1.0 / (paramSum + i - 1)
+        denominator += observationLengths(i) * currentDigamma
+      }
+
+      denominator -= 1.0/scale
+      paramSum = 0.0
+
+      for (k <- 0 until parameters.length){
+        val maxNonzeroIndex = maxNonZeroIndices(k)
+
+        val oldParam = parameters(k)
+        parameters(k) = 0.0
+        currentDigamma = 0.0
+
+        val histogram = observations(k)
+        for (j <- 1 to maxNonzeroIndex){
+          currentDigamma += 1.0 / (oldParam + j - 1)
+          parameters(k) += histogram(j) * currentDigamma
+        }
+
+        parameters(k) = oldParam * (parameters(k) + shape) / denominator
+        paramSum += parameters(k)
+      }
+    }
+
+    masses := new cc.factorie.DenseMasses1(masses.tensor.length)
+    for(i <- 0 until parameters.length) masses.increment(i, parameters(i))(null)
+    assert(paramSum >= 0.0)
+  }
+
+}
+
 /** Alternative style of Dirichlet parameterized by 2 parents (mean,precision) rather than 1 (masses). */
 object Dirichlet2 extends GenerativeFamily3[ProportionsVar,ProportionsVar,RealVar] {
   def newFactor(a:ProportionsVar, b:ProportionsVar, c:RealVar) = throw new Error("Not yet implemented")

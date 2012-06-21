@@ -21,7 +21,8 @@ import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader
 import collection.mutable.{ArrayBuffer, HashSet, HashMap, LinkedHashMap}
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
-class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01)(implicit val model:MutableGenerativeModel) {
+class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01,
+           val burnIn: Int = 100)(implicit val model:MutableGenerativeModel) {
   var diagnosticName = ""
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain(numTopics)
@@ -39,7 +40,9 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   val betas = MassesVariable.growableUniform(wordDomain, beta1)
   /** The prior over per-document topic distribution */
   val alphas = MassesVariable.dense(numTopics, alpha1)
-  
+  var maxDocSize:Int = 0
+  var docLengthCounts: Array[Int] = null
+
   /** The collection of all documents used to fit the parameters of this LDA model. */
   protected val documentMap = new LinkedHashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
   def documents: Iterable[Doc] = documentMap.values
@@ -67,6 +70,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     if (documentMap.contains(doc.name)) throw new Error(this.toString+" already contains document "+doc.name)
     setupDocument(doc, model)
     documentMap(doc.name) = doc
+    maxDocSize = math.max(maxDocSize, doc.ws.length)
   }
   
   def removeDocument(doc:Doc): Unit = {
@@ -94,12 +98,20 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   /** Run a collapsed Gibbs sampler to estimate the parameters of the LDA model. */
   def inferTopics(iterations:Int = 60, fitAlphaInterval:Int = Int.MaxValue, diagnosticInterval:Int = 10, diagnosticShowPhrases:Boolean = false): Unit = {
     val sampler = SparseLDAInferencer(ZDomain, wordDomain, documents, alphas.tensor, beta1, model)
+    if(fitAlphaInterval != Int.MaxValue) {
+      sampler.initializeHistograms(maxDocSize)
+      docLengthCounts = Array.fill[Int](maxDocSize+1)(0)
+      for (doc <- documents) docLengthCounts(doc.ws.length) += 1
+    }
+
     println("Collapsing finished.  Starting sampling iterations:")
     //sampler.debug = debug
     val startTime = System.currentTimeMillis
     for (i <- 1 to iterations) {
+      val timeToEstAlpha = (i % fitAlphaInterval == 0) && i > burnIn
+
       val startIterationTime = System.currentTimeMillis
-      for (doc <- documents) sampler.process(doc.zs.asInstanceOf[Zs])
+      for (doc <- documents) sampler.process(doc.zs.asInstanceOf[Zs], timeToEstAlpha)
       val timeSecs = (System.currentTimeMillis - startIterationTime)/1000.0
       if (timeSecs < 2.0) print(".") else print("%.0fsec ".format(timeSecs)); Console.flush
       if (i % diagnosticInterval == 0) {
@@ -107,11 +119,18 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
         sampler.export(phis)
         if (diagnosticShowPhrases) println(topicsWordsAndPhrasesSummary(10,10)) else println(topicsSummary(10))
       }
-      if (i % fitAlphaInterval == 0) {
+      /*if (i % fitAlphaInterval == 0) {
         sampler.exportThetas(documents)
         MaximizeDirichletByMomentMatching(alphas, model)
         sampler.resetSmoothing(alphas.tensor, beta1)
         println("alpha = " + alphas.tensor.toSeq.mkString(" "))
+      }*/
+
+      if (timeToEstAlpha){
+        LearnDirichletUsingFrequencyHistograms(alphas, sampler.topicDocCounts, docLengthCounts)
+        sampler.resetSmoothing(alphas.tensor, beta1)
+        sampler.initializeHistograms(maxDocSize)
+        //println("alpha = " + alphas.tensor.toSeq.mkString(" "))
       }
     } 
     //println("Finished in "+((System.currentTimeMillis-startTime)/1000.0)+" seconds")
@@ -230,6 +249,7 @@ class LDACmd {
       val diagnostic =    new CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
       val diagnosticPhrases= new CmdOption("diagnostic-phrases", false, "true|false", "If true diagnostic printing will include multi-word phrases.")
       val fitAlpha =      new CmdOption("fit-alpha-interval", Int.MaxValue, "N", "Number of iterations between each re-estimation of prior on per-document topic distribution.")
+      val optimizeBurnIn =new CmdOption("optimize-burn-in", 100, "N", "Number of iterations to run before the first estimation of the alpha parameters")
       val tokenRegex =    new CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
       val readDirs =      new CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
       val readLines =     new CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
@@ -249,7 +269,7 @@ class LDACmd {
     /** The domain of the words in documents */
     object WordSeqDomain extends CategoricalSeqDomain[String]
     val model = GenerativeModel()
-    val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value)(model)
+    val lda = new LDA(WordSeqDomain, opts.numTopics.value, opts.alpha.value, opts.beta.value, opts.optimizeBurnIn.value)(model)
     val mySegmenter = new cc.factorie.app.strings.RegexSegmenter(opts.tokenRegex.value.r)
     if (opts.readDirs.wasInvoked) {
       for (directory <- opts.readDirs.value) {

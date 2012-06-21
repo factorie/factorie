@@ -2,6 +2,7 @@ package cc.factorie.app.topics.lda
 import cc.factorie._
 import cc.factorie.generative._
 import cc.factorie.util.DoubleSeq
+import scala.Array
 
 class SparseLDAInferencer(
     val zDomain:DiscreteDomain,
@@ -23,6 +24,10 @@ class SparseLDAInferencer(
 
   if (verbosity > 0) println("Finished initializing phiCounts")
   if (verbosity > 5) println("nt "+phiCounts.mixtureCounts.mkString(" "))
+
+  private var _topicDocCounts: Array[Array[Int]] = null
+  def topicDocCounts = _topicDocCounts
+
   // Initialize alphas, beta1, smoothingMass and cachedCoefficients; must be done after phiCounts initialized
   resetSmoothing(initialAlphas, initialBeta1)
 
@@ -42,6 +47,11 @@ class SparseLDAInferencer(
       cachedCoefficients(t) = alphas(t) / (phiCounts.mixtureCounts(t) + betaSum)
       t += 1
     }
+  }
+
+  def initializeHistograms(maxDocSize: Int) {
+    _topicDocCounts = Array.ofDim[Int](numTopics, maxDocSize+1)
+    for (i <- 0 until numTopics; j <- 0 to maxDocSize) _topicDocCounts(i)(j) = 0
   }
 
   private def recalcSmoothingMass: Double = {
@@ -66,7 +76,7 @@ class SparseLDAInferencer(
   }
 
   /** Sample the Zs for one document. */
-  def process(zs:DiscreteSeqVariable): Unit = {
+  def process(zs:DiscreteSeqVariable, timeToEstAlphas: Boolean = false): Unit = {
 
     // TODO In some cases "smoothingMass" seems to drift low, perhaps due to math precision in its adjustments
     // So reset it here for each document
@@ -294,6 +304,18 @@ class SparseLDAInferencer(
       cachedCoefficients(ti) = alphas(ti) / (nt + betaSum)
 
       denseIndex += 1
+    }
+
+    if(timeToEstAlphas){
+
+      denseIndex = 0
+      while(denseIndex < nonZeroTopics){
+        val ti = localTopicIndex(denseIndex) // topic index
+        _topicDocCounts(ti)(localTopicCounts(ti)) += 1
+
+        denseIndex += 1
+      }
+
     }
   }
 
