@@ -10,6 +10,27 @@ trait GradientOptimizer {
   def reset(): Unit
 }
 
+/** Keeps an average of all weight settings throughout steps. 
+    To get "average perceptron" use "new WeightsAveraging(new StepwiseGradientAscent)" */
+class WeightsAveraging(val inner:GradientOptimizer) extends GradientOptimizer {
+  var weightsSum: Tensor = null
+  var normalizer = 0.0
+  def reset(): Unit = {
+    weightsSum = null
+    normalizer = 0.0
+    inner.reset()
+  }
+  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+    if (weightsSum eq null) weightsSum = weights.copy
+    else weightsSum += weights // Yipes, this is not sparse, not efficient
+    normalizer += 1.0
+    inner.step(weights, gradient, value, margin)
+  }
+  def averageWeights: Tensor = weightsSum / normalizer 
+  def isConverged: Boolean = inner.isConverged
+}
+
+/** Change the weights in the direction of the gradient by a factor of "rate" for each step. */
 class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
   def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     weights.+=(gradient, rate)
@@ -20,6 +41,7 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
   def reset(): Unit = {}
 }
 
+/** Change the weights in the direction of the gradient by using back-tracking line search to make sure we step up hill. */
 class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
   def isConverged = _isConverged

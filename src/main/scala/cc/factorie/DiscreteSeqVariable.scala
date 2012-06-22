@@ -85,8 +85,13 @@ abstract class CategoricalSeqVariable[C] extends DiscreteSeqVariable with VarAnd
     initialValue.foreach(c => this += d.value(c))
   }
   def domain: CategoricalSeqDomain[C]
-  def appendCategory(x:C): Unit = this += domain.elementDomain.value(x)
-  def appendCategories(xs:Iterable[C]): Unit = _appendAll(xs.map(c => domain.elementDomain.index(c)).toArray)
+  def appendCategory(x:C): Unit = {
+    //this += domain.elementDomain.value(x)
+    val index = domain.elementDomain.index(x)
+    if (index >= 0) _append(index)
+    // TODO Should we throw an error if that domain returns -1 (indicating it is locked, and can't add this category)?
+  }
+  def appendCategories(xs:Iterable[C]): Unit = xs.foreach(appendCategory(_)) //_appendAll(xs.map(c => domain.elementDomain.index(c)).toArray)
   def categoryValue(seqIndex:Int): C = domain.elementDomain.category(_apply(seqIndex))
   def categoryValues: Seq[C] = Seq.tabulate(length)(i => categoryValue(i))
 }
