@@ -14,9 +14,7 @@
 
 package cc.factorie.util
 
-import cc.factorie.db.mongo.{GraphLoader, MongoCubbieCollection}
-import collection.mutable.{HashMap, ArrayBuffer, Map => MutableMap}
-import collection.{Map => GenericMap, mutable}
+import collection.mutable
 import util.parsing.json.JSON
 
 /**
@@ -32,7 +30,6 @@ import util.parsing.json.JSON
 class Cubbie {
   thisCubbie =>
 
-  import scala.collection.mutable.Map
 
   //  def this(map:scala.collection.mutable.HashMap[String,Any]) = { this(); this._map = map }
   // Managing raw underlying map that hold the data
@@ -482,13 +479,19 @@ class Cubbie {
    * A RefSlot is a simple type of AbstractInverseSlot which "contains" all cubbies
    * of a given type with the given ID. Assuming uniqueness of IDs, it's a
    * unique inverse slot.
+   *
+   * The RefSlot field only stores the actual ID of the referenced cubbie. This means
+   * that calling value or apply() on this slot returns (untyped) ids. Likewise,
+   * the setter methods only take ids. Convenience methods exist to pass in
+   * cubbies instead.
+   *
    * @param name the name of the slot.
    * @param constructor the cubbie constructor for cubbies the slot contains.
    * @tparam A the type of cubbies this slot contains.
    */
   case class RefSlot[A <: Cubbie](override val name: String, constructor: () => A)
     extends Slot[Any](name) with AbstractRefSlot[A] with AbstractInverseSlot[A] {
-    def value = _rawGet(name)
+    def value = _map(name)
 
     override def unique = true
 
@@ -513,6 +516,15 @@ class Cubbie {
    * @tparam A
    */
   trait AbstractRefSlot[+A <: Cubbie] extends AbstractSlot[Any] {
+
+    /**
+     * The value of a RefSlot is the id of the referenced cubbie. To get an actual cubbie, clients need
+     * to call this method. It takes as implicit parameter a mapping from ids to cubbies. This is a deliberate
+     * choice: the slot itself is not supposed to store any internal state/mapping to cubbies, it only stores
+     * the id.
+     * @param tr mapping from ids to cubbies.
+     * @return the object associated with the given id in the given mapping.
+     */
     def deref(implicit tr: scala.collection.Map[Any, Cubbie]) = tr(value).asInstanceOf[A]
     //    def ->(coll:MongoCubbieCollection[A]):GraphLoader.SlotInCollection[A] = GraphLoader.SlotInCollection(this,coll)
   }
