@@ -191,46 +191,77 @@ object RecursiveLDA {
     if (opts.numLayers.value == 1) System.exit(0)
     
     // Build single flat LDA
-    val bigNumTopics = numTopics * numTopics
-    val lda3 = new RecursiveLDA(WordSeqDomain, bigNumTopics, opts.alpha.value, opts.beta.value)(GenerativeModel())
-    while (documents2.size > 0) {
-      val doc = documents2.last
-      val doc3 = lda3.documentMap.getOrElse(doc.name, { val d = new Document(WordSeqDomain, doc.name, Nil); d.zs = new lda3.Zs; d })
-      val ws = doc.ws; val zs = doc.zs
-      var i = 0; val len = doc.length
-      while (i < len) {
-        val zi = doc.superTopic * numTopics + zs.intValue(i)
-        val wi = ws.intValue(i)
-        lda3.phis(zi).tensor.+=(wi, 1.0) // This avoids? the need for estimating phis later; note that we are not setting thetas here.
-        doc3.ws.appendInt(wi)
-        doc3.zs.appendInt(zi)
-        if (doc.breaks.contains(i)) doc3.breaks += (doc3.ws.length-1) // preserve phrase boundaries
-        i += 1
+    if (false) {
+      val bigNumTopics = numTopics * numTopics
+      val lda3 = new RecursiveLDA(WordSeqDomain, bigNumTopics, opts.alpha.value, opts.beta.value)(GenerativeModel())
+      while (documents2.size > 0) {
+        val doc = documents2.last
+        val doc3 = lda3.documentMap.getOrElse(doc.name, { val d = new Document(WordSeqDomain, doc.name, Nil); d.zs = new lda3.Zs; d })
+        val ws = doc.ws; val zs = doc.zs
+        var i = 0; val len = doc.length
+        while (i < len) {
+          val zi = doc.superTopic * numTopics + zs.intValue(i)
+          val wi = ws.intValue(i)
+          lda3.phis(zi).tensor.+=(wi, 1.0) // This avoids? the need for estimating phis later; note that we are not setting thetas here.
+          doc3.ws.appendInt(wi)
+          doc3.zs.appendInt(zi)
+          if (doc.breaks.contains(i)) doc3.breaks += (doc3.ws.length-1) // preserve phrase boundaries
+          i += 1
+        }
+        if (!lda3.documentMap.contains(doc3.name)) lda3.addDocument(doc3)
+        //else println("RecursiveLDA appending to final flat model: "+doc.name+" superTopic="+doc.superTopic+" numWords="+doc.length)
+        documents2.remove(documents2.size-1) // Do this to enable garbage collection as we create more doc3's
       }
-      if (!lda3.documentMap.contains(doc3.name)) lda3.addDocument(doc3)
-      //else println("RecursiveLDA appending to final flat model: "+doc.name+" superTopic="+doc.superTopic+" numWords="+doc.length)
-      documents2.remove(documents2.size-1) // Do this to enable garbage collection as we create more doc3's
+      println("Flat LDA")
+      println(lda3.topicsSummary(10))
+      if (opts.printTopics.wasInvoked) {
+        println("\nFlat LDA topic words")
+        println(lda3.topicsSummary(opts.printTopics.value))
+      }
+      if (opts.printPhrases.wasInvoked) { 
+        println("\nFlat LDA topic phrases")
+        println(lda3.topicsWordsAndPhrasesSummary(opts.printPhrases.value, opts.printPhrases.value))
+      }
+      if (opts.writeDocs.wasInvoked) {
+        println("\nWriting state to "+opts.writeDocs.value)
+        val file = new File(opts.writeDocs.value)
+        val pw = new PrintWriter(file)
+        lda3.documents.foreach(_.writeNameWordsZs(pw))
+        pw.close()
+      }
+    } else { // Be more memory efficient; don't build lda3
+      val documents3 = new HashMap[String,Document]
+      object ZDomain3 extends DiscreteDomain(numTopics * numTopics)
+      object ZSeqDomain3 extends DiscreteSeqDomain { def elementDomain = ZDomain3 }
+      class Zs3 extends DiscreteSeqVariable { def domain = ZSeqDomain3 }
+      while (documents2.size > 0) {
+        val doc = documents2.last
+        val doc3 = documents3.getOrElseUpdate(doc.name, { val d = new Document(WordSeqDomain, doc.name, Nil); d.zs = new Zs3; d })
+        val ws = doc.ws; val zs = doc.zs
+        var i = 0; val len = doc.length
+        while (i < len) {
+          val zi = doc.superTopic * numTopics + zs.intValue(i)
+          val wi = ws.intValue(i)
+          doc3.ws.appendInt(wi)
+          doc3.zs.appendInt(zi)
+          if (doc.breaks.contains(i)) doc3.breaks += (doc3.ws.length-1) // preserve phrase boundaries
+          i += 1
+        }
+        documents2.remove(documents2.size-1) // Do this to enable garbage collection as we create more doc3's
+      }
+      if (opts.writeDocs.wasInvoked) {
+        println("\nWriting state to "+opts.writeDocs.value)
+        val file = new File(opts.writeDocs.value)
+        val pw = new PrintWriter(file)
+        pw.println("/alphas")
+        pw.println((Seq.fill(numTopics*numTopics)(opts.alpha.value)).mkString(" ")) // Just set all alphas to 1.0 // TODO can we do better?
+        pw.println()
+        documents3.values.foreach(_.writeNameWordsZs(pw))
+        pw.close()
+      }
     }
 
-    println("Flat LDA")
-    println(lda3.topicsSummary(10))
     
-    if (opts.writeDocs.wasInvoked) {
-      println("\nWriting state to "+opts.writeDocs.value)
-      val file = new File(opts.writeDocs.value)
-      val pw = new PrintWriter(file)
-      lda3.documents.foreach(_.writeNameWordsZs(pw))
-      pw.close()
-    }
-    
-    if (opts.printTopics.wasInvoked) {
-      println("\nFlat LDA topic words")
-      println(lda3.topicsSummary(opts.printTopics.value))
-    }
-    if (opts.printPhrases.wasInvoked) { 
-      println("\nFlat LDA topic phrases")
-      println(lda3.topicsWordsAndPhrasesSummary(opts.printPhrases.value, opts.printPhrases.value))
-    }
   }
   
 }

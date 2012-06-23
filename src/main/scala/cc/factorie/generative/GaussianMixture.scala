@@ -28,4 +28,19 @@ object GaussianMixture extends GenerativeFamily4[RealVar,Mixture[RealVar],Mixtur
     def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): Double = Gaussian.sampledValue(s._2(mixtureIndex).doubleValue, s._3(mixtureIndex).doubleValue)
   }
   def newFactor(a:RealVar, b:Mixture[RealVar], c:Mixture[RealVar], d:DiscreteVariable) = Factor(a, b, c, d)
+  
+  // A different version in which all the components share the same variance
+  case class FactorSharedVariance(_1:RealVar, _2:Mixture[RealVar], _3:RealVar, _4:DiscreteVariable) extends GenerativeFactorWithStatistics4[RealVar,Mixture[RealVar],RealVar,DiscreteVariable]  {
+    def gate = _4
+    override def logpr(s:StatisticsType) = Gaussian.logpr(s._1.doubleValue, s._2(s._4.intValue).doubleValue, s._3.doubleValue) 
+    def pr(s:StatisticsType) = Gaussian.pr(s._1.doubleValue, s._2(s._4.intValue).doubleValue, s._3.doubleValue) 
+    def sampledValue(s:StatisticsType): Double = Gaussian.sampledValue(s._2(s._4.intValue).doubleValue, s._3.doubleValue) 
+    def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = Gaussian.pr(s._1.doubleValue, s._2(mixtureIndex).doubleValue, s._3.doubleValue) 
+    def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): Double = Gaussian.sampledValue(s._2(mixtureIndex).doubleValue, s._3.doubleValue)
+  }
+  def newFactor(a:RealVar, b:Mixture[RealVar], c:RealVar, d:DiscreteVariable) = FactorSharedVariance(a, b, c ,d)
+  def apply(p1:Mixture[RealVar], p2:RealVar, p3:DiscreteVariable) = new Function1[RealVar,FactorSharedVariance] {
+    def apply(c:RealVar) = newFactor(c, p1, p2, p3)
+  }
+
 }

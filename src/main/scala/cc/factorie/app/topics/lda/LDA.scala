@@ -257,13 +257,18 @@ class LDACmd {
       val readLinesRegexGroups= new CmdOption("read-lines-regex-groups", List(1), "GROUPNUMS", "The --read-lines-regex group numbers from which to grab the text of the document.")
       val readLinesRegexPrint = new CmdOption("read-lines-regex-print", false, "BOOL", "Print the --read-lines-regex match that will become the text of the document.")
       val writeDocs =     new CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments") 
-      val readDocs =      new CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments") 
-      val readPhis =      new CmdOption("read-phis", "lda-docs.txt", "FILENAME", "Read documents from filename, but only use them to increment topic word counts.")
+      val readDocs =      new CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename, reading document names, words and z assignments; store documents; can then add more documents or do more inference.") 
+      val readPhis =      new CmdOption("read-phis", "lda-docs.txt", "FILENAME", "Read documents from filename, but only use them to increment topic word counts; does not store documents (conserving memory); cannot do more inference, nor print phrases") { override def invoke = { numIterations.value = 0; numIterations.defaultValue = 0 } }
       val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
       val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
       val printPhrases =  new CmdOption("print-topics-phrases", 20, "N", "Just before exiting print top N phrases for each topic.")
+      val thetaServer   = new CmdOption("theta-server", 50, "N", "Read from sdin newline-separated documents, and output a theta topic distribution for each, estimated by N iterations of sampling on the document.")
       val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = LDACmd.this.verbose = true }
       // TODO Add stopwords option
+      // TODO Add option to save alphas somewhere, perhaps first line of the writeDocs file, like a document containing only numbers (with extra newline at the end):
+      // alphas
+      // 0.23 0.15 0.62
+      // 
     }
     opts.parse(args)
     /** The domain of the words in documents */
@@ -313,6 +318,10 @@ class LDACmd {
     if (opts.readDocs.wasInvoked) {
       val file = new File(opts.readDocs.value)
       val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+      val alphasName = reader.readLine(); if (alphasName != "/alphas") throw new Error("/alphas not found")
+      val alphasString = reader.readLine(); lda.alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
+      reader.readLine() // consume delimiting newline
+      println("Read alphas "+lda.alphas.tensor.mkString(" "))
       breakable { while (true) {
         if (lda.documents.size == opts.maxNumDocs.value) break
         val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
@@ -328,8 +337,12 @@ class LDACmd {
       //println(lda.documents.head.zs.intValues.mkString(" "))
     }
     if (opts.readPhis.wasInvoked) {
-      val file = new File(opts.readDocs.value)
+      val file = new File(opts.readPhis.value)
       val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+      val alphasName = reader.readLine(); if (alphasName != "/alphas") throw new Error("/alphas not found")
+      val alphasString = reader.readLine(); lda.alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
+      reader.readLine() // consume delimiting newline
+      println("Read alphas "+lda.alphas.tensor.mkString(" "))
       breakable { while (true) {
         if (lda.documents.size == opts.maxNumDocs.value) break
         val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
@@ -372,6 +385,9 @@ class LDACmd {
     if (opts.writeDocs.wasInvoked) {
       val file = new File(opts.writeDocs.value)
       val pw = new PrintWriter(file)
+      pw.println("/alphas")
+      pw.println(lda.alphas.tensor.mkString(" "))
+      pw.println()
       lda.documents.foreach(_.writeNameWordsZs(pw))
       pw.close()
     }
@@ -382,6 +398,20 @@ class LDACmd {
       println(lda.topicsWordsAndPhrasesSummary(opts.printPhrases.value, opts.printPhrases.value))
       //println(lda.topicsPhraseCounts.topicsPhrasesSummary(opts.printPhrases.value))
 
+    if (opts.thetaServer.wasInvoked) {
+      lda.wordSeqDomain.elementDomain.freeze
+      val reader = new java.io.BufferedReader(new java.io.InputStreamReader(System.in))
+      println("Reading documents, one per line.  To end, close by Control-D")
+      var line = reader.readLine
+      var count = 0
+      while (line ne null) {
+        val doc = Document.fromString(lda.wordSeqDomain, "<stdin>"+count, line)
+        count += 1
+        lda.inferDocumentTheta(doc, opts.thetaServer.value)
+        println(doc.theta.tensor.mkString(" "))
+        line = reader.readLine
+      }
+    }
   }
 
   @deprecated("Will be removed")

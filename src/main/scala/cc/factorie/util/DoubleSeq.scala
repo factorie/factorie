@@ -247,6 +247,11 @@ trait IncrementableDoubleSeq extends DoubleSeq {
     case ds:DoubleSeq => { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor*ds(i)); i += 1 }} 
   }
   def +=(a:Array[Double], factor:Double): Unit = { val l = length; require(a.length == l); var i = 0; while (i < l) { +=(i, factor*a(i)); i += 1 }}
+  /** Increment by the element-wise product of ds and factor. */
+  def +=(ds:DoubleSeq, factor:DoubleSeq): Unit = ds match {
+    case ds:SparseDoubleSeq => { ds.foreachActiveElement((i,v) => +=(i,v*factor(i))) }
+    case ds:DoubleSeq => { val l = length; require(ds.length == l); var i = 0; while (i < l) { +=(i, factor(i)*ds(i)); i += 1 }} 
+  }
   def -=(i:Int, incr:Double): Unit = +=(i, -incr)
   final def -=(d:Double): Unit = +=(-d)
   def -=(ds:DoubleSeq): Unit = +=(ds, -1.0)
