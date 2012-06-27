@@ -39,7 +39,7 @@ trait Model {
   def factorsWithDuplicates(variable:Variable): Iterable[Factor]
   def factorsWithDuplicates(variables:Iterable[Variable]): Iterable[Factor] = variables.flatMap(factorsWithDuplicates(_))
   def factorsWithDuplicates(d:Diff): Iterable[Factor] = if (d.variable == null) Nil else factorsWithDuplicates(d.variable)
-  def factorsWithDuplicates(d:DiffList): Iterable[Factor] = if (d.size == 0) Nil else factorsWithDuplicates(d.map(_.variable))
+  def factorsWithDuplicates(d:DiffList): Iterable[Factor] = if (d.size == 0) Nil else d.flatMap(factorsWithDuplicates(_))
 
   def factors(variable:Variable): Iterable[Factor] = dedup(factorsWithDuplicates(variable))
   def factors(variables:Iterable[Variable]): Iterable[Factor] = dedup(factorsWithDuplicates(variables))
