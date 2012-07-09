@@ -117,7 +117,7 @@ class BackTrackLineOptimizer2(val gradient:Tensor, val line:Tensor, val initialS
     tmplam = 0.0;
     alam2 = 0.0
   }
-  
+
   def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     logger.warn("BackTrackLineOptimizer step value="+value)
     // If first time in, do various initializations
@@ -146,55 +146,63 @@ class BackTrackLineOptimizer2(val gradient:Tensor, val line:Tensor, val initialS
         i += 1
       }
       alamin = relTolx / test
-      
+
       // Set oldValue and origValue
       oldValue = value
       origValue = value
-    }
-    
-    // Check for convergence by sufficient function increase (Wolf condition)
-    if (value >= origValue + ALF * alam * slope) {
-      if (value < origValue) throw new Error("value did not increase: original=" + origValue + " new=" + value)
-      _isConverged = true 
-    } else if (value.isInfinity || oldValue.isInfinity) {
-      // value is infinite; we have jumped into unstable territory.  Scale down jump
-      tmplam =.2 * alam
-      if (alam < alamin) {
-        logger.warn("BackTrackLineOptimizer EXITING BACKTRACK: Jump too small. Exiting and using xold.");
-        _isConverged = true // Exiting backtrack: jump to small; using previous parameters
-      }
-    } else {
-      // backtrack
-      if (alam == 1.0) tmplam = -slope / (2.0 * (value - origValue - slope)) // first time through
-      else {
-        val rhs1 = value - origValue - alam * slope
-        val rhs2 = oldValue - origValue - alam2 * slope
-        assert((alam - alam2) != 0, "FAILURE: dividing by alam-alam2.  alam=" + alam)
-        val a = (rhs1 / (alam * alam) - rhs2 / (alam2 * alam2)) / (alam - alam2)
-        val b = (-alam2 * rhs1 / (alam * alam) + alam * rhs2 / (alam2 * alam2)) / (alam - alam2);
-        if (a == 0.0) tmplam = -slope / (2.0 * b)
+      if(!_isConverged) weights.+=(line, alam - oldAlam)
+
+    }else{
+
+      // Check for convergence by sufficient function increase (Wolf condition)
+      if (value >= origValue + ALF * alam * slope) {
+        if (value < origValue) throw new Error("value did not increase: original=" + origValue + " new=" + value)
+        _isConverged = true
+      } else if (value.isInfinity || oldValue.isInfinity) {
+        // value is infinite; we have jumped into unstable territory.  Scale down jump
+        tmplam =.2 * alam
+        if (alam < alamin) {
+          logger.warn("BackTrackLineOptimizer EXITING BACKTRACK: Jump too small. Exiting and using xold.");
+          _isConverged = true // Exiting backtrack: jump to small; using previous parameters
+        }
+      } else {
+        // backtrack
+        if (alam == 1.0) tmplam = -slope / (2.0 * (value - origValue - slope)) // first time through
         else {
-          val disc = b * b - 3.0 * a * slope
-          if (disc < 0.0) tmplam =.5 * alam
-          else if (b <= 0.0) tmplam = (-b + math.sqrt(disc)) / (3.0 * a)
-          else tmplam = -slope / (b + math.sqrt(disc))
-          if (tmplam > .5 * alam) tmplam =.5 * alam
+          val rhs1 = value - origValue - alam * slope
+          val rhs2 = oldValue - origValue - alam2 * slope
+          assert((alam - alam2) != 0, "FAILURE: dividing by alam-alam2.  alam=" + alam)
+          val a = (rhs1 / (alam * alam) - rhs2 / (alam2 * alam2)) / (alam - alam2)
+          val b = (-alam2 * rhs1 / (alam * alam) + alam * rhs2 / (alam2 * alam2)) / (alam - alam2);
+          if (a == 0.0) tmplam = -slope / (2.0 * b)
+          else {
+            val disc = b * b - 3.0 * a * slope
+            if (disc < 0.0) tmplam =.5 * alam
+            else if (b <= 0.0) tmplam = (-b + math.sqrt(disc)) / (3.0 * a)
+            else tmplam = -slope / (b + math.sqrt(disc))
+            if (tmplam > .5 * alam) tmplam =.5 * alam
+          }
         }
       }
+      alam2 = alam
+      oldValue = value
+      oldAlam = alam
+      alam = math.max(tmplam, 0.1 * alam)
+//      assert(alam != oldAlam)
+      // Here we actually make the step, updating the weights in the direction of the line
+      logger.warn("BackTrackLineOptimizer line factor="+(alam-oldAlam))
+
+      if(!_isConverged) weights.+=(line, alam - oldAlam)
     }
-    assert(alam != oldAlam)
-    // Here we actually make the step, updating the weights in the direction of the line
-    logger.warn("BackTrackLineOptimizer line factor="+(alam-oldAlam))
-    weights.+=(line, alam - oldAlam)
-    // Check for convergence., i.e. weights vector barely changed
+
+
+
+    // Check for convergence
     if (alam < alamin || !origWeights.different(weights, absTolx)) {
       weights := origWeights
       logger.warn("EXITING BACKTRACK: Jump too small (alamin=" + alamin + "). Exiting and using xold.");
       _isConverged = true // Convergence on change in params
     }
-    alam2 = alam
-    oldValue = value
-    alam = math.max(tmplam, 0.1 * alam)
   }
 
 }
