@@ -263,7 +263,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
   override def asArray = __values
   override def +=(i:Int, incr:Double): Unit = __values(i) += incr
   override def :=(ds:DoubleSeq): Unit = ds match {
-    case ds:DenseTensor => System.arraycopy(__values, 0, ds.__values, 0, length)
+    case ds:DenseTensor => System.arraycopy(ds.__values, 0, __values, 0, length)
     case ds:DoubleSeq => super.:=(ds)
   }
   override def :=(a:Array[Double]): Unit = { require(a.length == length); System.arraycopy(a, 0, _values, 0, a.length) }
