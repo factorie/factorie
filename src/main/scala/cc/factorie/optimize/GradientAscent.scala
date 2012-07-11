@@ -44,7 +44,8 @@ class GradientAscent(val optimizable: OptimizableByValueAndGradient) extends Opt
       // Ensure step size not to large
       val sum = ArrayOps.twoNorm(gradient)
       if (sum > gradientNormMax) ArrayOps.*=(gradient, (gradientNormMax / sum))
-      step = lineOptimizer.optimize(gradient, step)
+      //step = lineOptimizer.optimize(gradient, step)
+      lineOptimizer.optimize(gradient, initialStepSize)
       val newValue = optimizable.optimizableValue
       optimizable.getOptimizableGradient(gradient)
       if (2.0 * math.abs(newValue - value) < tolerance * (math.abs(newValue) + math.abs(value) + eps)) {

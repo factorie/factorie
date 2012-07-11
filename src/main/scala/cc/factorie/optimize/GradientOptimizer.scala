@@ -1,4 +1,7 @@
 package cc.factorie.optimize
+
+import _root_.scala.math
+import _root_.scala.Predef._
 import cc.factorie._
 import cc.factorie.la._
 
@@ -73,8 +76,8 @@ class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptim
 
     if (lineOptimizer eq null) {
       // Before giving the BackTrackLineOptimizer a line direction to search, ensure it isn't too steep
-      if (gradientTwoNorm > gradientNormMax) gradient.*=(gradientNormMax / gradientTwoNorm)
-      lineOptimizer = new BackTrackLineOptimizer2(gradient, gradient, stepSize)
+     // if (gradientTwoNorm > gradientNormMax) gradient.*=(gradientNormMax / gradientTwoNorm)
+      lineOptimizer = new BackTrackLineOptimizer2(gradient, gradient.copy, stepSize)
       oldValue = value
     }
     lineOptimizer.step(weights, gradient, value, margin)
@@ -117,16 +120,16 @@ class BackTrackLineOptimizer2(val gradient:Tensor, val line:Tensor, val initialS
     tmplam = 0.0;
     alam2 = 0.0
   }
-
-  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+    def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     logger.warn("BackTrackLineOptimizer step value="+value)
     // If first time in, do various initializations
     if (slope.isNaN) {
       origWeights = weights.copy
       // Set the slope
-      val sum = gradient.twoNorm
-      if (sum > gradientNormMax) gradient *= (gradientNormMax / sum) // If gradient is too steep, bring it down to gradientNormMax
-      slope = gradient dot line
+
+      val sum = line.twoNorm
+      if (sum > initialStepSize) line *= (initialStepSize / sum) // If gradient is too steep, bring it down to gradientNormMax
+      slope = gradient dot line     //todo, it's redundant, and expensive to do both gradient.twoNorm and gradient dot line when they're the same
       logger.warn("BackTrackLineOptimizer slope="+slope)
       if (slope <= 0.0) throw new Error("Slope=" + slope + " is negative or zero.")
 
@@ -150,6 +153,7 @@ class BackTrackLineOptimizer2(val gradient:Tensor, val line:Tensor, val initialS
       // Set oldValue and origValue
       oldValue = value
       origValue = value
+      logger.warn("BackTrackLineOptimizer line factor="+(alam-oldAlam))
       if(!_isConverged) weights.+=(line, alam - oldAlam)
 
     }else{
@@ -165,9 +169,11 @@ class BackTrackLineOptimizer2(val gradient:Tensor, val line:Tensor, val initialS
           logger.warn("BackTrackLineOptimizer EXITING BACKTRACK: Jump too small. Exiting and using xold.");
           _isConverged = true // Exiting backtrack: jump to small; using previous parameters
         }
+      }else if (alam == oldAlam){
+          _isConverged = true
       } else {
         // backtrack
-        if (alam == 1.0) tmplam = -slope / (2.0 * (value - origValue - slope)) // first time through
+        if (alam == 1.0) tmplam = { -slope / (2.0 * (value - origValue - slope))} // first time through
         else {
           val rhs1 = value - origValue - alam * slope
           val rhs2 = oldValue - origValue - alam2 * slope
@@ -188,14 +194,14 @@ class BackTrackLineOptimizer2(val gradient:Tensor, val line:Tensor, val initialS
       oldValue = value
       oldAlam = alam
       alam = math.max(tmplam, 0.1 * alam)
-//      assert(alam != oldAlam)
-      // Here we actually make the step, updating the weights in the direction of the line
-      logger.warn("BackTrackLineOptimizer line factor="+(alam-oldAlam))
+      if(alam == oldAlam) _isConverged = true
 
-      if(!_isConverged) weights.+=(line, alam - oldAlam)
+      if(!_isConverged){
+        logger.warn("BackTrackLineOptimizer line factor="+(alam-oldAlam))
+        weights.+=(line, alam - oldAlam)
+      }
+
     }
-
-
 
     // Check for convergence
     if (alam < alamin || !origWeights.different(weights, absTolx)) {
@@ -247,12 +253,12 @@ class ConjugateGradient2(val initialStepSize: Double = 1.0) extends GradientOpti
     }
     
     // Take a step in the current search direction, xi
-    if (lineOptimizer eq null) lineOptimizer = new BackTrackLineOptimizer2(gradient, xi, stepSize)
+    if (lineOptimizer eq null) lineOptimizer = new BackTrackLineOptimizer2(gradient, xi.copy, stepSize)
     lineOptimizer.step(weights, xi, value, margin)
     // If the lineOptimizer has not yet converged, then don't yet do any of the ConjugateGradient-specific things below
     if (!lineOptimizer.isConverged) return
     lineOptimizer = null // So we create a new one next time around
-
+    xi = gradient.copy
     // This termination provided by "Numeric Recipes in C".
     if (2.0 * math.abs(value - oldValue) <= tolerance * (math.abs(value) + math.abs(oldValue) + eps)) {
       logger.info("ConjugateGradient converged: old value="+oldValue+" new value="+value+" tolerance="+tolerance)
@@ -298,5 +304,8 @@ class ConjugateGradient2(val initialStepSize: Double = 1.0) extends GradientOpti
     if (xi.dot(h) > 0) xi := h  else h := xi
 
     iterations += 1
+
+    lineOptimizer = new BackTrackLineOptimizer2(gradient, xi.copy, stepSize)
+    lineOptimizer.step(weights, xi, value, margin)
   }
 }

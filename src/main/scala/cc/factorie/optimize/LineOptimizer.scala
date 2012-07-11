@@ -62,7 +62,7 @@ class BackTrackLineOptimizer(val optimizable: OptimizableByValueAndGradient, val
     maths.ArrayOps.set(oldParams, params)
     var gradient: Array[Double] = new Array[Double](optimizable.numOptimizableParameters)
     optimizable.getOptimizableGradient(gradient)
-
+    
     var f = Double.NaN
     var f2 = optimizable.optimizableValue
     var fold = f2

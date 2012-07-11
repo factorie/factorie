@@ -41,7 +41,7 @@ class DotMaximumLikelihood(val model:TemplateModel, val optimizer:GradientOptimi
 	  logLikelihood += -0.5 * 1.0/gaussianPriorVariance * weights.dot(weights)
 	  // Use gradient and value to make a step of optimization
 	  optimizer.step(weights, gradient, logLikelihood, Double.NaN)
-	  if (optimizer.isConverged) { convergences += 1; optimizer.reset(); println("DotMaximumLikelihood converged "+convergences) }
+	  if (optimizer.isConverged) { convergences += 1; optimizer.reset(); println("DotMaximumLikelihood converged in "+convergences + " iters with loglikelihood = " + logLikelihood) }
 	  iterations += 1
 	}
   }
