@@ -83,6 +83,9 @@ class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptim
     lineOptimizer.step(weights, gradient, value, margin)
     if (!lineOptimizer.isConverged) return
     lineOptimizer = null // So we create a new one next time
+    lineOptimizer = new BackTrackLineOptimizer2(gradient, gradient.copy, stepSize)
+    lineOptimizer.step(weights, gradient, value, margin)
+    oldValue = value
   }
 }
 
