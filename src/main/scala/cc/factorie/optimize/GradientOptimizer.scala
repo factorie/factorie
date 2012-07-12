@@ -259,7 +259,7 @@ class ConjugateGradient2(val initialStepSize: Double = 1.0) extends GradientOpti
     if (lineOptimizer eq null) lineOptimizer = new BackTrackLineOptimizer2(gradient, xi.copy, stepSize)
     lineOptimizer.step(weights, xi, value, margin)
     // If the lineOptimizer has not yet converged, then don't yet do any of the ConjugateGradient-specific things below
-    if (!lineOptimizer.isConverged) return
+    if (lineOptimizer.isConverged){
     lineOptimizer = null // So we create a new one next time around
     xi = gradient.copy
     // This termination provided by "Numeric Recipes in C".
@@ -310,5 +310,6 @@ class ConjugateGradient2(val initialStepSize: Double = 1.0) extends GradientOpti
 
     lineOptimizer = new BackTrackLineOptimizer2(gradient, xi.copy, stepSize)
     lineOptimizer.step(weights, xi, value, margin)
+  }
   }
 }
