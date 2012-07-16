@@ -24,30 +24,28 @@ import scala.util.Random
 // TODO Perhaps instead Proportions should contain a Masses, but not inherit from Masses?  (Suggested by Alexandre)  -akm
 // But I think this would lead to inefficiencies, and the current set-up isn't bad. -akm
 trait Proportions extends Masses {
-  abstract override def apply(i:Int): Double = {
-    val mt = massTotal
-    if (mt == 0.0) 1.0 / length
-    else super.apply(i) / mt
-  }
+  @inline final abstract override def apply(i:Int): Double = pr(i)
   // TODO Should we have the following instead?  It would be slower... :-(
   //abstract override def apply(i:Int): Double = if (massTotal == 0.0) 1.0/length else super.apply(i) / massTotal
   def mass(i:Int): Double = super.apply(i)
+  override def pr(index:Int): Double = {
+    val mt = massTotal
+    if (mt == 0.0) 1.0 / length else super.apply(index) / mt
+  }
   override def sampleIndex(implicit r:Random): Int = {
     var b = 0.0; val s = r.nextDouble; var i = 0
-    while (b <= s && i < length) { assert (apply(i) >= 0.0, "p="+apply(i)+" mt="+massTotal); b += apply(i); i += 1 }
+    while (b <= s && i < length) { assert (pr(i) >= 0.0, "p="+pr(i)+" mt="+massTotal); b += pr(i); i += 1 }
     assert(i > 0)
     i - 1
   } 
   //def sampleIndex: Int = sampleIndex(cc.factorie.random)
-  @inline final def pr(index:Int) = apply(index)
-  @inline final def logpr(index:Int) = math.log(apply(index))
   override def stringPrefix = "Proportions"
   override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
 }
 
 trait Proportions1 extends Masses1 with Proportions {
   // Preliminary thoughts on getting Masses out of Proportions
-  // Perhaps I should consider having inner Masses member in simpler? Proportions
+  // Perhaps I should consider having inner Masses member in simpler Proportions
   def masses: Masses1 = { val m = new DenseMasses1(length); val len = length; var i = 0; while (i < len) { m.+=(i, mass(i)); i += 1 }; m }
 }
 trait Proportions2 extends Masses2 with Proportions
@@ -57,13 +55,13 @@ trait Proportions4 extends Masses4 with Proportions
 // Proportions Values of dimensionality 1
 
 class SingletonProportions1(dim1:Int, singleIndex:Int) extends SingletonMasses1(dim1, singleIndex, 1.0) with Proportions1 {
-  @inline final override def apply(index:Int) = if (index == singleIndex) 1.0 else 0.0
+  @inline final override def pr(index:Int) = if (index == singleIndex) 1.0 else 0.0
 }
 class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0) with Proportions1 {
-  @inline override final def apply(i:Int): Double = 1.0 / dim1
+  @inline override final def pr(i:Int): Double = 1.0 / dim1
 }
 class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends GrowableUniformMasses1(sizeProxy, uniformValue) with Proportions1 {
-  @inline final override def apply(index:Int) = {
+  @inline final override def pr(index:Int) = {
     val result = 1.0 / length
     assert(result > 0 && result != Double.PositiveInfinity, "GrowableUniformProportions domain size is negative or zero.")
     result
@@ -73,6 +71,7 @@ class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double =
 class DenseProportions1(override val dim1:Int) extends DenseMasses1(dim1) with Proportions1 {
   def this(ds:DoubleSeq) = { this(ds.length); this += ds }
   def this(a:Array[Double]) = { this(a.length); this += a }
+  def this(dim1:Int, uniformValue:Double) = { this(dim1); this += uniformValue }
 }
 class DenseProportions2(override val dim1:Int, override val dim2:Int) extends DenseMasses2(dim1, dim2) with Proportions2
 class DenseProportions3(override val dim1:Int, override val dim2:Int, override val dim3:Int) extends DenseMasses3(dim1, dim2, dim3) with Proportions3
@@ -85,7 +84,7 @@ class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1
   var prior: Masses = null
   
   // TODO Fix this by implementing a SortedSparseCountsMasses1
-  override def apply(index:Int): Double = {
+  override def pr(index:Int): Double = {
     if (prior eq null) {
       if (countsTotal == 0) 1.0 / length
       else countOfIndex(index).toDouble / countsTotal

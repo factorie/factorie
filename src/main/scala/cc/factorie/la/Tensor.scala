@@ -266,7 +266,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
     case ds:DenseTensor => System.arraycopy(ds.__values, 0, __values, 0, length)
     case ds:DoubleSeq => super.:=(ds)
   }
-  override def :=(a:Array[Double]): Unit = { require(a.length == length); System.arraycopy(a, 0, _values, 0, a.length) }
+  override def :=(a:Array[Double]): Unit = { require(a.length == length, "Expected length="+length+" but got "+a.length); System.arraycopy(a, 0, _values, 0, a.length) }
   override def :=(a:Array[Double], offset:Int): Unit = System.arraycopy(a, offset, __values, 0, length)
   override def dot(t2:DoubleSeq): Double = t2 match {
     case t2:SingletonBinaryTensor => apply(t2.singleIndex)

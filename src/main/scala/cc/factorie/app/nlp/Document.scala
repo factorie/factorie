@@ -18,11 +18,14 @@ import scala.collection.mutable.ArrayBuffer
 
 /** Value is the sequence of tokens */
 // Consider Document(strValue:String, name:String = "")
+// TODO: Must all Documents have a name?  Alexandre thinks not.
 class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[Document,TokenSpan,Token] with Attr {
     
   // One of the following two is always null, the other non-null
   private var _string: String = strValue
   private var _stringbuf: StringBuffer = null
+  /** Append the string 's' to this Document.
+      @return the length of the Document's string before string 's' was appended. */
   def appendString(s:String): Int = {
     if (_stringbuf eq null) _stringbuf = new StringBuffer(_string)
     val result = _stringbuf.length
@@ -37,8 +40,18 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     }
     _string
   }
-  //def value: String = string
   def stringLength: Int = if (_string ne null) _string.length else _stringbuf.length
+  
+  /** Just a clearly-named alias for Chain.links. */
+  def tokens: IndexedSeq[Token] = links
+  
+  // Managing Sentences
+  private var _sentences = new ArrayBuffer[Sentence]
+  def sentences: Seq[Sentence] = _sentences
+  // potentially very slow for large documents. // TODO Why isn't this simply using token.sentence??  Or even better, just remove this method. -akm
+  def sentenceContaining(token: Token): Sentence = sentences.find(_.contains(token)).getOrElse(null)
+
+  // Managing Spans, keeping Sentence-spans separate from all other TokenSpans
   override def +=(s:TokenSpan): Unit = s match {
     case s:Sentence => {
       if (_sentences.length == 0 || _sentences.last.end < s.start) _sentences += s
@@ -52,12 +65,6 @@ class Document(val name:String, strValue:String = "") extends ChainWithSpansVar[
     case s:TokenSpan => super.-=(s)
   }
   
-  def tokens: IndexedSeq[Token] = links
-  private var _sentences = new ArrayBuffer[Sentence]
-  def sentences: Seq[Sentence] = _sentences
-  // potentially very slow for large documents.
-  def sentenceContaining(token: Token): Sentence = sentences.find(_.contains(token)).getOrElse(null)
-
   def sgmlString: String = {
     val buf = new StringBuffer
     for (token <- tokens) {
@@ -99,6 +106,7 @@ class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](va
   }
 }
 
+// TODO Consider moving this to file util/Attr.scala
 trait AttrCubbieSlots extends Cubbie {
   val storeHooks = new cc.factorie.util.Hooks1[Attr]
   val fetchHooks = new cc.factorie.util.Hooks1[AnyRef]

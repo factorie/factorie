@@ -3,13 +3,13 @@ package cc.factorie.app.nlp.segment
 import cc.factorie.app.nlp.{Token, Document}
 import cc.factorie.app.strings.RegexSegmenter
 
-/**
- * Author: martin
- * Date: 11/23/11
- */
-
 // TODO: this still needs testing on more text, contractions, and probably simplification --brian
-// Aims to adhere to CoNLL 2003 tokenization rules.
+// TODO: Gather abbreviations in separate Collection[String], and remove "may\\." from the collection. 
+
+/** Split a String into Tokens.  Aims to adhere to CoNLL 2003 tokenization rules.
+    Punctuation that ends a sentence should be placed alone in its own Token, hence this segmentation implicitly defines sentence segmentation also.
+    @author martin 
+    */
 class Tokenizer extends RegexSegmenter(Seq(
   "'[tT]|'[lL]+|'[sS]|'[mM]|'re|'RE|'ve|'VE", // this isn't working as expected
   "[\\p{L}]\\.[\\p{L}\\.]*", // A.de, A.A.A.I, etc.
@@ -41,7 +41,7 @@ class Tokenizer extends RegexSegmenter(Seq(
 
 object Tokenizer extends Tokenizer {
   def main(args: Array[String]): Unit = {
-    val string = io.Source.fromFile(args(0)).getLines().mkString("\n")
+    val string = io.Source.fromFile(args(0)).mkString
     val doc = new Document("", strValue = string)
     Tokenizer.process(doc)
     println(doc.tokens.map(_.string).mkString("\n"))

@@ -17,9 +17,7 @@ import java.io.File
 
 object LoadPlainText {
   def fromFile(file:File, segmentSentences:Boolean): Document = {
-    //println("LoadPlainText.fromFile: "+file.getCanonicalPath)
     val string = scala.io.Source.fromFile(file).mkString
-    //println("LoadPlainText.fromFile: "+string)
     fromString(file.getCanonicalPath, string, segmentSentences)
   }
 
@@ -62,6 +60,7 @@ object LoadPlainText {
   }
   
   // Recursively descend directory, returning a list of files.
+  // TODO This function should get moved into util/package.scala or somesuch.
   def files(directory:File): Seq[File] = {
     if (!directory.exists) throw new Error("File "+directory+" does not exist")
     if (directory.isFile) return List(directory)

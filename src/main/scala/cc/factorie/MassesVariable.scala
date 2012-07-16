@@ -19,8 +19,15 @@ import cc.factorie.la._
 import cc.factorie.util.{DoubleSeq,IntSeq}
 import scala.util.Random
 
+/** A Tensor containing only non-negative entries.  These are also the basis for Proportions. */
 trait Masses extends Tensor {
   def massTotal: Double
+  /** Get a normalized entry in this Masses, which can be interpreted as a probability. */
+  def pr(index:Int): Double = {
+    val mt = massTotal
+    if (mt == 0.0) 1.0 / length else apply(index) / mt
+  }
+  def logpr(index:Int) = math.log(pr(index))
   override def sampleIndex(implicit r:Random): Int = sampleIndex(massTotal)(r) //cc.factorie.maths.nextDiscrete(this.asArray, massTotal)(r)
   override def stringPrefix = "Masses"
   override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")

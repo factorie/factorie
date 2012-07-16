@@ -19,6 +19,8 @@ import cc.factorie._
     http://en.wikipedia.org/wiki/Beta_distribution */
 object Beta extends GenerativeFamily3[RealVar,RealVar,RealVar] {
   self =>
+  def mean(alpha:Double, beta:Double): Double = throw new Error("Not yet implemented")
+  def variance(alpha:Double, beta:Double): Double = throw new Error("Not yet implemented")
   def logpr(value:Double, alpha:Double, beta:Double): Double = math.log(pr(value, alpha, beta))
   def pr(value:Double, alpha:Double, beta:Double): Double = {
     require(value >= 0.0 && value <= 1.0)
@@ -55,7 +57,11 @@ object MaximizeBetaByMomentMatching {
     val ds = new cc.factorie.util.ArrayDoubleSeq(childFactors.size)
     var i = 0
     for (factor <- childFactors) factor match {
-      case f:Beta.Factor => { ds(i) = f._1.doubleValue; i += 1 } 
+      case f:Beta.Factor => { ds(i) = f._1.doubleValue; i += 1 }
+      case f:BetaMixture.Factor if (f._2(f._4.intValue) == alpha) => {
+        assert(f._3(f._4.intValue) == beta)
+        ds(i) = f._1.doubleValue; i += 1
+      }
     }
     val mean = maths.sampleMean(ds)
     val variance = maths.sampleVariance(ds, mean)
