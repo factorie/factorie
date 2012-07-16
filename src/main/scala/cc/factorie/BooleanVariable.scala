@@ -14,7 +14,8 @@
 
 package cc.factorie
 
-/** The value of a BooleanDomain.  A subclass of CategoricalValue. */
+/** The value of a BooleanDomain.  A subclass of CategoricalValue.
+    @author Andrew McCallum */
 trait BooleanValue extends CategoricalValue[Boolean] {
   def domain: BooleanDomain = BooleanDomain
   //def booleanValue = if (this eq BooleanDomain.trueValue) true else false
@@ -22,11 +23,12 @@ trait BooleanValue extends CategoricalValue[Boolean] {
 }
 
 /** The Domain for BooleanVar, of size two, containing a falseValue
-    (with intValue = 0) and a trueValue (with intValue = 1). */
+    (with intValue = 0) and a trueValue (with intValue = 1). 
+    @author Andrew McCallum */
 class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanValue] with Domain[BooleanValue] {
   thisDomain =>
-  val falseValue = super.value(false)
-  val trueValue = super.value(true)
+  val falseValue = super.value(false) // will get index == 0
+  val trueValue = super.value(true)   // will get index == 1
   freeze
   class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with cc.factorie.BooleanValue {
     override def domain = thisDomain
@@ -50,8 +52,8 @@ object BooleanDomain extends BooleanDomain
     @author Andrew McCallum */
 trait BooleanVar extends CategoricalVar[Boolean] with VarAndValueType[BooleanVar,BooleanValue] {
   def domain = BooleanDomain
-  override def categoryValue = (value eq BooleanDomain.trueValue) // Efficiently avoid a lookup in the domain 
-  final def booleanValue = categoryValue // Alias for the above method
+  override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
+  @inline final def booleanValue = categoryValue // Alias for the above method
   def ^(other:BooleanVar):Boolean = booleanValue && other.booleanValue
   def v(other:BooleanVar):Boolean = booleanValue || other.booleanValue
   def ==>(other:BooleanVar):Boolean = !booleanValue || other.booleanValue

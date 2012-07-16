@@ -15,10 +15,14 @@
 package cc.factorie
 import cc.factorie.la._
 
+/** Stores a marginal distribution containing a joint distribution over a set of variables.
+    See also Summary, which stores a collection of Marginals. */
 trait Marginal {
   def variables: Iterable[Variable]
   def setToMaximize(implicit d:DiffList): Unit
 }
+
+// Marginals over discrete variables
 
 trait DiscreteMarginal extends Marginal {
   def _1: DiscreteTensorVar
@@ -79,10 +83,32 @@ object DiscreteMarginal {
   }
 }
 
+class DiscreteSeqMarginal[V<:DiscreteSeqVariable](val _1:V, val proportionsSeq:Seq[Proportions1]) extends Marginal {
+  def variables = Seq(_1)
+  def setToMaximize(implicit d:DiffList): Unit = {
+    var i = 0;
+    while (i < _1.length) {
+      _1.set(i, proportionsSeq(i).maxIndex)(d)
+      i += 1
+    }
+  }
+}
+
+
+// Marginals over Proportions
+
+class ProportionsDirichletMarginal1[V<:ProportionsVar](_1:V, val masses:Masses1) extends Marginal {
+  def variables = Seq(_1)
+  def setToMaximize(implicit d:DiffList): Unit = {
+    if (d ne null) throw new Error("Handling of DiffList here not yet implemented.")
+    _1.tensor := masses
+  }
+}
+
 
 // Gaussian Marginal
 
-class GaussianRealMarginal1[V1<:RealVar](val _1:V1) extends Marginal {
+class RealGaussianMarginal1[V1<:RealVar](val _1:V1) extends Marginal {
   def variables = Seq(_1)
   // TODO Set this up better for incremental estimation
   var mean = 0.0

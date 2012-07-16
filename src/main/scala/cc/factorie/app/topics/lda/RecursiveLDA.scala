@@ -196,7 +196,7 @@ object RecursiveLDA {
       val lda3 = new RecursiveLDA(WordSeqDomain, bigNumTopics, opts.alpha.value, opts.beta.value)(GenerativeModel())
       while (documents2.size > 0) {
         val doc = documents2.last
-        val doc3 = lda3.documentMap.getOrElse(doc.name, { val d = new Document(WordSeqDomain, doc.name, Nil); d.zs = new lda3.Zs; d })
+        val doc3 = lda3.nameDocumentMap.getOrElse(doc.name, { val d = new Document(WordSeqDomain, doc.name, Nil); d.zs = new lda3.Zs; d })
         val ws = doc.ws; val zs = doc.zs
         var i = 0; val len = doc.length
         while (i < len) {
@@ -208,7 +208,7 @@ object RecursiveLDA {
           if (doc.breaks.contains(i)) doc3.breaks += (doc3.ws.length-1) // preserve phrase boundaries
           i += 1
         }
-        if (!lda3.documentMap.contains(doc3.name)) lda3.addDocument(doc3)
+        if (!lda3.nameDocumentMap.contains(doc3.name)) lda3.addDocument(doc3)
         //else println("RecursiveLDA appending to final flat model: "+doc.name+" superTopic="+doc.superTopic+" numWords="+doc.length)
         documents2.remove(documents2.size-1) // Do this to enable garbage collection as we create more doc3's
       }

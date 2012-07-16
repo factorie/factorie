@@ -44,9 +44,10 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   var docLengthCounts: Array[Int] = null
 
   /** The collection of all documents used to fit the parameters of this LDA model. */
-  protected val documentMap = new LinkedHashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
+  private val documentMap = new LinkedHashMap[String,Doc] { def +=(d:Document): Unit = this(d.name) = d }
   def documents: Iterable[Doc] = documentMap.values
   def getDocument(name:String) : Doc = documentMap.getOrElse(name, null)
+  def nameDocumentMap: scala.collection.Map[String,Doc] = documentMap
   /** The per-topic distribution over words.  FiniteMixture is a Seq of Dirichlet-distributed Proportions. */
   val phis = Mixture(numTopics)(ProportionsVariable.growableDense(wordDomain) ~ Dirichlet(betas))
   
@@ -318,10 +319,13 @@ class LDACmd {
     if (opts.readDocs.wasInvoked) {
       val file = new File(opts.readDocs.value)
       val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
-      val alphasName = reader.readLine(); if (alphasName != "/alphas") throw new Error("/alphas not found")
-      val alphasString = reader.readLine(); lda.alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
-      reader.readLine() // consume delimiting newline
-      println("Read alphas "+lda.alphas.tensor.mkString(" "))
+      reader.mark(512)
+      val alphasName = reader.readLine()
+      if (alphasName == "/alphas") { // If they are present, read the alpha parameters.
+        val alphasString = reader.readLine(); lda.alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
+        reader.readLine() // consume delimiting newline
+        println("Read alphas "+lda.alphas.tensor.mkString(" "))
+      } else reader.reset // Put the reader back to the read position when reader.mark was called
       breakable { while (true) {
         if (lda.documents.size == opts.maxNumDocs.value) break
         val doc = new Document(WordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs

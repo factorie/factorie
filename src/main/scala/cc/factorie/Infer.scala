@@ -44,6 +44,7 @@ trait Infer {
 
 // TODO Rename simply InferDiscrete?  Multiple DiscreteVariables could be handled by a "InferDiscretes"
 object InferDiscrete1 extends Infer {
+  // TODO Consider renaming this "asArray"
   def array(d:DiscreteVariable, model:Model): Array[Double] = {
     val distribution = new Array[Double](d.domain.size)
     val origValue = d.intValue

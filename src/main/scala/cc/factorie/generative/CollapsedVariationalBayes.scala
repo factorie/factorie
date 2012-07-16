@@ -62,6 +62,57 @@ trait CollapsedVariationalBayesHandler {
 }
 
 
+// Collapses LDA's theta, but not phi; gets marginals for Zs
+class PlatedGateCollapsedVariationalBayes(val model:GenerativeModel, val summary:Summary1[DiscreteSeqVariable,DiscreteSeqMarginal[DiscreteSeqVariable]] = new Summary1[DiscreteSeqVariable,DiscreteSeqMarginal[DiscreteSeqVariable]]) {
+  
+  def infer(gates:DiscreteSeqVariable, iterations:Int): Unit = {
+    val factors = model.factors(gates)
+    require(factors.size == 2) 
+    val gFactor = factors.collectFirst({case f:PlatedDiscrete.Factor => f}).get
+    val mFactor = factors.collectFirst({case f:PlatedDiscreteMixture.Factor => f}).get
+    require(gFactor._1 == mFactor._3) // both should equal gates
+    val gateDomainSize = gates.domain.elementDomain.size
+    val alpha1 = 1.0 / gateDomainSize // + 0.1 for smoothing?
+    val theta = gFactor._2.tensor
+    var gatesMarginal = summary.marginal1(gates)
+    if (gatesMarginal eq null) {
+      gatesMarginal = new DiscreteSeqMarginal(gates, Seq.fill(gates.length)(new DenseProportions1(gateDomainSize, alpha1))) // all Z marginals initialized to uniform
+      summary += gatesMarginal
+      theta := gates.length.toDouble / gateDomainSize // initialize theta to uniform with appropriate mass
+    }
+    val q = new cc.factorie.la.DenseTensor1(gateDomainSize)
+    var iteration = 0
+    while (iteration < iterations) {
+      var i = 0
+      // Loop over each "word" in the DiscreteSeqVariable
+      while (i < gates.length) {
+        val wi = mFactor._1.intValue(i) // the intValue of the Discrete
+        val oldQ: Proportions = gatesMarginal.proportionsSeq(i)
+        // Remove old mass
+        theta -= oldQ
+        // Loop over each possible value for this word's gate
+        var j = 0
+        while (j < gateDomainSize) {
+          q(j) = mFactor._2(i).tensor(j) * gFactor._2.tensor(j)
+          j += 1
+        }
+        q.normalize
+        theta += q
+        i += 1
+      }
+    }
+  }
+  def maximize(gates:DiscreteSeqVariable): Unit = {
+    val gatesMarginal = summary.marginal1(gates)
+    var i = 0
+    while (i < gates.length) {
+      gates.set(i, gatesMarginal.proportionsSeq(i).maxIndex)(null)
+      i += 1
+    }
+  }
+}
+
+
 
 /*
 object GeneratedVariableCollapsedVariationalBayesHandler extends CollapsedVariationalBayesHandler {

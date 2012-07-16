@@ -16,7 +16,7 @@ package cc.factorie.app.nlp
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
-class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends TokenSpan(doc, initialStart, initialLength) {
+class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:DiffList = null) extends TokenSpan(doc, initialStart, initialLength)(d) {
   def this(doc:Document)(implicit d:DiffList = null) = this(doc, doc.length, 0)
   //def tokens: IndexedSeq[Token] = links
   def tokenAtCharIndex(charOffset:Int): Token = {

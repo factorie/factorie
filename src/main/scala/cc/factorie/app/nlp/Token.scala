@@ -19,10 +19,12 @@ import scala.collection.mutable.ArrayBuffer
 // There are two ways to create Tokens and add them to Sentences and/or Documents:
 // Without String arguments, in which case the string is assumed to already be in the Document
 // With String arguments, in which case the string is appended to the Document (and when Sentence is specified, Sentence length is automatically extended)
+// TODO Why are stringStart and stringEnd "var" instead of "val"? -akm
 
-// TODO Consider stringEnd instead of stringLength?
 class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Document] with Attr {
   assert(stringStart <= stringEnd)
+  /** Create a Token and also append it to the list of Tokens in the Document.
+      There must not already be Tokens in the document with higher stringStart indices. */
   def this(doc:Document, s:Int, e:Int) = {
     this(s, e)
     doc += this
@@ -45,14 +47,18 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
     _sentence = s
     s.setLength(this.position - s.start + 1)(null)
   }
+  /** Just an alias for this.chain */
   def document: Document = chain
-  //@deprecated("Will be removed.  Use 'string' instead.") def value: String = string // abstract in StringVar
+  /** Return the substring  of the original Document string covered by the character indices stringStart to stringEnd.
+      This may be different than the String returned by this.string if the TokenString attribute has been set. 
+      (Such substitutions are useful for de-hyphenation, downcasing, and other such modifications. */
   def docSubstring = document.string.substring(stringStart, stringEnd)
   /** Return the string contents of this Token, either from its attr[TokenString] variable or ,if unset, directly as a substring of the Document */
   def string = { val ts = attr[TokenString]; if (ts ne null) ts.value else docSubstring }
+  /** Return the Token's string contents as a StringVariable.  Repeated calls will return the same Variable (assuming that the attr[TokenString] is not changed). */
   def stringVar: StringVariable = { val ts = attr[TokenString]; if (ts ne null) ts else { val ts2 = new TokenString(this, docSubstring); attr += ts2; ts2 } }
-  def sentencePosition = position - sentence.start
-  //def stringLength = throw new Error("Use string.length instead")
+  /** Return the 0-start index of this token in its sentence.  If not part of a sentence, return -1. */
+  def sentencePosition = if (_sentence eq null) -1 else position - sentence.start
   
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PosLabel]
@@ -69,7 +75,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   def parseRightChildrenLabeled(label:CategoricalValue[String]): Seq[Token] = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].rightChildrenLabeled(sentencePosition, label.intValue)
   
   // Sentence methods
-  private var _sentence: Sentence = null // This must be changeable from outside because sometimes Tokenization comes before Sentence segmentation
+  private var _sentence: Sentence = null // This must be changeable from outside because often Tokenization comes before Sentence segmentation
   def sentence = {
     if (_sentence eq null) _sentence = document.sentenceContaining(this)
     _sentence
@@ -100,13 +106,13 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   // String feature help:
   def matches(t2:Token): Boolean = string == t2.string
   /** Return true if the first  character of the word is upper case. */
-  def isCapitalized = java.lang.Character.isUpperCase(string(0))
-  def isPunctuation = string.matches("\\{Punct}")
-  def containsLowerCase = string.exists(c => java.lang.Character.isLowerCase(c))
+  def isCapitalized: Boolean = java.lang.Character.isUpperCase(string(0))
+  def isPunctuation: Boolean = string.matches("\\{Punct}")
+  def containsLowerCase: Boolean = string.exists(c => java.lang.Character.isLowerCase(c))
   /* Return true if the word contains only digits. */
-  def isDigits = string.matches("\\d+")
+  def isDigits: Boolean = string.matches("\\d+")
   /* Return true if the word contains at least one digit. */
-  def containsDigit = string.matches(".*\\d.*")
+  def containsDigit: Boolean = string.matches(".*\\d.*")
   /** Return a string that captures the generic "shape" of the original word, 
       mapping lowercase alphabetics to 'a', uppercase to 'A', digits to '1', whitespace to ' '.
       Skip more than 'maxRepetitions' of the same character class. */

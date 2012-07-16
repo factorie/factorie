@@ -29,6 +29,23 @@ trait IncrementableSummary[+M<:Marginal] extends Summary[M] {
   def incrementCurrentValues(weight:Double): Unit
 }
 
+/** A Summary that contains multiple Marginals of type M, each a marginal distribution over a single variable. */
+class Summary1[V<:Variable,M<:Marginal] {
+  protected val _marginals = new scala.collection.mutable.HashMap[V,M]
+  def marginals = _marginals.values
+  def variables = _marginals.keys
+  def marginal1(v:V) = _marginals(v)
+  def marginal(vs:Variable*): M  = vs match {
+    case Seq(v:V) => _marginals(v)
+    case _ => null.asInstanceOf[M]
+  }
+  def +=(marginal:M) = {
+    val vars = marginal.variables
+    require(vars.size == 1)
+    _marginals(vars.head.asInstanceOf[V]) = marginal
+  }
+}
+
 /** A Summary containing only one Marginal. */
 class SingletonSummary[M<:Marginal](val marginal:M) extends Summary[M] {
   def marginals = Seq(marginal)
@@ -44,7 +61,8 @@ class AssignmentSummary(val assignment:Assignment) extends Summary[Assignment] {
 }
 
 /** A summary with a separate Proportions distribution for each of its DiscreteVars */
-// TODO Rename FullyFactorizedDiscreteSummary or IndependentDiscreteSummary or PerVariableDiscreteSummary
+// TODO Consider renaming FullyFactorizedDiscreteSummary or IndependentDiscreteSummary or PerVariableDiscreteSummary
+// TODO Consider making this inherit from Summary1
 class DiscreteSummary1[V<:DiscreteVar] extends IncrementableSummary[DiscreteMarginal1[V]] {
   def this(vs:Iterable[V]) = { this(); ++=(vs) }
   //val variableClass = m.erasure
