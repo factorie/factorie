@@ -28,7 +28,7 @@ object DiscreteMixture extends GenerativeFamily3[DiscreteVar,Mixture[Proportions
     override def prChoosing(mixtureIndex:Int): Double = _2(mixtureIndex).tensor.apply(_1.intValue)
     def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value = s._1.domain.apply(s._2(mixtureIndex).sampleIndex)
     def prValue(f:Statistics, intValue:Int): Double = f._2.apply(f._3.intValue).apply(intValue)
-    override def updateCollapsedParents(weight:Double): Boolean = { _2(_3.intValue).tensor.+=(_1.intValue, weight); true }
+    override def updateCollapsedParents(weight:Double): Boolean = { _2(_3.intValue).tensor.masses.+=(_1.intValue, weight); true }
       //_2(_3.intValue) match case p:DenseCountsProportions => { p.increment(_1.intValue, weight)(null); true }
   }
   def newFactor(a:DiscreteVar, b:Mixture[ProportionsVar], c:DiscreteVariable) = Factor(a, b, c)

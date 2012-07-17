@@ -291,6 +291,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
     case t:SingletonTensor => __values(t.singleIndex) += f * t.singleValue
     case t:SparseBinaryTensor => t.=+(__values, f)
     case t:DenseTensor => { val len = length; var i = 0; while (i < len) { __values(i) += f * t.__values(i); i += 1 }}
+    case t:UniformTensor => { val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }}
   }
 }
 

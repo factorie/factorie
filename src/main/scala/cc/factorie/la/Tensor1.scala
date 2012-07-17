@@ -85,6 +85,13 @@ trait GrowableDenseTensorLike1 extends DenseTensorLike1 {
     if (index >= _size) { _size = index + 1 }
     super.+=(index, incr)
   }
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:SingletonBinaryTensor => +=(t.singleIndex, f)
+    case t:SingletonTensor => +=(t.singleIndex, f * t.singleValue)
+    case t:SparseBinaryTensor => { ensureCapacity(t.maxIndex+1); t.=+(_values, f) }
+    case t:DenseTensor => { ensureCapacity(t.length); super.+=(t, f) }
+    case t:UniformTensor => { ensureCapacity(t.length); super.+=(t, f) } //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
+  }
 }
 class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends DenseTensorLike1 with GrowableDenseTensorLike1 {
   override def copy: GrowableDenseTensor1 = { val c = new GrowableDenseTensor1(sizeProxy); c := this; c }

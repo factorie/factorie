@@ -72,9 +72,9 @@ object LDA3 {
           MaximizeDirichletByMomentMatching(alphas, model)
           sampler.resetSmoothing(alphas.tensor, beta1)
           println("alpha = " + alphas.tensor.toSeq.mkString(" "))
-          phis.zipWithIndex.map({case (phi:ProportionsVar, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).reverse.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
+          phis.zipWithIndex.map({case (phi:ProportionsVar, index:Int) => (phi, alphas(index))}).sortBy(_._2).map(_._1).reverse.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.masses.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
         } else {
-          phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
+          phis.foreach(t => println("Topic " + phis.indexOf(t) + "  " + t.tensor.top(10).map(dp => WordDomain.category(dp.index)).mkString(" ")+"  "+t.tensor.masses.massTotal.toInt+"  "+alphas(phis.indexOf(t))))
         }
         println
       }
@@ -121,7 +121,7 @@ object LDA3 {
     def export(phis:Seq[ProportionsVar]): Unit = {
       phis.foreach(_.tensor.zero())
       for (wi <- 0 until WordDomain.size)
-        phiCounts(wi).forCounts((ti,count) => phis(ti).tensor.+=(wi, count))
+        phiCounts(wi).forCounts((ti,count) => phis(ti).tensor.masses.+=(wi, count))
     }
     
     def exportThetas(docs:Seq[Document]): Unit = {
@@ -130,7 +130,7 @@ object LDA3 {
         theta.tensor.zero()
         val zis = doc.zs.intValues
         var i = zis.length - 1
-        while (i >= 0) theta.tensor.+=(zis(i), 1.0)
+        while (i >= 0) theta.tensor.masses.+=(zis(i), 1.0)
         //for (dv <- doc.zs) theta.increment(dv.intValue, 1.0)(null)
       }
     }

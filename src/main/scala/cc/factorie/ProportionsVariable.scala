@@ -21,33 +21,32 @@ import scala.util.Random
 
 // Proportions Values
 
-// TODO Perhaps instead Proportions should contain a Masses, but not inherit from Masses?  (Suggested by Alexandre)  -akm
-// But I think this would lead to inefficiencies, and the current set-up isn't bad. -akm
+/** A Tensor containing non-negative numbers summing to 1.0.  The parameter of a Discrete or Multinomial distribution. 
+    Proportions contain Masses, which may not sum to 1.0;
+    some Proportions subclasses can have their value changed by incrementing these inner masses.
+    All Proportions also inherit directly from Masses, but, naturally, these Masses always sum to 1.0, and generally are not directly mutable. */
 trait Proportions extends Masses {
-  @inline final abstract override def apply(i:Int): Double = pr(i)
+  def masses: Masses
+  //final def massTotal = 1.0
+  @inline final override def pr(i:Int): Double = apply(i)
   // TODO Should we have the following instead?  It would be slower... :-(
   //abstract override def apply(i:Int): Double = if (massTotal == 0.0) 1.0/length else super.apply(i) / massTotal
-  def mass(i:Int): Double = super.apply(i)
-  override def pr(index:Int): Double = {
-    val mt = massTotal
-    if (mt == 0.0) 1.0 / length else super.apply(index) / mt
-  }
-  override def sampleIndex(implicit r:Random): Int = {
-    var b = 0.0; val s = r.nextDouble; var i = 0
-    while (b <= s && i < length) { assert (pr(i) >= 0.0, "p="+pr(i)+" mt="+massTotal); b += pr(i); i += 1 }
-    assert(i > 0)
-    i - 1
-  } 
+//  override def pr(index:Int): Double = {
+//    val mt = massTotal
+//    if (mt == 0.0) 1.0 / length else super.apply(index) / mt
+//  }
+//  override def sampleIndex(implicit r:Random): Int = {
+//    var b = 0.0; val s = r.nextDouble; var i = 0
+//    while (b <= s && i < length) { assert (pr(i) >= 0.0, "p="+pr(i)+" mt="+massTotal); b += pr(i); i += 1 }
+//    assert(i > 0)
+//    i - 1
+//  } 
   //def sampleIndex: Int = sampleIndex(cc.factorie.random)
   override def stringPrefix = "Proportions"
   override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
 }
 
-trait Proportions1 extends Masses1 with Proportions {
-  // Preliminary thoughts on getting Masses out of Proportions
-  // Perhaps I should consider having inner Masses member in simpler Proportions
-  def masses: Masses1 = { val m = new DenseMasses1(length); val len = length; var i = 0; while (i < len) { m.+=(i, mass(i)); i += 1 }; m }
-}
+trait Proportions1 extends Masses1 with Proportions
 trait Proportions2 extends Masses2 with Proportions
 trait Proportions3 extends Masses3 with Proportions
 trait Proportions4 extends Masses4 with Proportions
@@ -55,50 +54,92 @@ trait Proportions4 extends Masses4 with Proportions
 // Proportions Values of dimensionality 1
 
 class SingletonProportions1(dim1:Int, singleIndex:Int) extends SingletonMasses1(dim1, singleIndex, 1.0) with Proportions1 {
-  @inline final override def pr(index:Int) = if (index == singleIndex) 1.0 else 0.0
+  def masses = this
 }
-class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0) with Proportions1 {
-  @inline override final def pr(i:Int): Double = 1.0 / dim1
+class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0/dim1) with Proportions1 {
+  def masses = this
 }
-class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends GrowableUniformMasses1(sizeProxy, uniformValue) with Proportions1 {
-  @inline final override def pr(index:Int) = {
-    val result = 1.0 / length
+class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends Proportions1 {
+  val masses = new GrowableUniformMasses1(sizeProxy, uniformValue)
+  def massTotal = 1.0
+  def dim1 = masses.length
+  def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, masses.length)
+  def isDense = true
+  @inline final override def apply(index:Int) = {
+    val result = 1.0 / masses.length
     assert(result > 0 && result != Double.PositiveInfinity, "GrowableUniformProportions domain size is negative or zero.")
     result
   }
 }
 
-class DenseProportions1(override val dim1:Int) extends DenseMasses1(dim1) with Proportions1 {
+trait DenseProportions extends Proportions {
+  def apply(index:Int): Double = {
+    val mt = masses.massTotal
+    if (mt == 0.0) 1.0 / length else masses.apply(index) / mt
+  }
+  def massTotal = 1.0
+  def isDense = true
+  override def zero(): Unit = masses.zero()
+}
+
+class DenseProportions1(override val dim1:Int) extends Proportions1 with DenseProportions {
   def this(ds:DoubleSeq) = { this(ds.length); this += ds }
   def this(a:Array[Double]) = { this(a.length); this += a }
   def this(dim1:Int, uniformValue:Double) = { this(dim1); this += uniformValue }
+  val masses = new DenseMasses1(dim1)
+  def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
 }
-class DenseProportions2(override val dim1:Int, override val dim2:Int) extends DenseMasses2(dim1, dim2) with Proportions2
-class DenseProportions3(override val dim1:Int, override val dim2:Int, override val dim3:Int) extends DenseMasses3(dim1, dim2, dim3) with Proportions3
-class DenseProportions4(override val dim1:Int, override val dim2:Int, override val dim3:Int, override val dim4:Int) extends DenseMasses4(dim1, dim2, dim3, dim4) with Proportions4
+class DenseProportions2(override val dim1:Int, override val dim2:Int) extends Proportions2 with DenseProportions {
+  val masses = new DenseMasses2(dim1, dim2)
+  def activeDomain =  new cc.factorie.util.RangeIntSeq(0, length)
+  def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
+  def activeDomain2 = new cc.factorie.util.RangeIntSeq(0, dim2)
+}
+class DenseProportions3(override val dim1:Int, override val dim2:Int, override val dim3:Int) extends Proportions3 with DenseProportions {
+  val masses = new DenseMasses3(dim1, dim2, dim3)
+  def activeDomain =  new cc.factorie.util.RangeIntSeq(0, length)
+  def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
+  def activeDomain2 = new cc.factorie.util.RangeIntSeq(0, dim2)
+  def activeDomain3 = new cc.factorie.util.RangeIntSeq(0, dim3)
+}
+class DenseProportions4(override val dim1:Int, override val dim2:Int, override val dim3:Int, override val dim4:Int) extends Proportions4 with DenseProportions {
+  val masses = new DenseMasses4(dim1, dim2, dim3, dim4)
+  def activeDomain =  new cc.factorie.util.RangeIntSeq(0, length)
+  def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
+  def activeDomain2 = new cc.factorie.util.RangeIntSeq(0, dim2)
+  def activeDomain3 = new cc.factorie.util.RangeIntSeq(0, dim3)
+  def activeDomain4 = new cc.factorie.util.RangeIntSeq(0, dim4)
+}
 
-class GrowableDenseProportions1(sizeProxy:Iterable[Any]) extends GrowableDenseMasses1(sizeProxy) with Proportions
+class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions1 with DenseProportions {
+  override def dim1 = sizeProxy.size
+  val masses = new GrowableDenseMasses1(sizeProxy)
+  def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
+}
 
-class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1(dim1) with Proportions1 {
-  // TODO We need somehow to say that this isDeterministic function of this.prior.
-  var prior: Masses = null
+class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
+  val masses = new SortedSparseCountsMasses1(dim1)
+  def massTotal = 1.0
+  def activeDomain1 = throw new Error("Not implemented")
+  def isDense = false
+  var prior: Masses = null  // TODO We need somehow to say that this isDeterministic function of this.prior.
   
-  // TODO Fix this by implementing a SortedSparseCountsMasses1
-  override def pr(index:Int): Double = {
+  def apply(index:Int): Double = {
     if (prior eq null) {
-      if (countsTotal == 0) 1.0 / length
-      else countOfIndex(index).toDouble / countsTotal
+      if (masses.countsTotal == 0) 1.0 / length
+      else masses.countOfIndex(index).toDouble / masses.countsTotal
     } else {
-      if (countsTotal == 0) prior(index) / prior.massTotal
-      else countOfIndex(index).toDouble / countsTotal
+      if (masses.countsTotal == 0) prior(index) / prior.massTotal
+      else masses.countOfIndex(index).toDouble / masses.countsTotal
     }
   }
+  override def zero(): Unit = masses.zero()
   // Note that "def zero()" defined in SortedSparseCountsMasses1 does not zero this.prior
   override def top(n:Int): cc.factorie.util.TopN[String] = {
-    val len = math.min(n, numPositions)
+    val len = math.min(n, masses.numPositions)
     val result = new cc.factorie.util.TopN[String](len)
     var i = 0
-    while (i < len) result += (indexAtPosition(i), countAtPosition(i).toDouble / countsTotal) 
+    while (i < len) result += (masses.indexAtPosition(i), masses.countAtPosition(i).toDouble / masses.countsTotal) 
     result
   }
   //for (i <- 0 until math.min(n, numPositions)) yield new DiscretePr(indexAtPosition(i), countAtPosition(i).toDouble / countsTotal)
@@ -110,11 +151,47 @@ class SortedSparseCountsProportions1(dim1:Int) extends SortedSparseCountsMasses1
 // Proportions Variable
 
 trait ProportionsVar extends MassesVar with VarAndValueType[ProportionsVar,Proportions] {
-  // Just a few short-cuts that reach into the value, for the most common operations, already defined in TensorVar
-  //final def size = tensor.size
+  // TODO What should go here?
 }
 class ProportionsVariable extends MassesVariable with ProportionsVar {
   def this(initialValue:Proportions) = { this(); _set(initialValue) }
+  //val massesVariable = new MassesVariable(tensor.masses) // TODO Is there a risk that tensor.masses may not have its final value yet here?  Yes!  It could be changed at any time via _set!!!
+  
+  // Methods that track modifications on a DiffList
+  def updateMasses(index:Int, newValue:Double)(implicit d:DiffList): Unit = {
+    if (d ne null) throw new Error("Not yet implemented")
+    tensor.masses.update(index, newValue)
+  }
+  def incrementMasses(index:Int, incr:Double)(implicit d:DiffList): Unit = {
+    if (d ne null) d += IncrementProportionsMassesIndexDiff(index, incr)
+    tensor.masses.+=(index, incr)
+  }
+  def incrementMasses(incr:Tensor)(implicit d:DiffList): Unit = {
+    require(incr.length == tensor.length)
+    if (d ne null) d += IncrementProportionsMassesDiff(incr)
+    tensor.masses += incr
+  }
+  def zeroMasses(implicit d:DiffList): Unit = {
+    if (d ne null) d += ZeroProportionsMassesDiff(tensor.toArray)
+    tensor.masses.zero()
+  }
+  
+  case class IncrementProportionsMassesIndexDiff(index:Int, incr:Double) extends Diff {
+    def variable = ProportionsVariable.this
+    def undo = tensor.masses.+=(index, -incr)
+    def redo = tensor.masses.+=(index, incr)
+  }
+  case class IncrementProportionsMassesDiff(t: Tensor) extends Diff {
+    def variable = ProportionsVariable.this
+    def undo = tensor.masses -= t // Note this relies on Tensor t not having changed.
+    def redo = tensor.masses += t
+  }
+  case class ZeroProportionsMassesDiff(prev: Array[Double]) extends Diff {
+    def variable = ProportionsVariable.this
+    def undo = tensor.masses += prev
+    def redo = tensor.masses.zero()
+  }
+
 }
 // In the future, we might also need a ProportionsVar1, ProportionsVar2, etc. -akm
 

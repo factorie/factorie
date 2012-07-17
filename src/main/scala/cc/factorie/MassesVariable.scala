@@ -22,6 +22,7 @@ import scala.util.Random
 /** A Tensor containing only non-negative entries.  These are also the basis for Proportions. */
 trait Masses extends Tensor {
   def massTotal: Double
+  override def sum = massTotal
   /** Get a normalized entry in this Masses, which can be interpreted as a probability. */
   def pr(index:Int): Double = {
     val mt = massTotal
@@ -73,7 +74,7 @@ class DenseMasses4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) exten
   override def +=(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = { _massTotal += v; val index = singleIndex(i, j, k, l); _values(index) += v; assert(_massTotal >= 0.0); assert(_values(index) >= 0.0) }
 }
 
-class UniformMasses1(dim1:Int, uniformValue:Double) extends UniformTensor1(dim1, uniformValue) with Masses1 {
+class UniformMasses1(dim1:Int, uniformValue:Double) extends UniformTensor1(dim1, uniformValue) with Masses1 with UniformTensor {
   def massTotal = dim1 * uniformValue
 }
 

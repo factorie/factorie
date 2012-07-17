@@ -64,14 +64,14 @@ class SparseLDAInferencer(
   def export(phis:Seq[ProportionsVar]): Unit = {
     phis.foreach(_.tensor.zero())
     for (wi <- 0 until wordDomain.size)
-      phiCounts(wi).forCounts((ti,count) => phis(ti).tensor.+=(wi, count))
+      phiCounts(wi).forCounts((ti,count) => phis(ti).tensor.masses.+=(wi, count))
   }
 
   def exportThetas(docs:Iterable[Doc]): Unit = {
     for (doc <- docs) {
       val theta = doc.theta
       theta.tensor.zero()
-      for (dv <- doc.zs.discreteValues) theta.tensor.+=(dv.intValue, 1.0)
+      for (dv <- doc.zs.discreteValues) theta.tensor.masses.+=(dv.intValue, 1.0)
     }
   }
 
@@ -95,7 +95,7 @@ class SparseLDAInferencer(
     var zp = 0
     while(zp < zs.length){
       val zi = zs.intValue(zp)
-      localTopicCounts(zi) +=1
+      localTopicCounts(zi) += 1
       zp += 1
     }
 
@@ -239,16 +239,16 @@ class SparseLDAInferencer(
         if (localTopicCounts(ti) == 0) {
 					denseIndex = 0;
 					while (localTopicIndex(denseIndex) != ti)
-						denseIndex+=1
+						denseIndex += 1
 
 					while (denseIndex < nonZeroTopics) {
 						if (denseIndex < localTopicIndex.length - 1)
 							localTopicIndex(denseIndex) = localTopicIndex(denseIndex + 1)
 
-						denseIndex+=1
+						denseIndex += 1
 					}
 
-					nonZeroTopics-=1
+					nonZeroTopics -= 1
 				}
 
         localTopicCounts(newTi) += 1
@@ -277,7 +277,7 @@ class SparseLDAInferencer(
         smoothingMass += alphas(newTi) * beta1 / (newNt + betaSum)
         if (smoothingMass <= 0.0) {
           println("smoothingMass="+smoothingMass+" alphas(ti)=%f beta1=%f newNt=%d betaSum=%f".format(alphas(ti), beta1, newNt, betaSum))
-          val smoothingMass2 = (0 until numTopics).foldLeft(0.0)((sum,t) => sum + (alphas(t) * beta1 / (phiCounts.mixtureCounts(t) + betaSum)))
+          val smoothingMass2 = (0 until numTopics).foldLeft(0.0)((sum,t) => sum + (alphas(t) * beta1 / (phiCounts.mixtureCounts(t) + betaSum))) // TODO This foldLeft does boxing.
           println("recalc smoothingMass="+smoothingMass2)
         }
         topicBetaMass -= beta1 * (newNtd-1) / ((newNt-1) + betaSum)
@@ -312,7 +312,6 @@ class SparseLDAInferencer(
       while(denseIndex < nonZeroTopics){
         val ti = localTopicIndex(denseIndex) // topic index
         _topicDocCounts(ti)(localTopicCounts(ti)) += 1
-
         denseIndex += 1
       }
 
@@ -321,7 +320,7 @@ class SparseLDAInferencer(
 
 }
 
-object SparseLDAInferencer{
+object SparseLDAInferencer {
   def apply(zDomain:DiscreteDomain,
     wordDomain:CategoricalDomain[String],
     docs:Iterable[Doc],

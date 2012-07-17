@@ -190,8 +190,8 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
         val outcomeIntValue = mFactor._1(index).intValue
         // Remove sufficient statistics from collapsed dependencies
         var z: Int = gates(index).intValue
-        if (gParentCollapsed) gParent.increment(z, -1.0)
-        if (mixtureCollapsed) mixture(z).increment(outcomeIntValue, -1.0)
+        if (gParentCollapsed) gParent.incrementMasses(z, -1.0)
+        if (mixtureCollapsed) mixture(z).incrementMasses(outcomeIntValue, -1.0)
         // Calculate distribution of new value
         //val mStat = mFactor.statistics
         //val gStat = gFactor.statistics
@@ -211,8 +211,8 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
         else z = cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random)
         gates.set(index, z)(null)
         // Put back sufficient statistics of collapsed dependencies
-        if (gParentCollapsed) gParent.increment(z, 1.0)
-        if (mixtureCollapsed) mixture(z).increment(outcomeIntValue, 1.0)
+        if (gParentCollapsed) gParent.incrementMasses(z, 1.0)
+        if (mixtureCollapsed) mixture(z).incrementMasses(outcomeIntValue, 1.0)
       }
     }
   }
@@ -258,8 +258,8 @@ object PlatedMixtureChoiceCollapsedDirichletGibbsSamplerHandler extends Collapse
       forIndex(seqSize)(seqIndex => {
         // Remove sufficient statistics from collapsed dependencies
         var choiceIntValue = choice.intValue(seqIndex)
-        if (collapsedChoiceParent ne null) collapsedChoiceParent.increment(choiceIntValue, -1.0)
-        if (collapsedOutcomeParent ne null) collapsedOutcomeParent(choiceIntValue).increment(outcome.intValue(seqIndex), -1.0)
+        if (collapsedChoiceParent ne null) collapsedChoiceParent.incrementMasses(choiceIntValue, -1.0)
+        if (collapsedOutcomeParent ne null) collapsedOutcomeParent(choiceIntValue).incrementMasses(outcome.intValue(seqIndex), -1.0)
         var sum = 0.0
         forIndex(domainSize)(i => {
           distribution(i) = collapsedChoiceParent(i) * collapsedOutcomeParent(i).pr(outcome.intValue(seqIndex))
@@ -274,8 +274,8 @@ object PlatedMixtureChoiceCollapsedDirichletGibbsSamplerHandler extends Collapse
         else choiceIntValue = cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random)
         choice.update(seqIndex, choiceIntValue)
         // Put back sufficient statitics of collapsed dependencies
-        if (collapsedChoiceParent ne null) collapsedChoiceParent.increment(choiceIntValue, 1.0)
-        if (collapsedOutcomeParent ne null) collapsedOutcomeParent(choiceIntValue).increment(outcome.intValue(seqIndex), 1.0)
+        if (collapsedChoiceParent ne null) collapsedChoiceParent.incrementMasses(choiceIntValue, 1.0)
+        if (collapsedOutcomeParent ne null) collapsedOutcomeParent(choiceIntValue).incrementMasses(outcome.intValue(seqIndex), 1.0)
       }
     )}
   }

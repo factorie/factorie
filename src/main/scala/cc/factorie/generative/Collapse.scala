@@ -42,15 +42,15 @@ object DenseCountsProportionsCollapser extends Collapser {
     if (variables.size != 1) return false
     variables.head match {
       case p:ProportionsVar => {
-        p.tensor.zero()
+        p.tensor.masses.zero()
         for (f <- factors) f match {
           //case f:Discrete.Factor if (f.family == Discrete) => p.increment(f._1.intValue, 1.0)(null)
-          case f:Discrete.Factor => p.tensor.+=(f._1.intValue, 1.0)
+          case f:Discrete.Factor => p.tensor.masses.+=(f._1.intValue, 1.0)
           //case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => f._2.asInstanceOf[DenseCountsProportions].increment(f._1(i).intValue, 1.0)(null))
-          case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => p.tensor.+=(f._1(i).intValue, 1.0))
+          case f:PlatedDiscrete.Factor => forIndex(f._1.length)(i => p.tensor.masses.+=(f._1(i).intValue, 1.0))
           //case f:Dirichlet.Factor if (f.family == Dirichlet) => p.increment(f._2)(null)
           case f:Dirichlet.Factor => p.tensor match {
-            case pt:DenseProportions1 => pt.+=(f._2.tensor)
+            case pt:DenseProportions1 => pt.masses.+=(f._2.tensor)
             case pt:SortedSparseCountsProportions1 if (model.parentFactor(p) eq f) => pt.prior = f._2.tensor
           }
           case _ => { println("DenseCountsProportionsCollapser unexpected factor "+f); return false }
@@ -68,15 +68,15 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
     variables.head match {
       case m:Mixture[ProportionsVar] => {
         if (!m(0).isInstanceOf[ProportionsVar]) return false // Because JVM erasure doesn't actually check the [DenseCountsProportions] above
-        m.foreach(p => { p.tensor.zero(); model.parentFactor(p) match { case f:Dirichlet.Factor => p.tensor.+=(f._2.tensor) } } )
+        m.foreach(p => { p.tensor.masses.zero(); model.parentFactor(p) match { case f:Dirichlet.Factor => p.tensor.masses.+=(f._2.tensor) } } )
         // TODO We really should create a mechanism indicating that a variable/factor is deterministic 
         //  and GenerativeModel.normalize should expand the factors to include neighbors of these,
         //  then include Dirichlet.factor in the match statement below.
         for (f <- factors) f match {
           //case f:MixtureComponent.Factor => {}
           case f:Mixture.Factor => {}
-          case f:DiscreteMixture.Factor => m(f._3.intValue).tensor.+=(f._1.intValue, 1.0)
-          case f:PlatedDiscreteMixture.Factor => forIndex(f._1.length)(i => m(f._3(i).intValue).tensor.+=(f._1(i).intValue, 1.0))
+          case f:DiscreteMixture.Factor => m(f._3.intValue).tensor.masses.+=(f._1.intValue, 1.0)
+          case f:PlatedDiscreteMixture.Factor => forIndex(f._1.length)(i => m(f._3(i).intValue).tensor.masses.+=(f._1(i).intValue, 1.0))
           case f:Factor => { println("DenseCountsProportionsMixtureCollapser unexpected factor "+f); return false }
         }
         true
