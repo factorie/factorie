@@ -143,7 +143,7 @@ object Tensor {
       case t2:SingletonBinaryTensorLike1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); val t2si = t2.singleIndex; for (i <- 0 until t1.dim1) t(i,t2si) = t1(i); t }
       case t2:SingletonTensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1) t(i,t2.singleIndex) = t1(i) * t2.singleValue; t }
       case t2:SparseBinaryTensorLike1 => throw new Error("Not yet implemented; needs SparseTensor2")
-      case t2:DenseTensorLike1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1; j <- 0 until t2.dim1) t(i,j) = t1(i) * t2(j); t }
+      case t2:DenseTensorLike1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1; j <- 0 until t2.dim1) t(i,j) = t1(i) * t2(j); t } // TODO Make a version of this that creates a GrowableDenseTensor2
       case t2:Tensor1 => { val t = new DenseTensor2(t1.dim1, t2.dim1); for (i <- 0 until t1.dim1; j <- t2.activeDomain.asSeq) t(i,j) = t1(i) * t2(j); t }
       //case t2:DenseTensor2 => { val t = new DenseTensor3(t1.dim1, t2.dim1, t2.dim2); for (i <- 0 until t1.dim1; j <- 0 until t2.dim1; k <- 0 until t2.dim2) t(i,j,k) = t1(i) * t2(j,k); t }
     }
@@ -602,6 +602,7 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = _.newSparseTensor) extends
   private val _map = new scala.collection.mutable.LinkedHashMap[DotFamily,Tensor] {
     override def default(f:DotFamily) = { val t = newTensor(f); this(f) = t; t }
   }
+  def families = _map.keys
   def dim1: Int = _map.values.map(_.length).sum
   override def dimensionsMatch(t:Tensor): Boolean = t match {
     case t:WeightsTensor => _map.keys.toSeq equals t._map.keys.toSeq
@@ -642,7 +643,22 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = _.newSparseTensor) extends
     case t:WeightsTensor => t._map.keys.foreach(k => apply(k).+=(t.apply(k), f))
   }
   override def +=(ds:DoubleSeq, factor:DoubleSeq): Unit = ds match {
-    case t:WeightsTensor => t._map.keys.foreach(k => apply(k).+=(t.apply(k), factor))
+    case t:WeightsTensor => {
+      factor match {
+        case t2:WeightsTensor => {
+          t._map.keys.foreach(k => apply(k).+=(t.apply(k), t2.apply(k)))
+        }
+      }
+    }
+  }
+  override def +=(ds:DoubleSeq, factor:DoubleSeq,scalar:Double): Unit = ds match {
+    case t:WeightsTensor => {
+      factor match {
+        case t2:WeightsTensor => {
+          t._map.keys.foreach(k => apply(k).+=(t.apply(k), t2.apply(k),scalar))
+        }
+      }
+    }
   }
   override def dot(t:DoubleSeq): Double = t match {
     case t:WeightsTensor => { var s = 0.0; for (k <- t._map.keys) { val t2 = apply(k); if (t2 ne null) s += t2 dot t.apply(k) }; s }

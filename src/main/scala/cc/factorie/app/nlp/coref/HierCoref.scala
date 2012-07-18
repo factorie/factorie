@@ -52,6 +52,7 @@ trait AutomaticBagPropagation{
 */
 
 abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends SettingsSampler[Null](model, null) {
+  def timeAndProcess(n:Int):Unit = super.process(n) //temporary fix to no longer being able to override process.
   def newEntity:T
   //def reestimateAttributes(e:T):Unit 
   protected var entities:ArrayBuffer[T] = null
@@ -77,10 +78,15 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
   }
   def sampleAttributes(e:T)(implicit d:DiffList):Unit //= {e.dirty.reset}
   protected def sampleEntity(samplePool:ArrayBuffer[T]) = {
-    var tries = 4
+    val initialSize = samplePool.size
+    var tries = 10
     var e:T = null.asInstanceOf[T]
-    while({tries-= 1;tries} >= 0 && (e==null || !e.isConnected)){e = samplePool(random.nextInt(samplePool.size));if(tries==1)performMaintenance(samplePool)}
-    if(!e.isConnected)throw new Exception("NOT CONNECTED")
+    while({tries-=1;tries} >= 0 && (e==null || !e.isConnected) && samplePool.size>0){
+      e = samplePool(random.nextInt(samplePool.size))
+      if(tries==1)performMaintenance(samplePool)
+    }
+    //if(e!=null && !e.isConnected)throw new Exception("NOT CONNECTED")
+    if(!e.isConnected)e==null.asInstanceOf[T]
     e
   }
   def setEntities(ents:Iterable[T]) = {entities = new ArrayBuffer[T];for(e<-ents)addEntity(e);deletedEntities = new ArrayBuffer[T]}
@@ -93,7 +99,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
     deletedEntities ++= es.filter(!_.isConnected)
     es.clear
     es++=cleanEntities
-    //println("  removed "+(oldSize-es.size)+ " disconnected entities. new size:"+es.size)
+    println("  removed "+(oldSize-es.size)+ " disconnected entities. new size:"+es.size)
   }
   //def newDiffList2 = new cc.factorie.example.DebugDiffList
   /**This function randomly generates a list of jumps/proposals to choose from.*/
@@ -108,14 +114,16 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
       }
       if(entity1.parentEntity==null && entity2.parentEntity==null)
         changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
+      else
+        changes += {(d:DiffList) => mergeUp(entity1.entityRoot.asInstanceOf[T],entity2.entityRoot.asInstanceOf[T])(d)}
     } else { //sampled nodes refer to same entity
       changes += {(d:DiffList) => splitRight(entity1,entity2)(d)}
       changes += {(d:DiffList) => splitRight(entity2,entity1)(d)}
       if(entity1.parentEntity != null && !entity1.isObserved)
         changes += {(d:DiffList) => {collapse(entity1)(d)}}
     }
-    if(entity1.dirty.value>0)changes += {(d:DiffList) => sampleAttributes(entity1)(d)}
-    if(entity1.entityRoot.id != entity1.id && entity1.entityRoot.attr[Dirty].value>0)changes += {(d:DiffList) => sampleAttributes(entity1.entityRoot.asInstanceOf[T])(d)}
+    if(entity1.dirty.value>0 && !entity1.isObserved)changes += {(d:DiffList) => sampleAttributes(entity1)(d)}
+    if(entity1.entityRoot.id != entity1.id && entity1.entityRoot.attr[Dirty].value>0 && !entity1.entityRoot.isObserved)changes += {(d:DiffList) => sampleAttributes(entity1.entityRoot.asInstanceOf[T])(d)}
 
     changes += {(d:DiffList) => {}} //give the sampler an option to reject all other proposals
     var i = 0
@@ -200,10 +208,26 @@ abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manif
   def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
 }
 
+/*
+abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends TemplateWithStatistics3[EntityRef,A,A] {
+  def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
+  def unroll2(childAttr:A) = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
+  def unroll3(parentAttr:A) = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
+}
+*/
+
+abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends Template3[EntityRef,A,A] {
+  def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
+  def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
+  def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
+}
+
+
+
 class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExistenceCost:Double=0.5) extends TemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
-  def unroll1(exists:EntityExists): Iterable[Factor] = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[IsMention])
-  def unroll2(isEntity:IsEntity): Iterable[Factor] = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[IsMention])
-  def unroll3(isMention:IsMention): Iterable[Factor] = throw new Exception("An entitie's status as a mention should never change.")
+  def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[IsMention])
+  def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[IsMention])
+  def unroll3(isMention:IsMention) = throw new Exception("An entitie's status as a mention should never change.")
   def score(s:Stat):Double ={
     val exists:Boolean = s._1.booleanValue
     val isEntity:Boolean = s._2.booleanValue

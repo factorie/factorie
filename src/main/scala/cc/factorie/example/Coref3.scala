@@ -711,6 +711,7 @@ class CanopySampler[T<:Entity](model:HierCorefModel){
       if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
     }
   */
+
     if(dropDB)rexa2.drop
     if(populateDB)rexa2.insertMentionsFromDBLP(dblpFile)
     var totalSamples:Long = 0L
