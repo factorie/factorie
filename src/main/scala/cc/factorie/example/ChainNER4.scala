@@ -71,13 +71,14 @@ object ChainNER4 {
     val trainLabels = trainSentences.flatMap(_.links.map(_.label)).take(30000)
     val testLabels = testSentences.flatMap(_.links.map(_.label)).take(2000)
     val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
-
+/*
     // Add features from next and previous tokens 
     println("Adding offset features...")
     allTokens.foreach(t => {
       if (t.hasPrev) t ++= t.prev.activeCategories.filter(!_.contains('@')).map(_+"@-1")
       if (t.hasNext) t ++= t.next.activeCategories.filter(!_.contains('@')).map(_+"@+1")
     })
+*/
     println("Using "+TokenDomain.dimensionSize+" observable features.")
     
     // Print some significant features
@@ -92,7 +93,8 @@ object ChainNER4 {
     //val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
     //val learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent(model))
     //val learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.MIRA)
-    val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.MIRA)
+    val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.ConfidenceWeighting(model,1.0))
+    //val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.MIRA)
     val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.01 }
     for (i <- 1 to 3) {
       println("Iteration "+i) 

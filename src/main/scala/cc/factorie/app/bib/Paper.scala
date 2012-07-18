@@ -55,10 +55,15 @@ class PersonCubbie extends EntityCubbie{ // Split from AuthorCubbie eventually
 */
 class AuthorCubbie extends EntityCubbie[AuthorEntity] {
   protected var _author:AuthorEntity=null
+
+ val index = IntSlot("idx")
   val firstName = StringSlot("fn")
   val middleName = StringSlot("mn")
   val lastName = StringSlot("ln")
   val suffix = StringSlot("sf")
+  val firstNameBag = new CubbieSlot("fnb", () => new BagOfWordsCubbie)
+  val middleNameBag = new CubbieSlot("mnb", () => new BagOfWordsCubbie)
+  val bagOfTruths = new CubbieSlot("gtbag", () => new BagOfWordsCubbie)
   //TODO: maybe name should be a bag, there may be multiple nick names
   val nickName = StringSlot("nn") // nickname  e.g. William Bruce Croft, nickname=Bruce; or William Freeman, nickname=Bill
   val emails = new CubbieSlot("emails", () => new BagOfWordsCubbie)
@@ -67,6 +72,7 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
   val venues = new CubbieSlot("venues", () => new BagOfWordsCubbie)
   val coauthors = new CubbieSlot("coauthors", () => new BagOfWordsCubbie)
   val pid = RefSlot("pid", () => new PaperCubbie) // paper id; set in author mentions, propagated up into entities
+  val groundTruth = new StringSlot("gt")
   override def fetch(e:AuthorEntity) ={
     super.fetch(e)
     e.attr[FullName].setFirst(firstName.value)(null)
@@ -79,8 +85,13 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     e.attr[BagOfCoAuthors] ++= coauthors.value.fetch
     e.attr[BagOfKeywords] ++= keywords.value.fetch
     e.attr[BagOfEmails] ++= emails.value.fetch
+    e.attr[BagOfFirstNames] ++= firstNameBag.value.fetch
+    e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
+    //e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
+    e.attr[BagOfTruths] ++= bagOfTruths.value.fetch
     e._id = this.id.toString
     if(pid.isDefined)e.paperMentionId = pid.value.toString
+    if(groundTruth.isDefined)e.groundTruth = Some(groundTruth.value)
     _author=e
   }
   override def store(e:AuthorEntity) ={
@@ -94,10 +105,14 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     coauthors := new BagOfWordsCubbie().store(e.attr[BagOfCoAuthors].value)
     keywords := new BagOfWordsCubbie().store(e.attr[BagOfKeywords].value)
     emails := new BagOfWordsCubbie().store(e.attr[BagOfEmails].value)
+    firstNameBag := new BagOfWordsCubbie().store(e.attr[BagOfFirstNames].value)
+    middleNameBag := new BagOfWordsCubbie().store(e.attr[BagOfMiddleNames].value)
+    bagOfTruths := new BagOfWordsCubbie().store(e.attr[BagOfTruths].value)
     this.id=e.id
-    println("pid: "+e.paperMentionId)
+    //println("pid: "+e.paperMentionId)
     if(e.paperMentionId != null)pid := e.paperMentionId
-    if(!e.isEntity && e.paperMentionId!=null)println("Warning: non-mention-author with id "+e.id+ " has a non-null promoted mention.")
+    if(!e.isObserved && e.paperMentionId!=null)println("Warning: non-mention-author with id "+e.id+ " has a non-null promoted mention.")
+    if(e.groundTruth != None)groundTruth := e.groundTruth.get
   }
   def author:AuthorEntity=_author
   override def newEntityCubbie:EntityCubbie[AuthorEntity] = new AuthorCubbie
@@ -114,7 +129,8 @@ class EssayCubbie extends Cubbie {
 // Articles, Patents, Proposals,...
 class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
   protected var _paper:PaperEntity=null
-  val authors = StringListSlot("authors")
+  val authors = new CubbieSlot("authors", () => new BagOfWordsCubbie)
+  val venueBag = new CubbieSlot("venueBag", () => new BagOfWordsCubbie)
   val institution = StringSlot("institution")
   val venue = StringSlot("venue") // booktitle, journal,...
   val series = StringSlot("series")
@@ -135,7 +151,9 @@ class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
     super.fetch(e)
     e.attr[Title].set(title.value)(null)
     if(pid.isDefined)e.promotedMention.set(pid.value.toString)(null) else e.promotedMention.set(null.asInstanceOf[String])(null)
-    //e.attr[BagOfAuthors] ++= authors.value.fetch
+    e.attr[BagOfAuthors] ++= authors.value.fetch
+    e.attr[BagOfAuthors] ++= venueBag.value.fetch
+    e.attr[BagOfAuthors] ++= keywords.value.fetch
     e._id = this.id.toString
   }
   override def store(e:PaperEntity) ={
@@ -143,7 +161,9 @@ class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
     title := e.attr[Title].value
     if(e.promotedMention.value!=null)pid := e.promotedMention.value
     if(!e.isEntity && e.promotedMention.value!=null)println("Warning: non-entity-paper with id "+e.id+ " has a non-null promoted mention.")
-    //authors := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
+    authors := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
+    venueBag := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
+    keywords := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
     this.id=e.id
   }
 }

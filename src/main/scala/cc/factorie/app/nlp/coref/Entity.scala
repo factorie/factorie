@@ -87,6 +87,7 @@ trait Entity extends Attr {
   def filterDescendants(test:Entity=>Boolean): Seq[Entity] = childEntitiesIterator.filter(test).toSeq
   def descendantsOfClass[A<:Entity](cls:Class[A]): Seq[A] = {
     var result = new ListBuffer[A]
+    result += this.asInstanceOf[A]
     for (entity <-childEntitiesIterator) {
       if (cls.isAssignableFrom(entity.getClass))
         result += entity.asInstanceOf[A]
@@ -94,7 +95,11 @@ trait Entity extends Attr {
     }
     result
   }
+
   def descendantsOfClass[A<:Entity](implicit m:Manifest[A]): Seq[A] = descendantsOfClass[A](m.erasure.asInstanceOf[Class[A]])
+  def depth:Int = depth(0)
+  def depth(d:Int):Int = if(parentEntity==null)0 else parentEntity.depth(d+1)
+  def getAncestor(numGenerationsBack:Int):Entity = if(numGenerationsBack==0)this else getAncestor(numGenerationsBack - 1)
 }
 
 /** This variable should not be changed directly.  Change EntityRef variables, and they will automatically coordinate with ChildEntities variables. */

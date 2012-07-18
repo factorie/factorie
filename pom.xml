@@ -165,6 +165,13 @@
                   </jvmArgs>
                 </launcher>
                 <launcher>
+                  <id>ChainNER4</id>
+                  <mainClass>cc.factorie.example.ChainNER4</mainClass>
+                  <jvmArgs>
+                    <jvmArg>-Xmx3g</jvmArg>
+                  </jvmArgs>
+                </launcher>
+                <launcher>
                   <id>ChainNER2</id>
                   <mainClass>cc.factorie.app.nlp.ner.ChainNer2</mainClass>
                   <jvmArgs>
