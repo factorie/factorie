@@ -388,7 +388,7 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   }
 }
 
-trait SparseIndexedTensor extends Tensor {
+trait    SparseIndexedTensor extends Tensor {
   def isDense = false
   // In subclasses either _length should be set > 0 or _sizeProxy should be set non-null, but not both.
   private var _length: Int = 0

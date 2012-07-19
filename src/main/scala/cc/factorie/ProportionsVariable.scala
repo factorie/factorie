@@ -83,9 +83,9 @@ trait DenseProportions extends Proportions {
 }
 
 class DenseProportions1(override val dim1:Int) extends Proportions1 with DenseProportions {
-  def this(ds:DoubleSeq) = { this(ds.length); this += ds }
-  def this(a:Array[Double]) = { this(a.length); this += a }
-  def this(dim1:Int, uniformValue:Double) = { this(dim1); this += uniformValue }
+  def this(ds:DoubleSeq) = { this(ds.length); this.masses += ds }
+  def this(a:Array[Double]) = { this(a.length); this.masses += a }
+  def this(dim1:Int, uniformValue:Double) = { this(dim1); this.masses += uniformValue }
   val masses = new DenseMasses1(dim1)
   def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
 }
@@ -260,7 +260,7 @@ object MaximizeProportions extends Maximize {
     // Incorporate children
     @inline def incrementForDiscreteVar(dv:DiscreteVar, incr:Double): Unit = {
       val marginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(dv) 
-      if (marginal eq null) e.+=(dv.intValue, incr) else e.+=(marginal.proportions, incr)
+      if (marginal eq null) e.masses.+=(dv.intValue, incr) else e.masses.+=(marginal.proportions, incr)
     }
     for (factor <- model.extendedChildFactors(p)) factor match {
       //case parent:GenerativeFactor if (parent.child == p) => {} // Parent factor of the Proportions we are estimating already incorporated above
@@ -284,7 +284,7 @@ object MaximizeProportions extends Maximize {
         // We don't yet handle variational summary of PlatedDiscreteMixture.Factor
         val mixtureIndex = pdm._2.indexOf(e)
         var i = 0; val len = pdm._1.length
-        while (i < len) { if (pdm._3.intValue(i) == mixtureIndex) e.+=(pdm._3.intValue(i), 1.0); i += 1 }
+        while (i < len) { if (pdm._3.intValue(i) == mixtureIndex) e.masses.+=(pdm._3.intValue(i), 1.0); i += 1 }
       }
     }
     e

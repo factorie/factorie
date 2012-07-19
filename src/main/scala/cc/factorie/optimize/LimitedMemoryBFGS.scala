@@ -19,9 +19,10 @@ package cc.factorie.optimize
 import cc.factorie._
 import cc.factorie.maths._
 import collection.mutable.{ArrayBuffer, LinkedList, IndexedSeq}
+//import sun.jvm.hotspot.oops.Array
 
 /**Maximize an Optimizable object by Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, "Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods" */
-class LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends Optimizer with FastLogging {
+class   LimitedMemoryBFGS(val optimizable: OptimizableByValueAndGradient) extends Optimizer with FastLogging {
 
   case class StepTooSmallException(msg:String) extends Exception(msg)
 

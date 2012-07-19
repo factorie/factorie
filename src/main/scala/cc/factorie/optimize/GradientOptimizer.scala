@@ -1,5 +1,8 @@
 package cc.factorie.optimize
 
+import _root_.scala.Array
+import scala.collection.mutable.{ArrayBuffer}
+import _root_.scala.math
 import _root_.scala.math
 import _root_.scala.Predef._
 import cc.factorie._
@@ -311,5 +314,227 @@ class ConjugateGradient2(val initialStepSize: Double = 1.0) extends GradientOpti
     lineOptimizer = new BackTrackLineOptimizer2(gradient, xi.copy, stepSize)
     lineOptimizer.step(weights, xi, value, margin)
   }
+  }
+}
+
+
+
+
+/**Maximize using Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, "Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods" */
+
+class LimitedMemoryBFGS2(val numIterations: Double = 1000) extends GradientOptimizer with FastLogging {
+  private var _isConverged = false
+  def isConverged = _isConverged
+
+  case class StepTooSmallException(msg:String) extends Exception(msg)
+
+  var maxIterations = 1000
+  var tolerance = 0.0001
+  var gradientTolerance = 0.001
+  var lineMaximizer: BackTrackLineOptimizer2 = null
+
+  val eps = 1.0e-5
+  // The number of corrections used in BFGS update
+  // ideally 3 <= m <= 7. Larger m means more cpu time, memory.
+  val m = 4
+
+  // State of search
+  // g = gradient
+  // s = list of m previous "parameters" values
+  // y = list of m previous "g" values
+  // rho = intermediate calculation
+  var g: Tensor = null;
+  var oldg: Tensor = null;
+  var direction: Tensor = null;
+  var params: Tensor = null;
+  var oldParams: Tensor = null
+  var s: ArrayBuffer[Tensor] = null;
+  var y: ArrayBuffer[Tensor] = null
+  var rho: ArrayBuffer[Double] = null
+  var alpha: Array[Double] = null
+  var step = 1.0
+  var iterations: Int = 0
+  val initialStepSize = 1.0
+  var oldValue: Double  = Double.NegativeInfinity
+
+  // override to evaluate on dev set, save the intermediate model, etc.
+  def postIteration(iter: Int): Unit = ()
+
+  def reset(): Unit = {
+    _isConverged = false
+    //todo: what else needs to be reset?
+  }
+
+
+
+  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+    if (_isConverged) return
+    //todo: is the right behavior to set _isConverged = true if exceeded numIters?
+    if(iterations > numIterations){ logger.warn("failed to converge: too many iterations");_isConverged = true; return}
+
+    //if first time in, initialize
+    if(g == null){
+      logger.info("LimitedMemoryBFGS: Initial value = " + value)
+
+      iterations = 0
+      s = new ArrayBuffer[Tensor]
+      y = new ArrayBuffer[Tensor]
+      rho = new ArrayBuffer[Double]
+      alpha = new Array[Double](m)
+
+      params = weights
+      oldParams = params.copy
+      //use copy to get the right size
+      g = gradient
+      oldg = gradient.copy
+      direction = gradient.copy
+
+
+
+      if (direction.twoNorm == 0) {
+        logger.info("initial L-BFGS initial gradient is zero; saying converged");
+        g = null
+        _isConverged = true
+        //return true;
+      }
+      direction.*=(1.0 / direction.twoNorm)
+
+      // take a step in the direction
+      lineMaximizer = new BackTrackLineOptimizer2(gradient, direction, initialStepSize)
+      lineMaximizer.step(weights, gradient, value, initialStepSize)
+
+      //todo: change this to just check if lineOptimizer has converged
+      //      if (step == 0.0) {
+      //        // could not step in this direction
+      //        // give up and say converged
+      //        g = null // reset search
+      //        step = 1.0
+      //        logger.error("Line search could not step in the current direction. " +
+      //                "(This is not necessarily cause for alarm. Sometimes this happens close to the maximum," +
+      //                " where the function may be very flat.)")
+      //        //throw new StepTooSmallException("Line search could not step in current direction.")
+      //        return false
+      //      }
+      oldValue = value
+    }else if(!lineMaximizer.isConverged){
+      lineMaximizer.step(weights, gradient, value, initialStepSize)
+    }
+    //else{
+    if(lineMaximizer.isConverged){
+      //first, check for convergence:
+      iterations += 1
+      logger.info("LimitedMemoryBFGS: At iteration " + iterations + ", value = " + value);
+      //params and g are just aliases for the names of the variables passed in
+      g = gradient
+      params = weights
+
+
+      if (2.0 * math.abs(value - oldValue) <= tolerance * (math.abs(value) + math.abs(oldValue) + eps)) {
+        logger.info("Exiting L-BFGS on termination #1:\nvalue difference below tolerance (oldValue: " + oldValue + " newValue: " + value)
+        _isConverged = true
+        return
+      }
+      val gg = g.twoNorm
+      if (gg < gradientTolerance) {
+        logger.trace("Exiting L-BFGS on termination #2: \ngradient=" + gg + " < " + gradientTolerance)
+        _isConverged = true
+        return
+      }
+
+      if (gg == 0.0) {
+        logger.trace("Exiting L-BFGS on termination #3: \ngradient==0.0")
+        _isConverged = true
+        return
+      }
+      logger.trace("Gradient = " + gg)
+      iterations += 1
+      if (iterations > maxIterations) {
+        logger.warn("Too many iterations in L-BFGS.java. Continuing with current parameters.")
+        _isConverged = true
+        return
+      }
+
+
+
+
+      // get difference between previous 2 gradients and parameters
+      var sy = 0.0
+      var yy = 0.0
+      //todo: these next check are quite inefficient, but is a hack to avoid doing the following line on tensors:
+      //params(i).isInfinite && oldParams(i).isInfinite && (params(i) * oldParams(i) > 0)) 0.0
+
+      if(!params.toArray.forall(d => !(d == Double.PositiveInfinity || d == Double.NegativeInfinity))) throw new IllegalStateException("Weight value can't be infinite")
+      if(!gradient.toArray.forall(d => !(d == Double.PositiveInfinity || d == Double.NegativeInfinity))) throw new IllegalStateException("gradient value can't be infinite")
+
+      oldParams = params - oldParams
+      oldg = g - oldg
+      sy = oldParams dot oldg
+      yy = oldg.twoNormSquared
+      direction := gradient
+
+      if (sy > 0) throw new IllegalStateException("sy=" + sy + "> 0")
+      val gamma = sy / yy // scaling factor
+      if (gamma > 0) throw new IllegalStateException("gamma=" + gamma + "> 0")
+
+      pushDbl(rho, 1.0 / sy)
+      pushTensor(s, oldParams)
+      pushTensor(y, oldg)
+
+      // calculate new direction
+      assert(s.size == y.size)
+
+
+      forReverseIndex(s.size)(i => {
+        // alpha(i) = rho(i) * ArrayOps.dot(direction, s(i))
+        alpha(i) = rho(i) *  (direction dot s(i))
+
+        // ArrayOps.incr(direction, y(i), -1.0 * alpha(i))
+        direction.+=(y(i),-1.0 * alpha(i))
+
+      })
+      direction.*=(gamma)
+
+      forIndex(s.size)(i => {
+        //val beta = rho(i) * ArrayOps.dot(direction, y(i))
+        val beta = rho(i) * (direction dot y(i))
+        //ArrayOps.incr(direction, s(i), alpha(i) - beta)
+        direction.+=(s(i),alpha(i) - beta)
+      })
+
+      oldParams := params
+      oldValue = value
+      oldg := g
+      direction.*=(-1)
+      lineMaximizer = null
+      postIteration(iterations)
+
+      lineMaximizer = new BackTrackLineOptimizer2(gradient, direction, initialStepSize)
+      lineMaximizer.step(weights, gradient, value, initialStepSize)
+
+
+    }
+
+
+  }
+  def pushTensor(l: ArrayBuffer[Tensor], toadd: Tensor): Unit = {
+    assert(l.size <= m)
+
+    if (l.size == m) {
+      l.remove(0)
+      l += toadd.copy
+      //todo: change back to this circular thing below
+      //      val last = l(0)
+      //      Array.copy(toadd, 0, last, 0, toadd.length)
+      //      forIndex(l.size - 1)(i => {l(i) = l(i + 1)})
+      //      l(m - 1) = last
+    } else {
+      l += toadd.copy
+    }
+  }
+
+  def pushDbl(l: ArrayBuffer[Double], toadd: Double): Unit = {
+    assert(l.size <= m)
+    if (l.size == m) l.remove(0)
+    l += toadd
   }
 }
