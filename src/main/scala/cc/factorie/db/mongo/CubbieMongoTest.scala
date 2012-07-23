@@ -94,12 +94,14 @@ object CubbieMongoTest {
     updatedLaura.address := address
     updatedLaura.spouse ::= james
 
+    //todo: this seems to not keep the name (= attribute not set in updated cubbie)
     persons.updateDelta(laura, updatedLaura)
 
     println(persons.mkString("\n"))
 
     //test batch id query
     println("****")
+    println(persons.query(_.hobbies.contains("James")).mkString("\n"))
     println(persons.query(_.idsIn(Seq(1, 2))).mkString("\n"))
     println(persons.query(_.idIs(1)).mkString("\n"))
 

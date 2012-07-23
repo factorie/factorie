@@ -476,7 +476,7 @@ class MongoSlot[C <: Cubbie, V](val slot: C#Slot[V]) {
         map
       } else oldMap
     } catch {
-      case _ => {
+      case _: Throwable => {
         val map = new mutable.HashMap[String, Any]
         slot.cubbie._map.update("$set", map)
         map
@@ -515,6 +515,26 @@ class MongoRefSlot[C <: Cubbie, A <: Cubbie](val slot: C#AbstractRefSlot[A]) {
   def in(coll: MongoCubbieCollection[A]): GraphLoader.SlotInCollection[A] = GraphLoader.SlotInCollection(slot, coll)
 
 }
+
+/**
+ * Support for mongo queries specific to list attributes
+ * @param slot a list slot
+ * @tparam C the type of cubbie the attribute is part of
+ * @tparam A the type objects in the list.
+ */
+class MongoPrimitiveListSlot[C <: Cubbie, A](val slot: C#PrimitiveListSlot[A]) {
+  /**
+   * Returns a cubbie that mongo can use to match documents that have the given value as member in the list.
+   * @param a the element that needs to be in the list.
+   * @return the cubbie itself.
+   */
+  def contains(a:A): C = {
+    slot.rawPut(a)
+    slot.cubbie
+  }
+
+}
+
 
 class MongoInvSlot[C <: Cubbie, A <: Cubbie](val slot: C#AbstractInverseSlot[A]) {
   def of(coll: MongoCubbieCollection[A]): GraphLoader.InvSlotInCollection[A] = GraphLoader.InvSlotInCollection(slot, coll)
@@ -570,6 +590,8 @@ object MongoCubbieImplicits {
   implicit def toMongoRefSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractRefSlot[A]) = new MongoRefSlot(slot)
 
   implicit def toMongoInvSlot[C <: Cubbie, A <: Cubbie](slot: C#AbstractInverseSlot[A]) = new MongoInvSlot(slot)
+
+  implicit def toMongoPrimitiveListSlot[C <: Cubbie, A](slot: C#PrimitiveListSlot[A]) = new MongoPrimitiveListSlot(slot)
 
   implicit def toMongoCubbie[C <: Cubbie](cubbie: C) = new MongoCubbie(cubbie)
 
