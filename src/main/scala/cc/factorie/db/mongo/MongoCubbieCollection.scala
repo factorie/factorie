@@ -392,14 +392,14 @@ object MongoCubbieConverter {
 
   def toCubbie(any: Any): Any = {
     any match {
-      case dbo: DBObject =>
-        val map = new mutable.HashMap[String, Any]
-        for (key <- dbo.keySet()) map(key) = toCubbie(dbo.get(key))
-        map
       case dbList: BasicBSONList =>
         val list = new ArrayBuffer[Any]
         for (element <- dbList) list += toCubbie(element)
         list
+      case dbo: DBObject =>
+        val map = new mutable.HashMap[String, Any]
+        for (key <- dbo.keySet()) map(key) = toCubbie(dbo.get(key))
+        map
       case _ => any
     }
   }
