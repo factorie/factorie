@@ -199,7 +199,7 @@ object ShiftReduceDependencyParser {
     def train(): Unit = {
       println("starting training...")
       println("generating labels...")
-      var actions = new LabelList[ActionLabel]((action: ActionLabel) => action.features)
+      var actions = new LabelList[ActionLabel,ShiftReduceDependencyParserFeatures]((action: ActionLabel) => action.features)
       for (s <- trainDocs.sentences)
         actions ++= generateTrainingLabels(s)
       //val trainer = new LogLinearMaximumLikelihood(ActionModel, modelFile = modelFile)
@@ -280,7 +280,7 @@ object ShiftReduceDependencyParser {
   }
 
   def trainClassifier(learner: app.classify.ClassifierTrainer)(sentences: Seq[Sentence]): Classifier[ActionLabel] = {
-    val actions = new LabelList[ActionLabel]((action: ActionLabel) => action.features)
+    val actions = new LabelList[ActionLabel,ShiftReduceDependencyParserFeatures]((action: ActionLabel) => action.features)
     for (s <- sentences)
       actions ++= generateTrainingLabels(s)
     learner.train(actions)

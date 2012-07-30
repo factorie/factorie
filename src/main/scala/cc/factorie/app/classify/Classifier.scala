@@ -21,6 +21,10 @@ import scala.collection.mutable.{HashMap,ArrayBuffer}
     @since 0.8
  */
 
+//case class Instance[L<:DiscreteVariable,F<:DiscreteTensorVar](label:L, features:F)
+// No, this isn't in the FACTORIE philosophy; relations between variables can be captured with functions instead
+// Note that this function could create a new DiscreteTensorVar on the fly.
+
 /** Performs independent prediction of (iid) Labels (all of whom must share the same domain).
     Has abstract methods for "model" and "labelDomain". */
 trait Classifier[L<:DiscreteVariable] {
@@ -46,9 +50,13 @@ object Classify {
 
 /** An "instance list" for iid classification, except it actually holds labels, 
     each of which is associated with a feature vector through the provided function labelToFeatures. */
-class LabelList[L<:DiscreteVar](val labelToFeatures:L=>DiscreteTensorVar)(implicit lm:Manifest[L]) extends ArrayBuffer[L] {
-  def this(labels:Iterable[L], l2f:L=>DiscreteTensorVar)(implicit lm:Manifest[L]) = { this(l2f); this ++= labels }
-  val instanceWeights: HashMap[L,Double] = null // TODO Implement this! -akm
+class LabelList[L<:DiscreteVar,+F<:DiscreteTensorVar](val labelToFeatures:L=>F)(implicit lm:Manifest[L], fm:Manifest[F]) extends ArrayBuffer[L] {
+  def this(labels:Iterable[L], l2f:L=>F)(implicit lm:Manifest[L], fm:Manifest[F]) = { this(l2f); this ++= labels }
+  val labelManifest = lm
+  //private val featureManifest = fm
+  def labelClass = lm.erasure
+  val featureClass = fm.erasure
+  //val instanceWeights: HashMap[L,Double] = null // TODO Implement this! -akm
   def labelDomain = head.domain // TODO Perhaps we should verify that all labels in the list have the same domain?
   def instanceDomain = labelToFeatures(head).domain // TODO Likewise
   def featureDomain = instanceDomain.dimensionDomain
@@ -80,5 +88,5 @@ class Trial[L<:LabelVariable[String]](val classifier:Classifier[L]) extends Labe
 
 /** An object that can train a Classifier given a LabelList. */
 trait ClassifierTrainer {
-  def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L]
+  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F])(implicit lm:Manifest[L], fm:Manifest[F]): Classifier[L]
 }

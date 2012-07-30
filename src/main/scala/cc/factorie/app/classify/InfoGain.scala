@@ -21,11 +21,11 @@ import cc.factorie.util.TopN
     @since 0.10
  */
 class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteTensorVar) extends cc.factorie.util.DoubleSeq {
-  def this(labels:LabelList[L]) = this(labels, labels.labelToFeatures)
-  def apply(i:Int) = infogains(i)
+  def this(labels:LabelList[L,DiscreteTensorVar]) = this(labels, labels.labelToFeatures)
+  def apply(i:Int): Double = infogains(i)
   def length = infogains.length
   val domain: DiscreteDomain = f(labels.head).domain.dimensionDomain
-  private val infogains = new Array[Double](domain.size)
+  private val infogains = cc.factorie.util.DoubleSeq(domain.size)
   var baseEntropy: Double = 0.0
   init(labels)
   
