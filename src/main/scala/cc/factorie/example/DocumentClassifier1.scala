@@ -42,28 +42,30 @@ object DocumentClassifier1 {
       throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 
     // Read data and create Variables
-    var documents = new classify.LabelList[Label](_.document);
+    var docLabels = new classify.LabelList[Label,Document](_.document)
+    //var docLabels = new classify.LabelList[Label,Document](_.document)
+    //var docLabels = new classify.LabelList((l:Label) => l.document)
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
-        documents += new Document(file).label
+        docLabels += new Document(file).label
       }
     }
     
-    val infogains = new classify.InfoGain(documents)
+    val infogains = new classify.InfoGain(docLabels)
     println(infogains.top(20).mkString(" "))
     println()
-    val plig = new classify.PerLabelInfoGain(documents)
+    val plig = new classify.PerLabelInfoGain(docLabels)
     for (label <- LabelDomain) println(label.category+": "+plig.top(label, 20))
     println()
-    val pllo = new classify.PerLabelLogOdds(documents)
+    val pllo = new classify.PerLabelLogOdds(docLabels)
     for (label <- LabelDomain) println(label.category+": "+pllo.top(label, 20))
     println()
 
     // Make a test/train split
-    val (trainVariables, testVariables) = documents.shuffle.split(0.5)
+    val (trainVariables, testVariables) = docLabels.shuffle.split(0.5)
     (trainVariables ++ testVariables).foreach(_.setRandomly())
 
     //println(model)

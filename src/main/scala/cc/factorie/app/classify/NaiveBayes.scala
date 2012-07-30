@@ -20,7 +20,7 @@ import scala.collection.mutable.{HashMap,ArrayBuffer}
 class NaiveBayesTrainer extends ClassifierTrainer {
   var biasSmoothingMass = 1.0
   var evidenceSmoothingMass = 1.0
-  def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
+  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F])(implicit lm:Manifest[L], fm:Manifest[F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)
     val labelDomain = il.labelDomain
     val featureDomain = il.featureDomain

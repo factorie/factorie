@@ -21,7 +21,7 @@ import scala.collection.mutable.{HashMap,ArrayBuffer}
 class MaxEntSampleRankTrainer extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
-  def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
+  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F])(implicit lm:Manifest[L], fm:Manifest[F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)
     val sampler = new GibbsSampler(cmodel, HammingLossObjective) {
       override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.head // which proposal is picked is irrelevant, so make it quick
@@ -33,7 +33,7 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
 }
 
 class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
-  def train[L<:LabelVariable[_]](il:LabelList[L])(implicit lm:Manifest[L]): Classifier[L] = {
+  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F])(implicit lm:Manifest[L], fm:Manifest[F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)
     if (warmStart != null) cmodel.evidenceTemplate.setWeights(warmStart)
     val trainer = new LogLinearMaximumLikelihood(cmodel)

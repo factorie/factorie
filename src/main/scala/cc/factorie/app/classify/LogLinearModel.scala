@@ -3,8 +3,8 @@ import cc.factorie._
 import collection.mutable.HashMap
 
 // Bias weights
-class LogLinearTemplate1[L<:DiscreteVar](val statisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends TemplateWithDotStatistics1[L]() {
-  def statisticsDomains = Tuple(statisticsDomain)
+class LogLinearTemplate1[L<:DiscreteVar](val labelStatisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends TemplateWithDotStatistics1[L]() {
+  def statisticsDomains = Tuple(labelStatisticsDomain)
 }
 
 // Label-Feature weights
