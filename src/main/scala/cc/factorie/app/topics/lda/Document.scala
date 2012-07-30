@@ -22,6 +22,7 @@ import java.io.{File,Reader,StringReader,InputStreamReader,FileInputStream,Buffe
 trait Doc extends SeqBreaks {
   var name: String
   var theta: ProportionsVar
+  def thetaArray: Array[Double] = theta.tensor.toArray
   var zs: DiscreteSeqVariable
   def ws: CategoricalSeqVariable[String]
   override def toString: String = {

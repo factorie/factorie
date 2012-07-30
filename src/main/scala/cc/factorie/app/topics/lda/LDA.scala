@@ -23,6 +23,7 @@ import collection.mutable.{ArrayBuffer, HashSet, HashMap, LinkedHashMap}
 /** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01,
            val burnIn: Int = 100)(implicit val model:MutableGenerativeModel) {
+  def this(numTopics:Int, alpha1:Double, beta1:Double, burnIn:Int) = this(new CategoricalSeqDomain[String], numTopics, alpha1, beta1, burnIn)(GenerativeModel())
   var diagnosticName = ""
   /** The per-word variable that indicates which topic it comes from. */
   object ZDomain extends DiscreteDomain(numTopics)
@@ -160,6 +161,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   }
   
   def topicWords(topicIndex:Int, numWords:Int = 10): Seq[String] = phis(topicIndex).tensor.top(numWords).map(dp => wordDomain.category(dp.index))
+  def topicWordsArray(topicIndex:Int, numWords:Int): Array[String] = topicWords(topicIndex, numWords).toArray
   def topicSummary(topicIndex:Int, numWords:Int = 10): String = "Topic %3d %s  %d  %f".format(topicIndex, (topicWords(topicIndex, numWords).mkString(" ")), phis(topicIndex).tensor.massTotal.toInt, alphas(topicIndex))
   def topicsSummary(numWords:Int = 10): String = Range(0, numTopics).map(topicSummary(_, numWords)).mkString("\n")
 
@@ -203,9 +205,26 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     for (doc <- documents) doc.writeNameWordsZs(pw)
   }
   
-  def addDocumentsFromWordZs(file:File): Unit = {
+  def addDocumentsFromWordZs(file:File, minDocLength:Int): Unit = {
+    import scala.util.control.Breaks._
     val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
-    throw new Error("Not yet implemented.")
+    reader.mark(512)
+    val alphasName = reader.readLine()
+    if (alphasName == "/alphas") { // If they are present, read the alpha parameters.
+      val alphasString = reader.readLine(); alphas.tensor := alphasString.split(" ").map(_.toDouble) // set lda.alphas
+      reader.readLine() // consume delimiting newline
+      println("Read alphas "+alphas.tensor.mkString(" "))
+    } else reader.reset // Put the reader back to the read position when reader.mark was called
+    breakable { while (true) {
+      val doc = new Document(wordSeqDomain, "", Nil) // doc.name will be set in doc.readNameWordsZs
+      doc.zs = new Zs(Nil)
+      val numWords = doc.readNameWordsZs(reader)
+      if (numWords < 0) break
+      else if (numWords >= minDocLength) addDocument(doc) // Skip documents that have only one word because inference can't handle them
+      //else System.err.println("addDocumentsFromWordZs skipping document %s: only %d words found.".format(doc.name, numWords))
+    }}
+    reader.close()
+    maximizePhisAndThetas
   }
 
   @deprecated("Should be removed eventually")
