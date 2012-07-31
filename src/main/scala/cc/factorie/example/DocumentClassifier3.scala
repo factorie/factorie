@@ -74,7 +74,7 @@ object DocumentClassifier3 {
 
     // Train and test
     val trainer = new DotMaximumLikelihood(model)
-    trainer.process(trainVariables)
+    trainer.processAll(trainVariables)
     val predictor = new VariableSettingsGreedyMaximizer[Label](model)
     predictor.processAll(trainVariables)
     predictor.processAll(testVariables)

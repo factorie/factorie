@@ -17,20 +17,15 @@ package cc.factorie
 /** A Variable whose value is a pointer to a Scala object (which may also be a Variable) */
 trait RefVar[A<:AnyRef] extends Variable with VarAndValueGenericDomain[RefVar[A],A] 
 
-/**A variable with a single mutable (unindexed) value which is of Scala type A. */
-// TODO A candidate for Scala 2.8 @specialized
+/** A variable whose value is a pointer to a Scala object (which may also be a Variable).
+    See also ArrowVariable and EdgeVariable. */
 class RefVariable[A<:AnyRef](initialValue:A = null) extends RefVar[A] with MutableVar {
-  //type VariableType <: RefVariable[A]
-  // TODO  Consider: def this(initval:A)(implicit d:DiffList = null)
-  //def this(initval:A) = { this(); set(initval)(null) } // initialize like this because subclasses may do coordination in overridden set()()
-  private var _value: A = initialValue // was _
-  //set(initialValue)(null) // Used to initialize by calling set because set may do additional work in subclasses, e.g. ParameterRef.
+  private var _value: A = initialValue
   @inline final def value: A = _value
   def set(newValue:A)(implicit d: DiffList): Unit = if (newValue != _value) {
     if (d ne null) d += new RefVariableDiff(_value, newValue)
     _value = newValue
   }
-  //  def :=(newValue:A): this.type = { set(newValue)(null); this }
   override def toString = printName + "(" + (if (value == this) "this" else value.toString) + ")"
   case class RefVariableDiff(oldValue:A, newValue:A) extends Diff {
     //        Console.println ("new RefVariableDiff old="+oldValue+" new="+newValue)

@@ -20,30 +20,12 @@ import java.util.Arrays
 
 // Variables for dealing with sequences
 
-/** Revert equals/hashCode behavior of Seq[A] to the default Object.
-    WARNING: This doesn't actually satisfy == commutativity with a Seq[A]. :-( */
-//trait SeqEqualsEq[+A] extends scala.collection.Seq[A] {
-//  override def equals(that:Any): Boolean = that match {
-//    case that:AnyRef => this eq that
-//    case _ => false
-//  }
-//  override def hashCode: Int = java.lang.System.identityHashCode(this)
-//}
-//
-//trait IndexedSeqEqualsEq[+A] extends SeqEqualsEq[A] with IndexedSeq[A] {
-//  override def equals(that:Any): Boolean = that match {
-//    case that:AnyRef => this eq that
-//    case _ => false
-//  }
-//  override def hashCode: Int = java.lang.System.identityHashCode(this)
-//}
-
 trait ElementType[+ET] {
   type ElementType = ET
 }
 
-@deprecated("Will be removed")
-trait VarAndElementType[+This<:Variable,+ET] extends VarAndValueType[This,IndexedSeq[ET]] with ElementType[ET]
+//@deprecated("Will be removed")
+//trait VarAndElementType[+This<:Variable,+ET] extends VarAndValueType[This,IndexedSeq[ET]] with ElementType[ET]
 
 /** A variable whose value is a Seq[E].  
     Note that this trait itself does not actually inherit from Seq[E] 
@@ -122,8 +104,7 @@ trait MutableSeqVar[X] extends IndexedSeqVar[X] with MutableVar { // TODO This c
   //def update(index:Int, x:Element): Unit = _seq(index) = x
 }
 
-abstract class SeqVariable[X](initialValue: Seq[X]) extends MutableSeqVar[X] {
-  def this() = this(Nil)
-  _seq ++= initialValue
+abstract class SeqVariable[X] extends MutableSeqVar[X] {
+  def this(initialValue: Seq[X]) = { this(); _seq ++= initialValue }
 }
 

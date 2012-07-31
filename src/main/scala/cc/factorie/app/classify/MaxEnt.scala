@@ -36,10 +36,10 @@ class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = nul
   def train[L<:LabelVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F])(implicit lm:Manifest[L], fm:Manifest[F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)
     if (warmStart != null) cmodel.evidenceTemplate.setWeights(warmStart)
-    val trainer = new LogLinearMaximumLikelihood(cmodel)
+    val trainer = new DotMaximumLikelihood(cmodel, new LimitedMemoryBFGS2)
     trainer.gaussianPriorVariance = l2
     // Do the training by BFGS
-    trainer.processAll(il.map(List(_)))
+    trainer.processAll(il)
     new Classifier[L] { val model = cmodel; val labelDomain = il.head.domain; val weights = cmodel.evidenceTemplate.weights }
   }
 }

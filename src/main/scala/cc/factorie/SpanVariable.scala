@@ -239,7 +239,7 @@ trait ChainWithSpans[This<:ChainWithSpans[This,S,E],S<:Span[S,This,E],E<:ChainLi
   }
 }
 
-trait ChainWithSpansVar[This<:ChainWithSpansVar[This,S,E],S<:SpanVar[S,This,E],E<:ChainLink[E,This]] extends ChainVar[This,E] with ChainWithSpans[This,S,E] with IndexedSeqVar[E] with VarAndElementType[ChainWithSpansVar[This,S,E],E]{
+trait ChainWithSpansVar[This<:ChainWithSpansVar[This,S,E],S<:SpanVar[S,This,E],E<:ChainLink[E,This]] extends ChainVar[This,E] with ChainWithSpans[This,S,E] with IndexedSeqVar[E] /*with VarAndElementType[ChainWithSpansVar[This,S,E],E]*/ {
   this: This =>
   /** Add the span to the list of spans maintained by this VariableSeqWithSpans.
       Typically you would not call this yourself; it is called automatically from the SpanVariable constructor. */

@@ -12,16 +12,22 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie
+package cc.factorie.la
+import cc.factorie._
+import cc.factorie.util._
 
-trait NullDomain extends Domain[Null]
-
-object NullDomain extends NullDomain
-
-/** A trait for a variable that actually has no value. */
-trait VarWithNullValue extends Variable with VarAndValueType[VarWithNullValue,Null] {
-  final def domain = NullDomain
-  final def value = null
+trait UniformTensor extends Tensor {
+  def uniformValue: Double
+  def apply(i:Int) = uniformValue
+  def isDense = true
+  //def activeDomain: IntSeq = new RangeIntSeq(0, length) // Can't be both here an Tensor1
+  override def isUniform = true
+  override def sum: Double = length * uniformValue
+  override def max: Double = uniformValue
+  override def min: Double = uniformValue
+  override def maxIndex: Int = 0
+  override def containsNaN: Boolean = false
+  override def dot(v:DoubleSeq): Double = v.sum * uniformValue
+  override def copy = this // safe because it is immutable
 }
-
 

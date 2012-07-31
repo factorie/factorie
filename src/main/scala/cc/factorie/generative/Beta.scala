@@ -17,10 +17,10 @@ import cc.factorie._
 
 /** Beta distribution.
     http://en.wikipedia.org/wiki/Beta_distribution */
-object Beta extends GenerativeFamily3[RealVar,RealVar,RealVar] {
-  self =>
-  def mean(alpha:Double, beta:Double): Double = throw new Error("Not yet implemented")
-  def variance(alpha:Double, beta:Double): Double = throw new Error("Not yet implemented")
+object Beta extends GenerativeFamily3[RealVar,RealVar,RealVar] { self =>
+  def mode(alpha:Double, beta:Double): Double = (alpha - 1) / (alpha + beta - 2) 
+  def mean(alpha:Double, beta:Double): Double = alpha / (alpha + beta)
+  def variance(alpha:Double, beta:Double): Double = { val sum = alpha + beta; alpha * beta / (sum * sum * (sum + 1) ) }
   def logpr(value:Double, alpha:Double, beta:Double): Double = math.log(pr(value, alpha, beta))
   def pr(value:Double, alpha:Double, beta:Double): Double = {
     require(value >= 0.0 && value <= 1.0)

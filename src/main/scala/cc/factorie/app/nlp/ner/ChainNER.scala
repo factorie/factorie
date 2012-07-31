@@ -123,11 +123,12 @@ class ChainNer {
  
     // Train for 5 iterations
     if (false) {
-      val trainer = new LogLinearMaximumLikelihood(model)
-      trainer.processAll(trainDocuments.map(doc => doc.tokens.map(_.nerLabel)), 10) // Do just one iteration for initial timing
-      trainDocuments.foreach(process(_))
-      testDocuments.foreach(process(_))
-      printEvaluation(trainDocuments, testDocuments, "FINAL")
+      // TODO Fix this and uncomment once DotMaximumLikelihood works on linear chains
+      //val trainer = new LogLinearMaximumLikelihood(model)
+      //trainer.processAll(trainDocuments.map(doc => doc.tokens.map(_.nerLabel)), 10) // Do just one iteration for initial timing
+      //trainDocuments.foreach(process(_))
+      //testDocuments.foreach(process(_))
+      //printEvaluation(trainDocuments, testDocuments, "FINAL")
     } else {
       (trainLabels ++ testLabels).foreach(_.setRandomly())
       val learner = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent) //ConfidenceWeightedUpdates { temperature = 0.01 }

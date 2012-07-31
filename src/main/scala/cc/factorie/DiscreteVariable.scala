@@ -60,7 +60,7 @@ abstract class DiscreteVariable extends MutableDiscreteVar with IterableSettings
     override def variable: DiscreteVariable.this.type = DiscreteVariable.this
   }
   /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
-  def proportions(model:Model): Proportions = {
+  def proportions(model:Model): Proportions1 = {
     val origIntValue = intValue
     val l = domain.size 
     val distribution = new DenseTensor1(l)

@@ -29,7 +29,7 @@ trait Masses extends Tensor {
     if (mt == 0.0) 1.0 / length else apply(index) / mt
   }
   def logpr(index:Int) = math.log(pr(index))
-  override def sampleIndex(implicit r:Random): Int = sampleIndex(massTotal)(r) //cc.factorie.maths.nextDiscrete(this.asArray, massTotal)(r)
+  override def sampleIndex(implicit r:Random): Int = sampleIndex(massTotal)(r)
   override def stringPrefix = "Masses"
   override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
 }
@@ -76,10 +76,12 @@ class DenseMasses4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) exten
 
 class UniformMasses1(dim1:Int, uniformValue:Double) extends UniformTensor1(dim1, uniformValue) with Masses1 with UniformTensor {
   def massTotal = dim1 * uniformValue
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
 
 class SingletonMasses1(dim1:Int, singleIndex:Int, singleValue:Double) extends SingletonTensor1(dim1, singleIndex, singleValue) with Masses1 {
   def massTotal = singleValue
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = singleIndex
 }
 
 class GrowableDenseMasses1(val sizeProxy:Iterable[Any]) extends GrowableDenseTensorLike1 with Masses1 with MassesWithTotal {
@@ -90,6 +92,7 @@ class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
   def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
   def dim1 = sizeProxy.size
   def massTotal = sizeProxy.size * uniformValue
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
 
 class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSparseCounts(dim1, 4, false) with Masses1 {
@@ -106,6 +109,7 @@ class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSpa
   }
   override def zero(): Unit = clear()
   def massTotal = countsTotal.toDouble
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = throw new Error("Should be overriden for efficiency; not yet implemented.")
 }
 
 // Masses Variables 

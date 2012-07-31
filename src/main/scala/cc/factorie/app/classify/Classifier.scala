@@ -56,7 +56,16 @@ class LabelList[L<:DiscreteVar,+F<:DiscreteTensorVar](val labelToFeatures:L=>F)(
   //private val featureManifest = fm
   def labelClass = lm.erasure
   val featureClass = fm.erasure
-  //val instanceWeights: HashMap[L,Double] = null // TODO Implement this! -akm
+  /** The weight with which a LabelVariable should be considered in training. */
+  lazy val instanceWeight = new HashMap[L,Double] { override def default(l:L) = 1.0 }
+  override def remove(index:Int): L = {
+    instanceWeight.remove(apply(index))
+    super.remove(index)
+  }
+  override def remove(index:Int, count:Int): Unit = {
+    this.slice(index, index+count).foreach(l => instanceWeight.remove(l))
+    super.remove(index, count)
+  }
   def labelDomain = head.domain // TODO Perhaps we should verify that all labels in the list have the same domain?
   def instanceDomain = labelToFeatures(head).domain // TODO Likewise
   def featureDomain = instanceDomain.dimensionDomain
@@ -65,7 +74,7 @@ class LabelList[L<:DiscreteVar,+F<:DiscreteTensorVar](val labelToFeatures:L=>F)(
 // TODO Consider including labelToFeatures here also?  
 // TODO Should we store the Classifier instead of the Model?  But what if it doesn't come from a Classifier?
 /** The result of applying a Classifier to a Label. */
-class Classification[L<:DiscreteVar](val label:L, val model:Model, val proportions:Proportions) {
+class Classification[L<:DiscreteVar](val label:L, val model:Model, val proportions:Proportions1) {
   val bestLabelIndex = proportions.maxIndex
   def bestLabelValue = label.domain.apply(bestLabelIndex)
   def bestCategoryValue: String = bestLabelValue match {

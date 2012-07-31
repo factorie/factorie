@@ -46,18 +46,20 @@ trait Proportions extends Masses {
   override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
 }
 
-trait Proportions1 extends Masses1 with Proportions
-trait Proportions2 extends Masses2 with Proportions
-trait Proportions3 extends Masses3 with Proportions
-trait Proportions4 extends Masses4 with Proportions
+trait Proportions1 extends Masses1 with Proportions { def masses: Masses1 }
+trait Proportions2 extends Masses2 with Proportions { def masses: Masses2 }
+trait Proportions3 extends Masses3 with Proportions { def masses: Masses3 }
+trait Proportions4 extends Masses4 with Proportions { def masses: Masses4 }
 
 // Proportions Values of dimensionality 1
 
 class SingletonProportions1(dim1:Int, singleIndex:Int) extends SingletonMasses1(dim1, singleIndex, 1.0) with Proportions1 {
   def masses = this
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = singleIndex
 }
 class UniformProportions1(dim1:Int) extends UniformMasses1(dim1, 1.0/dim1) with Proportions1 {
   def masses = this
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
 class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double = 1.0) extends Proportions1 {
   val masses = new GrowableUniformMasses1(sizeProxy, uniformValue)
@@ -70,6 +72,7 @@ class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double =
     assert(result > 0 && result != Double.PositiveInfinity, "GrowableUniformProportions domain size is negative or zero.")
     result
   }
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
 
 trait DenseProportions extends Proportions {
@@ -142,8 +145,7 @@ class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
     while (i < len) result += (masses.indexAtPosition(i), masses.countAtPosition(i).toDouble / masses.countsTotal) 
     result
   }
-  //for (i <- 0 until math.min(n, numPositions)) yield new DiscretePr(indexAtPosition(i), countAtPosition(i).toDouble / countsTotal)
-
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = throw new Error("Should be overriden for efficiency; not yet implemented.")
 }
 
 

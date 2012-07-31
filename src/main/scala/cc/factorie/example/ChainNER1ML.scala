@@ -73,12 +73,13 @@ object ChainNER1ML {
     // Train and test
     println("*** Starting training (#sentences=%d)".format(trainDocuments.map(_.sentences.size).sum))
     val start = System.currentTimeMillis
-    val trainer = new LogLinearMaximumLikelihood(model)
-    trainer.processAll(trainLabelsSentences, 1) // Do just one iteration for initial timing
-    println("One iteration took " + (System.currentTimeMillis - start) / 1000.0 + " seconds")
-    //System.exit(0)
-
-    trainer.processAll(trainLabelsSentences) // Keep training to convergence
+    throw new Error("DotMaximumLikelihood not yet working for linear-chains")
+//    val trainer = new DotMaximumLikelihood(model)
+//    trainer.processAll(trainLabelsSentences, 1) // Do just one iteration for initial timing
+//    println("One iteration took " + (System.currentTimeMillis - start) / 1000.0 + " seconds")
+//    //System.exit(0)
+//
+//    trainer.processAll(trainLabelsSentences) // Keep training to convergence
 
     val objective = HammingLossObjective
     // slightly more memory efficient - kedarb
