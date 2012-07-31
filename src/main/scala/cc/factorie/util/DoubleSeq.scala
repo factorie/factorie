@@ -325,3 +325,13 @@ final class ArrayDoubleSeq(override val asArray:Array[Double]) extends MutableDo
   def zero(): Unit = java.util.Arrays.fill(asArray, 0.0)
   def +=(i:Int, v:Double): Unit = asArray(i) += v
 }
+
+final class TruncatedArrayDoubleSeq(val array:Array[Double], val length:Int) extends DoubleSeq {
+  def apply(i:Int): Double = array(i)
+  override def toArray = { val a = new Array[Double](length); System.arraycopy(array, 0, a, 0, length); a }
+}
+
+final class SubArrayDoubleSeq(val array:Array[Double], val start:Int, val length:Int) extends DoubleSeq {
+  def apply(i:Int): Double = array(i+start)
+  override def toArray = { val a = new Array[Double](length); System.arraycopy(array, start, a, 0, length); a }
+}

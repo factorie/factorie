@@ -25,6 +25,7 @@ trait Doc extends SeqBreaks {
   def thetaArray: Array[Double] = theta.tensor.toArray
   var zs: DiscreteSeqVariable
   def ws: CategoricalSeqVariable[String]
+  def time: Long
   override def toString: String = {
     val sb = new StringBuilder
     sb append name; sb += '\n'
@@ -72,6 +73,7 @@ trait Doc extends SeqBreaks {
 class Document(val domain:CategoricalSeqDomain[String], var name:String, tokens:Seq[String]) extends CategoricalSeqVariable(tokens) with Doc {
   var theta: ProportionsVar = null
   var zs: DiscreteSeqVariable = null
+  var time: Long = -1
   def ws = this
 }
 
