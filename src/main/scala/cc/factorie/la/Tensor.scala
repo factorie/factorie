@@ -59,6 +59,13 @@ trait Tensor extends MutableDoubleSeq {
 
 object Tensor {
   
+  def tabulate(dim1:Int)(f:Int=>Double): DenseTensor1 = {
+    val t = new DenseTensor1(dim1)
+    var i = 0;
+    while (i < dim1) { t(i) = f(i); i += 1 }
+    t
+  }
+  
   // Support for creating new empty Tensors with dimensions matching an argument
   def newDense(t:Tensor): Tensor = t match {
     case t:Tensor1 => new DenseTensor1(t.dim1)

@@ -197,4 +197,5 @@ class DoubleArrayBuffer extends ProtectedDoubleArrayBuffer with DoubleSeq {
   def ++=(is:Seq[Double]): Unit = _appendAll(is)
   def +=:(i:Double): Unit = _prepend(i)
   def insert(index:Int, elt:Double): Unit = _insert(index, elt)
+  override def toSeq = _toSeq
 }

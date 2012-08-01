@@ -18,13 +18,18 @@ import cc.factorie._
 /** Beta distribution.
     http://en.wikipedia.org/wiki/Beta_distribution */
 object Beta extends GenerativeFamily3[RealVar,RealVar,RealVar] { self =>
-  def mode(alpha:Double, beta:Double): Double = (alpha - 1) / (alpha + beta - 2) 
+  def mode(alpha:Double, beta:Double): Double = 
+    if (alpha > 1 && beta > 1) (alpha - 1) / (alpha + beta - 2)
+    else Double.NaN
   def mean(alpha:Double, beta:Double): Double = alpha / (alpha + beta)
   def variance(alpha:Double, beta:Double): Double = { val sum = alpha + beta; alpha * beta / (sum * sum * (sum + 1) ) }
   def logpr(value:Double, alpha:Double, beta:Double): Double = math.log(pr(value, alpha, beta))
   def pr(value:Double, alpha:Double, beta:Double): Double = {
     require(value >= 0.0 && value <= 1.0)
-    math.pow(value, alpha-1.0) * math.pow(1.0-value, beta-1.0) / maths.beta(alpha, beta) 
+    val result = math.pow(value, alpha-1.0) * math.pow(1.0-value, beta-1.0) / maths.beta(alpha, beta)
+    require(result >= 0.0)
+    require(result <= 1.0, "value="+value+" alpha="+alpha+" beta="+beta+" result="+result)
+    result
   }
   def sampledValue(alpha:Double, beta:Double): Double = {
     val x = maths.nextGamma(alpha, 1.0)(cc.factorie.random) 
@@ -52,6 +57,21 @@ object BetaMixture extends GenerativeFamily4[RealVar,Mixture[RealVar],Mixture[Re
 }
 
 object MaximizeBetaByMomentMatching {
+  def maxAlpha(mean:Double, variance:Double): Double = {
+    require(mean >= 0.0 && mean <= 1.0)
+    require(variance >= 0.0 && variance <= 1.0)
+    val result = mean * (((mean * (1 - mean)) / variance) - 1)
+    println("MaximizeBetaByMomentMatching.maxAlpha mean="+mean+" variance="+variance+" alpha="+result)
+    require(result >= 0.0, "mean="+mean+" variance="+variance)
+    result
+  }
+  def maxBeta(mean:Double, variance:Double): Double = {
+    require(mean >= 0.0 && mean <= 1.0)
+    require(variance >= 0.0 && variance <= 1.0)
+    val result = (1 - mean) * (((mean * (1 - mean)) / variance) - 1)
+    require(result >= 0.0, "mean="+mean+" variance="+variance)
+    result
+  }
   def apply(alpha:RealVariable, beta:RealVariable, model:GenerativeModel): Unit = {
     val childFactors = model.extendedChildFactors(alpha) // Assume that beta has all the same children
     val ds = new cc.factorie.util.ArrayDoubleSeq(childFactors.size)
@@ -65,7 +85,7 @@ object MaximizeBetaByMomentMatching {
     }
     val mean = maths.sampleMean(ds)
     val variance = maths.sampleVariance(ds, mean)
-    alpha := mean * (((mean * (1 - mean)) / variance) - 1)
-    beta := (1 - mean) * (((mean * (1 - mean)) / variance) - 1)
+    alpha := maxAlpha(mean, variance)
+    beta := maxBeta(mean, variance)
   }
 }
