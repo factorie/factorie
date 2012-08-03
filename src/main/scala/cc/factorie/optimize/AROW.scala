@@ -5,12 +5,25 @@ import cc.factorie.la.Tensor
 import cc.factorie.maths
 import cc.factorie.Model
 
-class AROW(var learningMargin:Double = 1.0) extends GradientOptimizer {
-  def reset(): Unit = throw new Error("Not yet implemented")
-  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
-    throw new Error("Not yet implemented.")
+class AROW(model:Model, learningMargin:Double = 1.0, val lambdaAROW:Double=1.0) extends ConfidenceWeighting(model,learningMargin) {
+  //parameters specific to the algorithm
+  //
+  protected def alpha(modelScore:Double,gradient:WeightsTensor) : Double = math.max(0,1-modelScore) * beta(gradient)
+  protected def beta(gradient:WeightsTensor) : Double = 1/(marginVariance(gradient) + 2*lambdaAROW)
+  override def adjustConfidence(weights:WeightsTensor, gradient:WeightsTensor):Unit ={
+    val betaVal = beta(gradient)
+    for(template <- gradient.families){ //Update per-parameter learning rates.
+      val templateWeights = weights(template)
+      val templateGradient = gradient(template)
+      val templateLearningRates = sigma(template)
+      templateGradient.foreachActiveElement((index,value) => {
+        templateLearningRates(index)=
+          templateLearningRates(index)
+        - betaVal*templateLearningRates(index)*templateLearningRates(index)*value*value
+      })
+    }
   }
-  def isConverged = false // TODO What to put here?
+  override def calculateLearningRate(gradient: WeightsTensor,margin:Double): Double = alpha(margin,gradient)
 }
 
 class ConfidenceWeighting(val model:Model, var learningMargin:Double=1.0) extends GradientOptimizer {
@@ -39,40 +52,34 @@ class ConfidenceWeighting(val model:Model, var learningMargin:Double=1.0) extend
     //println(" done.")
     result
   }
-  def step(weights2:Tensor, gradient2:Tensor, value:Double, margin:Double): Unit = {
+  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     //println("Performing step")
-    gradient2 match{
+    gradient match{
       case gradient:WeightsTensor => {
-        weights2 match{
+        weights match{
           case weights:WeightsTensor =>{
-            learningRate = kktMultiplier(gradient,margin)
-            //weights.+=(gradient,sigma) //update parameters, note sparse argument comes first for efficiency
-            weights.+=(gradient,sigma,learningRate) //update parameters, note sparse argument comes first for efficiency
-            for(template <- gradient.families){
-              val templateWeights = weights(template)
-              val templateGradient = gradient(template)
-              val templateLearningRates = sigma(template)
-//      val templateSigma = sigma(template)
-//      for ((index, value) <- templateGradient.activeElements)
-//        template.weights(index) +=
-//              templateGradient(index) * templateSigma(index) * learningRate
-//    }
-//              templateGradient.foreachActiveElement((index,value) => {
-//                templateWeights(index)
-//              })
-              //weights.+=(gradient,sigma*learningRate)
-              templateGradient.foreachActiveElement((index,value) => {
-                templateLearningRates(index) = 1.0/((1.0/templateLearningRates(index))
-                  + 2*learningRate*gaussDeviate*value*value)
-              })
-            }
+            learningRate = calculateLearningRate(gradient,margin)
+            weights.+=(gradient,sigma,learningRate) //Update parameters. Note: sparse argument comes first for efficiency.
+            adjustConfidence(weights,gradient)
           }
+          case _ => throw new Exception("Confidence weighting only implemented for weight vectors of type WeightsTensor.")
         }
       }
-      case _ => throw new Exception("Confidence weighting only implemented for WeightsTensor gradients.")
+      case _ => throw new Exception("Confidence weighting only implemented for gradients of type WeightsTensor.")
     }
   }
-  def kktMultiplier(gradient: WeightsTensor,margin:Double): Double = {
+  def adjustConfidence(weights:WeightsTensor, gradient:WeightsTensor):Unit ={
+    for(template <- gradient.families){ //Update per-parameter learning rates.
+      val templateWeights = weights(template)
+      val templateGradient = gradient(template)
+      val templateLearningRates = sigma(template)
+      templateGradient.foreachActiveElement((index,value) => {
+        templateLearningRates(index) = 1.0/((1.0/templateLearningRates(index))
+          + 2*learningRate*gaussDeviate*value*value)
+      })
+    }
+  }
+  def calculateLearningRate(gradient: WeightsTensor,margin:Double): Double = {
     val marginMean = margin.abs
     val v = 1.0 + 2.0 * gaussDeviate * marginMean
     val marginVar = marginVariance(gradient)

@@ -1,6 +1,6 @@
 package cc.factorie.app.bib
 import collection.mutable.{HashMap, ArrayBuffer}
-import cc.factorie.app.nlp.coref.Entity
+import cc.factorie.app.nlp.coref._
 
 
 object FeatureUtils{
@@ -13,7 +13,7 @@ object FeatureUtils{
   val venueP4 = "(in the )?[Pp]roceedings of (the )?[a-z0-9]+ "
   val venueP5 = "(([Aa]dvances( ?in ?)?|[Pp]roceedings|[Pp]roc\\.? )) ?"
   val venuePost = " ?([Ee]ndowment|[Ee]ndow|Proceedings|Meeting)\\.?"
-  val venForAuthStops = "(proceedings|proc|endowment|endow|conference|in|the|of|[a-z]+eenth|[a-z]+tieth|first|second|third|fourth|fifth|sixth|seventh|eighth|nineth|tenth|eleventh|twelfth)"
+  val venForAuthStops = "(proceedings|proc|endowment|.iprioendow|conference|in|the|of|[a-z]+eenth|[a-z]+tieth|first|second|third|fourth|fifth|sixth|seventh|eighth|nineth|tenth|eleventh|twelfth)"
   val tokenFilterString = "[^A-Za-z0-9]"
   def normalizeName(name:String) = name.replaceAll("[^A-Za-z ]","").replaceAll("[ ]+"," ")
   def filterFieldNameForMongo(s:String) = s.replaceAll("[$\\.]","")
@@ -114,6 +114,16 @@ object FeatureUtils{
     for(paper <- papers)
       for(token <- tokenizer(paper))
         tfidf(token) = 1.0/(1.0/tfidf.getOrElse(token,0.0)+1.0)
+  }
+  def js(p:Seq[Double],q:Seq[Double]):Double ={
+    val qp = new Array[Double](p.size)
+    for(i<-0 until p.size)qp(i) = (q(i) + p(i))/2.0
+    (kl(p,qp)+kl(q,qp))/0.5
+  }
+  def kl(p:Seq[Double],q:Seq[Double]):Double = {
+    var result = 0.0
+    for(i<-0 until p.length)if(p(i)>0)result += p(i)*Math.log(p(i)/q(i))
+    result/Math.log(2)
   }
 }
 

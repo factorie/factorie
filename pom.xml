@@ -77,7 +77,6 @@
       <artifactId>bibtex</artifactId>
       <version>20040801</version>
     </dependency>
-
   </dependencies>
 
   <distributionManagement>

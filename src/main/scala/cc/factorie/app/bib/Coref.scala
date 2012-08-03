@@ -1,23 +1,26 @@
 package cc.factorie.app.bib
 import cc.factorie._
+import cc.factorie.util.DefaultCmdOptions
 import app.nlp.coref._
 import db.mongo._
 import com.mongodb.{DB, Mongo}
-import collection.mutable.{HashSet, HashMap, ArrayBuffer}
+import collection.mutable.{HashSet, HashMap, LinkedHashMap, ArrayBuffer}
 import bibtex.parser.BibtexParser
 import bibtex.expansions.PersonListExpander
 import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
 import bibtex.dom._
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import org.w3c.dom.{Node, NodeList, Document}
+//import org.apache.commons.codec._
+//import org.apache.commons.codec.language._
+
 
 class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity] {
-  def canopyName:String=(initial(entity.entityRoot.asInstanceOf[AuthorEntity].fullName.firstName)+entity.entityRoot.asInstanceOf[AuthorEntity].fullName.lastName).toLowerCase
+  def canopyName:String=FeatureUtils.normalizeName((initial(entity.entityRoot.asInstanceOf[AuthorEntity].fullName.firstName)+entity.entityRoot.asInstanceOf[AuthorEntity].fullName.lastName).toLowerCase)
   //def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
   def initial(s:String):String = if(s!=null && s.length>0)s.substring(0,1) else ""
 
 /*
-
   def convertCanopyForAuthors:Unit ={
     println("Converting canopies...")
     var counter = 0
@@ -110,7 +113,6 @@ class BagOfMiddleNames(val entity:Entity,names:Map[String,Double]=null) extends 
 }
 //misc attributes
 class BagOfKeywords(val entity:Entity,keywords:Map[String,Double]=null) extends BagOfWordsVariable(Nil,keywords) with EntityAttr
-class BagOfTruths(val entity:Entity, truths:Map[String,Double]=null) extends BagOfWordsVariable(Nil,truths) with EntityAttr
 /**Entity variables*/
 /**An entity with the necessary variables/coordination to implement hierarchical coreference.*/
 
@@ -148,7 +150,7 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
 class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isMention:Boolean = false) extends HierEntity(isMention) with HasCanopyAttributes[AuthorEntity] with Prioritizable{
   var _id = java.util.UUID.randomUUID.toString+""
   override def id = _id
-  priority = scala.math.exp(random.nextDouble)
+  priority = random.nextDouble
   canopyAttributes += new AuthorFLNameCanopy(this)
   attr += new FullName(this,f,m,l)
   attr += new BagOfTopics(this)
@@ -165,32 +167,77 @@ class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isM
   def string = f+" "+m+" "+l
   var paper:PaperEntity = null
   var paperMentionId:String=null
-  var groundTruth:Option[String] = None
+  //var groundTruth:Option[String] = None
 
   val bagOfFirstNames = new BagOfFirstNames(this)
   val bagOfMiddleNames = new BagOfMiddleNames(this)
-  val bagOfTruths = new BagOfTruths(this)
+//  val bagOfTruths = new BagOfTruths(this)
   attr += bagOfFirstNames
   attr += bagOfMiddleNames
-  attr += bagOfTruths
+  //attr += bagOfTruths
 }
 
 object Coref{
   def main(args:Array[String]) ={
-    val numEpochs=1
-    val batchSize=10000
-    val stepMultiplierA = 0.0
-    val stepMultiplierB = 200.0//200.0
-    val stepMultiplierC = 100.0 //100.0
+    println("Args: "+args.length)
+    for(arg <- args)
+      println("  "+arg)
+    object opts extends DefaultCmdOptions{
+      //db options
+      val server = new CmdOption("server","localhost","FILE","Location of Mongo server.")
+      val port = new CmdOption("port","27017","FILE","Port of Mongo server.")
+      val database = new CmdOption("database","rexa2-cubbies","FILE","Name of mongo database.")
+      //db creation options
+      val bibDirectory = new CmdOption("bibDir","/Users/mwick/data/thesis/all3/","FILE","Pointer to a directory containing .bib files.")
+      val rexaData = new CmdOption("rexaData","/Users/mwick/data/rexa/rexaAll/","FILE","Location of the labeled rexa2 directory.")
+      val createDB = new CmdOption("create","true","FILE","Creates a new DB by destroying the old one.")
+      //inference options
+      val numEpochs = new CmdOption("epochs","1","FILE","Number of inference round-trips to DB.")
+      val batchSize = new CmdOption("batchSize","1","FILE","Number of entities used to retrieve canopies from.")
+      val stepMultiplierA = new CmdOption("a","0.0","FILE","Runs for n^2 steps (n=number of mentions to do inference on.)")
+      val stepMultiplierB = new CmdOption("b","0.0","FILE","Runs for n steps (n=number of mentions to do inference on.)")
+      val stepMultiplierC = new CmdOption("c","0.0","FILE","Runs for c steps (c=constant)")
+      val evaluateOnly = new CmdOption("evaluate","false","FILE","Loads labeled data, evaluates the accuracy of coreference, and exits.")
+    }
+    opts.parse(args)
+    if(opts.evaluateOnly.value.toBoolean){
+      val tmpDB = new EpistemologicalDB(opts.server.value,opts.port.value.toInt,opts.database.value)
+      tmpDB.loadAndEvaluateAuthors
+      System.exit(0)
+    }
+    //Watch order here: first drop the collection, then create the epidb, then insert mentions. Required to make sure indexes remain intact.
+    if(opts.createDB.value.toBoolean){
+      println("Dropping database.")
+      val mongoConn = new Mongo(opts.server.value,opts.port.value.toInt)
+      val mongoDB = mongoConn.getDB(opts.database.value)
+      mongoDB.getCollection("authors").drop
+      mongoDB.getCollection("papers").drop
+    }
+    val epiDB = new EpistemologicalDB(opts.server.value,opts.port.value.toInt,opts.database.value)
+    if(opts.createDB.value.toBoolean){
+      println("About to add data.")
+      if(opts.bibDirectory.value.toLowerCase != "none")
+        epiDB.insertMentionsFromBibDir(new File(opts.bibDirectory.value))
+      if(opts.rexaData.value.toLowerCase != "none"){
+        println("Loading labeled data from: " + opts.rexaData.value)
+        epiDB.insertLabeledRexaMentions(new File(opts.rexaData.value))
+      }
+    }
 
-    val epiDB = new EpistemologicalDB
-    epiDB.drop
+    /*
+    //epiDB.drop
     epiDB.insertLabeledRexaMentions(new File("/Users/mwick/data/rexa/rexaTrain/"))
     epiDB.insertLabeledRexaMentions(new File("/Users/mwick/data/rexa/rexaTest/"))
     //epiDB.insertLabeledRexaMentions(new File("/Users/mwick/data/rexa/rexaAll/"))
-    //epiDB.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
+    epiDB.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
+    epiDB.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/all3/"))
     //epiDB.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/labeled/single-promotion-test.bib"))
-    epiDB.inferenceSweep(numEpochs,batchSize,stepMultiplierA,stepMultiplierB,stepMultiplierC)
+    */
+    epiDB.inferenceSweep(
+      opts.numEpochs.value.toInt,
+      opts.batchSize.value.toInt,
+      opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble
+    )
   }
 }
 
@@ -202,6 +249,8 @@ class EpistemologicalDB(mongoServer:String="localhost",mongoPort:Int=27017,mongo
   val authorPredictor = new AuthorSampler(new AuthorCorefModel){temperature = 0.001}
   val paperPredictor = new PaperSampler(new PaperCorefModel)
   def drop:Unit = {
+    //authorColl.remove(_)
+    //paperColl.remove(_)
     authorColl.drop
     paperColl.drop
   }
@@ -213,6 +262,11 @@ class EpistemologicalDB(mongoServer:String="localhost",mongoPort:Int=27017,mongo
     predictor.timeAndProcess(numSteps)
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
     entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities.map(_.asInstanceOf[E]))
+  }
+
+  def loadAndEvaluateAuthors:Unit ={
+    val labeledAuthors = authorColl.loadLabeled
+    Evaluator.eval(labeledAuthors)
   }
   /*
   //assumes everything is singletons
@@ -267,7 +321,7 @@ class EpistemologicalDB(mongoServer:String="localhost",mongoPort:Int=27017,mongo
       println("Author coreference")
       //trainTestAuthors(0.6,10,calculateSteps(_),calculateSteps(_))
       infer[AuthorEntity,AuthorCubbie](authorColl,authorPredictor,k,calculateSteps(_))
-      EntityUtils.printAuthors(authorPredictor.getEntities)
+      //EntityUtils.printAuthors(authorPredictor.getEntities)
       Evaluator.eval(authorPredictor.getEntities)
     }
   }
@@ -434,7 +488,8 @@ class AuthorCorefModel extends TemplateModel{
     def score(s:Stat):Double ={
       var result = 0.0
       val bag = s._1
-      val bagSeq = bag.iterator.toSeq
+      //val bagSeq = bag.iterator.toSeq
+      val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
       var firstLetterMismatches = 0
       var nameMismatches = 0
       var i=0;var j=0;
@@ -468,7 +523,8 @@ class AuthorCorefModel extends TemplateModel{
     def score(s:Stat):Double ={
       var result = 0.0
       val bag = s._1
-      val bagSeq = bag.iterator.toSeq
+      val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
+      //val bagSeq = bag.iterator.toSeq
       var firstLetterMismatches = 0
       var nameMismatches = 0
       var i=0;var j=0;
@@ -688,6 +744,9 @@ class AuthorSampler(model:TemplateModel) extends BibSampler[AuthorEntity](model)
   }
   override def proposalHook(proposal:Proposal) = {
     super.proposalHook(proposal)
+    if(proposalCount % (10000*20)==0){
+      Evaluator.eval(getEntities)
+    }
 //    if(proposalCount % 10000==0)
 //      printWeightInfo
     /*
@@ -795,8 +854,11 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
   protected var totalTime:Long=0L
   protected var intervalTime:Long=0L
   override def timeAndProcess(n:Int):Unit = {
+    println("About to take "+ n + " samples.")
     totalTime=System.currentTimeMillis
     intervalTime=totalTime
+    numAccepted=0
+    proposalCount=0
     super.process(n)
   }
   //def newEntity = new AuthorEntity
@@ -811,8 +873,8 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     _numSampleAttempts = 0.0
     canopies = new HashMap[String,ArrayBuffer[E]]
     super.setEntities(ents)
-    println("Number of canopies: "+canopies.size)
-    for((k,v) <- canopies)println("  -"+k+":"+v.size)
+    //println("Number of canopies: "+canopies.size)
+    //for((k,v) <- canopies)println("  -"+k+":"+v.size)
   }
   override def nextEntity(context:E=null.asInstanceOf[E]):E = {
     var result:E=null.asInstanceOf[E]
@@ -888,7 +950,7 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
       print(".")
     if(proposalCount % (10000*20)==0){
       var pctAccepted = numAccepted.toDouble/proposalCount.toDouble*100
-      println(" No. samples: "+proposalCount+", %accepted: "+pctAccepted+", time: "+(System.currentTimeMillis-intervalTime)/1000L+"sec., total: "+(System.currentTimeMillis-totalTime)/1000L+" sec.  Samples per sec: "+ (proposalCount.toInt/(((System.currentTimeMillis-totalTime)/1000L).toInt))+" Accepted per sec: "+(numAccepted/(((System.currentTimeMillis-totalTime)/1000L).toInt)))
+      println(" No. samples: "+proposalCount+", %accepted: "+pctAccepted+", time: "+(System.currentTimeMillis-intervalTime)/1000L+"sec., total: "+(System.currentTimeMillis-totalTime)/1000L+" sec.  Samples per sec: "+ (proposalCount.toInt/(((System.currentTimeMillis-totalTime+1L)/1000L).toInt))+" Accepted per sec: "+(numAccepted/(((System.currentTimeMillis-totalTime+1L)/1000L).toInt)))
       intervalTime = System.currentTimeMillis
     }
   }
@@ -969,6 +1031,18 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     val paperEntities = RexaLabeledLoader.load(rexaFile)
     add(paperEntities)
   }
+  def insertMentionsFromBibDir(bibDir:File):Unit ={
+    if(!bibDir.isDirectory)throw new Exception("Error "+bibDir + " is not a directory.")
+    println("Inserting mentions from bib directory: "+bibDir)
+    var size = bibDir.listFiles.size
+    var count = 0
+    for(file <- bibDir.listFiles){
+      insertMentionsFromBibFile(file)
+      count += 1
+      if(count % 10 == 0)print(".")
+      if(count % 200 == 0 || count==size)println(" Processed "+ count + " documents, but skipped "+skipped + ".")
+    }
+  }
   def insertMentionsFromBibFile(bibFile:File,numEntries:Int = Integer.MAX_VALUE):Unit ={
     val paperEntities = loadBibTeXFile(bibFile)
     add(paperEntities)
@@ -1009,12 +1083,12 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     }catch{
       case e:Exception =>{
         skipped += 1
-        println("\n=================================")
-        e.printStackTrace
-        println("=================================")
-        println("=================================")
-        println("ill-formated bib entry in file: " + file.getName)
-        println("  total skipped: " + skipped)
+        //println("\n=================================")
+        //e.printStackTrace
+        //println("=================================")
+        //println("=================================")
+        //println("ill-formated bib entry in file: " + file.getName)
+        //println("  total skipped: " + skipped)
       }
     }
     //processEdits(result)
@@ -1032,8 +1106,8 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
   }
   def filterFieldNameForMongo(s:String) = FeatureUtils.filterFieldNameForMongo(s)//s.replaceAll("[$\\.]","")
   def addFeatures(author:AuthorEntity):Unit ={
-    if(author.fullName.firstName.trim.length>0)author.bagOfFirstNames += author.fullName.firstName
-    if(author.fullName.middleName.trim.length>0)author.bagOfMiddleNames += author.fullName.middleName
+    if(author.fullName.firstName.trim.length>0)author.bagOfFirstNames += author.fullName.firstName.trim
+    if(author.fullName.middleName.trim.length>0)author.bagOfMiddleNames += author.fullName.middleName.trim
     if(author.groundTruth!=None)author.bagOfTruths += author.groundTruth.get
     val paper = author.paper
     if(paper!=null){
@@ -1147,7 +1221,11 @@ trait EntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
   protected def entity2cubbie(e:E):C =  _id2cubbie(e.id)
   protected def putEntityInCubbie(e:E) = {val ec=newEntityCubbie;ec.store(e);ec}
   protected def entityCubbieColl:MutableCubbieCollection[C]
-  protected def changePriority(e:E):Unit =e.priority = scala.math.exp(e.priority - random.nextDouble)
+  protected def changePriority(e:E):Unit ={
+    //e.priority = scala.math.exp(e.priority - random.nextDouble)
+    if(random.nextDouble>0.25)e.priority = scala.math.min(e.priority,random.nextDouble)
+    else e.priority = random.nextDouble
+  }
   def insert (c:C) = entityCubbieColl += c
   def insert (e:E) = entityCubbieColl += putEntityInCubbie(e)
   //def insert(cs:Iterable[C]) = entityCubbieColl ++= cs
@@ -1171,7 +1249,7 @@ trait EntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
     val deleted = new ArrayBuffer[E]
     val updated = new ArrayBuffer[E]
     val created = new ArrayBuffer[E]
-    for(e <- updated ++ created)changePriority(e)
+    for(e <- entitiesToStore)changePriority(e)
     for(e<-entitiesToStore){
       if(e.isConnected){
         if(wasLoadedFromDB(e))updated += e
@@ -1208,18 +1286,35 @@ abstract class MongoEntityCollection[E<:HierEntity with HasCanopyAttributes[E] w
   import MongoCubbieImplicits._
   import MongoCubbieConverter._
   protected val entityColl = mongoDB.getCollection(name)
-  val entityCubbieColl = new MongoCubbieCollection(entityColl,() => newEntityCubbie,(a:C) => Seq(Seq(a.canopies),Seq(a.inferencePriority),Seq(a.parentRef))) with LazyCubbieConverter[C]
+  val entityCubbieColl = new MongoCubbieCollection(entityColl,() => newEntityCubbie,(a:C) => Seq(Seq(a.canopies),Seq(a.inferencePriority),Seq(a.parentRef),Seq(a.bagOfTruths))) with LazyCubbieConverter[C]
   protected def removeEntities(deleted:Seq[E]):Unit = for(e <- deleted)entityCubbieColl.remove(_.idIs(entity2cubbie(e).id))
   //TODO: generalize MongoSlot so that we can move this into the EnttiyCollection class
   def drop:Unit = entityColl.drop
+  def loadLabeled:Seq[E] ={
+    reset
+    val result = new ArrayBuffer[C]
+    result ++= entityCubbieColl.query(_.bagOfTruths.exists(true))
+    val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
+    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
+    for(entity <- initialEntities)_id2entity += entity.id -> entity
+    println("initial entities: "+initialEntities.size)
+    println("initial cubbies : "+result.size)
+    println("_id2cubbie: "+ _id2cubbie.size)
+    println("_id2entity: "+ _id2entity.size)
+    assembleEntities(result, (id:Any)=>{_id2entity(id)})
+    initialEntities
+  }
   def nextBatch(n:Int=10):Seq[E] ={
     reset
     val canopyHash = new HashSet[String]
     var result = new ArrayBuffer[C]
     var topPriority = new ArrayBuffer[C]
     val sorted = entityCubbieColl.query(null,_.canopies.select.inferencePriority.select).sort(_.inferencePriority(-1))
-    for(i <- 0 until n)if(sorted.hasNext)
+    println("Printing top canopies")
+    for(i <- 0 until n)if(sorted.hasNext){
       topPriority += sorted.next
+      if(i<10)println("  "+topPriority(i).inferencePriority.value+": "+topPriority(i).canopies.value.toSeq)
+    }
     sorted.close
     for(entity <- topPriority){
       for(name <- entity.canopies.value){
@@ -1232,10 +1327,11 @@ abstract class MongoEntityCollection[E<:HierEntity with HasCanopyAttributes[E] w
     val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
     for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
     for(entity <- initialEntities)_id2entity += entity.id -> entity
-    println("initial entities: "+initialEntities.size)
-    println("initial cubbies : "+result.size)
-    println("_id2cubbie: "+ _id2cubbie.size)
-    println("_id2entity: "+ _id2entity.size)
+    println("Loaded "+n+" entities to determine canopies. Found "+result.size+" canopies.")
+    println("  initial entities: "+initialEntities.size)
+    println("  initial cubbies : "+result.size)
+    println("  _id2cubbie: "+ _id2cubbie.size)
+    println("  _id2entity: "+ _id2entity.size)
     assembleEntities(result, (id:Any)=>{_id2entity(id)})
     initialEntities
   }
@@ -1254,183 +1350,23 @@ class TemporaryMultiBagOfWords(wrappedBags:Iterable[BagOfWords]) extends BagOfWo
 }
 */
 
-/**Basic trait for doing operations with bags of words*/
-trait BagOfWords{ // extends scala.collection.Map[String,Double]{
-  //def empty: This
-  def size:Int
-  def asHashMap:HashMap[String,Double]
-  def apply(word:String):Double
-  def iterator:Iterator[(String,Double)]
-  def l2Norm:Double
-  def l1Norm:Double
-  def *(that:BagOfWords):Double
-  def deductedDot(that:BagOfWords, deduct:BagOfWords):Double
-  def cosineSimilarityINEFFICIENT(that:BagOfWords,deduct:BagOfWords):Double ={
-    //println("  (1) bag: "+that)
-    //println("  (1) that   : "+that.l2Norm)
-    //println("  (1) that bf: "+that.l2NormBruteForce)
-    that.removeBag(deduct)
-    //println("  (2) bag: "+that)
-    //println("  (2) that   : "+that.l2Norm)
-    //println("  (2) that bf: "+that.l2NormBruteForce)
-    val result = cosineSimilarity(that)
-    that.addBag(deduct)
-    //println("  (3) bag: "+that)
-    //println("  (3) that   : "+that.l2Norm)
-    //println("  (3) that bf: "+that.l2NormBruteForce)
-    result
-  }
-  def cosineSimilarity(that:BagOfWords,deduct:BagOfWords):Double ={
-    //val smaller = if(this.size<that.size)this else that
-    //val larger = if(that.size<this.size)this else that
-    val numerator:Double = this.deductedDot(that,deduct)
-    if(numerator==0.0){
-      val thatL2Norm = Math.sqrt(deduct.l2Norm*deduct.l2Norm+that.l2Norm*that.l2Norm - 2*(deduct * that))
-      val denominator:Double = this.l2Norm*thatL2Norm
-      if(denominator==0.0 || denominator != denominator) 0.0 else numerator/denominator
-    } else 0.0
-  }
-  def cosineSimilarity(that:BagOfWords):Double = {
-    val numerator:Double = this * that
-    val denominator:Double = this.l2Norm*that.l2Norm
-    if(denominator==0.0 || denominator != denominator) 0.0 else numerator/denominator
-  }
-  def +=(s:String,w:Double=1.0):Unit
-  def -=(s:String,w:Double=1.0):Unit
-  def ++=(that:BagOfWords):Unit = for((s,w) <- that.iterator)this += (s,w)
-  def --=(that:BagOfWords):Unit = for((s,w) <- that.iterator)this -= (s,w)
-  def contains(s:String):Boolean
-  def l2NormBruteForce:Double = {
-    var result=0.0
-    for((k,v) <- iterator)
-      result += v*v
-    scala.math.sqrt(result)
-  }
-  def addBag(that:BagOfWords):Unit
-  def removeBag(that:BagOfWords):Unit
-}
-
-class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,Double]=null) extends BagOfWords{
-  var variable:BagOfWordsVariable = null
-  protected var _l2Norm = 0.0
-  protected var _l1Norm = 0.0
-  protected var _bag = new HashMap[String,Double]
-  if(initialWords!=null)for(w<-initialWords)this += (w,1.0)
-  if(initialBag!=null)for((k,v)<-initialBag)this += (k,v)
-  def l2Norm = scala.math.sqrt(_l2Norm)
-  def l1Norm = _l1Norm
-  def asHashMap:HashMap[String,Double] = {val result = new HashMap[String,Double];result ++= _bag;result}
-  override def toString = _bag.toString
-  def apply(s:String):Double = _bag.getOrElse(s,0.0)
-  def contains(s:String):Boolean = _bag.contains(s)
-  def size = _bag.size
-  def iterator = _bag.iterator
-  def *(that:BagOfWords) : Double = {
-    if(that.size<this.size)return that * this
-    var result = 0.0
-    for((k,v) <- iterator)result += v*that(k)
-    result
-  }
-  def deductedDot(that:BagOfWords,deduct:BagOfWords) : Double = {
-    var result = 0.0
-    for((k,v) <- iterator)result += v*(that(k) - deduct(k))
-    result
-  }
-  def += (s:String, w:Double=1.0):Unit ={
-    _l1Norm += w
-    _l2Norm += w*w + 2*this(s)*w
-    _bag(s) = _bag.getOrElse(s,0.0) + w
-  }
-  def -= (s:String, w:Double=1.0):Unit ={
-    _l1Norm -= w
-    _l2Norm += w*w - 2.0*this(s)*w
-    if(w == _bag(s))_bag.remove(s)
-    else _bag(s) = _bag.getOrElse(s,0.0) - w
-  }
-  def addBag(that:BagOfWords) = for((k,v) <- that.iterator) this += (k,v)
-  def removeBag(that:BagOfWords) = for((k,v) <- that.iterator)this -= (k,v)
-}
-trait BagOfWordsVar extends Variable with VarAndValueGenericDomain[BagOfWordsVar,SparseBagOfWords] with Iterable[(String,Double)]
-class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVar with VarAndValueGenericDomain[BagOfWordsVariable,SparseBagOfWords] {
-  // Note that the returned value is not immutable.
-  def value = _members
-  private val _members:SparseBagOfWords = {
-    val result = new SparseBagOfWords(initialWords)
-    if(initialMap!=null)for((k,v) <- initialMap)result += (k,v)
-    result
-  }
-  _members.variable = this
-  def members: SparseBagOfWords = _members
-  def iterator = _members.iterator
-  override def size = _members.size
-  def contains(x:String) = _members.contains(x)
-  def accept:Unit ={} //_members.incorporateBags
-  def add(x:String,w:Double=1.0)(implicit d:DiffList):Unit = {
-    if(d!=null) d += new BagOfWordsVariableAddStringDiff(x,w)
-    _members += (x,w)
-  }
-  def remove(x:String,w:Double = 1.0)(implicit d:DiffList):Unit = {
-    if(d!=null) d += new BagOfWordsVariableRemoveStringDiff(x,w)
-    _members -= (x,w)
-  }
-  def add(x:BagOfWords)(implicit d: DiffList): Unit =  {
-    if (d != null) d += new BagOfWordsVariableAddBagDiff(x)
-    _members.addBag(x)
-  }
-  def remove(x: BagOfWords)(implicit d: DiffList): Unit = {
-    if (d != null) d += new BagOfWordsVariableRemoveBagDiff(x)
-    _members.removeBag(x)
-  }
-  final def += (x:String,w:Double=1.0):Unit = add(x,w)(null)
-  final def -= (x:String,w:Double=1.0):Unit = remove(x,w)(null)
-  final def +=(x:BagOfWords): Unit = add(x)(null)
-  final def -=(x:BagOfWords): Unit = remove(x)(null)
-  final def ++=(xs:Iterable[String]): Unit = xs.foreach(add(_)(null))
-  final def --=(xs:Iterable[String]): Unit = xs.foreach(remove(_)(null))
-  final def ++=(xs:HashMap[String,Double]): Unit = for((k,v)<-xs)add(k,v)(null)
-  final def --=(xs:HashMap[String,Double]): Unit = for((k,v)<-xs)remove(k,v)(null)
-  case class BagOfWordsVariableAddStringDiff(added: String,w:Double) extends Diff {
-    // Console.println ("new SetVariableAddDiff added="+added)
-    def variable: BagOfWordsVariable = BagOfWordsVariable.this
-    def redo = _members += (added,w)
-    def undo = _members -= (added,w)
-    override def toString = "BagOfWordsVariableAddStringDiff of " + added + " to " + BagOfWordsVariable.this
-  }
-  case class BagOfWordsVariableRemoveStringDiff(removed: String,w:Double) extends Diff {
-    //        Console.println ("new SetVariableRemoveDiff removed="+removed)
-    def variable: BagOfWordsVariable = BagOfWordsVariable.this
-    def redo = _members -= (removed,w)
-    def undo = _members += (removed,w)
-    override def toString = "BagOfWordsVariableRemoveStringDiff of " + removed + " from " + BagOfWordsVariable.this
-  }
-  case class BagOfWordsVariableAddBagDiff(added:BagOfWords) extends Diff {
-    // Console.println ("new SetVariableAddDiff added="+added)
-    def variable: BagOfWordsVariable = BagOfWordsVariable.this
-    def redo = _members.addBag(added)
-    def undo = _members.removeBag(added)
-    override def toString = "BagOfWordsVariableAddBagDiff of " + added + " to " + BagOfWordsVariable.this
-  }
-  case class BagOfWordsVariableRemoveBagDiff(removed: BagOfWords) extends Diff {
-    //        Console.println ("new SetVariableRemoveDiff removed="+removed)
-    def variable: BagOfWordsVariable = BagOfWordsVariable.this
-    def redo = _members.removeBag(removed)
-    def undo = _members.addBag(removed)
-    override def toString = "BagOfWordsVariableRemoveBagDiff of " + removed + " from " + BagOfWordsVariable.this
-  }
-}
-
 
 object RexaLabeledLoader{
   var noAuthorInFocusCount = 0
   def load(rexaDir:File):Seq[PaperEntity]={
     var result = new ArrayBuffer[PaperEntity]
     for(ambiguousNameDir <- rexaDir.listFiles){
-      for(entityDir <- ambiguousNameDir.listFiles){
-        val label = rexaDir.getName+"/"+ambiguousNameDir.getName+"-"+entityDir.getName
-        for(mentionFile <- entityDir.listFiles){
-          result += rexaMention2Paper(mentionFile,label)
+      if(ambiguousNameDir.listFiles!=null){
+        for(entityDir <- ambiguousNameDir.listFiles){
+          System.out.flush
+          val label = rexaDir.getName+"/"+ambiguousNameDir.getName+"-"+entityDir.getName
+          if(entityDir.listFiles != null)
+            for(mentionFile <- entityDir.listFiles)
+              result += rexaMention2Paper(mentionFile,label)
+          else println("Surprising error, listFiles returning null for directory: "+entityDir)
         }
       }
+      else println("Surprising error, listFiles returning null for directory: "+ambiguousNameDir)
     }
     println("Could not find the author in focus "+noAuthorInFocusCount + " times.")
     result

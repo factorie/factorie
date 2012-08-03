@@ -22,6 +22,8 @@ trait EntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable]
   val inferencePriority = new DoubleSlot("ipriority")
   val parentRef = RefSlot("parentRef", () => newEntityCubbie)
   val isMention = BooleanSlot("isMention")
+  val groundTruth = new StringSlot("gt")
+  val bagOfTruths = new CubbieSlot("gtbag", () => new BagOfWordsCubbie)
   def newEntityCubbie:EntityCubbie[T]
   def fetch(e:T) ={
     e.priority = inferencePriority.value
@@ -29,6 +31,8 @@ trait EntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable]
     e.isObserved=isMention.value
     e.attr[IsEntity].set(e.isRoot)(null)
     e.attr[EntityExists].set(e.isConnected)(null)
+    if(groundTruth.isDefined)e.groundTruth = Some(groundTruth.value)
+    if(bagOfTruths.isDefined && e.attr[BagOfTruths]!=null)e.attr[BagOfTruths] ++= bagOfTruths.value.fetch
     //note that entity parents are set externally not inside the cubbie
   }
   def store(e:T) ={
@@ -37,6 +41,7 @@ trait EntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable]
     inferencePriority := e.priority
     isMention := e.attr[IsMention].booleanValue
     if(e.parentEntity!=null)parentRef := e.parentEntity.id
+    if(e.groundTruth != None)groundTruth := e.groundTruth.get
   }
 }
 class BagOfWordsCubbie extends Cubbie{
@@ -63,7 +68,7 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
   val suffix = StringSlot("sf")
   val firstNameBag = new CubbieSlot("fnb", () => new BagOfWordsCubbie)
   val middleNameBag = new CubbieSlot("mnb", () => new BagOfWordsCubbie)
-  val bagOfTruths = new CubbieSlot("gtbag", () => new BagOfWordsCubbie)
+  //val bagOfTruths = new CubbieSlot("gtbag", () => new BagOfWordsCubbie)
   //TODO: maybe name should be a bag, there may be multiple nick names
   val nickName = StringSlot("nn") // nickname  e.g. William Bruce Croft, nickname=Bruce; or William Freeman, nickname=Bill
   val emails = new CubbieSlot("emails", () => new BagOfWordsCubbie)
@@ -72,7 +77,7 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
   val venues = new CubbieSlot("venues", () => new BagOfWordsCubbie)
   val coauthors = new CubbieSlot("coauthors", () => new BagOfWordsCubbie)
   val pid = RefSlot("pid", () => new PaperCubbie) // paper id; set in author mentions, propagated up into entities
-  val groundTruth = new StringSlot("gt")
+//  val groundTruth = new StringSlot("gt")
   override def fetch(e:AuthorEntity) ={
     super.fetch(e)
     e.attr[FullName].setFirst(firstName.value)(null)
@@ -88,10 +93,10 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     e.attr[BagOfFirstNames] ++= firstNameBag.value.fetch
     e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
     //e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
-    e.attr[BagOfTruths] ++= bagOfTruths.value.fetch
+    //e.attr[BagOfTruths] ++= bagOfTruths.value.fetch
     e._id = this.id.toString
     if(pid.isDefined)e.paperMentionId = pid.value.toString
-    if(groundTruth.isDefined)e.groundTruth = Some(groundTruth.value)
+//    if(groundTruth.isDefined)e.groundTruth = Some(groundTruth.value)
     _author=e
   }
   override def store(e:AuthorEntity) ={
@@ -107,12 +112,13 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     emails := new BagOfWordsCubbie().store(e.attr[BagOfEmails].value)
     firstNameBag := new BagOfWordsCubbie().store(e.attr[BagOfFirstNames].value)
     middleNameBag := new BagOfWordsCubbie().store(e.attr[BagOfMiddleNames].value)
-    bagOfTruths := new BagOfWordsCubbie().store(e.attr[BagOfTruths].value)
+    //bagOfTruths := new BagOfWordsCubbie().store(e.attr[BagOfTruths].value)
+    if(e.attr[BagOfTruths]!=null && e.attr[BagOfTruths].value.size>0)bagOfTruths := new BagOfWordsCubbie().store(e.attr[BagOfTruths].value)
     this.id=e.id
     //println("pid: "+e.paperMentionId)
     if(e.paperMentionId != null)pid := e.paperMentionId
     if(!e.isObserved && e.paperMentionId!=null)println("Warning: non-mention-author with id "+e.id+ " has a non-null promoted mention.")
-    if(e.groundTruth != None)groundTruth := e.groundTruth.get
+    //if(e.groundTruth != None)groundTruth := e.groundTruth.get
   }
   def author:AuthorEntity=_author
   override def newEntityCubbie:EntityCubbie[AuthorEntity] = new AuthorCubbie
