@@ -243,6 +243,61 @@ class ParserTests extends JUnitSuite {
     assert(coloradoSample.successful, coloradoSample)
     Dom.astToDom(AST.Document(coloradoSample.get))
 
+    val fails_8_4_1 = assertParse(DocumentParser.Impl.bibTex, """
+    @InProceedings{dredze-EtAl:2007:EMNLP-CoNLL2007,
+      author    = {Dredze, Mark  and  Blitzer, John  and  Pratim Talukdar, Partha  and  Ganchev, Kuzman  and  Graca, Jo\~ao  and  Pereira, Fernando},
+      title     = {Frustratingly Hard Domain Adaptation for Dependency Parsing},
+      booktitle = {Proceedings of the CoNLL Shared Task Session of EMNLP-CoNLL 2007},
+      pages     = {1051--1055},
+      url       = {http://www.aclweb.org/anthology/D/D07/D07-1112}
+    }
+    """)
+
+    assert(fails_8_4_1.successful, fails_8_4_1)
+
+    val failsDoc1 = Dom.astToDom(AST.Document(fails_8_4_1.get))
+
+    println(failsDoc1)
+
+    val fails_8_4_2 = assertParse(DocumentParser.Impl.bibTex, """
+    @InProceedings{BanikACL09-shortpaper,
+      author =       {Eva Banik},
+      title =        {Extending a Surface Realizer to Generate Coherent Discourse},
+                  booktitle =    {Proceedings of the Short Papers of the Joint conference of the Association for Computational Linguistics and the Asian Federation of Natural Language Processing (ACL-IJCNLP-09), Singapore},
+
+      year =         2009
+    }
+
+    @inproceedings{webdb03-smwea,
+            title={{ODISSEA: A Peer-to-Peer Architecture for Scalable Web Search and Information Retrieval}},
+            author={T. Suel and C. Mathur and J. Wu and J. Zhang and A. Delis
+                    and M. Kharrazi and X. Long and K. Shanmugasunderam},
+            booktitle={{6th International Workshop on the Web and Databases (WebDB)}},
+            month={June},
+            year={2003},
+            address={San Diego, CA}
+            }
+
+    @inproceedings{1333582,
+     author = {Donglai Zhang and Paul Coddington and Andrew Wendelborn},
+     title = {Binary Data Transfer Performance over High-Latency Networks Using Web Service Attachments},
+     booktitle = {E-SCIENCE '07: Proceedings of the Third IEEE International Conference on e-Science and Grid Computing},
+     year = {2007},
+     isbn = {0-7695-3064-8},
+     pages = {261--269},
+     doi = {http://dx.doi.org/10.1109/E-SCIENCE.2007.16},
+     publisher = {IEEE Computer Society}
+
+
+    }
+        """)
+
+    assert(fails_8_4_2.successful, fails_8_4_2)
+
+    val failsDoc2 = Dom.astToDom(AST.Document(fails_8_4_2.get))
+
+    println(failsDoc2)
+
     expect(NameParser.stringToNames("Ludwig von Beethoven"))(List(Name("Ludwig", "von", "Beethoven", "")))
     expect(NameParser.stringToNames("von Beethoven, Ludwig"))(List(Name("Ludwig", "von", "Beethoven", "")))
     expect(NameParser.stringToNames("Jones, Jr., John-Paul"))(List(Name("John Paul", "", "Jones", "Jr.")))

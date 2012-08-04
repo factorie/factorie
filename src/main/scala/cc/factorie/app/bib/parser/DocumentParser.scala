@@ -54,7 +54,7 @@ private[parser] object DocumentParser {
     def preambleEntry = PREAMBLE ~> WS ~> entryBody { value } ^^ (PreambleEntry(_))
 
     def regularEntry =
-      (SYMBOL <~ WS) ~ entryBody { SYMBOL ~ rep(COMMA_WS ~> tag) <~ (COMMA_WS ?) } ^^ {
+      (SYMBOL <~ WS) ~ entryBody { SYMBOL_CAN_START_WITH_NUMBER ~ rep(COMMA_WS ~> tag) <~ (COMMA_WS ?) } ^^ {
         case ty ~ (key ~ tags) => RegularEntry(ty, key, tags)
       }
 
@@ -87,7 +87,9 @@ private[parser] object DocumentParser {
     def COMMENT = r("(c|C)(o|O)(m|M)(m|M)(e|E)(n|N)(t|T)")
     def STRING = r("(s|S)(t|T)(r|R)(i|I)(n|N)(g|G)")
     def PREAMBLE = r("(p|P)(r|R)(e|E)(a|A)(m|M)(b|B)(l|L)(e|E)")
-    // anything except can't start with a number, and no quotes, braces/parens, '#', commas, whitespace, or '='
+    // anything except can't start with number, quotes, braces/parens, '#', commas, whitespace, or '='
     def SYMBOL = r("[^0-9\"}{)(,\\s#=][^\"}{)(,\\s#=]*")
+    // can start with (or even be entirely) a number
+    def SYMBOL_CAN_START_WITH_NUMBER = r("[^\"}{)(,\\s#=][^\"}{)(,\\s#=]*")
   }
 }
