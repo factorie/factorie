@@ -41,12 +41,12 @@ private[parser] object DocumentParser {
       (_ flatMap { case x ~ y ~ z => List(x, y, z): List[Entry] })
 
     // FIXME: lines starting with %%% are comments
-    def freeComment = "[^@]*" ^^ (CommentEntry(_))
+    def freeComment = (/*"(%%[^\r\n]*)+" |*/ "[^@]*") ^^ (CommentEntry(_))
 
     def anyEntry = AT ~> (commentEntry | stringEntry | preambleEntry | regularEntry)
 
     def commentEntry =
-      COMMENT ~> WS ~> (('{' ~> "[^}]*" <~ '}') | ('(' ~> "[^\\)]*" <~ ')')) ^^
+      COMMENT ~> (WS ~> (('{' ~> "[^}]*" <~ '}') | ('(' ~> "[^)]*" <~ ')')) | "[^@\r\n]*") ^^
       (CommentEntry(_))
 
     def stringEntry = STRING ~> WS ~> entryBody { tag } ^^ (StringEntry(_, _)).tupled
@@ -79,7 +79,7 @@ private[parser] object DocumentParser {
 
     def numericLiteral = "\\d+(\\.\\d+)?" ^^ (Literal(_))
     def quoteDelimitedLiteral =
-      '"' ~> (BRACE_DELIMITED_STRING | """[^"]""" | """\\.""").* <~ '"' ^^ (xs => Literal(xs.mkString))
+      '"' ~> (BRACE_DELIMITED_STRING | """\\.""" | """[^"]""").* <~ '"' ^^ (xs => Literal(xs.mkString))
     def braceDelimitedNoOuterLiteral = BRACE_DELIMITED_STRING_NO_OUTER ^^ (Literal(_))
 
     def AT = c('@')

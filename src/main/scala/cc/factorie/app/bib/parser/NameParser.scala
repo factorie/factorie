@@ -117,7 +117,7 @@ private[parser] object NameParser {
 
     // if its just one fragment with curly braces, its a literal, so leave out the braces
     def fragment =
-      (BRACE_DELIMITED_STRING_NO_OUTER ?) ~ (("""\\.""" ^^ (_.drop(1))) | "[^\\s,}{\\-~]" | BRACE_DELIMITED_STRING).* ^^ {
+      (BRACE_DELIMITED_STRING_NO_OUTER ?) ~ ("""\\.""" | "[^\\s,}{\\-~]" | BRACE_DELIMITED_STRING).* ^^ {
         case Some(bds) ~ Nil => bds
         case Some(bds) ~ rest => (("{" + bds + "}") :: rest).mkString
         case None ~ rest => rest.mkString

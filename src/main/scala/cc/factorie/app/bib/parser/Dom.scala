@@ -64,11 +64,11 @@ object Dom {
         case AST.CommentEntry(comment) =>
           val newComments =
             if (comment.trim.isEmpty) currentDoc.comments
-            else comment :: currentDoc.comments
+            else currentDoc.comments :+ comment
           loop(currentDoc.copy(comments = newComments), rest, env)
 
         case AST.PreambleEntry(pre) =>
-          loop(currentDoc.copy(preambles = evalValue(pre, env) :: currentDoc.preambles), rest, env)
+          loop(currentDoc.copy(preambles = currentDoc.preambles :+ evalValue(pre, env)), rest, env)
 
         case AST.RegularEntry(ty, citationKey, tags) =>
           val insensitiveMap = new TreeMap[String, String]()(CaseInsensitiveCompare)
