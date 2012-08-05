@@ -3,7 +3,7 @@ package cc.factorie.app.bib
 /**
 Luke's BibTeX parser consolidated into a single file.
 */
-
+/*
 // Names.scala //
 object Names {
 
@@ -633,3 +633,4 @@ object ParserTests {
       }
   }
 }
+*/

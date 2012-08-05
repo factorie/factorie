@@ -1,4 +1,5 @@
 package cc.factorie.app.bib
+import cc.factorie.app.bib.parser._
 import cc.factorie._
 import cc.factorie.util.DefaultCmdOptions
 import app.nlp.coref._
