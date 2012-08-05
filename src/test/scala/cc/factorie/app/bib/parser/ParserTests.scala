@@ -257,14 +257,11 @@ class ParserTests extends JUnitSuite {
 
     val failsDoc1 = Dom.astToDom(AST.Document(fails_8_4_1.get))
 
-    println(failsDoc1)
-
     val fails_8_4_2 = assertParse(DocumentParser.Impl.bibTex, """
     @InProceedings{BanikACL09-shortpaper,
       author =       {Eva Banik},
       title =        {Extending a Surface Realizer to Generate Coherent Discourse},
-                  booktitle =    {Proceedings of the Short Papers of the Joint conference of the Association for Computational Linguistics and the Asian Federation of Natural Language Processing (ACL-IJCNLP-09), Singapore},
-
+      booktitle =    {Proceedings of the Short Papers of the Joint conference of the Association for Computational Linguistics and the Asian Federation of Natural Language Processing (ACL-IJCNLP-09), Singapore},
       year =         2009
     }
 
@@ -296,7 +293,7 @@ class ParserTests extends JUnitSuite {
 
     val failsDoc2 = Dom.astToDom(AST.Document(fails_8_4_2.get))
 
-    println(failsDoc2)
+    expect(NameParser.stringToNames("Graca, Jo\\~ao"))(List(Name("Jo~ao", "", "Graca", "")))
 
     expect(NameParser.stringToNames("Ludwig von Beethoven"))(List(Name("Ludwig", "von", "Beethoven", "")))
     expect(NameParser.stringToNames("von Beethoven, Ludwig"))(List(Name("Ludwig", "von", "Beethoven", "")))
