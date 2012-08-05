@@ -30,7 +30,11 @@ object Dom {
     jr: String)
 
   def stringToDom(str: String, expandAbbreviations: Boolean = true): Either[String, Document] =
-    DocumentParser.parseString(str).right.map(astToDom(_, expandAbbreviations))
+    try {
+      DocumentParser.parseString(str).right.map(astToDom(_, expandAbbreviations))
+    } catch {
+      case e: Exception => Left(e.toString)
+    }
 
   private[parser] def astToDom(astDoc: AST.Document, expandAbbreviations: Boolean = true): Document = {
 

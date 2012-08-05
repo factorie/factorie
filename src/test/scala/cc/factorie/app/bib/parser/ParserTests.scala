@@ -3,6 +3,8 @@ package cc.factorie.app.bib.parser
 import org.scalatest.junit.JUnitSuite
 import cc.factorie.app.bib.parser.Dom.Name
 import org.junit.Test
+import java.io.File
+import collection.mutable.ArrayBuffer
 
 /**
  * @author Luke Vilnis
@@ -11,7 +13,35 @@ import org.junit.Test
 
 class ParserTests extends JUnitSuite {
 
-  @Test def allTests() {
+  @Test def testMichaelsStuff(): Unit = {
+
+    val path = """C:\Users\Luke\Downloads\failed\failed\failed"""
+
+    val fileTexts = new File(path).listFiles().toList
+      .filter(_.isFile)
+      .map(f => (f.getName, scala.io.Source.fromFile(f.getPath, "ISO-8859-1").toArray.mkString))
+
+    val results: List[Either[String, String]] = fileTexts map {
+      case (name, fileText) =>
+        Dom.stringToDom(fileText).fold(err =>
+          Left("""
+Error on file: "%s"
+Error text: "%s" """ format (name, err)),
+          _ => Right("""
+Success on file: "%s" """ format (name)))
+    }
+
+    val (failures, successes) = (new ArrayBuffer[String], new ArrayBuffer[String])
+
+    results.foreach(e => e.fold((failures +=), (successes +=)))
+
+    for (s <- successes) {println(s) }
+    for (f <- failures) {println(f) }
+
+    if (!failures.isEmpty) sys.error("Failed!")
+  }
+
+  @Test def allTests(): Unit = {
 
     def assertParse[T](parser: DocumentParser.Impl.Parser[T], str: String): DocumentParser.Impl.ParseResult[T] = {
       val result = DocumentParser.Impl.parseAll(parser, str)
@@ -304,6 +334,32 @@ class ParserTests extends JUnitSuite {
 }
     }
         """)
+
+    assertParseAndDocify(DocumentParser.Impl.bibTex, """
+@article{1814808,
+ author = {Kauppinen, Tomi and Mantegari, Glauco and Paakkarinen, Panu and Kuittinen, Heini and Hyv\"{o}nen, Eero and Bandini, Stefania},
+ title = {Determining relevance of imprecise temporal intervals for cultural heritage information retrieval},
+ journal = {Int. J. Hum.-Comput. Stud.},
+ volume = {68},
+ number = {9},
+ year = {2010},
+ issn = {1071-5819},
+ pages = {549--560},
+ doi = {http://dx.doi.org/10.1016/j.ijhcs.2010.03.002},
+ publisher = {Academic Press, Inc.},
+ address = {Duluth, MN, USA},
+ }""")
+
+    assertParseAndDocify(DocumentParser.Impl.bibTex, """
+@inproceedings{sen07:coordinating,
+	Author = {Sen, Rohan and Hackmann, Gregory and Haitjema, Mart and Roman, Gruia-Catalin and Gill, Christopher},
+	Booktitle = {Lecture Notes in Computer Science},
+	Pages = {249--267},
+	Title = {Coordinating Workflow Allocation and Execution in Mobile Environments},
+	Url = {http://dx.doi.org/10.1007/978-3-540-72794-1_14},
+	Volume = {4467}
+	Year = {2007}
+}""")
 
     expect(NameParser.stringToNames("Graca, Jo\\~ao"))(List(Name("Jo~ao", "", "Graca", "")))
 

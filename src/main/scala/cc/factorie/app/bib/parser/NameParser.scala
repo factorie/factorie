@@ -17,10 +17,14 @@ private[parser] object NameParser {
   final case class FRAGMENT(text: String) extends Token
 
   def stringToNames(names: String): List[Name] =
-    fragmentsToNames(lexNameFragments(names))
+    fragmentsToNames(lexNameFragments(names), names)
 
-  private def fragmentsToNames(fragments: List[Token]): List[Name] =
-    splitOn(fragments)(AND ==).map(fragmentsToName(_))
+  private def fragmentsToNames(fragments: List[Token], origName: String): List[Name] =
+    try {
+      splitOn(fragments)(AND ==).map(fragmentsToName(_))
+    } catch {
+      case re: Exception => sys.error("Error parsing name \"%s\": %s" format (origName, re.toString))
+    }
 
   private def fragmentsToName(fragments: List[Token]): Name = {
     val sectionTokens = splitOn(fragments)(COMMA ==)
