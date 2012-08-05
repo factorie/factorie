@@ -12,6 +12,8 @@ import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
 import bibtex.dom._
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import org.w3c.dom.{Node, NodeList, Document}
+import parser.Dom.Entry
+
 //import org.apache.commons.codec._
 //import org.apache.commons.codec.language._
 
@@ -1037,7 +1039,7 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     println("Inserting mentions from bib directory: "+bibDir)
     var size = bibDir.listFiles.size
     var count = 0
-    for(file <- bibDir.listFiles){
+    for(file <- bibDir.listFiles.filter(_.isFile)){
       insertMentionsFromBibFile(file)
       count += 1
       if(count % 10 == 0)print(".")
@@ -1055,191 +1057,91 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
   var skipped=0
   var numParsed=0
 
-  def loadBibTeXFile(file:File):Seq[PaperEntity]={
+
+  def loadBibTeXFile(file:File):Seq[PaperEntity] ={
     val result = new ArrayBuffer[PaperEntity]
+    val fileText = scala.io.Source.fromFile(file).toArray.mkString
+    loadBibTeXFile(fileText,file,result)
+  }
+  def loadBibTeXFile(fileText:String,file:File,result:ArrayBuffer[PaperEntity]):Seq[PaperEntity]={
     var docOption:Option[cc.factorie.app.bib.parser.Dom.Document] = None
     try{
-      var fileText = scala.io.Source.fromFile(file).toArray.mkString
-      docOption = Dom.stringToDom(fileText, false)
-      if(docOption==None){
-        println("Parser returned NONE, file failed silently: "+file.getName)
-        if(fileText.split("@").size==2){
-          println("BIB FILE: "+fileText)
+      val docOrError = Dom.stringToDom(fileText, false)
+      docOrError match{
+        case Right(doc:cc.factorie.app.bib.parser.Dom.Document) => docOption = Some(doc)
+        case Left(error:String) => {
+          //(error+" doc: "+file.getName)
+          val split = fileText.split("@")
+          if(split.length>=3){
+            for(s <- split)loadBibTeXFile("@"+s,file,result)
+            skipped += 1
+          }
         }
-        /*
-        val badDir = new File(file.getParent()+ "/failed");
-        badDir.mkdirs();
-        //println(badDir.getAbsolutePath() + "/" + file.getName() + ".bad\n");
-        file.renameTo(new File(badDir.getAbsolutePath + "/" + file.getName()));
-        */
       }
     }
     catch{
-      case e:Exception =>{println(e.getMessage+" doc: "+file.getName())
-        /*
-        val badDir = new File(file.getParent()+ "/failed");
-        badDir.mkdirs();
-        //println(badDir.getAbsolutePath() + "/" + file.getName() + ".bad\n");
-        file.renameTo(new File(badDir.getAbsolutePath + "/" + file.getName()));
-        */
+      case e:Exception => {
+          skipped += 1
+        //println(e.getMessage+" doc: "+file.getName())
+        //skipped += 1
       }
     }
-
-    if(docOption==None){
-      skipped += 1
-    }
-    else{
+    if(docOption!=None){
       val doc = docOption.get
       for((provenance, entry) <- doc.entries){
-        val paperEntity = new PaperEntity("DEFAULT",true)
-        result += paperEntity
-        val entryType = entry.ty
-        //val authors = new ArrayBuffer[AuthorEntity]
-        for(author <- entry.authors.getOrElse(Nil)){
-          val first = author.first
-          val middle = author.von
-          var last = author.last
-          val authorEntity = new AuthorEntity(first,middle,last,true)
-          val labelTest = last.split("\\[")
-          if(labelTest.length==2){
-            if(labelTest(1).matches("[0-9]+\\]")){
-              authorEntity.groundTruth=Some(labelTest(1).substring(0,labelTest(1).length-1))
-              //authorentity.setClusterID(labelTest(1).substring(0,labelTest(1).length-1).toInt)
-              last = labelTest(0)
-              authorEntity.fullName.setLast(last)(null)
-            }
-          }
-          paperEntity.authors += authorEntity
-        }
-        for(editor <- entry.editors.getOrElse(Nil)){
-          //TODO
-        }
-        for((name,value) <- entry.otherFields){
-          var xv=value.toString.replaceAll("[\r\n\t ]+"," ").replaceAll("[^A-Za-z0-9\\-\\.,\\(\\) ]","")
-          if(name != "authors" && name != "editors" && name != "mentions" && name!="entity_ref"){
-            if(xv.startsWith("{"))xv=xv.substring(1,xv.length-1)
-            if(name == "title")paperEntity.title.set(xv)(null)
-            if(name == "year"){
-              xv = xv.replaceAll("[^0-9]","")
-              println("xv.len="+xv.length)
-              System.out.flush
-              if(xv.length==0 || xv.length>4)xv="-1"
-              paperEntity.attr[Year] := xv.toInt
-            }
-          }
-          if (name == "journal"
-            || (name == "booktitle" && entryType.indexOf("book") == -1)
-            || (name == "institution" && (entryType=="techreport" || entryType.indexOf("thesis") != -1))){
-            if(xv==null || xv.replaceAll(FeatureUtils.tokenFilterString,"").length>0){
-              paperEntity.attr[VenueName]:=xv
-              //val venueMention = new VenueMention
-              //venueMention.name = xv
-              //paperMention.venueMention = venueMention
-            }
-          }
-        }//end for((name,value) <- entry.otherFields)
+        result += loadBibTexEntry(entry,provenance)
       }//end for((provenance, entry) <- doc.entries)
       numParsed += 1
     }//end .bib parsed correctly
-    result
-    /*
-            case x:BibtexAbstractValue =>{
-          var xv=value.toString.replaceAll("[\r\n\t ]+"," ").replaceAll("[^A-Za-z0-9\\-\\.,\\(\\) ]","")
-          if(name != "authors" && name != "editors" && name != "mentions" && name!="entity_ref"){
-            if(xv.startsWith("{"))xv=xv.substring(1,xv.length-1)
-            if(name == "title")paperEntity.title.set(xv)(null)
-            if(name == "year"){
-              xv = xv.replaceAll("[^0-9]","")
-              if(xv.length==0)xv="-1"
-              paperEntity.attr[Year] := xv.toInt
-            }
-          }
-          if (name == "journal"
-            || (name == "booktitle" && entryType.indexOf("book") == -1)
-            || (name == "institution" && (entryType=="techreport" || entryType.indexOf("thesis") != -1))){
-            if(xv==null || xv.replaceAll(FeatureUtils.tokenFilterString,"").length>0){
-              paperEntity.attr[VenueName]:=xv
-              //val venueMention = new VenueMention
-              //venueMention.name = xv
-              //paperMention.venueMention = venueMention
-            }
-          }
-        }
-
-  def bib2mention(entry:BibtexEntry):PaperEntity ={
-    val entryType = entry.getEntryType.toLowerCase
-    val key = entry.getEntryKey
-    val paperEntity = new PaperEntity("DEFAULT",true)
-    //paperMention.citationString=entry.toString
-    val iter = entry.getFields.keySet.iterator
-    while(iter.hasNext){
-      val name = filterFieldNameForMongo(iter.next.asInstanceOf[String].toLowerCase)
-      val value = entry.getFieldValue(name)
-      value match{
-        //case x:BibtexConcatenatedValue => {x.toString}
-        //case x:BibtexMacroReference => {x.toString}
-        //case x:BibtexMultipleValues => {x.toString}
-        //case x:BibtexPersonList => {x.toString}
-        //case x:BibtexString => {x.toString}
-        case x:BibtexPersonList =>{
-          val authors = new ArrayBuffer[AuthorEntity]
-          for(j<-0 until x.getList.size){
-            //val authorMention = new AuthorMention
-            //authorMention.paperMention = paperMention
-            //authorMention.authorIndex = j
-            val person = x.getList.get(j).asInstanceOf[BibtexPerson]
-            val (first,middle) = splitFirst(person.getFirst)
-            var last = person.getLast;if(last==null)last=""
-            val authorEntity = new AuthorEntity(first,middle,last,true)
-            authorEntity.paper = paperEntity
-            //paperEntity.authorEntities += authorEntity
-            //authorMention.authorIndex = j
-            val labelTest = last.split("\\[")
-            if(labelTest.length==2){
-              if(labelTest(1).matches("[0-9]+\\]")){
-                authorEntity.groundTruth=Some(labelTest(1).substring(0,labelTest(1).length-1))
-                //authorentity.setClusterID(labelTest(1).substring(0,labelTest(1).length-1).toInt)
-                last = labelTest(0)
-              }
-            }
+    def loadBibTexEntry(entry:Entry,provenance:String):PaperEntity ={
+      val paperEntity = new PaperEntity("DEFAULT",true)
+      //result += paperEntity
+      val entryType = entry.ty
+      //val authors = new ArrayBuffer[AuthorEntity]
+      for(author <- entry.authors.getOrElse(Nil)){
+        val first = author.first
+        val middle = author.von
+        var last = author.last
+        val authorEntity = new AuthorEntity(first,middle,last,true)
+        val labelTest = last.split("\\[")
+        if(labelTest.length==2){
+          if(labelTest(1).matches("[0-9]+\\]")){
+            authorEntity.groundTruth=Some(labelTest(1).substring(0,labelTest(1).length-1))
+            //authorentity.setClusterID(labelTest(1).substring(0,labelTest(1).length-1).toInt)
+            last = labelTest(0)
             authorEntity.fullName.setLast(last)(null)
-            authors += authorEntity//new AuthorMention(first,middle,last)
-            //if(person.getLineage!=null)
-            //  personObj.put(PersonRecord.LINEAGE,person.getLineage)
-          }
-          if(name == "editor"){}
-          else if(name == "author")
-            for(a<-authors)paperEntity.authors += a
-        }
-        case x:BibtexAbstractValue =>{
-          var xv=value.toString.replaceAll("[\r\n\t ]+"," ").replaceAll("[^A-Za-z0-9\\-\\.,\\(\\) ]","")
-          if(name != "authors" && name != "editors" && name != "mentions" && name!="entity_ref"){
-            if(xv.startsWith("{"))xv=xv.substring(1,xv.length-1)
-            if(name == "title")paperEntity.title.set(xv)(null)
-            if(name == "year"){
-              xv = xv.replaceAll("[^0-9]","")
-              if(xv.length==0)xv="-1"
-              paperEntity.attr[Year] := xv.toInt
-            }
-          }
-          if (name == "journal"
-            || (name == "booktitle" && entryType.indexOf("book") == -1)
-            || (name == "institution" && (entryType=="techreport" || entryType.indexOf("thesis") != -1))){
-            if(xv==null || xv.replaceAll(FeatureUtils.tokenFilterString,"").length>0){
-              paperEntity.attr[VenueName]:=xv
-              //val venueMention = new VenueMention
-              //venueMention.name = xv
-              //paperMention.venueMention = venueMention
-            }
           }
         }
+        paperEntity.authors += authorEntity
       }
-    }
-    if(paperEntity.title==null)paperEntity.title.set("")(null)
-    //paperMention.createAllSingletonEntities
-    paperEntity
-  }
-     */
+      for(editor <- entry.editors.getOrElse(Nil)){
+        //TODO
+      }
+      for((name,value) <- entry.otherFields){
+        var xv=value.toString.replaceAll("[\r\n\t ]+"," ").replaceAll("[^A-Za-z0-9\\-\\.,\\(\\) ]","")
+        if(name != "authors" && name != "editors" && name != "mentions" && name!="entity_ref"){
+          if(xv.startsWith("{"))xv=xv.substring(1,xv.length-1)
+          if(name == "title")paperEntity.title.set(xv)(null)
+          if(name == "year"){
+            xv = xv.replaceAll("[^0-9]","")
+            if(xv.length==0 || xv.length>4)xv="-1"
+            paperEntity.attr[Year] := xv.toInt
+          }
+        }
+        if (name == "journal"
+          || (name == "booktitle" && entryType.indexOf("book") == -1)
+          || (name == "institution" && (entryType=="techreport" || entryType.indexOf("thesis") != -1))){
+          if(xv==null || xv.replaceAll(FeatureUtils.tokenFilterString,"").length>0){
+            paperEntity.attr[VenueName]:=xv
+            //val venueMention = new VenueMention
+            //venueMention.name = xv
+            //paperMention.venueMention = venueMention
+          }
+        }
+      }//end for((name,value) <- entry.otherFields)
+      paperEntity
+    } //end loadBibTexEntry
+    result
   }
 
   def loadBibTeXFileOLD(file:File):Seq[PaperEntity]={
