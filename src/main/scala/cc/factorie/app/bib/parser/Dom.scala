@@ -29,8 +29,8 @@ object Dom {
     last: String,
     jr: String)
 
-  def stringToDom(str: String, expandAbbreviations: Boolean = true): Option[Document] =
-    DocumentParser.parseString(str).map(astToDom(_, expandAbbreviations))
+  def stringToDom(str: String, expandAbbreviations: Boolean = true): Either[String, Document] =
+    DocumentParser.parseString(str).right.map(astToDom(_, expandAbbreviations))
 
   private[parser] def astToDom(astDoc: AST.Document, expandAbbreviations: Boolean = true): Document = {
 

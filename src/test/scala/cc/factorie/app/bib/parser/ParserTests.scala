@@ -340,10 +340,10 @@ class ParserTests extends JUnitSuite {
     val clx1 = NameParser.stringToNames("Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin").head
     expect(clx1)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
     val clx2 = Dom.stringToDom("@thing{asdf, author = \"Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin\"}")
-      .get.entries.head._2.authors.get.head
+      .right.get.entries.head._2.authors.get.head
     expect(clx2)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
     val clx3 = Dom.stringToDom("@thing{asdf, author = {Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin}}")
-      .get.entries.head._2.authors.get.head
+      .right.get.entries.head._2.authors.get.head
     expect(clx3)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
 
     assert(clx1 == clx2 && clx2 == clx3, (clx1, clx2, clx3))
@@ -351,13 +351,13 @@ class ParserTests extends JUnitSuite {
     val ksn1 = NameParser.stringToNames("K.S.Narendra").head
     expect(ksn1)(Name("K. S.", "", "Narendra", ""))
     val ksn2 = Dom.stringToDom("@thing{asdf, author = \"K.S.Narendra\"}")
-      .get.entries.head._2.authors.get.head
+      .right.get.entries.head._2.authors.get.head
     expect(ksn2)(Name("K. S.", "", "Narendra", ""))
     val ksn3 = Dom.stringToDom("@thing{asdf, author = {K.S.Narendra}}")
-      .get.entries.head._2.authors.get.head
+      .right.get.entries.head._2.authors.get.head
     expect(ksn3)(Name("K. S.", "", "Narendra", ""))
     val ksn4 = Dom.stringToDom("@thing{asdf, author = {K.S.Narendra and Hugh Jass}}")
-      .get.entries.head._2.authors.get.head
+      .right.get.entries.head._2.authors.get.head
     expect(ksn4)(Name("K. S.", "", "Narendra", ""))
 
     assert(ksn1 == ksn2 && ksn2 == ksn3 && ksn3 == ksn4, (ksn1, ksn2, ksn3, ksn4))

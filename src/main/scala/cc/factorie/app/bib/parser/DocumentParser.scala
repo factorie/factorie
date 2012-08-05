@@ -29,9 +29,9 @@ private[parser] object DocumentParser {
   import AST._
 
   // this should return an Either or a custom error object instead of a useless "None"
-  def parseString(input: String): Option[Document] = {
+  def parseString(input: String): Either[String, Document] = {
     val res = Impl.parseAll(Impl.bibTex, input)
-    res.map(r => Some(Document(r))).getOrElse(None)
+    res.map(r => Right(Document(r))).getOrElse(Left(res.toString))
   }
 
   object Impl extends SharedParsers {
