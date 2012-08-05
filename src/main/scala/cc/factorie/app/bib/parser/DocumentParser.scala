@@ -54,7 +54,7 @@ private[parser] object DocumentParser {
     def preambleEntry = PREAMBLE ~> WS ~> entryBody { value } ^^ (PreambleEntry(_))
 
     def regularEntry =
-      (SYMBOL <~ WS) ~ entryBody { SYMBOL_CAN_START_WITH_NUMBER ~ rep(COMMA_WS ~> tag) <~ (COMMA_WS ?) } ^^ {
+      (SYMBOL <~ WS) ~ entryBody { SYMBOL_CAN_START_WITH_NUMBER ~ rep((COMMA_WS | WS) ~> tag) <~ (COMMA_WS ?) } ^^ {
         case ty ~ (key ~ tags) => RegularEntry(ty, key, tags)
       }
 

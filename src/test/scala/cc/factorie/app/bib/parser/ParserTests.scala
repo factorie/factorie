@@ -19,6 +19,12 @@ class ParserTests extends JUnitSuite {
       result
     }
 
+    def assertParseAndDocify(parser: DocumentParser.Impl.Parser[List[AST.Entry]], str: String): Unit = {
+      val parseResult = assertParse(parser, str)
+      assert(parseResult.successful, parseResult)
+      Dom.astToDom(AST.Document(parseResult.get))
+    }
+
     assertParse(DocumentParser.Impl.braceDelimitedNoOuterLiteral, "{Something Great}")
     assertParse(DocumentParser.Impl.literal, "{Something Great}")
     assertParse(DocumentParser.Impl.literalOrSymbol, "{Something Great}")
@@ -243,21 +249,17 @@ class ParserTests extends JUnitSuite {
     assert(coloradoSample.successful, coloradoSample)
     Dom.astToDom(AST.Document(coloradoSample.get))
 
-    val fails_8_4_1 = assertParse(DocumentParser.Impl.bibTex, """
+    assertParseAndDocify(DocumentParser.Impl.bibTex, """
     @InProceedings{dredze-EtAl:2007:EMNLP-CoNLL2007,
       author    = {Dredze, Mark  and  Blitzer, John  and  Pratim Talukdar, Partha  and  Ganchev, Kuzman  and  Graca, Jo\~ao  and  Pereira, Fernando},
       title     = {Frustratingly Hard Domain Adaptation for Dependency Parsing},
-      booktitle = {Proceedings of the CoNLL Shared Task Session of EMNLP-CoNLL 2007},
+      booktitle = {Proceedings of the CoNLL Shared Task Session of EMNLP-CoNLL 2007}
       pages     = {1051--1055},
       url       = {http://www.aclweb.org/anthology/D/D07/D07-1112}
     }
     """)
 
-    assert(fails_8_4_1.successful, fails_8_4_1)
-
-    val failsDoc1 = Dom.astToDom(AST.Document(fails_8_4_1.get))
-
-    val fails_8_4_2 = assertParse(DocumentParser.Impl.bibTex, """
+    assertParseAndDocify(DocumentParser.Impl.bibTex, """
     @InProceedings{BanikACL09-shortpaper,
       author =       {Eva Banik},
       title =        {Extending a Surface Realizer to Generate Coherent Discourse},
@@ -289,9 +291,19 @@ class ParserTests extends JUnitSuite {
     }
         """)
 
-    assert(fails_8_4_2.successful, fails_8_4_2)
-
-    val failsDoc2 = Dom.astToDom(AST.Document(fails_8_4_2.get))
+    assertParseAndDocify(DocumentParser.Impl.bibTex, """
+@inproceedings{nahm:icml-wkshp02,
+  author =       {Un Yong Nahm and Mikhail Bilenko and Raymond J.
+                 Mooney},
+  title =        {Two Approaches to Handling Noisy Variation in Text
+                 Mining},
+  booktitle =    {Proceedings of the ICML-2002 Workshop on
+                 Text Learning},
+  pages =        {18--27},
+  year =         2002,
+}
+    }
+        """)
 
     expect(NameParser.stringToNames("Graca, Jo\\~ao"))(List(Name("Jo~ao", "", "Graca", "")))
 
