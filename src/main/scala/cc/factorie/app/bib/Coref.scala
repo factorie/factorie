@@ -1057,9 +1057,9 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
 
   def loadBibTeXFile(file:File):Seq[PaperEntity]={
     val result = new ArrayBuffer[PaperEntity]
-    var docOption:Option[cc.factorie.app.bib.Dom.Document] = None
+    var docOption:Option[cc.factorie.app.bib.parser.Dom.Document] = None
     try{
-      val fileText = scala.io.Source.fromFile(file).toArray.mkString
+      var fileText = scala.io.Source.fromFile(file).toArray.mkString
       docOption = Dom.stringToDom(fileText, false)
       if(docOption==None){
         println("Parser returned NONE, file failed silently: "+file.getName)
@@ -1121,7 +1121,9 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
             if(name == "title")paperEntity.title.set(xv)(null)
             if(name == "year"){
               xv = xv.replaceAll("[^0-9]","")
-              if(xv.length==0)xv="-1"
+              println("xv.len="+xv.length)
+              System.out.flush
+              if(xv.length==0 || xv.length>4)xv="-1"
               paperEntity.attr[Year] := xv.toInt
             }
           }
