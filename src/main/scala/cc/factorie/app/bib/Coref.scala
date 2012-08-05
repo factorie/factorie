@@ -1056,8 +1056,6 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
   }
   var skipped=0
   var numParsed=0
-
-
   def loadBibTeXFile(file:File):Seq[PaperEntity] ={
     val result = new ArrayBuffer[PaperEntity]
     val fileText = scala.io.Source.fromFile(file).toArray.mkString
