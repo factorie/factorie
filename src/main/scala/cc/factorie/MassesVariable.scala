@@ -63,15 +63,19 @@ trait DenseMassesWithTotal extends DenseTensor with MassesWithTotal {
 //trait DenseMasses extends ... (gather += in here, but we need a DenseTensor class also)
 class DenseMasses1(val dim1:Int) extends DenseTensorLike1 with Masses1 with DenseMassesWithTotal {
   def this(dim1:Int, uniformValue:Double) = { this(dim1); this := uniformValue }
+  override def copy: DenseMasses1 = { val c = new DenseMasses1(dim1); c := this; c }
 }
 class DenseMasses2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 with Masses2 with DenseMassesWithTotal {
   override def +=(i:Int, j:Int, v:Double): Unit = { _massTotal += v; val index = singleIndex(i, j); _values(index) += v; assert(_massTotal >= 0.0); assert(_values(index) >= 0.0) }
+  override def copy: DenseMasses2 = { val c = new DenseMasses2(dim1, dim2); c := this; c }
 }
 class DenseMasses3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3 with Masses3 with DenseMassesWithTotal {
   override def +=(i:Int, j:Int, k:Int, v:Double): Unit = { _massTotal += v; val index = singleIndex(i, j, k); _values(index) += v; assert(_massTotal >= 0.0); assert(_values(index) >= 0.0) }
+  override def copy: DenseMasses3 = { val c = new DenseMasses3(dim1, dim2, dim3); c := this; c }
 }
 class DenseMasses4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) extends DenseTensorLike4 with Masses4 with DenseMassesWithTotal {
   override def +=(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = { _massTotal += v; val index = singleIndex(i, j, k, l); _values(index) += v; assert(_massTotal >= 0.0); assert(_values(index) >= 0.0) }
+  override def copy: DenseMasses4 = { val c = new DenseMasses4(dim1, dim2, dim3, dim4); c := this; c }
 }
 
 class UniformMasses1(dim1:Int, uniformValue:Double) extends UniformTensor1(dim1, uniformValue) with Masses1 with UniformTensor {
@@ -97,7 +101,7 @@ class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
 
 class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSparseCounts(dim1, 4, false) with Masses1 {
   def isDense = false
-  def activeDomain1 = throw new Error("Not implemented")
+  def activeDomain1 = activeIndices
   //def activeDomain = activeDomain1
   def apply(index:Int): Double = {
     if (countsTotal == 0) 0.0
@@ -109,7 +113,18 @@ class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSpa
   }
   override def zero(): Unit = clear()
   def massTotal = countsTotal.toDouble
-  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = throw new Error("Should be overriden for efficiency; not yet implemented.")
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = {
+    if (countsTotal == 0) r.nextInt(dim1) // If there are no counts, use a uniform distribution
+    else {
+      val sampledMass = r.nextInt(countsTotal)
+      var i = 0; var sum = countAtPosition(0)
+      while (sum < sampledMass) {
+        i += 1
+        sum += countAtPosition(i)
+      }
+      indexAtPosition(i)
+    }
+  }
 }
 
 // Masses Variables 

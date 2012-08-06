@@ -123,7 +123,7 @@ class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions
 class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
   val masses = new SortedSparseCountsMasses1(dim1)
   def massTotal = 1.0
-  def activeDomain1 = throw new Error("Not implemented")
+  def activeDomain1 = masses.activeDomain1  // throw new Error("Not implemented")
   def isDense = false
   var prior: Masses = null  // TODO We need somehow to say that this isDeterministic function of this.prior.
   
@@ -145,7 +145,7 @@ class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
     while (i < len) result += (masses.indexAtPosition(i), masses.countAtPosition(i).toDouble / masses.countsTotal) 
     result
   }
-  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = throw new Error("Should be overriden for efficiency; not yet implemented.")
+  override def sampleIndex(massTotal:Double)(implicit r:Random): Int = masses.sampleIndex(massTotal)(r)
 }
 
 
@@ -215,9 +215,8 @@ trait ProportionsMarginal extends Marginal {
 }
 
 class ProportionsAssignment(p:ProportionsVar, v:Proportions) extends Assignment1[ProportionsVar](p, v) with ProportionsMarginal {
-  def _1 = variable
-  def mean = value
-  def variance = Double.PositiveInfinity
+  def mean = _value1
+  def variance = Double.PositiveInfinity // TODO Is this the right value?
 }
 
 

@@ -20,8 +20,8 @@ import cc.factorie.util.TopN
     @author Andrew McCallum
     @since 0.10
  */
-class InfoGain[L<:DiscreteVar](labels:Iterable[L], f:L=>DiscreteTensorVar) extends cc.factorie.util.DoubleSeq {
-  def this(labels:LabelList[L,DiscreteTensorVar]) = this(labels, labels.labelToFeatures)
+class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) extends cc.factorie.util.DoubleSeq {
+  def this(labels:LabelList[L,F]) = this(labels, labels.labelToFeatures)
   def apply(i:Int): Double = infogains(i)
   def length = infogains.length
   val domain: DiscreteDomain = f(labels.head).domain.dimensionDomain

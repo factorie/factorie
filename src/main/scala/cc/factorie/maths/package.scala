@@ -805,15 +805,17 @@ object Probit {
   
   def sampleMean(ds:cc.factorie.util.DoubleSeq): Double = ds.sum / ds.length
   def sampleVariance(ds:cc.factorie.util.DoubleSeq): Double = sampleVariance(ds, sampleMean(ds))
+  /** Returns the unbiased sample variance.  See http://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance */
   def sampleVariance(ds:cc.factorie.util.DoubleSeq, mean:Double): Double = {
     val len = ds.length; var i = 0
-    var variance = 0.0
+    var v = 0.0
     while (i < len) {
       val diff = mean - ds(i)
-      variance += diff * diff
+      v += diff * diff
       i += 1
     }
-    math.sqrt(variance / (len - 1))
+    //math.sqrt(v / (len - 1))
+    v / (len - 1)
   }
 
 

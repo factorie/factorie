@@ -190,7 +190,7 @@ object ShiftReduceDependencyParser {
         for (i <- 0 until proportions.size)
           proportions(i) /= n
         val dp = new DenseProportions1(proportions)
-        val result = new Classification(label, model, dp)
+        val result = new Classification(label, this, dp)
         label.set(result.bestLabelIndex)(null)
         result
       }
@@ -286,17 +286,21 @@ object ShiftReduceDependencyParser {
     learner.train(actions)
   }
 
-  def maxClassifierModelScoreSetting(actionLabel: ActionLabel, classifier: Classifier[ActionLabel]): ActionLabel = maxModelScoreSetting(actionLabel, classifier.model)
-
-  def maxModelScoreSetting(actionLabel: ActionLabel, model: Model = ActionModel): ActionLabel = {
-    var (maxScore, maxSetting) = (Double.NegativeInfinity, actionLabel.categoryValue)
-    for (s <- actionLabel.settings) { // just iterating over
-      val score = model.score(Seq(actionLabel))
-      if (score > maxScore) { maxScore = score; maxSetting = actionLabel.categoryValue }
-    }
-    actionLabel.set(actionLabel.domain.value(maxSetting))(null)
+  def maxClassifierModelScoreSetting(actionLabel: ActionLabel, classifier: Classifier[ActionLabel]): ActionLabel = {
+    classifier.classify(actionLabel)
     actionLabel
-  }
+  } 
+    
+  //maxModelScoreSetting(actionLabel, classifier.model)
+//  def maxModelScoreSetting(actionLabel: ActionLabel, model: Model = ActionModel): ActionLabel = {
+//    var (maxScore, maxSetting) = (Double.NegativeInfinity, actionLabel.categoryValue)
+//    for (s <- actionLabel.settings) { // just iterating over
+//      val score = model.score(Seq(actionLabel))
+//      if (score > maxScore) { maxScore = score; maxSetting = actionLabel.categoryValue }
+//    }
+//    actionLabel.set(actionLabel.domain.value(maxSetting))(null)
+//    actionLabel
+//  }
 
   def generateTrainingLabels(ss: Seq[Sentence]): Seq[Seq[ActionLabel]] = ss.map(generateTrainingLabels(_))
   def generateTrainingLabels(s: Sentence): Seq[ActionLabel] = {

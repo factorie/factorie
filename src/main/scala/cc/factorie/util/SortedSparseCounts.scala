@@ -14,7 +14,6 @@
 
 
 package cc.factorie.util
-//import cc.factorie._
 
 // List of (index,count), sorted in descending order by count, stored sparsely
 // Useful in Proportions where sampling is efficient because outcomes are considered in order of highest-count first.
@@ -82,6 +81,7 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
   @inline private def ti(coti:Int) = coti & topicMask // topic from packed count&index 
   @inline private def co(coti:Int) = coti >> topicBits // count from packed count&index
   @inline private def coti(count:Int, index:Int): Int = { assert(index < _length); (count << topicBits) | index }
+  def activeIndices: IntSeq = new TruncatedArrayIntSeq(buf, siz) // Note that the IntSeq contents could be changed out from under it!
   protected def bubbleDownFrom(pos:Int): Unit = {
     val newb = buf(pos)
     var i = pos - 1

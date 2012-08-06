@@ -15,87 +15,132 @@
 package cc.factorie.app.classify
 import cc.factorie._
 import scala.collection.mutable.{HashMap,ArrayBuffer}
+import java.io.File
 
 /** Infrastructure for independent classification of feature vectors with String-valued features. 
     @author Andrew McCallum
     @since 0.8
  */
 
-//case class Instance[L<:DiscreteVariable,F<:DiscreteTensorVar](label:L, features:F)
-// No, this isn't in the FACTORIE philosophy; relations between variables can be captured with functions instead
-// Note that this function could create a new DiscreteTensorVar on the fly.
-
-/** Performs independent prediction of (iid) Labels (all of whom must share the same domain).
-    Has abstract methods for "model" and "labelDomain". */
+/** Performs independent prediction of (iid) Labels (all of which must share the same domain).
+    Has abstract method "labelDomain". */
 trait Classifier[L<:DiscreteVariable] {
-  def model:Model
-  def labelDomain: DiscreteDomain
-  def classify(label:L): Classification[L] = {
-    require(label.domain eq labelDomain)
-    Classify(label, model)
-  }
+  def labelDomain: DiscreteDomain  // This is necessary for LabelEvaluation
+  /** Set the label to classifier-predicted value and return a Classification object summarizing the outcome. */
+  def classify(label:L): Classification[L]
   def classify(labels:Iterable[L]): Seq[Classification[L]] = labels.toSeq.map(label => classify(label))
 }
 
-// TODO Consider putting a TUI here
-object Classify {
-  def apply[L<:DiscreteVariable](label:L, model:Model): Classification[L] = {
-    val p = label.proportions(model) // Here the model's distribution over labels is calculated
-    val result = new Classification(label, model, p)
-    // In addition to recording the result in a Classification instance, also set the label to the most likely value
-    label.set(result.bestLabelIndex)(null)
-    result
+/** A classifier that uses a Model to score alternative label values. */
+class ModelBasedClassifier[L<:DiscreteVariable](val model:Model, val labelDomain:DiscreteDomain) extends Classifier[L] {
+  def classify(label:L): Classification[L] = {
+    require(label.domain eq labelDomain)
+    val c = new Classification(label, this, label.proportions(model))
+    c.globalize(null) // set the label to the best-scoring value
+    c
   }
-}
-
-/** An "instance list" for iid classification, except it actually holds labels, 
-    each of which is associated with a feature vector through the provided function labelToFeatures. */
-class LabelList[L<:DiscreteVar,+F<:DiscreteTensorVar](val labelToFeatures:L=>F)(implicit lm:Manifest[L], fm:Manifest[F]) extends ArrayBuffer[L] {
-  def this(labels:Iterable[L], l2f:L=>F)(implicit lm:Manifest[L], fm:Manifest[F]) = { this(l2f); this ++= labels }
-  val labelManifest = lm
-  //private val featureManifest = fm
-  def labelClass = lm.erasure
-  val featureClass = fm.erasure
-  /** The weight with which a LabelVariable should be considered in training. */
-  lazy val instanceWeight = new HashMap[L,Double] { override def default(l:L) = 1.0 }
-  override def remove(index:Int): L = {
-    instanceWeight.remove(apply(index))
-    super.remove(index)
-  }
-  override def remove(index:Int, count:Int): Unit = {
-    this.slice(index, index+count).foreach(l => instanceWeight.remove(l))
-    super.remove(index, count)
-  }
-  def labelDomain = head.domain // TODO Perhaps we should verify that all labels in the list have the same domain?
-  def instanceDomain = labelToFeatures(head).domain // TODO Likewise
-  def featureDomain = instanceDomain.dimensionDomain
-}
-
-// TODO Consider including labelToFeatures here also?  
-// TODO Should we store the Classifier instead of the Model?  But what if it doesn't come from a Classifier?
-/** The result of applying a Classifier to a Label. */
-class Classification[L<:DiscreteVar](val label:L, val model:Model, val proportions:Proportions1) {
-  val bestLabelIndex = proportions.maxIndex
-  def bestLabelValue = label.domain.apply(bestLabelIndex)
-  def bestCategoryValue: String = bestLabelValue match {
-    case cv:CategoricalValue[_] => cv.category.toString
-    case dv:DiscreteValue => dv.intValue.toString
-  }
-}
-
-/** A collection of Classification results, along with methods for calculating several evaluation measures.
-    You can subclass Trial to add new evaluation measures. */
-// TODO Make this work for arbitrary category type, not just String; needs existential type argument.
-class Trial[L<:LabelVariable[String]](val classifier:Classifier[L]) extends LabelEvaluation(classifier.labelDomain.asInstanceOf[CategoricalDomain[String]]) with IndexedSeq[Classification[L]] {
-  private val classifications = new ArrayBuffer[Classification[L]]
-  def length = classifications.length
-  def apply(i:Int) = classifications(i)
-  def +=(label:L): Unit = { classifications.+=(classifier.classify(label)); super.+=(label) }
-  def ++=(labels:Iterable[L]): this.type = { labels.foreach(+=(_)); this }
-  override def toString: String = evalString
-}
+} 
 
 /** An object that can train a Classifier given a LabelList. */
 trait ClassifierTrainer {
-  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F])(implicit lm:Manifest[L], fm:Manifest[F]): Classifier[L]
+  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F]): Classifier[L]
+}
+
+/** An object that can gather  */
+trait ClassifierEvaluator[L<:LabelVariable[_]] {
+  def +=(c:Classification[L]): Unit
+  def toString: String
+}
+
+
+
+// A TUI for training, running and diagnosing classifiers
+object Classifier {
+  
+  def main(args:Array[String]): Unit = {
+    object opts extends cc.factorie.util.DefaultCmdOptions {
+      val writeInstances         = new CmdOption("write-instances", "instances", "FILE", "Filename in which to save the instances' labels and features.")
+
+      val readInstances          = new CmdOption("read-instances", "instances", "FILE", "Filename from which to read the instances' labels and features.")
+      val readTrainingInstances  = new CmdOption("read-training-instances", "instances", "FILE", "Filename from which to read the training instances' labels and features.")
+      val readValidationInstances= new CmdOption("read-validation-instances", "instances", "FILE", "Filename from which to read the validation instances' labels and features.")
+      val readTestingInstances   = new CmdOption("read-testing-instances", "instances", "FILE", "Filename from which to read the testing instances' labels and features.")
+
+      val readSVMLight           = new CmdOption("read-svm-light", "instances", "FILE", "Filename from which to read the instances' labels and features in SVMLight format.")
+      val readBinaryFeatures     = new CmdOption("read-binary-features", false, "true|false", "If true, features will be binary.")
+
+      val readTextDirs           = new CmdOption("read-text-dirs", "textdir", "DIR...", "Directories from which to read text documents; tokens become features; directory name is the label.")
+      val readTextLines          = new CmdOption("read-text-lines", "textfile", "FILE.txt", "Filename from which to read the instances' labels and features; first word is the label value")
+      val readTextTokenRegex     = new CmdOption("read-text-token-regex", "\\p{Alpha}+", "REGEX", "Regular expression defining extent of text tokens.")
+      val readTextSkipHeader     = new CmdOption("read-text-skip-header", false, "true|false", "Skip text up until double newline.")
+      val readTextSkipHTML       = new CmdOption("read-text-skip-html", false, "true|false", "Exclude HTML tags.")
+      val readTextEncoding       = new CmdOption("read-text-encoding", "UTF-8", "ENCODING", "The name of the encoding to use, e.g. UTF-8.")
+      val readTextPreserveCase   = new CmdOption("read-text-preserve-case", false, "true|false", "Do not downcase text.")
+      val readTextStoplist       = new CmdOption("read-text-stoplist", "stoplist.txt", "FILE", "File from which to read all stopwords, one per line.")
+      val readTextExtraStopwords = new CmdOption("read-text-extra-stopwords", "stopwords.txt", "FILE", "File from which to read stopwords to add to standard list, one per line.")
+      val readTextUseStoplist    = new CmdOption("read-text-use-stoplist", "stoplist.txt", "FILE", "Remove words on the stoplist.")
+      val readTextGramSizes      = new CmdOption("read-text-gram-sizes", List(1), "1,2", "Include among the features all n-grams of sizes specified.  For example, to get all unigrams and bigrams, use --gram-sizes 1,2.  This option occurs after the removal of stop words, if removed.")
+
+      val writeClassifier        = new CmdOption("write-classifier", "classifier", "FILE", "Filename in which to save the classifier.")
+      val readClassifier         = new CmdOption("read-classifier", "classifier", "FILE", "Filename from which to read the classifier.")
+      val trainingPortion        = new CmdOption("training-portion", 0.5, "FRACTION", "The fraction of the instances that should be used for training.  testing-portion is 1.0 - training-portion - validation-portion.")
+      val validationPortion      = new CmdOption("validation-portion", 0.0, "FRACTION", "The fraction of the instances that should be used for validation")
+      val randomSeed             = new CmdOption("random-seed", -1, "N", "The random seed for randomly selecting a proportion of the instance list for training")
+
+      val trainer                = new CmdOption("trainer", "MaxEntTrainer", "Class()", "The constructor for a ClassifierTrainer class.")
+      // TODO Consider enabling the system to use multiple ClassifierTrainers at the same time, and compare results
+      val crossValidation        = new CmdOption("cross-validation", 0, "N", "The number of folds for cross-validation (DEFAULT=0)")
+      
+      val evaluator              = new CmdOption("evaluator", "Trial", "Class()", "The constructor for a ClassifierEvaluator class.")
+      
+      val printInfoGain          = new CmdOption("print-infogain", false, "true|false", "Print the training features with highest information gain.")
+    }
+    opts.parse(args)
+    
+    // Feature and Label classes
+    object FeaturesDomain extends CategoricalTensorDomain[String]
+    class Features(labelName:String) extends BinaryFeatureVectorVariable[String] { // TODO Deal with binary or non-binary
+      def domain = FeaturesDomain
+      var label = new Label(labelName, this)
+    }
+    object LabelDomain extends CategoricalDomain[String]
+    class Label(labelName:String, val features:Features) extends LabelVariable(labelName) {
+      def domain = LabelDomain
+    }
+    
+    // Some global variables
+    val segmenter = new cc.factorie.app.strings.RegexSegmenter(opts.readTextTokenRegex.value.r)
+    val stoplist = if (opts.readTextStoplist.wasInvoked) throw new Error("Not yet implemented") else cc.factorie.app.strings.Stopwords
+    val labels = new LabelList[Label,Features](_.features)
+    val trainingLabels = new LabelList[Label,Features](_.features)
+    val validationLabels = new LabelList[Label,Features](_.features)
+    val testingLabels = new LabelList[Label,Features](_.features)
+    
+    // Helper functions
+    def fileToString(f:File): String = scala.io.Source.fromFile(f, opts.readTextEncoding.value).mkString
+    def textIntoFeatures(text:String, features:Features): Unit = {
+      if (opts.readTextSkipHTML.value) throw new Error("Not yet implemented.")
+      val text2 = if (opts.readTextSkipHeader.value) text.substring(text.indexOf("\n\n")) else text
+      val text3 = if (opts.readTextPreserveCase.value) text2 else text2.toLowerCase
+      for (word <- segmenter(text3)) {
+        if (!stoplist.contains(word)) features += word
+      }
+    }
+  
+    // Read instances
+    if (opts.readTextDirs.wasInvoked) {
+      for (directory <- args) {
+        val directoryFile = new File(directory)
+        if (! directoryFile.exists) throw new IllegalArgumentException("Directory "+directory+" does not exist.")
+        for (file <- new File(directory).listFiles; if (file.isFile)) {
+          //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
+          val features = new Features(directory) // Use directory as label category
+          textIntoFeatures(fileToString(file), features)
+          labels += features.label
+        }
+      }
+    }
+    
+    
+  }
 }
