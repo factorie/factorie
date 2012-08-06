@@ -215,9 +215,8 @@ trait ProportionsMarginal extends Marginal {
 }
 
 class ProportionsAssignment(p:ProportionsVar, v:Proportions) extends Assignment1[ProportionsVar](p, v) with ProportionsMarginal {
-  def _1 = variable
-  def mean = value
-  def variance = Double.PositiveInfinity
+  def mean = _value1
+  def variance = Double.PositiveInfinity // TODO Is this the right value?
 }
 
 

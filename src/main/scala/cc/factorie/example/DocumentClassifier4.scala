@@ -20,9 +20,11 @@ import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
+import app.classify
+import app.classify.{LabelList, ID3DecisionTreeTrainer}
 import la.Tensor
 
-/**A document classifier that will use Decision Trees (once they are actually implemented).
+/**A document classifier that uses Decision Trees.
     Note that it also does not use any of the facilities of cc.factorie.app.classify.document */
 object DocumentClassifier4 {
 
@@ -38,48 +40,45 @@ object DocumentClassifier4 {
     def domain = LabelDomain
   }
 
-  /**Factor between label and observed document */
-  val dtree = new DecisionTreeTemplateWithStatistics2[Label, Document]
-    with ID3DecisionTreeStatistics2[cc.factorie.DiscreteValue, Document#ValueType] {
-    def statisticsDomains = Tuple(LabelDomain, DocumentDomain)
-    def unroll1(label: Label) = Factor(label, label.document)
-    def unroll2(token: Document) = throw new Error("Document values shouldn't change")
-  }
-
-  val model = new TemplateModel(dtree)
-
   def main(args: Array[String]): Unit = {
+
     if (args.length < 2)
       throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 
     // Read data and create Variables
-    var documents = new ArrayBuffer[Document]
+    var docLabels = new classify.LabelList[Label,Document](_.document)
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
       for (file <- new File(directory).listFiles; if (file.isFile)) {
         //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
-        documents += new Document(file)
+        docLabels += new Document(file).label
       }
     }
 
     // Make a test/train split
-    val (testSet, trainSet) = documents.shuffle.split(0.5)
-    var trainVariables = trainSet.map(_ label)
-    var testVariables = testSet.map(_ label)
+    val (testSet, trainSet) = docLabels.shuffle.split(0.5)
+    val trainLabels = new classify.LabelList[Label,Document](trainSet, _.document)
+    val testLabels = new classify.LabelList[Label,Document](testSet, _.document)
 
     val start = System.currentTimeMillis
     // Train decision tree
-    dtree.train(trainVariables)
+    val classifier = new ID3DecisionTreeTrainer().train(trainLabels)
 
     // Test decision tree
-    val predictor = new VariableSettingsGreedyMaximizer[Label](model)
-    predictor.processAll(trainVariables)
-    predictor.processAll(testVariables)
-    println("Train accuracy = " + cc.factorie.defaultObjective.aveScore(trainVariables))
-    println("Test  accuracy = " + cc.factorie.defaultObjective.aveScore(testVariables))
+
+    val testTrial = new classify.Trial[Label](classifier)
+    testTrial ++= testLabels
+
+    val trainTrial = new classify.Trial[Label](classifier)
+    trainTrial ++= trainLabels
+
+    println("Train accuracy = " + trainTrial.accuracy)
+    println("Test  accuracy = " + testTrial.accuracy)
     println("Number of ms to train/test: " + (System.currentTimeMillis - start))
-    println(dtree.splittingFeatures.map(DocumentDomain.dimensionDomain.categories(_)))
+    println(classifier.model
+      .asInstanceOf[DecisionTreeStatistics2Base[Label#ValueType,Document#ValueType]]
+      .splittingFeatures.map(DocumentDomain.dimensionDomain.categories(_)))
   }
 }
 

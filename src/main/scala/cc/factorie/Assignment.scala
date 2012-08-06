@@ -41,7 +41,7 @@ trait TypedAssignment[A<:Variable] extends Marginal {
     }
   }
   // For Marginal trait
-  def setToMaximize(implicit d:DiffList): Unit = this.globalize
+  final def setToMaximize(implicit d:DiffList): Unit = this.globalize
 }
 
 trait Assignment extends TypedAssignment[Variable]
@@ -66,14 +66,18 @@ class HashMapAssignment extends MutableAssignment {
   def contains(v:Variable) = map.contains(v)
 }
 
-/** An efficient Assignment of one variable. */
-class Assignment1[A<:Variable](val variable:A, var value:A#Value) extends TypedAssignment[A] {
-  def variables = List(variable)
-  def apply[B<:A](v:B): B#Value = if (v eq variable) value.asInstanceOf[B#Value] else null.asInstanceOf[B#Value]
-  def get[B<:A](v:B): Option[B#Value] = if (v eq variable) Some(value.asInstanceOf[B#Value]) else None
-  def contains(v:A): Boolean = if (v eq variable) true else false
-  override def globalize(implicit d:DiffList): Unit = variable match { case v:MutableVar => v.set(value.asInstanceOf[v.Value]) }
+trait AbstractAssignment1[A<:Variable] extends TypedAssignment[A] {
+  def _1: A
+  def _value1: A#Value
+  def variables = List(_1)
+  def apply[B<:A](v:B): B#Value = if (v eq _1) _value1.asInstanceOf[B#Value] else null.asInstanceOf[B#Value]
+  def get[B<:A](v:B): Option[B#Value] = if (v eq _1) Some(_value1.asInstanceOf[B#Value]) else None
+  def contains(v:A): Boolean = if (v eq _1) true else false
+  override def globalize(implicit d:DiffList): Unit = _1 match { case v:MutableVar => v.set(_value1.asInstanceOf[v.Value]) }
 }
+
+/** An efficient Assignment of one variable. */
+class Assignment1[A<:Variable](val _1:A, var _value1:A#Value) extends AbstractAssignment1[A]
 
 /** An efficient Assignment of two variables. */
 class Assignment2[A<:Variable,B<:Variable](val var1:A, var value1:A#Value, val var2:B, value2:B#Value) extends Assignment {

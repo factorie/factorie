@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.util.matching.Regex
 import scala.collection.mutable.{HashSet,HashMap}
 
-/** Evalute in terms of correct entire segments.
+/** Evaluate in terms of correct entire segments.
     The field start and end boundaries must be perfect to count as correct.  No partial credit.
     For example, this is the standard for results on CoNLL 2003. */
 class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val labelValueContinue: Regex) {
@@ -151,7 +151,7 @@ class SegmentEvaluation[L<:LabelVariable[String]](baseLabelStrings: Seq[String],
   def correctCount = evals.values.foldLeft(0)(_+_.correctCount)
   def predictedCount = evals.values.foldLeft(0)(_+_.predictedCount)
 
-  @deprecated("use targetCount instead.") def trueCount = targetCount 
+  //@deprecated("use targetCount instead.") def trueCount = targetCount 
 
   def targetCount = evals.values.foldLeft(0)(_+_.targetCount)
   def precision = if (predictedCount == 0) 1.0 else correctCount.toDouble / predictedCount

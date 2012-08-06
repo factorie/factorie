@@ -31,14 +31,16 @@ trait DiscreteMarginal extends Marginal {
   def variables: Iterable[DiscreteTensorVar]
   def proportions: Proportions
 }
+// TODO Do we need a trait version of these? -akm
 //trait DiscreteMar1[V1<:DiscreteVectorVar] extends DiscreteMar { def _1: V1; def proportions: Proportions1 }
-class DiscreteMarginal1[V1<:DiscreteTensorVar](val _1:V1, proportions1:Proportions1 = null) extends DiscreteMarginal {
+class DiscreteMarginal1[V1<:DiscreteTensorVar](val _1:V1, proportions1:Proportions1 = null) extends DiscreteMarginal with AbstractAssignment1[V1] {
   def this(f:Factor1[V1]) = this (f._1, null)
-  def variables = Seq(_1)
+  //def variables = Seq(_1)
+  def _value1: V1#Value = _1.domain.dimensionDomain(proportions.maxIndex)
   protected var _proportions = if (proportions1 eq null) new DenseProportions1(_1.domain.dimensionDomain.size) else proportions1 // must do this here because no access to _1 in default argument values
   def proportions: Proportions1 = _proportions
   def incrementCurrentValue(w:Double): Unit = _1 match { case d:DiscreteVar => proportions.masses.+=(d.intValue, w); case d:DiscreteTensorVar => throw new Error("Not yet implemented") }
-  def setToMaximize(implicit d:DiffList): Unit = _1 match { case v:DiscreteVariable => v.set(proportions1.maxIndex); case _ => throw new Error }
+  override def globalize(implicit d:DiffList): Unit = _1 match { case v:DiscreteVariable => v.set(proportions1.maxIndex); case _ => throw new Error }
   // An Actor that can receive increment requests in a thread-safe manner.
   // TODO How/when does this get garbage collected?  See http://thread.gmane.org/gmane.comp.lang.scala.user/20255/focus=20391
   object incrementer extends Actor {

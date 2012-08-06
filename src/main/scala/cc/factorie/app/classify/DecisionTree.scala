@@ -13,23 +13,23 @@
    limitations under the License. */
 
 package cc.factorie.app.classify
+
 import cc.factorie._
 import cc.factorie.optimize._
-//import cc.factorie.la.Tensor
+import cc.factorie.la.Tensor
 
 class ID3DecisionTreeTrainer extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
-//  class ID3DecisionTreeTemplate[L<:LabelVariable[_],F<:DiscreteTensorVar](val labelToFeatures:L=>F, val labelDomain:DiscreteDomain /*with Domain[L#ValueType]*/, val featureDomain:DiscreteTensorDomain)(implicit m1:Manifest[L], m2:Manifest[F]) extends DecisionTreeTemplateWithStatistics2[L,F]()(m1,m2) with ID3DecisionTreeStatistics2[L#ValueType,F#ValueType] {
-//    def statisticsDomains = Tuple(labelDomain, featureDomain)
-//    def unroll1(label:L) = Factor(label, labelToFeatures(label))
-//    def unroll2(features:F) = throw new Error("Cannot unroll from feature variables.")
-//  }
+  class ID3DecisionTreeTemplate[L<:LabelVariable[_], F<:DiscreteTensorVar](val labelToFeatures: L=>F, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F]) extends DecisionTreeTemplateWithStatistics2[L, F]()(m1, m2) with ID3DecisionTreeStatistics2[DiscreteValue, F#ValueType] {
+    def statisticsDomains = Tuple(labelDomain, featureDomain)
+    def unroll1(label: L) = Factor(label, labelToFeatures(label))
+    def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
+  }
 
-  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F])(implicit lm:Manifest[L], fm:Manifest[F]): Classifier[L] = {
-    //val dmodel = new ID3DecisionTreeTemplate[L](il.labelToFeatures, il.labelDomain, il.instanceDomain)
-    //dmodel.train(il)
-    //new Classifier[L] { val model = dmodel; val labelDomain = il.head.domain }
-    null
+  def train[L <: LabelVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): ModelBasedClassifier[L] = {
+    val dmodel = new ID3DecisionTreeTemplate[L, F](il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
+    dmodel.train(il)
+    new ModelBasedClassifier[L](dmodel, il.head.domain)
   }
 }

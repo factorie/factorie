@@ -16,7 +16,7 @@ package cc.factorie.app.chain
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
-/** A element of the input sequence to a linear-chain (CRF).  Its corresponding label will be an Attr attribute. */
+/** A element of the input sequence to a linear-chain (CRF) having a string.  Its corresponding label will be an Attr attribute. */
 trait Observation[+This<:Observation[This]] extends AbstractChainLink[This] with Attr {
   this: This =>
   def string: String
