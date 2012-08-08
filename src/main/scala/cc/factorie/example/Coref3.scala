@@ -1,9 +1,9 @@
 package cc.factorie.example
 
-import bibtex._
-import bibtex.parser._
-import bibtex.dom._
-import bibtex.expansions._
+//import bibtex._
+//import bibtex.parser._
+//import bibtex.dom._
+//import bibtex.expansions._
 import cc.factorie.app.nlp.coref._
 import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
 import cc.factorie._
@@ -15,6 +15,12 @@ import java.io.{InputStreamReader, FileInputStream, BufferedReader, File}
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import org.w3c.dom.{Node, NodeList, Document}
 
+
+/**
+ * Please see app.bib.Coref.scala instead.
+ */
+
+/*
 //trait HasCanopyAttributes[T<:Entity]{
 //  val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
 //}
@@ -1374,3 +1380,4 @@ class DebugDiffList extends DiffList{
     s
   }
 }
+*/

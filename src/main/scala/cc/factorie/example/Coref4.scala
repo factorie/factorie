@@ -7,6 +7,11 @@ import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MongoCu
 import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 import com.mongodb.Mongo
 
+/**
+ * Please also see app.bib.Coref.scala for a more in depth example.
+ */
+
+
 object Coref4{
   /**The model: entities and their attribute variables and a hierarchical model*/
   class Name(val entity:Entity,s:String) extends StringVariable(s) with EntityAttr

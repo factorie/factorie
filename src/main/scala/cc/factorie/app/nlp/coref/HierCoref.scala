@@ -243,6 +243,15 @@ class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExist
   }
 }
 
+
+class BagOfWordsCubbie extends Cubbie{
+  def store(bag:BagOfWords) = {_map ++= bag.asHashMap;this}
+  def fetch:HashMap[String,Double] = {
+    val result = new HashMap[String,Double]
+    for((k,v) <- _map)result += k -> v.toString.toDouble
+    result
+  }
+}
 /**Basic trait for doing operations with bags of words*/
 trait BagOfWords{ // extends scala.collection.Map[String,Double]{
   //def empty: This

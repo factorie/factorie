@@ -44,14 +44,7 @@ trait EntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable]
     if(e.groundTruth != None)groundTruth := e.groundTruth.get
   }
 }
-class BagOfWordsCubbie extends Cubbie{
-  def store(bag:BagOfWords) = {_map ++= bag.asHashMap;this}
-  def fetch:HashMap[String,Double] = {
-    val result = new HashMap[String,Double]
-    for((k,v) <- _map)result += k -> v.toString.toDouble
-    result
-  }
-}
+
 class FieldsCubbie extends Cubbie
 /*
 class PersonCubbie extends EntityCubbie{ // Split from AuthorCubbie eventually
