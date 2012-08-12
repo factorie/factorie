@@ -26,18 +26,19 @@ import java.io.File
     Has abstract method "labelDomain". */
 trait Classifier[L<:DiscreteVariable] {
   def labelDomain: DiscreteDomain  // This is necessary for LabelEvaluation
+  /** Return a record summarizing the outcome of applying this classifier to the given label.  Afterwards the label will have the same value it had before this call. */
+  def classification(label:L): Classification[L]
+  def classifications(labels:Iterable[L]): Seq[Classification[L]] = labels.toSeq.map(label => classification(label))
   /** Set the label to classifier-predicted value and return a Classification object summarizing the outcome. */
-  def classify(label:L): Classification[L]
-  def classify(labels:Iterable[L]): Seq[Classification[L]] = labels.toSeq.map(label => classify(label))
+  def classify(label:L): Classification[L] = { val c = classification(label); c.globalize(null); c }
+  def classify(labels:Iterable[L]): Seq[Classification[L]] = { val c = classifications(labels); c.foreach(_.globalize(null)); c }
 }
 
 /** A classifier that uses a Model to score alternative label values. */
 class ModelBasedClassifier[L<:DiscreteVariable](val model:Model, val labelDomain:DiscreteDomain) extends Classifier[L] {
-  def classify(label:L): Classification[L] = {
+  def classification(label:L): Classification[L] = {
     require(label.domain eq labelDomain)
-    val c = new Classification(label, this, label.proportions(model))
-    c.globalize(null) // set the label to the best-scoring value
-    c
+    new Classification(label, this, label.proportions(model))
   }
 } 
 

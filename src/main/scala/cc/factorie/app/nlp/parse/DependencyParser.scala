@@ -181,7 +181,7 @@ object ShiftReduceDependencyParser {
     val classifier = new Classifier[ActionLabel] {
       val model = ActionModel
       val labelDomain = ActionDomain
-      override def classify(label: ActionLabel) = {
+      override def classification(label: ActionLabel) = {
         val probs = label.proportions(model)
         val proportions = Array.ofDim[Double](labelDomain.size)
         label.settings.foreach(s => proportions(label.intValue) = probs(label.intValue))
@@ -190,9 +190,7 @@ object ShiftReduceDependencyParser {
         for (i <- 0 until proportions.size)
           proportions(i) /= n
         val dp = new DenseProportions1(proportions)
-        val result = new Classification(label, this, dp)
-        label.set(result.bestLabelIndex)(null)
-        result
+        new Classification(label, this, dp)
       }
     }
 
