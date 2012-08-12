@@ -21,7 +21,7 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 import app.classify
-import app.classify.{LabelList, ID3DecisionTreeTrainer}
+import classify._
 import la.Tensor
 
 /**A document classifier that uses Decision Trees.
@@ -40,13 +40,15 @@ object DocumentClassifier4 {
     def domain = LabelDomain
   }
 
+  var useBoostedClassifier = false
+
   def main(args: Array[String]): Unit = {
 
     if (args.length < 2)
       throw new Error("Usage: directory_class1 directory_class2 ...\nYou must specify at least two directories containing text files for classification.")
 
     // Read data and create Variables
-    var docLabels = new classify.LabelList[Label,Document](_.document)
+    var docLabels = new classify.LabelList[Label, Document](_.document)
     for (directory <- args) {
       val directoryFile = new File(directory)
       if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
@@ -58,12 +60,14 @@ object DocumentClassifier4 {
 
     // Make a test/train split
     val (testSet, trainSet) = docLabels.shuffle.split(0.5)
-    val trainLabels = new classify.LabelList[Label,Document](trainSet, _.document)
-    val testLabels = new classify.LabelList[Label,Document](testSet, _.document)
+    val trainLabels = new classify.LabelList[Label, Document](trainSet, _.document)
+    val testLabels = new classify.LabelList[Label, Document](testSet, _.document)
 
     val start = System.currentTimeMillis
     // Train decision tree
-    val classifier = new ID3DecisionTreeTrainer().train(trainLabels)
+    val classifier =
+      if (useBoostedClassifier) new AdaBoostDecisionStumpTrainer().train(trainLabels)
+      else new ID3DecisionTreeTrainer().train(trainLabels)
 
     // Test decision tree
 
@@ -76,9 +80,9 @@ object DocumentClassifier4 {
     println("Train accuracy = " + trainTrial.accuracy)
     println("Test  accuracy = " + testTrial.accuracy)
     println("Number of ms to train/test: " + (System.currentTimeMillis - start))
-    println(classifier.model
-      .asInstanceOf[DecisionTreeStatistics2Base[Label#ValueType,Document#ValueType]]
-      .splittingFeatures.map(DocumentDomain.dimensionDomain.categories(_)))
+    //    println(classifier.model
+    //      .asInstanceOf[DecisionTreeStatistics2Base[Label#ValueType,Document#ValueType]]
+    //      .splittingFeatures.map(DocumentDomain.dimensionDomain.categories(_)))
   }
 }
 

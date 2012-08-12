@@ -21,14 +21,19 @@ import cc.factorie.la.Tensor
 class ID3DecisionTreeTrainer extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
-  class ID3DecisionTreeTemplate[L<:LabelVariable[_], F<:DiscreteTensorVar](val labelToFeatures: L=>F, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F]) extends DecisionTreeTemplateWithStatistics2[L, F]()(m1, m2) with ID3DecisionTreeStatistics2[DiscreteValue, F#ValueType] {
-    def statisticsDomains = Tuple(labelDomain, featureDomain)
-    def unroll1(label: L) = Factor(label, labelToFeatures(label))
-    def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
-  }
-
   def train[L <: LabelVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): ModelBasedClassifier[L] = {
     val dmodel = new ID3DecisionTreeTemplate[L, F](il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
+    val instanceWeights = il.map(il.instanceWeight(_))
+    dmodel.train(il, instanceWeights)
+    new ModelBasedClassifier[L](dmodel, il.head.domain)
+  }
+}
+
+class AdaBoostDecisionStumpTrainer extends ClassifierTrainer {
+  var iterations = 10
+  def train[L <: LabelVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): ModelBasedClassifier[L] = {
+    val dmodel = new AdaBoostDecisionStumpTemplate[L, F](il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
+    dmodel.numIterations = iterations
     dmodel.train(il)
     new ModelBasedClassifier[L](dmodel, il.head.domain)
   }

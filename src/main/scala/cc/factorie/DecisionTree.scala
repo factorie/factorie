@@ -51,10 +51,10 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
     decisionTree.map(inner(_)).flatten.toSeq
   }
 
-  def train(stats: Iterable[StatisticsType], maxDepth: Int = 100): Unit = {
+  def train(stats: Iterable[StatisticsType], maxDepth: Int = 100, getInstanceWeight: Option[Int => Double] = None): Unit = {
     val tree =
-      if (maxDepth < 1000) trainTree(stats.toSeq, 0, maxDepth, Set.empty[(Int, Double)])
-      else trainTreeNoMaxDepth(stats.toSeq, maxDepth)
+      if (maxDepth < 1000) trainTree(stats.toSeq, 0, maxDepth, Set.empty[(Int, Double)], getInstanceWeight)
+      else trainTreeNoMaxDepth(stats.toSeq, maxDepth, getInstanceWeight)
     println(tree)
     decisionTree = Some(tree)
   }
@@ -64,22 +64,24 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
 
   override def score(s: StatisticsType): Double = score(s, decisionTree.get)
 
+  def score(s1: S1, s2: S2): Double = score(Stat(s1, s2), decisionTree.get)
+
   def score(t: Tensor): Double = throw new Exception("??")
 
-  private def trainTree(stats: Seq[StatisticsType], depth: Int, maxDepth: Int, usedFeatures: Set[(Int, Double)]): DTree = {
+  private def trainTree(stats: Seq[StatisticsType], depth: Int, maxDepth: Int, usedFeatures: Set[(Int, Double)], getInstanceWeight: Option[Int => Double]): DTree = {
     if (maxDepth < depth || stats.map(_._1).distinct.length == 1 || shouldStop(stats, depth)) {
       DTLeaf(makeProportions(stats))
     } else {
-      val (featureIdx, threshold) = getSplittingFeatureAndThreshold(stats.toArray, usedFeatures)
+      val (featureIdx, threshold) = getSplittingFeatureAndThreshold(stats.toArray, usedFeatures, getInstanceWeight)
       val (statsWithFeature, statsWithoutFeature) = stats.partition(hasFeature(featureIdx, _, threshold))
       @inline def trainChildTree(childStats: Seq[StatisticsType]): DTree =
-        if (childStats.length > 0) trainTree(childStats, depth + 1, maxDepth, usedFeatures + ((featureIdx, threshold)))
+        if (childStats.length > 0) trainTree(childStats, depth + 1, maxDepth, usedFeatures + ((featureIdx, threshold)), getInstanceWeight)
         else DTLeaf(makeProportions(stats))
       DTBranch(trainChildTree(statsWithFeature), trainChildTree(statsWithoutFeature), featureIdx, threshold)
     }
   }
 
-  private def trainTreeNoMaxDepth(startingSamples: Seq[StatisticsType], maxDepth: Int): DTree = {
+  private def trainTreeNoMaxDepth(startingSamples: Seq[StatisticsType], maxDepth: Int, getInstanceWeight: Option[Int => Double]): DTree = {
     // Use arraybuffer as dense mutable int-indexed map - no IndexOutOfBoundsException, just expand to fit
     type DenseIntMap[T] = ArrayBuffer[T]
     def updateIntMap[@specialized T](ab: DenseIntMap[T], idx: Int, item: T, dfault: T = null.asInstanceOf[T]) = {
@@ -100,7 +102,7 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
       if (maxDepth < depth || samples.map(_._1).distinct.length == 1 || shouldStop(samples, depth)) {
         updateIntMap(nodes, heapIdx, DTLeaf(makeProportions(samples)))
       } else {
-        val (featureIdx, threshold) = getSplittingFeatureAndThreshold(samples.toArray, usedFeatures)
+        val (featureIdx, threshold) = getSplittingFeatureAndThreshold(samples.toArray, usedFeatures, getInstanceWeight)
         @inline def pushChildWork(childStats: Seq[StatisticsType], childIdx: Int) =
           if (childStats.length > 0) todo.push((childStats, usedFeatures + ((featureIdx, threshold)), depth + 1, childIdx))
           else updateIntMap(nodes, childIdx, DTLeaf(makeProportions(samples)))
@@ -124,7 +126,7 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
     case DTBranch(yes, no, idx, threshold) => score(s, if (hasFeature(idx, s, threshold)) yes else no)
   }
 
-  def label(s: StatisticsType, node: DTree): Int = node match {
+  def label(s:StatisticsType, node: DTree): Int = node match {
     case DTLeaf(proportions) => proportions.maxIndex
     case DTBranch(yes, no, idx, threshold) => label(s, if (hasFeature(idx, s, threshold)) yes else no)
   }
@@ -158,7 +160,9 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
     possibleThresholds
   }
 
-  private def getSplittingFeatureAndThreshold(stats: Array[StatisticsType], usedFeatures: Set[(Int, Double)]): (Int, Double) = {
+  private def getSplittingFeatureAndThreshold(stats: Array[StatisticsType], usedFeatures: Set[(Int, Double)], getInstanceWeight: Option[Int => Double]): (Int, Double) = {
+    val useInstanceWeights = getInstanceWeight.isDefined
+    val instanceWeight = getInstanceWeight.getOrElse(null)
     val state = getPerNodeState(stats)
     val numSamples = stats.length
     val numFeatures = stats.head._2.length
@@ -178,7 +182,7 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
           var sampleIdx = 0
           while (sampleIdx < numSamples) {
             val props = if (hasFeature(featureIdx, stats(sampleIdx), threshold)) proportionsWith else proportionsWithout
-            props.masses += (labelIndex(stats(sampleIdx)), 1.0)
+            props.masses += (labelIndex(stats(sampleIdx)), if (!useInstanceWeights) 1.0 else instanceWeight(sampleIdx))
             sampleIdx += 1
           }
           if (proportionsWith.massTotal > 0 && proportionsWithout.massTotal > 0) {
@@ -310,12 +314,12 @@ trait ID3DecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
   val minSampleSize = 4
 }
 
-trait BoostingDecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
+trait StumpDecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
   extends DecisionTreeStatistics2Base[S1, S2]
   with InfoGainSplitting[S1, S2]
   with MaxDepthStopping[S1, S2]
   with NoPruning[S1, S2] {
-  val maxDepth = 4
+  val maxDepth = 0
 }
 
 /**A template for factors who scores are the log-probability of
@@ -324,7 +328,24 @@ trait BoostingDecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorV
 abstract class DecisionTreeTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: DiscreteTensorVar](implicit m1: Manifest[S1], m2: Manifest[S2])
   extends Template2[S1, S2] {
   this: DecisionTreeStatistics2Base[S1#ValueType, S2#ValueType] =>
-  //def statistics(s1:S1, s2:S2) = Stat(s1, s2)
   def statistics(values: Values) = Stat(values._1, values._2)
-  def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(factor => factor.statistics: StatisticsType))
+  def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(_.statistics: StatisticsType))
+  def train(labels: Iterable[S1], getInstanceWeight: Int => Double): Unit =
+    train(labels.map(unroll1(_)).flatten.map(_.statistics: StatisticsType), getInstanceWeight = Some(getInstanceWeight))
+}
+
+class ID3DecisionTreeTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
+  val labelToFeatures: L => F, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
+  extends DecisionTreeTemplateWithStatistics2[L, F]()(m1, m2) with ID3DecisionTreeStatistics2[DiscreteValue, F#ValueType] {
+  def statisticsDomains = Tuple(labelDomain, featureDomain)
+  def unroll1(label: L) = Factor(label, labelToFeatures(label))
+  def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
+}
+
+class DecisionStumpTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
+  val labelToFeatures: L => F, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
+  extends DecisionTreeTemplateWithStatistics2[L, F]()(m1, m2) with StumpDecisionTreeStatistics2[DiscreteValue, F#ValueType] {
+  def statisticsDomains = Tuple(labelDomain, featureDomain)
+  def unroll1(label: L) = Factor(label, labelToFeatures(label))
+  def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
 }
