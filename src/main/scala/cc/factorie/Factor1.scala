@@ -34,6 +34,12 @@ trait Factor1[N1<:Variable] extends Factor {
   override def variables = IndexedSeq(_1)
   def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
   override def values = new Values(_1.value)
+  override def scoreValueTensor(vtensor:SingletonBinaryTensor) = vtensor match {
+    case vt: SingletonBinaryTensorLike1 => {
+      val domain0 = variable(0).domain.asInstanceOf[DiscreteDomain with Domain[N1#Value]]
+      new Values(domain0(vt.singleIndex)).score
+    }
+  }
   // Should the next line read instead V<:N1 ?? -akm
   def valuesAssigning[V<:Variable](variable:V, value:V#Value): Unit = if (variable eq _1) new Values(value.asInstanceOf[N1#Value]) else throw new Error
   case class Values(_1:N1#Value) extends cc.factorie.Values {

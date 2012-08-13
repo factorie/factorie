@@ -36,6 +36,13 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
   def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case _ => throw new IndexOutOfBoundsException(i.toString) }
   val _variables = Seq(factor._1, factor._2)
   override def values: Values = new Values(_1.value, _2.value)
+  override def scoreValueTensor(vtensor:SingletonBinaryTensor) = vtensor match {
+    case v: SingletonBinaryTensorLike2 => {
+      val domain0 = variable(0).domain.asInstanceOf[DiscreteDomain with Domain[N1#Value]]
+      val domain1 = variable(1).domain.asInstanceOf[DiscreteDomain with Domain[N2#Value]]
+      new Values(domain0(v.singleIndex1), domain1(v.singleIndex2)).score
+    }
+  }
   case class Values(_1:N1#Value, _2:N2#Value) extends cc.factorie.Values {
     override def apply[B <: Variable](v: B) = get(v).get
     def variables = _variables
