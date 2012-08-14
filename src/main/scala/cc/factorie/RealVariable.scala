@@ -15,6 +15,8 @@
 package cc.factorie
 import cc.factorie.la._
 
+// TODO Rename this DoubleVar, and make RealVar inherit from TensorVar with value SingletonTensor1
+
 trait RealDomain extends Domain[Double]
 object RealDomain extends RealDomain
 

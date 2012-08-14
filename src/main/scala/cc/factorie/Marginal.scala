@@ -125,6 +125,20 @@ class ProportionsDirichletMarginal1[V<:ProportionsVar](_1:V, val masses:Masses1)
 }
 
 
+// Marginals over Reals
+
+trait RealMarginal1[V1<:RealVar] extends Marginal {
+  val _1:V1
+  def mean:Double
+  def pr(x:Double): Double
+}
+
+class RealSingletonMarginal1[V1<:RealVar](val _1:V1, val mean:Double) extends AbstractAssignment1[V1] {
+  def pr(x:Double): Double = if (x == mean) 1.0 else 0.0
+  override def globalize(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }
+  def _value1: Double = mean // For AbstractAssignment1
+}
+
 // Gaussian Marginal
 
 class RealGaussianMarginal1[V1<:RealVar](val _1:V1) extends Marginal {
