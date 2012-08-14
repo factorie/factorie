@@ -10,7 +10,7 @@ class DotMaximumLikelihood(val model:TemplateModel, val optimizer:GradientOptimi
   val weights = model.weightsTensor
   var logLikelihood: Double = Double.NaN
   // TODO For now, this only handles the case of IID DiscreteVars
-  def processAll[V<:DiscreteVarWithTarget](variables: Iterable[V], numIterations:Int = Int.MaxValue): Unit = {
+  def processAll[V<:DiscreteVarWithTarget](variables: Iterable[V], numIterations:Int = Int.MaxValue): Double = {
     val constraints = model.newDenseWeightsTensor
 	  // Gather constraints
 	  variables.foreach(_.setToTarget(null))
@@ -44,6 +44,7 @@ class DotMaximumLikelihood(val model:TemplateModel, val optimizer:GradientOptimi
 	    if (optimizer.isConverged) { convergences += 1; optimizer.reset(); println("DotMaximumLikelihood converged in "+convergences + " iters with loglikelihood = " + logLikelihood) }
 	    iterations += 1
 	  }
-  }
+    logLikelihood
+}
 
 }

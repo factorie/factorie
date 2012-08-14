@@ -89,6 +89,7 @@ trait FamilyWithNeighborDomains extends Family {
     @author Andrew McCallum
 */
 trait TensorFamily extends Family {
+  type FamilyType <: TensorFamily
   //def vectorLength: Int
   //protected var _vectorLength1 = -1
   //def vectorLength1: Int = if (_vectorLength < 0) throw new Error("Not yet set.") else _vectorLength1
