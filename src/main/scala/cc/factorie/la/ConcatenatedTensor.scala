@@ -15,6 +15,7 @@
 package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
+import java.lang.IllegalStateException
 
 // TODO Finish this implementation
 class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
@@ -38,6 +39,30 @@ class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
     }
     throw new Error("Index out of bounds: "+index)
   }
+  override def toString: String = {
+    tensors.map(_.toString).mkString("\n")
+  }
+
+  override def different(t:DoubleSeq, threshold:Double): Boolean = t match {
+    case t: ConcatenatedTensor => {
+      assert(t.tensors.length == theTensors.length);
+      (0 until theTensors.length).exists(i=> tensors(i).different(t.tensors(i), threshold))
+    }
+    case t:DoubleSeq => {
+       throw new IllegalStateException("shouldn't be comparing to flat DoubleSeq")
+    }
+  }
+
+  override def :=(t:DoubleSeq): Unit = t match {
+    case t: ConcatenatedTensor => {
+      assert(t.tensors.length == theTensors.length);
+      (0 until theTensors.length).map(i=> tensors(i):=t.tensors(i))
+    }
+    case t:DoubleSeq => {
+       throw new IllegalStateException("shouldn't be comparing to flat DoubleSeq")
+    }
+  }
+
   override def copy: ConcatenatedTensor = new ConcatenatedTensor(tensors.map(_.copy))
   override def :=(a:Array[Double]): Unit = { var i = 0; while (i < tensors.length) { tensors(i).:=(a, offsets(i)); i += 1 } } 
   override def toArray: Array[Double] = { val a = new Array[Double](length); var i = 0; while (i < tensors.length) { System.arraycopy(tensors(i).asArray, 0, a, offsets(i), tensors(i).length); i +=1 }; a }
