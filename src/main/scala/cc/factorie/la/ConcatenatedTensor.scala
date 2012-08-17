@@ -53,6 +53,10 @@ class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
     }
   }
 
+  override def containsNaN: Boolean =  {
+      (0 until theTensors.length).exists(i=> tensors(i).containsNaN)
+  }
+
   override def :=(t:DoubleSeq): Unit = t match {
     case t: ConcatenatedTensor => {
       assert(t.tensors.length == theTensors.length);
