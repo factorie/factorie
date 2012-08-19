@@ -109,7 +109,7 @@ class SampleRankTest extends AssertionsForJUnit {
       model = new TemplateModel(
         new TemplateWithDotStatistics2[MyBool, MyBool]
         {
-          def statisticsDomains = Tuple(BooleanDomain, BooleanDomain)
+          def statisticsDomains = ((BooleanDomain, BooleanDomain))
           def unroll1(b: MyBool) = Factor(b, b.next)
           def unroll2(b: MyBool) = Factor(b.prev, b)
         }

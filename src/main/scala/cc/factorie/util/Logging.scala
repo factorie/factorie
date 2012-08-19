@@ -31,7 +31,7 @@ class Logger(val name:String, outputStream: => OutputStream = System.err, @volat
   setLevelFromEnv
   def setLevelFromEnv: Boolean = {
     val envLevelString = java.lang.System.getenv(name+".level")
-    if (envLevelString != null) try { level = envLevelString.toInt } catch { case _ => return false }
+    if (envLevelString != null) try { level = envLevelString.toInt } catch { case _: Throwable => return false }
     else return false
     return true
   }

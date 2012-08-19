@@ -40,15 +40,15 @@ trait NeighborAwareTemplate[C] extends ContextTemplate[C] with Model {
 
 // Example usage of ContextTemplate: 
 //class ChainTransitionTemplate[Y<:DiscreteVar](val yDomain:DiscreteDomain) extends FamilyWithDotStatistics2[Y,Y] with ContextTemplate[Seq[Y]] {
-//  def statisticsDomains = Tuple(yDomain , yDomain)
+//  def statisticsDomains = ((yDomain , yDomain))
 //  def factors(c:Seq[Y]) = for (pair <- c.sliding(2).toSeq) yield Factor(pair(0), pair(1)) 
 //}
 //class ChainTransitionTemplateAlt[Y<:DiscreteVar](val yDomain:DiscreteDomain, val seq:Seq[Y]) extends FamilyWithDotStatistics2[Y,Y] with ContextTemplate[Int] {
-//  def statisticsDomains = Tuple(yDomain , yDomain)
+//  def statisticsDomains = ((yDomain , yDomain))
 //  def factors(c:Int) = Factor(seq(c-1), seq(c)) 
 //}
 //class ChainObservationTemplate[Y<:DiscreteVar,X<:DiscreteTensorVar](val yDomain:DiscreteDomain, xDomain:DiscreteTensorDomain) extends FamilyWithDotStatistics2[Y,X] with ContextTemplate[(Seq[Y],Seq[X])] {
-//  def statisticsDomains = Tuple(yDomain , xDomain)
+//  def statisticsDomains = ((yDomain , xDomain))
 //  def factors(c:(Seq[Y],Seq[X])) = for (pair <- c._1.zip(c._2)) yield Factor(pair._1, pair._2) 
 //}
 //object ContextTemplateTest {

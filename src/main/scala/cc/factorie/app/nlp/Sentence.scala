@@ -20,7 +20,7 @@ class Sentence(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Dif
   def this(doc:Document)(implicit d:DiffList = null) = this(doc, doc.length, 0)
   //def tokens: IndexedSeq[Token] = links
   def tokenAtCharIndex(charOffset:Int): Token = {
-    require(charOffset >= tokens.first.stringStart && charOffset <= tokens.last.stringEnd)
+    require(charOffset >= tokens.head.stringStart && charOffset <= tokens.last.stringEnd)
     var i = 0 // TODO Implement as faster binary search
     while (i < this.length && tokens(i).stringStart <= charOffset) {
       val token = tokens(i)

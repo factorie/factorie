@@ -91,7 +91,7 @@ object CorefMentionsDemo {
         List("Charles Sutton", "Charles A. Sutton", "Sutton", "Sutton"),
         List("Nicola Cancceda", "Nicola Canceda", "Nicolla Cancceda", "Nicol Cancheta", "Canceda", "Cancceda")
       )
-      
+
       // Create variables for the data
       var eIndex = 0
       def entityIndex = { eIndex += 1; eIndex }
@@ -105,12 +105,12 @@ object CorefMentionsDemo {
           newMention;
         })
       }}
-      
+
       val model = new TemplateModel
-  
+
       // Pairwise affinity factor between Mentions in the same partition
       model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#ValueType] {
-        def statisticsDomains = Tuple(AffinityVectorDomain)
+        def statisticsDomains = Tuple1(AffinityVectorDomain)
         def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield 
           if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
           else Factor(er, other.entityRef, other.entityRef.mention, er.mention)
@@ -122,7 +122,7 @@ object CorefMentionsDemo {
 
       // Pairwise repulsion factor between Mentions in different partitions
       model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#ValueType] {
-        def statisticsDomains = Tuple(AffinityVectorDomain)
+        def statisticsDomains = Tuple1(AffinityVectorDomain)
         /*override def factors(d:Diff) = d.variable match {
           case mention: Mention => d match {
             case mention.entityRef.RefVariableDiff(oldEntity:Entity, newEntity:Entity) => 
@@ -142,10 +142,10 @@ object CorefMentionsDemo {
         //def unroll2 (mention:Mention) = Nil // symmetric
         //def statistics(values:Values) = Stat(new AffinityVector(values._1, values._2).value)
       }
-  
+
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature.
       model += new Template1[Entity] with DotStatistics1[BooleanValue] {
-        def statisticsDomains = Tuple(BooleanDomain)
+        def statisticsDomains = Tuple1(BooleanDomain)
         def statistics(values:Values) = {
           val mentions: Entity#ValueType = values._1
           if (mentions.isEmpty) Stat(BooleanDomain.trueValue)
@@ -197,7 +197,7 @@ object CorefMentionsDemo {
             if (s2.size != 0) e = s2(random.nextInt(s2.size))
             else {e = new Entity("e"+entityIndex); entityList += e}
           }
-      	  // Move it
+          // Move it
           //            Console.println ("Proposal.jump moving "+m+" to "+e)
           m.entityRef.set(e)(difflist)
           // log-Q-ratio shows that forward and backward jumps are equally likely
@@ -224,7 +224,6 @@ object CorefMentionsDemo {
       Console.println ("Beginning inference and learning")
       learner.process(null, 3000) // 3000
     }
-    0;
 
 }
 

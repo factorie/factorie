@@ -45,22 +45,22 @@ object ChainNER2 {
   val model = new TemplateModel(
     // Bias term on each individual label 
     new TemplateWithDotStatistics1[Label] {
-      def statisticsDomains = Tuple(LabelDomain)
+      def statisticsDomains = Tuple1(LabelDomain)
     }, 
     // Transition factors between two successive labels
     new TemplateWithDotStatistics2[Label, Label] {
-      def statisticsDomains = Tuple(LabelDomain, LabelDomain)
+      def statisticsDomains = ((LabelDomain, LabelDomain))
       def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
       def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
     },
     // Factor between label and observed token
     new TemplateWithDotStatistics2[Label, Token] {
-      def statisticsDomains = Tuple(LabelDomain, TokenDomain)
+      def statisticsDomains = ((LabelDomain, TokenDomain))
       def unroll1(label: Label) = Factor(label, label.token)
       def unroll2(token: Token) = throw new Error("Token values shouldn't change")
     },
     new Template2[Label,Label] with DotStatistics1[BooleanValue] {
-      def statisticsDomains = Tuple(BooleanDomain)
+      def statisticsDomains = Tuple1(BooleanDomain)
       def unroll1(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainAfter; if (other.token.string == label.token.string)) yield Factor(label, other)
       def unroll2(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainBefore; if (other.token.string == label.token.string)) yield Factor(other, label)
       def statistics(v:Values) = Stat(BooleanDomain.value(v._1.intValue == v._2.intValue))

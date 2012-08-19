@@ -81,7 +81,7 @@ object RelationVariables {
           }
         }
       } catch {
-        case _ =>
+        case _: Throwable =>
       }
       for (child <- from.parseChildren; if (!visited(child))) {
         for (path <- shortestPath(child, to, visited + from)) {

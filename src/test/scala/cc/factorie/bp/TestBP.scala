@@ -254,7 +254,7 @@ class TestBP extends TestCase {
     // create template between v1 and v2
     var fg: LatticeBP = null
     val template = new TemplateWithDotStatistics2[BinVar, BinVar] {
-      override def statisticsDomains = Tuple(BinDomain, BinDomain)
+      override def statisticsDomains = ((BinDomain, BinDomain))
       def unroll1(v: BinVar) = Factor(v1,v2)
       def unroll2(v: BinVar) = Nil
     }

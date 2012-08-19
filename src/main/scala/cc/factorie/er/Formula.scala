@@ -167,7 +167,7 @@ case class LessThan[X<:Variable](c1:IntExpression[X], c2:IntExpression[X]) exten
 trait LogicStatistics extends DotStatistics1[BooleanValue] {
   // Should a non-zero weight instead be spread across each of the two possibilities?
   def *(w:Double) : this.type = { this.weights(0) = 0.0; this.weights(1) = math.log(w); this }
-  override def statisticsDomains = Tuple(BooleanDomain)
+  override def statisticsDomains = Tuple1(BooleanDomain)
 }
 
 

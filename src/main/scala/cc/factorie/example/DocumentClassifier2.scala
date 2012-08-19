@@ -42,11 +42,11 @@ object DocumentClassifier2 {
   val model = new TemplateModel(
     /** Bias term just on labels */
     new TemplateWithDotStatistics1[Label] {
-      def statisticsDomains = Tuple(LabelDomain)
+      def statisticsDomains = Tuple1(LabelDomain)
     }, 
     /** Factor between label and observed document */
     new TemplateWithDotStatistics2[Label,Document] {
-      def statisticsDomains = Tuple(LabelDomain, DocumentDomain)
+      def statisticsDomains = ((LabelDomain, DocumentDomain))
       def unroll1 (label:Label) = Factor(label, label.document)
       def unroll2 (token:Document) = throw new Error("Document values shouldn't change")
     }

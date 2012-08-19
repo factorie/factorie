@@ -337,7 +337,7 @@ abstract class DecisionTreeTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: Disc
 class ID3DecisionTreeTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
   val labelToFeatures: L => F, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
   extends DecisionTreeTemplateWithStatistics2[L, F]()(m1, m2) with ID3DecisionTreeStatistics2[DiscreteValue, F#ValueType] {
-  def statisticsDomains = Tuple(labelDomain, featureDomain)
+  def statisticsDomains = ((labelDomain, featureDomain))
   def unroll1(label: L) = Factor(label, labelToFeatures(label))
   def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
 }
@@ -345,7 +345,7 @@ class ID3DecisionTreeTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
 class DecisionStumpTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
   val labelToFeatures: L => F, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
   extends DecisionTreeTemplateWithStatistics2[L, F]()(m1, m2) with StumpDecisionTreeStatistics2[DiscreteValue, F#ValueType] {
-  def statisticsDomains = Tuple(labelDomain, featureDomain)
+  def statisticsDomains = ((labelDomain, featureDomain))
   def unroll1(label: L) = Factor(label, labelToFeatures(label))
   def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
 }

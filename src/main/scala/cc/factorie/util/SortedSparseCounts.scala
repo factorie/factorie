@@ -76,7 +76,7 @@ class SortedSparseCounts(dim:Int, capacity:Int = 2, val keepTrimmed:Boolean = fa
       buf = newbuf
     }
   }
-  require (dim < Math.MAX_SHORT)
+  require (dim < Short.MaxValue)
   //private val _posIndex: Array[Short] = if (keepIndex) Array.fill[Short](dim)(-1) else null
   @inline private def ti(coti:Int) = coti & topicMask // topic from packed count&index 
   @inline private def co(coti:Int) = coti >> topicBits // count from packed count&index

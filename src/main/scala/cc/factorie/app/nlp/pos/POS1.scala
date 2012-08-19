@@ -31,17 +31,17 @@ class POS1 {
   object PosModel extends TemplateModel {
     // Bias term on each individual label 
     val biasTemplate = new TemplateWithDotStatistics1[PosLabel] {
-      override def statisticsDomains = Tuple(PosDomain)
+      override def statisticsDomains = Tuple1(PosDomain)
     }
     // Factor between label and observed token
     val localTemplate = new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
-      override def statisticsDomains = Tuple(PosDomain, PosFeaturesDomain)
+      override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
       def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
       def unroll2(tf: PosFeatures) = Factor(tf.token.attr[PosLabel], tf)
     }
     // Transition factors between two successive labels
     val transTemplate = new TemplateWithDotStatistics2[PosLabel, PosLabel] {
-      override def statisticsDomains = Tuple(PosDomain, PosDomain)
+      override def statisticsDomains = ((PosDomain, PosDomain))
       def unroll1(label: PosLabel) = {
         if (useSentenceBoundaries) {
           if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[PosLabel], label) else Nil
