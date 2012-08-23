@@ -30,7 +30,7 @@ class TestPiecewiseTrainer extends JUnitSuite {
   }
 
   class LocalTemplate extends TemplateWithDotStatistics2[Label, Features] {
-    override def statisticsDomains = Tuple(LabelDomain, FeaturesDomain)
+    override def statisticsDomains = ((LabelDomain, FeaturesDomain))
 
     def unroll1(label: Label) = Factor(label, label.features)
 

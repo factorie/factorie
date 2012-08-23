@@ -15,6 +15,7 @@
 package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
+import java.lang.IllegalStateException
 
 // TODO Finish this implementation
 class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
@@ -23,7 +24,7 @@ class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
   def isDense = throw new Error("Not yet implemented")
   lazy val lengths: Array[Int] = { val a = new Array[Int](tensors.length); var i = 0; while (i < a.length) { a(i) = tensors(i).length; i += 1 }; a }
   lazy val lengthsSums: Array[Int] = { val a = new Array[Int](lengths.length); a(0) = lengths(0); var i = 1; while (i < a.length) { a(i) = a(i-1) + lengths(i); i += 1 }; a }
-  lazy val offsets: Array[Int] = { val a = new Array[Int](lengths.length); a(0) = 0; var i = 1; while (i < a.length) { a(i) = a(i-1) + lengths(i); i += 1 }; a }
+  lazy val offsets: Array[Int] = { val a = new Array[Int](lengths.length); a(0) = 0; var i = 1; while (i < a.length) { a(i) = a(i-1) + lengths(i-1); i += 1 }; a }
   lazy val dim1 = lengths.sum
   def activeDomain1: IntSeq = throw new Error("Not yet implemented")
   // Careful!  This will be very slow.  You should really try to use the more specific methods, such as += 
@@ -38,6 +39,34 @@ class ConcatenatedTensor(theTensors:Seq[Tensor]) extends Tensor1 {
     }
     throw new Error("Index out of bounds: "+index)
   }
+  override def toString: String = {
+    tensors.map(_.toString).mkString("\n")
+  }
+
+  override def different(t:DoubleSeq, threshold:Double): Boolean = t match {
+    case t: ConcatenatedTensor => {
+      assert(t.tensors.length == theTensors.length);
+      (0 until theTensors.length).exists(i=> tensors(i).different(t.tensors(i), threshold))
+    }
+    case t:DoubleSeq => {
+       throw new IllegalStateException("shouldn't be comparing to flat DoubleSeq")
+    }
+  }
+
+  override def containsNaN: Boolean =  {
+      (0 until theTensors.length).exists(i=> tensors(i).containsNaN)
+  }
+
+  override def :=(t:DoubleSeq): Unit = t match {
+    case t: ConcatenatedTensor => {
+      assert(t.tensors.length == theTensors.length);
+      (0 until theTensors.length).map(i=> tensors(i):=t.tensors(i))
+    }
+    case t:DoubleSeq => {
+       throw new IllegalStateException("shouldn't be comparing to flat DoubleSeq")
+    }
+  }
+
   override def copy: ConcatenatedTensor = new ConcatenatedTensor(tensors.map(_.copy))
   override def :=(a:Array[Double]): Unit = { var i = 0; while (i < tensors.length) { tensors(i).:=(a, offsets(i)); i += 1 } } 
   override def toArray: Array[Double] = { val a = new Array[Double](length); var i = 0; while (i < tensors.length) { System.arraycopy(tensors(i).asArray, 0, a, offsets(i), tensors(i).length); i +=1 }; a }

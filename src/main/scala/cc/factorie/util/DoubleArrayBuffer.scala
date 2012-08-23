@@ -29,7 +29,7 @@ trait ProtectedDoubleArrayBuffer {
   @inline final protected def _increment(index:Int, incr:Double): Unit = { _ensureCapacity(index+1); _arr(index) += incr; if (_size < index+1) _size = index+1 }
   @inline final protected def _append(elem: Double): this.type = { _ensureCapacity(_size + 1); _arr(_size) = elem; _size += 1; this }
   protected def _copyToArray(a:Array[Double]): Unit = arraycopy(_arr, 0, a, 0, _size)
-  protected def _mapToArray[A](a:Array[A], f:Double=>A): Unit = { var i = 0; while (i < _size) { a(i) = f(_arr(i)); i += 1 }; a }
+  protected def _mapToArray[A](a:Array[A], f:Double=>A): Unit = { var i = 0; while (i < _size) { a(i) = f(_arr(i)); i += 1 } }
   protected def _asSeq: IndexedSeq[Double] = new IndexedSeq[Double] {
     final def length = _size
     final def apply(i:Int): Double = _arr(i)

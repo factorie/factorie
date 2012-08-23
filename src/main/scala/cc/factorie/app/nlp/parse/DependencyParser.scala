@@ -130,7 +130,7 @@ object ActionModel extends TemplateModel {
   var skipNonCategories = false
 
   val localTemplate = new TemplateWithDotStatistics2[ActionLabel, ShiftReduceDependencyParserFeatures] {
-    override def statisticsDomains = Tuple(ActionDomain, ParserFeaturesDomain)
+    override def statisticsDomains = ((ActionDomain, ParserFeaturesDomain))
     def unroll1(label: ActionLabel) = Factor(label, label.features)
     def unroll2(features: ShiftReduceDependencyParserFeatures) = Factor(features.label, features)
   }
