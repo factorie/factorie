@@ -32,7 +32,7 @@ trait SingletonTensor extends Tensor with SparseDoubleSeq {
   override def maxIndex: Int = if (singleValue >= 0.0) singleIndex else if (singleIndex != 0) 0 else 1
   override def containsNaN: Boolean = false
   //override def dot(v:DoubleSeq): Double = v(singleIndex) * singleValue
-  override def copy: SingletonTensor = this // immutable, but careful in the future we might make a mutable version
+  //override def copy: SingletonTensor = this // immutable, but careful in the future we might make a mutable version
   override def dot(t:DoubleSeq): Double = t match {
     case t:SingletonBinaryTensor => if (singleIndex == t.singleIndex) singleValue else 0.0
     case t:SingletonTensor => if (singleIndex == t.singleIndex) singleValue * t.singleValue else 0.0

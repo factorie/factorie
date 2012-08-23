@@ -427,7 +427,7 @@ object LogGamma {
    * @param vals An array log(x1), log(x2), ..., log(xn)
    * @return log(x1+x2+...+xn)
    */
-  def sumLogProbs (vals:Seq[Double]): Double = {
+  def sumLogProbs (vals:cc.factorie.util.DoubleSeq): Double = {
     val LOGTOLERANCE = 30.0
 
     val len = vals.length

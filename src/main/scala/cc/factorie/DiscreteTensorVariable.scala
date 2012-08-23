@@ -53,3 +53,12 @@ abstract class DiscreteTensorVariable extends TensorVariable with DiscreteTensor
 }
 
 
+//object DocumentDomain extends DiscreteTensorDomain { val dimensionDomain = new DiscreteDomain(100) }
+//class Document extends DiscreteTensorVariable(new DenseTensor1(DocumentDomain.dimensionDomain.size)) {
+//  def domain = DocumentDomain
+//}
+//object DocumentTest {
+//  val doc = new Document
+//  for (i <- 0 until DocumentDomain.dimensionDomain.size) 
+//    doc.tensor(i) = i
+//}

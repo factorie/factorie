@@ -56,6 +56,7 @@ trait VarAndValueGenericDomain[+This<:Variable,+VT] extends VarAndValueType[This
   def domain = GenericDomain.asInstanceOf[Domain[VT]]
 }
 
+// TODO Implement "with DomainFromClass"
 
 
 //// Notes for possible future optional default association between variable classes and domains

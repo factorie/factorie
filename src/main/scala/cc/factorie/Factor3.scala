@@ -49,6 +49,13 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
   def isLimitingValuesIterator = false
   def limitedDiscreteValuesIterator: Iterator[(Int,Int,Int)] = Iterator.empty
 
+  /** Given the Tensor value of neighbors _2 and _3, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
+      Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
+      If _1 is not a DiscreteVar then throws an Error. */
+  def scoreValues1(tensor1:Tensor, tensor2:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores1")
+  def scoreValues2(tensor1:Tensor, tensor2:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
+  def scoreValues3(tensor1:Tensor, tensor2:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
+
   /** Values iterator in style of specifying fixed neighbors. */
   def valuesIterator(fixed: Assignment): Iterator[Values] = {
     val fixed1 = fixed.contains(_1)
@@ -330,9 +337,32 @@ trait TensorStatistics3[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:Disc
   def score(s:Stat): Double
 }
 
-trait DotStatistics3[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue] extends TensorStatistics3[S1,S2,S3] with DotFamily
+trait DotStatistics3[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue] extends TensorStatistics3[S1,S2,S3] with DotFamily {
+  /** Given the Tensor value of neighbors _2 and _3, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
+      Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
+      If _1 is not a DiscreteVar then throws an Error. */
+  def scores1(tensor2:Tensor, tensor3:Tensor): Tensor1 = weights match {
+    case weights:Tensor3 => {
+      val outer = Tensor.outer(tensor2, tensor3)
+      val dim = statisticsDomains._1.dimensionDomain.size
+      val result = new DenseTensor1(dim)
+      outer.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += weights(i*dim + j) * v)
+      result
+    }
+  }
+  def scores2(tensor1:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
+  def scores3(tensor1:Tensor, tensor2:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
+}
 
 trait FamilyWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable] extends Family3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
   def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
 }
 
+trait FamilyWithTensorStatistics3[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar] extends Family3[N1,N2,N3] with TensorStatistics3[N1#Value,N2#Value,N3#Value] {
+  def statistics(values:Values) = Stat(values._1, values._2, values._3)
+}
+
+trait FamilyWithDotStatistics3[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar] extends Family3[N1,N2,N3] with DotStatistics3[N1#Value,N2#Value,N3#Value] {
+  def statistics(values:Values) = Stat(values._1, values._2, values._3)
+  def valueScore(tensor:Tensor): Double = statisticsScore(tensor) // reflecting the fact that there is no transformation between values and statistics
+}

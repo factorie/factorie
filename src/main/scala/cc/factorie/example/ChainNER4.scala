@@ -96,7 +96,7 @@ object ChainNER4 {
     val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.AROW(model))
     //val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.ConfidenceWeighting(model))
     //val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.MIRA)
-    val predictor = new VariableSettingsSampler[Label](model) { temperature = 0.01 }
+    val predictor = new VariableSettingsSampler[Label](model, null) { temperature = 0.01 }
     for (i <- 1 to 3) {
       println("Iteration "+i) 
       learner.processAll(trainLabels)
@@ -106,8 +106,15 @@ object ChainNER4 {
       println ("Train accuracy = "+ objective.aveScore(trainLabels))
       println ("Test  accuracy = "+ objective.aveScore(testLabels))
     }
-    predictor.temperature *= 0.1
-    predictor.processAll(testLabels, 2)
+    if (true) {
+      // Use BP Viterbi for prediction
+      for (sentence <- testSentences)
+        BP.inferChainMax(sentence.asSeq.map(_.label), model)
+    } else {
+      // Use VariableSettingsSampler for prediction
+      predictor.temperature *= 0.1
+      predictor.processAll(testLabels, 2)
+    }
     println ("Final Test  accuracy = "+ objective.aveScore(testLabels))
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
   }

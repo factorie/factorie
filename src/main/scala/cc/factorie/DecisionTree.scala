@@ -62,7 +62,7 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
   def prune(pruningSet: Iterable[StatisticsType]): Unit =
     decisionTree = Some(prune(decisionTree.get, pruningSet.toSeq))
 
-  override def score(s: StatisticsType): Double = score(s, decisionTree.get)
+  def score(s: StatisticsType): Double = score(s, decisionTree.get)
 
   def score(s1: S1, s2: S2): Double = score(Stat(s1, s2), decisionTree.get)
 
@@ -340,6 +340,7 @@ class ID3DecisionTreeTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
   def statisticsDomains = Tuple(labelDomain, featureDomain)
   def unroll1(label: L) = Factor(label, labelToFeatures(label))
   def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
+  def statisticsScore(t:Tensor): Double = throw new Error("Not yet implemented")
 }
 
 class DecisionStumpTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
@@ -348,4 +349,5 @@ class DecisionStumpTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
   def statisticsDomains = Tuple(labelDomain, featureDomain)
   def unroll1(label: L) = Factor(label, labelToFeatures(label))
   def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
+  def statisticsScore(t:Tensor): Double = throw new Error("Not yet implemented")
 }

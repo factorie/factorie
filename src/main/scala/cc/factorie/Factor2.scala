@@ -23,6 +23,11 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
+trait ValuesIterator extends Iterator[TypedAssignment[Variable]]
+trait ValuesIterator2[N1<:Variable,N2<:Variable] extends Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2] {
+  def score: Double
+}
+
 /** The only abstract things are _1, _2, statistics(Values), and StatisticsType */
 trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
   factor =>
@@ -36,11 +41,18 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
   def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case _ => throw new IndexOutOfBoundsException(i.toString) }
   val _variables = Seq(factor._1, factor._2)
   override def values: Values = new Values(_1.value, _2.value)
-  override def scoreValueTensor(vtensor:SingletonBinaryTensor) = vtensor match {
+  /** Return the score of a value assignment represented by the Tensor argument.  
+      If this Factor's values cannot be represented by a Tensor, throw an Error.
+      This method is overridden and very efficient in FamilyWithDotStatistics classes. */
+  override def valueScore(tensor:Tensor): Double = tensor match {
     case v: SingletonBinaryTensorLike2 => {
-      val domain0 = variable(0).domain.asInstanceOf[DiscreteDomain with Domain[N1#Value]]
-      val domain1 = variable(1).domain.asInstanceOf[DiscreteDomain with Domain[N2#Value]]
+      val domain0 = _1.domain.asInstanceOf[DiscreteDomain with Domain[N1#Value]]
+      val domain1 = _2.domain.asInstanceOf[DiscreteDomain with Domain[N2#Value]]
       new Values(domain0(v.singleIndex1), domain1(v.singleIndex2)).score
+    }
+    case t: SingletonBinaryLayeredTensor2 => {
+      val domain0 = _1.domain.asInstanceOf[DiscreteDomain with Domain[N1#Value]]
+      new Values(domain0(t.singleIndex1), t.inner.asInstanceOf[N2#Value]).score
     }
   }
   case class Values(_1:N1#Value, _2:N2#Value) extends cc.factorie.Values {
@@ -55,6 +67,49 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
   }
   def statistics: StatisticsType = statistics(values)
   def statistics(v:Values): StatisticsType
+  
+  // New work, testing ideas for getting rid of Values
+  /** Iterate over all value assignments of both neighbors, making available the score for each. 
+      Future alternative versions of this method would allow for iterating over restricted subsets. */
+  def valuesIterator: Iterator[AbstractAssignment2[N1,N2]] = new Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2] {
+    var var1: N1 = null.asInstanceOf[N1]
+    var var2: N2 = null.asInstanceOf[N2]
+    var value1: N1#Value = null.asInstanceOf[N1#Value]
+    var value2: N2#Value = null.asInstanceOf[N2#Value]
+    def hasNext = false
+    def next() = this
+    def score: Double = Double.NaN
+  }
+  /** Return a record of the current values of this Factor's neighbors. */
+  def currentAssignment = new Assignment2(_1, _1.value, _2, _2.value)
+  /** The ability to score a Values object is now removed, and this is its closest alternative. */
+  def scoreAssignment(a:TypedAssignment[Variable]) = a match {
+    case a:AbstractAssignment2[N1,N2] if ((a.var1 eq _1) && (a.var2 eq _2)) => statistics(a.value1, a.value2).score
+    case _ => statistics(a(_1), a(_2)).score
+  }
+  /** This replaces the current statistics(Values), and avoids the awkward stat._1, stat._2 access. */
+  def statistics(value1:N1#Value, value2:N2#Value): StatisticsType = throw new Error("Not yet implemented.")
+  //def scoreValues(v1:N1#Value, v2:N2#Value): Double = throw new Error("Not yet implemented.")
+  /** Return the score for Factors whose values can be represented as a Tensor, otherwise throw an Error.
+      For Factors/Family in which the Statistics are the values, this method simply calls scoreValues(Tensor). */
+  def scoreValues(tensor:Tensor): Double = throw new Error("Not yet implemented.")
+  /** Return the score for Factors whose Statistics can be represented as a Tensor, otherwise throw an Error.
+      For DotFamily this is implemented as simply "weights dot tensor". */
+  def scoreStatistics(tensor:Tensor): Double = throw new Error("Not yet implemented.")
+  /** Given multiplicative factors on values of neighbor _1 (which allow for limited iteration), and given the Tensor value of neighbor _2, 
+      return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
+      Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
+      If _1 is not a DiscreteVar then throws an Error. */
+  def scoreValues1(tensor1:Tensor, tensor2:Tensor): Tensor1 = throw new Error("Not implemented in Factor "+getClass)
+  def scoreValues2(tensor1:Tensor, tensor2:Tensor): Tensor1 = throw new Error("Not implemented in Factor "+getClass)
+  
+  
+  
+  /** Given the Tensor value of neighbor _2, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
+      Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
+      If _1 is not a DiscreteVar then throws an Error. */
+  def valueScores1(tensor2:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores1")
+  def valueScores2(tensor1:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
 
   // For implementing sparsity in belief propagation
   def isLimitingValuesIterator = false
@@ -176,9 +231,20 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
     override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
     override def isLimitingValuesIterator = Family2.this.isLimitingValuesIterator
     override def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = limitedDiscreteValues.iterator
+    //override def valueScore(tensor:Tensor): Double = Family2.this.valueScore(tensor)
     //override def score(t:Tensor2): Double = Family2.this.score(t)
   }
-  //def score(t:Tensor2): Double = throw new Error()
+  def valueScore(tensor:Tensor): Double = throw new Error("Not yet implemented")
+  
+  def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = throw new Error("Not yet implemented")
+  def valueScoreFuture(tensor:Tensor): Double = tensor match {
+    case v: SingletonBinaryTensorLike2 => {
+      val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]]
+      val domain1 = neighborDomain2.asInstanceOf[DiscreteDomain with Domain[N2#Value]]
+      statistics(domain0(v.singleIndex1), domain1(v.singleIndex2)).score
+    }
+  }
+
   // Cached Statistics
   private var cachedStatisticsArray: Array[StatisticsType] = null
   private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null
@@ -235,21 +301,82 @@ trait TensorStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends
   final case class Stat(_1:S1, _2:S2) extends { val tensor: Tensor = Tensor.outer(_1, _2) } with super.Statistics {
     lazy val score = self.score(this)
   }
-  def score(s:Stat): Double
 }
 
-trait DotStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorStatistics2[S1,S2] with DotFamily
+trait DotStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorStatistics2[S1,S2] with DotFamily {
+  //def statisticsScore(tensor:Tensor) = weights dot tensor
+}
 
 trait FamilyWithStatistics2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] with Statistics2[N1#Value,N2#Value] {
   def statistics(values:Values) = Stat(values._1, values._2)
 }
 
-trait FamilyWithVectorStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] extends Family2[N1,N2] with TensorStatistics2[N1#Value,N2#Value] {
+trait FamilyWithTensorStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] extends Family2[N1,N2] with TensorStatistics2[N1#Value,N2#Value] {
   def statistics(values:Values) = Stat(values._1, values._2)
 }
 
 trait FamilyWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] extends Family2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
   def statistics(values:Values) = Stat(values._1, values._2)
-  // TODO add method:  score(t:Tensor2): Double
+  override def valueScore(tensor:Tensor): Double = statisticsScore(tensor)
+  // TODO Consider a more efficient implementation of some cases
+  // TODO Should we consider the capability for something other than *summing* over elements of tensor2?
+  def valueScores1(tensor2:Tensor): Tensor1 = weights match {
+    case weights: Tensor2 => {
+      val dim = statisticsDomains._1.dimensionDomain.size
+      val result = new DenseTensor1(dim)
+      tensor2 match {
+        case tensor2:SingletonBinaryTensor1 => {
+          val j = tensor2.singleIndex
+          for (i <- 0 until dim) result(i) = weights(i, j)
+        }
+        case tensor2:SingletonTensor1 => {
+          val j = tensor2.singleIndex
+          val v = tensor2.singleValue
+          for (i <- 0 until dim) result(i) = v * weights(i, j)
+        }
+        case tensor2:UnaryTensor1 => {
+          for (i <- 0 until dim; j <- 0 until tensor2.length) result(i) += weights(i, j) 
+        }
+        case tensor2:UniformTensor1 => {
+          val v = tensor2.uniformValue
+          for (i <- 0 until dim; j <- 0 until tensor2.length) result(i) += v * weights(i, j) 
+        }
+        case _ => {
+          tensor2.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += v * weights(i, j))
+        }
+      }
+      result
+    }
+  }
+  // TODO Consider a more efficient implementation of some cases
+  // TODO Should we consider the capability for something other than *summing* over elements of tensor1?
+  def valueScores2(tensor1:Tensor): Tensor1 = weights match {
+    case weights: Tensor2 => {
+      val dim = statisticsDomains._2.dimensionDomain.size
+      val result = new DenseTensor1(dim)
+      tensor1 match {
+        case tensor1:SingletonBinaryTensor1 => {
+          val i = tensor1.singleIndex
+          for (j <- 0 until dim) result(j) = weights(i, j)
+        }
+        case tensor1:SingletonTensor1 => {
+          val i = tensor1.singleIndex
+          val v = tensor1.singleValue
+          for (j <- 0 until dim) result(j) = v * weights(i, j)
+        }
+        case tensor1:UnaryTensor1 => {
+          for (i <- 0 until tensor1.length; j <- 0 until dim) result(i) += weights(i, j) 
+        }
+        case tensor1:UniformTensor1 => {
+          val v = tensor1.uniformValue
+          for (i <- 0 until tensor1.length; j <- 0 until dim) result(j) += v * weights(i, j) 
+        }
+        case _ => {
+          tensor1.foreachActiveElement((i,v) => for (j <- 0 until dim) result(j) += v * weights(i, j))
+        }
+      }
+      result
+    }
+  }
 }
 

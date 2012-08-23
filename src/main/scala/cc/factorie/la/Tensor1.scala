@@ -24,6 +24,7 @@ trait Tensor1 extends Tensor {
   def activeDomains = Array(activeDomain1)
   def dimensions = Array(dim1)
   @inline final def length: Int = dim1
+  override def copy: Tensor1 = throw new Error("Method copy not defined on class "+getClass.getName)
   override def stringPrefix = "Tensor1"
 }
 
@@ -106,23 +107,26 @@ class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double
 trait SingletonBinaryTensorLike1 extends Tensor1 with SingletonBinaryTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex)
 }
-class SingletonBinaryTensor1(val dim1:Int, val singleIndex:Int) extends SingletonBinaryTensorLike1 {
+class SingletonBinaryTensor1(val dim1:Int, var singleIndex:Int) extends SingletonBinaryTensorLike1 {
   override def copy: SingletonBinaryTensor1 = new SingletonBinaryTensor1(dim1, singleIndex)
 }
-class MutableSingletonBinaryTensor1(val dim1:Int, var singleIndex:Int) extends SingletonBinaryTensorLike1 {
-  override def copy = new MutableSingletonBinaryTensor1(dim1, singleIndex)
-}
-class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], val singleIndex:Int) extends SingletonBinaryTensorLike1 {
+//class MutableSingletonBinaryTensor1(val dim1:Int, var singleIndex:Int) extends SingletonBinaryTensorLike1 { override def copy = new MutableSingletonBinaryTensor1(dim1, singleIndex) }
+class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], var singleIndex:Int) extends SingletonBinaryTensorLike1 {
   def dim1 = sizeProxy.size
 }
 
 class UniformTensor1(val dim1:Int, val uniformValue:Double) extends Tensor1 with UniformTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
+  override def copy = new UniformTensor1(dim1, uniformValue)
+}
+class UnaryTensor1(dim1:Int) extends UniformTensor1(dim1, 1.0) {
+  override def copy = new UnaryTensor1(dim1)
 }
 class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends Tensor1 with UniformTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
   //def activeDomain = activeDomain1
   def dim1 = sizeProxy.size
+  override def copy = new GrowableUniformTensor1(sizeProxy, uniformValue)
 }
 
 

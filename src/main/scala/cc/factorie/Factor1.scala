@@ -34,10 +34,13 @@ trait Factor1[N1<:Variable] extends Factor {
   override def variables = IndexedSeq(_1)
   def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
   override def values = new Values(_1.value)
-  override def scoreValueTensor(vtensor:SingletonBinaryTensor) = vtensor match {
-    case vt: SingletonBinaryTensorLike1 => {
-      val domain0 = variable(0).domain.asInstanceOf[DiscreteDomain with Domain[N1#Value]]
-      new Values(domain0(vt.singleIndex)).score
+  /** Return the score of a value assignment represented by the Tensor argument.  
+      If this Factor's values cannot be represented by a Tensor, throw an Error.
+      This method is overriden and very efficient in FamilyWithDotStatistics classes. */
+  override def valueScore(tensor:Tensor) = tensor match {
+    case t: SingletonBinaryTensorLike1 => {
+      val domain0 = _1.domain.asInstanceOf[DiscreteDomain with Domain[N1#Value]]
+      new Values(domain0(t.singleIndex)).score
     }
   }
   // Should the next line read instead V<:N1 ?? -akm
@@ -59,6 +62,11 @@ trait Factor1[N1<:Variable] extends Factor {
   }
   def statistics: StatisticsType = statistics(values)
   def statistics(v:Values): StatisticsType
+
+  /** Return a Tensor1 containing the scores for each possible value of neighbor _1, which must be a DiscreteVar.
+      Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
+      If _1 is not a DiscreteVar then throws an Error. */
+  def scoreValues1: Tensor1 = throw new Error("This Factor type does not implement scores1")
 
   // For implementing sparsity in belief propagation
   def isLimitingValuesIterator = false
@@ -96,6 +104,13 @@ trait FactorWithStatistics1[N1<:Variable] extends Factor1[N1] {
   }
   override def statistics(v:Values) = Statistics(v._1).asInstanceOf[StatisticsType]
   def score(s:Statistics): Double
+}
+
+abstract class FactorWithDotStatistics1[N1<:DiscreteTensorVar] extends FactorWithStatistics1[N1] {
+  def statisticsDomains: Tuple1[DiscreteTensorDomain]
+  val weights = new DenseTensor1(statisticsDomains._1.dimensionDomain.size)
+  def score(s:Statistics) = s._1 dot weights
+  override def valueScore(valueTensor:Tensor) = valueTensor dot weights
 }
 
 trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
@@ -149,7 +164,7 @@ trait TensorStatistics1[S1<:DiscreteTensorValue] extends TensorFamily {
   self =>
   type StatisticsType = Stat
   override def statisticsDomains: Tuple1[DiscreteTensorDomain with Domain[S1]]
-  // Use Scala's "pre-initialized fields" syntax because super.Stat needs vector to initialize score
+  // Use Scala's "pre-initialized fields" syntax because super.Stat needs tensor to initialize score
   final case class Stat(_1:S1) extends { val tensor: Tensor = _1 } with super.Statistics {
     lazy val score = self.score(this)
   }
@@ -161,17 +176,21 @@ trait DotStatistics1[S1<:DiscreteTensorValue] extends TensorStatistics1[S1] with
     case d:DiscreteValue => weights(d.intValue) = w
     case ds:DiscreteTensorValue => ds.activeDomain.foreach(i => weights(i) = w)
   }
+  def scores1(): Tensor1 = weights match {
+    case weights: Tensor1 => weights.copy
+  }
 }
 
 trait FamilyWithStatistics1[N1<:Variable] extends Family1[N1] with Statistics1[N1#Value] {
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
 
-trait FamilyWithVectorStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with TensorStatistics1[N1#Value] {
+trait FamilyWithTensorStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with TensorStatistics1[N1#Value] {
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
 }
 
 trait FamilyWithDotStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with DotStatistics1[N1#Value] {
   def statistics(vals:Values): StatisticsType = Stat(vals._1)
+  def valueScore(tensor:Tensor): Double = statisticsScore(tensor) // reflecting the fact that there is no transformation between values and statistics
 }
 

@@ -35,6 +35,7 @@ trait Tensor3 extends Tensor {
   @inline final def index1(i:Int): Int = i/dim2/dim3
   @inline final def index2(i:Int): Int = (i/dim3)%dim2
   @inline final def index3(i:Int): Int = i%dim3
+  override def copy: Tensor3 = throw new Error("Method copy not defined on class "+getClass.getName)
 }
 
 trait DenseTensorLike3 extends Tensor3 with DenseTensor {
@@ -62,6 +63,7 @@ class SingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singl
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
   def activeDomain = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2*dim3 + singleIndex2*dim3 + singleIndex3
+  override def copy = new SingletonBinaryTensor3(dim1, dim2, dim3, singleIndex1, singleIndex2, singleIndex3)
 }
 class MutableSingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, var singleIndex1:Int, var singleIndex2:Int, var singleIndex3:Int) extends Tensor3 with SingletonBinaryTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
@@ -69,6 +71,7 @@ class MutableSingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, va
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
   def activeDomain = new SingletonIntSeq(singleIndex)
   def singleIndex = singleIndex1*dim2*dim3 + singleIndex2*dim3 + singleIndex3
+  override def copy = new MutableSingletonBinaryTensor3(dim1, dim2, dim3, singleIndex1, singleIndex2, singleIndex3)
 }
 
 class SingletonTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleValue:Double) extends Tensor3 with SingletonTensor {
@@ -77,6 +80,7 @@ class SingletonTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex
   def activeDomain3 = new SingletonIntSeq(singleIndex3)
   def activeDomain: IntSeq = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2*dim3 + singleIndex2*dim3 + singleIndex3
+  override def copy = new SingletonTensor3(dim1, dim2, dim3, singleIndex1, singleIndex2, singleIndex3, singleValue)
 }
 
 trait SparseBinaryTensorLike3 extends Tensor3 with SparseBinaryTensor {
@@ -169,4 +173,4 @@ trait Singleton2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
     case t:Singleton2LayeredTensorLike3 => if (singleIndex1 == t.singleIndex1 && singleIndex2 == t.singleIndex2) inner.dot(t.inner) else 0.0
   }
 }
-class Singleton2LayeredTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val singleValue1:Double, val singleValue2:Double, val inner:Tensor1) extends Singleton2LayeredTensorLike3
+class Singleton2LayeredTensor3(val dim1:Int, val dim2:Int, val dim3:Int, var singleIndex1:Int, var singleIndex2:Int, var singleValue1:Double, var singleValue2:Double, var inner:Tensor1) extends Singleton2LayeredTensorLike3

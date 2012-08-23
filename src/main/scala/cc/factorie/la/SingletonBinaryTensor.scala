@@ -33,6 +33,6 @@ trait SingletonBinaryTensor extends SingletonTensor {
     case t:SingletonTensor => if (singleIndex == t.singleIndex) t.singleValue else 0.0
     case t:DoubleSeq => t(singleIndex)
   }
-  override def copy: SingletonBinaryTensor = this // immutable, but careful in the future we might make a mutable version
+  //override def copy: SingletonBinaryTensor = this // immutable, but careful in the future we might make a mutable version
 }
 // TODO Make a mutable version of this to be used in BP with DotFamily.score(Tensor)

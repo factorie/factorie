@@ -33,6 +33,7 @@ trait Tensor2 extends Tensor {
   @inline final def multiIndex(i:Int): (Int, Int) = (i/dim2, i%dim2)
   @inline final def index1(i:Int): Int = i/dim2
   @inline final def index2(i:Int): Int = i%dim2
+  override def copy: Tensor2 = throw new Error("Method copy not defined on class "+getClass.getName)
 }
 
 
@@ -75,15 +76,15 @@ trait SingletonBinaryTensorLike2 extends Tensor2 with SingletonBinaryTensor {
   def singleIndex = singleIndex1*dim2 + singleIndex2
 }
 
-class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int) extends SingletonBinaryTensorLike2
-
-class MutableSingletonBinaryTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var singleIndex2:Int) extends SingletonBinaryTensorLike2
+class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var singleIndex2:Int) extends SingletonBinaryTensorLike2
+//class MutableSingletonBinaryTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var singleIndex2:Int) extends SingletonBinaryTensorLike2
 
 class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int, val singleValue:Double) extends Tensor2 with SingletonTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain: IntSeq = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2 + singleIndex2
+  override def copy = new SingletonBinaryTensor2(dim1, dim2, singleIndex1, singleIndex2)
 }
 
 trait SparseBinaryTensorLike2 extends Tensor2 with SparseBinaryTensor {
@@ -93,6 +94,7 @@ trait SparseBinaryTensorLike2 extends Tensor2 with SparseBinaryTensor {
 class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensorLike2 {
   override def blankCopy: SparseBinaryTensor2 = new SparseBinaryTensor2(dim1, dim2)
   //override def stringPrefix = "SparseBinaryTensor2"
+  //override def copy = new SparseBinaryTensor2(dim1, dim2, singleIndex1, singleIndex2)
 }
 
 trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
@@ -187,5 +189,5 @@ trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:DenseTensorLike2 => { var s = 0.0; this.foreachActiveElement((i,v) => s += t(i)*v); s }
   }
 }
-class SingletonBinaryLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val inner:Tensor1) extends SingletonBinaryLayeredTensorLike2
+class SingletonBinaryLayeredTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var inner:Tensor1) extends SingletonBinaryLayeredTensorLike2
 

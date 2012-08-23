@@ -46,6 +46,22 @@ trait Proportions extends Masses {
   override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
 }
 
+object Proportions {
+  /** Return a zero-mass Proportions with the same dimensionality and sparsity as the Tensor argument. */
+  def blankCopy(t:Tensor1): Proportions1 = t match {
+    case t:DenseTensor1 => new DenseProportions1(t.dim1)
+    case t:SparseTensor1 => throw new Error("Not yet implemeneted")
+  }
+  def blankCopy(t:Tensor2): Proportions2 = t match {
+    case t:DenseTensor2 => new DenseProportions2(t.dim1, t.dim2)
+    //case t:SparseTensor2 => throw new Error("Not yet implemeneted")
+  }
+  def blankCopy(t:Tensor3): Proportions3 = t match {
+    case t:DenseTensor3 => new DenseProportions3(t.dim1, t.dim2, t.dim3)
+    //case t:SparseTensor2 => throw new Error("Not yet implemeneted")
+  }
+}
+
 trait Proportions1 extends Masses1 with Proportions { def masses: Masses1 }
 trait Proportions2 extends Masses2 with Proportions { def masses: Masses2 }
 trait Proportions3 extends Masses3 with Proportions { def masses: Masses3 }

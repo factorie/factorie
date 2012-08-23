@@ -26,10 +26,8 @@ import java.io._
 /** A single factor in a factor graph:  neighboring variables and methods for getting values and their score.
     @author Andrew McCallum */
 trait Factor extends Ordered[Factor] {
-  // FIXME: Alex: it's not clear to me whether Factor.factors should return this or Nil // Now that we no longer have inner factors, Factor isn't a model at all
-  //def factors(variables: Iterable[Variable]): Seq[Factor] = Nil
   /** Returns the collection of variables neighboring this factor. */
-  def variables: Seq[Variable] // = { val result = new ArrayBuffer[Variable](numVariables); for (i <- 0 until numVariables) result += variable(i); result }
+  def variables: Seq[Variable]
   /** The number of variables neighboring this factor. */
   def numVariables: Int
   def variable(index: Int): Variable
@@ -40,11 +38,15 @@ trait Factor extends Ordered[Factor] {
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
   def score: Double = statistics.score
   def values: Values
-  def scoreValueTensor(vtensor: SingletonBinaryTensor): Double = throw new Error("needs implementation")
+  /** Return a Tensor containing scores for alternative values of neighbor #ni, which must be a DiscreteVar.
+      When the other dimensions of "tensor" have more than one-hot, sum over the alternatives. */
+  def scoreValues(ni:Int, tensor:Tensor): Tensor1 = throw new Error("Not yet implemented.")
+  /** Return the score efficiently calculated for the case in which the Factor's Value can be represented as a Tensor. */
+  def valueScore(valueTensor: Tensor): Double = throw new Error("This Factor subclass does not implement valueScore")
+  /** Return the score efficiently calculated for the case in which the Factor's Statistics can be represented as a Tensor. */
+  def statisticsScore(statisticsTensor: Tensor): Double = throw new Error("This Factor subclass does not implement statisticsScore")
   def statistics: Statistics // = values.statistics
   def valuesIterator(varying:Set[Variable]): Iterator[Values]
-  /** Randomly selects and returns one of this factor's neighbors. */
-  //@deprecated def randomVariable(implicit random:Random = cc.factorie.random): Variable = variable(random.nextInt(numVariables))
   /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
   //def copy(s:Substitutions): Factor
   // Implement Ordered, such that worst (lowest) scores are considered "high"
@@ -80,6 +82,7 @@ trait Factor extends Ordered[Factor] {
   override def toString: String = variables.mkString(factorName+"(", ",", ")")
 }
 
+// This comment mostly discusses an old (removed) version of FACTORIE in which Factors could have "inner" Factors.
 /** A Factor is a Model because it can return a factor (itself) and a score.
     A Model is not a Factor because Factors *must* be able to list all the variables they touch;
      (this is part of how they are de-duplicated);
@@ -104,7 +107,7 @@ trait Factor extends Ordered[Factor] {
 trait Values extends Statistics with Assignment {
   override def variables: Seq[Variable] // Assignment has return type of only Iterable[Variable]
   // def factor: Factor // TODO Consider adding this method
-  override def inner: Seq[Values] = Nil
+  //override def inner: Seq[Values] = Nil
   //def apply[B <: Variable](v: B): B#Value = { new Error("Never call apply() on values"); null.asInstanceOf[B#Value] }
   def score: Double = statistics.score // TODO This will result in an infinite loop unless Statistics.statistics is overridden.  Consider leaving Statistics.statistics abstract? 
   /** Return a unique index for the combination of Discrete values in the set "varying".  Used in BeliefPropagation. */
@@ -136,17 +139,13 @@ trait Values extends Statistics with Assignment {
 }
 
 /** A container for sufficient statistics of a Factor.
-    There is one of these for each Factor. */
-// Rename this to Statistic singular, so we can have Statistic1, Statistic2, etc like Factor2, separate from "Template with Statistics2"
+    They reflect a certain choice of values for the neighbors of a Factor. */
+// TODO Rename this to Statistic singular, so we can have Statistic1, Statistic2, etc like Factor2, separate from "Template with Statistics2"
 trait Statistics  {
   //def variables = { new Error("Statistics should not call Assignment methods"); null }
   //def get[B <: Variable](v: B) = { new Error("Statistics should not call Assignment methods"); null }
   //def contains(v: Variable) = { new Error("Statistics should not call Assignment methods"); false }
-
   def statistics: Statistics = this
-  // def factor: Factor // TODO Consider adding this method
-  //def outer: Statistics = null // TODO Remove this
-  def inner: Seq[Statistics] = Nil // TODO Remove this.
   def score: Double
 }
 

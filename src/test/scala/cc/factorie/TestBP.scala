@@ -106,7 +106,7 @@ class TestBP extends TestCase {
     fg = new BPSummary(Set(v), model1)
     println("num Factors = %d".format(fg.bpFactors.size))
     println("num Variables = %d".format(fg.bpVariables.size))
-    LoopyBP.infer(fg, 1)
+    BP.inferLoopy(fg, 1)
     println(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), 0.5, eps)
     // 2) unequal potentials
@@ -115,7 +115,7 @@ class TestBP extends TestCase {
     fg = new BPSummary(Set(v), model2)
     println("num Factors = %d".format(fg.bpFactors.size))
     println("num Variables = %d".format(fg.bpVariables.size))
-    LoopyBP.infer(fg, 1)
+    BP.inferLoopy(fg, 1)
     println(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(2) / (e(2) + e(1)), eps)
   }
@@ -129,7 +129,7 @@ class TestBP extends TestCase {
     fg = new BPSummary(Set(v), model1)
     println("num Factors = %d".format(fg.bpFactors.size))
     println("num Variables = %d".format(fg.bpVariables.size))
-    LoopyBP.infer(fg, 1)
+    BP.inferLoopy(fg, 1)
     println(fg.marginal(v).proportions)
     assertEquals(0.5, fg.marginal(v).proportions(0), eps)
     // 2) f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}
@@ -137,7 +137,7 @@ class TestBP extends TestCase {
     fg = new BPSummary(Set(v), model2)
     println("num Factors = %d".format(fg.bpFactors.size))
     println("num Variables = %d".format(fg.bpVariables.size))
-    LoopyBP.infer(fg, 1)
+    BP.inferLoopy(fg, 1)
     println(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(0) / (e(0) + e(2)), eps)
   }
@@ -180,7 +180,7 @@ class TestBP extends TestCase {
     fg = new BPSummary(vars, model)
     println("num Factors = %d".format(fg.bpFactors.size))
     println("num Variables = %d".format(fg.bpVariables.size))
-    LoopyBP.infer(fg, 5)
+    BP.inferLoopy(fg, 5)
     println("v1 : " + fg.marginal(v1).proportions)
     println("v2 : " + fg.marginal(v2).proportions)
     for (mfactor <- fg.bpFactors) {

@@ -122,4 +122,11 @@ trait FamilyWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable]
   def statistics(values:Values) = Stat(values._1, values._2, values._3, values._4)
 }
 
-// TODO Also implement FamilyWithVectorStatistics4 and FamilyWithDotStatistics4
+trait FamilyWithTensorStatistics4[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar,N4<:DiscreteTensorVar] extends Family4[N1,N2,N3,N4] with TensorStatistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
+  def statistics(values:Values) = Stat(values._1, values._2, values._3, values._4)
+}
+
+trait FamilyWithDotStatistics4[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar,N4<:DiscreteTensorVar] extends Family4[N1,N2,N3,N4] with DotStatistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
+  def statistics(values:Values) = Stat(values._1, values._2, values._3, values._4)
+  def valueScore(tensor:Tensor): Double = statisticsScore(tensor) // reflecting the fact that there is no transformation between values and statistics
+}

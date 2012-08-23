@@ -32,7 +32,7 @@ trait Family {
   @inline final def thisFamily: this.type = this
   /** The method responsible for mapping a Statistic object to a real-valued score.  
       Called by the Statistic.score method; implemented here so that it can be easily overriden in user-defined subclasses of Template. */
-  //def score(s:StatisticsType): Double
+  def score(s:StatisticsType): Double
   //@inline final def score(s:cc.factorie.Statistics): Double = score(s.asInstanceOf[StatisticsType])
   def defaultFactorName = this.getClass.getName
   var factorName: String = defaultFactorName
@@ -105,14 +105,11 @@ trait TensorFamily extends Family {
   lazy val statisticsDomainsSeq: Seq[DiscreteTensorDomain] = statisticsDomains.productIterator.map(_.asInstanceOf[DiscreteTensorDomain]).toSeq
   private var _frozenDomains = false
   def freezeDomains: Unit = { statisticsDomainsSeq.foreach(_.freeze); _frozenDomains = true }
-  //lazy val statisticsVectorLength: Int = statisticsDomains.multiplyInts(_.dimensionSize)
   lazy val statisticsTensorDimensions: Array[Int] = { freezeDomains; statisticsDomainsSeq.map(_.dimensionSize).toArray }
   type StatisticsType <: Statistics
   trait Statistics extends super.Statistics {
     def tensor: Tensor
   }
-  def score(s:StatisticsType): Double = if (s eq null) 0.0 else score(s.tensor)
-  def score(t:Tensor): Double
 }
 
 
@@ -129,7 +126,8 @@ trait DotFamily extends TensorFamily {
   def newWeightsTypeTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)  // Dense by default, may be override in sub-traits
   def newDenseTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)
   def newSparseTensor: Tensor = Tensor.newSparse(statisticsTensorDimensions)
-  def score(t:Tensor): Double = weights dot t
+  @inline final def score(s:StatisticsType): Double = if (s eq null) 0.0 else statisticsScore(s.tensor)
+  @inline final def statisticsScore(t:Tensor): Double = weights dot t
 
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also

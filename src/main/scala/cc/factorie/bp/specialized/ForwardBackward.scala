@@ -2,6 +2,7 @@ package cc.factorie.bp.specialized
 
 import cc.factorie._
 import cc.factorie.maths.sumLogProbs
+import cc.factorie.util.ArrayDoubleSeq
 import cc.factorie.la._
 import scala.math.exp
 import collection.mutable.{HashMap, Map}
@@ -28,7 +29,7 @@ object ForwardBackward {
       }
 
       // normalize the node marginal
-      logNormalize(marginal(vi), sumLogProbs(marginal(vi)))
+      logNormalize(marginal(vi), sumLogProbs(new ArrayDoubleSeq(marginal(vi))))
       vi += 1
     }
 
@@ -53,7 +54,7 @@ object ForwardBackward {
       }
 
       // normalize the edge marginal
-      logNormalize(marginal(vi), sumLogProbs(marginal(vi)))
+      logNormalize(marginal(vi), sumLogProbs(new ArrayDoubleSeq(marginal(vi))))
       vi += 1
     }
 
@@ -174,7 +175,7 @@ object ForwardBackward {
 
     val expMap: Map[DotFamily, Tensor] = HashMap(localTemplate -> nodeExp, transTemplate -> edgeExp)
 
-    val logZ = sumLogProbs(alpha(alpha.length-1))
+    val logZ = sumLogProbs(new ArrayDoubleSeq(alpha(alpha.length-1)))
 
     (expMap, logZ)
   }
@@ -213,7 +214,7 @@ object ForwardBackward {
           tmpCol(j) = alpha(vi-1)(j) + transScores(j,i) + localScores(vi)(i)
           j += 1
         }
-        alpha(vi)(i) = sumLogProbs(tmpCol)
+        alpha(vi)(i) = sumLogProbs(new ArrayDoubleSeq(tmpCol))
         i += 1
       }
       vi += 1
@@ -235,7 +236,7 @@ object ForwardBackward {
           tmpCol(j) = transScores(i, j) + localScores(vi+1)(j) + beta(vi+1)(j)
           j += 1
         }
-        beta(vi)(i) = sumLogProbs(tmpCol)
+        beta(vi)(i) = sumLogProbs(new ArrayDoubleSeq(tmpCol))
         i += 1
       }
       vi -= 1
