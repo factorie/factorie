@@ -18,11 +18,48 @@ import cc.factorie.la._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, LinkedHashSet}
 import scala.collection.{Set}
 
-// TODO Consider if we can put methods for message operations in here, rather than just using them as enums for hard code in BPFactors
-// TODO Make this a factory object which will create various kinds of BPFactors and BPVariable as necessary
-trait BPRing
-object BPSumProductRing extends BPRing
-object BPMaxProductRing extends BPRing
+/** A factory object creating BPFactors and BPVariables, each of which contain methods for calculating messages. */
+trait BPRing {
+  def newBPVariable(v:DiscreteVar): BPVariable1
+  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor
+}
+
+object BPSumProductRing extends BPRing {
+  def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
+  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = {
+    val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
+    val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
+    edges.size match {
+      case 1 => factor match {
+        case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0)) 
+        case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2(factor, edges(0)) 
+      }
+      case 2 => factor match {
+        case factor:Factor2[DiscreteVar,DiscreteVar] => new BPFactor2Factor2(factor, edges(0), edges(1)) with BPFactor2SumProduct
+        case factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar] => new BPFactor2Factor3(factor, edges(0), edges(1)) with BPFactor2SumProduct
+      }
+    }
+  }
+}
+
+object BPMaxProductRing extends BPRing {
+  def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
+  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = {
+    val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
+    val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
+    edges.size match {
+      case 1 => factor match {
+        case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0)) 
+        case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2(factor, edges(0)) 
+      }
+      case 2 => factor match {
+        case factor:Factor2[DiscreteVar,DiscreteVar] => new BPFactor2Factor2(factor, edges(0), edges(1)) with BPFactor2MaxProduct
+        case factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar] => new BPFactor2Factor3(factor, edges(0), edges(1)) with BPFactor2MaxProduct
+      }
+    }
+  }
+}
+
 
 /** A dumb container for messages factor->variable and variable->factor */
 class BPEdge(val bpVariable: BPVariable1) {
@@ -44,7 +81,7 @@ trait BPVariable {
   def updateOutgoing: Unit = edges.foreach(updateOutgoing(_))
 }
 // TODO Get rid of ring, it isn't actually necessary, right?
-class BPVariable1(val variable: DiscreteVar, val ring: BPRing) extends DiscreteMarginal1(variable, null) with BPVariable {
+class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable, null) with BPVariable {
   val edges = new ArrayBuffer[BPEdge]
   protected def calculateMessageFromFactorProduct(edges:Seq[BPEdge]): Tensor = edges.size match {
     case 0 => new UniformTensor1(variable.domain.size, 0.0)
@@ -70,7 +107,6 @@ class BPVariable1(val variable: DiscreteVar, val ring: BPRing) extends DiscreteM
 trait BPFactor extends DiscreteMarginal {
   def factor: Factor
   def edges: Seq[BPEdge]
-  def ring: BPRing
   def updateOutgoing(e: BPEdge): Unit
   def updateOutgoing: Unit = edges.foreach(updateOutgoing(_))
   def scores: Tensor // All local scores across all dimensions of varying neighbors; does not use messages from variables
@@ -81,9 +117,8 @@ trait BPFactor extends DiscreteMarginal {
 
 
 // An abstract class for BPFactors that has 1 varying neighbor.  They may have additional constant neighbors.
-abstract class BPFactor1(val edge1: BPEdge, val ring: BPRing) extends DiscreteMarginal1(edge1.bpVariable.variable, null) with BPFactor {
-  def factor: Factor
-  def scores: Tensor1
+abstract class BPFactor1(val edge1: BPEdge) extends DiscreteMarginal1(edge1.bpVariable.variable, null) with BPFactor {
+  override def scores: Tensor1
   edge1.bpFactor = this
   val edges = Seq(edge1)
   def updateOutgoing(e: BPEdge): Unit = e match { case this.edge1 => updateOutgoing1 } 
@@ -97,7 +132,7 @@ abstract class BPFactor1(val edge1: BPEdge, val ring: BPRing) extends DiscreteMa
 }
 
 // A BPFactor1 with underlying model Factor1, with the one neighbor varying
-class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge, ring:BPRing) extends BPFactor1(edge1, ring) {
+class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends BPFactor1(edge1) {
   val scores: Tensor1 = {
     // TODO Make this more efficient by getting factor.family.weights when we can
     val valueTensor = new SingletonBinaryTensor1(edge1.variable.domain.size, 0)
@@ -111,7 +146,7 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge, ring:BPRi
 }
 
 // A BPFactor1 with underlying model Factor2, with the first neighbor varying and the second neighbor constant 
-class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1:BPEdge, ring:BPRing) extends BPFactor1(edge1, ring) {
+class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1:BPEdge) extends BPFactor1(edge1) {
   val scores: Tensor1 = {
     val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
     val result = new DenseTensor1(edge1.variable.domain.size)
@@ -125,9 +160,10 @@ class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1
 
 
 // An abstract class for BPFactors that have 2 varying neighbors.  They may have additional constant neighbors.
-abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val ring: BPRing) extends DiscreteMarginal2(edge1.bpVariable.variable, edge2.bpVariable.variable, null) with BPFactor {
-  def factor: Factor
+abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge) extends DiscreteMarginal2(edge1.bpVariable.variable, edge2.bpVariable.variable, null) with BPFactor {
   override def scores: Tensor2
+  def calculateOutgoing1: Tensor
+  def calculateOutgoing2: Tensor
   edge1.bpFactor = this
   edge2.bpFactor = this
   val edge1Max2 = new Array[Int](edge1.variable.domain.size) // The index value of edge2.variable that lead to the MaxProduct value for each index value of edge1.variable 
@@ -139,42 +175,6 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val ring: BPRing)
   } 
   def updateOutgoing1: Unit = edge1.messageFromFactor = calculateOutgoing1
   def updateOutgoing2: Unit = edge2.messageFromFactor = calculateOutgoing2
-  def calculateOutgoing1: Tensor = ring match {
-    case BPSumProductRing => calculateOutgoingSum1
-    case BPMaxProductRing => calculateOutgoingMax1
-  }
-  def calculateOutgoing2: Tensor = ring match {
-    case BPSumProductRing => calculateOutgoingSum2
-    case BPMaxProductRing => calculateOutgoingMax2
-  }
-  def calculateOutgoingSum1: Tensor = {
-    val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
-    for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size)
-      result(i) = cc.factorie.maths.sumLogProb(result(i), scores(i,j) + edge2.messageFromVariable(j))
-    result
-  }
-  def calculateOutgoingSum2: Tensor = {
-    val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
-    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size)
-      result(j) = cc.factorie.maths.sumLogProb(result(j), scores(i,j) + edge1.messageFromVariable(i))
-    result
-  }
-  def calculateOutgoingMax1: Tensor = {
-    val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
-    for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size) {
-      val s = scores(i,j) + edge2.messageFromVariable(j)
-      if (s > result(i)) { result(i) = s; edge1Max2(i) = j } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
-    }
-    result
-  }
-  def calculateOutgoingMax2: Tensor = {
-    val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
-    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size) {
-      val s = scores(i,j) + edge1.messageFromVariable(i)
-      if (s > result(j)) { result(j) = s; edge2Max1(j) = i } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
-    }
-    result
-  }
   // TODO See about caching this when possible
   def calculateBeliefs: Tensor2 = {
     val result = new DenseTensor2(edge1.messageFromVariable.length, edge2.messageFromVariable.length)
@@ -186,77 +186,65 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge, val ring: BPRing)
   override def proportions: Proportions2 = new NormalizedTensorProportions2(calculateMarginal, false)
 }
 
-// A BPFactor2 with underlying model Factor2, with both neighbors varying
-class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edge1:BPEdge, edge2:BPEdge, ring:BPRing) extends BPFactor2(edge1, edge2, ring) {
-  // TODO Consider making this calculate scores(i,j) on demand with something like
-  // val scores = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size, Double.NaN) { override def apply(i:Int) = if (_values(i).isNaN)... }
-  val scores: Tensor2 = {
-    // TODO Replace this with just efficiently getting factor.family.weights
-    val valueTensor = new SingletonBinaryTensor2(edge1.variable.domain.size, edge2.variable.domain.size, 0, 0)
-    val result = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size)
-    for (i <- 0 until edge1.variable.domain.size) {
-      valueTensor.singleIndex1 = i
-      for (j <- 0 until edge2.variable.domain.size) {
-        valueTensor.singleIndex2 = j
-        result(i, j) = factor.valueScore(valueTensor)
-      }
+trait BPFactor2SumProduct { this: BPFactor2 =>
+  def calculateOutgoing1: Tensor = {
+    val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
+    for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size)
+      result(i) = cc.factorie.maths.sumLogProb(result(i), scores(i,j) + edge2.messageFromVariable(j))
+    result
+  }
+  def calculateOutgoing2: Tensor = {
+    val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
+    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size)
+      result(j) = cc.factorie.maths.sumLogProb(result(j), scores(i,j) + edge1.messageFromVariable(i))
+    result
+  }
+}
+
+trait BPFactor2MaxProduct { this: BPFactor2 =>
+  def calculateOutgoing1: Tensor = {
+    val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
+    for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size) {
+      val s = scores(i,j) + edge2.messageFromVariable(j)
+      if (s > result(i)) { result(i) = s; edge1Max2(i) = j } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
     }
     result
   }
-//  def calculateOutgoingSum1: Tensor = {
-//    val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
-//    for (i <- 0 until edge1.variable.domain.size) {
-//      valueTensor.singleIndex1 = i
-//      for (j <- 0 until edge2.variable.domain.size) {
-//        valueTensor.singleIndex2 = j
-//        result(i) = cc.factorie.maths.sumLogProb(result(i), factor.valueScore(valueTensor) + edge2.messageFromVariable(j))
-//      }
-//    }
-//    result
-//  }
-//  def calculateOutgoingMax1: Tensor = {
-//    val result = new DenseTensor1(edge1.variable.domain.size)
-//    for (i <- 0 until edge1.variable.domain.size) {
-//      result(i) = Double.NegativeInfinity 
-//      valueTensor.singleIndex1 = i
-//      for (j <- 0 until edge2.variable.domain.size) {
-//        valueTensor.singleIndex2 = j
-//        val s = factor.valueScore(valueTensor) + edge2.messageFromVariable(j)
-//        if (s > result(i)) { result(i) = s; edge1Max2(i) = j } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
-//      }
-//    }
-//    result
-//  }
-//  
-//  def calculateOutgoingSum2: Tensor = {
-//    val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
-//    for (i <- 0 until edge2.variable.domain.size) {
-//      valueTensor.singleIndex2 = i
-//      for (j <- 0 until edge1.variable.domain.size) {
-//        valueTensor.singleIndex1 = j
-//        result(i) = cc.factorie.maths.sumLogProb(result(i), factor.valueScore(valueTensor) + edge1.messageFromVariable(j))
-//      }
-//    }
-//    result
-//  }
-//  def calculateOutgoingMax2: Tensor = {
-//    val result = new DenseTensor1(edge2.variable.domain.size)
-//    for (i <- 0 until edge2.variable.domain.size) {
-//      result(i) = Double.NegativeInfinity 
-//      valueTensor.singleIndex2 = i
-//      for (j <- 0 until edge1.variable.domain.size) {
-//        valueTensor.singleIndex1 = j
-//        val s = factor.valueScore(valueTensor) + edge1.messageFromVariable(j)
-//        if (s > result(i)) { result(i) = s; edge2Max1(i) = j }
-//      }
-//    }
-//    result
-//  }
+  def calculateOutgoing2: Tensor = {
+    val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
+    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size) {
+      val s = scores(i,j) + edge1.messageFromVariable(i)
+      if (s > result(j)) { result(j) = s; edge2Max1(j) = i } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
+    }
+    result
+  }
+}
+
+// A BPFactor2 with underlying model Factor2, with both neighbors varying
+abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edge1:BPEdge, edge2:BPEdge) extends BPFactor2(edge1, edge2) {
+  // TODO Consider making this calculate scores(i,j) on demand, with something like
+  // val scores = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size, Double.NaN) { override def apply(i:Int) = if (_values(i).isNaN)... }
+  val scores: Tensor2 = factor match {
+    //case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.asInstanceOf[Tensor2] // TODO Why getting DenseTensor1 here??
+    case _ => {
+      // TODO Replace this with just efficiently getting factor.family.weights
+      val valueTensor = new SingletonBinaryTensor2(edge1.variable.domain.size, edge2.variable.domain.size, 0, 0)
+      val result = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size)
+      for (i <- 0 until edge1.variable.domain.size) {
+        valueTensor.singleIndex1 = i
+        for (j <- 0 until edge2.variable.domain.size) {
+          valueTensor.singleIndex2 = j
+          result(i, j) = factor.valueScore(valueTensor)
+        }
+      }
+      result
+    }
+  }
 }
 
 // A BPFactor2 with underlying model Factor3, having two varying neighbors and one constant neighbor
 // Note that the varying neighbors are assumed to be factor._1 and factor._2, and the constant neighbor factor._3
-class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar], edge1:BPEdge, edge2:BPEdge, ring:BPRing) extends BPFactor2(edge1, edge2, ring) {
+abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar], edge1:BPEdge, edge2:BPEdge) extends BPFactor2(edge1, edge2) {
   val scores: Tensor2 = {
     val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
     val result = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size)
@@ -269,57 +257,6 @@ class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensor
     }
     result
   }
-
-//  val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
-//  def calculateOutgoingSum1: Tensor = {
-//    val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
-//    for (i <- 0 until edge1.variable.domain.size) {
-//      valueTensor.singleIndex1 = i
-//      for (j <- 0 until edge2.variable.domain.size) {
-//        valueTensor.singleIndex2 = j
-//        result(i) = cc.factorie.maths.sumLogProb(result(i), factor.valueScore(valueTensor) + edge2.messageFromVariable(j))
-//      }
-//    }
-//    result
-//  }
-//  def calculateOutgoingMax1: Tensor = {
-//    val result = new DenseTensor1(edge1.variable.domain.size)
-//    for (i <- 0 until edge1.variable.domain.size) {
-//      result(i) = Double.NegativeInfinity 
-//      valueTensor.singleIndex1 = i
-//      for (j <- 0 until edge2.variable.domain.size) {
-//        valueTensor.singleIndex2 = j
-//        val s = factor.valueScore(valueTensor) + edge2.messageFromVariable(j)
-//        if (s > result(i)) { result(i) = s; edge1Max2(i) = j }
-//      }
-//    }
-//    result
-//  }
-//  
-//  def calculateOutgoingSum2: Tensor = {
-//    val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
-//    for (i <- 0 until edge2.variable.domain.size) {
-//      valueTensor.singleIndex2 = i
-//      for (j <- 0 until edge1.variable.domain.size) {
-//        valueTensor.singleIndex1 = j
-//        result(i) = cc.factorie.maths.sumLogProb(result(i), factor.valueScore(valueTensor) + edge1.messageFromVariable(j))
-//      }
-//    }
-//    result
-//  }
-//  def calculateOutgoingMax2: Tensor = {
-//    val result = new DenseTensor1(edge2.variable.domain.size)
-//    for (i <- 0 until edge2.variable.domain.size) {
-//      valueTensor.singleIndex2 = i
-//      for (j <- 0 until edge1.variable.domain.size) {
-//        result(i) = Double.NegativeInfinity 
-//        valueTensor.singleIndex1 = j
-//        val s = factor.valueScore(valueTensor) + edge1.messageFromVariable(j)
-//        if (s > result(i)) { result(i) = s; edge2Max1(i) = j }
-//      }
-//    }
-//    result
-//  }
 }
 
 
@@ -350,29 +287,13 @@ class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val ed
 class BPSummary(val ring:BPRing, val model:Model) extends Summary[DiscreteMarginal] {
   private val _bpFactors = new LinkedHashMap[Factor, BPFactor]
   private val _bpVariables = new LinkedHashMap[DiscreteTensorVar, BPVariable1]
+  def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   // The caller is responsible for making sure there are no duplicates in "varying".
   def this(varying:Iterable[DiscreteVar], ring:BPRing, model:Model) = {
     this(ring, model)
     // Initialize BPVariables and BPEdge structure
-    //println("BPSummary varying.size = "+varying.size)
     val varyingSet = varying.toSet
-    //println("BPSummary varyingSet.size = "+varyingSet.size)
-    for (factor <- model.factors(varying)) {
-      val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => varyingSet.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
-      val edges = factorVarying.map(v => new BPEdge(_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring))))
-      val bpFactor = edges.size match {
-        case 1 => factor match {
-          case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0), ring) 
-          case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2(factor, edges(0), ring) 
-        }
-        case 2 => factor match {
-          case factor:Factor2[DiscreteVar,DiscreteVar] => new BPFactor2Factor2(factor, edges(0), edges(1), ring)
-          case factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar] => new BPFactor2Factor3(factor, edges(0), edges(1), ring)
-        }
-      }
-      _bpFactors(factor) = bpFactor
-    }
-    //println("BPSummary bpFactors.size = "+bpFactors.size)
+    for (factor <- model.factors(varying)) _bpFactors(factor) = ring.newBPFactor(factor, varyingSet, this)
   }
   def this(varying:Iterable[DiscreteVar], model:Model) = this(varying, BPSumProductRing, model)
   def bpFactors: Iterable[BPFactor] = _bpFactors.values

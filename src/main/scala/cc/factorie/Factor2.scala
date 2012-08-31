@@ -79,6 +79,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
     def hasNext = false
     def next() = this
     def score: Double = Double.NaN
+    def valuesTensor: Tensor = null
   }
   /** Return a record of the current values of this Factor's neighbors. */
   def currentAssignment = new Assignment2(_1, _1.value, _2, _2.value)
