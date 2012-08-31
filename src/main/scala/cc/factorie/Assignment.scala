@@ -71,18 +71,18 @@ class HashMapAssignment extends MutableAssignment {
 /** An efficient abstract Assignment of one variable.
     @author Andrew McCallum */
 trait AbstractAssignment1[A<:Variable] extends TypedAssignment[A] {
-  def _1: A
-  def _value1: A#Value
-  def variables = List(_1)
-  def apply[B<:A](v:B): B#Value = if (v eq _1) _value1.asInstanceOf[B#Value] else null.asInstanceOf[B#Value]
-  def get[B<:A](v:B): Option[B#Value] = if (v eq _1) Some(_value1.asInstanceOf[B#Value]) else None
-  def contains(v:A): Boolean = if (v eq _1) true else false
-  override def globalize(implicit d:DiffList): Unit = _1 match { case v:MutableVar => v.set(_value1.asInstanceOf[v.Value]) }
+  def var1: A
+  def value1: A#Value
+  def variables = List(var1)
+  def apply[B<:A](v:B): B#Value = if (v eq var1) value1.asInstanceOf[B#Value] else null.asInstanceOf[B#Value]
+  def get[B<:A](v:B): Option[B#Value] = if (v eq var1) Some(value1.asInstanceOf[B#Value]) else None
+  def contains(v:A): Boolean = if (v eq var1) true else false
+  override def globalize(implicit d:DiffList): Unit = var1 match { case v:MutableVar => v.set(value1.asInstanceOf[v.Value]) }
 }
 
 /** An efficient Assignment of one variable.
     @author Andrew McCallum */
-class Assignment1[A<:Variable](val _1:A, var _value1:A#Value) extends AbstractAssignment1[A]
+class Assignment1[A<:Variable](val var1:A, var value1:A#Value) extends AbstractAssignment1[A]
 
 /** An efficient abstract Assignment of two variables.
     @author Andrew McCallum */

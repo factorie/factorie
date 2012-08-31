@@ -61,6 +61,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
 
 class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   def this(t:Tensor2) = { this(t.dim1, t.dim2); this := t }
+  def this(dim1:Int, dim2:Int, fillValue:Double) = { this(dim1, dim2); java.util.Arrays.fill(_values, fillValue) }
   override def copy: DenseTensor2 = { val t = new DenseTensor2(dim1, dim2); System.arraycopy(_values, 0, t._values, 0, length); t }
   override def blankCopy: DenseTensor2 = new DenseTensor2(dim1, dim2)
   override def stringPrefix = "DenseTensor2"
@@ -146,6 +147,7 @@ class DenseLayeredTensor2(val dim1:Int, val dim2:Int, val newTensor1:Int=>Tensor
   override def stringPrefix = "DenseLayeredTensor2"
 }
 
+// TODO Make a version of the above that uses an _innerValues: Array[Double] acting as (factor) weights multiplying the values of the inner Tensor1's?
 
 trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def singleIndex1: Int

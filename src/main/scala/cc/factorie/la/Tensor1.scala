@@ -67,6 +67,7 @@ trait DenseTensorLike1 extends Tensor1 with DenseTensor {
 class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
   def this(t:DoubleSeq) = { this(t.length); this := t }
   def this(a:Array[Double]) = { this(a.length); this := a }
+  def this(dim1:Int, fillValue:Double) = { this(dim1); java.util.Arrays.fill(_values, fillValue) }
   override def copy: DenseTensor1 = { val c = new DenseTensor1(dim1); System.arraycopy(_values, 0, c._values, 0, length); c }
   override def blankCopy: DenseTensor1 = new DenseTensor1(dim1)
 }
@@ -118,6 +119,10 @@ class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], var singleInde
 class UniformTensor1(val dim1:Int, val uniformValue:Double) extends Tensor1 with UniformTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
   override def copy = new UniformTensor1(dim1, uniformValue)
+  override def +(t:Tensor): Tensor = t match {
+    case t:UniformTensor1 => new UniformTensor1(dim1, uniformValue + t.uniformValue)
+    case t:Tensor1 => new DenseTensor1(dim1, uniformValue) + t
+  }
 }
 class UnaryTensor1(dim1:Int) extends UniformTensor1(dim1, 1.0) {
   override def copy = new UnaryTensor1(dim1)

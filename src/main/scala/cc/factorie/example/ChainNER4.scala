@@ -110,6 +110,17 @@ object ChainNER4 {
       // Use BP Viterbi for prediction
       for (sentence <- testSentences)
         BP.inferChainMax(sentence.asSeq.map(_.label), model)
+        //BP.inferChainSum(sentence.asSeq.map(_.label), model).setToMaximize(null) // max-marginal inference
+      
+      for (sentence <- trainSentences.take(10)) {
+        println("---SumProduct---")
+        printTokenMarginals(sentence.asSeq, BP.inferChainSum(sentence.asSeq.map(_.label), model))
+        println("---MaxProduct---")
+        printTokenMarginals(sentence.asSeq, BP.inferChainMax(sentence.asSeq.map(_.label), model))
+        println("---Gibbs Sampling---")
+        predictor.processAll(testLabels, 2)
+        sentence.asSeq.foreach(token => printLabel(token.label))
+      }
     } else {
       // Use VariableSettingsSampler for prediction
       predictor.temperature *= 0.1
@@ -117,6 +128,13 @@ object ChainNER4 {
     }
     println ("Final Test  accuracy = "+ objective.aveScore(testLabels))
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+  }
+
+  def printTokenMarginals(tokens:Seq[Token], summary:BPSummary): Unit = {
+    //val summary = BP.inferChainSum(tokens.map(_.label), model)
+    for (token <- tokens)
+      println(token.word + " " + LabelDomain.categories.zip(summary.marginal(token.label).proportions.asSeq).sortBy(_._2).reverse.mkString(" "))
+    println()
   }
 
   // Feature extraction

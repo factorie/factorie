@@ -121,7 +121,7 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
   def activeDomain2 = new RangeIntSeq(0, dim2)
   def activeDomain3 = new RangeIntSeq(0, dim3)
   def activeDomain = new RangeIntSeq(0, length) // Actually more sparse than this
-  private var _inners = Array.fill(dim1*dim2)(newTensor1(dim3))
+  private var _inners = new Array[Tensor1](dim1*dim2) // Array.fill(dim1*dim2)(newTensor1(dim3)) // TODO We shouldn't pre-fill this array; leave it sparse
   override def apply(i:Int, j:Int, k:Int): Double = {
     assert(i*dim2+j < dim1*dim2, "len="+length+" dim1="+dim1+" dim2="+dim2+" dim3="+dim3+" i="+i+" j="+j+" k="+k)
     val t1 = _inners(i*dim2+j)

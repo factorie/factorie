@@ -136,6 +136,54 @@ class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions
   def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
 }
 
+/** An immutable Proportions from a pre-normalized Tensor. */
+abstract class NormalizedTensorProportions(tensor:Tensor, checkNormalization:Boolean = true) extends Proportions {
+  protected def _tensor: Tensor
+  if (checkNormalization) require(maths.almostEquals(tensor.sum, 1.0, 0.0001))
+  def apply(i:Int) = _tensor.apply(i)
+  def massTotal = 1.0
+  def isDense = _tensor.isDense
+}
+class NormalizedTensorProportions1(tensor:Tensor1, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions1 {
+  protected val _tensor = tensor
+  def dim1 = _tensor.dim1
+  def activeDomain1 = _tensor.activeDomain1
+  def masses = this
+}
+class NormalizedTensorProportions2(tensor:Tensor2, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions2 {
+  protected val _tensor = tensor
+  def dim1 = _tensor.dim1
+  def dim2 = _tensor.dim2
+  def activeDomain = _tensor.activeDomain
+  def activeDomain1 = _tensor.activeDomain1
+  def activeDomain2 = _tensor.activeDomain2
+  def masses = this
+}
+class NormalizedTensorProportions3(tensor:Tensor3, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions3 {
+  protected val _tensor = tensor
+  def dim1 = _tensor.dim1
+  def dim2 = _tensor.dim2
+  def dim3 = _tensor.dim3
+  def activeDomain = _tensor.activeDomain
+  def activeDomain1 = _tensor.activeDomain1
+  def activeDomain2 = _tensor.activeDomain2
+  def activeDomain3 = _tensor.activeDomain3
+  def masses = this
+}
+class NormalizedTensorProportions4(tensor:Tensor4, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions4 {
+  protected val _tensor = tensor
+  def dim1 = _tensor.dim1
+  def dim2 = _tensor.dim2
+  def dim3 = _tensor.dim3
+  def dim4 = _tensor.dim4
+  def activeDomain = _tensor.activeDomain
+  def activeDomain1 = _tensor.activeDomain1
+  def activeDomain2 = _tensor.activeDomain2
+  def activeDomain3 = _tensor.activeDomain3
+  def activeDomain4 = _tensor.activeDomain4
+  def masses = this
+}
+
 class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
   val masses = new SortedSparseCountsMasses1(dim1)
   def massTotal = 1.0
@@ -231,7 +279,8 @@ trait ProportionsMarginal extends Marginal {
 }
 
 class ProportionsAssignment(p:ProportionsVar, v:Proportions) extends Assignment1[ProportionsVar](p, v) with ProportionsMarginal {
-  def mean = _value1
+  final def _1 = p // TODO Consider renaming Assignment1.var1 back to _1
+  def mean = value1
   def variance = Double.PositiveInfinity // TODO Is this the right value?
 }
 

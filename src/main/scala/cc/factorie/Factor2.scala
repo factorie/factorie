@@ -87,6 +87,8 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
     case a:AbstractAssignment2[N1,N2] if ((a.var1 eq _1) && (a.var2 eq _2)) => statistics(a.value1, a.value2).score
     case _ => statistics(a(_1), a(_2)).score
   }
+  // TODO Consider a method like this?  Replaces score(Values)
+  def scoreValues(value1:N1#Value, value2:N2#Value): Double = statistics(value1, value2).score
   /** This replaces the current statistics(Values), and avoids the awkward stat._1, stat._2 access. */
   def statistics(value1:N1#Value, value2:N2#Value): StatisticsType = throw new Error("Not yet implemented.")
   //def scoreValues(v1:N1#Value, v2:N2#Value): Double = throw new Error("Not yet implemented.")
