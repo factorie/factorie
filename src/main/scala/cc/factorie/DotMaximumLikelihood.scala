@@ -3,7 +3,7 @@ import cc.factorie.la._
 import cc.factorie.optimize._
 
 class DotMaximumLikelihood(val model:TemplateModel, val optimizer:GradientOptimizer) {
-  def this(model:TemplateModel) = this(model, new ConjugateGradient2)
+  def this(model:TemplateModel) = this(model, new LimitedMemoryBFGS)
   var gaussianPriorVariance = 10.0
   var numRepeatConvergences = 2 // Number of times to re-run the optimizer to convergence
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
