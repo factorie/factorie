@@ -99,16 +99,18 @@ class ChainNerBP {
  
     // Train for 5 iterations
     val vars = for(td <- trainDocuments; sentence <- td.sentences) yield sentence.tokens.map(_.attr[ChainNerLabel])
-    //val vars = trainDocuments.map(d => d.sentences.map(s => s.tokens.map(_.attr[ChainNerLabel])))
-    val trainingInstances = vars.map(ModelPiece(model, _))
-    val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances) with L2Regularizer { override def sigmaSq = 10.0 }
-    println("Size of families: " + model.familiesOfClass[DotFamily]().size)
-      val optimizer = new LimitedMemoryBFGS(newLearner)
-      optimizer.optimize()
-      optimizer.optimize()
-      trainDocuments.foreach(process(_))
-      testDocuments.foreach(process(_))
-      printEvaluation(trainDocuments, testDocuments, "FINAL")    
+//    val trainingInstances = vars.map(ModelPiece(model, _))
+//    val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances) with L2Regularizer { override def sigmaSq = 10.0 }
+//    println("Size of families: " + model.familiesOfClass[DotFamily]().size)
+//    val optimizer = new LimitedMemoryBFGS(newLearner)
+//    optimizer.optimize()
+//    optimizer.optimize()
+//    trainDocuments.foreach(process(_))
+//    testDocuments.foreach(process(_))
+//    printEvaluation(trainDocuments, testDocuments, "FINAL")    
+    val trainer = new DotMaximumLikelihood(model)
+    trainer.processAllBP(vars, InferByBPChainSum)
+
   }
   
   def printEvaluation(trainDocuments:Iterable[Document], testDocuments:Iterable[Document], iteration:String): Unit = {

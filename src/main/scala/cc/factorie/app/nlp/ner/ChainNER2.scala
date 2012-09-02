@@ -526,17 +526,20 @@ class ChainNer2 {
 			val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
 
 		    val pieces = vars.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
-		    val trainer = new ParallelTrainer(pieces, model.familiesOfClass(classOf[DotFamily]))
-		    val optimizer = new LimitedMemoryBFGS(trainer) {
-		      override def postIteration(iter: Int): Unit = {
-			        trainDocuments.foreach(process(_))
-					testDocuments.foreach(process(_))
-			      	printEvaluation(trainDocuments, testDocuments, iter.toString)
-			  }
-		    }
-		      optimizer.optimize()
-		      optimizer.optimize()
+//		    val trainer = new ParallelTrainer(pieces, model.familiesOfClass(classOf[DotFamily]))
+//		    val optimizer = new LimitedMemoryBFGS(trainer) {
+//		      override def postIteration(iter: Int): Unit = {
+//			        trainDocuments.foreach(process(_))
+//					testDocuments.foreach(process(_))
+//			      	printEvaluation(trainDocuments, testDocuments, iter.toString)
+//			  }
+//		    }
+//		      optimizer.optimize()
+//		      optimizer.optimize()
 		    
+      val trainer = new DotMaximumLikelihood(model)
+      trainer.processAllBP(vars, InferByBPChainSum)
+
 			  (trainLabels ++ testLabels).foreach(_.setRandomly())
 	    
 		      trainDocuments.foreach(process(_))
@@ -588,17 +591,19 @@ class ChainNer2 {
 
 			val vars1 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
 
-		    val pieces1 = vars1.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
-		    val trainer1 = new ParallelTrainer(pieces1, model.familiesOfClass(classOf[DotFamily]))
-		    val optimizer1 = new LimitedMemoryBFGS(trainer1) {
-		      override def postIteration(iter: Int): Unit = {
-			        trainDocuments.foreach(process(_))
-					testDocuments.foreach(process(_))
-			      	printEvaluation(trainDocuments, testDocuments, iter.toString)
-			  }
-		    }
-		      optimizer1.optimize()
-		      optimizer1.optimize()
+//		    val pieces1 = vars1.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
+//		    val trainer1 = new ParallelTrainer(pieces1, model.familiesOfClass(classOf[DotFamily]))
+//		    val optimizer1 = new LimitedMemoryBFGS(trainer1) {
+//		      override def postIteration(iter: Int): Unit = {
+//			        trainDocuments.foreach(process(_))
+//					testDocuments.foreach(process(_))
+//			      	printEvaluation(trainDocuments, testDocuments, iter.toString)
+//			  }
+//		    }
+//		      optimizer1.optimize()
+//		      optimizer1.optimize()
+      val trainer = new DotMaximumLikelihood(model)
+      trainer.processAllBP(vars1, InferByBPChainSum)
 		      
 			  (trainLabels ++ testLabels).foreach(_.setRandomly())
 	    

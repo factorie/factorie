@@ -9,7 +9,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit._
 import Assert._
 import cc.factorie._
-import optimize.LimitedMemoryBFGS
+//import optimize.LimitedMemoryBFGS
 
 class TestPiecewiseTrainer extends JUnitSuite {
 
@@ -45,8 +45,9 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val model = new TemplateModel(localTemplate)
     val piece1 = ModelPiece(model, Seq(features1.label))
     val piece2 = ModelPiece(model, Seq(features2.label))
-    val optimizer = new LimitedMemoryBFGS(new Trainer(Seq(piece1, piece2), Seq(localTemplate)))
-    optimizer.optimize(10)
+    throw new Error("Needs re-implementation for new optimize package.")
+//    val optimizer = new LimitedMemoryBFGS(new Trainer(Seq(piece1, piece2), Seq(localTemplate)))
+//    optimizer.optimize(10)
     println("FD: " + FeaturesDomain.dimensionDomain.map(_.category))
     println("LD: " + LabelDomain.map(_.category))
     println("weights: " + localTemplate.weights)
@@ -69,10 +70,9 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val model = new TemplateModel(localTemplate)
     val piece1 = ModelPiece(model, Seq(features1.label))
     val piece2 = ModelPiece(model, Seq(features2.label))
-    val optimizer = new LimitedMemoryBFGS(new Trainer(Seq(piece1, piece2), Seq(localTemplate)) with L2Regularizer {
-      override def sigmaSq = 1
-    })
-    optimizer.optimize(10)
+    throw new Error("Needs re-implementation for new optimize package.")
+//    val optimizer = new LimitedMemoryBFGS(new Trainer(Seq(piece1, piece2), Seq(localTemplate)) with L2Regularizer { override def sigmaSq = 1 })
+//    optimizer.optimize(10)
     println("FD: " + FeaturesDomain.dimensionDomain)
     println("LD: " + LabelDomain)
     for (ftr <- FeaturesDomain.dimensionDomain)
@@ -94,8 +94,9 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val model = new TemplateModel(localTemplate)
     val piece1 = ModelPiece(model, Seq(features1.label))
     val piece2 = ModelPiece(model, Seq(features2.label))
-    val optimizer = new LimitedMemoryBFGS(new ParallelTrainer(Seq(piece1, piece2), Seq(localTemplate)))
-    optimizer.optimize(10)
+    throw new Error("Needs re-implementation for new optimize package.")
+//    val optimizer = new LimitedMemoryBFGS(new ParallelTrainer(Seq(piece1, piece2), Seq(localTemplate)))
+//    optimizer.optimize(10)
     println("FD: " + FeaturesDomain.dimensionDomain)
     println("LD: " + LabelDomain)
     for (ftr <- FeaturesDomain.dimensionDomain)
@@ -117,9 +118,10 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val localTemplatePar = new LocalTemplate
     val modelPar = new TemplateModel(localTemplatePar)
     val piecesPar = features.map(f => ModelPiece(modelPar, Seq(f.label)))
-    val optimizerPar = new LimitedMemoryBFGS(new ParallelTrainer(piecesPar, Seq(localTemplatePar)))
+    throw new Error("Needs re-implementation for new optimize package.")
+//    val optimizerPar = new LimitedMemoryBFGS(new ParallelTrainer(piecesPar, Seq(localTemplatePar)))
     var initTime = System.currentTimeMillis()
-    optimizerPar.optimize(1)
+//    optimizerPar.optimize(1)
     println("Parallel Time: " + (System.currentTimeMillis() - initTime))
     for (ftr <- FeaturesDomain.dimensionDomain)
       for (label <- LabelDomain) {
@@ -130,9 +132,10 @@ class TestPiecewiseTrainer extends JUnitSuite {
     val localTemplateSeq = new LocalTemplate
     val modelSeq = new TemplateModel(localTemplateSeq)
     val piecesSeq = features.map(f => ModelPiece(modelSeq, Seq(f.label)))
-    val optimizerSeq = new LimitedMemoryBFGS(new Trainer(piecesSeq, Seq(localTemplateSeq)))
+    throw new Error("Needs re-implementation for new optimize package.")
+//    val optimizerSeq = new LimitedMemoryBFGS(new Trainer(piecesSeq, Seq(localTemplateSeq)))
     initTime = System.currentTimeMillis()
-    optimizerSeq.optimize(1)
+//    optimizerSeq.optimize(1)
     println("Sequential Time: " + (System.currentTimeMillis() - initTime))
     for (ftr <- FeaturesDomain.dimensionDomain)
       for (label <- LabelDomain) {

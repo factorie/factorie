@@ -29,25 +29,8 @@ trait Tensor1 extends Tensor {
 }
 
 trait DenseTensorLike1 extends Tensor1 with DenseTensor {
-  //private var __values = new Array[Double](dim1)
-  //protected def _values = __values
-  //def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
   override def activeDomain = activeDomain1
-  //def apply(i:Int) = __values(i)
-  //override def asArray = __values
-  //override def +=(i:Int, incr:Double): Unit = __values(i) += incr
-  //override def :=(ds:DoubleSeq): Unit = ds match {
-  //  case ds:DenseTensorLike1 => System.arraycopy(__values, 0, ds.__values, 0, length)
-  //  case ds:DoubleSeq => super.:=(ds)
-  //}
-//  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); ds match {
-//    case t:Tensor => 
-//      if (t.isDense) { var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } } 
-//    case ds:DoubleSeq => { var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } } 
-//  }
-  //override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
-  //override def update(i:Int, v:Double): Unit = __values(i) = v
   override def dot(t:DoubleSeq): Double = t match {
     //case t:SingletonBinaryTensor => apply(t.singleIndex)
     //case t:SingletonTensor => apply(t.singleIndex) * t.singleValue
@@ -100,18 +83,30 @@ class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends DenseTensorLike1
   override def blankCopy: GrowableDenseTensor1 = new GrowableDenseTensor1(sizeProxy)
 }
 
+/** A Tensor representation of a single scalar */
+// TODO In Scala 2.10 this could be an implicit class
+class ScalarTensor(var singleValue:Double) extends Tensor1 {
+  def dim1 = 1
+  def activeDomain1 = new SingletonIntSeq(0)
+  def isDense = false
+  def apply(i:Int): Double = if (i == 0) singleValue else throw new Error
+}
 
+/** A one-dimensional one-hot Tensor. */
 class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends Tensor1 with SingletonTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex)
 } 
 
+/** A one-dimensional one-hot Tensor with hot value 1.0. */
 trait SingletonBinaryTensorLike1 extends Tensor1 with SingletonBinaryTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex)
 }
+/** A one-dimensional one-hot Tensor with hot value 1.0. */
 class SingletonBinaryTensor1(val dim1:Int, var singleIndex:Int) extends SingletonBinaryTensorLike1 {
   override def copy: SingletonBinaryTensor1 = new SingletonBinaryTensor1(dim1, singleIndex)
 }
-//class MutableSingletonBinaryTensor1(val dim1:Int, var singleIndex:Int) extends SingletonBinaryTensorLike1 { override def copy = new MutableSingletonBinaryTensor1(dim1, singleIndex) }
+
+/** A one-dimensional one-hot Tensor with hot value 1.0. */
 class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], var singleIndex:Int) extends SingletonBinaryTensorLike1 {
   def dim1 = sizeProxy.size
 }

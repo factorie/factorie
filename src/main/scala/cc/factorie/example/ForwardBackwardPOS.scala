@@ -2,11 +2,11 @@ package cc.factorie.example
 
 import cc.factorie._
 import bp.specialized.Viterbi
-import bp.{ParallelTrainer, ForwardBackwardPiece}
+//import bp.{ParallelTrainer, ForwardBackwardPiece}
 import app.nlp._
 import app.nlp.pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
 import app.chain.Observations.addNeighboringFeatureConjunctions
-import optimize.LimitedMemoryBFGS
+//import optimize.LimitedMemoryBFGS
 
 /**
  * Author: martin
@@ -89,13 +89,14 @@ object ForwardBackwardPOS {
     val sentences: Seq[Sentence] = documents.flatMap(_.sentences)
     val sentenceLabels = sentences.map(_.posLabels).filter(_.size > 0)
 
-    val pieces = sentenceLabels.map(vs => new ForwardBackwardPiece(vs.toArray, PosModel.localTemplate, PosModel.transTemplate))
-    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
-    val optimizer = new LimitedMemoryBFGS(trainer) {
-      override def postIteration(iter: Int): Unit = { testSavePrint(iter + "") }
-    }
-
-    optimizer.optimize()
+//    val pieces = sentenceLabels.map(vs => new ForwardBackwardPiece(vs.toArray, PosModel.localTemplate, PosModel.transTemplate))
+//    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
+//    val optimizer = new LimitedMemoryBFGS(trainer) { override def postIteration(iter: Int): Unit = { testSavePrint(iter + "") } }
+//    optimizer.optimize()
+    
+    val trainer = new DotMaximumLikelihood(PosModel)
+    trainer.processAllBP(sentenceLabels, InferByBPChainSum)
+    
     testSavePrint("final")
   }
 

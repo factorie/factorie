@@ -17,7 +17,7 @@ package cc.factorie.app.nlp.pos
 import cc.factorie._
 import app.nlp._
 import app.chain.Observations.addNeighboringFeatureConjunctions
-import optimize.LimitedMemoryBFGS
+//import optimize.LimitedMemoryBFGS
 import bp._
 import bp.specialized.Viterbi
 import util._
@@ -86,18 +86,20 @@ object POS {
     val sentences = documents.flatMap(_.sentences.filter(s => s.length > 0))
     val labels = sentences.map(s => s.posLabels) // was flatMap -akm
 
-    val pieces = labels.map(ls => ModelPiece(PosModel, ls))
-    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
-    val optimizer = new LimitedMemoryBFGS(trainer) {
-      override def postIteration(iter: Int): Unit = {
-        PosModel.save(modelFile + "-iter=" + iter)
-        test(documents, "train")
-        test(testDocuments, "test")
-        test(devDocuments, "dev")
-      }
-    }
+//    val pieces = labels.map(ls => ModelPiece(PosModel, ls))
+//    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
+//    val optimizer = new LimitedMemoryBFGS(trainer) {
+//      override def postIteration(iter: Int): Unit = {
+//        PosModel.save(modelFile + "-iter=" + iter)
+//        test(documents, "train")
+//        test(testDocuments, "test")
+//        test(devDocuments, "dev")
+//      }
+//    }
+//    optimizer.optimize()
 
-    optimizer.optimize()
+    val trainer = new DotMaximumLikelihood(PosModel)
+    trainer.processAllBP(labels, InferByBPChainSum)
 
     PosModel.save(modelFile)
     test(documents, "train")
