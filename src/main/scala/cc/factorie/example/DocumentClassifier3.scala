@@ -74,7 +74,9 @@ object DocumentClassifier3 {
 
     // Train and test
     val trainer = new DotMaximumLikelihood(model)
-    trainer.processAll(trainVariables)
+    //trainer.processAll(trainVariables)
+    //trainer.processAllBP(trainVariables.map(Seq(_)), InferByBPChainSum, 3) // TODO For now, just train for 3 iterations.
+    trainer.processAllBP(trainVariables.map(Seq(_)), InferByBPChainSum)
     val predictor = new VariableSettingsGreedyMaximizer[Label](model)
     predictor.processAll(trainVariables)
     predictor.processAll(testVariables)

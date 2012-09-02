@@ -16,6 +16,7 @@ package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
 
+/** A sparse Tensor that stores an array of indices having non-zero values and an aligned sized array storing those values. */
 trait SparseIndexedTensor extends Tensor {
   def isDense = false
   // In subclasses either _length should be set > 0 or _sizeProxy should be set non-null, but not both.
@@ -170,6 +171,7 @@ trait SparseIndexedTensor extends Tensor {
     case t:SparseBinaryTensorLike1 => { val a = t.asIntArray; val len = a.length; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
     case t:SparseIndexedTensor => { val len = t._npos; var i = 0; while (i < len) { +=(t._indexs(i), f * t._values(i)); i += 1 }}
   }
+  /** Increment Array "a" with the contents of this Tensor, but do so at "offset" into array and multipllied by factor "f". */
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { var i = 0; while (i < _npos) { a(_indexs(i)+offset) += f * _values(i); i += 1 }}
   
   def cloneFrom(t:SparseIndexedTensor): Unit = {
