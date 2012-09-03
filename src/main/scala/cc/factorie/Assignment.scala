@@ -26,7 +26,7 @@ package cc.factorie
 trait TypedAssignment[A<:Variable] extends Marginal {
   /** All variables with values in this Assignment */
   def variables: Iterable[A]
-  /** Return the value assigned to variable v. */
+  /** Return the value assigned to variable v, or throw an Error if the variable is not in this Assignment. */
   def apply[B<:A](v:B): B#Value
   /** Return the an Option for the value assigned to variable v.  If v is not contained in this Assignment return None. */
   def get[B<:A](v:B): Option[B#Value]
@@ -60,7 +60,7 @@ class HashMapAssignment extends MutableAssignment {
   private val map = new scala.collection.mutable.HashMap[Variable,Any]
   //val _variables = map.keys.toSeq
   def variables = map.keys //_variables
-  def apply[V<:Variable](v:V): V#Value = map(v).asInstanceOf[V#Value]
+  def apply[V<:Variable](v:V): V#Value = { val a = map(v); if (null != a) a.asInstanceOf[V#Value] else throw new Error("Variable not present: "+v) }
   def get[V<:Variable](v:V): Option[V#Value] = map.get(v).map(_.asInstanceOf[V#Value])
   def update[V<:Variable](variable:V, value:V#Value): Unit = map(variable) = value
   def contains(v:Variable) = map.contains(v)
@@ -74,7 +74,7 @@ trait AbstractAssignment1[A<:Variable] extends TypedAssignment[A] {
   def var1: A
   def value1: A#Value
   def variables = List(var1)
-  def apply[B<:A](v:B): B#Value = if (v eq var1) value1.asInstanceOf[B#Value] else null.asInstanceOf[B#Value]
+  def apply[B<:A](v:B): B#Value = if (v eq var1) value1.asInstanceOf[B#Value] else throw new Error("Variable not present: "+v)
   def get[B<:A](v:B): Option[B#Value] = if (v eq var1) Some(value1.asInstanceOf[B#Value]) else None
   def contains(v:A): Boolean = if (v eq var1) true else false
   override def globalize(implicit d:DiffList): Unit = var1 match { case v:MutableVar => v.set(value1.asInstanceOf[v.Value]) }
@@ -92,7 +92,7 @@ trait AbstractAssignment2[A<:Variable,B<:Variable] extends Assignment {
   def value1: A#Value
   def value2: B#Value
   def variables = List(var1, var2)
-  def apply[C<:Variable](v:C): C#Value = if (v eq var1) value1.asInstanceOf[C#Value] else if (v eq var2) value2.asInstanceOf[C#Value] else null.asInstanceOf[C#Value]
+  def apply[C<:Variable](v:C): C#Value = if (v eq var1) value1.asInstanceOf[C#Value] else if (v eq var2) value2.asInstanceOf[C#Value] else throw new Error("Variable not present: "+v)
   def get[C<:Variable](v:C): Option[C#Value] = if (v eq var1) Some(value1.asInstanceOf[C#Value]) else if (v eq var2) Some(value2.asInstanceOf[C#Value]) else None
   def contains(v:Variable): Boolean = if ((v eq var1) || (v eq var2)) true else false
   override def globalize(implicit d:DiffList): Unit = {
@@ -114,7 +114,7 @@ trait AbstractAssignment3[A<:Variable,B<:Variable,C<:Variable] extends Assignmen
   def value2: B#Value
   def value3: C#Value
   def variables = List(var1, var2, var3)
-  def apply[X<:Variable](v:X): X#Value = if (v eq var1) value1.asInstanceOf[X#Value] else if (v eq var2) value2.asInstanceOf[X#Value] else if (v eq var3) value3.asInstanceOf[X#Value] else null.asInstanceOf[X#Value]
+  def apply[X<:Variable](v:X): X#Value = if (v eq var1) value1.asInstanceOf[X#Value] else if (v eq var2) value2.asInstanceOf[X#Value] else if (v eq var3) value3.asInstanceOf[X#Value] else throw new Error("Variable not present: "+v)
   def get[C<:Variable](v:C): Option[C#Value] = if (v eq var1) Some(value1.asInstanceOf[C#Value]) else if (v eq var2) Some(value2.asInstanceOf[C#Value]) else if (v eq var3) Some(value3.asInstanceOf[C#Value]) else None
   def contains(v:Variable): Boolean = if ((v eq var1) || (v eq var2) || (v eq var3)) true else false
   override def globalize(implicit d:DiffList): Unit = {
@@ -139,7 +139,7 @@ trait AbstractAssignment4[A<:Variable,B<:Variable,C<:Variable,D<:Variable] exten
   def value3: C#Value
   def value4: D#Value
   def variables = List(var1, var2, var3, var4)
-  def apply[X<:Variable](v:X): X#Value = if (v eq var1) value1.asInstanceOf[X#Value] else if (v eq var2) value2.asInstanceOf[X#Value] else if (v eq var3) value3.asInstanceOf[X#Value] else if (v eq var4) value4.asInstanceOf[X#Value] else null.asInstanceOf[X#Value]
+  def apply[X<:Variable](v:X): X#Value = if (v eq var1) value1.asInstanceOf[X#Value] else if (v eq var2) value2.asInstanceOf[X#Value] else if (v eq var3) value3.asInstanceOf[X#Value] else if (v eq var4) value4.asInstanceOf[X#Value] else throw new Error("Variable not present: "+v)
   def get[C<:Variable](v:C): Option[C#Value] = if (v eq var1) Some(value1.asInstanceOf[C#Value]) else if (v eq var2) Some(value2.asInstanceOf[C#Value]) else if (v eq var3) Some(value3.asInstanceOf[C#Value]) else if (v eq var4) Some(value4.asInstanceOf[C#Value]) else None
   def contains(v:Variable): Boolean = if ((v eq var1) || (v eq var2) || (v eq var3) || (v eq var4)) true else false
   override def globalize(implicit d:DiffList): Unit = {

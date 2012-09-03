@@ -44,6 +44,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
   /** Return the score of a value assignment represented by the Tensor argument.  
       If this Factor's values cannot be represented by a Tensor, throw an Error.
       This method is overridden and very efficient in FamilyWithDotStatistics classes. */
+  @deprecated("Use scoreValue instead.")
   override def valueScore(tensor:Tensor): Double = tensor match {
     case v: SingletonBinaryTensorLike2 => {
       val domain0 = _1.domain.asInstanceOf[DiscreteDomain with Domain[N1#Value]]
