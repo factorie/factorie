@@ -21,24 +21,22 @@ abstract class AdaBoostTemplateWithStatistics2[S1 <: DiscreteVariable, S2 <: Dis
   }
 
   def train(labels: ArrayBuffer[S1]): Unit = {
-    val trueLabels = labels.map(_.intValue)
-    val numSamples = labels.length
-    val d = Array.fill(numSamples)(1.0 / numSamples)
+    val numInstances = labels.length
+    val instanceWeights = Array.fill(numInstances)(1.0 / numInstances)
     var converged = false
     var weightedClassifiers = List(): List[(WeakClassifier, Double)]
     var i = 0
     while (!converged) {
-      val classifierTemplate = trainWeakClassifier(labels, d)
+      val classifierTemplate = trainWeakClassifier(labels, instanceWeights)
       val currentClassifier = new ModelBasedClassifier[S1](classifierTemplate, labels.head.domain)
-      val classifications = currentClassifier.classify(labels).toArray
-      forIndex(numSamples)(i => labels(i).set(trueLabels(i))(null)) // set back variables to original values so we can feed them to next classifier
-      val isFail = mapIndex(numSamples)(i => classifications(i).bestLabelIndex != trueLabels(i))
-      val amountOfFail = (0 until numSamples).filter(isFail).foldLeft(0.0)((acc, el) => acc + d(el))
-      val alpha_t = 0.5 * math.log((1 - amountOfFail) / amountOfFail)
-      forIndex(numSamples)(i => d(i) *= math.exp(if (isFail(i)) alpha_t else -alpha_t))
-      val dSum = ArrayOps.oneNorm(d)
-      forIndex(numSamples)(i => d(i) /= dSum)
-      weightedClassifiers = (classifierTemplate, alpha_t) :: weightedClassifiers
+      val classifications = currentClassifier.classifications(labels).toArray
+      val isFail = mapIndex(numInstances)(i => classifications(i).bestLabelIndex != labels(i).intValue)
+      val amountOfFail = (0 until numInstances).filter(isFail).foldLeft(0.0)((acc, el) => acc + instanceWeights(el))
+      val classifierWeight = 0.5 * math.log((1 - amountOfFail) / amountOfFail)
+      forIndex(numInstances)(i => instanceWeights(i) *= math.exp(if (isFail(i)) classifierWeight else -classifierWeight))
+      val dSum = ArrayOps.oneNorm(instanceWeights)
+      forIndex(numInstances)(i => instanceWeights(i) /= dSum)
+      weightedClassifiers = (classifierTemplate, classifierWeight) :: weightedClassifiers
       converged = i > numIterations || amountOfFail == 0.0
       i += 1
     }
