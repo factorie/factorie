@@ -15,7 +15,7 @@
 package cc.factorie.app.nlp.ner
 import cc.factorie._
 import app.strings._
-import bp._
+//import bp._
 import optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.LoadConll2003._
@@ -140,10 +140,11 @@ class ChainNerBP {
     if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
 	    val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
-	    val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
-    	new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
-    	new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
-    	mfg.setToMaxMarginal()
+	    BP.inferChainMax(vars, model)
+	    //val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
+    	//new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
+    	//new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
+    	//mfg.setToMaxMarginal()
     }
   }
   

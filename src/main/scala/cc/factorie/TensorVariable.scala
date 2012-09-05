@@ -21,8 +21,8 @@ object TensorDomain extends TensorDomain
 trait TensorVar extends Variable with VarAndValueType[TensorVar,Tensor] {
   def domain: TensorDomain
   def tensor: Value
-  def length: Int = tensor.length
-  def apply(i:Int): Double = tensor.apply(i)
+  def length: Int = tensor.length // TODO Consider removing this?
+  def apply(i:Int): Double = tensor.apply(i)  // TODO Consider removing this?
 }
 
 // TODO Consider also, just in case needed:

@@ -20,10 +20,10 @@ import scala.collection.mutable.{ArrayBuffer,ListBuffer}
 
 
 abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseLabel] with Statistics2[BooleanValue,CorefAffinity] {
-  def statistics(v:Values): Stat = {
-    val mention1 = v._1
-    val mention2 = v._2
-    val coref: Boolean = v._3.booleanValue
+  def statistics(m1:PairwiseMention#Value, m2:PairwiseMention#Value, l:PairwiseLabel#Value): Stat = {
+    val mention1 = m1
+    val mention2 = m2
+    val coref: Boolean = l.booleanValue
     new Stat(null, null)
   }
 }
@@ -56,9 +56,9 @@ class EntityMentionModel extends TemplateModel(
     weights(CorefAffinityDimensionDomain.NormalizedEditDistance9) = -10
     weights(CorefAffinityDimensionDomain.NormalizedEditDistance5) = -2
     weights(CorefAffinityDimensionDomain.Singleton) = -1
-    def statistics(values:Values) = {
-      val mention: Entity = values._1._1
-      val entity: Entity = values._1._2
+    def statistics(e:EntityRef#Value) = {
+      val mention: Entity = e._1
+      val entity: Entity = e._2
       val affinity = new CorefAffinity
       if (mention.string == entity.string) affinity += CorefAffinityDimensionDomain.ExactMatch
       if (mention.string.takeRight(4) == entity.string.takeRight(4)) affinity += CorefAffinityDimensionDomain.SuffixMatch
@@ -90,9 +90,9 @@ class PairwiseModel extends TemplateModel(
     weights(CorefAffinityDimensionDomain.NormalizedEditDistance9) = -10
     weights(CorefAffinityDimensionDomain.NormalizedEditDistance5) = -2
     weights(CorefAffinityDimensionDomain.Singleton) = -1
-    def statistics(values:Values) = {
-      val mention: Entity = values._1._1
-      val entity: Entity = values._1._2
+    def statistics(e:EntityRef#Value) = {
+      val mention: Entity = e._1
+      val entity: Entity = e._2
       val affinity = new CorefAffinity
       if (mention.string == entity.string) affinity += CorefAffinityDimensionDomain.ExactMatch
       if (mention.string.takeRight(4) == entity.string.takeRight(4)) affinity += CorefAffinityDimensionDomain.SuffixMatch

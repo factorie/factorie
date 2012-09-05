@@ -18,8 +18,8 @@ import cc.factorie._
 import app.nlp._
 import app.chain.Observations.addNeighboringFeatureConjunctions
 //import optimize.LimitedMemoryBFGS
-import bp._
-import bp.specialized.Viterbi
+//import bp._
+//import bp.specialized.Viterbi
 import util._
 
 object PosFeaturesDomain extends CategoricalTensorDomain[String]
@@ -109,7 +109,8 @@ object POS {
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
   def predictSentence(vs: Seq[PosLabel], oldBp: Boolean = false): Unit =
-    if (vs.nonEmpty) Viterbi.searchAndSetToMax(vs, PosModel.local, PosModel.trans, PosModel.bias)
+    if (vs.nonEmpty) BP.inferChainMax(vs, PosModel)
+    //if (vs.nonEmpty) Viterbi.searchAndSetToMax(vs, PosModel.local, PosModel.trans, PosModel.bias)
 
   def test(documents: Seq[Document], label: String): Unit = {
     val sentences = documents.flatMap(_.sentences)

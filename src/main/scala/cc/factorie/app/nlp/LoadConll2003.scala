@@ -60,8 +60,8 @@ object LoadConll2003 {
           println()
         }
         token.attr += new Conll2003ChainNerLabel(token, ner)
-		//println("token: " + token + " Ner: " + ner)
-		token.attr += new cc.factorie.app.nlp.pos.PosLabel(token, partOfSpeech)
+		    //println("token: " + token + " Ner: " + ner)
+		    token.attr += new cc.factorie.app.nlp.pos.PosLabel(token, partOfSpeech)
       }
     }
     if(BILOU) convertToBILOU(documents)

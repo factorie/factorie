@@ -153,7 +153,7 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
       val result = new DenseTensor1(edge1.variable.domain.size)
       for (i <- 0 until edge1.variable.domain.size) {
         valueTensor.singleIndex = i
-       result(i) = factor.valueScore(valueTensor)
+       result(i) = factor.scoreValues(valueTensor)
       }
       result
     }
@@ -168,7 +168,7 @@ class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1
     val result = new DenseTensor1(edge1.variable.domain.size)
     for (i <- 0 until edge1.variable.domain.size) {
       valueTensor.singleIndex1 = i
-      result(i) = factor.valueScore(valueTensor)
+      result(i) = factor.scoreValues(valueTensor)
     }
     result
   }
@@ -257,7 +257,7 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
         valueTensor.singleIndex1 = i
         for (j <- 0 until edge2.variable.domain.size) {
           valueTensor.singleIndex2 = j
-          result(i, j) = factor.valueScore(valueTensor)
+          result(i, j) = factor.scoreValues(valueTensor)
         }
       }
       result
@@ -276,7 +276,7 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
       valueTensor.singleIndex1 = i
       for (j <- 0 until edge2.variable.domain.size) {
         valueTensor.singleIndex2 = j
-        result(i, j) = factor.valueScore(valueTensor)
+        result(i, j) = factor.scoreValues(valueTensor)
       }
     }
     result

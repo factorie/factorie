@@ -25,8 +25,8 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 trait Family {
   type FamilyType <: Family // like a self-type
   type FactorType <: Factor
-  type ValuesType <: cc.factorie.Values
-  type Values = ValuesType
+//  type ValuesType <: cc.factorie.Values
+//  type Values = ValuesType
   type StatisticsType <: Statistics
   type NeighborType1
   @inline final def thisFamily: this.type = this
@@ -44,9 +44,9 @@ trait Family {
     def family: FamilyType = Family.this.asInstanceOf[FamilyType];
     //def family = thisFamily
     def _1: NeighborType1
-    override def values: ValuesType
+//    override def values: ValuesType
     override def statistics: StatisticsType // = statistics(values)
-    override def cachedStatistics: StatisticsType = thisFamily.cachedStatistics(values)
+//    override def cachedStatistics: StatisticsType = thisFamily.cachedStatistics(values)
     override def factorName = family.factorName
     override def equalityPrerequisite: AnyRef = Family.this
     //@deprecated def forSettingsOf(vs:Seq[Variable])(f: =>Unit): Unit = Family.this.forSettingsOf(this.asInstanceOf[FactorType], vs)(f)
@@ -64,11 +64,11 @@ trait Family {
     //lazy val score = Family.this.score(this.asInstanceOf[StatisticsType]) 
     // TODO can we find a way to get rid of this cast?  Yes, use a self-type Stat[This], but too painful
   }
-  def statistics(values:ValuesType): StatisticsType
+//  def statistics(values:ValuesType): StatisticsType
   /** May be overridden in subclasses to actually cache. */
   //def cachedStatistics(values:ValuesType, stats:(ValuesType)=>StatisticsType): StatisticsType = stats(values)
-  def cachedStatistics(values:ValuesType): StatisticsType = statistics(values)
-  def clearCachedStatistics: Unit = {}
+//  def cachedStatistics(values:ValuesType): StatisticsType = statistics(values)
+//  def clearCachedStatistics: Unit = {}
   
   /** The filename into which to save this factor.  If templateName is not the default, use it, otherwise use the class name. */
   protected def filename: String = factorName
@@ -126,8 +126,8 @@ trait DotFamily extends TensorFamily {
   def newWeightsTypeTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)  // Dense by default, may be override in sub-traits
   def newDenseTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)
   def newSparseTensor: Tensor = Tensor.newSparse(statisticsTensorDimensions)
-  @inline final def score(s:StatisticsType): Double = if (s eq null) 0.0 else statisticsScore(s.tensor)
-  @inline final def statisticsScore(t:Tensor): Double = weights dot t
+  @inline final def score(s:StatisticsType): Double = if (s eq null) 0.0 else scoreStatistics(s.tensor)
+  @inline final def scoreStatistics(t:Tensor): Double = weights dot t
 
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also

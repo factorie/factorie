@@ -22,6 +22,7 @@ trait BooleanValue extends CategoricalValue[Boolean] {
   def booleanValue = if (intValue == 1) true else false
 }
 
+
 /** The Domain for BooleanVar, of size two, containing a falseValue
     (with intValue = 0) and a trueValue (with intValue = 1). 
     @author Andrew McCallum */
@@ -44,8 +45,12 @@ class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanVal
   //override def index(bool:Boolean) = if (bool) 1 else 0
   override def value(bool:Boolean) = if (bool) trueValue else falseValue
   override def apply(index:Int) = if (index == 1) trueValue else falseValue
+  def apply(b:Boolean) = if (b) trueValue else falseValue
 }
 object BooleanDomain extends BooleanDomain
+object BooleanValue {
+  def apply(b:Boolean) = if (b) BooleanDomain.trueValue else BooleanDomain.falseValue
+}
 
 /** A Variable containing a single Boolean value, which might be mutable or immutable.
     @see BooleanVariable

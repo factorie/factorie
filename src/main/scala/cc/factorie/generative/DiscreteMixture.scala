@@ -84,7 +84,7 @@ object MaximizeGate extends Maximize {
   def maxIndex(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Int = {
     var max = Double.NegativeInfinity
     var maxi = 0
-    val statistics = dmf.statistics(dmf.values)
+    val statistics = dmf.statistics(dmf._1.value, dmf._2.value, dmf._3.value)
     var i = 0; val size = gate.domain.size
     while (i < size) {
       val pr = df._2.tensor(i) * dmf.prChoosing(statistics, i)

@@ -93,7 +93,7 @@ object ChainNER4 {
     //val learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
     //val learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent(model))
     //val learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.MIRA)
-    val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.AROW(model))
+    val learner = new SampleRank(new GibbsSampler(model, objective), new cc.factorie.optimize.AROW(model))
     //val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.ConfidenceWeighting(model))
     //val learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.MIRA)
     val predictor = new VariableSettingsSampler[Label](model, null) { temperature = 0.01 }

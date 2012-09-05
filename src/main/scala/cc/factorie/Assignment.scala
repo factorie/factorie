@@ -70,13 +70,13 @@ class HashMapAssignment extends MutableAssignment {
 
 /** An efficient abstract Assignment of one variable.
     @author Andrew McCallum */
-trait AbstractAssignment1[A<:Variable] extends TypedAssignment[A] {
+trait AbstractAssignment1[A<:Variable] extends Assignment {
   def var1: A
   def value1: A#Value
   def variables = List(var1)
-  def apply[B<:A](v:B): B#Value = if (v eq var1) value1.asInstanceOf[B#Value] else throw new Error("Variable not present: "+v)
-  def get[B<:A](v:B): Option[B#Value] = if (v eq var1) Some(value1.asInstanceOf[B#Value]) else None
-  def contains(v:A): Boolean = if (v eq var1) true else false
+  def apply[B<:Variable](v:B): B#Value = if (v eq var1) value1.asInstanceOf[B#Value] else throw new Error("Variable not present: "+v)
+  def get[B<:Variable](v:B): Option[B#Value] = if (v eq var1) Some(value1.asInstanceOf[B#Value]) else None
+  def contains(v:Variable): Boolean = if (v eq var1) true else false
   override def globalize(implicit d:DiffList): Unit = var1 match { case v:MutableVar => v.set(value1.asInstanceOf[v.Value]) }
 }
 

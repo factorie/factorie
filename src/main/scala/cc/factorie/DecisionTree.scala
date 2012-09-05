@@ -328,7 +328,7 @@ trait StumpDecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValu
 abstract class DecisionTreeTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: DiscreteTensorVar](implicit m1: Manifest[S1], m2: Manifest[S2])
   extends Template2[S1, S2] {
   this: DecisionTreeStatistics2Base[S1#ValueType, S2#ValueType] =>
-  def statistics(values: Values) = Stat(values._1, values._2)
+  def statistics(value1:S1#Value, value2:S2#Value) = Stat(value1, value2)
   def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(_.statistics: StatisticsType))
   def train(labels: Iterable[S1], getInstanceWeight: Int => Double): Unit =
     train(labels.map(unroll1(_)).flatten.map(_.statistics: StatisticsType), getInstanceWeight = Some(getInstanceWeight))
