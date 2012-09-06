@@ -300,6 +300,49 @@ class TestBP extends FunSuite with BeforeAndAfter {
     assertEquals(v2.intValue, 1)
   }
   
+  test("Tree7") {
+    val v1 = new BinVar(0) { override def toString = "v1" }
+    val v2 = new BinVar(1) { override def toString = "v2" }
+    val v3 = new BinVar(0) { override def toString = "v3" }
+    val v4 = new BinVar(0) { override def toString = "v4" }
+    val v5 = new BinVar(0) { override def toString = "v5" }
+    val v6 = new BinVar(0) { override def toString = "v6" }
+    val v7 = new BinVar(0) { override def toString = "v7" }
+    val vars: Set[DiscreteVar] = Set(v1, v2, v3, v4, v5, v6, v7)
+    //        v4
+    //    v3      v5
+    //  v1  v2  v6  v7
+    val model = new FactorModel(
+      newFactor1(v1, 10, 0), //newFactor1(v7, 0, 3),
+      newFactor2(v1, v3, 5, 0), newFactor2(v2, v3, -5, 0),
+      newFactor2(v3, v4, 5, 0), newFactor2(v5, v4, -5, 0),
+      newFactor2(v6, v5, 5, 0), newFactor2(v7, v5, -5, 0)
+    )
+    val fg = BP.inferTreewiseSum(vars, model, v4)
+    fg.setToMaximize()
+    
+    assert(fg.marginal(v7).proportions(0) > 0.95)
+    
+    println("v1 : " + fg.marginal(v1).proportions)
+    println("v2 : " + fg.marginal(v2).proportions)
+    println("v3 : " + fg.marginal(v3).proportions)
+    println("v4 : " + fg.marginal(v4).proportions)
+    println("v5 : " + fg.marginal(v5).proportions)
+    println("v6 : " + fg.marginal(v6).proportions)
+    println("v7 : " + fg.marginal(v7).proportions)
+    println("      %2d".format(v4.intValue))
+    println("  %2d      %2d".format(v3.intValue, v5.intValue))
+    println("%2d  %2d  %2d  %2d".format(v1.intValue, v2.intValue, v6.intValue, v7.intValue))
+    
+    assert(v1.intValue === 0)
+    assert(v2.intValue === 1)
+    assert(v3.intValue === 0)
+    assert(v4.intValue === 0)
+    assert(v5.intValue === 1)
+    assert(v6.intValue === 1)
+    assert(v7.intValue === 0)
+  }
+  
 }
 
 object BPTestUtils {
