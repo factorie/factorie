@@ -128,6 +128,17 @@ object ChainNER4 {
     }
     println ("Final Test  accuracy = "+ objective.aveScore(testLabels))
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
+    
+    for (sentence <- testSentences)
+      BP.inferChainMax(sentence.asSeq.map(_.label), model)
+    println ("MaxBP Test accuracy = "+ objective.aveScore(testLabels))
+    for (sentence <- testSentences)
+      BP.inferChainSum(sentence.asSeq.map(_.label), model).setToMaximize(null) // max-marginal inference
+    println ("SumBP Test accuracy = "+ objective.aveScore(testLabels))
+//    for (label <- testLabels)
+//      label.setRandomly()
+    predictor.processAll(testLabels, 2)
+    println ("Gibbs Test accuracy = "+ objective.aveScore(testLabels))
   }
 
   def printTokenMarginals(tokens:Seq[Token], summary:BPSummary): Unit = {
