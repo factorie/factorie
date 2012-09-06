@@ -248,21 +248,18 @@ class TestBP2 extends FunSuite with BeforeAndAfter {
       //assertEquals(marginals.sum, 1.0, eps)
       
       // test sum-product
-//      val fg = new BPSummary(varSet, model)
-//      BP.inferChainSum(vars, model)
-//      for (i <- 0 until numVars) {
-//        println("v" + i + " : " + fg.marginal(vars(i)).proportions)
-//        assertEquals(marginals(i) / Z, fg.marginal(vars(i)).proportions(0), eps)
-//      }
+      val fg = BP.inferChainSum(vars, model)
+      for (i <- 0 until numVars) {
+        println("v" + i + " : " + fg.marginal(vars(i)).proportions)
+        assertEquals(marginals(i) / Z, fg.marginal(vars(i)).proportions(0), eps)
+      }
       
       // TODO: add back logZ assertion
       //println("z : " + math.log(Z) + ", " + fg.logZ())
       //assertEquals(math.log(Z), fg.logZ(), eps)
       // max product
       
-      val mfg = new BPSummary(varSet, BPMaxProductRing, model)
-      BP.inferChainMax(vars, model)
-      mfg.setToMaximize()
+      val mfg = BP.inferChainMax(vars, model)
       println("probabilities : " + scores.map(math.exp(_) / Z).mkString(", "))
       for (i <- 0 until numVars) {
         println("v" + i + " : " + mfg.marginal(vars(i)).proportions)
