@@ -6,9 +6,9 @@ package cc.factorie.example
  */
 
 import cc.factorie._
-import cc.factorie.bp._
+//import cc.factorie.bp._
 import cc.factorie.app.nlp._
-import cc.factorie.bp.specialized._
+//import cc.factorie.bp.specialized._
 import cc.factorie.app.nlp.pos._
 
 object TestModel extends TemplateModel {
@@ -22,7 +22,7 @@ object TestModel extends TemplateModel {
   }
   // Transition factors between two successive labels
   val transTemplate = new TemplateWithDotStatistics2[PosLabel, PosLabel] { // the sparse weights are kind of worthless here
-    override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
+    override def statisticsDomains = ((PosDomain, PosDomain))
     def unroll1(label: PosLabel) = if (label.token.hasPrev) Factor(label.token.prev.posLabel, label) else Nil
     def unroll2(label: PosLabel) = if (label.token.hasNext) Factor(label, label.token.next.posLabel) else Nil
   }
@@ -48,7 +48,7 @@ object TimingBP {
 
     println("Creating the documents")
     val documents = (0 until nDocuments).map(i => {
-      val d = new Document("noname")
+      val d = new Document("noname", "")
       (0 until  nTokensPerDocument).foreach(i => {
         val t = new Token(d, "a")
         val label = rng.nextInt(nStates).toString
@@ -85,23 +85,24 @@ object TimingBP {
 
     test("new BP (sum)", l => {
       assert(l.head.token.hasNext)
-      val fg = new LatticeBP(TestModel,  l.toSet) with SumProductLattice
-      new InferencerBPWorker(fg).inferTreewise()
+      InferByBPChainSum(l, TestModel)
+      //val fg = new LatticeBP(TestModel,  l.toSet) with SumProductLattice
+      //new InferencerBPWorker(fg).inferTreewise()
     })
 
-    test("new BP (max)", l => {
-      assert(l.head.token.hasNext)
-      val fg = new LatticeBP(TestModel,  l.toSet) with MaxProductLattice
-      new InferencerBPWorker(fg).inferTreewise()
-    })
-
-    test("forward-backward (sum)", l => {
-      ForwardBackward.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
-    })
-
-    test("viterbi (max)", l => {
-      Viterbi.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
-    })
+//    test("new BP (max)", l => {
+//      assert(l.head.token.hasNext)
+//      val fg = new LatticeBP(TestModel,  l.toSet) with MaxProductLattice
+//      new InferencerBPWorker(fg).inferTreewise()
+//    })
+//
+//    test("forward-backward (sum)", l => {
+//      ForwardBackward.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
+//    })
+//
+//    test("viterbi (max)", l => {
+//      Viterbi.search(l, TestModel.localTemplate, TestModel.transTemplate, TestModel.biasTemplate)
+//    })
 
 //    test("old BP (sum)", l => {
 //      new BPInferencer[PosLabel](TestModel).inferTreewise(l)

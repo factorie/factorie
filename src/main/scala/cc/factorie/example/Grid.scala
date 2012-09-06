@@ -2,7 +2,7 @@ package cc.factorie.example
 
 import collection.mutable.{Buffer, ArrayBuffer}
 import cc.factorie._
-import bp.{InferencerBPWorker, InferencerBP, MaxProductLattice, LatticeBP}
+//import bp.{InferencerBPWorker, InferencerBP, MaxProductLattice, LatticeBP}
 
 /**
  * Example of synthetic Ising Grid models
@@ -48,7 +48,8 @@ object Grid {
 
     def score(s: Stat) = s._1
 
-    def statistics(values: LocalTemplate.ValuesType) = Stat(values._2 * (if (values._1.category) 1.0 else -1.0))
+    //def statistics(values: LocalTemplate.ValuesType) = Stat(values._2 * (if (values._1.category) 1.0 else -1.0))
+    def statistics(v1:Pixel#Value, v2:Observed#Value) = Stat(v2 * (if (v1.category) 1.0 else -1.0))
 
     def unroll1(p: Pixel) = Factor(p, p.observed)
 
@@ -58,7 +59,8 @@ object Grid {
   object PairwiseTemplate extends Template2[Pixel, Pixel] with Statistics1[Double] {
     def score(s: Stat) = s._1
 
-    def statistics(values: PairwiseTemplate.ValuesType) = Stat(if (values._1.category == values._2.category) 1.0 else -1.0)
+    //def statistics(values: PairwiseTemplate.ValuesType) = Stat(if (values._1.category == values._2.category) 1.0 else -1.0)
+    def statistics(v1:Pixel#Value, v2:Pixel#Value) = Stat(if (v1.category == v2.category) 1.0 else -1.0)
 
     // (v1,v2), where v2.x = vx.i+1 or v2.y = v1.y +1
     def unroll1(v: Pixel) = {

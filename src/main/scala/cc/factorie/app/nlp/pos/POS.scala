@@ -17,9 +17,9 @@ package cc.factorie.app.nlp.pos
 import cc.factorie._
 import app.nlp._
 import app.chain.Observations.addNeighboringFeatureConjunctions
-import optimize.LimitedMemoryBFGS
-import bp._
-import bp.specialized.Viterbi
+//import optimize.LimitedMemoryBFGS
+//import bp._
+//import bp.specialized.Viterbi
 import util._
 
 object PosFeaturesDomain extends CategoricalTensorDomain[String]
@@ -36,7 +36,7 @@ object PosModel extends TemplateModel {
   }
   // Transition factors between two successive labels
   val trans = new TemplateWithDotStatistics2[PosLabel, PosLabel] {
-    override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
+    override def statisticsDomains = ((PosDomain, PosDomain))
     def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
     def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
   }
@@ -86,18 +86,20 @@ object POS {
     val sentences = documents.flatMap(_.sentences.filter(s => s.length > 0))
     val labels = sentences.map(s => s.posLabels) // was flatMap -akm
 
-    val pieces = labels.map(ls => ModelPiece(PosModel, ls))
-    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
-    val optimizer = new LimitedMemoryBFGS(trainer) {
-      override def postIteration(iter: Int): Unit = {
-        PosModel.save(modelFile + "-iter=" + iter)
-        test(documents, "train")
-        test(testDocuments, "test")
-        test(devDocuments, "dev")
-      }
-    }
+//    val pieces = labels.map(ls => ModelPiece(PosModel, ls))
+//    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
+//    val optimizer = new LimitedMemoryBFGS(trainer) {
+//      override def postIteration(iter: Int): Unit = {
+//        PosModel.save(modelFile + "-iter=" + iter)
+//        test(documents, "train")
+//        test(testDocuments, "test")
+//        test(devDocuments, "dev")
+//      }
+//    }
+//    optimizer.optimize()
 
-    optimizer.optimize()
+    val trainer = new DotMaximumLikelihood(PosModel)
+    trainer.processAllBP(labels, InferByBPChainSum)
 
     PosModel.save(modelFile)
     test(documents, "train")
@@ -107,7 +109,8 @@ object POS {
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
   def predictSentence(vs: Seq[PosLabel], oldBp: Boolean = false): Unit =
-    if (vs.nonEmpty) Viterbi.searchAndSetToMax(vs, PosModel.local, PosModel.trans, PosModel.bias)
+    if (vs.nonEmpty) BP.inferChainMax(vs, PosModel)
+    //if (vs.nonEmpty) Viterbi.searchAndSetToMax(vs, PosModel.local, PosModel.trans, PosModel.bias)
 
   def test(documents: Seq[Document], label: String): Unit = {
     val sentences = documents.flatMap(_.sentences)

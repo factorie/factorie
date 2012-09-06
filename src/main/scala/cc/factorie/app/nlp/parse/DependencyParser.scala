@@ -22,7 +22,7 @@ package cc.factorie.app.nlp.parse
 
 import cc.factorie._
 import app.classify.{Classification, Classifier, LabelList}
-import bp.ParallelTrainer
+//import bp.ParallelTrainer
 import cc.factorie.app.nlp._
 import collection.mutable.ArrayBuffer
 
@@ -203,20 +203,21 @@ object ShiftReduceDependencyParser {
       //val trainer = new LogLinearMaximumLikelihood(ActionModel, modelFile = modelFile)
       //trainer.processAll(actions.map(List(_)))
       println("generating pieces...")
-      val pieces = actions.par.map(v => bp.TransientModelPiece(ActionModel, Seq(v))).seq
       actions = null // collect garbage
-      println("generating optimizable...")
-      val optimizable = new ParallelTrainer(ActionModel, pieces)
-      println("optimizing...")
-      new optimize.LimitedMemoryBFGS(optimizable) {
-        tolerance = 1e-5
-        override def postIteration(i: Int): Unit = {
-          println("finished iteration " + i)
-          save("-iteration-" + i)
-          test()
-          writeResults("-iteration-" + i)
-        }
-      }.optimize()
+      throw new Error("Not yet implemented in new cc.factorie.optimize scheme")
+//      val pieces = actions.par.map(v => bp.TransientModelPiece(ActionModel, Seq(v))).seq
+//      println("generating optimizable...")
+//      val optimizable = new ParallelTrainer(ActionModel, pieces)
+//      println("optimizing...")
+//      new optimize.LimitedMemoryBFGS(optimizable) {
+//        tolerance = 1e-5
+//        override def postIteration(i: Int): Unit = {
+//          println("finished iteration " + i)
+//          save("-iteration-" + i)
+//          test()
+//          writeResults("-iteration-" + i)
+//        }
+//      }.optimize()
     }
 
     def test(): Unit = {

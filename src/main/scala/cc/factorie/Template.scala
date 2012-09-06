@@ -108,15 +108,17 @@ trait Template extends NeighborAwareTemplate[Variable] { thisTemplate =>
 // Shortcuts for templates whose statistics are a subset of their neighbors, coming from the end of the neighbor list.
 // AKM: Let me know if you think it would be more sensible to have them come from the beginning instead.
 
-abstract class Template2WithStatistics1[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with Statistics1[N2#Value] {
-  def statistics(v:Values) = Stat(v._2)
-}
-abstract class Template3WithStatistics1[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with Statistics1[N3#Value] {
-  def statistics(v:Values) = Stat(v._3)
-}
-abstract class Template3WithStatistics2[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with Statistics2[N2#Value,N3#Value] {
-  def statistics(v:Values) = Stat(v._2, v._3)
-}
+//abstract class Template2WithStatistics1[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with Statistics1[N2#Value] {
+//  def statistics(v1:N1#Value, v2:N2#Value) = Stat(v2)
+//}
+//abstract class Template3WithStatistics1[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with Statistics1[N3#Value] {
+//  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = Stat(v3)
+////  def statistics(v:Values) = Stat(v._3)
+//}
+//abstract class Template3WithStatistics2[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest] extends Template3[N1,N2,N3] with Statistics2[N2#Value,N3#Value] {
+//  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = Stat(v2, v3)
+////  def statistics(v:Values) = Stat(v._2, v._3)
+//}
 
 
 

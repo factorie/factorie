@@ -103,6 +103,12 @@ object Tensor {
     case 3 => new Dense2LayeredTensor3(dims(0), dims(1), dims(2), new SparseTensor1(_))
     case 4 => new Dense3LayeredTensor4(dims(0), dims(1), dims(2), dims(3), new SparseTensor1(_))
   }
+  
+  def sum(tensors:Iterable[Tensor]): Tensor = tensors.size match {
+    case 1 => tensors.head.copy // Because some callers may rely on being able to do mutate-in-place operations on the results
+    case 2 => tensors.head + tensors.last
+    case _ => tensors.head + sum(tensors.tail)
+  }
 
   // Support for dot inner products with dense tensors
   def dot(t1:DenseTensor, t2:DenseTensor): Double = {

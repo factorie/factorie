@@ -12,15 +12,33 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.optimize
 import cc.factorie._
+import cc.factorie.la._
 
-/** A method of iterative, numeric function maximization, given a function provided as an Optimizable object. */
-trait Optimizer {
-  /** Returns true if converged. */
-  def optimize(numIterations:Int = Int.MaxValue): Boolean
-  def isConverged: Boolean
-  def optimizable: Optimizable
+/** Keeps an average of all weight settings throughout steps. 
+    To get "average perceptron" use "new WeightsAveraging(new StepwiseGradientAscent)" */
+class WeightsAveraging(val inner:GradientOptimizer) extends GradientOptimizer {
+  var weightsSum: Tensor = null
+  var normalizer = 0.0
+  def reset(): Unit = {
+    weightsSum = null
+    normalizer = 0.0
+    inner.reset()
+  }
+  def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+    if (weightsSum eq null) weightsSum = weights.copy
+    else weightsSum += weights // Yipes, this is not sparse, not efficient
+    normalizer += 1.0
+    inner.step(weights, gradient, value, margin)
+  }
+  def averageWeights: Tensor = weightsSum / normalizer 
+  def isConverged: Boolean = inner.isConverged
 }
+
+
+
+
+
+
+

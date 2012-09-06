@@ -20,7 +20,7 @@ import cc.factorie.generative._
 // Inference requests can be made to objects with class name "Infer*"
 // Typically these requests will be made through an "apply" method, with type signature that is specific to the particular inference method. 
 // Some of these objects are complex enough to have ongoing internal state may create an *Inferencer to do the work.
-// Some of these objects my inherit from the Infer trait, indicating that they have an "infer" method suitable for calling by generic inference suites
+// Some of these objects may inherit from the Infer trait, indicating that they have an "infer" method suitable for calling by generic inference suites
 
 // The result of inference is a "Summary" object, which is basically a container for a bunch of Marginal objects.
 
@@ -42,7 +42,7 @@ trait Infer {
   def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = None
 }
 
-// TODO Rename simply InferDiscrete?  Multiple DiscreteVariables could be handled by a "InferDiscretes"
+// TODO Rename simply InferDiscrete?  Multiple DiscreteVariables could be handled by a "InferDiscretes" // Yes, I think so.  Note DiscreteSummary1 also. -akm
 object InferDiscrete1 extends Infer {
   // TODO Consider renaming this "asArray"
   def array(d:DiscreteVariable, model:Model): Array[Double] = {
@@ -100,7 +100,7 @@ object InferByGibbsSampling {
     inferencer.process(varying, iterations, burnIn, thinning)
     summary
   }
-  def apply[V<:DiscreteVariable](varying:Iterable[V], model:Model, iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): DiscreteSummary1[V] = {
+  def apply[V<:MutableDiscreteVar[_]](varying:Iterable[V], model:Model, iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): DiscreteSummary1[V] = {
     withSummary(varying, model, new DiscreteSummary1(varying), iterations, burnIn, thinning)
   }
 }

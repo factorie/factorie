@@ -21,7 +21,7 @@ object DirichletMixture extends GenerativeFamily3[ProportionsVar,Mixture[MassesV
     def pr(s:StatisticsType) = Dirichlet.pr(s._1, s._2(s._3.intValue))
     def sampledValue(s:StatisticsType): Proportions = Dirichlet.sampledValue(s._2(s._3.intValue))
     def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = Dirichlet.pr(s._1, s._2(mixtureIndex))
-    def sampledValueChoosing(s:Statistics, mixtureIndex:Int): Proportions = Dirichlet.sampledValue(s._2(mixtureIndex))
+    def sampledValueChoosing(s:Statistics, mixtureIndex:Int): ProportionsVar#Value = Dirichlet.sampledValue(s._2(mixtureIndex)).asInstanceOf[ProportionsVar#Value]
   }
   def newFactor(a:ProportionsVar, b:Mixture[MassesVar], c:DiscreteVariable) = Factor(a, b, c)
 }

@@ -38,6 +38,7 @@ trait Tensor4 extends Tensor {
   @inline final def index2(i:Int): Int = (i/dim3/dim4)%dim2
   @inline final def index3(i:Int): Int = (i/dim4)%dim3
   @inline final def index4(i:Int): Int = i%dim4
+  override def copy: Tensor4 = throw new Error("Method copy not defined on class "+getClass.getName)
 }
 
 trait DenseTensorLike4 extends Tensor4 with DenseTensor {
@@ -73,6 +74,7 @@ class SingletonBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:
   def activeDomain4 = new SingletonIntSeq(singleIndex4)
   def activeDomain = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4 + singleIndex4
+  override def copy = new SingletonBinaryTensor4(dim1, dim2, dim3, dim4, singleIndex1, singleIndex2, singleIndex3, singleIndex4)
 }
 class MutableSingletonBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, var singleIndex1:Int, var singleIndex2:Int, var singleIndex3:Int, var singleIndex4:Int) extends Tensor4 with SingletonBinaryTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
@@ -81,6 +83,7 @@ class MutableSingletonBinaryTensor4(val dim1:Int, val dim2:Int, val dim3:Int, va
   def activeDomain4 = new SingletonIntSeq(singleIndex4)
   def activeDomain = new SingletonIntSeq(singleIndex)
   def singleIndex = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4 + singleIndex4
+  override def copy = new MutableSingletonBinaryTensor4(dim1, dim2, dim3, dim4, singleIndex1, singleIndex2, singleIndex3, singleIndex4)
 }
 
 class SingletonTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int, val singleIndex4:Int, val singleValue:Double) extends Tensor4 with SingletonTensor {
@@ -90,6 +93,7 @@ class SingletonTensor4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int, v
   def activeDomain4 = new SingletonIntSeq(singleIndex4)
   def activeDomain: IntSeq = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2*dim3*dim4 + singleIndex2*dim3*dim4 + singleIndex3*dim4 + singleIndex4
+  override def copy = new SingletonTensor4(dim1, dim2, dim3, dim4, singleIndex1, singleIndex2, singleIndex3, singleIndex4, singleValue)
 }
 
 trait SparseBinaryTensorLike4 extends Tensor4 with SparseBinaryTensor {

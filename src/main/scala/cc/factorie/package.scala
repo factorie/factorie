@@ -17,7 +17,7 @@ import scala.util.Random
 
 package object factorie {
   
-  // TODO Consider removing these
+  // TODO Consider removing these.  Yes. -akm
   type DiscreteTensorValue = cc.factorie.la.Tensor
   type CategoricalTensorValue = cc.factorie.la.Tensor
 
@@ -30,6 +30,7 @@ package object factorie {
     type ThisType = This
   }
 
+  type BooleanValue = CategoricalValue[Boolean]
 
   var randomSeed = 0
   implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)

@@ -28,6 +28,6 @@ trait UniformTensor extends Tensor {
   override def maxIndex: Int = 0
   override def containsNaN: Boolean = false
   override def dot(v:DoubleSeq): Double = v.sum * uniformValue
-  override def copy = this // safe because it is immutable
+  //override def copy = this // safe because it is immutable
 }
 

@@ -1,14 +1,13 @@
 Pre 1.0 release:
 
+Remove Factor.Values
+Make app.regress and consider making RealVar inherit from TensorVar (with DoubleVar replacing current one)
 Finish BP and move to cc.factorie package.  Make it fast!
 Consider changes to generative.Collapse infrastructure
 Implement generative.CollapsedVariationalBayes and make sure it works for LDA
 Re-consider type arguments in Sampler and descendants
-Get AROW Perceptron training working, and look at SampleRank interaction
-Implement parameter averaging
 Look at app.nlp.relation
 Make reasonable command-line tools for MALLET functionality, and document
-Get rid of dependency on Java bibtex parser library
 Sanity-check pass through all code
 Package documentation
 
@@ -31,6 +30,9 @@ Get rid of Seq[Double] everywhere, including cc.factorie.maths.  Get rid of Inde
 Get rid of la.Vector and use la.Tensor instead.  Make corresponding changes in Factors/Templates, etc.
 Make VectorFamily require "def statisticsDomain"
 Consider making cc.factorie.optimize take DoubleSeq instead of Array[Double]
+Get AROW Perceptron training working, and look at SampleRank interaction
+Get rid of dependency on Java bibtex parser library
+Implement parameter averaging
 
 Future:
 Sebastian: Make new kinds of Templates; current one: factors(Variable neighbor); new: factors(arbitrary context)

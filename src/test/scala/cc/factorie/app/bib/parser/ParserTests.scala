@@ -13,7 +13,7 @@ import collection.mutable.ArrayBuffer
 
 class ParserTests extends JUnitSuite {
 
-  @Test def testMichaelsStuff(): Unit = {
+  def testMichaelsStuff(): Unit = {
 
     val path = """C:\Users\Luke\Downloads\failed\failed\failed"""
 

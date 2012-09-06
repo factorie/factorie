@@ -46,6 +46,22 @@ trait Proportions extends Masses {
   override def toString = this.asSeq.take(10).mkString(stringPrefix+"(", ",", if (length > 10) "...)" else ")")
 }
 
+object Proportions {
+  /** Return a zero-mass Proportions with the same dimensionality and sparsity as the Tensor argument. */
+  def blankCopy(t:Tensor1): Proportions1 = t match {
+    case t:DenseTensor1 => new DenseProportions1(t.dim1)
+    case t:SparseTensor1 => throw new Error("Not yet implemeneted")
+  }
+  def blankCopy(t:Tensor2): Proportions2 = t match {
+    case t:DenseTensor2 => new DenseProportions2(t.dim1, t.dim2)
+    //case t:SparseTensor2 => throw new Error("Not yet implemeneted")
+  }
+  def blankCopy(t:Tensor3): Proportions3 = t match {
+    case t:DenseTensor3 => new DenseProportions3(t.dim1, t.dim2, t.dim3)
+    //case t:SparseTensor2 => throw new Error("Not yet implemeneted")
+  }
+}
+
 trait Proportions1 extends Masses1 with Proportions { def masses: Masses1 }
 trait Proportions2 extends Masses2 with Proportions { def masses: Masses2 }
 trait Proportions3 extends Masses3 with Proportions { def masses: Masses3 }
@@ -120,6 +136,54 @@ class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions
   def activeDomain1 = new cc.factorie.util.RangeIntSeq(0, dim1)
 }
 
+/** An immutable Proportions from a pre-normalized Tensor. */
+abstract class NormalizedTensorProportions(tensor:Tensor, checkNormalization:Boolean = true) extends Proportions {
+  protected def _tensor: Tensor
+  if (checkNormalization) require(maths.almostEquals(tensor.sum, 1.0, 0.0001))
+  def apply(i:Int) = _tensor.apply(i)
+  def massTotal = 1.0
+  def isDense = _tensor.isDense
+}
+class NormalizedTensorProportions1(tensor:Tensor1, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions1 {
+  protected val _tensor = tensor
+  def dim1 = _tensor.dim1
+  def activeDomain1 = _tensor.activeDomain1
+  def masses = this
+}
+class NormalizedTensorProportions2(tensor:Tensor2, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions2 {
+  protected val _tensor = tensor
+  def dim1 = _tensor.dim1
+  def dim2 = _tensor.dim2
+  def activeDomain = _tensor.activeDomain
+  def activeDomain1 = _tensor.activeDomain1
+  def activeDomain2 = _tensor.activeDomain2
+  def masses = this
+}
+class NormalizedTensorProportions3(tensor:Tensor3, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions3 {
+  protected val _tensor = tensor
+  def dim1 = _tensor.dim1
+  def dim2 = _tensor.dim2
+  def dim3 = _tensor.dim3
+  def activeDomain = _tensor.activeDomain
+  def activeDomain1 = _tensor.activeDomain1
+  def activeDomain2 = _tensor.activeDomain2
+  def activeDomain3 = _tensor.activeDomain3
+  def masses = this
+}
+class NormalizedTensorProportions4(tensor:Tensor4, checkNormalization:Boolean = true) extends NormalizedTensorProportions(tensor, checkNormalization) with Proportions4 {
+  protected val _tensor = tensor
+  def dim1 = _tensor.dim1
+  def dim2 = _tensor.dim2
+  def dim3 = _tensor.dim3
+  def dim4 = _tensor.dim4
+  def activeDomain = _tensor.activeDomain
+  def activeDomain1 = _tensor.activeDomain1
+  def activeDomain2 = _tensor.activeDomain2
+  def activeDomain3 = _tensor.activeDomain3
+  def activeDomain4 = _tensor.activeDomain4
+  def masses = this
+}
+
 class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
   val masses = new SortedSparseCountsMasses1(dim1)
   def massTotal = 1.0
@@ -153,10 +217,15 @@ class SortedSparseCountsProportions1(val dim1:Int) extends Proportions1 {
 // Proportions Variable
 
 trait ProportionsVar extends MassesVar with VarAndValueType[ProportionsVar,Proportions] {
+  override def value: Proportions
   // TODO What should go here?
 }
-class ProportionsVariable extends MassesVariable with ProportionsVar {
+trait MutableProportionsVar[A<:Proportions] extends MutableMassesVar[A] with ProportionsVar
+trait ProportionsDomain extends MassesDomain with Domain[Proportions]
+object ProportionsDomain extends ProportionsDomain
+class ProportionsVariable extends MutableProportionsVar[Proportions] {
   def this(initialValue:Proportions) = { this(); _set(initialValue) }
+  def domain = ProportionsDomain
   //val massesVariable = new MassesVariable(tensor.masses) // TODO Is there a risk that tensor.masses may not have its final value yet here?  Yes!  It could be changed at any time via _set!!!
   
   // Methods that track modifications on a DiffList
@@ -214,8 +283,9 @@ trait ProportionsMarginal extends Marginal {
   //def setToMaximize(implicit d:DiffList): Unit = _1.asInstanceOf[ProportionsVariable].set(mean)
 }
 
-class ProportionsAssignment(p:ProportionsVar, v:Proportions) extends Assignment1[ProportionsVar](p, v) with ProportionsMarginal {
-  def mean = _value1
+class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions) extends Assignment1[MutableProportionsVar[Proportions]](p, v) with ProportionsMarginal {
+  final def _1 = p // TODO Consider renaming Assignment1.var1 back to _1
+  def mean = value1
   def variance = Double.PositiveInfinity // TODO Is this the right value?
 }
 

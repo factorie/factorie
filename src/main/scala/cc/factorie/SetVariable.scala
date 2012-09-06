@@ -16,6 +16,7 @@ package cc.factorie
 import scala.collection.mutable.HashSet
 
 trait SetVar[A] extends Variable with VarAndValueGenericDomain[SetVar[A],scala.collection.Set[A]] {
+  def value: scala.collection.Set[A]
   def iterator: Iterator[A] = value.iterator
   def foreach[U](f:A=>U): Unit = iterator.foreach(f)
   def map[B](f:A=>B): scala.collection.Set[B] = new HashSet[B] ++= iterator.map(f)
@@ -32,6 +33,7 @@ class EmptySetVar[A] extends SetVar[A] {
 
 /**A variable whose value is a set of other variables */
 class SetVariable[A]() extends SetVar[A] with VarAndValueGenericDomain[SetVariable[A],scala.collection.Set[A]] {
+  type Value = scala.collection.Set[A]
   // Note that the returned value is not immutable.
   def value = _members
   private val _members = new HashSet[A];

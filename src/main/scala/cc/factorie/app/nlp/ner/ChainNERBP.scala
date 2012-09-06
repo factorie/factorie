@@ -15,7 +15,7 @@
 package cc.factorie.app.nlp.ner
 import cc.factorie._
 import app.strings._
-import bp._
+//import bp._
 import optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.LoadConll2003._
@@ -99,16 +99,18 @@ class ChainNerBP {
  
     // Train for 5 iterations
     val vars = for(td <- trainDocuments; sentence <- td.sentences) yield sentence.tokens.map(_.attr[ChainNerLabel])
-    //val vars = trainDocuments.map(d => d.sentences.map(s => s.tokens.map(_.attr[ChainNerLabel])))
-    val trainingInstances = vars.map(ModelPiece(model, _))
-    val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances) with L2Regularizer { override def sigmaSq = 10.0 }
-    println("Size of families: " + model.familiesOfClass[DotFamily]().size)
-      val optimizer = new LimitedMemoryBFGS(newLearner)
-      optimizer.optimize()
-      optimizer.optimize()
-      trainDocuments.foreach(process(_))
-      testDocuments.foreach(process(_))
-      printEvaluation(trainDocuments, testDocuments, "FINAL")    
+//    val trainingInstances = vars.map(ModelPiece(model, _))
+//    val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances) with L2Regularizer { override def sigmaSq = 10.0 }
+//    println("Size of families: " + model.familiesOfClass[DotFamily]().size)
+//    val optimizer = new LimitedMemoryBFGS(newLearner)
+//    optimizer.optimize()
+//    optimizer.optimize()
+//    trainDocuments.foreach(process(_))
+//    testDocuments.foreach(process(_))
+//    printEvaluation(trainDocuments, testDocuments, "FINAL")    
+    val trainer = new DotMaximumLikelihood(model)
+    trainer.processAllBP(vars, InferByBPChainSum)
+
   }
   
   def printEvaluation(trainDocuments:Iterable[Document], testDocuments:Iterable[Document], iteration:String): Unit = {
@@ -138,10 +140,11 @@ class ChainNerBP {
     if (!hasLabels(document)) document.tokens.foreach(token => token.attr += new Conll2003ChainNerLabel(token, "O"))
     for(sentence <- document.sentences if sentence.tokens.size > 0) {
 	    val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
-	    val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
-    	new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
-    	new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
-    	mfg.setToMaxMarginal()
+	    BP.inferChainMax(vars, model)
+	    //val mfg = new LatticeBP(model, sentence.tokens.map(_.attr[ChainNerLabel]).toSet) with MaxProductLattice
+    	//new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
+    	//new InferencerBPWorker(mfg).inferTreewise(vars.sampleUniformly, false)
+    	//mfg.setToMaxMarginal()
     }
   }
   

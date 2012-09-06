@@ -16,8 +16,8 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.optimize._
 import app.strings._
-import bp._
-import bp.specialized.Viterbi
+//import bp._
+//import bp.specialized.Viterbi
 import optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.LoadConll2003._
@@ -525,18 +525,21 @@ class ChainNer2 {
 
 			val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
 
-		    val pieces = vars.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
-		    val trainer = new ParallelTrainer(pieces, model.familiesOfClass(classOf[DotFamily]))
-		    val optimizer = new LimitedMemoryBFGS(trainer) {
-		      override def postIteration(iter: Int): Unit = {
-			        trainDocuments.foreach(process(_))
-					testDocuments.foreach(process(_))
-			      	printEvaluation(trainDocuments, testDocuments, iter.toString)
-			  }
-		    }
-		      optimizer.optimize()
-		      optimizer.optimize()
+//		    val pieces = vars.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
+//		    val trainer = new ParallelTrainer(pieces, model.familiesOfClass(classOf[DotFamily]))
+//		    val optimizer = new LimitedMemoryBFGS(trainer) {
+//		      override def postIteration(iter: Int): Unit = {
+//			        trainDocuments.foreach(process(_))
+//					testDocuments.foreach(process(_))
+//			      	printEvaluation(trainDocuments, testDocuments, iter.toString)
+//			  }
+//		    }
+//		      optimizer.optimize()
+//		      optimizer.optimize()
 		    
+      val trainer = new DotMaximumLikelihood(model)
+      trainer.processAllBP(vars, InferByBPChainSum)
+
 			  (trainLabels ++ testLabels).foreach(_.setRandomly())
 	    
 		      trainDocuments.foreach(process(_))
@@ -549,7 +552,7 @@ class ChainNer2 {
 
       // Train primary (independent classifier) model
       // Train secondary (markov) model
-      val learner1 = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent)
+      val learner1 = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent(1.0))
       //val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       val predictor1 = new VariableSettingsSampler[ChainNerLabel](model) {temperature=0.01}
 
@@ -588,17 +591,19 @@ class ChainNer2 {
 
 			val vars1 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
 
-		    val pieces1 = vars1.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
-		    val trainer1 = new ParallelTrainer(pieces1, model.familiesOfClass(classOf[DotFamily]))
-		    val optimizer1 = new LimitedMemoryBFGS(trainer1) {
-		      override def postIteration(iter: Int): Unit = {
-			        trainDocuments.foreach(process(_))
-					testDocuments.foreach(process(_))
-			      	printEvaluation(trainDocuments, testDocuments, iter.toString)
-			  }
-		    }
-		      optimizer1.optimize()
-		      optimizer1.optimize()
+//		    val pieces1 = vars1.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
+//		    val trainer1 = new ParallelTrainer(pieces1, model.familiesOfClass(classOf[DotFamily]))
+//		    val optimizer1 = new LimitedMemoryBFGS(trainer1) {
+//		      override def postIteration(iter: Int): Unit = {
+//			        trainDocuments.foreach(process(_))
+//					testDocuments.foreach(process(_))
+//			      	printEvaluation(trainDocuments, testDocuments, iter.toString)
+//			  }
+//		    }
+//		      optimizer1.optimize()
+//		      optimizer1.optimize()
+      val trainer = new DotMaximumLikelihood(model)
+      trainer.processAllBP(vars1, InferByBPChainSum)
 		      
 			  (trainLabels ++ testLabels).foreach(_.setRandomly())
 	    
@@ -830,7 +835,8 @@ class ChainNer2 {
     if (true) {
     	for(sentence <- document.sentences if sentence.tokens.size > 0) {
 	  		val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
-	  		Viterbi.searchAndSetToMax(vars, model.localTemplate, model.transitionTemplate)
+	  		//Viterbi.searchAndSetToMax(vars, model.localTemplate, model.transitionTemplate)
+	  		BP.inferChainMax(vars, model)
     	}
     } else {
       for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.category(0)) // init value doens't matter

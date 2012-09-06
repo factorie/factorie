@@ -24,7 +24,7 @@ import java.io.File
 
 /** Performs independent prediction of (iid) Labels (all of which must share the same domain).
     Has abstract method "labelDomain". */
-trait Classifier[L<:DiscreteVariable] {
+trait Classifier[L<:MutableDiscreteVar[_]] {
   def labelDomain: DiscreteDomain  // This is necessary for LabelEvaluation
   /** Return a record summarizing the outcome of applying this classifier to the given label.  Afterwards the label will have the same value it had before this call. */
   def classification(label:L): Classification[L]
@@ -35,7 +35,7 @@ trait Classifier[L<:DiscreteVariable] {
 }
 
 /** A classifier that uses a Model to score alternative label values. */
-class ModelBasedClassifier[L<:DiscreteVariable](val model:Model, val labelDomain:DiscreteDomain) extends Classifier[L] {
+class ModelBasedClassifier[L<:MutableDiscreteVar[_]](val model:Model, val labelDomain:DiscreteDomain) extends Classifier[L] {
   def classification(label:L): Classification[L] = {
     require(label.domain eq labelDomain)
     new Classification(label, this, label.proportions(model))

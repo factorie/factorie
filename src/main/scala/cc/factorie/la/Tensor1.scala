@@ -24,29 +24,13 @@ trait Tensor1 extends Tensor {
   def activeDomains = Array(activeDomain1)
   def dimensions = Array(dim1)
   @inline final def length: Int = dim1
+  override def copy: Tensor1 = throw new Error("Method copy not defined on class "+getClass.getName)
   override def stringPrefix = "Tensor1"
 }
 
 trait DenseTensorLike1 extends Tensor1 with DenseTensor {
-  //private var __values = new Array[Double](dim1)
-  //protected def _values = __values
-  //def isDense = true
   def activeDomain1 = new RangeIntSeq(0, dim1)
   override def activeDomain = activeDomain1
-  //def apply(i:Int) = __values(i)
-  //override def asArray = __values
-  //override def +=(i:Int, incr:Double): Unit = __values(i) += incr
-  //override def :=(ds:DoubleSeq): Unit = ds match {
-  //  case ds:DenseTensorLike1 => System.arraycopy(__values, 0, ds.__values, 0, length)
-  //  case ds:DoubleSeq => super.:=(ds)
-  //}
-//  override def +=(ds:DoubleSeq): Unit = { require(ds.length == length); ds match {
-//    case t:Tensor => 
-//      if (t.isDense) { var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } } 
-//    case ds:DoubleSeq => { var i = 0; while (i < length) { __values(i) += ds(i); i += 1 } } 
-//  }
-  //override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
-  //override def update(i:Int, v:Double): Unit = __values(i) = v
   override def dot(t:DoubleSeq): Double = t match {
     //case t:SingletonBinaryTensor => apply(t.singleIndex)
     //case t:SingletonTensor => apply(t.singleIndex) * t.singleValue
@@ -66,6 +50,7 @@ trait DenseTensorLike1 extends Tensor1 with DenseTensor {
 class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
   def this(t:DoubleSeq) = { this(t.length); this := t }
   def this(a:Array[Double]) = { this(a.length); this := a }
+  def this(dim1:Int, fillValue:Double) = { this(dim1); java.util.Arrays.fill(_values, fillValue) }
   override def copy: DenseTensor1 = { val c = new DenseTensor1(dim1); System.arraycopy(_values, 0, c._values, 0, length); c }
   override def blankCopy: DenseTensor1 = new DenseTensor1(dim1)
 }
@@ -98,31 +83,50 @@ class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends DenseTensorLike1
   override def blankCopy: GrowableDenseTensor1 = new GrowableDenseTensor1(sizeProxy)
 }
 
+/** A Tensor representation of a single scalar */
+// TODO In Scala 2.10 this could be an implicit class
+class ScalarTensor(var singleValue:Double) extends Tensor1 {
+  def dim1 = 1
+  def activeDomain1 = new SingletonIntSeq(0)
+  def isDense = false
+  def apply(i:Int): Double = if (i == 0) singleValue else throw new Error
+}
 
+/** A one-dimensional one-hot Tensor. */
 class SingletonTensor1(val dim1:Int, val singleIndex:Int, val singleValue:Double) extends Tensor1 with SingletonTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex)
 } 
 
+/** A one-dimensional one-hot Tensor with hot value 1.0. */
 trait SingletonBinaryTensorLike1 extends Tensor1 with SingletonBinaryTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex)
 }
-class SingletonBinaryTensor1(val dim1:Int, val singleIndex:Int) extends SingletonBinaryTensorLike1 {
+/** A one-dimensional one-hot Tensor with hot value 1.0. */
+class SingletonBinaryTensor1(val dim1:Int, var singleIndex:Int) extends SingletonBinaryTensorLike1 {
   override def copy: SingletonBinaryTensor1 = new SingletonBinaryTensor1(dim1, singleIndex)
 }
-class MutableSingletonBinaryTensor1(val dim1:Int, var singleIndex:Int) extends SingletonBinaryTensorLike1 {
-  override def copy = new MutableSingletonBinaryTensor1(dim1, singleIndex)
-}
-class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], val singleIndex:Int) extends SingletonBinaryTensorLike1 {
+
+/** A one-dimensional one-hot Tensor with hot value 1.0. */
+class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], var singleIndex:Int) extends SingletonBinaryTensorLike1 {
   def dim1 = sizeProxy.size
 }
 
 class UniformTensor1(val dim1:Int, val uniformValue:Double) extends Tensor1 with UniformTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
+  override def copy = new UniformTensor1(dim1, uniformValue)
+  override def +(t:Tensor): Tensor = t match {
+    case t:UniformTensor1 => new UniformTensor1(dim1, uniformValue + t.uniformValue)
+    case t:Tensor1 => new DenseTensor1(dim1, uniformValue) + t
+  }
+}
+class UnaryTensor1(dim1:Int) extends UniformTensor1(dim1, 1.0) {
+  override def copy = new UnaryTensor1(dim1)
 }
 class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends Tensor1 with UniformTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
   //def activeDomain = activeDomain1
   def dim1 = sizeProxy.size
+  override def copy = new GrowableUniformTensor1(sizeProxy, uniformValue)
 }
 
 

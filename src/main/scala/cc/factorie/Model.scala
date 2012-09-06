@@ -17,14 +17,7 @@ import cc.factorie.la._
 import scala.collection.mutable.{ArrayBuffer,HashMap,LinkedHashSet}
 import scala.collection.immutable.ListSet
 
-// Models are composable
-// Model { score:Double = 0.0; variables:Seq[Variable] = Nil; score(vs:Seq[Variable]):Double; factors:Seq[Factor]; factors(vs:Seq[Variable]):Seq[Factor]; }
-// TemplateModel
-// FactorModel { +=(f:Factor); }
-// GenerativeModel
-// CombinedModel(models:Model*)
-// MyModel(MyTemplateModel, GenerativeModel)
-
+// TODO In the future, consider things like:
 // POSTagger extends TemplateModel with Inferencer[POSLabel]
 // ConcreteLinearChainPOS extends POSTemplateModel with BPInferencer[POSLabel]
 
@@ -79,11 +72,7 @@ trait Model {
   
   def score(variables:Iterable[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.score; sum } // factors(variables).foldLeft(0.0)((sum, f) => sum + f.score)
   def score(variable:Variable): Double = { var sum = 0.0; for (f <- factors(variable)) sum += f.score; sum }
-  def score(d:DiffList) : Double = {
-    var result = 0.0
-    for (f <- factors(d)) result += f.statistics.score
-    result
-  }
+  def score(d:DiffList) : Double = { var sum = 0.0; for (f <- factors(d)) sum += f.statistics.score; sum }
   /** Returns the average score, that is score of variables, normalized by the size of the collections vars. */
   def aveScore(variables:Iterable[Variable]): Double = score(variables) / variables.size  // TODO Rename to scoreAve?
 

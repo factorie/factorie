@@ -15,198 +15,422 @@
 package cc.factorie
 
 import cc.factorie.la._
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, LinkedHashSet}
+import scala.collection.{Set}
 
+/** A factory object creating BPFactors and BPVariables, each of which contain methods for calculating messages. */
 trait BPRing {
-  // multiply two messages
-  def *(t1: Tensor, t2: Tensor): Tensor
-
-  def *=(t1: Tensor, t2: Tensor): Unit
-
-  // divide two messages
-  def /(t1: Tensor, t2: Tensor): Tensor
-
-  def /=(t1: Tensor, t2: Tensor): Unit
+  def newBPVariable(v:DiscreteVar): BPVariable1
+  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor
 }
 
 object BPSumProductRing extends BPRing {
-  def *(t1: Tensor, t2: Tensor): Tensor = t1 + t2
-
-  def *=(t1: Tensor, t2: Tensor): Unit = t1 += t2
-
-  def /(t1: Tensor, t2: Tensor): Tensor = t1 - t2
-
-  def /=(t1: Tensor, t2: Tensor): Unit = t1 -= t2
+  def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
+  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = {
+    val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
+    val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
+    edges.size match {
+      case 1 => factor match {
+        case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0)) 
+        case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2(factor, edges(0)) 
+      }
+      case 2 => factor match {
+        case factor:Factor2[DiscreteVar,DiscreteVar] => new BPFactor2Factor2(factor, edges(0), edges(1)) with BPFactor2SumProduct
+        case factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar] => new BPFactor2Factor3(factor, edges(0), edges(1)) with BPFactor2SumProduct
+      }
+    }
+  }
 }
 
-class BPEdge(val bpVariable: BPVariable) {
+object BPMaxProductRing extends BPRing {
+  def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
+  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = {
+    val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
+    val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
+    edges.size match {
+      case 1 => factor match {
+        case factor:Factor1[DiscreteVar] => new BPFactor1Factor1(factor, edges(0)) 
+        case factor:Factor2[DiscreteVar,DiscreteTensorVar] => new BPFactor1Factor2(factor, edges(0)) 
+      }
+      case 2 => factor match {
+        case factor:Factor2[DiscreteVar,DiscreteVar] => new BPFactor2Factor2(factor, edges(0), edges(1)) with BPFactor2MaxProduct
+        case factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar] => new BPFactor2Factor3(factor, edges(0), edges(1)) with BPFactor2MaxProduct
+      }
+    }
+  }
+}
+
+// TODO
+// object BPSumProductBeamRing extends BPRing
+// object BPSumProductNonLogRing extends BPRing // Not in log space, avoiding maths.logSum
+
+/** A dumb container for messages factor->variable and variable->factor */
+class BPEdge(val bpVariable: BPVariable1) {
+  // TODO Eventually we should not require that this is a BPVariable1, but work for general BPVariable
+  bpVariable.addEdge(this)
   var bpFactor: BPFactor = null
-  var factorNeighborIndex: Int = -1
-
-  // ???
+  var factorNeighborIndex: Int = -1 // TODO Is this necessary?
+  // Note:  For Bethe cluster graphs with BPVariable1, these messages will be Tensor1, but for other cluster graphs they could have higher dimensionality
+  var messageFromVariable: Tensor = new UniformTensor1(bpVariable.variable.domain.size, 0.0) // null // bpVariable.scores.blankCopy
+  var messageFromFactor: Tensor = new UniformTensor1(bpVariable.variable.domain.size, 0.0) // null // bpVariable.scores.blankCopy
   def variable = bpVariable.variable
-
   def factor = bpFactor.factor
-
-  var messageFromVariable: Tensor = bpVariable.scores.blankCopy
-  var messageFromFactor: Tensor = bpVariable.scores.blankCopy
-  bpVariable.edges += this
 }
 
-class BPVariable(val variable: DiscreteVar, val ring: BPRing, val scores: Tensor1) extends DiscreteMarginal1(variable, null) {
-  val edges = new ArrayBuffer[BPEdge]
 
-  def computeOutgoing(e: BPEdge): Tensor = {
-    val result = scores.blankCopy
-    for (edge <- edges; if edge != e) {
-      ring *=(result, edge.messageFromFactor)
-    }
-    result
-  }
-
-  def updateOutgoing(e: BPEdge): Unit = e.messageFromVariable = computeOutgoing(e)
-
+trait BPVariable {
+  def edges: Seq[BPEdge]
+  def calculateOutgoing(e:BPEdge): Tensor
+  def updateOutgoing(e:BPEdge): Unit = e.messageFromVariable = calculateOutgoing(e)
   def updateOutgoing: Unit = edges.foreach(updateOutgoing(_))
-
-  override def proportions = {
-    scores.zero()
-    for (e <- edges) {
-      ring *=(scores, e.messageFromFactor)
-    }
-    scores.expNormalize()
-    new DenseProportions1(scores)
-  }
 }
+class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable, null) with BPVariable {
+  private var _edges: List[BPEdge] = Nil
+  def addEdge(e:BPEdge): Unit = _edges = e :: _edges
+  final def edges: List[BPEdge] = _edges
+  def calculateOutgoing(e:BPEdge): Tensor = {
+    edges.size match {
+      case 0 => throw new Error("BPVariable1 with no edges")
+      case 1 => { require(edges.head == e); new UniformTensor1(variable.domain.size, 0.0) }
+      case 2 => if (edges.head == e) edges.tail.head.messageFromFactor else if (edges.tail.head == e) edges.head.messageFromFactor else throw new Error
+      case _ => Tensor.sum(edges.filter(_ != e).map(_.messageFromFactor)) 
+    }
+  }
+  def calculateBelief: Tensor1 = Tensor.sum(edges.map(_.messageFromFactor)).asInstanceOf[Tensor1] // TODO
+  def calculateMarginal: Tensor1 = calculateBelief.expNormalized.asInstanceOf[Tensor1]
+  override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginal, false)  // TODO Think about avoiding re-calc every time
+  override def value1: DiscreteVar#Value = _1.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
+  override def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
+}
+// TODO class BPVariable{2,3,4} would be used for cluster graphs
 
-// class BPVariable2 would be used for cluster graphs
 
 trait BPFactor extends DiscreteMarginal {
   def factor: Factor
-
   def edges: Seq[BPEdge]
-
-  def ring: BPRing
-
+  /** Re-calculate the message from this factor to edge "e" and set e.messageFromFactor to the result. */
   def updateOutgoing(e: BPEdge): Unit
-
   def updateOutgoing: Unit = edges.foreach(updateOutgoing(_))
+  def scores: Tensor // All local scores across all dimensions of varying neighbors; does not use messages from variables
+  /** Unnormalized log scores over values of varying neighbors */
+  def calculateBeliefs: Tensor
+  /** The logSum of all entries in the beliefs tensor */
+  def calculateLogZ: Double = calculateBeliefs match {
+    case t:DenseTensor => { var z = Double.NegativeInfinity; val l = t.length; var i = 0; while (i < l) { z = maths.sumLogProb(z, t(i)); i += 1 }; z }
+    case t:SparseIndexedTensor => { var z = Double.NegativeInfinity; t.foreachActiveElement((i,v) => { z = maths.sumLogProb(z, v) }); z }
+  }
+  /** Normalized probabilities over values of varying neighbors */
+  def calculateMarginal: Tensor = calculateBeliefs.expNormalized
+  /** Normalized probabilities over values of varying neighbors, in the form of a Proportions */
+  override def proportions: Proportions // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginal, false)"
+  /** Add to t the normalized probabilities over values of all neighbors. */
+  def addExpectationInto(t:Tensor, f:Double): Unit
 }
 
-class BPFactor1(val factor: Factor, val edge1: BPEdge, val ring: BPRing, val scores: Tensor1) extends DiscreteMarginal1(edge1.bpVariable.variable, null) with BPFactor {
-  edge1.bpFactor = this
+
+// An abstract class for BPFactors that has 1 varying neighbor.  They may have additional constant neighbors.
+abstract class BPFactor1(val edge1: BPEdge) extends DiscreteMarginal1(edge1.bpVariable.variable, null) with BPFactor {
+  override def scores: Tensor1
+  edge1.bpFactor = this; edge1.factorNeighborIndex = 0
   val edges = Seq(edge1)
-
-  def updateOutgoing(e: BPEdge): Unit = e match {
-    case edge1 => updateOutgoing1
-  }
-
+  def updateOutgoing(e: BPEdge): Unit = e match { case this.edge1 => updateOutgoing1 } 
+  override def updateOutgoing: Unit = updateOutgoing1
   def updateOutgoing1: Unit = edge1.messageFromFactor = calculateOutgoing1
-
-  lazy val calculateOutgoing1: Tensor = {
-    val valueTensor = new MutableSingletonBinaryTensor1(edge1.variable.domain.size, 0)
-    for (i <- 0 until edge1.variable.domain.size) {
-      valueTensor.singleIndex = i
-      var s = factor.scoreValueTensor(valueTensor)
-      //s += edge1.messageFromVariable(i)
-      scores(i) = s
-    }
-    scores
-  }
+  // TODO See about caching this when possible
+  def calculateBeliefs: Tensor1 = (scores + edge1.messageFromVariable).asInstanceOf[Tensor1]
+  override def calculateMarginal: Tensor1 = calculateBeliefs.expNormalized.asInstanceOf[Tensor1]
+  override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginal, false)
+  def calculateOutgoing1: Tensor1 = scores
 }
 
-class BPFactor2(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val ring: BPRing, val scores: Tensor2) extends DiscreteMarginal2(edge1.bpVariable.variable, edge2.bpVariable.variable, null) with BPFactor {
-  edge1.bpFactor = this
-  edge2.bpFactor = this
-  val edges = Seq(edge1, edge2)
-
-  def updateOutgoing(e: BPEdge): Unit = {
-    if (e eq edge1) updateOutgoing1
-    else if (e eq edge2) updateOutgoing2
-    else throw new Error
+// A BPFactor1 with underlying model Factor1, with the one neighbor varying
+class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends BPFactor1(edge1) {
+  val scores: Tensor1 = factor match {
+    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.asInstanceOf[Tensor1]
+    case _ => {
+      // TODO Make this more efficient by getting factor.family.weights when we can
+      val valueTensor = new SingletonBinaryTensor1(edge1.variable.domain.size, 0)
+      val result = new DenseTensor1(edge1.variable.domain.size)
+      for (i <- 0 until edge1.variable.domain.size) {
+        valueTensor.singleIndex = i
+       result(i) = factor.scoreValues(valueTensor)
+      }
+      result
+    }
   }
+  def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal, f)
+}
 
-  def updateOutgoing1: Unit = edge1.messageFromFactor = calculateOutgoing1
-
-  def updateOutgoing2: Unit = edge2.messageFromFactor = calculateOutgoing2
-
-  def calculateOutgoing1: Tensor = {
-    val valueTensor = new MutableSingletonBinaryTensor2(edge1.variable.domain.size, edge2.variable.domain.size, 0, 0)
+// A BPFactor1 with underlying model Factor2, with the first neighbor varying and the second neighbor constant 
+class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1:BPEdge) extends BPFactor1(edge1) {
+  val scores: Tensor1 = {
+    val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
+    val result = new DenseTensor1(edge1.variable.domain.size)
     for (i <- 0 until edge1.variable.domain.size) {
       valueTensor.singleIndex1 = i
-      var s = 0.0
-      for (j <- 0 until edge2.variable.domain.size) {
-        valueTensor.singleIndex2 = j
-        s += factor.scoreValueTensor(valueTensor)
-        s += edge2.messageFromVariable(j)
-      }
-      scores(i) = s
+      result(i) = factor.scoreValues(valueTensor)
     }
-    scores
+    result
   }
-
-  // do the work of normalization
-  def calculateOutgoing2: Tensor = {
-    val valueTensor = new MutableSingletonBinaryTensor2(edge1.variable.domain.size, edge2.variable.domain.size, 0, 0)
-    for (i <- 0 until edge2.variable.domain.size) {
-      valueTensor.singleIndex2 = i
-      var s = 0.0
-      for (j <- 0 until edge1.variable.domain.size) {
-        valueTensor.singleIndex1 = j
-        s += factor.scoreValueTensor(valueTensor)
-        s += edge1.messageFromVariable(j)
-      }
-      scores(i) = s
+  def addExpectationInto(t:Tensor, f:Double): Unit = {
+    val marginal = calculateMarginal
+    // TODO One could imagine more efficient implementations that for DenseTensor t and SparseIndexedTensor factor._2.value, we iterator through the later only once -akm
+    val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
+    for (i <- 0 until edge1.variable.domain.size) {
+      valueTensor.singleIndex1 = i
+      t.+=(valueTensor, marginal(i) * f)
     }
-    scores
   }
 }
 
-class BPSummary(varying: Set[DiscreteVar], model: Model) extends Summary[DiscreteMarginal] {
-  private val _bpFactors = new HashMap[Factor, BPFactor]
-  private val _bpVariables = new HashMap[DiscreteTensorVar, BPVariable]
 
-  def bpVariable(v: DiscreteVar): BPVariable = {
-    _bpVariables.getOrElseUpdate(v, new BPVariable(v, BPSumProductRing, new DenseTensor1(v.domain.size)))
+// An abstract class for BPFactors that have 2 varying neighbors.  They may have additional constant neighbors.
+abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge) extends DiscreteMarginal2(edge1.bpVariable.variable, edge2.bpVariable.variable, null) with BPFactor {
+  override def scores: Tensor2
+  def calculateOutgoing1: Tensor
+  def calculateOutgoing2: Tensor
+  edge1.bpFactor = this; edge1.factorNeighborIndex = 0
+  edge2.bpFactor = this; edge1.factorNeighborIndex = 1
+  val edges = Seq(edge1, edge2)
+  override def updateOutgoing: Unit = { updateOutgoing1; updateOutgoing2 }
+  def updateOutgoing(e: BPEdge): Unit = e match { case this.edge1 => updateOutgoing1; case this.edge2 => updateOutgoing2 } 
+  def updateOutgoing1: Unit = edge1.messageFromFactor = calculateOutgoing1
+  def updateOutgoing2: Unit = edge2.messageFromFactor = calculateOutgoing2
+  // TODO See about caching this when possible
+  def calculateBeliefs: Tensor2 = {
+    val result = new DenseTensor2(edge1.messageFromVariable.length, edge2.messageFromVariable.length)
+    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size)
+      result(i,j) = scores(i,j) + edge1.messageFromVariable(i) + edge2.messageFromVariable(j)
+    result
   }
+  override def calculateMarginal: Tensor2 = calculateBeliefs.expNormalized.asInstanceOf[Tensor2]
+  override def proportions: Proportions2 = new NormalizedTensorProportions2(calculateMarginal, false)
+}
 
-  for (factor <- model.factors(varying)) {
-    val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
-    val edges = factorVarying.map(v => new BPEdge(bpVariable(v)))
-    val bpFactor = edges.size match {
-      case 1 => new BPFactor1(factor, edges(0), BPSumProductRing, new DenseTensor1(edges(0).variable.domain.size))
-      case 2 => new BPFactor2(factor, edges(0), edges(1), BPSumProductRing, new DenseTensor2(edges(0).variable.domain.size, edges(1).variable.domain.size))
+trait BPFactor2SumProduct { this: BPFactor2 =>
+  def calculateOutgoing1: Tensor = {
+    val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
+    for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size)
+      result(i) = cc.factorie.maths.sumLogProb(result(i), scores(i,j) + edge2.messageFromVariable(j))
+    result
+  }
+  def calculateOutgoing2: Tensor = {
+    val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
+    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size)
+      result(j) = cc.factorie.maths.sumLogProb(result(j), scores(i,j) + edge1.messageFromVariable(i))
+    result
+  }
+}
+
+trait BPFactor2MaxProduct { this: BPFactor2 =>
+  val edge1Max2 = new Array[Int](edge1.variable.domain.size) // The index value of edge2.variable that lead to the MaxProduct value for each index value of edge1.variable 
+  var edge2Max1 = new Array[Int](edge2.variable.domain.size)
+  def calculateOutgoing1: Tensor = {
+    val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
+    for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size) {
+      val s = scores(i,j) + edge2.messageFromVariable(j)
+      if (s > result(i)) { result(i) = s; edge1Max2(i) = j } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
     }
-    _bpFactors(factor) = bpFactor
+    result
   }
+  def calculateOutgoing2: Tensor = {
+    val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
+    for (j <- 0 until edge2.variable.domain.size; i <- 0 until edge1.variable.domain.size) {
+      val s = scores(i,j) + edge1.messageFromVariable(i)
+      if (s > result(j)) { result(j) = s; edge2Max1(j) = i } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
+    }
+    result
+  }
+}
 
+// A BPFactor2 with underlying model Factor2, with both neighbors varying
+abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edge1:BPEdge, edge2:BPEdge) extends BPFactor2(edge1, edge2) {
+  // TODO Consider making this calculate scores(i,j) on demand, with something like
+  // val scores = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size, Double.NaN) { override def apply(i:Int) = if (_values(i).isNaN)... }
+  val scores: Tensor2 = factor match {
+    //case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.asInstanceOf[Tensor2] // TODO Why getting DenseTensor1 here??
+    case _ => {
+      // TODO Replace this with just efficiently getting factor.family.weights
+      val valueTensor = new SingletonBinaryTensor2(edge1.variable.domain.size, edge2.variable.domain.size, 0, 0)
+      val result = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size)
+      for (i <- 0 until edge1.variable.domain.size) {
+        valueTensor.singleIndex1 = i
+        for (j <- 0 until edge2.variable.domain.size) {
+          valueTensor.singleIndex2 = j
+          result(i, j) = factor.scoreValues(valueTensor)
+        }
+      }
+      result
+    }
+  }
+  def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal,f)
+}
+
+// A BPFactor2 with underlying model Factor3, having two varying neighbors and one constant neighbor
+// Note that the varying neighbors are assumed to be factor._1 and factor._2, and the constant neighbor factor._3
+abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar], edge1:BPEdge, edge2:BPEdge) extends BPFactor2(edge1, edge2) {
+  val scores: Tensor2 = {
+    val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
+    val result = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size)
+    for (i <- 0 until edge1.variable.domain.size) {
+      valueTensor.singleIndex1 = i
+      for (j <- 0 until edge2.variable.domain.size) {
+        valueTensor.singleIndex2 = j
+        result(i, j) = factor.scoreValues(valueTensor)
+      }
+    }
+    result
+  }
+  def addExpectationInto(t:Tensor, f:Double): Unit = {
+    val marginal = calculateMarginal
+    val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
+    for (i <- 0 until edge1.variable.domain.size) {
+      valueTensor.singleIndex1 = i
+      for (j <- 0 until edge2.variable.domain.size) {
+        valueTensor.singleIndex2 = j
+        t.+=(valueTensor, marginal(i,j) * f)
+      }
+    }
+  }
+}
+
+
+class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val edge3:BPEdge, val ring: BPRing) extends DiscreteMarginal3(edge1.bpVariable.variable, edge2.bpVariable.variable, edge3.bpVariable.variable, null) with BPFactor {
+  edge1.bpFactor = this
+  edge2.bpFactor = this
+  edge3.bpFactor = this
+  val edges = Seq(edge1, edge2, edge3)
+  def scores: Tensor3 = throw new Error("Not yet implemented")
+  def updateOutgoing(e: BPEdge): Unit = e match {
+    case this.edge1 => updateOutgoing1
+    case this.edge2 => updateOutgoing2
+    case this.edge3 => updateOutgoing3
+  } 
+  def updateOutgoing1: Unit = edge1.messageFromFactor = calculateOutgoing1
+  def updateOutgoing2: Unit = edge2.messageFromFactor = calculateOutgoing2
+  def updateOutgoing3: Unit = edge3.messageFromFactor = calculateOutgoing3
+  def calculateOutgoing1: Tensor = throw new Error("Not yet implemented")
+  def calculateOutgoing2: Tensor = throw new Error("Not yet implemented")
+  def calculateOutgoing3: Tensor = throw new Error("Not yet implemented")
+  def calculateBeliefs: Tensor3 = throw new Error("Not yet implemented")
+  override def calculateMarginal: Tensor3 = calculateBeliefs.expNormalized.asInstanceOf[Tensor3]
+  override def proportions: Proportions3 = throw new Error("Not yet implemented") // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginal, false)"
+  def addExpectationInto(t:Tensor, f:Double): Unit = throw new Error("Not yet implemented")
+}
+
+
+
+class BPSummary(val ring:BPRing, val model:Model) extends Summary[DiscreteMarginal] {
+  private val _bpFactors = new LinkedHashMap[Factor, BPFactor]
+  private val _bpVariables = new LinkedHashMap[DiscreteTensorVar, BPVariable1]
+  def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
+  /** Create a new BPSummary to infer the given varying variables.  Other non-varying neighbors of relevant factors are considered constant. */
+  def this(varying:Iterable[DiscreteVar], ring:BPRing, model:Model) = {
+    this(ring, model)
+    val varyingSet = varying.toSet
+    for (factor <- model.factors(varying)) _bpFactors(factor) = ring.newBPFactor(factor, varyingSet, this)
+  }
+  def this(varying:Iterable[DiscreteVar], model:Model) = this(varying, BPSumProductRing, model)
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
-
-  def bpVariables: Iterable[BPVariable] = _bpVariables.values
-
+  def bpVariables: Iterable[BPVariable1] = _bpVariables.values
   def marginals = _bpFactors.values ++ _bpVariables.values
-
   def marginal(vs: Variable*): DiscreteMarginal = vs.size match {
     case 1 => _bpVariables(vs.head.asInstanceOf[DiscreteVar])
     case 2 => {val factors = _bpFactors.values.filter(f => f.variables.toSet == vs.toSet); factors.head} // Need to actually combine if more than one
   }
-
-  def marginal(v: DiscreteVar) = _bpVariables(v)
-
-  def marginal(f: Factor) = _bpFactors(f)
+  def marginal(v: DiscreteVar): BPVariable1 = _bpVariables(v)
+  def marginal(f: Factor): BPFactor = _bpFactors(f)
+  override def setToMaximize(implicit d:DiffList): Unit = 
+    if (ring == BPSumProductRing) bpVariables.foreach(_.setToMaximize(d))
+    else throw new Error("Not yet implemented arbitrary backwards pass.")
 }
 
-object LoopyBP {
-  def infer(summary: BPSummary, numIterations: Int = 10) {
-    for (iter <- 0 to numIterations)
-      for (bpf: BPFactor <- summary.bpFactors) {
-        // get all the incoming messages
-        for (e <- bpf.edges) {
-          e.bpVariable.updateOutgoing(e)
+object BP {
+  def inferLoopy(summary: BPSummary, numIterations: Int = 10): Unit = {
+    for (iter <- 0 to numIterations) { // TODO Make a more clever convergence detection
+      for (bpf <- summary.bpFactors) {
+        for (e <- bpf.edges) e.bpVariable.updateOutgoing(e)  // get all the incoming messages
+        for (e <- bpf.edges) e.bpFactor.updateOutgoing(e)    // send messages
+      }
+    }
+  }
+  def inferTreewiseSum(varying:Set[DiscreteVar], model:Model): BPSummary = {
+    val summary = new BPSummary(varying, BPSumProductRing, model)
+    throw new Error("Not yet implemented")
+  }
+  def inferSingle(v:MutableDiscreteVar[_<:DiscreteValue], model:Model): BPSummary = {
+    val summary = new BPSummary(Seq(v), BPSumProductRing, model)
+    summary.bpFactors.foreach(_.updateOutgoing) 
+    summary
+  }
+  // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
+  def inferChainMax(varying:Seq[MutableDiscreteVar[_]], model:Model): BPSummary = {
+    val summary = new BPSummary(varying, BPMaxProductRing, model)
+    varying.size match {
+      case 0 => {}
+      case 1 => { summary.bpFactors.foreach(_.updateOutgoing); summary.bpVariables.head.setToMaximize(null) }
+      case _ => {
+        val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
+        val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2 with BPFactor2MaxProduct]]
+        //println("BP.inferChainMax  markovBPFactors.size = "+markovBPFactors.size)
+        // Send all messages from observations to labels in parallel
+        obsBPFactors.par.foreach(_.updateOutgoing)
+        // Send forward Viterbi messages
+        for (f <- markovBPFactors) {
+          f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
+          f.edge1.bpFactor.updateOutgoing(f.edge2)   // send message from factor to neighbor2
         }
-        // send messages
-        for (e <- bpf.edges) {
-          e.bpFactor.updateOutgoing(e)
+        // Do Viterbi backtrace, setting label values
+        var maxIndex = markovBPFactors.last.edge2.bpVariable.proportions.maxIndex // TODO We don't actually need to expNormalize here; save computation by avoiding this
+        markovBPFactors.last.edge2.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
+        for (f <- markovBPFactors.reverse) {
+          maxIndex = f.edge2Max1(maxIndex)
+          f.edge1.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
         }
       }
+    }
+    summary
   }
+  
+  // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
+  def inferChainSum(varying:Seq[MutableDiscreteVar[_]], model:Model): BPSummary = {
+    val summary = new BPSummary(varying, BPSumProductRing, model)
+    varying.size match {
+      case 0 => {}
+      case 1 => summary.bpFactors.foreach(_.updateOutgoing)
+      case _ => {
+        val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
+        val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2]]
+        assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
+        // Send all messages from observations to labels in parallel
+        obsBPFactors.par.foreach(_.updateOutgoing)
+        // Send forward messages
+        for (f <- markovBPFactors) {
+          f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
+          f.edge1.bpFactor.updateOutgoing(f.edge2)   // send message from factor to neighbor2
+        }
+        // Send backward messages
+        for (f <- markovBPFactors.reverse) {
+          f.edge2.bpVariable.updateOutgoing(f.edge2) // send message from neighbor1 to factor
+          f.edge2.bpFactor.updateOutgoing(f.edge1)   // send message from factor to neighbor2
+        }
+        // Update marginals    //summary.bpVariables.foreach(_.updateProportions)
+        // TODO Also update BPFactor marginals
+      }
+    }
+    summary
+  }
+  
+}
+
+trait InferByBP extends Infer {
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = None
+}
+
+object InferByBPChainSum extends InferByBP {
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+    case variables:Seq[MutableDiscreteVar[_]] if (variables.forall(_.isInstanceOf[MutableDiscreteVar[_]])) => Some(apply(variables, model))
+    case _ => None
+  }
+  def apply(varying:Seq[MutableDiscreteVar[_]], model:Model): BPSummary = BP.inferChainSum(varying, model)
 }

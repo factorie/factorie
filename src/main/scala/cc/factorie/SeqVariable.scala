@@ -32,6 +32,8 @@ trait ElementType[+ET] {
     because Seq defines "equals" based on same contents, 
     but all variables must have equals based on identity. */
 trait SeqVar[+E] extends Variable with VarAndValueType[SeqVar[E],Seq[E]] with ElementType[E] {
+  type Value <: Seq[E]
+  def value: Seq[E]
   def iterator: Iterator[E]
   def foreach[U](f:(E)=>U): Unit
   def length: Int
@@ -46,6 +48,8 @@ trait SeqVar[+E] extends Variable with VarAndValueType[SeqVar[E],Seq[E]] with El
     because Seq defines "equals" based on same contents, 
     but all variables must have equals based on identity. */
 trait IndexedSeqVar[+E] extends SeqVar[E] with VarAndValueType[IndexedSeqVar[E],IndexedSeq[E]] with ElementType[E] {
+  type Value <: IndexedSeq[E]
+  def value: IndexedSeq[E]
   // Some of the methods of Seq, for convenience
   def iterator: Iterator[E] = new Iterator[E] {
     var i = 0
@@ -72,7 +76,7 @@ trait IndexedSeqVar[+E] extends SeqVar[E] with VarAndValueType[IndexedSeqVar[E],
 /** A variable containing a mutable sequence of other variables.  
     This variable stores the sequence itself, and tracks changes to the contents and order of the sequence. 
     @author Andrew McCallum */
-trait MutableSeqVar[X] extends IndexedSeqVar[X] with MutableVar { // TODO This could be an IndexedSeqVar
+trait MutableSeqVar[X] extends IndexedSeqVar[X] with MutableVar[IndexedSeq[X]] { // TODO This could be an IndexedSeqVar
   //type ElementType <: AnyRef
   type Element = VariableType#ElementType
   protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that SeqVar[Int] is efficient.

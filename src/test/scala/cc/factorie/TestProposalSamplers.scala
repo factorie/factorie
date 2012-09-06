@@ -38,7 +38,7 @@ class TestProposalSamplers extends TestCase {
         lazy val score: Double = factor.score(this)
       }
 
-      def statistics(v: this.type#Values) = Stat(v._1)
+      def statistics(v1:BinVar#Value) = Stat(v1)
 
       def score(s: Stat): Double = if (s._1 == LabelDomain(0)) {
         score0
@@ -62,7 +62,7 @@ class TestProposalSamplers extends TestCase {
         lazy val score: Double = factor.score(this)
       }
 
-      def statistics(v: this.type#Values) = Stat(v._1, v._2)
+      def statistics(v1:BinVar#Value, v2:BinVar#Value) = Stat(v1, v2)
 
       def score(s: Stat): Double = if (s._1 == s._2) scoreEqual else scoreUnequal
 

@@ -33,6 +33,7 @@ trait Tensor2 extends Tensor {
   @inline final def multiIndex(i:Int): (Int, Int) = (i/dim2, i%dim2)
   @inline final def index1(i:Int): Int = i/dim2
   @inline final def index2(i:Int): Int = i%dim2
+  override def copy: Tensor2 = throw new Error("Method copy not defined on class "+getClass.getName)
 }
 
 
@@ -60,6 +61,7 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
 
 class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   def this(t:Tensor2) = { this(t.dim1, t.dim2); this := t }
+  def this(dim1:Int, dim2:Int, fillValue:Double) = { this(dim1, dim2); java.util.Arrays.fill(_values, fillValue) }
   override def copy: DenseTensor2 = { val t = new DenseTensor2(dim1, dim2); System.arraycopy(_values, 0, t._values, 0, length); t }
   override def blankCopy: DenseTensor2 = new DenseTensor2(dim1, dim2)
   override def stringPrefix = "DenseTensor2"
@@ -75,15 +77,15 @@ trait SingletonBinaryTensorLike2 extends Tensor2 with SingletonBinaryTensor {
   def singleIndex = singleIndex1*dim2 + singleIndex2
 }
 
-class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int) extends SingletonBinaryTensorLike2
-
-class MutableSingletonBinaryTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var singleIndex2:Int) extends SingletonBinaryTensorLike2
+class SingletonBinaryTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var singleIndex2:Int) extends SingletonBinaryTensorLike2
+//class MutableSingletonBinaryTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var singleIndex2:Int) extends SingletonBinaryTensorLike2
 
 class SingletonTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val singleIndex2:Int, val singleValue:Double) extends Tensor2 with SingletonTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = new SingletonIntSeq(singleIndex2)
   def activeDomain: IntSeq = new SingletonIntSeq(singleIndex)
   val singleIndex = singleIndex1*dim2 + singleIndex2
+  override def copy = new SingletonBinaryTensor2(dim1, dim2, singleIndex1, singleIndex2)
 }
 
 trait SparseBinaryTensorLike2 extends Tensor2 with SparseBinaryTensor {
@@ -93,6 +95,7 @@ trait SparseBinaryTensorLike2 extends Tensor2 with SparseBinaryTensor {
 class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensorLike2 {
   override def blankCopy: SparseBinaryTensor2 = new SparseBinaryTensor2(dim1, dim2)
   //override def stringPrefix = "SparseBinaryTensor2"
+  //override def copy = new SparseBinaryTensor2(dim1, dim2, singleIndex1, singleIndex2)
 }
 
 trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
@@ -144,6 +147,7 @@ class DenseLayeredTensor2(val dim1:Int, val dim2:Int, val newTensor1:Int=>Tensor
   override def stringPrefix = "DenseLayeredTensor2"
 }
 
+// TODO Make a version of the above that uses an _innerValues: Array[Double] acting as (factor) weights multiplying the values of the inner Tensor1's?
 
 trait SingletonLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def singleIndex1: Int
@@ -187,5 +191,5 @@ trait SingletonBinaryLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:DenseTensorLike2 => { var s = 0.0; this.foreachActiveElement((i,v) => s += t(i)*v); s }
   }
 }
-class SingletonBinaryLayeredTensor2(val dim1:Int, val dim2:Int, val singleIndex1:Int, val inner:Tensor1) extends SingletonBinaryLayeredTensorLike2
+class SingletonBinaryLayeredTensor2(val dim1:Int, val dim2:Int, var singleIndex1:Int, var inner:Tensor1) extends SingletonBinaryLayeredTensorLike2
 
