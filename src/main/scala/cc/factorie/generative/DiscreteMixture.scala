@@ -26,9 +26,9 @@ object DiscreteMixture extends GenerativeFamily3[DiscreteVar,Mixture[Proportions
     def sampledValue(s:StatisticsType): DiscreteValue = s._1.domain.apply(s._2(s._3.intValue).sampleIndex)
     def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = s._2(mixtureIndex).apply(s._1.intValue)
     override def prChoosing(mixtureIndex:Int): Double = _2(mixtureIndex).tensor.apply(_1.intValue)
-    def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value = s._1.domain.apply(s._2(mixtureIndex).sampleIndex)
+    def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value = s._1.domain.apply(s._2(mixtureIndex).sampleIndex).asInstanceOf[ChildType#Value]
     def prValue(f:Statistics, intValue:Int): Double = f._2.apply(f._3.intValue).apply(intValue)
-    override def updateCollapsedParents(weight:Double): Boolean = { _2(_3.intValue).tensor.masses.+=(_1.intValue, weight); true }
+    //override def updateCollapsedParents(weight:Double): Boolean = { _2(_3.intValue).tensor.masses.+=(_1.intValue, weight); true }
       //_2(_3.intValue) match case p:DenseCountsProportions => { p.increment(_1.intValue, weight)(null); true }
   }
   def newFactor(a:DiscreteVar, b:Mixture[ProportionsVar], c:DiscreteVariable) = Factor(a, b, c)
@@ -84,7 +84,7 @@ object MaximizeGate extends Maximize {
   def maxIndex(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Int = {
     var max = Double.NegativeInfinity
     var maxi = 0
-    val statistics = dmf.statistics(dmf._1.value, dmf._2.value, dmf._3.value)
+    val statistics: dmf.StatisticsType = dmf.statistics //(dmf._1.value, dmf._2.value, dmf._3.value)
     var i = 0; val size = gate.domain.size
     while (i < size) {
       val pr = df._2.tensor(i) * dmf.prChoosing(statistics, i)

@@ -42,6 +42,7 @@ trait MixtureFactor extends GenerativeFactor {
 class Mixture[+P<:Variable](val components:Seq[P])(implicit val model: MutableGenerativeModel) extends Seq[P] with Variable 
 with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]] 
 {
+  type Value <: scala.collection.Seq[P#Value]
   this ~ Mixture() // This will make this a child of each of the mixture components.
   def apply(i:Int) = components(i)
   def length = components.length

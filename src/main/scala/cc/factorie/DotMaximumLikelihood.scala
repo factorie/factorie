@@ -11,7 +11,7 @@ class DotMaximumLikelihood(val model:TemplateModel, val optimizer:GradientOptimi
   var logLikelihood: Double = Double.NaN
   // TODO For now, this only handles the case of IID DiscreteVars
   // TODO Rename this to something indicating IID
-  def processAll[V<:DiscreteVarWithTarget](variables: Iterable[V], numIterations:Int = Int.MaxValue): Double = {
+  def processAll[V<:DiscreteVarWithTarget[_]](variables: Iterable[V], numIterations:Int = Int.MaxValue): Double = {
     val constraints = model.newDenseWeightsTensor
 	  // Gather constraints
 	  variables.foreach(_.setToTarget(null))
@@ -49,7 +49,7 @@ class DotMaximumLikelihood(val model:TemplateModel, val optimizer:GradientOptimi
   }
 
   // Consider making this not BP-specific by implementing something like addExpectationsInto with plain Factor and Summary?
-  def processAllBP[V<:DiscreteVarWithTarget](iidVariableSets: Iterable[Iterable[V]], inferencer:InferByBP, numIterations:Int = Int.MaxValue): Double = {
+  def processAllBP[V<:DiscreteVarWithTarget[_]](iidVariableSets: Iterable[Iterable[V]], inferencer:InferByBP, numIterations:Int = Int.MaxValue): Double = {
     val constraints = model.newDenseWeightsTensor
     // Gather constraints
     iidVariableSets.foreach(_.foreach(_.setToTarget(null)))

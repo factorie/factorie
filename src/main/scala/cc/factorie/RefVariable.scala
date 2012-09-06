@@ -19,7 +19,7 @@ trait RefVar[A<:AnyRef] extends Variable with VarAndValueGenericDomain[RefVar[A]
 
 /** A variable whose value is a pointer to a Scala object (which may also be a Variable).
     See also ArrowVariable and EdgeVariable. */
-class RefVariable[A<:AnyRef](initialValue:A = null) extends RefVar[A] with MutableVar {
+class RefVariable[A<:AnyRef](initialValue:A = null) extends RefVar[A] with MutableVar[A] {
   private var _value: A = initialValue
   @inline final def value: A = _value
   def set(newValue:A)(implicit d: DiffList): Unit = if (newValue != _value) {

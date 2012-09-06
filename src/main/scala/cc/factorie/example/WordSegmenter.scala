@@ -40,7 +40,7 @@ object WordSegmenterDemo {
   val model = new TemplateModel
   /** Bias term just on labels */
   model += new TemplateWithDotStatistics1[Label] {
-    def statistics(t:Label#Value) = Stat(t)
+    //def statistics(t:Label#Value) = Stat(t)
     def statisticsDomains = Tuple1(LabelDomain)
   }
   /** Factor between label and observed token */

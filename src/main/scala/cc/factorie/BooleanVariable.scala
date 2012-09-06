@@ -16,11 +16,7 @@ package cc.factorie
 
 /** The value of a BooleanDomain.  A subclass of CategoricalValue.
     @author Andrew McCallum */
-trait BooleanValue extends CategoricalValue[Boolean] {
-  def domain: BooleanDomain = BooleanDomain
-  //def booleanValue = if (this eq BooleanDomain.trueValue) true else false
-  def booleanValue = if (intValue == 1) true else false
-}
+//trait BooleanValue extends CategoricalValue[Boolean] { def domain: BooleanDomain = BooleanDomain }
 
 
 /** The Domain for BooleanVar, of size two, containing a falseValue
@@ -31,7 +27,7 @@ class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanVal
   val falseValue = super.value(false) // will get index == 0
   val trueValue = super.value(true)   // will get index == 1
   freeze
-  class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with cc.factorie.BooleanValue {
+  class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) /*with cc.factorie.BooleanValue*/ {
     override def domain = thisDomain
   }
   override protected def newCategoricalValue(i:Int, e:Boolean) = new BooleanValue(i, e)
@@ -42,7 +38,6 @@ class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanVal
   //override def apply(index:Int) = index == 1
   override def category(index:Int) = index == 1
   override def index(bool:Boolean) = if (bool) 1 else 0
-  //override def index(bool:Boolean) = if (bool) 1 else 0
   override def value(bool:Boolean) = if (bool) trueValue else falseValue
   override def apply(index:Int) = if (index == 1) trueValue else falseValue
   def apply(b:Boolean) = if (b) trueValue else falseValue
@@ -56,7 +51,8 @@ object BooleanValue {
     @see BooleanVariable
     @author Andrew McCallum */
 trait BooleanVar extends CategoricalVar[Boolean] with VarAndValueType[BooleanVar,BooleanValue] {
-  def domain = BooleanDomain
+  def value: BooleanValue
+  def domain: CategoricalDomain[Boolean] = BooleanDomain
   override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
   @inline final def booleanValue = categoryValue // Alias for the above method
   def ^(other:BooleanVar):Boolean = booleanValue && other.booleanValue
@@ -67,9 +63,12 @@ trait BooleanVar extends CategoricalVar[Boolean] with VarAndValueType[BooleanVar
 }
 
 /** A class for mutable Boolean variables. 
-    @author Andrew McCallum */
-class BooleanVariable(initialValue:Boolean) extends CategoricalVariable(initialValue) with BooleanVar {
-  def this() = this(false)
+    @author Andrew McCallum */ 
+// TODO Note that Value here will be CategoricalValue[Boolean], not BooleanValue; only matters if we care about the type of .domain
+class BooleanVariable extends MutableCategoricalVar[Boolean] with BooleanVar {
+  //type Value = BooleanValue
+  // Default will be false, because initial setting of MutableDiscreteVar.__value is 0
+  def this(initialValue:Boolean) = { this(); _set(if (initialValue) 1 else 0) }
   // Avoid CategoricalVariable's HashMap lookup
   final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)
   override final def setCategory(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)

@@ -64,7 +64,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
 //    override def statistics: StatisticsType = Factor2.this.statistics(this)
 //  }
 //  def statistics(v:Values): StatisticsType
-  def statistics: StatisticsType = statistics(_1.value, _2.value)
+  def statistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
   
   // New work, testing ideas for getting rid of Values
   /** Iterate over all value assignments of both neighbors, making available the score for each. 
@@ -92,7 +92,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
   def scoreValues2(tensor1:Tensor, tensor2:Tensor): Tensor1 = throw new Error("Not implemented in Factor "+getClass)
 
   /** Return a record of the current values of this Factor's neighbors. */
-  def currentAssignment = new Assignment2(_1, _1.value, _2, _2.value)
+  def currentAssignment = new Assignment2(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def scoreAssignment(a:TypedAssignment[Variable]) = a match {
     case a:AbstractAssignment2[N1,N2] if ((a.var1 eq _1) && (a.var2 eq _2)) => statistics(a.value1, a.value2).score
@@ -241,6 +241,7 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
       val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
       val domain1 = neighborDomain2.asInstanceOf[DiscreteDomain with Domain[N2#Value]]
       statistics(domain0(v.singleIndex1), domain1(v.singleIndex2)).score
+      //statistics(new SingletonBinaryTensor1(v.dim1, v.singleIndex1), new SingletonBinaryTensor1(v.dim2, v.singleIndex2)).score
     }
   }
 

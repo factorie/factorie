@@ -45,12 +45,12 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
 //    override def statistics: StatisticsType = Factor3.this.statistics(this)
 //  }
 //  def statistics(v:Values): StatisticsType
-  def statistics: StatisticsType = statistics(_1.value, _2.value, _3.value)
+  def statistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value], _3.value.asInstanceOf[N3#Value])
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): StatisticsType
   // TODO Consider a method like this?  Replaces score(Values)
   def scoreValues(value1:N1#Value, value2:N2#Value, value3:N3#Value): Double = statistics(value1, value2, value3).score
   /** Return a record of the current values of this Factor's neighbors. */
-  def currentAssignment = new Assignment3(_1, _1.value, _2, _2.value, _3, _3.value)
+  def currentAssignment = new Assignment3(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value], _3, _3.value.asInstanceOf[N3#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def scoreAssignment(a:TypedAssignment[Variable]) = a match {
     case a:AbstractAssignment3[N1,N2,N3] if ((a.var1 eq _1) && (a.var2 eq _2) && (a.var3 eq _3)) => statistics(a.value1, a.value2, a.value3).score

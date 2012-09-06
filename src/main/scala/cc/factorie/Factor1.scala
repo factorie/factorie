@@ -64,9 +64,9 @@ trait Factor1[N1<:Variable] extends Factor {
 //  }
 //  def statistics(v:Values): StatisticsType
   def statistics(v1:N1#Value): StatisticsType
-  def statistics: StatisticsType = statistics(_1.value)
+  def statistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value])
   /** Return a record of the current values of this Factor's neighbors. */
-  def currentAssignment = new Assignment1(_1, _1.value)
+  def currentAssignment = new Assignment1(_1, _1.value.asInstanceOf[N1#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def scoreAssignment(a:TypedAssignment[Variable]) = a match {
     case a:AbstractAssignment1[N1] if (a.var1 eq _1) => statistics(a.value1).score

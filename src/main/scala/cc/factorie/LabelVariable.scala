@@ -56,24 +56,24 @@ trait TargetVar extends Variable with AimerType[Variable] {
 // Discrete variables with targets.
 
 /** These variables have a target value, but it may not necessarily be stored in a separate TargetVar variable. */
-trait DiscreteVarWithTargetValue extends DiscreteVariable with VarWithTargetValue {
+trait DiscreteVarWithTargetValue[A<:DiscreteValue] extends MutableDiscreteVar[A] with VarWithTargetValue {
   def targetIntValue: Int
 }
 
 /** A container of a target value for discrete variables.  */
-trait DiscreteTargetVar extends DiscreteVariable with TargetVar with AimerType[DiscreteVar]
+trait DiscreteTargetVar[A<:DiscreteValue] extends MutableDiscreteVar[A] with TargetVar with AimerType[DiscreteVar]
 
 /** A discrete variable that has a true, target "labeled" value, 
     separate from its current value. 
     @author Andrew McCallum */
 // TODO We could also make version of this for IntegerVar: IntegerTargetValue
 // TODO Rename this DiscreteVariableWithTarget because it must include DiscreteVariable
-trait DiscreteVarWithTarget extends DiscreteVarWithTargetValue with VarWithTarget with TargetType[DiscreteTargetVar] {
+trait DiscreteVarWithTarget[A<:DiscreteValue] extends DiscreteVarWithTargetValue[A] with VarWithTarget with TargetType[DiscreteTargetVar[A]] {
   //type TargetType = DiscreteValue
   /** The index of the true labeled value for this variable.  If unlabeled, set to (-trueIndex)-1. */
   def targetIntValue: Int = if (target eq null) -1 else target.intValue
   def targetIntValue_=(newValue:Int): Unit = target.set(newValue)(null)
-  def setToTarget(implicit d:DiffList): Unit = set(target.value.asInstanceOf[ValueType])
+  def setToTarget(implicit d:DiffList): Unit = set(target.intValue)
   //def valueIsTarget: Boolean = value == target.value
   def targetValue: ValueType = if (target eq null) null.asInstanceOf[ValueType] else target.value.asInstanceOf[ValueType]
   def isUnlabeled = target eq null
@@ -81,19 +81,19 @@ trait DiscreteVarWithTarget extends DiscreteVarWithTargetValue with VarWithTarge
   //def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
 }
 
-abstract class DiscreteVariableWithTarget(targetVal:Int) extends DiscreteVariable(targetVal) with DiscreteVarWithTarget {
+abstract class DiscreteVariableWithTarget(targetVal:Int) extends DiscreteVariable(targetVal) with DiscreteVarWithTarget[DiscreteValue] {
   self =>
   val target = new DiscreteTarget(targetVal)
-  class DiscreteTarget(targetVal:Int) extends DiscreteVariable(targetVal) with DiscreteTargetVar with AimerType[DiscreteVariableWithTarget] {
+  class DiscreteTarget(targetVal:Int) extends DiscreteVariable(targetVal) with DiscreteTargetVar[DiscreteValue] with AimerType[DiscreteVariableWithTarget] {
     def domain = self.domain
     def aimer = self
   }
   
 }
 
-trait CategoricalTargetVar[A] extends CategoricalVariable[A] with DiscreteTargetVar with AimerType[CategoricalVar[A]]
+trait CategoricalTargetVar[A] extends CategoricalVariable[A] with DiscreteTargetVar[CategoricalValue[A]] with AimerType[CategoricalVar[A]]
 
-trait CategoricalVarWithTarget[A] extends CategoricalVariable[A] with DiscreteVarWithTarget with TargetType[CategoricalTargetVar[A]] {
+trait CategoricalVarWithTarget[A] extends CategoricalVariable[A] with DiscreteVarWithTarget[CategoricalValue[A]] with TargetType[CategoricalTargetVar[A]] {
   //def targetCategoryValue_=(x:A) = if (x == null) target = null else target.set(x)
   //def targetCategoryValue: CategoryType = target.categoryValue
   //def targetCategoryValue_=(newCategory:CategoryType): Unit = target.set(newCategory)(null)

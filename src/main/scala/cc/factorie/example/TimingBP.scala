@@ -22,7 +22,7 @@ object TestModel extends TemplateModel {
   }
   // Transition factors between two successive labels
   val transTemplate = new TemplateWithDotStatistics2[PosLabel, PosLabel] { // the sparse weights are kind of worthless here
-    override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
+    override def statisticsDomains = ((PosDomain, PosDomain))
     def unroll1(label: PosLabel) = if (label.token.hasPrev) Factor(label.token.prev.posLabel, label) else Nil
     def unroll2(label: PosLabel) = if (label.token.hasNext) Factor(label, label.token.next.posLabel) else Nil
   }

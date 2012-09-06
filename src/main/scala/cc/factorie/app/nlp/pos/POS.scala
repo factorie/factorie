@@ -36,7 +36,7 @@ object PosModel extends TemplateModel {
   }
   // Transition factors between two successive labels
   val trans = new TemplateWithDotStatistics2[PosLabel, PosLabel] {
-    override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
+    override def statisticsDomains = ((PosDomain, PosDomain))
     def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
     def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
   }

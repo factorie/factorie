@@ -47,7 +47,7 @@ object Dirichlet extends GenerativeFamily2[ProportionsVar,MassesVar] {
     def pr(s:StatisticsType) = self.pr(s._1, s._2)
     override def pr: Double = self.pr(_1.value, _2.value)
     def sampledValue(s:StatisticsType): Proportions = self.sampledValue(s._2, Nil)
-    override def sampledValue: Proportions = self.sampledValue(_2.tensor, Nil)
+    override def sampledValue: Proportions = self.sampledValue(_2.value, Nil)
     override def updateCollapsedChild(): Boolean = { _1.tensor.+=(_2.value); true }
   }
   def newFactor(a:ProportionsVar, b:MassesVar) = Factor(a, b)

@@ -71,7 +71,7 @@ abstract class TemplateWithTensorStatistics3[N1<:DiscreteTensorVar,N2<:DiscreteT
   def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = Stat(value1, value2, value3)
 }
 
-abstract class TemplateWithDotStatistics3[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with DotFamily with DotStatistics3[N1#Value,N2#Value,N3#Value]  {
+abstract class TemplateWithDotStatistics3[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with FamilyWithDotStatistics3[N1,N2,N3]  {
   type FamilyType <: TemplateWithDotStatistics3[N1,N2,N3]
-  def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = Stat(value1, value2, value3)
+  //def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = Stat(value1, value2, value3)
 }

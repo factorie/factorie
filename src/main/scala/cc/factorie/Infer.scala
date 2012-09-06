@@ -100,7 +100,7 @@ object InferByGibbsSampling {
     inferencer.process(varying, iterations, burnIn, thinning)
     summary
   }
-  def apply[V<:DiscreteVariable](varying:Iterable[V], model:Model, iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): DiscreteSummary1[V] = {
+  def apply[V<:MutableDiscreteVar[_]](varying:Iterable[V], model:Model, iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): DiscreteSummary1[V] = {
     withSummary(varying, model, new DiscreteSummary1(varying), iterations, burnIn, thinning)
   }
 }
