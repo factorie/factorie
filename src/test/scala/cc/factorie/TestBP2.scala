@@ -178,7 +178,7 @@ class TestBP2 extends FunSuite with BeforeAndAfter {
     val vars: Set[DiscreteVariable] = Set(v1, v2, v3, v4)
 
     val model = new FactorModel(
-      // loop
+      // loop of repulsion factors
       newFactor2(v1, v2, -5, 0), 
       newFactor2(v2, v3, -5, 0),
       newFactor2(v3, v4, -5, 0), 
@@ -188,16 +188,19 @@ class TestBP2 extends FunSuite with BeforeAndAfter {
     )
     
     val fg = new BPSummary(vars, model)
-    BP.inferLoopy(fg, 4)
+    BP.inferLoopy(fg)
+    fg.setToMaximize()
+    
     println("v1 : " + fg.marginal(v1).proportions)
     println("v2 : " + fg.marginal(v2).proportions)
     println("v3 : " + fg.marginal(v3).proportions)
     println("v4 : " + fg.marginal(v4).proportions)
-    fg.setToMaximize()
+    
     println("v1 val : " + v1.value)
     println("v2 val : " + v2.value)
     println("v3 val : " + v3.value)
     println("v4 val : " + v4.value)
+    
     assert(v1.intValue === 0)
     assert(v2.intValue === 1)
     assert(v3.intValue === 1)
@@ -245,7 +248,7 @@ class TestBP2 extends FunSuite with BeforeAndAfter {
       println("marginals : " + marginals.mkString(", "))
       println("marginals / Z: " + marginals.map(_ / Z).mkString(", "))
       // TODO: add this assertion back and check above code -brian
-      //assertEquals(marginals.sum, 1.0, eps)
+      // assertEquals(1.0, marginals.map(_ / Z).sum, eps)
       
       // test sum-product
       val fg = BP.inferChainSum(vars, model)
@@ -279,7 +282,7 @@ object BPTestUtils {
     def domain = BinDomain
   }
 
-  def newFactor1(n1: BinVar, score0: Double, score1: Double) = {
+  def newFactor1(n1: BinVar, score0: Double, score1: Double): Factor = {
     val family = new TemplateWithDotStatistics1[BinVar] {
       override def statisticsDomains = Tuple1(BinDomain)
     }
@@ -292,7 +295,7 @@ object BPTestUtils {
     family.factors(n1).head
   }
 
-  def newFactor2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double) = {
+  def newFactor2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double): Factor = {
     val family = new Template2[BinVar, BinVar] with DotStatistics1[BooleanValue] {
       override def statisticsDomains = Tuple1(BooleanDomain)
       def unroll1(v: BPTestUtils.this.type#BinVar) = if (v == n1) Factor(n1, n2) else Nil
