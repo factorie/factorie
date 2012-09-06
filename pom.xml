@@ -167,6 +167,16 @@ limitations under the License.
               </args>
             </launcher>
             -->
+            <launcher>
+              <id>bib-demo</id>
+              <mainClass>cc.factorie.app.bib.Coref</mainClass>
+              <jvmArgs><jvmArg>-Xmx4g</jvmArg></jvmArgs>
+            </launcher>
+            <launcher>
+              <id>epidb-experiments</id>
+              <mainClass>cc.factorie.app.bib.experiments.EpiDBExperimentOptions</mainClass>
+              <jvmArgs><jvmArg>-Xmx4g</jvmArg></jvmArgs>
+            </launcher>
           </launchers>
         </configuration>
       </plugin>

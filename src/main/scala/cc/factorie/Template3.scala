@@ -41,7 +41,6 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
           factor._2.asInstanceOf[DiscreteVar].intValue,
           factor._3.asInstanceOf[DiscreteVar].intValue))
   }
-  
   def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
     val ret = new ArrayBuffer[FactorType]
     if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])

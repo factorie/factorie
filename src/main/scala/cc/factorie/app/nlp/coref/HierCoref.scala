@@ -2,7 +2,8 @@ package cc.factorie.app.nlp.coref
 import cc.factorie._
 import com.mongodb.DB
 import db.mongo._
-import collection.mutable.{LinkedHashMap, HashMap, HashSet, ArrayBuffer}
+import la.SparseIndexedTensor
+import collection.mutable.{ArrayBuffer,ListBuffer,HashSet,HashMap,LinkedHashMap}
 
 class BagOfTruths(val entity:Entity, truths:Map[String,Double]=null) extends BagOfWordsVariable(Nil,truths) with EntityAttr
 class EntityExists(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
@@ -47,7 +48,7 @@ trait HasCanopyAttributes[T<:Entity]{
   val canopyAttributes = new ArrayBuffer[CanopyAttribute[T]]
 }
 trait CanopyAttribute[T<:Entity]{def entity:Entity;def canopyName:String}
-
+class SimpleStringCanopy[T<:Entity](val entity:T,val canopyName:String) extends CanopyAttribute[T]
 /**Mix this into the sampler and it will automatically propagate the bags that you define in the appropriate method*/
 /*
 trait AutomaticBagPropagation{
@@ -81,6 +82,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
     (e1,e2)
   }
   def sampleAttributes(e:T)(implicit d:DiffList):Unit //= {e.dirty.reset}
+
   protected def sampleEntity(samplePool:ArrayBuffer[T]) = {
     val initialSize = samplePool.size
     var tries = 10
@@ -206,7 +208,79 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
   def isMention(e:Entity):Boolean = e.isObserved
 }
 
-abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends TemplateWithStatistics3[EntityRef,A,A] {
+
+class FastTemplateModel extends TemplateModel() {
+  override def factorsWithDuplicates(variable:Variable): Iterable[Factor] = {
+    val result = new ListBuffer[Factor]
+    var i = 0
+    while(i<templates.size){result ++= templates(i).factorsWithDuplicates(variable);i+=1}
+    result
+  }
+  override def factorsWithDuplicates(variables:Iterable[Variable]): Iterable[Factor] = {
+    val result = new ListBuffer[Factor]
+    for(variable <- variables){
+      var i=0
+      while(i<templates.size){result ++= templates(i).factorsWithDuplicates(variable);i+=1}      
+    }
+    result
+  }
+  override def factorsWithDuplicates(d:DiffList): Iterable[Factor] = {
+    val result = new ListBuffer[Factor]
+    if (d.size > 0) {
+      for(diff <- d){
+        result ++= factorsWithDuplicates(diff)
+      }
+    }
+    result
+  }
+
+}
+abstract class FastTemplate1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template1[N1]()(nm1){
+  override def factorsWithDuplicates(v:Variable): Iterable[FactorType] = {
+    // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
+    // When I substituted "isAssignable" for HashMap caching in GenericSampler I got 42.8 versus 44.4 seconds ~ 3.7%  Perhaps worth considering?
+    val ret = new ListBuffer[FactorType]
+    // Create Factor iff variable class matches and the variable domain matches
+    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
+    if ((neighborClass1a ne null) && neighborClass1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
+    // TODO It would be so easy for the user to define Variable.unrollCascade to cause infinite recursion.  Can we make better checks for this?
+    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))
+    ret
+  }
+
+}
+abstract class FastTemplate3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3]()(nm1,nm2,nm3){
+    override def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
+    val ret = new ListBuffer[FactorType]
+    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
+    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
+    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) ret ++= unroll3(v.asInstanceOf[N3])
+    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
+    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
+    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
+    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) {throw Exception("Error")}//ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))}
+    ret
+  }
+}
+abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends FastTemplate3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
+  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
+}
+abstract class FastTemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends FastTemplate1[N1] with Statistics1[N1#Value] {
+  def statistics(vals:Values): StatisticsType = Stat(vals._1)
+}
+
+
+class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B]{
+    override def unroll2(childBow:B) = Nil //note: this is a slight approximation for efficiency
+    override def unroll3(childBow:B) = Nil //note this is a slight approximation for efficiency
+    def score(s:Stat): Double = {
+      val childBow = s._2
+      val parentBow = s._3
+      val result = childBow.cosineSimilarity(parentBow,childBow)
+      (result+shift)*weight
+    }
+}
+abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends FastTemplateWithStatistics3[EntityRef,A,A] {
   def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
   def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
   def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
@@ -220,7 +294,7 @@ abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manif
 }
 */
 
-abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends Template3[EntityRef,A,A] {
+abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends FastTemplate3[EntityRef,A,A] {
   def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
   def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
   def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
@@ -228,7 +302,7 @@ abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extend
 
 
 
-class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExistenceCost:Double=0.5) extends TemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
+class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExistenceCost:Double=0.5) extends FastTemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
   def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[IsMention])
   def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[IsMention])
   def unroll3(isMention:IsMention) = throw new Exception("An entitie's status as a mention should never change.")
@@ -243,6 +317,141 @@ class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExist
   }
 }
 
+/*
+class DirichletBagOfWordsTemplateWithStatistics[B<:BagOfWordsVariable](val weight:Double=1.0, val temperature:Double=0.1)(implicit m:Manifest[B]) extends TemplateWithStatistics1[B]{
+  @inline final def symmetricDirichletAlpha = temperature+1.0
+  def normalizer(size:Int):Double = {
+    if(size==0)return 0.0
+    val logn=size.toDouble*maths.logGamma(symmetricDirichletAlpha)//math.log(cc.factorie.maths.gamma(symmetricDirichletAlpha))
+    //val n = math.pow(cc.factorie.maths.gamma(symmetricDirichletAlpha),size.toDouble)
+    val logd=maths.logGamma(size.toDouble*symmetricDirichletAlpha)
+    val logz = logn-logd
+    println("z: "+logz+" n: "+logn+" d: "+logd+" size: "+size)
+    logz
+  }
+  def score(s:Stat):Double ={
+    val bag = s._1
+    var result = 0.0
+    val z = normalizer(bag.size)
+    val kernel = dirichletKernel(bag)
+    if(z!=0.0)result = -math.exp(kernel-z)
+    //var result = -math.exp(dirichletKernel(bag))/normalizer(bag.size)
+    println(" result:"+result+" kernel:"+kernel + " z:"+z)
+    result*weight
+  }
+  def dirichletKernel(bag:BagOfWords):Double ={
+    var result = 0.0
+    var l1Norm = 0.0
+    //val iterator = bag.iterator
+    for((k,v) <- bag.iterator)l1Norm += v
+    for((k,v) <- bag.iterator)result += (symmetricDirichletAlpha-1.0)*math.log(v/l1Norm)//scala.math.pow(v/l1Norm,symmetricDirichletAlpha-1.0)
+    result
+  }
+}
+*/
+
+
+
+/*
+class BagOfWordsTensorVariable extends FeatureVectorVariable[String]{
+  
+}
+*/
+
+/*
+make sparsebagofwords have a composability of bags and an ability to collapse it
+  -adding and removing bags adds and removes bags from the list
+  -collapsing actually adds values to the underlying _bag (called when a move is accepted)
+the diff variables for bag of words replace the actual _members value of the bag of words variable with a ComposedBagOfWords when undo/redo is called.
+
+ */
+/*
+class ComposedSparseBagOfWords2(protected val bag1:BagOfWords, protected val bag2:BagOfWords, scale:Double=1.0) extends SparseBagOfWords{
+  protected val smaller = if(bag1.size<bag2.size)bag1 else bag2
+  protected val larger = if(smaller eq bag1)bag2 else bag1
+  //protected var _l2Norm = larger._l2Norm
+  //protected var _l1Norm = larger._l1Norm + smaller.l1Norm
+  for((s,w) <- smaller.iterator){
+    _l1Norm += w*scale
+    _l2Norm += w*w*scale*scale + 2*this(s)*w*scale
+  }
+  override def size = bag1.size+bag2.size
+  override def asHashMap:HashMap[String,Double] ={
+    val result = bag1.asHashMap
+    result ++= bag2.asHashMap
+    result
+  }
+  override def apply(word:String):Double = bag1(word) + bag2(word)
+  override def iterator:Iterator[(String,Double)] = bag1.iterator ++ bag2.iterator
+  def buildSparseBag:SparseBagOfWords ={
+    val underlying = new LinkedHashMap[String,Double]
+    underlying ++= bag1.iterator
+    underlying ++= bag2.iterator
+    val result = new SparseBagOfWords()
+    result.buildFrom(_underlying,this.l1Norm,this.l2Norm)
+    result
+  }
+  //def l2Norm:Double = _l2Norm
+  //def l1Norm:Double = _l2Norm
+}
+
+
+class ComposableBagOfWords extends SparseBagOfWords{
+  protected val added = new ArrayBuffer[BagOfWords]
+  protected val removed = new ArrayBuffer[BagOfWords]
+  protected var _size:Int = 0
+  protected var _l1NormDelta = 0.0
+  protected var _l2NormDelta = 0.0
+  def addBag(bag:BagOfWords):Int ={
+    val result = added.size
+    added += bag
+    for((s,w) <- bag.iterator){
+      _l1NormDelta += w
+      _l2NormDelta += w*w + 2.0*this(s)*w
+      _if(this(s)==0.0)_size += 1
+    }
+    size += bag.size
+    result
+  }
+  def removeBag(bag:BagOfWords):Int ={
+    val result = removed.size
+    added += bag
+    for((s,w) <- bag.iterator){
+      _l1NormDelta -= w
+      _l2NormDelta += w*w + -2.0*this(s)*w
+      if(this(s) == w)_size -= 1
+    }
+    result
+  }
+  override def l1Norm = _l1Norm + l1NormDelta
+  override def l2Norm = _l2Norm + l2NormDelta
+  override def size = _size
+}
+*/
+
+class BagOfWordsPriorWithStatistics[B<:BagOfWordsVariable](val weight:Double=1.0,useL1Norm:Boolean=true)(implicit m:Manifest[B]) extends FastTemplateWithStatistics1[B]{
+  def score(s:Stat):Double ={
+    val bag = s._1
+    var result = bag.size.toDouble
+    if(useL1Norm){
+      var l1Norm = 0.0
+      for((k,v) <- bag.iterator)l1Norm += v
+      bag.size/l1Norm
+    }
+    -result*weight
+  }
+}
+
+class EntropyBagOfWordsPriorWithStatistics[B<:BagOfWordsVariable](val weight:Double=1.0)(implicit m:Manifest[B]) extends FastTemplateWithStatistics1[B]{
+  def score(s:Stat):Double ={
+    val bag = s._1
+    var entropy = 0.0
+    val l1Norm = bag.l1Norm
+    //for((k,v) <- bag.iterator)l1Norm += v
+    for((k,v) <- bag.iterator)entropy -= (v/l1Norm)*math.log(v/l1Norm)
+    -entropy*weight
+  }
+}
 
 class BagOfWordsCubbie extends Cubbie{
   def store(bag:BagOfWords) = {_map ++= bag.asHashMap;this}
@@ -252,6 +461,7 @@ class BagOfWordsCubbie extends Cubbie{
     result
   }
 }
+
 /**Basic trait for doing operations with bags of words*/
 trait BagOfWords{ // extends scala.collection.Map[String,Double]{
   //def empty: This
@@ -282,7 +492,7 @@ trait BagOfWords{ // extends scala.collection.Map[String,Double]{
     //val smaller = if(this.size<that.size)this else that
     //val larger = if(that.size<this.size)this else that
     val numerator:Double = this.deductedDot(that,deduct)
-    if(numerator==0.0){
+    if(numerator!=0.0){
       val thatL2Norm = Math.sqrt(deduct.l2Norm*deduct.l2Norm+that.l2Norm*that.l2Norm - 2*(deduct * that))
       val denominator:Double = this.l2Norm*thatL2Norm
       if(denominator==0.0 || denominator != denominator) 0.0 else numerator/denominator
@@ -313,6 +523,18 @@ class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,
   protected var _l2Norm = 0.0
   protected var _l1Norm = 0.0
   protected var _bag = new LinkedHashMap[String,Double]//TODO: try LinkedHashMap
+  /*
+  def buildFrom(_bag:HashMap[String,Double], _l1Norm:Double, _l2Norm:Double) ={
+    this._bag = _bag
+    this._l1Norm= _l1Norm
+    this._l2Norm= _l2Norm
+  }*/
+  def clear:Unit ={
+    _l2Norm=0.0
+    _l1Norm=0.0
+    _bag = new LinkedHashMap[String,Double]
+  }
+  def sizeHint(n:Int) = _bag.sizeHint(n)
   if(initialWords!=null)for(w<-initialWords)this += (w,1.0)
   if(initialBag!=null)for((k,v)<-initialBag)this += (k,v)
   def l2Norm = scala.math.sqrt(_l2Norm)
@@ -334,24 +556,43 @@ class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,
     for((k,v) <- iterator)result += v*(that(k) - deduct(k))
     result
   }
+  /*
+  override def ++=(that:BagOfWords):Unit = for((s,w) <- that.iterator){
+    _bag.sizeHint(this.size+that.size)
+    this += (s,w)
+  }*/
+  //def --=(that:BagOfWords):Unit = for((s,w) <- that.iterator)this -= (s,w)
   def += (s:String, w:Double=1.0):Unit ={
-    _l1Norm += w
-    _l2Norm += w*w + 2*this(s)*w
-    _bag(s) = _bag.getOrElse(s,0.0) + w
+    if(w!=0.0){
+      //if(w!=1.0)println("  add: "+w)
+      _l1Norm += w
+      _l2Norm += w*w + 2*this(s)*w
+      _bag(s) = _bag.getOrElse(s,0.0) + w
+    }
   }
   def -= (s:String, w:Double=1.0):Unit ={
-    _l1Norm -= w
-    _l2Norm += w*w - 2.0*this(s)*w
-    if(w == _bag(s))_bag.remove(s)
-    else _bag(s) = _bag.getOrElse(s,0.0) - w
+    if(w!=0.0){
+      _l1Norm -= w
+      _l2Norm += w*w - 2.0*this(s)*w
+      //if(w!=1.0)println("  remove: "+w)
+      if(withinEpsilon(w, _bag(s)))_bag.remove(s)
+      else _bag(s) = _bag.getOrElse(s,0.0) - w
+    }
   }
-  def addBag(that:BagOfWords) = for((k,v) <- that.iterator) this += (k,v)
+  @inline final def withinEpsilon(v1:Double, v2:Double, epsilon:Double=0.000001):Boolean = if(v1==v2)true else ((v1-v2).abs<=epsilon)
+  def addBag(that:BagOfWords) ={
+    //that match{case t:SparseBagOfWords=>t.sizeHint(this.size+that.size)}
+    for((k,v) <- that.iterator) this += (k,v)
+  }
   def removeBag(that:BagOfWords) = for((k,v) <- that.iterator)this -= (k,v)
 }
+
+
 trait BagOfWordsVar extends Variable with VarAndValueGenericDomain[BagOfWordsVar,SparseBagOfWords] with Iterable[(String,Double)]
 class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVar with VarAndValueGenericDomain[BagOfWordsVariable,SparseBagOfWords] {
   // Note that the returned value is not immutable.
   def value = _members
+  def clear = _members.clear
   private val _members:SparseBagOfWords = {
     val result = new SparseBagOfWords(initialWords)
     if(initialMap!=null)for((k,v) <- initialMap)result += (k,v)
@@ -414,5 +655,51 @@ class BagOfWordsVariable(initialWords:Iterable[String]=Nil,initialMap:Map[String
     def redo = _members.removeBag(removed)
     def undo = _members.addBag(removed)
     override def toString = "BagOfWordsVariableRemoveBagDiff of " + removed + " from " + BagOfWordsVariable.this
+  }
+}
+/*
+object BagOfWordsTests{
+  def main(args:Array[String]) ={
+    
+  }
+
+  def nextTestPair:(BagOfWordsVariable,BagOfWordsTensorVariable) ={
+    val bow = new BagOfWordsVariable
+    val bowTensor = new BagOfWordsTensorVariable
+    (bow,bowTensor)
+  }
+}
+*/
+
+object DefaultBagOfWordsDomain extends CategoricalTensorDomain[String]
+/*
+object TokenFeaturesDomain extends CategoricalTensorDomain[String]
+  class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
+    def domain = TokenFeaturesDomain
+  }
+ def domain = AffinityVectorDomain
+ */
+class BagOfWordsTensorVariable(val domain:CategoricalTensorDomain[String]=DefaultBagOfWordsDomain) extends FeatureVectorVariable[String]{
+  //final def ++=(xs:HashMap[String,Double]): Unit = for((k,v)<-xs)increment(k,v)(null)
+}
+object BagOfWordsUtil{
+  def cosineDistance(v1:SparseIndexedTensor,v2:SparseIndexedTensor,deduct:Boolean=false):Double ={
+    val v = if(deduct)v2-v1 else v2
+    val numerator = v dot v1
+    val denominator = v.twoNorm * v.twoNorm
+    if(denominator==0.0 || denominator != denominator) 0.0 else numerator/denominator
+  }
+}
+class TensorBagOfWordsCubbie extends Cubbie{
+  def store(bag:BagOfWordsTensorVariable) = {
+    bag.value.foreachActiveElement((k,v) => {
+      _map += bag.domain._dimensionDomain.category(k) -> v
+    })
+    this
+  }
+  def fetch:HashMap[String,Double] = {
+    val result = new HashMap[String,Double]
+    for((k,v) <- _map)result += k -> v.toString.toDouble
+    result
   }
 }
