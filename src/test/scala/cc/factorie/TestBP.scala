@@ -53,7 +53,7 @@ class TestBP extends TestCase {
       override def statisticsDomains = Tuple1(BooleanDomain)
       def unroll1(v: TestBP.this.type#BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: TestBP.this.type#BinVar) = if (v == n2) Factor(n1, n2) else Nil
-      def statistics(values: this.type#ValuesType) = Stat(BooleanDomain.value(values._1 == values._2))
+      def statistics(v1:BinVar#Value, v2:BinVar#Value) = Stat(BooleanDomain.value(v1 == v2))
     }
     family.weights(0) = scoreEqual
     family.weights(1) = scoreUnequal
@@ -75,7 +75,7 @@ class TestBP extends TestCase {
         lazy val score: Double = factor.score(this)
       }
 
-      def statistics(v: this.type#Values) = Stat(v._1, v._2, v._3)
+      def statistics(v1:BinVar#Value, v2:BinVar#Value, v3:BinVar#Value) = Stat(v1, v2, v3)
 
       def score(s: Stat): Double = scores(s._1.category * 4 + s._2.category * 2 + s._3.category)
 

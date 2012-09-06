@@ -66,8 +66,8 @@ object DocumentClassifier4 {
     val start = System.currentTimeMillis
     // Train decision tree
     val classifier =
-      if (useBoostedClassifier) new AdaBoostDecisionStumpTrainer().train(trainLabels)
-      else new ID3DecisionTreeTrainer().train(trainLabels)
+      //if (useBoostedClassifier) new AdaBoostDecisionStumpTrainer().train(trainLabels) else 
+      new ID3DecisionTreeTrainer().train(trainLabels)
 
     // Test decision tree
 

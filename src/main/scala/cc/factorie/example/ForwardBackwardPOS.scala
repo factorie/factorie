@@ -1,7 +1,7 @@
 package cc.factorie.example
 
 import cc.factorie._
-import bp.specialized.Viterbi
+//import bp.specialized.Viterbi
 //import bp.{ParallelTrainer, ForwardBackwardPiece}
 import app.nlp._
 import app.nlp.pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
@@ -66,7 +66,8 @@ object ForwardBackwardPOS {
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
   def predictSentence(vs: Seq[PosLabel], oldBp: Boolean = false): Unit =
-    Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
+    BP.inferChainMax(vs, PosModel)
+    //Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
 
   def train(
         documents: Seq[Document],

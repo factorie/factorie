@@ -20,36 +20,24 @@ import scala.collection.mutable.ArrayBuffer
 /** A single discrete variable */
 trait DiscreteVar extends DiscreteTensorVar with VarAndValueType[DiscreteVar,DiscreteValue] {
   def domain: DiscreteDomain
+  def value: DiscreteValue
   def intValue = value.intValue
   override def toString = printName+"("+intValue+")"
 }
 
 /** A single discrete variable whose value can be changed. */
-trait MutableDiscreteVar extends DiscreteVar with MutableVar {
-  def set(newValue:Value)(implicit d:DiffList): Unit
-  def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.apply(newInt).asInstanceOf[ValueType])(d)
-  @inline final def :=(i:Int): Unit = set(i)(null)
-  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
-}
-
-
-/** A concrete single discrete variable whose value can be changed. */
-abstract class DiscreteVariable extends MutableDiscreteVar with IterableSettings {
-  def this(initialValue:Int) = { this(); __value = initialValue }
-  def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue.intValue) }
+trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A] with IterableSettings {
   private var __value: Int = 0
-  protected def _value = __value
-  protected def _set(newValue:Int): Unit = __value = newValue
+  @inline final protected def _value = __value
+  @inline final protected def _set(newValue:Int): Unit = __value = newValue
   //final protected def _set(newValue:ValueType): Unit = _set(newValue.intValue)
   override def intValue = __value
-  def value: Value = domain.apply(__value).asInstanceOf[Value]
-  def tensor: Value = domain.apply(__value).asInstanceOf[Value]
-  @inline final def set(newValue:ValueType)(implicit d:DiffList): Unit = set(newValue.intValue)(d)
-  override def set(newValue:Int)(implicit d:DiffList): Unit = if (newValue != __value) {
-    assert(newValue < domain.size)
-    if (d ne null) d += new DiscreteVariableDiff(__value, newValue)
-    __value = newValue
-  }
+  def value: A = domain.apply(__value).asInstanceOf[A] // TODO Is there a better way to coordinate A and domain?
+  def tensor: Value = domain.apply(__value).asInstanceOf[Value] // TODO Consider removing this "tensor" method everywhere.  Yes! -akm
+  //def set(newValue:Value)(implicit d:DiffList): Unit
+  //def set(newInt:Int)(implicit d:DiffList): Unit = set(domain.apply(newInt).asInstanceOf[Value])(d)
+  @inline final def :=(i:Int): Unit = set(i)(null)
+  def setRandomly(random:Random = cc.factorie.random, d:DiffList = null): Unit = set(random.nextInt(domain.size))(d)
   def settings = new SettingIterator {
     // TODO Base this on a domain.iterator instead, for efficiency
     var i = -1
@@ -57,7 +45,13 @@ abstract class DiscreteVariable extends MutableDiscreteVar with IterableSettings
     def hasNext = i < max
     def next(difflist:DiffList) = { i += 1; val d = newDiffList; set(i)(d); d }
     def reset = i = -1
-    override def variable: DiscreteVariable.this.type = DiscreteVariable.this
+    override def variable: MutableDiscreteVar.this.type = MutableDiscreteVar.this
+  }
+  @inline final def set(newValue:Value)(implicit d:DiffList): Unit = set(newValue.intValue)(d)
+  def set(newValue:Int)(implicit d:DiffList): Unit = if (newValue != __value) {
+    assert(newValue < domain.size)
+    if (d ne null) d += new DiscreteVariableDiff(__value, newValue)
+    __value = newValue
   }
   /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
   def proportions(model:Model): Proportions1 = {
@@ -75,21 +69,31 @@ abstract class DiscreteVariable extends MutableDiscreteVar with IterableSettings
     __value = origIntValue
     new DenseProportions1(distribution)
   }
-
   case class DiscreteVariableDiff(oldValue: Int, newValue: Int) extends Diff {
-    @inline final def variable: DiscreteVariable = DiscreteVariable.this
-    @inline final def redo = DiscreteVariable.this.set(newValue)(null)
-    @inline final def undo = DiscreteVariable.this.set(oldValue)(null)
+    @inline final def variable = MutableDiscreteVar.this
+    @inline final def redo = MutableDiscreteVar.this.set(newValue)(null)
+    @inline final def undo = MutableDiscreteVar.this.set(oldValue)(null)
     override def toString = variable match { 
-      case cv:CategoricalVar[_] if (oldValue >= 0) => "DiscreteVariableDiff("+cv.domain.category(oldValue)+"="+oldValue+","+cv.domain.category(newValue)+"="+newValue+")"
-      case _ => "DiscreteVariableDiff("+oldValue+","+newValue+")"
+      case cv:CategoricalVar[_] if (oldValue >= 0) => "MutableDiscreteVarDiff("+cv.domain.category(oldValue)+"="+oldValue+","+cv.domain.category(newValue)+"="+newValue+")"
+      case _ => "MutableDiscreteVarDiff("+oldValue+","+newValue+")"
     }
   }
 }
 
+//trait Var { def foo = "foo" }
+
+trait IntMutableDiscreteVar[A<:DiscreteValue] extends MutableDiscreteVar[A] with IterableSettings {
+}
+
+/** A concrete single discrete variable whose value can be changed. */
+abstract class DiscreteVariable extends IntMutableDiscreteVar[DiscreteValue]  {
+  def this(initialValue:Int) = { this(); _set(initialValue) }
+  def this(initialValue:DiscreteValue) = { this(); require(initialValue.domain == domain); _set(initialValue.intValue) }
+}
+
 
 object MaximizeDiscrete extends Maximize {
-  def maxIndex(d:DiscreteVariable, model:Model): Int = {
+  def maxIndex(d:MutableDiscreteVar[_], model:Model): Int = {
     val origI = d.intValue
     var maxScore = Double.MinValue
     var maxI = -1
@@ -102,17 +106,17 @@ object MaximizeDiscrete extends Maximize {
     d := origI
     maxI
   }
-  def apply(d:DiscreteVariable, model:Model): Unit = d := maxIndex(d, model)
-  def apply(varying:Iterable[DiscreteVariable], model:Model): Unit = for (d <- varying) apply(d, model)
-  def infer[V<:DiscreteVariable](varying:V, model:Model): Option[DiscreteMarginal1[V]] =
+  def apply(d:MutableDiscreteVar[_], model:Model): Unit = d := maxIndex(d, model)
+  def apply(varying:Iterable[MutableDiscreteVar[_]], model:Model): Unit = for (d <- varying) apply(d, model)
+  def infer[V<:MutableDiscreteVar[_]](varying:V, model:Model): Option[DiscreteMarginal1[V]] =
     Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxIndex(varying, model))))
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVar]] = {
     if (summary ne null) return None
-    if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
-    val result = new DiscreteSummary1[DiscreteVariable]
+    if (!variables.forall(_.isInstanceOf[MutableDiscreteVar[_]])) return None
+    val result = new DiscreteSummary1[DiscreteVar]
     for (v <- variables) {
-      infer(v.asInstanceOf[DiscreteVariable], model) match {
-        case Some(dm) => result += dm
+      infer(v.asInstanceOf[MutableDiscreteVar[DiscreteValue]], model) match {
+        case Some(dm) => result += dm.asInstanceOf[DiscreteVar]
         case _ => return None
       }
     }

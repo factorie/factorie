@@ -24,13 +24,13 @@ object RealDomain extends RealDomain
 /** A Variable with a real (double) value. */
 trait RealVar extends VarWithNumericValue with VarAndValueType[RealVar,Double] {
   def domain = RealDomain
-  @inline final def value: Value = doubleValue
+  @inline final def value: Double = doubleValue
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
-trait MutableRealVar extends RealVar with MutableVar
+trait MutableRealVar extends RealVar with MutableVar[Double]
 
 /** A Variable with a mutable real (double) value. */
 class RealVariable(initialValue: Double) extends MutableRealVar {

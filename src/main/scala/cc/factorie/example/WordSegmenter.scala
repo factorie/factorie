@@ -40,6 +40,7 @@ object WordSegmenterDemo {
   val model = new TemplateModel
   /** Bias term just on labels */
   model += new TemplateWithDotStatistics1[Label] {
+    //def statistics(t:Label#Value) = Stat(t)
     def statisticsDomains = Tuple1(LabelDomain)
   }
   /** Factor between label and observed token */
@@ -69,7 +70,7 @@ object WordSegmenterDemo {
       for (other <- label.token.chain.links; if label.token.char == other.char) yield
         if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
     def unroll2 (label:Label) = Nil // We handle symmetric case above
-    def statistics(values:Values) = Stat(BooleanDomain.value(values._1 == values._2))
+    def statistics(v1:Label#Value, v2:Label#Value) = Stat(BooleanDomain.value(v1 == v2))
     //def statistics(label1:Label#Value, label2:Label#Value) = Stat(label1 ==label2)
   }
   //model += skipTemplate
@@ -126,7 +127,7 @@ object WordSegmenterDemo {
     // Sample and Learn!
     //var learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
     //var learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
-    var learner = new cc.factorie.bp.SampleRank2(new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
+    var learner = new SampleRank(new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
     //learner.learningRate = 1.0
     for (i <- 0 until 7) {
       learner.processAll(trainVariables, 2)

@@ -25,7 +25,12 @@ import scala.reflect.Manifest
 /** Provides a covariant member type 'ValueType' in such a way that it can be overridden in subclasses. */
 trait ValueType[+VT] {
   type ValueType = VT
+  type Value <: VT
 }
+
+// TODO Consider
+// trait ValueBound[+A] { type Value <: A }
+// trait ValueType[A] { type Value = A }
 
 /** Use this trait to refine the ValueType in subclasses of Variable.
     Do not use the ValueType trait directly, because this will not result in
@@ -61,13 +66,13 @@ trait Variable {
   type ValueType <: Any
 
   /** The type of the value of this variable, as a pseudo-invariant type. */
-  type Value = VariableType#ValueType
+  type Value <: Any // <: ValueType // Any // = VariableType#ValueType
  
   /** Abstract method to return the domain of this variable. */
   def domain: Domain[Any]
 
   /** Abstract method to return the value of this variable. */
-  def value: Value
+  def value: Any
 
   /** Value comparisons (as distinct from variable pointer equality) */
   def ===(other: VariableType) = value == other.value
@@ -124,7 +129,9 @@ trait VarWithConstantValue extends Variable {
   override final def isConstant = true
 }
 
-trait MutableVar extends Variable {
+trait MutableVar[A] extends Variable {
+  type Value = A
+  def value: A
   /** Assign a new value to this variable */
   def set(newValue:Value)(implicit d:DiffList): Unit
   final def :=(newValue:Value): Unit = set(newValue)(null)

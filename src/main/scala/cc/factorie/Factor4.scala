@@ -23,6 +23,8 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
+trait ValuesIterator4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Iterator[AbstractAssignment4[N1,N2,N3,N4]] with AbstractAssignment4[N1,N2,N3,N4] with ValuesIterator
+
 /** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
 trait Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Factor {
   factor =>
@@ -38,29 +40,59 @@ trait Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Facto
   def numVariables = 4
   override def variables = IndexedSeq(_1, _2, _3, _4)
   def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case 2 => _3; case 3 => _4; case _ => throw new IndexOutOfBoundsException(i.toString) }
-  override def values = new Values(_1.value, _2.value, _3.value, _4.value)
-  case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value, _4:N4#Value) extends cc.factorie.Values {
-    override def apply[B <: Variable](v: B) = get(v).get
-    def variables = Seq(factor._1, factor._2, factor._3, factor._4)
-    def get[B <: Variable](v: B) =
-      if(v == factor._1) Some(_1.asInstanceOf[B#Value])
-      else if(v == factor._2) Some(_2.asInstanceOf[B#Value])
-      else if(v == factor._3) Some(_3.asInstanceOf[B#Value])
-      else if(v == factor._4) Some(_4.asInstanceOf[B#Value])
-      else None
-    def contains(v: Variable) = v == factor._1 || v == factor._2 || v == factor._3 || v == factor._4
-    override def statistics: StatisticsType = Factor4.this.statistics(this)
+//  override def values = new Values(_1.value, _2.value, _3.value, _4.value)
+//  case class Values(_1:N1#Value, _2:N2#Value, _3:N3#Value, _4:N4#Value) extends cc.factorie.Values {
+//    override def apply[B <: Variable](v: B) = get(v).get
+//    def variables = Seq(factor._1, factor._2, factor._3, factor._4)
+//    def get[B <: Variable](v: B) =
+//      if(v == factor._1) Some(_1.asInstanceOf[B#Value])
+//      else if(v == factor._2) Some(_2.asInstanceOf[B#Value])
+//      else if(v == factor._3) Some(_3.asInstanceOf[B#Value])
+//      else if(v == factor._4) Some(_4.asInstanceOf[B#Value])
+//      else None
+//    def contains(v: Variable) = v == factor._1 || v == factor._2 || v == factor._3 || v == factor._4
+//    override def statistics: StatisticsType = Factor4.this.statistics(this)
+//  }
+//  def statistics: StatisticsType = statistics(values)
+//  def statistics(v:Values): StatisticsType
+
+  def statistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value], _3.value.asInstanceOf[N3#Value], _4.value.asInstanceOf[N4#Value])
+  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): StatisticsType
+  // TODO Consider a method like this?  Replaces score(Values)
+  def scoreValues(value1:N1#Value, value2:N2#Value, value3:N3#Value, value4:N4#Value): Double = statistics(value1, value2, value3, value4).score
+  /** Return a record of the current values of this Factor's neighbors. */
+  def currentAssignment = new Assignment4(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value], _3, _3.value.asInstanceOf[N3#Value], _4, _4.value.asInstanceOf[N4#Value])
+  /** The ability to score a Values object is now removed, and this is its closest alternative. */
+  def scoreAssignment(a:TypedAssignment[Variable]) = a match {
+    case a:AbstractAssignment4[N1,N2,N3,N4] if ((a.var1 eq _1) && (a.var2 eq _2) && (a.var3 eq _3) && (a.var4 eq _4)) => statistics(a.value1, a.value2, a.value3, a.value4).score
+    case _ => statistics(a(_1), a(_2), a(_3), a(_4)).score
   }
-  def statistics: StatisticsType = statistics(values)
-  def statistics(v:Values): StatisticsType
-  /** valuesIterator in style of specifying varying neighbors */
-  def valuesIterator(varying:Set[Variable]): Iterator[Values] = {
-    val values1 = if(varying.contains(_1)) _1.domain.asInstanceOf[Seq[N1#Value]] else Seq(_1.value)
-    val values2 = if(varying.contains(_2)) _2.domain.asInstanceOf[Seq[N2#Value]] else Seq(_2.value)
-    val values3 = if(varying.contains(_3)) _3.domain.asInstanceOf[Seq[N3#Value]] else Seq(_3.value)
-    val values4 = if(varying.contains(_4)) _4.domain.asInstanceOf[Seq[N4#Value]] else Seq(_4.value)
-    (for (val1 <- values1; val2 <- values2; val3 <- values3; val4 <- values4) yield Values(val1, val2, val3, val4)).iterator
+
+  def valuesIterator: ValuesIterator4[N1,N2,N3,N4] = new ValuesIterator4[N1,N2,N3,N4] {
+    def factor = Factor4.this
+    var var1: N1 = null.asInstanceOf[N1]
+    var var2: N2 = null.asInstanceOf[N2]
+    var var3: N3 = null.asInstanceOf[N3]
+    var var4: N4 = null.asInstanceOf[N4]
+    var value1: N1#Value = null.asInstanceOf[N1#Value]
+    var value2: N2#Value = null.asInstanceOf[N2#Value]
+    var value3: N3#Value = null.asInstanceOf[N3#Value]
+    var value4: N4#Value = null.asInstanceOf[N4#Value]
+    def hasNext = false
+    def next() = this
+    def score: Double = Double.NaN
+    def valuesTensor: Tensor = null
   }
+  
+  
+//  /** valuesIterator in style of specifying varying neighbors */
+//  def valuesIterator(varying:Set[Variable]): Iterator[Values] = {
+//    val values1 = if(varying.contains(_1)) _1.domain.asInstanceOf[Seq[N1#Value]] else Seq(_1.value)
+//    val values2 = if(varying.contains(_2)) _2.domain.asInstanceOf[Seq[N2#Value]] else Seq(_2.value)
+//    val values3 = if(varying.contains(_3)) _3.domain.asInstanceOf[Seq[N3#Value]] else Seq(_3.value)
+//    val values4 = if(varying.contains(_4)) _4.domain.asInstanceOf[Seq[N4#Value]] else Seq(_4.value)
+//    (for (val1 <- values1; val2 <- values2; val3 <- values3; val4 <- values4) yield Values(val1, val2, val3, val4)).iterator
+//  }
 }
 
 /** The only abstract things are _1, _2, _3, and score(Statistics) */
@@ -71,7 +103,7 @@ trait FactorWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable]
     // TODO Make this non-lazy later, when _statisticsDomains can be initialized earlier
     lazy val score = self.score(this)
   }
-  def statistics(v:Values) = new Statistics(v._1, v._2, v._3, v._4).asInstanceOf[StatisticsType]
+  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = new Statistics(v1, v2, v3, v4).asInstanceOf[StatisticsType]
   def score(s:Statistics): Double
 }
 
@@ -89,12 +121,13 @@ trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Famil
   def neighborDomains = Seq(neighborDomain1, neighborDomain2, neighborDomain3, neighborDomain4)
 
   type FactorType = Factor
-  type ValuesType = Factor#Values
+//  type ValuesType = Factor#Values
   final case class Factor(_1:N1, _2:N2, _3:N3, _4:N4) extends super.Factor with Factor4[N1,N2,N3,N4] {
     type StatisticsType = Family4.this.StatisticsType
     override def equalityPrerequisite: AnyRef = Family4.this
-    override def statistics(values:Values): StatisticsType = thisFamily.statistics(values)
+    override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): StatisticsType = thisFamily.statistics(v1, v2, v3, v4)
   }
+  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): StatisticsType
 }
 
 trait Statistics4[S1,S2,S3,S4] extends Family {
@@ -119,14 +152,14 @@ trait TensorStatistics4[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:Disc
 trait DotStatistics4[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue,S4<:DiscreteTensorValue] extends TensorStatistics4[S1,S2,S3,S4] with DotFamily
 
 trait FamilyWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Family4[N1,N2,N3,N4] with Statistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
-  def statistics(values:Values) = Stat(values._1, values._2, values._3, values._4)
+  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Stat(v1, v2, v3, v4)
 }
 
 trait FamilyWithTensorStatistics4[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar,N4<:DiscreteTensorVar] extends Family4[N1,N2,N3,N4] with TensorStatistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
-  def statistics(values:Values) = Stat(values._1, values._2, values._3, values._4)
+  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Stat(v1, v2, v3, v4)
 }
 
 trait FamilyWithDotStatistics4[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar,N4<:DiscreteTensorVar] extends Family4[N1,N2,N3,N4] with DotStatistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
-  def statistics(values:Values) = Stat(values._1, values._2, values._3, values._4)
-  def valueScore(tensor:Tensor): Double = statisticsScore(tensor) // reflecting the fact that there is no transformation between values and statistics
+  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Stat(v1, v2, v3, v4)
+  def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor) // reflecting the fact that there is no transformation between values and statistics
 }

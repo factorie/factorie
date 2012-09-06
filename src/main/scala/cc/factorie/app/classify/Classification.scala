@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 
 /** The result of applying a Classifier to a Label. */
-class Classification[L<:DiscreteVariable](theLabel:L, val classifier:Classifier[L], theProportions:Proportions1) extends DiscreteMarginal1(theLabel, theProportions) {
+class Classification[L<:MutableDiscreteVar[_]](theLabel:L, val classifier:Classifier[L], theProportions:Proportions1) extends DiscreteMarginal1(theLabel, theProportions) {
   final def label = _1
   val bestLabelIndex = proportions.maxIndex
   def bestLabelValue = label.domain.apply(bestLabelIndex)

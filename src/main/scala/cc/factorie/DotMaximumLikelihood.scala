@@ -1,5 +1,4 @@
 package cc.factorie
-
 import cc.factorie.la._
 import cc.factorie.optimize._
 import scala.collection._
@@ -14,14 +13,13 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
   var logLikelihood: Double = Double.NaN
   // TODO For now, this only handles the case of IID DiscreteVars
   // TODO Rename this to something indicating IID
-  def processAll[V <: DiscreteVarWithTarget](variables: Iterable[V], numIterations: Int = Int.MaxValue, instanceWeights: mutable.HashMap[V, Double] = null): Double = {
+  def processAll[V<:DiscreteVarWithTarget[_]](variables: Iterable[V], numIterations:Int = Int.MaxValue): Double = {
     val constraints = model.newDenseWeightsTensor
-    // Gather constraints
-    variables.foreach(_.setToTarget(null))
-    model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => {
-      val instanceWeight = if (instanceWeights == null) 1.0 else instanceWeights(f.variable(0).asInstanceOf[V])
-      constraints(f.family) += (f.cachedStatistics.tensor, instanceWeight)
-    })
+	  // Gather constraints
+	  variables.foreach(_.setToTarget(null))
+	  model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => {
+  	  constraints(f.family) += f.statistics.tensor 
+	  })
 
     var iterations = 0
     var convergences = 0
@@ -30,18 +28,18 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
       val gradient = model.newDenseWeightsTensor
       // Put -expectations into gradient
       variables.foreach(v => {
-        val instanceWeight = if (instanceWeights == null) 1.0 else instanceWeights(v)
+        //val instanceWeight = if (instanceWeights == null) 1.0 else instanceWeights(v)
         val proportions = v.proportions(model) // use model scores to get a normalized distribution over values
         // TODO Think carefully about how we can pass in a generic Infer object and still get expectations
         var i = 0
         while (i < proportions.length) {
           v := i
           model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => {
-            gradient(f.family) += (f.statistics.tensor, -proportions(i) * instanceWeight)
+            gradient(f.family) += (f.statistics.tensor, -proportions(i) /* * instanceWeight*/)
           })
           i += 1
         }
-        logLikelihood += math.log(proportions(v.targetIntValue)) * instanceWeight
+        logLikelihood += math.log(proportions(v.targetIntValue)) // * instanceWeight
       })
       // Put +constraints into gradient
       gradient += constraints
@@ -57,13 +55,13 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
   }
 
   // Consider making this not BP-specific by implementing something like addExpectationsInto with plain Factor and Summary?
-  def processAllBP[V <: DiscreteVarWithTarget](iidVariableSets: Iterable[Iterable[V]], inferencer: InferByBP, numIterations: Int = Int.MaxValue): Double = {
+  def processAllBP[V<:DiscreteVarWithTarget[_]](iidVariableSets: Iterable[Iterable[V]], inferencer:InferByBP, numIterations:Int = Int.MaxValue): Double = {
     val constraints = model.newDenseWeightsTensor
     // Gather constraints
     iidVariableSets.foreach(_.foreach(_.setToTarget(null)))
     for (variables <- iidVariableSets)
       model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => {
-        constraints(f.family) += f.cachedStatistics.tensor
+        constraints(f.family) += f.statistics.tensor 
       })
 
     var iterations = 0

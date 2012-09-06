@@ -99,8 +99,8 @@ class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable,
   def calculateBelief: Tensor1 = Tensor.sum(edges.map(_.messageFromFactor)).asInstanceOf[Tensor1] // TODO
   def calculateMarginal: Tensor1 = calculateBelief.expNormalized.asInstanceOf[Tensor1]
   override def proportions: Proportions1 = new NormalizedTensorProportions1(calculateMarginal, false)  // TODO Think about avoiding re-calc every time
-  override def value1: DiscreteVar#Value = _1.domain.dimensionDomain(calculateBelief.maxIndex) // To avoid normalization compute time
-  override def globalize(implicit d:DiffList): Unit = variable match { case v:DiscreteVariable => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
+  override def value1: DiscreteVar#Value = _1.domain.dimensionDomain(calculateBelief.maxIndex).asInstanceOf[DiscreteVar#Value] // TODO Ug.  This casting is rather sad.  // To avoid normalization compute time
+  override def globalize(implicit d:DiffList): Unit = variable match { case v:MutableDiscreteVar[_] => v.set(calculateBelief.maxIndex)(d) }  // To avoid normalization compute time
 }
 // TODO class BPVariable{2,3,4} would be used for cluster graphs
 
@@ -153,7 +153,7 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
       val result = new DenseTensor1(edge1.variable.domain.size)
       for (i <- 0 until edge1.variable.domain.size) {
         valueTensor.singleIndex = i
-       result(i) = factor.valueScore(valueTensor)
+       result(i) = factor.scoreValues(valueTensor)
       }
       result
     }
@@ -168,7 +168,7 @@ class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1
     val result = new DenseTensor1(edge1.variable.domain.size)
     for (i <- 0 until edge1.variable.domain.size) {
       valueTensor.singleIndex1 = i
-      result(i) = factor.valueScore(valueTensor)
+      result(i) = factor.scoreValues(valueTensor)
     }
     result
   }
@@ -257,7 +257,7 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
         valueTensor.singleIndex1 = i
         for (j <- 0 until edge2.variable.domain.size) {
           valueTensor.singleIndex2 = j
-          result(i, j) = factor.valueScore(valueTensor)
+          result(i, j) = factor.scoreValues(valueTensor)
         }
       }
       result
@@ -276,7 +276,7 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
       valueTensor.singleIndex1 = i
       for (j <- 0 until edge2.variable.domain.size) {
         valueTensor.singleIndex2 = j
-        result(i, j) = factor.valueScore(valueTensor)
+        result(i, j) = factor.scoreValues(valueTensor)
       }
     }
     result
@@ -358,13 +358,13 @@ object BP {
     val summary = new BPSummary(varying, BPSumProductRing, model)
     throw new Error("Not yet implemented")
   }
-  def inferSingle(v:DiscreteVariable, model:Model): BPSummary = {
+  def inferSingle(v:MutableDiscreteVar[_<:DiscreteValue], model:Model): BPSummary = {
     val summary = new BPSummary(Seq(v), BPSumProductRing, model)
     summary.bpFactors.foreach(_.updateOutgoing) 
     summary
   }
   // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
-  def inferChainMax(varying:Seq[DiscreteVariable], model:Model): BPSummary = {
+  def inferChainMax(varying:Seq[MutableDiscreteVar[_]], model:Model): BPSummary = {
     val summary = new BPSummary(varying, BPMaxProductRing, model)
     varying.size match {
       case 0 => {}
@@ -382,10 +382,10 @@ object BP {
         }
         // Do Viterbi backtrace, setting label values
         var maxIndex = markovBPFactors.last.edge2.bpVariable.proportions.maxIndex // TODO We don't actually need to expNormalize here; save computation by avoiding this
-        markovBPFactors.last.edge2.variable.asInstanceOf[DiscreteVariable] := maxIndex
+        markovBPFactors.last.edge2.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
         for (f <- markovBPFactors.reverse) {
           maxIndex = f.edge2Max1(maxIndex)
-          f.edge1.variable.asInstanceOf[DiscreteVariable] := maxIndex
+          f.edge1.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
         }
       }
     }
@@ -393,7 +393,7 @@ object BP {
   }
   
   // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
-  def inferChainSum(varying:Seq[DiscreteVariable], model:Model): BPSummary = {
+  def inferChainSum(varying:Seq[MutableDiscreteVar[_]], model:Model): BPSummary = {
     val summary = new BPSummary(varying, BPSumProductRing, model)
     varying.size match {
       case 0 => {}
@@ -429,8 +429,8 @@ trait InferByBP extends Infer {
 
 object InferByBPChainSum extends InferByBP {
   override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
-    case variables:Seq[DiscreteVariable] if (variables.forall(_.isInstanceOf[DiscreteVariable])) => Some(apply(variables, model))
+    case variables:Seq[MutableDiscreteVar[_]] if (variables.forall(_.isInstanceOf[MutableDiscreteVar[_]])) => Some(apply(variables, model))
     case _ => None
   }
-  def apply(varying:Seq[DiscreteVariable], model:Model): BPSummary = BP.inferChainSum(varying, model)
+  def apply(varying:Seq[MutableDiscreteVar[_]], model:Model): BPSummary = BP.inferChainSum(varying, model)
 }

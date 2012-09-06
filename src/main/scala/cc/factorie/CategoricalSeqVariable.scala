@@ -21,7 +21,7 @@ import java.util.Arrays
 class CategoricalSeqDomain[C] extends DiscreteSeqDomain with Domain[Seq[CategoricalValue[C]]] {
   lazy val elementDomain: CategoricalDomain[C] = new CategoricalDomain[C]
 }
-abstract class CategoricalSeqVariable[C] extends DiscreteSeqVariable with IndexedSeqVar[CategoricalValue[C]] /*VarAndElementType[CategoricalSeqVariable[C],CategoricalValue[C]]*/ {
+abstract class CategoricalSeqVariable[C] extends MutableDiscreteSeqVar[CategoricalValue[C]] with IndexedSeqVar[CategoricalValue[C]] /*VarAndElementType[CategoricalSeqVariable[C],CategoricalValue[C]]*/ {
   def this(initialValue:Seq[C]) = {
     this()
     _setCapacity(if (initialValue.length > 0) initialValue.length else 1)

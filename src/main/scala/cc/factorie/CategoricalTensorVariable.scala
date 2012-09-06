@@ -51,7 +51,7 @@ trait CategoricalTensorVar[C] extends DiscreteTensorVar {
   @deprecated("This method may be removed.") def zero(): Unit = tensor.zero()
   def activeCategories: Seq[C] = tensor.activeDomain.map(i => domain.dimensionDomain.category(i))
 }
-abstract class CategoricalTensorVariable[C] extends DiscreteTensorVariable with CategoricalTensorVar[C] {
+abstract class CategoricalTensorVariable[C] extends MutableTensorVar[Tensor] with CategoricalTensorVar[C] {
   def this(initialValue:Tensor) = { this(); _set(initialValue) }
 }
 

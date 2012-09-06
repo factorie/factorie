@@ -50,20 +50,20 @@ object ChainNER2 {
     // Transition factors between two successive labels
     new TemplateWithDotStatistics2[Label, Label] {
       def statisticsDomains = ((LabelDomain, LabelDomain))
-      def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
-      def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
+      def unroll1(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
+      def unroll2(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
     },
     // Factor between label and observed token
     new TemplateWithDotStatistics2[Label, Token] {
       def statisticsDomains = ((LabelDomain, TokenDomain))
       def unroll1(label: Label) = Factor(label, label.token)
-      def unroll2(token: Token) = throw new Error("Token values shouldn't change")
+      def unroll2(token: Token) = Factor(token.label, token)
     },
     new Template2[Label,Label] with DotStatistics1[BooleanValue] {
       def statisticsDomains = Tuple1(BooleanDomain)
       def unroll1(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainAfter; if (other.token.string == label.token.string)) yield Factor(label, other)
       def unroll2(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainBefore; if (other.token.string == label.token.string)) yield Factor(other, label)
-      def statistics(v:Values) = Stat(BooleanDomain.value(v._1.intValue == v._2.intValue))
+      def statistics(v1:Label#Value, v2:Label#Value) = Stat(BooleanValue(v1.intValue == v2.intValue))
     }
   )
   
@@ -88,6 +88,7 @@ object ChainNER2 {
     learner.processAll(trainLabels, 5)
 
     // Predict, also by sampling, visiting each variable 3 times.
+    // TODO Make an IteratedConditionalModes Sampler
     val predictor = new VariableSettingsSampler[Label](model)
     //predictor.processAll(testLabels, 3)
     for (i <- 0 until 3; label <- testLabels) predictor.process(label)

@@ -76,14 +76,14 @@ trait GibbsSamplerClosure {
 
 
 object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
-  class Closure(val variable:MutableVar, val factor:GenerativeFactor) extends GibbsSamplerClosure {
+  class Closure(val variable:MutableVar[_], val factor:GenerativeFactor) extends GibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = variable.set(factor.sampledValue.asInstanceOf[variable.Value])
   }
   def sampler(v:Variable, factors:Seq[Factor], sampler:TypedGibbsSampler[_]): GibbsSamplerClosure = {
     factors match {
       case List(factor:GenerativeFactor) => {
         v match {
-          case v:MutableVar => new Closure(v, factor)
+          case v:MutableVar[_] => new Closure(v, factor)
         }
       }
       case _ => null

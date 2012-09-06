@@ -37,16 +37,27 @@ trait Factor extends Ordered[Factor] {
   def touchesAny(variables:Iterable[Variable]): Boolean = variables.exists(touches(_))
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
   def score: Double = statistics.score
-  def values: Values
-  /** Return a Tensor containing scores for alternative values of neighbor #ni, which must be a DiscreteVar.
-      When the other dimensions of "tensor" have more than one-hot, sum over the alternatives. */
-  def scoreValues(ni:Int, tensor:Tensor): Tensor1 = throw new Error("Not yet implemented.")
+//  def values: Values
   /** Return the score efficiently calculated for the case in which the Factor's Value can be represented as a Tensor. */
-  def valueScore(valueTensor: Tensor): Double = throw new Error("This Factor subclass does not implement valueScore")
+//  def valueScore(valueTensor: Tensor): Double = throw new Error("This Factor subclass does not implement valueScore")
   /** Return the score efficiently calculated for the case in which the Factor's Statistics can be represented as a Tensor. */
-  def statisticsScore(statisticsTensor: Tensor): Double = throw new Error("This Factor subclass does not implement statisticsScore")
+//  def statisticsScore(statisticsTensor: Tensor): Double = throw new Error("This Factor subclass does not implement statisticsScore")
+
   def statistics: Statistics // = values.statistics
-  def valuesIterator(varying:Set[Variable]): Iterator[Values]
+  /** Return a record of the current values of this Factor's neighbors. */
+  def currentAssignment: TypedAssignment[Variable]
+  /** The ability to score a Values object is now removed, and this is its closest alternative. */
+  def scoreAssignment(a:TypedAssignment[Variable]): Double
+  /** Return the score for Factors whose values can be represented as a Tensor, otherwise throw an Error.
+      For Factors/Family in which the Statistics are the values, this method simply calls scoreValues(Tensor). */
+  def scoreValues(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreValues.")
+  /** Return the score for Factors whose Statistics can be represented as a Tensor, otherwise throw an Error.
+      For DotFamily this is implemented as simply "weights dot tensor". */
+  //def scoreStatistics(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreStatistics") // TODO Is this ever necessary?
+  /** Return an object that can iterate over all value assignments to the neighbors of this Factor */
+  def valuesIterator: ValuesIterator
+  
+//  def valuesIterator(varying:Set[Variable]): Iterator[Values]
   /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
   //def copy(s:Substitutions): Factor
   // Implement Ordered, such that worst (lowest) scores are considered "high"
@@ -82,6 +93,14 @@ trait Factor extends Ordered[Factor] {
   override def toString: String = variables.mkString(factorName+"(", ",", ")")
 }
 
+/** Created by a method in a Factor to iterate over a (sub)set of assignments. */
+trait ValuesIterator extends Iterator[Assignment] {
+  def factor: Factor
+  def score: Double
+  def valuesTensor: Tensor
+}
+
+
 // This comment mostly discusses an old (removed) version of FACTORIE in which Factors could have "inner" Factors.
 /** A Factor is a Model because it can return a factor (itself) and a score.
     A Model is not a Factor because Factors *must* be able to list all the variables they touch;
@@ -104,39 +123,39 @@ trait Factor extends Ordered[Factor] {
 
 /** A container for all the values of the variables neighboring a factor.
     These are necessary to construct a Statistics object. */
-trait Values extends Statistics with Assignment {
-  override def variables: Seq[Variable] // Assignment has return type of only Iterable[Variable]
-  // def factor: Factor // TODO Consider adding this method
-  //override def inner: Seq[Values] = Nil
-  //def apply[B <: Variable](v: B): B#Value = { new Error("Never call apply() on values"); null.asInstanceOf[B#Value] }
-  def score: Double = statistics.score // TODO This will result in an infinite loop unless Statistics.statistics is overridden.  Consider leaving Statistics.statistics abstract? 
-  /** Return a unique index for the combination of Discrete values in the set "varying".  Used in BeliefPropagation. */
-  def index(varying:Set[Variable]): Int = {  // TODO Change this to Set[DiscreteVar] and then rework body.
-    var result = 0
-    var mult = 1
-    var found: Boolean = false
-    var i = 0
-
-    while (i < variables.length) {
-      val variable = variables(i)
-      if (varying contains variable) {
-        variable match {
-          case dv:DiscreteVar => {
-            val dvalue: DiscreteValue = get(dv).get
-            found = true
-            result += (dvalue.intValue * mult)
-            mult *= dv.domain.size
-          }
-          case _ => return -1
-        }
-      }
-      i += 1
-    }
-    if (found) result else -1
-  }
-  //def productArity: Int
-  //def canEqual(other:Any) = other match { case other:Values => }
-}
+//trait Values extends Statistics with Assignment {
+//  override def variables: Seq[Variable] // Assignment has return type of only Iterable[Variable]
+//  // def factor: Factor // TODO Consider adding this method
+//  //override def inner: Seq[Values] = Nil
+//  //def apply[B <: Variable](v: B): B#Value = { new Error("Never call apply() on values"); null.asInstanceOf[B#Value] }
+//  def score: Double = statistics.score // TODO This will result in an infinite loop unless Statistics.statistics is overridden.  Consider leaving Statistics.statistics abstract? 
+//  /** Return a unique index for the combination of Discrete values in the set "varying".  Used in BeliefPropagation. */
+//  def index(varying:Set[Variable]): Int = {  // TODO Change this to Set[DiscreteVar] and then rework body.
+//    var result = 0
+//    var mult = 1
+//    var found: Boolean = false
+//    var i = 0
+//
+//    while (i < variables.length) {
+//      val variable = variables(i)
+//      if (varying contains variable) {
+//        variable match {
+//          case dv:DiscreteVar => {
+//            val dvalue: DiscreteValue = get(dv).get
+//            found = true
+//            result += (dvalue.intValue * mult)
+//            mult *= dv.domain.size
+//          }
+//          case _ => return -1
+//        }
+//      }
+//      i += 1
+//    }
+//    if (found) result else -1
+//  }
+//  //def productArity: Int
+//  //def canEqual(other:Any) = other match { case other:Values => }
+//}
 
 /** A container for sufficient statistics of a Factor.
     They reflect a certain choice of values for the neighbors of a Factor. */
