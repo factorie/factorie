@@ -272,6 +272,34 @@ class TestBP2 extends FunSuite with BeforeAndAfter {
     }
   }
   
+  test("Tree3") {
+    val v1 = new BinVar(0)
+    val v2 = new BinVar(1)
+    val v3 = new BinVar(0)
+    val vars: Set[DiscreteVariable] = Set(v1, v2, v3)
+    // v1 -- v3 -- v2
+    val model = new FactorModel(
+	    newFactor1(v1, 3, 0),
+	    newFactor1(v2, 0, 3),
+	    newFactor2(v1, v3, 3, 0),
+	    newFactor2(v2, v3, 3, 0)
+	  )
+    
+    val fg = BP.inferTreewiseSum(vars, model)
+    fg.setToMaximize()
+    
+    println("v1 : " + fg.marginal(v1).proportions)
+    println("v2 : " + fg.marginal(v2).proportions)
+    println("v3 : " + fg.marginal(v3).proportions)
+    println("v1 val : " + v1.value)
+    println("v2 val : " + v2.value)
+    println("v3 val : " + v3.value)
+    
+    assertEquals(0.5, fg.marginal(v3).proportions(0), eps)
+    assertEquals(v1.intValue, 0)
+    assertEquals(v2.intValue, 1)
+  }
+  
 }
 
 object BPTestUtils {
