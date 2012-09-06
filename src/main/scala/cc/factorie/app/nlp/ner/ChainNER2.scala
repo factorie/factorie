@@ -16,8 +16,8 @@ package cc.factorie.app.nlp.ner
 import cc.factorie._
 import cc.factorie.optimize._
 import app.strings._
-import bp._
-import bp.specialized.Viterbi
+//import bp._
+//import bp.specialized.Viterbi
 import optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.LoadConll2003._
@@ -525,7 +525,7 @@ class ChainNer2 {
 
 			val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
 
-		    val pieces = vars.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
+//		    val pieces = vars.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
 //		    val trainer = new ParallelTrainer(pieces, model.familiesOfClass(classOf[DotFamily]))
 //		    val optimizer = new LimitedMemoryBFGS(trainer) {
 //		      override def postIteration(iter: Int): Unit = {
@@ -552,7 +552,7 @@ class ChainNer2 {
 
       // Train primary (independent classifier) model
       // Train secondary (markov) model
-      val learner1 = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent)
+      val learner1 = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent(1.0))
       //val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
       val predictor1 = new VariableSettingsSampler[ChainNerLabel](model) {temperature=0.01}
 
@@ -835,7 +835,8 @@ class ChainNer2 {
     if (true) {
     	for(sentence <- document.sentences if sentence.tokens.size > 0) {
 	  		val vars = sentence.tokens.map(_.attr[ChainNerLabel]).toSeq
-	  		Viterbi.searchAndSetToMax(vars, model.localTemplate, model.transitionTemplate)
+	  		//Viterbi.searchAndSetToMax(vars, model.localTemplate, model.transitionTemplate)
+	  		BP.inferChainMax(vars, model)
     	}
     } else {
       for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.category(0)) // init value doens't matter

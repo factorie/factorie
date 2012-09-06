@@ -114,6 +114,11 @@ trait Attr {
       var i = index(m.erasure)
       if (i >= 0) _attr(i).asInstanceOf[C] else null.asInstanceOf[C]
     }
+    def apply[C<:AnyRef](key:Class[C]):C ={
+      var i = index(key)
+      if (i >= 0) _attr(i).asInstanceOf[C] else null.asInstanceOf[C]
+    }
+
     def exactly[C<:AnyRef]()(implicit m: Manifest[C]): C = {
       var i = indexExactly(m.erasure)
       if (i >= 0) _attr(i).asInstanceOf[C] else null.asInstanceOf[C]

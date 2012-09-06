@@ -251,6 +251,12 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 object LDA extends LDACmd
 
 class LDACmd {
+  /*
+  Potentail stop topics:
+     -Topic  47 formal verification model specification methods systems software checking ada analysis
+     -Topic 35 programming sigplan java generation implementation language comp programs sys design
+     -Topic  83 ieee trans syst expert circuits systems eng esa appl computers  1  0.100000
+   */
   import scala.collection.mutable.ArrayBuffer
   import scala.util.control.Breaks._
   import java.io.Reader

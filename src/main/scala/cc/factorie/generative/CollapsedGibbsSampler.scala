@@ -17,7 +17,7 @@ import cc.factorie._
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
 
 /** A GibbsSampler that can also collapse some Parameters. */
-class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:GenerativeModel) extends Sampler[Iterable[MutableVar]] {
+class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:GenerativeModel) extends Sampler[Iterable[MutableVar[_]]] {
   var debug = false
   makeNewDiffList = false // override default in cc.factorie.Sampler
   var temperature = 1.0 // TODO Currently ignored?
@@ -40,7 +40,7 @@ class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:GenerativeMod
 
   def isCollapsed(v:Variable): Boolean = collapsed.contains(v)
   
-  def process1(v:Iterable[MutableVar]): DiffList = {
+  def process1(v:Iterable[MutableVar[_]]): DiffList = {
     //assert(!v.exists(_.isInstanceOf[CollapsedVar])) // We should never be sampling a CollapsedVariable
     val d = newDiffList
     // If we have a cached closure, just use it and return
@@ -73,7 +73,7 @@ class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:GenerativeMod
   }
 
   /** Convenience for sampling single variable */
-  def process(v:MutableVar): DiffList = process(Seq(v))
+  def process(v:MutableVar[_]): DiffList = process(Seq(v))
 
 }
 
@@ -100,7 +100,7 @@ object GeneratedVarCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHan
   class Closure(val factor:GenerativeFactor) extends CollapsedGibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = {
       factor.updateCollapsedParents(-1.0)
-      val variable = factor.child.asInstanceOf[MutableVar]
+      val variable = factor.child.asInstanceOf[MutableVar[_]]
       variable.set(factor.sampledValue.asInstanceOf[variable.Value])
       factor.updateCollapsedParents(1.0)
       // TODO Consider whether we should be passing values rather than variables to updateChildStats

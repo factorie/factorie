@@ -39,7 +39,7 @@ class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = nul
     val trainer = new DotMaximumLikelihood(cmodel, new LimitedMemoryBFGS)
     trainer.gaussianPriorVariance = l2
     // Do the training by BFGS
-    trainer.processAll(il, instanceWeights = il.instanceWeight)
+    trainer.processAll(il /*, instanceWeights = il.instanceWeight*/)
     new ModelBasedClassifier[L](cmodel, il.head.domain) { val weights = cmodel.evidenceTemplate.weights }
   }
 }

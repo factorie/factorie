@@ -132,10 +132,18 @@ class SortedSparseCountsMasses1(val dim1:Int) extends cc.factorie.util.SortedSpa
 //trait MassesVar extends TensorVar[Masses] with VarAndValueType[MassesVar,Masses] 
 //class MassesVariable extends TensorVariable[Masses] with MassesVar {
 
-trait MassesVar extends TensorVar with VarAndValueType[MassesVar,Masses] 
-class MassesVariable extends TensorVariable with MassesVar {
+trait MassesDomain extends TensorDomain with Domain[Masses]
+object MassesDomain extends MassesDomain
+
+trait MassesVar extends TensorVar with VarAndValueType[MassesVar,Masses] {
+  def value: Masses
+  def domain: MassesDomain
+}
+trait MutableMassesVar[A<:Masses] extends MutableTensorVar[A] with MassesVar
+class MassesVariable extends MutableMassesVar[Masses] {
+  def domain = MassesDomain //.asInstanceOf[MassesDomain with Domain[A]]
   def this(initialValue:Masses) = { this(); _set(initialValue) }
-  def domain = TensorDomain
+  //def domain = TensorDomain
 }
 
 object MassesVariable {

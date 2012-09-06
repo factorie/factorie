@@ -16,7 +16,7 @@ package cc.factorie
 
 trait StringVar extends Variable with VarAndValueGenericDomain[StringVar,String]
 
-class StringVariable(initialValue:String) extends StringVar with MutableVar {
+class StringVariable(initialValue:String) extends StringVar with MutableVar[String] {
   private var _value: String = initialValue
   def value: String = _value
   def set(newValue:String)(implicit d:DiffList): Unit = {

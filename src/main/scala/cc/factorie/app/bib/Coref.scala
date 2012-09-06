@@ -1,6 +1,7 @@
 package cc.factorie.app.bib
 import cc.factorie.app.bib.parser._
 import cc.factorie._
+import cc.factorie.app.bib.experiments._
 import cc.factorie.util.DefaultCmdOptions
 import app.nlp.coref._
 import db.mongo._
@@ -9,45 +10,19 @@ import collection.mutable.{HashSet, HashMap, LinkedHashMap, ArrayBuffer}
 import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import org.w3c.dom.{Node, NodeList, Document}
-import parser.Dom.Entry
 
-//import org.apache.commons.codec._
-//import org.apache.commons.codec.language._
 
+class ChildCountsForBag(initialWords:Iterable[String]=Nil,initialMap:Map[String,Double]=null) extends BagOfWordsVariable(initialWords,initialMap)
 
 class AuthorFLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity] {
-  def canopyName:String=FeatureUtils.normalizeName((initial(entity.entityRoot.asInstanceOf[AuthorEntity].fullName.firstName)+entity.entityRoot.asInstanceOf[AuthorEntity].fullName.lastName).toLowerCase)
+  lazy val canopyName:String=FeatureUtils.normalizeName((initial(entity.entityRoot.asInstanceOf[AuthorEntity].fullName.firstName)+entity.entityRoot.asInstanceOf[AuthorEntity].fullName.lastName).toLowerCase)
   //def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
   def initial(s:String):String = if(s!=null && s.length>0)s.substring(0,1) else ""
-
-/*
-  def convertCanopyForAuthors:Unit ={
-    println("Converting canopies...")
-    var counter = 0
-    val proj = new BasicDBObject
-    proj.put("first",true)
-    proj.put("last",true)
-    proj.put("_id",true)
-    val canopizer = new AuthorFLastNameCanopy
-    val size = authorEntityColl.size
-    val iterator = authorEntityColl.find(null,proj)
-    println("SIZE: "+size)
-    for(data <- iterator){
-      counter += 1
-      if(counter % 10000 == 0) print(counter)+" "
-      if(counter % 200000 == 0)println(" out of: "+size)
-      val oid = data.get("_id").asInstanceOf[ObjectId]
-      val first = data.getOrElse("first",null.asInstanceOf[String]).toString
-      val last = data.getOrElse("last",null.asInstanceOf[String]).toString
-      val author = new AuthorMention(first,null,last)
-      val canopy = canopizer.value(author)
-      if(canopy!=null && canopy.length>0){
-        authorEntityColl.update(Map("_id"->oid), com.mongodb.casbah.query.Implicits.$set("canopy_last"->canopy))
-      }
-    }
-  }
-  */
-
+}
+class AuthorFMLNameCanopy(val entity:AuthorEntity) extends CanopyAttribute[AuthorEntity] {
+  lazy val canopyName:String=FeatureUtils.normalizeName((initial(entity.entityRoot.asInstanceOf[AuthorEntity].fullName.firstName)+initial(entity.entityRoot.asInstanceOf[AuthorEntity].fullName.middleName)+entity.entityRoot.asInstanceOf[AuthorEntity].fullName.lastName).toLowerCase)
+  //def canopyName:String=(initial(entity.fullName.firstName)+entity.fullName.lastName).toLowerCase
+  def initial(s:String):String = if(s!=null && s.length>0)s.substring(0,1) else ""
 }
 class PaperTitleCanopy(val entity:PaperEntity) extends CanopyAttribute[PaperEntity]{
   def cleanTitle(s:String) = s.toLowerCase.replaceAll("[^a-z0-9 ]","").replaceAll(" +"," ")
@@ -78,18 +53,7 @@ class FullName(val entity:Entity,f:String,m:String,l:String,su:String=null) exte
     result.toString.trim
   }
 }
-/*
-class NameBag(val entity:Entity,authorBag:Map[String,Double]=null) extends BagOfWordsVariable(Nil,authorBag) with EntityAttr{
-  def canonicalName:String=""
-}
-class FullNameBag(val entity:Entity) extends Variable with EntityAttr{
-  def domain = GenericDomain
-  val firstName = new NameBag(entity)
-  val middleName = new NameBag(entity)
-  val lastName = new NameBag(entity)
-  val suffix = new NameBag(entity)
-}
-*/
+
 //paper attributes
 class Title(val entity:Entity,title:String) extends StringVariable(title) with EntityAttr
 class Year(val entity:Entity,year:Int) extends IntegerVariable(year) with EntityAttr
@@ -115,6 +79,10 @@ class BagOfMiddleNames(val entity:Entity,names:Map[String,Double]=null) extends 
 class BagOfKeywords(val entity:Entity,keywords:Map[String,Double]=null) extends BagOfWordsVariable(Nil,keywords) with EntityAttr
 /**Entity variables*/
 /**An entity with the necessary variables/coordination to implement hierarchical coreference.*/
+class TensorBagOfTopics(val entity:Entity) extends BagOfWordsTensorVariable with EntityAttr
+class TensorBagOfVenues(val entity:Entity) extends BagOfWordsTensorVariable with EntityAttr
+class TensorBagOfCoAuthors(val entity:Entity) extends BagOfWordsTensorVariable with EntityAttr
+class TensorBagOfKeywords(val entity:Entity) extends BagOfWordsTensorVariable with EntityAttr
 
 class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity(isMention) with HasCanopyAttributes[PaperEntity] with Prioritizable{
   var _id = java.util.UUID.randomUUID.toString+""
@@ -124,6 +92,7 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
   attr += new Title(this,s)
   attr += new Year(this,-1)
   attr += new VenueName(this,"")
+  attr += new BagOfTopics(this)
   attr += new BagOfAuthors(this)
   attr += new BagOfKeywords(this)
   attr += new BagOfVenues(this)
@@ -131,6 +100,7 @@ class PaperEntity(s:String="DEFAULT",isMention:Boolean=false) extends HierEntity
   def title = attr[Title]
   def year = attr[Year]
   def venueName = attr[VenueName]
+  def bagOfTopics = attr[BagOfTopics]
   def bagOfAuthors = attr[BagOfAuthors]
   def bagOfKeywords = attr[BagOfKeywords]
   def bagOfVenues = attr[BagOfVenues]
@@ -152,6 +122,7 @@ class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isM
   override def id = _id
   priority = random.nextDouble
   canopyAttributes += new AuthorFLNameCanopy(this)
+  def addMoreCanopies:Unit = (fullName.firstName+" "+fullName.middleName+" "+fullName.lastName).replaceAll(" +"," ").trim.split(" ").toSet.foreach((s:String) => canopyAttributes += new SimpleStringCanopy(this,s))
   attr += new FullName(this,f,m,l)
   attr += new BagOfTopics(this)
   attr += new BagOfVenues(this)
@@ -167,30 +138,38 @@ class AuthorEntity(f:String="DEFAULT",m:String="DEFAULT",l:String="DEFAULT", isM
   def string = f+" "+m+" "+l
   var paper:PaperEntity = null
   var paperMentionId:String=null
-  //var groundTruth:Option[String] = None
-
   val bagOfFirstNames = new BagOfFirstNames(this)
   val bagOfMiddleNames = new BagOfMiddleNames(this)
-//  val bagOfTruths = new BagOfTruths(this)
   attr += bagOfFirstNames
   attr += bagOfMiddleNames
-  //attr += bagOfTruths
 }
 
 object Coref{
-  def main(args:Array[String]) ={
+  lazy val ldaOpt = if(ldaFileOpt==None)None else Some(LDAUtils.loadLDAModelFromAlphaAndPhi(new File(ldaFileOpt.get)))
+  protected var ldaFileOpt:Option[String] = None
+  def main(argsIn:Array[String]) ={
+    var args:Array[String]=new Array[String](0)
+    if(args.length==1 && args.head.startsWith("--config")){
+      val contents = scala.io.Source.fromFile(new File(args.head.split("=")(1))).mkString
+      args = contents.split("\\s+")
+    } else args=argsIn
     println("Args: "+args.length)
     for(arg <- args)
       println("  "+arg)
-    object opts extends DefaultCmdOptions{
+    object opts extends ExperimentOptions with AuthorModelOptions{
+      val advanceSeed = new CmdOption("advance-seed",0,"INT","Number of times to call random.nextInt to advance the seed.")
       //db options
       val server = new CmdOption("server","localhost","FILE","Location of Mongo server.")
       val port = new CmdOption("port","27017","FILE","Port of Mongo server.")
       val database = new CmdOption("database","rexa2-cubbies","FILE","Name of mongo database.")
       //db creation options
       val bibDirectory = new CmdOption("bibDir","/Users/mwick/data/thesis/all3/","FILE","Pointer to a directory containing .bib files.")
+      val dblpLocation = new CmdOption("dblpFile","none","FILE","Pointer to a directory containing .bib files.")
       val rexaData = new CmdOption("rexaData","/Users/mwick/data/rexa/rexaAll/","FILE","Location of the labeled rexa2 directory.")
+      val aronData = new CmdOption("aronData","/data/thesis/rexa1/rexa_coref_datav0.5/","FILE","Location of Aron's labeled data")
       val createDB = new CmdOption("create","true","FILE","Creates a new DB by destroying the old one.")
+      val ldaModel = new CmdOption("ldaModel","lda-model.txt","FILE","Location of lda model")
+      val saveDB = new CmdOption("save",true,"FILE","Creates a new DB by destroying the old one.")
       //inference options
       val numEpochs = new CmdOption("epochs","1","FILE","Number of inference round-trips to DB.")
       val batchSize = new CmdOption("batchSize","10000","FILE","Number of entities used to retrieve canopies from.")
@@ -198,10 +177,14 @@ object Coref{
       val stepMultiplierB = new CmdOption("b","0.0","FILE","Runs for n steps (n=number of mentions to do inference on.)")
       val stepMultiplierC = new CmdOption("c","1000000.0","FILE","Runs for c steps (c=constant)")
       val evaluateOnly = new CmdOption("evaluate","false","FILE","Loads labeled data, evaluates the accuracy of coreference, and exits.")
+      val saveOptions = new CmdOption("optionsFile","options.log","FILE","Loads labeled data, evaluates the accuracy of coreference, and exits.")
     }
+    for(i<-0 until opts.advanceSeed.value)random.nextInt
     opts.parse(args)
+    if(opts.saveOptions.wasInvoked)opts.writeOptions(new File(opts.saveOptions.value))
+    if(opts.ldaModel.wasInvoked)ldaFileOpt = Some(opts.ldaModel.value)
     if(opts.evaluateOnly.value.toBoolean){
-      val tmpDB = new EpistemologicalDB(opts.server.value,opts.port.value.toInt,opts.database.value)
+      val tmpDB = new EpistemologicalDB(new AuthorCorefModel,opts.server.value,opts.port.value.toInt,opts.database.value)
       tmpDB.loadAndEvaluateAuthors
       System.exit(0)
     }
@@ -212,18 +195,74 @@ object Coref{
       val mongoDB = mongoConn.getDB(opts.database.value)
       mongoDB.getCollection("authors").drop
       mongoDB.getCollection("papers").drop
+      mongoConn.close
+      //mongoDB.getCollection("cooc").drop
     }
-    val epiDB = new EpistemologicalDB(opts.server.value,opts.port.value.toInt,opts.database.value)
-    if(opts.createDB.value.toBoolean){
-      println("About to add data.")
-      if(opts.bibDirectory.value.toLowerCase != "none")
-        epiDB.insertMentionsFromBibDir(new File(opts.bibDirectory.value))
-      if(opts.rexaData.value.toLowerCase != "none"){
-        println("Loading labeled data from: " + opts.rexaData.value)
-        epiDB.insertLabeledRexaMentions(new File(opts.rexaData.value))
-      }
-    }
+    println("server: "+opts.server.value+" port: "+opts.port.value.toInt+" database: "+opts.database.value)
+    val authorCorefModel = new AuthorCorefModel
+    if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfTopics](opts.bagTopicsWeight.value,opts.bagTopicsShift.value)
+    if(opts.bagTopicsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](opts.bagTopicsEntropy.value)
+    if(opts.bagTopicsPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfTopics](opts.bagTopicsPrior.value)
 
+    if(opts.bagCoAuthorWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfCoAuthors](opts.bagCoAuthorWeight.value,opts.bagCoAuthorShift.value)
+    if(opts.bagCoAuthorEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfCoAuthors](opts.bagCoAuthorEntropy.value)
+    if(opts.bagCoAuthorPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfTopics](opts.bagCoAuthorPrior.value)
+
+    if(opts.bagVenuesWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfVenues](opts.bagVenuesWeight.value,opts.bagVenuesShift.value)
+    if(opts.bagVenuesEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfVenues](opts.bagVenuesEntropy.value)
+    if(opts.bagVenuesPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfTopics](opts.bagVenuesPrior.value)
+
+    if(opts.bagKeywordsWeight != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfKeywords](opts.bagKeywordsWeight.value,opts.bagKeywordsShift.value)
+    if(opts.bagKeywordsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfKeywords](opts.bagKeywordsEntropy.value)
+    if(opts.bagKeywordsPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfTopics](opts.bagKeywordsPrior.value)
+
+    if(opts.entityExistencePenalty.value!=0.0 && opts.subEntityExistencePenalty.value!=0.0)authorCorefModel += new StructuralPriorsTemplate(opts.entityExistencePenalty.value, opts.subEntityExistencePenalty.value)
+
+    /*
+    authorCorefModel += new ChildParentCosineDistance[BagOfTopics](4.0,-0.25)
+    authorCorefModel += new ChildParentCosineDistance[BagOfCoAuthors](4.0,-0.125)
+    authorCorefModel += new ChildParentCosineDistance[BagOfVenues](4.0,-0.125)
+    authorCorefModel += new ChildParentCosineDistance[BagOfKeywords](2.0,-0.125)
+    authorCorefModel += new StructuralPriorsTemplate(2.0,0.25)
+    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](0.75)
+    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfCoAuthors](0.125)
+    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfVenues](0.125)
+    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfKeywords](0.25)
+    */
+    //authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfTopics](0.125)
+    //authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfCoAuthors](0.125)
+    //authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfVenues](0.125)
+    //authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfKeywords](0.125)
+
+    /*
+    authorCorefModel += new ChildParentCosineDistance[BagOfTopics](4.0,-0.25)
+    authorCorefModel += new ChildParentCosineDistance[BagOfCoAuthors](4.0,-0.125)
+    authorCorefModel += new ChildParentCosineDistance[BagOfVenues](4.0,-0.125)
+    authorCorefModel += new ChildParentCosineDistance[BagOfKeywords](2.0,-0.125)
+    authorCorefModel += new StructuralPriorsTemplate(2.0,0.25)
+    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](0.75)
+    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfCoAuthors](0.125)
+    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfVenues](0.125)
+    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfKeywords](0.25)
+
+     */
+
+    val epiDB = new EpistemologicalDB(authorCorefModel,opts.server.value,opts.port.value.toInt,opts.database.value)
+//    if(opts.createDB.value.toBoolean){
+    println("About to add data.")
+    if(opts.bibDirectory.value.toLowerCase != "none")
+      epiDB.insertMentionsFromBibDirMultiThreaded(new File(opts.bibDirectory.value))
+    //epiDB.insertMentionsFromBibDir(new File(opts.bibDirectory.value))
+    if(opts.rexaData.value.toLowerCase != "none"){
+      println("Loading labeled data from: " + opts.rexaData.value)
+      epiDB.insertLabeledRexaMentions(new File(opts.rexaData.value))
+    }
+    if(opts.dblpLocation.value.toLowerCase != "none"){
+      println("Loading DBLP data from: " + opts.dblpLocation.value)
+      epiDB.insertMentionsFromDBLP(opts.dblpLocation.value)
+      println("done.")
+    }
+//    }
     /*
     //epiDB.drop
     epiDB.insertLabeledRexaMentions(new File("/Users/mwick/data/rexa/rexaTrain/"))
@@ -236,17 +275,18 @@ object Coref{
     epiDB.inferenceSweep(
       opts.numEpochs.value.toInt,
       opts.batchSize.value.toInt,
-      opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble
+      opts.stepMultiplierA.value.toDouble,opts.stepMultiplierB.value.toDouble,opts.stepMultiplierC.value.toDouble,
+      opts.saveDB.value
     )
   }
 }
 
-class EpistemologicalDB(mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie") extends MongoBibDatabase(mongoServer,mongoPort,mongoDBName){
+class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie") extends MongoBibDatabase(mongoServer,mongoPort,mongoDBName){
   //val authorModel = new ParameterizedAuthorCorefModel
   //val authorTrainer = new AuthorTrainer(authorModel,new TrainingModel){temperature = 0.001}//;override val amIMetropolis=true}
   //val authorPredictor = new AuthorSampler(new TrainingModel){temperature = 0.001}
   //val authorPredictor = new AuthorSampler(authorModel){temperature = 0.001}
-  val authorPredictor = new AuthorSampler(new AuthorCorefModel){temperature = 0.001}
+  val authorPredictor = new AuthorSampler(authorCorefModel){temperature = 0.001}
   val paperPredictor = new PaperSampler(new PaperCorefModel)
   def drop:Unit = {
     //authorColl.remove(_)
@@ -254,14 +294,76 @@ class EpistemologicalDB(mongoServer:String="localhost",mongoPort:Int=27017,mongo
     authorColl.drop
     paperColl.drop
   }
-  protected def infer[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable,C<:EntityCubbie[E]](entityCollection:EntityCollection[E,C],predictor:HierCorefSampler[E],k:Int,inferenceSteps:Int=>Int) ={
+  protected def infer[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable,C<:EntityCubbie[E]](entityCollection:EntityCollection[E,C],predictor:HierCorefSampler[E],k:Int,inferenceSteps:Int=>Int,save:Boolean=true) ={
+    val entities = entityCollection.loadLabeledAndCanopies //entityCollection.nextBatch(k)
+    /*
+    entities match{
+      case es:Seq[AuthorEntity] =>{
+        val ctime = System.currentTimeMillis
+        //EntityUtils.collapseOn(es,(e:AuthorEntity) => {Some(e.canopyAttributes.head.canopyName)})
+        EntityUtils.collapseOnCanopyAndTopics(es)
+        /*
+        Evaluator.printPairwiseFalseNegatives(es,(e:HierEntity)=>{
+          val result = new StringBuffer
+          result.append("first: "+e.attr[FullName].firstName)
+          result.append("\nlast : "+e.attr[FullName].lastName)
+          result.append("\ncanop: "+e.asInstanceOf[AuthorEntity].canopyAttributes.head.canopyName)
+          //result.append("\ntitle: "+e.attr[FullName].suffix)
+          result.toString
+        })
+        */
+        Evaluator.printPairwiseFalsePositives(entities,(e:HierEntity)=>{
+          val result = new StringBuffer
+          result.append("first: "+e.attr[FullName].firstName)
+          result.append("\nlast : "+e.attr[FullName].lastName)
+          result.append("\ncanop: "+e.asInstanceOf[AuthorEntity].canopyAttributes.head.canopyName)
+          result.append("\nkeywords: "+e.attr[BagOfKeywords])
+          result.append("\nCoAuthors: "+e.attr[BagOfCoAuthors])
+          result.append("\nTopics: "+e.attr[BagOfTopics])
+          result.append("\nVenues: "+e.attr[BagOfVenues])
+          result.append("\nEmails: "+e.attr[BagOfEmails])
+          result.append("\ntitle: "+e.attr[FullName].suffix)
+          result.toString
+        })
+        println("Collapsing took "+((System.currentTimeMillis-ctime)/1000L)+" seconds.")
+        Evaluator.eval(es)
+      }
+    }
+    */
+    Evaluator.eval(entities)
     var timer = System.currentTimeMillis
-    val entities = entityCollection.nextBatch(k)
     val numSteps = inferenceSteps(entities.size)
     predictor.setEntities(entities)
     predictor.timeAndProcess(numSteps)
+    Evaluator.printPairwiseFalseNegatives(entities,(e:HierEntity)=>{
+      val result = new StringBuffer
+      result.append("first: "+e.attr[FullName].firstName)
+      result.append("\nlast : "+e.attr[FullName].lastName)
+      result.append("\ncanop: "+e.asInstanceOf[AuthorEntity].canopyAttributes.head.canopyName)
+      result.append("\nkeywords: "+e.attr[BagOfKeywords])
+      result.append("\nCoAuthors: "+e.attr[BagOfCoAuthors])
+      result.append("\nTopics: "+e.attr[BagOfTopics])
+      result.append("\nVenues: "+e.attr[BagOfVenues])
+      result.append("\nEmails: "+e.attr[BagOfEmails])
+      result.append("\ntitle: "+e.attr[FullName].suffix)
+      result.toString
+    })
+    Evaluator.printPairwiseFalsePositives(entities,(e:HierEntity)=>{
+      val result = new StringBuffer
+      result.append("first: "+e.attr[FullName].firstName)
+      result.append("\nlast : "+e.attr[FullName].lastName)
+      result.append("\ncanop: "+e.asInstanceOf[AuthorEntity].canopyAttributes.head.canopyName)
+      result.append("\nkeywords: "+e.attr[BagOfKeywords])
+      result.append("\nCoAuthors: "+e.attr[BagOfCoAuthors])
+      result.append("\nTopics: "+e.attr[BagOfTopics])
+      result.append("\nVenues: "+e.attr[BagOfVenues])
+      result.append("\nEmails: "+e.attr[BagOfEmails])
+      result.append("\ntitle: "+e.attr[FullName].suffix)
+      result.toString
+    })
+    EntityUtils.printAuthorsForAnalysis(predictor.getEntities.asInstanceOf[Seq[AuthorEntity]])
     println(numSteps + " of inference took " + ((System.currentTimeMillis-timer)/1000L) + " seconds.")
-    entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities.map(_.asInstanceOf[E]))
+    if(save)entityCollection.store(predictor.getEntities ++ predictor.getDeletedEntities.map(_.asInstanceOf[E]))
   }
 
   def loadAndEvaluateAuthors:Unit ={
@@ -303,7 +405,7 @@ class EpistemologicalDB(mongoServer:String="localhost",mongoPort:Int=27017,mongo
     EntityUtils.printAuthors(authorPredictor.getEntities)
     Evaluator.eval(authorPredictor.getEntities)
   }*/
-  def inferenceSweep(numEpochs:Int,k:Int,a:Double,b:Double,c:Double) ={
+  def inferenceSweep(numEpochs:Int,k:Int,a:Double,b:Double,c:Double, save:Boolean=true) ={
     def calculateSteps(numEntities:Int) = (numEntities.toDouble*numEntities.toDouble*a + numEntities.toDouble*b + c).toInt
     for(i<-0 until numEpochs){
       println("INFERENCE ROUND "+i)
@@ -320,7 +422,7 @@ class EpistemologicalDB(mongoServer:String="localhost",mongoPort:Int=27017,mongo
       */
       println("Author coreference")
       //trainTestAuthors(0.6,10,calculateSteps(_),calculateSteps(_))
-      infer[AuthorEntity,AuthorCubbie](authorColl,authorPredictor,k,calculateSteps(_))
+      infer[AuthorEntity,AuthorCubbie](authorColl,authorPredictor,k,calculateSteps(_),save)
       //EntityUtils.printAuthors(authorPredictor.getEntities)
       Evaluator.eval(authorPredictor.getEntities)
     }
@@ -404,13 +506,114 @@ class PaperCorefModel extends TemplateModel{
   */
   //this += new StructuralPriorsTemplate(8.0,0.25)
 }
-class AuthorCorefModel extends TemplateModel{
+
+
+
+class AuthorCorefModel extends FastTemplateModel{
+  /*
+    this += new ChildParentTemplateWithStatistics[FullName] {
+    def score(s:Stat): Double = {
+      var result = 0.0
+      val childName = s._2
+      val parentName = s._3
+      val childFirst = FeatureUtils.normalizeName(childName(0)).toLowerCase
+      val childMiddle = FeatureUtils.normalizeName(childName(1)).toLowerCase
+      val childLast = FeatureUtils.normalizeName(childName(2)).toLowerCase
+      val parentFirst = FeatureUtils.normalizeName(parentName(0)).toLowerCase
+      val parentMiddle = FeatureUtils.normalizeName(parentName(1)).toLowerCase
+      val parentLast = FeatureUtils.normalizeName(parentName(2)).toLowerCase
+      if(childLast != parentLast)result -= 8
+      if(initialsMisMatch(childFirst,parentFirst))result -= 8
+      if(initialsMisMatch(childMiddle,parentMiddle))result -= 8
+      if(nameMisMatch(childFirst,parentFirst))result -= 8
+      if(nameMisMatch(childMiddle,parentMiddle))result -= 2
+      if(parentMiddle.length > childMiddle.length)result += 0.5
+      if(parentFirst.length > childFirst.length)result += 0.5
+      if((childMiddle.length==0 && parentMiddle.length>0) || (parentMiddle.length==0 && childMiddle.length>0))result -= 0.25
+      result
+    }
+    def initialsMisMatch(c:String,p:String):Boolean = (c!=null && p!=null && c.length>0 && p.length>0 && c.charAt(0)!=p.charAt(0))
+    def nameMisMatch(c:String,p:String):Boolean = (c!=null && p!=null && !FeatureUtils.isInitial(c) && !FeatureUtils.isInitial(p) && c != p)
+  }
+  */
+  this += new TemplateWithStatistics1[BagOfFirstNames]{
+    def score(s:Stat):Double ={
+      var result = 0.0
+      val bag = s._1
+      //val bagSeq = bag.iterator.toSeq
+      val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
+      var firstLetterMismatches = 0
+      var nameMismatches = 0
+      var i=0;var j=0;
+      while(i<bagSeq.size){
+        val (wordi,weighti) = bagSeq(i)
+        j=i+1
+        while(j<bagSeq.size){
+          val (wordj,weightj) = bagSeq(j)
+          if(wordi.charAt(0) != wordj.charAt(0))firstLetterMismatches += 1 //weighti*weightj
+          else if(FeatureUtils.isInitial(wordi) && FeatureUtils.isInitial(wordj) && wordi != wordj)firstLetterMismatches += 1
+          if(wordi.length>1 && wordj.length>1 && !FeatureUtils.isInitial(wordi) && !FeatureUtils.isInitial(wordj))nameMismatches += wordi.editDistance(wordj)
+          j += 1
+        }
+        i += 1
+      }
+      result -= firstLetterMismatches*firstLetterMismatches*4
+      result -= nameMismatches*nameMismatches*4
+      /*
+      val bag = s._1
+      var fullNameCount = 0.0
+      var initialCount = 0.0
+      var result = 0.0
+      for((k,v) <- bag.iterator)if(k.length>1)fullNameCount+=1 else if(k.length==1)initialCount+=1
+      result -= (initialCount*initialCount -1)*4
+      result -= (fullNameCount*fullNameCount -1)*4
+      */
+      result
+    }
+  }
+  this += new TemplateWithStatistics1[BagOfMiddleNames]{
+    def score(s:Stat):Double ={
+      var result = 0.0
+      val bag = s._1
+      val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
+      //val bagSeq = bag.iterator.toSeq
+      var firstLetterMismatches = 0
+      var nameMismatches = 0
+      var i=0;var j=0;
+      while(i<bagSeq.size){
+        val (wordi,weighti) = bagSeq(i)
+        j=i+1
+        while(j<bagSeq.size){
+          val (wordj,weightj) = bagSeq(j)
+          if(wordi.charAt(0) != wordj.charAt(0))firstLetterMismatches += 1 //weighti*weightj
+          else if(FeatureUtils.isInitial(wordi) && FeatureUtils.isInitial(wordj) && wordi != wordj)firstLetterMismatches += 1
+          if(wordi.length>1 && wordj.length>1 && !FeatureUtils.isInitial(wordi) && !FeatureUtils.isInitial(wordj))nameMismatches += wordi.editDistance(wordj)
+          j += 1
+        }
+        i += 1
+      }
+      result -= firstLetterMismatches*firstLetterMismatches*4
+      result -= nameMismatches*nameMismatches*4
+      result
+    }
+  }
+}
+
+class AuthorCorefModelOld extends TemplateModel{
+  var bagOfCoAuthorsShift:Double = -0.25
+  var bagOfCoAuthorsWeight:Double= 4.0
+  var bagOfVenuesShift:Double = 0.0
+  var bagOfVenuesWeight:Double= 4.0
+  var bagOfKeywordsShift:Double = 0.0
+  var bagOfKeyWordsWeight:Double = 4.0
+/*
   var bagOfCoAuthorsShift:Double = 0.0
   var bagOfCoAuthorsWeight:Double= 4.0
   var bagOfVenuesShift:Double = -0.25
   var bagOfVenuesWeight:Double= 8.0
   var bagOfKeywordsShift:Double = -0.25
   var bagOfKeyWordsWeight:Double = 8.0
+  */
   this += new ChildParentTemplateWithStatistics[FullName] {
     def score(s:Stat): Double = {
       var result = 0.0
@@ -435,7 +638,6 @@ class AuthorCorefModel extends TemplateModel{
     def initialsMisMatch(c:String,p:String):Boolean = (c!=null && p!=null && c.length>0 && p.length>0 && c.charAt(0)!=p.charAt(0))
     def nameMisMatch(c:String,p:String):Boolean = (c!=null && p!=null && !FeatureUtils.isInitial(c) && !FeatureUtils.isInitial(p) && c != p)
   }
-
   this += new ChildParentTemplateWithStatistics[BagOfCoAuthors] {
     override def unroll2(childBow:BagOfCoAuthors) = Nil
     override def unroll3(childBow:BagOfCoAuthors) = Nil
@@ -446,7 +648,7 @@ class AuthorCorefModel extends TemplateModel{
       val dot = childBow.deductedDot(parentBow,childBow)
       var cossim:Double=0.0
       if(dot == 0.0) {
-        result -= childBow.l2Norm*parentBow.l2Norm*2 - 0.5
+        //result -= childBow.l2Norm*parentBow.l2Norm*2 - 0.5
       }
       else cossim=childBow.cosineSimilarity(parentBow,childBow)
       result += (cossim+bagOfCoAuthorsShift)*bagOfCoAuthorsWeight
@@ -460,7 +662,7 @@ class AuthorCorefModel extends TemplateModel{
   }
   this += new ChildParentTemplateWithStatistics[BagOfVenues] {
     val strength = 4.0 //16.0
-    val shift = 0.0 //-0.25
+    val shift = -0.25 //-0.25
     override def unroll2(childBow:BagOfVenues) = Nil
     override def unroll3(childBow:BagOfVenues) = Nil
     def score(s:Stat): Double = {
@@ -471,18 +673,30 @@ class AuthorCorefModel extends TemplateModel{
     }
   }
   this += new ChildParentTemplateWithStatistics[BagOfKeywords] {
-    val strength = 4.0
-    val shift = 0.0
+    val strength = 1.0
+    val shift = -0.25
     override def unroll2(childBow:BagOfKeywords) = Nil
     override def unroll3(childBow:BagOfKeywords) = Nil
     def score(s:Stat): Double = {
       val childBow = s._2
       val parentBow = s._3
       var result = childBow.cosineSimilarity(parentBow,childBow)
+      //if(result==0.0)result -= 4.0
       (result+shift)*strength
     }
   }
-
+  this += new ChildParentTemplateWithStatistics[BagOfTopics] {
+    val strength = 4.0 //16.0
+    val shift = -0.25//0.0 //-0.25
+    override def unroll2(childBow:BagOfTopics) = Nil
+    override def unroll3(childBow:BagOfTopics) = Nil
+    def score(s:Stat): Double = {
+      val childBow = s._2
+      val parentBow = s._3
+      val result = childBow.cosineSimilarity(parentBow,childBow)
+      (result+shift)*strength
+    }
+  }
 
   this += new TemplateWithStatistics1[BagOfFirstNames]{
     def score(s:Stat):Double ={
@@ -542,54 +756,21 @@ class AuthorCorefModel extends TemplateModel{
       }
       result -= firstLetterMismatches*firstLetterMismatches*4
       result -= nameMismatches*nameMismatches*4
-      /*
-      println("bag: "+bag)
-      println("  mismatches: "+firstLetterMismatches)
-      println("  namemm    : "+nameMismatches)
-      println("  result: "+result)
-      */
-      /*
-      var initialNameMisMatches=0
-      var fullNameCount = 0
-      var initialCount = 0
-      var result = 0.0
-      val initials = new Array[String](bag.size)
-      val fullName = new Array[String](bag.size)
-      for((k,v) <- bag.iterator){
-        if(isInitial(k)){
-          initials(initialCount)=k
-          initialCount+=1
-        } else if(k.length>1){
-          fullName(fullNameCount)=k
-          fullNameCount+=1
-        }
-      } //if(k.length>1)fullNameCount+=1 else initialCount+=1
-      result -= (initialCount*initialCount -1)*2
-      result -= (fullNameCount*fullNameCount -1)*4
-
-      var i=0;var j=0
-      while(i<initialCount){
-        while(j<-fullNameCount){
-          if(initials(i)._1.charAt(0) != fullName(j)._1.charAt(j))initialNameMisMatches += 1
-          j+=1
-        }
-        i+=1
-      }
-      result -= initialNameMisMatches*initialNameMisMatches*4
-
-      println("Bag: "+bag)
-      println("  initialCount: "+initialCount)
-      println("  fullnmeCount: "+fullNameCount)
-      println("  initial-name: "+initialNameMisMatches)
-      println("  result: "+result)
-      */
       result
     }
 
   }
-  
+  this += new EntropyBagOfWordsPriorWithStatistics[BagOfKeywords](0.75)
+  this += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](0.75)
+//  this += new EntropyBagOfWordsPriorWithStatistics[BagOfVenues](0.75)
+//  this += new EntropyBagOfWordsPriorWithStatistics[BagOfCoAuthors](0.75)
+  //this += new EntropyBagOfWordsPriorWithStatistics[BagOfCoAuthors](0.5)
+  //this += new DirichletBagOfWordsTemplateWithStatistics[BagOfKeywords](1.0, 0.5)
+  //this += new StructuralPriorsTemplate(4.0,0.25)
+  this += new StructuralPriorsTemplate(2.0,0.25)
+
+
   //this += new StructuralPriorsTemplate(0.0,-0.5)
-  this += new StructuralPriorsTemplate(4.0,0.25)
   //this += new StructuralPriorsTemplate(16.0,0.25)
   //TODO: the structural prior should look at a canopy, look at the number of non-singleton entities, and make the clustering strength stronger proportional to this
   //the idea is that ambiguous canopies will be less aggressively clustered than unambiguous ones, and this will depend on the data
@@ -644,52 +825,12 @@ class AuthorSampler(model:TemplateModel) extends BibSampler[AuthorEntity](model)
     if(author.attr[Dirty].value>0)author.attr[Dirty].--()(d)
     if(author.parentEntity != null)author.parentEntity.attr[Dirty].++()(d)
   }
-  //val recurseBags=false
-  protected def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
-    var e = entity.parentEntity
-    while(e!=null){
-      //if(recurseBags || (e eq entity)){
-        e.attr[BagOfCoAuthors].add(entity.attr[BagOfCoAuthors].value)(d)
-        e.attr[BagOfVenues].add(entity.attr[BagOfVenues].value)(d)
-        e.attr[BagOfKeywords].add(entity.attr[BagOfKeywords].value)(d)
-      //}
-      e.attr[BagOfFirstNames].add(entity.attr[BagOfFirstNames].value)(d)
-      e.attr[BagOfMiddleNames].add(entity.attr[BagOfMiddleNames].value)(d)
-      e.attr[BagOfTruths].add(entity.attr[BagOfTruths].value)(d)
-      e = e.parentEntity
-    }
-  }
-  protected def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit ={
-    var e = formerParent
-    while(e!=null){
-      //if(recurseBags || (e eq formerParent)){
-        e.attr[BagOfCoAuthors].remove(parting.attr[BagOfCoAuthors].value)
-        e.attr[BagOfVenues].remove(parting.attr[BagOfVenues].value)
-        e.attr[BagOfKeywords].remove(parting.attr[BagOfKeywords].value)(d)
-      //}
-      e.attr[BagOfFirstNames].remove(parting.attr[BagOfFirstNames].value)(d)
-      e.attr[BagOfMiddleNames].remove(parting.attr[BagOfMiddleNames].value)(d)
-      e.attr[BagOfTruths].remove(parting.attr[BagOfTruths].value)(d)
-      e = e.parentEntity
-    }
-  }
   protected def createAttributesForMergeUp(e1:AuthorEntity,e2:AuthorEntity,parent:AuthorEntity)(implicit d:DiffList):Unit ={
     if(e1.attr[FullName].middleName.length>0)
       parent.attr[FullName].setFullName(e1.attr[FullName])
     else
       parent.attr[FullName].setFullName(e2.attr[FullName])
-    parent.attr[BagOfCoAuthors].add(e1.attr[BagOfCoAuthors].value)(d)
-    parent.attr[BagOfCoAuthors].add(e2.attr[BagOfCoAuthors].value)(d)
-    parent.attr[BagOfVenues].add(e1.attr[BagOfVenues].value)(d)
-    parent.attr[BagOfVenues].add(e2.attr[BagOfVenues].value)(d)
-    parent.attr[BagOfKeywords].add(e1.attr[BagOfKeywords].value)(d)
-    parent.attr[BagOfKeywords].add(e2.attr[BagOfKeywords].value)(d)
-    parent.attr[BagOfFirstNames].add(e1.attr[BagOfFirstNames].value)(d)
-    parent.attr[BagOfFirstNames].add(e2.attr[BagOfFirstNames].value)(d)
-    parent.attr[BagOfMiddleNames].add(e1.attr[BagOfMiddleNames].value)(d)
-    parent.attr[BagOfMiddleNames].add(e2.attr[BagOfMiddleNames].value)(d)
-    parent.attr[BagOfTruths].add(e1.attr[BagOfTruths].value)(d)
-    parent.attr[BagOfTruths].add(e2.attr[BagOfTruths].value)(d)
+    EntityUtils.createBagsForMergeUp(e1,e2,parent)(d)
   }
   override def mergeLeft(left:AuthorEntity,right:AuthorEntity)(implicit d:DiffList):Unit ={
     val oldParent = right.parentEntity
@@ -700,8 +841,6 @@ class AuthorSampler(model:TemplateModel) extends BibSampler[AuthorEntity](model)
     propagateRemoveBag(right,oldParent)(d)
     structurePreservationForEntityThatLostChild(oldParent)(d)
   }
-//  override def collapse(entity:AuthorEntity)(implicit d:DiffList):Unit={}
-
   def proposeMergeIfValid(entity1:AuthorEntity,entity2:AuthorEntity,changes:ArrayBuffer[(DiffList)=>Unit]):Unit ={
     if (entity1.entityRoot.id != entity2.entityRoot.id)  //sampled nodes refer to different entities
       if(!isMention(entity1))
@@ -710,7 +849,9 @@ class AuthorSampler(model:TemplateModel) extends BibSampler[AuthorEntity](model)
 
   override def settings(c:Null) : SettingIterator = new SettingIterator {
     val changes = new scala.collection.mutable.ArrayBuffer[(DiffList)=>Unit]
-    val (entity1,entity2) = nextEntityPair
+    val (entityS1,entityS2) = nextEntityPair
+    val entity1 = entityS1.getAncestor(random.nextInt(entityS1.depth+1)).asInstanceOf[AuthorEntity]
+    val entity2 = entityS2.getAncestor(random.nextInt(entityS2.depth+1)).asInstanceOf[AuthorEntity]
     if (entity1.entityRoot.id != entity2.entityRoot.id) { //sampled nodes refer to different entities
       /*
       if(!isMention(entity1)){
@@ -719,12 +860,15 @@ class AuthorSampler(model:TemplateModel) extends BibSampler[AuthorEntity](model)
           changes += {(d:DiffList) => mergeLeft(entity1.entityRoot.asInstanceOf[T],entity2)(d)} //unfortunately casting is necessary unless we want to type entityRef/parentEntity/childEntities
       }
       */
-      var e1 = entity1
-      var e2 = entity2.getAncestor(random.nextInt(entity2.depth+1)).asInstanceOf[AuthorEntity]
+      var e1 = entityS1
+      var e2 = entity2//entityS2.getAncestor(random.nextInt(entityS2.depth+1)).asInstanceOf[AuthorEntity]
       while(e1 != null){
         proposeMergeIfValid(e1,e2,changes)
+        //if(!e2.entityRoot eq e2)proposeMergeIfValid(e1,e2.entityRoot.asInstanceOf[AuthorEntity],changes)
         e1 = e1.parentEntity.asInstanceOf[AuthorEntity]
       }
+      //proposeMergeIfValid(entity1,entity2,changes)
+      //changes += {(d:DiffList) => mergeUp(entity1.entityRoot.asInstanceOf[AuthorEntity],entity2.entityRoot.asInstanceOf[AuthorEntity])(d)}
       if(entity1.parentEntity==null && entity2.parentEntity==null)
         changes += {(d:DiffList) => mergeUp(entity1,entity2)(d)}
     } else { //sampled nodes refer to same entity
@@ -816,6 +960,7 @@ class PaperSampler(model:TemplateModel) extends BibSampler[PaperEntity](model){
     author.attr[Dirty].reset
     if(author.parentEntity != null)author.parentEntity.attr[Dirty].++()(d)
   }
+  /*
   def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit ={
     var e = entity.parentEntity
     while(e!=null){
@@ -834,6 +979,7 @@ class PaperSampler(model:TemplateModel) extends BibSampler[PaperEntity](model){
       e = e.parentEntity
     }
   }
+  */
   protected def createAttributesForMergeUp(e1:PaperEntity,e2:PaperEntity,parent:PaperEntity)(implicit d:DiffList):Unit ={
     parent.attr[Title].set(e1.title.value)
     parent.attr[BagOfAuthors].add(e1.attr[BagOfAuthors].value)(d)
@@ -867,6 +1013,15 @@ trait CanopyStatistics[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
       i+=1
     }
     _sampled = null
+  }
+  def addNewOnly(cs:HashMap[String,ArrayBuffer[E]]):Unit ={
+    canopies = cs
+    var i=0
+    canopyNames = new Array[String](canopies.size)
+    for(canopyName <- cs.keys){
+      canopyNames(i)=canopyName
+      i+=1
+    }
   }
   def value(s:String) = (countsAccept.getOrElse(s,0.0) + ((random.nextDouble-0.5)/100.0+0.5))/(countsSamples.getOrElse(s,0.0)+1.0)
   def accept = {
@@ -988,6 +1143,11 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     //println("Number of canopies: "+canopies.size)
     //for((k,v) <- canopies)println("  -"+k+":"+v.size)
   }
+  def addEntities(ents:Iterable[E]):Unit ={
+    for(e <- ents)addEntity(e)
+    canopies = canopies.filter(_._2.size>1)
+    canopyStats.addNewOnly(canopies)
+  }
   override def nextEntity(context:E=null.asInstanceOf[E]):E = {
     var result:E=null.asInstanceOf[E]
     if(context==null)result=sampleEntity(entities)
@@ -1020,7 +1180,22 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
   }
   */
 
-/*
+  /**Override to sample an entity proportion to the number of mentions in the subtree rooted here.*/
+  /*
+  override protected def sampleEntity(samplePool:ArrayBuffer[E])={
+    var result = super.sampleEntity(samplePool)
+    var i = 0.0
+    var e = result
+    while(e!=null){
+      if(random.nextDouble<=1.0/i)result = e
+      e = e.parentEntity.asInstanceOf[E]
+      i += 1.0
+    }
+    result
+  }
+  */
+
+  /*
   override def nextEntityPair:(E,E)={
     val sampledCanopyName = canopyStats.nextCanopy
     val canopy = canopyStats(sampledCanopyName)
@@ -1029,6 +1204,7 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
     (m1,m2)
   }
   */
+  
 
   override def mergeLeft(left:E,right:E)(implicit d:DiffList):Unit ={
     val oldParent = right.parentEntity
@@ -1073,9 +1249,9 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
       //println("  diff size: "+proposal.diff.size)
       //println("  score: "+proposal.modelScore)
       //println("  canopy: "+canopyStats.lastSampledName)
-      canopyStats.accept
+//      canopyStats.accept
     }
-    canopyStats.sampled
+//    canopyStats.sampled
 
     proposalCount += 1
     if(proposalCount % 1000==0)
@@ -1084,11 +1260,14 @@ abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Priorit
       var pctAccepted = numAccepted.toDouble/proposalCount.toDouble*100
       println(" No. samples: "+proposalCount+", %accepted: "+pctAccepted+", time: "+(System.currentTimeMillis-intervalTime)/1000L+"sec., total: "+(System.currentTimeMillis-totalTime)/1000L+" sec.  Samples per sec: "+ (proposalCount.toInt/(((System.currentTimeMillis-totalTime+1L)/1000L).toInt))+" Accepted per sec: "+(numAccepted/(((System.currentTimeMillis-totalTime+1L)/1000L).toInt)))
       intervalTime = System.currentTimeMillis
-      canopyStats.print(5)
+ //     canopyStats.print(5)
     }
   }
-  protected def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit
-  protected def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit
+  protected def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit = EntityUtils.propagateBagUp(entity)(d)
+  protected def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit = EntityUtils.propagateRemoveBag(parting,formerParent)(d)
+
+  //protected def propagateBagUp(entity:Entity)(implicit d:DiffList):Unit
+  //protected def propagateRemoveBag(parting:Entity,formerParent:Entity)(implicit d:DiffList):Unit
   protected def createAttributesForMergeUp(e1:E,e2:E,parent:E)(implicit d:DiffList):Unit
 }
 
@@ -1100,8 +1279,15 @@ trait BibDatabase{
 abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=27017,mongoDBName:String="rexa2-cubbie") extends BibDatabase{
   import MongoCubbieConverter._
   import MongoCubbieImplicits._
+
+  println("MongoBibDatabase: "+mongoServer+":"+mongoPort+"/"+mongoDBName)
   protected val mongoConn = new Mongo(mongoServer,mongoPort)
   protected val mongoDB = mongoConn.getDB(mongoDBName)
+  //val coocColl = new MongoCubbieCollection(mongoDB.getCollection("cooc"),() => new CoocCubbie,(stat:CoocCubbie) => Seq(Seq(stat._occursWith),Seq(stat._kind))) with LazyCubbieConverter[CoocCubbie]
+
+
+  //protected val coocCollection = mongoDB.getCollection("cooc")
+  //coocCollection.ensureIndex(new BasicDBObject(""))
   val authorColl = new MongoEntityCollection[AuthorEntity,AuthorCubbie]("authors",mongoDB){
     def newEntityCubbie:AuthorCubbie = new AuthorCubbie
     def newEntity:AuthorEntity = new AuthorEntity
@@ -1149,14 +1335,46 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     }
   }
   def add(papers:Iterable[PaperEntity]):Unit ={
+    println("About to add papers to db.")
+    //println("Authors: "+papers.flatMap(_.authors).size)
+    println("Re-extracting names.")
+    papers.foreach(_.authors.foreach((a:AuthorEntity)=>EntityUtils.reExtractNames(a.fullName)))
+    println("Done.")
+    println("Inferring topics for papers....")
+    for(lda<-Coref.ldaOpt)LDAUtils.inferTopicsForPapers(papers,lda)
+    println("Done.")
+    println("Adding features...")
     for(p<-papers){
       p.promotedMention.set(p.id)(null)
       addFeatures(p)
       for(a<-p.authors)addFeatures(a)
     }
+    println("Done.")
+    println("Inserting papers into DB...")
     paperColl.insert(papers)
-    authorColl.insert(papers.flatMap(_.authors))
+    println("Done.")
+    println("Inserting authors into DB...")
+    var authorCount = 0
+    var paperCount = 0
+    for(paper <- papers){
+      authorColl.insert(paper.authors)
+      authorCount += paper.authors.size
+      paperCount += 1
+      if(paperCount % 1000==0)print(".")
+      if(paperCount % 25000==0)println(" inserted "+paperCount + " papers and "+authorCount+" authors.")
+    }
+    //authorColl.insert(papers.flatMap(_.authors)) //too slow for large data
+    println("Done.")
   }
+/*
+  protected def updateCooc(p:PaperEntity):Unit ={
+    
+  }
+  protected def updateCooc(cooc:CoocCubbie):Unit ={
+    //    val sorted = entityCubbieColl.query(null,_.canopies.select.inferencePriority.select).sort(_.inferencePriority(-1))
+    //val curVal = coocColl.query(null,_._id=)
+  }
+*/
   def createAuthorsFromPaper(p:PaperEntity):Unit ={
     
   }
@@ -1165,7 +1383,7 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     add(paperEntities)
   }
   def insertMentionsFromBibDir(bibDir:File):Unit ={
-    if(!bibDir.isDirectory)throw new Exception("Error "+bibDir + " is not a directory.")
+    if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir)//println("Warning: "+bibDir + " is not a directory. Loading file instead.")
     println("Inserting mentions from bib directory: "+bibDir)
     var size = bibDir.listFiles.size
     var count = 0
@@ -1178,6 +1396,14 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     }
     BibReader.skipped=0
   }
+  def insertMentionsFromBibDirMultiThreaded(bibDir:File):Unit ={
+    if(!bibDir.isDirectory)return insertMentionsFromBibFile(bibDir)
+    val papers = BibReader.loadBibTexDirMultiThreaded(bibDir)
+    add(papers)
+  }
+  /*
+  loadBibTexDirMultiThreaded
+   */
   def insertMentionsFromBibFile(bibFile:File,numEntries:Int = Integer.MAX_VALUE):Unit ={
     val paperEntities = BibReader.loadBibTeXFile(bibFile)
     add(paperEntities)
@@ -1203,6 +1429,8 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
     if(author.groundTruth!=None)author.bagOfTruths += author.groundTruth.get
     val paper = author.paper
     if(paper!=null){
+      author.fullName.setSuffix(paper.title.value)(null)
+      author.bagOfTopics.add(paper.bagOfTopics.value)(null)
       for(coAuthor <- paper.authors){
         if(coAuthor.ne(author)){
           val coauthorString = FeatureUtils.firstInitialLastName(coAuthor)
@@ -1213,8 +1441,10 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
         for(tok<-FeatureUtils.venueBag(paper.venueName.value))
           author.bagOfVenues.add(filterFieldNameForMongo(tok))(null)
       author.bagOfKeywords.add(paper.bagOfKeywords.value)(null)
+      //author.bagOfKeywords.add(author.bagOfCoAuthors.value)(null)
       //if(author.bagOfKeywords.value.size>0)println("BagOfKeywords: "+author.bagOfKeywords.value)
     }else println("Warning: paper is null for author with id "+author.id+" cannot compute features.")
+    //for(bag <- author.attr[BagOfWordsVariable])bag.clear
   }
   def addFeatures(paper:PaperEntity):Unit ={
     //for(author <- paper.authors)
@@ -1226,82 +1456,7 @@ abstract class MongoBibDatabase(mongoServer:String="localhost",mongoPort:Int=270
       }
     }
   }
-  /*
-  def bib2mention(entry:BibtexEntry):PaperEntity ={
-    val entryType = entry.getEntryType.toLowerCase
-    val key = entry.getEntryKey
-    val paperEntity = new PaperEntity("DEFAULT",true)
-    //paperMention.citationString=entry.toString
-    val iter = entry.getFields.keySet.iterator
-    while(iter.hasNext){
-      val name = filterFieldNameForMongo(iter.next.asInstanceOf[String].toLowerCase)
-      val value = entry.getFieldValue(name)
-      value match{
-        //case x:BibtexConcatenatedValue => {x.toString}
-        //case x:BibtexMacroReference => {x.toString}
-        //case x:BibtexMultipleValues => {x.toString}
-        //case x:BibtexPersonList => {x.toString}
-        //case x:BibtexString => {x.toString}
-        case x:BibtexPersonList =>{
-          val authors = new ArrayBuffer[AuthorEntity]
-          for(j<-0 until x.getList.size){
-            //val authorMention = new AuthorMention
-            //authorMention.paperMention = paperMention
-            //authorMention.authorIndex = j
-            val person = x.getList.get(j).asInstanceOf[BibtexPerson]
-            val (first,middle) = splitFirst(person.getFirst)
-            var last = person.getLast;if(last==null)last=""
-            val authorEntity = new AuthorEntity(first,middle,last,true)
-            authorEntity.paper = paperEntity
-            //paperEntity.authorEntities += authorEntity
-            //authorMention.authorIndex = j
-            val labelTest = last.split("\\[")
-            if(labelTest.length==2){
-              if(labelTest(1).matches("[0-9]+\\]")){
-                authorEntity.groundTruth=Some(labelTest(1).substring(0,labelTest(1).length-1))
-                //authorentity.setClusterID(labelTest(1).substring(0,labelTest(1).length-1).toInt)
-                last = labelTest(0)
-              }
-            }
-            authorEntity.fullName.setLast(last)(null)
-            authors += authorEntity//new AuthorMention(first,middle,last)
-            //if(person.getLineage!=null)
-            //  personObj.put(PersonRecord.LINEAGE,person.getLineage)
-          }
-          if(name == "editor"){}
-          else if(name == "author")
-            for(a<-authors)paperEntity.authors += a
-        }
-        case x:BibtexAbstractValue =>{
-          var xv=value.toString.replaceAll("[\r\n\t ]+"," ").replaceAll("[^A-Za-z0-9\\-\\.,\\(\\) ]","")
-          if(name != "authors" && name != "editors" && name != "mentions" && name!="entity_ref"){
-            if(xv.startsWith("{"))xv=xv.substring(1,xv.length-1)
-            if(name == "title")paperEntity.title.set(xv)(null)
-            if(name == "year"){
-              xv = xv.replaceAll("[^0-9]","")
-              if(xv.length==0)xv="-1"
-              paperEntity.attr[Year] := xv.toInt
-            }
-          }
-          if (name == "journal"
-            || (name == "booktitle" && entryType.indexOf("book") == -1)
-            || (name == "institution" && (entryType=="techreport" || entryType.indexOf("thesis") != -1))){
-            if(xv==null || xv.replaceAll(FeatureUtils.tokenFilterString,"").length>0){
-              paperEntity.attr[VenueName]:=xv
-              //val venueMention = new VenueMention
-              //venueMention.name = xv
-              //paperMention.venueMention = venueMention
-            }
-          }
-        }
-      }
-    }
-    if(paperEntity.title==null)paperEntity.title.set("")(null)
-    //paperMention.createAllSingletonEntities
-    paperEntity
-  }*/
 }
-
 /**Handles loading/storing issues generic to entity collections with canopies, ids, priorities, and hierarchical structure. Agnostic to DB technology (sql, mongo, etc)*/
 trait EntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable, C<:EntityCubbie[E]]{
   protected var _id2cubbie:HashMap[Any,C] = null
@@ -1374,6 +1529,8 @@ trait EntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritiza
     }
   }
   def nextBatch(n:Int=10):Seq[E]
+  def loadLabeledAndCanopies:Seq[E]
+  def loadLabeled:Seq[E]
 }
 abstract class MongoEntityCollection[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable,C<:EntityCubbie[E]](val name:String, mongoDB:DB) extends EntityCollection[E,C]{
   import MongoCubbieImplicits._
@@ -1387,6 +1544,31 @@ abstract class MongoEntityCollection[E<:HierEntity with HasCanopyAttributes[E] w
     reset
     val result = new ArrayBuffer[C]
     result ++= entityCubbieColl.query(_.bagOfTruths.exists(true))
+    val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
+    for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
+    for(entity <- initialEntities)_id2entity += entity.id -> entity
+    println("initial entities: "+initialEntities.size)
+    println("initial cubbies : "+result.size)
+    println("_id2cubbie: "+ _id2cubbie.size)
+    println("_id2entity: "+ _id2entity.size)
+    assembleEntities(result, (id:Any)=>{_id2entity(id)})
+    initialEntities
+  }
+  def loadLabeledAndCanopies:Seq[E] ={
+    reset
+    val result = new ArrayBuffer[C]
+    val labeled = new ArrayBuffer[C]
+    val canopyHash = new HashSet[String]
+    labeled ++= entityCubbieColl.query(_.bagOfTruths.exists(true))
+    //add canopies
+    for(entity <- labeled){
+      for(name <- entity.canopies.value){
+        if(!canopyHash.contains(name)){
+          result ++= entityCubbieColl.query(_.canopies(Seq(name)))
+          canopyHash += name
+        }
+      }
+    }
     val initialEntities = (for(entityCubbie<-result) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
     for(entityCubbie <- result)_id2cubbie += entityCubbie.id -> entityCubbie
     for(entity <- initialEntities)_id2entity += entity.id -> entity
@@ -1428,339 +1610,8 @@ abstract class MongoEntityCollection[E<:HierEntity with HasCanopyAttributes[E] w
     assembleEntities(result, (id:Any)=>{_id2entity(id)})
     initialEntities
   }
-}
-
-/*
-class TemporaryMultiBagOfWords(wrappedBags:Iterable[BagOfWords]) extends BagOfWords{
-  val bags = new ArrayBuffer[BagOfWords]
-  for(bag <-wrappedBags)bags += bag
-  lazy val size:Int = throw new Exception("Not yet implemented")
-
-  def *(that:BagOfWords):Double ={
-    
-  }
-  def asSparseBagOfWords:SparseBagOfWords = {null}
-}
-*/
-
-
-object BibReader{
-  var skipped=0
-  var numParsed=0
-  def loadBibTeXFile(file:File):Seq[PaperEntity] ={
-    val result = new ArrayBuffer[PaperEntity]
-    val fileText = scala.io.Source.fromFile(file).toArray.mkString
-    loadBibTeXFile(fileText,file,result)
-  }
-  def loadBibTeXFile(fileText:String,file:File,result:ArrayBuffer[PaperEntity]):Seq[PaperEntity]={
-    var docOption:Option[cc.factorie.app.bib.parser.Dom.Document] = None
-    try{
-      val docOrError = Dom.stringToDom(fileText, false)
-      docOrError match{
-        case Right(doc:cc.factorie.app.bib.parser.Dom.Document) => docOption = Some(doc)
-        case Left(error:String) => {
-          //(error+" doc: "+file.getName)
-          val split = fileText.split("@")
-          if(split.length>=3){
-            for(s <- split)loadBibTeXFile("@"+s,file,result)
-            skipped += 1
-          }
-        }
-      }
-    }
-    catch{
-      case e:Exception => {
-          skipped += 1
-        //println(e.getMessage+" doc: "+file.getName())
-        //skipped += 1
-      }
-    }
-    if(docOption!=None){
-      val doc = docOption.get
-      for((provenance, entry) <- doc.entries){
-        result += loadBibTexEntry(entry,provenance)
-      }//end for((provenance, entry) <- doc.entries)
-      numParsed += 1
-    }//end .bib parsed correctly
-    def loadBibTexEntry(entry:Entry,provenance:String):PaperEntity ={
-      val paperEntity = new PaperEntity("DEFAULT",true)
-      //result += paperEntity
-      val entryType = entry.ty
-      //val authors = new ArrayBuffer[AuthorEntity]
-      for(author <- entry.authors.getOrElse(Nil)){
-        val first = author.first
-        val middle = author.von
-        var last = author.last
-        val authorEntity = new AuthorEntity(first,middle,last,true)
-        val labelTest = last.split("\\[")
-        if(labelTest.length==2){
-          if(labelTest(1).matches("[0-9]+\\]")){
-            authorEntity.groundTruth=Some(labelTest(1).substring(0,labelTest(1).length-1))
-            //authorentity.setClusterID(labelTest(1).substring(0,labelTest(1).length-1).toInt)
-            last = labelTest(0)
-            authorEntity.fullName.setLast(last)(null)
-          }
-        }
-        paperEntity.authors += authorEntity
-      }
-      for(editor <- entry.editors.getOrElse(Nil)){
-        //TODO
-      }
-      for((name,value) <- entry.otherFields){
-        var xv=value.toString.replaceAll("[\r\n\t ]+"," ").replaceAll("[^A-Za-z0-9\\-\\.,\\(\\) ]","")
-        if(name != "authors" && name != "editors" && name != "mentions" && name!="entity_ref"){
-          if(xv.startsWith("{"))xv=xv.substring(1,xv.length-1)
-          if(name == "title")paperEntity.title.set(xv)(null)
-          if(name == "year"){
-            xv = xv.replaceAll("[^0-9]","")
-            if(xv.length==0 || xv.length>4)xv="-1"
-            paperEntity.attr[Year] := xv.toInt
-          }
-        }
-        if (name == "journal"
-          || (name == "booktitle" && entryType.indexOf("book") == -1)
-          || (name == "institution" && (entryType=="techreport" || entryType.indexOf("thesis") != -1))){
-          if(xv==null || xv.replaceAll(FeatureUtils.tokenFilterString,"").length>0){
-            paperEntity.attr[VenueName]:=xv
-            //val venueMention = new VenueMention
-            //venueMention.name = xv
-            //paperMention.venueMention = venueMention
-          }
-        }
-      }//end for((name,value) <- entry.otherFields)
-      paperEntity
-    } //end loadBibTexEntry
-    result
-  }
-/*
-  def loadBibTeXFileOLD(file:File):Seq[PaperEntity]={
-    val bibParser = new BibtexParser(false)
-    val expander = new PersonListExpander(true,true)
-    val bibDoc = new BibtexFile
-    val result = new ArrayBuffer[PaperEntity]
-    try{
-      bibParser.parse(bibDoc,new BufferedReader(new InputStreamReader(new FileInputStream(file))))
-      try {expander.expand(bibDoc)}
-      catch {
-        case e : Exception => {
-          e.printStackTrace
-          println("Adding .bad extension to file: " + file.getName());
-          val badDir = new File(file.getParent()+ "/bad");
-          badDir.mkdirs();
-          //println(badDir.getAbsolutePath() + "/" + file.getName() + ".bad\n");
-          file.renameTo(new File(badDir.getAbsolutePath + "/" + file.getName() + ".bad"));
-        }
-      }
-      val entries = bibDoc.getEntries
-      for(i<-0 until entries.size){
-        entries.get(i) match{
-          case x:BibtexEntry => result += bib2mention(x)
-          case x:BibtexToplevelComment => {}
-          case _ => {}
-        }
-      }
-      numParsed += 1
-    }catch{
-      case e:Exception =>{
-        skipped += 1
-        //println("\n=================================")
-        //e.printStackTrace
-        //println("=================================")
-        //println("=================================")
-        //println("ill-formated bib entry in file: " + file.getName)
-        //println("  total skipped: " + skipped)
-      }
-    }
-    //processEdits(result)
-    //filter(result)
-    result
-  }*/
-
-}
-
-object RexaLabeledLoader{
-  var noAuthorInFocusCount = 0
-  def load(rexaDir:File):Seq[PaperEntity]={
-    var result = new ArrayBuffer[PaperEntity]
-    for(ambiguousNameDir <- rexaDir.listFiles){
-      if(ambiguousNameDir.listFiles!=null){
-        for(entityDir <- ambiguousNameDir.listFiles){
-          System.out.flush
-          val label = rexaDir.getName+"/"+ambiguousNameDir.getName+"-"+entityDir.getName
-          if(entityDir.listFiles != null)
-            for(mentionFile <- entityDir.listFiles)
-              result += rexaMention2Paper(mentionFile,label)
-          else println("Surprising error, listFiles returning null for directory: "+entityDir)
-        }
-      }
-      else println("Surprising error, listFiles returning null for directory: "+ambiguousNameDir)
-    }
-    println("Could not find the author in focus "+noAuthorInFocusCount + " times.")
-    result
-  }
-  def rexaMention2Paper(file:File,labelString:String):PaperEntity ={
-    val paper = new PaperEntity("DEFAULT",true)
-    var authorInFocus = new Array[String](3)
-    for(line <- scala.io.Source.fromFile(file).getLines.toSeq.reverse){ //for some reason scala loads files in reverse order...
-      val split = line.split(":",2)
-      if(split.length==2){
-        val value = split(1).trim
-        split(0) match {
-          case "author-in-focus" => {
-            authorInFocus(0) = extractFlatSGML(value,"f")
-            authorInFocus(1) = extractFlatSGML(value,"m")
-            authorInFocus(2) = extractFlatSGML(value,"l")
-          }
-          case "authorlist" => {
-            for(authorString <- value.split("%%")){
-              val author = new AuthorEntity("f","m","l",true)
-              author.fullName.setFirst(extractFlatSGML(authorString,"f"))(null)
-              author.fullName.setMiddle(extractFlatSGML(authorString,"m"))(null)
-              author.fullName.setLast(extractFlatSGML(authorString,"l"))(null)
-              paper.authors += author
-            }
-          }
-          case "alt-authorlist" => {}
-          case "author-in-focus-score" => {}
-          case "title" => {
-            paper.title.set(value)(null)
-            for(keyword <- value.toLowerCase.split(" +"))paper.bagOfKeywords += FeatureUtils.filterFieldNameForMongo(keyword)
-          }
-          case "altTitle" => {}
-          case "editor" => {}
-          case "body" => {}
-          case "abstract" => {}
-          case "keywords" => for(keyword <- value.split(", "))paper.bagOfKeywords += FeatureUtils.filterFieldNameForMongo(keyword.toLowerCase)
-          case "keyword" => for(keyword <- value.split(", "))paper.bagOfKeywords += FeatureUtils.filterFieldNameForMongo(keyword.toLowerCase)
-          case "journal" => paper.venueName.set(value)(null)
-          case "institution" => for(keyword <- value.toLowerCase.split(", "))paper.bagOfKeywords += FeatureUtils.filterFieldNameForMongo(keyword)
-          case "email" => for(email <- value.split(", "))paper.bagOfKeywords += email.toLowerCase.replaceAll("\\.","DOT")
-          case "year" => {}//paper.year.set(value)(null)
-          case _ => println("(RexaLabeledLoader) Field: "+split(0)+" not used.")
-        }
-      }
-    }
-    if(authorInFocus(0)!="" || authorInFocus(1)!="" || authorInFocus(2)!=""){
-      var foundAuthorInFocus=false
-      for(author <- paper.authors){
-        //println("authorM: "+author.fullName.firstName+"|"+author.fullName.middleName+"|"+author.fullName.lastName)
-        //println("authorI: "+authorInFocus(0)+"|"+authorInFocus(1)+"|"+authorInFocus(2))
-        if(author.fullName.firstName==authorInFocus(0) && author.fullName.middleName==authorInFocus(1) && author.fullName.lastName==authorInFocus(2)){
-          foundAuthorInFocus=true
-          author.groundTruth=Some(labelString)
-          //println("  found ground truth: "+labelString)
-        }
-      }
-      if(!foundAuthorInFocus)noAuthorInFocusCount += 1
-    }
-    paper
-  }
-  def extractFlatSGML(string:String,tag:String):String ={
-    var start = string.indexOf("<"+tag+">")
-    if(start == -1)return ""
-    start += ("<"+tag+">").length
-    val end = string.indexOf("</"+tag+">")
-    string.substring(start,end)
-  }
-  /*
-    author-in-focus:  <n><f>Adam</f><l>Blum</l></n>
-authorlist:  <n><f>Adam</f><l>Blum</l></n>%%
-alt-authorlist:  <n><f>Adam</f><l>Blum</l></n>
-author-in-focus-score:  1.0
-title: Microsoft English Query 7.5: Automatic Extraction of Semantics from Relational Databases and OLAP Cubes
-
-
-author-in-focus:  <n><f>D</f><l>Allen</l></n>
-authorlist:      <n><f>D</f><l>Allen</l></n>%%<n><f>T</f><l>Simon</l></n>%%<n><f>F</f><l>Sablitzky</l></n>%%<n><f>K</f><l>Rajewsky</l></n>%%<n><f>A</f><l>Cumano</l></n>
-alt-authorlist:  <n><f>D</f><l>Allen</l></n>%%<n><f>T</f><l>Simon</l></n>%%<n><f>F</f><l>Sablitzky</l></n>%%<n><f>K</f><l>Rajewsky</l></n>%%<n><f>A</f><l>Cumano</l></n>
-altTitle:  Fundamental Immunology
-author-in-focus-score:  0.8168709
-
-editor:  ed. W.E. Paul, Lippincott, Williams and Wilkins. Fundamental immunology, Paul, W.E. ed.,
-title: response,
-     */
-}
-
-object DBLPLoader{
-  def loadDBLPData(location:String) : Seq[PaperEntity] ={
-    val REFERENCE_ELEMENT = "article"
-    val docFactory:DocumentBuilderFactory = DocumentBuilderFactory.newInstance
-    val docBuilder:DocumentBuilder = docFactory.newDocumentBuilder
-    val file:File = new File(location)
-    if(!file.exists()) error("Couldn't find file " + location + ", aborting load.")
-    val doc:Document = docBuilder.parse(file)
-    val nodes:NodeList = doc.getElementsByTagName("dblp").item(0).getChildNodes//doc.getElementsByTagName(REFERENCE_ELEMENT);
-    println("Num nodes: "+nodes.getLength)
-    var numArticles=0
-    var numConfs=0
-    val result = new ArrayBuffer[PaperEntity]
-    for(i <- 0 until nodes.getLength){
-      val node:Node = nodes.item(i)
-      val bibtexReferenceType = node.getNodeName //\in {article,inproceedings,proceedings}
-      //println(" -bibReferenceType: "+bibtexReferenceType)
-      if(filterBib(bibtexReferenceType)){
-        val paperMention = new PaperEntity
-        paperMention.flagAsMention
-        result += paperMention
-        bibtexReferenceType match{
-          case "article" => {addFieldsForDBLP(node,paperMention);numArticles+=1}
-          case "inproceedings" => {addFieldsForDBLP(node,paperMention);numConfs+=1}
-          case _ => {}
-        }
-        if((numArticles+numConfs) % 10000==0){
-          val total = numArticles+numConfs
-          println("Loaded: "+total)
-          //println("Loaded: "+numArticles+" journal articles and "+numConfs+" conference papers. Total: "(numArticles+numConfs))
-        }
-      }
-    }
-    result
-  }
-  protected def filterBib(s:String):Boolean = (s=="article" || s=="inproceedings")
-  protected def addFieldsForDBLP(node:Node,paperMention:PaperEntity) : Unit ={
-    val nodes = node.getChildNodes
-    for(i<-0 until nodes.getLength){
-      val node = nodes.item(i)
-      val text = node.getTextContent
-      //println("    Node name: "+node.getNodeName)
-      //println("    Node text: "+text)
-      node.getNodeName match{
-        //all fields
-        case "author" => {
-          for(j<-0 until node.getChildNodes.getLength){
-            val authorMention = new AuthorEntity
-            authorMention.flagAsMention
-            authorMention.fullName.setFirst("")(null);authorMention.fullName.setMiddle("")(null);authorMention.fullName.setLast("")(null)
-            paperMention.authors += authorMention
-            authorMention.paper = paperMention
-            val authorNode = node.getChildNodes.item(i)
-            val split = text.replaceAll("(Jr\\.|Sr\\.)","").split(" ")
-            if(split.length>1){
-              authorMention.fullName.setFirst(split(0))(null)
-              authorMention.fullName.setLast(split(split.length-1))(null)
-              if(split.length>2){
-                var middle = ""
-                for(k<-1 until split.length-1)middle += split(k)
-                authorMention.fullName.setMiddle(middle)(null)
-              }
-            }else {
-              authorMention.fullName.setLast(split(0))(null)
-            }
-          }
-        }
-        case "title" => paperMention.title.set(text)(null)
-        case "year" => paperMention.year.set(text.toInt)(null)
-        case "pages" => {}
-        //@inproceedings fields
-        case "booktitle" => {paperMention.venueName.set(text)(null)}
-        //@article fields
-        case "journal" => {paperMention.venueName.set(text)(null)}
-        case "month" => {}
-        case "volume" => {}
-        case _ => {}
-      }
-    }
-  }
+  def allEntityCubbies:Seq[C] =entityCubbieColl.iterator.toSeq
+  def freshCopy(cubbies:Seq[C]):Seq[E] =(for(entityCubbie<-cubbies) yield {val e = newEntity;entityCubbie.fetch(e);e}).toSeq
 }
 
 

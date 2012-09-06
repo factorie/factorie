@@ -17,6 +17,7 @@ import cc.factorie.util.Cubbie
 import collection.mutable.HashMap
 import cc.factorie.app.nlp.coref._
 
+
 trait EntityCubbie[T<:HierEntity with HasCanopyAttributes[T] with Prioritizable] extends Cubbie {
   val canopies = new StringListSlot("canopies")
   val inferencePriority = new DoubleSlot("ipriority")
@@ -69,6 +70,11 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
   val keywords = new CubbieSlot("keywords", () => new BagOfWordsCubbie)
   val venues = new CubbieSlot("venues", () => new BagOfWordsCubbie)
   val coauthors = new CubbieSlot("coauthors", () => new BagOfWordsCubbie)
+  //
+  //val topicsTensor = new CubbieSlot("topicst", () => new BagOfWordsCubbie)
+  //val keywordsTensor = new CubbieSlot("keywordst", () => new BagOfWordsCubbie)
+  //val venuesTensor = new CubbieSlot("venuest", () => new BagOfWordsCubbie)
+  //val coauthorsTensor = new CubbieSlot("coauthorst", () => new BagOfWordsCubbie)
   val pid = RefSlot("pid", () => new PaperCubbie) // paper id; set in author mentions, propagated up into entities
 //  val groundTruth = new StringSlot("gt")
   override def fetch(e:AuthorEntity) ={
@@ -85,8 +91,12 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     e.attr[BagOfEmails] ++= emails.value.fetch
     e.attr[BagOfFirstNames] ++= firstNameBag.value.fetch
     e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
-    //e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
-    //e.attr[BagOfTruths] ++= bagOfTruths.value.fetch
+    //
+//    e.attr[TensorBagOfTopics] ++= topicsTensor.value.fetch
+//    e.attr[TensorBagOfVenues] ++= venuesTensor.value.fetch
+//    e.attr[TensorBagOfCoAuthors] ++= coauthorsTensor.value.fetch
+//    e.attr[TensorBagOfKeywords] ++= keywordsTensor.value.fetch
+
     e._id = this.id.toString
     if(pid.isDefined)e.paperMentionId = pid.value.toString
 //    if(groundTruth.isDefined)e.groundTruth = Some(groundTruth.value)
@@ -105,7 +115,12 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     emails := new BagOfWordsCubbie().store(e.attr[BagOfEmails].value)
     firstNameBag := new BagOfWordsCubbie().store(e.attr[BagOfFirstNames].value)
     middleNameBag := new BagOfWordsCubbie().store(e.attr[BagOfMiddleNames].value)
-    //bagOfTruths := new BagOfWordsCubbie().store(e.attr[BagOfTruths].value)
+    //
+//    topicsTensor := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
+//    venuesTensor := new BagOfWordsCubbie().store(e.attr[BagOfVenues].value)
+//    coauthorsTensor := new BagOfWordsCubbie().store(e.attr[BagOfCoAuthors].value)
+//    keywordsTensor := new BagOfWordsCubbie().store(e.attr[BagOfKeywords].value)
+
     if(e.attr[BagOfTruths]!=null && e.attr[BagOfTruths].value.size>0)bagOfTruths := new BagOfWordsCubbie().store(e.attr[BagOfTruths].value)
     this.id=e.id
     //println("pid: "+e.paperMentionId)
@@ -129,6 +144,7 @@ class EssayCubbie extends Cubbie {
 class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
   protected var _paper:PaperEntity=null
   val authors = new CubbieSlot("authors", () => new BagOfWordsCubbie)
+  val topics = new CubbieSlot("topics", () => new BagOfWordsCubbie)
   val venueBag = new CubbieSlot("venueBag", () => new BagOfWordsCubbie)
   val institution = StringSlot("institution")
   val venue = StringSlot("venue") // booktitle, journal,...
@@ -150,6 +166,7 @@ class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
     super.fetch(e)
     e.attr[Title].set(title.value)(null)
     if(pid.isDefined)e.promotedMention.set(pid.value.toString)(null) else e.promotedMention.set(null.asInstanceOf[String])(null)
+    e.attr[BagOfTopics] ++= topics.value.fetch
     e.attr[BagOfAuthors] ++= authors.value.fetch
     e.attr[BagOfAuthors] ++= venueBag.value.fetch
     e.attr[BagOfAuthors] ++= keywords.value.fetch
@@ -160,6 +177,7 @@ class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
     title := e.attr[Title].value
     if(e.promotedMention.value!=null)pid := e.promotedMention.value
     if(!e.isEntity && e.promotedMention.value!=null)println("Warning: non-entity-paper with id "+e.id+ " has a non-null promoted mention.")
+    topics := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
     authors := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
     venueBag := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
     keywords := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)

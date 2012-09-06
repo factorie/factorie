@@ -22,22 +22,22 @@ import cc.factorie.la._
     @author Andrew McCallum */
 trait CategoricalVar[A] extends DiscreteVar with CategoricalTensorVar[A] with VarAndValueType[CategoricalVar[A],CategoricalValue[A]] {
   def domain: CategoricalDomain[A]
+  def value: CategoricalValue[A]
   def categoryValue: A = if (value ne null) value.category else null.asInstanceOf[A]
   override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
 }
 
-trait MutableCategoricalVar[A] extends CategoricalVar[A] with MutableDiscreteVar {
+trait MutableCategoricalVar[A] extends CategoricalVar[A] with MutableDiscreteVar[CategoricalValue[A]] {
   def setCategory(newCategory:A)(implicit d: DiffList): Unit = set(domain.index(newCategory))(d)
+  override def value: CategoricalValue[A]= domain.apply(_value) // TODO A little sad not to have access to DiscreteVariable.__value here for efficiency, but we need a new return type
 }
 
-/** A DiscreteVariable whose integers 0...N are associated with an object of type A. 
+/** A MutableDiscreteVar whose integers 0...N are associated with an object of type A. 
     @author Andrew McCallum */
-abstract class CategoricalVariable[A] extends DiscreteVariable with MutableCategoricalVar[A] {
+abstract class CategoricalVariable[A] extends MutableDiscreteVar[CategoricalValue[A]] with MutableCategoricalVar[A] {
   def this(initialCategory:A) = { this(); _set(domain.index(initialCategory)) }
   //def this(initalValue:ValueType) = { this(); _set(initialValue) }
 }
-
-
 
 
 

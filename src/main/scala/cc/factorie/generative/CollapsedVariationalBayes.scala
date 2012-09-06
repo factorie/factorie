@@ -42,7 +42,7 @@ class CollapsedVariationalBayes(collapse:Iterable[Variable], marginalize:Iterabl
 //  }
 //  def children(p:Variable): Iterable[Variable] = throw new Error
 
-  def process(v:MutableVar): DiffList = {
+  def process(v:MutableVar[_]): DiffList = {
     //assert(!v.isInstanceOf[CollapsedVar]) // We should never be processing a CollapsedVariable
     // Get factors, in sorted order of the their classname
     val factors = model.factors(Seq(v)).toSeq.sortWith((f1:Factor,f2:Factor) => f1.factorName < f2.factorName)
@@ -73,7 +73,7 @@ class PlatedGateCollapsedVariationalBayes(val model:GenerativeModel, val summary
     require(gFactor._1 == mFactor._3) // both should equal gates
     val gateDomainSize = gates.domain.elementDomain.size
     val alpha1 = 1.0 / gateDomainSize // + 0.1 for smoothing?
-    val theta: Proportions = gFactor._2.tensor
+    val theta: Proportions = gFactor._2.value
     var gatesMarginal = summary.marginal1(gates)
     if (gatesMarginal eq null) {
       gatesMarginal = new DiscreteSeqMarginal(gates, Seq.fill(gates.length)(new DenseProportions1(gateDomainSize, alpha1))) // all Z marginals initialized to uniform

@@ -33,7 +33,6 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Famil
     if (classOf[DiscreteVar].isAssignableFrom(neighborClass1)) 
       for (variable <- variables; factor <- factors(variable)) limitedDiscreteValues.+=(factor._1.asInstanceOf[DiscreteVar].intValue)
   }
-
   // Factors
   def factorsWithDuplicates(v:Variable): Iterable[FactorType] = {
     // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
@@ -52,16 +51,16 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Famil
 
 
 abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1] with Statistics1[N1#Value] {
-  def statistics(vals:Values): StatisticsType = Stat(vals._1)
+  def statistics(value1:N1#Value): StatisticsType = Stat(value1)
 }
 
 abstract class TemplateWithTensorStatistics1[N1<:DiscreteTensorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with TensorStatistics1[N1#Value] {
-  def statistics(vals:Values): StatisticsType = Stat(vals._1)
+  def statistics(value1:N1#Value): StatisticsType = Stat(value1)
 }
 
-abstract class TemplateWithDotStatistics1[N1<:DiscreteTensorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with DotStatistics1[N1#Value] {
+abstract class TemplateWithDotStatistics1[N1<:DiscreteTensorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with FamilyWithDotStatistics1[N1] {
   type FamilyType <: TemplateWithDotStatistics1[N1]
-  def statistics(vals:Values): StatisticsType = Stat(vals._1)
+  //def statistics(value1:N1#Value): StatisticsType = Stat(value1)
 }
 
 

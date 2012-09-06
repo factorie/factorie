@@ -117,7 +117,7 @@ object CorefMentionsDemo {
         def unroll2 (er:EntityRef) = Nil // symmetric
         def unroll3 (mention:Mention) = throw new Error
         def unroll4 (mention:Mention) = throw new Error
-        def statistics (values:Values) = Stat(new AffinityVector(values._3, values._4).value)
+        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = Stat(new AffinityVector(m1, m2).value)
       }
 
       // Pairwise repulsion factor between Mentions in different partitions
@@ -137,7 +137,7 @@ object CorefMentionsDemo {
         def unroll2 (er:EntityRef) = Nil // symmetric
         def unroll3 (mention:Mention) = throw new Error
         def unroll4 (mention:Mention) = throw new Error
-        def statistics (values:Values) = Stat(new AffinityVector(values._3, values._4).value)
+        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = Stat(new AffinityVector(m1, m2).value)
         //def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entityRef.value != mention.entityRef.value)) yield Factor(mention, other);
         //def unroll2 (mention:Mention) = Nil // symmetric
         //def statistics(values:Values) = Stat(new AffinityVector(values._1, values._2).value)
@@ -146,8 +146,8 @@ object CorefMentionsDemo {
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature.
       model += new Template1[Entity] with DotStatistics1[BooleanValue] {
         def statisticsDomains = Tuple1(BooleanDomain)
-        def statistics(values:Values) = {
-          val mentions: Entity#ValueType = values._1
+        def statistics(e:Entity#Value) = {
+          val mentions: Entity#ValueType = e
           if (mentions.isEmpty) Stat(BooleanDomain.trueValue)
           else {
             val prefix1 = mentions.iterator.next.name.substring(0,1)

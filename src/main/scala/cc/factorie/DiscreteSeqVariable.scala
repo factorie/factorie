@@ -23,6 +23,7 @@ abstract class DiscreteSeqDomain extends Domain[Seq[DiscreteValue]] {
 }
 
 trait DiscreteSeqVar extends IndexedSeqVar[DiscreteValue] {
+  type Value <: IndexedSeq[DiscreteValue]
   def domain: DiscreteSeqDomain
   def intValue(seqIndex:Int): Int
   def intValues: Array[Int]
@@ -32,23 +33,19 @@ trait DiscreteSeqVar extends IndexedSeqVar[DiscreteValue] {
   def apply(index:Int): DiscreteValue
 }
 
-//abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] 
-abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with DiscreteSeqVar {
-  def this(initialValue:Seq[Int]) = { this(); /*_setCapacity(if (initialValue.length > 0) initialValue.length else 1);*/ if (initialValue.length > 0) _appendAll(initialValue.toArray) }
-  def this(initialValue:Array[Int]) = { this(); if (initialValue.length > 0) _appendAll(initialValue) }
-  def this(len:Int) = { this(); _setCapacity(len); _appendAll(Array.fill(len)(0)) }
+trait MutableDiscreteSeqVar[A<:DiscreteValue] extends MutableVar[IndexedSeq[A]] with cc.factorie.util.ProtectedIntArrayBuffer with DiscreteSeqVar {
   def length = _length
-  def apply(index: Int): ElementType = domain.elementDomain.apply(_apply(index))
+  def apply(index: Int): A = domain.elementDomain.apply(_apply(index)).asInstanceOf[A]
   def domain: DiscreteSeqDomain
-  def discreteValues: IndexedSeq[DiscreteValue] = new IndexedSeq[DiscreteValue] {
+  def discreteValues: IndexedSeq[DiscreteValue] = new IndexedSeq[A] {
     def length = _length
-    def apply(index:Int) = domain.elementDomain.apply(_apply(index))
+    def apply(index:Int) = domain.elementDomain.apply(_apply(index)).asInstanceOf[A]
   }
-  def value: Value = new IndexedSeq[ElementType] {
-    private val arr = new Array[ElementType](_length)
+  def value: IndexedSeq[A] = new IndexedSeq[A] {
+    private val arr = new Array[DiscreteValue](_length)
     _mapToArray(arr, (i:Int) => domain.elementDomain.apply(i)) // Do this so that it stays constant even if _array changes later
     def length = arr.length
-    def apply(i:Int) = arr(i)
+    def apply(i:Int) = arr(i).asInstanceOf[A]
    //_toSeq.map(i => domain.elementDomain.getValue(i)) // TODO make this more efficient 
   }
   def set(newValue:Value)(implicit d:DiffList): Unit = _set(Array.tabulate(newValue.length)(i => newValue(i).intValue))
@@ -67,6 +64,13 @@ abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.Prot
     require(d eq null)
     _update(seqIndex, newValue)
   }
+}
+
+//abstract class DiscreteSeqVariable extends MutableVar with cc.factorie.util.ProtectedIntArrayBuffer with SeqEqualsEq[DiscreteValue] with VarAndElementType[DiscreteSeqVariable,DiscreteValue] 
+abstract class DiscreteSeqVariable extends MutableDiscreteSeqVar[DiscreteValue] {
+  def this(initialValue:Seq[Int]) = { this(); /*_setCapacity(if (initialValue.length > 0) initialValue.length else 1);*/ if (initialValue.length > 0) _appendAll(initialValue.toArray) }
+  def this(initialValue:Array[Int]) = { this(); if (initialValue.length > 0) _appendAll(initialValue) }
+  def this(len:Int) = { this(); _setCapacity(len); _appendAll(Array.fill(len)(0)) }
 }
 
 trait SeqBreaks {

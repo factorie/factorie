@@ -14,7 +14,7 @@ trait GenerativeModel extends Model {
   def extendedChildren(v:Variable): Iterable[Variable]
   def parents(v:Variable): Seq[Variable] 
   def children(v:Variable): Iterable[Variable]
-  def sampleFromParents(v:MutableVar)(implicit d:DiffList): Unit
+  def sampleFromParents(v:MutableVar[_])(implicit d:DiffList): Unit
 }
 
 trait MutableGenerativeModel extends GenerativeModel {
@@ -76,7 +76,7 @@ class GenerativeFactorModel extends MutableGenerativeModel {
     if (_parentFactor.contains(v)) _parentFactor(v).parents else Nil
   def children(v:Variable): Iterable[Variable] = childFactors(v).map(_.child)
 
-  def sampleFromParents(v:MutableVar)(implicit d:DiffList): Unit = v.set(parentFactor(v).sampledValue.asInstanceOf[v.Value])
+  def sampleFromParents(v:MutableVar[_])(implicit d:DiffList): Unit = v.set(parentFactor(v).sampledValue.asInstanceOf[v.Value])
 
   def +=(f:GenerativeFactor): Unit = {
     require(!_parentFactor.contains(f.child))

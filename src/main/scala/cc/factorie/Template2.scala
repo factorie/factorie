@@ -30,10 +30,10 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass2)) { assert(ta.length == 1); ta.head.erasure } else null }
 
-  override def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = {
-    if (classOf[DiscreteVar].isAssignableFrom(neighborClass1) && classOf[DiscreteVar].isAssignableFrom(neighborClass2)) 
-      for (variable <- variables; factor <- factors(variable)) limitedDiscreteValues.+=((factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue))
-  }
+//  override def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = {
+//    if (classOf[DiscreteVar].isAssignableFrom(neighborClass1) && classOf[DiscreteVar].isAssignableFrom(neighborClass2)) 
+//      for (variable <- variables; factor <- factors(variable)) limitedDiscreteValues.+=((factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue))
+//  }
 
   def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
     val ret = new ArrayBuffer[FactorType]
@@ -52,17 +52,17 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
 
 
 abstract class TemplateWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with Statistics2[N1#Value,N2#Value] {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
+  def statistics(value1:N1#Value, value2:N2#Value): StatisticsType = Stat(value1, value2)
 }
 
 abstract class TemplateWithTensorStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with TensorStatistics2[N1#Value,N2#Value] {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
+  def statistics(value1:N1#Value, value2:N2#Value): StatisticsType = Stat(value1, value2)
 }
 
-abstract class TemplateWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with DotFamily with DotStatistics2[N1#Value,N2#Value] {
+abstract class TemplateWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with FamilyWithDotStatistics2[N1,N2] {
   type FamilyType <: TemplateWithDotStatistics2[N1,N2]
   def weight(index0:Int, index1:Int): Double = weights.asInstanceOf[Tensor2].apply(index0, index1) //(index0 * statisticsDomains(1).dimensionDomain.size + index1)
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2)
+  //def statistics(value1:N1#Value, value2:N2#Value): StatisticsType = Stat(value1, value2)
 }
 
 /*

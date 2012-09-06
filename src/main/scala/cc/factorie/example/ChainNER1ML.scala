@@ -68,7 +68,7 @@ object ChainNER1ML {
     //val allTestVariables = testVariables.flatMap(l => l)
     //val allTokens: Seq[Token] = (trainSentences ++ testSentences).flatten
     // To enable Template.cachedStatistics
-    for (doc <- (trainDocuments ++ testDocuments); token <- doc.tokens) token.attr[TokenFeatures].freeze
+    //for (doc <- (trainDocuments ++ testDocuments); token <- doc.tokens) token.attr[TokenFeatures].freeze
 
     // Train and test
     println("*** Starting training (#sentences=%d)".format(trainDocuments.map(_.sentences.size).sum))

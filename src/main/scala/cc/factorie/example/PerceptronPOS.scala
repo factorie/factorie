@@ -1,7 +1,7 @@
 package cc.factorie.example
 
 import cc.factorie._
-import bp.specialized.Viterbi
+//import bp.specialized.Viterbi
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions
 import pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
@@ -34,7 +34,7 @@ object PerceptronPOS {
     }
     // Transition factors between two successive labels
     val transTemplate = new TemplateWithDotStatistics2[PosLabel, PosLabel] {
-      override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
+      override def statisticsDomains = ((PosDomain, PosDomain))
       def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
       def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
     }
@@ -70,7 +70,9 @@ object PerceptronPOS {
   def percentageSetToTarget[L <: VarWithTarget](ls: Seq[L]): Double = HammingLossObjective.aveScore(ls)
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
-  def predictSentence(vs: Seq[PosLabel]): Unit = Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
+  def predictSentence(vs: Seq[PosLabel]): Unit =
+    BP.inferChainMax(vs, PosModel)
+    //Viterbi.searchAndSetToMax(vs, PosModel.localTemplate, PosModel.transTemplate)
 
   def train(
         documents: Seq[Document],

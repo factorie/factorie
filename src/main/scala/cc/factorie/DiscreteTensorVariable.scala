@@ -45,7 +45,7 @@ trait DiscreteTensorVar extends TensorVar with VarAndValueType[DiscreteTensorVar
 }
 
 /** A vector with dimensions corresponding to a DiscreteDomain, and with Double weights for each dimension, represented by a sparse vector. */
-abstract class DiscreteTensorVariable extends TensorVariable with DiscreteTensorVar {
+abstract class DiscreteTensorVariable extends MutableTensorVar[Tensor] with DiscreteTensorVar {
   def this(initialValue:Tensor) = { this(); _set(initialValue) }
   //thisVariable =>
   //_set(new SparseVector(domain.dimensionSize) with DiscreteVectorValue { def domain = thisVariable.domain })

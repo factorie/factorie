@@ -37,7 +37,7 @@ class DiscreteMarginal1[V1<:DiscreteTensorVar](val _1:V1, proportions1:Proportio
   def this(f:Factor1[V1]) = this (f._1, null)
   //def variables = Seq(_1)
   def var1 = _1
-  def value1: V1#Value = _1.domain.dimensionDomain(proportions.maxIndex)
+  def value1: V1#Value = _1.domain.dimensionDomain(proportions.maxIndex).asInstanceOf[V1#Value]
   protected var _proportions = proportions1 // Cannot use default arguments to create because no access to _1 in default argument values
   def proportions: Proportions1 = {
     if (proportions1 eq null) _proportions = new DenseProportions1(_1.domain.dimensionDomain.size)
@@ -148,7 +148,7 @@ class RealSingletonMarginal1[V1<:RealVar](val _1:V1, val mean:Double) extends Ab
   final def var1 = _1
   def pr(x:Double): Double = if (x == mean) 1.0 else 0.0
   override def globalize(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }
-  final def value1: Double = mean // For AbstractAssignment1
+  final def value1: V1#Value = mean.asInstanceOf[V1#Value] // For AbstractAssignment1
 }
 
 // Gaussian Marginal
