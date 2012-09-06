@@ -11,7 +11,7 @@ import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
 
 @RunWith(classOf[JUnitRunner])
-class TestBP2 extends FunSuite with BeforeAndAfter {
+class TestBP extends FunSuite with BeforeAndAfter {
   
   import BPTestUtils._
 
@@ -276,7 +276,7 @@ class TestBP2 extends FunSuite with BeforeAndAfter {
     val v1 = new BinVar(0)
     val v2 = new BinVar(1)
     val v3 = new BinVar(0)
-    val vars: Set[DiscreteVariable] = Set(v1, v2, v3)
+    val vars: Set[DiscreteVar] = Set(v1, v2, v3)
     // v1 -- v3 -- v2
     val model = new FactorModel(
 	    newFactor1(v1, 3, 0),
@@ -285,7 +285,7 @@ class TestBP2 extends FunSuite with BeforeAndAfter {
 	    newFactor2(v2, v3, 3, 0)
 	  )
     
-    val fg = BP.inferTreewiseSum(vars, model)
+    val fg = BP.inferTreewiseSum(vars, model, root = v3)
     fg.setToMaximize()
     
     println("v1 : " + fg.marginal(v1).proportions)

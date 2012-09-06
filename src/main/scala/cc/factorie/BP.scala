@@ -17,6 +17,8 @@ package cc.factorie
 import cc.factorie.la._
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, LinkedHashSet}
 import scala.collection.{Set}
+import scala.collection.mutable.HashSet
+import scala.collection.mutable.Queue
 
 /** A factory object creating BPFactors and BPVariables, each of which contain methods for calculating messages. */
 trait BPRing {
@@ -347,6 +349,46 @@ class BPSummary(val ring:BPRing, val model:Model) extends Summary[DiscreteMargin
   }
 }
 
+object BPUtil {
+  
+  def bfs(varying: Set[DiscreteVar], root: BPVariable, checkLoops: Boolean): Seq[(BPEdge, Boolean)] = {
+    val visited: HashSet[BPEdge] = new HashSet
+    val result = new ArrayBuffer[(BPEdge, Boolean)]
+    val toProcess = new Queue[(BPEdge, Boolean)]
+    root.edges foreach (e => toProcess += Pair(e, true))
+    while (!toProcess.isEmpty) {
+      val (edge, v2f) = toProcess.dequeue()
+      if (!checkLoops || !visited(edge)) {
+        visited += edge
+        result += Pair(edge, v2f)
+        val edges =
+          if (v2f) edge.bpFactor.edges.filter(_ != edge)
+          else {
+            if (varying.contains(edge.bpVariable.variable))
+              edge.bpVariable.edges.filter(_ != edge) 
+            else Seq.empty[BPEdge]
+          }
+        edges.foreach(ne => toProcess += Pair(ne, !v2f))
+      }
+    }
+    result
+  }
+  
+  def sendAccordingToOrdering(edgeSeq: Seq[(BPEdge, Boolean)]) {
+    for ((e, v2f) <- edgeSeq) {
+      if (v2f) {
+        e.bpVariable.updateOutgoing(e)
+        e.bpFactor.updateOutgoing(e)
+      }
+      else {
+        e.bpFactor.updateOutgoing(e)
+        e.bpVariable.updateOutgoing(e)
+      }
+    }
+  }
+  
+}
+
 object BP {
   def inferLoopy(summary: BPSummary, numIterations: Int = 10): Unit = {
     for (iter <- 0 to numIterations) { // TODO Make a more clever convergence detection
@@ -356,9 +398,14 @@ object BP {
       }
     }
   }
-  def inferTreewiseSum(varying:Set[DiscreteVar], model:Model): BPSummary = {
+  def inferTreewiseSum(varying:Set[DiscreteVar], model:Model, root: DiscreteVar = null): BPSummary = {
     val summary = new BPSummary(varying, BPSumProductRing, model)
-    throw new Error("Not yet implemented")
+    val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
+    val bfsSeq = BPUtil.bfs(varying, _root, checkLoops = true)
+    println("bfs: " + bfsSeq.mkString("\n"))
+    BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
+    BPUtil.sendAccordingToOrdering(bfsSeq)
+    summary
   }
   def inferSingle(v:DiscreteVariable, model:Model): BPSummary = {
     val summary = new BPSummary(Seq(v), BPSumProductRing, model)
