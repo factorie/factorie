@@ -402,7 +402,6 @@ object BP {
     val summary = new BPSummary(varying, BPSumProductRing, model)
     val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
     val bfsSeq = BPUtil.bfs(varying, _root, checkLoops = true)
-    println("bfs: " + bfsSeq.mkString("\n"))
     BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
     BPUtil.sendAccordingToOrdering(bfsSeq)
     summary
