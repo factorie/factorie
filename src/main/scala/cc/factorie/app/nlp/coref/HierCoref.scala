@@ -262,11 +262,11 @@ abstract class FastTemplate3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm
     ret
   }
 }
-abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends FastTemplate3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
-  def statistics(values:Values): StatisticsType = Stat(values._1, values._2, values._3)
+abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
+  def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = Stat(value1, value2, value3)
 }
-abstract class FastTemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends FastTemplate1[N1] with Statistics1[N1#Value] {
-  def statistics(vals:Values): StatisticsType = Stat(vals._1)
+abstract class FastTemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1] with Statistics1[N1#Value] {
+  def statistics(value1:N1#Value): StatisticsType = Stat(value1)
 }
 
 
