@@ -340,7 +340,7 @@ class BPSummary(val ring:BPRing, val model:Model) extends Summary[DiscreteMargin
   }
   def marginal(v: DiscreteVar): BPVariable1 = _bpVariables(v)
   def marginal(f: Factor): BPFactor = _bpFactors(f)
-  override def setToMaximize(implicit d:DiffList): Unit = 
+  override def setToMaximize(implicit d:DiffList = null): Unit = 
     if (ring == BPSumProductRing) bpVariables.foreach(_.setToMaximize(d))
     else throw new Error("Not yet implemented arbitrary backwards pass.")
 }
