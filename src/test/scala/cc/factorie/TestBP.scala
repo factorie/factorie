@@ -8,6 +8,7 @@ import org.scalatest.BeforeAndAfter
 import scala.collection.mutable.Stack
 import org.junit.Assert.assertEquals
 import scala.util.Random
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Test for the factorie-1.0 BP framework (that uses Tensors)
@@ -151,7 +152,7 @@ class TestBP extends FunSuite with BeforeAndAfter {
   test("Loop2") {
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
-    val vars: Set[DiscreteVariable] = Set(v1, v2)
+    val vars: Set[DiscreteVar] = Set(v1, v2)
 
     val model = new FactorModel(
       // bias
@@ -181,7 +182,7 @@ class TestBP extends FunSuite with BeforeAndAfter {
     val v2 = new BinVar(0)
     val v3 = new BinVar(1)
     val v4 = new BinVar(0)
-    val vars: Set[DiscreteVariable] = Set(v1, v2, v3, v4)
+    val vars: Set[DiscreteVar] = Set(v1, v2, v3, v4)
 
     val model = new FactorModel(
       // loop of repulsion factors
@@ -217,7 +218,7 @@ class TestBP extends FunSuite with BeforeAndAfter {
     println("ChainRandom")
     val numVars = 2
     val vars: Seq[BinVar] = (0 until numVars).map(new BinVar(_)).toSeq
-    val varSet = vars.toSet[DiscreteVariable]
+    val varSet = vars.toSet[DiscreteVar]
     for (seed <- (0 until 50)) {
       val random = new Random(seed * 1024)
       val model = new FactorModel
@@ -377,7 +378,7 @@ object BPTestUtils {
       override def statisticsDomains = Tuple1(BooleanDomain)
       def unroll1(v: BPTestUtils.this.type#BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BPTestUtils.this.type#BinVar) = if (v == n2) Factor(n1, n2) else Nil
-      def statistics(values: this.type#ValuesType) = Stat(BooleanDomain.value(values._1 == values._2))
+      def statistics(values: BooleanValue) = Stat(BooleanDomain.value(values._1 == values._2))
     }
     family.weights(0) = scoreEqual
     family.weights(1) = scoreUnequal
