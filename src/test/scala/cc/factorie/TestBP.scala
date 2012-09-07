@@ -24,14 +24,14 @@ class TestBP extends FunSuite with BeforeAndAfter {
 
   val eps = 1e-4
   
-  before {
-    new BinVar(0)
-    new BinVar(1)
-  }
-  
-  after {
-    
-  }
+//  before {
+//    new BinVar(0)
+//    new BinVar(1)
+//  }
+//  
+//  after {
+//    
+//  }
   
   test("V1F1: equal potentials (sum-product)") {
     // one variable, one factor
@@ -378,7 +378,7 @@ object BPTestUtils {
       override def statisticsDomains = Tuple1(BooleanDomain)
       def unroll1(v: BPTestUtils.this.type#BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BPTestUtils.this.type#BinVar) = if (v == n2) Factor(n1, n2) else Nil
-      def statistics(values: BooleanValue) = Stat(BooleanDomain.value(values._1 == values._2))
+      def statistics(value1: BooleanValue, value2: BooleanValue) = Stat(BooleanDomain.value(value1 == value2))
     }
     family.weights(0) = scoreEqual
     family.weights(1) = scoreUnequal
@@ -386,22 +386,22 @@ object BPTestUtils {
   }
 
   def newFactor3(n1: BinVar, n2: BinVar, n3: BinVar, scores: Seq[Double]) =
-    new Factor3[BinVar, BinVar, BinVar] {
+    new FactorWithStatistics3[BinVar, BinVar, BinVar] {
       factor =>
         
       def _1 = n1
       def _2 = n2
       def _3 = n3
 
-      type StatisticsType = Stat
+//      type StatisticsType = Stat
 
-      final case class Stat(_1: BinVar#Value, _2: BinVar#Value, _3: BinVar#Value) extends Statistics {
-        lazy val score: Double = factor.score(this)
-      }
+//      final case class Stat(_1: BinVar#Value, _2: BinVar#Value, _3: BinVar#Value) extends Statistics {
+//        lazy val score: Double = factor.score(this)
+//      }
+//
+//      def statistics(v: this.type#Value) = Stat(v._1, v._2, v._3)
 
-      def statistics(v: this.type#Values) = Stat(v._1, v._2, v._3)
-
-      def score(s: Stat): Double = scores(s._1.category * 4 + s._2.category * 2 + s._3.category)
+      def score(s: Statistics): Double = scores(s._1.category * 4 + s._2.category * 2 + s._3.category)
 
       override def equalityPrerequisite = this
 
