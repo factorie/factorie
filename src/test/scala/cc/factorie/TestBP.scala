@@ -24,6 +24,7 @@ class TestBP extends FunSuite with BeforeAndAfter {
 
   val eps = 1e-4
   
+// What version of junit are these present in?  What .jar do I need to include?
 //  before {
 //    new BinVar(0)
 //    new BinVar(1)
@@ -378,7 +379,7 @@ object BPTestUtils {
       override def statisticsDomains = Tuple1(BooleanDomain)
       def unroll1(v: BPTestUtils.this.type#BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BPTestUtils.this.type#BinVar) = if (v == n2) Factor(n1, n2) else Nil
-      def statistics(value1: BooleanValue, value2: BooleanValue) = Stat(BooleanDomain.value(value1 == value2))
+      def statistics(value1: BinVar#Value, value2: BinVar#Value) = Stat(BooleanDomain.value(value1 == value2))
     }
     family.weights(0) = scoreEqual
     family.weights(1) = scoreUnequal
