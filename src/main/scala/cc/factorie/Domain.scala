@@ -31,7 +31,7 @@ import util.ClassPathUtils
     CategoricalDomain provides a densely-packed mapping between category values and integers.
     @author Andrew McCallum
     @since 0.8 */
-trait Domain[+VT] extends ValueType[VT] {
+trait Domain[+VT] extends ValueBound[VT] {
   /** Serialize this domain to disk in the given directory. */
   def save(dirname:String, gzip: Boolean = false): Unit = {}
   /** Deserialize this domain from disk in the given directory. */
@@ -50,7 +50,8 @@ trait IterableDomain[+VT] extends Domain[VT] {
 object GenericDomain extends Domain[Any]
 
 /** Add this trait to a Variable to give it a Domain with Value type VT. */
-trait VarAndValueGenericDomain[+This<:Variable,+VT] extends VarAndValueType[This,VT] {
+// TODO Consider removing [This] self type argument.
+trait VarAndValueGenericDomain[+This<:Variable,+VT] extends ValueBound[VT] {
   this: This =>
   //type ValueType = VT
   def domain = GenericDomain.asInstanceOf[Domain[VT]]

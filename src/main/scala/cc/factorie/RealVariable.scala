@@ -22,7 +22,7 @@ object RealDomain extends RealDomain
 
 // Because this has ValueType[Double] this is not unified with RealSingletonVectorVar
 /** A Variable with a real (double) value. */
-trait RealVar extends VarWithNumericValue with VarAndValueType[RealVar,Double] {
+trait RealVar extends VarWithNumericValue with Var[Double] {
   def domain = RealDomain
   @inline final def value: Double = doubleValue
   def doubleValue: Double
@@ -67,7 +67,7 @@ object RealSingletonTensorDomain extends RealSingletonTensorDomain
 
 /** A variable holding a single real (Double) value, but the value encased in a DiscreteVector, 
     so that it can be among the Statistics of a VectorTemplate. */
-trait RealSingletonTensorVar extends VarWithNumericValue with DiscreteTensorVar with VarAndValueType[RealSingletonTensorVar,SingletonTensor1] {
+trait RealSingletonTensorVar extends VarWithNumericValue with DiscreteTensorVar with Var[SingletonTensor1] {
   thisVariable =>
   def domain = RealSingletonTensorDomain
   /** A Vector representation of this Variable's value. */
@@ -76,8 +76,8 @@ trait RealSingletonTensorVar extends VarWithNumericValue with DiscreteTensorVar 
   // TODO Consider rewriting above line to avoid constructing new object
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
-  override def ===(other: VariableType) = doubleValue == other.doubleValue
-  override def !==(other: VariableType) = doubleValue != other.doubleValue
+  override def ===(other: Variable) = other match { case other:RealSingletonTensorVar => doubleValue == other.doubleValue; case _ => false } 
+  override def !==(other: Variable) = other match { case other:RealSingletonTensorVar => doubleValue != other.doubleValue; case _ => false } 
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 

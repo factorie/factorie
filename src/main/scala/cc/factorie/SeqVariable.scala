@@ -20,6 +20,7 @@ import java.util.Arrays
 
 // Variables for dealing with sequences
 
+// TODO Consider removing this?
 trait ElementType[+ET] {
   type ElementType = ET
 }
@@ -31,7 +32,7 @@ trait ElementType[+ET] {
     Note that this trait itself does not actually inherit from Seq[E] 
     because Seq defines "equals" based on same contents, 
     but all variables must have equals based on identity. */
-trait SeqVar[+E] extends Variable with VarAndValueType[SeqVar[E],Seq[E]] with ElementType[E] {
+trait SeqVar[+E] extends Variable with ValueBound[Seq[E]] with ElementType[E] {
   type Value <: Seq[E]
   def value: Seq[E]
   def iterator: Iterator[E]
@@ -47,7 +48,7 @@ trait SeqVar[+E] extends Variable with VarAndValueType[SeqVar[E],Seq[E]] with El
     Note that this trait itself does not actually inherit from IndexedSeq[E] 
     because Seq defines "equals" based on same contents, 
     but all variables must have equals based on identity. */
-trait IndexedSeqVar[+E] extends SeqVar[E] with VarAndValueType[IndexedSeqVar[E],IndexedSeq[E]] with ElementType[E] {
+trait IndexedSeqVar[+E] extends SeqVar[E] with ValueBound[IndexedSeq[E]] with ElementType[E] {
   type Value <: IndexedSeq[E]
   def value: IndexedSeq[E]
   // Some of the methods of Seq, for convenience
@@ -78,7 +79,8 @@ trait IndexedSeqVar[+E] extends SeqVar[E] with VarAndValueType[IndexedSeqVar[E],
     @author Andrew McCallum */
 trait MutableSeqVar[X] extends IndexedSeqVar[X] with MutableVar[IndexedSeq[X]] { // TODO This could be an IndexedSeqVar
   //type ElementType <: AnyRef
-  type Element = VariableType#ElementType
+  //type Element = VariableType#ElementType
+  type Element = X
   protected val _seq = new ArrayBuffer[Element] // TODO Consider using an Array[] instead so that SeqVar[Int] is efficient.
   final def value: IndexedSeq[Element] = _seq
   def set(newValue:Value)(implicit d:DiffList): Unit = { _seq.clear; _seq ++= newValue }

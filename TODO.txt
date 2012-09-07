@@ -1,5 +1,7 @@
 Pre 1.0 release:
 
+Remove statisticsDomain and just get size
+DomainFromClass or make it the default.
 Remove Factor.Values
 Make app.regress and consider making RealVar inherit from TensorVar (with DoubleVar replacing current one)
 Finish BP and move to cc.factorie package.  Make it fast!

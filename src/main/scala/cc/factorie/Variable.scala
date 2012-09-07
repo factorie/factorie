@@ -20,28 +20,30 @@ import scala.reflect.Manifest
 
 // Notes on class names for Variables:
 // Except for cc.factorie.Variable, "*Variable" are classes and mutable.
-// "*Var" are trait counterparts, not yet committing to a value-storage mechanism or (im)mutability.
+// "*Var" are trait counterparts, not yet committing to (im)mutability.
+// Many but not all "*Var" traits do not yet commit to a value-storage mechanism.
 
-/** Provides a covariant member type 'ValueType' in such a way that it can be overridden in subclasses. */
-trait ValueType[+VT] {
-  type ValueType = VT
-  type Value <: VT
-}
+// Some classes have a "bound" Value type member; others have an "assigned" (concrete, fixed) Value type member
+// "*Variable" classes have assigned Value type
+// "*Var" traits have bound Value type members
+// "*Var[Foo]" traits Value type member assigned to Foo
+// Variables that are type arguments to Family and Template should have assigned Values
+// because they must implement methods (such as statistics(Variable1#Value)) that concretely define Value.
 
-// TODO Consider
-// trait ValueBound[+A] { type Value <: A }
-// trait ValueType[A] { type Value = A }
 
-/** Use this trait to refine the ValueType in subclasses of Variable.
-    Do not use the ValueType trait directly, because this will not result in
-    a proper update to Variable's "Value" member type.
-    This trait provides member types "VariableType" and "ValueType" as covariant member types.
-    In Variable this supports the member type definition "Value = VariableType#ValueType",
-    which magically turns out to be (pseudo?)-invariant. */
-trait VarAndValueType[+This<:Variable,+VT] extends ValueType[VT] {
-  //this: This => // Crashes under scala-2.9.0.r24003-b20110118020144
-  type VariableType = This
-}
+/** Use this trait to refine the Value type member in subclasses of Variable.
+    It provides a covariant member type 'Value' in such a way that it can be override in subclasses.
+    However, because this type is lower-bounded not assigned, 
+    you cannot implement a method with arguments of this type, unless Value is later assigned
+    (for example perhaps with Var[A]). */
+trait ValueBound[+A] { type Value <: A }
+
+/** Use this trait to refine and set the Value type member in subclasses of Variable.
+    It provides a non-variant 'Value' type member in such a way that it cannot be overridden in subclasses.
+    Because this type is assigned and fixed,
+    you can implement a method with arguments of this type. */
+trait Var[A] extends ValueBound[A] with Variable { override type Value = A }
+
 
 
 /**Abstract superclass of all variables.  Don't need to know its value type to use it. 
@@ -56,17 +58,7 @@ trait VarAndValueType[+This<:Variable,+VT] extends ValueType[VT] {
    even though its value may do so.  This prevents confusion between
    Model.factors(Variable) and Model.factors(Iterable[Variable]).
    @author Andrew McCallum */
-trait Variable {
-  /** The type of this variable, used specially in the definition
-      of the member type 'Value'.
-      Often you can treat this as an approximation to a self-type */
-  type VariableType <: Variable
-
-  /** The type of the value of this variable, as a covariant type. */
-  type ValueType <: Any
-
-  /** The type of the value of this variable, as a pseudo-invariant type. */
-  type Value <: Any // <: ValueType // Any // = VariableType#ValueType
+trait Variable extends ValueBound[Any] {
  
   /** Abstract method to return the domain of this variable. */
   def domain: Domain[Any]
@@ -75,8 +67,8 @@ trait Variable {
   def value: Any
 
   /** Value comparisons (as distinct from variable pointer equality) */
-  def ===(other: VariableType) = value == other.value
-  def !==(other: VariableType) = value != other.value
+  def ===(other: Variable) = value == other.value
+  def !==(other: Variable) = value != other.value
   
   /** The type of the variable contained inside this variable.
       Used for handling var-args. 
@@ -86,13 +78,13 @@ trait Variable {
   /** Return a collection of other variables that should be unrolled in Templates whenever this variable is unrolled.
       This is typically used in "contained variables" to return "container variables".
       For example, a Span may be part of a Event; when the Span changes the Event should be considered as having changed also, and Template1[Event] will be relevant.
-      This mechanism is also used for implementing "var-args" to Templates, as in GeneratedVarTemplate[GeneratedVar, MixtureChoice, Vars[Parameters]].
+      This mechanism is also used for implementing "var-args", as in Vars[].
       See also PyMC's "Containers"? */
   def unrollCascade: Iterable[Variable] = Nil
   
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable, 
       and add this new factor to the given model. */
-  def ~[V<:this.VariableType](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
+  def ~[V<:Variable](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
     model += partialFactor(this.asInstanceOf[V])
     this
   }
@@ -117,8 +109,7 @@ trait Variable {
       values are scored (whether they are given 0.0 or 1.0 extreme probabilities) is a different matter. 
       This function is used in cc.factorie.generative.GenerativeModel.extendedParents and extendedChildren.
       */
-  // TODO Perhaps there should be a "isDeterministic" method in cc.factorie.Factor?  Or should it go in Statistics?  Ug. -akm
-  def isDeterministic = false
+  def isDeterministic = false  // TODO Perhaps there should be a "isDeterministic" method in cc.factorie.Factor?  Or should it go in Statistics?  Ug. -akm
 }
 
 
@@ -129,8 +120,7 @@ trait VarWithConstantValue extends Variable {
   override final def isConstant = true
 }
 
-trait MutableVar[A] extends Variable {
-  type Value = A
+trait MutableVar[A] extends Var[A] {
   def value: A
   /** Assign a new value to this variable */
   def set(newValue:Value)(implicit d:DiffList): Unit
@@ -138,7 +128,7 @@ trait MutableVar[A] extends Variable {
   /** Create a new GenerativeFactor, make it the "parent" generating factor for this variable,
       add this new factor to the given model, 
       and also assign the variable a new value randomly drawn from this factor. */
-  def :~[V<:this.VariableType](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
+  def :~[V<:MutableVar[A]](partialFactor:Function1[V,cc.factorie.generative.GenerativeFactor])(implicit model:cc.factorie.generative.MutableGenerativeModel): this.type = {
     this ~ (partialFactor)
     this.set(model.parentFactor(this).sampledValue.asInstanceOf[this.Value])(null)
     this
@@ -161,7 +151,7 @@ trait VarWithMutableDoubleValue extends VarWithNumericValue {
 
 
 /** A Variable whose (constant) value is the Variable object itself. */
-trait SelfVariable[This<:SelfVariable[This]] extends Variable with VarAndValueGenericDomain[SelfVariable[This],This] {
+trait SelfVariable[This<:SelfVariable[This]] extends Variable with Var[This] {
   this: This =>
   final def value: This = this
 }

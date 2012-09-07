@@ -327,27 +327,29 @@ trait StumpDecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValu
     @author Andrew McCallum */
 abstract class DecisionTreeTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: DiscreteTensorVar](implicit m1: Manifest[S1], m2: Manifest[S2])
   extends Template2[S1, S2] {
-  this: DecisionTreeStatistics2Base[S1#ValueType, S2#ValueType] =>
+  this: DecisionTreeStatistics2Base[S1#Value, S2#Value] =>
   def statistics(value1:S1#Value, value2:S2#Value) = Stat(value1, value2)
   def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(_.statistics: StatisticsType))
   def train(labels: Iterable[S1], getInstanceWeight: Int => Double): Unit =
     train(labels.map(unroll1(_)).flatten.map(_.statistics: StatisticsType), getInstanceWeight = Some(getInstanceWeight))
 }
 
-class ID3DecisionTreeTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
-  val labelToFeatures: L => F, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
-  extends DecisionTreeTemplateWithStatistics2[L, F]()(m1, m2) with ID3DecisionTreeStatistics2[DiscreteValue, F#ValueType] {
-  def statisticsDomains = ((labelDomain, featureDomain))
-  def unroll1(label: L) = Factor(label, labelToFeatures(label))
-  def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
-  def statisticsScore(t:Tensor): Double = throw new Error("Not yet implemented")
-}
+// TODO I'm struggling with getting the types right here -akm
 
-class DecisionStumpTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
-  val labelToFeatures: L => F, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
-  extends DecisionTreeTemplateWithStatistics2[L, F]()(m1, m2) with StumpDecisionTreeStatistics2[DiscreteValue, F#ValueType] {
-  def statisticsDomains = ((labelDomain, featureDomain))
-  def unroll1(label: L) = Factor(label, labelToFeatures(label))
-  def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
-  def statisticsScore(t:Tensor): Double = throw new Error("Not yet implemented")
-}
+//class ID3DecisionTreeTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
+//  val labelToFeatures: L => F, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
+//  extends DecisionTreeTemplateWithStatistics2[L, F]()(m1, m2) with ID3DecisionTreeStatistics2[DiscreteValue, F#Value] {
+//  def statisticsDomains = ((labelDomain, featureDomain))
+//  def unroll1(label: L) = Factor(label, labelToFeatures(label))
+//  def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
+//  def statisticsScore(t:Tensor): Double = throw new Error("Not yet implemented")
+//}
+//
+//class DecisionStumpTemplate[L <: DiscreteVar, F <: DiscreteTensorVar](
+//  val labelToFeatures: L => F, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
+//  extends DecisionTreeTemplateWithStatistics2[L, F]()(m1, m2) with StumpDecisionTreeStatistics2[DiscreteValue, F#Value] {
+//  def statisticsDomains = ((labelDomain, featureDomain))
+//  def unroll1(label: L) = Factor(label, labelToFeatures(label))
+//  def unroll2(features: F) = throw new Error("Cannot unroll from feature variables.")
+//  def statisticsScore(t:Tensor): Double = throw new Error("Not yet implemented")
+//}

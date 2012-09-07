@@ -18,8 +18,9 @@ import cc.factorie.la._
 trait TensorDomain extends Domain[Tensor]
 object TensorDomain extends TensorDomain
 
-trait TensorVar extends Variable with VarAndValueType[TensorVar,Tensor] {
+trait TensorVar extends Variable with ValueBound[Tensor] {
   def domain: TensorDomain
+  def value: Tensor
   def tensor: Tensor
   def length: Int = tensor.length // TODO Consider removing this?
   def apply(i:Int): Double = tensor.apply(i)  // TODO Consider removing this?
@@ -38,7 +39,7 @@ trait MutableTensorVar[A<:Tensor] extends TensorVar with MutableVar[A] {
   @inline final override def length: Int = _value.length
   @inline final override def apply(i:Int): Double = _value.apply(i)
   // Why is this necessary?  Why not use set()(null)?  I think there was a reason... -akm
-  @inline protected final def _set(newValue:A): Unit = _value = newValue 
+  //@inline protected final def _set(newValue:A): Unit = _value = newValue 
   // Methods that track modifications on a DiffList
   def set(newValue:A)(implicit d:DiffList): Unit = {
     if (d ne null) d += SetTensorDiff(_value, newValue)
@@ -67,15 +68,20 @@ trait MutableTensorVar[A<:Tensor] extends TensorVar with MutableVar[A] {
     def undo = _value = oldValue
     def redo = _value = newValue
   }
+  case class UpdateTensorDiff(index:Int, oldValue:Double, newValue:Double) extends Diff {
+    def variable = MutableTensorVar.this
+    def undo = _value(index) = oldValue
+    def redo = _value(index) = newValue
+  }
   case class IncrementTensorIndexDiff(index:Int, incr:Double) extends Diff {
     def variable = MutableTensorVar.this
-    def undo = tensor.+=(index, -incr)
-    def redo = tensor.+=(index, incr)
+    def undo = _value.+=(index, -incr)
+    def redo = _value.+=(index, incr)
   }
   case class IncrementTensorDiff(t: Tensor) extends Diff {
     def variable = MutableTensorVar.this
-    def undo = tensor -= t // Note this relies on Tensor t not having changed.
-    def redo = tensor += t
+    def undo = _value -= t // Note this relies on Tensor t not having changed.
+    def redo = _value += t
   }
   case class ZeroTensorDiff(prev: Array[Double]) extends Diff {
     def variable = MutableTensorVar.this

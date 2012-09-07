@@ -22,7 +22,7 @@ package cc.factorie
 /** The Domain for BooleanVar, of size two, containing a falseValue
     (with intValue = 0) and a trueValue (with intValue = 1). 
     @author Andrew McCallum */
-class BooleanDomain extends CategoricalDomain[Boolean] with ValueType[BooleanValue] with Domain[BooleanValue] {
+class BooleanDomain extends CategoricalDomain[Boolean] with ValueBound[BooleanValue] with Domain[BooleanValue] {
   thisDomain =>
   val falseValue = super.value(false) // will get index == 0
   val trueValue = super.value(true)   // will get index == 1
@@ -50,7 +50,7 @@ object BooleanValue {
 /** A Variable containing a single Boolean value, which might be mutable or immutable.
     @see BooleanVariable
     @author Andrew McCallum */
-trait BooleanVar extends CategoricalVar[Boolean] with VarAndValueType[BooleanVar,BooleanValue] {
+trait BooleanVar extends CategoricalVar[Boolean] with Var[BooleanValue] {
   def value: BooleanValue
   def domain: CategoricalDomain[Boolean] = BooleanDomain
   override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
