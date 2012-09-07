@@ -20,7 +20,7 @@ import cc.factorie.la._
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.
     Concrete implementations include CategoricalVariable and CategoricalObservation. 
     @author Andrew McCallum */
-trait CategoricalVar[A] extends DiscreteVar with CategoricalTensorVar[A] with VarAndValueType[CategoricalVar[A],CategoricalValue[A]] {
+trait CategoricalVar[A] extends DiscreteVar with CategoricalTensorVar[A] with ValueBound[CategoricalValue[A]] {
   def domain: CategoricalDomain[A]
   def value: CategoricalValue[A]
   def categoryValue: A = if (value ne null) value.category else null.asInstanceOf[A]

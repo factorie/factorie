@@ -48,32 +48,33 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   thisDomain =>
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)) }
   //private val _elements = new ArrayBuffer[ValueType]
-  private val _indices = new HashMap[C,ValueType] with collection.mutable.SynchronizedMap[C, ValueType] //new HashMap[C,ValueType]
+  private val _indices = new HashMap[C,Value] with collection.mutable.SynchronizedMap[C, Value] //new HashMap[C,ValueType]
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
       override this method with the largest you think your growable domain will get. */
   var maxSize = -1
   override def dimensionDomain: CategoricalDomain[C] = this
   @inline final override def length = _elements.length
-  def value(category:C): ValueType = {
-    if (_frozen) _indices.getOrElse(category, null.asInstanceOf[ValueType])
+  def value(category:C): Value = {
+    if (_frozen) _indices.getOrElse(category, null.asInstanceOf[Value])
     else {
       if (!_indices.contains(category)) { // double-tap locking necessary to ensure only one thread adds to _indices
         _indices.synchronized({
           if (_indices.get(category).isEmpty) {
             val m = _elements.size
             if (maxSize > 0 && m >= maxSize) throw new Error("Index size exceeded maxSize")
-            val e: ValueType = newCategoricalValue(m, category).asInstanceOf[ValueType]
+            val e: Value = newCategoricalValue(m, category).asInstanceOf[Value]
             _elements += e
             _indices(category) = e
           }
         })
       }
-      _indices.getOrElse(category, null)
+      //_indices.getOrElse(category, null)
+      _indices(category)
     }
   }
-  override def apply(i:Int): ValueType = _elements(i)
+  override def apply(i:Int): Value = _elements(i)
   def category(i:Int): C = _elements(i).category.asInstanceOf[C]
-  def categories: Seq[C] = _elements.map(_.category)
+  def categories: Seq[C] = _elements.map(_.category.asInstanceOf[C]) // TODO Can we avoid this cast.
   /** Return the integer associated with the category, do not increment the count of category, even if gatherCounts is true. */
   def indexOnly(category:C): Int = {
     val v = value(category)

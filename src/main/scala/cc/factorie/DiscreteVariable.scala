@@ -18,7 +18,7 @@ import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
 
 /** A single discrete variable */
-trait DiscreteVar extends DiscreteTensorVar with VarAndValueType[DiscreteVar,DiscreteValue] {
+trait DiscreteVar extends DiscreteTensorVar with ValueBound[DiscreteValue] {
   def domain: DiscreteDomain
   def value: DiscreteValue
   def intValue = value.intValue

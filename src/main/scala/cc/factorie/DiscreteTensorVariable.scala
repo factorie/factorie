@@ -21,7 +21,7 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 /** A Domain for variables whose value is a Tensor whose length matches the size of a DiscreteDomain. 
     This domain has a non-negative integer size.  The method 'dimensionDomain' is abstract. */
-trait DiscreteTensorDomain extends TensorDomain with ValueType[Tensor] {
+trait DiscreteTensorDomain extends TensorDomain with ValueBound[Tensor] {
   def dimensionDomain: DiscreteDomain
   /** The maximum size to which this domain will be allowed to grow.  
       The 'dimensionDomain.size' method may return values smaller than this, however.
@@ -39,14 +39,14 @@ trait DiscreteTensorDomain extends TensorDomain with ValueType[Tensor] {
   }
 }
 
-trait DiscreteTensorVar extends TensorVar with VarAndValueType[DiscreteTensorVar,Tensor] {
+trait DiscreteTensorVar extends TensorVar {
   def domain: DiscreteTensorDomain
   def contains(index:Int): Boolean = tensor.apply(index) != 0.0
 }
 
 /** A vector with dimensions corresponding to a DiscreteDomain, and with Double weights for each dimension, represented by a sparse vector. */
 abstract class DiscreteTensorVariable extends MutableTensorVar[Tensor] with DiscreteTensorVar {
-  def this(initialValue:Tensor) = { this(); _set(initialValue) }
+  def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
   //thisVariable =>
   //_set(new SparseVector(domain.dimensionSize) with DiscreteVectorValue { def domain = thisVariable.domain })
   def freeze: Unit = throw new Error("Is this still really necessary? -akm")

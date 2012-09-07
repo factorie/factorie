@@ -87,7 +87,7 @@ object Mixture extends GenerativeFamily1[Mixture[Variable]] {
     /** Even though they are the contents of the child, the parents are each of the mixture components. */
     override def parents: Seq[Variable] = _1.components
     def pr(s:StatisticsType) = 1.0
-    def sampledValue(s:StatisticsType): ChildType#ValueType = throw new Error("Cannot sample a Mixture")
+    def sampledValue(s:StatisticsType): ChildType#Value = throw new Error("Cannot sample a Mixture")
     override def updateCollapsedParents(weight:Double): Boolean = {
       throw new Error("Not yet implemented.")
       //  TODO this is inefficient because it will loop through all children of the Mixture for each Mixture component
