@@ -109,7 +109,7 @@ object CorefMentionsDemo {
       val model = new TemplateModel
 
       // Pairwise affinity factor between Mentions in the same partition
-      model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#ValueType] {
+      model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#Value] {
         def statisticsDomains = Tuple1(AffinityVectorDomain)
         def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield 
           if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)
@@ -121,7 +121,7 @@ object CorefMentionsDemo {
       }
 
       // Pairwise repulsion factor between Mentions in different partitions
-      model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#ValueType] {
+      model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#Value] {
         def statisticsDomains = Tuple1(AffinityVectorDomain)
         /*override def factors(d:Diff) = d.variable match {
           case mention: Mention => d match {
@@ -147,7 +147,7 @@ object CorefMentionsDemo {
       model += new Template1[Entity] with DotStatistics1[BooleanValue] {
         def statisticsDomains = Tuple1(BooleanDomain)
         def statistics(e:Entity#Value) = {
-          val mentions: Entity#ValueType = e
+          val mentions: Entity#Value= e
           if (mentions.isEmpty) Stat(BooleanDomain.trueValue)
           else {
             val prefix1 = mentions.iterator.next.name.substring(0,1)

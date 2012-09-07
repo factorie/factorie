@@ -52,18 +52,18 @@ trait CategoricalTensorVar[C] extends DiscreteTensorVar {
   def activeCategories: Seq[C] = tensor.activeDomain.map(i => domain.dimensionDomain.category(i))
 }
 abstract class CategoricalTensorVariable[C] extends MutableTensorVar[Tensor] with CategoricalTensorVar[C] {
-  def this(initialValue:Tensor) = { this(); _set(initialValue) }
+  def this(initialValue:Tensor) = { this(); set(initialValue)(null) }
 }
 
 abstract class BinaryFeatureVectorVariable[C] extends CategoricalTensorVariable[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
-  _set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))
+  set(new GrowableSparseBinaryTensor1(domain.dimensionDomain))(null)
   override def toString: String = activeCategories.mkString(printName+"(", ",", ")")
 }
 
 abstract class FeatureVectorVariable[C] extends CategoricalTensorVariable[C] {
   def this(initVals:Iterable[C]) = { this(); this.++=(initVals) }
-  _set(new GrowableSparseTensor1(domain.dimensionDomain))
+  set(new GrowableSparseTensor1(domain.dimensionDomain))(null)
   override def toString: String = {
     val b = new StringBuilder; b append printName; b append "("
     tensor.foreachActiveElement((i,v) => {

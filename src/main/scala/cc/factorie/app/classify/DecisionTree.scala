@@ -22,10 +22,11 @@ class ID3DecisionTreeTrainer extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
   def train[L <: LabelVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): ModelBasedClassifier[L] = {
-    val dmodel = new ID3DecisionTreeTemplate[L, F](il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
-    val instanceWeights = il.map(il.instanceWeight(_))
-    dmodel.train(il, instanceWeights)
-    new ModelBasedClassifier[L](dmodel, il.head.domain)
+    throw new Error("Needs fixing of type system in cc.factorie.ID3DecisionTreeTemplate")
+//    val dmodel = new ID3DecisionTreeTemplate[L, F](il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
+//    val instanceWeights = il.map(il.instanceWeight(_))
+//    dmodel.train(il, instanceWeights)
+//    new ModelBasedClassifier[L](dmodel, il.head.domain)
   }
 }
 

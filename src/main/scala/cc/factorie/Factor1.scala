@@ -129,9 +129,10 @@ trait FactorWithStatistics1[N1<:Variable] extends Factor1[N1] {
 }
 
 abstract class FactorWithDotStatistics1[N1<:DiscreteTensorVar] extends FactorWithStatistics1[N1] {
+  //type V1 = N1#Value
   def statisticsDomains: Tuple1[DiscreteTensorDomain]
   val weights = new DenseTensor1(statisticsDomains._1.dimensionDomain.size)
-  def score(s:Statistics) = s._1 dot weights
+  def score(s:Statistics) = s._1.asInstanceOf[Tensor] dot weights // TODO!!!! Why is this cast to Tensor necessary?
   override def scoreValues(valueTensor:Tensor) = valueTensor dot weights
 }
 

@@ -43,26 +43,26 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
   var maxRequestedInt: Int = 0
 
   /** Maps from integer index to the DiscreteValue objects */
-  private val __elements = new scala.collection.mutable.ArrayBuffer[ValueType]
+  private val __elements = new scala.collection.mutable.ArrayBuffer[Value]
   def _elements = __elements // Define this way so that _elements can be overridden
 
   // If _size >= 0 it is used to determine DiscreteDomain.size, otherwise _sizeProxy.size is used. 
   private var _size = -1
   private val _sizeProxy = sizeProxy
   def length = if (_size >= 0) _size else _sizeProxy.size
-  def apply(index:Int): ValueType = {
+  def apply(index:Int): Value = {
     if (index > maxRequestedInt) maxRequestedInt = index
     if (index >= size) throw new IllegalArgumentException("DiscreteDomain.getValue: index "+index+" larger than size "+size)
-    if (index >= _elements.size) {
-      _elements synchronized { for (i <- _elements.size to index) _elements += new DiscreteValue(i) }
+    if (index >= __elements.size) {
+      __elements synchronized { for (i <- __elements.size to index) __elements += new DiscreteValue(i).asInstanceOf[Value] }
     } //.asInstanceOf[Value] // Here new a DiscreteValue gets created
-    _elements(index)
+    __elements(index)
   }
-  def unapply(value:ValueType): Option[Int] = value match {
+  def unapply(value:Value): Option[Int] = value match { // TODO Is this callable?
     case dv:DiscreteValue => Some(dv.intValue)
     case _ => None
   }//if (value.domain == this) Some(value.intValue) else None
-  override def iterator: Iterator[ValueType] = _elements.iterator
+  override def iterator: Iterator[Value] = _elements.iterator
   def getAll(c: Iterator[Int]) = c map apply
   def getAll(c: List[Int]) = c map apply
   def getAll(c: Array[Int]) = c map apply

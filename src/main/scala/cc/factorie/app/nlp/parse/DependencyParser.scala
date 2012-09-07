@@ -79,7 +79,7 @@ class ActionLabel(targetAction: (Int, String), stack: ArrayBuffer[Int], input: A
   )
 
   override def settings = new SettingIterator {
-    private var validActionList: Iterator[ActionLabel.this.ValueType] = domain.filter(a => isAllowedCategory(a.category._1)).toSeq.iterator
+    private var validActionList: Iterator[ActionLabel.this.Value] = domain.filter(a => isAllowedCategory(a.category._1)).toSeq.iterator
     def hasNext = validActionList.hasNext
     def next(difflist:DiffList) = { val d = new DiffList; set(validActionList.next)(d); d }
     def reset = validActionList = domain.filter(a => isAllowedCategory(a.category._1)).toSeq.iterator

@@ -40,7 +40,7 @@ trait VarWithTargetValue extends Variable {
 trait VarWithTarget extends VarWithTargetValue with TargetType[TargetVar] {
   //type TargetType = TargetType with ValueType[this.Value]
   /** Stores the intended true "target" value for this variable. */
-  def target: TargetType { type ValueType = VarWithTarget.this.ValueType }
+  def target: TargetType { type Value = VarWithTarget.this.Value }
   def valueIsTarget: Boolean = value == target.value
 }
 
@@ -75,7 +75,7 @@ trait DiscreteVarWithTarget[A<:DiscreteValue] extends DiscreteVarWithTargetValue
   def targetIntValue_=(newValue:Int): Unit = target.set(newValue)(null)
   def setToTarget(implicit d:DiffList): Unit = set(target.intValue)
   //def valueIsTarget: Boolean = value == target.value
-  def targetValue: ValueType = if (target eq null) null.asInstanceOf[ValueType] else target.value.asInstanceOf[ValueType]
+  def targetValue: Value = if (target eq null) null.asInstanceOf[Value] else target.value.asInstanceOf[Value]
   def isUnlabeled = target eq null
   //def unlabel = if (trueVariable ne null) hiddentrueIntValue = -trueIntValue - 1 else throw new Error("Already unlabeled.")
   //def relabel = if (trueIntValue < 0) trueIntValue = -(trueIntValue+1) else throw new Error("Already labeled.")
