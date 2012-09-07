@@ -8,79 +8,13 @@ import org.scalatest.BeforeAndAfter
 import scala.collection.mutable.Stack
 import org.junit.Assert.assertEquals
 import scala.util.Random
-<<<<<<< HEAD
-import scala.collection.mutable.ArrayBuffer
-=======
-import collection.mutable.ArrayBuffer
-import java.util.regex.Pattern.Loop
 
 /**
  * Test for the factorie-1.0 BP framework (that uses Tensors)
- * @author sameer
+ * @author sameer, brian
  * @since Aug 7, 2012
  */
 
-class TestBP extends TestCase {
-
-  // a binary variable that takes values 0 or 1
-  object BinDomain extends CategoricalDomain[Int](List(0, 1))
-
-  class BinVar(i: Int) extends LabelVariable(i) {
-    def domain = BinDomain
-  }
-
-  private def newFactor1(n1: BinVar, score0: Double, score1: Double) = {
-    val family = new TemplateWithDotStatistics1[BinVar] {
-      override def statisticsDomains = Tuple1(BinDomain)
-    }
-    family.weights(0) = score0
-    family.weights(1) = score1
-    n1.set(0)(null)
-    println(family.score(n1))
-    n1.set(1)(null)
-    println(family.score(n1))
-    family.factors(n1).head
-  }
-
-  private def newFactor2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double) = {
-    val family = new Template2[BinVar, BinVar] with DotStatistics1[BooleanValue] {
-      override def statisticsDomains = Tuple1(BooleanDomain)
-      def unroll1(v: TestBP.this.type#BinVar) = if (v == n1) Factor(n1, n2) else Nil
-      def unroll2(v: TestBP.this.type#BinVar) = if (v == n2) Factor(n1, n2) else Nil
-      def statistics(v1:BinVar#Value, v2:BinVar#Value) = Stat(BooleanDomain.value(v1 == v2))
-    }
-    family.weights(0) = scoreEqual
-    family.weights(1) = scoreUnequal
-    family.factors(n1).head
-  }
-
-  private def newFactor3(n1: BinVar, n2: BinVar, n3: BinVar, scores: Seq[Double]) =
-    new Factor3[BinVar, BinVar, BinVar] {
-      factor =>
-      def _1 = n1
-
-      def _2 = n2
-
-      def _3 = n3
-
-      type StatisticsType = Stat
-
-      final case class Stat(_1: BinVar#Value, _2: BinVar#Value, _3: BinVar#Value) extends Statistics {
-        lazy val score: Double = factor.score(this)
-      }
-
-      def statistics(v1:BinVar#Value, v2:BinVar#Value, v3:BinVar#Value) = Stat(v1, v2, v3)
-
-      def score(s: Stat): Double = scores(s._1.category * 4 + s._2.category * 2 + s._3.category)
-
-      override def equalityPrerequisite = this
-
-      override def toString = "F(%s,%s,%s)".format(n1, n2, n3)
-    }
-
-  // short for exponential
-  private def e(num: Double) = math.exp(num)
->>>>>>> f184caf30504c86d0d74f3155c0d13c4c1d3f341
 
 @RunWith(classOf[JUnitRunner])
 class TestBP extends FunSuite with BeforeAndAfter {
