@@ -25,13 +25,13 @@ object TopicsOverTime {
   class Document(val file: String) extends ArrayBuffer[Word] {
     var theta: ProportionsVar = null
     var date: Long = -1  // datetime
-    val stamps = new ArrayBuffer[RealVariable] // datetime normalized to 0-1
+    val stamps = new ArrayBuffer[DoubleVariable] // datetime normalized to 0-1
   }
   val beta = MassesVariable.growableUniform(WordDomain, 0.1)
   val alphas = MassesVariable.dense(numTopics, 0.1)
   val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain) ~ Dirichlet(beta))
-  val balphas = Mixture(numTopics)(new RealVariable) 
-  val bbetas  = Mixture(numTopics)(new RealVariable) 
+  val balphas = Mixture(numTopics)(new DoubleVariable) 
+  val bbetas  = Mixture(numTopics)(new DoubleVariable) 
 
   def main(args: Array[String]): Unit = {
     val directories = if (args.length > 0) args.toList else List("/Users/mccallum/research/data/text/nipstxt/nips11")
@@ -46,7 +46,7 @@ object TopicsOverTime {
         for (word <- alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
           val z = new Z :~ Discrete(doc.theta)
           doc += new Word(word) ~ DiscreteMixture(phis, z)
-          doc.stamps += new RealVariable ~ BetaMixture(balphas, bbetas, z)
+          doc.stamps += new DoubleVariable ~ BetaMixture(balphas, bbetas, z)
         }
         documents += doc
       }

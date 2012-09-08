@@ -49,8 +49,8 @@ trait Tensor extends MutableDoubleSeq {
   def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t }
   def *(that:Tensor): Tensor = throw new Error("Not yet implemented")
   def /(that:Tensor): Tensor = throw new Error("Not yet implemented")
-  def normalized: Tensor = { val t = copy; t.normalize; t }
-  def expNormalized: Tensor = { val t = copy; t.expNormalize; t }
+  def normalized: Tensor = { val t = copy; t.normalize; t } // TODO Make this return Proportions, then fix BP
+  def expNormalized: Tensor = { val t = copy; t.expNormalize; t } // TODO Make this return Proportions, then fix BP
   def isUniform = false
   def stringPrefix = getClass.getName // "Tensor"
   def printLength = 50

@@ -17,7 +17,7 @@ import cc.factorie._
 
 /** Beta distribution.
     http://en.wikipedia.org/wiki/Beta_distribution */
-object Beta extends GenerativeFamily3[RealVar,RealVar,RealVar] { self =>
+object Beta extends GenerativeFamily3[DoubleVar,DoubleVar,DoubleVar] { self =>
   def mode(alpha:Double, beta:Double): Double = 
     if (alpha > 1 && beta > 1) (alpha - 1) / (alpha + beta - 2)
     else Double.NaN
@@ -36,16 +36,16 @@ object Beta extends GenerativeFamily3[RealVar,RealVar,RealVar] { self =>
     val y = maths.nextGamma(beta, 1.0)(cc.factorie.random)
     x / (x + y)
   }
-  case class Factor(_1:RealVar, _2:RealVar, _3:RealVar) extends super.Factor {
+  case class Factor(_1:DoubleVar, _2:DoubleVar, _3:DoubleVar) extends super.Factor {
     def pr(s:Statistics): Double = self.pr(s._1, s._2, s._3)
     def sampledValue(s:Statistics): Double = self.sampledValue(s._2, s._3)
   }
-  def newFactor(_1:RealVar, _2:RealVar, _3:RealVar) = Factor(_1, _2, _3)
+  def newFactor(_1:DoubleVar, _2:DoubleVar, _3:DoubleVar) = Factor(_1, _2, _3)
 }
 
 
-object BetaMixture extends GenerativeFamily4[RealVar,Mixture[RealVar],Mixture[RealVar],DiscreteVariable] {
-  case class Factor(_1:RealVar, _2:Mixture[RealVar], _3:Mixture[RealVar], _4:DiscreteVariable) extends super.Factor {
+object BetaMixture extends GenerativeFamily4[DoubleVar,Mixture[DoubleVar],Mixture[DoubleVar],DiscreteVariable] {
+  case class Factor(_1:DoubleVar, _2:Mixture[DoubleVar], _3:Mixture[DoubleVar], _4:DiscreteVariable) extends super.Factor {
     def gate = _4
     override def logpr(s:StatisticsType) = Beta.logpr(s._1.doubleValue, s._2(s._4.intValue).doubleValue, s._3(s._4.intValue).doubleValue) 
     def pr(s:StatisticsType) = Beta.pr(s._1.doubleValue, s._2(s._4.intValue).doubleValue, s._3(s._4.intValue).doubleValue) 
@@ -53,7 +53,7 @@ object BetaMixture extends GenerativeFamily4[RealVar,Mixture[RealVar],Mixture[Re
     def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = Beta.pr(s._1.doubleValue, s._2(mixtureIndex).doubleValue, s._3(mixtureIndex).doubleValue) 
     def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): Double = Beta.sampledValue(s._2(mixtureIndex).doubleValue, s._3(mixtureIndex).doubleValue)
   }
-  def newFactor(a:RealVar, b:Mixture[RealVar], c:Mixture[RealVar], d:DiscreteVariable) = Factor(a, b, c, d)
+  def newFactor(a:DoubleVar, b:Mixture[DoubleVar], c:Mixture[DoubleVar], d:DiscreteVariable) = Factor(a, b, c, d)
 }
 
 object MaximizeBetaByMomentMatching {
@@ -72,7 +72,7 @@ object MaximizeBetaByMomentMatching {
     require(result >= 0.0, "mean="+mean+" variance="+variance)
     result
   }
-  def apply(alpha:RealVariable, beta:RealVariable, model:GenerativeModel): Unit = {
+  def apply(alpha:DoubleVariable, beta:DoubleVariable, model:GenerativeModel): Unit = {
     val childFactors = model.extendedChildFactors(alpha) // Assume that beta has all the same children
     val ds = new cc.factorie.util.ArrayDoubleSeq(childFactors.size)
     var i = 0
