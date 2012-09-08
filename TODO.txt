@@ -1,25 +1,32 @@
 Pre 1.0 release:
 
-Remove statisticsDomain and just get size
-DomainFromClass or make it the default.
-Remove Factor.Values
-Make app.regress and consider making RealVar inherit from TensorVar (with DoubleVar replacing current one)
-Finish BP and move to cc.factorie package.  Make it fast!
-Consider changes to generative.Collapse infrastructure
-Implement generative.CollapsedVariationalBayes and make sure it works for LDA
-Re-consider type arguments in Sampler and descendants
-Look at app.nlp.relation
-Make reasonable command-line tools for MALLET functionality, and document
-Sanity-check pass through all code
-Package documentation
+Consider removing er package altogether for now [McCallum]
+Rename DiscreteTensorVar to DiscreteDomainTensorVar for clarity, similarly for Categorical. [McCallum]
+Remove statisticsDomain and just get size?  What about growable domains, though?  [McCallum]
+DomainFromClass or make it the default?  [McCallum]
+Make app.regress  [McCallum, Passos]
+Finish BP and move to cc.factorie package.  Make it fast!  [Martin, Pandya, Singh]
+Consider changes to generative.Collapse infrastructure  [McCallum]
+Implement generative.CollapsedVariationalBayes and make sure it works for LDA  [McCallum]
+Re-consider type arguments in Sampler and descendants  [McCallum]
+Look at app.nlp.relation  [McCallum]
+Wrap-up and clean up NER and POS [Anzaroot]
+Make reasonable command-line tools for MALLET functionality, and document [McCallum and others]
+Consider property-like facilities and its interaction with command line [Vilnis]
+Sanity-check pass through all code [All]
+Package documentation  [All]
 
 More examples:
-Implement TopicsOverTime (needs Beta distribution)
-Finish/fix DecisionTree implementation, and make example
-Make an HMM example and show that BP inference and EM training work on it
+Tutorial examples [McCallum]
+Basic models [All]
+Implement TopicsOverTime (needs Beta distribution) [Bakalov]
+Make an HMM example and show that BP inference and EM training work on it [Belanger]
 
 
 DONE:
+Finish/fix DecisionTree implementation, and make example
+Remove Factor.Values
+Make RealVar inherit from TensorVar (with DoubleVar replacing current one)
 Make a Family.score(Tensor) method for use in higher efficiency situations (e.g. BP)
 Consider moving generative.GibbsSampler up to cc.factorie?
 Consider making no variable inherit from Iterable.  (Seq would come from value instead.)  Remove SeqEqualsEq and friends.

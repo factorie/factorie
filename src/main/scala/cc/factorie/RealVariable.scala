@@ -15,44 +15,67 @@
 package cc.factorie
 import cc.factorie.la._
 
-// TODO Rename this DoubleVar, and make RealVar inherit from TensorVar with value SingletonTensor1
 
-trait RealDomain extends Domain[Double]
+/** A DiscreteDomain for holding a singleton Tensor holding a single real (Double) value. */
+object RealDiscreteDomain extends DiscreteDomain(1)
+trait RealDomain extends DiscreteTensorDomain with Domain[SingletonTensor1] {
+  def dimensionDomain = RealDiscreteDomain
+}
 object RealDomain extends RealDomain
 
-// Because this has ValueType[Double] this is not unified with RealSingletonVectorVar
-/** A Variable with a real (double) value. */
-trait RealVar extends VarWithNumericValue with Var[Double] {
+/** A Tensor holding a single real (Double) value. */
+class RealValue(val singleValue:Double) extends Tensor1 with SingletonTensor {
   def domain = RealDomain
-  @inline final def value: Double = doubleValue
+  @inline final def dim1 = 1
+  @inline final def singleIndex = 0
+  def activeDomain1 = new cc.factorie.util.SingletonIntSeq(singleIndex)
+  @inline final def doubleValue: Double = singleValue // TODO Consider swapping singleIndex <-> intValue
+  @inline final def intValue: Int = singleValue.toInt // TODO Consider swapping singleIndex <-> intValue
+  override def toString: String = singleValue.toString
+  def +(r:RealValue) = new RealValue(r.doubleValue + singleValue)
+  def -(r:RealValue) = new RealValue(r.doubleValue - singleValue)
+  def *(r:RealValue) = new RealValue(r.doubleValue * singleValue)
+  def /(r:RealValue) = new RealValue(r.doubleValue / singleValue)
+}
+
+/** A variable with Tensor value which holds a single real (Double) value.
+    Unlike a DoubleValue, these can be used in DotFamilyWithStatistics because it is a subclass of DiscreteTensorVar */
+trait RealVar extends DiscreteTensorVar with VarWithNumericValue with Var[RealValue] {
   def doubleValue: Double
+  def domain = RealDomain
+  @inline final def value: RealValue = new RealValue(doubleValue)
+  @inline final def tensor: RealValue = value
   def intValue: Int = doubleValue.toInt
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
-trait MutableRealVar extends RealVar with MutableVar[Double]
+trait MutableRealVar extends RealVar with VarWithMutableDoubleValue with VarWithMutableIntValue with MutableVar[RealValue]
 
 /** A Variable with a mutable real (double) value. */
 class RealVariable(initialValue: Double) extends MutableRealVar {
   def this() = this(0.0)
   private var _value: Double = initialValue
   @inline final def doubleValue = _value
-  def +=(x:Double) = set(_value + x)(null) // Should we allow non-null DiffLists?
-  def -=(x:Double) = set(_value - x)(null)
-  def *=(x:Double) = set(_value * x)(null)
-  def /=(x:Double) = set(_value / x)(null)
+  def :=(x:Double) = _value = x
+  def +=(x:Double) = _value += x
+  def -=(x:Double) = _value -= x
+  def *=(x:Double) = _value *= x
+  def /=(x:Double) = _value /= x
   def set(newValue: Double)(implicit d: DiffList): Unit = if (newValue != _value) {
     if (d ne null) d += new RealDiff(_value, newValue)
     _value = newValue
   }
+  final def set(newValue: RealValue)(implicit d: DiffList): Unit = if (newValue != _value) {
+    if (d ne null) d += new RealDiff(_value, newValue.doubleValue)
+    _value = newValue.doubleValue
+  }
+  final def set(newValue:Int)(implicit d:DiffList): Unit = set(newValue.toDouble)
   case class RealDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: RealVariable = RealVariable.this
     def redo = _value = newValue
     def undo = _value = oldValue
   }
 }
-
-
 
 
 

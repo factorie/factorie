@@ -24,16 +24,16 @@ object GaussianMixtureDemo {
     implicit val model = GenerativeModel()
     object ZDomain extends DiscreteDomain(numComponents)
     class Z extends DiscreteVariable(random.nextInt(numComponents)) { def domain = ZDomain }
-    val meanComponents = Mixture(numComponents)(new RealVariable(random.nextDouble * 10))
-    val varianceComponents = Mixture(numComponents)(new RealVariable(1.0))
+    val meanComponents = Mixture(numComponents)(new DoubleVariable(random.nextDouble * 10))
+    val varianceComponents = Mixture(numComponents)(new DoubleVariable(1.0))
     val mixtureProportions = ProportionsVariable.uniform(numComponents)
     // Generate some data
     val data = for (i <- 1 to 100) yield {
       val z = new Z :~ Discrete(mixtureProportions)
-      new RealVariable() :~ GaussianMixture(meanComponents, varianceComponents, z)
+      new DoubleVariable() :~ GaussianMixture(meanComponents, varianceComponents, z)
     }
-    // A convenience function for getting the Z for a particular RealVar data variable x
-    def z(x:RealVar): Z = model.parentFactor(x).asInstanceOf[GaussianMixture.Factor]._4.asInstanceOf[Z]
+    // A convenience function for getting the Z for a particular DoubleVar data variable x
+    def z(x:DoubleVar): Z = model.parentFactor(x).asInstanceOf[GaussianMixture.Factor]._4.asInstanceOf[Z]
     // Get the list of Z variables, so we can pass it into the EMInferencer
     val zs = data.map(z(_))
 

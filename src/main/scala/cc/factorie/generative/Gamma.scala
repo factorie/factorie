@@ -15,12 +15,9 @@
 package cc.factorie.generative
 import cc.factorie._
 
-// TODO Consider creating PostiveReal, and then Gamma extends 
+// TODO Consider creating PostiveDouble, and then Gamma extends 
 
-//trait GeneratedRealVar extends IntegerVar with GeneratedVar
-//abstract class Real(initial: Double = 0.0) extends RealVariable(initial) with GeneratedRealVar with MutableGeneratedVar
-
-object Gamma extends GenerativeFamily3[RealVar,RealVar,RealVar] {
+object Gamma extends GenerativeFamily3[DoubleVar,DoubleVar,DoubleVar] {
   self =>
   def logpr(value:Double, mean:Double, variance:Double): Double = {
     val diff = value - mean
@@ -31,11 +28,11 @@ object Gamma extends GenerativeFamily3[RealVar,RealVar,RealVar] {
     math.pow(beta, alpha) / maths.gamma(alpha) * math.pow(x, alpha - 1) * math.exp(- beta * x)
   }
   def sampledValue(alpha:Double, beta:Double): Double = maths.nextGamma(alpha, beta)(cc.factorie.random)
-  case class Factor(_1:RealVar, _2:RealVar, _3:RealVar) extends super.Factor {
+  case class Factor(_1:DoubleVar, _2:DoubleVar, _3:DoubleVar) extends super.Factor {
     def pr(s:Statistics): Double = self.pr(s._1, s._2, s._3)
     def sampledValue(s:Statistics): Double = self.sampledValue(s._2, s._3)
   }
-  def newFactor(_1:RealVar, _2:RealVar, _3:RealVar) = Factor(_1, _2, _3)
+  def newFactor(_1:DoubleVar, _2:DoubleVar, _3:DoubleVar) = Factor(_1, _2, _3)
 }
 
 
