@@ -132,34 +132,34 @@ trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Famil
 
 trait Statistics4[S1,S2,S3,S4] extends Family {
   self =>
-  type StatisticsType = Stat
-  final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends super.Statistics {
+  type StatisticsType = Statistics
+  final case class Statistics(_1:S1, _2:S2, _3:S3, _4:S4) extends super.Statistics {
     lazy val score = self.score(this)
   }
-  def score(s:Stat): Double
+  def score(s:Statistics): Double
 }
 
 trait TensorStatistics4[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue,S4<:DiscreteTensorValue] extends TensorFamily {
   self =>
-  type StatisticsType = Stat
+  type StatisticsType = Statistics
   override def statisticsDomains: Tuple4[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2], DiscreteTensorDomain with Domain[S3], DiscreteTensorDomain with Domain[S4]]
-  final case class Stat(_1:S1, _2:S2, _3:S3, _4:S4) extends  { val tensor: Tensor = Tensor.outer(_1, _2, _3, _4) } with super.Statistics {
+  final case class Statistics(_1:S1, _2:S2, _3:S3, _4:S4) extends  { val tensor: Tensor = Tensor.outer(_1, _2, _3, _4) } with super.Statistics {
     lazy val score = self.score(this)
   }
-  def score(s:Stat): Double
+  def score(s:Statistics): Double
 }
 
 trait DotStatistics4[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue,S4<:DiscreteTensorValue] extends TensorStatistics4[S1,S2,S3,S4] with DotFamily
 
 trait FamilyWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Family4[N1,N2,N3,N4] with Statistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
-  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Stat(v1, v2, v3, v4)
+  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Statistics(v1, v2, v3, v4)
 }
 
 trait FamilyWithTensorStatistics4[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar,N4<:DiscreteTensorVar] extends Family4[N1,N2,N3,N4] with TensorStatistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
-  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Stat(v1, v2, v3, v4)
+  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Statistics(v1, v2, v3, v4)
 }
 
 trait FamilyWithDotStatistics4[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar,N4<:DiscreteTensorVar] extends Family4[N1,N2,N3,N4] with DotStatistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
-  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Stat(v1, v2, v3, v4)
+  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Statistics(v1, v2, v3, v4)
   def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor) // reflecting the fact that there is no transformation between values and statistics
 }

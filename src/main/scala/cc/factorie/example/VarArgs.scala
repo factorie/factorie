@@ -45,7 +45,7 @@ object VarArgsDemo {
         def statistics(v1:X#Value, v2:Seq[Y#Value]) = {
           val x: Int = v1.intValue
           val ys: Seq[Int] = v2.map(_.intValue)
-          Stat(XDomain.apply(x % ys.foldLeft(0)(_+_)))
+          Statistics(XDomain.apply(x % ys.foldLeft(0)(_+_)))
         }
         //def statistics(x:DiscreteValue, ys:Seq[DiscreteValue]) = Stat(XDomain.getValue(x.index % ys.foldLeft(0)(_ + _.index)))
       }

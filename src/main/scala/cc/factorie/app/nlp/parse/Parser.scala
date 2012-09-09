@@ -29,7 +29,7 @@ class Parser {
       def unroll1(n:ParseEdge) = Factor(n, n.child.attr[ParseFeatures], n.parent.attr[ParseFeatures])
       def unroll2(child:ParseFeatures) = { val edge = child.token.attr[ParseEdge]; Factor(edge, child, edge.parent.attr[ParseFeatures]) }
       def unroll3(parent:ParseFeatures) = Nil
-      def statistics(v1:ParseEdge#Value, v2:ParseFeatures#Value, v3:ParseFeatures#Value) = Stat(v2, v3)
+      def statistics(v1:ParseEdge#Value, v2:ParseFeatures#Value, v3:ParseFeatures#Value) = Statistics(v2, v3)
     },
     new Template4[ParseEdge,ParseLabel,ParseFeatures,ParseFeatures] with DotStatistics2[DiscreteTensorValue,DiscreteTensorValue] with SparseWeights {
       def statisticsDomains = ((ParseLabelDomain, ParseFeaturesDomain))
@@ -37,7 +37,7 @@ class Parser {
       def unroll2(label:ParseLabel) = { val edge = label.edge; Factor(edge, label, edge.child.attr[ParseFeatures], edge.parent.attr[ParseFeatures]) }
       def unroll3(child:ParseFeatures) = { val edge = child.token.attr[ParseEdge]; Factor(edge, edge.label, child, edge.parent.attr[ParseFeatures]) }
       def unroll4(parent:ParseFeatures) = Nil
-      def statistics(v1:ParseEdge#Value, v2:ParseLabel#Value, v3:ParseFeatures#Value, v4:ParseFeatures#Value) = Stat(v2, v3)
+      def statistics(v1:ParseEdge#Value, v2:ParseLabel#Value, v3:ParseFeatures#Value, v4:ParseFeatures#Value) = Statistics(v2, v3)
     }
   )
 

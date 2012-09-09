@@ -435,7 +435,7 @@ class TrainingModel extends TemplateModel{
   this += new ChildParentTemplateWithStatistics[BagOfTruths]{
     override def unroll2(childBow:BagOfTruths) = Nil
     override def unroll3(childBow:BagOfTruths) = Nil
-    def score(s:Stat):Double ={
+    def score(s:Statistics):Double ={
       val childBow  =s._2
       val parentBow =s._3
       val result = childBow.cosineSimilarity(parentBow,childBow)
@@ -447,7 +447,7 @@ class TrainingModel extends TemplateModel{
     val precisionDominated=0.95
     def unroll1(bot:BagOfTruths) =if(bot.entity.isRoot)Factor(bot,bot.entity.attr[IsEntity]) else Nil
     def unroll2(isEntity:IsEntity) = if(isEntity.entity.isRoot)Factor(isEntity.entity.attr[BagOfTruths],isEntity) else Nil
-    override def score(s:Stat):Double ={
+    override def score(s:Statistics):Double ={
       var result = 0.0
       val bag = s._1
       val bagSeq = bag.iterator.toSeq
@@ -486,7 +486,7 @@ class PaperCorefModel extends TemplateModel{
   var bagOfAuthorsShift = -1.0
   var bagOfAuthorsWeight= 2.0
   this += new ChildParentTemplateWithStatistics[Title]{
-    def score(s:Stat):Double ={
+    def score(s:Statistics):Double ={
       val childTitle = s._2
       val parentTitle = s._3
       if(childTitle != parentTitle) -16.0 else 0.0
@@ -496,7 +496,7 @@ class PaperCorefModel extends TemplateModel{
   this += new ChildParentTemplateWithStatistics[BagOfAuthors] {
     override def unroll2(childBow:BagOfAuthors) = Nil
     override def unroll3(childBow:BagOfAuthors) = Nil
-    def score(s:Stat): Double = {
+    def score(s:Statistics): Double = {
       val childBow = s._2
       val parentBow = s._3
       var result = childBow.cosineSimilarity(parentBow,childBow)
@@ -512,7 +512,7 @@ class PaperCorefModel extends TemplateModel{
 class AuthorCorefModel extends FastTemplateModel{
   /*
     this += new ChildParentTemplateWithStatistics[FullName] {
-    def score(s:Stat): Double = {
+    def score(s:Statistics): Double = {
       var result = 0.0
       val childName = s._2
       val parentName = s._3
@@ -537,7 +537,7 @@ class AuthorCorefModel extends FastTemplateModel{
   }
   */
   this += new TemplateWithStatistics1[BagOfFirstNames]{
-    def score(s:Stat):Double ={
+    def score(s:Statistics):Double ={
       var result = 0.0
       val bag = s._1
       //val bagSeq = bag.iterator.toSeq
@@ -572,7 +572,7 @@ class AuthorCorefModel extends FastTemplateModel{
     }
   }
   this += new TemplateWithStatistics1[BagOfMiddleNames]{
-    def score(s:Stat):Double ={
+    def score(s:Statistics):Double ={
       var result = 0.0
       val bag = s._1
       val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
@@ -615,7 +615,7 @@ class AuthorCorefModelOld extends TemplateModel{
   var bagOfKeyWordsWeight:Double = 8.0
   */
   this += new ChildParentTemplateWithStatistics[FullName] {
-    def score(s:Stat): Double = {
+    def score(s:Statistics): Double = {
       var result = 0.0
       val childName = s._2
       val parentName = s._3
@@ -641,7 +641,7 @@ class AuthorCorefModelOld extends TemplateModel{
   this += new ChildParentTemplateWithStatistics[BagOfCoAuthors] {
     override def unroll2(childBow:BagOfCoAuthors) = Nil
     override def unroll3(childBow:BagOfCoAuthors) = Nil
-    def score(s:Stat): Double = {
+    def score(s:Statistics): Double = {
       var result = 0.0
       val childBow = s._2
       val parentBow = s._3
@@ -665,7 +665,7 @@ class AuthorCorefModelOld extends TemplateModel{
     val shift = -0.25 //-0.25
     override def unroll2(childBow:BagOfVenues) = Nil
     override def unroll3(childBow:BagOfVenues) = Nil
-    def score(s:Stat): Double = {
+    def score(s:Statistics): Double = {
       val childBow = s._2
       val parentBow = s._3
       var result = childBow.cosineSimilarity(parentBow,childBow)
@@ -677,7 +677,7 @@ class AuthorCorefModelOld extends TemplateModel{
     val shift = -0.25
     override def unroll2(childBow:BagOfKeywords) = Nil
     override def unroll3(childBow:BagOfKeywords) = Nil
-    def score(s:Stat): Double = {
+    def score(s:Statistics): Double = {
       val childBow = s._2
       val parentBow = s._3
       var result = childBow.cosineSimilarity(parentBow,childBow)
@@ -690,7 +690,7 @@ class AuthorCorefModelOld extends TemplateModel{
     val shift = -0.25//0.0 //-0.25
     override def unroll2(childBow:BagOfTopics) = Nil
     override def unroll3(childBow:BagOfTopics) = Nil
-    def score(s:Stat): Double = {
+    def score(s:Statistics): Double = {
       val childBow = s._2
       val parentBow = s._3
       val result = childBow.cosineSimilarity(parentBow,childBow)
@@ -699,7 +699,7 @@ class AuthorCorefModelOld extends TemplateModel{
   }
 
   this += new TemplateWithStatistics1[BagOfFirstNames]{
-    def score(s:Stat):Double ={
+    def score(s:Statistics):Double ={
       var result = 0.0
       val bag = s._1
       //val bagSeq = bag.iterator.toSeq
@@ -734,7 +734,7 @@ class AuthorCorefModelOld extends TemplateModel{
     }
   }
   this += new TemplateWithStatistics1[BagOfMiddleNames]{
-    def score(s:Stat):Double ={
+    def score(s:Statistics):Double ={
       var result = 0.0
       val bag = s._1
       val bagSeq = bag.iterator.filter(_._1.length>0).toSeq

@@ -117,7 +117,7 @@ object CorefMentionsDemo {
         def unroll2 (er:EntityRef) = Nil // symmetric
         def unroll3 (mention:Mention) = throw new Error
         def unroll4 (mention:Mention) = throw new Error
-        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = Stat(new AffinityVector(m1, m2).value)
+        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = Statistics(new AffinityVector(m1, m2).value)
       }
 
       // Pairwise repulsion factor between Mentions in different partitions
@@ -137,7 +137,7 @@ object CorefMentionsDemo {
         def unroll2 (er:EntityRef) = Nil // symmetric
         def unroll3 (mention:Mention) = throw new Error
         def unroll4 (mention:Mention) = throw new Error
-        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = Stat(new AffinityVector(m1, m2).value)
+        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = Statistics(new AffinityVector(m1, m2).value)
         //def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entityRef.value != mention.entityRef.value)) yield Factor(mention, other);
         //def unroll2 (mention:Mention) = Nil // symmetric
         //def statistics(values:Values) = Stat(new AffinityVector(values._1, values._2).value)
@@ -148,13 +148,13 @@ object CorefMentionsDemo {
         def statisticsDomains = Tuple1(BooleanDomain)
         def statistics(e:Entity#Value) = {
           val mentions: Entity#Value= e
-          if (mentions.isEmpty) Stat(BooleanDomain.trueValue)
+          if (mentions.isEmpty) Statistics(BooleanDomain.trueValue)
           else {
             val prefix1 = mentions.iterator.next.name.substring(0,1)
             if (mentions.forall(m => prefix1 equals m.name.substring(0,1)))
-              Stat(BooleanDomain.trueValue)
+              Statistics(BooleanDomain.trueValue)
             else
-              Stat(BooleanDomain.falseValue)
+              Statistics(BooleanDomain.falseValue)
           }
         }
       }
@@ -163,7 +163,7 @@ object CorefMentionsDemo {
       val objective1 = new TemplateModel(new TemplateWithStatistics2[EntityRef,TrueEntityIndex] {
         def unroll1(er:EntityRef) = Factor(er, er.mention.trueEntityIndex)
         def unroll2(tei:TrueEntityIndex) = Factor(tei.mention.entityRef, tei)
-        def score(s:Stat) = {
+        def score(s:Statistics) = {
           val thisMentionEntity = s._1
           val thisMentionTrueEntityIndex = s._2
           mentionList.foldLeft(0.0)((total,m) => 

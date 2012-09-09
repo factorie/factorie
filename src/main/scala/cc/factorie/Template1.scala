@@ -51,11 +51,11 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Famil
 
 
 abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1] with Statistics1[N1#Value] {
-  def statistics(value1:N1#Value): StatisticsType = Stat(value1)
+  def statistics(value1:N1#Value): StatisticsType = Statistics(value1)
 }
 
 abstract class TemplateWithTensorStatistics1[N1<:DiscreteTensorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with TensorStatistics1[N1#Value] {
-  def statistics(value1:N1#Value): StatisticsType = Stat(value1)
+  def statistics(value1:N1#Value): StatisticsType = Statistics(value1)
 }
 
 abstract class TemplateWithDotStatistics1[N1<:DiscreteTensorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with FamilyWithDotStatistics1[N1] {

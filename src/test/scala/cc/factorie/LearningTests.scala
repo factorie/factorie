@@ -63,7 +63,7 @@ class SampleRankTest extends AssertionsForJUnit {
     new TemplateWithStatistics2[MyBool, MyBool] {
       def unroll1(b: MyBool) = Factor(b, b.next)
       def unroll2(b: MyBool) = Factor(b.prev, b)
-      def score(s: Stat): Double = {
+      def score(s: Statistics): Double = {
         var v1 = s._1
         var v2 = s._2
         if (v1 == v2) -1.0

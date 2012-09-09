@@ -178,23 +178,22 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
 
 trait Statistics1[S1] extends Family {
   self =>
-  type StatisticsType = Stat
-  // TODO Consider renaming "Stat" to "Statistics"
-  case class Stat(_1:S1) extends super.Statistics {
+  type StatisticsType = Statistics
+  case class Statistics(_1:S1) extends super.Statistics {
     lazy val score = self.score(this) 
   }
-  def score(s:Stat): Double
+  def score(s:Statistics): Double
 }
 
 trait TensorStatistics1[S1<:DiscreteTensorValue] extends TensorFamily {
   self =>
-  type StatisticsType = Stat
+  type StatisticsType = Statistics
   override def statisticsDomains: Tuple1[DiscreteTensorDomain with Domain[S1]]
   // Use Scala's "pre-initialized fields" syntax because super.Stat needs tensor to initialize score
-  final case class Stat(_1:S1) extends { val tensor: Tensor = _1 } with super.Statistics {
+  final case class Statistics(_1:S1) extends { val tensor: Tensor = _1 } with super.Statistics {
     lazy val score = self.score(this)
   }
-  def score(s:Stat): Double
+  def score(s:Statistics): Double
 }
 
 trait DotStatistics1[S1<:DiscreteTensorValue] extends TensorStatistics1[S1] with DotFamily {
@@ -208,15 +207,15 @@ trait DotStatistics1[S1<:DiscreteTensorValue] extends TensorStatistics1[S1] with
 }
 
 trait FamilyWithStatistics1[N1<:Variable] extends Family1[N1] with Statistics1[N1#Value] {
-  def statistics(v1:N1#Value): StatisticsType = Stat(v1)
+  def statistics(v1:N1#Value): StatisticsType = Statistics(v1)
 }
 
 trait FamilyWithTensorStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with TensorStatistics1[N1#Value] {
-  def statistics(v1:N1#Value): StatisticsType = Stat(v1)
+  def statistics(v1:N1#Value): StatisticsType = Statistics(v1)
 }
 
 trait FamilyWithDotStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with DotStatistics1[N1#Value] {
-  def statistics(v1:N1#Value): StatisticsType = Stat(v1)
+  def statistics(v1:N1#Value): StatisticsType = Statistics(v1)
   def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor) // reflecting the fact that there is no transformation between values and statistics
 }
 

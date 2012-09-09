@@ -32,7 +32,7 @@ object Cards4 {
 
     val model = new TemplateModel(
       new TemplateWithStatistics1[Card] {
-        def score(s:Stat) = if (s._1 == jane) -1.0 else 0.0
+        def score(s:Statistics) = if (s._1 == jane) -1.0 else 0.0
       }
     )
 

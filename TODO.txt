@@ -24,6 +24,7 @@ Consider property-like facilities and its interaction with command line [Vilnis]
 Consider making Document not be a Variable, and again inherit from Seq[Token] [McCallum]
 Sanity-check pass through all code [All]
 Package documentation  [All]
+Fix copyright year [McCallum]
 
 More examples:
 Tutorial examples [McCallum]

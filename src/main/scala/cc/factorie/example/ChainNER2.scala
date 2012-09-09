@@ -63,7 +63,7 @@ object ChainNER2 {
       def statisticsDomains = Tuple1(BooleanDomain)
       def unroll1(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainAfter; if (other.token.string == label.token.string)) yield Factor(label, other)
       def unroll2(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainBefore; if (other.token.string == label.token.string)) yield Factor(other, label)
-      def statistics(v1:Label#Value, v2:Label#Value) = Stat(BooleanValue(v1.intValue == v2.intValue))
+      def statistics(v1:Label#Value, v2:Label#Value) = Statistics(BooleanValue(v1.intValue == v2.intValue))
     }
   )
   

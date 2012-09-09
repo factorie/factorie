@@ -20,11 +20,11 @@ import scala.collection.mutable.{ArrayBuffer,ListBuffer}
 
 
 abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseLabel] with Statistics2[BooleanValue,CorefAffinity] {
-  def statistics(m1:PairwiseMention#Value, m2:PairwiseMention#Value, l:PairwiseLabel#Value): Stat = {
+  def statistics(m1:PairwiseMention#Value, m2:PairwiseMention#Value, l:PairwiseLabel#Value): Statistics = {
     val mention1 = m1
     val mention2 = m2
     val coref: Boolean = l.booleanValue
-    new Stat(null, null)
+    new Statistics(null, null)
   }
 }
 abstract class PairwiseTransitivityTemplate extends Template3[PairwiseLabel,PairwiseLabel,PairwiseLabel] with Statistics1[BooleanValue] {
@@ -70,7 +70,7 @@ class EntityMentionModel extends TemplateModel(
       if (normalizedEditDistance > .5) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance5
       if (normalizedEditDistance > .9) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance9
       if (entity.childEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
-      val result = Stat(affinity.value)
+      val result = Statistics(affinity.value)
       val str = result.toString
       //println("### EntityMentionModel Stat="+str)
       result
@@ -104,7 +104,7 @@ class PairwiseModel extends TemplateModel(
       if (normalizedEditDistance > .5) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance5
       if (normalizedEditDistance > .9) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance9
       if (entity.childEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
-      val result = Stat(affinity.value)
+      val result = Statistics(affinity.value)
       val str = result.toString
       //println("### PairwiseModel Stat="+str)
       result

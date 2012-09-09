@@ -59,34 +59,34 @@ class SpanNerModel extends TemplateModel(
         var vector = firstToken.attr[SpanNerFeatures].value.blankCopy
         for (token <- v1; featureIndex <- token.attr[SpanNerFeatures].tensor.activeDomain.asSeq) 
           vector += featureIndex // TODO This is shifing array pieces all over; slow.  Fix it.
-        Stat(vector, v2) 
+        Statistics(vector, v2) 
       }
     },
     // First Token of Span
     new SpanNerTemplate { 
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = Stat(v1.head.attr[SpanNerFeatures].value, v2)
+      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = Statistics(v1.head.attr[SpanNerFeatures].value, v2)
     },
     // Last Token of Span
     new SpanNerTemplate { 
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = Stat(v1.last.attr[SpanNerFeatures].value, v2)
+      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = Statistics(v1.last.attr[SpanNerFeatures].value, v2)
     },
     // Token before Span
     new SpanNerTemplate { 
       override def unroll1(span:NerSpan) = if (span.head.hasPrev) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.head.hasPrev) Factor(label.span, label) else Nil
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = Stat(v1.head.prev.attr[SpanNerFeatures].value, v2)
+      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = Statistics(v1.head.prev.attr[SpanNerFeatures].value, v2)
     },
     // Token after Span
     new SpanNerTemplate { 
       override def unroll1(span:NerSpan) = if (span.last.hasNext) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.last.hasNext) Factor(label.span, label) else Nil
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = Stat(v1.last.next.attr[SpanNerFeatures].value, v2)
+      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = Statistics(v1.last.next.attr[SpanNerFeatures].value, v2)
     },
     // Single Token Span
     new SpanNerTemplate { 
       override def unroll1(span:NerSpan) = if (span.length == 1) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.length == 1) Factor(label.span, label) else Nil
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = Stat(v1.head.attr[SpanNerFeatures].value, v2)
+      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = Statistics(v1.head.attr[SpanNerFeatures].value, v2)
     }
     //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil },
     // Span Length with Label
@@ -103,7 +103,7 @@ class SpanNerObjective extends TemplateModel(
     //def statisticsDomains = ((NerSpanDomain, SpanNerLabelDomain))
     def unroll1(span:NerSpan) = Factor(span, span.label)
     def unroll2(label:SpanNerLabel) = Factor(label.span, label)
-    def score(s:Stat) = {
+    def score(s:Statistics) = {
       val spanValue = s._1
       val labelValue = s._2
       var result = 0.0

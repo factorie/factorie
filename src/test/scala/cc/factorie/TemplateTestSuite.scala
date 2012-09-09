@@ -64,7 +64,7 @@ class TemplateTestSuite extends JUnitSuite  {
       def unroll1(v: Aggregate) = Factor(v,Vars(v.members))
       override def unroll2s(v: Aggregate#Member) = Factor(v.owner,Vars(v.owner.members))
       def statistics(v1:Aggregate#Value, v2:Vars[Aggregate#Member]#Value) = 
-        new Stat(new RealVariable(v2.filter(_.booleanValue).size).value)
+        new Statistics(new RealVariable(v2.filter(_.booleanValue).size).value)
     }
     val diff = new DiffList
     aggregate.members(0).set(true)(diff)

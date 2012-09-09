@@ -287,18 +287,18 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
 
 trait Statistics2[S1,S2] extends Family {
   self =>
-  type StatisticsType = Stat
-  final case class Stat(_1:S1, _2:S2) extends super.Statistics {
+  type StatisticsType = Statistics
+  final case class Statistics(_1:S1, _2:S2) extends super.Statistics {
     lazy val score = self.score(this)
   }
-  def score(s:Stat): Double
+  def score(s:Statistics): Double
 }
 
 trait TensorStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorFamily {
   self =>
-  type StatisticsType = Stat
+  type StatisticsType = Statistics
   override def statisticsDomains: Tuple2[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2]]
-  final case class Stat(_1:S1, _2:S2) extends { val tensor: Tensor = Tensor.outer(_1, _2) } with super.Statistics {
+  final case class Statistics(_1:S1, _2:S2) extends { val tensor: Tensor = Tensor.outer(_1, _2) } with super.Statistics {
     lazy val score = self.score(this)
   }
 }
@@ -309,17 +309,17 @@ trait DotStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends Te
 
 trait FamilyWithStatistics2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] with Statistics2[N1#Value,N2#Value] {
 //  def statistics(values:Values) = Stat(values._1, values._2)
-  def statistics(v1:N1#Value, v2:N2#Value) = Stat(v1, v2)
+  def statistics(v1:N1#Value, v2:N2#Value) = Statistics(v1, v2)
 }
 
 trait FamilyWithTensorStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] extends Family2[N1,N2] with TensorStatistics2[N1#Value,N2#Value] {
 //  def statistics(values:Values) = Stat(values._1, values._2)
-  def statistics(v1:N1#Value, v2:N2#Value) = Stat(v1, v2)
+  def statistics(v1:N1#Value, v2:N2#Value) = Statistics(v1, v2)
 }
 
 trait FamilyWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] extends Family2[N1,N2] with DotStatistics2[N1#Value,N2#Value] {
 //  def statistics(values:Values) = Stat(values._1, values._2)
-  def statistics(v1:N1#Value, v2:N2#Value) = Stat(v1, v2)
+  def statistics(v1:N1#Value, v2:N2#Value) = Statistics(v1, v2)
   override def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor)
   // TODO Consider a more efficient implementation of some cases
   // TODO Should we consider the capability for something other than *summing* over elements of tensor2?

@@ -64,7 +64,7 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
 
   def score(s: StatisticsType): Double = score(s, decisionTree.get)
 
-  def score(s1: S1, s2: S2): Double = score(Stat(s1, s2), decisionTree.get)
+  def score(s1: S1, s2: S2): Double = score(Statistics(s1, s2), decisionTree.get)
 
   def score(t: Tensor): Double = throw new Exception("??")
 
@@ -328,7 +328,7 @@ trait StumpDecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValu
 abstract class DecisionTreeTemplateWithStatistics2[S1 <: DiscreteVar, S2 <: DiscreteTensorVar](implicit m1: Manifest[S1], m2: Manifest[S2])
   extends Template2[S1, S2] {
   this: DecisionTreeStatistics2Base[S1#Value, S2#Value] =>
-  def statistics(value1:S1#Value, value2:S2#Value) = Stat(value1, value2)
+  def statistics(value1:S1#Value, value2:S2#Value) = Statistics(value1, value2)
   def train(labels: Iterable[S1]): Unit = train(labels.map(unroll1(_)).flatten.map(_.statistics: StatisticsType))
   def train(labels: Iterable[S1], getInstanceWeight: Int => Double): Unit =
     train(labels.map(unroll1(_)).flatten.map(_.statistics: StatisticsType), getInstanceWeight = Some(getInstanceWeight))

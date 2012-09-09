@@ -263,17 +263,17 @@ abstract class FastTemplate3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm
   }
 }
 abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
-  def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = Stat(value1, value2, value3)
+  def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = Statistics(value1, value2, value3)
 }
 abstract class FastTemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1] with Statistics1[N1#Value] {
-  def statistics(value1:N1#Value): StatisticsType = Stat(value1)
+  def statistics(value1:N1#Value): StatisticsType = Statistics(value1)
 }
 
 
 class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B]{
     override def unroll2(childBow:B) = Nil //note: this is a slight approximation for efficiency
     override def unroll3(childBow:B) = Nil //note this is a slight approximation for efficiency
-    def score(s:Stat): Double = {
+    def score(s:Statistics): Double = {
       val childBow = s._2
       val parentBow = s._3
       val result = childBow.cosineSimilarity(parentBow,childBow)
@@ -306,7 +306,7 @@ class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExist
   def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[IsMention])
   def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[IsMention])
   def unroll3(isMention:IsMention) = throw new Exception("An entitie's status as a mention should never change.")
-  def score(s:Stat):Double ={
+  def score(s:Statistics):Double ={
     val exists:Boolean = s._1.booleanValue
     val isEntity:Boolean = s._2.booleanValue
     val isMention:Boolean = s._3.booleanValue
@@ -430,7 +430,7 @@ class ComposableBagOfWords extends SparseBagOfWords{
 */
 
 class BagOfWordsPriorWithStatistics[B<:BagOfWordsVariable](val weight:Double=1.0,useL1Norm:Boolean=true)(implicit m:Manifest[B]) extends FastTemplateWithStatistics1[B]{
-  def score(s:Stat):Double ={
+  def score(s:Statistics):Double ={
     val bag = s._1
     var result = bag.size.toDouble
     if(useL1Norm){
@@ -443,7 +443,7 @@ class BagOfWordsPriorWithStatistics[B<:BagOfWordsVariable](val weight:Double=1.0
 }
 
 class EntropyBagOfWordsPriorWithStatistics[B<:BagOfWordsVariable](val weight:Double=1.0)(implicit m:Manifest[B]) extends FastTemplateWithStatistics1[B]{
-  def score(s:Stat):Double ={
+  def score(s:Statistics):Double ={
     val bag = s._1
     var entropy = 0.0
     val l1Norm = bag.l1Norm
