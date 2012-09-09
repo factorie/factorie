@@ -35,13 +35,15 @@ import scala.reflect.Manifest
     It provides a covariant member type 'Value' in such a way that it can be override in subclasses.
     However, because this type is lower-bounded not assigned, 
     you cannot implement a method with arguments of this type, unless Value is later assigned
-    (for example perhaps with Var[A]). */
+    (for example with Var[A]).
+    @author Andrew McCallum */
 trait ValueBound[+A] { type Value <: A }
 
 /** Use this trait to refine and set the Value type member in subclasses of Variable.
     It provides a non-variant 'Value' type member in such a way that it cannot be overridden in subclasses.
     Because this type is assigned and fixed,
-    you can implement a method with arguments of this type. */
+    you can implement a method with arguments of this type. 
+    @author Andrew McCallum */
 trait Var[A] extends ValueBound[A] with Variable { override type Value = A }
 
 
@@ -120,6 +122,8 @@ trait VarWithConstantValue extends Variable {
   override final def isConstant = true
 }
 
+/** A Variable with a value that can be changed.
+    @author Andrew McCallum */
 trait MutableVar[A] extends Var[A] {
   def value: A
   /** Assign a new value to this variable */
@@ -136,22 +140,9 @@ trait MutableVar[A] extends Var[A] {
 }
 
 
-trait VarWithNumericValue extends Variable {
-  def intValue: Int
-  def doubleValue: Double
-}
-trait VarWithMutableIntValue extends VarWithNumericValue {
-  def set(newValue:Int)(implicit d:DiffList): Unit
-  def intValue_=(newValue:Int)(implicit d:DiffList): Unit = set(newValue)
-}
-trait VarWithMutableDoubleValue extends VarWithNumericValue {
-  def set(newValue:Double)(implicit d:DiffList): Unit
-  def doubleValue_=(newValue:Double)(implicit d:DiffList): Unit = set(newValue)
-}
-
 
 /** A Variable whose (constant) value is the Variable object itself. */
-trait SelfVariable[This<:SelfVariable[This]] extends Variable with Var[This] {
+trait SelfVariable[This<:SelfVariable[This]] extends Variable with Var[This] with VarWithConstantValue {
   this: This =>
   final def value: This = this
 }

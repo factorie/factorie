@@ -34,6 +34,7 @@ trait TypedAssignment[A<:Variable] extends Marginal {
   def contains(v:A): Boolean
   def getOrElse[B<:A](v:B, default: => B#Value): B#Value = if (contains(v)) apply(v) else default
   /** Set variables to the values specified in this assignment */
+  // TODO Rename this to "set" -akm
   def globalize(implicit d:DiffList): Unit = {
     for (v <- variables) v match {
       case v:MutableVar[_] => v.set(this.apply(v.asInstanceOf[A]).asInstanceOf[v.Value])

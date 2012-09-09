@@ -19,7 +19,7 @@ object DoubleDomain extends DoubleDomain
 
 // Because this has ValueType[Double] this is not unified with RealSingletonVectorVar
 /** A Variable with a real (double) value. */
-trait DoubleVar extends VarWithNumericValue with Var[Double] {
+trait DoubleVar extends ScalarVar with Var[Double] {
   def domain = DoubleDomain
   @inline final def value: Double = doubleValue
   def doubleValue: Double
@@ -27,7 +27,7 @@ trait DoubleVar extends VarWithNumericValue with Var[Double] {
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
-trait MutableDoubleVar extends DoubleVar with VarWithMutableDoubleValue with VarWithMutableIntValue with MutableVar[Double]
+trait MutableDoubleVar extends DoubleVar with MutableDoubleScalarVar with MutableIntScalarVar with MutableVar[Double]
 
 /** A Variable with a mutable Double value. */
 class DoubleVariable(initialValue: Double) extends MutableDoubleVar {

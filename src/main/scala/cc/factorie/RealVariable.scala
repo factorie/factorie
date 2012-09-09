@@ -18,13 +18,13 @@ import cc.factorie.la._
 
 /** A DiscreteDomain for holding a singleton Tensor holding a single real (Double) value. */
 object RealDiscreteDomain extends DiscreteDomain(1)
-trait RealDomain extends DiscreteTensorDomain with Domain[SingletonTensor1] {
+trait RealDomain extends DiscreteTensorDomain with Domain[RealValue] {
   def dimensionDomain = RealDiscreteDomain
 }
 object RealDomain extends RealDomain
 
 /** A Tensor holding a single real (Double) value. */
-class RealValue(val singleValue:Double) extends Tensor1 with SingletonTensor {
+final class RealValue(val singleValue:Double) extends Tensor1 with SingletonTensor {
   def domain = RealDomain
   @inline final def dim1 = 1
   @inline final def singleIndex = 0
@@ -39,8 +39,8 @@ class RealValue(val singleValue:Double) extends Tensor1 with SingletonTensor {
 }
 
 /** A variable with Tensor value which holds a single real (Double) value.
-    Unlike a DoubleValue, these can be used in DotFamilyWithStatistics because it is a subclass of DiscreteTensorVar */
-trait RealVar extends DiscreteTensorVar with VarWithNumericValue with Var[RealValue] {
+    Unlike a DoubleValue, these can be used in DotFamilyWithStatistics because its value is a Tensor. */
+trait RealVar extends DiscreteTensorVar with ScalarVar with Var[RealValue] {
   def doubleValue: Double
   def domain = RealDomain
   @inline final def value: RealValue = new RealValue(doubleValue)
@@ -49,7 +49,7 @@ trait RealVar extends DiscreteTensorVar with VarWithNumericValue with Var[RealVa
   override def toString = printName + "(" + doubleValue.toString + ")"
 }
 
-trait MutableRealVar extends RealVar with VarWithMutableDoubleValue with VarWithMutableIntValue with MutableVar[RealValue]
+trait MutableRealVar extends RealVar with MutableDoubleScalarVar with MutableIntScalarVar with MutableVar[RealValue]
 
 /** A Variable with a mutable real (double) value. */
 class RealVariable(initialValue: Double) extends MutableRealVar {
@@ -65,10 +65,7 @@ class RealVariable(initialValue: Double) extends MutableRealVar {
     if (d ne null) d += new RealDiff(_value, newValue)
     _value = newValue
   }
-  final def set(newValue: RealValue)(implicit d: DiffList): Unit = if (newValue != _value) {
-    if (d ne null) d += new RealDiff(_value, newValue.doubleValue)
-    _value = newValue.doubleValue
-  }
+  final def set(newValue: RealValue)(implicit d: DiffList): Unit = set(newValue.doubleValue)
   final def set(newValue:Int)(implicit d:DiffList): Unit = set(newValue.toDouble)
   case class RealDiff(oldValue: Double, newValue: Double) extends Diff {
     def variable: RealVariable = RealVariable.this
@@ -79,34 +76,34 @@ class RealVariable(initialValue: Double) extends MutableRealVar {
 
 
 
-// TODO Create an implicit conversion from Double to RealSingletonVector
-// So that we can use them as sufficient statistics in a VectorTemplate
-trait RealSingletonTensorDomain extends DiscreteTensorDomain with Domain[SingletonTensor1] {
-  def dimensionDomain = RealSingletonDiscreteDomain
-  def size = 1
-}
-object RealSingletonDiscreteDomain extends DiscreteDomain(1) 
-object RealSingletonTensorDomain extends RealSingletonTensorDomain
-
-/** A variable holding a single real (Double) value, but the value encased in a DiscreteVector, 
-    so that it can be among the Statistics of a VectorTemplate. */
-trait RealSingletonTensorVar extends VarWithNumericValue with DiscreteTensorVar with Var[SingletonTensor1] {
-  thisVariable =>
-  def domain = RealSingletonTensorDomain
-  /** A Vector representation of this Variable's value. */
-  @inline final def value = new SingletonTensor1(1, 0, doubleValue)
-  def tensor = value
-  // TODO Consider rewriting above line to avoid constructing new object
-  def doubleValue: Double
-  def intValue: Int = doubleValue.toInt
-  override def ===(other: Variable) = other match { case other:RealSingletonTensorVar => doubleValue == other.doubleValue; case _ => false } 
-  override def !==(other: Variable) = other match { case other:RealSingletonTensorVar => doubleValue != other.doubleValue; case _ => false } 
-  override def toString = printName + "(" + doubleValue.toString + ")"
-}
-
-class RealSingletonVectorVariable(initialValue:Double) extends RealSingletonTensorVar {
-  private var _value = initialValue
-  def doubleValue: Double = _value
-}
+//// TODO Create an implicit conversion from Double to RealSingletonVector
+//// So that we can use them as sufficient statistics in a VectorTemplate
+//trait RealSingletonTensorDomain extends DiscreteTensorDomain with Domain[SingletonTensor1] {
+//  def dimensionDomain = RealSingletonDiscreteDomain
+//  def size = 1
+//}
+//object RealSingletonDiscreteDomain extends DiscreteDomain(1) 
+//object RealSingletonTensorDomain extends RealSingletonTensorDomain
+//
+///** A variable holding a single real (Double) value, but the value encased in a DiscreteVector, 
+//    so that it can be among the Statistics of a VectorTemplate. */
+//trait RealSingletonTensorVar extends VarWithNumericValue with DiscreteTensorVar with Var[SingletonTensor1] {
+//  thisVariable =>
+//  def domain = RealSingletonTensorDomain
+//  /** A Vector representation of this Variable's value. */
+//  @inline final def value = new SingletonTensor1(1, 0, doubleValue)
+//  def tensor = value
+//  // TODO Consider rewriting above line to avoid constructing new object
+//  def doubleValue: Double
+//  def intValue: Int = doubleValue.toInt
+//  override def ===(other: Variable) = other match { case other:RealSingletonTensorVar => doubleValue == other.doubleValue; case _ => false } 
+//  override def !==(other: Variable) = other match { case other:RealSingletonTensorVar => doubleValue != other.doubleValue; case _ => false } 
+//  override def toString = printName + "(" + doubleValue.toString + ")"
+//}
+//
+//class RealSingletonVectorVariable(initialValue:Double) extends RealSingletonTensorVar {
+//  private var _value = initialValue
+//  def doubleValue: Double = _value
+//}
 
 // TODO Consider making an implicit conversion from RealVar to RealSingletonVectorVar 

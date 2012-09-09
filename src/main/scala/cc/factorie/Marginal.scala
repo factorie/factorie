@@ -27,7 +27,7 @@ trait Marginal {
 // Marginals over discrete variables
 
 trait DiscreteMarginal extends Marginal {
-  def _1: DiscreteTensorVar
+  def _1: DiscreteTensorVar // TODO Consider removing this.
   def variables: Iterable[DiscreteTensorVar]
   def proportions: Proportions
 }
@@ -137,6 +137,7 @@ class ProportionsDirichletMarginal1[V<:ProportionsVar](_1:V, val masses:Masses1)
 
 
 // Marginals over Reals
+// TODO Should there also be a Marginal over DoubleVar?  Should they be unified?  e.g. ScalarMarginal?
 
 trait RealMarginal1[V1<:RealVar] extends Marginal {
   val _1:V1
@@ -144,7 +145,7 @@ trait RealMarginal1[V1<:RealVar] extends Marginal {
   def pr(x:Double): Double
 }
 
-class RealSingletonMarginal1[V1<:RealVar](val _1:V1, val mean:Double) extends AbstractAssignment1[V1] {
+class RealSpikeMarginal1[V1<:RealVar](val _1:V1, val mean:Double) extends AbstractAssignment1[V1] {
   final def var1 = _1
   def pr(x:Double): Double = if (x == mean) 1.0 else 0.0
   override def globalize(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }

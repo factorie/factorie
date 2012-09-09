@@ -58,13 +58,13 @@ class TemplateTestSuite extends JUnitSuite  {
       val members = for (i <- 0 until 10) yield new Member 
     }
     val aggregate = new Aggregate
-    val template = new Template2[Aggregate,Vars[Aggregate#Member]] with DotStatistics1[RealSingletonVectorVariable#Value] {
-      def statisticsDomains = Tuple1(RealSingletonTensorDomain)
+    val template = new Template2[Aggregate,Vars[Aggregate#Member]] with DotStatistics1[RealVar#Value] {
+      def statisticsDomains = Tuple1(RealDomain)
       def unroll2(v: Vars[Aggregate#Member]) = sys.error("Not needed")
       def unroll1(v: Aggregate) = Factor(v,Vars(v.members))
       override def unroll2s(v: Aggregate#Member) = Factor(v.owner,Vars(v.owner.members))
       def statistics(v1:Aggregate#Value, v2:Vars[Aggregate#Member]#Value) = 
-        new Stat(new RealSingletonVectorVariable(v2.filter(_.booleanValue).size).value)
+        new Stat(new RealVariable(v2.filter(_.booleanValue).size).value)
     }
     val diff = new DiffList
     aggregate.members(0).set(true)(diff)
