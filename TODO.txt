@@ -8,8 +8,9 @@ Remove statisticsDomain and just get size?  [McCallum]
  What about serialization?  Make user serialize separately from Model; needed for unset neighborDomains anyway.
  Then DotFamily can depend on just TensorVar, not DiscreteTensorVar.
 Reconsider whether BooleanValue should be a class rather than (as it is currently) a type alias for CategoricalValue[Boolean] [McCallum]
-Rename all "Stat" to "Statistics". [McCallum]
 DomainFromClass or make it the default?  [McCallum]
+Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
+Consider property-like facilities and its interaction with command line [McCallum, Vilnis]
 Make app.regress  [McCallum, Passos]
 Finish BP.  Make it fast!  [Martin, Pandya, Singh]
 Consider changes to generative.Collapse infrastructure  [McCallum]
@@ -18,10 +19,9 @@ Re-consider type arguments in Sampler and descendants  [McCallum]
 Look at app.nlp.relation  [McCallum]
 Wrap-up and clean up NER and POS [Anzaroot]
 Make a command-line tool similar to Mallet SimpleTagger [McCallum]
-Look at other BUGS-like tools, and see what we can reproduce easily [Passos, Duckworth] 
+Look at other BUGS-like tools, and see what we can reproduce easily [Passos, Duckworth]
 Make reasonable command-line tools for MALLET functionality, and document [McCallum and others]
-Consider property-like facilities and its interaction with command line [Vilnis]
-Consider making Document not be a Variable, and again inherit from Seq[Token] [McCallum]
+Consider making nlp.Document not be a Variable, and again inherit from Seq[Token] [McCallum]
 Sanity-check pass through all code [All]
 Package documentation  [All]
 Fix copyright year [McCallum]
@@ -34,6 +34,7 @@ Make an HMM example and show that BP inference and EM training work on it [Belan
 
 
 DONE:
+Rename all "Stat" to "Statistics". [McCallum]
 Finish/fix DecisionTree implementation, and make example
 Remove Factor.Values
 Make RealVar inherit from TensorVar (with DoubleVar replacing current one)

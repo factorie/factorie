@@ -24,7 +24,8 @@ trait RealDomain extends DiscreteTensorDomain with Domain[RealValue] {
 object RealDomain extends RealDomain
 
 /** A Tensor holding a single real (Double) value. */
-final class RealValue(val singleValue:Double) extends Tensor1 with SingletonTensor {
+// In Scala 2.10 make this an implicit class.
+final class RealValue(val singleValue:Double) extends Tensor1 with SingletonTensor /*with scala.math.Numeric[RealValue]*/ {
   def domain = RealDomain
   @inline final def dim1 = 1
   @inline final def singleIndex = 0
@@ -36,6 +37,16 @@ final class RealValue(val singleValue:Double) extends Tensor1 with SingletonTens
   def -(r:RealValue) = new RealValue(r.doubleValue - singleValue)
   def *(r:RealValue) = new RealValue(r.doubleValue * singleValue)
   def /(r:RealValue) = new RealValue(r.doubleValue / singleValue)
+  type T = RealValue
+  def plus(x: T, y: T): T = x + y
+  def minus(x: T, y: T): T = x - y
+  def times(x: T, y: T): T = x * y
+  def negate(x: T): T = new RealValue(- x.doubleValue)
+  def fromInt(x: Int): T = new RealValue(x.toDouble)
+  def toInt(x: T): Int = singleValue.toInt
+  def toLong(x: T): Long = singleValue.toLong
+  def toFloat(x: T): Float = singleValue.toFloat
+  def toDouble(x: T): Double = singleValue
 }
 
 /** A variable with Tensor value which holds a single real (Double) value.

@@ -39,7 +39,7 @@ trait Tensor extends MutableDoubleSeq {
   override def dot(ds:DoubleSeq): Double = throw new Error("Subclasses should override dot with specialized efficient versions. t1="+this.getClass.getName+" t2="+ds.getClass.getName)
   // Methods for mutability not implemented in all Tensors
   def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
-  def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName)
+  def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName) // TODO Rename this setZero, to avoid conflict with scala.math.Numeric so that RealValue can inherit from it.
   def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
   def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
   def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
