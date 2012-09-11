@@ -1,14 +1,10 @@
 package cc.factorie
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.FlatSpec
-import org.scalatest.FunSuite
-import org.scalatest.BeforeAndAfter
 import scala.collection.mutable.Stack
-import org.junit.Assert.assertEquals
+import org.junit.Assert.{assertEquals}
 import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
+import org.junit.Test
 
 /**
  * Test for the factorie-1.0 BP framework (that uses Tensors)
@@ -17,72 +13,65 @@ import scala.collection.mutable.ArrayBuffer
  */
 
 
-@RunWith(classOf[JUnitRunner])
-class TestBP extends FunSuite with BeforeAndAfter {
+//@RunWith(classOf[JUnitRunner])
+class TestBP { //}extends FunSuite with BeforeAndAfter {
   
   import BPTestUtils._
 
   val eps = 1e-4
   
-// What version of junit are these present in?  What .jar do I need to include?
-//  before {
-//    new BinVar(0)
-//    new BinVar(1)
-//  }
-//  
-//  after {
-//    
-//  }
-  
-  test("V1F1: equal potentials (sum-product)") {
+  @Test def v1f1Test {
     // one variable, one factor
     val v = new BinVar(0)
     val model = new FactorModel(newFactor1(v, 1, 1))
     val fg = new BPSummary(Set(v), model)
-    assert(fg.bpFactors.size === 1)
-    assert(fg.bpVariables.size === 1)
+    assert(fg.bpFactors.size == 1)
+    assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
     println(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), 0.5, eps)
   }
   
-  test("V1F1: unequal potentials (sum-product)") {
+  @Test def v1f1UnequalPotentialsSum {
     // one variable, one factor
     val v = new BinVar(0)
     val model = new FactorModel(newFactor1(v, 2, 1))
     val fg = new BPSummary(Set(v), model)
-    assert(fg.bpFactors.size === 1)
-    assert(fg.bpVariables.size === 1)
+    assert(fg.bpFactors.size == 1)
+    assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
     //println(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(2) / (e(2) + e(1)), eps)
   }
   
-  test("V1F2: f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
+  @Test def v1f2Test1 {
+    //f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
     // one variable, two factors
     val v = new BinVar(0)
     val model = new FactorModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
     val fg = new BPSummary(Set(v), model)
-    assert(fg.bpFactors.size === 2)
-    assert(fg.bpVariables.size === 1)
+    assert(fg.bpFactors.size == 2)
+    assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
     //println(fg.marginal(v).proportions)
     assertEquals(0.5, fg.marginal(v).proportions(0), eps)
   }
     
-  test("V1F2: f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
-    // one variable, two factors
+  @Test def v1f2Test2 {
+  // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
+  // one variable, two factors
     val v = new BinVar(0)
     val model = new FactorModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
     val fg = new BPSummary(Set(v), model)
-    assert(fg.bpFactors.size === 2)
-    assert(fg.bpVariables.size === 1)
+    assert(fg.bpFactors.size == 2)
+    assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
     //println(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(0) / (e(0) + e(2)), eps)
   }
   
-  test("V1F2MAP: f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
+  @Test def v1f2MAP1 {
+    // f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
     // one variable, two factors
     val v = new BinVar(0)
     val model = new FactorModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
@@ -92,7 +81,8 @@ class TestBP extends FunSuite with BeforeAndAfter {
     assertEquals(fg.marginal(v).proportions(0), e(3) / (e(3) + e(3)), eps)
   }
 
-  test("V1F2MAP: f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
+  @Test def v1f2MAP2 {
+    // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
     // one variable, two factors
     val v = new BinVar(0)
     val model = new FactorModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
@@ -102,19 +92,30 @@ class TestBP extends FunSuite with BeforeAndAfter {
     assertEquals(fg.marginal(v).proportions(0), e(0 + 0) / (e(0) + e(2)), eps)
   }
   
-  test("V2F1: varying both") {
+  @Test def v2f1VaryingBoth {
+//  test("V2F1: varying both") {
+    println("V2F1: varying both")
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
 
     // create template between v1 and v2
-    val model = new FactorModel(newFactor2(v1, v2, 10, 0))
+    val model = new TemplateModel(newTemplate2(v1, v2, 10, 0))
     val vars: Set[DiscreteVar] = Set(v1, v2)
+    
+    val f = model.factors(v1).head
+    println("f score unequal: " + f.score)
+    v2 := 1
+    println("f score equal: " + f.score)
+    
+    
+    println(newTemplate2(v1, v2, 10.0, 0.0).neighborDomain2)
+    println(model.templates.head.neighborDomains)
 
     // vary both variables
     val fg = new BPSummary(vars, model)
-    assert(fg.bpFactors.size === 1)
-    assert(fg.bpVariables.size === 2)
+    assert(fg.bpFactors.size == 1)
+    assert(fg.bpVariables.size == 2)
     BP.inferLoopy(fg, 5)
     println("v1 : " + fg.marginal(v1).proportions)
     println("v2 : " + fg.marginal(v2).proportions)
@@ -125,7 +126,8 @@ class TestBP extends FunSuite with BeforeAndAfter {
     assertEquals(0.5, fg.marginal(v2).proportions(0), eps)
   }
   
-  test("V2F1: varying one") {
+  @Test def v2f1VaryingOne {
+    println("V2F1: varying one")
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
@@ -136,8 +138,8 @@ class TestBP extends FunSuite with BeforeAndAfter {
     val varying= Set(v1)
     
     val fg = new BPSummary(varying, model)
-    assert(fg.bpFactors.size === 1)
-    assert(fg.bpVariables.size === 1)
+    assert(fg.bpFactors.size == 1)
+    assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 5)
     println("v1 : " + fg.marginal(v1).proportions)
     for (mfactor <- fg.bpFactors) {
@@ -150,7 +152,7 @@ class TestBP extends FunSuite with BeforeAndAfter {
     
   }  
   
-  test("Loop2") {
+  @Test def loop2 {
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
     val vars: Set[DiscreteVar] = Set(v1, v2)
@@ -173,11 +175,11 @@ class TestBP extends FunSuite with BeforeAndAfter {
     
     println("v1 val : " + v1.value)
     println("v2 val : " + v2.value)
-    assert(v1.intValue === 0)
-    assert(v2.intValue === 0)
+    assert(v1.intValue == 0)
+    assert(v2.intValue == 0)
   }
 
-  test("Loop4") {
+  @Test def loop4 {
     println("Loop4")
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
@@ -209,13 +211,13 @@ class TestBP extends FunSuite with BeforeAndAfter {
     println("v3 val : " + v3.value)
     println("v4 val : " + v4.value)
     
-    assert(v1.intValue === 0)
-    assert(v2.intValue === 1)
-    assert(v3.intValue === 1)
-    assert(v4.intValue === 0)
+    assert(v1.intValue == 0)
+    assert(v2.intValue == 1)
+    assert(v3.intValue == 1)
+    assert(v4.intValue == 0)
   }
 
-  test("ChainRandom") {
+  @Test def chainRandom {
     println("ChainRandom")
     val numVars = 2
     val vars: Seq[BinVar] = (0 until numVars).map(new BinVar(_)).toSeq
@@ -253,10 +255,7 @@ class TestBP extends FunSuite with BeforeAndAfter {
         }
       }
       println("map : " + mapAssignment)
-      println("marginals : " + marginals.mkString(", "))
-      println("marginals / Z: " + marginals.map(_ / Z).mkString(", "))
-      // TODO: add this assertion back and check above code -brian
-      // assertEquals(1.0, marginals.map(_ / Z).sum, eps)
+      println("marginals : " + marginals.map(_ / Z).mkString(", "))
       
       // test sum-product
       val fg = BP.inferChainSum(vars, model)
@@ -280,7 +279,7 @@ class TestBP extends FunSuite with BeforeAndAfter {
     }
   }
   
-  test("Tree3") {
+  @Test def tree3 {
     val v1 = new BinVar(0)
     val v2 = new BinVar(1)
     val v3 = new BinVar(0)
@@ -308,7 +307,7 @@ class TestBP extends FunSuite with BeforeAndAfter {
     assertEquals(v2.intValue, 1)
   }
   
-  test("Tree7") {
+  @Test def tree7 {
     val v1 = new BinVar(0) { override def toString = "v1" }
     val v2 = new BinVar(1) { override def toString = "v2" }
     val v3 = new BinVar(0) { override def toString = "v3" }
@@ -342,24 +341,32 @@ class TestBP extends FunSuite with BeforeAndAfter {
     println("  %2d      %2d".format(v3.intValue, v5.intValue))
     println("%2d  %2d  %2d  %2d".format(v1.intValue, v2.intValue, v6.intValue, v7.intValue))
     
-    assert(v1.intValue === 0)
-    assert(v2.intValue === 1)
-    assert(v3.intValue === 0)
-    assert(v4.intValue === 0)
-    assert(v5.intValue === 1)
-    assert(v6.intValue === 1)
-    assert(v7.intValue === 0)
+    assert(v1.intValue == 0)
+    assert(v2.intValue == 1)
+    assert(v3.intValue == 0)
+    assert(v4.intValue == 0)
+    assert(v5.intValue == 1)
+    assert(v6.intValue == 1)
+    assert(v7.intValue == 0)
   }
   
 }
 
 object BPTestUtils {
   // a binary variable that takes values 0 or 1
-  object BinDomain extends CategoricalDomain[Int](List(0, 1))
+  object BinDomain extends CategoricalDomain[Int](List(0, 1)) {
+    def valueOf(b: Boolean) = {
+      val v = if (b) 0 else 1
+      value(v)
+    }
+  }
+  
+  object BoolDomain extends CategoricalDomain[Boolean](List(true, false))
 
   class BinVar(i: Int) extends LabelVariable(i) {
     def domain = BinDomain
   }
+  
 
   def newFactor1(n1: BinVar, score0: Double, score1: Double): Factor = {
     val family = new TemplateWithDotStatistics1[BinVar] {
@@ -375,15 +382,28 @@ object BPTestUtils {
   }
 
   def newFactor2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double): Factor = {
-    val family = new Template2[BinVar, BinVar] with DotStatistics1[BooleanValue] {
-      override def statisticsDomains = Tuple1(BooleanDomain)
-      def unroll1(v: BPTestUtils.this.type#BinVar) = if (v == n1) Factor(n1, n2) else Nil
-      def unroll2(v: BPTestUtils.this.type#BinVar) = if (v == n2) Factor(n1, n2) else Nil
-      def statistics(value1: BinVar#Value, value2: BinVar#Value) = Statistics(BooleanDomain.value(value1 == value2))
+    val family = new Template2[BinVar, BinVar] with DotStatistics1[BinVar#Value] {
+      override def neighborDomain1 = BinDomain
+      override def neighborDomain2 = BinDomain
+      override def statisticsDomains = Tuple1(BinDomain)
+      def unroll1(v: BinVar) = if (v == n1) Factor(n1, n2) else Nil
+      def unroll2(v: BinVar) = if (v == n2) Factor(n1, n2) else Nil
+      def statistics(value1: BinVar#Value, value2: BinVar#Value) = 
+        Statistics(BinDomain.valueOf(value1.intValue == value2.intValue))
     }
     family.weights(0) = scoreEqual
     family.weights(1) = scoreUnequal
     family.factors(n1).head
+  }
+  
+  def newTemplate2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double) = {
+    new TemplateWithStatistics2[BinVar, BinVar] {
+      override def neighborDomain1 = BinDomain
+      override def neighborDomain2 = BinDomain
+      def unroll1(v: BPTestUtils.this.type#BinVar) = if (v == n1) Factor(n1, n2) else Nil
+      def unroll2(v: BPTestUtils.this.type#BinVar) = if (v == n2) Factor(n1, n2) else Nil
+      def score(stat: Statistics): Double = if (stat._1 == stat._2) scoreEqual else scoreUnequal
+    }
   }
 
   def newFactor3(n1: BinVar, n2: BinVar, n3: BinVar, scores: Seq[Double]) =
@@ -394,18 +414,8 @@ object BPTestUtils {
       def _2 = n2
       def _3 = n3
 
-//      type StatisticsType = Stat
-
-//      final case class Stat(_1: BinVar#Value, _2: BinVar#Value, _3: BinVar#Value) extends Statistics {
-//        lazy val score: Double = factor.score(this)
-//      }
-//
-//      def statistics(v: this.type#Value) = Stat(v._1, v._2, v._3)
-
       def score(s: Statistics): Double = scores(s._1.category * 4 + s._2.category * 2 + s._3.category)
-
       override def equalityPrerequisite = this
-
       override def toString = "F(%s,%s,%s)".format(n1, n2, n3)
     }
 

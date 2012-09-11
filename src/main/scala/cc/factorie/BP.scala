@@ -406,6 +406,7 @@ object BP {
     BPUtil.sendAccordingToOrdering(bfsSeq)
     summary
   }
+  // TODO: add inferTreewiseMax and associated test
   def inferSingle(v:MutableDiscreteVar[_<:DiscreteValue], model:Model): BPSummary = {
     val summary = new BPSummary(Seq(v), BPSumProductRing, model)
     summary.bpFactors.foreach(_.updateOutgoing) 
