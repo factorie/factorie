@@ -243,6 +243,10 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
       statistics(domain0(v.singleIndex1), domain1(v.singleIndex2)).score
       //statistics(new SingletonBinaryTensor1(v.dim1, v.singleIndex1), new SingletonBinaryTensor1(v.dim2, v.singleIndex2)).score
     }
+    case v: SingletonBinaryLayeredTensor2 => {
+      val domain0 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
+      statistics(domain0(v.singleIndex1), v.inner.asInstanceOf[N2#Value]).score
+    }
   }
 
 //  // Cached Statistics

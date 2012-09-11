@@ -93,7 +93,6 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   }
   
   @Test def v2f1VaryingBoth {
-//  test("V2F1: varying both") {
     println("V2F1: varying both")
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)
@@ -133,9 +132,9 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val v2 = new BinVar(0)
     
     // create template between v1 and v2
-    val model = new FactorModel(newFactor2(v1, v2, 10, 0))
+    val model = new TemplateModel(newTemplate2(v1, v2, -10, 0))
     val vars: Set[Variable] = Set(v1, v2)
-    val varying= Set(v1)
+    val varying = Set(v1)
     
     val fg = new BPSummary(varying, model)
     assert(fg.bpFactors.size == 1)
