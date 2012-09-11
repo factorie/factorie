@@ -637,7 +637,7 @@ class ChainNer2 {
   }
 
   def test(testFilename:String): Unit = {
-    cc.factorie.randomSeed = 75839485
+    setRandomSeed(75839485)
     // Read in the data
     val testDocuments = LoadConll2003.fromFilename(testFilename, true)
 	

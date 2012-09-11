@@ -32,8 +32,13 @@ package object factorie {
 
   type BooleanValue = CategoricalValue[Boolean]
 
-  var randomSeed = 0
-  implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
+  //var randomSeed = 0
+  //implicit lazy val random: Random = if (randomSeed < 0) new Random() else new Random(randomSeed)
+  
+  implicit var random = new Random(0)
+  def setRandomSeed(seed: Long): Unit = {
+    random = new Random(seed)
+  }
   
   // TODO Remove both of these
   val defaultModel = new TemplateModel
