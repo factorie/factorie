@@ -71,8 +71,8 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
       Future alternative versions of this method would allow for iterating over restricted subsets. */
   def valuesIterator: ValuesIterator2[N1,N2] = new ValuesIterator2[N1,N2] { //Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2]
     def factor: Factor2[N1,N2] = Factor2.this
-    var var1: N1 = null.asInstanceOf[N1]
-    var var2: N2 = null.asInstanceOf[N2]
+    var _1: N1 = null.asInstanceOf[N1]
+    var _2: N2 = null.asInstanceOf[N2]
     var value1: N1#Value = null.asInstanceOf[N1#Value]
     var value2: N2#Value = null.asInstanceOf[N2#Value]
     def hasNext = false
@@ -95,7 +95,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
   def currentAssignment = new Assignment2(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def scoreAssignment(a:TypedAssignment[Variable]) = a match {
-    case a:AbstractAssignment2[N1,N2] if ((a.var1 eq _1) && (a.var2 eq _2)) => statistics(a.value1, a.value2).score
+    case a:AbstractAssignment2[N1,N2] if ((a._1 eq _1) && (a._2 eq _2)) => statistics(a.value1, a.value2).score
     case _ => statistics(a(_1), a(_2)).score
   }
   

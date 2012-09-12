@@ -14,8 +14,8 @@
 
 package cc.factorie
 import cc.factorie.la._
-import scala.actors.Actor
-import scala.actors.Actor._
+//import scala.actors.Actor
+//import scala.actors.Actor._
 
 /** Stores a marginal distribution containing a joint distribution over a set of variables.
     See also Summary, which stores a collection of Marginals. */
@@ -36,7 +36,6 @@ trait DiscreteMarginal extends Marginal {
 class DiscreteMarginal1[V1<:DiscreteTensorVar](val _1:V1, proportions1:Proportions1 = null) extends DiscreteMarginal with AbstractAssignment1[V1] {
   def this(f:Factor1[V1]) = this (f._1, null)
   //def variables = Seq(_1)
-  def var1 = _1
   def value1: V1#Value = _1.domain.dimensionDomain(proportions.maxIndex).asInstanceOf[V1#Value]
   protected var _proportions = proportions1 // Cannot use default arguments to create because no access to _1 in default argument values
   def proportions: Proportions1 = {
@@ -45,18 +44,18 @@ class DiscreteMarginal1[V1<:DiscreteTensorVar](val _1:V1, proportions1:Proportio
   }
   def incrementCurrentValue(w:Double): Unit = _1 match { case d:DiscreteVar => proportions.masses.+=(d.intValue, w); case d:DiscreteTensorVar => throw new Error("Not yet implemented") }
   override def globalize(implicit d:DiffList): Unit = _1 match { case v:DiscreteVariable => v.set(proportions.maxIndex); case _ => throw new Error }
-  /** An Actor that can receive increment requests in a thread-safe manner. */
-  // TODO How/when does this get garbage collected?  See http://thread.gmane.org/gmane.comp.lang.scala.user/20255/focus=20391
-  lazy val incrementer = actor {
-    loop {
-      react {
-        case dv:DiscreteValue => proportions.masses.+=(dv.intValue, 1.0)
-        case t:Tensor1 => proportions.masses.+=(t)
-        case i:Int => proportions.masses.+=(i, 1.0)
-        case (i:Int, d:Double) => proportions.masses.+=(i, d)
-      }
-    }
-  }
+//  /** An Actor that can receive increment requests in a thread-safe manner. */
+//  // TODO How/when does this get garbage collected?  See http://thread.gmane.org/gmane.comp.lang.scala.user/20255/focus=20391
+//  lazy val incrementer = actor {
+//    loop {
+//      react {
+//        case dv:DiscreteValue => proportions.masses.+=(dv.intValue, 1.0)
+//        case t:Tensor1 => proportions.masses.+=(t)
+//        case i:Int => proportions.masses.+=(i, 1.0)
+//        case (i:Int, d:Double) => proportions.masses.+=(i, d)
+//      }
+//    }
+//  }
 }
 class DiscreteMarginal2[V1<:DiscreteTensorVar,V2<:DiscreteTensorVar](val _1:V1, val _2:V2, proportions2:Proportions2 = null) extends DiscreteMarginal {
   def this(f:Factor2[V1,V2]) = this (f._1, f._2, null)
@@ -65,16 +64,16 @@ class DiscreteMarginal2[V1<:DiscreteTensorVar,V2<:DiscreteTensorVar](val _1:V1, 
   def proportions: Proportions2 = _proportions
   def incrementCurrentValue(w:Double): Unit = (_1,_2) match { case (d1:DiscreteVar,d2:DiscreteVar) => proportions.masses.+=(d1.intValue, d2.intValue, w); case d:DiscreteTensorVar => throw new Error("Not yet implemented") }
   def setToMaximize(implicit d:DiffList): Unit = throw new Error("Not yet implemented")
-  /** An Actor that can receive increment requests in a thread-safe manner. */
-  // TODO How/when does this get garbage collected?  See http://thread.gmane.org/gmane.comp.lang.scala.user/20255/focus=20391
-  lazy val incrementer = actor {
-    loop {
-      react {
-        case t:Tensor2 => proportions.masses.+=(t)
-        case (i:Int, j:Int, d:Double) => proportions.masses.+=(i, j, d)
-      }
-    }
-  }
+//  /** An Actor that can receive increment requests in a thread-safe manner. */
+//  // TODO How/when does this get garbage collected?  See http://thread.gmane.org/gmane.comp.lang.scala.user/20255/focus=20391
+//  lazy val incrementer = actor {
+//    loop {
+//      react {
+//        case t:Tensor2 => proportions.masses.+=(t)
+//        case (i:Int, j:Int, d:Double) => proportions.masses.+=(i, j, d)
+//      }
+//    }
+//  }
 }
 class DiscreteMarginal3[V1<:DiscreteTensorVar,V2<:DiscreteTensorVar,V3<:DiscreteTensorVar](val _1:V1, val _2:V2, val _3:V3, proportions3:Proportions3 = null) extends DiscreteMarginal {
   def this(f:Factor3[V1,V2,V3]) = this (f._1, f._2, f._3, null)
@@ -146,7 +145,6 @@ trait RealMarginal1[V1<:RealVar] extends Marginal {
 }
 
 class RealSpikeMarginal1[V1<:RealVar](val _1:V1, val mean:Double) extends AbstractAssignment1[V1] {
-  final def var1 = _1
   def pr(x:Double): Double = if (x == mean) 1.0 else 0.0
   override def globalize(implicit d:DiffList): Unit = _1 match { case v:RealVariable => v.set(mean) }
   final def value1: V1#Value = mean.asInstanceOf[V1#Value] // For AbstractAssignment1

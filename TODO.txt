@@ -1,6 +1,5 @@
 Pre 1.0 release:
 
-Use _1, _2 again for the variables in AbstractAssignment2, etc.  Use value1, value2 for values. [McCallum]
 Consider removing er package altogether for now [McCallum]
 Rename DiscreteTensorVar to DiscreteDomainTensorVar for clarity; similarly for Categorical. [McCallum]
 Remove statisticsDomain and just get size?  [McCallum]  
@@ -34,6 +33,7 @@ Make an HMM example and show that BP inference and EM training work on it [Belan
 
 
 DONE:
+Use _1, _2 again for the variables in AbstractAssignment2, etc.  Use value1, value2 for values. [McCallum]
 Rename all "Stat" to "Statistics". [McCallum]
 Finish/fix DecisionTree implementation, and make example
 Remove Factor.Values

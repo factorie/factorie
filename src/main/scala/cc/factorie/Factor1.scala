@@ -69,7 +69,7 @@ trait Factor1[N1<:Variable] extends Factor {
   def currentAssignment = new Assignment1(_1, _1.value.asInstanceOf[N1#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def scoreAssignment(a:TypedAssignment[Variable]) = a match {
-    case a:AbstractAssignment1[N1] if (a.var1 eq _1) => statistics(a.value1).score
+    case a:AbstractAssignment1[N1] if (a._1 eq _1) => statistics(a.value1).score
     case _ => statistics(a(_1)).score
   }
 
@@ -77,7 +77,7 @@ trait Factor1[N1<:Variable] extends Factor {
       Future alternative versions of this method would allow for iterating over restricted subsets. */
   def valuesIterator: ValuesIterator1[N1] = new ValuesIterator1[N1] { //Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2]
     def factor = Factor1.this
-    var var1: N1 = null.asInstanceOf[N1]
+    var _1: N1 = null.asInstanceOf[N1]
     var value1: N1#Value = null.asInstanceOf[N1#Value]
     def hasNext = false
     def next() = this
