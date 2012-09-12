@@ -1,26 +1,26 @@
 Pre 1.0 release:
 
 Consider removing er package altogether for now [McCallum]
-Rename DiscreteTensorVar to DiscreteDomainTensorVar for clarity; similarly for Categorical. [McCallum]
 Remove statisticsDomain and just get size?  [McCallum]  
  What about growable domains?  Let them grow just through gradients.
  What about serialization?  Make user serialize separately from Model; needed for unset neighborDomains anyway.
  Then DotFamily can depend on just TensorVar, not DiscreteTensorVar.
+Rename DiscreteTensorVar to DiscreteDomainTensorVar for clarity; similarly for Categorical. [McCallum]
 Reconsider whether BooleanValue should be a class rather than (as it is currently) a type alias for CategoricalValue[Boolean] [McCallum]
 DomainFromClass or make it the default?  [McCallum]
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
 Consider property-like facilities and its interaction with command line [McCallum, Vilnis]
+ No, use scala interpreter itself for configuration as recommended online.
 Make app.regress  [McCallum, Passos]
 Finish BP.  Make it fast!  [Martin, Pandya, Singh]
+Wrap-up and clean up NER and POS [Anzaroot]
 Consider changes to generative.Collapse infrastructure  [McCallum]
 Implement generative.CollapsedVariationalBayes and make sure it works for LDA  [McCallum]
 Re-consider type arguments in Sampler and descendants  [McCallum]
 Look at app.nlp.relation  [McCallum]
-Wrap-up and clean up NER and POS [Anzaroot]
 Make a command-line tool similar to Mallet SimpleTagger [McCallum]
-Look at other BUGS-like tools, and see what we can reproduce easily [Passos, Duckworth]
+Look at other BUGS-like tools, and see what we can reproduce easily [Bakalov, Duckworth]
 Make reasonable command-line tools for MALLET functionality, and document [McCallum and others]
-Consider making nlp.Document not be a Variable, and again inherit from Seq[Token] [McCallum]
 Sanity-check pass through all code [All]
 Package documentation  [All]
 Fix copyright year [McCallum]

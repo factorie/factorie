@@ -112,7 +112,7 @@ class Relation[A<:Entity[A],B<:Entity[B]] extends Variable with VarAndValueGener
 }
 
 // TODO It would be easier to make *Relation be a SingleIndexedVariable (for use with SamplingInferencer) if Relation(Amy,Bob) were a SingleIndexedVariable
-class ItemizedRelation[A<:ItemizedObservation[A] with Entity[A],B<:ItemizedObservation[B] with Entity[B]](implicit ma:Manifest[A], mb:Manifest[B]) extends Relation[A,B] with Variable with IterableSettings {
+class ItemizedRelation[A<:ItemizedVar[A] with Entity[A],B<:ItemizedVar[B] with Entity[B]](implicit ma:Manifest[A], mb:Manifest[B]) extends Relation[A,B] with Variable with IterableSettings {
   def settings = new SettingIterator {
     var i = -1
     val domainb: CategoricalDomain[B] = throw new Error // TODO Domain[B](mb) 

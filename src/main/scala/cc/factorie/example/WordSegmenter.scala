@@ -23,10 +23,8 @@ import cc.factorie._
 object WordSegmenterDemo { 
   
   // The variable types:
-  object LabelDomain extends CategoricalDomain[Boolean]
-  class Label(b:Boolean, val token:Token) extends LabelVariable(b) {
-    def domain = LabelDomain
-  }
+  //object LabelDomain extends CategoricalDomain[Boolean]
+  class Label(b:Boolean, val token:Token) extends BooleanLabelVariable(b)  // { def domain = LabelDomain }
   object TokenDomain extends CategoricalTensorDomain[String]
   class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
     def domain = TokenDomain
@@ -41,24 +39,24 @@ object WordSegmenterDemo {
   /** Bias term just on labels */
   model += new TemplateWithDotStatistics1[Label] {
     //def statistics(t:Label#Value) = Stat(t)
-    def statisticsDomains = Tuple1(LabelDomain)
+    def statisticsDomains = Tuple1(BooleanDomain)
   }
   /** Factor between label and observed token */
   model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
-    def statisticsDomains = ((LabelDomain,TokenDomain))
+    def statisticsDomains = ((BooleanDomain,TokenDomain))
     def unroll1 (label:Label) = Factor(label, label.token)
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
   }
   /** A token bi-gram conjunction  */
   model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
-    def statisticsDomains = (((LabelDomain,TokenDomain,TokenDomain)))
+    def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
     def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
     def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
   }
   /** Factor between two successive labels */
   model += new TemplateWithDotStatistics2[Label,Label] {
-    def statisticsDomains = ((LabelDomain,LabelDomain))
+    def statisticsDomains = ((BooleanDomain,BooleanDomain))
     def unroll1 (label:Label) = if (label.token.hasNext) Factor(label, label.token.next.label) else Nil
     def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
   }

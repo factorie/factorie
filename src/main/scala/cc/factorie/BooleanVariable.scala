@@ -16,7 +16,7 @@ package cc.factorie
 
 /** The value of a BooleanDomain.  A subclass of CategoricalValue.
     @author Andrew McCallum */
-//trait BooleanValue extends CategoricalValue[Boolean] { def domain: BooleanDomain = BooleanDomain }
+trait BooleanValue extends CategoricalValue[Boolean] { def domain: BooleanDomain = BooleanDomain }
 
 
 /** The Domain for BooleanVar, of size two, containing a falseValue
@@ -50,7 +50,7 @@ object BooleanValue {
 /** A Variable containing a single Boolean value, which might be mutable or immutable.
     @see BooleanVariable
     @author Andrew McCallum */
-trait BooleanVar extends CategoricalVar[Boolean] with Var[BooleanValue] {
+trait BooleanVar extends CategoricalVar[BooleanValue,Boolean] with Var[BooleanValue] {
   def value: BooleanValue
   def domain: CategoricalDomain[Boolean] = BooleanDomain
   override def categoryValue = (intValue == 1) // Efficiently avoid a lookup in the domain 
@@ -65,7 +65,7 @@ trait BooleanVar extends CategoricalVar[Boolean] with Var[BooleanValue] {
 /** A class for mutable Boolean variables. 
     @author Andrew McCallum */ 
 // TODO Note that Value here will be CategoricalValue[Boolean], not BooleanValue; only matters if we care about the type of .domain
-class BooleanVariable extends MutableCategoricalVar[Boolean] with BooleanVar {
+class BooleanVariable extends MutableCategoricalVar[BooleanValue,Boolean] with BooleanVar {
   //type Value = BooleanValue
   // Default will be false, because initial setting of MutableDiscreteVar.__value is 0
   def this(initialValue:Boolean) = { this(); _set(if (initialValue) 1 else 0) }

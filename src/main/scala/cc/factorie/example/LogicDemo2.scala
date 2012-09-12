@@ -22,7 +22,7 @@ object LogicDemo2 {
 
   // Define entity, attribute and relation types
   object PersonDomain extends CategoricalDomain[Person]
-  class Person (val name:String, var mother:Person) extends ItemizedObservation[Person] with Entity[Person] {
+  class Person (val name:String, var mother:Person) extends ItemizedVar[Person] with Entity[Person] {
     def domain = PersonDomain
     type GetterType = PersonGetter
     class GetterClass extends PersonGetter // Person#GetterClass#super
