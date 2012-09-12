@@ -17,7 +17,7 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import scala.collection.mutable.{ArrayBuffer,ListBuffer}
 
-class PairwiseLabel(val m1:PairwiseMention, val m2:PairwiseMention, b:Boolean) extends LabelVariable(b) with BooleanVar {
+class PairwiseLabel(val m1:PairwiseMention, val m2:PairwiseMention, b:Boolean) extends BooleanLabelVariable(b) {
   def other(m:PairwiseMention): Option[PairwiseMention] = if(m == m1) Some(m2) else if (m == m2) Some(m1) else None
 }
 trait PairwiseMention extends TokenSpan with Entity {

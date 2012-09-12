@@ -20,21 +20,21 @@ import cc.factorie.la._
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type A.
     Concrete implementations include CategoricalVariable and CategoricalObservation. 
     @author Andrew McCallum */
-trait CategoricalVar[A] extends DiscreteVar with CategoricalTensorVar[A] with ValueBound[CategoricalValue[A]] {
-  def domain: CategoricalDomain[A]
-  def value: CategoricalValue[A]
-  def categoryValue: A = if (value ne null) value.category else null.asInstanceOf[A]
+trait CategoricalVar[V<:CategoricalValue[C],C] extends DiscreteVar with CategoricalTensorVar[C] with ValueBound[CategoricalValue[C]] {
+  def domain: CategoricalDomain[C]
+  def value: CategoricalValue[C]
+  def categoryValue: C = if (value ne null) value.category else null.asInstanceOf[C]
   override def toString = printName + "(" + (if (categoryValue == null) "null" else if (categoryValue == this) "this" else categoryValue.toString) + "=" + intValue + ")" // TODO Consider dropping the "=23" at the end.
 }
 
-trait MutableCategoricalVar[A] extends CategoricalVar[A] with MutableDiscreteVar[CategoricalValue[A]] {
-  def setCategory(newCategory:A)(implicit d: DiffList): Unit = set(domain.index(newCategory))(d)
-  override def value: CategoricalValue[A]= domain.apply(_value) // TODO A little sad not to have access to DiscreteVariable.__value here for efficiency, but we need a new return type
+trait MutableCategoricalVar[V<:CategoricalValue[C],C] extends CategoricalVar[V,C] with MutableDiscreteVar[V] {
+  def setCategory(newCategory:C)(implicit d: DiffList): Unit = set(domain.index(newCategory))(d)
+  override def value: V = domain.apply(_value).asInstanceOf[V] // TODO A little sad not to have access to DiscreteVariable.__value here for efficiency, but we need a new return type
 }
 
 /** A MutableDiscreteVar whose integers 0...N are associated with an object of type A. 
     @author Andrew McCallum */
-abstract class CategoricalVariable[A] extends MutableDiscreteVar[CategoricalValue[A]] with MutableCategoricalVar[A] {
+abstract class CategoricalVariable[A] extends MutableDiscreteVar[CategoricalValue[A]] with MutableCategoricalVar[CategoricalValue[A],A] {
   def this(initialCategory:A) = { this(); _set(domain.index(initialCategory)) }
   //def this(initalValue:ValueType) = { this(); _set(initialValue) }
 }
@@ -55,7 +55,7 @@ abstract class CategoricalVariable[A] extends MutableDiscreteVar[CategoricalValu
     and upon creation each will be mapped to a unique integer 0..9.
     p1 = new Person; p1.index == 0; p1.categoryValue == p1. 
     @author Andrew McCallum */
-trait ItemizedObservation[This <: ItemizedObservation[This]] extends CategoricalVar[This] with VarWithConstantValue {
+trait ItemizedVar[This<:ItemizedVar[This]] extends CategoricalVar[CategoricalValue[This],This] with VarWithConstantValue {
   this: This =>
   def domain: CategoricalDomain[This]
   // Put the variable in the CategoricalDomain and remember it.
