@@ -200,6 +200,8 @@ object Tensor {
           for (j <- t2.activeDomain1.asSeq; k <- t3.activeDomain1.asSeq) t.update(t1.singleIndex, j, k, 1.0)
           t
         }
+        // TODO: see Diego's email on factorie-discuss, 9/12/2012
+        case t3:SingletonBinaryTensorLike1 => throw new Error("Not yet implemented: you might want to try to reorder your template so that singleton variables come first.")
         case _ => throw new Error("Not yet implemented.")// { val t = new SparseBinaryTensor3...} 
       }
     }
