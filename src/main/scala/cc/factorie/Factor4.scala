@@ -64,16 +64,16 @@ trait Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Facto
   def currentAssignment = new Assignment4(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value], _3, _3.value.asInstanceOf[N3#Value], _4, _4.value.asInstanceOf[N4#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def scoreAssignment(a:TypedAssignment[Variable]) = a match {
-    case a:AbstractAssignment4[N1,N2,N3,N4] if ((a.var1 eq _1) && (a.var2 eq _2) && (a.var3 eq _3) && (a.var4 eq _4)) => statistics(a.value1, a.value2, a.value3, a.value4).score
+    case a:AbstractAssignment4[N1,N2,N3,N4] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) && (a._4 eq _4)) => statistics(a.value1, a.value2, a.value3, a.value4).score
     case _ => statistics(a(_1), a(_2), a(_3), a(_4)).score
   }
 
   def valuesIterator: ValuesIterator4[N1,N2,N3,N4] = new ValuesIterator4[N1,N2,N3,N4] {
     def factor = Factor4.this
-    var var1: N1 = null.asInstanceOf[N1]
-    var var2: N2 = null.asInstanceOf[N2]
-    var var3: N3 = null.asInstanceOf[N3]
-    var var4: N4 = null.asInstanceOf[N4]
+    var _1: N1 = null.asInstanceOf[N1]
+    var _2: N2 = null.asInstanceOf[N2]
+    var _3: N3 = null.asInstanceOf[N3]
+    var _4: N4 = null.asInstanceOf[N4]
     var value1: N1#Value = null.asInstanceOf[N1#Value]
     var value2: N2#Value = null.asInstanceOf[N2#Value]
     var value3: N3#Value = null.asInstanceOf[N3#Value]

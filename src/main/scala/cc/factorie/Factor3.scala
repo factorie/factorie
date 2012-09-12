@@ -53,15 +53,15 @@ trait Factor3[N1<:Variable,N2<:Variable,N3<:Variable] extends Factor {
   def currentAssignment = new Assignment3(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value], _3, _3.value.asInstanceOf[N3#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def scoreAssignment(a:TypedAssignment[Variable]) = a match {
-    case a:AbstractAssignment3[N1,N2,N3] if ((a.var1 eq _1) && (a.var2 eq _2) && (a.var3 eq _3)) => statistics(a.value1, a.value2, a.value3).score
+    case a:AbstractAssignment3[N1,N2,N3] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3)) => statistics(a.value1, a.value2, a.value3).score
     case _ => statistics(a(_1), a(_2), a(_3)).score
   }
 
   def valuesIterator: ValuesIterator3[N1,N2,N3] = new ValuesIterator3[N1,N2,N3] {
     def factor = Factor3.this
-    var var1: N1 = null.asInstanceOf[N1]
-    var var2: N2 = null.asInstanceOf[N2]
-    var var3: N3 = null.asInstanceOf[N3]
+    var _1: N1 = null.asInstanceOf[N1]
+    var _2: N2 = null.asInstanceOf[N2]
+    var _3: N3 = null.asInstanceOf[N3]
     var value1: N1#Value = null.asInstanceOf[N1#Value]
     var value2: N2#Value = null.asInstanceOf[N2#Value]
     var value3: N3#Value = null.asInstanceOf[N3#Value]

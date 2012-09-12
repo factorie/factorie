@@ -284,7 +284,7 @@ trait ProportionsMarginal extends Marginal {
 }
 
 class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions) extends Assignment1[MutableProportionsVar[Proportions]](p, v) with ProportionsMarginal {
-  final def _1 = p // TODO Consider renaming Assignment1.var1 back to _1
+  //final def _1 = p // TODO Consider renaming Assignment1.var1 back to _1
   def mean = throw new Error // TODO!!! Should be this instead: value1
   def variance = Double.PositiveInfinity // TODO Is this the right value?
 }

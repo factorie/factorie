@@ -67,92 +67,92 @@ class HashMapAssignment extends MutableAssignment {
   def contains(v:Variable) = map.contains(v)
 }
 
-// TODO Decide what the naming scheme will be here:  _1 or var1; _value1 or value1.  I think perhaps it should be var1 and value1 for clarity. -akm
+// TODO Decide what the naming scheme will be here:  _1 or _1; _value1 or value1.  I think perhaps it should be var1 and value1 for clarity. -akm
 
 /** An efficient abstract Assignment of one variable.
     @author Andrew McCallum */
 trait AbstractAssignment1[A<:Variable] extends Assignment {
-  def var1: A
+  def _1: A
   def value1: A#Value
-  def variables = List(var1)
-  def apply[B<:Variable](v:B): B#Value = if (v eq var1) value1.asInstanceOf[B#Value] else throw new Error("Variable not present: "+v)
-  def get[B<:Variable](v:B): Option[B#Value] = if (v eq var1) Some(value1.asInstanceOf[B#Value]) else None
-  def contains(v:Variable): Boolean = if (v eq var1) true else false
-  override def globalize(implicit d:DiffList): Unit = var1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
+  def variables = List(_1)
+  def apply[B<:Variable](v:B): B#Value = if (v eq _1) value1.asInstanceOf[B#Value] else throw new Error("Variable not present: "+v)
+  def get[B<:Variable](v:B): Option[B#Value] = if (v eq _1) Some(value1.asInstanceOf[B#Value]) else None
+  def contains(v:Variable): Boolean = if (v eq _1) true else false
+  override def globalize(implicit d:DiffList): Unit = _1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
 }
 
 /** An efficient Assignment of one variable.
     @author Andrew McCallum */
-class Assignment1[A<:Variable](val var1:A, var value1:A#Value) extends AbstractAssignment1[A]
+class Assignment1[A<:Variable](val _1:A, var value1:A#Value) extends AbstractAssignment1[A]
 
 /** An efficient abstract Assignment of two variables.
     @author Andrew McCallum */
 trait AbstractAssignment2[A<:Variable,B<:Variable] extends Assignment {
-  def var1: A
-  def var2: B
+  def _1: A
+  def _2: B
   def value1: A#Value
   def value2: B#Value
-  def variables = List(var1, var2)
-  def apply[C<:Variable](v:C): C#Value = if (v eq var1) value1.asInstanceOf[C#Value] else if (v eq var2) value2.asInstanceOf[C#Value] else throw new Error("Variable not present: "+v)
-  def get[C<:Variable](v:C): Option[C#Value] = if (v eq var1) Some(value1.asInstanceOf[C#Value]) else if (v eq var2) Some(value2.asInstanceOf[C#Value]) else None
-  def contains(v:Variable): Boolean = if ((v eq var1) || (v eq var2)) true else false
+  def variables = List(_1, _2)
+  def apply[C<:Variable](v:C): C#Value = if (v eq _1) value1.asInstanceOf[C#Value] else if (v eq _2) value2.asInstanceOf[C#Value] else throw new Error("Variable not present: "+v)
+  def get[C<:Variable](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else if (v eq _2) Some(value2.asInstanceOf[C#Value]) else None
+  def contains(v:Variable): Boolean = if ((v eq _1) || (v eq _2)) true else false
   override def globalize(implicit d:DiffList): Unit = {
-    var1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
-    var2 match { case v:MutableVar[_] => v.set(value2.asInstanceOf[v.Value]) }
+    _1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
+    _2 match { case v:MutableVar[_] => v.set(value2.asInstanceOf[v.Value]) }
   }
 }
 /** An efficient Assignment of two variables.
     @author Andrew McCallum */
-class Assignment2[A<:Variable,B<:Variable](val var1:A, var value1:A#Value, val var2:B, var value2:B#Value) extends AbstractAssignment2[A,B]
+class Assignment2[A<:Variable,B<:Variable](val _1:A, var value1:A#Value, val _2:B, var value2:B#Value) extends AbstractAssignment2[A,B]
 
 /** An efficient abstract Assignment of three variables.
     @author Andrew McCallum */
 trait AbstractAssignment3[A<:Variable,B<:Variable,C<:Variable] extends Assignment {
-  def var1: A
-  def var2: B
-  def var3: C
+  def _1: A
+  def _2: B
+  def _3: C
   def value1: A#Value
   def value2: B#Value
   def value3: C#Value
-  def variables = List(var1, var2, var3)
-  def apply[X<:Variable](v:X): X#Value = if (v eq var1) value1.asInstanceOf[X#Value] else if (v eq var2) value2.asInstanceOf[X#Value] else if (v eq var3) value3.asInstanceOf[X#Value] else throw new Error("Variable not present: "+v)
-  def get[C<:Variable](v:C): Option[C#Value] = if (v eq var1) Some(value1.asInstanceOf[C#Value]) else if (v eq var2) Some(value2.asInstanceOf[C#Value]) else if (v eq var3) Some(value3.asInstanceOf[C#Value]) else None
-  def contains(v:Variable): Boolean = if ((v eq var1) || (v eq var2) || (v eq var3)) true else false
+  def variables = List(_1, _2, _3)
+  def apply[X<:Variable](v:X): X#Value = if (v eq _1) value1.asInstanceOf[X#Value] else if (v eq _2) value2.asInstanceOf[X#Value] else if (v eq _3) value3.asInstanceOf[X#Value] else throw new Error("Variable not present: "+v)
+  def get[C<:Variable](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else if (v eq _2) Some(value2.asInstanceOf[C#Value]) else if (v eq _3) Some(value3.asInstanceOf[C#Value]) else None
+  def contains(v:Variable): Boolean = if ((v eq _1) || (v eq _2) || (v eq _3)) true else false
   override def globalize(implicit d:DiffList): Unit = {
-    var1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
-    var2 match { case v:MutableVar[_] => v.set(value2.asInstanceOf[v.Value]) }
-    var3 match { case v:MutableVar[_] => v.set(value3.asInstanceOf[v.Value]) }
+    _1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
+    _2 match { case v:MutableVar[_] => v.set(value2.asInstanceOf[v.Value]) }
+    _3 match { case v:MutableVar[_] => v.set(value3.asInstanceOf[v.Value]) }
   }
 }
 /** An efficient Assignment of three variables.
     @author Andrew McCallum */
-class Assignment3[A<:Variable,B<:Variable,C<:Variable](val var1:A, var value1:A#Value, val var2:B, var value2:B#Value, val var3:C, var value3:C#Value) extends AbstractAssignment3[A,B,C]
+class Assignment3[A<:Variable,B<:Variable,C<:Variable](val _1:A, var value1:A#Value, val _2:B, var value2:B#Value, val _3:C, var value3:C#Value) extends AbstractAssignment3[A,B,C]
 
 /** An efficient abstract Assignment of three variables.
     @author Andrew McCallum */
 trait AbstractAssignment4[A<:Variable,B<:Variable,C<:Variable,D<:Variable] extends Assignment {
-  def var1: A
-  def var2: B
-  def var3: C
-  def var4: D
+  def _1: A
+  def _2: B
+  def _3: C
+  def _4: D
   def value1: A#Value
   def value2: B#Value
   def value3: C#Value
   def value4: D#Value
-  def variables = List(var1, var2, var3, var4)
-  def apply[X<:Variable](v:X): X#Value = if (v eq var1) value1.asInstanceOf[X#Value] else if (v eq var2) value2.asInstanceOf[X#Value] else if (v eq var3) value3.asInstanceOf[X#Value] else if (v eq var4) value4.asInstanceOf[X#Value] else throw new Error("Variable not present: "+v)
-  def get[C<:Variable](v:C): Option[C#Value] = if (v eq var1) Some(value1.asInstanceOf[C#Value]) else if (v eq var2) Some(value2.asInstanceOf[C#Value]) else if (v eq var3) Some(value3.asInstanceOf[C#Value]) else if (v eq var4) Some(value4.asInstanceOf[C#Value]) else None
-  def contains(v:Variable): Boolean = if ((v eq var1) || (v eq var2) || (v eq var3) || (v eq var4)) true else false
+  def variables = List(_1, _2, _3, _4)
+  def apply[X<:Variable](v:X): X#Value = if (v eq _1) value1.asInstanceOf[X#Value] else if (v eq _2) value2.asInstanceOf[X#Value] else if (v eq _3) value3.asInstanceOf[X#Value] else if (v eq _4) value4.asInstanceOf[X#Value] else throw new Error("Variable not present: "+v)
+  def get[C<:Variable](v:C): Option[C#Value] = if (v eq _1) Some(value1.asInstanceOf[C#Value]) else if (v eq _2) Some(value2.asInstanceOf[C#Value]) else if (v eq _3) Some(value3.asInstanceOf[C#Value]) else if (v eq _4) Some(value4.asInstanceOf[C#Value]) else None
+  def contains(v:Variable): Boolean = if ((v eq _1) || (v eq _2) || (v eq _3) || (v eq _4)) true else false
   override def globalize(implicit d:DiffList): Unit = {
-    var1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
-    var2 match { case v:MutableVar[_] => v.set(value2.asInstanceOf[v.Value]) }
-    var3 match { case v:MutableVar[_] => v.set(value3.asInstanceOf[v.Value]) }
-    var4 match { case v:MutableVar[_] => v.set(value4.asInstanceOf[v.Value]) }
+    _1 match { case v:MutableVar[_] => v.set(value1.asInstanceOf[v.Value]) }
+    _2 match { case v:MutableVar[_] => v.set(value2.asInstanceOf[v.Value]) }
+    _3 match { case v:MutableVar[_] => v.set(value3.asInstanceOf[v.Value]) }
+    _4 match { case v:MutableVar[_] => v.set(value4.asInstanceOf[v.Value]) }
   }
 }
 /** An efficient Assignment of three variables.
     @author Andrew McCallum */
-class Assignment4[A<:Variable,B<:Variable,C<:Variable,D<:Variable](val var1:A, var value1:A#Value, val var2:B, var value2:B#Value, val var3:C, var value3:C#Value, val var4:D, var value4:D#Value) extends AbstractAssignment4[A,B,C,D]
+class Assignment4[A<:Variable,B<:Variable,C<:Variable,D<:Variable](val _1:A, var value1:A#Value, val _2:B, var value2:B#Value, val _3:C, var value3:C#Value, val _4:D, var value4:D#Value) extends AbstractAssignment4[A,B,C,D]
 
 
 
