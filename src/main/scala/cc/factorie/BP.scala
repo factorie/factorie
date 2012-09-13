@@ -423,7 +423,7 @@ object BP {
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2 with BPFactor2MaxProduct]]
         //println("BP.inferChainMax  markovBPFactors.size = "+markovBPFactors.size)
         // Send all messages from observations to labels in parallel
-        obsBPFactors.par.foreach(_.updateOutgoing)
+        obsBPFactors.foreach(_.updateOutgoing)
         // Send forward Viterbi messages
         for (f <- markovBPFactors) {
           f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
@@ -452,7 +452,7 @@ object BP {
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2]]
         assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
         // Send all messages from observations to labels in parallel
-        obsBPFactors.par.foreach(_.updateOutgoing)
+        obsBPFactors.foreach(_.updateOutgoing)
         // Send forward messages
         for (f <- markovBPFactors) {
           f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
