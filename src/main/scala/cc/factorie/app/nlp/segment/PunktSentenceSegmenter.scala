@@ -283,7 +283,9 @@ object PunktSentenceSegmenter {
       private def trainTokensLogic(tokens: mutable.ArrayBuffer[PunktToken], verbose: Boolean = false, finalize: Boolean = true) = {
         finalized = false
 
-        for (tok <- tokens) {
+        val tokIter = tokens.iterator
+        while (tokIter.hasNext) {
+          val tok = tokIter.next()
           typeFreqDist(tok.ty) += 1
           if (tok.periodFinal) numPeriodTokens += 1
         }
@@ -424,7 +426,7 @@ object PunktSentenceSegmenter {
       def reclassifyAbbrevTypes(uniques: List[String]): List[(String, Double, Boolean)] = {
         val typeFreqDistN = sum(typeFreqDist.values)
         @tailrec def loop(
-          uniques: List[String] = uniques.toList,
+          uniques: List[String] = uniques,
           output: List[(String, Double, Boolean)] = List()): List[(String, Double, Boolean)] = uniques match {
           case curTokenType :: rest =>
             val isAdd = curTokenType.endsWith(".")
@@ -713,13 +715,16 @@ object PunktSentenceSegmenter {
       "Dea", "Est", "Capt", "Hev", "Gen", "Ltd", "Etc", "Sci", "Comput", "Univ", "Ave", "Cent", "Col", "Comdr",
       "Cpl", "Dept", "Dust,", "Div", "Est", "Gal", "Gov", "Hon", "Grad", "Inst", "Lib", "Mus", "Pseud", "Ser", "Alt",
       "Mr", "Ms")
-
-    val tokenizer = new PunktSentenceTokenizer(trainText = Some(text), verbose = true, parms = params)
-    //    tokenizer.params.abbrevTypes.foreach(println(_))
-    val sfromt = tokenizer.sentencesFromText(text)
-    println(sfromt.length)
-    sfromt.foreach(println(_))
-    println(tokenizer.params.abbrevTypes)
+    val start = System.currentTimeMillis()
+    for (i <- 1 to 5) {
+      val tokenizer = new PunktSentenceTokenizer(trainText = Some(text), verbose = false, parms = params)
+      //    tokenizer.params.abbrevTypes.foreach(println(_))
+      val sfromt = tokenizer.sentencesFromText(text)
+//      println(sfromt.length)
+//      sfromt.foreach(println(_))
+//      println(tokenizer.params.abbrevTypes)
+    }
+    println(System.currentTimeMillis() - start)
     //
     //    val text = Source.fromFile( """C:\Users\Luke\Documents\Code\IESL\SentenceBoundaryDetector\wsj_text.txt""").getLines().mkString(" ")
     //    val start = System.currentTimeMillis()

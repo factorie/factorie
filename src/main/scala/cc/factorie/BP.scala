@@ -84,7 +84,7 @@ trait BPVariable {
   def edges: Seq[BPEdge]
   def calculateOutgoing(e:BPEdge): Tensor
   def updateOutgoing(e:BPEdge): Unit = e.messageFromVariable = calculateOutgoing(e)
-  def updateOutgoing: Unit = edges.foreach(updateOutgoing(_))
+  def updateOutgoing(): Unit = edges.foreach(updateOutgoing(_))
 }
 class BPVariable1(val variable: DiscreteVar) extends DiscreteMarginal1(variable, null) with BPVariable {
   private var _edges: List[BPEdge] = Nil
@@ -112,7 +112,7 @@ trait BPFactor extends DiscreteMarginal {
   def edges: Seq[BPEdge]
   /** Re-calculate the message from this factor to edge "e" and set e.messageFromFactor to the result. */
   def updateOutgoing(e: BPEdge): Unit
-  def updateOutgoing: Unit = edges.foreach(updateOutgoing(_))
+  def updateOutgoing(): Unit = edges.foreach(updateOutgoing(_))
   def scores: Tensor // All local scores across all dimensions of varying neighbors; does not use messages from variables
   /** Unnormalized log scores over values of varying neighbors */
   def calculateBeliefs: Tensor
@@ -135,9 +135,9 @@ abstract class BPFactor1(val edge1: BPEdge) extends DiscreteMarginal1(edge1.bpVa
   override def scores: Tensor1
   edge1.bpFactor = this; edge1.factorNeighborIndex = 0
   val edges = Seq(edge1)
-  def updateOutgoing(e: BPEdge): Unit = e match { case this.edge1 => updateOutgoing1 } 
-  override def updateOutgoing: Unit = updateOutgoing1
-  def updateOutgoing1: Unit = edge1.messageFromFactor = calculateOutgoing1
+  def updateOutgoing(e: BPEdge): Unit = e match { case this.edge1 => updateOutgoing1() }
+  override def updateOutgoing(): Unit = updateOutgoing1()
+  def updateOutgoing1(): Unit = edge1.messageFromFactor = calculateOutgoing1
   // TODO See about caching this when possible
   def calculateBeliefs: Tensor1 = (scores + edge1.messageFromVariable).asInstanceOf[Tensor1]
   override def calculateMarginal: Tensor1 = calculateBeliefs.expNormalized.asInstanceOf[Tensor1]
@@ -194,10 +194,10 @@ abstract class BPFactor2(val edge1: BPEdge, val edge2: BPEdge) extends DiscreteM
   edge1.bpFactor = this; edge1.factorNeighborIndex = 0
   edge2.bpFactor = this; edge1.factorNeighborIndex = 1
   val edges = Seq(edge1, edge2)
-  override def updateOutgoing: Unit = { updateOutgoing1; updateOutgoing2 }
-  def updateOutgoing(e: BPEdge): Unit = e match { case this.edge1 => updateOutgoing1; case this.edge2 => updateOutgoing2 } 
-  def updateOutgoing1: Unit = edge1.messageFromFactor = calculateOutgoing1
-  def updateOutgoing2: Unit = edge2.messageFromFactor = calculateOutgoing2
+  override def updateOutgoing(): Unit = { updateOutgoing1(); updateOutgoing2() }
+  def updateOutgoing(e: BPEdge): Unit = e match { case this.edge1 => updateOutgoing1(); case this.edge2 => updateOutgoing2() }
+  def updateOutgoing1(): Unit = edge1.messageFromFactor = calculateOutgoing1
+  def updateOutgoing2(): Unit = edge2.messageFromFactor = calculateOutgoing2
   // TODO See about caching this when possible
   def calculateBeliefs: Tensor2 = {
     val result = new DenseTensor2(edge1.messageFromVariable.length, edge2.messageFromVariable.length)
@@ -304,13 +304,13 @@ class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val ed
   val edges = Seq(edge1, edge2, edge3)
   def scores: Tensor3 = throw new Error("Not yet implemented")
   def updateOutgoing(e: BPEdge): Unit = e match {
-    case this.edge1 => updateOutgoing1
-    case this.edge2 => updateOutgoing2
-    case this.edge3 => updateOutgoing3
+    case this.edge1 => updateOutgoing1()
+    case this.edge2 => updateOutgoing2()
+    case this.edge3 => updateOutgoing3()
   } 
-  def updateOutgoing1: Unit = edge1.messageFromFactor = calculateOutgoing1
-  def updateOutgoing2: Unit = edge2.messageFromFactor = calculateOutgoing2
-  def updateOutgoing3: Unit = edge3.messageFromFactor = calculateOutgoing3
+  def updateOutgoing1(): Unit = edge1.messageFromFactor = calculateOutgoing1
+  def updateOutgoing2(): Unit = edge2.messageFromFactor = calculateOutgoing2
+  def updateOutgoing3(): Unit = edge3.messageFromFactor = calculateOutgoing3
   def calculateOutgoing1: Tensor = throw new Error("Not yet implemented")
   def calculateOutgoing2: Tensor = throw new Error("Not yet implemented")
   def calculateOutgoing3: Tensor = throw new Error("Not yet implemented")
@@ -409,7 +409,7 @@ object BP {
   // TODO: add inferTreewiseMax and associated test
   def inferSingle(v:MutableDiscreteVar[_<:DiscreteValue], model:Model): BPSummary = {
     val summary = new BPSummary(Seq(v), BPSumProductRing, model)
-    summary.bpFactors.foreach(_.updateOutgoing) 
+    summary.bpFactors.foreach(_.updateOutgoing())
     summary
   }
   // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
@@ -417,13 +417,13 @@ object BP {
     val summary = new BPSummary(varying, BPMaxProductRing, model)
     varying.size match {
       case 0 => {}
-      case 1 => { summary.bpFactors.foreach(_.updateOutgoing); summary.bpVariables.head.setToMaximize(null) }
+      case 1 => { summary.bpFactors.foreach(_.updateOutgoing()); summary.bpVariables.head.setToMaximize(null) }
       case _ => {
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2 with BPFactor2MaxProduct]]
         //println("BP.inferChainMax  markovBPFactors.size = "+markovBPFactors.size)
         // Send all messages from observations to labels in parallel
-        obsBPFactors.foreach(_.updateOutgoing)
+        obsBPFactors.foreach(_.updateOutgoing())
         // Send forward Viterbi messages
         for (f <- markovBPFactors) {
           f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
@@ -446,13 +446,13 @@ object BP {
     val summary = new BPSummary(varying, BPSumProductRing, model)
     varying.size match {
       case 0 => {}
-      case 1 => summary.bpFactors.foreach(_.updateOutgoing)
+      case 1 => summary.bpFactors.foreach(_.updateOutgoing())
       case _ => {
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2]]
         assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
         // Send all messages from observations to labels in parallel
-        obsBPFactors.foreach(_.updateOutgoing)
+        obsBPFactors.foreach(_.updateOutgoing())
         // Send forward messages
         for (f <- markovBPFactors) {
           f.edge1.bpVariable.updateOutgoing(f.edge1) // send message from neighbor1 to factor
