@@ -1,250 +1,716 @@
 package cc.factorie.app.nlp.segment
 
 import io.Source
-
-sealed case class PunktToken(left: String, offset: Int, right: String, ty: TokenType)
+import annotation.tailrec
+import java.util.regex.Pattern
+import scala.collection._
 
 sealed trait TokenType
-case object S extends TokenType // Sentence boundary marker
-case object A extends TokenType // Abbreviation marker
-case object AS extends TokenType // Abbreviation at end of sentence marker
-case object U extends TokenType // Unknown
-
-class PunktSentenceSegmenter(text: String, abvSet: Set[String] = Set(), sentenceStarterSet: Set[String] = Set()) {
-
-  val (tokens, tokenStrings) = getTokens(text)
-
-  val TOKEN_MAP = tokens.groupBy(x => x.left.toLowerCase)
-  /**
-   * Stores the case-insensitive count of each distinct word
-   * It counts a word and a word ending in a period as distinct
-   */
-  val wordCount = TOKEN_MAP.mapValues(_.length)
-  val N_words = tokens.length
-
-  def getTokens(text: String): (List[PunktToken], List[String]) = {
-    val regex = """\w+'[\.\-\w]+|\w+[\.\-\w]*"""
-    val matchIter = regex.r.findAllIn(text)
-    val matchOffsets = scala.collection.mutable.ArrayBuffer[Int]()
-    val matches = scala.collection.mutable.ArrayBuffer[String]()
-    while (matchIter.hasNext) {
-      matches += matchIter.next()
-      matchOffsets += matchIter.start
-    }
-    val tokens = scala.collection.mutable.ArrayBuffer[PunktToken]()
-    val tokenStrings = scala.collection.mutable.ArrayBuffer[String]()
-    var m = 0
-    while (m < matches.length) {
-      val currentMatchUnsubbed = matches(m)
-      val currentMatch = if (currentMatchUnsubbed.charAt(0).isDigit) replaceNumeric(currentMatchUnsubbed) else currentMatchUnsubbed
-      tokens += PunktToken(currentMatch, matchOffsets(m),
-        if (m == matches.length - 1) "" else matches(m + 1),
-        if (abvSet(currentMatch)) A else U)
-      tokenStrings += currentMatch
-      m += 1
-    }
-    (tokens.toList, tokenStrings.toList)
-  }
-
-  /**
-   * If the input string is a number it replaces the string with<br>
-   * <b>##number##</b> maintaining any trailing period.
-   * @param str A string that is a candidate for being a number
-   * @return    The string <b>##number##</b> if the str is numeric.<br>
-   *            Otherwise, str itself.
-   */
-  def replaceNumeric(str: String): String = {
-    var temp = str
-    try {
-      if (temp.endsWith(".")) {
-        temp = temp.substring(0, temp.length - 1)
-        Some(temp.toDouble)
-        "##number##."
-      } else {
-        Some(temp.toDouble)
-        "##number##"
-      }
-    } catch {
-      case _: java.lang.NumberFormatException => str
-    }
-  }
-
-  def stripTrailingDot(str: String) = if (str.endsWith(".")) str.substring(0, str.length - 1) else str
-
-  /**
-   * <p> The type-based classiﬁcation stage employs
-   * three characteristic properties of abbreviations:
-   * <ol>
-   * <li>Strong collocational dependency: Abbreviations always occur with a ﬁnal period.
-   * <li>Brevity: Abbreviations tend to be short.
-   * <li>Internal periods: Many abbreviations contain additional internal periods.
-   * </ol>
-   * </p>
-   * <p>As these three characteristics do not change for
-   * each individual instance of a type, we combine them in
-   * a type-based approach to abbreviation detection.
-   * </p>
-   */
-  class TypeBasedClassifier {
-    val periodCount = wordCount.filter(_._1.endsWith(".")).foldLeft(0)((acc, kv) => acc + kv._2)
-    val N = N_words + periodCount
-    val p = periodCount.asInstanceOf[Double] / N
-
-    val distinctWords = tokens.filterNot(_.ty == A).map(t => stripTrailingDot(t.left).toLowerCase).toSet
-
-    val likelihoodRatios = distinctWords.filterNot(_.equals("##number##")).flatMap(w => {
-      val i1 = wordCount.getOrElse(w, 0) //count of word without period
-      val i2 = wordCount.getOrElse(w + ".", 0) //count of word with period
-      if (i2 != 0) {
-        val n1 = i1 + i2
-        val k1 = i2
-        val p1 = 0.99
-        val fLength = 1 / math.exp(w.replaceAll( """\.""", "").length)
-        val fPeriods = """\.""".r.findAllIn(w).length + 1 //number of internal periods
-        //val fPenalty = 1.0/math.pow(w.replaceAll("""\.""","").length,i1)
-        Seq(w -> logLikehoodRatioModified(n1, k1, p1, p) * fLength * fPeriods)
-      }
-      else Nil
-    })
-
-    def createTokens: List[PunktToken] = {
-      val preProcessedList = tokens.filter(_.ty == A) //Words tagged as abvs using the precompiled list
-      val numList = TOKEN_MAP.get("##number##.").map(_.map(_.copy(ty = U))).flatten.toList
-      preProcessedList ::: numList ::: likelihoodRatios.flatMap(kv => {
-        TOKEN_MAP.get(kv._1 + ".").get.map(_.copy(ty = if (kv._2 >= 0.3) A else S))
-      }).toList
-    }
-  }
-
-  class TokenBasedClassifier(tokenList: List[PunktToken]) {
-    val UNDECIDED = 0
-    val SENTENCE_BOUNDARY = 1
-    val NO_SENTENCE_BOUNDARY = 2
-    val sCount = tokenList.filter(_.ty == S).map(_.right).groupBy(x => x).mapValues(_.length)
-    val aCount = tokenList.filter(_.ty == A).map(_.right).groupBy(x => x).mapValues(_.length)
-    val tokenStringsCount = tokenStrings.groupBy(x => x).mapValues(_.length)
-    val internalWords = tokenStringsCount.map(kv => {
-      kv._1 -> (kv._2 - sCount.getOrElse(kv._1, 0) - aCount.getOrElse(kv._1, 0))
-    })
-
-    def decideOrthographic(token: String): Int = {
-      if (token.charAt(0).isUpper)
-        if (tokenStringsCount.getOrElse(token.toLowerCase, 0) != 0 && internalWords.getOrElse(token, 0) == 0)
-          SENTENCE_BOUNDARY
-        else
-          UNDECIDED
-      else if (tokenStringsCount.getOrElse(token.charAt(0).toUpper + token.substring(1), 0) != 0 || sCount.getOrElse(token, 0) == 0)
-        NO_SENTENCE_BOUNDARY
-      else
-        UNDECIDED
-    }
-
-    def collocationHeuristic(tokenList: List[PunktToken]) = {
-      val wordBigramCounts = tokens.groupBy({case PunktToken(l, _, r, _) => (stripTrailingDot(l), r)}).mapValues(_.length)
-      tokenList.filter({
-        case PunktToken(rawLeft, _, rawRight, A) =>
-          val left = stripTrailingDot(rawLeft)
-          val right = stripTrailingDot(rawRight)
-          val i2 = wordCount.getOrElse(right.toLowerCase, 0) + wordCount.getOrElse(right.toLowerCase + ".", 0)
-          val k1 = wordBigramCounts((left, rawRight))
-          val k2 = i2 - k1
-          val n1 = wordCount.getOrElse(left.toLowerCase, 0) + wordCount.getOrElse(left.toLowerCase + ".", 0)
-          val n2 = N_words - n1
-          val p1 = k1.asInstanceOf[Double] / n1
-          val p2 = k2.asInstanceOf[Double] / n2
-          val p = i2.asInstanceOf[Double] / N_words
-          p1 > p && logLikehoodRatioDunning(n1, k1, p1, n2, k2, p2, p) >= 7.88
-        case _ => false
-      })
-    }
-
-    def freqSentenceStarterHeuristic(tokenList: List[PunktToken]) = {
-      val N_S = tokenList.filter(_.ty == S).length
-      val k1Cache = tokenList.groupBy(_.right).mapValues(_.filter(_.ty == S).length)
-      tokenList.map(_.right).filter(rawRight => {
-        val w = stripTrailingDot(rawRight)
-        val i2 = wordCount.getOrElse(w.toLowerCase, 0) + wordCount.getOrElse(w.toLowerCase + ".", 0)
-        val k1 = k1Cache(rawRight)
-        val k2 = i2 - k1
-        val p1 = k1.asInstanceOf[Double] / N_S
-        val p2 = k2.asInstanceOf[Double] / N_words
-        val p = i2.asInstanceOf[Double] / (N_S + N_words)
-        p1 > p && logLikehoodRatioDunning(N_S, k1, p1, N_words, k2, p2, p) >= 30
-      }) ++ sentenceStarterSet
-    }
-
-    def annotatedTokens: (Set[String], Iterable[PunktToken]) = {
-      val mutableTokenList = collection.mutable.Map(tokenList.map(token => token.offset -> token): _*)
-      var filteredList = tokenList.filterNot(token => token.left.equals("#number##.") || token.left.matches( """\p{L}\."""))
-      val freqSentenceStarters = freqSentenceStarterHeuristic(filteredList).toSet
-      collocationHeuristic(filteredList).filterNot(kv => freqSentenceStarters(kv.right)).foreach(colToken => {
-        mutableTokenList.update(colToken.offset, colToken)
-      })
-      filteredList.foreach(token => {
-        if (token.ty == A) {
-          val decision = decideOrthographic(token.right)
-          if (decision == SENTENCE_BOUNDARY || (token.right.charAt(0).isUpper && freqSentenceStarters(token.right)))
-            mutableTokenList.update(token.offset, token.copy(ty = AS))
-        }
-      })
-      filteredList = tokenList.filter(token => token.left.equals("##number##.") || token.left.matches( """\p{L}\."""))
-      filteredList.foreach(token => {
-        val decision = decideOrthographic(token.right)
-        if (decision == NO_SENTENCE_BOUNDARY)
-          mutableTokenList.update(token.offset, token.copy(ty = A))
-        else if (!token.left.equals("##number##.") && decision == UNDECIDED && token.right.charAt(0).isUpper)
-          mutableTokenList.update(token.offset, token.copy(ty = A))
-      })
-      val boundaries = mutableTokenList.values.toList.sortBy(_.offset)
-      (freqSentenceStarters, boundaries)
-    }
-  }
-
-  def logBino(n: Int, k: Int, p: Double): Double =
-    if (p == 0 || p == 1) 0 else k * math.log(p) + (n - k) * math.log(1 - p)
-
-  def logLikehoodRatioDunning(n1: Int, k1: Int, p1: Double, n2: Int, k2: Int, p2: Double, p: Double): Double =
-    2 * (logBino(n1, k1, p1) + logBino(n2, k2, p2) - logBino(n1, k1, p) - logBino(n2, k2, p))
-
-  def logLikehoodRatioModified(n1: Int, k1: Int, p1: Double, p: Double): Double =
-    2 * (logBino(n1, k1, p1) - logBino(n1, k1, p))
-
-  def createTypeBasedClassifier = new TypeBasedClassifier
-  def createTokenBasedClassifier(tokenList: List[PunktToken]) = new TokenBasedClassifier(tokenList)
-}
+case object S extends TokenType
+// Sentence boundary marker
+case object A extends TokenType
+// Abbreviation marker
+case object AS extends TokenType
+// Abbreviation at end of sentence marker
+case object U extends TokenType
+// Unknown
 
 object PunktSentenceSegmenter {
-  def findSentenceBoundaries(text: String, abvSet: Set[String] = Set[String]()): Iterable[(Int, TokenType)] = {
-    val detector = new PunktSentenceSegmenter(text, abvSet)
-    val tokenList = detector.createTypeBasedClassifier.createTokens
-    val sentenceBoundaries = detector.createTokenBasedClassifier(tokenList)
-      .annotatedTokens._2
-      .filter(t => t.ty == AS || t.ty == S)
-      .map(t => (t.offset + t.left.length, t.ty))
+
+  object Punkt {
+
+    val ORTHO_BEG_UC = 1
+    val ORTHO_MID_UC = 1 << 2
+    val ORTHO_UNK_UC = 1 << 3
+    val ORTHO_BEG_LC = 1 << 4
+    val ORTHO_MID_LC = 1 << 5
+    val ORTHO_UNK_LC = 1 << 6
+    val ORTHO_UC = ORTHO_BEG_UC | ORTHO_MID_UC | ORTHO_UNK_UC
+    val ORTHO_LC = ORTHO_BEG_LC | ORTHO_MID_LC | ORTHO_UNK_LC
+
+    def hasFlag(flagSet: Int, testFlag: Int): Boolean = (flagSet & testFlag) != 0
+
+    sealed trait OrthoContext
+    case object Initial extends OrthoContext
+    case object Internal extends OrthoContext
+    case object Unknown extends OrthoContext
+
+    sealed trait Case
+    case object Upper extends Case
+    case object Lower extends Case
+    case object Non extends Case
+
+    val orthoMap = Map[(OrthoContext, Case), Int](
+      (Initial, Upper) -> ORTHO_BEG_UC
+      , (Internal, Upper) -> ORTHO_MID_UC
+      , (Unknown, Upper) -> ORTHO_UNK_UC
+      , (Initial, Lower) -> ORTHO_BEG_LC
+      , (Internal, Lower) -> ORTHO_MID_LC
+      , (Unknown, Lower) -> ORTHO_UNK_LC)
+
+    class PunktLanguageVars {
+      val sentenceEndChars = Set(".", "?", "!")
+      def sentenceEndCharsRegex = "[%s]".format(Pattern.quote(sentenceEndChars.mkString))
+      val internalPunctuation = ",:;"
+      val boundaryRealignmentRegex = """(?s)["')\]}]+?(?:\s+|(?=--)|$)""".r
+      val wordStartRegex = """[^\("\`{\[:;&\#\*@\)}\]\-,]"""
+      val nonWordChars = """(?:[?!)";}\]\*:@'\({\[])"""
+      val multiCharPunctuationRegex = """(?:\-{2,}|\.{2,}|(?:\.\s){2,}\.)"""
+      val wordTokenizeTemplate = """(?x)(
+            %2$s
+            |
+            (?=%3$s)\S+? # Accept word characters until end is found
+            (?=          # Sequences marking a word's end
+                \s|      # White-space
+                $|       # End-of-string
+                %1$s|%2$s| # Punctuation
+                ,(?=$|\s|%1$s|%2$s) # Comma if at end of word
+            )
+                                   |
+            \S
+        )""" //.replaceAll("\\s+", "")
+
+      lazy val wordTokenizerRegex = {
+        val re = wordTokenizeTemplate.format(nonWordChars, multiCharPunctuationRegex, wordStartRegex)
+        println(re)
+        re.r
+      }
+
+      def wordTokenize(s: String) = wordTokenizerRegex.findAllIn(s)
+
+      val periodContextTemplate = """
+            [^\s]*
+            %2$s
+            (?=(
+                %1$s
+                                    |
+                \s+([^\s]+)
+            ))""".replaceAll("\\s+", "")
+
+      lazy val periodContextRegex = {
+        val re = periodContextTemplate.format(nonWordChars, sentenceEndCharsRegex)
+        println(re)
+        re.r
+      }
+    }
+
+    val nonPunctuationRegex = """[^\W\d]""".r
+
+    def iteratePairs[T](it: Iterable[T]): Iterable[(T, T)] = it.toSeq.sliding(2).filter(_.length > 1).map({case Seq(x, y) => (x, y)}).toIterable
+
+    class PunktParameters {
+      var abbrevTypes = mutable.Set[String]()
+      var collocations = mutable.Set[(String, String)]()
+      var sentenceStarters = mutable.Set[String]()
+      var orthoContext = makeOrthoContext
+
+      def makeOrthoContext = new mutable.HashMap[String, Int]() {
+        override def default(key: String) = 0
+      }
+
+      def clearAbbrevs() = abbrevTypes = mutable.Set[String]()
+      def clearCollocations() = collocations = mutable.Set[(String, String)]()
+      def clearSentenceStarters() = sentenceStarters = mutable.Set[String]()
+      def clearOrthoContext() = orthoContext = makeOrthoContext
+      def addOrthoContext(typ: String, flag: Int) = orthoContext(typ) |= flag
+    }
+
+    class PunktToken(
+      val token: String,
+      var paraStart: Boolean = false,
+      var lineStart: Boolean = false,
+      var sentenceBreak: Boolean = false,
+      var abbr: Boolean = false,
+      var ellipsis: Boolean = false) {
+
+      val periodFinal = token.endsWith(".")
+
+      val ellipsisRegex = """\.\.+$""".r
+      val numericRegex = """^-?[\.,]?\d[\d,\.-]*\.?$""".r
+      val initialRegex = """[^\W\d]\.$""".r
+      val alphaRegex = """[^\W\d]+$""".r
+
+      def getType(tk: String) =
+        if ( {val fst = tk(0); (fst == '.' || fst == '-' || fst.isDigit)})
+          numericRegex.replaceAllIn(tk.toLowerCase, "##number##")
+        else
+          tk.toLowerCase
+
+      val ty = getType(token)
+
+      def typeNoPeriod = if (ty.length > 1 && ty.last == '.') ty.dropRight(1) else ty
+      def typeNoSentPeriod = if (sentenceBreak) typeNoPeriod else ty
+      def firstUpper = token(0).isUpper
+      def firstLower = token(0).isLower
+      def firstCase = if (firstUpper) Upper else if (firstLower) Lower else Non
+      def isEllipsis = ellipsisRegex.pattern.matcher(token).matches
+      def isNumber = ty.startsWith("##number##")
+      def isInitial = initialRegex.pattern.matcher(token).matches
+      def isAlpha = alphaRegex.pattern.matcher(token).matches
+      def isNonPunctuation = nonPunctuationRegex.findFirstIn(ty).isDefined
+
+      def serialize: String = sys.error("unimplemented")
+
+      override def toString: String = {
+        var res = token
+        if (abbr) res += "<A>"
+        if (ellipsis) res += "<E>"
+        if (sentenceBreak) res += "<S>"
+        res
+      }
+    }
+
+    abstract class PunktBase(
+      val languageVars: PunktLanguageVars = new PunktLanguageVars(),
+      parms: PunktParameters = new PunktParameters()) {
+
+      private[this] var p = parms
+
+      def params_=(parms: PunktParameters) = p = parms
+      def params = p
+
+      def tokenizeWords(plainText: String): mutable.ArrayBuffer[PunktToken] = {
+        val tokens = new mutable.ArrayBuffer[PunktToken]()
+        var paraStart = false
+        val lineIter = plainText.split('\n').iterator
+        while (lineIter.hasNext) {
+          val line = lineIter.next()
+          val stripped = line.trim
+          if (stripped.isEmpty) {
+            paraStart = true
+          } else {
+            val lineTokens = languageVars.wordTokenize(line)
+            val firstToken = lineTokens.next()
+            if (firstToken != "")
+              tokens += new PunktToken(firstToken, paraStart = paraStart, lineStart = true)
+            paraStart = false
+            while (lineTokens.hasNext) {
+              val tk = lineTokens.next()
+              if (tk != "")
+                tokens += new PunktToken(tk)
+            }
+          }
+        }
+        tokens
+      }
+
+      def annotateFirstPass(tokens: Iterable[PunktToken]): Unit =
+        tokens.foreach(firstPassAnnotation(_))
+
+      def firstPassAnnotation(pt: PunktToken) = {
+        val tok = pt.token
+        if (languageVars.sentenceEndChars.contains(tok))
+          pt.sentenceBreak = true
+        else if (pt.isEllipsis)
+          pt.ellipsis = true
+        else if (pt.periodFinal && !tok.endsWith(".."))
+          if (params.abbrevTypes.contains(tok.dropRight(1).toLowerCase) ||
+              params.abbrevTypes.contains(tok.dropRight(1).toLowerCase.split("-").last))
+            pt.abbr = true
+          else
+            pt.sentenceBreak = true
+      }
+    }
+
+    class UnigramFreqDist extends mutable.HashMap[String, Int] {
+      override def default(key: String) = 0
+      def thresholdFreq(threshold: Int): UnigramFreqDist = {
+        val res = new UnigramFreqDist
+        var numRemoved = 0
+        for ((tok, count) <- this) {
+          if (count > threshold) numRemoved += 1
+          else res(tok) += count
+        }
+        res(null) += numRemoved
+        res
+      }
+    }
+
+    class BigramFreqDist extends mutable.HashMap[(String, String), Int] {
+      override def default(key: (String, String)) = 0
+      def thresholdFreq(threshold: Int): BigramFreqDist = {
+        val res = new BigramFreqDist
+        var numRemoved = 0
+        for ((tok, count) <- this) {
+          if (count > threshold) numRemoved += 1
+          else res(tok) += count
+        }
+        res(null) += numRemoved
+        res
+      }
+    }
+
+    class PunktTrainer(
+      val trainText: Option[String] = None,
+      val verbose: Boolean = false,
+      languageVars: PunktLanguageVars = new PunktLanguageVars(),
+      params: PunktParameters = new PunktParameters())
+      extends PunktBase(languageVars, params) {
+
+      var typeFreqDist = new UnigramFreqDist()
+      var sentenceStarterFreqDist = new UnigramFreqDist()
+      var collocationFreqDist = new BigramFreqDist()
+
+      var numPeriodTokens = 0
+      var sentenceBreakCount = 0
+      var finalized = false
+
+      val ABBREV = 0.3
+      var IGNORE_ABBREV_PENALTY = false
+      var ABBREV_BACKOFF = 5
+      var COLLOCATION = 7.88
+      var SENT_STARTER = 30
+      var INCLUDE_ALL_COLLOCS = false
+      var INCLUDE_ABBREV_COLLOCS = false
+      var MIN_COLLOC_FREQ = 1
+
+      if (trainText.isDefined) train(trainText.get, verbose, finalize = true)
+
+      def train(text: String, verbose: Boolean = false, finalize: Boolean = true) = {
+        trainTokensLogic(tokenizeWords(text), verbose)
+        if (finalize) finalizeTraining(verbose)
+      }
+
+      def trainTokens(tokens: mutable.ArrayBuffer[PunktToken], verbose: Boolean = false, finalize: Boolean = true) = {
+        trainTokensLogic(tokens, verbose)
+        if (finalize) finalizeTraining(verbose)
+      }
+
+      private def trainTokensLogic(tokens: mutable.ArrayBuffer[PunktToken], verbose: Boolean = false, finalize: Boolean = true) = {
+        finalized = false
+
+        for (tok <- tokens) {
+          typeFreqDist(tok.ty) += 1
+          if (tok.periodFinal) numPeriodTokens += 1
+        }
+
+        val uniqueTypes = this.uniqueTypes(tokens)
+        for ((abbr, score, isAdd) <- reclassifyAbbrevTypes(uniqueTypes)) {
+          if (score >= ABBREV && isAdd) {
+            params.abbrevTypes += abbr
+            if (verbose) println(" Abbreviation: [%6.4f] %s" format(score, abbr))
+          } else if (!isAdd) {
+            params.abbrevTypes -= abbr
+            if (verbose) println(" Removed abbreviation: [%6.4f] %s" format(score, abbr))
+          }
+        }
+
+        annotateFirstPass(tokens)
+        annotateOrthographyData(tokens)
+        sentenceBreakCount += getSentenceBreakCount(tokens)
+
+        for ((tok1, tok2) <- iteratePairs(tokens); if (tok1.periodFinal)) {
+          if (isRareAbbrevType(tok1, tok2)) {
+            params.abbrevTypes += tok1.typeNoPeriod
+            if (verbose) println(" Rare Abbrev: %s" format tok1.ty)
+          }
+
+          if (isPotentialSentenceStarter(tok1, tok2))
+            sentenceStarterFreqDist(tok2.ty) += 1
+
+          if (isPotentialCollocation(tok1, tok2))
+            collocationFreqDist((tok1.typeNoPeriod, tok2.typeNoSentPeriod)) += 1
+        }
+      }
+
+      def finalizeTraining(verbose: Boolean = false): Unit = {
+        params.clearSentenceStarters()
+        for ((ty, ll) <- findSentenceStarters()) {
+          params.sentenceStarters += ty
+          if (verbose) println(" Sent Starter: [%6.4f] %s" format(ll, ty))
+        }
+        params.clearCollocations()
+        for (((ty1, ty2), ll) <- findCollocations()) {
+          params.collocations += ((ty1, ty2))
+          if (verbose) println(" Collocation: [%6.4f] %s+%s" format(ll, ty1, ty2))
+        }
+        finalized = true
+      }
+
+      def freqThreshold(orthoThreshold: Int = 2, typeThreshold: Int = 2, collocThreshold: Int = 2, sentenceStartThreshold: Int = 2) = {
+        if (orthoThreshold > 1) {
+          val oldOc = params.orthoContext
+          params.clearOrthoContext()
+          for ((tok, count) <- typeFreqDist; if count >= orthoThreshold)
+            params.orthoContext(tok) = oldOc(tok)
+        }
+
+        typeFreqDist = typeFreqDist.thresholdFreq(typeThreshold)
+        collocationFreqDist = collocationFreqDist.thresholdFreq(collocThreshold)
+        sentenceStarterFreqDist = sentenceStarterFreqDist.thresholdFreq(sentenceStartThreshold)
+      }
+
+      def annotateOrthographyData(tokens: mutable.ArrayBuffer[PunktToken]): Unit = {
+        var context: OrthoContext = Internal
+        for (tok <- tokens) {
+          if (tok.paraStart && context != Unknown) context = Initial
+          if (tok.lineStart && context == Internal) context = Unknown
+          val flag = orthoMap.getOrElse((context, tok.firstCase), 0)
+          if (flag != 0) params.addOrthoContext(tok.typeNoSentPeriod, flag)
+          if (tok.sentenceBreak)
+            if (!(tok.isNumber || tok.isInitial)) context = Initial
+            else context = Unknown
+          else if (tok.ellipsis || tok.abbr) context = Unknown
+          else context = Internal
+        }
+      }
+
+      def isRareAbbrevType(tok1: PunktToken, tok2: PunktToken): Boolean = {
+        if (tok1.abbr || !tok1.sentenceBreak) return false
+        val typ = tok1.typeNoSentPeriod
+        val count = typeFreqDist(typ) + typeFreqDist(typ.dropRight(1))
+        if (params.abbrevTypes.contains(typ) || count >= ABBREV_BACKOFF)
+          return false
+        if (languageVars.internalPunctuation.contains(tok2.token.take(1))) {
+          return true
+        } else if (tok2.firstLower) {
+          val typ2 = tok2.typeNoSentPeriod
+          val typ2OrthoContext = params.orthoContext(typ2)
+          if (hasFlag(typ2OrthoContext, ORTHO_BEG_UC) && !hasFlag(typ2OrthoContext, ORTHO_MID_UC))
+            return true
+        }
+        false
+      }
+
+      def isPotentialSentenceStarter(tok1: PunktToken, tok2: PunktToken): Boolean =
+        tok1.sentenceBreak && !(tok1.isNumber || tok1.isInitial) && tok2.isAlpha
+
+      def isPotentialCollocation(tok1: PunktToken, tok2: PunktToken): Boolean = {
+        (INCLUDE_ALL_COLLOCS ||
+         (INCLUDE_ABBREV_COLLOCS && tok1.abbr) ||
+         (tok1.sentenceBreak &&
+          (tok1.isNumber || tok1.isInitial))) &&
+        tok1.isNonPunctuation &&
+        tok2.isNonPunctuation
+      }
+
+      def findCollocations(): mutable.ArrayBuffer[((String, String), Double)] = {
+        val collocations = new mutable.ArrayBuffer[((String, String), Double)]()
+        val typeFreqDistN = sum(typeFreqDist.values)
+        for (((typ1, typ2), colCount) <- collocationFreqDist; if !params.sentenceStarters.contains(typ2)) {
+          val typ1Count = typeFreqDist(typ1) + typeFreqDist(typ1 + ".")
+          val typ2Count = typeFreqDist(typ2) + typeFreqDist(typ2 + ".")
+          if (typ1Count > 1 && typ2Count > 1 &&
+              MIN_COLLOC_FREQ < colCount &&
+              colCount <= math.min(typ1Count, typ2Count)) {
+            val ll = colLogLikelihood(typ1Count, typ2Count, colCount, typeFreqDistN)
+            if (ll >= COLLOCATION &&
+                (typeFreqDistN: Double) / typ1Count > (typ2Count: Double) / colCount)
+              collocations += (((typ1, typ2), ll))
+          }
+        }
+        collocations
+      }
+
+      def sum(xs: Iterable[Int]): Int = {
+        val iter = xs.iterator
+        var sum = 0
+        while (iter.hasNext) sum += iter.next()
+        sum
+      }
+
+      def reclassifyAbbrevTypes(uniques: Iterable[String]): Iterable[(String, Double, Boolean)] = {
+        val typeFreqDistN = sum(typeFreqDist.values)
+        @tailrec def loop(
+          uniques: List[String] = uniques.toList,
+          output: List[(String, Double, Boolean)] = List()): List[(String, Double, Boolean)] = uniques match {
+          case curTokenType :: rest =>
+            val isAdd = curTokenType.endsWith(".")
+            if (!nonPunctuationRegex.findFirstIn(curTokenType).isDefined ||
+                curTokenType == "##number##" ||
+                (isAdd && params.abbrevTypes.contains(curTokenType)) ||
+                (!isAdd && !params.abbrevTypes.contains(curTokenType)))
+              loop(rest, output)
+            else {
+              val typ = if (isAdd) curTokenType.dropRight(1) else curTokenType
+              val numPeriods = typ.count("." ==) + 1
+              val numNonPeriods = typ.length - numPeriods + 1
+              val countWithPeriod = typeFreqDist(typ + ".")
+              val countWithoutPeriod = typeFreqDist(typ)
+              val ll = dunningLogLikelihood(
+                countWithPeriod + countWithoutPeriod,
+                numPeriodTokens,
+                countWithPeriod,
+                typeFreqDistN)
+              val fLength = math.exp(-numNonPeriods)
+              val fPeriods = numPeriods
+              val fPenalty = if (IGNORE_ABBREV_PENALTY) 1 else math.pow(numNonPeriods, -countWithoutPeriod)
+              val score = ll * fLength * fPeriods * fPenalty
+              loop(rest, (typ, score, isAdd) :: output)
+            }
+          case _ => output
+        }
+        loop()
+      }
+
+      def dunningLogLikelihood(countA: Int, countB: Int, countAB: Int, N: Int) = {
+        val p1 = (countB: Double) / N
+        val p2 = 0.99
+        val nullHypo = (countAB: Double) * math.log(p1) + (countA - countAB) * math.log(1.0 - p1)
+        val altHypo = (countAB: Double) * math.log(p2) + (countA - countAB) * math.log(1.0 - p2)
+        val likelihood = nullHypo - altHypo
+        -2.0 * likelihood
+      }
+
+      def colLogLikelihood(countA: Int, countB: Int, countAB: Int, N: Int) = {
+        val p = (countB: Double) / N
+        val p1 = (countAB: Double) / countA
+        val p2 = ((countB - countAB): Double) / (N - countA)
+        val summand1 = countAB * math.log(p) + (countA - countAB) * math.log(1.0 - p)
+        val summand2 = (countB - countAB) * math.log(p) + (N - countA - countB + countAB) * math.log(1.0 - p)
+        val summand3 =
+          if (countA == countAB) 0
+          else countAB * math.log(p1) + (countA - countAB) * math.log(1.0 - p1)
+        val summand4 =
+          if (countB == countAB) 0
+          else (countB - countAB) * math.log(p2) + (N - countA - countB + countAB) * math.log(1.0 - p2)
+        val likelihood = summand1 + summand2 - summand3 - summand4
+        -2.0 * likelihood
+      }
+
+      def findAbbrevTypes() = {
+        params.clearAbbrevs()
+        val tokens = typeFreqDist.keys.filter(ty => ty != null && ty.endsWith("."))
+        for ((abbr, score, isAdd) <- reclassifyAbbrevTypes(tokens); if score >= ABBREV)
+          params.abbrevTypes += abbr
+      }
+
+      def uniqueTypes(tokens: Iterable[PunktToken]) = {
+        val uniques = new mutable.HashSet[String]()
+        val iter = tokens.iterator
+        while (iter.hasNext)
+          uniques += iter.next().ty
+        uniques
+      }
+
+      def findSentenceStarters(): Iterable[(String, Double)] = {
+        val typeFreqDistN = sum(typeFreqDist.values)
+        for {
+          (typ, typAtBreakCount) <- sentenceStarterFreqDist
+          if typ != null
+          typCount = typeFreqDist(typ) + typeFreqDist(typ + ".")
+          if typCount >= typAtBreakCount
+          ll = colLogLikelihood(sentenceBreakCount, typCount, typAtBreakCount, typeFreqDistN)
+          if ll >= SENT_STARTER && (typeFreqDistN: Double) / sentenceBreakCount > (typCount: Double) / typAtBreakCount
+        } yield (typ, ll)
+      }
+
+      def getSentenceBreakCount(tokens: Iterable[PunktToken]) = tokens.count(_.sentenceBreak)
+    }
+
+    class PunktSentenceTokenizer(
+      val trainText: Option[String] = None,
+      val verbose: Boolean = false,
+      languageVars: PunktLanguageVars = new PunktLanguageVars,
+      parms: PunktParameters = new PunktParameters()) extends PunktBase(languageVars, parms) {
+
+      val PUNCTUATION = Set(";", ":", ",", ".", "!", "?")
+
+      if (trainText != None) super.params_=(train(trainText.get, verbose))
+
+      def train(trainText: String, verbose: Boolean = false) =
+        new PunktTrainer(Some(trainText), verbose, languageVars, params).params
+
+      def sentencesFromText(text: String, realignBoundaries: Boolean = false) = {
+        var sents = slicesFromText(text).map({case (s1, s2, _) => text.substring(s1, s2)})
+        if (realignBoundaries) sents = this.realignBoundaries(sents)
+        sents
+      }
+
+      def annotateTokens(tokens: Iterable[PunktToken]): Iterable[PunktToken] = {
+        annotateFirstPass(tokens)
+//        println(tokens)
+//        println(tokens.map(_.ty))
+        annotateSecondPass(tokens)
+//        println(tokens)
+//        println(tokens.map(_.ty))
+        tokens
+      }
+
+      def buildSentenceList(text: String, tokens: mutable.ArrayBuffer[PunktToken]): mutable.ArrayBuffer[String] = {
+        val output = new mutable.ArrayBuffer[String]()
+        var pos = 0
+        val wsRegex = """\s*""".r
+        var sentence = ""
+        for (token <- tokens) {
+          var tok = token.token
+          val wsMatcher = wsRegex.pattern.matcher(text.substring(pos))
+          val ws = if (wsMatcher.matches) wsMatcher.group(0) else ""
+          pos += ws.length
+          if (text.substring(pos, pos + tok.length) != tok) {
+            val pat = tok.map(c => Pattern.quote(c.toString)).mkString( """\s*""")
+            val m = pat.r.pattern.matcher(text.substring(pos))
+            if (m.matches) tok = m.group(0)
+          }
+
+          pos += tok.length
+          sentence += (if (sentence != "") ws + tok else tok)
+          if (token.sentenceBreak) {
+            output += sentence
+            sentence = ""
+          }
+        }
+        if (sentence != "") output += sentence
+        output
+      }
+
+      def annotateSecondPass(tokens: Iterable[PunktToken]): Unit =
+        for ((t1, t2) <- iteratePairs(tokens)) secondPassAnnotation(t1, t2)
+
+      def secondPassAnnotation(tok1: PunktToken, tok2: PunktToken): Unit = {
+        if (!tok1.periodFinal) return
+        val typ = tok1.typeNoPeriod
+        val nextType = tok2.typeNoSentPeriod
+        val tokIsInitial = tok1.isInitial
+
+        if (params.collocations.contains((typ, nextType))) {
+          tok1.sentenceBreak = false
+          tok1.abbr = true
+          return
+        }
+
+        if ((tok1.abbr || tok1.ellipsis) && !tokIsInitial) {
+          val isSentenceStarter = orthoHeuristic(tok2)
+          if (isSentenceStarter.isDefined && isSentenceStarter.get) {
+            tok1.sentenceBreak = true
+            return
+          }
+          if (tok2.firstUpper && params.sentenceStarters.contains(nextType)) {
+            tok1.sentenceBreak = true
+            return
+          }
+        }
+
+        if (tokIsInitial || typ == "##number##") {
+          val isSentenceStarter = orthoHeuristic(tok2)
+          if (isSentenceStarter.isDefined && !isSentenceStarter.get) {
+            tok1.sentenceBreak = false
+            tok1.abbr = true
+            return
+          }
+          if (!isSentenceStarter.isDefined && tokIsInitial &&
+              tok2.firstUpper &&
+              !hasFlag(params.orthoContext(nextType), ORTHO_LC)) {
+            tok1.sentenceBreak = false
+            tok1.abbr = true
+          }
+        }
+      }
+
+      def orthoHeuristic(tok: PunktToken): Option[Boolean] = {
+        if (PUNCTUATION.contains(tok.token))
+          Some(false)
+        else {
+          val orthoContext = params.orthoContext(tok.typeNoSentPeriod)
+          if (tok.firstUpper && hasFlag(orthoContext, ORTHO_LC) && !hasFlag(orthoContext, ORTHO_MID_UC))
+            Some(true)
+          else if (tok.firstLower && (hasFlag(orthoContext, ORTHO_UC) || !hasFlag(orthoContext, ORTHO_BEG_LC)))
+            Some(false)
+          else
+            None
+        }
+      }
+
+      def textContainsSentenceBreak(text: String): Option[PunktToken] = {
+        val annotated = annotateTokens(tokenizeWords(text))
+  //      println(annotated)
+        annotated.dropRight(1).find(_.sentenceBreak)
+      }
+
+      def slicesFromText(text: String): mutable.ArrayBuffer[(Int, Int, TokenType)] = {
+        var lastBreak = 0
+        val output = new mutable.ArrayBuffer[(Int, Int, TokenType)]()
+        for (m <- languageVars.periodContextRegex.findAllIn(text).matchData) {
+          val context = m.group(0) + m.group(1)
+          //          println(context)
+          val break = textContainsSentenceBreak(context)
+          if (break.isDefined) {
+            output += ((lastBreak, m.end, if (break.get.abbr) AS else S))
+            lastBreak = if (m.groupNames.length > 2) m.start(2) else m.end
+          }
+        }
+        output += ((lastBreak, text.length, S))
+        output
+      }
+
+      def realignBoundaries(sents: mutable.ArrayBuffer[String]): mutable.ArrayBuffer[String] = {
+        var realign = 0
+        val output = new mutable.ArrayBuffer[String]()
+        for ((s1Unfixed, s2) <- iteratePairs(sents)) {
+          val s1 = s1Unfixed.substring(realign, s1Unfixed.length)
+          val m = languageVars.boundaryRealignmentRegex.findFirstMatchIn(s2)
+          if (m.isDefined) {
+            output += (s1 + m.get.group(0).trim)
+            realign = m.get.end
+          } else {
+            realign = 0
+            output += s1
+          }
+        }
+        output
+      }
+
+      def tokenize(text: String, realignBoundaries: Boolean = false) = sentencesFromText(text, realignBoundaries)
+
+      def spanTokenize(text: String) = slicesFromText(text)
+    }
+  }
+
+  import Punkt._
+
+  def findSentenceBoundaries(text: String, abvSet: Set[String] = Set[String](), sentStarters: Set[String] = Set[String]()): Iterable[(Int, TokenType)] = {
+    val params = new PunktParameters
+    params.abbrevTypes ++= abvSet
+    params.sentenceStarters ++= sentStarters
+    val tokenizer = new PunktSentenceTokenizer(trainText = Some(text), verbose = true, parms = params)
+    val sentenceBoundaries = tokenizer.slicesFromText(text).map({case (_, b, t) => (b, t)})
     Seq((0, S)) ++ sentenceBoundaries
   }
 
-  def findCommonAbbreviations(text: String, abvSet: Set[String] = Set[String]()): Set[String] = {
-    val detector = new PunktSentenceSegmenter(text, abvSet)
-    val tokenList = detector.createTypeBasedClassifier.createTokens
-    val abbrevs = detector.createTokenBasedClassifier(tokenList)
-      .annotatedTokens._2
-      .filter(t => t.ty == AS || t.ty == A)
-      .map(_.left).toSet
-    abbrevs
+  def findCommonAbbreviations(text: String, abvSet: Set[String] = Set[String](), sentStarters: Set[String] = Set[String]()): Set[String] = {
+    val params = new PunktParameters
+    params.abbrevTypes ++= abvSet
+    params.sentenceStarters ++= sentStarters
+    val trainer = new PunktTrainer(trainText = Some(text), params = params)
+    trainer.params.abbrevTypes
   }
 
-  def findCommonSentenceStarters(text: String): Set[String] = {
-    val detector = new PunktSentenceSegmenter(text)
-    val tokenList = detector.createTypeBasedClassifier.createTokens
-    detector.createTokenBasedClassifier(tokenList).annotatedTokens._1
+  def findCommonSentenceStarters(text: String, abvSet: Set[String] = Set[String](), sentStarters: Set[String] = Set[String]()): Set[String] = {
+    val params = new PunktParameters
+    params.abbrevTypes ++= abvSet
+    params.sentenceStarters ++= sentStarters
+    val trainer = new PunktTrainer(trainText = Some(text), params = params)
+    trainer.params.sentenceStarters
   }
 
   def main(args: Array[String]): Unit = {
-    val text = Source.fromFile( """C:\Users\Luke\Documents\Code\IESL\SentenceBoundaryDetector\wsj_text.txt""").getLines().mkString(" ")
-    val start = System.currentTimeMillis()
-    for (i <- 1 until 2)
-      findSentenceBoundaries(text).foreach(println(_))
-    println(System.currentTimeMillis() - start)
+    val text = scala.io.Source.fromFile( """C:\wsj_processed.txt""").getLines().mkString
+    val params = new PunktParameters
+    params.abbrevTypes ++= Set(
+       "inc", "corp", "dec", "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "ala",
+       "ariz", "ark", "colo", "conn", "del", "fla", "ill", "ind", "kans", "kan", "ken", "kent", "mass", "mich",
+       "minn", "miss", "mont", "nebr", "neb", "nev", "dak", "okla", "oreg", "tenn", "tex", "virg", "wash", "wis",
+       "wyo", "mr", "ms", "mrs", "calif", "oct", "vol", "rev", "ltd", "dea", "est", "capt", "hev", "gen", "ltd", "etc", "sci",
+       "comput", "univ", "ave", "cent", "col", "comdr", "cpl", "dept", "dust,", "div", "est", "gal", "gov", "hon",
+       "grad", "inst", "lib", "mus", "pseud", "ser", "alt", "Inc", "Corp", "Dec", "Jan", "Feb", "Mar", "Apr",
+       "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Ala", "Ariz", "Ark", "Colo", "Conn", "Del", "Fla", "Ill",
+       "Ind", "Kans", "Kan", "Ken", "Kent", "Mass", "Mich", "Minn", "Miss", "Mont", "Nebr", "Neb", "Nev", "Dak",
+       "Okla", "Oreg", "Tenn", "Tex", "Virg", "Wash", "Wis", "Wyo", "Mrs", "Calif", "Oct", "Vol", "Rev", "Ltd",
+       "Dea", "Est", "Capt", "Hev", "Gen", "Ltd", "Etc", "Sci", "Comput", "Univ", "Ave", "Cent", "Col", "Comdr",
+       "Cpl", "Dept", "Dust,", "Div", "Est", "Gal", "Gov", "Hon", "Grad", "Inst", "Lib", "Mus", "Pseud", "Ser", "Alt",
+       "Mr", "Ms")
+
+    val tokenizer = new PunktSentenceTokenizer(trainText = Some(text), verbose = true, parms = params)
+//    tokenizer.params.abbrevTypes.foreach(println(_))
+    val sfromt = tokenizer.sentencesFromText(text)
+    println(sfromt.length)
+    sfromt.foreach(println(_))
+
+//
+//    val text = Source.fromFile( """C:\Users\Luke\Documents\Code\IESL\SentenceBoundaryDetector\wsj_text.txt""").getLines().mkString(" ")
+//    val start = System.currentTimeMillis()
+//    for (i <- 1 until 2)
+//      findSentenceBoundaries(text).foreach(println(_))
+//    println(System.currentTimeMillis() - start)
   }
 }

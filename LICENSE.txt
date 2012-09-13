@@ -8,6 +8,14 @@ any subsequent version.
 The license is approved by the Open Source Initiative, and is available
 from their website at http://www.opensource.org.
 
+THIRD PARTY COMPONENTS
+
+The PunktTokenizer component is based on code from the NLTK library,
+ported from Python and modified, licensed under Apache License 2.0:
+Copyright (C) 2001-2012 NLTK Project
+Bird, Steven, Edward Loper and Ewan Klein (2009).
+Natural Language Processing with Python.  O'Reilly Media Inc.
+
 ==========================================
 
                                  Apache License
