@@ -58,7 +58,7 @@ object PunktSentenceSegmenter {
       val multiCharPunctuationRegex = """(?:\-{2,}|\.{2,}|(?:\.\s){2,}\.)"""
       val wordTokenizeTemplate = """(?x)(
             %2$s
-            |
+                                   |
             (?=%3$s)\S+? # Accept word characters until end is found
             (?=          # Sequences marking a word's end
                 \s|      # White-space
@@ -112,7 +112,14 @@ object PunktSentenceSegmenter {
       def clearCollocations() = collocations = mutable.Set[(String, String)]()
       def clearSentenceStarters() = sentenceStarters = mutable.Set[String]()
       def clearOrthoContext() = orthoContext = makeOrthoContext
-      def addOrthoContext(typ: String, flag: Int) = orthoContext(typ) |= flag
+      def addOrthoContext(typ: String, flag: Int) = orthoContext.update(typ, orthoContext(typ) | flag)
+    }
+
+    object PunktToken {
+      val ellipsisRegex = """\.\.+$""".r
+      val numericRegex = """^-?[\.,]?\d[\d,\.-]*\.?$""".r
+      val initialRegex = """[^\W\d]\.$""".r
+      val alphaRegex = """[^\W\d]+$""".r
     }
 
     class PunktToken(
@@ -123,12 +130,9 @@ object PunktSentenceSegmenter {
       var abbr: Boolean = false,
       var ellipsis: Boolean = false) {
 
-      val periodFinal = token.endsWith(".")
+      import PunktToken._
 
-      val ellipsisRegex = """\.\.+$""".r
-      val numericRegex = """^-?[\.,]?\d[\d,\.-]*\.?$""".r
-      val initialRegex = """[^\W\d]\.$""".r
-      val alphaRegex = """[^\W\d]+$""".r
+      val periodFinal = token.endsWith(".")
 
       def getType(tk: String) =
         if ( {val fst = tk(0); (fst == '.' || fst == '-' || fst.isDigit)})
@@ -285,10 +289,14 @@ object PunktSentenceSegmenter {
         }
 
         val uniqueTypes = this.uniqueTypes(tokens)
-        for ((abbr, score, isAdd) <- reclassifyAbbrevTypes(uniqueTypes)) {
-          if (score >= ABBREV && isAdd) {
-            params.abbrevTypes += abbr
-            if (verbose) println(" Abbreviation: [%6.4f] %s" format(score, abbr))
+        val reclassIter = reclassifyAbbrevTypes(uniqueTypes.toList).iterator
+        while (reclassIter.hasNext) {
+          val (abbr, score, isAdd) = reclassIter.next()
+          if (score >= ABBREV) {
+            if (isAdd) {
+              params.abbrevTypes += abbr
+              if (verbose) println(" Abbreviation (isAdd: %s): [%6.4f] %s" format(isAdd, score, abbr))
+            }
           } else if (!isAdd) {
             params.abbrevTypes -= abbr
             if (verbose) println(" Removed abbreviation: [%6.4f] %s" format(score, abbr))
@@ -299,17 +307,19 @@ object PunktSentenceSegmenter {
         annotateOrthographyData(tokens)
         sentenceBreakCount += getSentenceBreakCount(tokens)
 
-        for ((tok1, tok2) <- iteratePairs(tokens); if (tok1.periodFinal)) {
-          if (isRareAbbrevType(tok1, tok2)) {
-            params.abbrevTypes += tok1.typeNoPeriod
-            if (verbose) println(" Rare Abbrev: %s" format tok1.ty)
+        val pairIter = iteratePairs(tokens).iterator
+        while (pairIter.hasNext) {
+          val (tok1, tok2) = pairIter.next()
+          if (tok1.periodFinal) {
+            if (isRareAbbrevType(tok1, tok2)) {
+              params.abbrevTypes += tok1.typeNoPeriod
+              if (verbose) println(" Rare Abbrev: %s" format tok1.ty)
+            }
+            if (isPotentialSentenceStarter(tok1, tok2))
+              sentenceStarterFreqDist(tok2.ty) += 1
+            if (isPotentialCollocation(tok1, tok2))
+              collocationFreqDist((tok1.typeNoPeriod, tok2.typeNoSentPeriod)) += 1
           }
-
-          if (isPotentialSentenceStarter(tok1, tok2))
-            sentenceStarterFreqDist(tok2.ty) += 1
-
-          if (isPotentialCollocation(tok1, tok2))
-            collocationFreqDist((tok1.typeNoPeriod, tok2.typeNoSentPeriod)) += 1
         }
       }
 
@@ -342,7 +352,9 @@ object PunktSentenceSegmenter {
 
       def annotateOrthographyData(tokens: mutable.ArrayBuffer[PunktToken]): Unit = {
         var context: OrthoContext = Internal
-        for (tok <- tokens) {
+        val tokenIter = tokens.iterator
+        while (tokenIter.hasNext) {
+          val tok = tokenIter.next()
           if (tok.paraStart && context != Unknown) context = Initial
           if (tok.lineStart && context == Internal) context = Unknown
           val flag = orthoMap.getOrElse((context, tok.firstCase), 0)
@@ -409,7 +421,7 @@ object PunktSentenceSegmenter {
         sum
       }
 
-      def reclassifyAbbrevTypes(uniques: Iterable[String]): Iterable[(String, Double, Boolean)] = {
+      def reclassifyAbbrevTypes(uniques: List[String]): List[(String, Double, Boolean)] = {
         val typeFreqDistN = sum(typeFreqDist.values)
         @tailrec def loop(
           uniques: List[String] = uniques.toList,
@@ -470,7 +482,7 @@ object PunktSentenceSegmenter {
 
       def findAbbrevTypes() = {
         params.clearAbbrevs()
-        val tokens = typeFreqDist.keys.filter(ty => ty != null && ty.endsWith("."))
+        val tokens = typeFreqDist.keys.filter(ty => ty != null && ty.endsWith(".")).toList
         for ((abbr, score, isAdd) <- reclassifyAbbrevTypes(tokens); if score >= ABBREV)
           params.abbrevTypes += abbr
       }
@@ -519,11 +531,11 @@ object PunktSentenceSegmenter {
 
       def annotateTokens(tokens: Iterable[PunktToken]): Iterable[PunktToken] = {
         annotateFirstPass(tokens)
-//        println(tokens)
-//        println(tokens.map(_.ty))
+        //        println(tokens)
+        //        println(tokens.map(_.ty))
         annotateSecondPass(tokens)
-//        println(tokens)
-//        println(tokens.map(_.ty))
+        //        println(tokens)
+        //        println(tokens.map(_.ty))
         tokens
       }
 
@@ -613,14 +625,16 @@ object PunktSentenceSegmenter {
 
       def textContainsSentenceBreak(text: String): Option[PunktToken] = {
         val annotated = annotateTokens(tokenizeWords(text))
-  //      println(annotated)
+        //      println(annotated)
         annotated.dropRight(1).find(_.sentenceBreak)
       }
 
       def slicesFromText(text: String): mutable.ArrayBuffer[(Int, Int, TokenType)] = {
         var lastBreak = 0
         val output = new mutable.ArrayBuffer[(Int, Int, TokenType)]()
-        for (m <- languageVars.periodContextRegex.findAllIn(text).matchData) {
+        val mIter = languageVars.periodContextRegex.findAllIn(text).matchData
+        while (mIter.hasNext) {
+          val m = mIter.next()
           val context = m.group(0) + m.group(1)
           //          println(context)
           val break = textContainsSentenceBreak(context)
@@ -687,30 +701,30 @@ object PunktSentenceSegmenter {
     val text = scala.io.Source.fromFile( """C:\wsj_processed.txt""").getLines().mkString
     val params = new PunktParameters
     params.abbrevTypes ++= Set(
-       "inc", "corp", "dec", "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "ala",
-       "ariz", "ark", "colo", "conn", "del", "fla", "ill", "ind", "kans", "kan", "ken", "kent", "mass", "mich",
-       "minn", "miss", "mont", "nebr", "neb", "nev", "dak", "okla", "oreg", "tenn", "tex", "virg", "wash", "wis",
-       "wyo", "mr", "ms", "mrs", "calif", "oct", "vol", "rev", "ltd", "dea", "est", "capt", "hev", "gen", "ltd", "etc", "sci",
-       "comput", "univ", "ave", "cent", "col", "comdr", "cpl", "dept", "dust,", "div", "est", "gal", "gov", "hon",
-       "grad", "inst", "lib", "mus", "pseud", "ser", "alt", "Inc", "Corp", "Dec", "Jan", "Feb", "Mar", "Apr",
-       "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Ala", "Ariz", "Ark", "Colo", "Conn", "Del", "Fla", "Ill",
-       "Ind", "Kans", "Kan", "Ken", "Kent", "Mass", "Mich", "Minn", "Miss", "Mont", "Nebr", "Neb", "Nev", "Dak",
-       "Okla", "Oreg", "Tenn", "Tex", "Virg", "Wash", "Wis", "Wyo", "Mrs", "Calif", "Oct", "Vol", "Rev", "Ltd",
-       "Dea", "Est", "Capt", "Hev", "Gen", "Ltd", "Etc", "Sci", "Comput", "Univ", "Ave", "Cent", "Col", "Comdr",
-       "Cpl", "Dept", "Dust,", "Div", "Est", "Gal", "Gov", "Hon", "Grad", "Inst", "Lib", "Mus", "Pseud", "Ser", "Alt",
-       "Mr", "Ms")
+      "inc", "corp", "dec", "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "ala",
+      "ariz", "ark", "colo", "conn", "del", "fla", "ill", "ind", "kans", "kan", "ken", "kent", "mass", "mich",
+      "minn", "miss", "mont", "nebr", "neb", "nev", "dak", "okla", "oreg", "tenn", "tex", "virg", "wash", "wis",
+      "wyo", "mr", "ms", "mrs", "calif", "oct", "vol", "rev", "ltd", "dea", "est", "capt", "hev", "gen", "ltd", "etc", "sci",
+      "comput", "univ", "ave", "cent", "col", "comdr", "cpl", "dept", "dust,", "div", "est", "gal", "gov", "hon",
+      "grad", "inst", "lib", "mus", "pseud", "ser", "alt", "Inc", "Corp", "Dec", "Jan", "Feb", "Mar", "Apr",
+      "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Ala", "Ariz", "Ark", "Colo", "Conn", "Del", "Fla", "Ill",
+      "Ind", "Kans", "Kan", "Ken", "Kent", "Mass", "Mich", "Minn", "Miss", "Mont", "Nebr", "Neb", "Nev", "Dak",
+      "Okla", "Oreg", "Tenn", "Tex", "Virg", "Wash", "Wis", "Wyo", "Mrs", "Calif", "Oct", "Vol", "Rev", "Ltd",
+      "Dea", "Est", "Capt", "Hev", "Gen", "Ltd", "Etc", "Sci", "Comput", "Univ", "Ave", "Cent", "Col", "Comdr",
+      "Cpl", "Dept", "Dust,", "Div", "Est", "Gal", "Gov", "Hon", "Grad", "Inst", "Lib", "Mus", "Pseud", "Ser", "Alt",
+      "Mr", "Ms")
 
     val tokenizer = new PunktSentenceTokenizer(trainText = Some(text), verbose = true, parms = params)
-//    tokenizer.params.abbrevTypes.foreach(println(_))
+    //    tokenizer.params.abbrevTypes.foreach(println(_))
     val sfromt = tokenizer.sentencesFromText(text)
     println(sfromt.length)
     sfromt.foreach(println(_))
-
-//
-//    val text = Source.fromFile( """C:\Users\Luke\Documents\Code\IESL\SentenceBoundaryDetector\wsj_text.txt""").getLines().mkString(" ")
-//    val start = System.currentTimeMillis()
-//    for (i <- 1 until 2)
-//      findSentenceBoundaries(text).foreach(println(_))
-//    println(System.currentTimeMillis() - start)
+    println(tokenizer.params.abbrevTypes)
+    //
+    //    val text = Source.fromFile( """C:\Users\Luke\Documents\Code\IESL\SentenceBoundaryDetector\wsj_text.txt""").getLines().mkString(" ")
+    //    val start = System.currentTimeMillis()
+    //    for (i <- 1 until 2)
+    //      findSentenceBoundaries(text).foreach(println(_))
+    //    println(System.currentTimeMillis() - start)
   }
 }
