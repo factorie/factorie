@@ -17,12 +17,25 @@ import cc.factorie._
 import cc.factorie.util._
 
 trait Tensor1 extends Tensor {
+  tensor1 =>
   def dim1: Int
   def activeDomain1: IntSeq
   def activeDomain: IntSeq = activeDomain1
   def numDimensions: Int = 1
   def activeDomains = Array(activeDomain1)
   def dimensions = Array(dim1)
+  def reshape(dim: Array[Int]) : Tensor = {
+    assert(dim.fold(1)((a,b) => a*b) == dim1)
+    new Tensor {
+      def dimensions = dim
+      def activeDomain = tensor1.activeDomain
+      def apply(i: Int) = tensor1(i)
+      def length = tensor1.length
+      def isDense = tensor1.isDense
+      def numDimensions = dimensions.length
+      def activeDomains = dimensions.map(d => new RangeIntSeq(0, d)).toArray
+    }
+  }
   @inline final def length: Int = dim1
   override def copy: Tensor1 = throw new Error("Method copy not defined on class "+getClass.getName)
   override def stringPrefix = "Tensor1"

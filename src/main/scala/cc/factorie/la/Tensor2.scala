@@ -28,6 +28,12 @@ trait Tensor2 extends Tensor {
   def apply(i:Int): Double //= apply(i % dim1, i / dim2)
   def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
+  def matrixVector(t: Tensor1): Tensor1 = {
+    assert(dim2 == t.dim1, "Dimensions don't match: " + dim2 + " " + t.dim1)
+    val newT = new DenseTensor1(dim1)
+    activeDomain1.foreach(i => activeDomain2.foreach(j => newT(i) += this(i,j)*t(j)))
+    newT
+  }
   @inline final def length = dim1 * dim2
   @inline final def singleIndex(i:Int, j:Int): Int = i*dim2 + j
   @inline final def multiIndex(i:Int): (Int, Int) = (i/dim2, i%dim2)
