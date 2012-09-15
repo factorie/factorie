@@ -20,6 +20,8 @@ class TestSingleSingleSparse {
   }
 
   @Test def test {
+    
+    throw new Error("This code is significantly slower than expected.")
 
     val t =
       new TemplateWithDotStatistics3[Label, CategoryFeature, Feature] {

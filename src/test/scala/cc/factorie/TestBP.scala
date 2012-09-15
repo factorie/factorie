@@ -197,7 +197,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     )
     
     val fg = new BPSummary(vars, model)
-    BP.inferLoopy(fg)
+    BP.inferLoopy(fg, 4)
     fg.setToMaximize()
     
     println("v1 : " + fg.marginal(v1).proportions)
