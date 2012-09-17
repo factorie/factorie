@@ -54,8 +54,19 @@ trait Tensor extends MutableDoubleSeq {
   def isUniform = false
   def stringPrefix = getClass.getName // "Tensor"
   def printLength = 50
+  def linearize = new LinearizedTensor(this)
   override def toString = { val suffix = if (length > printLength) "...)" else ")"; this.asSeq.take(printLength).mkString(stringPrefix+"(", ",", suffix) }
 }
+
+class LinearizedTensor(tensor: Tensor) extends Tensor1 {
+  def dim1 = tensor.dimensions.fold(1)((a,b) => a*b)
+  def activeDomain1 = tensor.activeDomain
+  def apply(index: Int) = tensor(index)
+  def isDense = tensor.isDense
+  override def update(index: Int,  value: Double) { tensor.update(index,value) }
+  override def copy = tensor.copy.linearize
+}
+
 
 object Tensor {
   

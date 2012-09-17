@@ -32,15 +32,15 @@ class ID3DecisionTreeTrainer extends ClassifierTrainer {
   }
 }
 
-//class AdaBoostDecisionStumpTrainer extends ClassifierTrainer {
-//  var iterations = 10
-//  def train[L <: LabelVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): ModelBasedClassifier[L] = {
-//    val dmodel = new AdaBoostDecisionStumpTemplate[L, F](
-//      il.labelToFeatures,
-//      il.labelDomain.asInstanceOf[DiscreteDomain with Domain[L#Value]],
-//      il.instanceDomain.asInstanceOf[DiscreteTensorDomain with Domain[F#Value]])(il.labelManifest, il.featureManifest)
-//    dmodel.numIterations = iterations
-//    dmodel.train(il)
-//    new ModelBasedClassifier[L](dmodel, il.head.domain)
-//  }
-//}
+class AdaBoostDecisionStumpTrainer extends ClassifierTrainer {
+  var iterations = 10
+  def train[L <: LabelVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): ModelBasedClassifier[L] = {
+    val dmodel = new AdaBoostDecisionStumpTemplate[L, F](
+      il.labelToFeatures,
+      il.labelDomain.asInstanceOf[DiscreteDomain with Domain[L#Value]],
+      il.instanceDomain.asInstanceOf[DiscreteTensorDomain with Domain[F#Value]])(il.labelManifest, il.featureManifest)
+    dmodel.numIterations = iterations
+    dmodel.train(il)
+    new ModelBasedClassifier[L](dmodel, il.head.domain)
+  }
+}
