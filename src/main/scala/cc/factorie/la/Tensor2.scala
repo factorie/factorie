@@ -78,13 +78,14 @@ class GrowableDenseTensor2(d1:Int, d2:Int) extends { private var _dim1 = d1; pri
   def dim2: Int = _dim2
   override def apply(index:Int):Double = if (index < _valuesSize) _values(index) else 0.0
   def ensureDims(d1:Int, d2:Int): Unit = if (d1 > _dim1 || d2 > _dim2) {
-    val newSize = math.max(_valuesSize * 2, d1 * d2)
+    val newSize = d1 * d2 // math.max(_valuesSize * 2, d1 * d2)
     val oldValues = _values
     _resetValues(newSize) // allocates a new __values array of size newSize
-    for (i <- 0 until d1) {
+    if (_dim1 + _dim2 > 0) for (i <- 0 until _dim1) {
       Array.copy(oldValues, i*_dim2, _values, i*d2, _dim2) // copy old values into place
-      if (defaultValue != 0.0) java.util.Arrays.fill(_values, i*d2, d2-_dim2, defaultValue) // fill in new space with default value
+      if (defaultValue != 0.0) java.util.Arrays.fill(_values, i*d2+_dim2, d2-_dim2, defaultValue) // fill in new space with default value
     }
+    if (d1 > _dim1) java.util.Arrays.fill(_values, _dim1*d2, (d1-_dim1)*d2, defaultValue)
     _dim1 = d1
     _dim2 = d2
   }
