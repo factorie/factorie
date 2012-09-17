@@ -67,7 +67,7 @@ protected[er] def getGetterClass(c:Class[_]) : Class[_] = {
   if (debug) println("getGetterClass "+c)
   // First check this class to see if it specifies the GetterClass
   val classes = c.getDeclaredClasses()
-  val index = if (classes == null) -1 else classes.findIndexOf(c=>c.getName.endsWith("$GetterClass"))
+  val index = if (classes == null) -1 else classes.indexWhere(c=>c.getName.endsWith("$GetterClass"))
   //if (debug) println("  $GetterClass index="+index+"  classes "+classes.toList)
   if (index >= 0) {
     if (debug) println("getGetterClass   returning "+classes(index).getSuperclass)
