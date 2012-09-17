@@ -86,7 +86,7 @@ object Classifier {
       val readClassifier         = new CmdOption("read-classifier", "classifier", "FILE", "Filename from which to read the classifier.")
       val trainingPortion        = new CmdOption("training-portion", 0.5, "FRACTION", "The fraction of the instances that should be used for training.  testing-portion is 1.0 - training-portion - validation-portion.")
       val validationPortion      = new CmdOption("validation-portion", 0.0, "FRACTION", "The fraction of the instances that should be used for validation")
-      val randomSeed             = new CmdOption("random-seed", -1, "N", "The random seed for randomly selecting a proportion of the instance list for training")
+      val localRandomSeed             = new CmdOption("random-seed", -1, "N", "The random seed for randomly selecting a proportion of the instance list for training")
 
       val trainer                = new CmdOption("trainer", "MaxEntTrainer", "Class()", "The constructor for a ClassifierTrainer class.")
       // TODO Consider enabling the system to use multiple ClassifierTrainers at the same time, and compare results
@@ -97,6 +97,10 @@ object Classifier {
       val printInfoGain          = new CmdOption("print-infogain", false, "true|false", "Print the training features with highest information gain.")
     }
     opts.parse(args)
+    
+    // set local random seed
+    if (opts.localRandomSeed.wasInvoked)
+      setRandomSeed(opts.localRandomSeed.value)
     
     // Feature and Label classes
     object FeaturesDomain extends CategoricalTensorDomain[String]
