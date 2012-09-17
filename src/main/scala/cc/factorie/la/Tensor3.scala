@@ -57,6 +57,39 @@ class DenseTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensor
   override def blankCopy: DenseTensor3 = new DenseTensor3(dim1, dim2, dim3)
 }
 
+class GrowableDenseTensor3(d1:Int, d2:Int, d3:Int) extends { private var _dim1 = d1; private var _dim2 = d2; private var _dim3 = d3} with DenseTensorLike3 {
+  def dim1: Int = _dim1
+  def dim2: Int = _dim2
+  def dim3: Int = _dim3
+  override def apply(index:Int):Double = if (index < _valuesSize) _values(index) else 0.0
+  def ensureDims(d1:Int, d2:Int, d3:Int): Unit = if (d1 > _dim1 || d2 > _dim2 | d3 > _dim3) {
+    val newSize = d1 * d2 * d3 // math.max(_valuesSize * 2, d1 * d2 * d3)
+    val oldValues = _values
+    _resetValues(newSize) // allocates a new __values array of size newSize
+    val _dim23 = _dim2 * _dim3
+    val d23 = d2 * d3
+    if (_dim1 + _dim2 + _dim3 > 0) for (i <- 0 until d1; j <- 0 until d2) {
+      Array.copy(oldValues, i*_dim23+j*_dim3, _values, i*d23+j*d3, _dim3) // copy old values into place
+      if (defaultValue != 0.0) java.util.Arrays.fill(_values, i*d23+j*d3+_dim3, d3-_dim3, defaultValue) // fill in new space with default value
+    }
+    if (d1 > _dim1) java.util.Arrays.fill(_values, _dim1*d23, (d1-_dim1)*d23, defaultValue)
+    _dim1 = d1
+    _dim2 = d2
+    _dim3 = d3
+  }
+  // Currently these are the only methods that support capacity expansion
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:SingletonBinaryTensor3 => { ensureDims(t.dim1, t.dim2, t.dim3); +=(t.singleIndex, f) }
+    case t:SingletonTensor3 => { ensureDims(t.dim1, t.dim2, t.dim3); +=(t.singleIndex, f * t.singleValue) }
+    case t:SparseBinaryTensor3 => { ensureDims(t.dim1, t.dim2, t.dim3); t.=+(_values, f) }
+    case t:DenseTensorLike3 => { ensureDims(t.dim1, t.dim2, t.dim3); super.+=(t, f) }
+    //case t:UniformTensor3 => { ensureDims(t.dim1, t.dim2, t.dim3); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
+  }
+  override def copy: GrowableDenseTensor3 = { val c = new GrowableDenseTensor3(_dim1, _dim2, _dim3); c := this; c }
+  override def blankCopy: GrowableDenseTensor3 = new GrowableDenseTensor3(_dim1, _dim2, _dim3)
+} 
+
+
 class SingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int) extends Tensor3 with SingletonBinaryTensor {
   def activeDomain1 = new SingletonIntSeq(singleIndex1)
   def activeDomain2 = new SingletonIntSeq(singleIndex2)

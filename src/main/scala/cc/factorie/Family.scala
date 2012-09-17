@@ -105,12 +105,12 @@ trait TensorFamily extends Family {
   lazy val statisticsDomainsSeq: Seq[DiscreteTensorDomain] = statisticsDomains.productIterator.map(_.asInstanceOf[DiscreteTensorDomain]).toSeq
   private var _frozenDomains = false
   def freezeDomains: Unit = { statisticsDomainsSeq.foreach(_.freeze); _frozenDomains = true }
-  //lazy val statisticsTensorDimensions: Array[Int] = { freezeDomains; statisticsDomainsSeq.map(_.dimensionSize).toArray }
-  var statisticsTensorDimensions: Array[Int] = null
+  lazy val statisticsTensorDimensions: Array[Int] = { freezeDomains; statisticsDomainsSeq.map(_.dimensionSize).toArray }
+  // xxx var statisticsTensorDimensions: Array[Int] = null
   type StatisticsType <: Statistics
   trait Statistics extends super.Statistics {
     def tensor: Tensor
-    if (statisticsTensorDimensions eq null) statisticsTensorDimensions = tensor.dimensions
+    // xxx if (statisticsTensorDimensions eq null) statisticsTensorDimensions = tensor.dimensions
     //println("TensorFamily.Statistics init "+TensorFamily.this.getClass.getName+" "+TensorFamily.this.factorName+" "+statisticsTensorDimensions.toList)
   }
 }
