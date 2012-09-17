@@ -36,11 +36,11 @@ trait LinkList[This >: Null <: LinkList[This]] extends AnyRef with Seq[This] {
   def lengthToFirst : Int = if (prev eq null) 0 else 1 + prev.lengthToFirst
   def position = lengthToFirst
   def lengthToLast  : Int = if (next eq null) 0 else 1 + next.lengthToLast
-  def length: Int = 1 + first.lengthToLast
+  def length: Int = 1 + head.lengthToLast
   override def size: Int = length
-  override def first: This = if (prev eq null) this else prev.head
+  override def head: This = if (prev eq null) this else prev.head
   override def last: This = if (next eq null) this else next.last
-  def apply(i:Int): This = first.nextBy(i)
+  def apply(i:Int): This = head.nextBy(i)
   
   def nextBy(n:Int): This =
     if (n == 0) this
