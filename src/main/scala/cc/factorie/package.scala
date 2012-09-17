@@ -46,8 +46,8 @@ package object factorie {
   // TODO Consider removing this now that we have separate, more specific samplers.
   // TODO Consider also removing SamplerSuite?
   // Yes to both.
-  @deprecated("Will be removed.")
-  val defaultSampler = new SamplerSuite
+//  @deprecated("Will be removed.")
+//  val defaultSampler = new SamplerSuite
 
   type Logging = cc.factorie.util.Logging
   type FastLogging = cc.factorie.util.FastLogging
