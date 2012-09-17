@@ -42,6 +42,21 @@ object WordSegmenterDemo {
     //def statistics(t:Label#Value) = Stat(t)
     def statisticsDomains = Tuple1(BooleanDomain)
   }
+//  /** Factor between label and observed token */
+//  model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
+//    factorName = "Label,Token"
+//    def statisticsDomains = ((BooleanDomain,TokenDomain))
+//    def unroll1 (label:Label) = Factor(label, label.token)
+//    def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
+//  }
+//  /** A token bi-gram conjunction  */
+//  model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
+//    factorName = "Label,Token,Token"
+//    def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
+//    def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
+//    def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
+//    def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
+//  }
   /** Factor between label and observed token */
   model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
     factorName = "Label,Token"

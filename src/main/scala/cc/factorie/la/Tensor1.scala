@@ -24,6 +24,14 @@ trait Tensor1 extends Tensor {
   def numDimensions: Int = 1
   def activeDomains = Array(activeDomain1)
   def dimensions = Array(dim1)
+  override def dimensionsMatch(t:Tensor): Boolean = t match {
+    case t:Tensor1 => t.dim1 == dim1
+    case _ => false
+  } 
+  def ensureDimenionsMatch(t:Tensor): Unit = t match {
+    case t:Tensor1 => require(t.dim1 == dim1)
+    case _ => throw new Error("Tensor ranks do not match.")
+  }
   def reshape(dim: Array[Int]) : Tensor = {
     assert(dim.fold(1)((a,b) => a*b) == dim1)
     new Tensor {
@@ -79,7 +87,11 @@ class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
 class GrowableDenseTensor1(initialSize:Int) extends { private var _dim1 = initialSize } with DenseTensorLike1 {
   def dim1: Int = _dim1
   override def apply(index:Int):Double = if (index < _valuesSize) _values(index) else 0.0
-  def ensureDims(d1:Int): Unit = if (d1 > _dim1) {
+  override def ensureDimenionsMatch(t:Tensor): Unit = t match {
+    case t:Tensor1 => ensureDimensions(t.dim1)
+    case _ => super.ensureDimenionsMatch(t)
+  }
+  def ensureDimensions(d1:Int): Unit = if (d1 > _dim1) {
     _dim1 = d1
     val newSize = math.max(_valuesSize * 2, d1)
     val oldValues = _values
@@ -89,15 +101,16 @@ class GrowableDenseTensor1(initialSize:Int) extends { private var _dim1 = initia
   }
   // Currently these two are the only methods that support capacity expansion
   override def +=(index:Int, incr:Double): Unit = {
-    ensureDims(index+1)
+    ensureDimensions(index+1)
     super.+=(index, incr)
   }
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
-    case t:SingletonBinaryTensor => +=(t.singleIndex, f)
-    case t:SingletonTensor => +=(t.singleIndex, f * t.singleValue)
-    case t:SparseBinaryTensor => { ensureDims(t.maxIndex+1); t.=+(_values, f) }
-    case t:DenseTensor => { ensureDims(t.length); super.+=(t, f) }
-    case t:UniformTensor => { ensureDims(t.length); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
+    case t:SingletonBinaryTensor1 => +=(t.singleIndex, f)
+    case t:SingletonTensor1 => +=(t.singleIndex, f * t.singleValue)
+    case t:SparseBinaryTensorLike1 => { ensureDimensions(t.maxIndex+1); t.=+(_values, f) }
+    case t:DenseTensorLike1 => { ensureDimensions(t.length); super.+=(t, f) }
+    case t:SparseIndexedTensor1 => { ensureDimensions(t.length); t dot this }
+    case t:UniformTensor1 => { ensureDimensions(t.length); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
   }
   override def copy: GrowableDenseTensor1 = { val c = new GrowableDenseTensor1(_dim1); c := this; c }
   override def blankCopy: GrowableDenseTensor1 = new GrowableDenseTensor1(_dim1)

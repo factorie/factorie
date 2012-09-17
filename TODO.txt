@@ -22,6 +22,7 @@ Make a command-line tool similar to Mallet SimpleTagger [McCallum]
 Look at other BUGS-like tools, and see what we can reproduce easily [Bakalov, Duckworth]
 Make reasonable command-line tools for MALLET functionality, and document [McCallum and others]
 Sanity-check pass through all code [All]
+Consider which println's should be transformed into Logging statements
 Package documentation  [All]
 Fix copyright year [McCallum]
 

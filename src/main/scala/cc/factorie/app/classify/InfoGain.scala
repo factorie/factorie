@@ -47,13 +47,13 @@ class InfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], f:L=>F) 
       assert(instance.domain == instanceDomain)
       assert(label.domain == labelDomain)
       val labelIndex = label.intValue
-      targetProportions.+=(labelIndex, 1.0)
+      targetProportions.masses.+=(labelIndex, 1.0)
       //println("InfoGain "+instance.activeDomain.toSeq)
       //for (featureIndex <- instance.activeDomain.asSeq)
       //println("InfoGain "+instance.tensor.asInstanceOf[cc.factorie.la.GrowableSparseBinaryTensor1].toIntArray.toSeq)
       assert(instance.tensor.activeDomain.toSeq.distinct.length == instance.tensor.activeDomain.toSeq.length, instance.tensor.activeDomain.toSeq.toString)
       instance.tensor.activeDomain.foreach(featureIndex => {
-        featureTargetProportions(featureIndex).+=(labelIndex, 1.0)
+        featureTargetProportions(featureIndex).masses.+=(labelIndex, 1.0)
         featureCount(featureIndex) += 1
       })
     }

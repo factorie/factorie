@@ -105,12 +105,23 @@ trait TensorFamily extends Family {
   lazy val statisticsDomainsSeq: Seq[DiscreteTensorDomain] = statisticsDomains.productIterator.map(_.asInstanceOf[DiscreteTensorDomain]).toSeq
   private var _frozenDomains = false
   def freezeDomains: Unit = { statisticsDomainsSeq.foreach(_.freeze); _frozenDomains = true }
-  lazy val statisticsTensorDimensions: Array[Int] = { freezeDomains; statisticsDomainsSeq.map(_.dimensionSize).toArray }
-  // xxx var statisticsTensorDimensions: Array[Int] = null
+  //lazy val statisticsTensorDimensions: Array[Int] = { freezeDomains; statisticsDomainsSeq.map(_.dimensionSize).toArray }
+  private var __statisticsTensorDimensions: Array[Int] = null
+  def statisticsTensorDimensions: Array[Int] = if (__statisticsTensorDimensions eq null) this match { 
+    case s:Statistics1[_] => Array(0)
+    case s:TensorStatistics1[_] => Array(0) // TODO Try to make TensorStatistics1 inherit from Statistics1
+    case s:Statistics2[_,_] => Array(0,0)
+    case s:TensorStatistics2[_,_] => Array(0,0)
+    case s:Statistics3[_,_,_] => Array(0,0,0)
+    case s:TensorStatistics3[_,_,_] => Array(0,0,0)
+    case s:Statistics4[_,_,_,_] => Array(0,0,0,0)
+    case s:TensorStatistics4[_,_,_,_] => Array(0,0,0,0)
+  } else __statisticsTensorDimensions
+  // xxx ?var statisticsTensorDimensions: Array[Int] = null
   type StatisticsType <: Statistics
   trait Statistics extends super.Statistics {
     def tensor: Tensor
-    // xxx if (statisticsTensorDimensions eq null) statisticsTensorDimensions = tensor.dimensions
+    if (__statisticsTensorDimensions eq null) __statisticsTensorDimensions = tensor.dimensions
     //println("TensorFamily.Statistics init "+TensorFamily.this.getClass.getName+" "+TensorFamily.this.factorName+" "+statisticsTensorDimensions.toList)
   }
 }
@@ -121,16 +132,23 @@ trait TensorFamily extends Family {
 trait DotFamily extends TensorFamily {
   //type TemplateType <: DotFamily
   type FamilyType <: DotFamily
-  var _weights: Tensor = null
-  lazy val defaultWeights = { freezeDomains; newWeightsTypeTensor } // What is the use-case here? -akm
-  def weights: Tensor = { if (_weights != null) _weights else setWeights(defaultWeights); _weights }
+  private var _weights: Tensor = null
+  //lazy val defaultWeights = { freezeDomains; newWeightsTypeTensor } // What is the use-case here? -akm
+  def weights: Tensor = { if (_weights != null) _weights else setWeights(newWeightsTypeTensor); _weights }
   def setWeights(w: Tensor): Unit = _weights = w
   //def newWeightsTypeTensor(default:Double = 0.0): Tensor = Tensor.dense(statisticsTensorDimensions)
   def newWeightsTypeTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)  // Dense by default, may be override in sub-traits
   def newDenseTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)
   def newSparseTensor: Tensor = Tensor.newSparse(statisticsTensorDimensions)
   @inline final def score(s:StatisticsType): Double = if (s eq null) 0.0 else scoreStatistics(s.tensor)
-  @inline final def scoreStatistics(t:Tensor): Double = weights dot t
+  @inline final def scoreStatistics(t:Tensor): Double = {
+    if (!weights.dimensionsMatch(t)) {
+      require(weights.oneNorm == 0.0)
+      println("DotFamily.scoreStatistics re-allocating weights Tensor.")
+      _weights = newWeightsTypeTensor
+    }
+    weights dot t
+  }
 
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also
