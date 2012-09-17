@@ -67,6 +67,33 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   override def stringPrefix = "DenseTensor2"
 }
 
+class GrowableDenseTensor2(d1:Int, d2:Int) extends { private var _dim1 = d1; private var _dim2 = d2 } with DenseTensorLike2 {
+  def dim1: Int = _dim1
+  def dim2: Int = _dim2
+  override def apply(index:Int):Double = if (index < _valuesSize) _values(index) else 0.0
+  def ensureDims(d1:Int, d2:Int): Unit = if (d1 > _dim1 || d2 > _dim2) {
+    val newSize = math.max(_valuesSize * 2, d1 * d2)
+    val oldValues = _values
+    _resetValues(newSize) // allocates a new __values array of size newSize
+    for (i <- 0 until d1) {
+      Array.copy(oldValues, i*_dim2, _values, i*d2, _dim2) // copy old values into place
+      if (defaultValue != 0.0) java.util.Arrays.fill(_values, i*d2, d2-_dim2, defaultValue) // fill in new space with default value
+    }
+    _dim1 = d1
+    _dim2 = d2
+  }
+  // Currently these are the only methods that support capacity expansion
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:SingletonBinaryTensor2 => { ensureDims(t.dim1, t.dim2); +=(t.singleIndex, f) }
+    case t:SingletonTensor2 => { ensureDims(t.dim1, t.dim2); +=(t.singleIndex, f * t.singleValue) }
+    case t:SparseBinaryTensor2 => { ensureDims(t.dim1, t.dim2); t.=+(_values, f) }
+    case t:DenseTensorLike2 => { ensureDims(t.dim1, t.dim2); super.+=(t, f) }
+    case t:UniformTensor2 => { ensureDims(t.dim1, t.dim2); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
+  }
+  override def copy: GrowableDenseTensor2 = { val c = new GrowableDenseTensor2(_dim1, _dim2); c := this; c }
+  override def blankCopy: GrowableDenseTensor2 = new GrowableDenseTensor2(_dim1, _dim2)
+} 
+
 // TODO Make a GrowableDenseTensor2
 trait SingletonBinaryTensorLike2 extends Tensor2 with SingletonBinaryTensor {
   def singleIndex1: Int
@@ -97,6 +124,18 @@ class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensor
   //override def stringPrefix = "SparseBinaryTensor2"
   //override def copy = new SparseBinaryTensor2(dim1, dim2, singleIndex1, singleIndex2)
 }
+
+class UniformTensor2(val dim1:Int, val dim2:Int, val uniformValue:Double) extends Tensor2 with UniformTensor {
+  def activeDomain1 = new RangeIntSeq(0, dim1)
+  def activeDomain2 = new RangeIntSeq(0, dim2)
+  def activeDomain = new RangeIntSeq(0, length)
+  override def copy = new UniformTensor2(dim1, dim2, uniformValue)
+  override def +(t:Tensor): Tensor = t match {
+    case t:UniformTensor2 => { require(dim1 == t.dim1 && dim2 == t.dim2); new UniformTensor2(dim1, dim2, uniformValue + t.uniformValue) }
+    case t:Tensor1 => new DenseTensor2(dim1, dim2, uniformValue) + t
+  }
+}
+
 
 trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def newTensor1:Int=>Tensor1

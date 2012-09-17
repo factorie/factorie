@@ -1,12 +1,12 @@
 Pre 1.0 release:
 
+Consider renaming LabelVariable to LabeledCategoricalVariable, and having LabeledDiscreteVariable, LabeledBooleanVariable [McCallum]
 Consider removing er package altogether for now [McCallum]
 Remove statisticsDomain and just get size?  [McCallum]  
  What about growable domains?  Let them grow just through gradients.
  What about serialization?  Make user serialize separately from Model; needed for unset neighborDomains anyway.
  Then DotFamily can depend on just TensorVar, not DiscreteTensorVar.
 Rename DiscreteTensorVar to DiscreteDomainTensorVar for clarity; similarly for Categorical. [McCallum]
-Reconsider whether BooleanValue should be a class rather than (as it is currently) a type alias for CategoricalValue[Boolean] [McCallum]
 DomainFromClass or make it the default?  [McCallum]
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
 Consider property-like facilities and its interaction with command line [McCallum, Vilnis]
@@ -33,6 +33,7 @@ Make an HMM example and show that BP inference and EM training work on it [Belan
 
 
 DONE:
+Make BooleanValue be a class rather than (as it is currently) a type alias for CategoricalValue[Boolean] [McCallum]
 Use _1, _2 again for the variables in AbstractAssignment2, etc.  Use value1, value2 for values. [McCallum]
 Rename all "Stat" to "Statistics". [McCallum]
 Finish/fix DecisionTree implementation, and make example

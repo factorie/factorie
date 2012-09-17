@@ -23,9 +23,11 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
   override def defaultValue: Double = __default
   def defaultValue_=(v:Double): Unit = __default = v
   protected def _values = __values
-  protected def _valuesSize: Int = _values.size
+  protected def _valuesSize: Int = __values.size
+  protected def _resetValues(s:Int): Unit = __values = new Array[Double](s)
   // Used by subclass GrowableDenseTensor1
-  protected def ensureCapacity(size:Int): Unit = if (__values.size < size) {
+  private def ensureCapacity(size:Int): Unit = if (__values.size < size) { // TODO Delete this method
+    if (__values.size == 0) { __values = new Array[Double](size); return }
     val newSize = math.max(__values.size * 2, size)
     val newValues = new Array[Double](newSize)
     Array.copy(_values, 0, newValues, 0, __values.size)

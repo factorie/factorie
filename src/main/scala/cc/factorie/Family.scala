@@ -105,10 +105,13 @@ trait TensorFamily extends Family {
   lazy val statisticsDomainsSeq: Seq[DiscreteTensorDomain] = statisticsDomains.productIterator.map(_.asInstanceOf[DiscreteTensorDomain]).toSeq
   private var _frozenDomains = false
   def freezeDomains: Unit = { statisticsDomainsSeq.foreach(_.freeze); _frozenDomains = true }
-  lazy val statisticsTensorDimensions: Array[Int] = { freezeDomains; statisticsDomainsSeq.map(_.dimensionSize).toArray }
+  //lazy val statisticsTensorDimensions: Array[Int] = { freezeDomains; statisticsDomainsSeq.map(_.dimensionSize).toArray }
+  var statisticsTensorDimensions: Array[Int] = null
   type StatisticsType <: Statistics
   trait Statistics extends super.Statistics {
     def tensor: Tensor
+    if (statisticsTensorDimensions eq null) statisticsTensorDimensions = tensor.dimensions
+    //println("TensorFamily.Statistics init "+TensorFamily.this.getClass.getName+" "+TensorFamily.this.factorName+" "+statisticsTensorDimensions.toList)
   }
 }
 
@@ -196,7 +199,10 @@ trait DotFamily extends TensorFamily {
 /** A DotTemplate that stores its parameters in a Scalala SparseTensor instead of a DenseTensor
     @author Andrew McCallum */
 trait SparseWeights extends DotFamily {
-  override def newWeightsTypeTensor: Tensor = Tensor.newSparse(statisticsTensorDimensions)
+  override def newWeightsTypeTensor: Tensor = {
+    if (statisticsTensorDimensions eq null) throw new Error("statisticsTensorDimensions not yet set on Family "+getClass.getName+" "+factorName)
+    Tensor.newSparse(statisticsTensorDimensions)
+  }
   //override def newWeightsTypeTensor(defaultVal:Double): Tensor = new SparseVector(statisticsVectorLength) { default = defaultVal }
 }
 

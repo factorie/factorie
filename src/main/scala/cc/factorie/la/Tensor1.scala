@@ -28,6 +28,10 @@ trait Tensor1 extends Tensor {
   override def stringPrefix = "Tensor1"
 }
 
+object Tensor1 {
+  def apply(values:Double*): DenseTensor1 = new DenseTensor1(values.toArray)
+}
+
 trait DenseTensorLike1 extends Tensor1 with DenseTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
   override def activeDomain = activeDomain1
@@ -59,31 +63,40 @@ class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
 //   _setArray(asArray)  
 // }
 
-trait GrowableDenseTensorLike1 extends DenseTensorLike1 {
-  def sizeProxy: Iterable[Any]
-  private var _size: Int = 0
-  def dim1: Int = math.max(_size, sizeProxy.size)
+class GrowableDenseTensor1(initialSize:Int) extends { private var _dim1 = initialSize } with DenseTensorLike1 {
+  def dim1: Int = _dim1
   override def apply(index:Int):Double = if (index < _valuesSize) _values(index) else 0.0
-  // This is currently the only method that supports capacity expansion
+  def ensureDims(d1:Int): Unit = if (d1 > _dim1) {
+    _dim1 = d1
+    val newSize = math.max(_valuesSize * 2, d1)
+    val oldValues = _values
+    _resetValues(newSize) // allocates a new array of size newSize
+    Array.copy(oldValues, 0, _values, 0, oldValues.size)
+    if (defaultValue != 0.0) java.util.Arrays.fill(_values, oldValues.size, newSize, defaultValue)
+  }
+  // Currently these two are the only methods that support capacity expansion
   override def +=(index:Int, incr:Double): Unit = {
-    ensureCapacity(index+1)
-    if (index >= _size) { _size = index + 1 }
+    ensureDims(index+1)
     super.+=(index, incr)
   }
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensor => +=(t.singleIndex, f)
     case t:SingletonTensor => +=(t.singleIndex, f * t.singleValue)
-    case t:SparseBinaryTensor => { ensureCapacity(t.maxIndex+1); t.=+(_values, f) }
-    case t:DenseTensor => { ensureCapacity(t.length); super.+=(t, f) }
-    case t:UniformTensor => { ensureCapacity(t.length); super.+=(t, f) } //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
+    case t:SparseBinaryTensor => { ensureDims(t.maxIndex+1); t.=+(_values, f) }
+    case t:DenseTensor => { ensureDims(t.length); super.+=(t, f) }
+    case t:UniformTensor => { ensureDims(t.length); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
   }
-}
-class GrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends DenseTensorLike1 with GrowableDenseTensorLike1 {
-  override def copy: GrowableDenseTensor1 = { val c = new GrowableDenseTensor1(sizeProxy); c := this; c }
-  override def blankCopy: GrowableDenseTensor1 = new GrowableDenseTensor1(sizeProxy)
+  override def copy: GrowableDenseTensor1 = { val c = new GrowableDenseTensor1(_dim1); c := this; c }
+  override def blankCopy: GrowableDenseTensor1 = new GrowableDenseTensor1(_dim1)
 }
 
-/** A Tensor representation of a single scalar */
+class ProxyGrowableDenseTensor1(val sizeProxy:Iterable[Any]) extends GrowableDenseTensor1(sizeProxy.size) {
+  override def dim1 = math.max(super.dim1, sizeProxy.size)
+  override def copy: ProxyGrowableDenseTensor1 = { val c = new ProxyGrowableDenseTensor1(sizeProxy); c := this; c }
+  override def blankCopy: GrowableDenseTensor1 = new ProxyGrowableDenseTensor1(sizeProxy)
+}
+
+/** A Tensor representation of a single scalar (Double) value */
 // TODO In Scala 2.10 this could be an implicit class
 class ScalarTensor(var singleValue:Double) extends Tensor1 {
   def dim1 = 1

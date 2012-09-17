@@ -38,17 +38,20 @@ object WordSegmenterDemo {
   val model = new TemplateModel
   /** Bias term just on labels */
   model += new TemplateWithDotStatistics1[Label] {
+    factorName = "Label"
     //def statistics(t:Label#Value) = Stat(t)
     def statisticsDomains = Tuple1(BooleanDomain)
   }
   /** Factor between label and observed token */
   model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
+    factorName = "Label,Token"
     def statisticsDomains = ((BooleanDomain,TokenDomain))
     def unroll1 (label:Label) = Factor(label, label.token)
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
   }
   /** A token bi-gram conjunction  */
   model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
+    factorName = "Label,Token,Token"
     def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
     def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
     def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
@@ -56,12 +59,14 @@ object WordSegmenterDemo {
   }
   /** Factor between two successive labels */
   model += new TemplateWithDotStatistics2[Label,Label] {
+    factorName = "Label,Label"
     def statisticsDomains = ((BooleanDomain,BooleanDomain))
     def unroll1 (label:Label) = if (label.token.hasNext) Factor(label, label.token.next.label) else Nil
     def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
   }
   /** Skip edge */
   val skipTemplate = new Template2[Label,Label] with DotStatistics1[BooleanValue] {
+    factorName = "Label,Label:Boolean"
     def statisticsDomains = Tuple1(BooleanDomain)
     def unroll1 (label:Label) =  
       // could cache this search in label.similarSeq for speed
@@ -111,6 +116,10 @@ object WordSegmenterDemo {
     println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
     println ("Initial test accuracy = "+ objective.aveScore(testVariables))
+    
+    val exampleFactors = model.factors(trainVariables.tail.head)
+    println("Example Factors: "+exampleFactors.mkString(", "))
+    //println("Example Factors score: "+exampleFactors.map(_.score).sum)
   
     // If a saved model was specified on the command-line, then instead of training, take parameters from there, test and exit
     if (args.length > 0) {

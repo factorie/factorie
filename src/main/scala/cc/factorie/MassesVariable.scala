@@ -88,7 +88,7 @@ class SingletonMasses1(dim1:Int, singleIndex:Int, singleValue:Double) extends Si
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = singleIndex
 }
 
-class GrowableDenseMasses1(val sizeProxy:Iterable[Any]) extends GrowableDenseTensorLike1 with Masses1 with MassesWithTotal {
+class GrowableDenseMasses1(sizeProxy:Iterable[Any]) extends ProxyGrowableDenseTensor1(sizeProxy) with Masses1 with MassesWithTotal {
   override def +=(i:Int, v:Double): Unit = { _massTotal += v; super.+=(i, v); assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
 }
 
