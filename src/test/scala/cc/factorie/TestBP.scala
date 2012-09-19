@@ -369,7 +369,7 @@ object BPTestUtils {
 
   def newFactor1(n1: BinVar, score0: Double, score1: Double): Factor = {
     val family = new TemplateWithDotStatistics1[BinVar] {
-      override def statisticsDomains = Tuple1(BinDomain)
+      lazy val weights = new la.DenseTensor1(BinDomain.size)
     }
     family.weights(0) = score0
     family.weights(1) = score1
@@ -384,7 +384,7 @@ object BPTestUtils {
     val family = new Template2[BinVar, BinVar] with DotStatistics1[BinVar#Value] {
       override def neighborDomain1 = BinDomain
       override def neighborDomain2 = BinDomain
-      override def statisticsDomains = Tuple1(BinDomain)
+      lazy val weights = new la.DenseTensor1(BinDomain.size)
       def unroll1(v: BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BinVar) = if (v == n2) Factor(n1, n2) else Nil
       def statistics(value1: BinVar#Value, value2: BinVar#Value) = 

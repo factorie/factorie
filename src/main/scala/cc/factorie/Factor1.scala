@@ -130,8 +130,8 @@ trait FactorWithStatistics1[N1<:Variable] extends Factor1[N1] {
 
 abstract class FactorWithDotStatistics1[N1<:DiscreteTensorVar] extends FactorWithStatistics1[N1] {
   //type V1 = N1#Value
-  def statisticsDomains: Tuple1[DiscreteTensorDomain]
-  val weights = new DenseTensor1(statisticsDomains._1.dimensionDomain.size)
+  //def statisticsDomains: Tuple1[DiscreteTensorDomain]
+  def weights: Tensor1 // = new DenseTensor1(statisticsDomains._1.dimensionDomain.size)
   def score(s:Statistics) = s._1.asInstanceOf[Tensor] dot weights // TODO!!!! Why is this cast to Tensor necessary?
   override def scoreValues(valueTensor:Tensor) = valueTensor dot weights
 }
@@ -188,7 +188,7 @@ trait Statistics1[S1] extends Family {
 trait TensorStatistics1[S1<:DiscreteTensorValue] extends TensorFamily {
   self =>
   type StatisticsType = Statistics
-  override def statisticsDomains: Tuple1[DiscreteTensorDomain with Domain[S1]]
+  //override def statisticsDomains: Tuple1[DiscreteTensorDomain with Domain[S1]]
   // Use Scala's "pre-initialized fields" syntax because super.Stat needs tensor to initialize score
   final case class Statistics(_1:S1) extends { val tensor: Tensor = _1 } with super.Statistics {
     lazy val score = self.score(this)
@@ -197,13 +197,12 @@ trait TensorStatistics1[S1<:DiscreteTensorValue] extends TensorFamily {
 }
 
 trait DotStatistics1[S1<:DiscreteTensorValue] extends TensorStatistics1[S1] with DotFamily {
+  override def weights: Tensor1
   def setWeight(entry:S1, w:Double) = entry match {
     case d:DiscreteValue => weights(d.intValue) = w
     case ds:DiscreteTensorValue => ds.activeDomain.foreach(i => weights(i) = w)
   }
-  def scores1(): Tensor1 = weights match {
-    case weights: Tensor1 => weights.copy
-  }
+  def scores1(): Tensor1 = weights.copy //  match { case weights: Tensor1 => weights.copy }
 }
 
 trait FamilyWithStatistics1[N1<:Variable] extends Family1[N1] with Statistics1[N1#Value] {

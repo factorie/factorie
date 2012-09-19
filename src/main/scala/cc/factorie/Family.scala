@@ -97,31 +97,31 @@ trait TensorFamily extends Family {
   //protected def _newStatisticsDomains = new ArrayBuffer[DiscreteTensorDomain]
   //protected var _tensorDims: IntSeq
   //def tensorDims: Seq[Int]
-  def statisticsDomains: Product // [Domain[_]]  // Seq[DiscreteTensorDomain]
-//    = if (_statisticsDomains eq null)
-//      throw new IllegalStateException("You must override statisticsDomains if you want to access them before creating any Factor and Stat objects.")
-//    else
-//      _statisticsDomains
-  lazy val statisticsDomainsSeq: Seq[DiscreteTensorDomain] = statisticsDomains.productIterator.map(_.asInstanceOf[DiscreteTensorDomain]).toSeq
-  private var _frozenDomains = false
-  def freezeDomains: Unit = { statisticsDomainsSeq.foreach(_.freeze); _frozenDomains = true }
-  //lazy val statisticsTensorDimensions: Array[Int] = { freezeDomains; statisticsDomainsSeq.map(_.dimensionSize).toArray }
-  private var __statisticsTensorDimensions: Array[Int] = null
-  def statisticsTensorDimensions: Array[Int] = if (__statisticsTensorDimensions eq null) this match { 
-    case s:Statistics1[_] => Array(0)
-    case s:TensorStatistics1[_] => Array(0) // TODO Try to make TensorStatistics1 inherit from Statistics1
-    case s:Statistics2[_,_] => Array(0,0)
-    case s:TensorStatistics2[_,_] => Array(0,0)
-    case s:Statistics3[_,_,_] => Array(0,0,0)
-    case s:TensorStatistics3[_,_,_] => Array(0,0,0)
-    case s:Statistics4[_,_,_,_] => Array(0,0,0,0)
-    case s:TensorStatistics4[_,_,_,_] => Array(0,0,0,0)
-  } else __statisticsTensorDimensions
-  // xxx ?var statisticsTensorDimensions: Array[Int] = null
+//  def statisticsDomains: Product // [Domain[_]]  // Seq[DiscreteTensorDomain]
+////    = if (_statisticsDomains eq null)
+////      throw new IllegalStateException("You must override statisticsDomains if you want to access them before creating any Factor and Stat objects.")
+////    else
+////      _statisticsDomains
+//  lazy val statisticsDomainsSeq: Seq[DiscreteTensorDomain] = statisticsDomains.productIterator.map(_.asInstanceOf[DiscreteTensorDomain]).toSeq
+//  private var _frozenDomains = false
+//  def freezeDomains: Unit = { statisticsDomainsSeq.foreach(_.freeze); _frozenDomains = true }
+//  //lazy val statisticsTensorDimensions: Array[Int] = { freezeDomains; statisticsDomainsSeq.map(_.dimensionSize).toArray }
+//  private var __statisticsTensorDimensions: Array[Int] = null
+//  def statisticsTensorDimensions: Array[Int] = if (__statisticsTensorDimensions eq null) this match { 
+//    case s:Statistics1[_] => Array(0)
+//    case s:TensorStatistics1[_] => Array(0) // TODO Try to make TensorStatistics1 inherit from Statistics1
+//    case s:Statistics2[_,_] => Array(0,0)
+//    case s:TensorStatistics2[_,_] => Array(0,0)
+//    case s:Statistics3[_,_,_] => Array(0,0,0)
+//    case s:TensorStatistics3[_,_,_] => Array(0,0,0)
+//    case s:Statistics4[_,_,_,_] => Array(0,0,0,0)
+//    case s:TensorStatistics4[_,_,_,_] => Array(0,0,0,0)
+//  } else __statisticsTensorDimensions
+//  // xxx ?var statisticsTensorDimensions: Array[Int] = null
   type StatisticsType <: Statistics
   trait Statistics extends super.Statistics {
     def tensor: Tensor
-    if (__statisticsTensorDimensions eq null) __statisticsTensorDimensions = tensor.dimensions
+//    if (__statisticsTensorDimensions eq null) __statisticsTensorDimensions = tensor.dimensions
     //println("TensorFamily.Statistics init "+TensorFamily.this.getClass.getName+" "+TensorFamily.this.factorName+" "+statisticsTensorDimensions.toList)
   }
 }
@@ -132,28 +132,28 @@ trait TensorFamily extends Family {
 trait DotFamily extends TensorFamily {
   //type TemplateType <: DotFamily
   type FamilyType <: DotFamily
-  private var _weights: Tensor = null
+//  private var _weights: Tensor = null
   //lazy val defaultWeights = { freezeDomains; newWeightsTypeTensor } // What is the use-case here? -akm
-  def weights: Tensor = { if (_weights != null) _weights else setWeights(newWeightsTypeTensor); _weights }
-  def setWeights(w: Tensor): Unit = _weights = w
-  //def newWeightsTypeTensor(default:Double = 0.0): Tensor = Tensor.dense(statisticsTensorDimensions)
-  def newWeightsTypeTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)  // Dense by default, may be override in sub-traits
-  def newDenseTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)
-  def newSparseTensor: Tensor = Tensor.newSparse(statisticsTensorDimensions)
+  def weights: Tensor // = { if (_weights != null) _weights else setWeights(newWeightsTypeTensor); _weights }
+//  def setWeights(w: Tensor): Unit = _weights = w
+//  //def newWeightsTypeTensor(default:Double = 0.0): Tensor = Tensor.dense(statisticsTensorDimensions)
+//  def newWeightsTypeTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)  // Dense by default, may be override in sub-traits
+//  def newDenseTensor: Tensor = Tensor.newDense(weights)
+//  def newSparseTensor: Tensor = Tensor.newSparse(weights)
   @inline final def score(s:StatisticsType): Double = if (s eq null) 0.0 else scoreStatistics(s.tensor)
   @inline final def scoreStatistics(t:Tensor): Double = {
-    if (!weights.dimensionsMatch(t)) {
-      require(weights.oneNorm == 0.0)
-      println("DotFamily.scoreStatistics re-allocating weights Tensor.")
-      _weights = newWeightsTypeTensor
-    }
+//    if (!weights.dimensionsMatch(t)) {
+//      require(weights.oneNorm == 0.0)
+//      println("DotFamily.scoreStatistics re-allocating weights Tensor.")
+//      _weights = newWeightsTypeTensor
+//    }
     weights dot t
   }
 
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also
     if (f.exists) return // Already exists, don't write it again
-    for (d <- statisticsDomainsSeq) d.save(dirname)
+    // for (d <- statisticsDomainsSeq) d.save(dirname) // TODO!!! These must now be saved by the user!
     val writer = new PrintWriter(new BufferedOutputStream({
       if (gzip)
         new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
@@ -174,7 +174,7 @@ trait DotFamily extends TensorFamily {
   }
 
   override def load(dirname: String, gzip: Boolean = false): Unit = {
-    for (d <- statisticsDomainsSeq) d.load(dirname)
+    // for (d <- statisticsDomainsSeq) d.load(dirname) // TODO!!! These must now be saved by the user!
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     val reader = new BufferedReader(new InputStreamReader({
       if (gzip)
@@ -206,23 +206,22 @@ trait DotFamily extends TensorFamily {
     def readerFromResourcePath(path: String) =
       new BufferedReader(new InputStreamReader(cl.getResourceAsStream(path)))
 
-    for (d <- statisticsDomainsSeq.map(_.dimensionDomain))
-      d.loadFromReader(readerFromResourcePath(dirname + "/" + d.filename))
+    // for (d <- statisticsDomainsSeq.map(_.dimensionDomain)) d.loadFromReader(readerFromResourcePath(dirname + "/" + d.filename)) // TODO!!! These must now be loaded by the user!
     loadFromReader(readerFromResourcePath(dirname + "/" + filename))
   }
 
 }
 
 
-/** A DotTemplate that stores its parameters in a Scalala SparseTensor instead of a DenseTensor
-    @author Andrew McCallum */
-trait SparseWeights extends DotFamily {
-  override def newWeightsTypeTensor: Tensor = {
-    if (statisticsTensorDimensions eq null) throw new Error("statisticsTensorDimensions not yet set on Family "+getClass.getName+" "+factorName)
-    Tensor.newSparse(statisticsTensorDimensions)
-  }
-  //override def newWeightsTypeTensor(defaultVal:Double): Tensor = new SparseVector(statisticsVectorLength) { default = defaultVal }
-}
+///** A DotTemplate that stores its parameters in a Scalala SparseTensor instead of a DenseTensor
+//    @author Andrew McCallum */
+//trait SparseWeights extends DotFamily {
+//  override def newWeightsTypeTensor: Tensor = {
+//    if (statisticsTensorDimensions eq null) throw new Error("statisticsTensorDimensions not yet set on Family "+getClass.getName+" "+factorName)
+//    Tensor.newSparse(statisticsTensorDimensions)
+//  }
+//  //override def newWeightsTypeTensor(defaultVal:Double): Tensor = new SparseVector(statisticsVectorLength) { default = defaultVal }
+//}
 
 /** A DotTemplate that stores its parameters in a SparseHashVector instead of a DenseVector
     @author Sameer Singh */

@@ -17,6 +17,20 @@ import scala.util.Random
 
 package object factorie {
   
+  // Common cases for DotFamily weights
+//  type Tensor = cc.factorie.la.Tensor
+//  type Tensor1 = cc.factorie.la.Tensor1
+//  type Tensor2 = cc.factorie.la.Tensor2
+//  type Tensor3 = cc.factorie.la.Tensor3
+//  type Tensor4 = cc.factorie.la.Tensor4
+//  type DenseTensor1 = cc.factorie.la.DenseTensor1
+//  type DenseTensor2 = cc.factorie.la.DenseTensor2
+//  type DenseTensor3 = cc.factorie.la.DenseTensor3
+//  type DenseTensor4 = cc.factorie.la.DenseTensor4
+//  type SparseTensor1 = cc.factorie.la.SparseTensor1
+//  type DenseLayeredTensor2 = cc.factorie.la.DenseLayeredTensor2
+//  type Dense2LayeredTensor3 = cc.factorie.la.Dense2LayeredTensor3
+  
   // TODO Consider removing these.  Yes. -akm
   type DiscreteTensorValue = cc.factorie.la.Tensor
   type CategoricalTensorValue = cc.factorie.la.Tensor

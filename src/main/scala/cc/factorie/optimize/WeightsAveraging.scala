@@ -28,7 +28,7 @@ class WeightsAveraging(val inner:GradientOptimizer) extends GradientOptimizer {
   }
   def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
     if (weightsSum eq null) weightsSum = weights.copy
-    else weightsSum += weights // Yipes, this is not sparse, not efficient
+    else weightsSum += weights // TODO  Yipes, this is not sparse, not efficient
     normalizer += 1.0
     inner.step(weights, gradient, value, margin)
   }

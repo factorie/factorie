@@ -21,18 +21,21 @@ class Parser {
   object ParserModel extends TemplateModel(
     // Bias term on each individual label 
     new TemplateWithDotStatistics1[ParseLabel] {
-      def statisticsDomains = Tuple1(ParseLabelDomain)
+      //def statisticsDomains = Tuple1(ParseLabelDomain)
+      lazy val weights = new la.DenseTensor1(ParseLabelDomain.size)
     },
     // Factor between label and observed token
-    new Template3[ParseEdge,ParseFeatures,ParseFeatures] with DotStatistics2[DiscreteTensorValue,DiscreteTensorValue] with SparseWeights {
-      def statisticsDomains = ((ParseFeaturesDomain, ParseFeaturesDomain))
+    new Template3[ParseEdge,ParseFeatures,ParseFeatures] with DotStatistics2[DiscreteTensorValue,DiscreteTensorValue] {
+      //def statisticsDomains = ((ParseFeaturesDomain, ParseFeaturesDomain))
+      lazy val weights = new la.DenseLayeredTensor2(ParseFeaturesDomain.dimensionSize, ParseFeaturesDomain.dimensionSize) // TODO Change this to la.SparseTensor2 when it is available
       def unroll1(n:ParseEdge) = Factor(n, n.child.attr[ParseFeatures], n.parent.attr[ParseFeatures])
       def unroll2(child:ParseFeatures) = { val edge = child.token.attr[ParseEdge]; Factor(edge, child, edge.parent.attr[ParseFeatures]) }
       def unroll3(parent:ParseFeatures) = Nil
       def statistics(v1:ParseEdge#Value, v2:ParseFeatures#Value, v3:ParseFeatures#Value) = Statistics(v2, v3)
     },
-    new Template4[ParseEdge,ParseLabel,ParseFeatures,ParseFeatures] with DotStatistics2[DiscreteTensorValue,DiscreteTensorValue] with SparseWeights {
-      def statisticsDomains = ((ParseLabelDomain, ParseFeaturesDomain))
+    new Template4[ParseEdge,ParseLabel,ParseFeatures,ParseFeatures] with DotStatistics2[DiscreteTensorValue,DiscreteTensorValue] {
+      //def statisticsDomains = ((ParseLabelDomain, ParseFeaturesDomain))
+      lazy val weights = new la.DenseTensor2(ParseLabelDomain.size, ParseFeaturesDomain.dimensionSize)
       def unroll1(n:ParseEdge) = Factor(n, n.label, n.child.attr[ParseFeatures], n.parent.attr[ParseFeatures])
       def unroll2(label:ParseLabel) = { val edge = label.edge; Factor(edge, label, edge.child.attr[ParseFeatures], edge.parent.attr[ParseFeatures]) }
       def unroll3(child:ParseFeatures) = { val edge = child.token.attr[ParseEdge]; Factor(edge, edge.label, child, edge.parent.attr[ParseFeatures]) }

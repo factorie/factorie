@@ -45,22 +45,26 @@ object ChainNER2 {
   val model = new TemplateModel(
     // Bias term on each individual label 
     new TemplateWithDotStatistics1[Label] {
-      def statisticsDomains = Tuple1(LabelDomain)
+      //def statisticsDomains = Tuple1(LabelDomain)
+      lazy val weights = new la.DenseTensor1(LabelDomain.size)
     }, 
     // Transition factors between two successive labels
     new TemplateWithDotStatistics2[Label, Label] {
-      def statisticsDomains = ((LabelDomain, LabelDomain))
+      //def statisticsDomains = ((LabelDomain, LabelDomain))
+      lazy val weights = new la.DenseTensor2(LabelDomain.size, LabelDomain.size)
       def unroll1(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
       def unroll2(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
     },
     // Factor between label and observed token
     new TemplateWithDotStatistics2[Label, Token] {
-      def statisticsDomains = ((LabelDomain, TokenDomain))
+      //def statisticsDomains = ((LabelDomain, TokenDomain))
+      lazy val weights = new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize)
       def unroll1(label: Label) = Factor(label, label.token)
       def unroll2(token: Token) = Factor(token.label, token)
     },
     new Template2[Label,Label] with DotStatistics1[BooleanValue] {
-      def statisticsDomains = Tuple1(BooleanDomain)
+      //def statisticsDomains = Tuple1(BooleanDomain)
+      lazy val weights = new la.DenseTensor1(BooleanDomain.size)
       def unroll1(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainAfter; if (other.token.string == label.token.string)) yield Factor(label, other)
       def unroll2(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainBefore; if (other.token.string == label.token.string)) yield Factor(other, label)
       def statistics(v1:Label#Value, v2:Label#Value) = Statistics(BooleanValue(v1.intValue == v2.intValue))

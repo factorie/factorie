@@ -356,7 +356,7 @@ trait Statistics3[S1,S2,S3] extends Family {
 trait TensorStatistics3[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue] extends TensorFamily {
   self =>
   type StatisticsType = Statistics
-  override def statisticsDomains: Tuple3[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2], DiscreteTensorDomain with Domain[S3]]
+  //override def statisticsDomains: Tuple3[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2], DiscreteTensorDomain with Domain[S3]]
   final case class Statistics(_1:S1, _2:S2, _3:S3) extends { val tensor: Tensor = Tensor.outer(_1, _2, _3) } with super.Statistics {
     lazy val score = self.score(this)
   }
@@ -364,17 +364,16 @@ trait TensorStatistics3[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:Disc
 }
 
 trait DotStatistics3[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue] extends TensorStatistics3[S1,S2,S3] with DotFamily {
+  override def weights: Tensor3
   /** Given the Tensor value of neighbors _2 and _3, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
       Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
       If _1 is not a DiscreteVar then throws an Error. */
-  def scores1(tensor2:Tensor, tensor3:Tensor): Tensor1 = weights match {
-    case weights:Tensor3 => {
-      val outer = Tensor.outer(tensor2, tensor3)
-      val dim = statisticsDomains._1.dimensionDomain.size
-      val result = new DenseTensor1(dim)
-      outer.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += weights(i*dim + j) * v)
-      result
-    }
+  def scores1(tensor2:Tensor, tensor3:Tensor): Tensor1 = {
+    val outer = Tensor.outer(tensor2, tensor3)
+    val dim = weights.dim1 //statisticsDomains._1.dimensionDomain.size
+    val result = new DenseTensor1(dim)
+    outer.foreachActiveElement((j,v) => for (i <- 0 until dim) result(i) += weights(i*dim + j) * v)
+    result
   }
   def scores2(tensor1:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
   def scores3(tensor1:Tensor, tensor2:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")

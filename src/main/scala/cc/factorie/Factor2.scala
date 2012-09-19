@@ -301,13 +301,14 @@ trait Statistics2[S1,S2] extends Family {
 trait TensorStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorFamily {
   self =>
   type StatisticsType = Statistics
-  override def statisticsDomains: Tuple2[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2]]
+  //override def statisticsDomains: Tuple2[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2]]
   final case class Statistics(_1:S1, _2:S2) extends { val tensor: Tensor = Tensor.outer(_1, _2) } with super.Statistics {
     lazy val score = self.score(this)
   }
 }
 
 trait DotStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorStatistics2[S1,S2] with DotFamily {
+  override def weights: Tensor2
   //def statisticsScore(tensor:Tensor) = weights dot tensor
 }
 
@@ -329,7 +330,7 @@ trait FamilyWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] exte
   // TODO Should we consider the capability for something other than *summing* over elements of tensor2?
   def valueScores1(tensor2:Tensor): Tensor1 = weights match {
     case weights: Tensor2 => {
-      val dim = statisticsDomains._1.dimensionDomain.size
+      val dim = weights.dim1 // statisticsDomains._1.dimensionDomain.size
       val result = new DenseTensor1(dim)
       tensor2 match {
         case tensor2:SingletonBinaryTensor1 => {
@@ -359,7 +360,7 @@ trait FamilyWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] exte
   // TODO Should we consider the capability for something other than *summing* over elements of tensor1?
   def valueScores2(tensor1:Tensor): Tensor1 = weights match {
     case weights: Tensor2 => {
-      val dim = statisticsDomains._2.dimensionDomain.size
+      val dim = weights.dim2 //statisticsDomains._2.dimensionDomain.size
       val result = new DenseTensor1(dim)
       tensor1 match {
         case tensor1:SingletonBinaryTensor1 => {

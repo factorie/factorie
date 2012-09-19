@@ -25,7 +25,8 @@ class TestSingleSingleSparse {
 
     val t =
       new TemplateWithDotStatistics3[Label, CategoryFeature, Feature] {
-        override def statisticsDomains = ((LabelDomain, CategoryFeatureDomain, FeatureDomain))
+        //override def statisticsDomains = ((LabelDomain, CategoryFeatureDomain, FeatureDomain))
+        lazy val weights = new la.DenseTensor3(LabelDomain.size, CategoryFeatureDomain.size, FeatureDomain.dimensionSize)
         def unroll1(label: Label) = Factor(label, label.categoryFeature, label.feature)
         def unroll2(categoryFeature: CategoryFeature) = throw new Error("CategoryFeature shouldn't change")
         def unroll3(feature: Feature) = throw new Error("Feature shouldn't change")

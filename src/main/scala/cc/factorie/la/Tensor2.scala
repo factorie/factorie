@@ -208,6 +208,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   }
 }
 class DenseLayeredTensor2(val dim1:Int, val dim2:Int, val newTensor1:Int=>Tensor1) extends DenseLayeredTensorLike2 {
+  def this(dim1:Int, dim2:Int) = this(dim1, dim2, new SparseTensor1(_)) // TODO Keep methods like this, or avoid the magic of filling in the last argument?
   override def blankCopy: DenseLayeredTensor2 = new DenseLayeredTensor2(dim1, dim2, newTensor1)
   override def stringPrefix = "DenseLayeredTensor2"
 }

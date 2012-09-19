@@ -17,7 +17,7 @@ import cc.factorie._
 import cc.factorie.util._
 
 //* A Tensor to represent the weights in a collection of DotFamilies as the keys in a HashMap from DotFamily to Tensor. */
-class WeightsTensor(val newTensor:DotFamily=>Tensor = _.newSparseTensor) extends Tensor1 {
+class WeightsTensor(val newTensor:DotFamily=>Tensor = (df:DotFamily) => Tensor.newSparse(df.weights)) extends Tensor1 {
   // This functionality moved to TemplateModel
   //def this(model:TemplateModel, newTensor:DotFamily=>Tensor) = { this(newTensor); val wt = this; model.familiesOfClass[DotFamily].foreach(f => wt(f) = newTensor(f)) } 
   private val _map = new scala.collection.mutable.LinkedHashMap[DotFamily,Tensor] {

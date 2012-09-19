@@ -21,13 +21,15 @@ object ForwardBackwardPOS {
   object PosModel extends TemplateModel {
     // Factor between label and observed token
     val localTemplate = new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
-      override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
+      //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
+      lazy val weights = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
       def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
       def unroll2(tf: PosFeatures) = Factor(tf.token.posLabel, tf)
     }
     // Transition factors between two successive labels
     val transTemplate = new TemplateWithDotStatistics2[PosLabel, PosLabel] {
-      override def statisticsDomains = ((PosDomain, PosDomain))
+      //override def statisticsDomains = ((PosDomain, PosDomain))
+      lazy val weights = new la.DenseTensor2(PosDomain.size, PosDomain.size)
       def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil
       def unroll2(label: PosLabel) = if (label.token.sentenceHasNext) Factor(label, label.token.sentenceNext.posLabel) else Nil
     }

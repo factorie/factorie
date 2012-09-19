@@ -42,13 +42,15 @@ object ChainNER4 {
     // Bias term on each individual label 
     new TemplateWithDotStatistics1[Label] {
       override def neighborDomain1 = LabelDomain
-      override def statisticsDomains = Tuple1(LabelDomain)
+      //override def statisticsDomains = Tuple1(LabelDomain)
+      lazy val weights = new la.DenseTensor1(LabelDomain.size)
     },
     // Transition factors between two successive labels
     new TemplateWithDotStatistics2[Label, Label] {
       override def neighborDomain1 = LabelDomain
       override def neighborDomain2 = LabelDomain
-      override def statisticsDomains = ((LabelDomain, LabelDomain))
+      //override def statisticsDomains = ((LabelDomain, LabelDomain))
+      lazy val weights = new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize)
       def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
       def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
     },
@@ -56,7 +58,8 @@ object ChainNER4 {
     new TemplateWithDotStatistics2[Label, Token] {
       override def neighborDomain1 = LabelDomain
       override def neighborDomain2 = TokenDomain
-      override def statisticsDomains = ((LabelDomain, TokenDomain))
+      //override def statisticsDomains = ((LabelDomain, TokenDomain))
+      lazy val weights = new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize)
       def unroll1(label: Label) = Factor(label, label.token)
       def unroll2(token: Token) = throw new Error("Token values shouldn't change")
     }

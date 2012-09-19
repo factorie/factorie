@@ -39,7 +39,7 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
   case class DTBranch(yes: DTree, no: DTree, featureIndex: Int, threshold: Double) extends DTree
   case class DTLeaf(proportions: Proportions) extends DTree
 
-  lazy val numLabels: Int = statisticsDomains._1.asInstanceOf[DiscreteDomain].size
+  lazy val numLabels: Int = throw new Error("We need to figure out how to get the statistics tensor dim1 size.") // statisticsDomains._1.asInstanceOf[DiscreteDomain].size // TODO!!! Fix this!
 
   var decisionTree = None: Option[DTree]
 

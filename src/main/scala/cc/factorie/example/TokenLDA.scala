@@ -122,13 +122,13 @@ object TokenLDA {
     })
 
     val transTemplate = new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel]  {
-       def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain)) 
+       lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size) 
        factorName = "LabelLabelToken"
        override def unroll1(l: ChainNerLabel) = if (l.token.sentenceHasNext) List(Factor(l, l.token.sentenceNext.nerLabel)) else Nil
        override def unroll2(l: ChainNerLabel) = if (l.token.sentenceHasPrev) List(Factor(l.token.sentencePrev.nerLabel, l)) else Nil
      }
      val localTemplate = new TemplateWithDotStatistics2[ChainNerLabel, ChainNerFeatures2] {
-       def statisticsDomains = ((Conll2003NerDomain, ChainNerFeaturesDomain2))
+       lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, ChainNerFeaturesDomain2.dimensionSize)
        override def unroll1(l: ChainNerLabel) = List(Factor(l, l.token.attr[ChainNerFeatures2]))
        override def unroll2(t: ChainNerFeatures2) = throw new Error("Do not change the token variables")
      }
@@ -143,10 +143,12 @@ object TokenLDA {
      val d = trainLabels.head.domain
      MyModel.score(trainLabels.take(5))
 
+     ChainNerFeaturesDomain2.freeze()
+     Conll2003NerDomain.freeze()
      val nIter = 15
      val errors = (0 until nIter).map(i => {
        List(localTemplate, transTemplate).foreach(t => {
-         t.freezeDomains
+         //t.freezeDomains
          var i = 0
          while (i < t.weights.length) {
            t.weights(i) = 0.0
