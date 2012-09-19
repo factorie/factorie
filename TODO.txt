@@ -25,6 +25,7 @@ Sanity-check pass through all code [All]
 Consider which println's should be transformed into Logging statements
 Package documentation  [All]
 Fix copyright year [McCallum]
+Write JUnit tests for cc.factorie.la [Vilnis?]
 
 More examples:
 Tutorial examples [McCallum]
