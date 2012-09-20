@@ -14,10 +14,10 @@
 
 
 
-package cc.factorie.example
-import cc.factorie._
-import cc.factorie.er._
-import scala.collection.mutable.ArrayBuffer
+//package cc.factorie.example
+//import cc.factorie._
+//import cc.factorie.er._
+//import scala.collection.mutable.ArrayBuffer
 
 ///** A simple example, modeling smoking, cancer and frienships. */
 //object LogicDemo1 {

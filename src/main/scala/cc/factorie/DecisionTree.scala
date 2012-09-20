@@ -20,7 +20,7 @@ import collection.mutable.{ArrayBuilder, Stack, ArrayBuffer}
 /** Statistics for factors who scores are the log-probability of
     label S1 given feature vector S2, according to a decision tree.
     @author Luke Vilnis */
-trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue] extends TensorStatistics2[S1, S2] {
+trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: Tensor] extends TensorStatistics2[S1, S2] {
 
   type State
   def getPerNodeState(stats: Seq[StatisticsType]): State
@@ -221,7 +221,7 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
 
 // Provides default implementation of State and splitting criteria that ignores it, for strategies that do not require
 // state to be stored to efficiently calculate the splitting feature
-trait NoTrainingState[S1 <: DiscreteValue, S2 <: DiscreteTensorValue] {
+trait NoTrainingState[S1 <: DiscreteValue, S2 <: Tensor] {
   this: DecisionTreeStatistics2Base[S1, S2] =>
   type State = Unit
   def getPerNodeState(stats: Seq[StatisticsType]): State = ()
@@ -230,7 +230,7 @@ trait NoTrainingState[S1 <: DiscreteValue, S2 <: DiscreteTensorValue] {
   def evaluateSplittingCriteria(withFeature: DenseProportions1, withoutFeature: DenseProportions1): Double
 }
 
-trait InfoGainSplitting[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
+trait InfoGainSplitting[S1 <: DiscreteValue, S2 <: Tensor]
   extends NoTrainingState[S1, S2] {
   this: DecisionTreeStatistics2Base[S1, S2] =>
   def evaluateSplittingCriteria(withFeature: DenseProportions1, withoutFeature: DenseProportions1): Double = {
@@ -243,7 +243,7 @@ trait InfoGainSplitting[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
   }
 }
 
-trait GainRatioSplitting[S1 <: DiscreteValue, S2 <: DiscreteTensorValue] {
+trait GainRatioSplitting[S1 <: DiscreteValue, S2 <: Tensor] {
   this: DecisionTreeStatistics2Base[S1, S2] =>
   type State = Double
   def getPerNodeState(stats: Seq[StatisticsType]): State =
@@ -258,30 +258,30 @@ trait GainRatioSplitting[S1 <: DiscreteValue, S2 <: DiscreteTensorValue] {
   }
 }
 
-trait SampleSizeStopping[S1 <: DiscreteValue, S2 <: DiscreteTensorValue] {
+trait SampleSizeStopping[S1 <: DiscreteValue, S2 <: Tensor] {
   this: DecisionTreeStatistics2Base[S1, S2] =>
   def minSampleSize: Int
   def shouldStop(stats: Seq[StatisticsType], depth: Int) = stats.size < minSampleSize
 }
 
-trait UniformLabelStopping[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
+trait UniformLabelStopping[S1 <: DiscreteValue, S2 <: Tensor]
   extends SampleSizeStopping[S1, S2] {
   this: DecisionTreeStatistics2Base[S1, S2] =>
   val minSampleSize = 1
 }
 
-trait MaxDepthStopping[S1 <: DiscreteValue, S2 <: DiscreteTensorValue] {
+trait MaxDepthStopping[S1 <: DiscreteValue, S2 <: Tensor] {
   this: DecisionTreeStatistics2Base[S1, S2] =>
   def maxDepth: Int
   def shouldStop(stats: Seq[StatisticsType], depth: Int) = depth > maxDepth
 }
 
-trait NoPruning[S1 <: DiscreteValue, S2 <: DiscreteTensorValue] {
+trait NoPruning[S1 <: DiscreteValue, S2 <: Tensor] {
   this: DecisionTreeStatistics2Base[S1, S2] =>
   def prune(tree: DTree, pruningSet: Seq[StatisticsType]) = tree
 }
 
-trait ErrorBasedPruning[S1 <: DiscreteValue, S2 <: DiscreteTensorValue] {
+trait ErrorBasedPruning[S1 <: DiscreteValue, S2 <: Tensor] {
   this: DecisionTreeStatistics2Base[S1, S2] =>
 
   def prune(tree: DTree, pruningSet: Seq[StatisticsType]): DTree = tree match {
@@ -298,7 +298,7 @@ trait ErrorBasedPruning[S1 <: DiscreteValue, S2 <: DiscreteTensorValue] {
     stats.map(s => if (labelIndex(s) == label(s, node)) 1.0 else 0.0).sum / stats.length
 }
 
-trait C45DecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
+trait C45DecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: Tensor]
   extends DecisionTreeStatistics2Base[S1, S2]
   with GainRatioSplitting[S1, S2]
   with SampleSizeStopping[S1, S2]
@@ -306,7 +306,7 @@ trait C45DecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
   val minSampleSize = 4
 }
 
-trait ID3DecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
+trait ID3DecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: Tensor]
   extends DecisionTreeStatistics2Base[S1, S2]
   with InfoGainSplitting[S1, S2]
   with SampleSizeStopping[S1, S2]
@@ -314,7 +314,7 @@ trait ID3DecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
   val minSampleSize = 4
 }
 
-trait StumpDecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: DiscreteTensorValue]
+trait StumpDecisionTreeStatistics2[S1 <: DiscreteValue, S2 <: Tensor]
   extends DecisionTreeStatistics2Base[S1, S2]
   with InfoGainSplitting[S1, S2]
   with MaxDepthStopping[S1, S2]

@@ -293,21 +293,21 @@ trait Statistics2[S1,S2] extends Family {
   self =>
   type StatisticsType = Statistics
   final case class Statistics(_1:S1, _2:S2) extends super.Statistics {
-    lazy val score = self.score(this)
+    val score = self.score(this)
   }
   def score(s:Statistics): Double
 }
 
-trait TensorStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorFamily {
+trait TensorStatistics2[S1<:Tensor,S2<:Tensor] extends TensorFamily {
   self =>
   type StatisticsType = Statistics
   //override def statisticsDomains: Tuple2[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2]]
   final case class Statistics(_1:S1, _2:S2) extends { val tensor: Tensor = Tensor.outer(_1, _2) } with super.Statistics {
-    lazy val score = self.score(this)
+    val score = self.score(this)
   }
 }
 
-trait DotStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorStatistics2[S1,S2] with DotFamily {
+trait DotStatistics2[S1<:Tensor,S2<:Tensor] extends TensorStatistics2[S1,S2] with DotFamily {
   override def weights: Tensor2
   //def statisticsScore(tensor:Tensor) = weights dot tensor
 }

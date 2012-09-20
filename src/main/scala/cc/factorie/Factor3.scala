@@ -348,22 +348,22 @@ trait Statistics3[S1,S2,S3] extends Family {
   self =>
   type StatisticsType = Statistics
   final case class Statistics(_1:S1, _2:S2, _3:S3) extends super.Statistics {
-    lazy val score = self.score(this)
+    val score = self.score(this)
   }
   def score(s:Statistics): Double
 }
 
-trait TensorStatistics3[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue] extends TensorFamily {
+trait TensorStatistics3[S1<:Tensor,S2<:Tensor,S3<:Tensor] extends TensorFamily {
   self =>
   type StatisticsType = Statistics
   //override def statisticsDomains: Tuple3[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2], DiscreteTensorDomain with Domain[S3]]
   final case class Statistics(_1:S1, _2:S2, _3:S3) extends { val tensor: Tensor = Tensor.outer(_1, _2, _3) } with super.Statistics {
-    lazy val score = self.score(this)
+    val score = self.score(this)
   }
   def score(s:Statistics): Double
 }
 
-trait DotStatistics3[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue,S3<:DiscreteTensorValue] extends TensorStatistics3[S1,S2,S3] with DotFamily {
+trait DotStatistics3[S1<:Tensor,S2<:Tensor,S3<:Tensor] extends TensorStatistics3[S1,S2,S3] with DotFamily {
   override def weights: Tensor3
   /** Given the Tensor value of neighbors _2 and _3, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
       Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
@@ -383,11 +383,11 @@ trait FamilyWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable] extends Fami
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): StatisticsType = Statistics(v1, v2, v3)
 }
 
-trait FamilyWithTensorStatistics3[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar] extends Family3[N1,N2,N3] with TensorStatistics3[N1#Value,N2#Value,N3#Value] {
+trait FamilyWithTensorStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends Family3[N1,N2,N3] with TensorStatistics3[N1#Value,N2#Value,N3#Value] {
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = Statistics(v1, v2, v3)
 }
 
-trait FamilyWithDotStatistics3[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar] extends Family3[N1,N2,N3] with DotStatistics3[N1#Value,N2#Value,N3#Value] {
+trait FamilyWithDotStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends Family3[N1,N2,N3] with DotStatistics3[N1#Value,N2#Value,N3#Value] {
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = Statistics(v1, v2, v3)
   def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor) // reflecting the fact that there is no transformation between values and statistics
 }

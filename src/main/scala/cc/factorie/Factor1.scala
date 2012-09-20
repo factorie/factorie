@@ -180,27 +180,26 @@ trait Statistics1[S1] extends Family {
   self =>
   type StatisticsType = Statistics
   case class Statistics(_1:S1) extends super.Statistics {
-    lazy val score = self.score(this) 
+    val score = self.score(this) 
   }
   def score(s:Statistics): Double
 }
 
-trait TensorStatistics1[S1<:DiscreteTensorValue] extends TensorFamily {
+trait TensorStatistics1[S1<:Tensor] extends TensorFamily {
   self =>
   type StatisticsType = Statistics
-  //override def statisticsDomains: Tuple1[DiscreteTensorDomain with Domain[S1]]
-  // Use Scala's "pre-initialized fields" syntax because super.Stat needs tensor to initialize score
+  // Use Scala's "pre-initialized fields" syntax because super.Statistics needs tensor to initialize score
   final case class Statistics(_1:S1) extends { val tensor: Tensor = _1 } with super.Statistics {
-    lazy val score = self.score(this)
+    val score = self.score(this)
   }
   def score(s:Statistics): Double
 }
 
-trait DotStatistics1[S1<:DiscreteTensorValue] extends TensorStatistics1[S1] with DotFamily {
+trait DotStatistics1[S1<:Tensor] extends TensorStatistics1[S1] with DotFamily {
   override def weights: Tensor1
   def setWeight(entry:S1, w:Double) = entry match {
-    case d:DiscreteValue => weights(d.intValue) = w
-    case ds:DiscreteTensorValue => ds.activeDomain.foreach(i => weights(i) = w)
+    case d:SingletonTensor1 => weights(d.singleIndex) = w // e.g. DiscreteValue
+    case ds:Tensor => ds.activeDomain.foreach(i => weights(i) = w)
   }
   def scores1(): Tensor1 = weights.copy //  match { case weights: Tensor1 => weights.copy }
 }
@@ -209,11 +208,11 @@ trait FamilyWithStatistics1[N1<:Variable] extends Family1[N1] with Statistics1[N
   def statistics(v1:N1#Value): StatisticsType = Statistics(v1)
 }
 
-trait FamilyWithTensorStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with TensorStatistics1[N1#Value] {
+trait FamilyWithTensorStatistics1[N1<:TensorVar] extends Family1[N1] with TensorStatistics1[N1#Value] {
   def statistics(v1:N1#Value): StatisticsType = Statistics(v1)
 }
 
-trait FamilyWithDotStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with DotStatistics1[N1#Value] {
+trait FamilyWithDotStatistics1[N1<:TensorVar] extends Family1[N1] with DotStatistics1[N1#Value] {
   def statistics(v1:N1#Value): StatisticsType = Statistics(v1)
   def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor) // reflecting the fact that there is no transformation between values and statistics
 }

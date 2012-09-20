@@ -14,6 +14,7 @@
 
 package cc.factorie.app.nlp.parse
 import cc.factorie._
+import cc.factorie.la._
 import cc.factorie.app.nlp._
 
 class Parser {
@@ -25,7 +26,7 @@ class Parser {
       lazy val weights = new la.DenseTensor1(ParseLabelDomain.size)
     },
     // Factor between label and observed token
-    new Template3[ParseEdge,ParseFeatures,ParseFeatures] with DotStatistics2[DiscreteTensorValue,DiscreteTensorValue] {
+    new Template3[ParseEdge,ParseFeatures,ParseFeatures] with DotStatistics2[Tensor,Tensor] {
       //def statisticsDomains = ((ParseFeaturesDomain, ParseFeaturesDomain))
       lazy val weights = new la.DenseLayeredTensor2(ParseFeaturesDomain.dimensionSize, ParseFeaturesDomain.dimensionSize) // TODO Change this to la.SparseTensor2 when it is available
       def unroll1(n:ParseEdge) = Factor(n, n.child.attr[ParseFeatures], n.parent.attr[ParseFeatures])
@@ -33,7 +34,7 @@ class Parser {
       def unroll3(parent:ParseFeatures) = Nil
       def statistics(v1:ParseEdge#Value, v2:ParseFeatures#Value, v3:ParseFeatures#Value) = Statistics(v2, v3)
     },
-    new Template4[ParseEdge,ParseLabel,ParseFeatures,ParseFeatures] with DotStatistics2[DiscreteTensorValue,DiscreteTensorValue] {
+    new Template4[ParseEdge,ParseLabel,ParseFeatures,ParseFeatures] with DotStatistics2[Tensor,Tensor] {
       //def statisticsDomains = ((ParseLabelDomain, ParseFeaturesDomain))
       lazy val weights = new la.DenseTensor2(ParseLabelDomain.size, ParseFeaturesDomain.dimensionSize)
       def unroll1(n:ParseEdge) = Factor(n, n.label, n.child.attr[ParseFeatures], n.parent.attr[ParseFeatures])

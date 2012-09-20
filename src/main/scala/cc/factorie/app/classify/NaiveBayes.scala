@@ -14,7 +14,6 @@
 
 package cc.factorie.app.classify
 import cc.factorie._
-import cc.factorie.er._
 import scala.collection.mutable.{HashMap,ArrayBuffer}
 
 class NaiveBayesTrainer extends ClassifierTrainer {

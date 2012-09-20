@@ -32,8 +32,8 @@ package object factorie {
 //  type Dense2LayeredTensor3 = cc.factorie.la.Dense2LayeredTensor3
   
   // TODO Consider removing these.  Yes. -akm
-  type DiscreteTensorValue = cc.factorie.la.Tensor
-  type CategoricalTensorValue = cc.factorie.la.Tensor
+  //type DiscreteTensorValue = cc.factorie.la.Tensor
+  //type CategoricalTensorValue = cc.factorie.la.Tensor
 
   // TODO Should we have this?  Is there a more Java-standard way to provide this?
   // TODO If we keep it, find a way to automatically maintain this string value

@@ -17,7 +17,6 @@
 package cc.factorie.example
 import scala.io.Source
 import cc.factorie._ 
-import cc.factorie.er._
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
 
