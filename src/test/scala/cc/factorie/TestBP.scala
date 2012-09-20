@@ -1,7 +1,7 @@
 package cc.factorie
 
 import scala.collection.mutable.Stack
-import org.junit.Assert.{assertEquals}
+import org.junit.Assert._
 import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
 import org.junit.Test
@@ -187,7 +187,8 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val vars: Set[DiscreteVar] = Set(v1, v2, v3, v4)
 
     val model = new FactorModel(
-      // loop of repulsion factors
+      // loop of repulsion factors, with v4 having an extra factor
+      // pegging its value to 0
       newFactor2(v1, v2, -5, 0), 
       newFactor2(v2, v3, -5, 0),
       newFactor2(v3, v4, -5, 0), 
@@ -200,20 +201,19 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     BP.inferLoopy(fg, 4)
     fg.setToMaximize()
     
-    println("v1 : " + fg.marginal(v1).proportions)
-    println("v2 : " + fg.marginal(v2).proportions)
-    println("v3 : " + fg.marginal(v3).proportions)
-    println("v4 : " + fg.marginal(v4).proportions)
-    
-    println("v1 val : " + v1.value)
-    println("v2 val : " + v2.value)
-    println("v3 val : " + v3.value)
-    println("v4 val : " + v4.value)
-    
-    assert(v1.intValue == 0)
-    assert(v2.intValue == 1)
-    assert(v3.intValue == 1)
-    assert(v4.intValue == 0)
+    assertEquals(fg.marginal(v1).proportions(0), 0.0, 0.1)
+    assertEquals(fg.marginal(v1).proportions(1), 1.0, 0.1)
+    assertEquals(fg.marginal(v2).proportions(0), 1.0, 0.1)
+    assertEquals(fg.marginal(v2).proportions(1), 0.0, 0.1)
+    assertEquals(fg.marginal(v3).proportions(0), 0.0, 0.1)
+    assertEquals(fg.marginal(v3).proportions(1), 1.0, 0.1)
+    assertEquals(fg.marginal(v4).proportions(0), 1.0, 0.1)
+    assertEquals(fg.marginal(v4).proportions(1), 0.0, 0.1)
+
+    assertEquals(v1.intValue, 1)
+    assertEquals(v2.intValue, 0)
+    assertEquals(v3.intValue, 1)
+    assertEquals(v4.intValue, 0)
   }
 
   @Test def chainRandom {
@@ -374,9 +374,7 @@ object BPTestUtils {
     family.weights(0) = score0
     family.weights(1) = score1
     n1.set(0)(null)
-    println(family.score(n1))
     n1.set(1)(null)
-    println(family.score(n1))
     family.factors(n1).head
   }
 
