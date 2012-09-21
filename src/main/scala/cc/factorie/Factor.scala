@@ -32,7 +32,7 @@ trait Factor extends Ordered[Factor] {
   def numVariables: Int
   def variable(index: Int): Variable
   /** Optionally return pre-calculated Statistics.  By default not actually cached, but may be overridden in subclasses. */
-  def cachedStatistics: Statistics = statistics
+  //def cachedStatistics: Statistics = statistics
   def touches(variable:Variable): Boolean = this.variables.contains(variable)
   def touchesAny(variables:Iterable[Variable]): Boolean = variables.exists(touches(_))
   /** This factors contribution to the unnormalized log-probability of the current possible world. */

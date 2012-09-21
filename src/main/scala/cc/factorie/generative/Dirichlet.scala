@@ -43,7 +43,7 @@ object Dirichlet extends GenerativeFamily2[ProportionsVar,MassesVar] {
     forIndex(alpha.length)(i => p(i) /= norm)
     p
   }
-  case class Factor(_1:ProportionsVar, _2:MassesVar) extends super.Factor {
+  case class Factor(override val _1:ProportionsVar, override val _2:MassesVar) extends super.Factor(_1, _2) {
     def pr(s:StatisticsType) = self.pr(s._1, s._2)
     override def pr: Double = self.pr(_1.value, _2.value)
     def sampledValue(s:StatisticsType): Proportions = self.sampledValue(s._2, Nil)

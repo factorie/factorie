@@ -76,6 +76,8 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
 
 class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   def this(t:Tensor2) = { this(t.dim1, t.dim2); this := t }
+  def this(values:Seq[Seq[Double]]) = { this(values.size, values.head.size); for (i <- 0 until dim1; j <- 0 until dim2) update(i, j, values(i)(j)) } // TODO Not very efficient
+  def this(values:Array[Array[Double]]) = { this(values.size, values.head.size); for (i <- 0 until dim1; j <- 0 until dim2) update(i, j, values(i)(j)) } // TODO Not very efficient
   def this(dim1:Int, dim2:Int, fillValue:Double) = { this(dim1, dim2); java.util.Arrays.fill(_values, fillValue) }
   override def copy: DenseTensor2 = { val t = new DenseTensor2(dim1, dim2); System.arraycopy(_values, 0, t._values, 0, length); t }
   override def blankCopy: DenseTensor2 = new DenseTensor2(dim1, dim2)

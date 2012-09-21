@@ -28,9 +28,9 @@ class TestProposalSamplers extends TestCase {
   }
 
   private def newFactor1(n1: BinVar, score0: Double, score1: Double) =
-    new Factor1[BinVar] {
+    new Factor1(n1) {
       factor =>
-      def _1 = n1
+      //def _1 = n1
 
       type StatisticsType = Stat
 
@@ -50,11 +50,10 @@ class TestProposalSamplers extends TestCase {
     }
 
   private def newFactor2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double) =
-    new Factor2[BinVar, BinVar] {
+    new Factor2[BinVar, BinVar](n1, n2) {
       factor =>
-      def _1 = n1
-
-      def _2 = n2
+      //def _1 = n1
+       //def _2 = n2
 
       type StatisticsType = Stat
 
@@ -85,7 +84,7 @@ class TestProposalSamplers extends TestCase {
     val samples = 10000
     val v1 = new BinVar(0)
     val v2 = new BinVar(0)
-    val model = new FactorModel(newFactor2(v1, v2, 5, 1))
+    val model = new ItemizedModel(newFactor2(v1, v2, 5, 1))
     val sampler = new VariablesSettingsSampler[BinVar](model)
 
     val origScore = model.score(Seq(v1, v2))

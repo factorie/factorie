@@ -26,13 +26,11 @@ import java.io._
 trait ValuesIterator2[N1<:Variable,N2<:Variable] extends Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2] with ValuesIterator
 
 /** The only abstract things are _1, _2, statistics(Values), and StatisticsType */
-trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
+abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends Factor {
   factor =>
   type NeighborType1 = N1
   type NeighborType2 = N2
   type StatisticsType <: cc.factorie.Statistics
-  def _1: N1
-  def _2: N2
   def numVariables = 2
   override def variables = IndexedSeq(_1, _2)
   def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case _ => throw new IndexOutOfBoundsException(i.toString) }
@@ -193,7 +191,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
 }
 
 /** The only abstract things are _1, _2, and score(Statistics) */
-trait FactorWithStatistics2[N1<:Variable,N2<:Variable] extends Factor2[N1,N2] {
+abstract class FactorWithStatistics2[N1<:Variable,N2<:Variable](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
   self =>
   type StatisticsType = Statistics
   case class Statistics(_1:N1#Value, _2:N2#Value) extends cc.factorie.Statistics {
@@ -223,7 +221,7 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
 //  def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = limitedDiscreteValues ++= values
   //def limitDiscreteValuesIterator
   
-  final case class Factor(_1:N1, _2:N2) extends super.Factor with Factor2[N1,N2] {
+  final case class Factor(override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) with super.Factor {
     type StatisticsType = Family2.this.StatisticsType
     override def equalityPrerequisite: AnyRef = Family2.this
     override def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = thisFamily.statistics(v1, v2)
