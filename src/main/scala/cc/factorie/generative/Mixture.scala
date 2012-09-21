@@ -83,7 +83,7 @@ with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]]
 
 object Mixture extends GenerativeFamily1[Mixture[Variable]] {
   def apply[P<:Variable](n:Int)(constructor: =>P)(implicit model: MutableGenerativeModel): Mixture[P] = new Mixture[P](for (i <- 1 to n) yield constructor) // TODO Consider Seq.fill instead 
-  case class Factor(_1:Mixture[Variable]) extends super.Factor {
+  case class Factor(override val _1:Mixture[Variable]) extends super.Factor(_1) {
     /** Even though they are the contents of the child, the parents are each of the mixture components. */
     override def parents: Seq[Variable] = _1.components
     def pr(s:StatisticsType) = 1.0

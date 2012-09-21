@@ -47,14 +47,14 @@ trait IntGeneratingFactor extends GenerativeFactor {
   def logpr(x:Int): Double
 }
 
-trait GenerativeFactorWithStatistics1[C<:Variable] extends GenerativeFactor with FactorWithStatistics1[C] {
+abstract class GenerativeFactorWithStatistics1[C<:Variable](override val _1:C) extends FactorWithStatistics1[C](_1) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents: Seq[Variable] = Nil
-  def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType]) // Can't define score earlier because inner class Factor.Statistics not defined until here
+  def score(s:Statistics) = logpr(s) // Can't define score earlier because inner class Factor.Statistics not defined until here
 }
 
-trait GenerativeFactorWithStatistics2[C<:Variable,P1<:Variable] extends GenerativeFactor with FactorWithStatistics2[C,P1] {
+abstract class GenerativeFactorWithStatistics2[C<:Variable,P1<:Variable](override val _1:C, override val _2:P1) extends FactorWithStatistics2[C,P1](_1, _2) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents = Seq(_2)
@@ -79,7 +79,7 @@ trait GenerativeFactorWithStatistics4[C<:Variable,P1<:Variable,P2<:Variable,P3<:
 
 trait GenerativeFamily1[Child<:Variable] {
   type C = Child
-  trait Factor extends GenerativeFactorWithStatistics1[C] 
+  abstract class Factor(override val _1:Child) extends GenerativeFactorWithStatistics1[C](_1) 
   def newFactor(c:C): Factor
   def apply() = new Function1[C,Factor] {
     def apply(c:C) = newFactor(c)
@@ -89,7 +89,7 @@ trait GenerativeFamily1[Child<:Variable] {
 trait GenerativeFamily2[Child<:Variable,Parent1<:Variable] {
   type C = Child
   type P1 = Parent1
-  trait Factor extends GenerativeFactorWithStatistics2[C,P1] 
+  abstract class Factor(override val _1:Child, override val _2:Parent1) extends GenerativeFactorWithStatistics2[C,P1](_1, _2) 
   def newFactor(c:C, p1:P1): Factor
   def apply(p1:P1) = new Function1[C,Factor] {
     def apply(c:C) = newFactor(c, p1)

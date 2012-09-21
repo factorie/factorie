@@ -65,6 +65,7 @@ trait MutableRealVar extends RealVar with MutableDoubleScalarVar with MutableInt
 /** A Variable with a mutable real (double) value. */
 class RealVariable(initialValue: Double) extends MutableRealVar {
   def this() = this(0.0)
+  def this(rv:RealValue) = this(rv.singleValue)
   private var _value: Double = initialValue
   @inline final def doubleValue = _value
   def :=(x:Double) = _value = x

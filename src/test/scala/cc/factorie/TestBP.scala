@@ -23,7 +23,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   @Test def v1f1Test {
     // one variable, one factor
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 1, 1))
+    val model = new ItemizedModel(newFactor1(v, 1, 1))
     val fg = new BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
@@ -35,7 +35,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   @Test def v1f1UnequalPotentialsSum {
     // one variable, one factor
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 2, 1))
+    val model = new ItemizedModel(newFactor1(v, 2, 1))
     val fg = new BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
@@ -48,7 +48,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     //f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
     // one variable, two factors
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
+    val model = new ItemizedModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
     val fg = new BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 2)
     assert(fg.bpVariables.size == 1)
@@ -61,7 +61,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
   // one variable, two factors
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
+    val model = new ItemizedModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
     val fg = new BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 2)
     assert(fg.bpVariables.size == 1)
@@ -74,7 +74,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     // f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
     // one variable, two factors
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
+    val model = new ItemizedModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
     val fg = new BPSummary(Set(v), BPMaxProductRing, model) 
     BP.inferLoopy(fg, 2)
     //println(fg.marginal(v).proportions)
@@ -85,7 +85,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
     // one variable, two factors
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
+    val model = new ItemizedModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
     val fg = new BPSummary(Set(v), BPMaxProductRing, model)
     BP.inferLoopy(fg, 1)
     //println(fg.marginal(v).proportions)
@@ -156,7 +156,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val v2 = new BinVar(0)
     val vars: Set[DiscreteVar] = Set(v1, v2)
 
-    val model = new FactorModel(
+    val model = new ItemizedModel(
       // bias
       newFactor1(v1, 1, 0), 
       newFactor1(v2, 1, 0),
@@ -186,7 +186,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val v4 = new BinVar(0)
     val vars: Set[DiscreteVar] = Set(v1, v2, v3, v4)
 
-    val model = new FactorModel(
+    val model = new ItemizedModel(
       // loop of repulsion factors
       newFactor2(v1, v2, -5, 0), 
       newFactor2(v2, v3, -5, 0),
@@ -223,7 +223,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val varSet = vars.toSet[DiscreteVar]
     for (seed <- (0 until 50)) {
       val random = new Random(seed * 1024)
-      val model = new FactorModel
+      val model = new ItemizedModel
       for (i <- 0 until numVars) {
         model += newFactor1(vars(i), 0, random.nextDouble() * 4.0 - 2.0)
         if ((i + 1) != numVars) model += newFactor2(vars(i), vars(i + 1), 0, random.nextDouble() * 6.0 - 3.0)
@@ -284,7 +284,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val v3 = new BinVar(0)
     val vars: Set[DiscreteVar] = Set(v1, v2, v3)
     // v1 -- v3 -- v2
-    val model = new FactorModel(
+    val model = new ItemizedModel(
 	    newFactor1(v1, 3, 0),
 	    newFactor1(v2, 0, 3),
 	    newFactor2(v1, v3, 3, 0),
@@ -318,7 +318,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     //        v4
     //    v3      v5
     //  v1  v2  v6  v7
-    val model = new FactorModel(
+    val model = new ItemizedModel(
       newFactor1(v1, 10, 0), //newFactor1(v7, 0, 3),
       newFactor2(v1, v3, 5, 0), newFactor2(v2, v3, -5, 0),
       newFactor2(v3, v4, 5, 0), newFactor2(v5, v4, -5, 0),

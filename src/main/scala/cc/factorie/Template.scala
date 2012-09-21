@@ -20,7 +20,7 @@ import collection.mutable.HashSet
 trait ContextTemplate[C] extends FamilyWithNeighborDomains {
   def factors(c:C): Iterable[FactorType]
   //def factors(cs:Iterable[C]): Iterable[FactorType] = dedup(cs.flatMap(factors(_))) // TODO Do we also want a method like this?
-  def itemizedModel(c:C): FactorModel = new FactorModel(factors(c))
+  def itemizedModel(c:C): ItemizedModel = new ItemizedModel(factors(c))
 }
 
 /** A template for creating Factors, where there is a mapping from variables neighboring the factors to the contexts necessary to create those Factors. */

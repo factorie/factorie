@@ -127,8 +127,7 @@ class CombinedModel(theSubModels:Model*) extends Model {
     @author Andrew McCallum
     @since 0.11
  */
-// TODO Rename UnrolledModel ???  Or ExpandedModel  Or EnumeratedModel  Or ItemizedModel << YES, last one
-class FactorModel(initialFactors:Factor*) extends Model {
+class ItemizedModel(initialFactors:Factor*) extends Model {
   def this(initialFactors:Iterable[Factor]) = { this(initialFactors.toSeq:_*) }
   private val _factors = new HashMap[Variable,scala.collection.Set[Factor]] {
     override def default(v:Variable) = ListSet.empty[Factor]
