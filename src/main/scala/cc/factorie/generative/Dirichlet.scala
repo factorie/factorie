@@ -18,7 +18,7 @@ import cc.factorie._
 // Proportions ~ Dirichlet(Masses)
 // Proportions ~ Dirichlet(Proportions, Precision)
 
-object Dirichlet extends GenerativeFamily2[ProportionsVar,MassesVar] {
+object Dirichlet extends GenerativeFamily2[ProportionsVariable,MassesVariable] {
   self =>
   def pr(value:Proportions, alpha:Masses): Double = {
     require(value.length == alpha.length)
@@ -43,14 +43,14 @@ object Dirichlet extends GenerativeFamily2[ProportionsVar,MassesVar] {
     forIndex(alpha.length)(i => p(i) /= norm)
     p
   }
-  case class Factor(override val _1:ProportionsVar, override val _2:MassesVar) extends super.Factor(_1, _2) {
-    def pr(s:StatisticsType) = self.pr(s._1, s._2)
+  case class Factor(override val _1:ProportionsVariable, override val _2:MassesVariable) extends super.Factor(_1, _2) {
+    def pr(p:Proportions, m:Masses) = self.pr(p, m)
     override def pr: Double = self.pr(_1.value, _2.value)
-    def sampledValue(s:StatisticsType): Proportions = self.sampledValue(s._2, Nil)
+    def sampledValue(masses:Masses): Proportions = self.sampledValue(masses, Nil)
     override def sampledValue: Proportions = self.sampledValue(_2.value, Nil)
     override def updateCollapsedChild(): Boolean = { _1.tensor.+=(_2.value); true }
   }
-  def newFactor(a:ProportionsVar, b:MassesVar) = Factor(a, b)
+  def newFactor(a:ProportionsVariable, b:MassesVariable) = Factor(a, b)
 }
 
 object MaximizeDirichletByMomentMatching {

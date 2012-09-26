@@ -42,19 +42,19 @@ object ChainNER2b {
   // The model
   val model = new TemplateModel(
     // Bias term on each individual label 
-    new TemplateWithDotStatistics1[Label] {
+    new DotTemplateWithStatistics1[Label] {
       //def statisticsDomains = Tuple1(LabelDomain)
       lazy val weights = new la.DenseTensor1(LabelDomain.size)
     }, 
     // Transition factors between two successive labels
-    new TemplateWithDotStatistics2[Label, Label] {
+    new DotTemplateWithStatistics2[Label, Label] {
       //def statisticsDomains = ((LabelDomain, LabelDomain))
       lazy val weights = new la.DenseTensor2(LabelDomain.size, LabelDomain.size)
       def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
       def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
     },
     // Factor between label and observed token
-    new TemplateWithDotStatistics2[Label, Token] {
+    new DotTemplateWithStatistics2[Label, Token] {
       //def statisticsDomains = ((LabelDomain, TokenDomain))
       lazy val weights = new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize)
       def unroll1(label: Label) = Factor(label, label.token)

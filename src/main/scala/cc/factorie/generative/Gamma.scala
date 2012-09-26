@@ -28,9 +28,9 @@ object Gamma extends GenerativeFamily3[DoubleVar,DoubleVar,DoubleVar] {
     math.pow(beta, alpha) / maths.gamma(alpha) * math.pow(x, alpha - 1) * math.exp(- beta * x)
   }
   def sampledValue(alpha:Double, beta:Double): Double = maths.nextGamma(alpha, beta)(cc.factorie.random)
-  case class Factor(_1:DoubleVar, _2:DoubleVar, _3:DoubleVar) extends super.Factor {
-    def pr(s:Statistics): Double = self.pr(s._1, s._2, s._3)
-    def sampledValue(s:Statistics): Double = self.sampledValue(s._2, s._3)
+  case class Factor(override val _1:DoubleVar, override val _2:DoubleVar, override val _3:DoubleVar) extends super.Factor(_1, _2, _3) {
+    def pr(child:Double, mean:Double, variance:Double): Double = self.pr(child, mean, variance)
+    def sampledValue(mean:Double, variance:Double): Double = self.sampledValue(mean, variance)
   }
   def newFactor(_1:DoubleVar, _2:DoubleVar, _3:DoubleVar) = Factor(_1, _2, _3)
 }

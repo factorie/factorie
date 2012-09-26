@@ -443,13 +443,13 @@ class TrainingModel extends TemplateModel{
     }
   }
   */
-  this += new TemplateWithStatistics2[BagOfTruths,IsEntity]{
+  this += new TupleTemplateWithStatistics2[BagOfTruths,IsEntity]{
     val precisionDominated=0.95
     def unroll1(bot:BagOfTruths) =if(bot.entity.isRoot)Factor(bot,bot.entity.attr[IsEntity]) else Nil
     def unroll2(isEntity:IsEntity) = if(isEntity.entity.isRoot)Factor(isEntity.entity.attr[BagOfTruths],isEntity) else Nil
-    override def score(s:Statistics):Double ={
+    override def score(bag:BagOfTruths#Value, isEntity:IsEntity#Value):Double ={
       var result = 0.0
-      val bag = s._1
+      //val bag = s._1
       val bagSeq = bag.iterator.toSeq
       var i=0;var j=0;
       var tp = 0.0
@@ -486,9 +486,7 @@ class PaperCorefModel extends TemplateModel{
   var bagOfAuthorsShift = -1.0
   var bagOfAuthorsWeight= 2.0
   this += new ChildParentTemplateWithStatistics[Title]{
-    def score(s:Statistics):Double ={
-      val childTitle = s._2
-      val parentTitle = s._3
+    def score(er:EntityRef#Value, childTitle:Title#Value, parentTitle: Title#Value):Double ={
       if(childTitle != parentTitle) -16.0 else 0.0
     }
   }
@@ -536,10 +534,10 @@ class AuthorCorefModel extends FastTemplateModel{
     def nameMisMatch(c:String,p:String):Boolean = (c!=null && p!=null && !FeatureUtils.isInitial(c) && !FeatureUtils.isInitial(p) && c != p)
   }
   */
-  this += new TemplateWithStatistics1[BagOfFirstNames]{
-    def score(s:Statistics):Double ={
+  this += new TupleTemplateWithStatistics1[BagOfFirstNames]{
+    def score(bag:BagOfFirstNames#Value):Double ={
       var result = 0.0
-      val bag = s._1
+      //val bag = s._1
       //val bagSeq = bag.iterator.toSeq
       val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
       var firstLetterMismatches = 0
@@ -571,10 +569,10 @@ class AuthorCorefModel extends FastTemplateModel{
       result
     }
   }
-  this += new TemplateWithStatistics1[BagOfMiddleNames]{
-    def score(s:Statistics):Double ={
+  this += new TupleTemplateWithStatistics1[BagOfMiddleNames]{
+    def score(bag:BagOfMiddleNames#Value):Double ={
       var result = 0.0
-      val bag = s._1
+      //val bag = s._1
       val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
       //val bagSeq = bag.iterator.toSeq
       var firstLetterMismatches = 0
@@ -615,10 +613,10 @@ class AuthorCorefModelOld extends TemplateModel{
   var bagOfKeyWordsWeight:Double = 8.0
   */
   this += new ChildParentTemplateWithStatistics[FullName] {
-    def score(s:Statistics): Double = {
+    def score(er:EntityRef#Value, childName:FullName#Value, parentName:FullName#Value): Double = {
       var result = 0.0
-      val childName = s._2
-      val parentName = s._3
+      //val childName = s._2
+      //val parentName = s._3
       val childFirst = FeatureUtils.normalizeName(childName(0)).toLowerCase
       val childMiddle = FeatureUtils.normalizeName(childName(1)).toLowerCase
       val childLast = FeatureUtils.normalizeName(childName(2)).toLowerCase
@@ -641,10 +639,10 @@ class AuthorCorefModelOld extends TemplateModel{
   this += new ChildParentTemplateWithStatistics[BagOfCoAuthors] {
     override def unroll2(childBow:BagOfCoAuthors) = Nil
     override def unroll3(childBow:BagOfCoAuthors) = Nil
-    def score(s:Statistics): Double = {
+    def score(er:EntityRef#Value, childBow:BagOfCoAuthors#Value, parentBow:BagOfCoAuthors#Value): Double = {
       var result = 0.0
-      val childBow = s._2
-      val parentBow = s._3
+      //val childBow = s._2
+      //val parentBow = s._3
       val dot = childBow.deductedDot(parentBow,childBow)
       var cossim:Double=0.0
       if(dot == 0.0) {
@@ -665,9 +663,9 @@ class AuthorCorefModelOld extends TemplateModel{
     val shift = -0.25 //-0.25
     override def unroll2(childBow:BagOfVenues) = Nil
     override def unroll3(childBow:BagOfVenues) = Nil
-    def score(s:Statistics): Double = {
-      val childBow = s._2
-      val parentBow = s._3
+    def score(er:EntityRef#Value, childBow:BagOfVenues#Value, parentBow:BagOfVenues#Value): Double = {
+      //val childBow = s._2
+      //val parentBow = s._3
       var result = childBow.cosineSimilarity(parentBow,childBow)
       (result+shift)*strength
     }
@@ -677,9 +675,9 @@ class AuthorCorefModelOld extends TemplateModel{
     val shift = -0.25
     override def unroll2(childBow:BagOfKeywords) = Nil
     override def unroll3(childBow:BagOfKeywords) = Nil
-    def score(s:Statistics): Double = {
-      val childBow = s._2
-      val parentBow = s._3
+    def score(er:EntityRef#Value, childBow:BagOfKeywords#Value, parentBow:BagOfKeywords#Value): Double = {
+      //val childBow = s._2
+      //val parentBow = s._3
       var result = childBow.cosineSimilarity(parentBow,childBow)
       //if(result==0.0)result -= 4.0
       (result+shift)*strength
@@ -690,18 +688,18 @@ class AuthorCorefModelOld extends TemplateModel{
     val shift = -0.25//0.0 //-0.25
     override def unroll2(childBow:BagOfTopics) = Nil
     override def unroll3(childBow:BagOfTopics) = Nil
-    def score(s:Statistics): Double = {
-      val childBow = s._2
-      val parentBow = s._3
+    def score(er:EntityRef#Value, childBow:BagOfTopics#Value, parentBow:BagOfTopics#Value): Double = {
+      //val childBow = s._2
+      //val parentBow = s._3
       val result = childBow.cosineSimilarity(parentBow,childBow)
       (result+shift)*strength
     }
   }
 
-  this += new TemplateWithStatistics1[BagOfFirstNames]{
-    def score(s:Statistics):Double ={
+  this += new TupleTemplateWithStatistics1[BagOfFirstNames]{
+    def score(bag:BagOfFirstNames#Value):Double ={
       var result = 0.0
-      val bag = s._1
+      //val bag = s._1
       //val bagSeq = bag.iterator.toSeq
       val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
       var firstLetterMismatches = 0
@@ -733,10 +731,10 @@ class AuthorCorefModelOld extends TemplateModel{
       result
     }
   }
-  this += new TemplateWithStatistics1[BagOfMiddleNames]{
-    def score(s:Statistics):Double ={
+  this += new TupleTemplateWithStatistics1[BagOfMiddleNames]{
+    def score(bag:BagOfMiddleNames#Value):Double ={
       var result = 0.0
-      val bag = s._1
+//      val bag = s._1
       val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
       //val bagSeq = bag.iterator.toSeq
       var firstLetterMismatches = 0

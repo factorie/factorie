@@ -31,40 +31,22 @@ class TestProposalSamplers extends TestCase {
     new Factor1(n1) {
       factor =>
       //def _1 = n1
+        def score(v:BinVar#Value): Double = if (v == LabelDomain(0)) score0 else score1
 
-      type StatisticsType = Stat
-
-      final case class Stat(_1: BinVar#Value) extends Statistics {
-        lazy val score: Double = factor.score(this)
-      }
-
-      def statistics(v1:BinVar#Value) = Stat(v1)
-
-      def score(s: Stat): Double = if (s._1 == LabelDomain(0)) {
-        score0
-      } else {
-        score1
-      }
+//      type StatisticsType = Stat
+//      final case class Stat(_1: BinVar#Value) extends Statistics {
+//        lazy val score: Double = factor.score(this)
+//      }
+//      def statistics(v1:BinVar#Value) = Stat(v1)
+//      def score(s: Stat): Double = if (s._1 == LabelDomain(0)) score0 else score1
 
       override def equalityPrerequisite = this
     }
 
   private def newFactor2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double) =
-    new Factor2[BinVar, BinVar](n1, n2) {
+    new FactorWithTupleStatistics2[BinVar, BinVar](n1, n2) {
       factor =>
-      //def _1 = n1
-       //def _2 = n2
-
-      type StatisticsType = Stat
-
-      final case class Stat(_1: BinVar#Value, _2: BinVar#Value) extends Statistics {
-        lazy val score: Double = factor.score(this)
-      }
-
-      def statistics(v1:BinVar#Value, v2:BinVar#Value) = Stat(v1, v2)
-
-      def score(s: Stat): Double = if (s._1 == s._2) scoreEqual else scoreUnequal
-
+      def score(s1:BinVar#Value, s2:BinVar#Value): Double = if (s1 == s2) scoreEqual else scoreUnequal
       override def equalityPrerequisite = this
     }
 

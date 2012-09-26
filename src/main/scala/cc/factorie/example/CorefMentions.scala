@@ -109,7 +109,7 @@ object CorefMentionsDemo {
       val model = new TemplateModel
 
       // Pairwise affinity factor between Mentions in the same partition
-      model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#Value] {
+      model += new DotTemplate4[EntityRef,EntityRef,Mention,Mention] {
         //def statisticsDomains = Tuple1(AffinityVectorDomain)
         lazy val weights = new la.DenseTensor1(AffinityVectorDomain.dimensionSize)
         def unroll1 (er:EntityRef) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield 
@@ -118,11 +118,11 @@ object CorefMentionsDemo {
         def unroll2 (er:EntityRef) = Nil // symmetric
         def unroll3 (mention:Mention) = throw new Error
         def unroll4 (mention:Mention) = throw new Error
-        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = Statistics(new AffinityVector(m1, m2).value)
+        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = new AffinityVector(m1, m2).value
       }
 
       // Pairwise repulsion factor between Mentions in different partitions
-      model += new Template4[EntityRef,EntityRef,Mention,Mention] with DotStatistics1[AffinityVector#Value] {
+      model += new DotTemplate4[EntityRef,EntityRef,Mention,Mention] {
         //def statisticsDomains = Tuple1(AffinityVectorDomain)
         lazy val weights = new la.DenseTensor1(AffinityVectorDomain.dimensionSize)
         /*override def factors(d:Diff) = d.variable match {
@@ -139,36 +139,34 @@ object CorefMentionsDemo {
         def unroll2 (er:EntityRef) = Nil // symmetric
         def unroll3 (mention:Mention) = throw new Error
         def unroll4 (mention:Mention) = throw new Error
-        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = Statistics(new AffinityVector(m1, m2).value)
+        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = new AffinityVector(m1, m2).value
         //def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entityRef.value != mention.entityRef.value)) yield Factor(mention, other);
         //def unroll2 (mention:Mention) = Nil // symmetric
         //def statistics(values:Values) = Stat(new AffinityVector(values._1, values._2).value)
       }
 
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature.
-      model += new Template1[Entity] with DotStatistics1[BooleanValue] {
+      model += new DotTemplate1[Entity] {
         //def statisticsDomains = Tuple1(BooleanDomain)
         lazy val weights = new la.DenseTensor1(BooleanDomain.size)
         def statistics(e:Entity#Value) = {
           val mentions: Entity#Value= e
-          if (mentions.isEmpty) Statistics(BooleanDomain.trueValue)
+          if (mentions.isEmpty) BooleanDomain.trueValue
           else {
             val prefix1 = mentions.iterator.next.name.substring(0,1)
             if (mentions.forall(m => prefix1 equals m.name.substring(0,1)))
-              Statistics(BooleanDomain.trueValue)
+              BooleanDomain.trueValue
             else
-              Statistics(BooleanDomain.falseValue)
+              BooleanDomain.falseValue
           }
         }
       }
 
 
-      val objective1 = new TemplateModel(new TemplateWithStatistics2[EntityRef,TrueEntityIndex] {
+      val objective1 = new TemplateModel(new TupleTemplateWithStatistics2[EntityRef,TrueEntityIndex] {
         def unroll1(er:EntityRef) = Factor(er, er.mention.trueEntityIndex)
         def unroll2(tei:TrueEntityIndex) = Factor(tei.mention.entityRef, tei)
-        def score(s:Statistics) = {
-          val thisMentionEntity = s._1
-          val thisMentionTrueEntityIndex = s._2
+        def score(thisMentionEntity:EntityRef#Value, thisMentionTrueEntityIndex:TrueEntityIndex#Value) = {
           mentionList.foldLeft(0.0)((total,m) => 
           if (m.trueEntityIndex.value == thisMentionTrueEntityIndex) {
             if (m.entityRef.value == thisMentionEntity) total + 1

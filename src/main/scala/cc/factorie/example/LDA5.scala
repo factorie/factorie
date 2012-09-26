@@ -26,7 +26,7 @@ object LDA5 {
   class Zs(len:Int) extends DiscreteSeqVariable(len) { def domain = ZSeqDomain }
   object WordSeqDomain extends CategoricalSeqDomain[String]
   val WordDomain = WordSeqDomain.elementDomain
-  class Document(name:String, myTheta:ProportionsVar, myZs:Zs, words:Seq[String]) extends cc.factorie.app.topics.lda.Document(WordSeqDomain, name, words) {
+  class Document(name:String, myTheta:ProportionsVariable, myZs:Zs, words:Seq[String]) extends cc.factorie.app.topics.lda.Document(WordSeqDomain, name, words) {
     this.theta = myTheta
     this.zs = myZs
     var timeStamp: Double = -1.0

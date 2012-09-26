@@ -31,7 +31,7 @@ object LDA3 {
 //    def zs = model.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3.asInstanceOf[Zs]
 //  }
   //class Document(val file:String, val theta:ProportionsVar, strings:Seq[String]) extends Words(strings)
-  class Document(name:String, myTheta:ProportionsVar, myZs:Zs, words:Seq[String]) extends cc.factorie.app.topics.lda.Document(WordSeqDomain, name, words) {
+  class Document(name:String, myTheta:ProportionsVariable, myZs:Zs, words:Seq[String]) extends cc.factorie.app.topics.lda.Document(WordSeqDomain, name, words) {
     this.theta = myTheta
     this.zs = myZs
   }

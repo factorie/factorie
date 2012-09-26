@@ -32,9 +32,9 @@ abstract class StructuredPerceptron[V<:VarWithTargetValue](val model:TemplateMod
     vs.foreach(_.setToTarget(difflist))
     if (difflist.size > 0) {
       val gradient: WeightsTensor = model.newSparseWeightsTensor
-      model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, rate))
+      model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics, rate))
       difflist.undo
-      model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics.tensor, -rate))
+      model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => gradient(f.family).+=(f.statistics, -rate))
       optimizer.step(model.weightsTensor, gradient, Double.NaN, Double.NaN)
     }
   }

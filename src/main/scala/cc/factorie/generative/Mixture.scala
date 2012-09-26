@@ -25,12 +25,12 @@ import scala.collection.mutable.{ArrayBuffer,Stack}
 trait MixtureFactor extends GenerativeFactor {
   //type ChildType <: MixtureGeneratedVar
   def gate: DiscreteVariable
-  def prChoosing(s:StatisticsType, mixtureIndex:Int): Double
-  def prChoosing(mixtureIndex:Int): Double = prChoosing(statistics, mixtureIndex)
-  def logprChoosing(s:StatisticsType, mixtureIndex:Int): Double = math.log(prChoosing(s, mixtureIndex))
-  def logprChoosing(mixtureIndex:Int): Double = logprChoosing(statistics, mixtureIndex)
-  def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value
-  def sampledValueChoosing(mixtureIndex:Int): ChildType#Value = sampledValueChoosing(statistics, mixtureIndex)
+  //def prChoosing(s:StatisticsType, mixtureIndex:Int): Double
+  //def prChoosing(mixtureIndex:Int): Double = prChoosing(statistics, mixtureIndex)
+  //def logprChoosing(s:StatisticsType, mixtureIndex:Int): Double = math.log(prChoosing(s, mixtureIndex))
+  //def logprChoosing(mixtureIndex:Int): Double = logprChoosing(statistics, mixtureIndex)
+  //def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): ChildType#Value
+  //def sampledValueChoosing(mixtureIndex:Int): ChildType#Value = sampledValueChoosing(statistics, mixtureIndex)
 }
 
 
@@ -39,11 +39,14 @@ trait MixtureFactor extends GenerativeFactor {
 // Proportions =/                                Gate =/
 
 // TODO I think perhaps this should be a GeneratedVars[] ContainerVariable -akm
-class Mixture[+P<:Variable](val components:Seq[P])(implicit val model: MutableGenerativeModel) extends Seq[P] with Variable 
-with VarAndValueGenericDomain[Mixture[P],scala.collection.Seq[P#Value]] 
+class MixtureDomain[+V] extends Domain[scala.collection.Seq[V]]
+object MixtureDomain extends MixtureDomain[Any]
+// NOTE Was Mixture[+P...]
+class Mixture[P<:Variable](val components:Seq[P])(implicit val model: MutableGenerativeModel) extends scala.collection.Seq[P] with Variable with Var[scala.collection.Seq[P#Value]] 
 {
-  type Value <: scala.collection.Seq[P#Value]
+  //type Value <: scala.collection.Seq[P#Value]
   this ~ Mixture() // This will make this a child of each of the mixture components.
+  def domain = MixtureDomain.asInstanceOf[MixtureDomain[P#Value]]
   def apply(i:Int) = components(i)
   def length = components.length
   def iterator = components.iterator
@@ -86,8 +89,8 @@ object Mixture extends GenerativeFamily1[Mixture[Variable]] {
   case class Factor(override val _1:Mixture[Variable]) extends super.Factor(_1) {
     /** Even though they are the contents of the child, the parents are each of the mixture components. */
     override def parents: Seq[Variable] = _1.components
-    def pr(s:StatisticsType) = 1.0
-    def sampledValue(s:StatisticsType): ChildType#Value = throw new Error("Cannot sample a Mixture")
+    def pr(v:C#Value) = 1.0
+    def sampledValue: ChildType#Value = throw new Error("Cannot sample a Mixture")
     override def updateCollapsedParents(weight:Double): Boolean = {
       throw new Error("Not yet implemented.")
       //  TODO this is inefficient because it will loop through all children of the Mixture for each Mixture component

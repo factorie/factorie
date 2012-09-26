@@ -24,7 +24,7 @@ class TestSingleSingleSparse {
     throw new Error("This code is significantly slower than expected.")
 
     val t =
-      new TemplateWithDotStatistics3[Label, CategoryFeature, Feature] {
+      new DotTemplateWithStatistics3[Label, CategoryFeature, Feature] {
         //override def statisticsDomains = ((LabelDomain, CategoryFeatureDomain, FeatureDomain))
         lazy val weights = new la.DenseTensor3(LabelDomain.size, CategoryFeatureDomain.size, FeatureDomain.dimensionSize)
         def unroll1(label: Label) = Factor(label, label.categoryFeature, label.feature)

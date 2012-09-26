@@ -19,15 +19,15 @@ import cc.factorie.app.nlp._
 import scala.collection.mutable.{ArrayBuffer,ListBuffer}
 
 
-abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseLabel] with Statistics2[BooleanValue,CorefAffinity] {
-  def statistics(m1:PairwiseMention#Value, m2:PairwiseMention#Value, l:PairwiseLabel#Value): Statistics = {
+abstract class PairwiseTemplate extends Template3[PairwiseMention, PairwiseMention, PairwiseLabel] with Statistics[(BooleanValue,CorefAffinity)] {
+  def statistics(m1:PairwiseMention#Value, m2:PairwiseMention#Value, l:PairwiseLabel#Value) = {
     val mention1 = m1
     val mention2 = m2
     val coref: Boolean = l.booleanValue
-    new Statistics(null, null)
+    (null, null)
   }
 }
-abstract class PairwiseTransitivityTemplate extends Template3[PairwiseLabel,PairwiseLabel,PairwiseLabel] with Statistics1[BooleanValue] {
+abstract class PairwiseTransitivityTemplate extends Template3[PairwiseLabel,PairwiseLabel,PairwiseLabel] with Statistics[BooleanValue] {
   //def unroll1(p:PairwiseBoolean) = for (m1 <- p.edge.src.edges; m2 <- p.edge.dst.edges; if (m1)
 }
 
@@ -44,7 +44,7 @@ class CorefAffinity extends BinaryFeatureVectorVariable[String] {
 }
 
 class EntityMentionModel extends TemplateModel(
-  new Template1[EntityRef] with DotStatistics1[CorefAffinity#Value] {
+  new DotTemplate1[EntityRef] {
     lazy val weights = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
     //println("*** EntityMentionModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
     //weights.update(CorefAffinityDimensionDomain.Bias, -1)
@@ -70,7 +70,7 @@ class EntityMentionModel extends TemplateModel(
       if (normalizedEditDistance > .5) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance5
       if (normalizedEditDistance > .9) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance9
       if (entity.childEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
-      val result = Statistics(affinity.value)
+      val result = affinity.value
       val str = result.toString
       //println("### EntityMentionModel Stat="+str)
       result
@@ -79,7 +79,7 @@ class EntityMentionModel extends TemplateModel(
 )
 
 class PairwiseModel extends TemplateModel(
-  new Template1[EntityRef] with DotStatistics1[CorefAffinity#Value] {
+  new DotTemplate1[EntityRef] {
     lazy val weights = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
     //println("*** PairwiseModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
     weights(CorefAffinityDimensionDomain.Bias) = -1
@@ -104,7 +104,7 @@ class PairwiseModel extends TemplateModel(
       if (normalizedEditDistance > .5) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance5
       if (normalizedEditDistance > .9) affinity += CorefAffinityDimensionDomain.NormalizedEditDistance9
       if (entity.childEntities.size == 1) affinity += CorefAffinityDimensionDomain.Singleton
-      val result = Statistics(affinity.value)
+      val result = affinity.value
       val str = result.toString
       //println("### PairwiseModel Stat="+str)
       result

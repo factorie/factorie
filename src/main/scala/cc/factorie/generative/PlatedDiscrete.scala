@@ -24,22 +24,42 @@ trait PlatedDiscreteGeneratingFactor extends GenerativeFactor {
 }
 */
 
-object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVar,ProportionsVar] {
+object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVariable,ProportionsVariable] {
   self =>
   //def pr(ds:Seq[DiscreteValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
-  def pr(ds:Seq[DiscreteValue], p:Proportions): Double = ds.map(dv => p(dv.intValue)).product // TODO Make this more efficient; this current boxes
-  def logpr(ds:Seq[DiscreteValue], p:Proportions): Double = ds.map(dv => math.log(p(dv.intValue))).sum // TODO Make this more efficient
-  def sampledValue(d:DiscreteDomain, length:Int, p:Proportions): Seq[DiscreteValue] = 
+  def pr(ds:DiscreteSeqVariable#Value, p:Proportions): Double = ds.map(dv => p(dv.intValue)).product // TODO Make this more efficient; this current boxes
+  def logpr(ds:IndexedSeq[DiscreteValue], p:Proportions): Double = ds.map(dv => math.log(p(dv.intValue))).sum // TODO Make this more efficient
+  def sampledValue(d:DiscreteDomain, length:Int, p:Proportions): IndexedSeq[DiscreteValue] = 
     Vector.fill(length)(d.apply(p.sampleIndex))
-  case class Factor(override val _1:DiscreteSeqVar, override val _2:ProportionsVar) extends super.Factor(_1, _2) {
-    def pr(s:Statistics): Double = self.pr(s._1, s._2)
-    override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
-    override def sampledValue: Any = self.sampledValue(_1.discreteValues.head.domain, _1.length, _2.value) // Avoid creating a Statistics
-    def sampledValue(s:Statistics): Seq[DiscreteValue] = {
-      if (s._1.length == 0) Nil
-      else self.sampledValue(s._1.head.domain, s._1.length, s._2)
+  case class Factor(override val _1:DiscreteSeqVariable, override val _2:ProportionsVariable) extends super.Factor(_1, _2) {
+    def pr(child:DiscreteSeqVariable#Value, p:Proportions): Double = self.pr(child, p)
+    //override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
+    override def sampledValue: DiscreteSeqVariable#Value = self.sampledValue(_1.discreteValues.head.domain, _1.length, _2.value) // Avoid creating a Statistics
+    def sampledValue(p:Proportions): IndexedSeq[DiscreteValue] = {
+      if (_1.length == 0) IndexedSeq[DiscreteValue]()
+      else self.sampledValue(_1.head.domain, _1.length, p)
     }
     def updateCollapsedParents(index:Int, weight:Double): Boolean = { _2.tensor.+=(_1(index).intValue, weight); true }
   }
-  def newFactor(a:DiscreteSeqVar, b:ProportionsVar) = Factor(a, b)
+  def newFactor(a:DiscreteSeqVariable, b:ProportionsVariable) = Factor(a, b)
+}
+
+object PlatedCategorical extends GenerativeFamily2[CategoricalSeqVariable[String],ProportionsVariable] {
+  self =>
+  //def pr(ds:Seq[CategoricalValue], p:IndexedSeq[Double]): Double = ds.map(dv => p(dv.intValue)).product
+  def pr(ds:IndexedSeq[CategoricalValue[String]], p:Proportions): Double = ds.map(dv => p(dv.intValue)).product // TODO Make this more efficient; this current boxes
+  def logpr(ds:IndexedSeq[CategoricalValue[String]], p:Proportions): Double = ds.map(dv => math.log(p(dv.intValue))).sum // TODO Make this more efficient
+  def sampledValue(d:CategoricalDomain[String], length:Int, p:Proportions): IndexedSeq[CategoricalValue[String]] = 
+    Vector.fill(length)(d.apply(p.sampleIndex))
+  case class Factor(override val _1:CategoricalSeqVariable[String], override val _2:ProportionsVariable) extends super.Factor(_1, _2) {
+    def pr(child:IndexedSeq[CategoricalValue[String]], p:Proportions): Double = self.pr(child, p)
+    //override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
+    override def sampledValue: CategoricalSeqVariable[String]#Value = self.sampledValue(_1.head.domain, _1.length, _2.value) // Avoid creating a Statistics
+    def sampledValue(p:Proportions): IndexedSeq[CategoricalValue[String]] = {
+      if (_1.length == 0) IndexedSeq[CategoricalValue[String]]()
+      else self.sampledValue(_1.head.domain, _1.length, p)
+    }
+    def updateCollapsedParents(index:Int, weight:Double): Boolean = { _2.tensor.+=(_1(index).intValue, weight); true }
+  }
+  def newFactor(a:CategoricalSeqVariable[String], b:ProportionsVariable) = Factor(a, b)
 }

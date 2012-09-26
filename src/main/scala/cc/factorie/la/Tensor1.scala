@@ -92,8 +92,8 @@ class GrowableDenseTensor1(initialSize:Int) extends { private var _dim1 = initia
     case _ => super.ensureDimenionsMatch(t)
   }
   def ensureDimensions(d1:Int): Unit = if (d1 > _dim1) {
+    val newSize = d1 //math.max(_valuesSize * 2, d1)
     _dim1 = d1
-    val newSize = math.max(_valuesSize * 2, d1)
     val oldValues = _values
     _resetValues(newSize) // allocates a new array of size newSize
     Array.copy(oldValues, 0, _values, 0, oldValues.size)

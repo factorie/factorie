@@ -64,7 +64,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
       require(doc.zs.domain.elementDomain.size == numTopics, "zs.domain.elementDomain.size=%d != numTopics=%d".format(doc.zs.domain.elementDomain.size, numTopics))
     }
     doc.zs.~(PlatedDiscrete(doc.theta))(m)
-    doc.ws.~(PlatedDiscreteMixture(phis, doc.zs))(m)
+    doc.ws.~(PlatedCategoricalMixture(phis, doc.zs))(m)
   }
 
   /** Add a document to the LDA model. */

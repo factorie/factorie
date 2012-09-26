@@ -18,7 +18,7 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
 	  // Gather constraints
 	  variables.foreach(_.setToTarget(null))
 	  model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => {
-  	  constraints(f.family) += f.statistics.tensor 
+  	  constraints(f.family) += f.statistics 
 	  })
 
     var iterations = 0
@@ -35,7 +35,7 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
         while (i < proportions.length) {
           v := i
           model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => {
-            gradient(f.family) += (f.statistics.tensor, -proportions(i) /* * instanceWeight*/)
+            gradient(f.family) += (f.statistics, -proportions(i) /* * instanceWeight*/)
           })
           i += 1
         }
@@ -64,7 +64,7 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
         println("1 " + constraints.dimensions.toSeq)
         println("2 " + f.family)
         println("3 " + constraints(f.family).dimensions.toSeq)
-        constraints(f.family) += f.statistics.tensor 
+        constraints(f.family) += f.statistics 
       })
 
     var iterations = 0
@@ -84,7 +84,7 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
               case bpf: BPFactor1 => bpf.calculateBeliefs.apply(bpf.edge1.variable.intValue) - logZ
               case bpf: BPFactor2 => bpf.calculateBeliefs.apply(bpf.edge1.variable.intValue, bpf.edge2.variable.intValue) - logZ
             })
-            bpf.addExpectationInto(gradient(f.family), -1.0)
+            bpf.addExpectationInto(gradient(f.family), -1.0) // TODO But this adds the expectation over the neighbors, not the statistics!  When neighbors != statistics, this will not work.
           }
         }
       }

@@ -23,6 +23,9 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
+// TODO Rename this to TemplateModel1, and rename TemplateModel to ComposedModel,
+//  and have it be generic as a collection of arbitrary Models.
+//  (Now possible if Templates are now responsible for their own de-duplication.)
 
 abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Family1[N1] with Template
 {
@@ -50,19 +53,12 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Famil
 }
 
 
-abstract class TemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends Template1[N1] with Statistics1[N1#Value] {
-  def statistics(value1:N1#Value): StatisticsType = Statistics(value1)
-}
-
-abstract class TemplateWithTensorStatistics1[N1<:DiscreteTensorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with TensorStatistics1[N1#Value] {
-  def statistics(value1:N1#Value): StatisticsType = Statistics(value1)
-}
-
-abstract class TemplateWithDotStatistics1[N1<:DiscreteTensorVar](implicit nm1:Manifest[N1]) extends Template1[N1] with FamilyWithDotStatistics1[N1] {
-  type FamilyType <: TemplateWithDotStatistics1[N1]
-  //def statistics(value1:N1#Value): StatisticsType = Stat(value1)
-}
-
+abstract class TupleTemplate1[N1<:Variable:Manifest] extends Template1[N1] with TupleFamily1[N1] 
+abstract class TupleTemplateWithStatistics1[N1<:Variable:Manifest] extends Template1[N1] with TupleFamilyWithStatistics1[N1]
+abstract class TensorTemplate1[N1<:Variable:Manifest] extends Template1[N1] with TensorFamily1[N1]
+abstract class TensorTemplateWithStatistics1[N1<:TensorVar:Manifest] extends Template1[N1] with TensorFamilyWithStatistics1[N1]
+abstract class DotTemplate1[N1<:Variable:Manifest] extends Template1[N1] with DotFamily1[N1]
+abstract class DotTemplateWithStatistics1[N1<:TensorVar:Manifest] extends Template1[N1] with DotFamilyWithStatistics1[N1]
 
 
 /*

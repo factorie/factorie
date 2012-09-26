@@ -17,16 +17,15 @@ import cc.factorie._
 
 trait GenerativeFactor extends Factor {
   type ChildType <: Variable
-  type StatisticsType <: Statistics
-  def statistics: StatisticsType
   def child: ChildType
   def parents: Seq[Variable]
-  def pr(s:StatisticsType): Double
-  def pr: Double = pr(statistics)
-  def logpr(s:StatisticsType): Double = math.log(pr(s))
-  def logpr: Double = logpr(statistics)
-  def sampledValue(s:StatisticsType): Any
-  def sampledValue: Any = sampledValue(statistics)
+  //def pr(s:StatisticsType): Double
+  def pr: Double // = pr(statistics)
+  //def logpr(s:StatisticsType): Double = math.log(pr(s))
+  def logpr: Double = math.log(pr) // logpr(statistics)
+  //def score: Double = logpr
+  //def sampledValue(s:StatisticsType): Any
+  def sampledValue: Any // = sampledValue(statistics)
   // TODO Consider removing these methods because we'd have specialized code in the inference recipes.
   /** Update sufficient statistics in collapsed parents, using current value of child, with weight.  Return false on failure. */
   // TODO Consider passing a second argument which is the value of the child to use in the update
@@ -47,35 +46,55 @@ trait IntGeneratingFactor extends GenerativeFactor {
   def logpr(x:Int): Double
 }
 
-abstract class GenerativeFactorWithStatistics1[C<:Variable](override val _1:C) extends FactorWithStatistics1[C](_1) with GenerativeFactor {
+abstract class GenerativeFactorWithStatistics1[C<:Variable](override val _1:C) extends FactorWithTupleStatistics1[C](_1) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents: Seq[Variable] = Nil
-  def score(s:Statistics) = logpr(s) // Can't define score earlier because inner class Factor.Statistics not defined until here
+  def score(v1:C#Value): Double = logpr(v1:C#Value)
+  def pr(v1:C#Value): Double
+  def logpr(v1:C#Value): Double = math.log(pr(v1))
+  def pr: Double = pr(_1.value.asInstanceOf[C#Value])
+  override def sampledValue: C#Value
 }
 
-abstract class GenerativeFactorWithStatistics2[C<:Variable,P1<:Variable](override val _1:C, override val _2:P1) extends FactorWithStatistics2[C,P1](_1, _2) with GenerativeFactor {
+abstract class GenerativeFactorWithStatistics2[C<:Variable,P1<:Variable](override val _1:C, override val _2:P1) extends FactorWithTupleStatistics2[C,P1](_1, _2) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents = Seq(_2)
+  def score(v1:C#Value, v2:P1#Value): Double = logpr(v1, v2)
+  def pr(v1:C#Value, v2:P1#Value): Double
+  def logpr(v1:C#Value, v2:P1#Value): Double = math.log(pr(v1, v2))
+  def pr: Double = pr(_1.value.asInstanceOf[C#Value], _2.value.asInstanceOf[P1#Value])
+  def sampledValue(p1:P1#Value): C#Value
+  def sampledValue: C#Value = sampledValue(_2.value.asInstanceOf[P1#Value])
   // TODO Consider this:
   //def parents = _2 match { case vars:Vars[Parameter] => vars; case _ => Seq(_2) }
-  def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
 }
 
-trait GenerativeFactorWithStatistics3[C<:Variable,P1<:Variable,P2<:Variable] extends GenerativeFactor with FactorWithStatistics3[C,P1,P2] {
+abstract class GenerativeFactorWithStatistics3[C<:Variable,P1<:Variable,P2<:Variable](override val _1:C, override val _2:P1, override val _3:P2) extends FactorWithTupleStatistics3[C,P1,P2](_1, _2, _3) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents = Seq(_2, _3)
-  def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
+  def score(v1:C#Value, v2:P1#Value, v3:P2#Value): Double = logpr(v1, v2, v3)
+  def pr(v1:C#Value, v2:P1#Value, v3:P2#Value): Double
+  def logpr(v1:C#Value, v2:P1#Value, v3:P2#Value): Double = math.log(pr(v1, v2, v3))
+  def pr: Double = pr(_1.value.asInstanceOf[C#Value], _2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value])
+  def sampledValue(p1:P1#Value, p2:P2#Value): C#Value
+  def sampledValue: C#Value = sampledValue(_2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value])
 }
 
-trait GenerativeFactorWithStatistics4[C<:Variable,P1<:Variable,P2<:Variable,P3<:Variable] extends GenerativeFactor with FactorWithStatistics4[C,P1,P2,P3] {
+abstract class GenerativeFactorWithStatistics4[C<:Variable,P1<:Variable,P2<:Variable,P3<:Variable](override val _1:C, override val _2:P1, override val _3:P2, override val _4:P3) extends FactorWithTupleStatistics4[C,P1,P2,P3](_1, _2, _3, _4) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents = Seq(_2, _3, _4)
-  def score(s:Statistics) = logpr(s.asInstanceOf[StatisticsType])
+  def score(v1:C#Value, v2:P1#Value, v3:P2#Value, v4:P3#Value): Double = logpr(v1, v2, v3, v4)
+  def pr(v1:C#Value, v2:P1#Value, v3:P2#Value, v4:P3#Value): Double
+  def logpr(v1:C#Value, v2:P1#Value, v3:P2#Value, v4:P3#Value): Double = math.log(pr(v1, v2, v3, v4))
+  def pr: Double = pr(_1.value.asInstanceOf[C#Value], _2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value], _4.value.asInstanceOf[P3#Value])
+  def sampledValue(p1:P1#Value, p2:P2#Value, p3:P3#Value): C#Value
+  def sampledValue: C#Value = sampledValue(_2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value], _4.value.asInstanceOf[P3#Value])
 }
+
 
 trait GenerativeFamily1[Child<:Variable] {
   type C = Child
@@ -100,7 +119,7 @@ trait GenerativeFamily3[Child<:Variable,Parent1<:Variable,Parent2<:Variable] {
   type C = Child
   type P1 = Parent1
   type P2 = Parent2
-  trait Factor extends GenerativeFactorWithStatistics3[C,P1,P2] 
+  abstract class Factor(override val _1:Child, override val _2:Parent1, override val _3:Parent2) extends GenerativeFactorWithStatistics3[C,P1,P2](_1, _2, _3) 
   def newFactor(c:C, p1:P1, p2:P2): Factor
   def apply(p1:P1,p2:P2) = new Function1[C,Factor] {
     def apply(c:C) = newFactor(c, p1, p2)
@@ -112,7 +131,7 @@ trait GenerativeFamily4[Child<:Variable,Parent1<:Variable,Parent2<:Variable,Pare
   type P1 = Parent1
   type P2 = Parent2
   type P3 = Parent3
-  trait Factor extends GenerativeFactorWithStatistics4[C,P1,P2,P3] 
+  abstract class Factor(override val _1:Child, override val _2:Parent1, override val _3:Parent2, override val _4:Parent3) extends GenerativeFactorWithStatistics4[C,P1,P2,P3](_1, _2, _3, _4) 
   def newFactor(c:C, p1:P1, p2:P2, p3:P3): Factor
   def apply(p1:P1,p2:P2,p3:P3) = new Function1[C,Factor] {
     def apply(c:C) = newFactor(c, p1, p2, p3)

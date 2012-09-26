@@ -121,13 +121,13 @@ object TokenLDA {
       })
     })
 
-    val transTemplate = new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel]  {
+    val transTemplate = new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel]  {
        lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size) 
        factorName = "LabelLabelToken"
        override def unroll1(l: ChainNerLabel) = if (l.token.sentenceHasNext) List(Factor(l, l.token.sentenceNext.nerLabel)) else Nil
        override def unroll2(l: ChainNerLabel) = if (l.token.sentenceHasPrev) List(Factor(l.token.sentencePrev.nerLabel, l)) else Nil
      }
-     val localTemplate = new TemplateWithDotStatistics2[ChainNerLabel, ChainNerFeatures2] {
+     val localTemplate = new DotTemplateWithStatistics2[ChainNerLabel, ChainNerFeatures2] {
        lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, ChainNerFeaturesDomain2.dimensionSize)
        override def unroll1(l: ChainNerLabel) = List(Factor(l, l.token.attr[ChainNerFeatures2]))
        override def unroll2(t: ChainNerFeatures2) = throw new Error("Do not change the token variables")
