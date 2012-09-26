@@ -36,24 +36,25 @@ object Beta extends GenerativeFamily3[DoubleVar,DoubleVar,DoubleVar] { self =>
     val y = maths.nextGamma(beta, 1.0)(cc.factorie.random)
     x / (x + y)
   }
-  case class Factor(_1:DoubleVar, _2:DoubleVar, _3:DoubleVar) extends super.Factor {
-    def pr(s:Statistics): Double = self.pr(s._1, s._2, s._3)
-    def sampledValue(s:Statistics): Double = self.sampledValue(s._2, s._3)
+  // TODO Consider making this not a case class, but Factor1 be a case class?
+  case class Factor(override val _1:DoubleVar, override val _2:DoubleVar, override val _3:DoubleVar) extends super.Factor(_1, _2, _3) {
+    def pr(child:Double, alpha:Double, beta:Double): Double = self.pr(child, alpha, beta)
+    def sampledValue(alpha:Double, beta:Double): Double = self.sampledValue(alpha, beta)
   }
   def newFactor(_1:DoubleVar, _2:DoubleVar, _3:DoubleVar) = Factor(_1, _2, _3)
 }
 
 
-object BetaMixture extends GenerativeFamily4[DoubleVar,Mixture[DoubleVar],Mixture[DoubleVar],DiscreteVariable] {
-  case class Factor(_1:DoubleVar, _2:Mixture[DoubleVar], _3:Mixture[DoubleVar], _4:DiscreteVariable) extends super.Factor {
+object BetaMixture extends GenerativeFamily4[DoubleVariable,Mixture[DoubleVariable],Mixture[DoubleVariable],DiscreteVariable] {
+  type Seq[+A] = scala.collection.Seq[A]
+  case class Factor(override val _1:DoubleVariable, override val _2:Mixture[DoubleVariable], override val _3:Mixture[DoubleVariable], override val _4:DiscreteVariable) extends super.Factor(_1, _2, _3, _4) {
     def gate = _4
-    override def logpr(s:StatisticsType) = Beta.logpr(s._1.doubleValue, s._2(s._4.intValue).doubleValue, s._3(s._4.intValue).doubleValue) 
-    def pr(s:StatisticsType) = Beta.pr(s._1.doubleValue, s._2(s._4.intValue).doubleValue, s._3(s._4.intValue).doubleValue) 
-    def sampledValue(s:StatisticsType): Double = Beta.sampledValue(s._2(s._4.intValue).doubleValue, s._3(s._4.intValue).doubleValue) 
-    def prChoosing(s:StatisticsType, mixtureIndex:Int): Double = Beta.pr(s._1.doubleValue, s._2(mixtureIndex).doubleValue, s._3(mixtureIndex).doubleValue) 
-    def sampledValueChoosing(s:StatisticsType, mixtureIndex:Int): Double = Beta.sampledValue(s._2(mixtureIndex).doubleValue, s._3(mixtureIndex).doubleValue)
+    def pr(child:Double, alpha:Seq[Double], beta:Seq[Double], z:DiscreteValue) = Beta.pr(child, alpha(z.intValue), beta(z.intValue)) 
+    def sampledValue(alpha:Seq[Double], beta:Seq[Double], z:DiscreteValue): Double = Beta.sampledValue(alpha(z.intValue), beta(z.intValue)) 
+    def prChoosing(child:Double, alpha:Seq[Double], beta:Seq[Double], z:Int): Double = Beta.pr(child, alpha(z), beta(z)) 
+    def sampledValueChoosing(alpha:Seq[Double], beta:Seq[Double], z:Int): Double = Beta.sampledValue(alpha(z), beta(z))
   }
-  def newFactor(a:DoubleVar, b:Mixture[DoubleVar], c:Mixture[DoubleVar], d:DiscreteVariable) = Factor(a, b, c, d)
+  def newFactor(a:DoubleVariable, b:Mixture[DoubleVariable], c:Mixture[DoubleVariable], d:DiscreteVariable) = Factor(a, b, c, d)
 }
 
 object MaximizeBetaByMomentMatching {

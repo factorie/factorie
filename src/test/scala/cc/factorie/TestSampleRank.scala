@@ -14,7 +14,7 @@ object TestSampleRank {
     this += "f2"+labelString; println("TestSampleRank features "+tensor+" intArray "+tensor.asInstanceOf[SparseBinaryTensorLike1].toIntArray.toSeq)
     this += "f3"+labelString; println("TestSampleRank features "+tensor+" intArray "+tensor.asInstanceOf[SparseBinaryTensorLike1].toIntArray.toSeq)
   }
-  object model extends TemplateWithDotStatistics2[Label,Instance] {
+  object model extends DotTemplateWithStatistics2[Label,Instance] {
     lazy val weights = new la.DenseTensor2(LabelDomain.size, InstanceDomain.dimensionSize)
     def unroll1(l:Label) = Factor(l, l.instance)
     def unroll2(i:Instance) = Factor(i.label, i)

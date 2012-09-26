@@ -33,7 +33,7 @@ object VarArgsDemo {
 
     val model = new TemplateModel(
       // "Vars[]" indicates that there can be a variable number of these neighbors
-      new Template2[X,Vars[Y]] with DotStatistics1[DiscreteValue] {
+      new DotTemplate2[X,Vars[Y]] {
         //def statisticsDomains = Tuple1(XDomain)
         lazy val weights = new la.DenseTensor1(XDomain.size)
         def unroll1(x:X) = Factor(x, Vars(x.ys))
@@ -46,7 +46,7 @@ object VarArgsDemo {
         def statistics(v1:X#Value, v2:Seq[Y#Value]) = {
           val x: Int = v1.intValue
           val ys: Seq[Int] = v2.map(_.intValue)
-          Statistics(XDomain.apply(x % ys.foldLeft(0)(_+_)))
+          XDomain.apply(x % ys.foldLeft(0)(_+_))
         }
         //def statistics(x:DiscreteValue, ys:Seq[DiscreteValue]) = Stat(XDomain.getValue(x.index % ys.foldLeft(0)(_ + _.index)))
       }
@@ -77,6 +77,6 @@ object VarArgsDemo {
 
     println(model.factors(Seq(x1)))
     println(model.factors(List(x1,x2,x3,x4)))
-    println(model.factors(Seq(x1)).head.statistics.score)
+    println(model.factors(Seq(x1)).head.score)
   }
 }

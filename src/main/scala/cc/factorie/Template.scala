@@ -17,6 +17,7 @@ package cc.factorie
 import collection.mutable.HashSet
 
 /** A template for creating Factors.  The creation of Factors is keyed by some context of arbitrary type C. */
+// TODO Make this ContextTemplate[C,F<:Factor] because this is like a Map from C to Fs.
 trait ContextTemplate[C] extends FamilyWithNeighborDomains {
   def factors(c:C): Iterable[FactorType]
   //def factors(cs:Iterable[C]): Iterable[FactorType] = dedup(cs.flatMap(factors(_))) // TODO Do we also want a method like this?
@@ -82,6 +83,7 @@ object Template {
 /** The template for creating factors, using "unroll*" methods which given on of the Factor's variables, finding the other neighboring variables.
     @author Andrew McCallum
 */
+// TODO Make this Template[F] because this is a container/generator of Factors F
 trait Template extends NeighborAwareTemplate[Variable] { thisTemplate =>
   def contexts(v:Variable): Iterable[Variable] = Seq(v)
   // Member type FactorType is defined so we will know the Factor type, which enables code like "factor.statistics.vector"

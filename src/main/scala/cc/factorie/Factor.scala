@@ -26,34 +26,34 @@ import java.io._
 /** A single factor in a factor graph:  neighboring variables and methods for getting values and their score.
     @author Andrew McCallum */
 trait Factor extends Ordered[Factor] {
+  type StatisticsType <: Any
   /** Returns the collection of variables neighboring this factor. */
   def variables: Seq[Variable]
   /** The number of variables neighboring this factor. */
   def numVariables: Int
   def variable(index: Int): Variable
-  /** Optionally return pre-calculated Statistics.  By default not actually cached, but may be overridden in subclasses. */
-  //def cachedStatistics: Statistics = statistics
+  
+  /** This factors contribution to the unnormalized log-probability of the current possible world. */
+  def score: Double
+  def statistics: StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
+  /** Return the score and statistics of the current neighbor values; this method enables special cases in which it is more efficient to calculate them together. */
+  def scoreAndStatistics: (Double,StatisticsType) = (score, statistics)
+
   def touches(variable:Variable): Boolean = this.variables.contains(variable)
   def touchesAny(variables:Iterable[Variable]): Boolean = variables.exists(touches(_))
-  /** This factors contribution to the unnormalized log-probability of the current possible world. */
-  def score: Double = statistics.score
-//  def values: Values
-  /** Return the score efficiently calculated for the case in which the Factor's Value can be represented as a Tensor. */
-//  def valueScore(valueTensor: Tensor): Double = throw new Error("This Factor subclass does not implement valueScore")
-  /** Return the score efficiently calculated for the case in which the Factor's Statistics can be represented as a Tensor. */
-//  def statisticsScore(statisticsTensor: Tensor): Double = throw new Error("This Factor subclass does not implement statisticsScore")
+  
 
-  def statistics: Statistics // = values.statistics
+  //def statistics: Statistics // = values.statistics
   /** Return a record of the current values of this Factor's neighbors. */
   def currentAssignment: TypedAssignment[Variable]
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
   def scoreAssignment(a:TypedAssignment[Variable]): Double
   /** Return the score for Factors whose values can be represented as a Tensor, otherwise throw an Error.
       For Factors/Family in which the Statistics are the values, this method simply calls scoreValues(Tensor). */
-  def scoreValues(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreValues.")
+  def scoreValues(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreValues(Tensor).")
   /** Return the score for Factors whose Statistics can be represented as a Tensor, otherwise throw an Error.
       For DotFamily this is implemented as simply "weights dot tensor". */
-  //def scoreStatistics(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreStatistics") // TODO Is this ever necessary?
+  //def scoreStatistics(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreStatistics(Tensor)") // TODO Is this ever necessary?
   /** Return an object that can iterate over all value assignments to the neighbors of this Factor */
   def valuesIterator: ValuesIterator
   
@@ -71,7 +71,7 @@ trait Factor extends Ordered[Factor] {
       (this eq other) || ((this.equalityPrerequisite eq other.equalityPrerequisite)
                           && (this.hashCode == other.hashCode)
                           && forallIndex(numVariables)(i =>
-                            (this.variable(i) eq other.variable(i)) ||
+                            (this.variable(i) eq other.variable(i)) || // TODO Consider getting rid of this, and just using == all the time.
                             (this.variable(i).isInstanceOf[Vars[_]] && this.variable(i) == other.variable(i))))
                             // TODO with the == above, some Vars classes should implement equals based on sameContents
     case _ => false
@@ -120,51 +120,17 @@ trait ValuesIterator extends Iterator[Assignment] {
     When you ask an inner Model for its score, it returns its score alone.
     */
 
+// TODO Create for use with:  Template2[Label,Token] with Statistics[Tensor2]
+//trait Statistics[+A] { type StatisticsType = A }
 
-/** A container for all the values of the variables neighboring a factor.
-    These are necessary to construct a Statistics object. */
-//trait Values extends Statistics with Assignment {
-//  override def variables: Seq[Variable] // Assignment has return type of only Iterable[Variable]
-//  // def factor: Factor // TODO Consider adding this method
-//  //override def inner: Seq[Values] = Nil
-//  //def apply[B <: Variable](v: B): B#Value = { new Error("Never call apply() on values"); null.asInstanceOf[B#Value] }
-//  def score: Double = statistics.score // TODO This will result in an infinite loop unless Statistics.statistics is overridden.  Consider leaving Statistics.statistics abstract? 
-//  /** Return a unique index for the combination of Discrete values in the set "varying".  Used in BeliefPropagation. */
-//  def index(varying:Set[Variable]): Int = {  // TODO Change this to Set[DiscreteVar] and then rework body.
-//    var result = 0
-//    var mult = 1
-//    var found: Boolean = false
-//    var i = 0
-//
-//    while (i < variables.length) {
-//      val variable = variables(i)
-//      if (varying contains variable) {
-//        variable match {
-//          case dv:DiscreteVar => {
-//            val dvalue: DiscreteValue = get(dv).get
-//            found = true
-//            result += (dvalue.intValue * mult)
-//            mult *= dv.domain.size
-//          }
-//          case _ => return -1
-//        }
-//      }
-//      i += 1
-//    }
-//    if (found) result else -1
-//  }
-//  //def productArity: Int
-//  //def canEqual(other:Any) = other match { case other:Values => }
+///** A container for sufficient statistics of a Factor.
+//    They reflect a certain choice of values for the neighbors of a Factor. */
+//// TODO Rename this to Statistic singular, so we can have Statistic1, Statistic2, etc like Factor2, separate from "Template with Statistics2"
+//trait Statistics  {
+//  //def variables = { new Error("Statistics should not call Assignment methods"); null }
+//  //def get[B <: Variable](v: B) = { new Error("Statistics should not call Assignment methods"); null }
+//  //def contains(v: Variable) = { new Error("Statistics should not call Assignment methods"); false }
+//  def statistics: Statistics = this
+//  def score: Double
 //}
-
-/** A container for sufficient statistics of a Factor.
-    They reflect a certain choice of values for the neighbors of a Factor. */
-// TODO Rename this to Statistic singular, so we can have Statistic1, Statistic2, etc like Factor2, separate from "Template with Statistics2"
-trait Statistics  {
-  //def variables = { new Error("Statistics should not call Assignment methods"); null }
-  //def get[B <: Variable](v: B) = { new Error("Statistics should not call Assignment methods"); null }
-  //def contains(v: Variable) = { new Error("Statistics should not call Assignment methods"); false }
-  def statistics: Statistics = this
-  def score: Double
-}
 

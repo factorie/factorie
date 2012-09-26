@@ -20,23 +20,23 @@ import scala.collection.mutable.{HashSet,ArrayBuffer}
 
 trait DiscreteGeneratingFactor extends GenerativeFactor {
   //type ChildType <: GeneratedDiscreteVar
-  def prValue(value:Int): Double = prValue(statistics, value)
-  def prValue(s:StatisticsType, value:Int): Double
+  def prValue(value:Int): Double
+  //def prValue(s:StatisticsType, value:Int): Double
 }
 
-object Discrete extends GenerativeFamily2[DiscreteVar,ProportionsVar] {
-  case class Factor(override val _1:DiscreteVar, override val _2:ProportionsVar) extends super.Factor(_1, _2) with DiscreteGeneratingFactor {
+object Discrete extends GenerativeFamily2[DiscreteVariable,ProportionsVariable] {
+  case class Factor(override val _1:DiscreteVariable, override val _2:ProportionsVariable) extends super.Factor(_1, _2) with DiscreteGeneratingFactor {
     //def proportions: Proportions = _2 // Just an alias
-    def pr(s:Statistics) = s._2.apply(s._1.intValue)
+    def pr(child:DiscreteValue, proportions:Proportions) = proportions(child.intValue)
     override def pr: Double = _2.value.apply(_1.intValue)
-    def prValue(s:Statistics, intValue:Int): Double = s._2.apply(intValue)
+    def prValue(p:Proportions, intValue:Int): Double = p.apply(intValue)
     override def prValue(intValue:Int): Double = _2.value.apply(intValue)
-    def sampledValue(s:Statistics): DiscreteValue = s._1.domain.apply(s._2.sampleIndex)
+    def sampledValue(p:Proportions): DiscreteValue = _1.domain.apply(p.sampleIndex)
     override def sampledValue: DiscreteValue = _1.domain.apply(_2.value.sampleIndex)
-    def maxIntValue(s:Statistics): Int = s._2.maxIndex
+    def maxIntValue(p:Proportions): Int = p.maxIndex // TODO 
     //@deprecated("May be deleted") override def updateCollapsedParents(weight:Double): Boolean = { _2.tensor.masses.+=(_1.intValue, weight); true }
   }
-  def newFactor(a:DiscreteVar, b:ProportionsVar) = Factor(a, b)
+  def newFactor(a:DiscreteVariable, b:ProportionsVariable) = Factor(a, b)
   // TODO Arrange to call this in Factor construction.
   def factorHook(factor:Factor): Unit =
     if (factor._1.domain.size != factor._2.tensor.length) throw new Error("Discrete child domain size different from parent Proportions size.")

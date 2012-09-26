@@ -57,17 +57,24 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
 
 }
 
+abstract class TupleTemplate4[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest,N4<:Variable:Manifest] extends Template4[N1,N2,N3,N4] with TupleFamily4[N1,N2,N3,N4] 
+abstract class TupleTemplateWithStatistics4[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest,N4<:Variable:Manifest] extends Template4[N1,N2,N3,N4] with TupleFamilyWithStatistics4[N1,N2,N3,N4]
+abstract class TensorTemplate4[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest,N4<:Variable:Manifest] extends Template4[N1,N2,N3,N4] with TensorFamily4[N1,N2,N3,N4]
+abstract class TensorTemplateWithStatistics4[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest,N3<:TensorVar:Manifest,N4<:TensorVar:Manifest] extends Template4[N1,N2,N3,N4] with TensorFamilyWithStatistics4[N1,N2,N3,N4]
+abstract class DotTemplate4[N1<:Variable:Manifest,N2<:Variable:Manifest,N3<:Variable:Manifest,N4<:Variable:Manifest] extends Template4[N1,N2,N3,N4] with DotFamily4[N1,N2,N3,N4]
+abstract class DotTemplateWithStatistics4[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest,N3<:TensorVar:Manifest,N4<:TensorVar:Manifest] extends Template4[N1,N2,N3,N4] with DotFamilyWithStatistics4[N1,N2,N3,N4]
 
-abstract class TemplateWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with Statistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
-  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Statistics(v1, v2, v3, v4)
-}
 
-abstract class TemplateWithTensorStatistics4[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar,N4<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with TensorStatistics4[N1#Value,N2#Value,N3#Value,N4#Value]  {
-  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Statistics(v1, v2, v3, v4)
-}
-
-abstract class TemplateWithDotStatistics4[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar,N4<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with FamilyWithDotStatistics4[N1,N2,N3,N4] {
-  type FamilyType <: TemplateWithDotStatistics4[N1,N2,N3,N4]
-  //def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Stat(v1, v2, v3, v4)
-}
-
+//abstract class TemplateWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with Statistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
+//  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Statistics(v1, v2, v3, v4)
+//}
+//
+//abstract class TemplateWithTensorStatistics4[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar,N4<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with TensorStatistics4[N1#Value,N2#Value,N3#Value,N4#Value]  {
+//  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Statistics(v1, v2, v3, v4)
+//}
+//
+//abstract class TemplateWithDotStatistics4[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar,N3<:DiscreteTensorVar,N4<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends Template4[N1,N2,N3,N4] with FamilyWithDotStatistics4[N1,N2,N3,N4] {
+//  type FamilyType <: TemplateWithDotStatistics4[N1,N2,N3,N4]
+//  //def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Stat(v1, v2, v3, v4)
+//}
+//

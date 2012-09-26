@@ -36,19 +36,19 @@ class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[Str
 class ChainNer21Model extends TemplateModel{
   
   // Bias term on each individual label 
-  val biasTemplate = new TemplateWithDotStatistics1[ChainNerLabel] {
+  val biasTemplate = new DotTemplateWithStatistics1[ChainNerLabel] {
     factorName = "bias"
     lazy val weights = new la.DenseTensor1(Conll2003NerDomain.size)
   }
   // Factor between label and observed token
-  val localTemplate = new TemplateWithDotStatistics2[ChainNerLabel,ChainNerFeatures] {
+  val localTemplate = new DotTemplateWithStatistics2[ChainNerLabel,ChainNerFeatures] {
     factorName = "markov"
     lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, ChainNerFeaturesDomain.dimensionSize)
     def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])
     def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
   }
   // Transition factors between two successive labels
-  val transitionTemplate = new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel] {
+  val transitionTemplate = new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
     factorName = "observation"
     lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size)
     def unroll1(label: ChainNerLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.attr[ChainNerLabel], label) else Nil
@@ -61,19 +61,19 @@ class ChainNer21Model extends TemplateModel{
 
 class ChainNer2Model extends TemplateModel{
   // Bias term on each individual label 
-  val bias = new TemplateWithDotStatistics1[ChainNerLabel] {
+  val bias = new DotTemplateWithStatistics1[ChainNerLabel] {
     factorName = "bias"
     lazy val weights = new la.DenseTensor1(Conll2003NerDomain.size)
   }
   // Factor between label and observed token
-  val localTemplate = new TemplateWithDotStatistics2[ChainNerLabel,ChainNer2Features] {
+  val localTemplate = new DotTemplateWithStatistics2[ChainNerLabel,ChainNer2Features] {
     factorName = "markov"
     lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, ChainNer2FeaturesDomain.dimensionSize)
     def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNer2Features])
     def unroll2(tf: ChainNer2Features) = Factor(tf.token.attr[ChainNerLabel], tf)
   }
   // Transition factors between two successive labels
-  val transitionTemplate = new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel] {
+  val transitionTemplate = new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
     factorName = "observation"
     lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size)
     //override def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
@@ -86,11 +86,11 @@ class ChainNer2Model extends TemplateModel{
 }
 
 class ChainNer2WindowModel extends TemplateModel (
-  new TemplateWithDotStatistics1[ChainNerLabel] {
+  new DotTemplateWithStatistics1[ChainNerLabel] {
     factorName = "bias"
     lazy val weights = new la.DenseTensor1(Conll2003NerDomain.size)
   },
-  new TemplateWithDotStatistics2[ChainNerLabel,ChainNerFeatures] {
+  new DotTemplateWithStatistics2[ChainNerLabel,ChainNerFeatures] {
     factorName = "window"
     lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, ChainNerFeaturesDomain.dimensionSize)
     def unroll1(label: ChainNerLabel) = Factor(label, label.token.attr[ChainNerFeatures])

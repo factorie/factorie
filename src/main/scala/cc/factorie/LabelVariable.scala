@@ -153,11 +153,11 @@ class BooleanLabelVariable(targetVal:Boolean) extends CoordinatedBooleanLabelVar
 
 //class ZeroOneLossTemplate[A<:VarWithTarget[TargetVar[A,TargetVar[A,_]],A]]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends Template2[A,A#TargetType] with Statistics1[Boolean] 
 
-class HammingLossTemplate[A<:VarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends Template2[A,A#TargetType] with Statistics1[Boolean] {
+class HammingLossTemplate[A<:VarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
   def unroll1(aimer:A) = Factor(aimer, aimer.target)
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
-  def statistics(value1:A#Value, value2:A#TargetType#Value) = Statistics(value1 == value2)
-  def score(s:Statistics) = if (s._1) 1.0 else 0.0
+  //def statistics(value1:A#Value, value2:A#TargetType#Value) = Statistics(value1 == value2)
+  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0
 }
 
 //object HammingLossObjective extends TemplateModel(new HammingLossTemplate[VarWithTarget])

@@ -2,6 +2,7 @@ Pre 1.0 release:
 
 Implement sparse iteration through values for BP [McCallum]
 Consider renaming LabelVariable to LabeledCategoricalVariable, and having LabeledDiscreteVariable, LabeledBooleanVariable [McCallum]
+Consider Statistics -> Statistic, and then also having Statistic1, Statistic2, etc.
 Fix Family's serialization of DiscreteDomains and CategoricalDomains.  Make user serialize separately from Model.
 Make DotFamily can depend on just TensorVar, not DiscreteTensorVar.
 Rename DiscreteTensorVar to DiscreteDomainTensorVar for clarity; similarly for Categorical. [McCallum]

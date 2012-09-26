@@ -23,7 +23,7 @@ object TopicsOverTime {
   object WordDomain extends CategoricalDomain[String]
   class Word(value: String) extends CategoricalVariable(value) { def domain = WordDomain; def z = model.parentFactor(this).asInstanceOf[DiscreteMixture.Factor]._3 }
   class Document(val file: String) extends ArrayBuffer[Word] {
-    var theta: ProportionsVar = null
+    var theta: ProportionsVariable = null
     var date: Long = -1  // datetime
     val stamps = new ArrayBuffer[DoubleVariable] // datetime normalized to 0-1
   }

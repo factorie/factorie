@@ -31,7 +31,7 @@ object LDA {
   class Z(value: Int = 0) extends DiscreteVariable(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
   class Word(value: String) extends CategoricalVariable(value) { def domain = WordDomain; def z = model.parentFactor(this).asInstanceOf[DiscreteMixture.Factor]._3 }
-  class Document(val file: String) extends ArrayBuffer[Word] {var theta: ProportionsVar = null}
+  class Document(val file: String) extends ArrayBuffer[Word] {var theta: ProportionsVariable = null}
   val beta = MassesVariable.growableUniform(WordDomain, 0.1)
   val alphas = MassesVariable.dense(numTopics, 0.1)
   val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain) ~ Dirichlet(beta))

@@ -31,8 +31,8 @@ object Cards4 {
     allCards = cards
 
     val model = new TemplateModel(
-      new TemplateWithStatistics1[Card] {
-        def score(s:Statistics) = if (s._1 == jane) -1.0 else 0.0
+      new TupleTemplateWithStatistics1[Card] {
+        def score(c:Card#Value) = if (c == jane) -1.0 else 0.0
       }
     )
 

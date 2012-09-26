@@ -30,17 +30,17 @@ class POS1 {
   def useSentenceBoundaries = false
   object PosModel extends TemplateModel {
     // Bias term on each individual label 
-    val biasTemplate = new TemplateWithDotStatistics1[PosLabel] {
+    val biasTemplate = new DotTemplateWithStatistics1[PosLabel] {
       lazy val weights = new la.DenseTensor1(PosDomain.size)
     }
     // Factor between label and observed token
-    val localTemplate = new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
+    val localTemplate = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
       lazy val weights = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
       def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
       def unroll2(tf: PosFeatures) = Factor(tf.token.attr[PosLabel], tf)
     }
     // Transition factors between two successive labels
-    val transTemplate = new TemplateWithDotStatistics2[PosLabel, PosLabel] {
+    val transTemplate = new DotTemplateWithStatistics2[PosLabel, PosLabel] {
       lazy val weights = new la.DenseTensor2(PosDomain.size, PosDomain.size)
       def unroll1(label: PosLabel) = {
         if (useSentenceBoundaries) {

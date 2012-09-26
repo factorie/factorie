@@ -368,7 +368,7 @@ object BPTestUtils {
   
 
   def newFactor1(n1: BinVar, score0: Double, score1: Double): Factor = {
-    val family = new TemplateWithDotStatistics1[BinVar] {
+    val family = new DotTemplateWithStatistics1[BinVar] {
       lazy val weights = new la.DenseTensor1(BinDomain.size)
     }
     family.weights(0) = score0
@@ -379,14 +379,14 @@ object BPTestUtils {
   }
 
   def newFactor2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double): Factor = {
-    val family = new Template2[BinVar, BinVar] with DotStatistics1[BinVar#Value] {
+    val family = new DotTemplate2[BinVar, BinVar] {
       override def neighborDomain1 = BinDomain
       override def neighborDomain2 = BinDomain
       lazy val weights = new la.DenseTensor1(BinDomain.size)
       def unroll1(v: BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BinVar) = if (v == n2) Factor(n1, n2) else Nil
       def statistics(value1: BinVar#Value, value2: BinVar#Value) = 
-        Statistics(BinDomain.valueOf(value1.intValue == value2.intValue))
+        BinDomain.valueOf(value1.intValue == value2.intValue)
     }
     family.weights(0) = scoreEqual
     family.weights(1) = scoreUnequal
@@ -394,24 +394,19 @@ object BPTestUtils {
   }
   
   def newTemplate2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double) = {
-    new TemplateWithStatistics2[BinVar, BinVar] {
+    new TupleTemplateWithStatistics2[BinVar, BinVar] {
       override def neighborDomain1 = BinDomain
       override def neighborDomain2 = BinDomain
       def unroll1(v: BPTestUtils.this.type#BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BPTestUtils.this.type#BinVar) = if (v == n2) Factor(n1, n2) else Nil
-      def score(stat: Statistics): Double = if (stat._1 == stat._2) scoreEqual else scoreUnequal
+      def score(v1:BinVar#Value, v2:BinVar#Value): Double = if (v1 == v2) scoreEqual else scoreUnequal
     }
   }
 
   def newFactor3(n1: BinVar, n2: BinVar, n3: BinVar, scores: Seq[Double]) =
-    new FactorWithStatistics3[BinVar, BinVar, BinVar] {
+    new FactorWithTupleStatistics3[BinVar, BinVar, BinVar](n1, n2, n3) {
       factor =>
-        
-      def _1 = n1
-      def _2 = n2
-      def _3 = n3
-
-      def score(s: Statistics): Double = scores(s._1.category * 4 + s._2.category * 2 + s._3.category)
+      def score(v1:BinVar#Value, v2:BinVar#Value, v3:BinVar#Value): Double = scores(v1.category * 4 + v2.category * 2 + v3.category)
       override def equalityPrerequisite = this
       override def toString = "F(%s,%s,%s)".format(n1, n2, n3)
     }

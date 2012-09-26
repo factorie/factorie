@@ -51,19 +51,12 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
 }
 
 
-abstract class TemplateWithStatistics2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with Statistics2[N1#Value,N2#Value] {
-  def statistics(value1:N1#Value, value2:N2#Value): StatisticsType = Statistics(value1, value2)
-}
-
-abstract class TemplateWithTensorStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with TensorStatistics2[N1#Value,N2#Value] {
-  def statistics(value1:N1#Value, value2:N2#Value): StatisticsType = Statistics(value1, value2)
-}
-
-abstract class TemplateWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Template2[N1,N2] with FamilyWithDotStatistics2[N1,N2] {
-  type FamilyType <: TemplateWithDotStatistics2[N1,N2]
-  def weight(index0:Int, index1:Int): Double = weights.asInstanceOf[Tensor2].apply(index0, index1) //(index0 * statisticsDomains(1).dimensionDomain.size + index1)
-  //def statistics(value1:N1#Value, value2:N2#Value): StatisticsType = Statistics(value1, value2)
-}
+abstract class TupleTemplate2[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with TupleFamily2[N1,N2] 
+abstract class TupleTemplateWithStatistics2[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with TupleFamilyWithStatistics2[N1,N2]
+abstract class TensorTemplate2[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with TensorFamily2[N1,N2]
+abstract class TensorTemplateWithStatistics2[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest] extends Template2[N1,N2] with TensorFamilyWithStatistics2[N1,N2]
+abstract class DotTemplate2[N1<:Variable:Manifest,N2<:Variable:Manifest] extends Template2[N1,N2] with DotFamily2[N1,N2]
+abstract class DotTemplateWithStatistics2[N1<:TensorVar:Manifest,N2<:TensorVar:Manifest] extends Template2[N1,N2] with DotFamilyWithStatistics2[N1,N2]
 
 /*
 trait DiscreteFactorSettings2 extends Template {

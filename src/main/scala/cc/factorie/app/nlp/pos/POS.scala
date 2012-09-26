@@ -27,19 +27,19 @@ class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
 
 object PosModel extends TemplateModel {
   // Bias term on each individual label
-  val bias = new TemplateWithDotStatistics1[PosLabel] {
+  val bias = new DotTemplateWithStatistics1[PosLabel] {
     //override def statisticsDomains = Tuple1(PosDomain)
     lazy val weights = new la.DenseTensor1(PosDomain.size)
   }
   // Factor between label and observed token
-  val local = new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
+  val local = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
     //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
     lazy val weights = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
     def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
     def unroll2(tf: PosFeatures) = Factor(tf.token.posLabel, tf)
   }
   // Transition factors between two successive labels
-  val trans = new TemplateWithDotStatistics2[PosLabel, PosLabel] {
+  val trans = new DotTemplateWithStatistics2[PosLabel, PosLabel] {
     //override def statisticsDomains = ((PosDomain, PosDomain))
     lazy val weights = new la.DenseTensor2(PosDomain.size, PosDomain.size)
     def unroll1(label: PosLabel) = if (label.token.sentenceHasPrev) Factor(label.token.sentencePrev.posLabel, label) else Nil

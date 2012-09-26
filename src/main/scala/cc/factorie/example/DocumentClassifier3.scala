@@ -40,12 +40,12 @@ object DocumentClassifier3 {
 
   val model = new TemplateModel(
     /** Bias term just on labels */
-    new TemplateWithDotStatistics1[Label] { 
+    new DotTemplateWithStatistics1[Label] { 
       //override def statisticsDomains = Tuple1(LabelDomain)
       lazy val weights = new la.DenseTensor1(LabelDomain.size)
     },
     /** Factor between label and observed document */
-    new TemplateWithDotStatistics2[Label,Document] {
+    new DotTemplateWithStatistics2[Label,Document] {
       //override def statisticsDomains = ((LabelDomain, DocumentDomain))
       lazy val weights = new la.DenseTensor2(LabelDomain.size, DocumentDomain.dimensionSize)
       def unroll1 (label:Label) = Factor(label, label.document)

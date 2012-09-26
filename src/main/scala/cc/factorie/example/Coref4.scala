@@ -28,10 +28,10 @@ object Coref4{
   }
   class SimpleHierModel extends TemplateModel(
     new ChildParentTemplateWithStatistics[Name]{
-      override def score(s:Statistics):Double = {val childName=s._2;val parentName=s._3;-childName.editDistance(parentName).toDouble}
+      override def score(er:EntityRef#Value, childName:Name#Value, parentName:Name#Value):Double = { -childName.editDistance(parentName).toDouble }
     },
     new ChildParentTemplateWithStatistics[Bow]{
-      override def score(s:Statistics):Double = s._2.cosineSimilarity(s._3)
+      override def score(er:EntityRef#Value, childBow:Bow#Value, parentBow:Bow#Value):Double = childBow.cosineSimilarity(parentBow)
     },
     new StructuralPriorsTemplate(8.0,0.25)
   )

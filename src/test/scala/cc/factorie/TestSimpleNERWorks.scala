@@ -63,14 +63,14 @@ class TestSimpleNERWorks {
     val trainLabels = trainTokens.map(_.attr[Label])
 
     val model = new TemplateModel(
-      new TemplateWithDotStatistics2[Label, Label]() {
+      new DotTemplateWithStatistics2[Label, Label]() {
         lazy val weights = new la.DenseTensor2(LabelDomain.size, LabelDomain.size)
         factorName = "labelLabel"
         def unroll1(v: Label) = if (v.token.hasNext) Factor(v, v.token.next.attr[Label]) else Nil
         def unroll2(v: Label) = if (v.token.hasPrev) Factor(v.token.prev.attr[Label], v) else Nil
 
       },
-      new TemplateWithDotStatistics2[Label, ChainNerFeatures]() {
+      new DotTemplateWithStatistics2[Label, ChainNerFeatures]() {
         lazy val weights = new la.DenseTensor2(LabelDomain.size, ChainNerFeaturesDomain.dimensionSize)
         factorName = "labelToken"
         def unroll1(v: Label) = Factor(v, v.token.attr[ChainNerFeatures])

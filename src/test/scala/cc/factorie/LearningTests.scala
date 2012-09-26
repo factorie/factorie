@@ -60,12 +60,12 @@ class SampleRankTest extends AssertionsForJUnit {
   val trainingSignal = new TemplateModel(
     //
     //this template unrolls a "ring" structured graphical model
-    new TemplateWithStatistics2[MyBool, MyBool] {
+    new TupleTemplateWithStatistics2[MyBool, MyBool] {
       def unroll1(b: MyBool) = Factor(b, b.next)
       def unroll2(b: MyBool) = Factor(b.prev, b)
-      def score(s: Statistics): Double = {
-        var v1 = s._1
-        var v2 = s._2
+      def score(v1:MyBool#Value, v2:MyBool#Value): Double = {
+        //var v1 = s._1
+        //var v2 = s._2
         if (v1 == v2) -1.0
         else 1.0
       }
@@ -107,7 +107,7 @@ class SampleRankTest extends AssertionsForJUnit {
       println("NUM BOOL VARS: " + bools.size)
 
       model = new TemplateModel(
-        new TemplateWithDotStatistics2[MyBool, MyBool]
+        new DotTemplateWithStatistics2[MyBool, MyBool]
         {
           //def statisticsDomains = ((BooleanDomain, BooleanDomain))
           lazy val weights = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)

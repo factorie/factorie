@@ -31,7 +31,7 @@ class ChainNerModel extends TemplateModel(
     override def statisticsDomains = Tuple1(Conll2003NerDomain)
   },*/
   // Factor between label and observed token
-  new TemplateWithDotStatistics2[ChainNerLabel,ChainNerFeatures] {
+  new DotTemplateWithStatistics2[ChainNerLabel,ChainNerFeatures] {
     factorName = "observation"
     //override def statisticsDomains = ((Conll2003NerDomain, ChainNerFeaturesDomain))
     lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, ChainNerFeaturesDomain.dimensionSize)
@@ -39,7 +39,7 @@ class ChainNerModel extends TemplateModel(
     def unroll2(tf: ChainNerFeatures) = Factor(tf.token.attr[ChainNerLabel], tf)
   },
   // Transition factors between two successive labels
-  new TemplateWithDotStatistics2[ChainNerLabel, ChainNerLabel] {
+  new DotTemplateWithStatistics2[ChainNerLabel, ChainNerLabel] {
     factorName = "markov"
     //override def statisticsDomains = ((Conll2003NerDomain, Conll2003NerDomain))
     lazy val weights = new la.DenseTensor2(Conll2003NerDomain.size, Conll2003NerDomain.size)

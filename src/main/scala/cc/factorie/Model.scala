@@ -72,7 +72,7 @@ trait Model {
   
   def score(variables:Iterable[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.score; sum } // factors(variables).foldLeft(0.0)((sum, f) => sum + f.score)
   def score(variable:Variable): Double = { var sum = 0.0; for (f <- factors(variable)) sum += f.score; sum }
-  def score(d:DiffList) : Double = { var sum = 0.0; for (f <- factors(d)) sum += f.statistics.score; sum }
+  def score(d:DiffList) : Double = { var sum = 0.0; for (f <- factors(d)) sum += f.score; sum }
   /** Returns the average score, that is score of variables, normalized by the size of the collections vars. */
   def aveScore(variables:Iterable[Variable]): Double = score(variables) / variables.size  // TODO Rename to scoreAve?
 

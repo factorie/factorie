@@ -84,7 +84,7 @@ class SparseLDAInferencer(
     //smoothingMass = recalcSmoothingMass
     //assert(smoothingMass > 0.0)
     //println("process doc "+zs.words.asInstanceOf[Document].file)
-    val ws = model.childFactors(zs).head.asInstanceOf[PlatedDiscreteMixture.Factor]._1 //words
+    val ws = model.childFactors(zs).head.asInstanceOf[PlatedCategoricalMixture.Factor]._1 //words
     //assert(ws.length == zs.length)
     // r = sum_t ( \beta n_{t|d} ) ( n_t + |V| \beta )  [Mimno "Sparse LDA"]
     var topicBetaMass = 0.0
@@ -332,7 +332,7 @@ object SparseLDAInferencer {
     val phiCounts = new DiscreteMixtureCounts(wordDomain, zDomain)
 
     for (doc <- docs)
-      phiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedDiscreteMixture.Factor], 1)
+      phiCounts.incrementFactor(model.parentFactor(doc.ws).asInstanceOf[PlatedCategoricalMixture.Factor], 1)
 
     new SparseLDAInferencer(zDomain, wordDomain, phiCounts, initialAlphas, initialBeta1, model)
   }

@@ -40,13 +40,13 @@ object ChainNER4 {
   // The model
   val model = new TemplateModel(
     // Bias term on each individual label 
-    new TemplateWithDotStatistics1[Label] {
+    new DotTemplateWithStatistics1[Label] {
       override def neighborDomain1 = LabelDomain
       //override def statisticsDomains = Tuple1(LabelDomain)
       lazy val weights = new la.DenseTensor1(LabelDomain.size)
     },
     // Transition factors between two successive labels
-    new TemplateWithDotStatistics2[Label, Label] {
+    new DotTemplateWithStatistics2[Label, Label] {
       override def neighborDomain1 = LabelDomain
       override def neighborDomain2 = LabelDomain
       //override def statisticsDomains = ((LabelDomain, LabelDomain))
@@ -55,7 +55,7 @@ object ChainNER4 {
       def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
     },
     // Factor between label and observed token
-    new TemplateWithDotStatistics2[Label, Token] {
+    new DotTemplateWithStatistics2[Label, Token] {
       override def neighborDomain1 = LabelDomain
       override def neighborDomain2 = TokenDomain
       //override def statisticsDomains = ((LabelDomain, TokenDomain))

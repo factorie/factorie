@@ -148,8 +148,8 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
       forIndex(domainSize)(i => {
         //throw new Error
         distribution(i) = /*gStat.prValue(i) * */ 
-          gFactor.prValue(i) * 
-          mFactor.prChoosing(i) // TODO Re-implement these methods so that they don't allocate new Statistics objects with each call
+          gFactor.prValue(i) // * mFactor.prChoosing(i) // TODO Re-implement these methods so that they don't allocate new Statistics objects with each call
+        throw new Error("Not yet implemented") 
         sum += distribution(i)
       })
       assert(sum == sum, "Distribution sum is NaN")
