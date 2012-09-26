@@ -48,7 +48,7 @@ trait DecisionTreeStatistics2Base[S1 <: DiscreteValue, S2 <: DiscreteTensorValue
       case DTBranch(yes, no, idx, thresh) => idx +: (inner(yes) ++ inner(no))
       case _ => Seq.empty[Int]
     }
-    decisionTree.map(inner(_)).flatten.toSeq
+    decisionTree.toSeq.map(inner(_)).flatten
   }
 
   def train(stats: Iterable[StatisticsType], maxDepth: Int = 100, getInstanceWeight: Option[Int => Double] = None): Unit = {
