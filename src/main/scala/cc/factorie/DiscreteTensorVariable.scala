@@ -27,6 +27,7 @@ trait DiscreteTensorDomain extends TensorDomain with ValueBound[Tensor] {
       The 'dimensionDomain.size' method may return values smaller than this, however.
       This method is used to pre-allocate a Template's parameter arrays and is useful for growing domains. */
   def dimensionSize: Int = dimensionDomain.size
+  //def size: Int = dimensionDomain.size // TODO Should we keep this convenience, or is it too confusing?  Is isn't really the number of possible values in the Domain.
   def dimensionName(i:Int): String = i.toString
   def freeze(): Unit = dimensionDomain.freeze
   override def save(dirname: String, gzip: Boolean = false) {

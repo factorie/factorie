@@ -1,7 +1,7 @@
 package cc.factorie
 
 import scala.collection.mutable.Stack
-import org.junit.Assert.{assertEquals}
+import org.junit.Assert._
 import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
 import org.junit.Test
@@ -23,7 +23,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   @Test def v1f1Test {
     // one variable, one factor
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 1, 1))
+    val model = new ItemizedModel(newFactor1(v, 1, 1))
     val fg = new BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
@@ -35,7 +35,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   @Test def v1f1UnequalPotentialsSum {
     // one variable, one factor
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 2, 1))
+    val model = new ItemizedModel(newFactor1(v, 2, 1))
     val fg = new BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
@@ -48,7 +48,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     //f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
     // one variable, two factors
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
+    val model = new ItemizedModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
     val fg = new BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 2)
     assert(fg.bpVariables.size == 1)
@@ -61,7 +61,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
   // one variable, two factors
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
+    val model = new ItemizedModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
     val fg = new BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 2)
     assert(fg.bpVariables.size == 1)
@@ -74,7 +74,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     // f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
     // one variable, two factors
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
+    val model = new ItemizedModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
     val fg = new BPSummary(Set(v), BPMaxProductRing, model) 
     BP.inferLoopy(fg, 2)
     //println(fg.marginal(v).proportions)
@@ -85,7 +85,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
     // one variable, two factors
     val v = new BinVar(0)
-    val model = new FactorModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
+    val model = new ItemizedModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
     val fg = new BPSummary(Set(v), BPMaxProductRing, model)
     BP.inferLoopy(fg, 1)
     //println(fg.marginal(v).proportions)
@@ -156,7 +156,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val v2 = new BinVar(0)
     val vars: Set[DiscreteVar] = Set(v1, v2)
 
-    val model = new FactorModel(
+    val model = new ItemizedModel(
       // bias
       newFactor1(v1, 1, 0), 
       newFactor1(v2, 1, 0),
@@ -186,8 +186,9 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val v4 = new BinVar(0)
     val vars: Set[DiscreteVar] = Set(v1, v2, v3, v4)
 
-    val model = new FactorModel(
-      // loop of repulsion factors
+    val model = new ItemizedModel(
+      // loop of repulsion factors, with v4 having an extra factor
+      // pegging its value to 0
       newFactor2(v1, v2, -5, 0), 
       newFactor2(v2, v3, -5, 0),
       newFactor2(v3, v4, -5, 0), 
@@ -200,20 +201,19 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     BP.inferLoopy(fg, 4)
     fg.setToMaximize()
     
-    println("v1 : " + fg.marginal(v1).proportions)
-    println("v2 : " + fg.marginal(v2).proportions)
-    println("v3 : " + fg.marginal(v3).proportions)
-    println("v4 : " + fg.marginal(v4).proportions)
-    
-    println("v1 val : " + v1.value)
-    println("v2 val : " + v2.value)
-    println("v3 val : " + v3.value)
-    println("v4 val : " + v4.value)
-    
-    assert(v1.intValue == 0)
-    assert(v2.intValue == 1)
-    assert(v3.intValue == 1)
-    assert(v4.intValue == 0)
+    assertEquals(fg.marginal(v1).proportions(0), 0.0, 0.1)
+    assertEquals(fg.marginal(v1).proportions(1), 1.0, 0.1)
+    assertEquals(fg.marginal(v2).proportions(0), 1.0, 0.1)
+    assertEquals(fg.marginal(v2).proportions(1), 0.0, 0.1)
+    assertEquals(fg.marginal(v3).proportions(0), 0.0, 0.1)
+    assertEquals(fg.marginal(v3).proportions(1), 1.0, 0.1)
+    assertEquals(fg.marginal(v4).proportions(0), 1.0, 0.1)
+    assertEquals(fg.marginal(v4).proportions(1), 0.0, 0.1)
+
+    assertEquals(v1.intValue, 1)
+    assertEquals(v2.intValue, 0)
+    assertEquals(v3.intValue, 1)
+    assertEquals(v4.intValue, 0)
   }
 
   @Test def chainRandom {
@@ -223,7 +223,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val varSet = vars.toSet[DiscreteVar]
     for (seed <- (0 until 50)) {
       val random = new Random(seed * 1024)
-      val model = new FactorModel
+      val model = new ItemizedModel
       for (i <- 0 until numVars) {
         model += newFactor1(vars(i), 0, random.nextDouble() * 4.0 - 2.0)
         if ((i + 1) != numVars) model += newFactor2(vars(i), vars(i + 1), 0, random.nextDouble() * 6.0 - 3.0)
@@ -284,7 +284,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val v3 = new BinVar(0)
     val vars: Set[DiscreteVar] = Set(v1, v2, v3)
     // v1 -- v3 -- v2
-    val model = new FactorModel(
+    val model = new ItemizedModel(
 	    newFactor1(v1, 3, 0),
 	    newFactor1(v2, 0, 3),
 	    newFactor2(v1, v3, 3, 0),
@@ -318,7 +318,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     //        v4
     //    v3      v5
     //  v1  v2  v6  v7
-    val model = new FactorModel(
+    val model = new ItemizedModel(
       newFactor1(v1, 10, 0), //newFactor1(v7, 0, 3),
       newFactor2(v1, v3, 5, 0), newFactor2(v2, v3, -5, 0),
       newFactor2(v3, v4, 5, 0), newFactor2(v5, v4, -5, 0),
@@ -369,14 +369,12 @@ object BPTestUtils {
 
   def newFactor1(n1: BinVar, score0: Double, score1: Double): Factor = {
     val family = new TemplateWithDotStatistics1[BinVar] {
-      override def statisticsDomains = Tuple1(BinDomain)
+      lazy val weights = new la.DenseTensor1(BinDomain.size)
     }
     family.weights(0) = score0
     family.weights(1) = score1
     n1.set(0)(null)
-    println(family.score(n1))
     n1.set(1)(null)
-    println(family.score(n1))
     family.factors(n1).head
   }
 
@@ -384,7 +382,7 @@ object BPTestUtils {
     val family = new Template2[BinVar, BinVar] with DotStatistics1[BinVar#Value] {
       override def neighborDomain1 = BinDomain
       override def neighborDomain2 = BinDomain
-      override def statisticsDomains = Tuple1(BinDomain)
+      lazy val weights = new la.DenseTensor1(BinDomain.size)
       def unroll1(v: BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BinVar) = if (v == n2) Factor(n1, n2) else Nil
       def statistics(value1: BinVar#Value, value2: BinVar#Value) = 

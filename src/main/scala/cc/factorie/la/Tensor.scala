@@ -27,7 +27,8 @@ trait Tensor extends MutableDoubleSeq {
   def activeDomain: IntSeq
   def activeDomains: Array[IntSeq]
   def isDense: Boolean
-  def dimensionsMatch(t:Tensor): Boolean = dimensions.toSeq equals t.dimensions.toSeq
+  def dimensionsMatch(t:Tensor): Boolean = dimensions.toSeq equals t.dimensions.toSeq // Inefficient; override in subclasses
+  def ensureDimensionsMatch(t:Tensor): Unit = require(dimensions.toSeq == t.dimensions.toSeq) // Inefficient; override in subclasses
   def activeDomainSize: Int = activeDomain.length // Should be overridden for efficiency in many subclasses
   /** The default value at indices not covered by activeDomain.  Subclasses may override this  */
   def defaultValue: Double = 0.0 // TODO This is not actually yet properly used by subclasses
@@ -54,19 +55,8 @@ trait Tensor extends MutableDoubleSeq {
   def isUniform = false
   def stringPrefix = getClass.getName // "Tensor"
   def printLength = 50
-  def linearize = new LinearizedTensor(this)
   override def toString = { val suffix = if (length > printLength) "...)" else ")"; this.asSeq.take(printLength).mkString(stringPrefix+"(", ",", suffix) }
 }
-
-class LinearizedTensor(tensor: Tensor) extends Tensor1 {
-  def dim1 = tensor.dimensions.fold(1)((a,b) => a*b)
-  def activeDomain1 = tensor.activeDomain
-  def apply(index: Int) = tensor(index)
-  def isDense = tensor.isDense
-  override def update(index: Int,  value: Double) { tensor.update(index,value) }
-  override def copy = tensor.copy.linearize
-}
-
 
 object Tensor {
   
@@ -95,6 +85,11 @@ object Tensor {
     case 2 => new DenseTensor2(dims(0), dims(1))
     case 3 => new DenseTensor3(dims(0), dims(1), dims(2))
     case 4 => new DenseTensor4(dims(0), dims(1), dims(2), dims(3))
+  }
+  def newGrowableDense(dims:Array[Int]): Tensor = dims.length match {
+    case 1 => new GrowableDenseTensor1(dims(0))
+    case 2 => new GrowableDenseTensor2(dims(0), dims(1))
+    case 3 => new GrowableDenseTensor3(dims(0), dims(1), dims(2))
   }
   def newSparse(t:Tensor): Tensor = t match {
     case t:Tensor1 => new SparseTensor1(t.dim1)

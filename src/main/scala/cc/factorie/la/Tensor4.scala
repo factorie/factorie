@@ -28,6 +28,14 @@ trait Tensor4 extends Tensor {
   def numDimensions: Int = 4
   def activeDomains = Array(activeDomain1, activeDomain2, activeDomain3, activeDomain4)
   def dimensions = Array(dim1, dim2, dim3, dim4)
+  override def dimensionsMatch(t:Tensor): Boolean = t match {
+    case t:Tensor4 => t.dim1 == dim1 && t.dim2 == dim2 && t.dim3 == dim3 && t.dim4 == dim4
+    case _ => false
+  } 
+  override def ensureDimensionsMatch(t:Tensor): Unit = t match {
+    case t:Tensor4 => require(t.dim1 == dim1 && t.dim2 == dim2 && t.dim3 == dim3 && t.dim4 == dim4)
+    case _ => throw new Error("Tensor ranks do not match.")
+  }
   def apply(i:Int, j:Int, k:Int, l:Int): Double = apply(i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l)
   def update(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = update(i*dim2*dim3*dim4 + j*dim3*dim4 + k*dim4 + l, v)
   def +=(i:Int, j:Int, k:Int, l:Int, v:Double): Unit = +=(singleIndex(i, j, k, l), v)

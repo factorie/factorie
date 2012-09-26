@@ -61,6 +61,9 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
     iidVariableSets.foreach(_.foreach(_.setToTarget(null)))
     for (variables <- iidVariableSets)
       model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => {
+        println("1 " + constraints.dimensions.toSeq)
+        println("2 " + f.family)
+        println("3 " + constraints(f.family).dimensions.toSeq)
         constraints(f.family) += f.statistics.tensor 
       })
 

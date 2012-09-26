@@ -130,7 +130,8 @@ object ActionModel extends TemplateModel {
   var skipNonCategories = false
 
   val localTemplate = new TemplateWithDotStatistics2[ActionLabel, ShiftReduceDependencyParserFeatures] {
-    override def statisticsDomains = ((ActionDomain, ParserFeaturesDomain))
+    //override def statisticsDomains = ((ActionDomain, ParserFeaturesDomain))
+    lazy val weights = new la.DenseTensor2(ActionDomain.size, ParserFeaturesDomain.dimensionSize)
     def unroll1(label: ActionLabel) = Factor(label, label.features)
     def unroll2(features: ShiftReduceDependencyParserFeatures) = Factor(features.label, features)
   }

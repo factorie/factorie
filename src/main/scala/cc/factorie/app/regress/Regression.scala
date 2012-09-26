@@ -35,7 +35,7 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
   linearRegressor =>
 
   def regression(x: A) = {
-    val result = weights.matrixVector(dependant2Explanatory(x).value.linearize).reshape(x.value.dimensions)
+    val result = weights.matrixVector(dependant2Explanatory(x).value).reshape(x.value.dimensions)
     new Regression[A] {
       def dependant = x
       def dependantValue = result.asInstanceOf[A#Value]
@@ -49,7 +49,9 @@ object LinearRegressionTrainer {
   def train[E<:TensorVar, A<:TensorVar](examples: Iterable[A], dependant2Explanatory: A=>E, l2: Double): LinearRegressor[E,A] = {
     val exampleDependent = examples.head
     val exampleExplanatory = dependant2Explanatory(exampleDependent)
-    val weights = new DenseTensor2(exampleDependent.value.linearize.dim1, exampleExplanatory.value.linearize.dim1)
+    val dependentSize = exampleDependent.value.dimensions.reduce((a,b)=>a*b)
+    val explanatorySize = exampleExplanatory.value.dimensions.reduce((a,b)=>a*b)
+    val weights = new DenseTensor2(dependentSize, explanatorySize)
     //val optimizer = new cc.factorie.optimize.ConjugateGradient()
     val optimizer = new cc.factorie.optimize.LimitedMemoryBFGS()
     val gradient = new DenseTensor2(weights.dim1, weights.dim2)
@@ -57,7 +59,7 @@ object LinearRegressionTrainer {
       gradient.zero()
       var value = 0.0
       examples.foreach(e => {
-        val features = dependant2Explanatory(e).value.linearize
+        val features = dependant2Explanatory(e).value
         val prediction = weights.matrixVector(features)
         prediction.activeDomain.foreach(i => prediction(i) -= e.value(i))
         value -= prediction.dot(prediction)

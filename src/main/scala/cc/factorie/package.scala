@@ -17,9 +17,23 @@ import scala.util.Random
 
 package object factorie {
   
+  // Common cases for DotFamily weights
+//  type Tensor = cc.factorie.la.Tensor
+//  type Tensor1 = cc.factorie.la.Tensor1
+//  type Tensor2 = cc.factorie.la.Tensor2
+//  type Tensor3 = cc.factorie.la.Tensor3
+//  type Tensor4 = cc.factorie.la.Tensor4
+//  type DenseTensor1 = cc.factorie.la.DenseTensor1
+//  type DenseTensor2 = cc.factorie.la.DenseTensor2
+//  type DenseTensor3 = cc.factorie.la.DenseTensor3
+//  type DenseTensor4 = cc.factorie.la.DenseTensor4
+//  type SparseTensor1 = cc.factorie.la.SparseTensor1
+//  type DenseLayeredTensor2 = cc.factorie.la.DenseLayeredTensor2
+//  type Dense2LayeredTensor3 = cc.factorie.la.Dense2LayeredTensor3
+  
   // TODO Consider removing these.  Yes. -akm
-  type DiscreteTensorValue = cc.factorie.la.Tensor
-  type CategoricalTensorValue = cc.factorie.la.Tensor
+  //type DiscreteTensorValue = cc.factorie.la.Tensor
+  //type CategoricalTensorValue = cc.factorie.la.Tensor
 
   // TODO Should we have this?  Is there a more Java-standard way to provide this?
   // TODO If we keep it, find a way to automatically maintain this string value
@@ -46,8 +60,8 @@ package object factorie {
   // TODO Consider removing this now that we have separate, more specific samplers.
   // TODO Consider also removing SamplerSuite?
   // Yes to both.
-  @deprecated("Will be removed.")
-  val defaultSampler = new SamplerSuite
+//  @deprecated("Will be removed.")
+//  val defaultSampler = new SamplerSuite
 
   type Logging = cc.factorie.util.Logging
   type FastLogging = cc.factorie.util.FastLogging

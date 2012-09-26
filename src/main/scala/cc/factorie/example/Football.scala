@@ -41,17 +41,20 @@ object Football {
   val model = new TemplateModel(
     //Foreach[Label] { label => Score(label) },
     new TemplateWithDotStatistics1[Label] {
-      def statisticsDomains = Tuple1(LabelDomain)
+      //def statisticsDomains = Tuple1(LabelDomain)
+      lazy val weights = new la.DenseTensor1(LabelDomain.size)
     },
     //Foreach[Label] { label => Score(label, label.token) },
     new TemplateWithDotStatistics2[Label,TokenFeatures] {
-      def statisticsDomains = ((LabelDomain, TokenFeaturesDomain))
+      //def statisticsDomains = ((LabelDomain, TokenFeaturesDomain))
+      lazy val weights = new la.DenseTensor2(LabelDomain.size, TokenFeaturesDomain.dimensionSize)
       def unroll1(label:Label) = Factor(label, label.token.attr[TokenFeatures])
       def unroll2(tf:TokenFeatures) = throw new Error()
     },
     //Foreach[Label] { label => Score(label.prev, label, label.token) },
     new TemplateWithDotStatistics3[Label,Label,TokenFeatures] {
-      def statisticsDomains = ((LabelDomain, LabelDomain, TokenFeaturesDomain))
+      //def statisticsDomains = ((LabelDomain, LabelDomain, TokenFeaturesDomain))
+      lazy val weights = new la.DenseTensor3(LabelDomain.size, LabelDomain.size, TokenFeaturesDomain.dimensionSize)
       def unroll1(label:Label) = Factor(label, label.token.next.attr[Label], label.token.next.attr[TokenFeatures])
       def unroll2(label:Label) = Factor(label.token.prev.attr[Label], label, label.token.attr[TokenFeatures])
       def unroll3(tf:TokenFeatures) = throw new Error()
@@ -59,6 +62,7 @@ object Football {
     //Foreach[Label] { label => Score(label.prev, label) }
     new TemplateWithDotStatistics2[Label,Label] {
       def statisticsDomains = ((LabelDomain, LabelDomain))
+      lazy val weights = new la.DenseTensor2(LabelDomain.size, LabelDomain.size)
       def unroll1(label:Label) = Factor(label, label.token.next.attr[Label])
       def unroll2(label:Label) = Factor(label.token.prev.attr[Label], label)
     }

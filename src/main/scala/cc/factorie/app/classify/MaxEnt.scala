@@ -35,7 +35,7 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
 class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
   def train[L<:LabelVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
-    if (warmStart != null) cmodel.evidenceTemplate.setWeights(warmStart)
+    if (warmStart != null) cmodel.evidenceTemplate.weights := warmStart
     val trainer = new DotMaximumLikelihood(cmodel, new LimitedMemoryBFGS)
     trainer.gaussianPriorVariance = l2
     // Do the training by BFGS

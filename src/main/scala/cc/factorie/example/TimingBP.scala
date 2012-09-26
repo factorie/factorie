@@ -13,16 +13,21 @@ import cc.factorie.app.nlp.pos._
 
 object TestModel extends TemplateModel {
   // Bias term on each individual label
-  val biasTemplate =  new TemplateWithDotStatistics1[PosLabel] { override def statisticsDomains = Tuple1(PosDomain) }
+  val biasTemplate =  new TemplateWithDotStatistics1[PosLabel] {
+    lazy val weights = new la.DenseTensor1(PosDomain.size)
+    //override def statisticsDomains = Tuple1(PosDomain)
+  }
   // Factor between label and observed token
   val localTemplate = new TemplateWithDotStatistics2[PosLabel,PosFeatures] {
-    override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
+    //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
+    lazy val weights = new la.DenseTensor2(PosDomain.size, PosFeaturesDomain.dimensionSize)
     def unroll1(label: PosLabel) = Factor(label, label.token.attr[PosFeatures])
     def unroll2(tf: PosFeatures) = Factor(tf.token.posLabel, tf)
   }
   // Transition factors between two successive labels
   val transTemplate = new TemplateWithDotStatistics2[PosLabel, PosLabel] { // the sparse weights are kind of worthless here
-    override def statisticsDomains = ((PosDomain, PosDomain))
+    //override def statisticsDomains = ((PosDomain, PosDomain))
+    lazy val weights = new la.DenseTensor2(PosDomain.size, PosDomain.size)
     def unroll1(label: PosLabel) = if (label.token.hasPrev) Factor(label.token.prev.posLabel, label) else Nil
     def unroll2(label: PosLabel) = if (label.token.hasNext) Factor(label, label.token.next.posLabel) else Nil
   }
@@ -65,8 +70,9 @@ object TimingBP {
     val labels = documents.map(_.tokens).map(_.map(_.posLabel))
 
     println("Initializing the weights")
+    PosDomain.freeze(); PosFeaturesDomain.freeze()
     List(TestModel.localTemplate,TestModel.transTemplate, TestModel.biasTemplate).foreach(t => {
-      t.freezeDomains
+      //t.freezeDomains
       (0 until t.weights.length).foreach(t.weights(_) = rng.nextGaussian())
     })
 

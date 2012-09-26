@@ -26,6 +26,14 @@ trait Tensor3 extends Tensor {
   def numDimensions: Int = 3
   def activeDomains = Array(activeDomain1, activeDomain2, activeDomain3)
   def dimensions = Array(dim1, dim2, dim3)
+  override def dimensionsMatch(t:Tensor): Boolean = t match {
+    case t:Tensor3 => t.dim1 == dim1 && t.dim2 == dim2 && t.dim3 == dim3
+    case _ => false
+  } 
+  override def ensureDimensionsMatch(t:Tensor): Unit = t match {
+    case t:Tensor3 => require(t.dim1 == dim1 && t.dim2 == dim2 && t.dim3 == dim3)
+    case _ => throw new Error("Tensor ranks do not match.")
+  }
   def apply(i:Int, j:Int, k:Int): Double = apply(i*dim2*dim3 + j*dim3 + k)
   def update(i:Int, j:Int, k:Int, v:Double): Unit = update(i*dim2*dim3 + j*dim3 + k, v)
   def +=(i:Int, j:Int, k:Int, v:Double): Unit = +=(singleIndex(i, j, k), v)
@@ -51,6 +59,10 @@ trait DenseTensorLike3 extends Tensor3 with DenseTensor {
   //override def update(i:Int, v:Double): Unit = __values(i) = v
   //override def update(i:Int, j:Int, k:Int, v:Double): Unit = __values(i*dim2*dim3 + j*dim3 + k) = v
   //override def +=(i:Int, v:Double): Unit = __values(i) += v
+  override def +=(t:DoubleSeq, f:Double): Unit = t match {
+    case t:Dense2LayeredTensor3 => t.=+(_values, 0, f)
+    case t:Tensor3 => super.+=(t, f)
+  }
 }
 class DenseTensor3(val dim1:Int, val dim2:Int, val dim3:Int) extends DenseTensorLike3 {
   override def copy: DenseTensor3 = { val t = new DenseTensor3(dim1, dim2, dim3); System.arraycopy(_values, 0, t._values, 0, length); t }
@@ -62,7 +74,11 @@ class GrowableDenseTensor3(d1:Int, d2:Int, d3:Int) extends { private var _dim1 =
   def dim2: Int = _dim2
   def dim3: Int = _dim3
   override def apply(index:Int):Double = if (index < _valuesSize) _values(index) else 0.0
-  def ensureDims(d1:Int, d2:Int, d3:Int): Unit = if (d1 > _dim1 || d2 > _dim2 | d3 > _dim3) {
+  override def ensureDimensionsMatch(t:Tensor): Unit = t match {
+    case t:Tensor3 => ensureDimensions(t.dim1, t.dim2, t.dim3)
+    case _ => throw new Error("Tensor ranks do not match.")
+  }
+  def ensureDimensions(d1:Int, d2:Int, d3:Int): Unit = if (d1 > _dim1 || d2 > _dim2 | d3 > _dim3) {
     val newSize = d1 * d2 * d3 // math.max(_valuesSize * 2, d1 * d2 * d3)
     val oldValues = _values
     _resetValues(newSize) // allocates a new __values array of size newSize
@@ -79,11 +95,13 @@ class GrowableDenseTensor3(d1:Int, d2:Int, d3:Int) extends { private var _dim1 =
   }
   // Currently these are the only methods that support capacity expansion
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
-    case t:SingletonBinaryTensor3 => { ensureDims(t.dim1, t.dim2, t.dim3); +=(t.singleIndex, f) }
-    case t:SingletonTensor3 => { ensureDims(t.dim1, t.dim2, t.dim3); +=(t.singleIndex, f * t.singleValue) }
-    case t:SparseBinaryTensor3 => { ensureDims(t.dim1, t.dim2, t.dim3); t.=+(_values, f) }
-    case t:DenseTensorLike3 => { ensureDims(t.dim1, t.dim2, t.dim3); super.+=(t, f) }
-    //case t:UniformTensor3 => { ensureDims(t.dim1, t.dim2, t.dim3); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
+    case t:SingletonBinaryTensor3 => { ensureDimensions(t.dim1, t.dim2, t.dim3); +=(t.singleIndex, f) }
+    case t:SingletonTensor3 => { ensureDimensions(t.dim1, t.dim2, t.dim3); +=(t.singleIndex, f * t.singleValue) }
+    case t:SparseBinaryTensor3 => { ensureDimensions(t.dim1, t.dim2, t.dim3); t.=+(_values, f) }
+    case t:DenseTensorLike3 => { ensureDimensions(t.dim1, t.dim2, t.dim3); super.+=(t, f) }
+    //case t:Dense2LayeredTensor3 => { ensureDimensions(t.dim1, t.dim2, t.dim3); { val len = t._inners.length; var i = 0; while (i < len) { val in = t._inners(i); if (in ne null) getInner(i).+=(in, f); i += 1 }} }
+    //case t:Tensor3 => { ensureDimensions(t.dim1, t.dim2, t.dim3); super.+=(t, f) }
+    //case t:UniformTensor3 => { ensureDimensions(t.dim1, t.dim2, t.dim3); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
   }
   override def copy: GrowableDenseTensor3 = { val c = new GrowableDenseTensor3(_dim1, _dim2, _dim3); c := this; c }
   override def blankCopy: GrowableDenseTensor3 = new GrowableDenseTensor3(_dim1, _dim2, _dim3)
@@ -154,6 +172,16 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
   def activeDomain2 = new RangeIntSeq(0, dim2)
   def activeDomain3 = new RangeIntSeq(0, dim3)
   def activeDomain = new RangeIntSeq(0, length) // Actually more sparse than this
+  override def ensureDimensionsMatch(t:Tensor): Unit = t match {
+    case t:Tensor3 => ensureDimensions(t.dim1, t.dim2, t.dim3)
+    case _ => throw new Error("Tensor ranks do not match.")
+  }
+  def ensureDimensions(d1:Int, d2:Int, d3:Int): Unit = if (d1 > dim1 || d2 > dim2) {
+    val newInners = new Array[Tensor1](d1 * d2)
+    for (i <- 0 until dim1)
+      System.arraycopy(_inners, i*dim2, newInners, i*d2, dim2)
+    throw new Error("Implementation not yet finished.")
+  }
   private var _inners = new Array[Tensor1](dim1*dim2) // Array.fill(dim1*dim2)(newTensor1(dim3)) // TODO We shouldn't pre-fill this array; leave it sparse
   override def apply(i:Int, j:Int, k:Int): Double = {
     assert(i*dim2+j < dim1*dim2, "len="+length+" dim1="+dim1+" dim2="+dim2+" dim3="+dim3+" i="+i+" j="+j+" k="+k)
@@ -162,10 +190,15 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
   def isDense = false
   def apply(i:Int): Double = apply(i/dim2/dim3, (i/dim3)%dim2, i%dim3)
   override def update(i:Int, j:Int, k:Int, v:Double): Unit = _inners(i*dim2+j).update(j, v)
-  protected def getInner(i:Int, j:Int): Tensor1 = { var in = _inners(i*dim2+j); if (in eq null) { in = newTensor1(dim3); _inners(i*dim2+j) = in }; in }
-  protected def getInner(i:Int): Tensor1 = { var in = _inners(i); if (in eq null) { in = newTensor1(dim3); _inners(i) = in }; in }
-  override def +=(i:Int, incr:Double): Unit = getInner(index1(i), index2(i)).+=(index3(i), incr)
-  override def +=(i1:Int, i2:Int, i3:Int, incr:Double): Unit = getInner(i1, i2).+=(i3, incr)
+  /** Get the inner Tensor1 at first two dimensions index i,j.  Create it if necessary. */
+  def inner(i:Int, j:Int): Tensor1 = { var in = _inners(i*dim2+j); if (in eq null) { in = newTensor1(dim3); _inners(i*dim2+j) = in }; in }
+  /** Get the inner Tensor1 at first two dimensions index i.  Create it if necessary. */
+  def inner(i:Int): Tensor1 = { var in = _inners(i); if (in eq null) { in = newTensor1(dim3); _inners(i) = in }; in }
+  override def +=(i:Int, incr:Double): Unit = inner(index1(i), index2(i)).+=(index3(i), incr)
+  override def +=(i1:Int, i2:Int, i3:Int, incr:Double): Unit = inner(i1, i2).+=(i3, incr)
+  override def =+(a:Array[Double], offset:Int, f:Double): Unit = {
+    val len = _inners.length; var i = 0; while (i < len) { val in = _inners(i); if (in ne null) inner(i).=+(a, offset+i*dim1*dim2, f); i += 1 }
+  }
   override def dot(ds:DoubleSeq): Double = ds match {
     case t:SingletonBinaryTensor3 => apply(t.singleIndex1, t.singleIndex2, t.singleIndex3)
     case t:SingletonTensor3 => apply(t.singleIndex1, t.singleIndex2, t.singleIndex3) * t.singleValue
@@ -176,10 +209,10 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensor3 => +=(t.singleIndex1, t.singleIndex2, t.singleIndex3, f)
     case t:SingletonTensor3 => +=(t.singleIndex1, t.singleIndex2, t.singleIndex3, f * t.singleValue)
-    case t:Singleton2LayeredTensorLike3 => { val in = getInner(t.singleIndex1, t.singleIndex2); in.+=(t.inner, f * t.singleValue1 * t.singleValue2) }
-    case t:Dense2LayeredTensorLike3 => { val len = t._inners.length; var i = 0; while (i < len) { val in = t._inners(i); if (in ne null) getInner(i).+=(in, f); i += 1 }}
+    case t:Singleton2LayeredTensorLike3 => { val in = inner(t.singleIndex1, t.singleIndex2); in.+=(t.inner, f * t.singleValue1 * t.singleValue2) }
+    case t:Dense2LayeredTensorLike3 => { val len = t._inners.length; var i = 0; while (i < len) { val in = t._inners(i); if (in ne null) inner(i).+=(in, f); i += 1 }}
     case t:SparseBinaryTensor3 => { var s = 0.0; t.foreachActiveElement((i,v) => +=(i, 1.0)) }
-    case t:Singleton2BinaryLayeredTensorLike3 => { val in = getInner(t.singleIndex1, t.singleIndex2); in.+=(t.inner, f) }
+    case t:Singleton2BinaryLayeredTensorLike3 => { val in = inner(t.singleIndex1, t.singleIndex2); in.+=(t.inner, f) }
   }
 }
 // TODO Consider also Dense1LayeredTensor3 with an InnerTensor2

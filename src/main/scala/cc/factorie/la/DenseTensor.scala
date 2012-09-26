@@ -73,7 +73,6 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
     case t:DenseTensor => { val len = length; var i = 0; while (i < len) { __values(i) += f * t.__values(i); i += 1 }}
     case t:UniformTensor => { val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }}
     case t:TensorTimesScalar => { t.tensor.activeDomain.foreach(i => this(i) += t(i)*t.scalar) }
-    case t:LinearizedTensor => { t.activeDomain.foreach(i => this(i) += t(i)) }
   }
 }
 

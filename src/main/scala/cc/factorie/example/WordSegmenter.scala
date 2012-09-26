@@ -38,28 +38,47 @@ object WordSegmenterDemo {
   val model = new TemplateModel
   /** Bias term just on labels */
   model += new TemplateWithDotStatistics1[Label] {
+    lazy val weights = new la.DenseTensor1(BooleanDomain.size)
     factorName = "Label"
     //def statistics(t:Label#Value) = Stat(t)
     def statisticsDomains = Tuple1(BooleanDomain)
   }
+//  /** Factor between label and observed token */
+//  model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
+//    factorName = "Label,Token"
+//    def statisticsDomains = ((BooleanDomain,TokenDomain))
+//    def unroll1 (label:Label) = Factor(label, label.token)
+//    def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
+//  }
+//  /** A token bi-gram conjunction  */
+//  model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
+//    factorName = "Label,Token,Token"
+//    def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
+//    def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
+//    def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
+//    def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
+//  }
   /** Factor between label and observed token */
-  model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
+  model += new TemplateWithDotStatistics2[Label,Token] {
     factorName = "Label,Token"
     def statisticsDomains = ((BooleanDomain,TokenDomain))
+    lazy val weights = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
     def unroll1 (label:Label) = Factor(label, label.token)
-    def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
+    def unroll2 (token:Token) = Factor(token.label, token)
   }
   /** A token bi-gram conjunction  */
-  model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
+  model += new TemplateWithDotStatistics3[Label,Token,Token] {
     factorName = "Label,Token,Token"
     def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
-    def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
-    def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
-    def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
+    lazy val weights = new la.Dense2LayeredTensor3(BooleanDomain.size, TokenDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_))
+    def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token.prev, label.token) else Nil
+    def unroll2 (token:Token) = if (token.hasPrev) Factor(token.label, token.prev, token) else Nil
+    def unroll3 (token:Token) = if (token.hasNext) Factor(token.next.label, token, token.next) else Nil
   }
   /** Factor between two successive labels */
   model += new TemplateWithDotStatistics2[Label,Label] {
     factorName = "Label,Label"
+    lazy val weights = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
     def statisticsDomains = ((BooleanDomain,BooleanDomain))
     def unroll1 (label:Label) = if (label.token.hasNext) Factor(label, label.token.next.label) else Nil
     def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
@@ -67,14 +86,14 @@ object WordSegmenterDemo {
   /** Skip edge */
   val skipTemplate = new Template2[Label,Label] with DotStatistics1[BooleanValue] {
     factorName = "Label,Label:Boolean"
+    lazy val weights = new la.DenseTensor1(BooleanDomain.size)
     def statisticsDomains = Tuple1(BooleanDomain)
     def unroll1 (label:Label) =  
       // could cache this search in label.similarSeq for speed
       for (other <- label.token.chain.links; if label.token.char == other.char) yield
         if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
     def unroll2 (label:Label) = Nil // We handle symmetric case above
-    def statistics(v1:Label#Value, v2:Label#Value) = Statistics(BooleanDomain.value(v1 == v2))
-    //def statistics(label1:Label#Value, label2:Label#Value) = Stat(label1 ==label2)
+    def statistics(v1:Label#Value, v2:Label#Value) = Statistics(BooleanValue(v1 == v2))
   }
   //model += skipTemplate
 

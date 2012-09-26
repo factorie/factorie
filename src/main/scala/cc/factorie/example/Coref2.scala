@@ -45,7 +45,7 @@ class CorefAffinity extends BinaryFeatureVectorVariable[String] {
 
 class EntityMentionModel extends TemplateModel(
   new Template1[EntityRef] with DotStatistics1[CorefAffinity#Value] {
-    override def statisticsDomains = Tuple1(CorefAffinityDimensionDomain)
+    lazy val weights = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
     //println("*** EntityMentionModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
     //weights.update(CorefAffinityDimensionDomain.Bias, -1)
     weights(CorefAffinityDimensionDomain.Bias) = -1
@@ -80,7 +80,7 @@ class EntityMentionModel extends TemplateModel(
 
 class PairwiseModel extends TemplateModel(
   new Template1[EntityRef] with DotStatistics1[CorefAffinity#Value] {
-    override def statisticsDomains = Tuple1(CorefAffinityDimensionDomain)
+    lazy val weights = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
     //println("*** PairwiseModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
     weights(CorefAffinityDimensionDomain.Bias) = -1
     weights(CorefAffinityDimensionDomain.ExactMatch) = 10

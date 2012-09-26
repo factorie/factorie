@@ -109,7 +109,8 @@ class SampleRankTest extends AssertionsForJUnit {
       model = new TemplateModel(
         new TemplateWithDotStatistics2[MyBool, MyBool]
         {
-          def statisticsDomains = ((BooleanDomain, BooleanDomain))
+          //def statisticsDomains = ((BooleanDomain, BooleanDomain))
+          lazy val weights = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
           def unroll1(b: MyBool) = Factor(b, b.next)
           def unroll2(b: MyBool) = Factor(b.prev, b)
         }

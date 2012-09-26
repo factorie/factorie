@@ -26,13 +26,11 @@ import java.io._
 trait ValuesIterator2[N1<:Variable,N2<:Variable] extends Iterator[AbstractAssignment2[N1,N2]] with AbstractAssignment2[N1,N2] with ValuesIterator
 
 /** The only abstract things are _1, _2, statistics(Values), and StatisticsType */
-trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
+abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends Factor {
   factor =>
   type NeighborType1 = N1
   type NeighborType2 = N2
   type StatisticsType <: cc.factorie.Statistics
-  def _1: N1
-  def _2: N2
   def numVariables = 2
   override def variables = IndexedSeq(_1, _2)
   def variable(i:Int) = i match { case 0 => _1; case 1 => _2; case _ => throw new IndexOutOfBoundsException(i.toString) }
@@ -193,7 +191,7 @@ trait Factor2[N1<:Variable,N2<:Variable] extends Factor {
 }
 
 /** The only abstract things are _1, _2, and score(Statistics) */
-trait FactorWithStatistics2[N1<:Variable,N2<:Variable] extends Factor2[N1,N2] {
+abstract class FactorWithStatistics2[N1<:Variable,N2<:Variable](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
   self =>
   type StatisticsType = Statistics
   case class Statistics(_1:N1#Value, _2:N2#Value) extends cc.factorie.Statistics {
@@ -223,7 +221,7 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
 //  def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = limitedDiscreteValues ++= values
   //def limitDiscreteValuesIterator
   
-  final case class Factor(_1:N1, _2:N2) extends super.Factor with Factor2[N1,N2] {
+  final case class Factor(override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) with super.Factor {
     type StatisticsType = Family2.this.StatisticsType
     override def equalityPrerequisite: AnyRef = Family2.this
     override def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = thisFamily.statistics(v1, v2)
@@ -293,21 +291,22 @@ trait Statistics2[S1,S2] extends Family {
   self =>
   type StatisticsType = Statistics
   final case class Statistics(_1:S1, _2:S2) extends super.Statistics {
-    lazy val score = self.score(this)
+    val score = self.score(this)
   }
   def score(s:Statistics): Double
 }
 
-trait TensorStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorFamily {
+trait TensorStatistics2[S1<:Tensor,S2<:Tensor] extends TensorFamily {
   self =>
   type StatisticsType = Statistics
-  override def statisticsDomains: Tuple2[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2]]
+  //override def statisticsDomains: Tuple2[DiscreteTensorDomain with Domain[S1], DiscreteTensorDomain with Domain[S2]]
   final case class Statistics(_1:S1, _2:S2) extends { val tensor: Tensor = Tensor.outer(_1, _2) } with super.Statistics {
-    lazy val score = self.score(this)
+    val score = self.score(this)
   }
 }
 
-trait DotStatistics2[S1<:DiscreteTensorValue,S2<:DiscreteTensorValue] extends TensorStatistics2[S1,S2] with DotFamily {
+trait DotStatistics2[S1<:Tensor,S2<:Tensor] extends TensorStatistics2[S1,S2] with DotFamily {
+  override def weights: Tensor2
   //def statisticsScore(tensor:Tensor) = weights dot tensor
 }
 
@@ -329,7 +328,7 @@ trait FamilyWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] exte
   // TODO Should we consider the capability for something other than *summing* over elements of tensor2?
   def valueScores1(tensor2:Tensor): Tensor1 = weights match {
     case weights: Tensor2 => {
-      val dim = statisticsDomains._1.dimensionDomain.size
+      val dim = weights.dim1 // statisticsDomains._1.dimensionDomain.size
       val result = new DenseTensor1(dim)
       tensor2 match {
         case tensor2:SingletonBinaryTensor1 => {
@@ -359,7 +358,7 @@ trait FamilyWithDotStatistics2[N1<:DiscreteTensorVar,N2<:DiscreteTensorVar] exte
   // TODO Should we consider the capability for something other than *summing* over elements of tensor1?
   def valueScores2(tensor1:Tensor): Tensor1 = weights match {
     case weights: Tensor2 => {
-      val dim = statisticsDomains._2.dimensionDomain.size
+      val dim = weights.dim2 //statisticsDomains._2.dimensionDomain.size
       val result = new DenseTensor1(dim)
       tensor1 match {
         case tensor1:SingletonBinaryTensor1 => {

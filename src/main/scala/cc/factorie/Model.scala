@@ -100,8 +100,8 @@ trait Model {
   def weightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t }
   //def newDenseWeightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.newDenseTensor); t }
   //def newSparseWeightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.newSparseTensor); t }
-  def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(_.newDenseTensor)
-  def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(_.newSparseTensor)
+  def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
+  def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
 
   // Some Model subclasses that have a fixed set of factors and variables can override the methods below
   // TODO Consider making a Model trait for these methods.  Yes!
@@ -127,8 +127,7 @@ class CombinedModel(theSubModels:Model*) extends Model {
     @author Andrew McCallum
     @since 0.11
  */
-// TODO Rename UnrolledModel ???  Or ExpandedModel  Or EnumeratedModel  Or ItemizedModel << YES, last one
-class FactorModel(initialFactors:Factor*) extends Model {
+class ItemizedModel(initialFactors:Factor*) extends Model {
   def this(initialFactors:Iterable[Factor]) = { this(initialFactors.toSeq:_*) }
   private val _factors = new HashMap[Variable,scala.collection.Set[Factor]] {
     override def default(v:Variable) = ListSet.empty[Factor]

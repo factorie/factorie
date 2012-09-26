@@ -4,13 +4,15 @@ import collection.mutable.HashMap
 
 // Bias weights
 class LogLinearTemplate1[L<:DiscreteVar](val labelStatisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends TemplateWithDotStatistics1[L]() {
-  def statisticsDomains = Tuple1(labelStatisticsDomain.asInstanceOf[DiscreteDomain with Domain[L#Value]])
+  //def statisticsDomains = Tuple1(labelStatisticsDomain.asInstanceOf[DiscreteDomain with Domain[L#Value]])
+  lazy val weights = new la.DenseTensor1(labelStatisticsDomain.size)
 }
 
 // Label-Feature weights
 class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends TemplateWithDotStatistics2[L,F]() {
   def this(lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
-  def statisticsDomains = ((labelStatisticsDomain.asInstanceOf[DiscreteDomain with Domain[L#Value]], featureStatisticsDomain.asInstanceOf[DiscreteTensorDomain with Domain[F#Value]]))
+  //def statisticsDomains = ((labelStatisticsDomain.asInstanceOf[DiscreteDomain with Domain[L#Value]], featureStatisticsDomain.asInstanceOf[DiscreteTensorDomain with Domain[F#Value]]))
+  lazy val weights = new la.DenseTensor2(labelStatisticsDomain.size, featureStatisticsDomain.dimensionSize)
   def unroll1(label: L) = Factor(label, lf(label))
   def unroll2(features: F) = Factor(fl(features), features)
 }

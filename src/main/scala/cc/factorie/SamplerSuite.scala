@@ -52,31 +52,31 @@ class GenericSampler[C](val sampler:Sampler[C])(implicit mc:Manifest[C]) extends
     @author Andrew McCallum
 */
 // TODO !! Remove this.
-@deprecated
-class SamplerSuite extends ArrayBuffer[GenericSampler[_]] with Sampler[AnyRef] with cc.factorie.util.Trackable {
-  /*def this() = this(Nil)
-  def this(ss:Sampler[_]*) = this(ss)
-  this ++= ss*/
-  
-  def process1(context:AnyRef) : DiffList = {
-    val samplers = this.iterator
-    while (samplers.hasNext) {
-      //|**("SamplerSuite")
-      val sampler = samplers.next
-      //println("SamplerSuite context "+context+" sampler "+sampler.sampler)
-      val d:DiffList = sampler.process0(context)
-      //**|
-      if (d != null) {
-        //println("SamplerSuite sampler "+sampler.sampler+" diff "+d)
-        return d
-      }
-    }
-    return null
-  }
-  
-  override def noDiffList: this.type = {
-    this.foreach(_.sampler.noDiffList)
-    super.noDiffList
-  }
-  
-}
+//@deprecated
+//class SamplerSuite extends ArrayBuffer[GenericSampler[_]] with Sampler[AnyRef] with cc.factorie.util.Trackable {
+//  /*def this() = this(Nil)
+//  def this(ss:Sampler[_]*) = this(ss)
+//  this ++= ss*/
+//  
+//  def process1(context:AnyRef) : DiffList = {
+//    val samplers = this.iterator
+//    while (samplers.hasNext) {
+//      //|**("SamplerSuite")
+//      val sampler = samplers.next
+//      //println("SamplerSuite context "+context+" sampler "+sampler.sampler)
+//      val d:DiffList = sampler.process0(context)
+//      //**|
+//      if (d != null) {
+//        //println("SamplerSuite sampler "+sampler.sampler+" diff "+d)
+//        return d
+//      }
+//    }
+//    return null
+//  }
+//  
+//  override def noDiffList: this.type = {
+//    this.foreach(_.sampler.noDiffList)
+//    super.noDiffList
+//  }
+//  
+//}

@@ -25,46 +25,22 @@ import java.io._
 
 trait ValuesIterator1[N1<:Variable] extends Iterator[AbstractAssignment1[N1]] with AbstractAssignment1[N1] with ValuesIterator
 
+// TODO 
+
 /** A Factor with one neighboring variable */
-trait Factor1[N1<:Variable] extends Factor {
+abstract class Factor1[N1<:Variable](val _1:N1) extends Factor {
   factor =>
   type NeighborType1 = N1
   type StatisticsType <: cc.factorie.Statistics
   protected def thisFactor: this.type = this
-  def _1: N1
+  //def _1: N1
   def numVariables = 1
   override def variables = IndexedSeq(_1)
   def variable(i:Int) = i match { case 0 => _1; case _ => throw new IndexOutOfBoundsException(i.toString) }
-//  override def values = new Values(_1.value)
-//  /** Return the score of a value assignment represented by the Tensor argument.  
-//      If this Factor's values cannot be represented by a Tensor, throw an Error.
-//      This method is overriden and very efficient in FamilyWithDotStatistics classes. */
-//  override def valueScore(tensor:Tensor) = tensor match {
-//    case t: SingletonBinaryTensorLike1 => {
-//      val domain0 = _1.domain.asInstanceOf[DiscreteDomain with Domain[N1#Value]]
-//      new Values(domain0(t.singleIndex)).score
-//    }
-//  }
-//  // Should the next line read instead V<:N1 ?? -akm
-//  def valuesAssigning[V<:Variable](variable:V, value:V#Value): Unit = if (variable eq _1) new Values(value.asInstanceOf[N1#Value]) else throw new Error
-//  case class Values(_1:N1#Value) extends cc.factorie.Values {
-//    override def apply[B <: Variable](v: B) = get(v).get
-//    def variables = Seq(factor._1)
-//    def get[B <: Variable](v: B) = if(contains(v)) Some(_1.asInstanceOf[B#Value]) else None
-//    def contains(v: Variable) = v == factor._1
-//    override def statistics: StatisticsType = Factor1.this.statistics(this)
-//    override def index(varying:Set[Variable]): Int = {
-//      if(varying.contains(factor._1)) {
-//        _1 match {
-//          case dv: DiscreteValue => dv.intValue
-//          case _ => -1
-//        }
-//      } else -1
-//    }
-//  }
-//  def statistics(v:Values): StatisticsType
   def statistics(v1:N1#Value): StatisticsType
+  //def statistics(v1:N1#Value): Statistics
   def statistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value])
+  //def statistics: Statistics = statistics(_1.value.asInstanceOf[N1#Value])
   /** Return a record of the current values of this Factor's neighbors. */
   def currentAssignment = new Assignment1(_1, _1.value.asInstanceOf[N1#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
@@ -118,7 +94,7 @@ trait Factor1[N1<:Variable] extends Factor {
 }
 
 /** A Factor with one neighboring variable, whose statistics are simply the value of that neighboring variable. */
-trait FactorWithStatistics1[N1<:Variable] extends Factor1[N1] {
+abstract class FactorWithStatistics1[N1<:Variable](v1:N1) extends Factor1[N1](v1) {
   self =>
   type StatisticsType = Statistics // TODO Consider making this <: and defining separate StatisticsReturnType and StatisticsArgumentType
   case class Statistics(_1:N1#Value) extends cc.factorie.Statistics {
@@ -128,10 +104,10 @@ trait FactorWithStatistics1[N1<:Variable] extends Factor1[N1] {
   def score(s:Statistics): Double
 }
 
-abstract class FactorWithDotStatistics1[N1<:DiscreteTensorVar] extends FactorWithStatistics1[N1] {
+abstract class FactorWithDotStatistics1[N1<:DiscreteTensorVar](v1:N1) extends FactorWithStatistics1[N1](v1) {
   //type V1 = N1#Value
-  def statisticsDomains: Tuple1[DiscreteTensorDomain]
-  val weights = new DenseTensor1(statisticsDomains._1.dimensionDomain.size)
+  //def statisticsDomains: Tuple1[DiscreteTensorDomain]
+  def weights: Tensor1 // = new DenseTensor1(statisticsDomains._1.dimensionDomain.size)
   def score(s:Statistics) = s._1.asInstanceOf[Tensor] dot weights // TODO!!!! Why is this cast to Tensor necessary?
   override def scoreValues(valueTensor:Tensor) = valueTensor dot weights
 }
@@ -148,7 +124,7 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
   lazy val limitedDiscreteValues = new scala.collection.mutable.HashSet[Int]
   def addLimitedDiscreteValues(values:Iterable[Int]): Unit = limitedDiscreteValues ++= values
   
-  final case class Factor(_1:N1) extends super.Factor with Factor1[N1] {
+  final case class Factor(override val _1:N1) extends Factor1[N1](_1) with super.Factor {
     type StatisticsType = Family1.this.StatisticsType
     override def equalityPrerequisite: AnyRef = Family1.this
     override def statistics(v1:N1#Value): StatisticsType = thisFamily.statistics(v1)
@@ -180,41 +156,39 @@ trait Statistics1[S1] extends Family {
   self =>
   type StatisticsType = Statistics
   case class Statistics(_1:S1) extends super.Statistics {
-    lazy val score = self.score(this) 
+    val score = self.score(this) 
   }
   def score(s:Statistics): Double
 }
 
-trait TensorStatistics1[S1<:DiscreteTensorValue] extends TensorFamily {
+trait TensorStatistics1[S1<:Tensor] extends TensorFamily {
   self =>
   type StatisticsType = Statistics
-  override def statisticsDomains: Tuple1[DiscreteTensorDomain with Domain[S1]]
-  // Use Scala's "pre-initialized fields" syntax because super.Stat needs tensor to initialize score
+  // Use Scala's "pre-initialized fields" syntax because super.Statistics needs tensor to initialize score
   final case class Statistics(_1:S1) extends { val tensor: Tensor = _1 } with super.Statistics {
-    lazy val score = self.score(this)
+    val score = self.score(this)
   }
   def score(s:Statistics): Double
 }
 
-trait DotStatistics1[S1<:DiscreteTensorValue] extends TensorStatistics1[S1] with DotFamily {
+trait DotStatistics1[S1<:Tensor] extends TensorStatistics1[S1] with DotFamily {
+  override def weights: Tensor1
   def setWeight(entry:S1, w:Double) = entry match {
-    case d:DiscreteValue => weights(d.intValue) = w
-    case ds:DiscreteTensorValue => ds.activeDomain.foreach(i => weights(i) = w)
+    case d:SingletonTensor1 => weights(d.singleIndex) = w // e.g. DiscreteValue
+    case ds:Tensor => ds.activeDomain.foreach(i => weights(i) = w)
   }
-  def scores1(): Tensor1 = weights match {
-    case weights: Tensor1 => weights.copy
-  }
+  def scores1(): Tensor1 = weights.copy //  match { case weights: Tensor1 => weights.copy }
 }
 
 trait FamilyWithStatistics1[N1<:Variable] extends Family1[N1] with Statistics1[N1#Value] {
   def statistics(v1:N1#Value): StatisticsType = Statistics(v1)
 }
 
-trait FamilyWithTensorStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with TensorStatistics1[N1#Value] {
+trait FamilyWithTensorStatistics1[N1<:TensorVar] extends Family1[N1] with TensorStatistics1[N1#Value] {
   def statistics(v1:N1#Value): StatisticsType = Statistics(v1)
 }
 
-trait FamilyWithDotStatistics1[N1<:DiscreteTensorVar] extends Family1[N1] with DotStatistics1[N1#Value] {
+trait FamilyWithDotStatistics1[N1<:TensorVar] extends Family1[N1] with DotStatistics1[N1#Value] {
   def statistics(v1:N1#Value): StatisticsType = Statistics(v1)
   def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor) // reflecting the fact that there is no transformation between values and statistics
 }

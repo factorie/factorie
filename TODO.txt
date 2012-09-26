@@ -1,11 +1,9 @@
 Pre 1.0 release:
 
+Implement sparse iteration through values for BP [McCallum]
 Consider renaming LabelVariable to LabeledCategoricalVariable, and having LabeledDiscreteVariable, LabeledBooleanVariable [McCallum]
-Consider removing er package altogether for now [McCallum]
-Remove statisticsDomain and just get size?  [McCallum]  
- What about growable domains?  Let them grow just through gradients.
- What about serialization?  Make user serialize separately from Model; needed for unset neighborDomains anyway.
- Then DotFamily can depend on just TensorVar, not DiscreteTensorVar.
+Fix Family's serialization of DiscreteDomains and CategoricalDomains.  Make user serialize separately from Model.
+Make DotFamily can depend on just TensorVar, not DiscreteTensorVar.
 Rename DiscreteTensorVar to DiscreteDomainTensorVar for clarity; similarly for Categorical. [McCallum]
 DomainFromClass or make it the default?  [McCallum]
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
@@ -22,8 +20,10 @@ Make a command-line tool similar to Mallet SimpleTagger [McCallum]
 Look at other BUGS-like tools, and see what we can reproduce easily [Bakalov, Duckworth]
 Make reasonable command-line tools for MALLET functionality, and document [McCallum and others]
 Sanity-check pass through all code [All]
+Consider which println's should be transformed into Logging statements
 Package documentation  [All]
 Fix copyright year [McCallum]
+Write JUnit tests for cc.factorie.la [Vilnis?]
 
 More examples:
 Tutorial examples [McCallum]
@@ -33,6 +33,8 @@ Make an HMM example and show that BP inference and EM training work on it [Belan
 
 
 DONE:
+Remove er package altogether for now [McCallum]
+Remove statisticsDomain and let DotFamily.weights be abstract  [McCallum]  
 Make BooleanValue be a class rather than (as it is currently) a type alias for CategoricalValue[Boolean] [McCallum]
 Use _1, _2 again for the variables in AbstractAssignment2, etc.  Use value1, value2 for values. [McCallum]
 Rename all "Stat" to "Statistics". [McCallum]

@@ -31,7 +31,7 @@ object PlatedDiscrete extends GenerativeFamily2[DiscreteSeqVar,ProportionsVar] {
   def logpr(ds:Seq[DiscreteValue], p:Proportions): Double = ds.map(dv => math.log(p(dv.intValue))).sum // TODO Make this more efficient
   def sampledValue(d:DiscreteDomain, length:Int, p:Proportions): Seq[DiscreteValue] = 
     Vector.fill(length)(d.apply(p.sampleIndex))
-  case class Factor(_1:DiscreteSeqVar, _2:ProportionsVar) extends super.Factor {
+  case class Factor(override val _1:DiscreteSeqVar, override val _2:ProportionsVar) extends super.Factor(_1, _2) {
     def pr(s:Statistics): Double = self.pr(s._1, s._2)
     override def logpr(s:Statistics): Double = self.logpr(s._1, s._2)
     override def sampledValue: Any = self.sampledValue(_1.discreteValues.head.domain, _1.length, _2.value) // Avoid creating a Statistics

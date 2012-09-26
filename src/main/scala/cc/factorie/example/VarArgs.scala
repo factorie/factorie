@@ -34,7 +34,8 @@ object VarArgsDemo {
     val model = new TemplateModel(
       // "Vars[]" indicates that there can be a variable number of these neighbors
       new Template2[X,Vars[Y]] with DotStatistics1[DiscreteValue] {
-        def statisticsDomains = Tuple1(XDomain)
+        //def statisticsDomains = Tuple1(XDomain)
+        lazy val weights = new la.DenseTensor1(XDomain.size)
         def unroll1(x:X) = Factor(x, Vars(x.ys))
         // The "Vars" container will not change...
         def unroll2(ys:Vars[Y]) = throw new Error

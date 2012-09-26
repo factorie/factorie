@@ -24,12 +24,20 @@ trait Tensor2 extends Tensor {
   def numDimensions: Int = 2
   def activeDomains = Array(activeDomain1, activeDomain2)
   def dimensions = Array(dim1, dim2)
+  override def dimensionsMatch(t:Tensor): Boolean = t match {
+    case t:Tensor2 => t.dim1 == dim1 && t.dim2 == dim2
+    case _ => false
+  } 
+  override def ensureDimensionsMatch(t:Tensor): Unit = t match {
+    case t:Tensor2 => require(t.dim1 == dim1 && t.dim2 == dim2)
+    case _ => throw new Error("Tensor ranks do not match.")
+  }
   def apply(i:Int, j:Int): Double = apply(i*dim2 + j)
   def apply(i:Int): Double //= apply(i % dim1, i / dim2)
   def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
-  def matrixVector(t: Tensor1): Tensor1 = {
-    assert(dim2 == t.dim1, "Dimensions don't match: " + dim2 + " " + t.dim1)
+  def matrixVector(t: Tensor): Tensor1 = {
+    assert(dim2 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim2 + " " + t.dimensions)
     val newT = new DenseTensor1(dim1)
     activeDomain1.foreach(i => activeDomain2.foreach(j => newT(i) += this(i,j)*t(j)))
     newT
@@ -60,13 +68,16 @@ trait DenseTensorLike2 extends Tensor2 with DenseTensor {
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryLayeredTensorLike2 => t.=+(_values, f)
     case t:SingletonLayeredTensorLike2 => t.=+(_values, f)
-    case t:DenseLayeredTensorLike2 => { val len = t.dim1; var i = 0; while (i < len) { val inner = t.inner(i); if (inner ne null) inner.=+(_values, i*dim2, f); i += 1 } }
+    //case t:DenseLayeredTensorLike2 => { val len = t.dim1; var i = 0; while (i < len) { val inner = t.inner(i); if (inner ne null) inner.=+(_values, i*dim2, f); i += 1 } }
+    case t:DenseLayeredTensorLike2 => t.=+(_values, f)
     case t:DoubleSeq => super.+=(t, f)
   }
 }
 
 class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   def this(t:Tensor2) = { this(t.dim1, t.dim2); this := t }
+  def this(values:Seq[Seq[Double]]) = { this(values.size, values.head.size); for (i <- 0 until dim1; j <- 0 until dim2) update(i, j, values(i)(j)) } // TODO Not very efficient
+  def this(values:Array[Array[Double]]) = { this(values.size, values.head.size); for (i <- 0 until dim1; j <- 0 until dim2) update(i, j, values(i)(j)) } // TODO Not very efficient
   def this(dim1:Int, dim2:Int, fillValue:Double) = { this(dim1, dim2); java.util.Arrays.fill(_values, fillValue) }
   override def copy: DenseTensor2 = { val t = new DenseTensor2(dim1, dim2); System.arraycopy(_values, 0, t._values, 0, length); t }
   override def blankCopy: DenseTensor2 = new DenseTensor2(dim1, dim2)
@@ -74,10 +85,15 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
 }
 
 class GrowableDenseTensor2(d1:Int, d2:Int) extends { private var _dim1 = d1; private var _dim2 = d2 } with DenseTensorLike2 {
+  println("GrowableDenseTensor2 new "+_dim1+","+_dim2)
   def dim1: Int = _dim1
   def dim2: Int = _dim2
   override def apply(index:Int):Double = if (index < _valuesSize) _values(index) else 0.0
-  def ensureDims(d1:Int, d2:Int): Unit = if (d1 > _dim1 || d2 > _dim2) {
+  override def ensureDimensionsMatch(t:Tensor): Unit = t match {
+    case t:Tensor2 => ensureDimensions(t.dim1, t.dim2)
+    case _ => super.ensureDimensionsMatch(t)
+  }
+  def ensureDimensions(d1:Int, d2:Int): Unit = if (d1 > _dim1 || d2 > _dim2) {
     val newSize = d1 * d2 // math.max(_valuesSize * 2, d1 * d2)
     val oldValues = _values
     _resetValues(newSize) // allocates a new __values array of size newSize
@@ -86,16 +102,18 @@ class GrowableDenseTensor2(d1:Int, d2:Int) extends { private var _dim1 = d1; pri
       if (defaultValue != 0.0) java.util.Arrays.fill(_values, i*d2+_dim2, d2-_dim2, defaultValue) // fill in new space with default value
     }
     if (d1 > _dim1) java.util.Arrays.fill(_values, _dim1*d2, (d1-_dim1)*d2, defaultValue)
+    println("GrowableDenseTensor2 grew from "+_dim1+","+_dim2+" to "+d1+","+d2)
     _dim1 = d1
     _dim2 = d2
   }
   // Currently these are the only methods that support capacity expansion
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
-    case t:SingletonBinaryTensor2 => { ensureDims(t.dim1, t.dim2); +=(t.singleIndex, f) }
-    case t:SingletonTensor2 => { ensureDims(t.dim1, t.dim2); +=(t.singleIndex, f * t.singleValue) }
-    case t:SparseBinaryTensor2 => { ensureDims(t.dim1, t.dim2); t.=+(_values, f) }
-    case t:DenseTensorLike2 => { ensureDims(t.dim1, t.dim2); super.+=(t, f) }
-    case t:UniformTensor2 => { ensureDims(t.dim1, t.dim2); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
+    case t:SingletonBinaryTensor2 => { ensureDimensions(t.dim1, t.dim2); +=(t.singleIndex, f) }
+    case t:SingletonTensor2 => { ensureDimensions(t.dim1, t.dim2); +=(t.singleIndex, f * t.singleValue) }
+    case t:SparseBinaryTensor2 => { ensureDimensions(t.dim1, t.dim2); t.=+(_values, f) }
+    case t:DenseTensorLike2 => { ensureDimensions(t.dim1, t.dim2); super.+=(t, f) }
+    case t:DenseLayeredTensorLike2 => { ensureDimensions(t.dim1, t.dim2); val len = t.dim1; var i = 0; while (i < len) { val inner = t.inner(i); if (inner ne null) inner.=+(_values, i*dim2, f); i += 1 } }
+    case t:UniformTensor2 => { ensureDimensions(t.dim1, t.dim2); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
   }
   override def copy: GrowableDenseTensor2 = { val c = new GrowableDenseTensor2(_dim1, _dim2); c := this; c }
   override def blankCopy: GrowableDenseTensor2 = new GrowableDenseTensor2(_dim1, _dim2)
@@ -160,6 +178,9 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def update(i:Int, t:Tensor1): Unit = _inners(i) = t
   def inner(i:Int): Tensor1 = _inners(i)
   protected def getInner(i:Int): Tensor1 = { var in = _inners(i); if (in eq null) { in = newTensor1(dim2); _inners(i) = in }; in }
+  override def =+(a:Array[Double], offset:Int, f:Double): Unit = {
+    val len = _inners.length; var i = 0; while (i < len) { val in = _inners(i); if (in ne null) inner(i).=+(a, offset+i*dim1, f); i += 1 }
+  }
   override def +=(i:Int, incr:Double): Unit = getInner(index1(i)).+=(index2(i), incr)
   /*override def +=(ds:DoubleSeq): Unit = ds match {
     case t:SingletonBinaryTensor2 => getInner(t.singleIndex1).+=(t.singleIndex2, 1.0)
@@ -189,6 +210,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   }
 }
 class DenseLayeredTensor2(val dim1:Int, val dim2:Int, val newTensor1:Int=>Tensor1) extends DenseLayeredTensorLike2 {
+  def this(dim1:Int, dim2:Int) = this(dim1, dim2, new SparseTensor1(_)) // TODO Keep methods like this, or avoid the magic of filling in the last argument?
   override def blankCopy: DenseLayeredTensor2 = new DenseLayeredTensor2(dim1, dim2, newTensor1)
   override def stringPrefix = "DenseLayeredTensor2"
 }
