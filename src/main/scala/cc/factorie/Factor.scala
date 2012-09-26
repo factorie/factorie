@@ -34,10 +34,10 @@ trait Factor extends Ordered[Factor] {
   def variable(index: Int): Variable
   
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
-  def score: Double
-  def statistics: StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
+  def currentScore: Double
+  def currentStatistics: StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
   /** Return the score and statistics of the current neighbor values; this method enables special cases in which it is more efficient to calculate them together. */
-  def scoreAndStatistics: (Double,StatisticsType) = (score, statistics)
+  def currentScoreAndStatistics: (Double,StatisticsType) = (currentScore, currentStatistics)
 
   def touches(variable:Variable): Boolean = this.variables.contains(variable)
   def touchesAny(variables:Iterable[Variable]): Boolean = variables.exists(touches(_))
@@ -61,7 +61,7 @@ trait Factor extends Ordered[Factor] {
   /** Return a copy of this factor with some neighbors potentially substituted according to the mapping in the argument. */
   //def copy(s:Substitutions): Factor
   // Implement Ordered, such that worst (lowest) scores are considered "high"
-  def compare(that: Factor) = {val d = that.score - this.score; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
+  def compare(that: Factor) = {val d = that.currentScore - this.currentScore; if (d > 0.0) 1 else if (d < 0.0) -1 else 0}
   /** In order to two Factors to satisfy "equals", the value returned by this method for each Factor must by "eq" . */
   def equalityPrerequisite: AnyRef = this.getClass
   // Implement equality based on class assignability and Variable contents equality

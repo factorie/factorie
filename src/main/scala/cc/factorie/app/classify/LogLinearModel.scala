@@ -47,7 +47,7 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labe
   override def score(variables:Iterable[Variable]): Double = {
     var s = 0.0
     // TODO We can make this more efficient
-    for (f <- factors(variables)) s += f.score
+    for (f <- factors(variables)) s += f.currentScore
     s
   }
 

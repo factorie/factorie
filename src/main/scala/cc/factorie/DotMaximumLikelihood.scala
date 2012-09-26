@@ -18,7 +18,7 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
 	  // Gather constraints
 	  variables.foreach(_.setToTarget(null))
 	  model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => {
-  	  constraints(f.family) += f.statistics 
+  	  constraints(f.family) += f.currentStatistics 
 	  })
 
     var iterations = 0
@@ -35,7 +35,7 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
         while (i < proportions.length) {
           v := i
           model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => {
-            gradient(f.family) += (f.statistics, -proportions(i) /* * instanceWeight*/)
+            gradient(f.family) += (f.currentStatistics, -proportions(i) /* * instanceWeight*/)
           })
           i += 1
         }
@@ -64,7 +64,7 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
         println("1 " + constraints.dimensions.toSeq)
         println("2 " + f.family)
         println("3 " + constraints(f.family).dimensions.toSeq)
-        constraints(f.family) += f.statistics 
+        constraints(f.family) += f.currentStatistics 
       })
 
     var iterations = 0

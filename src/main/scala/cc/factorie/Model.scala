@@ -70,9 +70,10 @@ trait Model {
   def factorsOfFamilies[F<:Family](variables:Iterable[Variable], families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factors(variables), families)
   def factorsOfFamilies[F<:Family](d:DiffList, families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factors(d), families)
   
-  def score(variables:Iterable[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.score; sum } // factors(variables).foldLeft(0.0)((sum, f) => sum + f.score)
-  def score(variable:Variable): Double = { var sum = 0.0; for (f <- factors(variable)) sum += f.score; sum }
-  def score(d:DiffList) : Double = { var sum = 0.0; for (f <- factors(d)) sum += f.score; sum }
+  // TODO Add score(Iterable[Variable],TypedAssignment[Variable]): Double
+  def score(variables:Iterable[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.currentScore; sum } // factors(variables).foldLeft(0.0)((sum, f) => sum + f.score)
+  def score(variable:Variable): Double = { var sum = 0.0; for (f <- factors(variable)) sum += f.currentScore; sum }
+  def score(d:DiffList) : Double = { var sum = 0.0; for (f <- factors(d)) sum += f.currentScore; sum }
   /** Returns the average score, that is score of variables, normalized by the size of the collections vars. */
   def aveScore(variables:Iterable[Variable]): Double = score(variables) / variables.size  // TODO Rename to scoreAve?
 
@@ -107,7 +108,7 @@ trait Model {
   // TODO Consider making a Model trait for these methods.  Yes!
   def variables: Iterable[Variable] = throw new Error("Model class does not implement method 'variables': "+ this.getClass.getName)
   def factors: Iterable[Factor] = throw new Error("Model class does not implement method 'factors': "+ this.getClass.getName)
-  def score: Double = { var s = 0.0; for (f <- factors) s += f.score; s } 
+  def score: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
 }
 
 

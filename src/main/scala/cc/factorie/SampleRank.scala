@@ -34,25 +34,25 @@ class SampleRank[C](val model:Model, sampler:ProposalSampler[C], optimizer:Gradi
       // ...update parameters by adding sufficient stats of truth, and subtracting error
       g = model.newSparseWeightsTensor
       bestObjective1.diff.redo
-      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics, 1.0))
+      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, 1.0))
       bestObjective1.diff.undo
-      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics, -1.0))
+      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, -1.0))
       bestModel1.diff.redo
-      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics, -1.0))
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, -1.0))
       bestModel1.diff.undo
-      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics, 1.0))
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, 1.0))
     }
     else if (margin < learningMargin) {
       // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
       g = model.newSparseWeightsTensor
       bestObjective1.diff.redo
-      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics, 1.0))
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, 1.0))
       bestObjective1.diff.undo
-      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics, -1.0))
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, -1.0))
       bestModel2.diff.redo
-      model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics, -1.0))
+      model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, -1.0))
       bestModel2.diff.undo
-      model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.statistics, 1.0))
+      model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, 1.0))
     }
     (g, margin)
   }

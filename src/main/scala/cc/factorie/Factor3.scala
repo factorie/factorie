@@ -29,9 +29,9 @@ abstract class Factor3[N1<:Variable,N2<:Variable,N3<:Variable](val _1:N1, val _2
   def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): StatisticsType = ((v1, v2, v3)).asInstanceOf[StatisticsType] // Just a stand-in default
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): (Double,StatisticsType) = (score(v1, v2, v3), statistics(v1, v2, v3))
-  def score: Double = score(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value], _3.value.asInstanceOf[N3#Value])
-  override def statistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value], _3.value.asInstanceOf[N3#Value])
-  override def scoreAndStatistics: (Double,StatisticsType) = scoreAndStatistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value], _3.value.asInstanceOf[N3#Value])
+  def currentScore: Double = score(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value], _3.value.asInstanceOf[N3#Value])
+  override def currentStatistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value], _3.value.asInstanceOf[N3#Value])
+  override def currentScoreAndStatistics: (Double,StatisticsType) = scoreAndStatistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value], _3.value.asInstanceOf[N3#Value])
 
   def numVariables = 3
   override def variables = IndexedSeq(_1, _2, _3)

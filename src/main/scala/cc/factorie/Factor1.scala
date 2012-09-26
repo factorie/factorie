@@ -33,9 +33,9 @@ abstract class Factor1[N1<:Variable](val _1:N1) extends Factor {
   def score(v1:N1#Value): Double
   def statistics(v1:N1#Value): StatisticsType = ((v1)).asInstanceOf[StatisticsType] // Just a stand-in default
   def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = (score(v1), statistics(v1))
-  def score: Double = score(_1.value.asInstanceOf[N1#Value])
-  override def statistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value])
-  override def scoreAndStatistics: (Double,StatisticsType) = scoreAndStatistics(_1.value.asInstanceOf[N1#Value])
+  def currentScore: Double = score(_1.value.asInstanceOf[N1#Value])
+  override def currentStatistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value])
+  override def currentScoreAndStatistics: (Double,StatisticsType) = scoreAndStatistics(_1.value.asInstanceOf[N1#Value])
   
   def numVariables = 1
   override def variables = IndexedSeq(_1)
@@ -101,7 +101,7 @@ abstract class TupleFactor1[N1<:Variable](override val _1:N1) extends Factor1[N1
 abstract class TensorFactorWithStatistics1[N1<:TensorVar](override val _1:N1) extends Factor1[N1](_1) {
   type StatisticsType = N1#Value
   final override def statistics(v1:N1#Value) = v1
-  final override def statistics = _1.value.asInstanceOf[N1#Value] // TODO Why is this cast necessary?
+  final override def currentStatistics = _1.value.asInstanceOf[N1#Value] // TODO Why is this cast necessary?
   final def score(v1:N1#Value): Double = scoreStatistics(v1)
   def scoreStatistics(t:Tensor): Double
 }

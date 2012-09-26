@@ -51,7 +51,7 @@ object InferDiscrete1 extends Infer {
     val factors = model.factors(d) // Note that this doens't handle value-specific factor unrolling
     for (i <- 0 until distribution.size) {
       d := i // Note that this doesn't handle variable-value coordination, and if this is present, undo'ing won't happen properly.
-      factors.foreach(f => distribution(i) += f.score)
+      factors.foreach(f => distribution(i) += f.currentScore)
     }
     maths.ArrayOps.expNormalize(distribution)
     d := origValue

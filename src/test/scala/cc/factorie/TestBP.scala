@@ -103,9 +103,9 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val vars: Set[DiscreteVar] = Set(v1, v2)
     
     val f = model.factors(v1).head
-    println("f score unequal: " + f.score)
+    println("f score unequal: " + f.currentScore)
     v2 := 1
-    println("f score equal: " + f.score)
+    println("f score equal: " + f.currentScore)
     
     
     println(newTemplate2(v1, v2, 10.0, 0.0).neighborDomain2)

@@ -34,9 +34,9 @@ abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends 
   def score(v1:N1#Value, v2:N2#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType] // Just a stand-in default
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double,StatisticsType) = (score(v1, v2), statistics(v1, v2))
-  def score: Double = score(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
-  override def statistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
-  override def scoreAndStatistics: (Double,StatisticsType) = scoreAndStatistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
+  def currentScore: Double = score(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
+  override def currentStatistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
+  override def currentScoreAndStatistics: (Double,StatisticsType) = scoreAndStatistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
   
   def numVariables = 2
   override def variables = IndexedSeq(_1, _2)

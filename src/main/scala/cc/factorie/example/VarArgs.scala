@@ -77,6 +77,6 @@ object VarArgsDemo {
 
     println(model.factors(Seq(x1)))
     println(model.factors(List(x1,x2,x3,x4)))
-    println(model.factors(Seq(x1)).head.score)
+    println(model.factors(Seq(x1)).head.currentScore)
   }
 }

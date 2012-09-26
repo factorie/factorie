@@ -138,8 +138,8 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
       if (gCollapsed) gFactor.updateCollapsedParents(-1.0)
       if (mCollapsed) mFactor.updateCollapsedParents(-1.0)
       // Calculate distribution of new value
-      val mStat = mFactor.statistics
-      val gStat = gFactor.statistics
+      val mStat = mFactor.currentStatistics // TODO Are these two still necessary?
+      val gStat = gFactor.currentStatistics
       val domainSize = gate.domain.size
       val distribution = new Array[Double](domainSize)
       var sum = 0.0
