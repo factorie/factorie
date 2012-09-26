@@ -80,13 +80,13 @@ abstract class Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](val 
 }
 
 /** The only abstract thing is score(N1#Value, N2#Value, N3#Value, N3#Value) */
-abstract class FactorWithTupleStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
+abstract class TupleFactor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value, N4#Value))
   override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = ((v1, v2, v3, v4))
 }
 
 /** The only abstract thing is scoreStatistics(Tensor) */
-abstract class FactorWithTensorStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
+abstract class TensorFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   type StatisticsType = Tensor
   final override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Tensor = throw new Error("Not yet implemented")
   //final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = cc.factorie.la.Tensor,outer(v1, v2, v3).asInstanceOf[StatisticsType] // TODO Why is this cast necessary?
@@ -95,7 +95,7 @@ abstract class FactorWithTensorStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:Tenso
 }
 
 /** The only abstract thing is weights:Tensor3 */
-abstract class FactorWithDotStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends FactorWithTensorStatistics4[N1,N2,N3,N4](_1, _2, _3, _4) {
+abstract class DotFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends TensorFactorWithStatistics4[N1,N2,N3,N4](_1, _2, _3, _4) {
   def weights: Tensor3 // TODO This might not be Tensor3 if some of the neighbors have values that are not Tensor1
   def scoreStatistics(t:Tensor): Double = weights dot t
   override def scoreValues(valueTensor:Tensor) = weights dot valueTensor

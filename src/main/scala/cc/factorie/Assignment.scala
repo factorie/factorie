@@ -57,6 +57,7 @@ trait MutableAssignment extends Assignment {
 /** A MutableAssignment backed by a HashMap.
     @author Andrew McCallum */
 class HashMapAssignment extends MutableAssignment {
+  def this(variables:Variable*) = { this(); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
   def this(variables:Iterable[Variable]) = { this(); variables.foreach(v => update(v, v.value.asInstanceOf[v.Value])) }
   private val map = new scala.collection.mutable.HashMap[Variable,Any]
   //val _variables = map.keys.toSeq

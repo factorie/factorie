@@ -92,13 +92,13 @@ abstract class Factor1[N1<:Variable](val _1:N1) extends Factor {
 //  }
 }
 
-abstract class FactorWithTupleStatistics1[N1<:Variable](override val _1:N1) extends Factor1[N1](_1) {
+abstract class TupleFactor1[N1<:Variable](override val _1:N1) extends Factor1[N1](_1) {
   type StatisticsType = Tuple1[N1#Value]
   final override def statistics(v1:N1#Value) = Tuple(v1)
 }
 
 /** A Factor with one neighboring variable, whose statistics are simply the value of that neighboring variable. */
-abstract class FactorWithTensorStatistics1[N1<:TensorVar](override val _1:N1) extends Factor1[N1](_1) {
+abstract class TensorFactorWithStatistics1[N1<:TensorVar](override val _1:N1) extends Factor1[N1](_1) {
   type StatisticsType = N1#Value
   final override def statistics(v1:N1#Value) = v1
   final override def statistics = _1.value.asInstanceOf[N1#Value] // TODO Why is this cast necessary?
@@ -106,7 +106,7 @@ abstract class FactorWithTensorStatistics1[N1<:TensorVar](override val _1:N1) ex
   def scoreStatistics(t:Tensor): Double
 }
 
-abstract class FactorWithDotStatistics1[N1<:TensorVar](override val _1:N1) extends FactorWithTensorStatistics1[N1](_1) {
+abstract class DotFactorWithStatistics1[N1<:TensorVar](override val _1:N1) extends TensorFactorWithStatistics1[N1](_1) {
   def weights: Tensor1
   def scoreStatistics(t:Tensor): Double = weights dot t
   override def scoreValues(valueTensor:Tensor) = valueTensor dot weights

@@ -404,7 +404,7 @@ object BPTestUtils {
   }
 
   def newFactor3(n1: BinVar, n2: BinVar, n3: BinVar, scores: Seq[Double]) =
-    new FactorWithTupleStatistics3[BinVar, BinVar, BinVar](n1, n2, n3) {
+    new TupleFactor3[BinVar, BinVar, BinVar](n1, n2, n3) {
       factor =>
       def score(v1:BinVar#Value, v2:BinVar#Value, v3:BinVar#Value): Double = scores(v1.category * 4 + v2.category * 2 + v3.category)
       override def equalityPrerequisite = this

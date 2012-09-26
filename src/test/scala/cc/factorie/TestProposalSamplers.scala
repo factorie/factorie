@@ -44,7 +44,7 @@ class TestProposalSamplers extends TestCase {
     }
 
   private def newFactor2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double) =
-    new FactorWithTupleStatistics2[BinVar, BinVar](n1, n2) {
+    new TupleFactor2[BinVar, BinVar](n1, n2) {
       factor =>
       def score(s1:BinVar#Value, s2:BinVar#Value): Double = if (s1 == s2) scoreEqual else scoreUnequal
       override def equalityPrerequisite = this

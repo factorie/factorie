@@ -164,20 +164,20 @@ abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends 
 
 }
 
-abstract class FactorWithTupleStatistics2[N1<:Variable,N2<:Variable](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
+abstract class TupleFactor2[N1<:Variable,N2<:Variable](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
   type StatisticsType = ((N1#Value, N2#Value))
   final override def statistics(v1:N1#Value, v2:N2#Value) = Tuple(v1, v2)
 }
 
 /** The only abstract thing is score(N1#Value, N2#Value) */
-abstract class FactorWithTensorStatistics2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
+abstract class TensorFactorWithStatistics2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
   type StatisticsType = Tensor
   final override def statistics(v1:N1#Value, v2:N2#Value): Tensor = v1 outer v2
   final def score(v1:N1#Value, v2:N2#Value): Double = scoreStatistics(statistics(v1, v2))
   def scoreStatistics(t:Tensor): Double
 }
 
-abstract class FactorWithDotStatistics2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends FactorWithTensorStatistics2[N1,N2](_1, _2) {
+abstract class DotFactorWithStatistics2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends TensorFactorWithStatistics2[N1,N2](_1, _2) {
   def weights: Tensor2
   def scoreStatistics(t:Tensor): Double = weights dot t
   override def scoreValues(valueTensor:Tensor) = weights dot valueTensor
