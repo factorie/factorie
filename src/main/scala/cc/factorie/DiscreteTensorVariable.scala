@@ -21,11 +21,12 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 /** A Domain for variables whose value is a Tensor whose length matches the size of a DiscreteDomain. 
     This domain has a non-negative integer size.  The method 'dimensionDomain' is abstract. */
-trait DiscreteTensorDomain extends TensorDomain with ValueBound[Tensor] {
+trait DiscreteTensorDomain extends TensorDomain {
   def dimensionDomain: DiscreteDomain
   /** The maximum size to which this domain will be allowed to grow.  
       The 'dimensionDomain.size' method may return values smaller than this, however.
       This method is used to pre-allocate a Template's parameter arrays and is useful for growing domains. */
+  // TODO But actually, I don't think this is used any more.
   def dimensionSize: Int = dimensionDomain.size
   //def size: Int = dimensionDomain.size // TODO Should we keep this convenience, or is it too confusing?  Is isn't really the number of possible values in the Domain.
   def dimensionName(i:Int): String = i.toString

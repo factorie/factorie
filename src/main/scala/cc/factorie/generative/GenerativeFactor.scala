@@ -46,7 +46,7 @@ trait IntGeneratingFactor extends GenerativeFactor {
   def logpr(x:Int): Double
 }
 
-abstract class GenerativeFactorWithStatistics1[C<:Variable](override val _1:C) extends TupleFactor1[C](_1) with GenerativeFactor {
+abstract class GenerativeFactorWithStatistics1[C<:Variable](override val _1:C) extends TupleFactorWithStatistics1[C](_1) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents: Seq[Variable] = Nil
@@ -57,7 +57,7 @@ abstract class GenerativeFactorWithStatistics1[C<:Variable](override val _1:C) e
   override def sampledValue: C#Value
 }
 
-abstract class GenerativeFactorWithStatistics2[C<:Variable,P1<:Variable](override val _1:C, override val _2:P1) extends TupleFactor2[C,P1](_1, _2) with GenerativeFactor {
+abstract class GenerativeFactorWithStatistics2[C<:Variable,P1<:Variable](override val _1:C, override val _2:P1) extends TupleFactorWithStatistics2[C,P1](_1, _2) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents = Seq(_2)
@@ -71,7 +71,7 @@ abstract class GenerativeFactorWithStatistics2[C<:Variable,P1<:Variable](overrid
   //def parents = _2 match { case vars:Vars[Parameter] => vars; case _ => Seq(_2) }
 }
 
-abstract class GenerativeFactorWithStatistics3[C<:Variable,P1<:Variable,P2<:Variable](override val _1:C, override val _2:P1, override val _3:P2) extends TupleFactor3[C,P1,P2](_1, _2, _3) with GenerativeFactor {
+abstract class GenerativeFactorWithStatistics3[C<:Variable,P1<:Variable,P2<:Variable](override val _1:C, override val _2:P1, override val _3:P2) extends TupleFactorWithStatistics3[C,P1,P2](_1, _2, _3) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents = Seq(_2, _3)
@@ -83,7 +83,7 @@ abstract class GenerativeFactorWithStatistics3[C<:Variable,P1<:Variable,P2<:Vari
   def sampledValue: C#Value = sampledValue(_2.value.asInstanceOf[P1#Value], _3.value.asInstanceOf[P2#Value])
 }
 
-abstract class GenerativeFactorWithStatistics4[C<:Variable,P1<:Variable,P2<:Variable,P3<:Variable](override val _1:C, override val _2:P1, override val _3:P2, override val _4:P3) extends TupleFactor4[C,P1,P2,P3](_1, _2, _3, _4) with GenerativeFactor {
+abstract class GenerativeFactorWithStatistics4[C<:Variable,P1<:Variable,P2<:Variable,P3<:Variable](override val _1:C, override val _2:P1, override val _3:P2, override val _4:P3) extends TupleFactorWithStatistics4[C,P1,P2,P3](_1, _2, _3, _4) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents = Seq(_2, _3, _4)

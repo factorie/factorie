@@ -47,6 +47,7 @@ trait CategoricalValue[C] extends DiscreteValue {
 class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[CategoricalValue[C]] with CategoricalTensorDomain[C] with Domain[CategoricalValue[C]] with cc.factorie.util.ProtectedIntArrayBuffer {
   thisDomain =>
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)) }
+  //def this(values:C*) = { this(); values.foreach(value(_)) }
   //private val _elements = new ArrayBuffer[ValueType]
   private val _indices = new HashMap[C,Value] with collection.mutable.SynchronizedMap[C, Value] //new HashMap[C,ValueType]
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;

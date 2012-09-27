@@ -272,25 +272,47 @@ abstract class Factor3[N1<:Variable,N2<:Variable,N3<:Variable](val _1:N1, val _2
 //  }
 }
 
-/** The only abstract thing is score(N1#Value, N2#Value, N3#Value) */
-abstract class TupleFactor3[N1<:Variable,N2<:Variable,N3<:Variable](override val _1:N1, override val _2:N2, override val _3:N3) extends Factor3[N1,N2,N3](_1, _2, _3) {
+/** A 3-neighbor Factor whose statistics have type Tuple2.
+    Only "score" method is abstract. */
+abstract class TupleFactorWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](override val _1:N1, override val _2:N2, override val _3:N3) extends Factor3[N1,N2,N3](_1, _2, _3) {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value))
-  override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = ((v1, v2, v3))
+  final override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = ((v1, v2, v3))
 }
 
-/** The only abstract thing is scoreStatistics(Tensor) */
-abstract class TensorFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends Factor3[N1,N2,N3](_1, _2, _3) {
+/** A 3-neighbor Factor whose statistics have type Tensor.
+    Only "statistics" and "score" methods are abstract. */
+abstract class TensorFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends Factor3[N1,N2,N3](_1, _2, _3) {
   type StatisticsType = Tensor
-  final override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): Tensor = throw new Error("Not yet implemented")
-  //final override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = cc.factorie.la.Tensor,outer(v1, v2, v3).asInstanceOf[StatisticsType] // TODO Why is this cast necessary?
+  override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): Tensor
   final def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = scoreStatistics(statistics(v1, v2, v3))
   def scoreStatistics(t:Tensor): Double
 }
 
-/** The only abstract thing is weights:Tensor3 */
-abstract class DotFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends TensorFactorWithStatistics3[N1,N2,N3](_1, _2, _3) {
-  def weights: Tensor3 // TODO This might not be Tensor3 if some of the neighbors have values that are not Tensor1
+/** A trait for 3-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values.
+    Only "scoreStatistics" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
+trait TensorFactorStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends TensorFactor3[N1,N2,N3] {
+  final override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = cc.factorie.la.Tensor.outer(v1, v2, v3)
+}
+
+/** A 3-neighbor Factor whose neighbors have Tensor values, 
+    and whose statistics are the outer product of those values.
+    Only "scoreStatistics" method is abstract. */
+abstract class TensorFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends TensorFactor3[N1,N2,N3](_1, _2, _3) with TensorFactorStatistics3[N1,N2,N3]
+
+/** A 3-neighbor Factor whose statistics have type Tensor, 
+    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
+    Only "statistics" and "weights" methods are abstract. */
+abstract class DotFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends TensorFactor3[N1,N2,N3](_1, _2, _3) {
+  def weights: Tensor
   def scoreStatistics(t:Tensor): Double = weights dot t
+}
+
+/** A 3-neighbor Factor whose neighbors have Tensor values, 
+    and whose statistics are the outer product of those values,
+    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
+    Only "weights" method is abstract. */
+abstract class DotFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends DotFactor3(_1, _2, _3) with TensorFactorStatistics3[N1,N2,N3] {
   override def scoreValues(valueTensor:Tensor) = weights dot valueTensor
 }
 

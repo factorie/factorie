@@ -164,22 +164,47 @@ abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends 
 
 }
 
-abstract class TupleFactor2[N1<:Variable,N2<:Variable](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
+/** A 2-neighbor Factor whose statistics have type Tuple2.
+    Only "score" method is abstract. */
+abstract class TupleFactorWithStatistics2[N1<:Variable,N2<:Variable](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
   type StatisticsType = ((N1#Value, N2#Value))
   final override def statistics(v1:N1#Value, v2:N2#Value) = Tuple(v1, v2)
 }
 
-/** The only abstract thing is score(N1#Value, N2#Value) */
-abstract class TensorFactorWithStatistics2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
+/** A 2-neighbor Factor whose statistics have type Tensor.
+    Only "statistics" and "score" methods are abstract. */
+abstract class TensorFactor2[N1<:Variable,N2<:Variable](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
   type StatisticsType = Tensor
-  final override def statistics(v1:N1#Value, v2:N2#Value): Tensor = v1 outer v2
+  override def statistics(v1:N1#Value, v2:N2#Value): Tensor
   final def score(v1:N1#Value, v2:N2#Value): Double = scoreStatistics(statistics(v1, v2))
   def scoreStatistics(t:Tensor): Double
 }
 
-abstract class DotFactorWithStatistics2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends TensorFactorWithStatistics2[N1,N2](_1, _2) {
-  def weights: Tensor2
+/** A trait for 2-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values.
+    Only "scoreStatistics" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
+trait TensorFactorStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFactor2[N1,N2] {
+  final override def statistics(v1:N1#Value, v2:N2#Value): Tensor = v1 outer v2
+}
+
+/** A 2-neighbor Factor whose neighbors have Tensor values, 
+    and whose statistics are the outer product of those values.
+    Only "scoreStatistics" method is abstract. */
+abstract class TensorFactorWithStatistics2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends TensorFactor2[N1,N2](_1, _2) with TensorFactorStatistics2[N1,N2]
+
+/** A 2-neighbor Factor whose statistics have type Tensor, 
+    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
+    Only "statistics" and "weights" methods are abstract. */
+abstract class DotFactor2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends TensorFactor2[N1,N2](_1, _2) {
+  def weights: Tensor
   def scoreStatistics(t:Tensor): Double = weights dot t
+}
+
+/** A 2-neighbor Factor whose neighbors have Tensor values, 
+    and whose statistics are the outer product of those values,
+    and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
+    Only "weights" method is abstract. */
+abstract class DotFactorWithStatistics2[N1<:TensorVar,N2<:TensorVar](override val _1:N1, override val _2:N2) extends DotFactor2(_1, _2) with TensorFactorStatistics2[N1,N2] {
   override def scoreValues(valueTensor:Tensor) = weights dot valueTensor
 }
 

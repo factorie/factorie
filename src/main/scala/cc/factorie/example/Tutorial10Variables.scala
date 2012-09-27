@@ -2,22 +2,29 @@ package cc.factorie.example
 
 import cc.factorie._
 
-// TODO Rename this file Tutorial01Variables
-// TutorialFactors
-// TutorialModels
-// TutorialGenerativeModels
-// TutorialInference
-// TutorialMCMC
-// TutorialBP
-// TutorialLearning
-// TutorialClassification
-// TutorialChainCRF
-// TutorialNLP
+// Tutorial00Introduction
+// Tutorial01CRFExample
+// Tutorial01GenerativeExample
+// Tutorial10Variables
+// Tutorial11Domains
+// Tutorial15NLPVariables
+// Tutorial20Factors
+// Tutorial21Families
+// Tutorial30Models
+// Tutorial40Templates
+// Tutorial50GenerativeModels
+// Tutorial60Inference
+// Tutorial6*MCMC
+// Tutorial6*BP
+// Tutorial70Learning
+// Tutorial81Classification
+// Tutorial82ChainCRF
+// Tutorial83NLP
 
 
 
 /** Examples of FACTORIE Variables, which hold data values. */
-object Tutorial01 {
+object Tutorial10Variables {
   def main(args:Array[String]): Unit = {
     
     // A Variable holds a value (data)
@@ -117,21 +124,23 @@ object Tutorial01 {
     val ut = new UniformTensor1(33, 0.1) // A vector of length 33, in which all values are 0.1
     // Tensors of ranks 1 through 4 are available
     val dt4 = new DenseTensor4(3, 4, 5, 2) // A Tensor with 4 dimensions, storing 3*4*5*2 numbers.
+    println("dt4 value at indices (2,3,4,1) is "+dt4(2,3,4,1))
     
     // Tensors have many useful methods, including dot (products), outer (products), twoNorm, etc.
-    // See Tutorial03Tensors for more information 
+    // See Tutorial*Tensors for more information 
     
     // Tensors are important because some important special cases of Factors require variables with Tensor values
     //  because the Factors calculate their scores as dot-products between these Tensor values and a "weight" parameter Tensor.
     
     // RealVariable is like DoubleVariable in that it holds a single floating-point number,
-    //  however its value is a Tensor rather than a Double.  In particular it is a RealValue which inherits from ScalarTensor.
+    //  however its value is a Tensor rather than a Double.  
+    // In particular it is a RealValue which inherits from ScalarTensor, which is a Tensor1 of length 1.
     val scalar = new RealValue(3.4) // A Tensor1 of length 1, holding value 3.4 at index 0
     val rv = new RealVariable(3.4)
     val rvv:RealValue = rv.value
-    // TODO Consider whether Tensor.equals should test equality of all values in the Tensor. 
+    // TODO Tensor.equals should test equality of all values in the Tensor, but it does not yet. 
     
-    // A widely used type of Tensor is SingletonBinaryTensor1, which is a "one-hot" Tensor with value 1.0 in its one-hot position
+    // A widely used type of Tensor is SingletonBinaryTensor1, which is a "one-hot" Tensor with value 1.0 in its one-hot position.
     val sbt = new SingletonBinaryTensor1(999, 3) // A vector of length 999, with all zeros, except a 1.0 at index 3.
     println("Tensor sbt is "+sbt)
     
