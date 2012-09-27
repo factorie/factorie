@@ -43,7 +43,7 @@ object VarArgsDemo {
         // While unroll1 and unroll2 do not need the "override" modifier,
         // (unfortunately, because of Scala limitations) unroll2s does.
         override def unroll2s(y:Y) = Factor(y.x, Vars(y.x.ys))
-        def statistics(v1:X#Value, v2:Seq[Y#Value]) = {
+        override def statistics(v1:X#Value, v2:Seq[Y#Value]) = {
           val x: Int = v1.intValue
           val ys: Seq[Int] = v2.map(_.intValue)
           XDomain.apply(x % ys.foldLeft(0)(_+_))

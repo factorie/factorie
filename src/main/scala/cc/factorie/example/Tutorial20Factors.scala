@@ -23,7 +23,11 @@ object Tutorial20Factors {
     // You could also create your own subclass of the trait "Factor".)
     
     // Here is a factor with one neighbor.
-    val f1 = new Factor1(v1) { def score(i:Int) = if (i == 1) 0.0 else -1.0 }
+    val f1 = new Factor1(v1) {
+      def score(i:Int) = if (i == 1) 0.0 else -1.0
+      //type StatisticsType = Int
+      //def statistics(i:Int) = i
+    }
 
     // The only method that is abstract in Factor1-Factor4 classes is the "score" method.
     // Its arguments are the values of the neighboring variables, in order.
@@ -41,7 +45,9 @@ object Tutorial20Factors {
     
     // Here is a Factor with two neighbors.
     // The second neighbor is a DoubleVariable and has value type Double.
-    val f2 = new Factor2(v1, v2) { def score(i:Int, j:Double) = i * j }
+    val f2 = new Factor2(v1, v2) {
+      def score(i:Int, j:Double) = i * j
+    }
     println("Second factor score is "+f1.currentScore)
 
     // Given a factor I can get its list of neighbors, or individual neighbors

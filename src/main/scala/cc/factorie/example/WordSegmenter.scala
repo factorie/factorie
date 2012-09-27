@@ -93,7 +93,7 @@ object WordSegmenterDemo {
       for (other <- label.token.chain.links; if label.token.char == other.char) yield
         if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
     def unroll2 (label:Label) = Nil // We handle symmetric case above
-    def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
+    override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
   }
   //model += skipTemplate
 

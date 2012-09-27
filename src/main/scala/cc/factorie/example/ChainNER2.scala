@@ -67,7 +67,7 @@ object ChainNER2 {
       lazy val weights = new la.DenseTensor1(BooleanDomain.size)
       def unroll1(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainAfter; if (other.token.string == label.token.string)) yield Factor(label, other)
       def unroll2(label: Label) = if (excludeSkipEdges) Nil else for (other <- label.chainBefore; if (other.token.string == label.token.string)) yield Factor(other, label)
-      def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1.intValue == v2.intValue)
+      override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1.intValue == v2.intValue)
     }
   )
   

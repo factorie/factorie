@@ -63,7 +63,7 @@ class TemplateTestSuite extends JUnitSuite  {
       def unroll2(v: Vars[Aggregate#Member]) = sys.error("Not needed")
       def unroll1(v: Aggregate) = Factor(v,Vars(v.members))
       override def unroll2s(v: Aggregate#Member) = Factor(v.owner,Vars(v.owner.members))
-      def statistics(v1:Aggregate#Value, v2:Vars[Aggregate#Member]#Value) = 
+      override def statistics(v1:Aggregate#Value, v2:Vars[Aggregate#Member]#Value) = 
         new RealVariable(v2.filter(_.booleanValue).size).value // TODO Just create a RealValue; don't bother with a RealVariable
     }
     val diff = new DiffList

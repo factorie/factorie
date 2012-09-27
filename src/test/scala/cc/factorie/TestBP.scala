@@ -385,7 +385,7 @@ object BPTestUtils {
       lazy val weights = new la.DenseTensor1(BinDomain.size)
       def unroll1(v: BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BinVar) = if (v == n2) Factor(n1, n2) else Nil
-      def statistics(value1: BinVar#Value, value2: BinVar#Value) = 
+      override def statistics(value1: BinVar#Value, value2: BinVar#Value) = 
         BinDomain.valueOf(value1.intValue == value2.intValue)
     }
     family.weights(0) = scoreEqual

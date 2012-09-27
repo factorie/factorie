@@ -53,7 +53,7 @@ class SpanNerModel extends TemplateModel(
     },
     // Token-Label within Span
     new SpanNerTemplate { 
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = {
+      override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = {
         // TODO Yipes, this is awkward, but more convenient infrastructure could be build.
         //var vector = new cc.factorie.la.SparseBinaryVector(v._1.head.value.length) with CategoricalVectorValue[String] { val domain = SpanNerFeaturesDomain }
         val firstToken = v1.head
@@ -65,29 +65,29 @@ class SpanNerModel extends TemplateModel(
     },
     // First Token of Span
     new SpanNerTemplate { 
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.head.attr[SpanNerFeatures].value outer v2
+      override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.head.attr[SpanNerFeatures].value outer v2
     },
     // Last Token of Span
     new SpanNerTemplate { 
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.last.attr[SpanNerFeatures].value outer v2
+      override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.last.attr[SpanNerFeatures].value outer v2
     },
     // Token before Span
     new SpanNerTemplate { 
       override def unroll1(span:NerSpan) = if (span.head.hasPrev) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.head.hasPrev) Factor(label.span, label) else Nil
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.head.prev.attr[SpanNerFeatures].value outer v2
+      override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.head.prev.attr[SpanNerFeatures].value outer v2
     },
     // Token after Span
     new SpanNerTemplate { 
       override def unroll1(span:NerSpan) = if (span.last.hasNext) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.last.hasNext) Factor(label.span, label) else Nil
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.last.next.attr[SpanNerFeatures].value outer v2
+      override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.last.next.attr[SpanNerFeatures].value outer v2
     },
     // Single Token Span
     new SpanNerTemplate { 
       override def unroll1(span:NerSpan) = if (span.length == 1) Factor(span, span.label) else Nil
       override def unroll2(label:SpanNerLabel) = if (label.span.length == 1) Factor(label.span, label) else Nil
-      def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.head.attr[SpanNerFeatures].value outer v2
+      override def statistics(v1:NerSpan#Value, v2:SpanNerLabel#Value) = v1.head.attr[SpanNerFeatures].value outer v2
     }
     //new SpanLabelTemplate with DotStatistics2[Token,Label] { def statistics(span:Span, label:Label) = if (span.last.hasNext && span.last.next.hasNext) Stat(span.last.next.next, span.label) else Nil },
     // Span Length with Label

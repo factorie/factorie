@@ -139,17 +139,14 @@ object CorefMentionsDemo {
         def unroll2 (er:EntityRef) = Nil // symmetric
         def unroll3 (mention:Mention) = throw new Error
         def unroll4 (mention:Mention) = throw new Error
-        def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = new AffinityVector(m1, m2).value
-        //def unroll1 (mention:Mention) = for (other <- mentionList; if (other.entityRef.value != mention.entityRef.value)) yield Factor(mention, other);
-        //def unroll2 (mention:Mention) = Nil // symmetric
-        //def statistics(values:Values) = Stat(new AffinityVector(values._1, values._2).value)
+        override def statistics (e1:EntityRef#Value, e2:EntityRef#Value, m1:Mention#Value, m2:Mention#Value) = new AffinityVector(m1, m2).value
       }
 
       // Factor testing if all the mentions in this entity share the same prefix of length 1.  A first-order-logic feature.
       model += new DotTemplate1[Entity] {
         //def statisticsDomains = Tuple1(BooleanDomain)
         lazy val weights = new la.DenseTensor1(BooleanDomain.size)
-        def statistics(e:Entity#Value) = {
+        override def statistics(e:Entity#Value) = {
           val mentions: Entity#Value= e
           if (mentions.isEmpty) BooleanDomain.trueValue
           else {

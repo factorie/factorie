@@ -32,7 +32,7 @@ abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends 
   type NeighborType2 = N2
 
   def score(v1:N1#Value, v2:N2#Value): Double
-  def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType] // Just a stand-in default
+  def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType]
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double,StatisticsType) = (score(v1, v2), statistics(v1, v2))
   def currentScore: Double = score(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
   override def currentStatistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value], _2.value.asInstanceOf[N2#Value])
@@ -177,6 +177,10 @@ abstract class TensorFactor2[N1<:Variable,N2<:Variable](override val _1:N1, over
   type StatisticsType = Tensor
   override def statistics(v1:N1#Value, v2:N2#Value): Tensor
   final def score(v1:N1#Value, v2:N2#Value): Double = scoreStatistics(statistics(v1, v2))
+  override def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double, Tensor) = {
+    val tensor = statistics(v1, v2)
+    (scoreStatistics(tensor), tensor)
+  } 
   def scoreStatistics(t:Tensor): Double
 }
 
@@ -222,7 +226,7 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
   final case class Factor(override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) with super.Factor {
     //type StatisticsType = Family2.this.StatisticsType
     override def equalityPrerequisite: AnyRef = Family2.this
-    override def score(value1:N1#Value, value2:N2#Value): Double = Family2.this.score(value1, value2)
+    def score(value1:N1#Value, value2:N2#Value): Double = Family2.this.score(value1, value2)
     override def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = Family2.this.statistics(v1, v2)
     override def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double,StatisticsType) = Family2.this.scoreAndStatistics(v1, v2)
     //override def scoreValues(tensor:Tensor): Double = thisFamily.scoreValues(tensor) // TODO Consider implementing match here to use available _1 domain
@@ -231,7 +235,7 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
     //override def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = limitedDiscreteValues.iterator
   }
   def score(v1:N1#Value, v2:N2#Value): Double
-  def statistics(v1:N1#Value, v2:N2#Value): StatisticsType
+  def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType]
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double,StatisticsType) = (score(v1, v2), statistics(v1, v2))
   
   override def scoreValues(tensor:Tensor): Double = tensor match {
@@ -294,11 +298,11 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
 
 trait TupleFamily2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] {
   type StatisticsType = ((N1#Value, N2#Value))
-  override def statistics(v1:N1#Value, v2:N2#Value): ((N1#Value, N2#Value))
+  //def statistics(v1:N1#Value, v2:N2#Value): ((N1#Value, N2#Value))
 }
 
 trait TupleFamilyWithStatistics2[N1<:Variable,N2<:Variable] extends TupleFamily2[N1,N2] {
-  final def statistics(v1:N1#Value, v2:N2#Value): ((N1#Value, N2#Value)) = ((v1, v2))
+  final override def statistics(v1:N1#Value, v2:N2#Value): ((N1#Value, N2#Value)) = ((v1, v2))
 }
 
 trait TensorFamily2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] with TensorFamily {
@@ -307,7 +311,7 @@ trait TensorFamily2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] with Tenso
 
 trait TensorFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamily2[N1,N2] {
   //type StatisticsType = Tensor
-  final def statistics(v1:N1#Value, v2:N2#Value) = v1 outer v2
+  final override def statistics(v1:N1#Value, v2:N2#Value) = v1 outer v2
 }
 
 trait DotFamily2[N1<:Variable,N2<:Variable] extends TensorFamily2[N1,N2] with DotFamily {

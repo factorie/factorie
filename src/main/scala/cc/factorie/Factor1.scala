@@ -31,7 +31,7 @@ abstract class Factor1[N1<:Variable](val _1:N1) extends Factor {
   type NeighborType1 = N1
 
   def score(v1:N1#Value): Double
-  def statistics(v1:N1#Value): StatisticsType = ((v1)).asInstanceOf[StatisticsType] // Just a stand-in default
+  def statistics(v1:N1#Value): StatisticsType = ((v1)).asInstanceOf[StatisticsType]
   def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = (score(v1), statistics(v1))
   def currentScore: Double = score(_1.value.asInstanceOf[N1#Value])
   override def currentStatistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value])
@@ -105,6 +105,10 @@ abstract class TensorFactor1[N1<:Variable](override val _1:N1) extends Factor1[N
   type StatisticsType = Tensor
   override def statistics(v1:N1#Value): Tensor
   final def score(v1:N1#Value): Double = scoreStatistics(statistics(v1))
+  override def scoreAndStatistics(v1:N1#Value): (Double, Tensor) = {
+    val tensor = statistics(v1)
+    (scoreStatistics(tensor), tensor)
+  } 
   def scoreStatistics(t:Tensor): Double
 }
 
@@ -150,14 +154,14 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
     //type StatisticsType = Family1.this.StatisticsType
     override def equalityPrerequisite: AnyRef = Family1.this
     def score(v1:N1#Value): Double = Family1.this.score(v1)
-    override def statistics(v1:N1#Value) = Family1.this.statistics(v1)
+    override def statistics(v1:N1#Value): StatisticsType = Family1.this.statistics(v1)
     override def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = Family1.this.scoreAndStatistics(v1)
     override def valuesIterator: ValuesIterator1[N1] = Family1.this.valuesIterator(this) 
     //override def isLimitingValuesIterator = Family1.this.isLimitingValuesIterator
     //override def limitedDiscreteValuesIterator: Iterator[Int] = limitedDiscreteValues.iterator
   }
   def score(v1:N1#Value): Double
-  def statistics(v1:N1#Value): StatisticsType
+  def statistics(v1:N1#Value): StatisticsType = ((v1)).asInstanceOf[StatisticsType]
   def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = (score(v1), statistics(v1))
   // For implementing sparsity in belief propagation
   var isLimitingValuesIterator = false
@@ -172,7 +176,7 @@ trait TupleFamily1[N1<:Variable] extends Family1[N1] {
 }
 
 trait TupleFamilyWithStatistics1[N1<:Variable] extends TupleFamily1[N1] {
-  @inline final def statistics(v1:N1#Value) = ((v1))
+  @inline final override def statistics(v1:N1#Value) = ((v1))
 }
 
 trait TensorFamily1[N1<:Variable] extends Family1[N1] with TensorFamily {
@@ -181,7 +185,7 @@ trait TensorFamily1[N1<:Variable] extends Family1[N1] with TensorFamily {
 
 trait TensorFamilyWithStatistics1[N1<:TensorVar] extends TensorFamily1[N1] {
   //type StatisticsTypze = N1#Value
-  @inline final def statistics(v1:N1#Value) = v1
+  @inline final override def statistics(v1:N1#Value) = v1
 }
 
 trait DotFamily1[N1<:Variable] extends TensorFamily1[N1] with DotFamily {
