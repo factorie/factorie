@@ -51,7 +51,7 @@ trait Assignment extends TypedAssignment[Variable]
 /** An Assignment in which variable-value mappings can be changed.
     @author Andrew McCallum */
 trait MutableAssignment extends Assignment {
-  def update[V<:Variable](variable:V, value:V#Value): Unit
+  def update[V<:Variable, U <: V#Value](variable:V, value:U): Unit
 }
 
 /** A MutableAssignment backed by a HashMap.
@@ -64,7 +64,7 @@ class HashMapAssignment extends MutableAssignment {
   def variables = map.keys //_variables
   def apply[V<:Variable](v:V): V#Value = { val a = map(v); if (null != a) a.asInstanceOf[V#Value] else throw new Error("Variable not present: "+v) }
   def get[V<:Variable](v:V): Option[V#Value] = map.get(v).map(_.asInstanceOf[V#Value])
-  def update[V<:Variable](variable:V, value:V#Value): Unit = map(variable) = value
+  def update[V<:Variable, U <: V#Value](variable:V, value:U): Unit = map(variable) = value
   def contains(v:Variable) = map.contains(v)
 }
 

@@ -75,10 +75,8 @@ object Tutorial20Factors {
     
     // The Assignment object could contain values for more variables than the neighbors
     val as = new HashMapAssignment(v1, v2, v3)
-    //as(v1) = 44 // TODO Figure out how to make this work
+    as(v1) = 44
     println("Second factor's score from a new assignment is "+f2.scoreAssignment(as))
-    
-
     
     // All factors also have "statistics"
     // This is some arbitrary object that holds information sufficient to obtain a score.

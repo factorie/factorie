@@ -80,7 +80,7 @@ object MaximizeGaussianMean extends Maximize {
     val dSummary = summary match { case s:DiscreteSummary1[DiscreteVar] => s ; case null => null ; case _ => return None }
     lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
-      case r:MutableDoubleVar => { val m = maxMean(r, gModel, dSummary); if (m.isNaN) return None else assignment.update[MutableDoubleVar](r, m) } 
+      case r:MutableDoubleVar => { val m = maxMean(r, gModel, dSummary); if (m.isNaN) return None else assignment.update[MutableDoubleVar, MutableDoubleVar#Value](r, m) }
       case _ => return None
     }
     //println("MaximizeGaussianMean assignment "+assignment(variables.head))
@@ -144,7 +144,7 @@ object MaximizeGaussianVariance extends Maximize {
     val dSummary = summary match { case s:DiscreteSummary1[DiscreteVar] => s ; case null => null ; case _ => return None }
     lazy val assignment = new HashMapAssignment
     for (v <- variables) v match {
-      case r:MutableDoubleVar => { val va = maxVariance(r, gModel, dSummary); if (va.isNaN) return None else assignment.update[MutableDoubleVar](r, va) } 
+      case r:MutableDoubleVar => { val va = maxVariance(r, gModel, dSummary); if (va.isNaN) return None else assignment.update[MutableDoubleVar, MutableDoubleVar#Value](r, va) }
       case _ => return None
     }
     Option(new AssignmentSummary(assignment))
