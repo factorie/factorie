@@ -16,6 +16,8 @@
 
 package cc.factorie.app.strings
 
+import collection.mutable
+
 /** A collection of standard English "stop words"---common words often left out of processing. 
     @author Andrew McCallum
     @see cc.factorie.example.LDA
@@ -31,6 +33,12 @@ object Stopwords extends Stopwords
 object EmptyStringSet extends StringSet {
   def contains(s:String): Boolean = false
   def +=(s:String): Unit = throw new Error("Cannot add strings to the EmptyStringSet")
+}
+
+class SetBasedStopwords extends StringSet {
+  private val wordSet = new collection.mutable.HashSet[String]()
+  def contains(s: String): Boolean = wordSet(s)
+  def +=(s: String): Unit = wordSet += s
 }
 
 class Stopwords extends StringSet {
