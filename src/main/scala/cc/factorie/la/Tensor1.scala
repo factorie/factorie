@@ -172,6 +172,12 @@ class GrowableUniformTensor1(val sizeProxy:Iterable[Any], val uniformValue:Doubl
 // TODO Use SparseBinaryTensor here
 trait SparseBinaryTensorLike1 extends cc.factorie.util.ProtectedIntArrayBuffer with Tensor1 {
   def activeDomain1 = new TruncatedArrayIntSeq(_array, _length)
+  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { var i = 0; while (i < _length) { f(_array(i), 1.0); i += 1 } }
+  override def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] { // Must not change _indexs and _values during iteration!
+    var i = 0
+    def hasNext = i < _length
+    def next = { i += 1 ; (_array(i-1), 1.0) }
+  }
   //def activeDomain = activeDomain1
   def isDense = false
   @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0

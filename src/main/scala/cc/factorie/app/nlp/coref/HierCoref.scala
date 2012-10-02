@@ -56,7 +56,7 @@ trait AutomaticBagPropagation{
 }
 */
 
-abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends SettingsSampler[Null](model, null) {
+abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSampler[Null](model, null) {
   def timeAndProcess(n:Int):Unit = super.process(n) //temporary fix to no longer being able to override process.
   def newEntity:T
   //def reestimateAttributes(e:T):Unit 
@@ -209,58 +209,58 @@ abstract class HierCorefSampler[T<:HierEntity](model:TemplateModel) extends Sett
 }
 
 
-class FastTemplateModel extends TemplateModel() {
-  override def factorsWithDuplicates(variable:Variable): Iterable[Factor] = {
-    val result = new ListBuffer[Factor]
-    var i = 0
-    while(i<templates.size){result ++= templates(i).factorsWithDuplicates(variable);i+=1}
-    result
-  }
-  override def factorsWithDuplicates(variables:Iterable[Variable]): Iterable[Factor] = {
-    val result = new ListBuffer[Factor]
-    for(variable <- variables){
-      var i=0
-      while(i<templates.size){result ++= templates(i).factorsWithDuplicates(variable);i+=1}      
-    }
-    result
-  }
-  override def factorsWithDuplicates(d:DiffList): Iterable[Factor] = {
-    val result = new ListBuffer[Factor]
-    if (d.size > 0) {
-      for(diff <- d){
-        result ++= factorsWithDuplicates(diff)
-      }
-    }
-    result
-  }
+class FastTemplateModel extends CombinedModel() {
+//  override def factorsWithDuplicates(variable:Variable): Iterable[Factor] = {
+//    val result = new ListBuffer[Factor]
+//    var i = 0
+//    while(i<templates.size){result ++= templates(i).factorsWithDuplicates(variable);i+=1}
+//    result
+//  }
+//  override def factorsWithDuplicates(variables:Iterable[Variable]): Iterable[Factor] = {
+//    val result = new ListBuffer[Factor]
+//    for(variable <- variables){
+//      var i=0
+//      while(i<templates.size){result ++= templates(i).factorsWithDuplicates(variable);i+=1}      
+//    }
+//    result
+//  }
+//  override def factorsWithDuplicates(d:DiffList): Iterable[Factor] = {
+//    val result = new ListBuffer[Factor]
+//    if (d.size > 0) {
+//      for(diff <- d){
+//        result ++= factorsWithDuplicates(diff)
+//      }
+//    }
+//    result
+//  }
 
 }
 abstract class FastTemplate1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template1[N1]()(nm1){
-  override def factorsWithDuplicates(v:Variable): Iterable[FactorType] = {
-    // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
-    // When I substituted "isAssignable" for HashMap caching in GenericSampler I got 42.8 versus 44.4 seconds ~ 3.7%  Perhaps worth considering?
-    val ret = new ListBuffer[FactorType]
-    // Create Factor iff variable class matches and the variable domain matches
-    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
-    if ((neighborClass1a ne null) && neighborClass1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-    // TODO It would be so easy for the user to define Variable.unrollCascade to cause infinite recursion.  Can we make better checks for this?
-    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))
-    ret
-  }
+//  override def factorsWithDuplicates(v:Variable): Iterable[FactorType] = {
+//    // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
+//    // When I substituted "isAssignable" for HashMap caching in GenericSampler I got 42.8 versus 44.4 seconds ~ 3.7%  Perhaps worth considering?
+//    val ret = new ListBuffer[FactorType]
+//    // Create Factor iff variable class matches and the variable domain matches
+//    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
+//    if ((neighborClass1a ne null) && neighborClass1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
+//    // TODO It would be so easy for the user to define Variable.unrollCascade to cause infinite recursion.  Can we make better checks for this?
+//    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))
+//    ret
+//  }
 
 }
 abstract class FastTemplate3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3]()(nm1,nm2,nm3){
-    override def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
-    val ret = new ListBuffer[FactorType]
-    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
-    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
-    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) ret ++= unroll3(v.asInstanceOf[N3])
-    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
-    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
-    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) {throw Exception("Error")}//ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))}
-    ret
-  }
+//    override def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
+//    val ret = new ListBuffer[FactorType]
+//    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
+//    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
+//    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) ret ++= unroll3(v.asInstanceOf[N3])
+//    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
+//    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
+//    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
+//    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) {throw Exception("Error")}//ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))}
+//    ret
+//  }
 }
 abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends TupleTemplateWithStatistics3[N1,N2,N3] {
   //def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = (value1, value2, value3)

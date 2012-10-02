@@ -30,7 +30,7 @@ object Cards4 {
     allLocations = locations
     allCards = cards
 
-    val model = new TemplateModel(
+    val model = new CombinedModel(
       new TupleTemplateWithStatistics1[Card] {
         def score(c:Card#Value) = if (c == jane) -1.0 else 0.0
       }

@@ -54,8 +54,8 @@ package object factorie {
   }
   
   // TODO Remove both of these
-  val defaultModel = new TemplateModel
-  val defaultObjective = HammingLossObjective
+  //val defaultModel = new TemplateModel
+  //val defaultObjective = HammingLossObjective
 
   // TODO Consider removing this now that we have separate, more specific samplers.
   // TODO Consider also removing SamplerSuite?
@@ -103,13 +103,9 @@ package object factorie {
   implicit def traversableExtras[A](x:Traversable[A]) = new cc.factorie.util.TraversableExtras[A] { val t = x }
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras { val s = x }
   implicit def regexToSegmenter(r:scala.util.matching.Regex) = new cc.factorie.app.strings.RegexSegmenter(r)
-  implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new Iterable[F] {
-    def iterator = Iterator.single(f)
-    override def size = 1
-    override def head = f
-  }
+  implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
   // TODO Remove this
-  implicit def file2Source(f:java.io.File): scala.io.Source = scala.io.Source.fromFile(f)
+  //implicit def file2Source(f:java.io.File): scala.io.Source = scala.io.Source.fromFile(f)
 
   //implicit def boolean2BooleanValue(b:Boolean): BooleanValue = if (b) BooleanDomain.trueValue else BooleanDomain.falseValue
   // TODO Consider making implicit conversions for IntegerVariable and RealVariable also

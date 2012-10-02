@@ -18,7 +18,7 @@ class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, 
 }
 
 // TODO Consider renaming this DotModel, like DotMaximumLikelihood
-class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends TemplateModel {
+class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends CombinedModel {
   def this(lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
   val biasTemplate = new LogLinearTemplate1[L](labelStatisticsDomain)
   val evidenceTemplate = new LogLinearTemplate2[L,F](lf, fl, labelStatisticsDomain, featureStatisticsDomain)
@@ -39,7 +39,7 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labe
     if ((families.length == 2) &&
         (families(0) == biasTemplate || families(1) == biasTemplate) &&
         (families(0) == evidenceTemplate || families(1) == evidenceTemplate))
-      factors(variables).asInstanceOf[Seq[F#Factor]]
+      factors(variables).asInstanceOf[Iterable[F#Factor]]
     else {
       filterByFamilies(factors(variables), families)
     }

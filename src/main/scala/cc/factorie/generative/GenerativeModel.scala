@@ -24,32 +24,48 @@ trait MutableGenerativeModel extends GenerativeModel {
 
 object GenerativeModel {
   /** Contructor for a default GenerativeModel */
-  def apply(): GenerativeFactorModel = new GenerativeFactorModel
+  def apply(): ItemizedGenerativeModel = new ItemizedGenerativeModel
 }
 
-class GenerativeFactorModel extends MutableGenerativeModel {
+class ItemizedGenerativeModel extends MutableGenerativeModel {
   private val _parentFactor = new HashMap[Variable,GenerativeFactor]
   private val _childFactors = new HashMap[Variable,ArrayBuffer[GenerativeFactor]]
-  override def factorsWithDuplicates(variables:Iterable[Variable]): Iterable[Factor] = {
-    val result = new ArrayBuffer[GenerativeFactor]
-    variables.foreach(v => {
-      if (_parentFactor.contains(v)) result += _parentFactor(v)
-      // TODO Do we need to use extendedParentFactors also?
-      //if (_childFactors.contains(v)) result ++= _childFactors(v)
-      if (_childFactors.contains(v)) result ++= extendedChildFactors(v)
-      // TODO special handling of ContainerVariable[_]??
-    })
-    result
-  }
-  def factorsWithDuplicates(v:Variable): Iterable[Factor] = {
-    val result = new ArrayBuffer[GenerativeFactor]
-    if (_parentFactor.contains(v)) result += _parentFactor(v)
+  def addFactors(variable:Variable, result:scala.collection.mutable.Set[Factor]): Unit = {
+    if (_parentFactor.contains(variable)) result += _parentFactor(variable)
     // TODO Do we need to use extendedParentFactors also?
     //if (_childFactors.contains(v)) result ++= _childFactors(v)
-    if (_childFactors.contains(v)) result ++= extendedChildFactors(v)
+    if (_childFactors.contains(variable)) result ++= extendedChildFactors(variable)
     // TODO special handling of ContainerVariable[_]??
-    result
   }
+  def addFactors(v:Variable, result:scala.collection.generic.Growable[Factor]): Unit = {
+    val set = new scala.collection.mutable.HashSet[Factor]
+    if (_parentFactor.contains(v)) set += _parentFactor(v)
+    // TODO Do we need to use extendedParentFactors also?
+    //if (_childFactors.contains(v)) result ++= _childFactors(v)
+    if (_childFactors.contains(v)) set ++= extendedChildFactors(v)
+    // TODO special handling of ContainerVariable[_]??
+    result ++= set
+  }
+//  override def factorsWithDuplicates(variables:Iterable[Variable]): Iterable[Factor] = {
+//    val result = new ArrayBuffer[GenerativeFactor]
+//    variables.foreach(v => {
+//      if (_parentFactor.contains(v)) result += _parentFactor(v)
+//      // TODO Do we need to use extendedParentFactors also?
+//      //if (_childFactors.contains(v)) result ++= _childFactors(v)
+//      if (_childFactors.contains(v)) result ++= extendedChildFactors(v)
+//      // TODO special handling of ContainerVariable[_]??
+//    })
+//    result
+//  }
+//  def factorsWithDuplicates(v:Variable): Iterable[Factor] = {
+//    val result = new ArrayBuffer[GenerativeFactor]
+//    if (_parentFactor.contains(v)) result += _parentFactor(v)
+//    // TODO Do we need to use extendedParentFactors also?
+//    //if (_childFactors.contains(v)) result ++= _childFactors(v)
+//    if (_childFactors.contains(v)) result ++= extendedChildFactors(v)
+//    // TODO special handling of ContainerVariable[_]??
+//    result
+//  }
   def allFactors: Iterable[Factor] = _parentFactor.values ++ _childFactors.values.flatten
   def getParentFactor(v:Variable): Option[GenerativeFactor] = _parentFactor.get(v)
   def getChildFactors(v:Variable): Option[Iterable[GenerativeFactor]] = _childFactors.get(v)

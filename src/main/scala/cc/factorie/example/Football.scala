@@ -38,7 +38,7 @@ object Football {
   }
 
   // Define the model
-  val model = new TemplateModel(
+  val model = new CombinedModel(
     //Foreach[Label] { label => Score(label) },
     new DotTemplateWithStatistics1[Label] {
       //def statisticsDomains = Tuple1(LabelDomain)
@@ -75,7 +75,7 @@ object Football {
   val orgLexicon = new Lexicon(lexiconDir+"orgs")
   //val positionLexicon = new Lexicon(lexiconDir+"positions")
   throw new Error("Objective needs to be re-implemented.")
-  val objective = new TemplateModel(
+  val objective = new CombinedModel(
     /*new TemplateWithVectorStatistics1[Label] {
       val oIndex = LabelDomain.index("O")
       val orgIndex = LabelDomain.index("ORG")

@@ -25,15 +25,13 @@ object Tutorial20Factors {
     // Here is a factor with one neighbor.
     val f1 = new Factor1(v1) {
       def score(i:Int) = if (i == 1) 0.0 else -1.0
-      //type StatisticsType = Int
-      //def statistics(i:Int) = i
     }
 
     // The only method that is abstract in Factor1-Factor4 classes is the "score" method.
     // Its arguments are the values of the neighboring variables, in order.
     // It must return a Double.
     // NegInfinity indicates "impossible values on neighbors".
-    // PosInfinity indicates "certain values on neighbors".
+    // More positive scores indicate higher likelihood.
     // In terms of probabilities these scores can be interpreted as "unnormalized log-probabilities".
     // If you do have a normalized probability for a factor, the score should be math.log(probability). 
     
@@ -66,7 +64,7 @@ object Tutorial20Factors {
     
     // We can get an Assignment object that captures the current values of the neighbors.
     val a2: Assignment2[IntegerVariable,DoubleVariable] = f2.currentAssignment
-    v2 := 4.4
+    v2 := 4.4 // Here we give v2 a new value.
     println("Second neighbor of second factor had value "+a2(v2))
     
     // We can ask for a factor's score using the values in an Assignment
@@ -75,7 +73,7 @@ object Tutorial20Factors {
     
     // The Assignment object could contain values for more variables than the neighbors
     val as = new HashMapAssignment(v1, v2, v3)
-    //as(v1) = 44 // TODO Figure out how to make this work
+    //as(v1) = 44 // TODO Figure out how to make this work.
     println("Second factor's score from a new assignment is "+f2.scoreAssignment(as))
     
 
@@ -96,7 +94,7 @@ object Tutorial20Factors {
     
     // Some subclasses of Factor override the method to return more specific types.
     // If the Tuple statistics are sufficient for your needs, 
-    // and you want the "statistics" method's return type to be set to a Tuple
+    // and you want the "statistics" method's return type to be the correct Tuple
     // use the classes TupleFactor*
     val f3 = new TupleFactorWithStatistics3(v1, v2, v3) {
       def score(i:Int, j:Double, k:Int) = if (i == k) j else 0.0
@@ -147,7 +145,7 @@ object Tutorial20Factors {
     // Since Factors with Tensor statistics are common, there are Factor classes that pre-define this,
     // avoiding the need to assign StatisticsType.
     // The method "score" is pre-defined to gather these Tensor statistics and call "scoreStatistics(Tensor)".
-    // (This enforces that the Tensor statistics are sufficient to calcualte the score.)
+    // (This enforces that the Tensor statistics are sufficient to calculate the score.)
     // In TensorFactor2 only "statistics" and "scoreStatistics" are abstract.
     val f6 = new TensorFactor2(flag1, flag2) {
       val weights = new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0)))
@@ -184,7 +182,7 @@ object Tutorial20Factors {
 
     
     // Naturally, we can define a class of Factors all sharing the same "score" method
-    class MyFactor(n1:IntegerVariable, n2:IntegerVariable) {
+    class MyFactor(n1:IntegerVariable, n2:IntegerVariable) extends Factor2(n1, n2) {
       def score(i:Int, j:Int) = if (i == j) 1.0 else -1.0
     }
     
@@ -198,7 +196,7 @@ object Tutorial20Factors {
     if (mf1 == mf2) println("Two factors are equal.")
 
     
-    // Let's create a Factor representing a simple log-linear classifier for classifying newswire articles.
+    // Let's create a Factor representing a simple log-linear classifier for classifying blog posts.
     // into the classes "politics", "sports", "arts"
     // The input is a feature vector of three boolean values indicating whether or not 
     // a particular word was present in the document: "beat", "beautiful", "election".

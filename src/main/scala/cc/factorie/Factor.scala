@@ -100,6 +100,14 @@ trait ValuesIterator extends Iterator[Assignment] {
   def valuesTensor: Tensor
 }
 
+/** An iterable collection for efficiently holding a single Factor.
+    Used in various Template classes and in an implicit conversion from Factor to IterableSingleFactor. */
+class IterableSingleFactor[F<:Factor](val factor:F) extends Iterable[F] {
+  def iterator = Iterator.single(factor)
+  override def size = 1
+  override def head = factor
+}
+
 
 // This comment mostly discusses an old (removed) version of FACTORIE in which Factors could have "inner" Factors.
 /** A Factor is a Model because it can return a factor (itself) and a score.
@@ -119,18 +127,4 @@ trait ValuesIterator extends Iterator[Assignment] {
      (Is this right?  Perhaps not.)
     When you ask an inner Model for its score, it returns its score alone.
     */
-
-// TODO Create for use with:  Template2[Label,Token] with Statistics[Tensor2]
-//trait Statistics[+A] { type StatisticsType = A }
-
-///** A container for sufficient statistics of a Factor.
-//    They reflect a certain choice of values for the neighbors of a Factor. */
-//// TODO Rename this to Statistic singular, so we can have Statistic1, Statistic2, etc like Factor2, separate from "Template with Statistics2"
-//trait Statistics  {
-//  //def variables = { new Error("Statistics should not call Assignment methods"); null }
-//  //def get[B <: Variable](v: B) = { new Error("Statistics should not call Assignment methods"); null }
-//  //def contains(v: Variable) = { new Error("Statistics should not call Assignment methods"); false }
-//  def statistics: Statistics = this
-//  def score: Double
-//}
 

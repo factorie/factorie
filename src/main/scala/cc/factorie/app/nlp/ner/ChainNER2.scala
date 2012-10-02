@@ -33,7 +33,7 @@ class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[Str
   override def skipNonCategories = true
 } 
 
-class ChainNer21Model extends TemplateModel{
+class ChainNer21Model extends CombinedModel {
   
   // Bias term on each individual label 
   val biasTemplate = new DotTemplateWithStatistics1[ChainNerLabel] {
@@ -59,7 +59,7 @@ class ChainNer21Model extends TemplateModel{
   this += transitionTemplate
 }
 
-class ChainNer2Model extends TemplateModel{
+class ChainNer2Model extends CombinedModel{
   // Bias term on each individual label 
   val bias = new DotTemplateWithStatistics1[ChainNerLabel] {
     factorName = "bias"
@@ -85,7 +85,7 @@ class ChainNer2Model extends TemplateModel{
   this += transitionTemplate
 }
 
-class ChainNer2WindowModel extends TemplateModel (
+class ChainNer2WindowModel extends CombinedModel (
   new DotTemplateWithStatistics1[ChainNerLabel] {
     factorName = "bias"
     lazy val weights = new la.DenseTensor1(Conll2003NerDomain.size)
@@ -841,7 +841,7 @@ class ChainNer2 {
     	}
     } else {
       for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.category(0)) // init value doens't matter
-      val localModel = new TemplateModel(model.templates(0), model.templates(1))
+      val localModel = new CombinedModel(model.subModels(0), model.subModels(1))
       val localPredictor = new VariableSettingsGreedyMaximizer[ChainNerLabel](localModel, null)
       for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)

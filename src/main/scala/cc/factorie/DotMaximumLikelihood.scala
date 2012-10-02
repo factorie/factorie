@@ -3,8 +3,8 @@ import cc.factorie.la._
 import cc.factorie.optimize._
 import scala.collection._
 
-class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOptimizer) {
-  def this(model: TemplateModel) = this(model, new LimitedMemoryBFGS)
+class DotMaximumLikelihood(val model: Model, val optimizer: GradientOptimizer) {
+  def this(model: Model) = this(model, new LimitedMemoryBFGS)
   var gaussianPriorVariance = 10.0
   var numRepeatConvergences = 2
   // Number of times to re-run the optimizer to convergence
@@ -49,7 +49,7 @@ class DotMaximumLikelihood(val model: TemplateModel, val optimizer: GradientOpti
       // Use gradient and value to make a step of optimization
       optimizer.step(weights, gradient, logLikelihood, Double.NaN)
       iterations += 1
-      if (optimizer.isConverged) {convergences += 1; optimizer.reset(); println("DotMaximumLikelihood converged in " + iterations + " iterations with loglikelihood = " + logLikelihood)}
+      if (optimizer.isConverged) {convergences += 1; optimizer.reset(); System.err.println("DotMaximumLikelihood converged in " + iterations + " iterations with loglikelihood = " + logLikelihood)}
     }
     logLikelihood
   }

@@ -46,7 +46,7 @@ abstract class SpanNerTemplate extends DotTemplate2[NerSpan,SpanNerLabel] {
   def unroll2(label:SpanNerLabel) = Factor(label.span, label)
 }
 
-class SpanNerModel extends TemplateModel(
+class SpanNerModel extends CombinedModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[SpanNerLabel] {
       lazy val weights = new la.DenseTensor1(Conll2003NerDomain.size)
@@ -99,7 +99,7 @@ class SpanNerModel extends TemplateModel(
 }
 
 // The training objective
-class SpanNerObjective extends TemplateModel(
+class SpanNerObjective extends CombinedModel(
   new TupleTemplateWithStatistics2[NerSpan,SpanNerLabel] {
     //def statisticsDomains = ((NerSpanDomain, SpanNerLabelDomain))
     def unroll1(span:NerSpan) = Factor(span, span.label)
@@ -132,7 +132,7 @@ class SpanNerObjective extends TemplateModel(
 )
 
 // The sampler
-class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends SettingsSampler[Token](model, objective) {
+class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Token](model, objective) {
   // The proposer for changes to Spans touching this Token
   def settings(token:Token) = new SettingIterator {
     private val _seq = token.document
@@ -204,7 +204,7 @@ class TokenSpanSampler(model:TemplateModel, objective:TemplateModel) extends Set
 }
 
 // The predictor for test data
-class SpanNerPredictor(model:TemplateModel) extends TokenSpanSampler(model, null) {
+class SpanNerPredictor(model:Model) extends TokenSpanSampler(model, null) {
   def this(file:File) = this(new SpanNerModel(file))
   var verbose = false
   temperature = 0.0001 

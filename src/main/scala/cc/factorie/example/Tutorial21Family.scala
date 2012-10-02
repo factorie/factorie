@@ -16,4 +16,7 @@ object Tutorial21Family {
     
   }
 
+  
+  // TODO Consider giving a Family to singleton Factors, to support learning on them. 
+  
 }

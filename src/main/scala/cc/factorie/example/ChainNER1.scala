@@ -31,7 +31,7 @@ object ChainNER1a {
   class TokenFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] {
     def domain = TokenFeaturesDomain
   }
-  val model = new TemplateModel(
+  val model = new CombinedModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[ChainNerLabel] {
       //def statisticsDomains = Tuple1(Conll2003NerDomain) // TODO But sometimes there should be subclasses here?

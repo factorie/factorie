@@ -38,7 +38,7 @@ object ChainNER4 {
   class Sentence extends Chain[Sentence,Token]
   
   // The model
-  val model = new TemplateModel(
+  val model = new CombinedModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[Label] {
       override def neighborDomain1 = LabelDomain
@@ -66,7 +66,7 @@ object ChainNER4 {
   )
   
   // The training objective
-  val objective = new TemplateModel(new HammingLossTemplate[Label])
+  val objective = new HammingLossTemplate[Label]
   
 
 

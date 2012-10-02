@@ -43,7 +43,7 @@ class CorefAffinity extends BinaryFeatureVectorVariable[String] {
   def domain = CorefAffinityDomain
 }
 
-class EntityMentionModel extends TemplateModel(
+class EntityMentionModel extends CombinedModel(
   new DotTemplate1[EntityRef] {
     lazy val weights = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
     //println("*** EntityMentionModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))
@@ -78,7 +78,7 @@ class EntityMentionModel extends TemplateModel(
   }
 )
 
-class PairwiseModel extends TemplateModel(
+class PairwiseModel extends CombinedModel(
   new DotTemplate1[EntityRef] {
     lazy val weights = new la.DenseTensor1(CorefAffinityDimensionDomain.dimensionSize)
     //println("*** PairwiseModel index="+CorefAffinityDomain.dimensionDomain.index("ExactMatch"))

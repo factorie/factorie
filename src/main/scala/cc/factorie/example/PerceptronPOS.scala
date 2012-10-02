@@ -25,7 +25,7 @@ import pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
 
 object PerceptronPOS {
 
-  object PosModel extends TemplateModel {
+  object PosModel extends CombinedModel {
     // Factor between label and observed token
     val localTemplate = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
       //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))

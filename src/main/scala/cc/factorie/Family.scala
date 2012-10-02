@@ -49,7 +49,11 @@ trait Family {
 }
 
 trait FamilyWithNeighborDomains extends Family {
-  def neighborDomains: Seq[Domain[_]] 
+  def neighborDomains: Seq[Domain[_]]
+}
+
+trait FamilyWithNeighborClasses extends Family {
+  def neighborClasses: Seq[Class[_]]
 }
 
 trait Statistics[A] extends Family {

@@ -42,7 +42,7 @@ object ChainNER2 {
   
   // The model
   val excludeSkipEdges = true
-  val model = new TemplateModel(
+  val model = new CombinedModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[Label] {
       //def statisticsDomains = Tuple1(LabelDomain)
@@ -72,7 +72,7 @@ object ChainNER2 {
   )
   
   // The training objective
-  val objective = new TemplateModel(new HammingLossTemplate[Label])
+  val objective = new HammingLossTemplate[Label]
   
 
   def main(args: Array[String]): Unit = {

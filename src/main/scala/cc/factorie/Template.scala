@@ -15,27 +15,32 @@
 package cc.factorie
 
 import collection.mutable.HashSet
+import scala.collection.mutable.Set
 
 /** A template for creating Factors.  The creation of Factors is keyed by some context of arbitrary type C. */
-// TODO Make this ContextTemplate[C,F<:Factor] because this is like a Map from C to Fs.
-trait ContextTemplate[C] extends FamilyWithNeighborDomains {
-  def factors(c:C): Iterable[FactorType]
-  //def factors(cs:Iterable[C]): Iterable[FactorType] = dedup(cs.flatMap(factors(_))) // TODO Do we also want a method like this?
-  def itemizedModel(c:C): ItemizedModel = new ItemizedModel(factors(c))
+// TODO Make this ContextTemplate[C,F<:Factor] because this is like a Map from C to Fs?
+trait Template[C,F<:Factor] {
+  //type FactorType <: Factor
+  def addFactorsOfContext(c:C, result:Set[F]): Unit 
+  def factorsOfContext(c:C): Iterable[F] = { val result = newContextFactorsCollection; addFactorsOfContext(c, result); result }
+  def itemizedModel(c:C): ItemizedModel = new ItemizedModel(factorsOfContext(c))
+  protected def newContextFactorsCollection: Set[F] = new collection.mutable.LinkedHashSet[F]
 }
 
-/** A template for creating Factors, where there is a mapping from variables neighboring the factors to the contexts necessary to create those Factors. */
-trait NeighborAwareTemplate[C] extends ContextTemplate[C] with Model {
-  // Map from a variable back to a context from which we can get its neighboring factors
-  def contexts(v:Variable): Iterable[C]
-  //def factorsWithDuplicates(v:Variable): Iterable[FactorType] = context(v).flatMap(factors(_))
-}
+///** A template for creating Factors, where there is a mapping from variables neighboring the factors to the contexts necessary to create those Factors. */
+//trait NeighborAwareTemplate[C] extends Template[C] with Model {
+//  // Map from a variable back to a context from which we can get its neighboring factors
+//  def contexts(v:Variable): Iterable[C]
+//  //def factorsWithDuplicates(v:Variable): Iterable[FactorType] = context(v).flatMap(factors(_))
+//}
 
-// Future:
+// Future, discussed with Sebastian:
 // class SymbolicTemplate extends NeighborAwareTemplate[SymbolicPredicate] 
 // Term (e.g. real-valued term), tree-based expression, sub-expressions
 //  depends on notion of state: each template/term takes a state and maps to double-valued score
 // SymbolicPredicate, SymbolicConstant, LogicalGroundAtom extends BooleanVariable with Seq[SymbolicConstant]
+
+
 
 // class Templates[C] extends scala.collection.mutable.ArrayBuffer[TemplateA[C]] { def factors(c:C) = flatMap(_.factors(c)) }
 
@@ -83,21 +88,37 @@ object Template {
 /** The template for creating factors, using "unroll*" methods which given on of the Factor's variables, finding the other neighboring variables.
     @author Andrew McCallum
 */
-// TODO Make this Template[F] because this is a container/generator of Factors F
-trait Template extends NeighborAwareTemplate[Variable] { thisTemplate =>
-  def contexts(v:Variable): Iterable[Variable] = Seq(v)
+// TODO Make this Template[F] because this is a container/generator of Factors F.  No, can't because Factor class is inner.
+trait TemplateModel extends Model with Template[Variable,Factor] with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
+  def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
   // Member type FactorType is defined so we will know the Factor type, which enables code like "factor.statistics.vector"
-  override def factorsWithDuplicates(v:Variable): Iterable[FactorType]
-  override def factorsWithDuplicates(vs:Iterable[Variable]): Iterable[FactorType] = super.factorsWithDuplicates(vs).asInstanceOf[Iterable[FactorType]]
-  override def factorsWithDuplicates(d:Diff): Iterable[FactorType] = super.factorsWithDuplicates(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
-  override def factorsWithDuplicates(difflist:DiffList): Iterable[FactorType] = super.factorsWithDuplicates(difflist).asInstanceOf[Iterable[FactorType]]
-  override def factors(v:Variable): Iterable[FactorType] = super.factors(v).asInstanceOf[Iterable[FactorType]]
-  override def factors(variables:Iterable[Variable]): Iterable[FactorType] = super.factors(variables).asInstanceOf[Iterable[FactorType]]
-  override def factors(d:Diff): Iterable[FactorType] = super.factors(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
-  override def factors(difflist:DiffList): Iterable[FactorType] = super.factors(difflist).asInstanceOf[Iterable[FactorType]]
+  //def addFactors(variables:Iterable[Variable], result:Growable[Factor]): Unit = 
+  //override def 
+//  override def factorsWithDuplicates(v:Variable): Iterable[FactorType]
+//  override def factorsWithDuplicates(vs:Iterable[Variable]): Iterable[FactorType] = super.factorsWithDuplicates(vs).asInstanceOf[Iterable[FactorType]]
+//  override def factorsWithDuplicates(d:Diff): Iterable[FactorType] = super.factorsWithDuplicates(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
+//  override def factorsWithDuplicates(difflist:DiffList): Iterable[FactorType] = super.factorsWithDuplicates(difflist).asInstanceOf[Iterable[FactorType]]
+//  override def factors(v:Variable): Iterable[FactorType] = super.factors(v).asInstanceOf[Iterable[FactorType]]
+//  override def factors(variables:Iterable[Variable]): Iterable[FactorType] = super.factors(variables).asInstanceOf[Iterable[FactorType]]
+//  override def factors(d:Diff): Iterable[FactorType] = super.factors(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
+//  override def factors(difflist:DiffList): Iterable[FactorType] = super.factors(difflist).asInstanceOf[Iterable[FactorType]]
   /** Called in implementations of factors(Variable) to give the variable a chance
       to specify additional dependent variables on which factors(Variable) should also be called. */
   def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade
+  def tryCascade: Boolean = true //hasContainerNeighbors
+  def hasContainerNeighbors: Boolean = {
+    println("TemplateModel hasContainerNeighbors neighborClasses: "+neighborClasses.mkString(","))
+    this match {
+      case t:Template1[_] => {
+        println("TemplateModel Template1 neighborClass1 = "+t.neighborClass1)
+        //println("TemplateModel Template1 nm1.erasure = "+t.nm1.erasure)
+      }
+      case _ => {}
+    }
+    //neighborClasses.exists(classOf[ContainerVariable[_]].isAssignableFrom(_))
+    throw new Error("Not yet implemented.  Why am I getting nulls in neighborClasses?")
+    false // TODO Fix the above line
+  }
   
   /** Causes future calls to factor.valuesIterator to limit the returned values to 
       those value combinations seen in the current values of the variables in factors touching "vars". */
