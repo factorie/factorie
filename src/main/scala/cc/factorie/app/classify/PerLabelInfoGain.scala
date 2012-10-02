@@ -50,6 +50,7 @@ class PerLabelInfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], 
       val pnc = (numInstances-labelCounts(labelIndex):Double)/numInstances
       labelEntropies(labelIndex) = entropy (pc, pnc);
     }
+    //if (true) for (labelIndex <- 0 until numLabels) println(labelDomain.asInstanceOf[CategoricalDomain[String]].category(labelIndex)+" "+labelEntropies(labelIndex))
 
     // Calculate per-class infogain of each feature, and store it in "igs"
     for (fi <- 0 until numFeatures) {
@@ -72,7 +73,7 @@ class PerLabelInfoGain[L<:DiscreteVar,F<:DiscreteTensorVar](labels:Iterable[L], 
           pnc = ((numInstances-featureCounts(fi):Double)-(labelCounts(li)-labelFeatureCounts(li)(fi))) / (numInstances-featureCounts(fi))
           val enf = entropy(pc, pnc)
           infogains(li)(fi) = labelEntropies(li) - (pf*ef + pnf*enf)
-          if (false && fi < 100)  println("pf="+pf+" ef="+ef+" pnf="+pnf+" enf="+enf+" e="+labelEntropies(li)+" cig="+labelFeatureCounts(li)(fi))
+          //if (fi < 100)  println("pf="+pf+" ef="+ef+" pnf="+pnf+" enf="+enf+" e="+labelEntropies(li)+" cig="+labelFeatureCounts(li)(fi)+" c="+featureDomain.asInstanceOf[CategoricalDomain[String]].category(fi))
         }
       }
     }

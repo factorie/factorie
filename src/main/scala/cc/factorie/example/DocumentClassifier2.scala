@@ -22,6 +22,7 @@ import scala.io.Source
 import java.io.File
 import cc.factorie._
 import cc.factorie.optimize._
+import cc.factorie.HammingLossObjective$
 
 /** A raw document classifier without using any of the facilities of cc.factorie.app.classify.document,
  and without using the entity-relationship language of cc.factorie.er.  By contrast, see example/DocumentClassifier1. */
@@ -39,7 +40,7 @@ object DocumentClassifier2 {
     def domain = LabelDomain
   }
 
-  val model = new TemplateModel(
+  val model = new CombinedModel(
     /** Bias term just on labels */
     new DotTemplateWithStatistics1[Label] {
       lazy val weights = new la.DenseTensor1(LabelDomain.size)
@@ -52,7 +53,7 @@ object DocumentClassifier2 {
     }
   )
 
-  val objective = new TemplateModel(new HammingLossTemplate[Label])
+  val objective = new HammingLossTemplate[Label]
 
   def main(args: Array[String]) : Unit = {
     if (args.length < 2) 
@@ -84,8 +85,8 @@ object DocumentClassifier2 {
     for (i <- 0 until 10) {
       learner.processAll(trainVariables)
       predictor.processAll(testVariables)
-      println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
-      println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))
+      println ("Train accuracy = "+ HammingLossObjective.aveScore(trainVariables))
+      println ("Test  accuracy = "+ HammingLossObjective.aveScore(testVariables))
     }
 
   }

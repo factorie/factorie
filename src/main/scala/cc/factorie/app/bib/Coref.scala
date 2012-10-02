@@ -430,7 +430,7 @@ class EpistemologicalDB(authorCorefModel:AuthorCorefModel,mongoServer:String="lo
 }
 
 /**Models*/
-class TrainingModel extends TemplateModel{
+class TrainingModel extends CombinedModel{
   /*
   this += new ChildParentTemplateWithStatistics[BagOfTruths]{
     override def unroll2(childBow:BagOfTruths) = Nil
@@ -482,7 +482,7 @@ class TrainingModel extends TemplateModel{
     }
   }
 }
-class PaperCorefModel extends TemplateModel{
+class PaperCorefModel extends CombinedModel{
   var bagOfAuthorsShift = -1.0
   var bagOfAuthorsWeight= 2.0
   this += new ChildParentTemplateWithStatistics[Title]{
@@ -597,7 +597,7 @@ class AuthorCorefModel extends FastTemplateModel{
   }
 }
 
-class AuthorCorefModelOld extends TemplateModel{
+class AuthorCorefModelOld extends CombinedModel{
   var bagOfCoAuthorsShift:Double = -0.25
   var bagOfCoAuthorsWeight:Double= 4.0
   var bagOfVenuesShift:Double = 0.0
@@ -807,7 +807,7 @@ class AuthorTrainer(model:TemplateModel, trainingSignal:TemplateModel) extends A
 }
 */
 
-class AuthorSampler(model:TemplateModel) extends BibSampler[AuthorEntity](model){
+class AuthorSampler(model:Model) extends BibSampler[AuthorEntity](model){
   def newEntity = new AuthorEntity
   def sampleAttributes(author:AuthorEntity)(implicit d:DiffList) = {
     if(author.childEntities.size==0){
@@ -941,7 +941,7 @@ class AuthorSampler(model:TemplateModel) extends BibSampler[AuthorEntity](model)
   }
   */
 }
-class PaperSampler(model:TemplateModel) extends BibSampler[PaperEntity](model){
+class PaperSampler(model:Model) extends BibSampler[PaperEntity](model){
   def newEntity = new PaperEntity
   def chooseCanonicalMention(paper:PaperEntity)(implicit d:DiffList):Unit ={
     var canonical:PaperEntity = null
@@ -1107,7 +1107,7 @@ class ApproxMaxCanopySampling[E<:HierEntity with HasCanopyAttributes[E] with Pri
   }
 }
 
-abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](model:TemplateModel) extends HierCorefSampler[E](model){
+abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](model:Model) extends HierCorefSampler[E](model){
   var numAccepted = 0
   protected var canopyStats:CanopyStatistics[E] = new ApproxMaxCanopySampling//( (Unit) => {this.getEntities})
   protected var canopies = new HashMap[String,ArrayBuffer[E]]

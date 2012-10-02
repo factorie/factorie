@@ -74,11 +74,12 @@ object DocumentClassifier1 {
     // Train and test
     val learner = new SampleRank(new GibbsSampler(model, HammingLossObjective), new MIRA)
     val predictor = new GibbsSampler(model)
+    def objective = new HammingLossTemplate[Label]
     for (i <- 0 until 10) {
       learner.processAll(trainVariables)
       predictor.processAll(testVariables)
-      println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
-      println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))
+      println ("Train accuracy = "+ objective.aveScore(trainVariables))
+      println ("Test  accuracy = "+ objective.aveScore(testVariables))
     }
 
   }

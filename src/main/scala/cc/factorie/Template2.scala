@@ -23,10 +23,11 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends Family2[N1,N2] with Template
+abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends TypedModel with Family2[N1,N2] with TemplateModel
 {
   val neighborClass1 = nm1.erasure
   val neighborClass2 = nm2.erasure
+  def neighborClasses: Seq[Class[_]] = Seq(neighborClass1, neighborClass2)
   val nc1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
   val nc2a = { val ta = nm2.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass2)) { assert(ta.length == 1); ta.head.erasure } else null }
 
@@ -35,14 +36,12 @@ abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], n
 //      for (variable <- variables; factor <- factors(variable)) limitedDiscreteValues.+=((factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue))
 //  }
 
-  def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
-    val ret = new ArrayBuffer[FactorType]
-    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
-    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
-    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
-    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
-    val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))
-    ret
+  def addFactors(v:Variable, result:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
+    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) result ++= unroll1(v.asInstanceOf[N1])
+    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) result ++= unroll2(v.asInstanceOf[N2])
+    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) result ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
+    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) result ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
+    if (tryCascade) { val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) addFactors(cascadeVariables, result) }
   }
   def unroll1(v:N1): Iterable[FactorType]
   def unroll2(v:N2): Iterable[FactorType]

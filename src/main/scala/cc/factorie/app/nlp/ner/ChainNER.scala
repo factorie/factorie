@@ -24,7 +24,7 @@ class ChainNerFeatures(val token:Token) extends BinaryFeatureVectorVariable[Stri
   override def skipNonCategories = true
 }
 
-class ChainNerModel extends TemplateModel(
+class ChainNerModel extends CombinedModel(
   /*// Bias term on each individual label 
   new TemplateWithDotStatistics1[ChainNerLabel] {
     factorName = "bias"
@@ -48,7 +48,7 @@ class ChainNerModel extends TemplateModel(
   }
 )
 
-class ChainNerObjective extends TemplateModel(new HammingLossTemplate[ChainNerLabel])
+class ChainNerObjective extends HammingLossTemplate[ChainNerLabel]
 
   
 class ChainNer {
@@ -179,7 +179,7 @@ class ChainNer {
       //new BPInferencer[ChainNerLabel](model).inferTreewiseMax(document.tokens.map(_.attr[ChainNerLabel]))
     } else {
       for (token <- document.tokens) if (token.attr[ChainNerLabel] == null) token.attr += new Conll2003ChainNerLabel(token, Conll2003NerDomain.category(0)) // init value doens't matter
-      val localModel = new TemplateModel(model.templates(0), model.templates(1))
+      val localModel = new CombinedModel(model.subModels(0), model.subModels(1))
       val localPredictor = new VariableSettingsGreedyMaximizer[ChainNerLabel](localModel, null)
       for (label <- document.tokens.map(_.attr[ChainNerLabel])) localPredictor.process(label)
       val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)

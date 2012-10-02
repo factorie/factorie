@@ -28,7 +28,7 @@ class POS1 {
   }
 
   def useSentenceBoundaries = false
-  object PosModel extends TemplateModel {
+  object PosModel extends CombinedModel {
     // Bias term on each individual label 
     val biasTemplate = new DotTemplateWithStatistics1[PosLabel] {
       lazy val weights = new la.DenseTensor1(PosDomain.size)
@@ -83,7 +83,7 @@ class POS1 {
   // TODO Change this to use Viterbi! -akm
   def process(document:Document): Unit = {
     for (token <- document.tokens) if (token.attr[PosLabel] == null) token.attr += new PosLabel(token, PosDomain.category(0)) // init value doens't matter
-    val localModel = new TemplateModel(PosModel.templates(0), PosModel.templates(1))
+    val localModel = new CombinedModel(PosModel.subModels(0), PosModel.subModels(1))
     val localPredictor = new VariableSettingsGreedyMaximizer[PosLabel](localModel)
     for (label <- document.tokens.map(_.attr[PosLabel])) localPredictor.process(label)
     val predictor = new VariableSettingsSampler[PosLabel](PosModel)

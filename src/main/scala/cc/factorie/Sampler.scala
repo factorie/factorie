@@ -185,7 +185,7 @@ class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model, ob
 }
 
 // TODO Remove and recommend GibbsSampler instead
-class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
+class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
   def settings(variables:Seq[V]): SettingIterator = new SettingIterator {
     val vs = variables.map(_.settings).toList
     val vds = variables.map(v => new DiffList).toList // maintains a list of changes for each variable
@@ -229,7 +229,7 @@ class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model = 
 }
 
 // TODO Rename IteratedConditionalModes /* Besag's Iterated Conditional Modes */
-class VariableSettingsGreedyMaximizer[V<:Variable with IterableSettings](model:Model = cc.factorie.defaultModel, objective:Model = null) extends SettingsGreedyMaximizer[V](model, objective) {
+class VariableSettingsGreedyMaximizer[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsGreedyMaximizer[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 

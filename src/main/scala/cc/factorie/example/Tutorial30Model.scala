@@ -11,7 +11,7 @@ object Tutorial30Model {
     
     // The trait "Model" leaves abstract how this mapping from Variables to Factors is maintained.
     
-    // Let's start by creating some Variables and Factor classes
+    // Let's start by creating some Variables and Factor classes.
     val outputs: Seq[BooleanVariable] = for (i <- 0 until 10) yield new BooleanVariable
     val inputs: Seq[BooleanVariable] = for (i <- 0 until 10) yield new BooleanVariable(i % 2 == 0)
     val markovWeights = new DenseTensor2(Array(Array(1.0, 0.0), Array(0.0, 1.0))) 
@@ -23,7 +23,7 @@ object Tutorial30Model {
     class InputFactor(bi:BooleanVariable, bo:BooleanVariable) extends DotFactorWithStatistics2(bi, bo) {
       def weights = inputWeights 
       override def factorName = "InputFactor"
-    } 
+    }
     
     // ItemizedModel stores a given set of Factors, efficiently indexed with HashMaps.
     val m1 = new ItemizedModel

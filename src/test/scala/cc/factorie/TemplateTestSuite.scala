@@ -28,7 +28,7 @@ class TemplateTestSuite extends JUnitSuite  {
     val diff = new DiffList
     b.set(false)(diff)
     val factors = template.factors(diff)
-    assert(factors.head.family === template)
+    assert(factors.head.asInstanceOf[DotTemplateWithStatistics1[BooleanVariable]#FactorType].family === template)
     assert(factors.head.variables.head == b)
     // TODO Uncomment this next line
     //assert(factors.head.statistics.asInstanceOf[TemplateWithDotStatistics1[BooleanVariable]#Stat]._1 == false)

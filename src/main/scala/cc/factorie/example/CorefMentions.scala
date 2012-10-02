@@ -106,7 +106,7 @@ object CorefMentionsDemo {
         })
       }}
 
-      val model = new TemplateModel
+      val model = new CombinedModel
 
       // Pairwise affinity factor between Mentions in the same partition
       model += new DotTemplate4[EntityRef,EntityRef,Mention,Mention] {
@@ -160,7 +160,7 @@ object CorefMentionsDemo {
       }
 
 
-      val objective1 = new TemplateModel(new TupleTemplateWithStatistics2[EntityRef,TrueEntityIndex] {
+      val objective1 = new CombinedModel(new TupleTemplateWithStatistics2[EntityRef,TrueEntityIndex] {
         def unroll1(er:EntityRef) = Factor(er, er.mention.trueEntityIndex)
         def unroll2(tei:TrueEntityIndex) = Factor(tei.mention.entityRef, tei)
         def score(thisMentionEntity:EntityRef#Value, thisMentionTrueEntityIndex:TrueEntityIndex#Value) = {

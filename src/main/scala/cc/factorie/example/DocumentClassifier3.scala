@@ -38,7 +38,7 @@ object DocumentClassifier3 {
     def domain = LabelDomain
   }
 
-  val model = new TemplateModel(
+  val model = new CombinedModel(
     /** Bias term just on labels */
     new DotTemplateWithStatistics1[Label] { 
       //override def statisticsDomains = Tuple1(LabelDomain)
@@ -53,7 +53,7 @@ object DocumentClassifier3 {
     }
   )
 
-  val objective = new TemplateModel(new HammingLossTemplate[Label])
+  val objective = new HammingLossTemplate[Label]
 
   def main(args: Array[String]) : Unit = {
     if (args.length < 2) 
@@ -84,8 +84,8 @@ object DocumentClassifier3 {
     val predictor = new VariableSettingsGreedyMaximizer[Label](model)
     predictor.processAll(trainVariables)
     predictor.processAll(testVariables)
-    println ("Train accuracy = "+ cc.factorie.defaultObjective.aveScore(trainVariables))
-    println ("Test  accuracy = "+ cc.factorie.defaultObjective.aveScore(testVariables))
+    println ("Train accuracy = "+ HammingLossObjective.aveScore(trainVariables))
+    println ("Test  accuracy = "+ HammingLossObjective.aveScore(testVariables))
 
   }
 }

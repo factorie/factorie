@@ -35,13 +35,13 @@ object WordSegmenterDemo {
   class Sentence extends Chain[Sentence,Token]
 
     // The factor templates that define the model
-  val model = new TemplateModel
+  val model = new CombinedModel
   /** Bias term just on labels */
   model += new DotTemplateWithStatistics1[Label] {
     lazy val weights = new la.DenseTensor1(BooleanDomain.size)
     factorName = "Label"
     //def statistics(t:Label#Value) = Stat(t)
-    def statisticsDomains = Tuple1(BooleanDomain)
+    //def statisticsDomains = Tuple1(BooleanDomain)
   }
 //  /** Factor between label and observed token */
 //  model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
@@ -61,7 +61,7 @@ object WordSegmenterDemo {
   /** Factor between label and observed token */
   model += new DotTemplateWithStatistics2[Label,Token] {
     factorName = "Label,Token"
-    def statisticsDomains = ((BooleanDomain,TokenDomain))
+    //def statisticsDomains = ((BooleanDomain,TokenDomain))
     lazy val weights = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
     def unroll1 (label:Label) = Factor(label, label.token)
     def unroll2 (token:Token) = Factor(token.label, token)
@@ -69,7 +69,7 @@ object WordSegmenterDemo {
   /** A token bi-gram conjunction  */
   model += new DotTemplateWithStatistics3[Label,Token,Token] {
     factorName = "Label,Token,Token"
-    def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
+    //def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
     lazy val weights = new la.Dense2LayeredTensor3(BooleanDomain.size, TokenDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_))
     def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token.prev, label.token) else Nil
     def unroll2 (token:Token) = if (token.hasPrev) Factor(token.label, token.prev, token) else Nil
@@ -79,7 +79,7 @@ object WordSegmenterDemo {
   model += new DotTemplateWithStatistics2[Label,Label] {
     factorName = "Label,Label"
     lazy val weights = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
-    def statisticsDomains = ((BooleanDomain,BooleanDomain))
+    //def statisticsDomains = ((BooleanDomain,BooleanDomain))
     def unroll1 (label:Label) = if (label.token.hasNext) Factor(label, label.token.next.label) else Nil
     def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
   }
@@ -87,7 +87,7 @@ object WordSegmenterDemo {
   val skipTemplate = new DotTemplate2[Label,Label] {
     factorName = "Label,Label:Boolean"
     lazy val weights = new la.DenseTensor1(BooleanDomain.size)
-    def statisticsDomains = Tuple1(BooleanDomain)
+    //def statisticsDomains = Tuple1(BooleanDomain)
     def unroll1 (label:Label) =  
       // could cache this search in label.similarSeq for speed
       for (other <- label.token.chain.links; if label.token.char == other.char) yield
@@ -97,7 +97,7 @@ object WordSegmenterDemo {
   }
   //model += skipTemplate
 
-  val objective = new TemplateModel(new HammingLossTemplate[Label])
+  val objective = new HammingLossTemplate[Label]
 
 
 

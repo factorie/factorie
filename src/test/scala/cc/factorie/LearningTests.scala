@@ -57,7 +57,7 @@ class SampleRankTest extends AssertionsForJUnit {
   //create variables with a ring graph structure
   var bools: Seq[MyBool] = null
 
-  val trainingSignal = new TemplateModel(
+  val trainingSignal = new CombinedModel(
     //
     //this template unrolls a "ring" structured graphical model
     new TupleTemplateWithStatistics2[MyBool, MyBool] {
@@ -71,10 +71,10 @@ class SampleRankTest extends AssertionsForJUnit {
       }
     }
   )
-  var model: TemplateModel = null
+  var model: CombinedModel = null
 
 
-  class AllPairsProposer(model: TemplateModel) extends MHSampler[Null](model)
+  class AllPairsProposer(model: CombinedModel) extends MHSampler[Null](model)
   {
     def propose(context: Null)(implicit delta: DiffList): Double =
       {
@@ -84,7 +84,7 @@ class SampleRankTest extends AssertionsForJUnit {
   }
 
 
-  abstract class AllPairsCD1Proposer(model: TemplateModel) extends ContrastiveDivergence[Null](model)
+  abstract class AllPairsCD1Proposer(model: CombinedModel) extends ContrastiveDivergence[Null](model)
   {
     def propose(context: Null)(implicit delta: DiffList): Double =
       {
@@ -106,7 +106,7 @@ class SampleRankTest extends AssertionsForJUnit {
       bools(bools.length - 1).next = bools(0)
       println("NUM BOOL VARS: " + bools.size)
 
-      model = new TemplateModel(
+      model = new CombinedModel(
         new DotTemplateWithStatistics2[MyBool, MyBool]
         {
           //def statisticsDomains = ((BooleanDomain, BooleanDomain))

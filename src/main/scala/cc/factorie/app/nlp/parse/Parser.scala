@@ -19,7 +19,7 @@ import cc.factorie.app.nlp._
 
 class Parser {
   
-  object ParserModel extends TemplateModel(
+  object ParserModel extends CombinedModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[ParseLabel] {
       //def statisticsDomains = Tuple1(ParseLabelDomain)

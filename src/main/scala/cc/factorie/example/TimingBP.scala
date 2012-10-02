@@ -11,7 +11,7 @@ import cc.factorie.app.nlp._
 //import cc.factorie.bp.specialized._
 import cc.factorie.app.nlp.pos._
 
-object TestModel extends TemplateModel {
+object TestModel extends CombinedModel {
   // Bias term on each individual label
   val biasTemplate =  new DotTemplateWithStatistics1[PosLabel] {
     lazy val weights = new la.DenseTensor1(PosDomain.size)

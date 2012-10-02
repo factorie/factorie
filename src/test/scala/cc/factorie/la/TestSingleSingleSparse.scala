@@ -32,7 +32,7 @@ class TestSingleSingleSparse {
         def unroll3(feature: Feature) = throw new Error("Feature shouldn't change")
       }
 
-    val model = new TemplateModel(t)
+    val model = new CombinedModel(t)
 
     val feature = new Feature(Seq("feature1", "feat2", "feat3"))
     val categoryFeature = new CategoryFeature(2)
@@ -40,7 +40,7 @@ class TestSingleSingleSparse {
 
     label := LabelDomain.value(false)
 
-    val objective = new TemplateModel(new HammingLossTemplate[Label])
+    val objective = new CombinedModel(new HammingLossTemplate[Label])
     val learner = new SampleRank(new GibbsSampler(model, objective), new cc.factorie.optimize.AROW(model))
     val predictor = new VariableSettingsSampler[Label](model, null) { temperature = 0.01 }
 

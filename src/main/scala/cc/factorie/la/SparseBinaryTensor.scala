@@ -22,6 +22,11 @@ trait SparseBinaryTensor extends Tensor with cc.factorie.util.ProtectedIntArrayB
   @inline final def apply(index:Int): Double = if (_indexOfSorted(index) >= 0) 1.0 else 0.0
   @inline final def contains(index:Int): Boolean = _containsSorted(index)
   override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { val len = _length; var i = 0; while (i < len) { f(_array(i), 1.0); i += 1 }}
+  override def activeElements: Iterator[(Int,Double)] = new Iterator[(Int,Double)] { // Must not change _indexs and _values during iteration!
+    var i = 0
+    def hasNext = i < _length
+    def next = { i += 1 ; (_array(i-1), 1.0) }
+  }
   override def sum: Double = _length.toDouble
   override def max: Double = if (_length > 0) 1.0 else 0.0
   override def min: Double = if (_length == 0) 0.0 else 1.0
