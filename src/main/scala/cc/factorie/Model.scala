@@ -90,27 +90,13 @@ trait Model {
   def factorsOfFamilies[F<:Family](variables:Iterable[Variable], families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factors(variables), families)
   def factorsOfFamilies[F<:Family](d:DiffList, families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factors(d), families)
   
-  // TODO Add score(Iterable[Variable],TypedAssignment[Variable]): Double
-  def score(variables:Iterable[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.currentScore; sum } // factors(variables).foldLeft(0.0)((sum, f) => sum + f.score)
+  // Getting sums of scores from all neighboring factors
+  def score(variables:Iterable[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.currentScore; sum }
+  def score(variables:Iterable[Variable], assignment:TypedAssignment[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.scoreAssignment(assignment); sum } 
   def score(variable:Variable): Double = { var sum = 0.0; for (f <- factors(variable)) sum += f.currentScore; sum }
   def score(d:DiffList) : Double = { var sum = 0.0; for (f <- factors(d)) sum += f.currentScore; sum }
   /** Returns the average score, that is score of variables, normalized by the size of the collections vars. */
   def aveScore(variables:Iterable[Variable]): Double = score(variables) / variables.size  // TODO Rename to scoreAve?
-
-  /** Deduplicate a sequence of Factors.
-      This method should be called on all Iterable[Factor] before they are returned by methods such as "factors" */
-  // TODO Remove this method
-//  private def dedup[F<:Factor](factors:Iterable[F]): Iterable[F] = {
-//    if (factors.size == 1) factors
-//    else if (factors.size == 2) {
-//      if (factors.head == factors.last) factors.head
-//      else factors
-//    } else {
-//      val result = new scala.collection.mutable.LinkedHashSet[F]
-//      result ++= factors
-//      result
-//    }
-//  }
   
   // Some Model subclasses have a list of Families to which all its factors belong
   def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
@@ -118,10 +104,7 @@ trait Model {
   def familiesOfClass[F<:Family]()(implicit m:Manifest[F]): Seq[F] = familiesOfClass[F](m.erasure.asInstanceOf[Class[F]])
 
   // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
-  //def weightsTensor: ConcatenatedTensor = new ConcatenatedTensor(familiesOfClass[DotFamily].map(_.weights))
   def weightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t }
-  //def newDenseWeightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.newDenseTensor); t }
-  //def newSparseWeightsTensor: WeightsTensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.newSparseTensor); t }
   def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
   def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
 
@@ -134,7 +117,7 @@ trait Model {
 
 
 /** Assumes that all calls to addFactors() will only add Factors of type FactorType, and then appropriately casts the return type of factors() methods. */
-trait TypedModel extends Model {
+trait ModelWithFactorType extends Model {
   trait FactorType <: Factor
   /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
   override def factors(variables:Iterable[Variable]): Iterable[FactorType] = { val set = newFactorsCollection; addFactors(variables, set); set.asInstanceOf[Iterable[FactorType]] }

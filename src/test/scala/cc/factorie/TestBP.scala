@@ -362,7 +362,7 @@ object BPTestUtils {
   
   object BoolDomain extends CategoricalDomain[Boolean](List(true, false))
 
-  class BinVar(i: Int) extends LabelVariable(i) {
+  class BinVar(i: Int) extends LabeledCategoricalVariable(i) {
     def domain = BinDomain
   }
   

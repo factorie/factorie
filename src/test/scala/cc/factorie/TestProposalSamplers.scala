@@ -23,7 +23,7 @@ class TestProposalSamplers extends TestCase {
   // a binary variable that takes values 0 or 1
   object LabelDomain extends CategoricalDomain[Int](0 until numLabels)
 
-  class BinVar(i: Int) extends LabelVariable(i) {
+  class BinVar(i: Int) extends LabeledCategoricalVariable(i) {
     def domain = LabelDomain
   }
 

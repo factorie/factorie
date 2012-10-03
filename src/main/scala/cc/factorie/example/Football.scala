@@ -33,7 +33,7 @@ object Football {
     def domain = TokenFeaturesDomain
   }
   object LabelDomain extends CategoricalDomain[String]
-  class Label(tag:String, val token:Token) extends LabelVariable(tag) {
+  class Label(tag:String, val token:Token) extends LabeledCategoricalVariable(tag) {
     def domain = LabelDomain
   }
 

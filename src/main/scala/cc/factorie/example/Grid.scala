@@ -14,7 +14,7 @@ object Grid {
 
   class Observed(val score: Double) extends DoubleVariable(score)
 
-  class Pixel(val x: Int, val y: Int, val image: Seq[Seq[Pixel]], val score: Double, truth: Boolean) extends LabelVariable(truth) {
+  class Pixel(val x: Int, val y: Int, val image: Seq[Seq[Pixel]], val score: Double, truth: Boolean) extends LabeledCategoricalVariable(truth) {
 
     def domain = BooleanDomain
 

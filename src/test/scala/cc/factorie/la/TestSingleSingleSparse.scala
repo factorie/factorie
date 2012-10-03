@@ -5,7 +5,7 @@ import org.junit.Test
 class TestSingleSingleSparse {
 
   object LabelDomain extends CategoricalDomain[Boolean](List(true, false))
-  class Label(target: Boolean, val categoryFeature: CategoryFeature, val feature: Feature) extends LabelVariable[Boolean](target) {
+  class Label(target: Boolean, val categoryFeature: CategoryFeature, val feature: Feature) extends LabeledCategoricalVariable[Boolean](target) {
     def domain = LabelDomain 
   }
 

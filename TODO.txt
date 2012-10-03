@@ -2,23 +2,15 @@ Pre 1.0 release:
 
 Implement sparse iteration through values for BP [McCallum]
 Consider renaming LabelVariable to LabeledCategoricalVariable, and having LabeledDiscreteVariable, LabeledBooleanVariable [McCallum]
-Consider Statistics -> Statistic, and then also having Statistic1, Statistic2, etc.
 Fix Family's serialization of DiscreteDomains and CategoricalDomains.  Make user serialize separately from Model.
-Make DotFamily can depend on just TensorVar, not DiscreteTensorVar.
 Rename DiscreteTensorVar to DiscreteDomainTensorVar for clarity; similarly for Categorical. [McCallum]
-DomainFromClass or make it the default?  [McCallum]
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
-Consider property-like facilities and its interaction with command line [McCallum, Vilnis]
- No, use scala interpreter itself for configuration as recommended online.
-Make app.regress  [McCallum, Passos]
 Finish BP.  Make it fast!  [Martin, Pandya, Singh]
 Wrap-up and clean up NER and POS [Anzaroot]
 Consider changes to generative.Collapse infrastructure  [McCallum]
 Implement generative.CollapsedVariationalBayes and make sure it works for LDA  [McCallum]
-Re-consider type arguments in Sampler and descendants  [McCallum]
 Look at app.nlp.relation  [McCallum]
 Make a command-line tool similar to Mallet SimpleTagger [McCallum]
-Look at other BUGS-like tools, and see what we can reproduce easily [Bakalov, Duckworth]
 Make reasonable command-line tools for MALLET functionality, and document [McCallum and others]
 Sanity-check pass through all code [All]
 Consider which println's should be transformed into Logging statements
@@ -34,6 +26,13 @@ Make an HMM example and show that BP inference and EM training work on it [Belan
 
 
 DONE:
+DomainFromClass or make it the default?  No.  [McCallum]
+Re-consider type arguments in Sampler and descendants?  No.  [McCallum]
+Consider property-like facilities and its interaction with command line [McCallum, Vilnis]
+ No, use scala interpreter itself for configuration as recommended online.
+Consider Statistics -> Statistic, and then also having Statistic1, Statistic2, etc.
+Make app.regress  [McCallum, Passos]
+Make DotFamily can depend on just TensorVar, not DiscreteTensorVar.
 Remove er package altogether for now [McCallum]
 Remove statisticsDomain and let DotFamily.weights be abstract  [McCallum]  
 Make BooleanValue be a class rather than (as it is currently) a type alias for CategoricalValue[Boolean] [McCallum]
@@ -59,6 +58,7 @@ Get rid of dependency on Java bibtex parser library
 Implement parameter averaging
 
 Future:
+Look at other BUGS-like tools, and see what we can reproduce easily [Bakalov, Duckworth]
 Sebastian: Make new kinds of Templates; current one: factors(Variable neighbor); new: factors(arbitrary context)
  Consider naming the current Template something more specific, e.g. "NeighborTemplate"
  Template[C] { def factors(context:C): Iterable[Factors] }

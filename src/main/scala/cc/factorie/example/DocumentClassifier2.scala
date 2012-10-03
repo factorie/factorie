@@ -36,7 +36,7 @@ object DocumentClassifier2 {
     "\\w+".r.findAllIn(Source.fromFile(file).mkString).foreach(regexMatch => this += regexMatch.toString)
   }
   object LabelDomain extends CategoricalDomain[String]
-  class Label(name:String, val document:Document) extends LabelVariable(name) {
+  class Label(name:String, val document:Document) extends LabeledCategoricalVariable(name) {
     def domain = LabelDomain
   }
 

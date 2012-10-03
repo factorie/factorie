@@ -24,7 +24,7 @@ object WordSegmenterDemo {
   
   // The variable types:
   //object LabelDomain extends CategoricalDomain[Boolean]
-  class Label(b:Boolean, val token:Token) extends BooleanLabelVariable(b)  // { def domain = LabelDomain }
+  class Label(b:Boolean, val token:Token) extends LabeledBooleanVariable(b)  // { def domain = LabelDomain }
   object TokenDomain extends CategoricalTensorDomain[String]
   class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
     def domain = TokenDomain

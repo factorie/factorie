@@ -57,7 +57,7 @@ object ActionDomain extends CategoricalDomain[(Int, String)] {
     }
   }
 }
-class ActionLabel(targetAction: (Int, String), stack: ArrayBuffer[Int], input: ArrayBuffer[Int], tree: ParseTree) extends LabelVariable(targetAction) {
+class ActionLabel(targetAction: (Int, String), stack: ArrayBuffer[Int], input: ArrayBuffer[Int], tree: ParseTree) extends LabeledCategoricalVariable(targetAction) {
   import ParseFeatureExtractors._
 
   def domain = ActionDomain

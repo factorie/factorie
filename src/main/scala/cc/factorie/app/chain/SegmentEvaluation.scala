@@ -27,7 +27,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
   var targetCount, predictedCount, correctCount = 0 // per segment
   @deprecated("use targetCount instead.") def trueCount = targetCount 
 
-  def ++=(tokenseqs:Seq[Seq[{def label:LabelVariable[String]}]]): Unit = tokenseqs.foreach(ts => this.+=(ts.map(_.label)))
+  def ++=(tokenseqs:Seq[Seq[{def label:LabeledCategoricalVariable[String]}]]): Unit = tokenseqs.foreach(ts => this.+=(ts.map(_.label)))
 
   /* Find out if we are at the beginning of a segment.
    * This complicated conditional is necessary to make the start pattern "(B|I)-" work
@@ -48,7 +48,7 @@ class PerSegmentEvaluation(val labelName:String, val labelValueStart: Regex, val
       document ends in a mention and the next document begins with the same
       mention type, they will be counted as only one mention, when they should
       have been counted as two. */
-  def +=(labels: Seq[LabelVariable[String]]): Unit = {
+  def +=(labels: Seq[LabeledCategoricalVariable[String]]): Unit = {
     //println("PerSegmentEvaluation += "+labels.size)
     var predictedStart, targetStart = false
     for (position <- 0 until labels.length) {
@@ -128,7 +128,7 @@ object SegmentEvaluation {
 }
 
 // for defaultStartPrefix = "(B|I)-" Although just "B-" would be enough for BIO, "(B|I)-" is needed for IOB
-class SegmentEvaluation[L<:LabelVariable[String]](baseLabelStrings: Seq[String], startPrefix:String = "(B|I)-", continuePrefix:String = "I-") {
+class SegmentEvaluation[L<:LabeledCategoricalVariable[String]](baseLabelStrings: Seq[String], startPrefix:String = "(B|I)-", continuePrefix:String = "I-") {
   def this(startPrefix:String, continuePrefix:String, labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.map(_.category)), startPrefix, continuePrefix)
   def this(labelDomain:CategoricalDomain[String]) = this(SegmentEvaluation.labelStringsToBase(labelDomain.map(_.category)))
   // Grab the domain from the first label in the Seq; assume all the domains are the same

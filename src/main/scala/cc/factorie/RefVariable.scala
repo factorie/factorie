@@ -36,13 +36,12 @@ class RefVariable[A<:AnyRef](initialValue:A = null) extends RefVar[A] with Mutab
 }
 
 /** For variables that have a true value described by a Scala AnyRef type T. */
-trait RefVarWithTargetValue[A>:Null<:AnyRef] extends VarWithTargetValue {
+trait LabeledRefVar[A>:Null<:AnyRef] extends LabeledVar {
   this: RefVariable[A] =>
   def targetValue: A
   def isUnlabeled = targetValue == null
-  def setToTarget(implicit d:DiffList): Unit = set(targetValue)
   def valueIsTarget: Boolean = targetValue == value
 }
 
-abstract class RefLabel[A>:Null<:AnyRef](var trueValue:A) extends RefVariable[A] with RefVarWithTargetValue[A]
+abstract class LabeledRefVariable[A>:Null<:AnyRef](var targetValue:A) extends RefVariable[A](targetValue) with LabeledRefVar[A]
 

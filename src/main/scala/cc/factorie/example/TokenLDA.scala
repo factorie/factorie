@@ -22,7 +22,7 @@ object TokenLDA {
   }
   
   object LexiconLabelDomain extends CategoricalDomain[String] { this += "TRUE" }
-  class LexiconLabel(value:String, val token:Token) extends LabelVariable(value) {
+  class LexiconLabel(value:String, val token:Token) extends LabeledCategoricalVariable(value) {
     def domain = LexiconLabelDomain
   }
 

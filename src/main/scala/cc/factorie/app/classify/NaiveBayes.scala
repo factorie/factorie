@@ -19,7 +19,7 @@ import scala.collection.mutable.{HashMap,ArrayBuffer}
 class NaiveBayesTrainer extends ClassifierTrainer {
   var biasSmoothingMass = 1.0
   var evidenceSmoothingMass = 1.0
-  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F]): Classifier[L] = {
+  def train[L<:LabeledCategoricalVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val labelDomain = il.labelDomain
     val featureDomain = il.featureDomain
@@ -33,7 +33,7 @@ class NaiveBayesTrainer extends ClassifierTrainer {
     for (li <- 0 until numLabels; fi <- 0 until numFeatures) evid(li).+=(fi, evidenceSmoothingMass)
     // Incorporate evidence
     for (label <- il) {
-      val targetIndex = label.target.intValue
+      val targetIndex = label.target.asInstanceOf[DiscreteVar].intValue // TODO Try to get rid of this cast
       bias.+=(targetIndex, 1.0)
       val features = il.labelToFeatures(label)
       //for (featureIndex <- features.activeDomain.asSeq)

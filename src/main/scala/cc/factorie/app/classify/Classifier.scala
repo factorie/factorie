@@ -55,11 +55,11 @@ class ModelBasedClassifier[L <: MutableDiscreteVar[_]](val model: Model, val lab
 
 /** An object that can train a Classifier given a LabelList. */
 trait ClassifierTrainer {
-  def train[L <: LabelVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L]
+  def train[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L]
 }
 
 /** An object that can gather  */
-trait ClassifierEvaluator[L <: LabelVariable[_]] {
+trait ClassifierEvaluator[L <: LabeledCategoricalVariable[_]] {
   def += (c: Classification[L]): Unit
   def toString: String
 }
@@ -114,7 +114,7 @@ object Classifier {
     // Feature and Label classes
     object FeaturesDomain extends CategoricalTensorDomain[String]
     object LabelDomain extends CategoricalDomain[String]
-    class Label(labelName: String, val features: Features) extends LabelVariable(labelName) {
+    class Label(labelName: String, val features: Features) extends LabeledCategoricalVariable(labelName) {
       def domain = LabelDomain
     }
     trait Features extends DiscreteTensorVar {

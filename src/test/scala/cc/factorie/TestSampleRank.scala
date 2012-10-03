@@ -3,7 +3,7 @@ import cc.factorie.la._
 
 object TestSampleRank {
   object LabelDomain extends CategoricalDomain[String]
-  class Label(s:String, val instance:Instance) extends LabelVariable(s) { def domain = LabelDomain }
+  class Label(s:String, val instance:Instance) extends LabeledCategoricalVariable(s) { def domain = LabelDomain }
   object InstanceDomain extends CategoricalTensorDomain[String]
   class Instance(labelString:String) extends BinaryFeatureVectorVariable[String] {
     def domain = InstanceDomain

@@ -17,4 +17,4 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 
 object PosDomain extends CategoricalDomain[String]
-class PosLabel(val token:Token, targetValue:String) extends LabelVariable(targetValue) { def domain = PosDomain } 
+class PosLabel(val token:Token, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = PosDomain } 

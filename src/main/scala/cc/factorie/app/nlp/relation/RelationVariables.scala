@@ -20,7 +20,7 @@ object RelationVariables {
 
   RelationLabelDomain += NoneLabel
 
-  class RelationLabel(labelStr: String, val mention: RelationMention) extends LabelVariable(labelStr) {
+  class RelationLabel(labelStr: String, val mention: RelationMention) extends LabeledCategoricalVariable(labelStr) {
     def domain = RelationLabelDomain
   }
 

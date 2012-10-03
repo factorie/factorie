@@ -10,7 +10,7 @@ import cc.factorie._
  * Sentences are separated by blank lines.
  */
 object LoadOWPL {
-  def fromFilename(file: String, labelMaker: (Token, String) => LabelVariable[String], takeOnly: Int = -1): Seq[Document] = {
+  def fromFilename(file: String, labelMaker: (Token, String) => LabeledCategoricalVariable[String], takeOnly: Int = -1): Seq[Document] = {
     val doc = new Document("", "")
     var sentence = new Sentence(doc)
     var numSentences = 1

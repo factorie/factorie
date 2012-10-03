@@ -33,7 +33,7 @@ object ChainNER2b {
     def domain = TokenDomain
   }
   object LabelDomain extends CategoricalDomain[String]
-  class Label(labelName: String, word: String) extends LabelVariable(labelName) with ChainLink[Label,Sentence] {
+  class Label(labelName: String, word: String) extends LabeledCategoricalVariable(labelName) with ChainLink[Label,Sentence] {
     val token = new Token(word, this)
     def domain = LabelDomain
   }

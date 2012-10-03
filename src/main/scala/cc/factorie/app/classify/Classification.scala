@@ -40,7 +40,7 @@ class Classification[L<:MutableDiscreteVar[_]](theLabel:L, val classifier:Classi
 /** A collection of Classification results, along with methods for calculating several evaluation measures.
     You can subclass Trial to add new evaluation measures. */
 // TODO Make this work for arbitrary category type, not just String; needs existential type argument.
-class Trial[L<:LabelVariable[String]](val classifier:Classifier[L]) extends LabelEvaluation(classifier.labelDomain.asInstanceOf[CategoricalDomain[String]]) with IndexedSeq[Classification[L]] {
+class Trial[L<:LabeledCategoricalVariable[String]](val classifier:Classifier[L]) extends LabelEvaluation(classifier.labelDomain.asInstanceOf[CategoricalDomain[String]]) with IndexedSeq[Classification[L]] {
   private val classifications = new ArrayBuffer[Classification[L]]
   def length = classifications.length
   def apply(i:Int) = classifications(i)

@@ -20,7 +20,7 @@ import java.lang.StringBuffer
 // Representation for a dependency parse
 
 object ParseLabelDomain extends CategoricalDomain[String]
-class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabelVariable(targetValue) { def domain = ParseLabelDomain }
+class ParseLabel(val edge:ParseEdge, targetValue:String) extends LabeledCategoricalVariable(targetValue) { def domain = ParseLabelDomain }
 
 object ParseFeaturesDomain extends CategoricalTensorDomain[String]
 class ParseFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = ParseFeaturesDomain }
@@ -58,7 +58,7 @@ class ParseChildEdges extends SetVariable[ParseEdge]
 // Proposed new style
 
 object ParseTreeLabelDomain extends CategoricalDomain[String]
-class ParseTreeLabel(val tree:ParseTree, targetValue:String = "O") extends LabelVariable(targetValue) { def domain = ParseTreeLabelDomain }
+class ParseTreeLabel(val tree:ParseTree, targetValue:String = "O") extends LabeledCategoricalVariable(targetValue) { def domain = ParseTreeLabelDomain }
 
 object ParseTree {
   val rootIndex = -1

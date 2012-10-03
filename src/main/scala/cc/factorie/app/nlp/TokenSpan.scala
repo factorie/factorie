@@ -40,7 +40,7 @@ class TokenSpan(doc:Document, initialStart:Int, initialLength:Int)(implicit d:Di
   override def toString = "TokenSpan("+start+":"+this.phrase+")"
   /** A short name for this span */
   def name: String = attr.values.head match {
-    case label:LabelVariable[String] => label.categoryValue
+    case label:LabeledCategoricalVariable[String] => label.categoryValue
     case x => x.toString
   }
   

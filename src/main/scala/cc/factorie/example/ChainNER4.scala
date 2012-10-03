@@ -28,7 +28,7 @@ object ChainNER4 {
     this ++= features
   }
   object LabelDomain extends CategoricalDomain[String]
-  class Label(labelname: String, val token: Token) extends LabelVariable(labelname) {
+  class Label(labelname: String, val token: Token) extends LabeledCategoricalVariable(labelname) {
     def domain = LabelDomain
     def hasNext = token.hasNext && token.next.label != null
     def hasPrev = token.hasPrev && token.prev.label != null

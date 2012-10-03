@@ -30,7 +30,7 @@ object DocumentClassifier1 {
     cc.factorie.app.strings.alphaSegmenter(file).foreach(token => this += token)
   }
   object LabelDomain extends CategoricalDomain[String];
-  class Label(labelString:String, val document:Document) extends LabelVariable(labelString) {
+  class Label(labelString:String, val document:Document) extends LabeledCategoricalVariable(labelString) {
     def domain = LabelDomain
   }
  

@@ -23,7 +23,7 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends TypedModel with Family2[N1,N2] with TemplateModel
+abstract class Template2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends ModelWithFactorType with Family2[N1,N2] with TemplateModel
 {
   val neighborClass1 = nm1.erasure
   val neighborClass2 = nm2.erasure

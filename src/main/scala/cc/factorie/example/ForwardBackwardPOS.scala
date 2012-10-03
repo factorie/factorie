@@ -61,7 +61,7 @@ object ForwardBackwardPOS {
       addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 
-  def percentageSetToTarget[L <: VarWithTarget](ls: Seq[L]): Double = {
+  def percentageSetToTarget[L <: LabeledVarWithTarget](ls: Seq[L]): Double = {
     val numCorrect = ls.foldLeft(0.0)((partialSum, label) => partialSum + {if (label.valueIsTarget) 1 else 0})
     numCorrect / ls.size * 100
   }
