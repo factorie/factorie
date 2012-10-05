@@ -3,9 +3,9 @@ package cc.factorie.app.classify
 import cc.factorie._
 import cc.factorie.la._
 
-class SVMTrainer extends ClassifierTrainer {
+class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
 
-  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](ll:LabelList[L,F], parallel: Boolean = true): Classifier[L] = {
+  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](ll:LabelList[L,F]): Classifier[L] = {
     val cmodel = new LogLinearModel(ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
 
     val numLabels = ll.labelDomain.size
