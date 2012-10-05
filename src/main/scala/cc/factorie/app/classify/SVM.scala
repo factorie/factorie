@@ -5,15 +5,19 @@ import cc.factorie.la._
 
 class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
 
-  def train[L<:LabelVariable[_],F<:DiscreteTensorVar](ll:LabelList[L,F]): Classifier[L] = {
+  def train[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](ll: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
 
     val numLabels = ll.labelDomain.size
     val numFeatures = ll.featureDomain.size
     val xs: Seq[Tensor1] = ll.map(ll.labelToFeatures(_).tensor.asInstanceOf[Tensor1])
     val ys: Array[Int]   = ll.map(_.intValue).toArray // TODO: tighten the bounds on L so targetIntValue is available here.
-    val labelSeq = if (parallel) (0 until numLabels).par else (0 until numLabels)
-    val weightTensor = labelSeq.map { label => (new LiblinearL2SV).getWeight(xs, ys, label) }
+    val weightTensor = {
+      if (parallel)
+        (0 until numLabels).par.map { label => (new LiblinearL2SV).getWeight(xs, ys, label) }
+      else
+        (0 until numLabels).map { label => (new LiblinearL2SV).getWeight(xs, ys, label) }
+    }
     for (f <- 0 until numFeatures;
          (l,t) <- (0 until numLabels).zip(weightTensor)) {
       cmodel.evidenceTemplate.weights(l,f) = t(f)

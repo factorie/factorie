@@ -272,7 +272,7 @@ object ParserSupport {
       this += new ParseDecision(-1, -1, "")
       lazy val defaultCategory = this.head.category
     }
-    class ParseDecisionVariable(targetDecision: ParseDecision, state: ParseState) extends LabelVariable(targetDecision) {
+    class ParseDecisionVariable(targetDecision: ParseDecision, state: ParseState) extends LabeledCategoricalVariable(targetDecision) {
     
       def this(state: ParseState) = this(DecisionDomain.defaultCategory, state)
     
@@ -286,7 +286,7 @@ object ParserSupport {
       var _skipNonCategories = false
     }
     class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
-      val decision = decisionVariable.value
+      //val decision = decisionVariable.value
       def domain = NonProjParserFeaturesDomain
       override def skipNonCategories = NonProjParserFeaturesDomain._skipNonCategories
     }
