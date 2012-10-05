@@ -27,6 +27,8 @@ import java.io.PrintWriter
  * @author Brian Martin
  */
 
+case class Lemma(lemma: String)
+
 object LoadConll2008 {
   private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int,Int,String)]): Unit = {
     val tree = new ParseTree(s)
@@ -38,7 +40,6 @@ object LoadConll2008 {
   }
 
   var loadLemma = true
-  case class Lemma(lemma: String)
 
   def fromFilename(filename:String): Seq[Document] = {
     var document: Document = new Document("Conll2008", "")

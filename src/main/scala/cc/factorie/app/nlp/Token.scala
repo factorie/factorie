@@ -63,6 +63,7 @@ class Token(var stringStart:Int, var stringEnd:Int) extends cc.factorie.app.chai
   // Common attributes, will return null if not present
   def posLabel = attr[cc.factorie.app.nlp.pos.PosLabel]
   def nerLabel = attr[cc.factorie.app.nlp.ner.ChainNerLabel]
+  def lemma = attr[Lemma]
   // Parse attributes, will throw exception if parse is not present
   def parse = sentence.attr[cc.factorie.app.nlp.parse.ParseTree]
   def parseParent: Token = sentence.attr[cc.factorie.app.nlp.parse.ParseTree].parent(sentencePosition)
