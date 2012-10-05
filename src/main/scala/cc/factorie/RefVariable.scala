@@ -40,7 +40,7 @@ trait LabeledRefVar[A>:Null<:AnyRef] extends LabeledVar {
   this: RefVariable[A] =>
   def targetValue: A
   def isUnlabeled = targetValue == null
-  def valueIsTarget: Boolean = targetValue == value
+  //def valueIsTarget: Boolean = targetValue == value
 }
 
 abstract class LabeledRefVariable[A>:Null<:AnyRef](var targetValue:A) extends RefVariable[A](targetValue) with LabeledRefVar[A]

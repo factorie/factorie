@@ -823,7 +823,7 @@ class ChainNer2 {
     //println(" Test Token accuracy = "+ NerObjective.aveScore(testLabels))
     val buf = new StringBuffer
     // Per-token evaluation
-    buf.append(new LabelEvaluation(documents.flatMap(_.tokens.map(_.attr[ChainNerLabel]))))
+    buf.append(new LabeledDiscreteEvaluation(documents.flatMap(_.tokens.map(_.attr[ChainNerLabel]))))
     val segmentEvaluation = new cc.factorie.app.chain.SegmentEvaluation[ChainNerLabel](Conll2003NerDomain.categories.filter(_.length > 2).map(_.substring(2)))
     for (doc <- documents; sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[ChainNerLabel])
     println("Segment evaluation")
