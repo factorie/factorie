@@ -14,9 +14,10 @@
 
 package cc.factorie
 import cc.factorie.la._
-import scala.collection.mutable.{ArrayBuffer,HashMap,LinkedHashSet}
+import scala.collection.mutable.{ArrayBuffer,HashMap,LinkedHashSet,ListBuffer}
 import scala.collection.immutable.ListSet
 import scala.collection.mutable.Set
+import scala.collection.generic.Growable
 
 // TODO In the future, consider things like:
 // POSTagger extends TemplateModel with Inferencer[POSLabel]
@@ -31,12 +32,88 @@ import scala.collection.mutable.Set
  */
 
 trait Model2[C] {
+  //def variables(context:C): Iterable[Variable]
   def factors(context:C): Iterable[Factor]
+  def addFactors(context:C, result:Iterable[Factor] with Growable[Factor]): Unit = result ++= factors(context) 
+  def newFactorsCollection: Iterable[Factor] with Growable[Factor] = new collection.mutable.LinkedHashSet[Factor]
+  def filterByFactorClass[F<:Factor](factors:Iterable[Factor], fclass:Class[F]): Iterable[F] = factors.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
+  def factorsOfClass[F<:Factor](context:C, fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(context), fclass)
+  def filterByFamilyClass[F<:Family](factors:Iterable[Factor], fclass:Class[F]): Iterable[F#Factor] =
+    factors.filter(f => f match {
+      case f:Family#Factor => fclass.isAssignableFrom(f.family.getClass)
+      case _ => false
+    }).asInstanceOf[Iterable[F#Factor]]
+  def factorsOfFamilyClass[F<:Family](context:C, fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(context), fclass)
+  def filterByFamily[F<:Family](factors:Iterable[Factor], family:F): Iterable[F#Factor] = 
+    factors.filter(f => f match {
+      case f:Family#Factor => f.family.equals(family)
+      case _ => false
+    }).asInstanceOf[Iterable[F#Factor]]
+  def factorsOfFamily[F<:Family](context:C, family:F): Iterable[F#Factor] = filterByFamily(factors(context), family)
+  def filterByFamilies[F<:Family](factors:Iterable[Factor], families:Seq[F]): Iterable[F#Factor] = 
+    factors.filter(f => f match {
+      case f:Family#Factor => families.contains(f.family)
+      case _ => false
+    }).asInstanceOf[Iterable[F#Factor]]
+  def factorsOfFamilies[F<:Family](context:C, families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factors(context), families)
+  
+  // Getting sums of scores from all neighboring factors
+  def score(context:C): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.currentScore; sum }
+  def averageScore(context:C): Double = score(context) / context.asInstanceOf[Iterable[_]].size
+  
+  // Some Model subclasses have a list of Families to which all its factors belong
+  def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
+  def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Seq[F]]
+  def familiesOfClass[F<:Family]()(implicit m:Manifest[F]): Seq[F] = familiesOfClass[F](m.erasure.asInstanceOf[Class[F]])
+
+  // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
+  //def weights: Tensor = weightsTensor
+  def weightsTensor: Tensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t }
+  def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
+  def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
+
+  // Some Model subclasses that have a fixed set of factors and variables can override the methods below
+  // TODO Consider making a Model trait for these methods.  Yes!
+  def variables: Iterable[Variable] = throw new Error("Model class does not implement method 'variables': "+ this.getClass.getName)
+  def factors: Iterable[Factor] = throw new Error("Model class does not implement method 'factors': "+ this.getClass.getName)
+  def score: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
 }
 
+class CombinedModel2[C](theSubModels:Model2[C]*) extends Model2[C] {
+  val subModels = new ArrayBuffer[Model2[C]] ++= theSubModels
+  def +=(model:Model2[C]): Unit = subModels += model
+  def ++=(models:Iterable[Model2[C]]): Unit = subModels ++= models
+  def factors(context:C): ListBuffer[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
+  override def newFactorsCollection: ListBuffer[Factor] = new collection.mutable.ListBuffer[Factor]
+  override def addFactors(context:C, result:Iterable[Factor] with Growable[Factor]): Unit = subModels.foreach(_.addFactors(context, result))
+  override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
+  override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
+  override def families: Seq[Family] = subModels.flatMap(_.families) // filterByClass(classOf[Family]).toSeq
+
+  protected def filename: String = throw new Error("Not yet implemented")
+  def save(dirname:String, gzip: Boolean = false): Unit = throw new Error("Not yet implemented")
+  def load(dirname:String, gzip: Boolean = false): Unit = throw new Error("Not yet implemented")
+  def loadFromJar(dirname:String): Unit = throw new Error("Unsupported")
+}
+
+
 object ModelConversions {
-  implicit def variable2DiffList(model:Model2[Variable]): Model2[DiffList] = new Model2[DiffList] {
-    def factors(dl:DiffList): Iterable[Factor] = dl.map(diff => model.factors(diff.variable)).flatten 
+  implicit def modelVariable2DiffList(model:Model2[Variable]): Model2[DiffList] = new Model2[DiffList] {
+    def factors(dl:DiffList): Iterable[Factor] = {
+      val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables in the DiffList
+      dl.foreach(d => if (d.variable ne null) model.addFactors(d.variable, result))
+      result
+    }
+  }
+  implicit def modelVariables2Variable(model:Model2[Iterable[Variable]]): Model2[Variable] = new Model2[Variable] {
+    def factors(variable:Variable): Iterable[Factor] = model.factors(Seq(variable))
+  }
+  implicit def modelVariable2Variables(model:Model2[Variable]): Model2[Iterable[Variable]] = new Model2[Iterable[Variable]] {
+    def factors(variables:Iterable[Variable]): Iterable[Factor] = {
+      val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables
+      variables.foreach(v => model.addFactors(v, result))
+      result
+    }
   }
 }
 

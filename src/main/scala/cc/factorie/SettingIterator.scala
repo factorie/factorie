@@ -46,7 +46,7 @@ trait IterableSettings {
   }
   def settings: SettingIterator
 }
-// TODO Keep this even though IterableDomain may be the prefered mechanism for many cases,
+// TODO Keep this even though IterableDomain may be the preferred mechanism for many cases,
 // because in some cases certain variable may iterate over only a subset of the domain's values.
 
 // TODO Consider something like this?  Perhaps not.  -akm
