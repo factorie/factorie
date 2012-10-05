@@ -26,21 +26,11 @@ class Classification[L<:MutableDiscreteVar[_]](theLabel:L, val classifier:Classi
     case cv:CategoricalValue[_] => cv.category.toString
     case dv:DiscreteValue => dv.intValue.toString
   }
-  // TODO  Is "set" the best name for this method?  Perhaps "globalize" like Assignment?
-  //@deprecated("Use globalize instead") def set(): this.type = { label.set(bestLabelIndex)(null); this }
-//  // TypedAssignment implementation
-//  //def variables = List(_1)
-//  def apply[B<:L](v:B): B#Value = if (v eq _1) bestLabelValue.asInstanceOf[B#Value] else null.asInstanceOf[B#Value]
-//  def get[B<:L](v:B): Option[B#Value] = if (v eq _1) Some(bestLabelValue.asInstanceOf[B#Value]) else None
-//  def contains(v:L): Boolean = if (v eq _1) true else false
-//  override def globalize(implicit d:DiffList): Unit = label.set(bestLabelIndex)(null)
-//
 }
 
 /** A collection of Classification results, along with methods for calculating several evaluation measures.
     You can subclass Trial to add new evaluation measures. */
-// TODO Make this work for arbitrary category type, not just String; needs existential type argument.
-class Trial[L<:LabeledCategoricalVariable[String]](val classifier:Classifier[L]) extends LabeledDiscreteEvaluation(classifier.labelDomain.asInstanceOf[CategoricalDomain[String]]) with IndexedSeq[Classification[L]] {
+class Trial[L<:LabeledMutableDiscreteVar[_]](val classifier:Classifier[L]) extends LabeledDiscreteEvaluation(classifier.labelDomain.asInstanceOf[CategoricalDomain[String]]) with IndexedSeq[Classification[L]] {
   private val classifications = new ArrayBuffer[Classification[L]]
   def length = classifications.length
   def apply(i:Int) = classifications(i)

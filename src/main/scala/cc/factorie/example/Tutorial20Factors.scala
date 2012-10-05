@@ -4,7 +4,7 @@ import cc.factorie._
 import cc.factorie.la._
 
 /** Introduction to Factors in FACTORIE */
-object Tutorial20Factors {
+object TutorialFactors {
   def main(args:Array[String]): Unit = {
     
     // Factors are a container for an ordered set of neighboring variables, 

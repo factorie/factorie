@@ -24,7 +24,7 @@ import cc.factorie._
 
 
 /** Examples of FACTORIE Variables, which hold data values. */
-object Tutorial10Variables {
+object TutorialVariables {
   def main(args:Array[String]): Unit = {
     
     // A Variable holds a value (data)

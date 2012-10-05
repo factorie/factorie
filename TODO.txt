@@ -1,11 +1,13 @@
 Pre 1.0 release:
 
-Implement sparse iteration through values for BP [McCallum]
-Consider renaming LabelVariable to LabeledCategoricalVariable, and having LabeledDiscreteVariable, LabeledBooleanVariable [McCallum]
-Fix Family's serialization of DiscreteDomains and CategoricalDomains.  Make user serialize separately from Model.
+Implement sparse iteration through values for BP [McCallum, Singh]
+Polish Piece and OptimizationDriver [Passos, Vilnis, McCallum]
+Consider Model[Context] [McCallum]
+Look at Model, Tensor, Domain serialization [Vilnis?]
+Finish BP.  Make it fast!  [Martin, Pandya, Singh]
+
 Rename DiscreteTensorVar to DiscreteDomainTensorVar for clarity; similarly for Categorical. [McCallum]
 Finish app.classify.Classifier command-line tool [McCallum, Vilnis]
-Finish BP.  Make it fast!  [Martin, Pandya, Singh]
 Wrap-up and clean up NER and POS [Anzaroot]
 Consider changes to generative.Collapse infrastructure  [McCallum]
 Implement generative.CollapsedVariationalBayes and make sure it works for LDA  [McCallum]
@@ -17,6 +19,9 @@ Consider which println's should be transformed into Logging statements
 Package documentation  [All]
 Fix copyright year [McCallum]
 Write JUnit tests for cc.factorie.la [Vilnis?]
+HashDomain [Martin]
+Liblinear-like L1 SVM... [Martin]
+No holes in Tensor dot products [Passos]
 
 More examples:
 Tutorial examples [McCallum]
@@ -26,6 +31,7 @@ Make an HMM example and show that BP inference and EM training work on it [Belan
 
 
 DONE:
+Consider renaming LabelVariable to LabeledCategoricalVariable, and having LabeledDiscreteVariable, LabeledBooleanVariable [McCallum]
 DomainFromClass or make it the default?  No.  [McCallum]
 Re-consider type arguments in Sampler and descendants?  No.  [McCallum]
 Consider property-like facilities and its interaction with command line [McCallum, Vilnis]

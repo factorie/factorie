@@ -3,7 +3,7 @@ package cc.factorie.example
 import cc.factorie._ 
 import cc.factorie.la._ 
 
-object Tutorial21Family {
+object TutorialFamily {
   def main(args:Array[String]): Unit = {
     
     val family1 = new Family1[BooleanVariable] {

@@ -3,7 +3,7 @@ package cc.factorie.example
 import cc.factorie._
 import cc.factorie.la._
 
-object Tutorial30Model {
+object TutorialModel {
   def main(args:Array[String]): Unit = {
     
     // Fundamentally a Model is a container for Factors.
@@ -25,7 +25,7 @@ object Tutorial30Model {
       override def factorName = "InputFactor"
     }
     
-    // ItemizedModel stores a given set of Factors, efficiently indexed with HashMaps.
+    // ItemizedModel stores a given set of Factors, with their relations to Variables indexed by HashMaps.
     val m1 = new ItemizedModel
     m1 ++= (for (i <- 0 until 9) yield new MarkovFactor(outputs(i), outputs(i+1)))
     m1 ++= inputs.zip(outputs).map({ case (i:BooleanVariable, o:BooleanVariable) => new InputFactor(i, o) })

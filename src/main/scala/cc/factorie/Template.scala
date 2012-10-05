@@ -27,6 +27,8 @@ trait Template[C,F<:Factor] {
   protected def newContextFactorsCollection: Set[F] = new collection.mutable.LinkedHashSet[F]
 }
 
+//trait VariablesTemplate extends Template[Iterable[Variable],Factors]
+
 ///** A template for creating Factors, where there is a mapping from variables neighboring the factors to the contexts necessary to create those Factors. */
 //trait NeighborAwareTemplate[C] extends Template[C] with Model {
 //  // Map from a variable back to a context from which we can get its neighboring factors
@@ -91,17 +93,6 @@ object Template {
 // TODO Make this Template[F] because this is a container/generator of Factors F.  No, can't because Factor class is inner.
 trait TemplateModel extends Model with Template[Variable,Factor] with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
   def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
-  // Member type FactorType is defined so we will know the Factor type, which enables code like "factor.statistics.vector"
-  //def addFactors(variables:Iterable[Variable], result:Growable[Factor]): Unit = 
-  //override def 
-//  override def factorsWithDuplicates(v:Variable): Iterable[FactorType]
-//  override def factorsWithDuplicates(vs:Iterable[Variable]): Iterable[FactorType] = super.factorsWithDuplicates(vs).asInstanceOf[Iterable[FactorType]]
-//  override def factorsWithDuplicates(d:Diff): Iterable[FactorType] = super.factorsWithDuplicates(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
-//  override def factorsWithDuplicates(difflist:DiffList): Iterable[FactorType] = super.factorsWithDuplicates(difflist).asInstanceOf[Iterable[FactorType]]
-//  override def factors(v:Variable): Iterable[FactorType] = super.factors(v).asInstanceOf[Iterable[FactorType]]
-//  override def factors(variables:Iterable[Variable]): Iterable[FactorType] = super.factors(variables).asInstanceOf[Iterable[FactorType]]
-//  override def factors(d:Diff): Iterable[FactorType] = super.factors(d).asInstanceOf[Iterable[FactorType]] //if (d.variable == null) Nil else factors(d.variable)
-//  override def factors(difflist:DiffList): Iterable[FactorType] = super.factors(difflist).asInstanceOf[Iterable[FactorType]]
   /** Called in implementations of factors(Variable) to give the variable a chance
       to specify additional dependent variables on which factors(Variable) should also be called. */
   def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade

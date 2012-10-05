@@ -29,6 +29,17 @@ import scala.collection.mutable.Set
     @author Andrew McCallum
     @since 0.11
  */
+
+trait Model2[C] {
+  def factors(context:C): Iterable[Factor]
+}
+
+object ModelConversions {
+  implicit def variable2DiffList(model:Model2[Variable]): Model2[DiffList] = new Model2[DiffList] {
+    def factors(dl:DiffList): Iterable[Factor] = dl.map(diff => model.factors(diff.variable)).flatten 
+  }
+}
+
 trait Model {
   //type FactorType <: Factor
   /** Append to "result" all Factors in this Model that touch the given "variable".  This method must not append duplicates. */
