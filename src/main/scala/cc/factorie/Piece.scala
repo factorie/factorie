@@ -1,5 +1,7 @@
-package cc.factorie.optimize
+package cc.factorie
 import cc.factorie._
+import cc.factorie.optimize._
+import cc.factorie.util._
 import app.classify
 import cc.factorie.la._
 import classify.{ModelBasedClassifier, LogLinearModel}
@@ -17,74 +19,61 @@ import io.Source
  * To change this template use File | Settings | File Templates.
  */
 
-abstract class TensorAccumulator {
-  def add(t: Tensor) : Unit
-  def add(index: Int, value: Double): Unit
-}
-
-class ActualTensorAccumulator(val innerTensor: Tensor) extends TensorAccumulator {
-  val l = new Object
-  def add(t: Tensor) {
-    innerTensor += t
-  }
-
-  def add(index: Int, value: Double) {
-    innerTensor(index) += value
-  }
-}
 
 
-abstract class PieceState {
-  def merge(other: PieceState): PieceState
-}
-
-abstract class ModelWithWeights {
-  def weights: Tensor
-  def setWeights(t: Tensor): Unit
-  def copy: ModelWithWeights
-}
+//trait PieceState { def merge(other: PieceState): PieceState }
 
 // Pieces are thread safe
-abstract class Piece {
-  def process(model: ModelWithWeights, gradient: TensorAccumulator,  value: TensorAccumulator,  computeGradient: Boolean, computeValue: Boolean): Unit
-
-  def state: PieceState
-
-  def updateState(state: PieceState)
+trait Piece {
+  def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator,  value: DoubleAccumulator): Unit
+  def accumulateGradient(model: Model, gradient: TensorAccumulator): Unit = accumulateValueAndGradient(model, gradient, NoopDoubleAccumulator)
+  def accumulateValue(model: Model, value: DoubleAccumulator): Unit = accumulateValueAndGradient(model, NoopTensorAccumulator, value)
+  //def state: PieceState
+  //def updateState(state: PieceState)
 }
 
-abstract class OptimizationStrategy(val pieces: GenSeq[Piece], val model: ModelWithWeights) {
-  def iterate(): Unit
+
+trait PiecewiseLearner {
+  def model: Model
+  def process(pieces:GenSeq[Piece]): Unit
 }
 
-class DumbOptimizerStrategy(pieces: GenSeq[Piece], optimizer: GradientOptimizer, model: ModelWithWeights) extends OptimizationStrategy(pieces, model) {
-  val gradient = model.weights.copy
-  val gradientAccumulator = new ActualTensorAccumulator(gradient)
-
-  val value = new DenseTensor1(1)
-  val valueAccumulator = new ActualTensorAccumulator(value)
-  def iterate() {
+class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) extends PiecewiseLearner {
+  val gradient = model.weightsTensor.copy
+  val gradientAccumulator = new LocalTensorAccumulator(gradient)
+  val valueAccumulator = new LocalDoubleAccumulator(0.0)
+  def process(pieces:GenSeq[Piece]): Unit = {
     gradient.zero()
-    value.zero()
+    valueAccumulator.value = 0.0
     // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit
-    pieces/*par*/.foreach(piece => piece.process(model, gradientAccumulator, valueAccumulator, true, true))
-    optimizer.step(model.weights, gradient, value(0), 0)
+    pieces/*par*/.foreach(piece => piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator))
+    optimizer.step(model.weightsTensor, gradient, valueAccumulator.value, 0)
   }
 }
 
-class SGDStrategy(pieces: GenSeq[Piece], optimizer: GradientOptimizer, model: ModelWithWeights) extends DumbOptimizerStrategy(pieces, optimizer, model) {
-  override def iterate() {
+class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) extends PiecewiseLearner {
+  val gradient = new ThreadLocal[Tensor] { override def initialValue = model.weightsTensor.copy }
+  val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] { override def initialValue = new LocalTensorAccumulator(gradient.get) }
+  val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator(0.0) }
+  
+  override def process(pieces:GenSeq[Piece]): Unit = {
     // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit
     pieces.foreach(piece => {
-      gradient.zero()
-      value.zero()
-      piece.process(model, gradientAccumulator, valueAccumulator, true, true)
-      optimizer.step(model.weights, gradient, value(0), 0)
+      gradient.get.zero()
+      valueAccumulator.get.value = 0.0
+      piece.accumulateValueAndGradient(model, gradientAccumulator.get, valueAccumulator.get)
+      optimizer.step(model.weightsTensor, gradient.get, valueAccumulator.get.value, 0)
     })
   }
 }
 
-class HogwildStrategy(pieces: GenSeq[Piece], optimizer: GradientOptimizer, model: ModelWithWeights) extends SGDStrategy(pieces.par, optimizer, model) {}
+class HogwildPiecewiseLearner(optimizer: GradientOptimizer, model: Model) extends SGDPiecewiseLearner(optimizer, model) {
+  override def process(pieces:GenSeq[Piece]) = super.process(pieces.par)
+}
+
+
+
+// Example usage
 
 object LossFunctions {
   type LossFunction = (Double, Double) => (Double, Double)
@@ -100,21 +89,22 @@ object LossFunctions {
 }
 
 class GLMPiece(featureVector: Tensor, label: Double, lossAndGradient: LossFunctions.LossFunction) extends Piece {
-  def updateState(state: PieceState): Unit = { }
+  //def updateState(state: PieceState): Unit = { }
   def state = null
-  def process(model: ModelWithWeights, gradient: TensorAccumulator, value: TensorAccumulator, computeGradient: Boolean, computeValue: Boolean) {
+  def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
-    val (loss, sgrad) = lossAndGradient(featureVector dot  model.weights , label)
-    if (computeValue) value.add(0, -loss)
-    if (computeGradient) featureVector.activeDomain.foreach(x => gradient.add(x, sgrad))
+    val (loss, sgrad) = lossAndGradient(featureVector dot  model.weightsTensor , label)
+    value.accumulate(-loss)
+    featureVector.activeDomain.foreach(x => gradient.accumulate(x, sgrad))
   }
 }
 
 object Test {
-  class ModelWithWeightsImpl(model: Model) extends ModelWithWeights {
+  class ModelWithWeightsImpl(model: Model) extends Model {
+    def addFactors(v:Variable, result:Set[Factor]): Unit = throw new Error
     def copy = sys.error("unimpl")
-    def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
-    def weights = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
+    //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
+    override def weightsTensor = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
   }
 
   object DocumentDomain extends CategoricalTensorDomain[String]
@@ -152,12 +142,12 @@ object Test {
     val forOuter = new la.SingletonBinaryTensor1(2, 0)
     val pieces = docLabels.map(l => new GLMPiece((l.document.value outer forOuter), (1 - l.target.value.intValue) * 2 - 1, loss))
 
-    val strategy = new HogwildStrategy(pieces, new StepwiseGradientAscent(rate=0.01), modelWithWeights)
+    val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate=0.01), modelWithWeights)
 
     var totalTime = 0L
     for (_ <- 1 to 100) {
       val t0 = System.currentTimeMillis()
-      strategy.iterate()
+      strategy.process(pieces)
       totalTime += System.currentTimeMillis() - t0
 
       val classifier = new ModelBasedClassifier[Label](model, LabelDomain)
