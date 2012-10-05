@@ -36,7 +36,7 @@ object TrainWithSVM {
   }
   
   def trainSVM(ll: LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures]): Classifier[ParseDecisionVariable] = {
-    (new SVMTrainer).train(ll)
+    (new SVMTrainer()).train(ll)
   }
   
   def train(ss: Seq[Sentence]): (Classifier[ParseDecisionVariable], Seq[ParseDecisionVariable]) = {
