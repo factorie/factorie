@@ -160,6 +160,17 @@ limitations under the License.
               </args>
             </launcher>
             -->
+            <launcher>
+              <id>parsing</id>
+              <mainClass>cc.factorie.app.nlp.parse.nonproj.TrainWithSVM</mainClass>
+              <jvmArgs>
+                <jvmArg>-Xmx4g</jvmArg>
+              </jvmArgs>
+              <args>
+                  <arg>--train=../data/conll-2008-Dep/devel.closed</arg>
+                  <arg>--dev=../data/conll-2008-Dep/trial.closed</arg>
+              </args>
+            </launcher>
           </launchers>
         </configuration>
       </plugin>
