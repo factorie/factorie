@@ -33,6 +33,7 @@ trait Piece {
 trait PiecewiseLearner {
   def model: Model
   def process(pieces: GenSeq[Piece]): Unit
+  def isConverged: Boolean
 }
 
 class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) extends PiecewiseLearner {
@@ -40,13 +41,15 @@ class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) 
   val gradientAccumulator = new LocalTensorAccumulator(gradient.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   def process(pieces: GenSeq[Piece]): Unit = {
+    if (isConverged) return
     gradient.zero()
     valueAccumulator.value = 0.0
-    // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit
-    pieces /*.par*/ .foreach(piece => piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator))
+    // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit...
+    pieces /*.par */ .foreach(piece => piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator))
     println("Gradient: " + gradient + "\nLoss: " + valueAccumulator.value)
     optimizer.step(model.weightsTensor, gradient, valueAccumulator.value, 0)
   }
+  def isConverged = optimizer.isConverged
 }
 
 class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) extends PiecewiseLearner {
@@ -63,23 +66,23 @@ class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) ex
       optimizer.step(model.weightsTensor, gradient.get, valueAccumulator.get.value, 0)
     })
   }
+
+  def isConverged = false
 }
 
 class HogwildPiecewiseLearner(optimizer: GradientOptimizer, model: Model) extends SGDPiecewiseLearner(optimizer, model) {
   override def process(pieces: GenSeq[Piece]) = super.process(pieces.par)
 }
 
-// Example usage
-
 object LossFunctions {
   type LossFunction = (Double, Double) => (Double, Double)
   val hingeLoss: LossFunction = (prediction, label) => {
-    val loss = -math.max(0, 1 - prediction * label)
+    val loss = math.max(0, 1 - prediction * label)
     (loss, math.signum(loss) * label)
   }
   def sigmoid(x: Double): Double = 1.0 / (1 + math.exp(-x))
   val logLoss: LossFunction = (prediction, label) => {
-    val loss = -math.log(1 + math.exp(-prediction * label))
+    val loss = math.log(1 + math.exp(-prediction * label))
     (loss, math.signum(label) * sigmoid(-prediction * label))
   }
   type MultiClassLossFunction = (Tensor1, Tensor1) => (Double, Tensor1)
@@ -97,14 +100,12 @@ class MultiClassGLMPiece(featureVector: Tensor1, label: Tensor1, lossAndGradient
   def state = null
   def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
-    val (loss, sgrad) = lossAndGradient(model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily).asInstanceOf[Tensor2] matrixVector featureVector, label)
+    val weightsMatrix = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily).asInstanceOf[Tensor2]
+    val prediction = weightsMatrix matrixVector featureVector
+    val (loss, sgrad) = lossAndGradient(prediction, label)
     value.accumulate(loss)
     //println("Stochastic gradient: " + sgrad)
-    val numFeatures = featureVector.size
-    sgrad.foreachActiveElement((idx, v) => {
-      val offset = numFeatures * idx
-      featureVector.activeDomain.foreach(x => gradient.accumulate(DummyFamily, offset + x, v))
-    })
+    gradient.addOuter(DummyFamily, sgrad, featureVector)
   }
 }
 
@@ -121,7 +122,7 @@ object DummyFamily extends DotFamily {
  class GLMPiece(featureVector: Tensor, label: Double, lossAndGradient: LossFunctions.LossFunction) extends Piece {
   def state = null
   def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
-    val (loss, sgrad) = lossAndGradient(featureVector dot  model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily), label)
+    val (loss, sgrad) = lossAndGradient(featureVector dot model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily), label)
     value.accumulate(loss)
     featureVector.activeDomain.foreach(x => gradient.accumulate(DummyFamily, x, sgrad))
   }
@@ -194,10 +195,13 @@ object PieceTest {
       new MultiClassGLMPiece(l.document.value.asInstanceOf[Tensor1], labelTensor, loss)
     })
 
-    val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
+//    val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
+//    val strategy = new SGDPiecewiseLearner(new L2RegularizedGradientAscent(rate = .01), modelWithWeights)
+    val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
 
     var totalTime = 0L
-    for (_ <- 1 to 100) {
+    var i = 0
+    while (i < 100 && !strategy.isConverged) {
       val t0 = System.currentTimeMillis()
       strategy.process(pieces)
       totalTime += System.currentTimeMillis() - t0
@@ -213,6 +217,9 @@ object PieceTest {
       println("Train accuracy = " + trainTrial.accuracy)
       println("Test  accuracy = " + testTrial.accuracy)
       println("Total time to train: " + totalTime / 1000.0)
+      i += 1
     }
+
+    if (strategy.isConverged) println("Converged in " + totalTime / 1000.0)
   }
 }
