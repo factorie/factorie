@@ -98,6 +98,17 @@ class CombinedModel2[C](theSubModels:Model2[C]*) extends Model2[C] {
 
 
 object ModelConversions {
+  // No, Model2 might expect a Seq[Label].  It isn't the same to just pass a single Seq(label)?? 
+  //  implicit def modelVariables2Variable(model:Model2[Iterable[Variable]]): Model2[Variable] = new Model2[Variable] {
+  //    def factors(variable:Variable): Iterable[Factor] = model.factors(Seq(variable))
+  //  }
+  implicit def modelVariable2Variables(model:Model2[Variable]): Model2[Iterable[Variable]] = new Model2[Iterable[Variable]] {
+    def factors(variables:Iterable[Variable]): Iterable[Factor] = {
+      val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables
+      variables.foreach(v => model.addFactors(v, result))
+      result
+    }
+  }
   implicit def modelVariable2DiffList(model:Model2[Variable]): Model2[DiffList] = new Model2[DiffList] {
     def factors(dl:DiffList): Iterable[Factor] = {
       val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables in the DiffList
@@ -105,15 +116,11 @@ object ModelConversions {
       result
     }
   }
-  implicit def modelVariables2Variable(model:Model2[Iterable[Variable]]): Model2[Variable] = new Model2[Variable] {
-    def factors(variable:Variable): Iterable[Factor] = model.factors(Seq(variable))
+  implicit def modelVariables2DiffList(model:Model2[Iterable[Variable]]): Model2[DiffList] = new Model2[DiffList] {
+    def factors(dl:DiffList): Iterable[Factor] = model.factors(dl.variables)
   }
-  implicit def modelVariable2Variables(model:Model2[Variable]): Model2[Iterable[Variable]] = new Model2[Iterable[Variable]] {
-    def factors(variables:Iterable[Variable]): Iterable[Factor] = {
-      val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables
-      variables.foreach(v => model.addFactors(v, result))
-      result
-    }
+  implicit def modelDiffList2Variables(model:Model2[DiffList]): Model2[Iterable[Variable]] = new Model2[Iterable[Variable]] {
+    def factors(variables:Iterable[Variable]): Iterable[Factor] = model.factors(new DiffList ++= variables.map(NoopDiff(_)))
   }
 }
 

@@ -36,6 +36,10 @@ abstract class AutoDiff(implicit d:DiffList) extends Diff {
   redo
 }
 
+case class NoopDiff(variable:Variable) extends Diff {
+  def redo: Unit = {}
+  def undo: Unit = {}
+}
  
 /** A collection of changes to variables; the common representation for the result of a proposed change in configuration.
     Tracks whether the change is in its done or undone state and throws an error if repeated undo or redo is attempted.
@@ -55,6 +59,11 @@ class DiffList extends ArrayBuffer[Diff] {
     if (!done) throw new Error("DiffList already undone")
     this.reverse.foreach(d => d.undo)
     done = false
+  }
+  def variables: Seq[Variable] = {
+    val result = new collection.mutable.ListBuffer[Variable]
+    this.foreach(diff => if (diff.variable ne null) result += diff.variable)
+    result
   }
   // TODO Should we provide this kind of syntax reversal, or only provide "one" way to do things?
   def score(model:Model) = model.score(this)
