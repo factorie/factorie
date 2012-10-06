@@ -54,7 +54,7 @@ class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) 
 
 class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) extends PiecewiseLearner {
   val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.copy}
-  val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] { override def initialValue = new LocalTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor]) }
+  val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] {override def initialValue = new LocalTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
   val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] {override def initialValue = new LocalDoubleAccumulator(0.0)}
 
   override def process(pieces: GenSeq[Piece]): Unit = {
@@ -85,17 +85,31 @@ object LossFunctions {
     val loss = math.log(1 + math.exp(-prediction * label))
     (loss, math.signum(label) * sigmoid(-prediction * label))
   }
-  type MultiClassLossFunction = (Tensor1, Tensor1) => (Double, Tensor1)
+  type MultiClassLossFunction = (Tensor1, Int) => (Double, Tensor1)
   val logMultiClassLoss: MultiClassLossFunction = (prediction, label) => {
-    //println("Prediction: " + prediction)
     val normed = prediction.expNormalized
-    val loss = math.log(normed dot label)
-    val gradient = (label - normed).asInstanceOf[Tensor1]
+    val loss = math.log(normed(label))
+    normed *= -1
+    normed +=(label, 1.0)
+    val gradient = normed.asInstanceOf[Tensor1]
+    (loss, gradient)
+  }
+  val hingeMultiClassLoss: MultiClassLossFunction = (prediction, label) => {
+    val loss = math.max(0, 1 - (prediction(label)))
+    val predictedLabel = prediction.maxIndex
+    val gradient =
+      if (label == predictedLabel)
+        new UniformTensor1(prediction.size, 0.0)
+      else {
+        val g = new DenseTensor1(prediction.size, -1.0)
+        g(label) += 2.0
+        g
+      }
     (loss, gradient)
   }
 }
 
-class MultiClassGLMPiece(featureVector: Tensor1, label: Tensor1, lossAndGradient: LossFunctions.MultiClassLossFunction) extends Piece {
+class MultiClassGLMPiece(featureVector: Tensor1, label: Int, lossAndGradient: LossFunctions.MultiClassLossFunction) extends Piece {
   //def updateState(state: PieceState): Unit = { }
   def state = null
   def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
@@ -119,7 +133,7 @@ object DummyFamily extends DotFamily {
   def weights = null
 }
 
- class GLMPiece(featureVector: Tensor, label: Double, lossAndGradient: LossFunctions.LossFunction) extends Piece {
+class GLMPiece(featureVector: Tensor, label: Double, lossAndGradient: LossFunctions.LossFunction) extends Piece {
   def state = null
   def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
     val (loss, sgrad) = lossAndGradient(featureVector dot model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily), label)
@@ -128,7 +142,7 @@ object DummyFamily extends DotFamily {
   }
 }
 
-class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMutableDiscreteVarWithTarget[A]]) extends Piece{
+class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMutableDiscreteVarWithTarget[A]]) extends Piece {
   def state = null
 
   labels.foreach(_.setToTarget(null))
@@ -136,7 +150,7 @@ class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMu
   def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
     val fg = BP.inferTreewiseSum(labels.toSet, model)
     // The log loss is - score + log Z
-    value.accumulate(- model.score(labels) + fg.bpFactors.head.calculateLogZ)
+    value.accumulate(-model.score(labels) + fg.bpFactors.head.calculateLogZ)
 
     fg.bpFactors.foreach(f => {
       val factor = f.factor.asInstanceOf[DotFamily#Factor]
@@ -148,7 +162,7 @@ class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMu
 
 object PieceTest {
   class ModelWithWeightsImpl(model: Model) extends Model {
-    def addFactors(v:Variable, result:Set[Factor]): Unit = throw new Error
+    def addFactors(v: Variable, result: Set[Factor]): Unit = throw new Error
     def copy = sys.error("unimpl")
     //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
     val weights = new WeightsTensor()
@@ -184,24 +198,23 @@ object PieceTest {
     val trainLabels = new classify.LabelList[Label, Document](trainSet, _.document)
     val testLabels = new classify.LabelList[Label, Document](testSet, _.document)
 
-    val loss = LossFunctions.logMultiClassLoss
+    val loss = LossFunctions.hingeMultiClassLoss
     // needs to be binary
     val model = new LogLinearModel[Label, Document](_.document, LabelDomain, DocumentDomain)
     val modelWithWeights = new ModelWithWeightsImpl(model)
     //   val forOuter = new la.SingletonBinaryTensor1(2, 0)
-    val pieces = docLabels.map(l => {
-      val labelTensor = new la.DenseTensor1(l.domain.size)
-      labelTensor += l.target.tensor
-      new MultiClassGLMPiece(l.document.value.asInstanceOf[Tensor1], labelTensor, loss)
-    })
+    val pieces = docLabels.map(l => new MultiClassGLMPiece(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
-//    val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
-//    val strategy = new SGDPiecewiseLearner(new L2RegularizedGradientAscent(rate = .01), modelWithWeights)
-    val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
+    val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
+    //        val strategy = new HogwildPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
+    //        val strategy = new SGDPiecewiseLearner(new L2RegularizedGradientAscent(rate = .01), modelWithWeights)
+    //    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .1), modelWithWeights)
+    //        val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
 
     var totalTime = 0L
     var i = 0
-    while (i < 100 && !strategy.isConverged) {
+    var perfectAccuracy = false
+    while (i < 100 && !strategy.isConverged && !perfectAccuracy) {
       val t0 = System.currentTimeMillis()
       strategy.process(pieces)
       totalTime += System.currentTimeMillis() - t0
@@ -218,8 +231,9 @@ object PieceTest {
       println("Test  accuracy = " + testTrial.accuracy)
       println("Total time to train: " + totalTime / 1000.0)
       i += 1
+      perfectAccuracy = (trainTrial.accuracy == 1.0 && testTrial.accuracy == 1.0)
     }
 
-    if (strategy.isConverged) println("Converged in " + totalTime / 1000.0)
+    if (strategy.isConverged || perfectAccuracy) println("Converged in " + totalTime / 1000.0)
   }
 }
