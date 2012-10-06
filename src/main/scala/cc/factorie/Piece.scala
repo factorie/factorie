@@ -107,28 +107,23 @@ object DummyFamily extends DotFamily {
   }
 }
 
-/* WIP
 class BPMaxLikelihoodPiece[A](labels: Seq[LabeledMutableDiscreteVarWithTarget[A]]) extends Piece{
   def state = null
 
   labels.foreach(_.setToTarget(null))
 
-  val factors = ListBuffer[Factor]()
-
   def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
-    if (factors.size == 0) {
-      factors ++= model.factors(labels)
-    }
     val fg = BP.inferTreewiseSum(labels.toSet, model)
     // The log loss is - score + log Z
     value.accumulate(- model.score(labels) + fg.bpFactors.head.calculateLogZ)
 
-    factors.foreach(f => {
-      
+    fg.bpFactors.foreach(f => {
+      val factor = f.factor.asInstanceOf[DotFamily#Factor]
+      gradient.accumulate(factor.family, factor.currentStatistics * -1)
+      gradient.accumulate(factor.family, f.calculateMarginal)
     })
   }
 }
-*/
 
 object Test {
   class ModelWithWeightsImpl(model: Model) extends Model {
@@ -175,7 +170,7 @@ object Test {
     val forOuter = new la.SingletonBinaryTensor1(2, 0)
     val pieces = docLabels.map(l => new GLMPiece((l.document.value outer forOuter), (1 - l.target.value.intValue) * 2 - 1, loss))
 
-    val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate=0.01), modelWithWeights)
+    val strategy = new HogwildPiecewiseLearner(new ConfidenceWeighting(model), modelWithWeights)
 
     var totalTime = 0L
     for (_ <- 1 to 100) {
