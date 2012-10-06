@@ -90,19 +90,20 @@ object LossFunctions {
     val normed = prediction.expNormalized
     val loss = math.log(normed(label))
     normed *= -1
-    normed +=(label, 1.0)
+    normed += (label, 1.0)
     val gradient = normed.asInstanceOf[Tensor1]
     (loss, gradient)
   }
   val hingeMultiClassLoss: MultiClassLossFunction = (prediction, label) => {
-    val loss = math.max(0, 1 - (prediction(label)))
+    val loss = math.max(0, 1 - prediction(label))
     val predictedLabel = prediction.maxIndex
     val gradient =
       if (label == predictedLabel)
         new UniformTensor1(prediction.size, 0.0)
       else {
-        val g = new DenseTensor1(prediction.size, -1.0)
-        g(label) += 2.0
+        val g = new DenseTensor1(prediction.size, 0.0)
+        g(label) += 1.0
+        g(predictedLabel) += -1.0
         g
       }
     (loss, gradient)
@@ -198,18 +199,18 @@ object PieceTest {
     val trainLabels = new classify.LabelList[Label, Document](trainSet, _.document)
     val testLabels = new classify.LabelList[Label, Document](testSet, _.document)
 
-    val loss = LossFunctions.hingeMultiClassLoss
+    val loss = LossFunctions.logMultiClassLoss
     // needs to be binary
     val model = new LogLinearModel[Label, Document](_.document, LabelDomain, DocumentDomain)
     val modelWithWeights = new ModelWithWeightsImpl(model)
     //   val forOuter = new la.SingletonBinaryTensor1(2, 0)
     val pieces = docLabels.map(l => new MultiClassGLMPiece(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
-    val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
+//        val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
     //        val strategy = new HogwildPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
     //        val strategy = new SGDPiecewiseLearner(new L2RegularizedGradientAscent(rate = .01), modelWithWeights)
-    //    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .1), modelWithWeights)
-    //        val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
+    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
+//            val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
 
     var totalTime = 0L
     var i = 0
@@ -227,6 +228,7 @@ object PieceTest {
       val trainTrial = new classify.Trial[Label](classifier)
       trainTrial ++= trainLabels
 
+      println("Weights = " + model.evidenceTemplate.weights)
       println("Train accuracy = " + trainTrial.accuracy)
       println("Test  accuracy = " + testTrial.accuracy)
       println("Total time to train: " + totalTime / 1000.0)

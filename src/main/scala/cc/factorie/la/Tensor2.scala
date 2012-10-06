@@ -82,6 +82,21 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   override def copy: DenseTensor2 = { val t = new DenseTensor2(dim1, dim2); System.arraycopy(_values, 0, t._values, 0, length); t }
   override def blankCopy: DenseTensor2 = new DenseTensor2(dim1, dim2)
   override def stringPrefix = "DenseTensor2"
+  override def matrixVector(t: Tensor): Tensor1 = {
+    assert(dim2 == t.dimensions.reduce(_ * _), "Dimensions don't match: " + dim2 + " " + t.dimensions)
+    val newArray = new Array[Double](dim1)
+    val vecIter = t.activeElements
+    while (vecIter.hasNext) {
+      val (col, v) = vecIter.next()
+      var row = 0
+      while (row < dim1) {
+        val offset = row * dim2
+        newArray(row) += (_values(offset + col) * v)
+        row += 1
+      }
+    }
+    new DenseTensor1(newArray)
+  }
 }
 
 class GrowableDenseTensor2(d1:Int, d2:Int) extends { private var _dim1 = d1; private var _dim2 = d2 } with DenseTensorLike2 {
