@@ -145,7 +145,7 @@ class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMu
   }
 }
 
-object Test {
+object PieceTest {
   class ModelWithWeightsImpl(model: Model) extends Model {
     def addFactors(v:Variable, result:Set[Factor]): Unit = throw new Error
     def copy = sys.error("unimpl")
