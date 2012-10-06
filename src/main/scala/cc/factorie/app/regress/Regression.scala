@@ -71,11 +71,8 @@ object LinearRegressionTrainer {
         })
       })
 
-      (0 to weights.dim1-1).foreach(i => {
-        (0 to weights.dim2-1).foreach(j => {
-          gradient(i,j) += l2 * weights(i,j)
-        })
-      })
+      for (i <- 0 to weights.dim1 - 1; j <- 0 to weights.dim2 - 1)
+        gradient(i,j) += l2 * weights(i,j)
 
       optimizer.step(weights, gradient, value, 0.0)
     }
