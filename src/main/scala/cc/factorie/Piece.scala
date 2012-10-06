@@ -170,7 +170,7 @@ object Test {
     val forOuter = new la.SingletonBinaryTensor1(2, 0)
     val pieces = docLabels.map(l => new GLMPiece((l.document.value outer forOuter), (1 - l.target.value.intValue) * 2 - 1, loss))
 
-    val strategy = new HogwildPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
+    val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS(0.1), modelWithWeights)
 
     var totalTime = 0L
     for (_ <- 1 to 100) {
