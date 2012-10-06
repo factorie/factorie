@@ -23,6 +23,7 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = (df:DotFamily) => Tensor.n
   private val _map = new scala.collection.mutable.LinkedHashMap[DotFamily,Tensor] {
     override def default(f:DotFamily) = { val t = newTensor(f); this(f) = t; t }
   }
+  override def zero() = _map.valuesIterator.foreach(_.zero())
   def families = _map.keys
   def dim1: Int = _map.values.map(_.length).sum
   override def dimensionsMatch(t:Tensor): Boolean = t match {

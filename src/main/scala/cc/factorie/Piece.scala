@@ -40,7 +40,7 @@ trait PiecewiseLearner {
 
 class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) extends PiecewiseLearner {
   val gradient = model.weightsTensor.copy
-  val gradientAccumulator = new LocalTensorAccumulator(gradient)
+  val gradientAccumulator = new LocalTensorAccumulator(gradient.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   def process(pieces:GenSeq[Piece]): Unit = {
     gradient.zero()
@@ -53,7 +53,7 @@ class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) 
 
 class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) extends PiecewiseLearner {
   val gradient = new ThreadLocal[Tensor] { override def initialValue = model.weightsTensor.copy }
-  val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] { override def initialValue = new LocalTensorAccumulator(gradient.get) }
+  val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] { override def initialValue = new LocalTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor]) }
   val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator(0.0) }
   
   override def process(pieces:GenSeq[Piece]): Unit = {
@@ -88,23 +88,56 @@ object LossFunctions {
   }
 }
 
-class GLMPiece(featureVector: Tensor, label: Double, lossAndGradient: LossFunctions.LossFunction) extends Piece {
-  //def updateState(state: PieceState): Unit = { }
+// This family exists only to  allow us to map a single tensor into a WeightsTensor
+object DummyFamily extends DotFamily {
+  type FamilyType = this.type
+
+  type NeighborType1 = Variable
+  type FactorType = Factor
+
+  def weights = null
+}
+
+ class GLMPiece(featureVector: Tensor, label: Double, lossAndGradient: LossFunctions.LossFunction) extends Piece {
   def state = null
   def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
-    // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
-    val (loss, sgrad) = lossAndGradient(featureVector dot  model.weightsTensor , label)
+    val (loss, sgrad) = lossAndGradient(featureVector dot  model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily), label)
     value.accumulate(-loss)
-    featureVector.activeDomain.foreach(x => gradient.accumulate(x, sgrad))
+    featureVector.activeDomain.foreach(x => gradient.accumulate(DummyFamily, x, sgrad))
   }
 }
+
+/* WIP
+class BPMaxLikelihoodPiece[A](labels: Seq[LabeledMutableDiscreteVarWithTarget[A]]) extends Piece{
+  def state = null
+
+  labels.foreach(_.setToTarget(null))
+
+  val factors = ListBuffer[Factor]()
+
+  def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
+    if (factors.size == 0) {
+      factors ++= model.factors(labels)
+    }
+    val fg = BP.inferTreewiseSum(labels.toSet, model)
+    // The log loss is - score + log Z
+    value.accumulate(- model.score(labels) + fg.bpFactors.head.calculateLogZ)
+
+    factors.foreach(f => {
+      
+    })
+  }
+}
+*/
 
 object Test {
   class ModelWithWeightsImpl(model: Model) extends Model {
     def addFactors(v:Variable, result:Set[Factor]): Unit = throw new Error
     def copy = sys.error("unimpl")
     //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
-    override def weightsTensor = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
+    val weights = new WeightsTensor()
+    weights(DummyFamily) = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
+    override def weightsTensor = weights
   }
 
   object DocumentDomain extends CategoricalTensorDomain[String]
