@@ -27,6 +27,21 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
   def reset(): Unit = {}
 }
 
+// Note: This implementation is slower than it should be in the online case, but should be fast enough in batch mode
+class L2RegularizedGradientAscent(var l2: Double = 0.1, rate: Double = 1.0) extends StepwiseGradientAscent(rate) {
+  override def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+    gradient += (weights, l2)
+    super.step(weights, gradient, value, margin)
+  }
+}
+
+class SparseL2RegularizedGradientAscent(var l2: Double = 0.1, rate: Double = 1.0) extends StepwiseGradientAscent(rate) {
+  override def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
+    super.step(weights, gradient, value, margin)
+    weights *= (1.0 - rate * l2)
+  }
+}
+
 /** Change the weights in the direction of the gradient by using back-tracking line search to make sure we step up hill. */
 class LineSearchGradientAscent(var stepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false
