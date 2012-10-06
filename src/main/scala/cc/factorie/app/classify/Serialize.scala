@@ -17,7 +17,7 @@ object Serialize {
 
   def writeClassifier(classifier: Classifier[Label], featureDomain: CategoricalTensorDomain[String], out: PrintStream): Unit = classifier match {
     case cls: ModelBasedClassifier[Label] =>
-      val weights = cls.model.weightsTensor
+      val weights = cls.model.weightsTensor.asInstanceOf[WeightsTensor]
       val fileStr = new StringBuilder
       val families = weights.families.toSeq
       val labelDomain = classifier.labelDomain

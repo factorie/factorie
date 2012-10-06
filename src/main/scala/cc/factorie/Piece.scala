@@ -97,13 +97,13 @@ class MultiClassGLMPiece(featureVector: Tensor1, label: Tensor1, lossAndGradient
   def state = null
   def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
-    val (loss, sgrad) = lossAndGradient(model.weightsTensor.asInstanceOf[Tensor2] matrixVector featureVector, label)
+    val (loss, sgrad) = lossAndGradient(model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily).asInstanceOf[Tensor2] matrixVector featureVector, label)
     value.accumulate(loss)
     //println("Stochastic gradient: " + sgrad)
     val numFeatures = featureVector.size
     sgrad.foreachActiveElement((idx, v) => {
       val offset = numFeatures * idx
-      featureVector.activeDomain.foreach(x => gradient.accumulate(offset + x, v))
+      featureVector.activeDomain.foreach(x => gradient.accumulate(DummyFamily, offset + x, v))
     })
   }
 }
@@ -194,7 +194,7 @@ object PieceTest {
       new MultiClassGLMPiece(l.document.value.asInstanceOf[Tensor1], labelTensor, loss)
     })
 
-    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
+    val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
 
     var totalTime = 0L
     for (_ <- 1 to 100) {
