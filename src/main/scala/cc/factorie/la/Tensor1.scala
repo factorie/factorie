@@ -219,6 +219,11 @@ class SparseBinaryTensor1(val dim1:Int) extends SparseBinaryTensorLike1 {
 class GrowableSparseBinaryTensor1(val sizeProxy:Iterable[Any]) extends SparseBinaryTensorLike1 {
   def dim1: Int = sizeProxy.size
   override def blankCopy: GrowableSparseBinaryTensor1 = new GrowableSparseBinaryTensor1(sizeProxy)
+  override def copy = {
+    val newT = new GrowableSparseBinaryTensor1(sizeProxy)
+    this.foreachActiveElement((i, v) => newT(i) = v)
+    newT
+  }
 }
 
 // Just aliases
