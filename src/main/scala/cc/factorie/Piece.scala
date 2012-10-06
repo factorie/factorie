@@ -107,7 +107,7 @@ object DummyFamily extends DotFamily {
   }
 }
 
-class BPMaxLikelihoodPiece[A](labels: Seq[LabeledMutableDiscreteVarWithTarget[A]]) extends Piece{
+class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMutableDiscreteVarWithTarget[A]]) extends Piece{
   def state = null
 
   labels.foreach(_.setToTarget(null))
