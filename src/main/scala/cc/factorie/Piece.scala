@@ -117,9 +117,10 @@ class MultiClassGLMPiece(featureVector: Tensor1, label: Int, lossAndGradient: Lo
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
     val weightsMatrix = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily).asInstanceOf[Tensor2]
     val prediction = weightsMatrix matrixVector featureVector
+//    println("Prediction: " + prediction)
     val (loss, sgrad) = lossAndGradient(prediction, label)
     value.accumulate(loss)
-    //println("Stochastic gradient: " + sgrad)
+//    println("Stochastic gradient: " + sgrad)
     gradient.addOuter(DummyFamily, sgrad, featureVector)
   }
 }
@@ -203,14 +204,15 @@ object PieceTest {
     // needs to be binary
     val model = new LogLinearModel[Label, Document](_.document, LabelDomain, DocumentDomain)
     val modelWithWeights = new ModelWithWeightsImpl(model)
+
     //   val forOuter = new la.SingletonBinaryTensor1(2, 0)
     val pieces = docLabels.map(l => new MultiClassGLMPiece(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
-//        val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
-    //        val strategy = new HogwildPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
-    //        val strategy = new SGDPiecewiseLearner(new L2RegularizedGradientAscent(rate = .01), modelWithWeights)
-    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
-//            val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
+//    val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
+    //val strategy = new HogwildPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
+    //val strategy = new SGDPiecewiseLearner(new L2RegularizedGradientAscent(rate = .01), modelWithWeights)
+//    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
+    val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
 
     var totalTime = 0L
     var i = 0

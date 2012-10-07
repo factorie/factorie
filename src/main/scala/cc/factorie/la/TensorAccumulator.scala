@@ -22,10 +22,10 @@ class LocalTensorAccumulator(val tensor: WeightsTensor) extends TensorAccumulato
     val myTensor = tensor(family)
     val t2Size = t2.size
     val t1Iter = t1.activeElements
-    val t2Iter = t2.activeElements
     while (t1Iter.hasNext) {
       val (idx1, v1) = t1Iter.next()
       val offset = t2Size * idx1
+      val t2Iter = t2.activeElements
       while (t2Iter.hasNext) {
         val (idx2, v2) = t2Iter.next()
         myTensor(offset + idx2) += (v1 * v2)
