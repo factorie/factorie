@@ -18,33 +18,39 @@ class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, 
 }
 
 // TODO Consider renaming this DotModel, like DotMaximumLikelihood
-class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends CombinedModel {
+class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends CombinedModel[Variable] {
   def this(lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
   val biasTemplate = new LogLinearTemplate1[L](labelStatisticsDomain)
   val evidenceTemplate = new LogLinearTemplate2[L,F](lf, fl, labelStatisticsDomain, featureStatisticsDomain)
   this += biasTemplate
   this += evidenceTemplate
   val factorCache = HashMap[Variable, Iterable[Factor]]()
-  override def factors(vs:Iterable[Variable]): Iterable[Factor] =  {
+  def factors(vs:Iterable[Variable]): Iterable[Factor] =  {
     if (vs.size == 1) factors(vs.head)
     else vs.flatMap(factors).toSeq
   }
   override def factors(v:Variable): Iterable[Factor] = {
-    if (!factorCache.contains(v)) {
-      factorCache(v) = super.factors(v)
+    v match {
+      case v:L if lm.erasure.isAssignableFrom(v.getClass) => Seq(biasTemplate.Factor(v), evidenceTemplate.Factor(v, lf(v)))
+      case _ => Nil
     }
-    factorCache(v)
+    //if (!factorCache.contains(v)) factorCache(v) = super.factors(v); factorCache(v)
   }
-  override def factorsOfFamilies[F<:Family](variables:Iterable[Variable], families:Seq[F]): Iterable[F#Factor] = {
-    if ((families.length == 2) &&
-        (families(0) == biasTemplate || families(1) == biasTemplate) &&
-        (families(0) == evidenceTemplate || families(1) == evidenceTemplate))
-      factors(variables).asInstanceOf[Iterable[F#Factor]]
-    else {
-      filterByFamilies(factors(variables), families)
+//  override def factorsOfFamilies[F<:Family](variables:Iterable[Variable], families:Seq[F]): Iterable[F#Factor] = {
+//    if ((families.length == 2) &&
+//        (families(0) == biasTemplate || families(1) == biasTemplate) &&
+//        (families(0) == evidenceTemplate || families(1) == evidenceTemplate))
+//      factors(variables).asInstanceOf[Iterable[F#Factor]]
+//    else {
+//      filterByFamilies(factors(variables), families)
+//    }
+//  }
+  override def sumScore(v:Variable): Double = {
+    v match {
+      case v:L if lm.erasure.isAssignableFrom(v.getClass) => biasTemplate.score(v.value.asInstanceOf[L#Value]) + evidenceTemplate.score(v.value.asInstanceOf[L#Value], lf(v).value.asInstanceOf[F#Value])
+      case _ => Nil
     }
-  }
-  override def score(variables:Iterable[Variable]): Double = {
+
     var s = 0.0
     // TODO We can make this more efficient
     for (f <- factors(variables)) s += f.currentScore

@@ -85,8 +85,8 @@ object DocumentClassifier2 {
     for (i <- 0 until 10) {
       learner.processAll(trainVariables)
       predictor.processAll(testVariables)
-      println ("Train accuracy = "+ HammingLossObjective.aveScore(trainVariables))
-      println ("Test  accuracy = "+ HammingLossObjective.aveScore(testVariables))
+      println ("Train accuracy = "+ HammingLossObjective.averageScore(trainVariables))
+      println ("Test  accuracy = "+ HammingLossObjective.averageScore(testVariables))
     }
 
   }

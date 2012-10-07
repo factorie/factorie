@@ -3,8 +3,8 @@ import cc.factorie.la._
 import cc.factorie.optimize._
 import scala.collection._
 
-class DotMaximumLikelihood(val model: Model, val optimizer: GradientOptimizer) {
-  def this(model: Model) = this(model, new LimitedMemoryBFGS)
+class DotMaximumLikelihood(val model: Model2[Variable], val optimizer: GradientOptimizer) {
+  def this(model: Model2[Variable]) = this(model, new LimitedMemoryBFGS)
   var gaussianPriorVariance = 10.0
   var numRepeatConvergences = 2
   // Number of times to re-run the optimizer to convergence
@@ -17,9 +17,11 @@ class DotMaximumLikelihood(val model: Model, val optimizer: GradientOptimizer) {
     val constraints = model.newDenseWeightsTensor
 	  // Gather constraints
 	  variables.foreach(_.setToTarget(null))
-	  model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => {
-  	  constraints(f.family) += f.currentStatistics 
-	  })
+	  // TODO Why doesn't the implicit conversion Model[Variable] -> Model[Iterable[Variable]] work here?
+	  //model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => { constraints(f.family) += f.currentStatistics })
+	  val factors = new collection.mutable.LinkedHashSet[Factor]
+    variables.foreach(v => model.addFactors(v, factors))
+    model.filterByFamilies(factors, familiesToUpdate).foreach(f => { constraints(f.family) += f.currentStatistics })
 
     var iterations = 0
     var convergences = 0
@@ -34,7 +36,7 @@ class DotMaximumLikelihood(val model: Model, val optimizer: GradientOptimizer) {
         var i = 0
         while (i < proportions.length) {
           v := i
-          model.factorsOfFamilies(Seq(v), familiesToUpdate).foreach(f => {
+          model.factorsOfFamilies(v, familiesToUpdate).foreach(f => {
             gradient(f.family) += (f.currentStatistics, -proportions(i) /* * instanceWeight*/)
           })
           i += 1
@@ -59,14 +61,18 @@ class DotMaximumLikelihood(val model: Model, val optimizer: GradientOptimizer) {
     val constraints = model.newDenseWeightsTensor
     // Gather constraints
     iidVariableSets.foreach(_.foreach(_.setToTarget(null)))
-    for (variables <- iidVariableSets)
-      model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => {
-        println("1 " + constraints.dimensions.toSeq)
-        println("2 " + f.family)
-        println("3 " + constraints(f.family).dimensions.toSeq)
-        constraints(f.family) += f.currentStatistics 
-      })
-
+    for (variables <- iidVariableSets) {
+      val factors = new collection.mutable.LinkedHashSet[Factor]
+      variables.foreach(v => model.addFactors(v, factors))
+      model.filterByFamilies(factors, familiesToUpdate).foreach(f => { constraints(f.family) += f.currentStatistics })
+// TODO Why doesn't implicit conversion make the code below work?
+//      model.factorsOfFamilies(variables, familiesToUpdate).foreach(f => {
+//        println("1 " + constraints.dimensions.toSeq)
+//        println("2 " + f.family)
+//        println("3 " + constraints(f.family).dimensions.toSeq)
+//        constraints(f.family) += f.currentStatistics 
+//      })
+    }
     var iterations = 0
     var convergences = 0
     while (iterations < numIterations && convergences < numRepeatConvergences) {

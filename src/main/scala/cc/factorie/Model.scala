@@ -34,7 +34,7 @@ import scala.collection.generic.Growable
 trait Model2[C] {
   //def variables(context:C): Iterable[Variable]
   def factors(context:C): Iterable[Factor]
-  def addFactors(context:C, result:Iterable[Factor] with Growable[Factor]): Unit = result ++= factors(context) 
+  def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = { result ++= factors(context); result } 
   def newFactorsCollection: Iterable[Factor] with Growable[Factor] = new collection.mutable.LinkedHashSet[Factor]
   def filterByFactorClass[F<:Factor](factors:Iterable[Factor], fclass:Class[F]): Iterable[F] = factors.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
   def factorsOfClass[F<:Factor](context:C, fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(context), fclass)
@@ -58,8 +58,10 @@ trait Model2[C] {
   def factorsOfFamilies[F<:Family](context:C, families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factors(context), families)
   
   // Getting sums of scores from all neighboring factors
-  def score(context:C): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.currentScore; sum }
-  def averageScore(context:C): Double = score(context) / context.asInstanceOf[Iterable[_]].size
+  // TODO Consider an alternative name to "sumScore".  Cannot name "score" because conflicts with Template1.score(N1#Value)
+  // Consider factorsScore and factorsScoreAverage
+  def sumScore(context:C): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.currentScore; sum }
+  def averageScore(context:C): Double = sumScore(context) / context.asInstanceOf[Iterable[_]].size
   
   // Some Model subclasses have a list of Families to which all its factors belong
   def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
@@ -79,13 +81,13 @@ trait Model2[C] {
   def score: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
 }
 
-class CombinedModel2[C](theSubModels:Model2[C]*) extends Model2[C] {
+class CombinedModel[C](theSubModels:Model2[C]*) extends Model2[C] {
   val subModels = new ArrayBuffer[Model2[C]] ++= theSubModels
   def +=(model:Model2[C]): Unit = subModels += model
   def ++=(models:Iterable[Model2[C]]): Unit = subModels ++= models
-  def factors(context:C): ListBuffer[Factor] = { val result = newFactorsCollection; addFactors(context, result); result }
+  def factors(context:C): Iterable[Factor] = addFactors(context, newFactorsCollection)
   override def newFactorsCollection: ListBuffer[Factor] = new collection.mutable.ListBuffer[Factor]
-  override def addFactors(context:C, result:Iterable[Factor] with Growable[Factor]): Unit = subModels.foreach(_.addFactors(context, result))
+  override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = { subModels.foreach(_.addFactors(context, result)); result }
   override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
   override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
   override def families: Seq[Family] = subModels.flatMap(_.families) // filterByClass(classOf[Family]).toSeq
@@ -96,133 +98,143 @@ class CombinedModel2[C](theSubModels:Model2[C]*) extends Model2[C] {
   def loadFromJar(dirname:String): Unit = throw new Error("Unsupported")
 }
 
+trait ProxyModel[C1,C2] extends Model2[C2] {
+  def model: Model2[C1]
+  override def newFactorsCollection: ListBuffer[Factor] = new collection.mutable.ListBuffer[Factor]
+  //override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C2, result:A): A = { subModels.foreach(_.addFactors(context, result)); result }
+  override def variables = model.variables
+  override def factors = model.factors
+  override def families = model.families
+}
 
-object ModelConversions {
-  // No, Model2 might expect a Seq[Label].  It isn't the same to just pass a single Seq(label)?? 
-  //  implicit def modelVariables2Variable(model:Model2[Iterable[Variable]]): Model2[Variable] = new Model2[Variable] {
-  //    def factors(variable:Variable): Iterable[Factor] = model.factors(Seq(variable))
-  //  }
-  implicit def modelVariable2Variables(model:Model2[Variable]): Model2[Iterable[Variable]] = new Model2[Iterable[Variable]] {
-    def factors(variables:Iterable[Variable]): Iterable[Factor] = {
-      val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables
-      variables.foreach(v => model.addFactors(v, result))
-      result
-    }
-  }
-  implicit def modelVariable2DiffList(model:Model2[Variable]): Model2[DiffList] = new Model2[DiffList] {
-    def factors(dl:DiffList): Iterable[Factor] = {
-      val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables in the DiffList
-      dl.foreach(d => if (d.variable ne null) model.addFactors(d.variable, result))
-      result
-    }
-  }
-  implicit def modelVariables2DiffList(model:Model2[Iterable[Variable]]): Model2[DiffList] = new Model2[DiffList] {
-    def factors(dl:DiffList): Iterable[Factor] = model.factors(dl.variables)
-  }
-  implicit def modelDiffList2Variables(model:Model2[DiffList]): Model2[Iterable[Variable]] = new Model2[Iterable[Variable]] {
-    def factors(variables:Iterable[Variable]): Iterable[Factor] = model.factors(new DiffList ++= variables.map(NoopDiff(_)))
+class Variable2DiffListModel(val model:Model2[Variable]) extends ProxyModel[Variable,DiffList] {
+  def factors(context:DiffList): Iterable[Factor] = {
+    val result = new collection.mutable.LinkedHashSet[Factor]
+    assert(model ne null)
+    assert(context ne null)
+    assert(context.variables.forall(_ ne null))
+    context.variables.foreach(v => model.addFactors(v, result))
+    result
   }
 }
 
-trait Model {
-  //type FactorType <: Factor
-  /** Append to "result" all Factors in this Model that touch the given "variable".  This method must not append duplicates. */
-  def addFactors(variable:Variable, result:Set[Factor]): Unit
-  //def addFactors[F>:FactorType](variable:Variable, result:Growable[F]): Unit = addFactors(Seq(variable), result)
-  /** Append to "result" all Factors in this Model that touch any of the given "variables".  This method must not append duplicates. */
-  def addFactors(variables:Iterable[Variable], result:Set[Factor]): Unit  = for (v <- variables) addFactors(v, result)
-  //def addFactors[F>:FactorType](variables:Iterable[Variable], result:Growable[F]): Unit
-  /** Append to "result" all Factors in this Model that are affected by the given Diff.  This method must not append duplicates. */
-  def addFactors(d:Diff, result:Set[Factor]): Unit = if (d.variable ne null) addFactors(d.variable, result)
-  //def addFactors[F>:FactorType](d:Diff, result:Growable[F]): Unit = if (d.variable ne null) addFactors(d.variable, result)
-  /** Append to "result" all Factors in this Model that are affected by the given DiffList.  This method must not append duplicates. */
-  def addFactors(dl:DiffList, result:Set[Factor]): Unit = if (dl.size > 0) addFactors(dl.foldLeft(List[Variable]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs), result)
-  //def addFactors[F>:FactorType](dl:DiffList, result:Growable[F]): Unit = if (dl.size > 0) addFactors(dl.foldLeft(List[Variable]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs), result)
-  /** The "factors" methods need a new collection to return; this method is used by them to construct this collection. */
-  //protected def newFactorsCollection: collection.mutable.Iterable[FactorType] with Growable[FactorType] = new collection.mutable.ListBuffer[FactorType]
-  protected def newFactorsCollection: Set[Factor] = new collection.mutable.LinkedHashSet[Factor]
-  /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
-  def factors(variables:Iterable[Variable]): Iterable[Factor] = { val set = newFactorsCollection; addFactors(variables, set); set }
-  //def factors(variables:Iterable[Variable]): Iterable[FactorType] = { val set = newFactorsCollection; addFactors(variables, set); set }
-  /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
-  def factors(variable:Variable): Iterable[Factor] = { val set = newFactorsCollection; addFactors(variable, set); set }
-  //def factors(variable:Variable): Iterable[FactorType] = { val set = newFactorsCollection; addFactors(variable, set); set }
-  /** Return all Factors in this Model that are affected by the given Diff.  The result will not have any duplicate Factors. */
-  def factors(d:Diff): Iterable[Factor] = if (d.variable eq null) Nil else { val set = newFactorsCollection; addFactors(d, set); set }
-  //def factors(d:Diff): Iterable[FactorType] = if (d.variable eq null) Nil else { val set = newFactorsCollection; addFactors(d, set); set }
-  /** Return all Factors in this Model that are affected by the given DiffList.  The result will not have any duplicate Factors. */
-  def factors(dl:DiffList): Iterable[Factor] = if (dl.size == 0) Nil else { val set = newFactorsCollection; addFactors(dl, set); set } //factors(dl.foldLeft(List[Variable]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs))
-  //def factors(dl:DiffList): Iterable[FactorType] = if (dl.size == 0) Nil else { val set = newFactorsCollection; addFactors(dl, set); set } //factors(dl.foldLeft(List[Variable]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs))
-
-  def filterByFactorClass[F<:Factor](factors:Iterable[Factor], fclass:Class[F]): Iterable[F] = factors.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
-  def factorsOfClass[F<:Factor](variables:Iterable[Variable], fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(variables), fclass)
-  def factorsOfClass[F<:Factor](variables:Iterable[Variable])(implicit fm:Manifest[F]): Iterable[F] = factorsOfClass(variables, fm.erasure.asInstanceOf[Class[F]])
-  def factorsOfClass[F<:Factor](d:DiffList, fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(d), fclass)
-  def factorsOfClass[F<:Factor](d:DiffList)(implicit fm:Manifest[F]): Iterable[F] = factorsOfClass[F](d, fm.erasure.asInstanceOf[Class[F]])
-
-  def filterByFamilyClass[F<:Family](factors:Iterable[Factor], fclass:Class[F]): Iterable[F#Factor] =
-    factors.filter(f => f match {
-      case f:Family#Factor => fclass.isAssignableFrom(f.family.getClass)
-      case _ => false
-    }).asInstanceOf[Iterable[F#Factor]]
-  def factorsOfFamilyClass[F<:Family](variables:Iterable[Variable], fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(variables), fclass)
-  def factorsOfFamilyClass[F<:Family](variables:Iterable[Variable])(implicit fm:Manifest[F]): Iterable[F#Factor] = factorsOfFamilyClass[F](variables, fm.erasure.asInstanceOf[Class[F]])
-  def factorsOfFamilyClass[F<:Family](d:DiffList, fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass(factors(d), fclass)
-  def factorsOfFamilyClass[F<:Family](d:DiffList)(implicit fm:Manifest[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(d), fm.erasure.asInstanceOf[Class[F]])
-
-  def filterByFamily[F<:Family](factors:Iterable[Factor], family:F): Iterable[F#Factor] = 
-    factors.filter(f => f match {
-      case f:Family#Factor => f.family.equals(family)
-      case _ => false
-    }).asInstanceOf[Iterable[F#Factor]]
-  def filterByFamilies[F<:Family](factors:Iterable[Factor], families:Seq[F]): Iterable[F#Factor] = 
-    factors.filter(f => f match {
-      case f:Family#Factor => families.contains(f.family)
-      case _ => false
-    }).asInstanceOf[Iterable[F#Factor]]
-  def factorsOfFamily[F<:Family](variables:Iterable[Variable], family:F): Iterable[F#Factor] = filterByFamily(factors(variables), family)
-  def factorsOfFamily[F<:Family](d:DiffList, family:F): Iterable[F#Factor] = filterByFamily(factors(d), family)
-  def factorsOfFamilies[F<:Family](variables:Iterable[Variable], families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factors(variables), families)
-  def factorsOfFamilies[F<:Family](d:DiffList, families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factors(d), families)
-  
-  // Getting sums of scores from all neighboring factors
-  def score(variables:Iterable[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.currentScore; sum }
-  def score(variables:Iterable[Variable], assignment:TypedAssignment[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.scoreAssignment(assignment); sum } 
-  def score(variable:Variable): Double = { var sum = 0.0; for (f <- factors(variable)) sum += f.currentScore; sum }
-  def score(d:DiffList) : Double = { var sum = 0.0; for (f <- factors(d)) sum += f.currentScore; sum }
-  /** Returns the average score, that is score of variables, normalized by the size of the collections vars. */
-  def aveScore(variables:Iterable[Variable]): Double = score(variables) / variables.size  // TODO Rename to scoreAve?
-  
-  // Some Model subclasses have a list of Families to which all its factors belong
-  def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
-  def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Seq[F]]
-  def familiesOfClass[F<:Family]()(implicit m:Manifest[F]): Seq[F] = familiesOfClass[F](m.erasure.asInstanceOf[Class[F]])
-
-  // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
-  //def weights: Tensor = weightsTensor
-  def weightsTensor: Tensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t }
-  def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
-  def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
-
-  // Some Model subclasses that have a fixed set of factors and variables can override the methods below
-  // TODO Consider making a Model trait for these methods.  Yes!
-  def variables: Iterable[Variable] = throw new Error("Model class does not implement method 'variables': "+ this.getClass.getName)
-  def factors: Iterable[Factor] = throw new Error("Model class does not implement method 'factors': "+ this.getClass.getName)
-  def score: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
+class Variable2IterableModel[V<:Variable](val model:Model2[V]) extends ProxyModel[V,Iterable[V]] {
+  def factors(context:Iterable[V]): Iterable[Factor] = {
+    val result = new collection.mutable.LinkedHashSet[Factor]
+    context.foreach(v => model.addFactors(v, result))
+    result
+  }
 }
+
+//class Variable2DiffListModel(val model:Model2[Variable]) extends ProxyModel[Variable,DiffList] {
+//  def factors(dl:DiffList): Iterable[Factor] = {
+//    val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables in the DiffList
+//    dl.foreach(d => if (d.variable ne null) model.addFactors(d.variable, result))
+//    result
+//  }  
+//}
+
+//trait Model {
+//  //type FactorType <: Factor
+//  /** Append to "result" all Factors in this Model that touch the given "variable".  This method must not append duplicates. */
+//  def addFactors(variable:Variable, result:Set[Factor]): Unit
+//  //def addFactors[F>:FactorType](variable:Variable, result:Growable[F]): Unit = addFactors(Seq(variable), result)
+//  /** Append to "result" all Factors in this Model that touch any of the given "variables".  This method must not append duplicates. */
+//  def addFactors(variables:Iterable[Variable], result:Set[Factor]): Unit  = for (v <- variables) addFactors(v, result)
+//  //def addFactors[F>:FactorType](variables:Iterable[Variable], result:Growable[F]): Unit
+//  /** Append to "result" all Factors in this Model that are affected by the given Diff.  This method must not append duplicates. */
+//  def addFactors(d:Diff, result:Set[Factor]): Unit = if (d.variable ne null) addFactors(d.variable, result)
+//  //def addFactors[F>:FactorType](d:Diff, result:Growable[F]): Unit = if (d.variable ne null) addFactors(d.variable, result)
+//  /** Append to "result" all Factors in this Model that are affected by the given DiffList.  This method must not append duplicates. */
+//  def addFactors(dl:DiffList, result:Set[Factor]): Unit = if (dl.size > 0) addFactors(dl.foldLeft(List[Variable]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs), result)
+//  //def addFactors[F>:FactorType](dl:DiffList, result:Growable[F]): Unit = if (dl.size > 0) addFactors(dl.foldLeft(List[Variable]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs), result)
+//  /** The "factors" methods need a new collection to return; this method is used by them to construct this collection. */
+//  //protected def newFactorsCollection: collection.mutable.Iterable[FactorType] with Growable[FactorType] = new collection.mutable.ListBuffer[FactorType]
+//  protected def newFactorsCollection: Set[Factor] = new collection.mutable.LinkedHashSet[Factor]
+//  /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
+//  def factors(variables:Iterable[Variable]): Iterable[Factor] = { val set = newFactorsCollection; addFactors(variables, set); set }
+//  //def factors(variables:Iterable[Variable]): Iterable[FactorType] = { val set = newFactorsCollection; addFactors(variables, set); set }
+//  /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
+//  def factors(variable:Variable): Iterable[Factor] = { val set = newFactorsCollection; addFactors(variable, set); set }
+//  //def factors(variable:Variable): Iterable[FactorType] = { val set = newFactorsCollection; addFactors(variable, set); set }
+//  /** Return all Factors in this Model that are affected by the given Diff.  The result will not have any duplicate Factors. */
+//  def factors(d:Diff): Iterable[Factor] = if (d.variable eq null) Nil else { val set = newFactorsCollection; addFactors(d, set); set }
+//  //def factors(d:Diff): Iterable[FactorType] = if (d.variable eq null) Nil else { val set = newFactorsCollection; addFactors(d, set); set }
+//  /** Return all Factors in this Model that are affected by the given DiffList.  The result will not have any duplicate Factors. */
+//  def factors(dl:DiffList): Iterable[Factor] = if (dl.size == 0) Nil else { val set = newFactorsCollection; addFactors(dl, set); set } //factors(dl.foldLeft(List[Variable]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs))
+//  //def factors(dl:DiffList): Iterable[FactorType] = if (dl.size == 0) Nil else { val set = newFactorsCollection; addFactors(dl, set); set } //factors(dl.foldLeft(List[Variable]())((vs,d) => if (d.variable ne null) d.variable :: vs else vs))
+//
+//  def filterByFactorClass[F<:Factor](factors:Iterable[Factor], fclass:Class[F]): Iterable[F] = factors.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Iterable[F]]
+//  def factorsOfClass[F<:Factor](variables:Iterable[Variable], fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(variables), fclass)
+//  def factorsOfClass[F<:Factor](variables:Iterable[Variable])(implicit fm:Manifest[F]): Iterable[F] = factorsOfClass(variables, fm.erasure.asInstanceOf[Class[F]])
+//  def factorsOfClass[F<:Factor](d:DiffList, fclass:Class[F]): Iterable[F] = filterByFactorClass(factors(d), fclass)
+//  def factorsOfClass[F<:Factor](d:DiffList)(implicit fm:Manifest[F]): Iterable[F] = factorsOfClass[F](d, fm.erasure.asInstanceOf[Class[F]])
+//
+//  def filterByFamilyClass[F<:Family](factors:Iterable[Factor], fclass:Class[F]): Iterable[F#Factor] =
+//    factors.filter(f => f match {
+//      case f:Family#Factor => fclass.isAssignableFrom(f.family.getClass)
+//      case _ => false
+//    }).asInstanceOf[Iterable[F#Factor]]
+//  def factorsOfFamilyClass[F<:Family](variables:Iterable[Variable], fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(variables), fclass)
+//  def factorsOfFamilyClass[F<:Family](variables:Iterable[Variable])(implicit fm:Manifest[F]): Iterable[F#Factor] = factorsOfFamilyClass[F](variables, fm.erasure.asInstanceOf[Class[F]])
+//  def factorsOfFamilyClass[F<:Family](d:DiffList, fclass:Class[F]): Iterable[F#Factor] = filterByFamilyClass(factors(d), fclass)
+//  def factorsOfFamilyClass[F<:Family](d:DiffList)(implicit fm:Manifest[F]): Iterable[F#Factor] = filterByFamilyClass[F](factors(d), fm.erasure.asInstanceOf[Class[F]])
+//
+//  def filterByFamily[F<:Family](factors:Iterable[Factor], family:F): Iterable[F#Factor] = 
+//    factors.filter(f => f match {
+//      case f:Family#Factor => f.family.equals(family)
+//      case _ => false
+//    }).asInstanceOf[Iterable[F#Factor]]
+//  def filterByFamilies[F<:Family](factors:Iterable[Factor], families:Seq[F]): Iterable[F#Factor] = 
+//    factors.filter(f => f match {
+//      case f:Family#Factor => families.contains(f.family)
+//      case _ => false
+//    }).asInstanceOf[Iterable[F#Factor]]
+//  def factorsOfFamily[F<:Family](variables:Iterable[Variable], family:F): Iterable[F#Factor] = filterByFamily(factors(variables), family)
+//  def factorsOfFamily[F<:Family](d:DiffList, family:F): Iterable[F#Factor] = filterByFamily(factors(d), family)
+//  def factorsOfFamilies[F<:Family](variables:Iterable[Variable], families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factors(variables), families)
+//  def factorsOfFamilies[F<:Family](d:DiffList, families:Seq[F]): Iterable[F#Factor] = filterByFamilies(factors(d), families)
+//  
+//  // Getting sums of scores from all neighboring factors
+//  def score(variables:Iterable[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.currentScore; sum }
+//  def score(variables:Iterable[Variable], assignment:TypedAssignment[Variable]): Double = { var sum = 0.0; for (f <- factors(variables)) sum += f.scoreAssignment(assignment); sum } 
+//  def score(variable:Variable): Double = { var sum = 0.0; for (f <- factors(variable)) sum += f.currentScore; sum }
+//  def score(d:DiffList) : Double = { var sum = 0.0; for (f <- factors(d)) sum += f.currentScore; sum }
+//  /** Returns the average score, that is score of variables, normalized by the size of the collections vars. */
+//  def aveScore(variables:Iterable[Variable]): Double = score(variables) / variables.size  // TODO Rename to scoreAve?
+//  
+//  // Some Model subclasses have a list of Families to which all its factors belong
+//  def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
+//  def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Seq[F]]
+//  def familiesOfClass[F<:Family]()(implicit m:Manifest[F]): Seq[F] = familiesOfClass[F](m.erasure.asInstanceOf[Class[F]])
+//
+//  // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
+//  //def weights: Tensor = weightsTensor
+//  def weightsTensor: Tensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t }
+//  def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
+//  def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
+//
+//  // Some Model subclasses that have a fixed set of factors and variables can override the methods below
+//  // TODO Consider making a Model trait for these methods.  Yes!
+//  def variables: Iterable[Variable] = throw new Error("Model class does not implement method 'variables': "+ this.getClass.getName)
+//  def factors: Iterable[Factor] = throw new Error("Model class does not implement method 'factors': "+ this.getClass.getName)
+//  def score: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
+//}
 
 
 /** Assumes that all calls to addFactors() will only add Factors of type FactorType, and then appropriately casts the return type of factors() methods. */
-trait ModelWithFactorType extends Model {
+trait ModelWithFactorType[C] extends Model2[C] {
   trait FactorType <: Factor
   /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
-  override def factors(variables:Iterable[Variable]): Iterable[FactorType] = { val set = newFactorsCollection; addFactors(variables, set); set.asInstanceOf[Iterable[FactorType]] }
-  /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
-  override def factors(variable:Variable): Iterable[FactorType] = { val set = newFactorsCollection; addFactors(variable, set); set.asInstanceOf[Iterable[FactorType]] }
-  /** Return all Factors in this Model that are affected by the given Diff.  The result will not have any duplicate Factors. */
-  override def factors(d:Diff): Iterable[FactorType] = if (d.variable eq null) Nil else { val set = newFactorsCollection; addFactors(d, set); set.asInstanceOf[Iterable[FactorType]] }
-  /** Return all Factors in this Model that are affected by the given DiffList.  The result will not have any duplicate Factors. */
-  override def factors(dl:DiffList): Iterable[FactorType] = if (dl.size == 0) Nil else { val set = newFactorsCollection; addFactors(dl, set); set.asInstanceOf[Iterable[FactorType]] }
+  //override def factors(context:C): Iterable[FactorType] // = super.factors(context).asInstanceOf[FactorType] 
+  //{ val result = newFactorsCollection; addFactors(context, newFactorsCollection).asInstanceOf[Iterable[FactorType]] }
+  //override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = { result ++= super.factors(context); result } 
+//  /** Return all Factors in this Model that touch the given "variable".  The result will not have any duplicate Factors. */
+//  override def factors(variable:Variable): Iterable[FactorType] = { val set = newFactorsCollection; addFactors(variable, set); set.asInstanceOf[Iterable[FactorType]] }
+//  /** Return all Factors in this Model that are affected by the given Diff.  The result will not have any duplicate Factors. */
+//  override def factors(d:Diff): Iterable[FactorType] = if (d.variable eq null) Nil else { val set = newFactorsCollection; addFactors(d, set); set.asInstanceOf[Iterable[FactorType]] }
+//  /** Return all Factors in this Model that are affected by the given DiffList.  The result will not have any duplicate Factors. */
+//  override def factors(dl:DiffList): Iterable[FactorType] = if (dl.size == 0) Nil else { val set = newFactorsCollection; addFactors(dl, set); set.asInstanceOf[Iterable[FactorType]] }
 }
 
 
@@ -230,36 +242,37 @@ trait ModelWithFactorType extends Model {
     @author Andrew McCallum
     @since 0.11
  */
-class CombinedModel(theSubModels:Model*) extends Model {
-  val subModels = new ArrayBuffer[Model] ++= theSubModels
-  def +=(model:Model): Unit = subModels += model
-  def ++=(models:Iterable[Model]): Unit = subModels ++= models
-  def addFactors(variable:Variable, result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variable, result))
-  override def addFactors(variables:Iterable[Variable], result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variables, result))
-  override def addFactors(d:Diff, set:Set[Factor]): Unit = if (d.variable ne null) subModels.foreach(_.addFactors(d, set))
-  override def addFactors(dl:DiffList, set:Set[Factor]): Unit = if (dl.size > 0) subModels.foreach(_.addFactors(dl, set))
-  override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
-  override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
-  override def families: Seq[Family] = subModels.flatMap(_.families) // filterByClass(classOf[Family]).toSeq
-
-  protected def filename: String = throw new Error("Not yet implemented")
-  def save(dirname:String, gzip: Boolean = false): Unit = throw new Error("Not yet implemented")
-  def load(dirname:String, gzip: Boolean = false): Unit = throw new Error("Not yet implemented")
-  def loadFromJar(dirname:String): Unit = throw new Error("Unsupported")
-}
+//class CombinedModel(theSubModels:Model*) extends Model {
+//  val subModels = new ArrayBuffer[Model] ++= theSubModels
+//  def +=(model:Model): Unit = subModels += model
+//  def ++=(models:Iterable[Model]): Unit = subModels ++= models
+//  def addFactors(variable:Variable, result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variable, result))
+//  override def addFactors(variables:Iterable[Variable], result:Set[Factor]): Unit = subModels.foreach(_.addFactors(variables, result))
+//  override def addFactors(d:Diff, set:Set[Factor]): Unit = if (d.variable ne null) subModels.foreach(_.addFactors(d, set))
+//  override def addFactors(dl:DiffList, set:Set[Factor]): Unit = if (dl.size > 0) subModels.foreach(_.addFactors(dl, set))
+//  override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
+//  override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
+//  override def families: Seq[Family] = subModels.flatMap(_.families) // filterByClass(classOf[Family]).toSeq
+//
+//  protected def filename: String = throw new Error("Not yet implemented")
+//  def save(dirname:String, gzip: Boolean = false): Unit = throw new Error("Not yet implemented")
+//  def load(dirname:String, gzip: Boolean = false): Unit = throw new Error("Not yet implemented")
+//  def loadFromJar(dirname:String): Unit = throw new Error("Unsupported")
+//}
 
 /** A Model that explicitly stores all factors, with an efficient map from variables to their neighboring factors.
     @author Andrew McCallum
     @since 0.11
  */
-class ItemizedModel(initialFactors:Factor*) extends Model {
+class ItemizedModel(initialFactors:Factor*) extends Model2[Variable] {
   def this(initialFactors:Iterable[Factor]) = { this(initialFactors.toSeq:_*) }
   private val _factors = new HashMap[Variable,scala.collection.Set[Factor]] {
     override def default(v:Variable) = ListSet.empty[Factor]
   }
   this ++= initialFactors
   // TODO The next method needs to handle ContainerVariables.
-  def addFactors(variable:Variable, result:Set[Factor]): Unit = result ++= _factors(variable)
+  def factors(variable:Variable): Iterable[Factor] = _factors(variable)
+  override def addFactors[A<:Iterable[Factor] with Growable[Factor]](variable:Variable, result:A): A = result ++= _factors(variable)
   //override def addFactors(variable:Variable, result:Set[Factor]): Unit = result ++= _factors(variable)
   override def factors: Iterable[Factor] = _factors.values.flatten.toSeq.distinct
   def +=(f:Factor): Unit = f.variables.foreach(v => _factors(v) match {

@@ -113,8 +113,8 @@ object ChainNER4 {
       trainLabels.take(50).foreach(printLabel _); println; println
       printDiagnostic(trainLabels.take(400))
       predictor.processAll(testLabels)
-      println ("Train accuracy = "+ objective.aveScore(trainLabels))
-      println ("Test  accuracy = "+ objective.aveScore(testLabels))
+      println ("Train accuracy = "+ objective.averageScore(trainLabels))
+      println ("Test  accuracy = "+ objective.averageScore(testLabels))
     }
     if (true) {
       // Use BP Viterbi for prediction
@@ -136,19 +136,19 @@ object ChainNER4 {
       predictor.temperature *= 0.1
       predictor.processAll(testLabels, 2)
     }
-    println ("Final Test  accuracy = "+ objective.aveScore(testLabels))
+    println ("Final Test  accuracy = "+ objective.averageScore(testLabels))
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
     
     for (sentence <- testSentences)
       BP.inferChainMax(sentence.asSeq.map(_.label), model)
-    println ("MaxBP Test accuracy = "+ objective.aveScore(testLabels))
+    println ("MaxBP Test accuracy = "+ objective.averageScore(testLabels))
     for (sentence <- testSentences)
       BP.inferChainSum(sentence.asSeq.map(_.label), model).setToMaximize(null) // max-marginal inference
-    println ("SumBP Test accuracy = "+ objective.aveScore(testLabels))
+    println ("SumBP Test accuracy = "+ objective.averageScore(testLabels))
 //    for (label <- testLabels)
 //      label.setRandomly()
     predictor.processAll(testLabels, 2)
-    println ("Gibbs Test accuracy = "+ objective.aveScore(testLabels))
+    println ("Gibbs Test accuracy = "+ objective.averageScore(testLabels))
   }
 
   def printTokenMarginals(tokens:Seq[Token], summary:BPSummary): Unit = {

@@ -56,7 +56,7 @@ trait AutomaticBagPropagation{
 }
 */
 
-abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSampler[Null](model, null) {
+abstract class HierCorefSampler[T<:HierEntity](model:Model2[Variable]) extends SettingsSampler[Null](model, null) {
   def timeAndProcess(n:Int):Unit = super.process(n) //temporary fix to no longer being able to override process.
   def newEntity:T
   //def reestimateAttributes(e:T):Unit 
@@ -209,7 +209,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSamp
 }
 
 
-class FastTemplateModel extends CombinedModel() {
+class FastTemplateModel extends CombinedModel[Variable]() {
 //  override def factorsWithDuplicates(variable:Variable): Iterable[Factor] = {
 //    val result = new ListBuffer[Factor]
 //    var i = 0

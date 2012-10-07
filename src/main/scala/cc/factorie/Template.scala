@@ -91,8 +91,12 @@ object Template {
     @author Andrew McCallum
 */
 // TODO Make this Template[F] because this is a container/generator of Factors F.  No, can't because Factor class is inner.
-trait TemplateModel extends Model with Template[Variable,Factor] with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
+trait TemplateModel extends Model2[Variable] with Template[Variable,Factor] with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
+  def addFactors(v:Variable, result:Set[cc.factorie.Factor]): Unit
   def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
+  // TODO This method is a little messy.  Clean up this situation. -akm
+  override def factors(v:Variable): Iterable[FactorType] = { val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]; addFactors(v, result); result.asInstanceOf[Iterable[FactorType]] }
+
   /** Called in implementations of factors(Variable) to give the variable a chance
       to specify additional dependent variables on which factors(Variable) should also be called. */
   def unrollCascade(v:Variable): Iterable[Variable] = v.unrollCascade

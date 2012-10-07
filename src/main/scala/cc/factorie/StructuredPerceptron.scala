@@ -19,7 +19,7 @@ import cc.factorie.la._
 
 /** Collins' structured-perceptron.
     @author Andrew McCallum */
-abstract class StructuredPerceptron[V<:LabeledMutableVar[_]](val model:Model, val optimizer:GradientOptimizer) {
+abstract class StructuredPerceptron[V<:LabeledMutableVar[_]](val model:Model2[DiffList], val optimizer:GradientOptimizer) {
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
   var rate = 1.0
   /** Method should set variables to model's MAP solution. */

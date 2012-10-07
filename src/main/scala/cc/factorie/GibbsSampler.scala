@@ -2,7 +2,7 @@ package cc.factorie
 import cc.factorie.generative.{GenerativeFactor,GenerativeModel}
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
-class TypedGibbsSampler[V<:Variable](val model:Model, val objective:Model = null) extends ProposalSampler[V] {
+class TypedGibbsSampler[V<:Variable](val model:Model2[Variable], val objective:Model2[Variable] = null) extends ProposalSampler[V] {
   val handlers = new ArrayBuffer[GibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVarGibbsSamplerHandler) //, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler
   handlers ++= defaultHandlers
@@ -44,7 +44,7 @@ class TypedGibbsSampler[V<:Variable](val model:Model, val objective:Model = null
 
   def proposals(v:V): Seq[Proposal] = model match {
     case m:GenerativeModel => throw new Error("Not yet implemented")
-    case m:Model => v match {
+    case m:Model2[Variable] => v match {
       case v:DiscreteVariable => proposals(v)
       case v:Variable with IterableSettings => proposals(v.settings)
     } 
@@ -65,7 +65,7 @@ class TypedGibbsSampler[V<:Variable](val model:Model, val objective:Model = null
   }
 }
 
-class GibbsSampler(model:Model, objective:Model = null) extends TypedGibbsSampler[Variable](model, objective)
+class GibbsSampler(model:Model2[Variable], objective:Model2[Variable] = null) extends TypedGibbsSampler[Variable](model, objective)
 
 trait GibbsSamplerHandler {
   def sampler(v:Variable, factors:Seq[Factor], sampler:TypedGibbsSampler[_]): GibbsSamplerClosure

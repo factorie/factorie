@@ -25,7 +25,7 @@ import pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
 
 object PerceptronPOS {
 
-  object PosModel extends CombinedModel {
+  object PosModel extends CombinedModel[Variable] {
     // Factor between label and observed token
     val localTemplate = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
       //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))
@@ -69,7 +69,7 @@ object PerceptronPOS {
       addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 
-  def percentageSetToTarget[L <: LabeledVarWithTarget](ls: Seq[L]): Double = HammingLossObjective.aveScore(ls)
+  def percentageSetToTarget[L <: LabeledVarWithTarget](ls: Seq[L]): Double = HammingLossObjective.averageScore(ls)
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
   def predictSentence(vs: Seq[PosLabel]): Unit =

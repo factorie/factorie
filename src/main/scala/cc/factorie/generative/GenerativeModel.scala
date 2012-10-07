@@ -3,7 +3,7 @@ import cc.factorie._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
-trait GenerativeModel extends Model {
+trait GenerativeModel extends Model2[Variable] {
   def getParentFactor(v:Variable): Option[GenerativeFactor]
   def getChildFactors(v:Variable): Option[Iterable[GenerativeFactor]]
   def parentFactor(v:Variable): GenerativeFactor
@@ -23,21 +23,22 @@ trait MutableGenerativeModel extends GenerativeModel {
 }
 
 object GenerativeModel {
-  /** Contructor for a default GenerativeModel */
+  /** Constructor for a default GenerativeModel */
   def apply(): ItemizedGenerativeModel = new ItemizedGenerativeModel
 }
 
 class ItemizedGenerativeModel extends MutableGenerativeModel {
   private val _parentFactor = new HashMap[Variable,GenerativeFactor]
   private val _childFactors = new HashMap[Variable,ArrayBuffer[GenerativeFactor]]
-  def addFactors(variable:Variable, result:scala.collection.mutable.Set[Factor]): Unit = {
+  def addFactors(variable:Variable, result:scala.collection.mutable.Set[Factor]): scala.collection.mutable.Set[Factor] = {
     if (_parentFactor.contains(variable)) result += _parentFactor(variable)
     // TODO Do we need to use extendedParentFactors also?
     //if (_childFactors.contains(v)) result ++= _childFactors(v)
     if (_childFactors.contains(variable)) result ++= extendedChildFactors(variable)
     // TODO special handling of ContainerVariable[_]??
+    result
   }
-  def addFactors(v:Variable, result:scala.collection.generic.Growable[Factor]): Unit = {
+  override def addFactors[A<:Iterable[Factor] with collection.generic.Growable[Factor]](v:Variable, result:A): A = {
     val set = new scala.collection.mutable.HashSet[Factor]
     if (_parentFactor.contains(v)) set += _parentFactor(v)
     // TODO Do we need to use extendedParentFactors also?
@@ -45,7 +46,9 @@ class ItemizedGenerativeModel extends MutableGenerativeModel {
     if (_childFactors.contains(v)) set ++= extendedChildFactors(v)
     // TODO special handling of ContainerVariable[_]??
     result ++= set
+    result
   }
+  def factors(v:Variable): Iterable[Factor] = { val result = new collection.mutable.HashSet[Factor]; addFactors(v, result); result }
 //  override def factorsWithDuplicates(variables:Iterable[Variable]): Iterable[Factor] = {
 //    val result = new ArrayBuffer[GenerativeFactor]
 //    variables.foreach(v => {

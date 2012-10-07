@@ -57,7 +57,7 @@ class SampleRankTest extends AssertionsForJUnit {
   //create variables with a ring graph structure
   var bools: Seq[MyBool] = null
 
-  val trainingSignal = new CombinedModel(
+  val trainingSignal = new CombinedModel[Variable] (
     //
     //this template unrolls a "ring" structured graphical model
     new TupleTemplateWithStatistics2[MyBool, MyBool] {
@@ -71,10 +71,10 @@ class SampleRankTest extends AssertionsForJUnit {
       }
     }
   )
-  var model: CombinedModel = null
+  var model: CombinedModel[Variable] = null
 
 
-  class AllPairsProposer(model: CombinedModel) extends MHSampler[Null](model)
+  class AllPairsProposer(model: CombinedModel[Variable]) extends MHSampler[Null](model)
   {
     def propose(context: Null)(implicit delta: DiffList): Double =
       {
@@ -84,7 +84,7 @@ class SampleRankTest extends AssertionsForJUnit {
   }
 
 
-  abstract class AllPairsCD1Proposer(model: CombinedModel) extends ContrastiveDivergence[Null](model)
+  abstract class AllPairsCD1Proposer(model: CombinedModel[Variable]) extends ContrastiveDivergence[Null](model)
   {
     def propose(context: Null)(implicit delta: DiffList): Double =
       {
@@ -106,7 +106,7 @@ class SampleRankTest extends AssertionsForJUnit {
       bools(bools.length - 1).next = bools(0)
       println("NUM BOOL VARS: " + bools.size)
 
-      model = new CombinedModel(
+      model = new CombinedModel[Variable](
         new DotTemplateWithStatistics2[MyBool, MyBool]
         {
           //def statisticsDomains = ((BooleanDomain, BooleanDomain))
@@ -144,14 +144,14 @@ class SampleRankTest extends AssertionsForJUnit {
       for (i <- 0 until math.pow(2, bools.length).toInt)
         {
           decodeConfiguration(i, bools)
-          val modelScoreI = model.score(bools)
-          val truthScoreI = trainingSignal.score(bools)
+          val modelScoreI = model.sumScore(bools)
+          val truthScoreI = trainingSignal.sumScore(bools)
 
           for (j <- i + 1 until math.pow(2, bools.length).toInt)
             {
               decodeConfiguration(j, bools)
-              val modelScoreJ = model.score(bools)
-              val truthScoreJ = trainingSignal.score(bools)
+              val modelScoreJ = model.sumScore(bools)
+              val truthScoreJ = trainingSignal.sumScore(bools)
 
               if (truthScoreI > truthScoreJ)
                 if (modelScoreI <= modelScoreJ)

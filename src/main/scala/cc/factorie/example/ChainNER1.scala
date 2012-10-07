@@ -72,8 +72,8 @@ object ChainNER1a {
       learner.processAll(trainLabels)
       predictor.processAll(testLabels)
     }
-    println("Train Acccuracy = "+HammingLossObjective.aveScore(trainLabels))
-    println("Test Acccuracy = "+HammingLossObjective.aveScore(testLabels))
+    println("Train Acccuracy = "+HammingLossObjective.averageScore(trainLabels))
+    println("Test Acccuracy = "+HammingLossObjective.averageScore(testLabels))
   }
 }
   

@@ -23,7 +23,7 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends ModelWithFactorType with Family4[N1,N2,N3,N4] with TemplateModel {
+abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3], nm4:Manifest[N4]) extends ModelWithFactorType[Variable] with Family4[N1,N2,N3,N4] with TemplateModel {
   val neighborClass1 = nm1.erasure
   val neighborClass2 = nm2.erasure
   val neighborClass3 = nm3.erasure
@@ -43,7 +43,7 @@ abstract class Template4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](im
     if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
     if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
     if ((nc4a ne null) && nc4a.isAssignableFrom(v.getClass)) ret ++= unroll4s(v.asInstanceOf[N4#ContainedVariableType])
-    if (tryCascade) { val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) addFactors(cascadeVariables, ret) }
+    if (tryCascade) { val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) cascadeVariables.foreach(addFactors(_, ret)) }
     ret
   }
   def unroll1(v:N1): Iterable[FactorType]

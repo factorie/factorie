@@ -67,11 +67,11 @@ object TestSampleRank {
     //learner.logLevel = 10
     learner.processAll(labels)
     labels.foreach(l => l.set(0)(null)); println("Set to 0")
-    labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.score(l)))
+    labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.sumScore(l)))
     labels.foreach(l => l.set(1)(null)); println("Set to 1")
-    labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.score(l)))
+    labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.sumScore(l)))
     MaximizeDiscrete(labels, model); println("Set to max")
-    labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.score(l)))
-    println("Train accuracy "+HammingLossObjective.aveScore(labels))
+    labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.sumScore(l)))
+    println("Train accuracy "+HammingLossObjective.averageScore(labels))
   }
 }

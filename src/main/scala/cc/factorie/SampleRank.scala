@@ -20,7 +20,7 @@ import cc.factorie.optimize.GradientOptimizer
 import collection.mutable.HashMap
 
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
-class SampleRank[C](val model:Model, sampler:ProposalSampler[C], optimizer:GradientOptimizer) {
+class SampleRank[C](val model:Model2[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) {
   def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
   var learningMargin = 1.0
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])

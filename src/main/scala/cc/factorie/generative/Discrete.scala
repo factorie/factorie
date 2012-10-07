@@ -43,7 +43,7 @@ object Discrete extends GenerativeFamily2[DiscreteVariable,ProportionsVariable] 
 }
 
 object MaximizeGeneratedDiscrete extends Maximize {
-  def apply(d:DiscreteVariable, model:Model): Unit = {
+  def apply(d:DiscreteVariable, model:Model2[Variable]): Unit = {
     val dFactors = model.factors(d)
     require(dFactors.size == 1)
     dFactors.head match {
@@ -51,8 +51,8 @@ object MaximizeGeneratedDiscrete extends Maximize {
       case _ => throw new Error("This Maximizer only handles factors of type Discrete.Factor.")
     }
   }
-  def apply(varying:Iterable[DiscreteVariable], model:Model): Unit = for (d <- varying) apply(d, model)
-  def infer[V<:DiscreteVariable](varying:V, model:Model): Option[DiscreteMarginal1[V]] = {
+  def apply(varying:Iterable[DiscreteVariable], model:Model2[Variable]): Unit = for (d <- varying) apply(d, model)
+  def infer[V<:DiscreteVariable](varying:V, model:Model2[Variable]): Option[DiscreteMarginal1[V]] = {
     val dFactors = model.factors(varying)
     require(dFactors.size == 1)
     dFactors.head match {
@@ -60,7 +60,7 @@ object MaximizeGeneratedDiscrete extends Maximize {
       case _ => None
     }
   }
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
+  override def infer(variables:Iterable[Variable], model:Model2[Variable], summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
     if (summary ne null) return None
     if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
     val result = new DiscreteSummary1[DiscreteVariable]

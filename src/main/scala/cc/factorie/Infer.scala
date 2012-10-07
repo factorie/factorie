@@ -39,13 +39,13 @@ trait Infer {
   /** Called by generic inference engines that manages a suite of Infer objects, allowing each to attempt an inference request.
       If you want your Infer subclass to support such usage by a suite, override this method to check types as a appropriate
       and return Some Summary on success, or None on failure. */
-  def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[Summary[Marginal]] = None
+  def infer(variables:Iterable[Variable], model:Model2[Variable], summary:Summary[Marginal] = null): Option[Summary[Marginal]] = None
 }
 
 // TODO Rename simply InferDiscrete?  Multiple DiscreteVariables could be handled by a "InferDiscretes" // Yes, I think so.  Note DiscreteSummary1 also. -akm
 object InferDiscrete1 extends Infer {
   // TODO Consider renaming this "asArray"
-  def array(d:DiscreteVariable, model:Model): Array[Double] = {
+  def array(d:DiscreteVariable, model:Model2[Variable]): Array[Double] = {
     val distribution = new Array[Double](d.domain.size)
     val origValue = d.intValue
     val factors = model.factors(d) // Note that this doens't handle value-specific factor unrolling
@@ -57,19 +57,19 @@ object InferDiscrete1 extends Infer {
     d := origValue
     distribution
   }
-  def proportions(d:DiscreteVariable, model:Model): Proportions1 = new DenseProportions1(array(d, model))
-  def marginal[V<:DiscreteVariable](d:V, model:Model): DiscreteMarginal1[V] = new DiscreteMarginal1(d, proportions(d, model))
-  def apply[V<:DiscreteVariable](varying:Iterable[V], model:Model): DiscreteSummary1[V] = {
+  def proportions(d:DiscreteVariable, model:Model2[Variable]): Proportions1 = new DenseProportions1(array(d, model))
+  def marginal[V<:DiscreteVariable](d:V, model:Model2[Variable]): DiscreteMarginal1[V] = new DiscreteMarginal1(d, proportions(d, model))
+  def apply[V<:DiscreteVariable](varying:Iterable[V], model:Model2[Variable]): DiscreteSummary1[V] = {
     val summary = new DiscreteSummary1[V]
     for (v <- varying) summary += new DiscreteMarginal1(v, proportions(v, model))
     summary
   }
-  def apply[V<:DiscreteVariable](varying:V, model:Model): DiscreteSummary1[V] = {
+  def apply[V<:DiscreteVariable](varying:V, model:Model2[Variable]): DiscreteSummary1[V] = {
     val summary = new DiscreteSummary1[V]
     summary += new DiscreteMarginal1(varying, proportions(varying, model))
     summary
   }
-  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
+  override def infer(variables:Iterable[Variable], model:Model2[Variable], summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
     if (summary ne null) return None // We don't handle a provided Summary
     if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
     Some(apply(variables.asInstanceOf[Iterable[DiscreteVariable]], model))
@@ -95,12 +95,12 @@ class SamplingInferencer[C,S<:IncrementableSummary[Marginal]](val sampler:Sample
 // TODO Consider making this extend Infer?
 object InferByGibbsSampling {
   // TODO Not a great name, but can't have both named "apply" because they both have default arguments.
-  def withSummary[S<:IncrementableSummary[Marginal]](varying:Iterable[Variable with IterableSettings], model:Model, summary:S, iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): S = {
+  def withSummary[S<:IncrementableSummary[Marginal]](varying:Iterable[Variable with IterableSettings], model:Model2[Variable], summary:S, iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): S = {
     val inferencer = new SamplingInferencer(new VariableSettingsSampler[Variable with IterableSettings](model, null), summary)
     inferencer.process(varying, iterations, burnIn, thinning)
     summary
   }
-  def apply[V<:MutableDiscreteVar[_]](varying:Iterable[V], model:Model, iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): DiscreteSummary1[V] = {
+  def apply[V<:MutableDiscreteVar[_]](varying:Iterable[V], model:Model2[Variable], iterations:Int = 500, burnIn:Int = 100, thinning:Int = 20): DiscreteSummary1[V] = {
     withSummary(varying, model, new DiscreteSummary1(varying), iterations, burnIn, thinning)
   }
 }

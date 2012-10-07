@@ -69,7 +69,7 @@ class TestProposalSamplers extends TestCase {
     val model = new ItemizedModel(newFactor2(v1, v2, 5, 1))
     val sampler = new VariablesSettingsSampler[BinVar](model)
 
-    val origScore = model.score(Seq(v1, v2))
+    val origScore = model.sumScore(Seq(v1, v2))
     println("orig score: " + origScore)
     val assignCounts = Array.fill(numLabels, numLabels)(0)
     for (i <- 0 until samples) {
@@ -80,13 +80,13 @@ class TestProposalSamplers extends TestCase {
     var Z = 0.0
     for (p <- sampler.proposals(Seq(v1, v2))) {
       p.diff.redo
-      val modelScore = model.score(Seq(v1, v2))
+      val modelScore = model.sumScore(Seq(v1, v2))
       Z += e(modelScore)
       p.diff.undo
     }
     for (p <- sampler.proposals(Seq(v1, v2))) {
       p.diff.redo
-      val modelScore = model.score(Seq(v1, v2))
+      val modelScore = model.sumScore(Seq(v1, v2))
       val sampleProb = assignCounts(v1.intValue)(v2.intValue) / totalCount
       println("%d %d : true: %f, prop: %f, trueProb: %f, sample: %f".format(v1.intValue, v2.intValue, modelScore - origScore, p.modelScore, e(modelScore) / Z, sampleProb))
       assertEquals(modelScore - origScore, p.modelScore, eps)
