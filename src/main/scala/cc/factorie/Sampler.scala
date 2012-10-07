@@ -105,7 +105,7 @@ trait ProposalSampler0 {
     Proposal objects come from abstract method "proposals". 
     @author Andrew McCallum */
 trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
-  def model: Model
+  def model: Model[Variable]
   var temperature = 1.0 // Not used here, but used in subclasses; here for uniformity // TODO Consider moving use from SettingsSampler to this.process1
   def proposals(context:C): Seq[Proposal]
   def skipEmptyProposals = true
@@ -132,13 +132,13 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
 // Not intended for users.  Here just so that SampleRank can override it.
 // TODO is there a better way to do this?
 trait SettingsSampler0 {
-  def objective: Model
+  def objective: Model[Variable]
 }
 
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(C), 
     scores each, builds a distribution from the scores, and samples from it.
     @author Andrew McCallum */
-abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) extends ProposalSampler[C] with SettingsSampler0 {
+abstract class SettingsSampler[C](theModel:Model[Variable], theObjective:Model[Variable] = null) extends ProposalSampler[C] with SettingsSampler0 {
   //def this(m:Model) = this(m, null)
   def model = theModel
   def objective = theObjective 
@@ -153,6 +153,7 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) ext
     val si = settings(context)
     while (si.hasNext) {
       val d = si.next
+      assert(model ne null) // TODO!!! Clean up and delete this
       val (m,o) = d.scoreAndUndo(model, objective)
       if (proposalsCache.length == i) proposalsCache.append(null)
       proposalsCache(i) = new Proposal(d, m, o, m/temperature)
@@ -169,7 +170,7 @@ abstract class SettingsSampler[C](theModel:Model, theObjective:Model = null) ext
 }
 
 /** Instead of randomly sampling according to the distribution, always pick the setting with the maximum acceptanceScore. */
-abstract class SettingsGreedyMaximizer[C](theModel:Model, theObjective:Model = null) extends SettingsSampler[C](theModel, theObjective) {
+abstract class SettingsGreedyMaximizer[C](theModel:Model[Variable], theObjective:Model[Variable] = null) extends SettingsSampler[C](theModel, theObjective) {
   override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.maxByDouble(_.acceptanceScore)
 }
 
@@ -180,12 +181,12 @@ abstract class SettingsGreedyMaximizer[C](theModel:Model, theObjective:Model = n
     Because SampleRank requires Proposal objects, we use this intsead of GibbsSampler.
     @see generative.GibbsSampler
     @author Andrew McCallum */
-class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsSampler[V](model, objective) {
+class VariableSettingsSampler[V<:Variable with IterableSettings](model:Model[Variable], objective:Model[Variable] = null) extends SettingsSampler[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 
 // TODO Remove and recommend GibbsSampler instead
-class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsSampler[Seq[V]](model, objective) {
+class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model[Variable], objective:Model[Variable] = null) extends SettingsSampler[Seq[V]](model, objective) {
   def settings(variables:Seq[V]): SettingIterator = new SettingIterator {
     val vs = variables.map(_.settings).toList
     val vds = variables.map(v => new DiffList).toList // maintains a list of changes for each variable
@@ -229,7 +230,7 @@ class VariablesSettingsSampler[V<:Variable with IterableSettings](model:Model, o
 }
 
 // TODO Rename IteratedConditionalModes /* Besag's Iterated Conditional Modes */
-class VariableSettingsGreedyMaximizer[V<:Variable with IterableSettings](model:Model, objective:Model = null) extends SettingsGreedyMaximizer[V](model, objective) {
+class VariableSettingsGreedyMaximizer[V<:Variable with IterableSettings](model:Model[Variable], objective:Model[Variable] = null) extends SettingsGreedyMaximizer[V](model, objective) {
   def settings(v:V): SettingIterator = v.settings
 }
 
@@ -245,7 +246,7 @@ trait FactorQueue[C] extends Sampler[C] {
   
   /** Override to provide the generic sampler that can potentially deal with arbitrary variables coming from Factors */
   def process0(x:AnyRef): DiffList
-  def model: Model
+  def model: Model[Variable]
   
   override def postProcessHook(context:C, diff:DiffList): Unit = {
     super.postProcessHook(context, diff)

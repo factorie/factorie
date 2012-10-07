@@ -16,9 +16,9 @@ object DiffChecker {
     // TODO check variables in difflist are in variables
     diffList.redo
     val diffScore:Double = diffList.scoreAndUndo(model)
-    val prevScore:Double = model.score(variables)
+    val prevScore:Double = model.sumScore(variables)
     diffList.redo
-    val modelScoreDiff:Double = model.score(variables)
+    val modelScoreDiff:Double = model.sumScore(variables)
     diffScore == modelScoreDiff
   }
 

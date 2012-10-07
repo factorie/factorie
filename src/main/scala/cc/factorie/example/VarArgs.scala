@@ -31,7 +31,7 @@ object VarArgsDemo {
       def domain = XDomain
     }
 
-    val model = new CombinedModel(
+    val model = new CombinedModel[Variable] (
       // "Vars[]" indicates that there can be a variable number of these neighbors
       new DotTemplate2[X,Vars[Y]] {
         //def statisticsDomains = Tuple1(XDomain)

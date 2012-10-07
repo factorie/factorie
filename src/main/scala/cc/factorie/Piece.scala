@@ -26,17 +26,19 @@ trait Piece {
   def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator): Unit
   def accumulateGradient(model: Model, gradient: TensorAccumulator): Unit = accumulateValueAndGradient(model, gradient, NoopDoubleAccumulator)
   def accumulateValue(model: Model, value: DoubleAccumulator): Unit = accumulateValueAndGradient(model, NoopTensorAccumulator, value)
+  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator,  value: DoubleAccumulator): Unit
+  def accumulateGradient(model: Model[Variable], gradient: TensorAccumulator): Unit = accumulateValueAndGradient(model, gradient, NoopDoubleAccumulator)
+  def accumulateValue(model: Model[Variable], value: DoubleAccumulator): Unit = accumulateValueAndGradient(model, NoopTensorAccumulator, value)
   //def state: PieceState
   //def updateState(state: PieceState)
 }
 
 trait PiecewiseLearner {
-  def model: Model
-  def process(pieces: GenSeq[Piece]): Unit
-  def isConverged: Boolean
+  def model: Model[Variable]
+  def process(pieces:GenSeq[Piece]): Unit
 }
 
-class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) extends PiecewiseLearner {
+class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model[Variable]) extends PiecewiseLearner {
   val gradient = model.weightsTensor.copy
   val gradientAccumulator = new LocalTensorAccumulator(gradient.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
@@ -58,6 +60,12 @@ class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) ex
   val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] {override def initialValue = new LocalDoubleAccumulator(0.0)}
 
   override def process(pieces: GenSeq[Piece]): Unit = {
+class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model[Variable]) extends PiecewiseLearner {
+  val gradient = new ThreadLocal[Tensor] { override def initialValue = model.weightsTensor.copy }
+  val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] { override def initialValue = new LocalTensorAccumulator(gradient.get) }
+  val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator(0.0) }
+  
+  override def process(pieces:GenSeq[Piece]): Unit = {
     // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit
     pieces.foreach(piece => {
       gradient.get.zero()
@@ -72,6 +80,8 @@ class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) ex
 
 class HogwildPiecewiseLearner(optimizer: GradientOptimizer, model: Model) extends SGDPiecewiseLearner(optimizer, model) {
   override def process(pieces: GenSeq[Piece]) = super.process(pieces.par)
+class HogwildPiecewiseLearner(optimizer: GradientOptimizer, model: Model[Variable]) extends SGDPiecewiseLearner(optimizer, model) {
+  override def process(pieces:GenSeq[Piece]) = super.process(pieces.par)
 }
 
 object LossFunctions {
@@ -113,7 +123,7 @@ object LossFunctions {
 class MultiClassGLMPiece(featureVector: Tensor1, label: Int, lossAndGradient: LossFunctions.MultiClassLossFunction) extends Piece {
   //def updateState(state: PieceState): Unit = { }
   def state = null
-  def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
     val weightsMatrix = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily).asInstanceOf[Tensor2]
     val prediction = weightsMatrix matrixVector featureVector

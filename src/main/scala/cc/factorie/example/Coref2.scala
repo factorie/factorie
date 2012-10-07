@@ -112,7 +112,7 @@ class PairwiseModel extends CombinedModel(
   }
 )
 
-/*class PairwiseModel2 extends TemplateModel(
+/*class PairwiseModel extends TemplateModel(
   new Template4[EntityRef2,EntityRef2,Mention,Mention] with DotStatistics1[DiscreteVectorValue] {
     def unroll1 (er:EntityRef2) = for (other <- er.value.mentions; if (other.entityRef.value == er.value)) yield 
         if (er.mention.hashCode > other.hashCode) Factor(er, other.entityRef, er.mention, other.entityRef.mention)

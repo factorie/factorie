@@ -75,7 +75,7 @@ object Football {
   val orgLexicon = new Lexicon(lexiconDir+"orgs")
   //val positionLexicon = new Lexicon(lexiconDir+"positions")
   throw new Error("Objective needs to be re-implemented.")
-  val objective = new CombinedModel(
+  val objective = new CombinedModel[Variable](
     /*new TemplateWithVectorStatistics1[Label] {
       val oIndex = LabelDomain.index("O")
       val orgIndex = LabelDomain.index("ORG")
