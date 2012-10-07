@@ -32,6 +32,7 @@ trait Tensor1 extends Tensor {
     case t:Tensor1 => require(t.dim1 == dim1)
     case _ => throw new Error("Tensor ranks do not match.")
   }
+  // FIXME: should "activeDomains" be a "def" there or a "val"?
   def reshape(dim: Array[Int]) : Tensor = {
     assert(dim.fold(1)((a,b) => a*b) == dim1)
     new Tensor {
@@ -109,7 +110,7 @@ class GrowableDenseTensor1(initialSize:Int) extends { private var _dim1 = initia
     case t:SingletonTensor1 => +=(t.singleIndex, f * t.singleValue)
     case t:SparseBinaryTensorLike1 => { ensureDimensions(t.maxIndex+1); t.=+(_values, f) }
     case t:DenseTensorLike1 => { ensureDimensions(t.length); super.+=(t, f) }
-    case t:SparseIndexedTensor1 => { ensureDimensions(t.length); t dot this }
+    case t:SparseIndexedTensor1 => { ensureDimensions(t.length); super.+=(t, f) }
     case t:UniformTensor1 => { ensureDimensions(t.length); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
   }
   override def copy: GrowableDenseTensor1 = { val c = new GrowableDenseTensor1(_dim1); c := this; c }
