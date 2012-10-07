@@ -58,7 +58,7 @@ package object factorie {
   //    def factors(variable:Variable): Iterable[Factor] = model.factors(Seq(variable))
   //  }
   implicit def modelVariable2Variables[V<:Variable](model:Model[V]): Model[Iterable[V]] = {
-    assert(model ne null)
+    if (model eq null) return null
     new Variable2IterableModel[V](model)
   }
 //  new Model[Iterable[V]] {
@@ -69,7 +69,7 @@ package object factorie {
 //    }
 //  }
   implicit def modelVariable2DiffList(model:Model[Variable]): Model[DiffList] = {
-    assert(model ne null)
+    if (model eq null) return null
     new Variable2DiffListModel(model)
   }
 //    new Model[DiffList] {
