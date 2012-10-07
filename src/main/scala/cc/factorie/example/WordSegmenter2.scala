@@ -34,7 +34,7 @@ object WordSegmenterDemo2 {
   class Sentence extends Chain[Sentence,Token]
 
   
-  val model = new Model2[IndexedSeq[Label]] {
+  val model = new Model[IndexedSeq[Label]] {
     object bias extends DotFamilyWithStatistics1[Label] {
       factorName = "Label"
       lazy val weights = new la.DenseTensor1(BooleanDomain.size)

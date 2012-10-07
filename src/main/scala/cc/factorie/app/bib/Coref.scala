@@ -807,7 +807,7 @@ class AuthorTrainer(model:TemplateModel, trainingSignal:TemplateModel) extends A
 }
 */
 
-class AuthorSampler(model:Model2[Variable]) extends BibSampler[AuthorEntity](model){
+class AuthorSampler(model:Model[Variable]) extends BibSampler[AuthorEntity](model){
   def newEntity = new AuthorEntity
   def sampleAttributes(author:AuthorEntity)(implicit d:DiffList) = {
     if(author.childEntities.size==0){
@@ -941,7 +941,7 @@ class AuthorSampler(model:Model2[Variable]) extends BibSampler[AuthorEntity](mod
   }
   */
 }
-class PaperSampler(model:Model2[Variable]) extends BibSampler[PaperEntity](model){
+class PaperSampler(model:Model[Variable]) extends BibSampler[PaperEntity](model){
   def newEntity = new PaperEntity
   def chooseCanonicalMention(paper:PaperEntity)(implicit d:DiffList):Unit ={
     var canonical:PaperEntity = null
@@ -1107,7 +1107,7 @@ class ApproxMaxCanopySampling[E<:HierEntity with HasCanopyAttributes[E] with Pri
   }
 }
 
-abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](model:Model2[Variable]) extends HierCorefSampler[E](model){
+abstract class BibSampler[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable](model:Model[Variable]) extends HierCorefSampler[E](model){
   var numAccepted = 0
   protected var canopyStats:CanopyStatistics[E] = new ApproxMaxCanopySampling//( (Unit) => {this.getEntities})
   protected var canopies = new HashMap[String,ArrayBuffer[E]]

@@ -31,7 +31,7 @@ import scala.collection.generic.Growable
     @since 0.11
  */
 
-trait Model2[C] {
+trait Model[C] {
   //def variables(context:C): Iterable[Variable]
   def factors(context:C): Iterable[Factor]
   def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = { result ++= factors(context); result } 
@@ -81,10 +81,10 @@ trait Model2[C] {
   def score: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
 }
 
-class CombinedModel[C](theSubModels:Model2[C]*) extends Model2[C] {
-  val subModels = new ArrayBuffer[Model2[C]] ++= theSubModels
-  def +=(model:Model2[C]): Unit = subModels += model
-  def ++=(models:Iterable[Model2[C]]): Unit = subModels ++= models
+class CombinedModel[C](theSubModels:Model[C]*) extends Model[C] {
+  val subModels = new ArrayBuffer[Model[C]] ++= theSubModels
+  def +=(model:Model[C]): Unit = subModels += model
+  def ++=(models:Iterable[Model[C]]): Unit = subModels ++= models
   def factors(context:C): Iterable[Factor] = addFactors(context, newFactorsCollection)
   override def newFactorsCollection: ListBuffer[Factor] = new collection.mutable.ListBuffer[Factor]
   override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = { subModels.foreach(_.addFactors(context, result)); result }
@@ -98,8 +98,8 @@ class CombinedModel[C](theSubModels:Model2[C]*) extends Model2[C] {
   def loadFromJar(dirname:String): Unit = throw new Error("Unsupported")
 }
 
-trait ProxyModel[C1,C2] extends Model2[C2] {
-  def model: Model2[C1]
+trait ProxyModel[C1,C2] extends Model[C2] {
+  def model: Model[C1]
   override def newFactorsCollection: ListBuffer[Factor] = new collection.mutable.ListBuffer[Factor]
   //override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C2, result:A): A = { subModels.foreach(_.addFactors(context, result)); result }
   override def variables = model.variables
@@ -107,7 +107,7 @@ trait ProxyModel[C1,C2] extends Model2[C2] {
   override def families = model.families
 }
 
-class Variable2DiffListModel(val model:Model2[Variable]) extends ProxyModel[Variable,DiffList] {
+class Variable2DiffListModel(val model:Model[Variable]) extends ProxyModel[Variable,DiffList] {
   def factors(context:DiffList): Iterable[Factor] = {
     val result = new collection.mutable.LinkedHashSet[Factor]
     assert(model ne null)
@@ -118,7 +118,7 @@ class Variable2DiffListModel(val model:Model2[Variable]) extends ProxyModel[Vari
   }
 }
 
-class Variable2IterableModel[V<:Variable](val model:Model2[V]) extends ProxyModel[V,Iterable[V]] {
+class Variable2IterableModel[V<:Variable](val model:Model[V]) extends ProxyModel[V,Iterable[V]] {
   def factors(context:Iterable[V]): Iterable[Factor] = {
     val result = new collection.mutable.LinkedHashSet[Factor]
     context.foreach(v => model.addFactors(v, result))
@@ -126,7 +126,7 @@ class Variable2IterableModel[V<:Variable](val model:Model2[V]) extends ProxyMode
   }
 }
 
-//class Variable2DiffListModel(val model:Model2[Variable]) extends ProxyModel[Variable,DiffList] {
+//class Variable2DiffListModel(val model:Model[Variable]) extends ProxyModel[Variable,DiffList] {
 //  def factors(dl:DiffList): Iterable[Factor] = {
 //    val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables in the DiffList
 //    dl.foreach(d => if (d.variable ne null) model.addFactors(d.variable, result))
@@ -223,7 +223,7 @@ class Variable2IterableModel[V<:Variable](val model:Model2[V]) extends ProxyMode
 
 
 /** Assumes that all calls to addFactors() will only add Factors of type FactorType, and then appropriately casts the return type of factors() methods. */
-trait ModelWithFactorType[C] extends Model2[C] {
+trait ModelWithFactorType[C] extends Model[C] {
   trait FactorType <: Factor
   /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
   //override def factors(context:C): Iterable[FactorType] // = super.factors(context).asInstanceOf[FactorType] 
@@ -264,7 +264,7 @@ trait ModelWithFactorType[C] extends Model2[C] {
     @author Andrew McCallum
     @since 0.11
  */
-class ItemizedModel(initialFactors:Factor*) extends Model2[Variable] {
+class ItemizedModel(initialFactors:Factor*) extends Model[Variable] {
   def this(initialFactors:Iterable[Factor]) = { this(initialFactors.toSeq:_*) }
   private val _factors = new HashMap[Variable,scala.collection.Set[Factor]] {
     override def default(v:Variable) = ListSet.empty[Factor]
@@ -347,7 +347,7 @@ class ItemizedModel(initialFactors:Factor*) extends Model2[Variable] {
 //}
 //
 //
-//abstract class NewTemplateModel2[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends NewModel {
+//abstract class NewTemplateModel[N1<:Variable,N2<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2]) extends NewModel {
 //  def unroll1(v:N1): Iterable[Factor]
 //  def unroll2(v:N2): Iterable[Factor]
 //  // We must assume that variables does not contain duplicates; if debug flag on, then check.
@@ -385,7 +385,7 @@ class ItemizedModel(initialFactors:Factor*) extends Model2[Variable] {
 //
 //object NewTemplateModel {
 //  def main(args:Array[String]): Unit = {
-//    val t = new NewTemplateModel2[BooleanVariable,BooleanVariable] {
+//    val t = new NewTemplateModel[BooleanVariable,BooleanVariable] {
 //      def unroll1(b:BooleanVariable): Iterable[Factor] = { println("unroll1"); new Factor2(b,b) { def score(b1:BooleanValue, b2:BooleanValue) = 0.0 } }
 //      def unroll2(b:BooleanVariable): Iterable[Factor] = { println("unroll1"); List(new Factor2(b,b) { def score(b1:BooleanValue, b2:BooleanValue) = 0.0 }) }
 //    }

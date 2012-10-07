@@ -304,7 +304,7 @@ object MaximizeProportions extends Maximize {
       case _ => return None
     }
   }*/
-  override def infer(variables:Iterable[Variable], model:Model2[Variable], summary:Summary[Marginal] = null): Option[Summary[ProportionsAssignment]] = {
+  override def infer(variables:Iterable[Variable], model:Model[Variable], summary:Summary[Marginal] = null): Option[Summary[ProportionsAssignment]] = {
     // override def infer(variables:Iterable[Variable], model:Model): Option[Summary[ProportionsAssignment]] = 
     if (variables.size != 1) return None
     (variables.head, model, summary) match {

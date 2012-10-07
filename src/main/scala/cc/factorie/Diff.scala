@@ -66,8 +66,8 @@ class DiffList extends ArrayBuffer[Diff] {
     result
   }
   // TODO Should we provide this kind of syntax reversal, or only provide "one" way to do things?
-  def score(model:Model2[DiffList]) = model.sumScore(this)
-  def scoreAndUndo(model:Model2[DiffList]): Double = {
+  def score(model:Model[DiffList]) = model.sumScore(this)
+  def scoreAndUndo(model:Model[DiffList]): Double = {
     if (this.length == 0) return 0.0  // short-cut the simple case
     var s = model.sumScore(this)
     //log(Log.DEBUG)("DiffList scoreAndUndo  pre-undo score=" + s)
@@ -79,7 +79,7 @@ class DiffList extends ArrayBuffer[Diff] {
     s
   }
   /** For comparing the scores of two different models. */
-  def scoreAndUndo(model1:Model2[DiffList], model2:Model2[DiffList]) : (Double, Double) = {
+  def scoreAndUndo(model1:Model[DiffList], model2:Model[DiffList]) : (Double, Double) = {
     if (this.length == 0) return (0.0, if (model2 == null) Double.NaN else 0.0) // short-cut the simple case
     var s1 = model1.sumScore(this)
     var s2 = if (model2 == null) Double.NaN else model2.sumScore(this)

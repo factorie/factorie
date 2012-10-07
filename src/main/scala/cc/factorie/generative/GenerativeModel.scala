@@ -3,7 +3,7 @@ import cc.factorie._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
-trait GenerativeModel extends Model2[Variable] {
+trait GenerativeModel extends Model[Variable] {
   def getParentFactor(v:Variable): Option[GenerativeFactor]
   def getChildFactors(v:Variable): Option[Iterable[GenerativeFactor]]
   def parentFactor(v:Variable): GenerativeFactor

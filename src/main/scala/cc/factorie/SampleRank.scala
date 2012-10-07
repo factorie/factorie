@@ -20,16 +20,16 @@ import cc.factorie.optimize.GradientOptimizer
 import collection.mutable.HashMap
 
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
-class SampleRank[C](val model:Model2[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) {
+class SampleRank[C](val model:Model[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) {
   def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
   var learningMargin = 1.0
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
   def gradientAndMargin(proposals:Seq[Proposal]): (Tensor,Double) = {
     var g: WeightsTensor = null // model.newSparseWeightsTensor
     //val g2 = new TensorMap; def gg(df:DotFamily): Tensor = g.getOrElseUpdate(df, Tensor.newSparse(df.weights)
-    val bestModels = proposals.max2ByDouble(_ modelScore); val bestModel1 = bestModels._1; val bestModel2 = bestModels._2
+    val bestModels = proposals.max2ByDouble(_ modelScore); val bestModel1 = bestModels._1; val bestModel = bestModels._2
     val bestObjectives = proposals.max2ByDouble(_ objectiveScore); val bestObjective1 = bestObjectives._1; val bestObjective2 = bestObjectives._2
-    val margin = bestModel1.modelScore - bestModel2.modelScore
+    val margin = bestModel1.modelScore - bestModel.modelScore
     if (bestModel1 ne bestObjective1) {
       // ...update parameters by adding sufficient stats of truth, and subtracting error
       g = model.newSparseWeightsTensor
@@ -49,10 +49,10 @@ class SampleRank[C](val model:Model2[DiffList], sampler:ProposalSampler[C], opti
       model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, 1.0))
       bestObjective1.diff.undo
       model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, -1.0))
-      bestModel2.diff.redo
-      model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, -1.0))
-      bestModel2.diff.undo
-      model.factorsOfFamilies(bestModel2.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, 1.0))
+      bestModel.diff.redo
+      model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, -1.0))
+      bestModel.diff.undo
+      model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, 1.0))
     }
     (g, margin)
   }
@@ -74,14 +74,14 @@ class SampleRank[C](val model:Model2[DiffList], sampler:ProposalSampler[C], opti
 /*
   def shouldUpdate: Boolean = {
     if (amIMetropolis) {
-      val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel2
+      val changeProposal = if (bestModel1.diff.size > 0) bestModel1 else bestModel
       !(changeProposal.modelScore * changeProposal.objectiveScore > 0 || changeProposal.objectiveScore == 0)      
     } else {
       // the objective function has some preference (e.g. we don't have an unlabeled example here)
       (bestObjective1.objectiveScore > bestObjective2.objectiveScore || bestObjective1.objectiveScore > bestModel1.objectiveScore) &&
       // the model got it wrong, or isn't confident enough about being right
       // TODO should this be based on acceptanceScore instead of modelScore?
-      ((bestModel1 ne bestObjective1) || math.abs(bestModel1.modelScore - bestModel2.modelScore) < learningMargin)
+      ((bestModel1 ne bestObjective1) || math.abs(bestModel1.modelScore - bestModel.modelScore) < learningMargin)
     }
   }
 

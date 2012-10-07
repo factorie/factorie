@@ -22,7 +22,7 @@ import cc.factorie.la._
     @author Andrew McCallum
     @since 0.8
  */
-abstract class ContrastiveDivergence[C](model:Model2[Variable]) extends MHSampler[C](model) {
+abstract class ContrastiveDivergence[C](model:Model[Variable]) extends MHSampler[C](model) {
   def updateWeights: Unit
   var difflist : DiffList = null
   

@@ -91,7 +91,7 @@ object Template {
     @author Andrew McCallum
 */
 // TODO Make this Template[F] because this is a container/generator of Factors F.  No, can't because Factor class is inner.
-trait TemplateModel extends Model2[Variable] with Template[Variable,Factor] with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
+trait TemplateModel extends Model[Variable] with Template[Variable,Factor] with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
   def addFactors(v:Variable, result:Set[cc.factorie.Factor]): Unit
   def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
   // TODO This method is a little messy.  Clean up this situation. -akm

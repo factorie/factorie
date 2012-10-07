@@ -322,17 +322,17 @@ class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val ed
 
 
 
-class BPSummary(val ring:BPRing, val model:Model2[Variable]) extends Summary[DiscreteMarginal] {
+class BPSummary(val ring:BPRing, val model:Model[Variable]) extends Summary[DiscreteMarginal] {
   private val _bpFactors = new LinkedHashMap[Factor, BPFactor]
   private val _bpVariables = new LinkedHashMap[DiscreteTensorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   /** Create a new BPSummary to infer the given varying variables.  Other non-varying neighbors of relevant factors are considered constant. */
-  def this(varying:Iterable[DiscreteVar], ring:BPRing, model:Model2[Variable]) = {
+  def this(varying:Iterable[DiscreteVar], ring:BPRing, model:Model[Variable]) = {
     this(ring, model)
     val varyingSet = varying.toSet
     for (factor <- model.factors(varying)) _bpFactors(factor) = ring.newBPFactor(factor, varyingSet, this)
   }
-  def this(varying:Iterable[DiscreteVar], model:Model2[Variable]) = this(varying, BPSumProductRing, model)
+  def this(varying:Iterable[DiscreteVar], model:Model[Variable]) = this(varying, BPSumProductRing, model)
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
   def bpVariables: Iterable[BPVariable1] = _bpVariables.values
   def marginals = _bpFactors.values ++ _bpVariables.values
@@ -398,7 +398,7 @@ object BP {
       }
     }
   }
-  def inferTreewiseSum(varying:Set[DiscreteVar], model:Model2[Variable], root: DiscreteVar = null): BPSummary = {
+  def inferTreewiseSum(varying:Set[DiscreteVar], model:Model[Variable], root: DiscreteVar = null): BPSummary = {
     val summary = new BPSummary(varying, BPSumProductRing, model)
     val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
     val bfsSeq = BPUtil.bfs(varying, _root, checkLoops = true)
@@ -407,13 +407,13 @@ object BP {
     summary
   }
   // TODO: add inferTreewiseMax and associated test
-  def inferSingle(v:MutableDiscreteVar[_<:DiscreteValue], model:Model2[Variable]): BPSummary = {
+  def inferSingle(v:MutableDiscreteVar[_<:DiscreteValue], model:Model[Variable]): BPSummary = {
     val summary = new BPSummary(Seq(v), BPSumProductRing, model)
     summary.bpFactors.foreach(_.updateOutgoing())
     summary
   }
   // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
-  def inferChainMax(varying:Seq[MutableDiscreteVar[_]], model:Model2[Variable]): BPSummary = {
+  def inferChainMax(varying:Seq[MutableDiscreteVar[_]], model:Model[Variable]): BPSummary = {
     val summary = new BPSummary(varying, BPMaxProductRing, model)
     varying.size match {
       case 0 => {}
@@ -442,7 +442,7 @@ object BP {
   }
   
   // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
-  def inferChainSum(varying:Seq[MutableDiscreteVar[_]], model:Model2[Variable]): BPSummary = {
+  def inferChainSum(varying:Seq[MutableDiscreteVar[_]], model:Model[Variable]): BPSummary = {
     val summary = new BPSummary(varying, BPSumProductRing, model)
     varying.size match {
       case 0 => {}
@@ -473,13 +473,13 @@ object BP {
 }
 
 trait InferByBP extends Infer {
-  override def infer(variables:Iterable[Variable], model:Model2[Variable], summary:Summary[Marginal] = null): Option[BPSummary] = None
+  override def infer(variables:Iterable[Variable], model:Model[Variable], summary:Summary[Marginal] = null): Option[BPSummary] = None
 }
 
 object InferByBPChainSum extends InferByBP {
-  override def infer(variables:Iterable[Variable], model:Model2[Variable], summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+  override def infer(variables:Iterable[Variable], model:Model[Variable], summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
     case variables:Seq[MutableDiscreteVar[_]] if (variables.forall(_.isInstanceOf[MutableDiscreteVar[_]])) => Some(apply(variables, model))
     case _ => None
   }
-  def apply(varying:Seq[MutableDiscreteVar[_]], model:Model2[Variable]): BPSummary = BP.inferChainSum(varying, model)
+  def apply(varying:Seq[MutableDiscreteVar[_]], model:Model[Variable]): BPSummary = BP.inferChainSum(varying, model)
 }
