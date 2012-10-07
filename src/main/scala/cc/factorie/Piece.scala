@@ -26,9 +26,6 @@ trait Piece {
   def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator): Unit
   def accumulateGradient(model: Model[Variable], gradient: TensorAccumulator): Unit = accumulateValueAndGradient(model, gradient, NoopDoubleAccumulator)
   def accumulateValue(model: Model[Variable], value: DoubleAccumulator): Unit = accumulateValueAndGradient(model, NoopTensorAccumulator, value)
-//  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator,  value: DoubleAccumulator): Unit
-//  def accumulateGradient(model: Model[Variable], gradient: TensorAccumulator): Unit = accumulateValueAndGradient(model, gradient, NoopDoubleAccumulator)
-//  def accumulateValue(model: Model[Variable], value: DoubleAccumulator): Unit = accumulateValueAndGradient(model, NoopTensorAccumulator, value)
   //def state: PieceState
   //def updateState(state: PieceState)
 }
@@ -60,12 +57,6 @@ class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model[Var
   val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] {override def initialValue = new LocalDoubleAccumulator(0.0)}
 
   override def process(pieces: GenSeq[Piece]): Unit = {
-//class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model[Variable]) extends PiecewiseLearner {
-//  val gradient = new ThreadLocal[Tensor] { override def initialValue = model.weightsTensor.copy }
-//  val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] { override def initialValue = new LocalTensorAccumulator(gradient.get) }
-//  val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator(0.0) }
-//  
-//  override def process(pieces:GenSeq[Piece]): Unit = {
     // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit
     pieces.foreach(piece => {
       gradient.get.zero()
@@ -80,8 +71,6 @@ class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model[Var
 
 class HogwildPiecewiseLearner(optimizer: GradientOptimizer, model: Model[Variable]) extends SGDPiecewiseLearner(optimizer, model) {
   override def process(pieces: GenSeq[Piece]) = super.process(pieces.par)
-//class HogwildPiecewiseLearner(optimizer: GradientOptimizer, model: Model[Variable]) extends SGDPiecewiseLearner(optimizer, model) {
-//  override def process(pieces:GenSeq[Piece]) = super.process(pieces.par)
 }
 
 object LossFunctions {
@@ -232,7 +221,7 @@ object PieceTest {
       strategy.process(pieces)
       totalTime += System.currentTimeMillis() - t0
 
-      val classifier = new ModelBasedClassifier[Label](model, LabelDomain)
+      val classifier = new ModelBasedClassifier[Label](model.evidenceTemplate, LabelDomain)
 
       val testTrial = new classify.Trial[Label](classifier)
       testTrial ++= testLabels
@@ -240,7 +229,7 @@ object PieceTest {
       val trainTrial = new classify.Trial[Label](classifier)
       trainTrial ++= trainLabels
 
-      println("Weights = " + model.evidenceTemplate.weights)
+//      println("Weights = " + model.evidenceTemplate.weights)
       println("Train accuracy = " + trainTrial.accuracy)
       println("Test  accuracy = " + testTrial.accuracy)
       println("Total time to train: " + totalTime / 1000.0)
