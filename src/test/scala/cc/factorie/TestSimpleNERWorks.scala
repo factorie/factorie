@@ -62,7 +62,7 @@ class TestSimpleNERWorks {
     val trainTokens = someVariables()
     val trainLabels = trainTokens.map(_.attr[Label])
 
-    val model = new CombinedModel(
+    val model = new CombinedModel[Variable](
       new DotTemplateWithStatistics2[Label, Label]() {
         lazy val weights = new la.DenseTensor2(LabelDomain.size, LabelDomain.size)
         factorName = "labelLabel"

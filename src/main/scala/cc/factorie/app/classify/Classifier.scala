@@ -46,7 +46,7 @@ trait Classifier[L <: MutableDiscreteVar[_]] {
 }
 
 /** A classifier that uses a Model to score alternative label values. */
-class ModelBasedClassifier[L <: MutableDiscreteVar[_]](val model: Model, val labelDomain: DiscreteDomain) extends Classifier[L] {
+class ModelBasedClassifier[L <: MutableDiscreteVar[_]](val model: Model[Variable], val labelDomain: DiscreteDomain) extends Classifier[L] {
   def classification(label: L): Classification[L] = {
     require(label.domain eq labelDomain)
     new Classification(label, this, label.proportions(model))

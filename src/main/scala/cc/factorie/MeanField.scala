@@ -25,8 +25,8 @@ trait MeanField {
 }
 
 /** Performs naive mean field inference with a Q Summary that is a set of independent Discrete distributions */
-class DiscreteMeanField[V<:DiscreteVariable](val model:Model, val summary:DiscreteSummary1[V]) extends MeanField {
-  def this(vs:Iterable[V], model:Model) = this(model, new DiscreteSummary1(vs))
+class DiscreteMeanField[V<:DiscreteVariable](val model:Model[Variable], val summary:DiscreteSummary1[V]) extends MeanField {
+  def this(vs:Iterable[V], model:Model[Variable]) = this(model, new DiscreteSummary1(vs))
   def updateQ(d:V): Unit = {
     val marginal = summary.marginal(d)
     val p = marginal.proportions
@@ -46,8 +46,8 @@ class DiscreteMeanField[V<:DiscreteVariable](val model:Model, val summary:Discre
 }
 
 class InferByMeanField {
-  def inferencer[V<:DiscreteVariable](variables:Iterable[V], model:Model): DiscreteMeanField[V] = new DiscreteMeanField(variables, model)
-  def apply[V<:DiscreteVariable](variables:Iterable[V], model:Model): DiscreteSummary1[V] = {
+  def inferencer[V<:DiscreteVariable](variables:Iterable[V], model:Model[Variable]): DiscreteMeanField[V] = new DiscreteMeanField(variables, model)
+  def apply[V<:DiscreteVariable](variables:Iterable[V], model:Model[Variable]): DiscreteSummary1[V] = {
     val inf = inferencer(variables, model)
     for (i <- 0 until 50) inf.updateQ // TODO Replace with a proper convergence criterion!!!
     inf.summary

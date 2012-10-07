@@ -25,7 +25,7 @@ import util._
 object PosFeaturesDomain extends CategoricalTensorDomain[String]
 class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain }
 
-object PosModel extends CombinedModel {
+object PosModel extends CombinedModel[Variable] {
   // Bias term on each individual label
   val bias = new DotTemplateWithStatistics1[PosLabel] {
     //override def statisticsDomains = Tuple1(PosDomain)
@@ -122,7 +122,7 @@ object POS {
     val labels = sentences.flatMap(s => s.tokens.map(_.posLabel))
     labels.map(_.setRandomly())
     sentences.map(predictSentence(_))
-    println(label + " accuracy: " + PosObjective.aveScore(labels) + "%")
+    println(label + " accuracy: " + PosObjective.averageScore(labels) + "%")
   }
 
   var modelLoaded = false

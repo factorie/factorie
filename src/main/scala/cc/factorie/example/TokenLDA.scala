@@ -132,7 +132,7 @@ object TokenLDA {
        override def unroll1(l: ChainNerLabel) = List(Factor(l, l.token.attr[ChainNerFeatures2]))
        override def unroll2(t: ChainNerFeatures2) = throw new Error("Do not change the token variables")
      }
-     val MyModel = new CombinedModel(transTemplate, localTemplate)
+     val MyModel = new CombinedModel[Variable](transTemplate, localTemplate)
 
      val obj = new HammingLossTemplate[ChainNerLabel]()
      val tester = new VariableSettingsSampler[ChainNerLabel](MyModel)
@@ -141,7 +141,7 @@ object TokenLDA {
      val testLabels = testDocs.flatMap(_.tokens.map(_.nerLabel))
 
      val d = trainLabels.head.domain
-     MyModel.score(trainLabels.take(5))
+     MyModel.sumScore(trainLabels.take(5))
 
      ChainNerFeaturesDomain2.freeze()
      Conll2003NerDomain.freeze()

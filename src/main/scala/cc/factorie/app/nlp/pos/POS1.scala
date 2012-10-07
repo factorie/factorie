@@ -28,7 +28,7 @@ class POS1 {
   }
 
   def useSentenceBoundaries = false
-  object PosModel extends CombinedModel {
+  object PosModel extends CombinedModel[Variable] {
     // Bias term on each individual label 
     val biasTemplate = new DotTemplateWithStatistics1[PosLabel] {
       lazy val weights = new la.DenseTensor1(PosDomain.size)
@@ -83,7 +83,7 @@ class POS1 {
   // TODO Change this to use Viterbi! -akm
   def process(document:Document): Unit = {
     for (token <- document.tokens) if (token.attr[PosLabel] == null) token.attr += new PosLabel(token, PosDomain.category(0)) // init value doens't matter
-    val localModel = new CombinedModel(PosModel.subModels(0), PosModel.subModels(1))
+    val localModel = new CombinedModel[Variable](PosModel.subModels(0), PosModel.subModels(1))
     val localPredictor = new VariableSettingsGreedyMaximizer[PosLabel](localModel)
     for (label <- document.tokens.map(_.attr[PosLabel])) localPredictor.process(label)
     val predictor = new VariableSettingsSampler[PosLabel](PosModel)
@@ -134,8 +134,8 @@ object POS1 extends POS1 {
     
       def printEvaluation(iteration:String): Unit = {
         println("Iteration "+iteration)
-        println("Train Token accuracy = "+ PosObjective.aveScore(trainLabels))
-        println(" Test Token accuracy = "+ PosObjective.aveScore(testLabels))
+        println("Train Token accuracy = "+ PosObjective.averageScore(trainLabels))
+        println(" Test Token accuracy = "+ PosObjective.averageScore(testLabels))
         /*for (docs <- List(trainDocuments, testDocuments)) {
         if (docs.length > 300) println ("TRAIN") else println("TEST") // Fragile
         val tokenEvaluation = new LabelEvaluation(PosDomain)

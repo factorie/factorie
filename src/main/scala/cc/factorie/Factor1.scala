@@ -31,7 +31,7 @@ abstract class Factor1[N1<:Variable](val _1:N1) extends Factor {
   type NeighborType1 = N1
 
   def score(v1:N1#Value): Double
-  def statistics(v1:N1#Value): StatisticsType = ((v1)).asInstanceOf[StatisticsType]
+  def statistics(v1:N1#Value): StatisticsType = throw new Error("statistics not defined") // ((v1)).asInstanceOf[StatisticsType]
   def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = (score(v1), statistics(v1))
   def currentScore: Double = score(_1.value.asInstanceOf[N1#Value])
   override def currentStatistics: StatisticsType = statistics(_1.value.asInstanceOf[N1#Value])
@@ -172,7 +172,7 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
 
 trait TupleFamily1[N1<:Variable] extends Family1[N1] {
   type StatisticsType = ((N1#Value))
-  override def statistics(v1:N1#Value): ((N1#Value))
+  //override def statistics(v1:N1#Value): ((N1#Value))
 }
 
 trait TupleFamilyWithStatistics1[N1<:Variable] extends TupleFamily1[N1] {

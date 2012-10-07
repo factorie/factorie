@@ -20,11 +20,10 @@ import scala.collection.mutable.{ArrayBuffer,HashMap,HashSet,ListBuffer}
 import scala.util.Sorting
 import cc.factorie._
 
-object WordSegmenterDemo { 
+object WordSegmenterDemo2 { 
   
   // The variable types:
-  //object LabelDomain extends CategoricalDomain[Boolean]
-  class Label(b:Boolean, val token:Token) extends LabeledBooleanVariable(b)  // { def domain = LabelDomain }
+  class Label(b:Boolean, val token:Token) extends LabeledBooleanVariable(b)
   object TokenDomain extends CategoricalTensorDomain[String]
   class Token(val char:Char, isWordStart:Boolean) extends BinaryFeatureVectorVariable[String] with ChainLink[Token,Sentence] {
     def domain = TokenDomain
@@ -34,76 +33,47 @@ object WordSegmenterDemo {
   }
   class Sentence extends Chain[Sentence,Token]
 
-    // The factor templates that define the model
-  val model = new CombinedModel[Variable]
-  /** Bias term just on labels */
-  model += new DotTemplateWithStatistics1[Label] {
-    lazy val weights = new la.DenseTensor1(BooleanDomain.size)
-    factorName = "Label"
-    //def statistics(t:Label#Value) = Stat(t)
-    //def statisticsDomains = Tuple1(BooleanDomain)
+  
+  val model = new Model[IndexedSeq[Label]] {
+    object bias extends DotFamilyWithStatistics1[Label] {
+      factorName = "Label"
+      lazy val weights = new la.DenseTensor1(BooleanDomain.size)
+    }
+    object obs extends DotFamilyWithStatistics2[Label,Token] {
+      factorName = "Label,Token"
+      lazy val weights = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
+    }
+    object markov extends DotFamilyWithStatistics2[Label,Label] {
+      factorName = "Label,Label"
+      lazy val weights = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
+    }
+    object obsmarkov extends DotFamilyWithStatistics3[Label,Label,Token] {
+      factorName = "Label,Label,Token"
+      lazy val weights = new la.Dense2LayeredTensor3(BooleanDomain.size, TokenDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_))
+    }
+    object skip extends  DotFamily2[Label,Label] {
+      factorName = "Label,Label:Boolean"
+      lazy val weights = new la.DenseTensor1(BooleanDomain.size)
+      override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
+    }
+    def factors(labels:IndexedSeq[Label]): Iterable[Factor] = {
+      val result = new ListBuffer[Factor]
+      for (i <- 0 until labels.length) {
+        result += bias.Factor(labels(i))
+        result += obs.Factor(labels(i), labels(i).token)
+        if (i > 0) result += markov.Factor(labels(i-1), labels(i))
+      }
+      result
+    }
+
   }
-//  /** Factor between label and observed token */
-//  model += new TemplateWithDotStatistics2[Label,Token] with SparseWeights {
-//    factorName = "Label,Token"
-//    def statisticsDomains = ((BooleanDomain,TokenDomain))
-//    def unroll1 (label:Label) = Factor(label, label.token)
-//    def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
-//  }
-//  /** A token bi-gram conjunction  */
-//  model += new TemplateWithDotStatistics3[Label,Token,Token] with SparseWeights {
-//    factorName = "Label,Token,Token"
-//    def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
-//    def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token, label.token.prev) else Nil
-//    def unroll2 (token:Token) = throw new Error("Token values shouldn't change")
-//    def unroll3 (token:Token) = throw new Error("Token values shouldn't change")
-//  }
-  /** Factor between label and observed token */
-  model += new DotTemplateWithStatistics2[Label,Token] {
-    factorName = "Label,Token"
-    //def statisticsDomains = ((BooleanDomain,TokenDomain))
-    lazy val weights = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
-    def unroll1 (label:Label) = Factor(label, label.token)
-    def unroll2 (token:Token) = Factor(token.label, token)
-  }
-  /** A token bi-gram conjunction  */
-  model += new DotTemplateWithStatistics3[Label,Token,Token] {
-    factorName = "Label,Token,Token"
-    //def statisticsDomains = (((BooleanDomain,TokenDomain,TokenDomain)))
-    lazy val weights = new la.Dense2LayeredTensor3(BooleanDomain.size, TokenDomain.dimensionSize, TokenDomain.dimensionSize, new la.SparseTensor1(_))
-    def unroll1 (label:Label) = if (label.token.hasPrev) Factor(label, label.token.prev, label.token) else Nil
-    def unroll2 (token:Token) = if (token.hasPrev) Factor(token.label, token.prev, token) else Nil
-    def unroll3 (token:Token) = if (token.hasNext) Factor(token.next.label, token, token.next) else Nil
-  }
-  /** Factor between two successive labels */
-  model += new DotTemplateWithStatistics2[Label,Label] {
-    factorName = "Label,Label"
-    lazy val weights = new la.DenseTensor2(BooleanDomain.size, BooleanDomain.size)
-    //def statisticsDomains = ((BooleanDomain,BooleanDomain))
-    def unroll1 (label:Label) = if (label.token.hasNext) Factor(label, label.token.next.label) else Nil
-    def unroll2 (label:Label) = if (label.token.hasPrev) Factor(label.token.prev.label, label) else Nil
-  }
-  /** Skip edge */
-  val skipTemplate = new DotTemplate2[Label,Label] {
-    factorName = "Label,Label:Boolean"
-    lazy val weights = new la.DenseTensor1(BooleanDomain.size)
-    //def statisticsDomains = Tuple1(BooleanDomain)
-    def unroll1 (label:Label) =  
-      // could cache this search in label.similarSeq for speed
-      for (other <- label.token.chain.links; if label.token.char == other.char) yield
-        if (label.token.position < other.position) Factor(label, other.label) else Factor(other.label,label)
-    def unroll2 (label:Label) = Nil // We handle symmetric case above
-    override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
-  }
-  //model += skipTemplate
+
 
   val objective = new HammingLossTemplate[Label]
 
 
-
   def main(args: Array[String]) : Unit = {
     implicit val random = new scala.util.Random 
-    var startTime:Long = 0
   
     // Read data and create Variables
     val sentences = for (string <- data.toList) yield {
@@ -128,57 +98,16 @@ object WordSegmenterDemo {
     val (testSet, trainSet) = sentences.shuffle(random).split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
     var trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
     var testVariables = testSet.map(_.links).flatMap(_.map(_.label))
-    var sampler = new VariableSettingsSampler[Label](model)
-    val predictor = new SamplingMaximizer(sampler)
     
     testVariables.foreach(_.setRandomly())
     println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
     println ("Initial test accuracy = "+ objective.averageScore(testVariables))
     
-    val exampleFactors = model.factors(trainVariables.tail.head)
+    val exampleFactors = model.factors(trainSet.head.asSeq.map(_.label))
     println("Example Factors: "+exampleFactors.mkString(", "))
-    //println("Example Factors score: "+exampleFactors.map(_.score).sum)
   
-    // If a saved model was specified on the command-line, then instead of training, take parameters from there, test and exit
-    if (args.length > 0) {
-      println("Loading model parameters from "+args(0))
-      model.load(args(0))
-      //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
-      predictor.maximize(testVariables, iterations=6, rounds=2)
-      println ("Test  accuracy = "+ objective.averageScore(testVariables))
-      System.exit(0)
-    }
 
-    // Sample and Learn!
-    //var learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
-    //var learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
-    var learner = new SampleRank(new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
-    //learner.learningRate = 1.0
-    for (i <- 0 until 7) {
-      learner.processAll(trainVariables, 2)
-      //learner.learningRate *= 0.8
-      sampler.processAll(testVariables, 2)
-      sampler.temperature *= 0.8
-      println("Train accuracy = "+ objective.averageScore(trainVariables))
-      println("Test  accuracy = "+ objective.averageScore(testVariables))
-      println
-      if (startTime == 0) startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
-    }
-    //println ("Setting weights to average")
-    //learner.setWeightsToAverage
-    //(trainVariables ++ testVariables).foreach(_.setRandomly)
-    //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
-    //val predictor = new SamplingMaximizer(sampler)
-    predictor.maximize(testVariables, iterations=6, rounds=2)
-    println ("Test  accuracy = "+ objective.averageScore(testVariables))
-
-
-    // Show the parameters
-    //model.templatesOf[LogLinearScoring].foreach(t => Console.println(t.weights.toList))
-    println("Finished in "+(System.currentTimeMillis-startTime)+" milliseconds.")
-    
-    //model.save("/Users/mccallum/tmp/wordsegmenter.factorie")
   }
 
   val data = Array(

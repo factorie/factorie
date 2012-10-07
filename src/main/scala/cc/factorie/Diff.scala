@@ -36,6 +36,10 @@ abstract class AutoDiff(implicit d:DiffList) extends Diff {
   redo
 }
 
+case class NoopDiff(variable:Variable) extends Diff {
+  def redo: Unit = {}
+  def undo: Unit = {}
+}
  
 /** A collection of changes to variables; the common representation for the result of a proposed change in configuration.
     Tracks whether the change is in its done or undone state and throws an error if repeated undo or redo is attempted.
@@ -56,30 +60,35 @@ class DiffList extends ArrayBuffer[Diff] {
     this.reverse.foreach(d => d.undo)
     done = false
   }
+  def variables: Seq[Variable] = {
+    val result = new collection.mutable.ListBuffer[Variable]
+    this.foreach(diff => if (diff.variable ne null) result += diff.variable)
+    result
+  }
   // TODO Should we provide this kind of syntax reversal, or only provide "one" way to do things?
-  def score(model:Model) = model.score(this)
-  def scoreAndUndo(model:Model): Double = {
+  def score(model:Model[DiffList]) = model.sumScore(this)
+  def scoreAndUndo(model:Model[DiffList]): Double = {
     if (this.length == 0) return 0.0  // short-cut the simple case
-    var s = model.score(this)
+    var s = model.sumScore(this)
     //log(Log.DEBUG)("DiffList scoreAndUndo  pre-undo score=" + s)
     this.undo
     // We need to re-calculate the Factors list because the structure may have changed
-    val s2 = model.score(this) 
+    val s2 = model.sumScore(this) 
     s -= s2
     //log(Log.DEBUG)("DiffList scoreAndUndo post-undo score=" + s)
     s
   }
   /** For comparing the scores of two different models. */
-  def scoreAndUndo(model1:Model, model2:Model) : (Double, Double) = {
+  def scoreAndUndo(model1:Model[DiffList], model2:Model[DiffList]) : (Double, Double) = {
     if (this.length == 0) return (0.0, if (model2 == null) Double.NaN else 0.0) // short-cut the simple case
-    var s1 = model1.score(this)
-    var s2 = if (model2 == null) Double.NaN else model2.score(this)
+    var s1 = model1.sumScore(this)
+    var s2 = if (model2 == null) Double.NaN else model2.sumScore(this)
     //println("DiffList scoreAndUndo  pre-undo score=" + s1)
     this.undo
-    val s1b = model1.score(this) 
+    val s1b = model1.sumScore(this) 
     //println("DiffList scoreAndUndo post-undo score=" + s1b)
     s1 -= s1b
-    if (model2 != null) s2 -= model2.score(this)
+    if (model2 != null) s2 -= model2.sumScore(this)
     //println("DiffList scoreAndUndo *** score diff=" + s1)
     (s1, s2)
   }

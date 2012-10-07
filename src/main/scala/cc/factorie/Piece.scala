@@ -23,20 +23,22 @@ import io.Source
 
 // Pieces are thread safe
 trait Piece {
-  def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator): Unit
-  def accumulateGradient(model: Model, gradient: TensorAccumulator): Unit = accumulateValueAndGradient(model, gradient, NoopDoubleAccumulator)
-  def accumulateValue(model: Model, value: DoubleAccumulator): Unit = accumulateValueAndGradient(model, NoopTensorAccumulator, value)
+  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator): Unit
+  def accumulateGradient(model: Model[Variable], gradient: TensorAccumulator): Unit = accumulateValueAndGradient(model, gradient, NoopDoubleAccumulator)
+  def accumulateValue(model: Model[Variable], value: DoubleAccumulator): Unit = accumulateValueAndGradient(model, NoopTensorAccumulator, value)
+//  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator,  value: DoubleAccumulator): Unit
+//  def accumulateGradient(model: Model[Variable], gradient: TensorAccumulator): Unit = accumulateValueAndGradient(model, gradient, NoopDoubleAccumulator)
+//  def accumulateValue(model: Model[Variable], value: DoubleAccumulator): Unit = accumulateValueAndGradient(model, NoopTensorAccumulator, value)
   //def state: PieceState
   //def updateState(state: PieceState)
 }
 
 trait PiecewiseLearner {
-  def model: Model
-  def process(pieces: GenSeq[Piece]): Unit
-  def isConverged: Boolean
+  def model: Model[Variable]
+  def process(pieces:GenSeq[Piece]): Unit
 }
 
-class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) extends PiecewiseLearner {
+class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model[Variable]) extends PiecewiseLearner {
   val gradient = model.weightsTensor.copy
   val gradientAccumulator = new LocalTensorAccumulator(gradient.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
@@ -52,12 +54,18 @@ class BatchPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) 
   def isConverged = optimizer.isConverged
 }
 
-class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) extends PiecewiseLearner {
+class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model[Variable]) extends PiecewiseLearner {
   val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.copy}
   val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] {override def initialValue = new LocalTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
   val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] {override def initialValue = new LocalDoubleAccumulator(0.0)}
 
   override def process(pieces: GenSeq[Piece]): Unit = {
+//class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model[Variable]) extends PiecewiseLearner {
+//  val gradient = new ThreadLocal[Tensor] { override def initialValue = model.weightsTensor.copy }
+//  val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] { override def initialValue = new LocalTensorAccumulator(gradient.get) }
+//  val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator(0.0) }
+//  
+//  override def process(pieces:GenSeq[Piece]): Unit = {
     // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit
     pieces.foreach(piece => {
       gradient.get.zero()
@@ -70,8 +78,10 @@ class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model) ex
   def isConverged = false
 }
 
-class HogwildPiecewiseLearner(optimizer: GradientOptimizer, model: Model) extends SGDPiecewiseLearner(optimizer, model) {
+class HogwildPiecewiseLearner(optimizer: GradientOptimizer, model: Model[Variable]) extends SGDPiecewiseLearner(optimizer, model) {
   override def process(pieces: GenSeq[Piece]) = super.process(pieces.par)
+//class HogwildPiecewiseLearner(optimizer: GradientOptimizer, model: Model[Variable]) extends SGDPiecewiseLearner(optimizer, model) {
+//  override def process(pieces:GenSeq[Piece]) = super.process(pieces.par)
 }
 
 object LossFunctions {
@@ -113,7 +123,7 @@ object LossFunctions {
 class MultiClassGLMPiece(featureVector: Tensor1, label: Int, lossAndGradient: LossFunctions.MultiClassLossFunction) extends Piece {
   //def updateState(state: PieceState): Unit = { }
   def state = null
-  def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
     val weightsMatrix = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily).asInstanceOf[Tensor2]
     val prediction = weightsMatrix matrixVector featureVector
@@ -137,7 +147,7 @@ object DummyFamily extends DotFamily {
 
 class GLMPiece(featureVector: Tensor, label: Double, lossAndGradient: LossFunctions.LossFunction) extends Piece {
   def state = null
-  def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
     val (loss, sgrad) = lossAndGradient(featureVector dot model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily), label)
     value.accumulate(loss)
     featureVector.activeDomain.foreach(x => gradient.accumulate(DummyFamily, x, sgrad))
@@ -149,10 +159,10 @@ class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMu
 
   labels.foreach(_.setToTarget(null))
 
-  def accumulateValueAndGradient(model: Model, gradient: TensorAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
     val fg = BP.inferTreewiseSum(labels.toSet, model)
     // The log loss is - score + log Z
-    value.accumulate(-model.score(labels) + fg.bpFactors.head.calculateLogZ)
+    value.accumulate(-model.sumScore(labels) + fg.bpFactors.head.calculateLogZ)
 
     fg.bpFactors.foreach(f => {
       val factor = f.factor.asInstanceOf[DotFamily#Factor]
@@ -163,8 +173,8 @@ class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMu
 }
 
 object PieceTest {
-  class ModelWithWeightsImpl(model: Model) extends Model {
-    def addFactors(v: Variable, result: Set[Factor]): Unit = throw new Error
+  class ModelWithWeightsImpl(model: Model[Variable]) extends Model[Variable] {
+    def factors(v: Variable): Iterable[Factor] = throw new Error
     def copy = sys.error("unimpl")
     //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
     val weights = new WeightsTensor()

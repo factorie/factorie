@@ -22,7 +22,7 @@ import cc.factorie.la._
     @author Andrew McCallum
     @since 0.8
  */
-abstract class ContrastiveDivergence[C](model:Model) extends MHSampler[C](model) {
+abstract class ContrastiveDivergence[C](model:Model[Variable]) extends MHSampler[C](model) {
   def updateWeights: Unit
   var difflist : DiffList = null
   
@@ -35,10 +35,11 @@ abstract class ContrastiveDivergence[C](model:Model) extends MHSampler[C](model)
   }
 
   def addGradient(accumulator:DotFamily=>Tensor, rate:Double): Unit = {
-    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.currentStatistics, -rate))
+    // TODO Why doesn't implicit conversion take care of this?
+    new Variable2DiffListModel(model).factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.currentStatistics, -rate))
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += (f.statistics.vector * -rate))
     difflist.undo
-    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.currentStatistics, rate))
+    new Variable2DiffListModel(model).factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.currentStatistics, rate))
     //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += (f.statistics.vector *  rate))
   }  
 }

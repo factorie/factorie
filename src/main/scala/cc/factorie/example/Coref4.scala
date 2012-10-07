@@ -80,7 +80,7 @@ object Coref4{
     }
   }
   /**Inference: a kinetic MCMC sampler*/
-  class MyEntitySampler(model:Model) extends HierCorefSampler[MyEntity](model){
+  class MyEntitySampler(model:Model[Variable]) extends HierCorefSampler[MyEntity](model){
     def newEntity = new MyEntity
     override def mergeUp(e1:MyEntity,e2:MyEntity)(implicit d:DiffList):MyEntity = {
       val oldParent1 = e1.parentEntity

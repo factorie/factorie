@@ -30,7 +30,7 @@ class StepwiseGradientAscent(var rate: Double = 1.0) extends GradientOptimizer {
 // Note: This implementation is slower than it should be in the online case, but should be fast enough in batch mode
 class L2RegularizedGradientAscent(var l2: Double = 0.1, rate: Double = 1.0) extends StepwiseGradientAscent(rate) {
   override def step(weights:Tensor, gradient:Tensor, value:Double, margin:Double): Unit = {
-    gradient += (weights, l2)
+    gradient += (weights, -l2)
     super.step(weights, gradient, value, margin)
   }
 }
