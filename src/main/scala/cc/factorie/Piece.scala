@@ -151,7 +151,7 @@ class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMu
   def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
     val fg = BP.inferTreewiseSum(labels.toSet, model)
     // The log loss is - score + log Z
-    value.accumulate(-model.sumScore(labels) + fg.bpFactors.head.calculateLogZ)
+    value.accumulate(-model.currentScore(labels) + fg.bpFactors.head.calculateLogZ)
 
     fg.bpFactors.foreach(f => {
       val factor = f.factor.asInstanceOf[DotFamily#Factor]

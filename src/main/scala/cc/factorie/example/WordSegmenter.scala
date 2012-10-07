@@ -134,7 +134,7 @@ object WordSegmenterDemo {
     testVariables.foreach(_.setRandomly())
     println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
-    println ("Initial test accuracy = "+ objective.averageScore(testVariables))
+    println ("Initial test accuracy = "+ objective.currentScorePerElement(testVariables))
     
     val exampleFactors = model.factors(trainVariables.tail.head)
     println("Example Factors: "+exampleFactors.mkString(", "))
@@ -146,7 +146,7 @@ object WordSegmenterDemo {
       model.load(args(0))
       //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
       predictor.maximize(testVariables, iterations=6, rounds=2)
-      println ("Test  accuracy = "+ objective.averageScore(testVariables))
+      println ("Test  accuracy = "+ objective.currentScorePerElement(testVariables))
       System.exit(0)
     }
 
@@ -160,8 +160,8 @@ object WordSegmenterDemo {
       //learner.learningRate *= 0.8
       sampler.processAll(testVariables, 2)
       sampler.temperature *= 0.8
-      println("Train accuracy = "+ objective.averageScore(trainVariables))
-      println("Test  accuracy = "+ objective.averageScore(testVariables))
+      println("Train accuracy = "+ objective.currentScorePerElement(trainVariables))
+      println("Test  accuracy = "+ objective.currentScorePerElement(testVariables))
       println
       if (startTime == 0) startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
     }
@@ -171,7 +171,7 @@ object WordSegmenterDemo {
     //var predictor = SamplingMaximizer[Label](model); predictor.iterations = 6; predictor.rounds = 2
     //val predictor = new SamplingMaximizer(sampler)
     predictor.maximize(testVariables, iterations=6, rounds=2)
-    println ("Test  accuracy = "+ objective.averageScore(testVariables))
+    println ("Test  accuracy = "+ objective.currentScorePerElement(testVariables))
 
 
     // Show the parameters

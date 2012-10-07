@@ -88,10 +88,10 @@ object Grid {
     val pixels = image.flatMap(_.toSeq).toSeq
     val gridModel = new CombinedModel(LocalTemplate, PairwiseTemplate)
     val objective = new CombinedModel(new HammingLossTemplate[Pixel])
-    println("True accuracy: " + objective.averageScore(pixels))
+    println("True accuracy: " + objective.currentScorePerElement(pixels))
     printImage(image)
     pixels.foreach(_.setUsingObserved)
-    println("Local accuracy: " + objective.averageScore(pixels))
+    println("Local accuracy: " + objective.currentScorePerElement(pixels))
     printImage(image)
     pixels.foreach(_.setRandomly())
     //*
@@ -109,7 +109,7 @@ object Grid {
     bp.inferLoopyBP(1)
     lattice.setToMaxMarginal()
     */
-    println("Accuracy: %f".format(objective.averageScore(pixels)))
+    println("Accuracy: %f".format(objective.currentScorePerElement(pixels)))
     printImage(image)
   }
 }

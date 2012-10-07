@@ -240,7 +240,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
         for (i <- 0 until numVars) {
           vars(i).set((bs / math.pow(2, i)).toInt % 2)(null)
         }
-        val score = model.sumScore(vars.toIterable)
+        val score = model.currentScore(vars.toIterable)
         scores += score
         Z += math.exp(score)
         for (i <- 0 until numVars) {

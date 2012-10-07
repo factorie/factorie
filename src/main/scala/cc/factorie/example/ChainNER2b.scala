@@ -96,16 +96,16 @@ object ChainNER2b {
       trainLabels.take(50).foreach(printLabel _); println; println
       printDiagnostic(trainLabels.take(400))
       predictor.processAll(testLabels)
-      println ("Train accuracy = "+ objective.averageScore(trainLabels))
-      println ("Test  accuracy = "+ objective.averageScore(testLabels))
+      println ("Train accuracy = "+ objective.currentScorePerElement(trainLabels))
+      println ("Test  accuracy = "+ objective.currentScorePerElement(testLabels))
     }
     predictor.temperature *= 0.1 // Be more greedy in inference
     repeat(2) { 
       predictor.processAll(trainLabels) 
       predictor.processAll(testLabels)
     }
-    println ("Final Train accuracy = "+ objective.averageScore(trainLabels))
-    println ("Final Test  accuracy = "+ objective.averageScore(testLabels))
+    println ("Final Train accuracy = "+ objective.currentScorePerElement(trainLabels))
+    println ("Final Test  accuracy = "+ objective.currentScorePerElement(testLabels))
   }
 
 

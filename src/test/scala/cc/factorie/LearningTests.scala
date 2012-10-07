@@ -144,14 +144,14 @@ class SampleRankTest extends AssertionsForJUnit {
       for (i <- 0 until math.pow(2, bools.length).toInt)
         {
           decodeConfiguration(i, bools)
-          val modelScoreI = model.sumScore(bools)
-          val truthScoreI = trainingSignal.sumScore(bools)
+          val modelScoreI = model.currentScore(bools)
+          val truthScoreI = trainingSignal.currentScore(bools)
 
           for (j <- i + 1 until math.pow(2, bools.length).toInt)
             {
               decodeConfiguration(j, bools)
-              val modelScoreJ = model.sumScore(bools)
-              val truthScoreJ = trainingSignal.sumScore(bools)
+              val modelScoreJ = model.currentScore(bools)
+              val truthScoreJ = trainingSignal.currentScore(bools)
 
               if (truthScoreI > truthScoreJ)
                 if (modelScoreI <= modelScoreJ)

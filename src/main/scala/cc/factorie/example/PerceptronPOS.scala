@@ -69,7 +69,7 @@ object PerceptronPOS {
       addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 
-  def percentageSetToTarget[L <: LabeledVarWithTarget](ls: Seq[L]): Double = HammingLossObjective.averageScore(ls)
+  def percentageSetToTarget[L <: LabeledVarWithTarget](ls: Seq[L]): Double = HammingLossObjective.currentScorePerElement(ls)
 
   def predictSentence(s: Sentence): Unit = predictSentence(s.tokens.map(_.posLabel))
   def predictSentence(vs: Seq[PosLabel]): Unit =
