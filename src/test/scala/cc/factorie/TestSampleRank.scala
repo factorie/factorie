@@ -72,6 +72,6 @@ object TestSampleRank {
     labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.currentScore(l)))
     MaximizeDiscrete(labels, model); println("Set to max")
     labels.foreach(l => println("feature="+l.instance.tensor+" value="+l.categoryValue+" target="+l.target.categoryValue+" score="+model.currentScore(l)))
-    println("Train accuracy "+HammingLossObjective.currentScorePerElement(labels))
+    println("Train accuracy "+labels.map(l => HammingLossObjective.currentScore(l)).sum / labels.length)
   }
 }

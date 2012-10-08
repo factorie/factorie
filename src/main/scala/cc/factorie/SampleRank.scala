@@ -18,6 +18,7 @@ package cc.factorie
 import cc.factorie.la._
 import cc.factorie.optimize.GradientOptimizer
 import collection.mutable.HashMap
+import util.DoubleAccumulator
 
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
 class SampleRank[C](val model:Model[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) {
@@ -68,6 +69,49 @@ class SampleRank[C](val model:Model[DiffList], sampler:ProposalSampler[C], optim
   def process(c:C, repeat:Int): Unit = for (i <- 0 until repeat) process(c)
   def processAll(cs:Iterable[C]): Unit = cs.foreach(process(_))
   def processAll(cs:Iterable[C], repeat:Int): Unit = for (i <- 0 until repeat) cs.foreach(process(_))
+}
+
+class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extends Piece[DiffList] {
+
+  var learningMargin = 1.0
+
+  def accumulateValueAndGradient(model: Model[DiffList], gradient: TensorAccumulator, value: DoubleAccumulator) {
+    val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
+    val proposals = sampler.proposals(context)
+    //val g2 = new TensorMap; def gg(df:DotFamily): Tensor = g.getOrElseUpdate(df, Tensor.newSparse(df.weights)
+    val bestModels = proposals.max2ByDouble(_ modelScore)
+    val bestModel1 = bestModels._1
+    val bestModel = bestModels._2
+    val bestObjectives = proposals.max2ByDouble(_ objectiveScore)
+    val bestObjective1 = bestObjectives._1
+    val bestObjective2 = bestObjectives._2
+    val margin = bestModel1.modelScore - bestModel.modelScore
+    if (bestModel1 ne bestObjective1) {
+      // ...update parameters by adding sufficient stats of truth, and subtracting error
+      bestObjective1.diff.redo
+      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family.asInstanceOf[DotFamily], f.currentStatistics))
+      bestObjective1.diff.undo
+      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics * -1.0))
+      bestModel1.diff.redo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics * -1.0))
+      bestModel1.diff.undo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+    }
+    else if (margin < learningMargin) {
+      // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
+      bestObjective1.diff.redo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+      bestObjective1.diff.undo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics * -1.0))
+      bestModel.diff.redo
+      model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics * -1.0))
+      bestModel.diff.undo
+      model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+    }
+
+    val bestProposal = proposals.maxByDouble(_.modelScore)
+    bestProposal.diff.redo
+  }
 }
 
 // In the old SampleRank there was something like the following.  Do we need this for any reason?

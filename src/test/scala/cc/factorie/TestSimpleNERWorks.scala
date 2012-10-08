@@ -77,9 +77,13 @@ class TestSimpleNERWorks {
         def unroll2(v: ChainNerFeatures) = Nil
       })
 
+    val sampler = new GibbsSampler(model, HammingLossObjective)
+    val pieces = trainLabels.map(l => new SampleRankPiece(l, sampler))
+    val learner = new SGDPiecewiseLearner[DiffList](new optimize.StepwiseGradientAscent(), model)
+    learner.process(pieces)
+
     val trainer = new DotMaximumLikelihood(model)
     trainer.processAllBP(Seq(trainLabels), InferByBPChainSum)
-
     BP.inferChainMax(trainLabels, model)
   }
 }
