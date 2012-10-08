@@ -27,7 +27,7 @@ trait Tensor2 extends Tensor {
   override def dimensionsMatch(t:Tensor): Boolean = t match {
     case t:Tensor2 => t.dim1 == dim1 && t.dim2 == dim2
     case _ => false
-  } 
+  }
   override def ensureDimensionsMatch(t:Tensor): Unit = t match {
     case t:Tensor2 => require(t.dim1 == dim1 && t.dim2 == dim2)
     case _ => throw new Error("Tensor ranks do not match.")
@@ -83,19 +83,67 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
   override def blankCopy: DenseTensor2 = new DenseTensor2(dim1, dim2)
   override def stringPrefix = "DenseTensor2"
   override def matrixVector(t: Tensor): Tensor1 = {
-    assert(dim2 == t.dimensions.reduce(_ * _), "Dimensions don't match: " + dim2 + " " + t.dimensions)
-    val newArray = new Array[Double](dim1)
-    val vecIter = t.activeElements
-    while (vecIter.hasNext) {
-      val (col, v) = vecIter.next()
-      var row = 0
-      while (row < dim1) {
-        val offset = row * dim2
-        newArray(row) += (_values(offset + col) * v)
-        row += 1
-      }
+//    assert(dim2 == t.dimensions.reduce(_ * _), "Dimensions don't match: " + dim2 + " " + t.dimensions)
+    val newT = new DenseTensor1(dim1)
+    val newArray = newT.asArray
+    t match {
+      case t: DenseTensor1 =>
+        val tArr = t.asArray
+        var col = 0
+        while (col < tArr.length) {
+          val v = tArr(col)
+          var row = 0
+          while (row < dim1) {
+            val offset = row * dim2
+            newArray(row) += (_values(offset + col) * v)
+            row += 1
+          }
+          col += 1
+        }
+      case t: SparseIndexedTensor1 =>
+        val tIndices = t._indexs
+        val tValues = t._values
+        var ti = 0
+        while (ti < tIndices.length) {
+          val col = tIndices(ti)
+          val v = tValues(ti)
+          var row = 0
+          while (row < dim1) {
+            val offset = row * dim2
+            newArray(row) += (_values(offset + col) * v)
+            row += 1
+          }
+          ti += 1
+        }
+      case t: SparseBinaryTensorLike1 =>
+        val tIndexSeq = t.activeDomain.asInstanceOf[TruncatedArrayIntSeq]
+        val tIndices = tIndexSeq.array
+        var row = 0
+        while (row < dim1) {
+          val offset = row * dim2
+          var ti = 0
+          var dot = 0.0
+          while (ti < tIndexSeq.size) {
+            val col = tIndices(ti)
+            dot += _values(offset + col)
+            ti += 1
+          }
+          newArray(row) = dot
+          row += 1
+        }
+      case _ =>
+        val vecIter = t.activeElements
+        while (vecIter.hasNext) {
+          val (col, v) = vecIter.next()
+          var row = 0
+          while (row < dim1) {
+            val offset = row * dim2
+            newArray(row) += (_values(offset + col) * v)
+            row += 1
+          }
+        }
     }
-    new DenseTensor1(newArray)
+    newT
   }
 }
 
@@ -132,7 +180,7 @@ class GrowableDenseTensor2(d1:Int, d2:Int) extends { private var _dim1 = d1; pri
   }
   override def copy: GrowableDenseTensor2 = { val c = new GrowableDenseTensor2(_dim1, _dim2); c := this; c }
   override def blankCopy: GrowableDenseTensor2 = new GrowableDenseTensor2(_dim1, _dim2)
-} 
+}
 
 // TODO Make a GrowableDenseTensor2
 trait SingletonBinaryTensorLike2 extends Tensor2 with SingletonBinaryTensor {

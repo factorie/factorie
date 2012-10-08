@@ -289,8 +289,8 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
   def isDense = false
   private val _length: Int = len
   private var _sizeProxy: Iterable[Any] = null
-  private var _values: Array[Double] = new Array[Double](4)
-  private var _indexs: Array[Int] = new Array[Int](4) // the indices, in order corresponding to _values
+  var _values: Array[Double] = new Array[Double](4)
+  var _indexs: Array[Int] = new Array[Int](4) // the indices, in order corresponding to _values
   private var _positions: Array[Int] = null // a dense array containing the index into _indices and _values; not yet implemented
   private var _npos = 0 // the number of positions in _values and _indices that are actually being used
   private var _sorted = 0 // The number of positions in _values & _indices where indices are sorted; if _sorted == _npos then ready for use
