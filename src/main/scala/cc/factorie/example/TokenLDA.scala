@@ -141,7 +141,7 @@ object TokenLDA {
      val testLabels = testDocs.flatMap(_.tokens.map(_.nerLabel))
 
      val d = trainLabels.head.domain
-     MyModel.sumScore(trainLabels.take(5))
+     MyModel.currentScore(trainLabels.take(5))
 
      ChainNerFeaturesDomain2.freeze()
      Conll2003NerDomain.freeze()

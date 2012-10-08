@@ -62,7 +62,7 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
     while (i < l) {
       //model.factors(Seq(this)).sumBy(_.values.set(this, i).score) // a version that doesn't change the value of this variable
       __value = i
-      distribution(i) = model.sumScore(this)  // compute score of variable with value 'i'
+      distribution(i) = model.currentScore(this)  // compute score of variable with value 'i'
       i += 1
     }
     distribution.expNormalize()
@@ -99,7 +99,7 @@ object MaximizeDiscrete extends Maximize {
     var maxI = -1
     for (i <- 0 until d.domain.size) {
       d := i // Careful!  Doesn't work if d has variable value coordination!
-      val score = model.sumScore(d)
+      val score = model.currentScore(d)
       if (score > maxScore) { maxScore = score; maxI = i }
     }
     assert(maxI != -1)

@@ -66,14 +66,14 @@ class DiffList extends ArrayBuffer[Diff] {
     result
   }
   // TODO Should we provide this kind of syntax reversal, or only provide "one" way to do things?
-  def score(model:Model[DiffList]) = model.sumScore(this)
+  def score(model:Model[DiffList]) = model.currentScore(this)
   def scoreAndUndo(model:Model[DiffList]): Double = {
     if (this.length == 0) return 0.0  // short-cut the simple case
-    var s = model.sumScore(this)
+    var s = model.currentScore(this)
     //log(Log.DEBUG)("DiffList scoreAndUndo  pre-undo score=" + s)
     this.undo
     // We need to re-calculate the Factors list because the structure may have changed
-    val s2 = model.sumScore(this) 
+    val s2 = model.currentScore(this) 
     s -= s2
     //log(Log.DEBUG)("DiffList scoreAndUndo post-undo score=" + s)
     s
@@ -81,14 +81,14 @@ class DiffList extends ArrayBuffer[Diff] {
   /** For comparing the scores of two different models. */
   def scoreAndUndo(model1:Model[DiffList], model2:Model[DiffList]) : (Double, Double) = {
     if (this.length == 0) return (0.0, if (model2 == null) Double.NaN else 0.0) // short-cut the simple case
-    var s1 = model1.sumScore(this)
-    var s2 = if (model2 == null) Double.NaN else model2.sumScore(this)
+    var s1 = model1.currentScore(this)
+    var s2 = if (model2 == null) Double.NaN else model2.currentScore(this)
     //println("DiffList scoreAndUndo  pre-undo score=" + s1)
     this.undo
-    val s1b = model1.sumScore(this) 
+    val s1b = model1.currentScore(this) 
     //println("DiffList scoreAndUndo post-undo score=" + s1b)
     s1 -= s1b
-    if (model2 != null) s2 -= model2.sumScore(this)
+    if (model2 != null) s2 -= model2.currentScore(this)
     //println("DiffList scoreAndUndo *** score diff=" + s1)
     (s1, s2)
   }

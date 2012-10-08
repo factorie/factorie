@@ -42,8 +42,8 @@ trait Factor extends Ordered[Factor] {
   def touches(variable:Variable): Boolean = this.variables.contains(variable)
   def touchesAny(variables:Iterable[Variable]): Boolean = variables.exists(touches(_))
   
+  // TODO!!! To better match Model "score" method naming consider "assignmentScore", "valuesScore", "statisticsScore" ?? -akm 
 
-  //def statistics: Statistics // = values.statistics
   /** Return a record of the current values of this Factor's neighbors. */
   def currentAssignment: TypedAssignment[Variable]
   /** The ability to score a Values object is now removed, and this is its closest alternative. */

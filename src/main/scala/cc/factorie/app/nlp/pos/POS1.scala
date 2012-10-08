@@ -134,8 +134,8 @@ object POS1 extends POS1 {
     
       def printEvaluation(iteration:String): Unit = {
         println("Iteration "+iteration)
-        println("Train Token accuracy = "+ PosObjective.averageScore(trainLabels))
-        println(" Test Token accuracy = "+ PosObjective.averageScore(testLabels))
+        println("Train Token accuracy = "+ PosObjective.currentScorePerElement(trainLabels))
+        println(" Test Token accuracy = "+ PosObjective.currentScorePerElement(testLabels))
         /*for (docs <- List(trainDocuments, testDocuments)) {
         if (docs.length > 300) println ("TRAIN") else println("TEST") // Fragile
         val tokenEvaluation = new LabelEvaluation(PosDomain)

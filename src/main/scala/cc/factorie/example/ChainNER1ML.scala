@@ -91,7 +91,7 @@ object ChainNER1ML {
       throw new Error("Not yet implemented.")
 //      variables => new BPInferencer(model).inferTreewiseMax(variables)
     }
-    println("test token accuracy=" + objective.averageScore(testLabelsSentences.flatten))
+    println("test token accuracy=" + objective.currentScorePerElement(testLabelsSentences.flatten))
 
     println("Total training took " + (System.currentTimeMillis - start) / 1000.0 + " seconds")
   }

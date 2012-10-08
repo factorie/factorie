@@ -98,8 +98,8 @@ object ChainNER2 {
     for (i <- 0 until 3; label <- testLabels) predictor.process(label)
     
     // Evaluate
-    println ("Train accuracy = "+ objective.averageScore(trainLabels))
-    println ("Test  accuracy = "+ objective.averageScore(testLabels))
+    println ("Train accuracy = "+ objective.currentScorePerElement(trainLabels))
+    println ("Test  accuracy = "+ objective.currentScorePerElement(testLabels))
   }
 
 

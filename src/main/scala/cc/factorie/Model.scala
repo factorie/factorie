@@ -60,8 +60,9 @@ trait Model[C] {
   // Getting sums of scores from all neighboring factors
   // TODO Consider an alternative name to "sumScore".  Cannot name "score" because conflicts with Template1.score(N1#Value)
   // Consider factorsScore and factorsScoreAverage
-  def sumScore(context:C): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.currentScore; sum }
-  def averageScore(context:C): Double = sumScore(context) / context.asInstanceOf[Iterable[_]].size
+  def currentScore(context:C): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.currentScore; sum }
+  def assignmentScore(context:C, assignment:TypedAssignment[Variable]): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.scoreAssignment(assignment); sum }
+  def currentScorePerElement(context:C with Iterable[_]): Double = currentScore(context) / context.size
   
   // Some Model subclasses have a list of Families to which all its factors belong
   def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
@@ -78,7 +79,7 @@ trait Model[C] {
   // TODO Consider making a Model trait for these methods.  Yes!
   def variables: Iterable[Variable] = throw new Error("Model class does not implement method 'variables': "+ this.getClass.getName)
   def factors: Iterable[Factor] = throw new Error("Model class does not implement method 'factors': "+ this.getClass.getName)
-  def score: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
+  def currentScore: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
 }
 
 class CombinedModel[C](theSubModels:Model[C]*) extends Model[C] {

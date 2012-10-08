@@ -45,7 +45,7 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labe
 //      filterByFamilies(factors(variables), families)
 //    }
 //  }
-  override def sumScore(v:Variable): Double = {
+  override def currentScore(v:Variable): Double = {
     v match {
       case v:L if lm.erasure.isAssignableFrom(v.getClass) => biasTemplate.score(v.value.asInstanceOf[L#Value]) + evidenceTemplate.score(v.value.asInstanceOf[L#Value], lf(v).value.asInstanceOf[F#Value])
       case _ => Nil
