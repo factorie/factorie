@@ -60,9 +60,10 @@ class SGDPiecewiseLearner(val optimizer: GradientOptimizer, val model: Model[Var
     // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit
     pieces.foreach(piece => {
       gradient.get.zero()
-      valueAccumulator.get.value = 0.0
+//      valueAccumulator.get.value = 0.0
       piece.accumulateValueAndGradient(model, gradientAccumulator.get, valueAccumulator.get)
       optimizer.step(model.weightsTensor, gradient.get, valueAccumulator.get.value, 0)
+//      println("Step!")
     })
   }
 
@@ -76,7 +77,7 @@ class HogwildPiecewiseLearner(optimizer: GradientOptimizer, model: Model[Variabl
 object LossFunctions {
   type LossFunction = (Double, Double) => (Double, Double)
   val hingeLoss: LossFunction = (prediction, label) => {
-    val loss = math.max(0, 1 - prediction * label)
+    val loss = -math.max(0, 1 - prediction * label)
     (loss, math.signum(loss) * label)
   }
   def sigmoid(x: Double): Double = 1.0 / (1 + math.exp(-x))
@@ -94,7 +95,7 @@ object LossFunctions {
     (loss, gradient)
   }
   val hingeMultiClassLoss: MultiClassLossFunction = (prediction, label) => {
-    val loss = math.max(0, 1 - prediction(label))
+    val loss = -math.max(0, 1 - prediction(label))
     val predictedLabel = prediction.maxIndex
     val gradient =
       if (label == predictedLabel)
@@ -205,13 +206,14 @@ object PieceTest {
     val modelWithWeights = new ModelWithWeightsImpl(model)
 
     //   val forOuter = new la.SingletonBinaryTensor1(2, 0)
-    val pieces = docLabels.map(l => new MultiClassGLMPiece(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
+    val pieces = trainLabels.map(l => new MultiClassGLMPiece(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
-//    val strategy = new HogwildPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
-    //val strategy = new HogwildPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
-    //val strategy = new SGDPiecewiseLearner(new L2RegularizedGradientAscent(rate = .01), modelWithWeights)
+//    val strategy = new HogwildPiecewiseLearner(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
+//    val strategy = new HogwildPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
+//    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
 //    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
     val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
+//    val strategy = new BatchPiecewiseLearner(new SparseL2RegularizedGradientAscent(rate = 10.0 / trainLabels.size), modelWithWeights)
 
     var totalTime = 0L
     var i = 0

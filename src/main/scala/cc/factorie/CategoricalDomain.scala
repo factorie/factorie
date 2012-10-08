@@ -126,7 +126,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   }
 
   var string2T: (String) => C = null  // if T is not string, this should be overridden to provide deserialization
-  private var _frozenByLoader = false
+  var _frozenByLoader = false
   override def load(dirname:String, gzip: Boolean = false): Unit = {
     if (_frozenByLoader) return // Already initialized by loader, don't read again
     else if (size > 0) throw new Error("Attempted to load a non-empty domain. Did you mean to load the model before creating variables?")
