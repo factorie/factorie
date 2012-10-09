@@ -48,7 +48,7 @@ object TrainWithSVM {
   }
   
   def predict(c: Classifier[ParseDecisionVariable], ss: Seq[Sentence]): (Seq[Seq[(Int, String)]], Seq[Seq[(Int, String)]]) = {
-    val p = new Parser
+    val p = new Parser()
     
     p.mode = 1 // predicting
     p.predict = (v: ParseDecisionVariable) => { DecisionDomain.category(c.classify(v).bestLabelIndex) }
@@ -132,15 +132,19 @@ object TrainWithSVM {
     var modelFile: File = null
     
     // generate training (even if predicting -- to fill domain)
-    NonProjParserFeaturesDomain.dimensionDomain.gatherCounts = true
+    //NonProjParserFeaturesDomain.dimensionDomain.gatherCounts = true
     
     val trainingVs = generateDecisions(sentences, new Parser(0)) 
     
-	println("# features < cutoff [" + cutoff.value.toInt + "]: " + (NonProjParserFeaturesDomain.dimensionDomain.size - NonProjParserFeaturesDomain.dimensionDomain.sizeAtOrAboveCount(cutoff.value.toInt)))
-	
-    NonProjParserFeaturesDomain.dimensionDomain.trimBelowCount(cutoff.value.toInt)
+	println("# features " + NonProjParserFeaturesDomain.dimensionDomain.size)
     
-    NonProjParserFeaturesDomain._skipNonCategories = true
+//	NonProjParserFeaturesDomain.gatherCounts = true
+	
+//	println("Counts: " + NonProjParserFeaturesDomain.counts.toSeq.zipWithIndex.mkString("\n"))
+	
+    //NonProjParserFeaturesDomain.dimensionDomain.trimBelowCount(cutoff.value.toInt)
+    
+    //NonProjParserFeaturesDomain._skipNonCategories = true
     
     if (modelUrl eq null) {
 	  modelFile = new File(modelDir.value + System.currentTimeMillis() + ".liblinear")

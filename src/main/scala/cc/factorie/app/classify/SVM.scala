@@ -6,24 +6,27 @@ import cc.factorie.la._
 class SVMTrainer(parallel: Boolean = true) extends ClassifierTrainer {
 
   def train[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](ll: LabelList[L, F]): Classifier[L] = {
-    val cmodel = new LogLinearModel(ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
-
+    //val cmodel = new LogLinearModel(ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
+    
+    val template = new LogLinearTemplate2[L,F](ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
+    val model = new CombinedModel(template)
+    
     val numLabels = ll.labelDomain.size
     val numFeatures = ll.featureDomain.size
     val xs: Seq[Tensor1] = ll.map(ll.labelToFeatures(_).tensor.asInstanceOf[Tensor1])
     val ys: Array[Int]   = ll.map(_.intValue).toArray // TODO: tighten the bounds on L so targetIntValue is available here.
     val weightTensor = {
       if (parallel)
-        (0 until numLabels).par.map { label => (new LiblinearL2SV).getWeight(xs, ys, label) }
+        (0 until numLabels).par.map { label => (new LiblinearL2SV).train(xs, ys, label) }
       else
-        (0 until numLabels).map { label => (new LiblinearL2SV).getWeight(xs, ys, label) }
+        (0 until numLabels).map { label => (new LiblinearL2SV).train(xs, ys, label) }
     }
     for (f <- 0 until numFeatures;
          (l,t) <- (0 until numLabels).zip(weightTensor)) {
-      cmodel.evidenceTemplate.weights(l,f) = t(f)
+      template.weights(l,f) = t(f)
     }
 
-    new ModelBasedClassifier[L](cmodel, ll.head.domain)
+    new ModelBasedClassifier[L](model, ll.head.domain)
   }
 }
 
@@ -32,7 +35,7 @@ class LiblinearL2SV(lossType: Int = 0, cost: Double = 0.1, eps: Double = 1e-5, b
   @inline private final def GETI(y: Array[Byte], i: Int) = y(i) + 1
   @inline private final def swap(a: Array[Int], i0: Int, i1: Int) { val t = a(i0); a(i0) = a(i1); a(i1) = t }
 
-  def getWeight(xTensors: Seq[Tensor1], ys: Array[Int], currLabel: Int): DenseTensor1 = {
+  def train(xTensors: Seq[Tensor1], ys: Array[Int], currLabel: Int): DenseTensor1 = {
 
     val N = ys.size
     val D = xTensors.head.length
