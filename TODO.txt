@@ -19,7 +19,6 @@ Consider which println's should be transformed into Logging statements
 Package documentation  [All]
 Fix copyright year [McCallum]
 Write JUnit tests for cc.factorie.la [Vilnis?]
-HashDomain [Martin]
 Liblinear-like L1 SVM... [Martin]
 No holes in Tensor dot products [Passos]
 
@@ -31,6 +30,7 @@ Make an HMM example and show that BP inference and EM training work on it [Belan
 
 
 DONE:
+HashDomain [Martin]
 Consider renaming LabelVariable to LabeledCategoricalVariable, and having LabeledDiscreteVariable, LabeledBooleanVariable [McCallum]
 DomainFromClass or make it the default?  No.  [McCallum]
 Re-consider type arguments in Sampler and descendants?  No.  [McCallum]
