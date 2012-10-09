@@ -49,7 +49,8 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)) }
   //def this(values:C*) = { this(); values.foreach(value(_)) }
   //private val _elements = new ArrayBuffer[ValueType]
-  private val _indices = new HashMap[C,Value] with collection.mutable.SynchronizedMap[C, Value] //new HashMap[C,ValueType]
+  private val __indices = new HashMap[C,Value] with collection.mutable.SynchronizedMap[C, Value] //new HashMap[C,ValueType]
+  def _indices = __indices
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weights;
       override this method with the largest you think your growable domain will get. */
   var maxSize = -1
