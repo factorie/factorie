@@ -102,7 +102,7 @@ object WordSegmenterDemo2 {
     testVariables.foreach(_.setRandomly())
     println ("Read "+(trainVariables.size+testVariables.size)+" characters")
     println ("Read "+trainVariables.size+" train "+testVariables.size+" test characters")
-    println ("Initial test accuracy = "+ objective.currentScorePerElement(testVariables))
+    println ("Initial test accuracy = "+ objective.accuracy(testVariables))
     
     val exampleFactors = model.factors(trainSet.head.asSeq.map(_.label))
     println("Example Factors: "+exampleFactors.mkString(", "))

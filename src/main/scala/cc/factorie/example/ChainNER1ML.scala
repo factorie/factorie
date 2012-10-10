@@ -87,7 +87,7 @@ object ChainNER1ML {
     testLabelsSentences.foreach {
       variables => cc.factorie.BP.inferChainMax(variables, model)
     }
-    println("test token accuracy=" + objective.currentScorePerElement(testLabelsSentences.flatten))
+    println("test token accuracy=" + objective.accuracy(testLabelsSentences.flatten))
 
     println("Total training took " + (System.currentTimeMillis - start) / 1000.0 + " seconds")
   }

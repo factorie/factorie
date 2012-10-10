@@ -78,8 +78,8 @@ object DocumentClassifier1 {
     for (i <- 0 until 10) {
       learner.processAll(trainVariables)
       predictor.processAll(testVariables)
-      println ("Train accuracy = "+ objective.currentScorePerElement(trainVariables))
-      println ("Test  accuracy = "+ objective.currentScorePerElement(testVariables))
+      println ("Train accuracy = "+ objective.accuracy(trainVariables))
+      println ("Test  accuracy = "+ objective.accuracy(testVariables))
     }
 
   }
