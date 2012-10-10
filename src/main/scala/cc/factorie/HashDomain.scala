@@ -7,8 +7,12 @@ import scala.collection.mutable.SynchronizedMap
 import cc.factorie.la.GrowableSparseBinaryTensor1
 
 /*
- * A CategoricalDomain which does not preserve the mapping from Category to Value,
- * intead using the hash of the category to index.
+ * The expected usage is something like:
+ * 
+ *  object MyFeaturesDomain extends StringHashDomain(size = 100000)
+ *  class MyFeatures(val v: MyVariable) extends HashingBinaryFeatureVectorVariable[String] {
+ *    override def domain = MyFeaturesDomain 
+ *  }
  * 
  * @author Brian Martin
  * @date 10/7/2012
