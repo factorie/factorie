@@ -20,7 +20,7 @@ import java.io.File
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
-import collection.mutable.ArrayBuffer
+import collection.mutable.{ArrayBuffer, Seq => MSeq}
 
 object ChainNER1ML {
   object TokenFeaturesDomain extends CategoricalTensorDomain[String]
@@ -65,7 +65,7 @@ object ChainNER1ML {
     
     // Get the variables to be inferred
     val trainLabelsSentences: Seq[Seq[NerLabel]] = trainDocuments.map(_.tokens.map(_.nerLabel))
-    val  testLabelsSentences: Seq[Seq[NerLabel]] =  testDocuments.map(_.tokens.map(_.nerLabel))
+    val  testLabelsSentences: Seq[Seq[NerLabel]] = testDocuments.map(_.tokens.map(_.nerLabel))
     //val trainVariables = trainLabels
     //val testVariables = testLabels
     //val allTestVariables = testVariables.flatMap(l => l)
@@ -76,20 +76,16 @@ object ChainNER1ML {
     // Train and test
     println("*** Starting training (#sentences=%d)".format(trainDocuments.map(_.sentences.size).sum))
     val start = System.currentTimeMillis
-    throw new Error("DotMaximumLikelihood not yet working for linear-chains")
-//    val trainer = new DotMaximumLikelihood(model)
-//    trainer.processAll(trainLabelsSentences, 1) // Do just one iteration for initial timing
-//    println("One iteration took " + (System.currentTimeMillis - start) / 1000.0 + " seconds")
-//    //System.exit(0)
-//
-//    trainer.processAll(trainLabelsSentences) // Keep training to convergence
+    //throw new Error("DotMaximumLikelihood not yet working for linear-chains")
 
+    val pieces = trainLabelsSentences.map(s => new BPMaxLikelihoodPiece[NerLabel,String](s))
+    val learner = new BatchPiecewiseLearner[Variable](new optimize.StepwiseGradientAscent(), model)
+    (1 to 10).foreach(_ => learner.process(pieces))
     val objective = HammingLossObjective
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))
     testLabelsSentences.foreach {
-      throw new Error("Not yet implemented.")
-//      variables => new BPInferencer(model).inferTreewiseMax(variables)
+      variables => cc.factorie.BP.inferChainMax(variables, model)
     }
     println("test token accuracy=" + objective.currentScorePerElement(testLabelsSentences.flatten))
 

@@ -144,7 +144,7 @@ class GLMPiece(featureVector: Tensor, label: Double, lossAndGradient: LossFuncti
   }
 }
 
-class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMutableDiscreteVarWithTarget[A]]) extends Piece[Variable] {
+class BPMaxLikelihoodPiece[V <: LabeledCategoricalVariable[C],C](labels: collection.Seq[V]) extends Piece[Variable] {
   def state = null
 
   labels.foreach(_.setToTarget(null))
