@@ -27,7 +27,7 @@ import java.io._
 //  and have it be generic as a collection of arbitrary Models.
 //  (Now possible if Templates are now responsible for their own de-duplication.)
 
-abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends ModelWithFactorType[Variable] with TemplateModel with Family1[N1] 
+abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends ModelWithFactorType[Variable] with ModelAsTemplate with Family1[N1] 
 {
   val neighborClass1 = nm1.erasure
   def neighborClasses: Seq[Class[_]] = Seq(neighborClass1)

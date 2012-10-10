@@ -27,8 +27,8 @@ class Proposal(val diff:DiffList, val modelScore:Double, val objectiveScore:Doub
 // TODO The following trait is currently unused.  Remove it?
 /** An object (typically a variable or a world) that can propose changes to itself, 
     and possibly also other variables through variable value coordination. */
-@deprecated("May be removed in a future version of the library.")
-trait Proposer {
-  /** Make a random proposal.  Return Metropolis-Hastings' log(q(old|new)/q(new|old)) */
-  def propose(model:TemplateModel, d:DiffList): Double
-}
+//@deprecated("May be removed in a future version of the library.")
+//trait Proposer {
+//  /** Make a random proposal.  Return Metropolis-Hastings' log(q(old|new)/q(new|old)) */
+//  def propose(model:TemplateModel, d:DiffList): Double
+//}
