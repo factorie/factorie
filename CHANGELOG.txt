@@ -1,6 +1,8 @@
 New in version 1.0.0-M1:
 * Models and Templates
-  -
+  - All templates are now Models
+  - Models are now parameterized by the type of things they can score
+  - It is possible to write code that does not deduplicate factors
 
 * NLP
   - new Ontonotes Loader
@@ -11,7 +13,9 @@ New in version 1.0.0-M1:
 
 * Optimization & Training
   - efficient L2-regularized SVM training
-    - integration with app.classify
+     - integration with app.classify
+  - support for parallel batch and online training with a Piece API
+  - support for Hogwild (including Hogwild SampleRank)
 
 * Inference
   -
