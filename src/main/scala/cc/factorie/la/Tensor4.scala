@@ -47,6 +47,7 @@ trait Tensor4 extends Tensor {
   @inline final def index3(i:Int): Int = (i/dim4)%dim3
   @inline final def index4(i:Int): Int = i%dim4
   override def copy: Tensor4 = throw new Error("Method copy not defined on class "+getClass.getName)
+  override def sparseCopy: Tensor4 = new Dense3LayeredTensor4(dim1, dim2, dim3, dim4, i => new SparseTensor1(i))
 }
 
 trait DenseTensorLike4 extends Tensor4 with DenseTensor {

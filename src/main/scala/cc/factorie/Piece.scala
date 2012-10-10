@@ -52,7 +52,7 @@ class BatchPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Mode
 }
 
 class SGDPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[C]) extends PiecewiseLearner[C] {
-  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.copy}
+  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.asInstanceOf[WeightsTensor].sparseCopy}
   val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] {override def initialValue = new LocalTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
   val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] {override def initialValue = new LocalDoubleAccumulator(0.0)}
 
@@ -162,6 +162,58 @@ class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMu
   }
 }
 
+// The following trait has convenience methods for adding to an accumulator the
+// factors that touch a pair of Good/Bad variables
+object GoodBadPiece {
+  def addGoodBad[C](gradient: TensorAccumulator, model: Model[C], good: C, bad: C) {
+    model.factors(good).foreach(f => {
+      f match {
+        case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics)
+        case _ => Nil
+      }
+    })
+    model.factors(bad).foreach(f => {
+      f match {
+        case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics * -1.0)
+        case _ => Nil
+      }
+    })
+  }
+}
+
+// The following piece implements the domination loss function: it penalizes models that rank any of
+// the badCandates above any of the goodCandidates.
+// The actual loss used in this version is the maximum (margin-augmented) difference between
+// goodCandidates and badCandidates.
+// See DominationLossPieceAllGood for one that outputs a gradient for all goodCandidates
+class DominationLossPiece(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Piece[Variable] {
+  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
+    val goodScores = goodCandidates.map(model.currentScore(_))
+    val badScores = badCandidates.map(model.currentScore(_))
+    val worstGoodIndex = goodScores.zipWithIndex.maxBy(i => -i._1)._2
+    val bestBadIndex = badScores.zipWithIndex.maxBy(i => i._1)._2
+    if (goodScores(worstGoodIndex) < badScores(bestBadIndex) + 1) {
+      value.accumulate(goodScores(worstGoodIndex) - badScores(bestBadIndex) - 1)
+      GoodBadPiece.addGoodBad(gradient, model, goodCandidates(worstGoodIndex), badCandidates(bestBadIndex))
+    }
+  }
+}
+
+class DominationLossPieceAllGood(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Piece[Variable] {
+  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
+    val goodScores = goodCandidates.map(model.currentScore(_))
+    val badScores = badCandidates.map(model.currentScore(_))
+    val bestBadIndex = badScores.zipWithIndex.maxBy(i => i._1)._2
+    for (i <- 0 until goodScores.length) {
+      val goodIndex = goodScores.zipWithIndex.maxBy(i => -i._1)._2
+      if (goodScores(goodIndex) < badScores(bestBadIndex) + 1) {
+        value.accumulate(goodScores(goodIndex) - badScores(bestBadIndex) - 1)
+        GoodBadPiece.addGoodBad(gradient, model, goodCandidates(goodIndex), badCandidates(bestBadIndex))
+      }
+    }
+  }
+}
+
 object PieceTest {
   class ModelWithWeightsImpl(model: Model[Variable]) extends Model[Variable] {
     def factors(v: Variable): Iterable[Factor] = throw new Error
@@ -212,7 +264,7 @@ object PieceTest {
 //    val strategy = new HogwildPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
 //    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
 //    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
-    val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
+    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(), modelWithWeights)
 //    val strategy = new BatchPiecewiseLearner(new SparseL2RegularizedGradientAscent(rate = 10.0 / trainLabels.size), modelWithWeights)
 
     var totalTime = 0L
