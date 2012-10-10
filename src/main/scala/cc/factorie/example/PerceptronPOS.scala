@@ -90,8 +90,6 @@ object PerceptronPOS {
         test(testDocuments, label = "test")
       if (devDocuments.nonEmpty)
         test(devDocuments, label = "dev")
-      if (modelFile != "")
-        PosModel.save(modelFile + label + extraId)
     }
 
     val sentenceLabels: Array[Seq[PosLabel]] = documents.flatMap(_.sentences).map(_.posLabels).filter(_.size > 0).toArray
