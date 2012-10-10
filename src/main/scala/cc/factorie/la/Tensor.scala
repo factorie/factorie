@@ -43,6 +43,8 @@ trait Tensor extends MutableDoubleSeq {
   def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName) // TODO Rename this setZero, to avoid conflict with scala.math.Numeric so that RealValue can inherit from it.
   def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
   def copy: Tensor = throw new Error("Method copy not defined on class "+getClass.getName)
+  // sparseCopy returns something that looks like this tensor but can be sparse
+  def sparseCopy: Tensor = throw new Error("Method sparseCopy not defined on class "+getClass.getName)
   def blankCopy: Tensor = throw new Error("Method blankCopy not defined on class "+getClass.getName)
   def *(v:Double): Tensor = new TensorTimesScalar(this.copy, v) // TODO Should I use this.copy here?
   def /(v:Double): Tensor = new TensorTimesScalar(this.copy, 1.0/v) // TODO Should I use this.copy here?
