@@ -1,3 +1,22 @@
+New in version 1.0.0-M1:
+* Models and Templates
+  -
+
+* NLP
+  -
+
+* BP
+  -
+
+* Optimization & Training
+  -
+
+* Inference
+  -
+
+* Serialization
+  -
+
 New in version 0.10.2:
 * NLP
   - Customized forward-backward and viterbi for chain models
