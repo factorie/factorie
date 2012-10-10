@@ -40,7 +40,7 @@ class DiscreteMeanField[V<:DiscreteVariable](val model:Model[Variable], val summ
       distribution(i) = diff.scoreAndUndo(model)
     }
     distribution.expNormalize()
-    p := distribution
+    p.masses := distribution
   }
   def updateQ: Unit = summary.variables.foreach(updateQ(_))
 }
