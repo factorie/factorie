@@ -52,7 +52,7 @@ class BatchPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Mode
 }
 
 class SGDPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[C]) extends PiecewiseLearner[C] {
-  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.asInstanceOf[WeightsTensor].sparseCopy}
+  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.asInstanceOf[WeightsTensor].copy}
   val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] {override def initialValue = new LocalTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
   val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] {override def initialValue = new LocalDoubleAccumulator(0.0)}
 

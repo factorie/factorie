@@ -48,7 +48,6 @@ trait Tensor2 extends Tensor {
   @inline final def index1(i:Int): Int = i/dim2
   @inline final def index2(i:Int): Int = i%dim2
   override def copy: Tensor2 = throw new Error("Method copy not defined on class "+getClass.getName)
-  override def sparseCopy: Tensor2 = new SparseBinaryTensor2(dim1, dim2)
 }
 
 

@@ -23,7 +23,6 @@ trait Tensor1 extends Tensor {
   def activeDomain: IntSeq = activeDomain1
   def numDimensions: Int = 1
   def activeDomains = Array(activeDomain1)
-  override def sparseCopy: Tensor1 = { new SparseTensor1(dim1) }
   def dimensions = Array(dim1)
   override def dimensionsMatch(t:Tensor): Boolean = t match {
     case t:Tensor1 => t.dim1 == dim1
