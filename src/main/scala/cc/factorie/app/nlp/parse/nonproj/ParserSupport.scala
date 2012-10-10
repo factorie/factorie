@@ -276,7 +276,7 @@ object ParserSupport {
       def this(state: ParseState) = this(DecisionDomain.defaultCategory, state)
       def domain = DecisionDomain
       val features = new NonProjDependencyParserFeatures(this)
-      features ++= ParserUtils.featureGenerators.map(s => new Hash[String](s.apply(state)))  //.map(_.apply(state))  //.map(s => new Hash[String](s))
+      features ++= ParserUtils.featureGenerators.map(_.apply(state)) //.map(s => new Hash[String](s.apply(state)))  //.map(_.apply(state))  //.map(s => new Hash[String](s))
     }
     
     object NonProjParserFeaturesDomain extends StringHashDomain(100000)
