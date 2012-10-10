@@ -198,7 +198,7 @@ object TutorialVariables {
     // These are Tensors with only non-negative elements, whose sum is efficiently cached.
     // They are useful for the parameters of a Dirichlet, and also as the sufficient statistics for a Proportions
     val m1 = new DenseMasses1(5) // A vector of length 5
-    m1 := Array(.5, .5, .5, .5)
+    m1 := Array(.5, .5, .5, .5, .5)
     println("m1 sum is "+m1.sum)
     
     // Proportions inherits from Masses
