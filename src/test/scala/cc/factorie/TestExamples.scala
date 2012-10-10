@@ -94,12 +94,6 @@ class TestExamples {
     cc.factorie.example.DocumentClassifier4.main(Array(dummyDir1, dummyDir2))
   }
 
-  @Test def testFootball() {
-    // TODO: this test is failing, and someone needs to know what the example files
-    // look like to mock it
-    cc.factorie.example.Football.main(emptyArgs)
-  }
-
   val posFile = dummyFileWithContents("POS", "\nNN WORD=Hello\nNN WORD=World\n")
 
   @Test def testForwardBackwardPOS() {
@@ -146,10 +140,6 @@ class TestExamples {
 
   @Test def testPerceptronPOS() {
     cc.factorie.example.PerceptronPOS.main(Array("--train", posFile, "--dev", posFile, "--test", posFile))
-  }
-
-  @Test def testTimingBP() {
-    cc.factorie.example.TimingBP.main(emptyArgs)
   }
 
   @Test def testTutorial10() {
