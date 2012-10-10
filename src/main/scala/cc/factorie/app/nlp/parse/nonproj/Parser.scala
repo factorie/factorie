@@ -225,8 +225,8 @@ class Parser(var mode: Int = 0) {
       else {
         val label = getDecision()
         
-        if(debug)
-	        println(instances.last.features.activeCategories.mkString("\n"))
+//        if(debug)
+//	        println(instances.last.features.activeCategories.mkString("\n"))
         //println(label, label.shift_?, label.reduce_?, label.pass_?)
 
         if (label.left_?) {
