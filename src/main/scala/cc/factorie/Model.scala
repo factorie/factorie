@@ -62,8 +62,8 @@ trait Model[C] {
   // Consider factorsScore and factorsScoreAverage
   def currentScore(context:C): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.currentScore; sum }
   def assignmentScore(context:C, assignment:TypedAssignment[Variable]): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.scoreAssignment(assignment); sum }
-  def currentScorePerElement(context:C with Iterable[_]): Double = currentScore(context) / context.size
-  
+  def currentScorePerElement(context: Iterable[C]): Double = context.map(currentScore(_)).sum / context.size
+
   // Some Model subclasses have a list of Families to which all its factors belong
   def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
   def familiesOfClass[F<:Family](fclass:Class[F]): Seq[F] = families.filter(f => fclass.isAssignableFrom(f.getClass)).asInstanceOf[Seq[F]]
