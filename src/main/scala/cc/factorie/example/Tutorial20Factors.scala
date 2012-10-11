@@ -224,7 +224,7 @@ object TutorialFactors {
      * Here let's define a Variable Article for representing the feature vector.
      * WordDomain is the object WordDomain extends CategoricalDomain(List("beat", "beautiful", "election"))
      */
-
+    object WordDomain extends CategoricalDomain(List("beat", "beautiful", "election"))
     // TODO Consider interface improvements to CategoricalTensorDomain initialization.
     object ArticleDomain extends CategoricalTensorDomain[String] { override def dimensionDomain = WordDomain }
     class Article(ws:Iterable[String]) extends BinaryFeatureVectorVariable[String](ws) {

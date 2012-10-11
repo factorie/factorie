@@ -42,7 +42,7 @@ object Serializer {
           domain.index(domain.string2T(line))
       }
       if (willFreeze) {domain.freeze(); domain._frozenByLoader = true}
-      reader.close()
+//      reader.close()
     }
   }
 

@@ -8,17 +8,20 @@ import java.io._
 
 // Feature and Label classes
 
-class Label(labelName: String, val features: Features, val domain: CategoricalDomain[String]) extends LabeledCategoricalVariable(labelName)
+class Label(labelName: String, val features: Features, val domain: CategoricalDomain[String]) extends LabeledCategoricalVariable(labelName) {
+  override def toString = "instance=%s label=%s" format(features.instanceName, categoryValue)
+}
 trait Features extends DiscreteTensorVar {
   this: CategoricalTensorVariable[String] =>
   def labelName: String
+  def instanceName: String
   def domain: CategoricalTensorDomain[String]
   def labelDomain: CategoricalDomain[String]
   var label = new Label(labelName, this, labelDomain)
 }
-class BinaryFeatures(val labelName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
+class BinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
   extends BinaryFeatureVectorVariable[String] with Features {}
-class NonBinaryFeatures(val labelName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
+class NonBinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
   extends FeatureVectorVariable[String] with Features {}
 
 
@@ -51,6 +54,8 @@ object ClassifyTUI {
 
       val writeVocabulary = new CmdOption("write-vocabulary", "vocabulary", "FILE", "Filename in which to save the vocabulary.")
       val readVocabulary = new CmdOption("read-vocabulary", "vocabulary", "FILE", "Filename from which to load the vocabulary.")
+
+      val writeClassifications = new CmdOption("write-classifications", "classifications", "FILE", "Filename in which to save the classifications.")
 
       val writeClassifier = new CmdOption("write-classifier", "classifier", "FILE", "Filename in which to save the classifier.")
       val readClassifier = new CmdOption("read-classifier", "classifier", "FILE", "Filename from which to read the classifier.")
@@ -116,7 +121,7 @@ object ClassifyTUI {
     def readInstancesFromFile(fileName: String): LabelList[Label, Features] = {
       val textFile = new File(fileName)
       val text = fileToString(textFile)
-      Deserialize.readInstancesSVMLight(text)
+      Serialize.readInstancesSVMLight(text)
     }
 
     // Read vocabulary
@@ -134,9 +139,11 @@ object ClassifyTUI {
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
         for (file <- new File(directory).listFiles; if (file.isFile)) {
           //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
+          val labelName = directoryFile.getName
+          val instanceName = labelName + "-" + file.getName
           val features =
-            if (opts.readBinaryFeatures.value) new BinaryFeatures(directoryFile.getName, FeaturesDomain, LabelDomain)
-            else new NonBinaryFeatures(directory, FeaturesDomain, LabelDomain)
+            if (opts.readBinaryFeatures.value) new BinaryFeatures(labelName, instanceName, FeaturesDomain, LabelDomain)
+            else new NonBinaryFeatures(labelName, instanceName, FeaturesDomain, LabelDomain)
           // Use directory as label category
           textIntoFeatures(fileToString(file), features)
           labels += features.label
@@ -156,15 +163,25 @@ object ClassifyTUI {
       vocabFile.createNewFile()
       Serializer.serialize(FeaturesDomain, new PrintStream(vocabFile), gzip = false)
     }
-    
+
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
-      val classifier = Deserialize.readClassifier(fileToString(new File(opts.readClassifier.value)))
-      classifier.classify(labels)
+      import Serialize._
+      val classifierFile = new File(opts.readClassifier.value)
+      val classifier = new ModelBasedClassifier[Label](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
+      Serializer.deserialize(classifier, new BufferedReader(new InputStreamReader(new FileInputStream(classifierFile))))
+      val classifications = classifier.classify(labels)
+      for (cl <- classifications) println(cl.label)
       if (opts.writeInstances.wasInvoked) {
         val instancesFile = new File(opts.writeInstances.value)
         instancesFile.createNewFile()
         Serialize.writeInstancesSVMLight(labels, new PrintStream(instancesFile))
+      }
+      if (opts.writeClassifications.wasInvoked) {
+        val classificationsFile = new File(opts.writeClassifications.value)
+        classificationsFile.createNewFile()
+        val writer = new PrintStream(classificationsFile)
+        for (cl <- classifications) Serializer.serialize(cl, writer, gzip = false)
       }
       return
     }
@@ -206,9 +223,10 @@ object ClassifyTUI {
     println("Classifier trained in " + ((System.currentTimeMillis - start) / 1000.0) + " seconds.")
 
     if (opts.writeClassifier.wasInvoked) {
-      val trainerFile = new File(opts.writeClassifier.value)
-      trainerFile.createNewFile()
-      Serialize.writeClassifier(classifier, FeaturesDomain, new PrintStream(trainerFile))
+      val classifierFile = new File(opts.writeClassifier.value)
+      classifierFile.createNewFile()
+      import Serialize._
+      Serializer.serialize(classifier, new PrintStream(classifierFile), gzip = false)
     }
 
     opts.evaluator.value match {
