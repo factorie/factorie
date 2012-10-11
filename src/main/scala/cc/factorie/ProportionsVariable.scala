@@ -324,7 +324,7 @@ object MaximizeProportions extends Maximize {
     var e: DenseProportions1 = new DenseProportions1(p.tensor.length) // TODO Consider instead passing this in as an argument, so that SparseProportions could be used
     // Initialize with prior; find the factor that is the parent of "p", and use its Dirichlet masses for initialization
     model.parentFactor(p) match {
-	  case f:Dirichlet.Factor => e := f._2.tensor
+	  case f:Dirichlet.Factor => e.masses := f._2.tensor
 	  case null => {}
       case _ => throw new Error // TODO Do something more reasonable here?
     }
