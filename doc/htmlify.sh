@@ -5,16 +5,16 @@ MD_FILE=./`basename $1`.md
 HTML_FILE=./`basename $1`.html
 
 rm $MD_FILE
-rm $MD_FILE.html
+rm $HTML_FILE
 touch $MD_FILE
 
 echo -e "\`\`\`scala\n" >> $MD_FILE
 
 cat $TUT_FILE | \
-sed -e 's/[[:space:]]*\/\*\*/```\
-/'  -e 's/[[:space:]]*\/\*/```\
-/'  -e 's/^[[:space:]]*\* \(.*\)/\1/' \
-    -e 's/[[:space:]]*\*\//\
+sed -e 's/[[:space:]]*\/\*\*&/```\
+/'  -e 's/[[:space:]]*\/\*&/```\
+/'  -e 's/^[[:space:]]*\*& \(.*\)/\1/' \
+    -e 's/[[:space:]]*\*&\*\//\
 ```scala\
 /'  -e 's/\s*```/\
 ```/' >> $MD_FILE
