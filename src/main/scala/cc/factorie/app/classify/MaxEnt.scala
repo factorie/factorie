@@ -13,18 +13,20 @@
    limitations under the License. */
 
 package cc.factorie.app.classify
+
 import cc.factorie._
 import cc.factorie.optimize._
-import cc.factorie.la.Tensor
-import scala.collection.mutable.{HashMap,ArrayBuffer}
+import la.{Tensor1, Tensor}
+import scala.collection.mutable.{HashMap, ArrayBuffer}
+import cc.factorie.ModelWithWeightsImpl
 
 class MaxEntSampleRankTrainer extends ClassifierTrainer {
   var iterations = 10
   var learningRateDecay = 0.9
-  def train[L<:LabeledCategoricalVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F]): Classifier[L] = {
+  def train[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val sampler = new GibbsSampler(cmodel, HammingLossObjective) {
-      override def pickProposal(proposals:Seq[Proposal]): Proposal = proposals.head // which proposal is picked is irrelevant, so make it quick
+      override def pickProposal(proposals: Seq[Proposal]): Proposal = proposals.head // which proposal is picked is irrelevant, so make it quick
     }
     val learner = new SampleRank(sampler, new MIRA)
     learner.processAll(il, iterations)
@@ -33,14 +35,20 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
 }
 
 class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
-  def train[L<:LabeledCategoricalVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F]): Classifier[L] = {
+  def train[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
+    val pieces = il.map(l => new MultiClassGLMPiece(
+      il.labelToFeatures(l).tensor.asInstanceOf[Tensor1],
+      l.intValue,
+      LossFunctions.logMultiClassLoss,
+      weight = il.instanceWeight(l)))
     if (warmStart != null) cmodel.evidenceTemplate.weights := warmStart
-    val trainer = new DotMaximumLikelihood(cmodel, new LimitedMemoryBFGS)
-    trainer.gaussianPriorVariance = l2
     // Do the training by BFGS
-    trainer.processAll(il /*, instanceWeights = il.instanceWeight*/)
-    new ModelBasedClassifier[L](cmodel, il.head.domain) { val weights = cmodel.evidenceTemplate.weights }
+    val lbfgs = new L2RegularizedLBFGS(l2 = 1 / l2)
+    val strategy = new BatchPiecewiseLearner(lbfgs, new ModelWithWeightsImpl(cmodel))
+    while (!strategy.isConverged)
+      strategy.process(pieces)
+    new ModelBasedClassifier[L](cmodel, il.head.domain) {val weights = cmodel.evidenceTemplate.weights}
   }
 }
 

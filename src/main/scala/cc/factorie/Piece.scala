@@ -267,15 +267,17 @@ class DominationLossPieceAllGood(goodCandidates: Seq[Variable], badCandidates: S
   }
 }
 
+class ModelWithWeightsImpl(model: Model[Variable]) extends Model[Variable] {
+  def factors(v: Variable): Iterable[Factor] = throw new Error
+  def copy = sys.error("unimpl")
+  //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
+  val weights = new WeightsTensor()
+  weights(DummyFamily) = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
+  override def weightsTensor = weights
+}
+
 object PieceTest {
-  class ModelWithWeightsImpl(model: Model[Variable]) extends Model[Variable] {
-    def factors(v: Variable): Iterable[Factor] = throw new Error
-    def copy = sys.error("unimpl")
-    //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
-    val weights = new WeightsTensor()
-    weights(DummyFamily) = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
-    override def weightsTensor = weights
-  }
+
 
   object DocumentDomain extends CategoricalTensorDomain[String]
   class Document(file: File) extends BinaryFeatureVectorVariable[String] {
