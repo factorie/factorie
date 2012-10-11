@@ -2,6 +2,7 @@
 
 TUT_FILE=$1
 MD_FILE=./`basename $1`.md
+HTML_FILE=./`basename $1`.html
 
 rm $MD_FILE
 rm $MD_FILE.html
@@ -20,5 +21,5 @@ sed -e 's/[[:space:]]*\/\*\*/```\
 
 echo -e "\`\`\`\n" >> $MD_FILE
 
-pandoc $MD_FILE -o $MD_FILE.html -s --highlight-style=pygments
+pandoc $MD_FILE -o $HTML_FILE -s --highlight-style=pygments
 
