@@ -35,7 +35,7 @@ object ClassifyTUI {
       val readTestingInstances = new CmdOption("read-testing-instances", "instances", "FILE", "Filename from which to read the testing instances' labels and features.")
 
       val readSVMLight = new CmdOption("read-svm-light", "instances", "FILE", "Filename from which to read the instances' labels and features in SVMLight format.")
-      val readBinaryFeatures = new CmdOption("read-binary-features", false, "true|false", "If true, features will be binary.")
+      val readBinaryFeatures = new CmdOption("read-binary-features", true, "true|false", "If true, features will be binary.")
 
       val readTextDirs = new CmdOption("read-text-dirs", "textdir", "DIR...", "Directories from which to read text documents; tokens become features; directory name is the label.")
       val readTextLines = new CmdOption("read-text-lines", "textfile", "FILE.txt", "Filename from which to read the instances' labels and features; first word is the label value")
@@ -124,7 +124,7 @@ object ClassifyTUI {
         for (file <- new File(directory).listFiles; if (file.isFile)) {
           //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
           val features =
-            if (opts.readBinaryFeatures.value) new BinaryFeatures(directory, FeaturesDomain, LabelDomain)
+            if (opts.readBinaryFeatures.value) new BinaryFeatures(directoryFile.getName, FeaturesDomain, LabelDomain)
             else new NonBinaryFeatures(directory, FeaturesDomain, LabelDomain)
           // Use directory as label category
           textIntoFeatures(fileToString(file), features)
@@ -157,8 +157,11 @@ object ClassifyTUI {
       if (opts.readValidationInstances.wasInvoked) validationLabels ++= readInstancesFromFile(opts.readValidationInstances.value)
       if (opts.readTestingInstances.wasInvoked) testingLabels ++= readInstancesFromFile(opts.readTestingInstances.value)
     } else {
-      val (trainSet, testAndValidationSet) = labels.shuffle.split(opts.trainingPortion.value)
-      val (valSet, testSet) = testAndValidationSet.split(opts.validationPortion.value)
+      val (trainSet, testAndValidationSet) =
+        if (opts.trainingPortion == 1.0) (labels, Seq(): Seq[Label]) else labels.shuffle.split(opts.trainingPortion.value)
+      val (valSet, testSet) =
+        if (opts.validationPortion.value == 0.0) (Seq(): Seq[Label], testAndValidationSet)
+        else testAndValidationSet.split(opts.validationPortion.value / (1 - opts.trainingPortion.value))
       trainingLabels ++= trainSet
       testingLabels ++= testSet
       validationLabels ++= valSet
