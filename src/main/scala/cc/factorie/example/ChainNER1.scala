@@ -66,10 +66,11 @@ object ChainNER1a {
     val trainLabels : Seq[ChainNerLabel] = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
     val testLabels : Seq[ChainNerLabel] = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly())
-    val learner = new SampleRank(new GibbsSampler(model, HammingLossObjective), new StepwiseGradientAscent)
+    val pieces: Seq[Piece[DiffList]] = trainLabels.map(l => new SampleRankPiece[Variable](l, new TypedGibbsSampler[Variable](model, HammingLossObjective)))
+    val learner = new BatchPiecewiseLearner[DiffList](new optimize.StepwiseGradientAscent(), model)
     val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
     for (iteration <- 1 until 5) {
-      learner.processAll(trainLabels)
+      learner.process(pieces)
       predictor.processAll(testLabels)
     }
     println("Train Acccuracy = "+HammingLossObjective.accuracy(trainLabels))
