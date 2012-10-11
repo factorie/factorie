@@ -4,7 +4,7 @@ import cc.factorie._
 import app.classify
 import app.classify._
 import app.strings.SetBasedStopwords
-import java.io.{PrintStream, PrintWriter, File}
+import java.io._
 
 // Feature and Label classes
 
@@ -48,6 +48,9 @@ object ClassifyTUI {
       val readTextExtraStopwords = new CmdOption("read-text-extra-stopwords", "stopwords.txt", "FILE", "File from which to read stopwords to add to standard list, one per line.")
       val readTextUseStoplist = new CmdOption("read-text-use-stoplist", "stoplist.txt", "FILE", "Remove words on the stoplist.")
       val readTextGramSizes = new CmdOption("read-text-gram-sizes", List(1), "1,2", "Include among the features all n-grams of sizes specified.  For example, to get all unigrams and bigrams, use --gram-sizes 1,2.  This option occurs after the removal of stop words, if removed.")
+
+      val writeVocabulary = new CmdOption("write-vocabulary", "vocabulary", "FILE", "Filename in which to save the vocabulary.")
+      val readVocabulary = new CmdOption("read-vocabulary", "vocabulary", "FILE", "Filename from which to load the vocabulary.")
 
       val writeClassifier = new CmdOption("write-classifier", "classifier", "FILE", "Filename in which to save the classifier.")
       val readClassifier = new CmdOption("read-classifier", "classifier", "FILE", "Filename from which to read the classifier.")
@@ -116,6 +119,14 @@ object ClassifyTUI {
       Deserialize.readInstancesSVMLight(text)
     }
 
+    // Read vocabulary
+    if (opts.readVocabulary.wasInvoked) {
+      val vocabFile = new File(opts.readVocabulary.value)
+      val vocabStr = fileToString(vocabFile)
+      Serializer.deserialize(FeaturesDomain, new BufferedReader(new StringReader(vocabStr)))
+      FeaturesDomain.freeze()
+    }
+
     // Read instances
     if (opts.readTextDirs.wasInvoked) {
       for (directory <- opts.readTextDirs.value.split("\\s+")) {
@@ -139,6 +150,13 @@ object ClassifyTUI {
       labels ++= readInstancesFromFile(opts.readInstances.value)
     }
 
+    // Write vocabulary
+    if (opts.writeVocabulary.wasInvoked) {
+      val vocabFile = new File(opts.writeVocabulary.value)
+      vocabFile.createNewFile()
+      Serializer.serialize(FeaturesDomain, new PrintStream(vocabFile), gzip = false)
+    }
+    
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
       val classifier = Deserialize.readClassifier(fileToString(new File(opts.readClassifier.value)))
@@ -185,20 +203,34 @@ object ClassifyTUI {
 
     val classifier = classifierTrainer.train(trainingLabels)
 
+    println("Classifier trained in " + ((System.currentTimeMillis - start) / 1000.0) + " seconds.")
+
     if (opts.writeClassifier.wasInvoked) {
       val trainerFile = new File(opts.writeClassifier.value)
       trainerFile.createNewFile()
       Serialize.writeClassifier(classifier, FeaturesDomain, new PrintStream(trainerFile))
     }
 
-    val testTrial = new classify.Trial[Label](classifier)
-    testTrial ++= testingLabels
-
-    val trainTrial = new classify.Trial[Label](classifier)
-    trainTrial ++= trainingLabels
-
-    println("Train accuracy = " + trainTrial.accuracy)
-    println("Test  accuracy = " + testTrial.accuracy)
-    println("Number of ms to train/test: " + (System.currentTimeMillis - start))
+    opts.evaluator.value match {
+      case "Trial" =>
+        if (trainingLabels.length > 0) {
+          val trainTrial = new classify.Trial[Label](classifier)
+          trainTrial ++= trainingLabels
+          println("== Training Evaluation ==")
+          println(trainTrial.toString)
+        }
+        if (testingLabels.length > 0) {
+          val testTrial = new classify.Trial[Label](classifier)
+          testTrial ++= testingLabels
+          println("== Testing Evaluation ==")
+          println(testTrial.toString)
+        }
+        if (validationLabels.length > 0) {
+          val validationTrial = new classify.Trial[Label](classifier)
+          validationTrial ++= validationLabels
+          println("== Validation Evaluation ==")
+          println(validationTrial.toString)
+        }
+    }
   }
 }

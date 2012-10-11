@@ -59,7 +59,7 @@ trait ClassifierTrainer {
 }
 
 /** An object that can gather  */
-trait ClassifierEvaluator[L <: LabeledCategoricalVariable[_]] {
+trait ClassifierEvaluator[L <: MutableDiscreteVar[_]] {
   def += (c: Classification[L]): Unit
   def toString: String
 }

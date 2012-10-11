@@ -228,6 +228,7 @@ class LabeledDiscreteEvaluation[C](val domain: DiscreteDomain) {
   //def correctCount(labelIndex:Int) = _tp(labelIndex)
   //def missCount(labelIndex:Int) = _fn(labelIndex)
   //def alarmCount(labelIndex:Int) = _fp(labelIndex)
+  def overallEvalString: String = "accuracy=%-8f".format(accuracy)
   def evalString(labelIndex:Int): String = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(domain(labelIndex).toString, f1(labelIndex), precision(labelIndex), recall(labelIndex), tp(labelIndex), fp(labelIndex), fn(labelIndex), tp(labelIndex)+fn(labelIndex), tp(labelIndex)+fp(labelIndex))
   def evalString: String = (0 until domain.size).map(evalString(_)).mkString("\n")
   override def toString = evalString
