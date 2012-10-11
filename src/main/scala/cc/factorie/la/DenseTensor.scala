@@ -41,6 +41,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
   override def update(i:Int, v:Double): Unit = __values(i) = v
   override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
   override def asArray = __values
+  override def *=(d: Double) = { var i = 0; while (i < __values.length) { __values(i) *= d; i += 1 } }
   override def +=(i:Int, incr:Double): Unit = __values(i) += incr
   override def :=(ds:DoubleSeq): Unit = ds match {
     case ds:DenseTensor => System.arraycopy(ds.__values, 0, __values, 0, length)
