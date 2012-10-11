@@ -128,7 +128,7 @@ object ClassifyTUI {
     if (opts.readVocabulary.wasInvoked) {
       val vocabFile = new File(opts.readVocabulary.value)
       val vocabStr = fileToString(vocabFile)
-      Serializer.deserialize(FeaturesDomain, new BufferedReader(new StringReader(vocabStr)))
+      Serializer.deserialize(FeaturesDomain.dimensionDomain, new BufferedReader(new StringReader(vocabStr)))
       FeaturesDomain.freeze()
     }
 
@@ -161,7 +161,7 @@ object ClassifyTUI {
     if (opts.writeVocabulary.wasInvoked) {
       val vocabFile = new File(opts.writeVocabulary.value)
       vocabFile.createNewFile()
-      Serializer.serialize(FeaturesDomain, new PrintStream(vocabFile), gzip = false)
+      Serializer.serialize(FeaturesDomain.dimensionDomain, new PrintStream(vocabFile), gzip = false)
     }
 
     // if readclassifier is set, then we ignore instances labels and classify them

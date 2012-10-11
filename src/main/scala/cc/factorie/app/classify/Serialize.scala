@@ -25,12 +25,12 @@ object Serialize {
   implicit object ClassifierSerializer extends Serializer[Classifier[Label]] {
     def serialize(toSerialize: Classifier[Label], str: PrintStream, gzip: Boolean) = toSerialize match {
       case cls: ModelBasedClassifier[Label] =>
-        Serializer.serialize(cls.labelDomain, str, gzip)
+        Serializer.serialize(cls.labelDomain.asInstanceOf[CategoricalDomain[String]], str, gzip)
         Serializer.serialize(cls.model, str, gzip)
     }
     def deserialize(deserializeTo: Classifier[Label], str: BufferedReader) = deserializeTo match {
       case cls: ModelBasedClassifier[Label] =>
-        Serializer.deserialize(cls.labelDomain, str)
+        Serializer.deserialize(cls.labelDomain.asInstanceOf[CategoricalDomain[String]], str)
         Serializer.deserialize(cls.model, str)
     }
   }
