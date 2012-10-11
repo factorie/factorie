@@ -289,8 +289,8 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
   def isDense = false
   private val _length: Int = len
   private var _sizeProxy: Iterable[Any] = null
-  var _values: Array[Double] = new Array[Double](4)
-  var _indexs: Array[Int] = new Array[Int](4) // the indices, in order corresponding to _values
+  private var __values: Array[Double] = new Array[Double](4)
+  private var __indexs: Array[Int] = new Array[Int](4) // the indices, in order corresponding to _values
   private var _positions: Array[Int] = null // a dense array containing the index into _indices and _values; not yet implemented
   private var _npos = 0 // the number of positions in _values and _indices that are actually being used
   private var _sorted = 0 // The number of positions in _values & _indices where indices are sorted; if _sorted == _npos then ready for use
@@ -298,48 +298,49 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     assert(cap >= _npos)
     val newInd = new Array[Int](cap)
     val newVal = new Array[Double](cap)
-    System.arraycopy(_indexs, 0, newInd, 0, _npos)
-    System.arraycopy(_values, 0, newVal, 0, _npos)
-    _indexs = newInd; _values = newVal
+    System.arraycopy(__indexs, 0, newInd, 0, _npos)
+    System.arraycopy(__values, 0, newVal, 0, _npos)
+    __indexs = newInd; __values = newVal
   }
-  private def ensureCapacity(cap:Int): Unit = if (_indexs.length < cap) setCapacity(math.max(cap, _indexs.length + _indexs.length/2))
+  private def ensureCapacity(cap:Int): Unit = if (__indexs.length < cap) setCapacity(math.max(cap, __indexs.length + __indexs.length/2))
+  def _values = __values
+  def _indices = __indexs
   def trim: Unit = setCapacity(_npos)
-  
   def dim1: Int = if (_length < 0) _sizeProxy.size else _length
   override def activeDomainSize: Int = { makeReadable; _npos }
-  def activeDomain1: IntSeq = { makeReadable ; new TruncatedArrayIntSeq(_indexs, _npos) } // TODO Consider making more efficient
+  def activeDomain1: IntSeq = { makeReadable ; new TruncatedArrayIntSeq(__indexs, _npos) } // TODO Consider making more efficient
   //def activeDomain = activeDomain1
-  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { var i = 0; while (i < _npos) { f(_indexs(i), _values(i)); i += 1 } }
+  override def foreachActiveElement(f:(Int,Double)=>Unit): Unit = { var i = 0; while (i < _npos) { f(__indexs(i), __values(i)); i += 1 } }
   override def activeElements: Iterator[(Int,Double)] = {
     makeReadable
     new Iterator[(Int,Double)] { // Must not change _indexs and _values during iteration!
       var i = 0
       def hasNext = i < _npos
-      def next = { i += 1 ; (_indexs(i-1), _values(i-1)) }
+      def next = { i += 1 ; (__indexs(i-1), __values(i-1)) }
     }
   }
   override def zero(): Unit = _npos = 0
-  override def sum: Double = { var s = 0.0; var i = 0; while (i < _npos) { s += _values(i); i += 1 }; s }
+  override def sum: Double = { var s = 0.0; var i = 0; while (i < _npos) { s += __values(i); i += 1 }; s }
 
   /** Return the position at which index occurs, or -1 if index does not occur. */
   def position(index:Int): Int = {
     makeReadable
     var i = 0; var ii = 0
-    while (i < _npos) { ii = _indexs(i); if (ii == index) return i else if (ii > index) return -1; i += 1 }
+    while (i < _npos) { ii = __indexs(i); if (ii == index) return i else if (ii > index) return -1; i += 1 }
     //while (i < _npos) { if (_indexs(i) == index) return i; i += 1 }
     -1
   }
   def position(index:Int, start:Int): Int = { // Just linear search for now; consider binary search with memory of last position
     makeReadable
     var i = start; var ii = 0
-    while (i < _npos) { ii = _indexs(i); if (ii == index) return i else if (ii > index) return -1; i += 1 }
+    while (i < _npos) { ii = __indexs(i); if (ii == index) return i else if (ii > index) return -1; i += 1 }
     -1
   }
 
   def apply(index:Int): Double = {
     // makeReadable is called in this.position
     val pos = position(index)
-    if (pos < 0) 0.0 else _values(pos)
+    if (pos < 0) 0.0 else __values(pos)
   }
 
   override def dot(v:DoubleSeq): Double = {
@@ -353,13 +354,13 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
         var i = 0; var j = -1; var j2 = 0
         var result = 0.0
         while (i < v1._npos) {
-          j2 = v2.position(v1._indexs(i), j+1)
-          if (j2 >= 0) { result += v1._values(i) * v2._values(j2); j = j2 }
+          j2 = v2.position(v1.__indexs(i), j+1)
+          if (j2 >= 0) { result += v1.__values(i) * v2.__values(j2); j = j2 }
           i += 1
         }
         result
       }
-      case v:DoubleSeq => { var result = 0.0; var p = 0; while (p < _npos) { result += v(_indexs(p)) * _values(p); p += 1 }; result }
+      case v:DoubleSeq => { var result = 0.0; var p = 0; while (p < _npos) { result += v(__indexs(p)) * __values(p); p += 1 }; result }
     }
   }
   
@@ -372,10 +373,10 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     throw new Error("Not yet implemented")
     var cp = start
     while (cp < end) {
-      val ci = _indexs(cp)
-      val cv = _values(cp)
+      val ci = __indexs(cp)
+      val cv = __values(cp)
       var i = cp - 1
-      while (i >= 0 && _indexs(i) >= ci) {
+      while (i >= 0 && __indexs(i) >= ci) {
         val tmpi = 
         i -= 1
       }
@@ -383,52 +384,52 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     0
   }
   
-  override def toString = "SparseIndexedTensor1 npos="+_npos+" sorted="+_sorted+" ind="+_indexs.mkString(",")+" val="+_values.mkString(",")
+  override def toString = "SparseIndexedTensor1 npos="+_npos+" sorted="+_sorted+" ind="+__indexs.mkString(",")+" val="+__values.mkString(",")
   
   @inline private def makeReadable: Unit = {
     var cp = _sorted // "current position", the position next to be placed into sorted order
     while (cp < _npos) {
       //println("cp="+cp)
-      val ci = _indexs(cp) // "current index", the index next to be placed into sorted order.
-      val cv = _values(cp) // "current value"
+      val ci = __indexs(cp) // "current index", the index next to be placed into sorted order.
+      val cv = __values(cp) // "current value"
       var i = _sorted - 1
       //println("i="+i)
       // Find the position at which the current index/value belongs
-      while (i >= 0 && _indexs(i) >= ci) i -= 1
+      while (i >= 0 && __indexs(i) >= ci) i -= 1
       i += 1
       // Put it there, shifting to make room if necessary
       //println("Placing at position "+i)
-      if (_indexs(i) == ci) { if (i != cp) _values(i) += cv else _sorted += 1 }
+      if (__indexs(i) == ci) { if (i != cp) __values(i) += cv else _sorted += 1 }
       else insert(i, ci, cv, incrementNpos=false, incrementSorted=true)
       //println("sorted="+_sorted)
       cp += 1
     }
     _npos = _sorted
-    if (_npos * 1.5 > _values.length) trim
+    if (_npos * 1.5 > __values.length) trim
   }
   
   // Caller is responsible for making sure there is enough capacity
   @inline private def insert(position:Int, index:Int, value:Double, incrementNpos:Boolean, incrementSorted:Boolean): Unit = {
     if (_npos - position > 0) {
-      System.arraycopy(_values, position, _values, position+1, _sorted-position)
-      System.arraycopy(_indexs, position, _indexs, position+1, _sorted-position)
+      System.arraycopy(__values, position, __values, position+1, _sorted-position)
+      System.arraycopy(__indexs, position, __indexs, position+1, _sorted-position)
     }
-    _indexs(position) = index
-    _values(position) = value
+    __indexs(position) = index
+    __values(position) = value
     if (incrementNpos) _npos += 1
     if (incrementSorted) _sorted += 1
   }
 
   override def update(index:Int, value:Double): Unit = {
     val p = position(index)
-    if (p >= 0) _values(p) = value
+    if (p >= 0) __values(p) = value
     else +=(index, value) 
   }
   // Efficiently support multiple sequential additions
   override def +=(index:Int, incr:Double): Unit = {
     ensureCapacity(_npos+1)
-    _indexs(_npos) = index
-    _values(_npos) = incr
+    __indexs(_npos) = index
+    __values(_npos) = incr
     _npos += 1
   }
   
@@ -437,17 +438,17 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     case t:SingletonBinaryTensorLike1 => +=(t.singleIndex, f)
     case t:SingletonTensor1 => +=(t.singleIndex, f * t.singleValue)
     case t:SparseBinaryTensorLike1 => { val a = t.asIntArray; val len = a.length; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
-    case t:SparseIndexedTensor1 => { val len = t._npos; var i = 0; while (i < len) { +=(t._indexs(i), f * t._values(i)); i += 1 }}
+    case t:SparseIndexedTensor1 => { val len = t._npos; var i = 0; while (i < len) { +=(t.__indexs(i), f * t.__values(i)); i += 1 }}
   }
-  override def =+(a:Array[Double], offset:Int, f:Double): Unit = { var i = 0; while (i < _npos) { a(_indexs(i)+offset) += f * _values(i); i += 1 }}
+  override def =+(a:Array[Double], offset:Int, f:Double): Unit = { var i = 0; while (i < _npos) { a(__indexs(i)+offset) += f * __values(i); i += 1 }}
   
   override def clone: SparseIndexedTensor1 = {
     val v: SparseIndexedTensor1 = if (_sizeProxy eq null) new SparseIndexedTensor1(_length) else new SparseIndexedTensor1(_sizeProxy)
     makeReadable
     v._npos = _npos
     v._sorted = _sorted
-    v._values = _values.clone
-    v._indexs = _indexs.clone
+    v.__values = __values.clone
+    v.__indexs = __indexs.clone
     // TODO Deal with _positions
     v
   }

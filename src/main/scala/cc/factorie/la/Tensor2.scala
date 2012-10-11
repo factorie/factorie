@@ -101,7 +101,7 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
           col += 1
         }
       case t: SparseIndexedTensor1 =>
-        val tIndices = t._indexs
+        val tIndices = t._indices
         val tValues = t._values
         var ti = 0
         while (ti < tIndices.length) {
