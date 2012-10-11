@@ -8,8 +8,9 @@ New in version 1.0.0-M1:
   - new Ontonotes Loader
   - new Nonprojective Dependency parser
 
-* BP
-  -
+* Inference
+  - Summary class now maintains the marginals, and is common to Samplers and BP
+  - Reimplementation of BP to be more efficient
 
 * Optimization & Training
   - efficient L2-regularized SVM training
@@ -17,11 +18,17 @@ New in version 1.0.0-M1:
   - support for parallel batch and online training with a Piece API
   - support for Hogwild (including Hogwild SampleRank)
 
-* Inference
-  -
+* Tensors
+  - all new la package that replaces the earlier Vector classes with Tensors
+  - Tensors can be multi-dimensional, with implementations that independently choose sparsity/singleton for each dimension
+  - weights and features now use Tensors
 
 * Serialization
-  -
+  - Serialization exists in a different class
+
+* Misc
+  - Added Tutorials to walkthrough model construction
+  - Cleaned examples so that they work (added a test that makes sure they do)
 
 New in version 0.10.2:
 * NLP
