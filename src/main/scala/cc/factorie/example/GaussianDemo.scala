@@ -9,7 +9,7 @@ object GaussianDemo {
     val mean = new DoubleVariable(10)
     val variance = new DoubleVariable(1.0)
 
-    val data = for (i <- 1 to 1000) yield new RealVariable :~ Gaussian(mean, variance)
+    val data = for (i <- 1 to 1000) yield new DoubleVariable :~ Gaussian(mean, variance)
     data.take(50).foreach(println(_))
 
     println("Original mean="+mean.value)

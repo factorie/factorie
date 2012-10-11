@@ -84,8 +84,8 @@ object DocumentClassifier3 {
     val predictor = new VariableSettingsGreedyMaximizer[Label](model)
     predictor.processAll(trainVariables)
     predictor.processAll(testVariables)
-    println ("Train accuracy = "+ HammingLossObjective.currentScorePerElement(trainVariables))
-    println ("Test  accuracy = "+ HammingLossObjective.currentScorePerElement(testVariables))
+    println ("Train accuracy = "+ HammingLossObjective.accuracy(trainVariables))
+    println ("Test  accuracy = "+ HammingLossObjective.accuracy(testVariables))
 
   }
 }

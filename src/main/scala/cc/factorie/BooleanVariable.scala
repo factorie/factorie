@@ -27,7 +27,7 @@ class BooleanDomain extends CategoricalDomain[Boolean] with ValueBound[BooleanVa
   val falseValue = super.value(false) // will get index == 0
   val trueValue = super.value(true)   // will get index == 1
   freeze
-  class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) /*with cc.factorie.BooleanValue*/ {
+  class BooleanValue(i:Int, e:Boolean) extends CategoricalValue(i, e) with cc.factorie.BooleanValue {
     override def domain = thisDomain
   }
   override protected def newCategoricalValue(i:Int, e:Boolean) = new BooleanValue(i, e)
@@ -43,6 +43,7 @@ class BooleanDomain extends CategoricalDomain[Boolean] with ValueBound[BooleanVa
   def apply(b:Boolean) = if (b) trueValue else falseValue
 }
 object BooleanDomain extends BooleanDomain
+
 object BooleanValue {
   def apply(b:Boolean) = if (b) BooleanDomain.trueValue else BooleanDomain.falseValue
 }

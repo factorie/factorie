@@ -1,3 +1,28 @@
+New in version 1.0.0-M1:
+* Models and Templates
+  - All templates are now Models
+  - Models are now parameterized by the type of things they can score
+  - It is possible to write code that does not deduplicate factors
+
+* NLP
+  - new Ontonotes Loader
+  - new Nonprojective Dependency parser
+
+* BP
+  -
+
+* Optimization & Training
+  - efficient L2-regularized SVM training
+     - integration with app.classify
+  - support for parallel batch and online training with a Piece API
+  - support for Hogwild (including Hogwild SampleRank)
+
+* Inference
+  -
+
+* Serialization
+  -
+
 New in version 0.10.2:
 * NLP
   - Customized forward-backward and viterbi for chain models

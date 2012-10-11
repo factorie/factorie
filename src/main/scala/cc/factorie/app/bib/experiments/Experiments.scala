@@ -9,7 +9,7 @@ import com.mongodb.Mongo
 import cc.factorie._
 import app.nlp.coref.{EntropyBagOfWordsPriorWithStatistics, StructuralPriorsTemplate, ChildParentCosineDistance, HierEntity}
 
-class AuthorSamplerWriter(model:TemplateModel, val labeledData:Seq[AuthorEntity], val evidenceBatches:Seq[Seq[AuthorEntity]],var initialSteps:Int=0,var snapshotInterval:Int=1000, var addDataInterval:Int=10000) extends AuthorSampler(model){
+class AuthorSamplerWriter(model:Model[Variable], val labeledData:Seq[AuthorEntity], val evidenceBatches:Seq[Seq[AuthorEntity]],var initialSteps:Int=0,var snapshotInterval:Int=1000, var addDataInterval:Int=10000) extends AuthorSampler(model){
   protected var pwOption:Option[PrintWriter]=None
   var mentionCount = labeledData.size
   def processExperiment(pw:PrintWriter,steps:Int):Unit ={

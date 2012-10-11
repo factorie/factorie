@@ -273,34 +273,15 @@ object ParserSupport {
       lazy val defaultCategory = this.head.category
     }
     class ParseDecisionVariable(targetDecision: ParseDecision, state: ParseState) extends LabeledCategoricalVariable(targetDecision) {
-    
       def this(state: ParseState) = this(DecisionDomain.defaultCategory, state)
-    
       def domain = DecisionDomain
       val features = new NonProjDependencyParserFeatures(this)
-      features ++= ParserUtils.featureGenerators.map(_.apply(state))
-    
+      features ++= ParserUtils.featureGenerators.map(_.apply(state)) //.map(s => new Hash[String](s.apply(state)))  //.map(_.apply(state))  //.map(s => new Hash[String](s))
     }
     
-    object NonProjParserFeaturesDomain extends CategoricalTensorDomain[String] {
-      var _skipNonCategories = false
+    object NonProjParserFeaturesDomain extends StringHashDomain(100000)
+    class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends HashingBinaryFeatureVectorVariable[String] {
+      override def domain = NonProjParserFeaturesDomain
     }
-    class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
-      //val decision = decisionVariable.value
-      def domain = NonProjParserFeaturesDomain
-      override def skipNonCategories = NonProjParserFeaturesDomain._skipNonCategories
-    }
-    
-//    object DecisionModel extends TemplateModel {
-//      var skipNonCategories = false
-//    
-//      val localTemplate = new TemplateWithDotStatistics2[ParseDecisionVariable, NonProjDependencyParserFeatures] {
-//        override def statisticsDomains = ((DecisionDomain, NonProjParserFeaturesDomain))
-//        def unroll1(decision: ParseDecisionVariable) = Factor(decision, decision.features)
-//        def unroll2(features: NonProjDependencyParserFeatures) = Factor(features.decisionVariable, features)
-//      }
-//    
-//      this += localTemplate
-//    }
     
 }

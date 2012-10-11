@@ -146,7 +146,8 @@ class LabeledBooleanVariable(targetVal:Boolean) extends BooleanVariable(targetVa
 class HammingLossTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
   def unroll1(aimer:A) = Factor(aimer, aimer.target)
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
-  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO 
+  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
+  def accuracy(context: Iterable[A]): Double = context.map(currentScore(_)).sum / context.size
   //def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0
 }
 object HammingLossObjective extends HammingLossTemplate[LabeledVarWithTarget]
