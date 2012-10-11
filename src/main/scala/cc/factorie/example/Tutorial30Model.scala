@@ -1,12 +1,12 @@
-/*
- * Model Tutorial
- * ==============
- * 
- * Fundamentally a Model is a container for Factors.
- * Its primary function is, given a collection of variables, to return the Factors that neighbor those variables.
- * 
- * The trait ``Model`` leaves abstract how this mapping from Variables to Factors is maintained.
- */
+/*&
+ *& Model Tutorial
+ *& ==============
+ *& 
+ *& Fundamentally a Model is a container for Factors.
+ *& Its primary function is, given a collection of variables, to return the Factors that neighbor those variables.
+ *& 
+ *& The trait ``Model`` leaves abstract how this mapping from Variables to Factors is maintained.
+ *&*/
 
 package cc.factorie.example
 
@@ -17,9 +17,9 @@ object TutorialModel {
   def main(args:Array[String]): Unit = {
     
     
-    /*
-     * Let's start by creating some Variables and Factor classes.
-     */
+    /*&
+     *& Let's start by creating some Variables and Factor classes.
+     *&*/
     val outputs: Seq[BooleanVariable] = for (i <- 0 until 10) yield new BooleanVariable
     val inputs: Seq[BooleanVariable] = for (i <- 0 until 10) yield new BooleanVariable(i % 2 == 0)
     val markovWeights = new DenseTensor2(Array(Array(1.0, 0.0), Array(0.0, 1.0))) 
