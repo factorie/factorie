@@ -113,11 +113,6 @@ class TestExamples {
     cc.factorie.example.Grid.main(emptyArgs)
   }
 
-  @Test def testLDA() {
-    // TODO: uncomment this after fixing the Gibbs sampler.
-    // cc.factorie.example.LDA.main(Array(dummyDir1))
-  }
-
   @Test def testLDA2() {
     cc.factorie.example.LDA2.main(Array(dummyDir1))
   }

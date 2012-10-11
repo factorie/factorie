@@ -120,6 +120,29 @@ class ConfidenceWeighting(val model:Model[_], var learningMargin:Double=1.0) ext
             index += 1
           }
           result = res
+        case (tlr: DenseTensor3,  grad:Dense2LayeredTensorLike3) =>
+          var i = 0
+          var res = 0.0
+          while (i < grad.dim1) {
+            var j = 0
+            while (j < grad.dim2) {
+              grad.inner(i, j) match {
+                case g: DenseTensor =>
+                  var k = 0
+                  while (k < grad.dim3) {
+                    res += g(k) * g(k) * tlr(i, j, k)
+                    k += 1
+                  }
+                case g: SparseTensor1 =>
+                  g.activeElements.foreach(x => {
+                    res += x._2 * x._2 * tlr(i, j, x._1)
+                  })
+              }
+              j += 1
+            }
+            i += 1
+            result = res
+          }
         case _ =>
           gradient(template).foreachActiveElement((index,value) => result += value*value*templateLearningRates(index))
       }
