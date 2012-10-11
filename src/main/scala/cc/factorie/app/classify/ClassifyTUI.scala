@@ -4,26 +4,60 @@ import cc.factorie._
 import app.classify
 import app.classify._
 import app.strings.SetBasedStopwords
-import java.io.{PrintStream, PrintWriter, File}
+import java.io._
+import java.util.zip.GZIPInputStream
 
 // Feature and Label classes
 
-class Label(labelName: String, val features: Features, val domain: CategoricalDomain[String]) extends LabeledCategoricalVariable(labelName)
+class Label(labelName: String, val features: Features, val domain: CategoricalDomain[String]) extends LabeledCategoricalVariable(labelName) {
+  override def toString = "instance=%s label=%s" format(features.instanceName, categoryValue)
+}
 trait Features extends DiscreteTensorVar {
   this: CategoricalTensorVariable[String] =>
   def labelName: String
+  def instanceName: String
   def domain: CategoricalTensorDomain[String]
   def labelDomain: CategoricalDomain[String]
   var label = new Label(labelName, this, labelDomain)
 }
-class BinaryFeatures(val labelName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
+class BinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
   extends BinaryFeatureVectorVariable[String] with Features {}
-class NonBinaryFeatures(val labelName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
+class NonBinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
   extends FeatureVectorVariable[String] with Features {}
 
 
 // A TUI for training, running and diagnosing classifiers
 object ClassifyTUI {
+
+  /* Sample Usages:
+  *
+  *   - Train a classifier, write to disk:
+  *
+  *     --write-vocabulary
+  *     C:\classifier-vocab
+  *     --write-classifier
+  *     C:\classifytuiclassifier
+  *     --training-portion
+  *     1.0
+  *     --read-text-encoding
+  *     ISO-8859-1
+  *     --read-text-dirs
+  *     "c:\first-directory c:\second-directory ..."
+  *
+  *   - Use that classifier to classify some new data:
+  *
+  *     --read-vocabulary
+  *     C:\classifytuivocab
+  *     --read-classifier
+  *     C:\classifytuiclassifier
+  *     --write-classifications
+  *     c:\classificationresults.txt
+  *     --read-text-encoding
+  *     ISO-8859-1
+  *     --read-text-dirs
+  *     "c:\first-directory c:\second-directory ..."
+  *
+  * */
 
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
@@ -35,7 +69,7 @@ object ClassifyTUI {
       val readTestingInstances = new CmdOption("read-testing-instances", "instances", "FILE", "Filename from which to read the testing instances' labels and features.")
 
       val readSVMLight = new CmdOption("read-svm-light", "instances", "FILE", "Filename from which to read the instances' labels and features in SVMLight format.")
-      val readBinaryFeatures = new CmdOption("read-binary-features", false, "true|false", "If true, features will be binary.")
+      val readBinaryFeatures = new CmdOption("read-binary-features", true, "true|false", "If true, features will be binary.")
 
       val readTextDirs = new CmdOption("read-text-dirs", "textdir", "DIR...", "Directories from which to read text documents; tokens become features; directory name is the label.")
       val readTextLines = new CmdOption("read-text-lines", "textfile", "FILE.txt", "Filename from which to read the instances' labels and features; first word is the label value")
@@ -48,6 +82,11 @@ object ClassifyTUI {
       val readTextExtraStopwords = new CmdOption("read-text-extra-stopwords", "stopwords.txt", "FILE", "File from which to read stopwords to add to standard list, one per line.")
       val readTextUseStoplist = new CmdOption("read-text-use-stoplist", "stoplist.txt", "FILE", "Remove words on the stoplist.")
       val readTextGramSizes = new CmdOption("read-text-gram-sizes", List(1), "1,2", "Include among the features all n-grams of sizes specified.  For example, to get all unigrams and bigrams, use --gram-sizes 1,2.  This option occurs after the removal of stop words, if removed.")
+
+      val writeVocabulary = new CmdOption("write-vocabulary", "vocabulary", "FILE", "Filename in which to save the vocabulary.")
+      val readVocabulary = new CmdOption("read-vocabulary", "vocabulary", "FILE", "Filename from which to load the vocabulary.")
+
+      val writeClassifications = new CmdOption("write-classifications", "classifications", "FILE", "Filename in which to save the classifications.")
 
       val writeClassifier = new CmdOption("write-classifier", "classifier", "FILE", "Filename in which to save the classifier.")
       val readClassifier = new CmdOption("read-classifier", "classifier", "FILE", "Filename from which to read the classifier.")
@@ -113,7 +152,15 @@ object ClassifyTUI {
     def readInstancesFromFile(fileName: String): LabelList[Label, Features] = {
       val textFile = new File(fileName)
       val text = fileToString(textFile)
-      Deserialize.readInstancesSVMLight(text)
+      Serialize.readInstancesSVMLight(text)
+    }
+
+    // Read vocabulary
+    if (opts.readVocabulary.wasInvoked) {
+      val vocabFile = new File(opts.readVocabulary.value)
+      val vocabStr = fileToString(vocabFile)
+      Serializer.deserialize(FeaturesDomain.dimensionDomain, new BufferedReader(new StringReader(vocabStr)))
+      FeaturesDomain.freeze()
     }
 
     // Read instances
@@ -123,9 +170,11 @@ object ClassifyTUI {
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
         for (file <- new File(directory).listFiles; if (file.isFile)) {
           //println ("Directory "+directory+" File "+file+" documents.size "+documents.size)
+          val labelName = directoryFile.getName
+          val instanceName = labelName + "-" + file.getName
           val features =
-            if (opts.readBinaryFeatures.value) new BinaryFeatures(directory, FeaturesDomain, LabelDomain)
-            else new NonBinaryFeatures(directory, FeaturesDomain, LabelDomain)
+            if (opts.readBinaryFeatures.value) new BinaryFeatures(labelName, instanceName, FeaturesDomain, LabelDomain)
+            else new NonBinaryFeatures(labelName, instanceName, FeaturesDomain, LabelDomain)
           // Use directory as label category
           textIntoFeatures(fileToString(file), features)
           labels += features.label
@@ -139,14 +188,31 @@ object ClassifyTUI {
       labels ++= readInstancesFromFile(opts.readInstances.value)
     }
 
+    // Write vocabulary
+    if (opts.writeVocabulary.wasInvoked) {
+      val vocabFile = new File(opts.writeVocabulary.value)
+      vocabFile.createNewFile()
+      Serializer.serialize(FeaturesDomain.dimensionDomain, new PrintStream(vocabFile), gzip = false)
+    }
+
     // if readclassifier is set, then we ignore instances labels and classify them
     if (opts.readClassifier.wasInvoked) {
-      val classifier = Deserialize.readClassifier(fileToString(new File(opts.readClassifier.value)))
-      classifier.classify(labels)
+      import Serialize._
+      val classifierFile = new File(opts.readClassifier.value)
+      val classifier = new ModelBasedClassifier[Label](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
+      Serializer.deserialize(classifier, new BufferedReader(new InputStreamReader(new FileInputStream(classifierFile))))
+      val classifications = classifier.classify(labels)
+      for (cl <- classifications) println(cl.label)
       if (opts.writeInstances.wasInvoked) {
         val instancesFile = new File(opts.writeInstances.value)
         instancesFile.createNewFile()
         Serialize.writeInstancesSVMLight(labels, new PrintStream(instancesFile))
+      }
+      if (opts.writeClassifications.wasInvoked) {
+        val classificationsFile = new File(opts.writeClassifications.value)
+        classificationsFile.createNewFile()
+        val writer = new PrintStream(classificationsFile)
+        for (cl <- classifications) Serializer.serialize(cl, writer, gzip = false)
       }
       return
     }
@@ -157,8 +223,11 @@ object ClassifyTUI {
       if (opts.readValidationInstances.wasInvoked) validationLabels ++= readInstancesFromFile(opts.readValidationInstances.value)
       if (opts.readTestingInstances.wasInvoked) testingLabels ++= readInstancesFromFile(opts.readTestingInstances.value)
     } else {
-      val (trainSet, testAndValidationSet) = labels.shuffle.split(opts.trainingPortion.value)
-      val (valSet, testSet) = testAndValidationSet.split(opts.validationPortion.value)
+      val (trainSet, testAndValidationSet) =
+        if (opts.trainingPortion == 1.0) (labels, Seq(): Seq[Label]) else labels.shuffle.split(opts.trainingPortion.value)
+      val (valSet, testSet) =
+        if (opts.validationPortion.value == 0.0) (Seq(): Seq[Label], testAndValidationSet)
+        else testAndValidationSet.split(opts.validationPortion.value / (1 - opts.trainingPortion.value))
       trainingLabels ++= trainSet
       testingLabels ++= testSet
       validationLabels ++= valSet
@@ -182,20 +251,35 @@ object ClassifyTUI {
 
     val classifier = classifierTrainer.train(trainingLabels)
 
+    println("Classifier trained in " + ((System.currentTimeMillis - start) / 1000.0) + " seconds.")
+
     if (opts.writeClassifier.wasInvoked) {
-      val trainerFile = new File(opts.writeClassifier.value)
-      trainerFile.createNewFile()
-      Serialize.writeClassifier(classifier, FeaturesDomain, new PrintStream(trainerFile))
+      val classifierFile = new File(opts.writeClassifier.value)
+      classifierFile.createNewFile()
+      import Serialize._
+      Serializer.serialize(classifier, new PrintStream(classifierFile), gzip = false)
     }
 
-    val testTrial = new classify.Trial[Label](classifier)
-    testTrial ++= testingLabels
-
-    val trainTrial = new classify.Trial[Label](classifier)
-    trainTrial ++= trainingLabels
-
-    println("Train accuracy = " + trainTrial.accuracy)
-    println("Test  accuracy = " + testTrial.accuracy)
-    println("Number of ms to train/test: " + (System.currentTimeMillis - start))
+    opts.evaluator.value match {
+      case "Trial" =>
+        if (trainingLabels.length > 0) {
+          val trainTrial = new classify.Trial[Label](classifier)
+          trainTrial ++= trainingLabels
+          println("== Training Evaluation ==")
+          println(trainTrial.toString)
+        }
+        if (testingLabels.length > 0) {
+          val testTrial = new classify.Trial[Label](classifier)
+          testTrial ++= testingLabels
+          println("== Testing Evaluation ==")
+          println(testTrial.toString)
+        }
+        if (validationLabels.length > 0) {
+          val validationTrial = new classify.Trial[Label](classifier)
+          validationTrial ++= validationLabels
+          println("== Validation Evaluation ==")
+          println(validationTrial.toString)
+        }
+    }
   }
 }

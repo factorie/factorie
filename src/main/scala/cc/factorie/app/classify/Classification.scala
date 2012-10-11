@@ -30,7 +30,8 @@ class Classification[L<:MutableDiscreteVar[_]](theLabel:L, val classifier:Classi
 
 /** A collection of Classification results, along with methods for calculating several evaluation measures.
     You can subclass Trial to add new evaluation measures. */
-class Trial[L<:LabeledMutableDiscreteVar[_]](val classifier:Classifier[L]) extends LabeledDiscreteEvaluation(classifier.labelDomain.asInstanceOf[CategoricalDomain[String]]) with IndexedSeq[Classification[L]] {
+class Trial[L<:LabeledMutableDiscreteVar[_]](val classifier:Classifier[L])
+  extends LabeledDiscreteEvaluation(classifier.labelDomain.asInstanceOf[CategoricalDomain[String]]) with IndexedSeq[Classification[L]] with ClassifierEvaluator[L] {
   private val classifications = new ArrayBuffer[Classification[L]]
   def length = classifications.length
   def apply(i:Int) = classifications(i)
@@ -40,5 +41,5 @@ class Trial[L<:LabeledMutableDiscreteVar[_]](val classifier:Classifier[L]) exten
     if (c.classifier == classifier) classifications += c
     else throw new Error("Classification.classifier does not match.")
   }
-  override def toString: String = evalString
+  override def toString: String = "OVERALL: " + overallEvalString + "\n" +  evalString
 }
