@@ -5,6 +5,7 @@ import app.classify
 import app.classify._
 import app.strings.SetBasedStopwords
 import java.io._
+import java.util.zip.GZIPInputStream
 
 // Feature and Label classes
 
@@ -27,6 +28,36 @@ class NonBinaryFeatures(val labelName: String, val instanceName: String, val dom
 
 // A TUI for training, running and diagnosing classifiers
 object ClassifyTUI {
+
+  /* Sample Usages:
+  *
+  *   - Train a classifier, write to disk:
+  *
+  *     --write-vocabulary
+  *     C:\classifier-vocab
+  *     --write-classifier
+  *     C:\classifytuiclassifier
+  *     --training-portion
+  *     1.0
+  *     --read-text-encoding
+  *     ISO-8859-1
+  *     --read-text-dirs
+  *     "c:\first-directory c:\second-directory ..."
+  *
+  *   - Use that classifier to classify some new data:
+  *
+  *     --read-vocabulary
+  *     C:\classifytuivocab
+  *     --read-classifier
+  *     C:\classifytuiclassifier
+  *     --write-classifications
+  *     c:\classificationresults.txt
+  *     --read-text-encoding
+  *     ISO-8859-1
+  *     --read-text-dirs
+  *     "c:\first-directory c:\second-directory ..."
+  *
+  * */
 
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
