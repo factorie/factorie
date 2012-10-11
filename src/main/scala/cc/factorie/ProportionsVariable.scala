@@ -291,7 +291,7 @@ class ProportionsAssignment(p:MutableProportionsVar[Proportions], v:Proportions)
 
 
 object MaximizeProportions extends Maximize {
-  import cc.factorie.generative.{GenerativeModel,Dirichlet,Discrete,Mixture,DiscreteMixture,PlatedDiscreteMixture}
+  import cc.factorie.generative.{GenerativeModel,Dirichlet,Discrete,Mixture,CategoricalMixture,PlatedDiscreteMixture}
   /*override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal]): Option[Summary[ProportionsAssignment]] = {
     if (variables.size != 1) return None
     variables.head match {
@@ -319,7 +319,7 @@ object MaximizeProportions extends Maximize {
   }
   def apply(p:ProportionsVariable, model:GenerativeModel): Unit = apply(p, model, null)
   def apply(p:ProportionsVariable, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Unit = p.set(maxProportions(p, model, summary))(null)
-  def maxProportions(p:ProportionsVariable, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Proportions = {
+  def maxProportions[A](p:ProportionsVariable, model:GenerativeModel, summary:DiscreteSummary1[DiscreteVar]): Proportions = {
     // Zero an accumulator
     var e: DenseProportions1 = new DenseProportions1(p.tensor.length) // TODO Consider instead passing this in as an argument, so that SparseProportions could be used
     // Initialize with prior; find the factor that is the parent of "p", and use its Dirichlet masses for initialization
@@ -335,12 +335,12 @@ object MaximizeProportions extends Maximize {
     }
     for (factor <- model.extendedChildFactors(p)) factor match {
       //case parent:GenerativeFactor if (parent.child == p) => {} // Parent factor of the Proportions we are estimating already incorporated above
-      // The array holding the mixture components; the individual components (DiscreteMixture.Factors) will also be among the extendedChildFactors
+      // The array holding the mixture components; the individual components (CategoricalMixture.Factors) will also be among the extendedChildFactors
       case m:Mixture.Factor => {}
       // A simple DiscreteVar child of the Proportions
       case d:Discrete.Factor => incrementForDiscreteVar(d._1, 1.0)
       // A DiscreteVar child of a Mixture[Proportions]
-      case dm:DiscreteMixture.Factor => {
+      case dm:CategoricalMixture[A]#Factor => {
         val gate = dm._3
         val gateMarginal:DiscreteMarginal1[DiscreteVar] = if (summary eq null) null else summary.marginal1(gate) 
         //val qFactors = if (qModel eq null) Nil else qModel.factors(Seq(gate))

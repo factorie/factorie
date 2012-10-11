@@ -35,7 +35,7 @@ trait MixtureFactor extends GenerativeFactor {
 
 
 // Graphical model structure of a mixture:
-// Proportions =Mixture.Factor=> Mixture[Proportions] =DiscreteMixture.Factor=> Discrete
+// Proportions =Mixture.Factor=> Mixture[Proportions] =CategoricalMixture.Factor=> Discrete
 // Proportions =/                                Gate =/
 
 // TODO I think perhaps this should be a GeneratedVars[] ContainerVariable -akm

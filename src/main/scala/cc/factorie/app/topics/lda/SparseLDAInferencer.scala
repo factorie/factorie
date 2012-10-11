@@ -7,7 +7,7 @@ import scala.Array
 class SparseLDAInferencer(
     val zDomain:DiscreteDomain,
     val wordDomain:CategoricalDomain[String],
-    var phiCounts:DiscreteMixtureCounts,
+    var phiCounts:DiscreteMixtureCounts[String],
     initialAlphas:DoubleSeq,
     initialBeta1:Double,
     model:GenerativeModel)

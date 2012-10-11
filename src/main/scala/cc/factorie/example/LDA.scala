@@ -20,9 +20,9 @@ import scala.util.matching.Regex
 import scala.io.Source
 import java.io.File
 import cc.factorie._
-import cc.factorie.generative._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
+import generative._
 
 object LDA {
   val numTopics = 10
@@ -30,7 +30,7 @@ object LDA {
   object ZDomain extends DiscreteDomain(numTopics)
   class Z(value: Int = 0) extends DiscreteVariable(value) { def domain = ZDomain }
   object WordDomain extends CategoricalDomain[String]
-  class Word(value: String) extends CategoricalVariable(value) { def domain = WordDomain; def z = model.parentFactor(this).asInstanceOf[DiscreteMixture.Factor]._3 }
+  class Word(value: String) extends CategoricalVariable(value) { def domain = WordDomain; def z = model.parentFactor(this).asInstanceOf[CategoricalMixture[String]#Factor]._3 }
   class Document(val file: String) extends ArrayBuffer[Word] {var theta: ProportionsVariable = null}
   val beta = MassesVariable.growableUniform(WordDomain, 0.1)
   val alphas = MassesVariable.dense(numTopics, 0.1)
@@ -47,7 +47,7 @@ object LDA {
         doc.theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
         for (word <- alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_))) {
           val z = new Z :~ Discrete(doc.theta)
-          doc += new Word(word) ~ DiscreteMixture(phis, z)
+          doc +=  new Word(word) :~ CategoricalMixture(phis, z)
         }
         documents += doc
       }

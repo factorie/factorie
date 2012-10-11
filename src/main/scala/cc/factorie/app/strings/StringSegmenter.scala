@@ -19,7 +19,7 @@ import java.io.InputStream
 
 trait StringSegmenter {
   def apply(s:String): Iterator[String]
-  def apply(file:java.io.File): Iterator[String] = apply(scala.io.Source.fromFile(file).mkString)
+  def apply(file:java.io.File): Iterator[String] = apply(scala.io.Source.fromFile(file, "ISO-8859-1").mkString)
   def apply(is:InputStream): Iterator[String] = apply(cc.factorie.app.strings.inputStreamToString(is))
   def apply(reader:Reader): Iterator[String] = apply(cc.factorie.app.strings.readerToString(reader))
 }
