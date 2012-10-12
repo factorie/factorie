@@ -268,6 +268,7 @@ class Parser(var mode: Int = 0) {
     for ((t, i) <- s.links.map(DepToken(_)).zipWithIndex) {
       a(i+1) = t
       a(i+1).state = state
+      a(i+1).thisIdx = i
     }
     a
   }
@@ -294,14 +295,14 @@ class Parser(var mode: Int = 0) {
     val lambda = state.stackToken(0)
     val beta = state.inputToken(0)
     lambda.setHead(beta, label, state.input)
-    beta.lmDep = lambda
+    beta.lmDepIdx = lambda.thisIdx
   }
 
   private def rightArc(label: String) {
     val lambda = state.stackToken(0)
     val beta = state.inputToken(0)
     beta.setHead(lambda, label, state.stack)
-    lambda.rmDep = beta
+    lambda.rmDepIdx = beta.thisIdx
   }
 
   private def shift() = {
