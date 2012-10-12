@@ -42,9 +42,11 @@ object DependencyFeatures {
     "b"   -> ((offset: Int) => (state: ParseState) => state.inputToken(offset)),
     "l"   -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset)),
     "s"   -> ((offset: Int) => (state: ParseState) => state.stackToken(offset)),
-    "l_h"   -> ((_: Int) => (state: ParseState) => state.lambdaToken(0))
-    //"lmd" -> 
-    //"rmd" -> 
+    "l_h" -> ((_: Int) => (state: ParseState) => state.lambdaToken(0)),
+    "l_lmd" -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset).leftmostDependent),
+    "b_lmd" -> ((offset: Int) => (state: ParseState) =>  state.stackToken(offset).leftmostDependent),
+    "l_lmd" -> ((offset: Int) => (state: ParseState) => state.lambdaToken(offset).rightmostDependent),
+    "b_lmd" -> ((offset: Int) => (state: ParseState) =>  state.stackToken(offset).rightmostDependent)
   )
 
   val formFns = HashMap(
@@ -52,7 +54,14 @@ object DependencyFeatures {
     "m"   -> ((t: DepToken) => t.lemma),
     "p"   -> ((t: DepToken) => t.pos),
     //"d"   -> ((t: DepToken) => (t.state.input - 1 == t.state.stack).toString),
-    "b0"  -> ((t: DepToken) => (t.state.lambdaToken(0) eq t.state.sentenceTokens(1)).toString()),
+    "b0"  -> ((t: DepToken) => {
+      if (t == DepToken.nullToken)
+        "null"
+      else {
+	    val s = t.state
+	    (t.state.lambdaToken(0) eq t.state.sentenceTokens(1)).toString()
+      }
+    }),
     "b1"  -> ((t: DepToken) => (t.state.stackToken(0) eq t.state.sentenceTokens.last).toString()),
     "b2"  -> ((t: DepToken) => (t.state.input - t.state.stack == 1).toString())
     //"lnpl -> 
@@ -63,7 +72,7 @@ object DependencyFeatures {
   
   def generators(locationOffsetAndForm: String): Function1[ParseState,String] = {
     
-    val LocationOffsetAndForm = """([a-z]*)[+]?([-0-9]*):([a-z]*)""".r
+    val LocationOffsetAndForm = """([a-z_]*)[+]?([-0-9]*):([a-z]*[0-9]?)""".r
 
     locationOffsetAndForm match {
       case LocationOffsetAndForm(location, offset, form) => {

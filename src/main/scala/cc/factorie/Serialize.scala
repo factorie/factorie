@@ -9,7 +9,7 @@ trait Serializer[-T] {
 }
 
 object Serializer {
-  def serialize[T](toSerialize: T, str: PrintStream, gzip: Boolean)(implicit serializer: Serializer[T]): Unit = {
+  def serialize[T](toSerialize: T, str: PrintStream, gzip: Boolean = false)(implicit serializer: Serializer[T]): Unit = {
     serializer.serialize(toSerialize, str, gzip)
   }
   def deserialize[T](deserializeTo: T, str: BufferedReader)(implicit serializer: Serializer[T]): Unit = {

@@ -19,23 +19,32 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashSet,HashMap}
 import scala.util.Random
 
-object DiscreteMixture extends GenerativeFamily3[DiscreteVariable,Mixture[ProportionsVariable],DiscreteVariable] {
-  case class Factor(override val _1:DiscreteVariable, override val _2:Mixture[ProportionsVariable], override val _3:DiscreteVariable) extends super.Factor(_1, _2, _3) with DiscreteGeneratingFactor with MixtureFactor {
+class CategoricalMixture[A] extends GenerativeFamily3[CategoricalVariable[A],Mixture[ProportionsVariable],DiscreteVariable] {
+  case class Factor(override val _1:CategoricalVariable[A], override val _2:Mixture[ProportionsVariable], override val _3:DiscreteVariable) extends super.Factor(_1, _2, _3) with DiscreteGeneratingFactor with MixtureFactor {
     def gate = _3
-    def pr(child:DiscreteValue, mixture:scala.collection.Seq[Proportions], z:DiscreteValue) = mixture(z.intValue).apply(child.intValue)
-    def sampledValue(mixture:scala.collection.Seq[Proportions], z:DiscreteValue): DiscreteValue = _1.domain.apply(mixture(z.intValue).sampleIndex)
-    def prChoosing(child:DiscreteValue, mixture:scala.collection.Seq[Proportions], mixtureIndex:Int): Double = mixture(mixtureIndex).apply(child.intValue)
+    def pr(child:CategoricalValue[A], mixture:scala.collection.Seq[Proportions], z:DiscreteValue): Double = mixture(z.intValue).apply(child.intValue)
+    def sampledValue(mixture:scala.collection.Seq[Proportions], z:DiscreteValue): CategoricalValue[A] = _1.domain.apply(mixture(z.intValue).sampleIndex)
+    def prChoosing(child:CategoricalValue[A], mixture:scala.collection.Seq[Proportions], mixtureIndex:Int): Double = mixture(mixtureIndex).apply(child.intValue)
     def prChoosing(mixtureIndex:Int): Double = _2(mixtureIndex).tensor.apply(_1.intValue)
-    def sampledValueChoosing(mixture:scala.collection.Seq[Proportions], mixtureIndex:Int): DiscreteValue = _1.domain.apply(mixture(mixtureIndex).sampleIndex)
+    def sampledValueChoosing(mixture:scala.collection.Seq[Proportions], mixtureIndex:Int): CategoricalValue[A] = _1.domain.apply(mixture(mixtureIndex).sampleIndex)
     def prValue(mixture:scala.collection.Seq[Proportions], mixtureIndex:Int, intValue:Int): Double = mixture.apply(mixtureIndex).apply(intValue)
     def prValue(intValue:Int) = prValue(_2.value.asInstanceOf[scala.collection.Seq[Proportions]], _3.intValue, intValue)
-    //override def updateCollapsedParents(weight:Double): Boolean = { _2(_3.intValue).tensor.masses.+=(_1.intValue, weight); true }
-      //_2(_3.intValue) match case p:DenseCountsProportions => { p.increment(_1.intValue, weight)(null); true }
+    override def updateCollapsedParents(weight:Double): Boolean = { _2(_3.intValue).tensor.masses.+=(_1.intValue, weight); true }
+    // _2(_3.intValue) match case p:DenseCountsProportions => { p.increment(_1.intValue, weight)(null); true }
   }
-  def newFactor(a:DiscreteVariable, b:Mixture[ProportionsVariable], c:DiscreteVariable) = Factor(a, b, c)
+  def newFactor(a: CategoricalVariable[A], b: Mixture[ProportionsVariable], c:DiscreteVariable) = new Factor(a, b, c)
+}
+object CategoricalMixture {
+  def newFactor[A](a:CategoricalVariable[A], b:Mixture[ProportionsVariable], c:DiscreteVariable): CategoricalMixture[A]#Factor = {
+    val dm = new CategoricalMixture[A]()
+    dm.Factor(a, b, c)
+  }
+  def apply[A](p1: Mixture[ProportionsVariable],p2:DiscreteVariable) = new Function1[CategoricalVariable[A],CategoricalMixture[A]#Factor] {
+    def apply(c:CategoricalVariable[A]): CategoricalMixture[A]#Factor = newFactor[A](c, p1, p2)
+  }
 }
 
-class DiscreteMixtureCounts(val discreteDomain: DiscreteDomain, val mixtureDomain: DiscreteDomain) extends Seq[SortedSparseCounts] {
+class DiscreteMixtureCounts[A](val discreteDomain: CategoricalDomain[A], val mixtureDomain: DiscreteDomain) extends Seq[SortedSparseCounts] {
 
   // counts(wordIndex).countOfIndex(topicIndex)
   private val counts = Array.fill(discreteDomain.size)(new SortedSparseCounts(mixtureDomain.size))
@@ -55,7 +64,7 @@ class DiscreteMixtureCounts(val discreteDomain: DiscreteDomain, val mixtureDomai
     assert(mixtureCounts(mixture) >= 0)
     counts(discrete).incrementCountAtIndex(mixture, incr)
   }
-  def incrementFactor(f:DiscreteMixture.Factor, incr:Int): Unit = increment(f._1.intValue, f._3.intValue, incr)
+  def incrementFactor(f:CategoricalMixture[A]#Factor, incr:Int): Unit = increment(f._1.intValue, f._3.intValue, incr)
   def incrementFactor(f:PlatedCategoricalMixture.Factor, incr:Int): Unit = {
     val discretes = f._1
     val gates = f._3
@@ -79,13 +88,14 @@ class DiscreteMixtureCounts(val discreteDomain: DiscreteDomain, val mixtureDomai
   }
 }
 
-// TODO Currently only handles Gates of a DiscreteMixture; we should make it handle GaussianMixture also.
+
+// TODO Currently only handles Gates of a CategoricalMixture; we should make it handle GaussianMixture also.
 object MaximizeGate extends Maximize {
   // Underlying workhorse
-  def maxIndex(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Int = {
+  def maxIndex[A](gate:DiscreteVariable, df:Discrete.Factor, dmf:CategoricalMixture[A]#Factor): Int = {
     var max = Double.NegativeInfinity
     var maxi = 0
-    val statistics: dmf.StatisticsType = dmf.currentStatistics //(dmf._1.value, dmf._2.value, dmf._3.value)
+    val statistics: CategoricalMixture[A]#Factor#StatisticsType = dmf.currentStatistics //(dmf._1.value, dmf._2.value, dmf._3.value)
     var i = 0; val size = gate.domain.size
     while (i < size) {
       val pr = df._2.tensor(i) * dmf.prChoosing(i)
@@ -95,17 +105,17 @@ object MaximizeGate extends Maximize {
     maxi
   }
   /** Returns -1 on failure. */
-  def maxIndex(gate:DiscreteVariable, model:Model[Variable]): Int = {
-    val factors = model.factors(Seq(gate)).toSeq
+  def maxIndex[A](gate:DiscreteVariable, model:Model[Variable]): Int = {
+    val factors = model.factors(gate).toSeq
     if (factors.size != 2) return -1
     (factors(0), factors(1)) match {
-      case (df:Discrete.Factor, dmf:DiscreteMixture.Factor) => maxIndex(gate, df, dmf)
-      case (dmf:DiscreteMixture.Factor, df:Discrete.Factor) => maxIndex(gate, df, dmf)
+      case (df:Discrete.Factor, dmf:CategoricalMixture[A]#Factor) => maxIndex(gate, df, dmf)
+      case (dmf:CategoricalMixture[A]#Factor, df:Discrete.Factor) => maxIndex(gate, df, dmf)
       case _ => -1
     }
   }
   // For typical direct callers
-  def apply(gate:DiscreteVariable, df:Discrete.Factor, dmf:DiscreteMixture.Factor): Unit = gate.set(maxIndex(gate, df, dmf))(null)
+  def apply[A](gate:DiscreteVariable, df:Discrete.Factor, dmf:CategoricalMixture[A]#Factor): Unit = gate.set(maxIndex(gate, df, dmf))(null)
   def apply(gate:DiscreteVariable, model:Model[Variable]): Unit = {
     val maxi = maxIndex(gate, model)
     if (maxi >= 0) gate.set(maxi)(null) else throw new Error("MaximizeGate unable to handle model factors.")

@@ -1,15 +1,18 @@
 package cc.factorie.app.nlp.parse.nonproj
 
 import cc.factorie._
+import cc.factorie.optimize.LinearL2SVM
+import cc.factorie.la.{WeightsTensor, Tensor1}
 import cc.factorie.app.classify._
-import cc.factorie.app.nlp
-import nlp._
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.parse.nonproj.ParserSupport._
+import collection.mutable.ListBuffer
 import collection.mutable.HashSet
 import collection.mutable.ArrayBuffer
-import ParserSupport._
-import cc.factorie.la.WeightsTensor
-import scala.collection.mutable.ListBuffer
 import java.io.File
+import java.io.PrintStream
+import java.io.BufferedReader
+import java.io.FileReader
 
 /**
  * A non-projective shift-reduce dependency parser based on Jinho Choi's thesis work and ClearNLP.
@@ -35,11 +38,28 @@ object TrainWithSVM {
     vs
   }
   
-  def trainSVM(ll: LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures]): Classifier[ParseDecisionVariable] = {
-    (new SVMTrainer()).train(ll)
+  def getEmptyModelAndTemplate[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](ll: LabelList[L, F]) = {
+    val t = new LogLinearTemplate2[L,F](ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
+    (new CombinedModel(t), t)
   }
   
-  def train(ss: Seq[Sentence]): (Classifier[ParseDecisionVariable], Seq[ParseDecisionVariable]) = {
+  def trainSVM(ll: LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures]) = {
+    val (model, template) = getEmptyModelAndTemplate(ll)
+    
+    val numLabels = ll.labelDomain.size
+    val numFeatures = ll.featureDomain.size
+    val xs: Seq[Tensor1] = ll.map(ll.labelToFeatures(_).tensor.asInstanceOf[Tensor1])
+    val ys: Array[Int]   = ll.map(_.intValue).toArray // TODO: tighten the bounds on L so targetIntValue is available here.
+    val weightTensor = (0 until numLabels).par.map { label => (new LinearL2SVM).train(xs, ys, label) }
+    for (f <- 0 until numFeatures;
+         (l,t) <- (0 until numLabels).zip(weightTensor)) {
+      template.weights(l,f) = t(f)
+    }
+
+    (model, new ModelBasedClassifier[ParseDecisionVariable](model, ll.head.domain))
+  }
+  
+  def train(ss: Seq[Sentence]) = {
     var p = new Parser()
     p.mode = 0
     val vs = generateDecisions(ss, p)
@@ -112,6 +132,7 @@ object TrainWithSVM {
       val devFiles =   new CmdOption("dev", List(""), "FILE", "") { override def required = true }
       val ontonotes = new CmdOption("onto", "", "", "")
       val cutoff    = new CmdOption("cutoff", "0", "", "")
+      val load      = new CmdOption("load", "", "", "")
       val modelDir =  new CmdOption("model", "model", "DIR", "Directory in which to save the trained model.")
     }
     opts.parse(args)
@@ -127,52 +148,38 @@ object TrainWithSVM {
     println("Total train sentences: " + sentences.size)
     println("Total test sentences: " + testSentences.size)
     
-    //var modelUrl: String = "/Users/brian/wrk-umass/factorie-parser/models/model1349188735567"
-    var modelUrl: String = null
-    var modelFile: File = null
+    var modelUrl: String = if (modelDir.wasInvoked) modelDir.value else modelDir.defaultValue + System.currentTimeMillis().toString() + ".parser"
+    var modelFile: File = new File(modelUrl)
     
     // generate training (even if predicting -- to fill domain)
-    //NonProjParserFeaturesDomain.dimensionDomain.gatherCounts = true
-    
     val trainingVs = generateDecisions(sentences, new Parser(0)) 
     
 	println("# features " + NonProjParserFeaturesDomain.dimensionDomain.size)
     
-//	NonProjParserFeaturesDomain.gatherCounts = true
-	
-//	println("Counts: " + NonProjParserFeaturesDomain.counts.toSeq.zipWithIndex.mkString("\n"))
-	
-    //NonProjParserFeaturesDomain.dimensionDomain.trimBelowCount(cutoff.value.toInt)
-    
-    //NonProjParserFeaturesDomain._skipNonCategories = true
-    
-    if (modelUrl eq null) {
-	  modelFile = new File(modelDir.value + System.currentTimeMillis() + ".liblinear")
+    if (!load.wasInvoked) {
 	  modelFile.createNewFile()
 	  
-      val m = trainSVM(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](trainingVs, lTof))
+      val (m, c) = trainSVM(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](trainingVs, lTof))
 	  
-      testAcc(m, sentences)
+      testAcc(c, sentences)
       println("Test")
       println("------------")
-      testAcc(m, testSentences)
-	  
-//      m.save(new PrintStream(modelFile))
+      testAcc(c, testSentences)
       
+      Serializer.serialize(m, new PrintStream(modelFile))
+	  
     }
     else {
       
-      throw new Error()
+      val (m, _) = getEmptyModelAndTemplate(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](Seq(trainingVs.head), lTof))
+      Serializer.deserialize(m, new BufferedReader(new FileReader(modelFile)))
       
-//      DecisionModel.skipNonCategories = true
-//      
-//	  modelFile = new File(modelUrl)
-//	  val m = SparseModel.load(modelFile)
-//	  
-//      testAcc(m, sentences)
-//      println("Test")
-//      println("------------")
-//      testAcc(m, testSentences)
+      val c = new ModelBasedClassifier[ParseDecisionVariable](m, DecisionDomain)     
+      
+      testAcc(c, sentences)
+      println("Test")
+      println("------------")
+      testAcc(c, testSentences)
       
     }
     
@@ -268,6 +275,7 @@ class Parser(var mode: Int = 0) {
     for ((t, i) <- s.links.map(DepToken(_)).zipWithIndex) {
       a(i+1) = t
       a(i+1).state = state
+      a(i+1).thisIdx = i
     }
     a
   }
@@ -294,14 +302,14 @@ class Parser(var mode: Int = 0) {
     val lambda = state.stackToken(0)
     val beta = state.inputToken(0)
     lambda.setHead(beta, label, state.input)
-    beta.lmDep = lambda
+    beta.lmDepIdx = lambda.thisIdx
   }
 
   private def rightArc(label: String) {
     val lambda = state.stackToken(0)
     val beta = state.inputToken(0)
     beta.setHead(lambda, label, state.stack)
-    lambda.rmDep = beta
+    lambda.rmDepIdx = beta.thisIdx
   }
 
   private def shift() = {

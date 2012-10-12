@@ -90,7 +90,7 @@ class SingletonMasses1(dim1:Int, singleIndex:Int, singleValue:Double) extends Si
 }
 
 class GrowableDenseMasses1(sizeProxy:Iterable[Any]) extends ProxyGrowableDenseTensor1(sizeProxy) with Masses1 with MassesWithTotal {
-  override def +=(i:Int, v:Double): Unit = { _massTotal += v; super.+=(i, v); assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
+  override def +=(i:Int, v:Double): Unit = { _massTotal += v; super.+=(i, v); assert(_massTotal >= 0.0, "_masstotal is negative: "+_massTotal); assert(_values(i) >= 0.0, "Negative value " + i + " " + _values(i)) }
 }
 
 class GrowableUniformMasses1(val sizeProxy:Iterable[Any], val uniformValue:Double) extends Masses1 with UniformTensor /*Like1 with Masses1*/ {

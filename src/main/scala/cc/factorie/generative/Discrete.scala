@@ -34,7 +34,7 @@ object Discrete extends GenerativeFamily2[DiscreteVariable,ProportionsVariable] 
     def sampledValue(p:Proportions): DiscreteValue = _1.domain.apply(p.sampleIndex)
     override def sampledValue: DiscreteValue = _1.domain.apply(_2.value.sampleIndex)
     def maxIntValue(p:Proportions): Int = p.maxIndex // TODO 
-    //@deprecated("May be deleted") override def updateCollapsedParents(weight:Double): Boolean = { _2.tensor.masses.+=(_1.intValue, weight); true }
+    override def updateCollapsedParents(weight:Double): Boolean = { _2.tensor.masses.+=(_1.intValue, weight); true }
   }
   def newFactor(a:DiscreteVariable, b:ProportionsVariable) = Factor(a, b)
   // TODO Arrange to call this in Factor construction.

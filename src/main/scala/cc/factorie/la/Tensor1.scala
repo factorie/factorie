@@ -112,6 +112,7 @@ class GrowableDenseTensor1(initialSize:Int) extends { private var _dim1 = initia
     case t:DenseTensorLike1 => { ensureDimensions(t.length); super.+=(t, f) }
     case t:SparseIndexedTensor1 => { ensureDimensions(t.length); super.+=(t, f) }
     case t:UniformTensor1 => { ensureDimensions(t.length); super.+=(t, f) }  //val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }
+    case _ => {t.foreachActiveElement((i, d) => +=(i,d))}
   }
   override def copy: GrowableDenseTensor1 = { val c = new GrowableDenseTensor1(_dim1); c := this; c }
   override def blankCopy: GrowableDenseTensor1 = new GrowableDenseTensor1(_dim1)

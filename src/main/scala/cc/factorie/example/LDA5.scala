@@ -45,6 +45,7 @@ object LDA5 {
       //val bs = new scala.collection.mutable.BitSet
       for (i <- 0 until doc.length) {
         //if (!bs.contains(doc.zs.intValue(i)))
+        if (!doc.timeStamp.isNaN)
           topic2times(doc.zs.intValue(i)) += doc.timeStamp
         //bs += doc.zs.intValue(i)
       }
@@ -53,8 +54,8 @@ object LDA5 {
     }
     println("topic2times counts "+topic2times.map(_.length).toSeq)
     topic2times.foreach(a => println(topic2times.indexOf(a)+"  "+a.toSeq.groupBy(a=>a).map(t => (t._1, t._2.length)).toSeq.sortBy(t => t._1)))
-    val topic2mean = Array.tabulate(numTopics)(i => maths.sampleMean(topic2times(i)))
-    val topic2variance = Array.tabulate(numTopics)(i => maths.sampleVariance(topic2times(i), topic2mean(i)))
+    val topic2mean = Array.tabulate(numTopics)(i => if (topic2times(i).length > 0) maths.sampleMean(topic2times(i)) else 0.5)
+    val topic2variance = Array.tabulate(numTopics)(i => if (topic2times(i).length > 0) maths.sampleVariance(topic2times(i), topic2mean(i)) else 0.25)
     timeMeans := topic2mean
     for (i <- 0 until numTopics) {
       timeAlphas(i) = cc.factorie.generative.MaximizeBetaByMomentMatching.maxAlpha(topic2mean(i), topic2variance(i))
@@ -80,7 +81,7 @@ object LDA5 {
         val theta = ProportionsVariable.sortedSparseCounts(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_ toLowerCase).filter(!stopwords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
-        val doc = new Document(file.toString, theta, zs, tokens) ~ PlatedDiscreteMixture(phis, zs)
+        val doc = new Document(file.toString, theta, zs, tokens) ~ PlatedCategoricalMixture(phis, zs)
         doc.time = file.lastModified
         documents += doc
       }
