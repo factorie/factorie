@@ -244,6 +244,7 @@ object ClassifyTUI {
       case "MaxEntLikelihoodTrainer" => new MaxEntLikelihoodTrainer()
       case "MaxEntSampleRankTrainer" => new MaxEntSampleRankTrainer()
       case "NaiveBayesTrainer" => new NaiveBayesTrainer()
+      case "SVMTrainer" => new SVMTrainer()
       case e => throw new IllegalArgumentException("Unknown ClassifierTrainer: " + e)
     }
 

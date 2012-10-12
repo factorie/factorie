@@ -35,10 +35,6 @@ object Serialize {
     }
   }
 
-  //  def writeInstances(labels: LabelList[Label, Features], out: PrintStream): Unit = {
-  //
-  //  }
-
   def writeInstancesSVMLight(labels: Iterable[Label], out: PrintStream): Unit = {
     for (label <- labels) {
       val labelStr = new StringBuilder
@@ -52,14 +48,6 @@ object Serialize {
       out.append(labelStr)
     }
   }
-
-  //  def writeClassifications(labels: Classification[Features], out: PrintStream): Unit = {
-  //
-  //  }
-
-  //  def readInstances(instancesString: String): LabelList[Label, Features] = {
-  //
-  //  }
 
   def readInstancesSVMLight(instancesString: String): LabelList[Label, Features] = {
     object FeaturesDomain extends CategoricalTensorDomain[String]
@@ -80,9 +68,4 @@ object Serialize {
     }
     instances
   }
-
-  //  def readClassifications(labels: Classification[Features], out: PrintStream): Unit = {
-  //
-  //  }
-
 }
