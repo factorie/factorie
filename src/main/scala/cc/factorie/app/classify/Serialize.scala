@@ -14,7 +14,7 @@ import java.util.zip.GZIPOutputStream
 object Serialize {
 
   implicit object ClassificationSerializer extends Serializer[Classification[Label]] {
-    def serialize(toSerialize: Classification[Label], str: PrintStream, gzip: Boolean) = {
+    def serialize(toSerialize: Classification[Label], str: PrintStream, gzip: Boolean = false) = {
       val writer = new PrintWriter(if (gzip) new GZIPOutputStream(str) else str)
       writer.println(toSerialize.label)
       writer.flush()
@@ -23,7 +23,7 @@ object Serialize {
   }
 
   implicit object ClassifierSerializer extends Serializer[Classifier[Label]] {
-    def serialize(toSerialize: Classifier[Label], str: PrintStream, gzip: Boolean) = toSerialize match {
+    def serialize(toSerialize: Classifier[Label], str: PrintStream, gzip: Boolean = false) = toSerialize match {
       case cls: ModelBasedClassifier[Label] =>
         Serializer.serialize(cls.labelDomain.asInstanceOf[CategoricalDomain[String]], str, gzip)
         Serializer.serialize(cls.model, str, gzip)
