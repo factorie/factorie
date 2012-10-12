@@ -197,7 +197,7 @@ object ClassifyTUI {
       import Serialize._
       val classifierFile = new File(opts.readClassifier.value)
       val classifier = new ModelBasedClassifier[Label](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
-      Serializer.deserialize(classifier, classifierFile, gzip = false)
+      Serializer.deserialize(classifier, classifierFile, gzip = true)
       val classifications = classifier.classify(labels)
       for (cl <- classifications) println(cl.label)
       if (opts.writeInstances.wasInvoked) {
@@ -252,7 +252,7 @@ object ClassifyTUI {
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
       import Serialize._
-      Serializer.serialize(classifier, classifierFile, gzip = false)
+      Serializer.serialize(classifier, classifierFile, gzip = true)
     }
 
     opts.evaluator.value match {

@@ -15,12 +15,14 @@ object Serializer {
     val fileStream = new FileOutputStream(file)
     val writer = new PrintStream(if (gzip) new GZIPOutputStream(fileStream) else fileStream)
     serializer.serialize(toSerialize, writer)
+    writer.close()
   }
 
   def deserialize[T](deserializeTo: T, file: File, gzip: Boolean = false)(implicit serializer: Serializer[T]): Unit = {
     val fileStream = new FileInputStream(file)
     val str = new BufferedReader(new InputStreamReader(if (gzip) new GZIPInputStream(new BufferedInputStream(fileStream)) else fileStream))
     serializer.deserialize(deserializeTo, str)
+    str.close()
   }
 
   def serialize[T](toSerialize: T, str: PrintStream)(implicit serializer: Serializer[T]): Unit = {
