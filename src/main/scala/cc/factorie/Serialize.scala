@@ -4,22 +4,37 @@ import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 trait Serializer[-T] {
-  def serialize(toSerialize: T, str: PrintStream, gzip: Boolean): Unit
+  def serialize(toSerialize: T, str: PrintStream): Unit
   def deserialize(deserializeTo: T, str: BufferedReader): Unit
 }
 
 object Serializer {
-  def serialize[T](toSerialize: T, str: PrintStream, gzip: Boolean = false)(implicit serializer: Serializer[T]): Unit = {
-    serializer.serialize(toSerialize, str, gzip)
+
+  def serialize[T](toSerialize: T, file: File, gzip: Boolean = false)(implicit serializer: Serializer[T]): Unit = {
+    file.createNewFile()
+    val fileStream = new FileOutputStream(file)
+    val writer = new PrintStream(if (gzip) new GZIPOutputStream(fileStream) else fileStream)
+    serializer.serialize(toSerialize, writer)
   }
+
+  def deserialize[T](deserializeTo: T, file: File, gzip: Boolean = false)(implicit serializer: Serializer[T]): Unit = {
+    val fileStream = new FileInputStream(file)
+    val str = new BufferedReader(new InputStreamReader(if (gzip) new GZIPInputStream(new BufferedInputStream(fileStream)) else fileStream))
+    serializer.deserialize(deserializeTo, str)
+  }
+
+  def serialize[T](toSerialize: T, str: PrintStream)(implicit serializer: Serializer[T]): Unit = {
+    serializer.serialize(toSerialize, str)
+  }
+
   def deserialize[T](deserializeTo: T, str: BufferedReader)(implicit serializer: Serializer[T]): Unit = {
     serializer.deserialize(deserializeTo, str)
   }
 
   implicit object CategoricalDomainSerializer extends Serializer[CategoricalDomain[String]] {
 
-    def serialize(domain: CategoricalDomain[String], str: PrintStream, gzip: Boolean): Unit = {
-      val writer = new PrintWriter(if (gzip) new GZIPOutputStream(str) else str)
+    def serialize(domain: CategoricalDomain[String], str: PrintStream): Unit = {
+      val writer = new PrintWriter(str)
       if (domain.frozen) writer.println("#frozen = true") else writer.println("#frozen = false")
       for (e <- domain.iterator) {
         if (e.toString.contains("\n")) throw new Error("Cannot save Domain with category String containing newline.")
@@ -30,7 +45,6 @@ object Serializer {
     }
 
     def deserialize(domain: CategoricalDomain[String], reader: BufferedReader): Unit = {
-      //    val reader = new BufferedReader(new InputStreamReader(if (gzip) new GZIPInputStream(data) else data))
       var line = reader.readLine
       var willFreeze = false
       if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
@@ -42,14 +56,13 @@ object Serializer {
           domain.index(domain.string2T(line))
       }
       if (willFreeze) {domain.freeze(); domain._frozenByLoader = true}
-//      reader.close()
     }
   }
 
   object DotFamilySerializer extends Serializer[DotFamily] {
 
-    def serialize(dotFamily: DotFamily, str: PrintStream, gzip: Boolean): Unit = {
-      val writer = new PrintWriter(if (gzip) new GZIPOutputStream(str) else str)
+    def serialize(dotFamily: DotFamily, str: PrintStream): Unit = {
+      val writer = new PrintWriter(str)
       for (weight <- dotFamily.weights.activeElements; if (weight._2 != 0.0)) {
         //      println("writing: " + weight)
         writer.print(weight._1)
@@ -61,7 +74,6 @@ object Serializer {
     }
 
     def deserialize(dotFamily: DotFamily, reader: BufferedReader): Unit = {
-      //    val reader = new BufferedReader(new InputStreamReader(if (gzip) new GZIPInputStream(data) else data), 1)
       var line = ""
       while ( {line = reader.readLine; line != null && line != "#end"}) {
         //      println("reading: " + line)
@@ -71,18 +83,15 @@ object Serializer {
         val value = fields(1).toDouble
         dotFamily.weights(index) = value
       }
-      //    reader.close()
     }
   }
 
   implicit object FamilySerializer extends Serializer[Family] {
-
-    def serialize(family: Family, str: PrintStream, gzip: Boolean): Unit = {
+    def serialize(family: Family, str: PrintStream): Unit = {
       family match {
-        case df: DotFamily => DotFamilySerializer.serialize(df, str, gzip)
+        case df: DotFamily => DotFamilySerializer.serialize(df, str)
       }
     }
-
     def deserialize(family: Family, reader: BufferedReader): Unit = {
       family match {
         case df: DotFamily => DotFamilySerializer.deserialize(df, reader)
@@ -91,11 +100,9 @@ object Serializer {
   }
 
   implicit object ModelSerializer extends Serializer[Model[_]] {
-
-    def serialize(m: Model[_], str: PrintStream, gzip: Boolean): Unit = {
-      m.families.foreach(Serializer.serialize(_, str, gzip))
+    def serialize(m: Model[_], str: PrintStream): Unit = {
+      m.families.foreach(Serializer.serialize(_, str))
     }
-
     def deserialize(model: Model[_], reader: BufferedReader): Unit = {
       model.families.foreach(Serializer.deserialize(_, reader))
     }

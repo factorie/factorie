@@ -25,7 +25,6 @@ class BinaryFeatures(val labelName: String, val instanceName: String, val domain
 class NonBinaryFeatures(val labelName: String, val instanceName: String, val domain: CategoricalTensorDomain[String], val labelDomain: CategoricalDomain[String])
   extends FeatureVectorVariable[String] with Features {}
 
-
 // A TUI for training, running and diagnosing classifiers
 object ClassifyTUI {
 
@@ -158,8 +157,7 @@ object ClassifyTUI {
     // Read vocabulary
     if (opts.readVocabulary.wasInvoked) {
       val vocabFile = new File(opts.readVocabulary.value)
-      val vocabStr = fileToString(vocabFile)
-      Serializer.deserialize(FeaturesDomain.dimensionDomain, new BufferedReader(new StringReader(vocabStr)))
+      Serializer.deserialize(FeaturesDomain.dimensionDomain, vocabFile)
       FeaturesDomain.freeze()
     }
 
@@ -191,8 +189,7 @@ object ClassifyTUI {
     // Write vocabulary
     if (opts.writeVocabulary.wasInvoked) {
       val vocabFile = new File(opts.writeVocabulary.value)
-      vocabFile.createNewFile()
-      Serializer.serialize(FeaturesDomain.dimensionDomain, new PrintStream(vocabFile), gzip = false)
+      Serializer.serialize(FeaturesDomain.dimensionDomain, vocabFile)
     }
 
     // if readclassifier is set, then we ignore instances labels and classify them
@@ -200,7 +197,7 @@ object ClassifyTUI {
       import Serialize._
       val classifierFile = new File(opts.readClassifier.value)
       val classifier = new ModelBasedClassifier[Label](new LogLinearModel[Label, Features](_.features, LabelDomain, FeaturesDomain), LabelDomain)
-      Serializer.deserialize(classifier, new BufferedReader(new InputStreamReader(new FileInputStream(classifierFile))))
+      Serializer.deserialize(classifier, classifierFile, gzip = false)
       val classifications = classifier.classify(labels)
       for (cl <- classifications) println(cl.label)
       if (opts.writeInstances.wasInvoked) {
@@ -210,9 +207,7 @@ object ClassifyTUI {
       }
       if (opts.writeClassifications.wasInvoked) {
         val classificationsFile = new File(opts.writeClassifications.value)
-        classificationsFile.createNewFile()
-        val writer = new PrintStream(classificationsFile)
-        for (cl <- classifications) Serializer.serialize(cl, writer, gzip = false)
+        for (cl <- classifications) Serializer.serialize(cl, classificationsFile)
       }
       return
     }
@@ -256,9 +251,8 @@ object ClassifyTUI {
 
     if (opts.writeClassifier.wasInvoked) {
       val classifierFile = new File(opts.writeClassifier.value)
-      classifierFile.createNewFile()
       import Serialize._
-      Serializer.serialize(classifier, new PrintStream(classifierFile), gzip = false)
+      Serializer.serialize(classifier, classifierFile, gzip = false)
     }
 
     opts.evaluator.value match {
