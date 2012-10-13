@@ -14,6 +14,10 @@
 
 package cc.factorie
 
+trait RefDomain extends Domain[AnyRef]
+object RefDomain extends RefDomain
+// TODO Use the above
+
 /** A Variable whose value is a pointer to a Scala object (which may also be a Variable) */
 trait RefVar[A<:AnyRef] extends Variable with VarAndValueGenericDomain[RefVar[A],A] 
 

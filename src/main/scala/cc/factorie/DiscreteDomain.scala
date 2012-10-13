@@ -62,7 +62,7 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
     case dv:DiscreteValue => Some(dv.intValue)
     case _ => None
   }//if (value.domain == this) Some(value.intValue) else None
-  override def iterator: Iterator[Value] = _elements.iterator
+  override def iterator: Iterator[Value] = _elements.iterator // TODO Remove this method.
   def getAll(c: Iterator[Int]) = c map apply
   def getAll(c: List[Int]) = c map apply
   def getAll(c: Array[Int]) = c map apply
@@ -70,12 +70,13 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
 
   protected class DiscreteValue(val singleIndex:Int) extends cc.factorie.DiscreteValue {
     def domain = thisDomain
-    override def toString = intValue.toString
     override def equals(other:Any): Boolean = 
       other match { case other:DiscreteValue => this.intValue == other.intValue; case _ => false }
+    // TODO Above we shouldn't be also insisting that the Domain objects match?
   }
   
   // Serialization
+  // TODO Remove this, once exterior serialization is set.
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" })
     val writer = new PrintWriter(new BufferedOutputStream({
