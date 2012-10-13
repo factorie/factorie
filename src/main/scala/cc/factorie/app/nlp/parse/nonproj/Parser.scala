@@ -154,6 +154,8 @@ object TrainWithSVM {
     // generate training (even if predicting -- to fill domain)
     val trainingVs = generateDecisions(sentences, new Parser(0)) 
     
+    NonProjParserFeaturesDomain.freeze()
+    
 	println("# features " + NonProjParserFeaturesDomain.dimensionDomain.size)
     
     if (!load.wasInvoked) {

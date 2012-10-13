@@ -201,12 +201,13 @@ object ParserSupport {
       def this(state: ParseState) = this(DecisionDomain.defaultCategory, state)
       def domain = DecisionDomain
       val features = new NonProjDependencyParserFeatures(this)
-      features ++= ParserUtils.featureGenerators.map(_.apply(state)) //.map(s => new Hash[String](s.apply(state)))  //.map(_.apply(state))  //.map(s => new Hash[String](s))
+      features ++= ParserUtils.featureGenerators.map(_.apply(state))
     }
     
     object NonProjParserFeaturesDomain extends CategoricalTensorDomain[String] //StringHashDomain(6000000)
     class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
       override def domain = NonProjParserFeaturesDomain
+      override def skipNonCategories = domain.dimensionDomain.frozen
     }
     
 }
