@@ -204,8 +204,8 @@ object ParserSupport {
       features ++= ParserUtils.featureGenerators.map(_.apply(state)) //.map(s => new Hash[String](s.apply(state)))  //.map(_.apply(state))  //.map(s => new Hash[String](s))
     }
     
-    object NonProjParserFeaturesDomain extends StringHashDomain(100000)
-    class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends HashingBinaryFeatureVectorVariable[String] {
+    object NonProjParserFeaturesDomain extends CategoricalTensorDomain[String] //StringHashDomain(6000000)
+    class NonProjDependencyParserFeatures(val decisionVariable: ParseDecisionVariable) extends BinaryFeatureVectorVariable[String] {
       override def domain = NonProjParserFeaturesDomain
     }
     
