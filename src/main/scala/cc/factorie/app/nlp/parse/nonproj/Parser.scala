@@ -166,13 +166,13 @@ object TrainWithSVM {
       println("------------")
       testAcc(c, testSentences)
       
-      Serializer.serialize(m, new PrintStream(modelFile))
+      Serializer.serialize(m, modelFile, gzip = true)
 	  
     }
     else {
       
       val (m, _) = getEmptyModelAndTemplate(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](Seq(trainingVs.head), lTof))
-      Serializer.deserialize(m, new BufferedReader(new FileReader(modelFile)))
+      Serializer.deserialize(m, modelFile, gzip = true)
       
       val c = new ModelBasedClassifier[ParseDecisionVariable](m, DecisionDomain)     
       
