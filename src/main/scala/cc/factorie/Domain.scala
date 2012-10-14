@@ -32,6 +32,9 @@ import util.ClassPathUtils
     @author Andrew McCallum
     @since 0.8 */
 trait Domain[+VT] extends ValueBound[VT] {
+  // TODO Resolve issue below.
+  //def contains(value:Any): Boolean = true // TODO Make this do something reasonable // Can't use this because SeqLike defines it. "hasValue" insetad?
+  // Remove "save" and "load".  Serialization should be external to this class.
   /** Serialize this domain to disk in the given directory. */
   def save(dirname:String, gzip: Boolean = false): Unit = {}
   /** Deserialize this domain from disk in the given directory. */
@@ -40,6 +43,7 @@ trait Domain[+VT] extends ValueBound[VT] {
   def filename:String = this.getClass.getName
 }
 
+// TODO Or should this extend Iterable[VT] directly?  Yes, I think so.  DiscreteDomain does. -akm
 /** A domain that provides an Iterable[] over its values. */
 trait IterableDomain[+VT] extends Domain[VT] {
   def values: Iterable[VT]
@@ -51,6 +55,7 @@ object GenericDomain extends Domain[Any]
 
 /** Add this trait to a Variable to give it a Domain with Value type VT. */
 // TODO Consider removing [This] self type argument.
+// TODO Get rid of this?  Yes, I think so. -akm
 trait VarAndValueGenericDomain[+This<:Variable,+VT] extends ValueBound[VT] {
   this: This =>
   //type ValueType = VT

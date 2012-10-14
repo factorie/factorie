@@ -14,13 +14,16 @@
 
 package cc.factorie
 
-trait DoubleDomain extends Domain[Double]
-object DoubleDomain extends DoubleDomain
+trait DoubleDomain extends Domain[Double] {
+  def minValue = Double.MinValue
+  def maxValue = Double.MaxValue
+}
+object DoubleDomain extends DoubleDomain { type Value = Double }
 
 // Because this has ValueType[Double] this is not unified with RealSingletonVectorVar
 /** A Variable with a real (double) value. */
 trait DoubleVar extends ScalarVar with Var[Double] {
-  def domain = DoubleDomain
+  def domain: DoubleDomain = DoubleDomain
   @inline final def value: Double = doubleValue
   def doubleValue: Double
   def intValue: Int = doubleValue.toInt
