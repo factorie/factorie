@@ -4,7 +4,9 @@ import cc.factorie.random
 import cc.factorie.la.Tensor1
 import cc.factorie.la.DenseTensor1
 
-class LiblinearL2SV(lossType: Int = 0, cost: Double = 0.1, eps: Double = 1e-5, bias: Double = -1, maxIterations: Int = 1000) {
+
+// This is based on the algorithm implemented in liblinear
+class LinearL2SVM(lossType: Int = 0, cost: Double = 0.1, eps: Double = 1e-5, bias: Double = -1, maxIterations: Int = 1000) {
 
   @inline private final def GETI(y: Array[Byte], i: Int) = y(i) + 1
   @inline private final def swap(a: Array[Int], i0: Int, i1: Int) { val t = a(i0); a(i0) = a(i1); a(i1) = t }

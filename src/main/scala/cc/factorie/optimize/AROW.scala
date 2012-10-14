@@ -72,10 +72,25 @@ class ConfidenceWeighting(val model:Model[_], var learningMargin:Double=1.0) ext
       val templateWeights = weights(template)
       val templateGradient = gradient(template)
       val templateLearningRates = sigma(template)
-      templateGradient.foreachActiveElement((index,value) => {
-        templateLearningRates(index) = 1.0/((1.0/templateLearningRates(index))
-          + 2*learningRate*gaussDeviate*value*value)
-      })
+      (templateGradient, templateLearningRates) match {
+        case (tg: DenseTensor, tlr: DenseTensor) =>
+          val tgArr = tg.asArray
+          val tlrArr = tlr.asArray
+          var i = 0
+          while (i < tgArr.length) {
+            val value = tgArr(i)
+            tlrArr(i) = 1.0/((1.0/tlrArr(i))
+              + 2*learningRate*gaussDeviate*value*value)
+            i += 1
+          }
+        case _ =>
+          val gradIter = templateGradient.activeElements
+          while (gradIter.hasNext) {
+            val (index, value) = gradIter.next()
+            templateLearningRates(index) = 1.0/((1.0/templateLearningRates(index))
+              + 2*learningRate*gaussDeviate*value*value)
+          }
+      }
     }
   }
   def calculateLearningRate(gradient: WeightsTensor,margin:Double): Double = {
@@ -87,13 +102,51 @@ class ConfidenceWeighting(val model:Model[_], var learningMargin:Double=1.0) ext
       return 0.0
     if (marginVar > zeroEpsilon || marginVar < -zeroEpsilon)
       lambda = (-v + math.sqrt(v * v - 8 * gaussDeviate * (marginMean - gaussDeviate * marginVar))) / (4 * gaussDeviate * marginVar);
-    math.max(0, lambda);
+    math.max(0, lambda)
   }
   def marginVariance(gradient:WeightsTensor):Double ={
     var result = 0.0
     for(template <- gradient.families){
       val templateLearningRates=sigma(template)
-      gradient(template).foreachActiveElement((index,value) => result += value*value*templateLearningRates(index))
+      (templateLearningRates, gradient(template)) match {
+        case (tlr: DenseTensor, grad: DenseTensor) =>
+          val gradArr = grad.asArray
+          val tlrArr = tlr.asArray
+          var index = 0
+          var res = 0.0
+          while (index < gradArr.length) {
+            val value = gradArr(index)
+            res += value * value * tlrArr(index)
+            index += 1
+          }
+          result = res
+        case (tlr: DenseTensor3,  grad:Dense2LayeredTensorLike3) =>
+          var i = 0
+          var res = 0.0
+          while (i < grad.dim1) {
+            var j = 0
+            while (j < grad.dim2) {
+              grad.inner(i, j) match {
+                case g: DenseTensor =>
+                  var k = 0
+                  while (k < grad.dim3) {
+                    res += g(k) * g(k) * tlr(i, j, k)
+                    k += 1
+                  }
+                case g: SparseTensor1 =>
+                  g.activeElements.foreach(x => {
+                    res += x._2 * x._2 * tlr(i, j, x._1)
+                  })
+              }
+              j += 1
+            }
+            i += 1
+            result = res
+          }
+        case _ =>
+          gradient(template).foreachActiveElement((index,value) => result += value*value*templateLearningRates(index))
+      }
+
     }
     result
   }

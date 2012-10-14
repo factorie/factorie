@@ -24,6 +24,7 @@ class CollapsedGibbsSampler(collapse:Iterable[Variable], val model:GenerativeMod
   val handlers = new ArrayBuffer[CollapsedGibbsSamplerHandler]
   def defaultHandlers = Seq(
       PlatedGateDiscreteCollapsedGibbsSamplerHandler,
+      PlatedGateGategoricalCollapsedGibbsSamplerHandler,
       GateCollapsedGibbsSamplerHandler, 
       //PlatedMixtureChoiceCollapsedDirichletGibbsSamplerHandler,
       GeneratedVarCollapsedGibbsSamplerHandler
@@ -149,7 +150,7 @@ object GateCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
         //throw new Error
         distribution(i) = /*gStat.prValue(i) * */ 
           gFactor.prValue(i) // * mFactor.prChoosing(i) // TODO Re-implement these methods so that they don't allocate new Statistics objects with each call
-        throw new Error("Not yet implemented") 
+        throw new Error("Not yet implemented")
         sum += distribution(i)
       })
       assert(sum == sum, "Distribution sum is NaN")
@@ -177,6 +178,60 @@ object PlatedGateDiscreteCollapsedGibbsSamplerHandler extends CollapsedGibbsSamp
   }
     
   class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedDiscreteMixture.Factor) extends CollapsedGibbsSamplerClosure
+  {
+    def sample(implicit d:DiffList = null): Unit = {
+      val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];
+      val domainSize = gates(0).domain.size
+      val distribution = new Array[Double](domainSize)
+      val gParent = gFactor._2.asInstanceOf[ProportionsVariable]
+      val gParentCollapsed = sampler.isCollapsed(gParent)
+      val mixture = mFactor._2.asInstanceOf[Mixture[ProportionsVariable]]
+      val mixtureCollapsed = sampler.isCollapsed(mixture)
+      for (index <- 0 until gates.length) {
+        val outcomeIntValue = mFactor._1(index).intValue
+        // Remove sufficient statistics from collapsed dependencies
+        var z: Int = gates(index).intValue
+        if (gParentCollapsed) gParent.incrementMasses(z, -1.0)
+        if (mixtureCollapsed) mixture(z).incrementMasses(outcomeIntValue, -1.0)
+        // Calculate distribution of new value
+        //val mStat = mFactor.statistics
+        //val gStat = gFactor.statistics
+        var sum = 0.0
+        java.util.Arrays.fill(distribution, 0.0)
+        var i = 0
+        while (i < domainSize) {
+          distribution(i) = gParent.tensor(i) * mixture(i).tensor(outcomeIntValue)
+          sum += distribution(i)
+          i += 1
+        }
+        assert(sum == sum, "Distribution sum is NaN")
+        assert(sum != Double.PositiveInfinity, "Distrubtion sum is infinity.")
+        // Sample
+        // sum can be zero for a new word in the domain and a non-collapsed growable Proportions has not yet placed non-zero mass there
+        if (sum == 0) z = cc.factorie.random.nextInt(domainSize)
+        else z = cc.factorie.maths.nextDiscrete(distribution, sum)(cc.factorie.random)
+        gates.set(index, z)(null)
+        // Put back sufficient statistics of collapsed dependencies
+        if (gParentCollapsed) gParent.incrementMasses(z, 1.0)
+        if (mixtureCollapsed) mixture(z).incrementMasses(outcomeIntValue, 1.0)
+      }
+    }
+  }
+}
+
+
+
+object PlatedGateGategoricalCollapsedGibbsSamplerHandler extends CollapsedGibbsSamplerHandler {
+  def sampler(v:Iterable[Variable], factors:Iterable[Factor], sampler:CollapsedGibbsSampler): CollapsedGibbsSamplerClosure = {
+    if (v.size != 1 || factors.size != 2) return null
+    val gFactor = factors.collectFirst({case f:PlatedDiscrete.Factor => f}) // TODO Should be any DiscreteGeneratingFamily#Factor => f
+    val mFactor = factors.collectFirst({case f:PlatedCategoricalMixture.Factor => f})
+    if (gFactor == None || mFactor == None) return null
+    assert(gFactor.get._1 == mFactor.get._3)
+    new Closure(sampler, gFactor.get, mFactor.get)
+  }
+
+  class Closure(val sampler:CollapsedGibbsSampler, val gFactor:PlatedDiscrete.Factor, val mFactor:PlatedCategoricalMixture.Factor) extends CollapsedGibbsSamplerClosure
   {
     def sample(implicit d:DiffList = null): Unit = {
       val gates = mFactor._3.asInstanceOf[DiscreteSeqVariable];

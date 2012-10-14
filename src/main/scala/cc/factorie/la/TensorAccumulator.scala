@@ -44,14 +44,16 @@ class LocalTensorAccumulator(val tensor: WeightsTensor) extends TensorAccumulato
         val t1Size = t1.size
         val myTValues = myT.asArray
         val t1Values = t1.asArray
+        val t2Indices = t2._indices
+        val t2Values = t2._values
         var idx1 = 0
         while (idx1 < t1Size) {
           val v1 = t1Values(idx1)
           val offset = t2Size * idx1
           var t2i = 0
-          while (t2i < t2._indexs.length) {
-            val idx2 = t2._indexs(t2i)
-            val v2 = t2._values(t2i)
+          while (t2i < t2Indices.length) {
+            val idx2 = t2Indices(t2i)
+            val v2 = t2Values(t2i)
             myTValues(offset + idx2) += (v1 * v2)
             t2i += 1
           }

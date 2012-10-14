@@ -122,7 +122,7 @@ object POS {
     val labels = sentences.flatMap(s => s.tokens.map(_.posLabel))
     labels.map(_.setRandomly())
     sentences.map(predictSentence(_))
-    println(label + " accuracy: " + PosObjective.currentScorePerElement(labels) + "%")
+    println(label + " accuracy: " + PosObjective.accuracy(labels) + "%")
   }
 
   var modelLoaded = false

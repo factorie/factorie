@@ -24,7 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 class Collapse(val model:GenerativeModel) {
   val collapsers = new ArrayBuffer[Collapser] ++= Seq(DenseCountsProportionsCollapser, DenseCountsProportionsMixtureCollapser)
   def apply(variables:Seq[Variable]): Unit = {
-    val factors = model.factors(variables)
+    val factors = new Variable2IterableModel(model).factors(variables)
     // This next line does the collapsing
     val option = collapsers.find(_.collapse(variables, factors, model))
     if (option == None) throw new Error("No collapser found for factors "+factors.take(10).map(_ match { case f:Family#Factor => f.family.getClass; case f:Factor => f.getClass }).mkString(" "))
@@ -68,15 +68,21 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
     variables.head match {
       case m:Mixture[ProportionsVar] => {
         if (!m(0).isInstanceOf[ProportionsVar]) return false // Because JVM erasure doesn't actually check the [DenseCountsProportions] above
-        m.foreach(p => { p.value.masses.zero(); model.parentFactor(p) match { case f:Dirichlet.Factor => p.value.masses.+=(f._2.tensor) } } )
+        m.foreach(p => {
+          p.value.masses.zero()
+          model.parentFactor(p) match {
+            case f:Dirichlet.Factor => p.value.masses.+=(f._2.tensor)
+          }
+        })
         // TODO We really should create a mechanism indicating that a variable/factor is deterministic 
         //  and GenerativeModel.normalize should expand the factors to include neighbors of these,
         //  then include Dirichlet.factor in the match statement below.
         for (f <- factors) f match {
           //case f:MixtureComponent.Factor => {}
           case f:Mixture.Factor => {}
-          case f:DiscreteMixture.Factor => m(f._3.intValue).value.masses.+=(f._1.intValue, 1.0)
+          case f:CategoricalMixture[_]#Factor => m(f._3.intValue).value.masses.+=(f._1.intValue, 1.0)
           case f:PlatedDiscreteMixture.Factor => forIndex(f._1.length)(i => m(f._3(i).intValue).value.masses.+=(f._1(i).intValue, 1.0))
+          case f:PlatedCategoricalMixture.Factor => forIndex(f._1.length)(i => m(f._3(i).intValue).value.masses.+=(f._1(i).intValue, 1.0))
           case f:Factor => { println("DenseCountsProportionsMixtureCollapser unexpected factor "+f); return false }
         }
         true

@@ -32,7 +32,7 @@ trait Piece[C] {
 
 trait PiecewiseLearner[C] {
   def model: Model[C]
-  def process(pieces:GenSeq[Piece[C]]): Unit
+  def process(pieces: GenSeq[Piece[C]]): Unit
 }
 
 class BatchPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[C]) extends PiecewiseLearner[C] {
@@ -51,8 +51,58 @@ class BatchPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Mode
   def isConverged = optimizer.isConverged
 }
 
+// Hacky proof of concept
+class SGDThenBatchPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[C], val learningRate: Double = 0.01, val l2: Double = 0.1)
+  extends PiecewiseLearner[C] {
+  val gradientAccumulator = new LocalTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
+  val valueAccumulator = new LocalDoubleAccumulator(0.0)
+  val batchLearner = new BatchPiecewiseLearner[C](optimizer, model)
+  var sgdPasses = 5
+  override def process(pieces: GenSeq[Piece[C]]): Unit = {
+    if (sgdPasses > 0) {
+      valueAccumulator.value = 0.0
+      pieces.foreach(piece => {
+        val glmPiece = piece.asInstanceOf[MultiClassGLMPiece]
+        val oldWeight = glmPiece.weight
+        glmPiece.weight *= learningRate
+        piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
+        glmPiece.weight = oldWeight
+      })
+      model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily) *= math.pow(1.0 - learningRate * l2, math.sqrt(pieces.length))
+      valueAccumulator.value += -l2 * (model.weightsTensor dot model.weightsTensor)
+      println("Loss: " + valueAccumulator.value)
+      sgdPasses -= 1
+    }
+    else
+      batchLearner.process(pieces)
+  }
+  def isConverged = optimizer.isConverged
+}
+
+// Hacky proof of concept
+class InlineSGDPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[C], val learningRate: Double = 0.01, val l2: Double = 0.1)
+  extends PiecewiseLearner[C] {
+  val gradientAccumulator = new LocalTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
+  val valueAccumulator = new LocalDoubleAccumulator(0.0)
+  override def process(pieces: GenSeq[Piece[C]]): Unit = {
+    val weights = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily)
+    valueAccumulator.value = 0.0
+    pieces.foreach(piece => {
+      val glmPiece = piece.asInstanceOf[MultiClassGLMPiece]
+      val oldWeight = glmPiece.weight
+      glmPiece.weight *= learningRate
+      piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
+      glmPiece.weight = oldWeight
+    })
+    weights *= (1.0 - l2)
+    valueAccumulator.value += -l2 * (weights dot weights)
+    println("Loss: " + valueAccumulator.value)
+  }
+  def isConverged = false
+}
+
 class SGDPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[C]) extends PiecewiseLearner[C] {
-  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.copy}
+  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.asInstanceOf[WeightsTensor].copy}
   val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] {override def initialValue = new LocalTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
   val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] {override def initialValue = new LocalDoubleAccumulator(0.0)}
 
@@ -60,10 +110,10 @@ class SGDPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[
     // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit
     pieces.foreach(piece => {
       gradient.get.zero()
-//      valueAccumulator.get.value = 0.0
+      valueAccumulator.get.value = 0.0
       piece.accumulateValueAndGradient(model, gradientAccumulator.get, valueAccumulator.get)
       optimizer.step(model.weightsTensor, gradient.get, valueAccumulator.get.value, 0)
-//      println("Step!")
+      //      println("Step!")
     })
   }
 
@@ -90,11 +140,13 @@ object LossFunctions {
     val normed = prediction.expNormalized
     val loss = math.log(normed(label))
     normed *= -1
-    normed += (label, 1.0)
+    normed(label) += 1.0
     val gradient = normed.asInstanceOf[Tensor1]
     (loss, gradient)
   }
   val hingeMultiClassLoss: MultiClassLossFunction = (prediction, label) => {
+    // TODO: this seems wrong - shouldnt it have loss for every weight vector it has a margin violation with?
+    // same with the gradient, should it be 0 for categories without margin violations, 1 for those with, -1 for correct category?
     val loss = -math.max(0, 1 - prediction(label))
     val predictedLabel = prediction.maxIndex
     val gradient =
@@ -110,17 +162,18 @@ object LossFunctions {
   }
 }
 
-class MultiClassGLMPiece(featureVector: Tensor1, label: Int, lossAndGradient: LossFunctions.MultiClassLossFunction) extends Piece[Variable] {
+class MultiClassGLMPiece(featureVector: Tensor1, label: Int, lossAndGradient: LossFunctions.MultiClassLossFunction, var weight: Double = 1.0) extends Piece[Variable] {
   //def updateState(state: PieceState): Unit = { }
   def state = null
   def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
     val weightsMatrix = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily).asInstanceOf[Tensor2]
     val prediction = weightsMatrix matrixVector featureVector
-//    println("Prediction: " + prediction)
+    //    println("Prediction: " + prediction)
     val (loss, sgrad) = lossAndGradient(prediction, label)
     value.accumulate(loss)
-//    println("Stochastic gradient: " + sgrad)
+    if (weight != 0.0) sgrad *= weight
+    //    println("Stochastic gradient: " + sgrad)
     gradient.addOuter(DummyFamily, sgrad, featureVector)
   }
 }
@@ -144,7 +197,7 @@ class GLMPiece(featureVector: Tensor, label: Double, lossAndGradient: LossFuncti
   }
 }
 
-class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMutableDiscreteVarWithTarget[A]]) extends Piece[Variable] {
+class BPMaxLikelihoodPiece[V <: LabeledCategoricalVariable[C],C](labels: collection.Seq[V]) extends Piece[Variable] {
   def state = null
 
   labels.foreach(_.setToTarget(null))
@@ -162,15 +215,69 @@ class BPMaxLikelihoodPiece[A <: cc.factorie.DiscreteValue](labels: Seq[LabeledMu
   }
 }
 
-object PieceTest {
-  class ModelWithWeightsImpl(model: Model[Variable]) extends Model[Variable] {
-    def factors(v: Variable): Iterable[Factor] = throw new Error
-    def copy = sys.error("unimpl")
-    //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
-    val weights = new WeightsTensor()
-    weights(DummyFamily) = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
-    override def weightsTensor = weights
+// The following trait has convenience methods for adding to an accumulator the
+// factors that touch a pair of Good/Bad variables
+object GoodBadPiece {
+  def addGoodBad[C](gradient: TensorAccumulator, model: Model[C], good: C, bad: C) {
+    model.factors(good).foreach(f => {
+      f match {
+        case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics)
+        case _ => Nil
+      }
+    })
+    model.factors(bad).foreach(f => {
+      f match {
+        case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics * -1.0)
+        case _ => Nil
+      }
+    })
   }
+}
+
+// The following piece implements the domination loss function: it penalizes models that rank any of
+// the badCandates above any of the goodCandidates.
+// The actual loss used in this version is the maximum (margin-augmented) difference between
+// goodCandidates and badCandidates.
+// See DominationLossPieceAllGood for one that outputs a gradient for all goodCandidates
+class DominationLossPiece(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Piece[Variable] {
+  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
+    val goodScores = goodCandidates.map(model.currentScore(_))
+    val badScores = badCandidates.map(model.currentScore(_))
+    val worstGoodIndex = goodScores.zipWithIndex.maxBy(i => -i._1)._2
+    val bestBadIndex = badScores.zipWithIndex.maxBy(i => i._1)._2
+    if (goodScores(worstGoodIndex) < badScores(bestBadIndex) + 1) {
+      value.accumulate(goodScores(worstGoodIndex) - badScores(bestBadIndex) - 1)
+      GoodBadPiece.addGoodBad(gradient, model, goodCandidates(worstGoodIndex), badCandidates(bestBadIndex))
+    }
+  }
+}
+
+class DominationLossPieceAllGood(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Piece[Variable] {
+  def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
+    val goodScores = goodCandidates.map(model.currentScore(_))
+    val badScores = badCandidates.map(model.currentScore(_))
+    val bestBadIndex = badScores.zipWithIndex.maxBy(i => i._1)._2
+    for (i <- 0 until goodScores.length) {
+      val goodIndex = goodScores.zipWithIndex.maxBy(i => -i._1)._2
+      if (goodScores(goodIndex) < badScores(bestBadIndex) + 1) {
+        value.accumulate(goodScores(goodIndex) - badScores(bestBadIndex) - 1)
+        GoodBadPiece.addGoodBad(gradient, model, goodCandidates(goodIndex), badCandidates(bestBadIndex))
+      }
+    }
+  }
+}
+
+class ModelWithWeightsImpl(model: Model[Variable]) extends Model[Variable] {
+  def factors(v: Variable): Iterable[Factor] = throw new Error
+  def copy = sys.error("unimpl")
+  //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
+  val weights = new WeightsTensor()
+  weights(DummyFamily) = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
+  override def weightsTensor = weights
+}
+
+object PieceTest {
+
 
   object DocumentDomain extends CategoricalTensorDomain[String]
   class Document(file: File) extends BinaryFeatureVectorVariable[String] {
@@ -208,12 +315,14 @@ object PieceTest {
     //   val forOuter = new la.SingletonBinaryTensor1(2, 0)
     val pieces = trainLabels.map(l => new MultiClassGLMPiece(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
-//    val strategy = new HogwildPiecewiseLearner(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
-//    val strategy = new HogwildPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
-//    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
-//    val strategy = new SGDPiecewiseLearner(new StepwiseGradientAscent(rate = .01), modelWithWeights)
-    val strategy = new BatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
-//    val strategy = new BatchPiecewiseLearner(new SparseL2RegularizedGradientAscent(rate = 10.0 / trainLabels.size), modelWithWeights)
+    //    val strategy = new HogwildPiecewiseLearner(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
+    //        val strategy = new BatchPiecewiseLearner(new L2RegularizedConjugateGradient, modelWithWeights)
+    //        val strategy = new SGDPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
+    //    val strategy = new SGDThenBatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
+    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
+    lbfgs.tolerance = 0.05
+    val strategy = new SGDThenBatchPiecewiseLearner(lbfgs, modelWithWeights, learningRate = .01)
+    //    val strategy = new BatchPiecewiseLearner(new SparseL2RegularizedGradientAscent(rate = 10.0 / trainLabels.size), modelWithWeights)
 
     var totalTime = 0L
     var i = 0
@@ -221,6 +330,9 @@ object PieceTest {
     while (i < 100 && !strategy.isConverged && !perfectAccuracy) {
       val t0 = System.currentTimeMillis()
       strategy.process(pieces)
+
+      //      val classifier = new classify.MaxEntTrainer().train(trainLabels)
+
       totalTime += System.currentTimeMillis() - t0
 
       val classifier = new ModelBasedClassifier[Label](model.evidenceTemplate, LabelDomain)
@@ -231,7 +343,7 @@ object PieceTest {
       val trainTrial = new classify.Trial[Label](classifier)
       trainTrial ++= trainLabels
 
-//      println("Weights = " + model.evidenceTemplate.weights)
+      //      println("Weights = " + model.evidenceTemplate.weights)
       println("Train accuracy = " + trainTrial.accuracy)
       println("Test  accuracy = " + testTrial.accuracy)
       println("Total time to train: " + totalTime / 1000.0)

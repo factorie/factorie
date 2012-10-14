@@ -34,7 +34,7 @@ object LDA2 {
   val WordDomain = WordSeqDomain.elementDomain
   class Words(strings:Seq[String]) extends CategoricalSeqVariable(strings) {
     def domain = WordSeqDomain
-    def zs = model.parentFactor(this).asInstanceOf[PlatedDiscreteMixture.Factor]._3
+    def zs = model.parentFactor(this).asInstanceOf[PlatedCategoricalMixture.Factor]._3
   }
   class Document(val file:String, val theta:ProportionsVar, strings:Seq[String]) extends Words(strings)
   val beta = MassesVariable.growableUniform(WordDomain, 0.1)
@@ -51,7 +51,7 @@ object LDA2 {
         val theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_ toLowerCase).filter(!Stopwords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
-        documents += new Document(file.toString, theta, tokens) ~ PlatedDiscreteMixture(phis, zs)
+        documents += new Document(file.toString, theta, tokens) ~ PlatedCategoricalMixture(phis, zs)
       }
       println()
     }

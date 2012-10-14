@@ -146,7 +146,8 @@ class LabeledBooleanVariable(targetVal:Boolean) extends BooleanVariable(targetVa
 class HammingLossTemplate[A<:LabeledVarWithTarget]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
   def unroll1(aimer:A) = Factor(aimer, aimer.target)
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
-  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO 
+  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
+  def accuracy(context: Iterable[A]): Double = context.map(currentScore(_)).sum / context.size
   //def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0
 }
 object HammingLossObjective extends HammingLossTemplate[LabeledVarWithTarget]
@@ -227,6 +228,7 @@ class LabeledDiscreteEvaluation[C](val domain: DiscreteDomain) {
   //def correctCount(labelIndex:Int) = _tp(labelIndex)
   //def missCount(labelIndex:Int) = _fn(labelIndex)
   //def alarmCount(labelIndex:Int) = _fp(labelIndex)
+  def overallEvalString: String = "accuracy=%-8f".format(accuracy)
   def evalString(labelIndex:Int): String = "%-8s f1=%-8f p=%-8f r=%-8f (tp=%d fp=%d fn=%d true=%d pred=%d)".format(domain(labelIndex).toString, f1(labelIndex), precision(labelIndex), recall(labelIndex), tp(labelIndex), fp(labelIndex), fn(labelIndex), tp(labelIndex)+fn(labelIndex), tp(labelIndex)+fp(labelIndex))
   def evalString: String = (0 until domain.size).map(evalString(_)).mkString("\n")
   override def toString = evalString

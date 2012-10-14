@@ -54,7 +54,7 @@ object LDA3 {
         val theta = ProportionsVariable.sortedSparseCounts(numTopics) ~ Dirichlet(alphas)
         val tokens = alphaSegmenter(file).map(_ toLowerCase).filter(!stopwords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
-        documents += new Document(file.toString, theta, zs, tokens) ~ PlatedDiscreteMixture(phis, zs)
+        documents += new Document(file.toString, theta, zs, tokens) ~ PlatedCategoricalMixture(phis, zs)
       }
       println()
     }

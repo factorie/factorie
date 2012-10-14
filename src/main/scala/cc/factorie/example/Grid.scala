@@ -87,11 +87,11 @@ object Grid {
     val image = createDonut(1.0, 50, 20, 7.5, Pair(25.0, 25.0))
     val pixels = image.flatMap(_.toSeq).toSeq
     val gridModel = new CombinedModel(LocalTemplate, PairwiseTemplate)
-    val objective = new CombinedModel(new HammingLossTemplate[Pixel])
-    println("True accuracy: " + objective.currentScorePerElement(pixels))
+    val objective = new HammingLossTemplate[Pixel]
+    println("True accuracy: " + objective.accuracy(pixels))
     printImage(image)
     pixels.foreach(_.setUsingObserved)
-    println("Local accuracy: " + objective.currentScorePerElement(pixels))
+    println("Local accuracy: " + objective.accuracy(pixels))
     printImage(image)
     pixels.foreach(_.setRandomly())
     //*
@@ -109,7 +109,7 @@ object Grid {
     bp.inferLoopyBP(1)
     lattice.setToMaxMarginal()
     */
-    println("Accuracy: %f".format(objective.currentScorePerElement(pixels)))
+    println("Accuracy: %f".format(objective.accuracy(pixels)))
     printImage(image)
   }
 }

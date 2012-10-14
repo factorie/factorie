@@ -8,92 +8,8 @@ import collection.mutable.HashSet
 object ParserSupport {
     object ParserUtils {
 
-      val testFeatureSpec = """
-          {"features" : [
-
-              # basic features
-                ["l:f"], # lambda form
-                ["l:m"], # lambda lemma
-                ["l:p"], # lambda pos
-                ["b:f"], # beta form
-                ["b:m"], # beta lemma
-                ["b:p"], # beta pos
-                ["l:p", "l:m"],
-                ["b:p", "b:m"],
-                ["l:p", "b:p"],
-                ["l:p", "b:m"],
-                ["l:m", "b:p"],
-                ["l:m", "b:m"],
-
-              # 1-gram features
-               ["s-2:f"],
-               ["l-2:f"],
-               ["l-1:f"],
-               ["l+1:f"],
-               ["l+2:f"],
-               ["b-2:f"],
-               ["b-1:f"],
-               ["b+1:f"],
-               ["b+2:f"],
-
-              # 2-gram features
-               ["s-1:p", "l:p"],
-               ["s-1:m", "l:m"],
-               ["s-1:p", "b:p"],
-               ["s-1:m", "b:p"],
-               ["s-1:p", "b:m"],
-
-               ["b+1:p", "l:p"],
-               ["b+1:p", "l:m"],
-               ["b+1:p", "b:m"],
-               ["b+1:m", "b:m"],
-
-               ["b-1:p", "b:m"],
-
-              # 3-gram features
-               ["s-2:p", "s-1:p", "l:p"],
-               ["l-2:p", "l-1:p", "l:p"],
-               ["l-1:p", "l+1:p", "l:p"],
-               ["l+1:p", "l+2:p", "l:p"],
-               ["b-1:p", "b+1:p", "b:p"],
-               ["b+1:p", "b+2:p", "b:p"],
-
-               ["s-3:p", "l:p", "b:p"],
-               ["s-2:p", "l:p", "b:p"],
-               ["l+1:p", "l:p", "b:p"],
-               ["b-2:p", "l:p", "b:p"],
-               ["b-1:p", "l:p", "b:p"],
-               ["b+1:p", "l:p", "b:p"],
-               ["b+3:p", "l:p", "b:p"]
-
-            # dependency features
-     	#  	["l:d"], # lambda head label // TODO : check that this actually shows up
-         #      ["b:d"],
-         #      ["l:lmdr"]
-         #      ["l:rmdr"]
-
-         #     ["l_h:m", "l:p"], # l_h is the head of lambda
-
-         #     ["l_h:p", "l:p", "b:p"],
-         #      ["l_lmd:p", "l:p", "b:p"]
-         #      ["b_lmd:p", "l:p", "b:p"]
-
-         #    # binary features
-         #      ["l:b0"], # lambda is the leftmost token
-         #     ["b:b1"], # beta is the righttmost token
-         #     ["l:b2"] # lambda and beta are adjacent
-
-         #    # punctuation features
-         #      ["b:lnpb"] # left-nearest punctuation of beta
-         #      #["l:rnpl"], # right-nearest punctuation of lambda
-         #      #["l:lnpl"], # left-nearest punctuation of lambda
-         #      #["b:rnpb"], # right-nearest punctuation of beta
-
-            ]
-          }
-    
-        """
-    
+      lazy val testFeatureSpec = io.Source.fromURL(ClassLoader.getSystemResource("parser-features.json")).getLines().mkString("\n")
+      
       lazy val featureGenerators: Seq[DependencyFeatureGenerator] = LoadParserFeatureSpec.fromJSON(testFeatureSpec)
     }
     
@@ -124,14 +40,33 @@ object ParserSupport {
         val lemma: String,
         val pos: String,
         var head: DepArc = new DepArc(null, null, -1),
-        var lmDep: DepToken = null,
-        var rmDep: DepToken = null,
+        var lmDepIdx: Int = null.asInstanceOf[Int],
+        var rmDepIdx: Int = null.asInstanceOf[Int],
+        var thisIdx: Int = null.asInstanceOf[Int],
         var state: ParseState = null) {
     
       def setHead(headToken: DepToken, label: String, idx: Int) {
         head.depToken = headToken
         head.label = label
         head.parentIdx = idx
+        updateHeadLmDependents(thisIdx)
+        updateHeadRmDependents(thisIdx)
+      }
+      
+      def updateHeadLmDependents(idx: Int) {
+        if (idx < lmDepIdx) {
+          lmDepIdx = idx
+          if (hasHead())
+	        head.depToken.updateHeadLmDependents(idx)
+        }
+      }
+      
+      def updateHeadRmDependents(idx: Int) {
+        if (rmDepIdx < idx) {
+          rmDepIdx = idx
+          if (hasHead())
+            head.depToken.updateHeadRmDependents(idx)
+        }
       }
     
       def hasHead(): Boolean = head.depToken != null
@@ -146,14 +81,19 @@ object ParserSupport {
         return false
       }
       
-//      def leftmostDependent(): DepToken = {
-//        
-//      }
-//      
-//      def rightmostDependent(): DepToken = {
-//        
-//      }
-//      
+      def leftmostDependent(): DepToken = {
+        if (lmDepIdx == null.asInstanceOf[Int])
+          DepToken.nullToken
+        else
+          state.sentenceTokens(lmDepIdx)
+      }
+      
+      def rightmostDependent(): DepToken = {
+        if (rmDepIdx == null.asInstanceOf[Int])
+          DepToken.nullToken
+        else
+          state.sentenceTokens(rmDepIdx)
+      }
       
       override def toString = "(%s, f: %s, l: %s, p: %s)".format(token.string, form, lemma, pos)
     
@@ -168,6 +108,8 @@ object ParserSupport {
         var input: Int,
         var reducedIds: HashSet[Int],
         var sentenceTokens: Array[DepToken]) {
+      
+      sentenceTokens.foreach(_.state = this)
       
       def this(tokens: Array[DepToken]) = this(0, 1, HashSet[Int](), tokens)
     
@@ -209,23 +151,6 @@ object ParserSupport {
         }
     
         return DepToken.nullToken
-      }
-      
-      def children(t: DepToken): Seq[Int] = {
-        throw new Error("TODO")
-        Seq(0)
-      }
-      
-      def lefmostAndRightmostDependent(t: DepToken): (DepToken, DepToken) = {
-        var min = Int.MaxValue
-        var max = Int.MinValue
-        for (c <- children(t)) {
-          if (c < min)
-            min = c
-          if (c > max)
-            max = c
-        }
-        return (sentenceTokens(min), sentenceTokens(max))
       }
       
       override def toString = "[ParseState: %d, %d]" format (stack, input)

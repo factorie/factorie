@@ -101,7 +101,7 @@ class DenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
           col += 1
         }
       case t: SparseIndexedTensor1 =>
-        val tIndices = t._indexs
+        val tIndices = t._indices
         val tValues = t._values
         var ti = 0
         while (ti < tIndices.length) {
@@ -230,6 +230,7 @@ class UniformTensor2(val dim1:Int, val dim2:Int, val uniformValue:Double) extend
 trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   def newTensor1:Int=>Tensor1
   private var _inners = new Array[Tensor1](dim1) // var because may need to grow in Growable version
+  override def zero() { _inners.foreach(i => if (i != null) i.zero()) }
   def activeDomain1 = { val a = new Array[Int](dim1); var i = 0; var j = 0; while (i < dim1) { if (_inners(i) ne null) { a(j) = i; j += 1 }; i += 1 }; new TruncatedArrayIntSeq(a, j) }
   def activeDomain2 = new RangeIntSeq(0, dim2) // This could perhaps be more sparse
   def activeDomain = { val b = new IntArrayBuffer; for (i <- 0 until dim1; j <- 0 until dim2) { if (apply(i,j) != 0.0) b += singleIndex(i,j) }; new ArrayIntSeq(b.toArray) } // Not very efficient; use _inner().activeDomain intead
@@ -238,6 +239,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
   }
   override def apply(i:Int, j:Int): Double = { val in = _inners(i); if (in ne null) in.apply(j) else 0.0 }
   def apply(i:Int): Double = apply(i/dim2, i%dim2)
+  override def update(i: Int, d: Double) = update(i/dim2, i%dim2, d)
   def isDense = false
   override def update(i:Int, j:Int, v:Double): Unit = getInner(i).update(j, v)
   def update(i:Int, t:Tensor1): Unit = _inners(i) = t

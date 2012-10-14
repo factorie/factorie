@@ -57,23 +57,24 @@ object ChainNER1a {
   def main(args:Array[String]): Unit = {
     val trainDocuments = LoadConll2003.fromFilename(args(0))
     val testDocuments = LoadConll2003.fromFilename(args(1))
-    for (document <- (trainDocuments ++ testDocuments); token <- document) {
+    for (document <- (trainDocuments ++ testDocuments); token <- document.tokens) {
       val features = new TokenFeatures(token)
       features += "W="+token.string
       features += "SHAPE="+cc.factorie.app.strings.stringShape(token.string, 2)
       token.attr += features
     }
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
+    val trainLabels : Seq[ChainNerLabel] = trainDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(10000)
+    val testLabels : Seq[ChainNerLabel] = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly())
-    val learner = new SampleRank(new GibbsSampler(model, HammingLossObjective), new StepwiseGradientAscent)
+    val pieces: Seq[Piece[DiffList]] = trainLabels.map(l => new SampleRankPiece[Variable](l, new TypedGibbsSampler[Variable](model, HammingLossObjective)))
+    val learner = new SGDPiecewiseLearner[DiffList](new optimize.StepwiseGradientAscent(), model)
     val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
     for (iteration <- 1 until 5) {
-      learner.processAll(trainLabels)
+      learner.process(pieces)
       predictor.processAll(testLabels)
     }
-    println("Train Acccuracy = "+HammingLossObjective.currentScorePerElement(trainLabels))
-    println("Test Acccuracy = "+HammingLossObjective.currentScorePerElement(testLabels))
+    println("Train Acccuracy = "+HammingLossObjective.accuracy(trainLabels))
+    println("Test Acccuracy = "+HammingLossObjective.accuracy(testLabels))
   }
 }
   

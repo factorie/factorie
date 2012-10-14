@@ -1,3 +1,8 @@
+/*&
+ *& Family Tutorial
+ *& ===============
+ *&*/
+
 package cc.factorie.example
 
 import cc.factorie._ 

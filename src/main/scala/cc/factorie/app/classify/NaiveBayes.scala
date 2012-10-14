@@ -19,30 +19,33 @@ import scala.collection.mutable.{HashMap,ArrayBuffer}
 class NaiveBayesTrainer extends ClassifierTrainer {
   var biasSmoothingMass = 1.0
   var evidenceSmoothingMass = 1.0
-  def train[L<:LabeledCategoricalVariable[_],F<:DiscreteTensorVar](il:LabelList[L,F]): Classifier[L] = {
+  def train[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
     val labelDomain = il.labelDomain
     val featureDomain = il.featureDomain
     val numLabels = labelDomain.size
     val numFeatures = featureDomain.size
-    val bias = new DenseProportions1(labelDomain.size)
-    val evid = Seq.tabulate(labelDomain.size)(i => new DenseProportions1(featureDomain.size))
+    val bias = new DenseProportions1(numLabels)
+    val evid = Seq.tabulate(numLabels)(i => new DenseProportions1(numFeatures))
     // Note: this doesn't actually build the graphical model, it just gathers smoothed counts, never creating factors
     // Incorporate smoothing, with simple +m smoothing
-    for (li <- 0 until numLabels) bias.+=(li, biasSmoothingMass)
-    for (li <- 0 until numLabels; fi <- 0 until numFeatures) evid(li).+=(fi, evidenceSmoothingMass)
+    for (li <- 0 until numLabels) bias.masses += (li, biasSmoothingMass)
+    for (li <- 0 until numLabels; fi <- 0 until numFeatures) evid(li).masses += (fi, evidenceSmoothingMass)
     // Incorporate evidence
     for (label <- il) {
-      val targetIndex = label.target.asInstanceOf[DiscreteVar].intValue // TODO Try to get rid of this cast
-      bias.+=(targetIndex, 1.0)
+      val targetIndex = label.intValue
+      bias.masses += (targetIndex, 1.0)
       val features = il.labelToFeatures(label)
-      //for (featureIndex <- features.activeDomain.asSeq)
-      features.tensor.foreachElement((featureIndex,featureValue) => evid(targetIndex).+=(featureIndex, featureValue))
+      val activeElements = features.tensor.activeElements
+      while (activeElements.hasNext) {
+        val (featureIndex, featureValue) = activeElements.next()
+        evid(targetIndex).masses += (featureIndex, featureValue)
+      }
     }
     // Put results into the model templates
     forIndex(numLabels)(i => cmodel.biasTemplate.weights(i) = math.log(bias(i)))
     for (li <- 0 until numLabels; fi <- 0 until numFeatures)
-      cmodel.evidenceTemplate.weights(li*numFeatures + fi) = math.log(evid(li).apply(fi))
+      cmodel.evidenceTemplate.weights(li * numFeatures + fi) = math.log(evid(li).apply(fi))
     new ModelBasedClassifier[L](cmodel, il.head.domain)
   }
 }

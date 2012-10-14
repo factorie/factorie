@@ -27,6 +27,7 @@ trait Maximize extends Infer {
 }
 
 
+
 /* A suite containing various recipes to maximize the value of variables to maximize some objective, 
    usually maximum likelihood. 
    @author Andrew McCallum */
