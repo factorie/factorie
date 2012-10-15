@@ -8,6 +8,7 @@
 
 package cc.factorie.example
 
+import org.junit.Assert._
 import cc.factorie._
 import cc.factorie.la._
 
@@ -45,23 +46,28 @@ object TutorialFactors {
     
     // Naturally, then we can get the factor's score for particular values of the neighboring variable(s).
     println("First factor score for value 0 is "+f1.score(0))
+    assertEquals(-1.0, f1.score(0), 0.01)
     
     // We can also ask for the score resulting from the neighbors current values.
     println("First factor score for current neighbor value is "+f1.currentScore)
+    assertEquals(0.0, f1.currentScore, 0.1)
     
     // Here is a Factor with two neighbors.
     // The second neighbor is a DoubleVariable and has value type Double.
     val f2 = new Factor2(v1, v2) {
       def score(i:Int, j:Double) = i * j
     }
-    println("Second factor score is "+f1.currentScore)
+    println("Second factor score is "+f2.currentScore)
+    assertEquals(2.0, f2.currentScore, 0.01)
 
     // Given a factor I can get its list of neighbors, or individual neighbors
     println("Second factor neighbors are "+f2.variables)
     println("Second factor first neighbor is "+f2.variable(0))
+    assert(f2.variable(0) == v1)
     
     // We can also ask if a Factor has a variable among its neighbors
     if (f2.touches(v3)) println("Second factor has v3 as a neighbor.")
+    assert(!f2.touches(v3))
     
     // Factors can be given a customized named used in their toString method
     val f2b = new Factor2(v1, v2) {
@@ -69,20 +75,24 @@ object TutorialFactors {
       override def factorName = "Factor2B"
     }
     println("Factor with custom name "+f2b)
+    assertEquals("Factor2B", f2b.factorName)
     
     // We can get an Assignment object that captures the current values of the neighbors.
     val a2: Assignment2[IntegerVariable,DoubleVariable] = f2.currentAssignment
     v2 := 4.4 // Here we give v2 a new value.
     println("Second neighbor of second factor had value "+a2(v2))
+    assertEquals(2.0, a2(v2), 0.01)
     
     // We can ask for a factor's score using the values in an Assignment
     // rather than the neighbors current values
     println("Second factor's score from old assignment is "+f2.scoreAssignment(a2))
+    assertEquals(2.0, f2.scoreAssignment(a2), 0.01)
     
     // The Assignment object could contain values for more variables than the neighbors
     val as = new HashMapAssignment(v1, v2, v3)
     as(v1) = 44
     println("Second factor's score from a new assignment is "+f2.scoreAssignment(as))
+    assertEquals(44*4.4, f2.scoreAssignment(as), 0.01)
     
     // All factors also have "statistics"
     // This is some arbitrary object that holds information sufficient to obtain a score.
@@ -97,7 +107,8 @@ object TutorialFactors {
     // (This lack of typing is because we want the method to be flexibly override-able in subclasses.)
     if (s2.asInstanceOf[Tuple2[Int,Double]]._2 == 4.4)
       println("The second factor's second value is 4.4")
-    
+    assertEquals(8.8, s2.asInstanceOf[Tuple2[Int,Double]]._2, 0.01)
+
     // Some subclasses of Factor override the method to return more specific types.
     // If the Tuple statistics are sufficient for your needs, 
     // and you want the "statistics" method's return type to be the correct Tuple
@@ -106,6 +117,7 @@ object TutorialFactors {
       def score(i:Int, j:Double, k:Int) = if (i == k) j else 0.0
     }
     println("The current value of the third neighbor is "+f3.currentStatistics._3)
+    assertEquals(3.0, f3.currentStatistics._3, 0.01)
     
     // The various Factor subclasses containing "WithStatistics" in the class name
     // all contain a new final definition of the "statistics" method.
@@ -213,6 +225,7 @@ object TutorialFactors {
     val mf1 = new MyFactor(v1, v3)
     val mf2 = new MyFactor(v1, v3)
     if (mf1 == mf2) println("Two factors are equal.")
+    assert(mf1 == mf2)
 
     /*&
      *& Let's create a Factor representing a simple log-linear classifier for classifying blog posts.
