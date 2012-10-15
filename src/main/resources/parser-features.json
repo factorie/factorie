@@ -56,16 +56,16 @@
    ["b+3:p", "l:p", "b:p"],
 
   # dependency features
-   #["l:d"], # lambda head label // TODO : check that this actually shows up
-   #["b:d"],
+   ["l:d"], # lambda head label // TODO : check that this actually shows up
+   ["b:d"],
    #["l:lmdr"]
    #["l:rmdr"]
 
    ["l_h:m", "l:p"], # l_h is the head of lambda
 
    ["l_h:p", "l:p", "b:p"],
-   #["l_lmd:p", "l:p", "b:p"],
-   #["b_lmd:p", "l:p", "b:p"],
+   ["l_lmd:p", "l:p", "b:p"],
+   ["b_lmd:p", "l:p", "b:p"],
 
   # binary features
    ["l:b0"], # lambda is the leftmost token

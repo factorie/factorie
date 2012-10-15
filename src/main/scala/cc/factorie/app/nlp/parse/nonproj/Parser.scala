@@ -82,7 +82,7 @@ object TrainWithSVM {
 	  
       val dts = p.parse(s)
 	  p.clear()
-	  pred append dts.drop(1).map(dt => dt.head).map(arc => (arc.parentIdx, arc.label))
+	  pred append dts.drop(1).map(dt => dt.head).map(arc => (arc.depToken.thisIdx, arc.label))
 	  
 	  i += 1
 	  if (i % 1000 == 0)
@@ -259,7 +259,7 @@ class Parser(var mode: Int = 0) {
         else {
             if (label.shift_?)
                 noShift()
-            else if (label.reduce_? && state.stackToken(0).hasHead())
+            else if (label.reduce_? && state.stackToken(0).hasHead)
                 noReduce()
             else
                 noPass()
@@ -277,7 +277,7 @@ class Parser(var mode: Int = 0) {
     for ((t, i) <- s.links.map(DepToken(_)).zipWithIndex) {
       a(i+1) = t
       a(i+1).state = state
-      a(i+1).thisIdx = i
+      a(i+1).thisIdx = i + 1
     }
     a
   }
@@ -290,9 +290,9 @@ class Parser(var mode: Int = 0) {
   }
   
   def getDepArcs(ts: Array[DepToken], s: Sentence): Seq[DepArc] = {
-    Seq(new DepArc(ts(0), "<ROOT-ROOT>", 0)) ++
+    Seq(new DepArc(ts(0), "<ROOT-ROOT>")) ++
 	    getSimpleDepArcs(s).map { 
-	      case (i: Int, l: String) => new DepArc(ts(i), l, i)
+	      case (i: Int, l: String) => new DepArc(ts(i), l)
 	    }
   }
 
@@ -303,15 +303,15 @@ class Parser(var mode: Int = 0) {
   private def leftArc(label: String) = {
     val lambda = state.stackToken(0)
     val beta = state.inputToken(0)
-    lambda.setHead(beta, label, state.input)
-    beta.lmDepIdx = lambda.thisIdx
+    lambda.setHead(beta, label)
+    //beta.lmDepIdx = lambda.thisIdx
   }
 
   private def rightArc(label: String) {
     val lambda = state.stackToken(0)
     val beta = state.inputToken(0)
-    beta.setHead(lambda, label, state.stack)
-    lambda.rmDepIdx = beta.thisIdx
+    beta.setHead(lambda, label)
+    //lambda.rmDepIdx = beta.thisIdx
   }
 
   private def shift() = {
@@ -393,14 +393,14 @@ class Parser(var mode: Int = 0) {
 
   def getGoldLabelArc(): ParseDecision = {
 
-    val headIdx   = goldHeads(state.stack).parentIdx
+    val headIdx   = goldHeads(state.stack).depToken.thisIdx
     val headLabel = goldHeads(state.stack).label
 
     // if beta is the head of lambda
     if (headIdx == state.input)
       return new ParseDecision(LEFT, -1, headLabel)
 
-    val inputHeadIdx   = goldHeads(state.input).parentIdx
+    val inputHeadIdx   = goldHeads(state.input).depToken.thisIdx
     val inputHeadLabel = goldHeads(state.input).label
 
     // if lambda is the head of beta
@@ -413,12 +413,12 @@ class Parser(var mode: Int = 0) {
 
   def shouldGoldShift: Boolean = {
     // if the head of the input is to the left of the stack: don't shift
-    if (goldHeads(state.input).parentIdx < state.stack)
+    if (goldHeads(state.input).depToken.thisIdx < state.stack)
       return false
     // if the head of any token in the stack is the input: don't shift
     else
       for (i <- (state.stack - 1) until 0 by -1) if (!state.reducedIds.contains(i)) {
-        if (goldHeads(i).parentIdx == state.input)
+        if (goldHeads(i).depToken.thisIdx == state.input)
           return false
       }
 
@@ -432,7 +432,7 @@ class Parser(var mode: Int = 0) {
       return false
 
     for (i <- (state.input + 1) until state.sentenceTokens.length)
-      if (goldHeads(i).parentIdx == state.stack)
+      if (goldHeads(i).depToken.thisIdx == state.stack)
         return false
 
     true

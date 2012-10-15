@@ -31,32 +31,33 @@ object ParserSupport {
       def apply(token: Token) = new DepToken(token, form = token.string, lemma = token.attr[Lemma].lemma, pos = token.posLabel.categoryValue)
       //TODO: will it be a problem to have this in a separate document?
       //TODO: eclipse didn't like "lazy" here
-      val root = new DepToken(new Token(new Document("Root Dummy Document", ""), "<ROOT>"), form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p")
-      val nullToken = new DepToken(new Token(new Document("Null Dummy Document", ""), "<NULL>"), form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p")
+      def root = new DepToken(new Token(new Document("Root Dummy Document", ""), "<ROOT>"), form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p")
+      def nullToken = new DepToken(new Token(new Document("Null Dummy Document", ""), "<NULL>"), form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p")
     }
     class DepToken(
         var token: Token,
         val form: String,
         val lemma: String,
         val pos: String,
-        var head: DepArc = new DepArc(null, null, -1),
-        var lmDepIdx: Int = null.asInstanceOf[Int],
-        var rmDepIdx: Int = null.asInstanceOf[Int],
+        var head: DepArc = null,
+        var lmDepIdx: Int = Int.MaxValue,
+        var rmDepIdx: Int = Int.MinValue,
         var thisIdx: Int = null.asInstanceOf[Int],
         var state: ParseState = null) {
     
-      def setHead(headToken: DepToken, label: String, idx: Int) {
-        head.depToken = headToken
-        head.label = label
-        head.parentIdx = idx
-        updateHeadLmDependents(thisIdx)
-        updateHeadRmDependents(thisIdx)
+      def setHead(headToken: DepToken, label: String) {
+        head = new DepArc(headToken, label)
+        updateHeadLmDependents(head.depToken.thisIdx)
+        updateHeadRmDependents(head.depToken.thisIdx)
+        //assert(0 <= lmDepIdx && lmDepIdx < state.sentenceTokens.size)
+        //assert(0 <= rmDepIdx && rmDepIdx < state.sentenceTokens.size)
+        //assert(lmDepIdx <= rmDepIdx)
       }
       
       def updateHeadLmDependents(idx: Int) {
         if (idx < lmDepIdx) {
           lmDepIdx = idx
-          if (hasHead())
+          if (hasHead)
 	        head.depToken.updateHeadLmDependents(idx)
         }
       }
@@ -64,16 +65,32 @@ object ParserSupport {
       def updateHeadRmDependents(idx: Int) {
         if (rmDepIdx < idx) {
           rmDepIdx = idx
-          if (hasHead())
+          if (hasHead)
             head.depToken.updateHeadRmDependents(idx)
         }
       }
+      
+      def leftmostDependent(): DepToken = {
+        if (lmDepIdx == Int.MaxValue)
+          DepToken.nullToken
+        else
+          state.sentenceTokens(lmDepIdx)
+      }
+      
+      def rightmostDependent(): DepToken = {
+        if (rmDepIdx == Int.MinValue)
+          DepToken.nullToken
+        else
+          state.sentenceTokens(rmDepIdx)
+      }
+      
     
-      def hasHead(): Boolean = head.depToken != null
+      def hasHead: Boolean = head ne null
     
       def isDescendentOf(that: DepToken): Boolean = {
+        assert(that ne null)
         var ptr = this
-        while (ptr != null && ptr != DepToken.root) {
+        while (ptr.head != null && ptr != DepToken.root) {
           ptr = ptr.head.depToken
           if (ptr == that)
             return true
@@ -81,26 +98,12 @@ object ParserSupport {
         return false
       }
       
-      def leftmostDependent(): DepToken = {
-        if (lmDepIdx == null.asInstanceOf[Int])
-          DepToken.nullToken
-        else
-          state.sentenceTokens(lmDepIdx)
-      }
-      
-      def rightmostDependent(): DepToken = {
-        if (rmDepIdx == null.asInstanceOf[Int])
-          DepToken.nullToken
-        else
-          state.sentenceTokens(rmDepIdx)
-      }
-      
       override def toString = "(%s, f: %s, l: %s, p: %s)".format(token.string, form, lemma, pos)
     
     }
     
-    class DepArc(var depToken: DepToken, var label: String, var parentIdx: Int) {
-      override def toString = (parentIdx, label).toString
+    class DepArc(var depToken: DepToken, var label: String) {
+      override def toString = (depToken.thisIdx, label).toString
     }
     
     class ParseState(

@@ -53,7 +53,7 @@ object DependencyFeatures {
     "f"   -> ((t: DepToken) => t.form),
     "m"   -> ((t: DepToken) => t.lemma),
     "p"   -> ((t: DepToken) => t.pos),
-    //"d"   -> ((t: DepToken) => (t.state.input - 1 == t.state.stack).toString),
+    "d"   -> ((t: DepToken) => if (!t.hasHead) "null" else t.head.label),
     "b0"  -> ((t: DepToken) => {
       if (t == DepToken.nullToken)
         "null"
