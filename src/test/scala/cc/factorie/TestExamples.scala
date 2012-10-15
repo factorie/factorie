@@ -144,6 +144,10 @@ class TestExamples {
     cc.factorie.example.TutorialVariables.main(emptyArgs)
   }
 
+  @Test def testTutorial11() {
+    cc.factorie.example.TutorialDomain.main(emptyArgs)
+  }
+
   @Test def testTutorial20() {
     cc.factorie.example.TutorialFactors.main(emptyArgs)
   }

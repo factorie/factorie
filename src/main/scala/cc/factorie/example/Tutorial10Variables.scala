@@ -7,6 +7,7 @@
 
 package cc.factorie.example
 
+import org.junit.Assert._
 import cc.factorie._
 
 object TutorialVariables {
@@ -23,30 +24,38 @@ object TutorialVariables {
     // Create a variable that holds an integer value
     val i = new IntegerVariable(0)
     println("Variable i has value "+i.value)
+    assertEquals(i.value, 0)
 
     // Set its value to 2
     i := 2 // TODO Make this use an implicit DiffList defaulting to null.
     println("After i := 2, variable i has value "+i.value)
+    assertEquals(i.value, 2)
     
     // === tests equality of Variable values.  == tests Variable object identity
     val j = new IntegerVariable(2)
     if (i === j) println("Variables i and j have equal values.") else println("Variables i and j have unequal values.")
     if (i == j) println("i and j are the same Variable.") else println("i and j are not the same Variable")
-    
+    assert(i === j)
+    assert(!(i == j))
+
     // We can also track changes with a DiffList and undo them. // TODO Move this material about DiffLists to a separate Tutorial file.
     val d = new DiffList
     i.set(3)(d) // This method will create a Diff object and append it to the DiffList d.
     println("After i.set(2), variable i has value "+i.value)
+    assertEquals(3, i.value)
     d.undo
     println("After DiffList.undo, variable i has value "+i.value)
+    assertEquals(2, i.value)
     // A Diff and a DiffList can be re-done also
     d.redo
     println("After DiffList.redo, variable i has value "+i.value)
+    assertEquals(3, i.value)
     
     // Variables can be sub-classed, and often are in order to represent relations among data
     class MyIntegerVariable(initialValue:Int, val partner:IntegerVariable) extends IntegerVariable(initialValue)
     val k = new MyIntegerVariable(3, i)
     println("k's partner is "+k.partner)
+    assert(k.partner == i)
     
     /*&
      *& All Variables also have a Domain, which indicates something about the range of values.
@@ -79,10 +88,11 @@ object TutorialVariables {
     set += i
     set += j
     if (set.contains(i)) println("SetVariable s contains Variable i")
+    assert(set.contains(i))
     // Variable whose value is a Seq of Scala objects
     val list = new SeqVariable(Seq(i, j))
     println("The first element of list is "+list.head)
-
+    assert(i == list.head)
     
     /*&
      *& Variables are defined in a deep hierarchy of type inheritance.
@@ -115,6 +125,7 @@ object TutorialVariables {
     val st = new SparseTensor1(999999) // Creates a vector of length 999999, but which efficiently stores only its non-zero values
     st(555) = 2.3
     println("Tensor st oneNorm is "+st.oneNorm)
+    assertEquals(st.oneNorm, 2.3, 0.01)
     val ut = new UniformTensor1(33, 0.1) // A vector of length 33, in which all values are 0.1
     // Tensors of ranks 1 through 4 are available
     val dt4 = new DenseTensor4(3, 4, 5, 2) // A Tensor with 4 dimensions, storing 3*4*5*2 numbers.
@@ -165,17 +176,24 @@ object TutorialVariables {
     val md = new MyDiscrete(4) // A DiscreteVariable, initialized to a one-hot vector with 1.0 at index 4.
     println("md value is "+md.value)
     println("md integer value is "+md.intValue)
+    assertEquals(4, md.intValue)
     println("md domain size is "+md.domain.size)
+    assertEquals(md.domain.size, 10)
     
     // CategoricalDomain[A] has type parameter A indicating the type of the category.
     // CategoricalDomain can be initialized with a list of such categories,
     //  or it can grow dynamically as values for new categories are requested.
     val cd = new CategoricalDomain[String]
     println("The index of category 'apple' is "+cd.index("apple"))
+    assertEquals(0, cd.index("apple"))
     println("The index of category 'pear'  is "+cd.index("pear"))
+    assertEquals(1, cd.index("pear"))
     println("The index of category 'kiwi'  is "+cd.index("kiwi"))
+    assertEquals(2, cd.index("kiwi"))
     println("The index of category 'apple' is "+cd.index("apple"))
+    assertEquals(0, cd.index("apple"))
     println("The category of index 2 is "+cd.category(2))
+    assertEquals("kiwi", cd.category(2))
     // Clearly, CategoricalDomains are useful for mapping from Strings to integers and back, and heavily used in NLP.
     // They are also typically used for class label in tasks such as document classification.
     
@@ -186,9 +204,12 @@ object TutorialVariables {
     val cv2 = new MyCategorical("plum")
     println("cv1 value is "+cv1.value)
     println("cv1 category value is "+cv1.categoryValue)
+    assertEquals("peach", cv1.categoryValue)
     println("cv1 integer value is "+cv1.intValue)
+    assertEquals(cv1.intValue, cd.index("peach"))
     // The domain grew automatically to accomodate the new category values
     println("The cd CategoricalDomain size is now "+cd.size)
+    assertEquals(5, cd.size)
     // You cannot create CategoricalValue or DiscreteValue yourself.  They are only created automatically inside their Domains.
     
     // BooleanVar is a subtype of CategoricalVar whose category is of type Boolean.
@@ -210,6 +231,7 @@ object TutorialVariables {
     val m1 = new DenseMasses1(5) // A vector of length 5
     m1 := Array(.5, .5, .5, .5, .5)
     println("m1 sum is "+m1.sum)
+    assertEquals(2.5, m1.sum, 0.01)
     
     /*&
      *& Proportions inherits from Masses
@@ -223,6 +245,7 @@ object TutorialVariables {
     dp.masses(2) += 2
     println("dp masses are "+dp.masses)
     println("dp sum is "+dp.sum)
+    assertEquals(dp.sum, 1.0, 0.001)
     println("dp proportions are "+dp)
     
 
