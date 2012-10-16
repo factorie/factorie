@@ -50,13 +50,12 @@ object Serializer {
       var line = reader.readLine
       var willFreeze = false
       if (line.split("\\s+").apply(2) == "true") willFreeze = true // Parse '#frozen = true'
-      if (domain.string2T eq null) {
-        while ( {line = reader.readLine; line != null && line != "#end"})
+      if (domain.string2T eq null)
+        while ({line = reader.readLine; line != null && line != "#end"})
           domain.index(line)
-      } else {
-        while ( {line = reader.readLine; line != null && line != "#end"})
+      else
+        while ({line = reader.readLine; line != null && line != "#end"})
           domain.index(domain.string2T(line))
-      }
       if (willFreeze) {domain.freeze(); domain._frozenByLoader = true}
     }
   }
