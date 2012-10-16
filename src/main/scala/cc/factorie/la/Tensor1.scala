@@ -92,13 +92,17 @@ class GrowableDenseTensor1(initialSize:Int) extends { private var _dim1 = initia
     case t:Tensor1 => ensureDimensions(t.dim1)
     case _ => super.ensureDimenionsMatch(t)
   }
-  def ensureDimensions(d1:Int): Unit = if (d1 > _dim1) {
-    val newSize = d1 //math.max(_valuesSize * 2, d1)
-    _dim1 = d1
-    val oldValues = _values
-    _resetValues(newSize) // allocates a new array of size newSize
-    Array.copy(oldValues, 0, _values, 0, oldValues.size)
-    if (defaultValue != 0.0) java.util.Arrays.fill(_values, oldValues.size, newSize, defaultValue)
+  def ensureDimensions(d1:Int): Unit = {
+    if (d1 > _dim1) {
+      if (d1 > _valuesSize) {
+        val newSize = math.max(_valuesSize * 2, d1)
+        val oldValues = _values
+        _resetValues(newSize) // allocates a new array of size newSize
+        Array.copy(oldValues, 0, _values, 0, oldValues.size)
+        if (defaultValue != 0.0) java.util.Arrays.fill(_values, oldValues.size, newSize, defaultValue)
+      }
+      _dim1 = d1
+    }
   }
   // Currently these two are the only methods that support capacity expansion
   override def +=(index:Int, incr:Double): Unit = {
