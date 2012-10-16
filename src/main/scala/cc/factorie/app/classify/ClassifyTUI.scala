@@ -144,8 +144,9 @@ object ClassifyTUI {
       if (opts.readTextSkipHTML.value) throw new Error("Not yet implemented.")
       val text2 = if (opts.readTextSkipHeader.value) text.substring(text.indexOf("\n\n")) else text
       val text3 = if (opts.readTextPreserveCase.value) text2 else text2.toLowerCase
-      for (word <- segmenter(text3))
-        if (!stoplist.contains(word)) features += word
+      for (gramSize <- opts.readTextGramSizes.value)
+        for (words <- segmenter(text3).filterNot(stoplist.contains(_)).sliding(gramSize))
+          features += words.mkString(",")
     }
 
     def readInstancesFromFile(fileName: String): LabelList[Label, Features] = {
