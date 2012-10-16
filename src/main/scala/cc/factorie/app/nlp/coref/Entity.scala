@@ -89,13 +89,31 @@ trait Entity extends Attr {
     var result = new ListBuffer[A]
     result += this.asInstanceOf[A]
     for (entity <-childEntitiesIterator) {
-      if (cls.isAssignableFrom(entity.getClass))
-        result += entity.asInstanceOf[A]
+      //if (cls.isAssignableFrom(entity.getClass))
+      //  result += entity.asInstanceOf[A]
       result ++= entity.descendantsOfClass[A](cls)
     }
     result
   }
+  def numLeaves:Int = {
+    var result = 0
+    incIfLeaf(this)
+    def incIfLeaf(e:Entity):Unit ={
+      if(e.isLeaf)result += 1
+      for(c <- e.childEntitiesIterator)incIfLeaf(c)
+    }
+    result
+  }
 
+  /*
+  def descendantsOfClass[A<:Entity](cls:Class[A],result:ListBuffer[A] = new ListBuffer[A]): Seq[A] = {
+    if(cls.isAssignableFrom(entityRoot.getClass))result += this.asInstanceOf[A]
+    for (entity <-childEntitiesIterator) {
+      result ++= entity.descendantsOfClass[A](cls,result)
+    }
+    result
+  }
+  */
   def descendantsOfClass[A<:Entity](implicit m:Manifest[A]): Seq[A] = descendantsOfClass[A](m.erasure.asInstanceOf[Class[A]])
   def depth:Int = depth(0)
   def depth(d:Int):Int = if(parentEntity==null)0 else parentEntity.depth(d+1)

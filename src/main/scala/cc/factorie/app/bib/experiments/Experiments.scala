@@ -2,26 +2,55 @@ package cc.factorie.app.bib.experiments
 import cc.factorie.app.bib._
 import java.util.Date
 import java.io._
-import collection.mutable.{ArrayBuffer,HashSet}
+import collection.mutable.{ArrayBuffer,HashSet,HashMap}
 import java.text.DateFormat
 import cc.factorie.util.{CmdOption, DefaultCmdOptions}
 import com.mongodb.Mongo
 import cc.factorie._
-import app.nlp.coref.{EntropyBagOfWordsPriorWithStatistics, StructuralPriorsTemplate, ChildParentCosineDistance, HierEntity}
+import app.nlp.coref._
+import io.Source
 
-class AuthorSamplerWriter(model:Model[Variable], val labeledData:Seq[AuthorEntity], val evidenceBatches:Seq[Seq[AuthorEntity]],var initialSteps:Int=0,var snapshotInterval:Int=1000, var addDataInterval:Int=10000) extends AuthorSampler(model){
+class AuthorSamplerWriter(model:Model[Variable], val initialDB:Seq[AuthorEntity], val evidenceBatches:Seq[Seq[AuthorEntity]], val initialDBNameOpt:Option[String]=None,val evidenceBatchNames:Option[Seq[String]]=None,var initialSteps:Int=0,stepsPerBatch:Int=10000) extends AuthorSampler(model){
   protected var pwOption:Option[PrintWriter]=None
-  var mentionCount = labeledData.size
-  def processExperiment(pw:PrintWriter,steps:Int):Unit ={
+  val labeledData = initialDB.filter(_.groundTruth != None)
+  def snapshotInterval = 10000
+  var batchCount = 0
+  var mentionCount = labeledData.filter(_.isObserved).size
+  var gtEntityCount = labeledData.filter((e:AuthorEntity) => {e.isObserved && e.groundTruth != None}).map(_.groundTruth.get).toSet.size
+  var curScore:Double = 0.0
+  var maxScore:Double = 0.0
+  private var currentBatchName = "initial"
+  if(initialDBNameOpt!=None)currentBatchName = initialDBNameOpt.get
+  def processExperiment(pw:PrintWriter):Unit ={
+    batchCount = 0
     pwOption=Some(pw)
-    pw.println("time #samples #accepted p r f1 #mentions")
-    process(initialSteps)
+    println("LABELED DATA SIZE "+labeledData.size)
+    setEntities(initialDB)
+    pw.println("time samples accepted f1 p r batch-count mentions entities batch-name score maxscore")
+    //snapshot(totalTime,proposalCount,numAccepted,Evaluator.pairF1LabeledOnly(labeledData))
+    println("Inferring initial database.")
+    timeAndProcess(initialSteps)
+    snapshot(totalTime,proposalCount,numAccepted,Evaluator.pairF1LabeledOnly(labeledData))
+    println("About to process evidence stream.")
     for(evidenceBatch <- evidenceBatches){
-      this.process(steps)
+      batchCount += 1
+      evidenceBatch.foreach(this.addEntity(_))
+      if(evidenceBatchNames != None)currentBatchName = evidenceBatchNames.get(batchCount-1)
+      println("\n---Adding new evidence batch---")
+      println("Batch name: "+currentBatchName)
+      println("Mentions added: ")
+      for(mention <- evidenceBatch)println(EntityUtils.prettyPrintAuthor(mention))
+
+      mentionCount += evidenceBatch.filter(_.isObserved).size
+      gtEntityCount = entities.filter((e:AuthorEntity) => {e.isObserved && e.groundTruth != None}).map(_.groundTruth.get).toSet.size
+      process(stepsPerBatch)
+      //snapshot(totalTime,proposalCount,numAccepted,Evaluator.pairF1LabeledOnly(labeledData))
     }
   }
   override def proposalHook(proposal:Proposal) ={
     super.proposalHook(proposal)
+    curScore += proposal.modelScore
+    if(curScore>maxScore)maxScore=curScore
     if(proposalCount % snapshotInterval == 0){
       val scores = Evaluator.pairF1LabeledOnly(labeledData)
       snapshot(totalTime,proposalCount,numAccepted,scores)
@@ -29,7 +58,7 @@ class AuthorSamplerWriter(model:Model[Variable], val labeledData:Seq[AuthorEntit
   }
   def snapshot(time:Long,numSamples:Int,numAccepted:Int,scores:Iterable[Double]):Unit ={
     for(pw <- pwOption){
-      val line = (time+" "+numSamples+" "+numAccepted+" "+scores.foreach(_ + " ")).trim+" "+mentionCount
+      val line = ((System.currentTimeMillis - time)/1000L + " "+numSamples+" "+numAccepted+" "+scores.mkString(" ")+" "+batchCount+" "+mentionCount+" "+gtEntityCount+" "+currentBatchName+" "+curScore+" "+maxScore)
       pw.println(line)
       pw.flush()
     }
@@ -37,49 +66,82 @@ class AuthorSamplerWriter(model:Model[Variable], val labeledData:Seq[AuthorEntit
 }
 
 object EpiDBExperimentOptions extends MongoOptions with DataOptions with InferenceOptions with AuthorModelOptions{
+  val advanceSeed = new CmdOption("advance-seed",0,"INT","Number of times to call random.nextInt to advance the seed.")
+  val outputFile = new CmdOption("outputFile","experiment.log","FILE","Output file for experimental results.")
   val outputDir = new CmdOption("outputDir","/Users/mwick/data/rexa2/experiments/","FILE","Root output directory containing intermediate results and final results")
   val scratchDir = new CmdOption("scratchDir","scratch/","FILE","Directory for intermediate results of experiment")
   val resultsDir = new CmdOption("resultsDir","results/","FILE","Directory for final results of experiment")
   val metaDir = new CmdOption("metaDir","meta/","FILE","Directory for meta information about results (parameters, settings, configurations used etc.)")
   val experimentName = new CmdOption("name","NONE","FILE","Name of experiment to run")
-  def main(args:Array[String]):Unit ={
-    this.parse(args)
-    writeOptions(new File(this.metaDir.value+experimentName.value))
-    println("Dropping database.")
+  val initialDBPercent = new CmdOption("initial-db-pct",0.5,"","Percentage of labeled data to include in the initial database")
+  val numFolds = new CmdOption("num-folds",3,"","Number of folds for CV, this indirectly determines the size of the initial DB: initialDB.size=labeledData.size/numFolds")
+  val fold = new CmdOption("fold",0,"","Specifies which fold to use as the inital DB.")
+  val evidenceBatchSize = new CmdOption("evidence-batch-size",10,"","Size of each streaming batch of evidence")
+  val inferenceStepsPerBatch = new CmdOption("inference-steps-per-batch",100000,"","Number of inference steps per batch of incoming evidence")
+  val inferenceInitialSteps = new CmdOption("inference-steps-initial",1000000,"","Nubmer of steps of inference to run on the initial DB")
+  val evidenceStreamType = new CmdOption("evidence-stream-type","random","","Types of evidence streams, current options are: random, and byyear.")
+
+  def main(argsIn:Array[String]):Unit ={
+    var args:Array[String]=new Array[String](0)
+    if(argsIn.length>0 && argsIn.head.startsWith("--config")){
+      val contents = scala.io.Source.fromFile(new File(argsIn.head.split("=")(1))).mkString
+      args = contents.split("\\s+") ++ argsIn
+    } else args=argsIn
+    println("Args: "+args.length)
+    for(arg <- args)
+      println("  "+arg)
+    parse(args)
+    //writeOptions(new File(this.metaDir.value+experimentName.value))
+    if(ldaModel.wasInvoked)Coref.ldaFileOpt = Some(ldaModel.value)
+    for(i<-0 until advanceSeed.value)random.nextInt
     if(dropDB.value){
+      println("Dropping database.")
       val mongoConn = new Mongo(server.value,port.value.toInt)
       val mongoDB = mongoConn.getDB(database.value)
       mongoDB.getCollection("authors").drop
       mongoDB.getCollection("papers").drop
+      mongoDB.getCollection("venues").drop
       mongoConn.close
     }
+    println("server: "+server.value+" port: "+port.value.toInt+" database: "+database.value)
     val authorCorefModel = new AuthorCorefModel
-    authorCorefModel += new ChildParentCosineDistance[BagOfTopics](4.0,-0.25)
-    authorCorefModel += new ChildParentCosineDistance[BagOfCoAuthors](4.0,-0.25)
-    authorCorefModel += new ChildParentCosineDistance[BagOfVenues](4.0,-0.25)
-    authorCorefModel += new StructuralPriorsTemplate(2.0,0.25)
-    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](0.75)
-    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfCoAuthors](0.25)
-    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfVenues](0.25)
-
+    def opts = this
+    if(opts.entitySizeWeight.value != 0.0)authorCorefModel += new EntitySizePrior(opts.entitySizeWeight.value,opts.entitySizeExponent.value)
+    if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfTopics](opts.bagTopicsWeight.value,opts.bagTopicsShift.value)
+    if(opts.bagTopicsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](opts.bagTopicsEntropy.value)
+    if(opts.bagTopicsPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfTopics](opts.bagTopicsPrior.value)
+    if(opts.bagCoAuthorWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfCoAuthors](opts.bagCoAuthorWeight.value,opts.bagCoAuthorShift.value)
+    if(opts.bagCoAuthorEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfCoAuthors](opts.bagCoAuthorEntropy.value)
+    if(opts.bagCoAuthorPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfCoAuthors](opts.bagCoAuthorPrior.value)
+    if(opts.bagVenuesWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfVenues](opts.bagVenuesWeight.value,opts.bagVenuesShift.value)
+    if(opts.bagVenuesEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfVenues](opts.bagVenuesEntropy.value)
+    if(opts.bagVenuesPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfVenues](opts.bagVenuesPrior.value)
+    if(opts.bagKeywordsWeight != 0.0)authorCorefModel += new ChildParentCosineDistance[BagOfKeywords](opts.bagKeywordsWeight.value,opts.bagKeywordsShift.value)
+    if(opts.bagKeywordsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfKeywords](opts.bagKeywordsEntropy.value)
+    if(opts.bagKeywordsPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfKeywords](opts.bagKeywordsPrior.value)
+    if(opts.entityExistencePenalty.value!=0.0 && opts.subEntityExistencePenalty.value!=0.0)authorCorefModel += new StructuralPriorsTemplate(opts.entityExistencePenalty.value, opts.subEntityExistencePenalty.value)
     val epiDB = new EpistemologicalDB(authorCorefModel,server.value,port.value.toInt,database.value)
     println("About to add data.")
     var papers = new ArrayBuffer[PaperEntity]
     if(bibDirectory.value.toLowerCase != "none"){
       println("Adding mentions from BibTeX directory: "+bibDirectory.value.toLowerCase)
       papers ++= BibReader.loadBibTexDirMultiThreaded(new File(bibDirectory.value))
+      println("  total papers: "+papers.size)
     }
     if(rexaData.value.toLowerCase != "none"){
       println("Loading labeled data from: " + rexaData.value)
       papers ++= RexaLabeledLoader.load(new File(rexaData.value))
+      println("  total papers: "+papers.size)
     }
     if(dblpLocation.value.toLowerCase != "none"){
       println("Loading dblp data from: "+dblpLocation.value)
       papers ++= DBLPLoader.loadDBLPData(dblpLocation.value)
+      println("  total papers: "+papers.size)
     }
+    /*
     if(this.filterPapersOnLabeledCanopies.value){
       println("About to filter papers so only those in a labeled author's canopy are inserted into DB.")
-      val labeledAuthors = epiDB.authorColl.loadLabeled
+      val labeledAuthors = epiDB.authorColl.loadLabeledAndCanopies
       val canopySet = new HashSet[String]
       canopySet ++= labeledAuthors.flatMap(_.canopyAttributes).map(_.canopyName)
       var i =0
@@ -91,19 +153,104 @@ object EpiDBExperimentOptions extends MongoOptions with DataOptions with Inferen
       }
       papers = filteredPapers
     }
-    println("About to add "+papers.size+"papers.")
+    */
+    println("About to add "+papers.size+" papers.")
     epiDB.add(papers)
     println("Finished adding papers.")
+    val authors:Seq[AuthorEntity] = random.shuffle(epiDB.authorColl.loadLabeledAndCanopies)
+    var initialDB:Seq[AuthorEntity] = null
+    var evidenceBatches:Seq[Seq[AuthorEntity]] = null
+    var evidenceBatchNamesOpt:Option[Seq[String]] = None
+    var initialDBNameOpt:Option[String] = None
+    println("Authors.size" +authors.size)
+    EntityUtils.checkIntegrity(authors)
+    Evaluator.eval(authors)
+
+    println("Evidence stream: "+evidenceStreamType.value)
+    if(this.evidenceStreamType.value=="random"){
+      val (initialDB2,evidence) = split(authors,numFolds.value,fold.value)
+      initialDB=initialDB2
+      println("initialDB.size "+initialDB.size+" evidence.size: "+evidence.size)
+      evidence.foreach(_.groundTruth=None) //so it `won't get evaluated during the experiment
+      evidenceBatches = randomEqualPartitioning(evidence,evidenceBatchSize.value)
+    }
+    else if(this.evidenceStreamType.value=="byyear"){
+      val years = this.partitionByYear(authors)
+      println("Paper counts by year.")
+      println("   year: count")
+      var yearCount = 0
+      for((k,v) <- years.toList.sortBy(_._1)){
+        println("   "+k+": "+v.size)
+        if(k != -1)yearCount += v.size
+      }
+      println("Number of papers with year: "+yearCount)
+      val targetSize = yearCount/numFolds.value
+      val initialDBBuffer = new ArrayBuffer[AuthorEntity]
+      val evidenceBatchesBuffer = new ArrayBuffer[Seq[AuthorEntity]]
+      val evidenceBatchNames = new ArrayBuffer[String]
+      evidenceBatchNamesOpt = Some(evidenceBatchNames)
+      var initialDBName:String = ""
+      for((k,v) <- years.toList.sortBy(_._1)){
+        if(k != -1){
+          if(initialDBBuffer.size<targetSize){
+            if(initialDBName.length==0)initialDBName = k.toString
+            println("Adding year "+ k + " to initial DB.")
+            initialDBBuffer ++= v
+          } else {
+            if(initialDBName.length<=4)initialDBName += "-"+k.toString
+            evidenceBatchesBuffer += v
+            evidenceBatchNames += k.toString
+          }
+        }
+      }
+      initialDBNameOpt=Some(initialDBName)
+      println("Initial DB name: "+initialDBName)
+      if(years.contains(-1)){
+        evidenceBatchesBuffer += years(-1)
+        evidenceBatchNames += "????"
+      }
+      initialDB = initialDBBuffer
+      evidenceBatches = evidenceBatchesBuffer
+      println("  initialDB.size: " + initialDB.size)
+      println("  num evidence batches: "+evidenceBatches.size)
+    }
+    else println("unrecognized evidence stream: "+evidenceStreamType.value)
+    val sampler = new AuthorSamplerWriter(authorCorefModel,initialDB,evidenceBatches,initialDBNameOpt,evidenceBatchNamesOpt,inferenceInitialSteps.value,inferenceStepsPerBatch.value){temperature = 0.001}
+    sampler.processExperiment(new PrintWriter(new File(outputFile.value)))
   }
-
-
+  def split[T](seq:Seq[T],numFolds:Int,fold:Int):(Seq[T],Seq[T]) = {
+    val folds = randomEqualPartitioning(seq,(scala.math.ceil(seq.size.toDouble/numFolds.toDouble)).toInt)
+    val other = new ArrayBuffer[T]
+    for(i<-0 until folds.size)if(i!=fold)other ++= folds(i)
+    (folds(fold),other)
+  }
+  def randomSubset[T](seq:Seq[T],pct:Double):Seq[T] = randomSubset[T](seq,(seq.size.toDouble*pct).toInt)
   def randomSubset[T](seq:Seq[T],n:Int):Seq[T] = random.shuffle(seq).take(n)
-  def runInference(authors:Seq[AuthorEntity],inferencer:AuthorSamplerWriter,pw:PrintWriter,numSteps:Int) ={
-    inferencer.setEntities(authors)
-    inferencer.processExperiment(pw,numSteps)
+  def randomEqualPartitioning[T](seq:Seq[T],partitionSize:Int):Seq[Seq[T]] = {
+    val result = new ArrayBuffer[Seq[T]]
+    var batch = new ArrayBuffer[T]
+    random.shuffle(seq)
+    var i =0
+    while(i<seq.size){
+      if(i % partitionSize==0){
+        batch = new ArrayBuffer[T]
+        result += batch
+      }
+      batch += seq(i)
+      i+=1
+    }
+    println("SEQ SIZE: "+seq.size+" batches: " + result.size)
+    result
+  }
+  def partitionByYear[T<:Attr](seq:Seq[T]):HashMap[Int,Seq[T]] ={
+    val result = new HashMap[Int,ArrayBuffer[T]]
+    for(s <- seq){
+      val b = result.getOrElseUpdate(s.attr[Year].intValue,new ArrayBuffer[T])
+      b += s
+    }
+    result.asInstanceOf[HashMap[Int,Seq[T]]]
   }
 }
-
 trait ExperimentOptions extends DefaultCmdOptions{
   def writeOptions(file:File):Unit = {
     //if(!file.exists)file.mkDirs
@@ -123,14 +270,11 @@ trait ExperimentOptions extends DefaultCmdOptions{
     parse(args)
   }
 }
-
-
 trait MongoOptions extends ExperimentOptions{
   val server = new CmdOption("server","localhost","FILE","Location of Mongo server.")
   val port = new CmdOption("port","27017","FILE","Port of Mongo server.")
   val database = new CmdOption("database","rexa2-cubbies","FILE","Name of mongo database.")
 }
-  //db creation options
 trait DataOptions extends ExperimentOptions{
   val bibDirectory = new CmdOption("bibDir","/Users/mwick/data/thesis/all3/","FILE","Pointer to a directory containing .bib files.")
   val rexaData = new CmdOption("rexaData","/Users/mwick/data/rexa/rexaAll/","FILE","Location of the labeled rexa2 directory.")
@@ -153,18 +297,6 @@ trait InferenceOptions extends ExperimentOptions{
   //model
 }
 trait AuthorModelOptions extends ExperimentOptions{
-  /*
-    authorCorefModel += new ChildParentCosineDistance[BagOfTopics](4.0,-0.25)
-    authorCorefModel += new ChildParentCosineDistance[BagOfCoAuthors](4.0,-0.125)
-    authorCorefModel += new ChildParentCosineDistance[BagOfVenues](4.0,-0.125)
-    authorCorefModel += new ChildParentCosineDistance[BagOfKeywords](2.0,-0.125)
-    authorCorefModel += new StructuralPriorsTemplate(2.0,0.25)
-    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfTopics](0.75)
-    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfCoAuthors](0.125)
-    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfVenues](0.125)
-    authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfKeywords](0.25)
-
-   */
   //co-authors
   val bagCoAuthorWeight = new CmdOption("model-author-bag-coauthors-weight", 4.0, "N", "Penalty for bag-of-co-authors cosine distance template (author coreference model).")
   val bagCoAuthorShift = new CmdOption("model-author-bag-coauthors-shift", -0.125, "N", "Shift for bag-of-co-authors cosine distance template  (author coreference model).")
@@ -185,6 +317,9 @@ trait AuthorModelOptions extends ExperimentOptions{
   val bagTopicsShift = new CmdOption("model-author-bag-topics-shift", -0.25, "N", "Shift for bag-of-topics cosine distance template (author coreference model).")
   val bagTopicsEntropy = new CmdOption("model-author-bag-topics-entropy", 0.75, "N", "Penalty on bag of topics entropy  (author coreference model).")
   val bagTopicsPrior = new CmdOption("model-author-bag-topics-prior", 0.25, "N", "Bag of co-author prior penalty, formula is bag.size/bag.oneNorm*weight.")
+
+  val entitySizeExponent = new CmdOption("model-author-size-prior-exponent", 1.2, "N", "Exponent k for rewarding entity size: w*|e|^k")
+  val entitySizeWeight = new CmdOption("model-author-size-prior-weight", 0.05, "N", "Weight w for rewarding entity size: w*|e|^k.")
   //author names
 //  val bagFirstInitialWeight = new CmdOption("model-author-bag-first-initial-weight", 4.0, "N", "Penalty for first initial mismatches.")
 //  val bagFirstNameWeight = new CmdOption("model-author-bag-first-name-weight", 4.0, "N", "Penalty for first name mismatches")
@@ -193,87 +328,8 @@ trait AuthorModelOptions extends ExperimentOptions{
   //structural priors
   val entityExistencePenalty = new CmdOption("model-author-entity-penalty", 2.0, "N", "Penalty for a top-level entity existing")
   val subEntityExistencePenalty = new CmdOption("model-author-subentity-penalty", 0.25, "N", "Penalty for a subentity existing")
-}
-/*
-trait Experiment{
-  val now = new Date
-  def experimentName:String
-  def dataOutDir:String
-  def dataWorkingDir:String = dataOutDir+"/"+working+"/"
-  def dataResultsDir:String = dataOutputDir+"/"+results+"/"
-  def parametersLocation:String = dataResultsDir+"/"+experimentName+".parameters"
-  def writeParameters(args:Array[String]):Unit = {
-    val pw = new PrintWriter(new File(parameters))
-    pw.println("Experiment Parameters: "+DateFormat.getDateInstance(DateFormat.SHORT).format(now))
-    args.foreach(pw.println(_))
-    pw.flush()
-    pw.close()
-  }
-  def readParameters(params:String):Array[String] ={
-    val reader = new BufferedReader(new InputStreamReader(new FileInputStream(params)))
-    var line = reader.readLine()
-    val result = new ArrayBuffer[String]
-    while(line!=null){
-      line = reader.readLine
-      result += line
-    }
-    reader.close
-    result.toArray
-  }
-}
 
-
-*/
-
-/*
-object EpiDBExperiment{
-  def subsetExperiments(numFolds:Int=10,randomSeed:Int,numTrials:Int):Unit ={
-    
-  }
-  def incrementalEvidenceExperiments(initialBatchPortion:Double,numIncrementalBatches:Int,initialInferenceSteps:Int,incrementalInferenceSteps:Int,numTrials:Int):Unit ={
-    
-  }
-}
-
-trait EpiDBExperiment{
-  var printWriter:PrintWriter = null
-  var snapshotFrequency = 1000
-  def proposalCount:Int
-  def numAccepted:Int
-  def totalTime:Long
-  def labeledData:Seq[HierEntity]
-  def process(n:Int)
-  
-  def runExperiment(experimentName:String,trialNumber:Int,experimentParams:Array[String],outputDirectory:File) ={
-    initializeOutputFile(outputDirectory, experimentName,trialNumber,experimentParams)
-    this.process()
-    finalizeOutputFile
-  }
-
-  def initializeOutputFile(directory:String,experimentName:String,trialNumber:Int,args:Array[String]):Unit ={
-    val fileName = directory+experimentName+"-"+trialNumber+".ssv"
-    printWriter = new PrintWriter(new File(fileName))
-    printWriter.println("Experiment name: "+experimentName)
-    printWriter.println("Experiment params: ")
-    for(arg <- args)printWriter.println(  "*"+arg)
-    printWriter.println("--END-HEADER---")
-    printWriter.println()
-  }
-  def snapshot(time:Long,numSamples:Int,numAccepted:Int,scores:Iterable[Double]):Unit ={
-    val line = (time+" "+numSamples+" "+numAccepted+" "+scores.foreach(_ + " ")).trim
-    printWriter.println(line)
-  }
-  def finalizeOutputFile:Unit ={
-    printWriter.flush
-    printWriter.close
-  }
-  abstract override def proposalHook(proposal:Proposal) ={
-    super.proposalHook
-    if(proposalCount % snapshotFrequency == 0){
-      val scores = pairF1LabeledOnly(labeledData)
-      snapshot(totalTime,proposalCount,numAccepted,scores)
-    }
-  }
+  val bagFirstNamePenalty = new CmdOption("model-author-firstname-penalty", 16.0, "N", "Penalty for having multiple first names")
+  val bagMiddleNamePenalty = new CmdOption("model-author-middlename-penalty", 16.0, "N", "Penalty for having multiple middle names")
 
 }
-*/

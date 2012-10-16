@@ -1,6 +1,7 @@
 package cc.factorie.app.bib
 
 import cc.factorie.app.nlp.coref.{SparseBagOfWords, ChildParentTemplateWithStatistics, HierEntity}
+import collection.mutable.HashMap
 
 object Evaluator{
   def debugBagFeature(childBow:SparseBagOfWords,parentBow:SparseBagOfWords, strength:Double=4.0, shift:Double=0.0):Double= {
@@ -136,4 +137,30 @@ object Evaluator{
     val f1 = 2 * p * r / (p + r)
     println("BCub F1: p="+p+" r="+r+" f1="+f1)
   }
+  def analysisForEntityId(id:String,entities:Seq[HierEntity]):Unit ={
+    var targetEntity:HierEntity = null
+    for(e <- entities){
+      if(e.id.toString==id){
+        targetEntity=e
+      }
+    }
+    if(targetEntity!=null)analysisForEntity(targetEntity)
+  }
+  def analysisForEntity(e:HierEntity):Unit ={
+    val top = e.entityRoot.asInstanceOf[HierEntity]
+    val truthIds = new HashMap[String,Int]
+    println("ID: "+e.id+"  TOP ID: "+top.id)
+    for(mention <- top.descendantsOfClass[HierEntity].filter(_.isObserved)){
+      if(mention.groundTruth != None)truthIds(mention.groundTruth.get) = truthIds.getOrElse(mention.groundTruth.get,0) + 1
+      else truthIds("unlabeled") = truthIds.getOrElse("unlabeled",0) + 1
+    }
+    println("Label composition:")
+    for((k,v) <- truthIds)
+      println("   "+v+" "+k)
+  }
+  def analysisForTruthKey(truthKey:String,entities:Seq[HierEntity]):Unit ={
+    val relevant = entities.filter((e:HierEntity) => e.groundTruth!=None && e.groundTruth.get == truthKey).map((e:HierEntity) => e.entityRoot).toSet.toSeq
+
+  }
+
 }
