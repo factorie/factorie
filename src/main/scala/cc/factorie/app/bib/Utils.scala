@@ -658,14 +658,20 @@ object LDAUtils{
     }
     var line = reader.readLine()
     var topicCount= -1
+    var lineCount = 0
+    var start = System.currentTimeMillis
     while(line!=null){
       if(line=="/topic"){
         topicCount += 1
         line=reader.readLine
       }
+      lineCount += 1
+      if(lineCount % 1000 == 0)print(lineCount+" ")
+      if(lineCount % 25000 == 0)println("  time: "+((System.currentTimeMillis-start)/1000L))
       val word = line
       val count = reader.readLine.toDouble
-      lda.phis(topicCount).tensor.masses.+=(lda.wordDomain.index(word),count)
+      //lda.phis(topicCount).tensor.masses.+=(lda.wordDomain.index(word),count)
+      lda.phis(topicCount).value.masses.+=(lda.wordDomain.index(word),count)
       line=reader.readLine
     }
     println("Topics: \n"+lda.topicsSummary(10))
