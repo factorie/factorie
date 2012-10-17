@@ -14,6 +14,7 @@ package cc.factorie
 
 
 import cc.factorie.app.nlp._
+import cc.factorie.optimize._
 import cc.factorie.app.chain._
 import cc.factorie._
 import app.chain.Lexicon

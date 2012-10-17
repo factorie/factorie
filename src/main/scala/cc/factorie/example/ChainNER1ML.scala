@@ -18,6 +18,7 @@ package cc.factorie.example
 
 import java.io.File
 import cc.factorie._
+import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import collection.mutable.{ArrayBuffer, Seq => MSeq}

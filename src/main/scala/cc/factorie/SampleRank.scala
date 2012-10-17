@@ -16,8 +16,8 @@
 
 package cc.factorie
 import cc.factorie.la._
-import cc.factorie.optimize.GradientOptimizer
 import collection.mutable.HashMap
+import optimize.{Piece, GradientOptimizer}
 import util.DoubleAccumulator
 
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */

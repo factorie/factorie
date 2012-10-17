@@ -18,7 +18,6 @@ import cc.factorie._
 import cc.factorie.optimize._
 import la.{Tensor1, Tensor}
 import scala.collection.mutable.{HashMap, ArrayBuffer}
-import cc.factorie.ModelWithWeightsImpl
 
 class MaxEntSampleRankTrainer extends ClassifierTrainer {
   var iterations = 10
@@ -37,7 +36,7 @@ class MaxEntSampleRankTrainer extends ClassifierTrainer {
 class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = null) extends ClassifierTrainer {
   def train[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](il: LabelList[L, F]): Classifier[L] = {
     val cmodel = new LogLinearModel(il.labelToFeatures, il.labelDomain, il.instanceDomain)(il.labelManifest, il.featureManifest)
-    val pieces = il.map(l => new MultiClassGLMPiece(
+    val pieces = il.map(l => new GLMPiece(
       il.labelToFeatures(l).tensor.asInstanceOf[Tensor1],
       l.intValue,
       LossFunctions.logMultiClassLoss,

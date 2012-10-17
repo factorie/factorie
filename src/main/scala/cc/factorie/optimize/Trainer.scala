@@ -44,7 +44,7 @@ class InlineSGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C],
     val weights = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily)
     valueAccumulator.value = 0.0
     pieces.foreach(piece => {
-      val glmPiece = piece.asInstanceOf[MultiClassGLMPiece]
+      val glmPiece = piece.asInstanceOf[GLMPiece]
       val oldWeight = glmPiece.weight
       glmPiece.weight *= learningRate
       piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
@@ -91,7 +91,7 @@ class SGDThenBatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[
     if (sgdPasses > 0) {
       valueAccumulator.value = 0.0
       pieces.foreach(piece => {
-        val glmPiece = piece.asInstanceOf[MultiClassGLMPiece]
+        val glmPiece = piece.asInstanceOf[GLMPiece]
         val oldWeight = glmPiece.weight
         glmPiece.weight *= learningRate
         piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
