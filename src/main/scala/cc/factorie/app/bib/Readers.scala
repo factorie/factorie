@@ -2,9 +2,94 @@ package cc.factorie.app.bib
 import cc.factorie.app.bib.parser.Dom
 import cc.factorie.app.bib.parser.Dom.Entry
 import collection.mutable.{ArrayBuffer,HashMap}
-import java.io.File
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import org.w3c.dom.{Node, NodeList, Document}
+import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
+
+object RexaCitationLoader{
+  var numPapers = 0
+  var numReferences = 0
+  def loadFromList(file:File):Seq[PaperEntity] ={
+    println("About to load REXA data from " + file)
+    val result = new ArrayBuffer[PaperEntity]
+    val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+    var line = reader.readLine
+    while(line!=null){
+      result ++= loadFile(new File(line))
+      line=reader.readLine
+    }
+    println("Finished loading "+numPapers + " papers and "+numReferences + " references. Total: "+(numPapers+numReferences)+".")
+    result
+  }
+  def loadFile(file:File):Seq[PaperEntity] ={
+    val docFactory:DocumentBuilderFactory = DocumentBuilderFactory.newInstance
+    val docBuilder:DocumentBuilder = docFactory.newDocumentBuilder
+    if(!file.exists()) error("Couldn't find file " + file + ", aborting load.")
+    val result = new ArrayBuffer[PaperEntity]
+    val doc:Document = docBuilder.parse(file)
+    val content = doc.getElementsByTagName("content")
+    if(content.getLength==1){
+      val contentChildren = content.item(0).getChildNodes
+      for(i<-0 until contentChildren.getLength){
+        val contentType = contentChildren.item(i).getNodeName
+        val contentFieldNodes = contentChildren.item(i).getChildNodes
+        if(contentType == "headers"){
+          val paper = processPaper(contentChildren.item(i))
+          result += paper
+          numPapers += 1
+        }
+        if(contentType == "biblio"){
+          for(j<-0 until contentFieldNodes.getLength){
+            val biblioNode = contentFieldNodes.item(j)
+            result += processPaper(biblioNode)
+            numReferences += 1
+          }
+        }
+      }
+    }
+    result
+  }
+  protected def processPaper(paperNode:Node):PaperEntity ={
+    val paperAttributeNodes = paperNode.getChildNodes
+    val paper = new PaperEntity("",true)
+    for(j <- 0 until paperAttributeNodes.getLength){
+      val name = paperAttributeNodes.item(j).getNodeName
+      val text = paperAttributeNodes.item(j).getTextContent
+      name match{
+        case "title" => {paper.title := text.replaceAll("[\r\n\t ]+"," ").replaceAll("[^A-Za-z0-9\\-\\.,\\(\\) ]","")}
+        case "date" => {} //more than a year, e.g., September 21, 2006
+        case "authors" => {
+          paperAttributeNodes.item(j).getChildNodes
+          val authorNodes = paperAttributeNodes.item(j).getChildNodes
+          for(k <- 0 until authorNodes.getLength){
+            val authorMention = getAuthor(authorNodes.item(k))
+            authorMention.paper = paper
+            paper.authors += authorMention
+          }
+        }
+        case "note" => {}
+        case "address" =>{}
+        case "institution" => {}
+        case "abstract" => {}
+        case _ => {}
+      }
+    }
+    paper
+  }
+  protected def getAuthor(authorNode:Node):AuthorEntity ={
+    var (f,m,l) = ("","","")
+    val name = authorNode.getNodeName
+    val text = FeatureUtils.normalizeName(authorNode.getTextContent)
+    name match{
+      case "author-first" => f=text
+      case "author-middle" => m=text
+      case "author-last" => l=text
+      case _ => {}
+    }
+    val result = new AuthorEntity(f,m,l,true)
+    result
+  }
+}
 
 object AclAnthologyReader{
   def loadAnnFile(file:File):Seq[PaperEntity] ={

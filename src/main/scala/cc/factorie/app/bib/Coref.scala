@@ -171,6 +171,7 @@ object Coref{
       val rexaData = new CmdOption("rexaData","/Users/mwick/data/rexa/rexaAll/","FILE","Location of the labeled rexa2 directory.")
       val aronData = new CmdOption("aronData","/data/thesis/rexa1/rexa_coref_datav0.5/","FILE","Location of Aron's labeled data")
       val aclAnthologyFile = new CmdOption("aclFile","none","FILE","Location of the \"acl-metadata.txt\" ACL Anthology data file. E.g., /iesl/canvas/soergel/aan/release/2011/acl-metadata.txt")
+      val rexaFileList = new CmdOption("rexaFileList","none","FILE","Location of the file listing the locations of REXA \".crf.xml\" files to load.")
       val createDB = new CmdOption("create","true","FILE","Creates a new DB by destroying the old one.")
       val ldaModel = new CmdOption("ldaModel","lda-model.txt","FILE","Location of lda model")
       val saveDB = new CmdOption("save",true,"FILE","Creates a new DB by destroying the old one.")
@@ -223,9 +224,7 @@ object Coref{
     if(opts.bagKeywordsEntropy.value != 0.0)authorCorefModel += new EntropyBagOfWordsPriorWithStatistics[BagOfKeywords](opts.bagKeywordsEntropy.value)
     if(opts.bagKeywordsPrior.value != 0.0)authorCorefModel += new BagOfWordsPriorWithStatistics[BagOfKeywords](opts.bagKeywordsPrior.value)
     if(opts.entityExistencePenalty.value!=0.0 && opts.subEntityExistencePenalty.value!=0.0)authorCorefModel += new StructuralPriorsTemplate(opts.entityExistencePenalty.value, opts.subEntityExistencePenalty.value)
-    //if(opts.bagFirstNamePenalty.value!=0.0)authorCorefModel += new First
     val epiDB = new EpistemologicalDB(authorCorefModel,opts.server.value,opts.port.value.toInt,opts.database.value)
-//    if(opts.createDB.value.toBoolean){
     println("About to add data.")
     if(opts.bibDirectory.value.toLowerCase != "none")
       epiDB.insertMentionsFromBibDirMultiThreaded(new File(opts.bibDirectory.value))
@@ -243,17 +242,10 @@ object Coref{
       val papers = AclAnthologyReader.loadAnnFile(new File(opts.aclAnthologyFile.value))
       epiDB.add(papers)
     }
-//    }
-    /*
-    //epiDB.drop
-    epiDB.insertLabeledRexaMentions(new File("/Users/mwick/data/rexa/rexaTrain/"))
-    epiDB.insertLabeledRexaMentions(new File("/Users/mwick/data/rexa/rexaTest/"))
-    //epiDB.insertLabeledRexaMentions(new File("/Users/mwick/data/rexa/rexaAll/"))
-    epiDB.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/labeled/fpereira.bib"))
-    epiDB.insertMentionsFromBibDir(new File("/Users/mwick/data/thesis/all3/"))
-    //epiDB.insertMentionsFromBibFile(new File("/Users/mwick/data/thesis/rexa2/labeled/single-promotion-test.bib"))
-    */
-    
+    if(opts.rexaFileList.value.toLowerCase != "none"){
+      val papers = RexaCitationLoader.loadFromList(new File(opts.rexaFileList.value))
+      epiDB.add(papers)
+    }
     epiDB.inferenceSweep(
       opts.numEpochs.value.toInt,
       opts.batchSize.value.toInt,
