@@ -30,12 +30,12 @@ trait Piece[C] {
   //def updateState(state: PieceState)
 }
 
-trait PiecewiseLearner[C] {
+trait Trainer[C] {
   def model: Model[C]
   def process(pieces: GenSeq[Piece[C]]): Unit
 }
 
-class BatchPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[C]) extends PiecewiseLearner[C] {
+class BatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] {
   val gradient = model.weightsTensor.copy
   val gradientAccumulator = new LocalTensorAccumulator(gradient.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
@@ -52,11 +52,11 @@ class BatchPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Mode
 }
 
 // Hacky proof of concept
-class SGDThenBatchPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[C], val learningRate: Double = 0.01, val l2: Double = 0.1)
-  extends PiecewiseLearner[C] {
+class SGDThenBatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C], val learningRate: Double = 0.01, val l2: Double = 0.1)
+  extends Trainer[C] {
   val gradientAccumulator = new LocalTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
-  val batchLearner = new BatchPiecewiseLearner[C](optimizer, model)
+  val batchLearner = new BatchTrainer[C](optimizer, model)
   var sgdPasses = 5
   override def process(pieces: GenSeq[Piece[C]]): Unit = {
     if (sgdPasses > 0) {
@@ -80,8 +80,8 @@ class SGDThenBatchPiecewiseLearner[C](val optimizer: GradientOptimizer, val mode
 }
 
 // Hacky proof of concept
-class InlineSGDPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[C], val learningRate: Double = 0.01, val l2: Double = 0.1)
-  extends PiecewiseLearner[C] {
+class InlineSGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C], val learningRate: Double = 0.01, val l2: Double = 0.1)
+  extends Trainer[C] {
   val gradientAccumulator = new LocalTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   override def process(pieces: GenSeq[Piece[C]]): Unit = {
@@ -101,7 +101,7 @@ class InlineSGDPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: 
   def isConverged = false
 }
 
-class SGDPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[C]) extends PiecewiseLearner[C] {
+class SGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] {
   val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.asInstanceOf[WeightsTensor].copy}
   val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] {override def initialValue = new LocalTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
   val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] {override def initialValue = new LocalDoubleAccumulator(0.0)}
@@ -120,7 +120,7 @@ class SGDPiecewiseLearner[C](val optimizer: GradientOptimizer, val model: Model[
   def isConverged = false
 }
 
-class HogwildPiecewiseLearner[C](optimizer: GradientOptimizer, model: Model[C]) extends SGDPiecewiseLearner[C](optimizer, model) {
+class HogwildTrainer[C](optimizer: GradientOptimizer, model: Model[C]) extends SGDTrainer[C](optimizer, model) {
   override def process(pieces: GenSeq[Piece[C]]) = super.process(pieces.par)
 }
 
@@ -315,14 +315,14 @@ object PieceTest {
     //   val forOuter = new la.SingletonBinaryTensor1(2, 0)
     val pieces = trainLabels.map(l => new MultiClassGLMPiece(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
-    //    val strategy = new HogwildPiecewiseLearner(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
-    //        val strategy = new BatchPiecewiseLearner(new L2RegularizedConjugateGradient, modelWithWeights)
-    //        val strategy = new SGDPiecewiseLearner(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
-    //    val strategy = new SGDThenBatchPiecewiseLearner(new L2RegularizedLBFGS, modelWithWeights)
+    //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
+    //        val strategy = new BatchTrainer(new L2RegularizedConjugateGradient, modelWithWeights)
+    //        val strategy = new SGDTrainer(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
+    //    val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
     val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
     lbfgs.tolerance = 0.05
-    val strategy = new SGDThenBatchPiecewiseLearner(lbfgs, modelWithWeights, learningRate = .01)
-    //    val strategy = new BatchPiecewiseLearner(new SparseL2RegularizedGradientAscent(rate = 10.0 / trainLabels.size), modelWithWeights)
+    val strategy = new SGDThenBatchTrainer(lbfgs, modelWithWeights, learningRate = .01)
+    //    val strategy = new BatchTrainer(new SparseL2RegularizedGradientAscent(rate = 10.0 / trainLabels.size), modelWithWeights)
 
     var totalTime = 0L
     var i = 0

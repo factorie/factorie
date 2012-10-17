@@ -45,7 +45,7 @@ class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = nul
     if (warmStart != null) cmodel.evidenceTemplate.weights := warmStart
     // Do the training by BFGS
     val lbfgs = new L2RegularizedLBFGS(l2 = 1 / l2)
-    val strategy = new BatchPiecewiseLearner(lbfgs, new ModelWithWeightsImpl(cmodel))
+    val strategy = new BatchTrainer(lbfgs, new ModelWithWeightsImpl(cmodel))
     while (!strategy.isConverged)
       strategy.process(pieces)
     new ModelBasedClassifier[L](cmodel, il.head.domain) {val weights = cmodel.evidenceTemplate.weights}

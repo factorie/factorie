@@ -79,7 +79,7 @@ class TestSimpleNERWorks {
 
     val sampler = new GibbsSampler(model, HammingLossObjective)
     val pieces = trainLabels.map(l => new SampleRankPiece(l, sampler))
-    val learner = new SGDPiecewiseLearner[DiffList](new optimize.StepwiseGradientAscent(), model)
+    val learner = new SGDTrainer[DiffList](new optimize.StepwiseGradientAscent(), model)
     learner.process(pieces)
 
     val trainer = new DotMaximumLikelihood(model)
