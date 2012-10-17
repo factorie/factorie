@@ -56,7 +56,7 @@ class GLMPiece(featureVector: Tensor1, label: Int, lossAndGradient: LossFunction
     if (value != null) value.accumulate(loss)
     if (weight != 0.0) sgrad *= weight
     //    println("Stochastic gradient: " + sgrad)
-    if (gradient != null) gradient.addOuter(DummyFamily, sgrad, featureVector)
+    if (gradient != null) gradient.accumulateOuter(DummyFamily, sgrad, featureVector)
   }
 }
 

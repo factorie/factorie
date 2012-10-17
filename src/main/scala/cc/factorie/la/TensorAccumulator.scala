@@ -11,7 +11,7 @@ trait WeightsTensorAccumulator extends TensorAccumulator[WeightsTensor] {
   def accumulate(family: DotFamily, t: Tensor): Unit
   def accumulate(family: DotFamily, index: Int, value: Double): Unit
   def += (family: DotFamily, t: Tensor, c: Double): Unit
-  def addOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit
 }
 
 class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTensorAccumulator {
@@ -20,7 +20,7 @@ class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTe
   def accumulate(family: DotFamily, t: Tensor): Unit = tensor(family) += t
   def accumulate(family: DotFamily, index: Int, value: Double): Unit = tensor(family)(index) += value
   def += (family: DotFamily, t: Tensor, c: Double) = tensor(family) +=(t, c)
-  def addOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = {
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = {
     (tensor(family), t1, t2) match {
       case (_, t1: UniformTensor1, _) if t1(0) == 0.0 => return
       case (_, _, t2: UniformTensor1) if t2(0) == 0.0 => return
@@ -107,6 +107,6 @@ object NoopWeightsTensorAccumulator extends WeightsTensorAccumulator {
   def accumulate(family: DotFamily, index: Int, value: Double): Unit = {}
   def combine(a: Accumulator[WeightsTensor]): Unit = {}
   def += (family: DotFamily, t: Tensor, c: Double): Unit = {}
-  def addOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) = {}
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) = {}
 }
 
