@@ -23,11 +23,8 @@ import io.Source
 
 // Pieces are thread safe
 trait Piece[C] {
+  // gradient or value can be null if they don't need to be computed.
   def accumulateValueAndGradient(model: Model[C], gradient: TensorAccumulator, value: DoubleAccumulator): Unit
-  def accumulateGradient(model: Model[C], gradient: TensorAccumulator): Unit = accumulateValueAndGradient(model, gradient, NoopDoubleAccumulator)
-  def accumulateValue(model: Model[C], value: DoubleAccumulator): Unit = accumulateValueAndGradient(model, NoopTensorAccumulator, value)
-  //def state: PieceState
-  //def updateState(state: PieceState)
 }
 
 
@@ -39,13 +36,16 @@ class BPMaxLikelihoodPiece[V <: LabeledCategoricalVariable[C],C](labels: collect
   def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
     val fg = BP.inferTreewiseSum(labels.toSet, model)
     // The log loss is - score + log Z
-    value.accumulate(new Variable2IterableModel[Variable](model).currentScore(labels) - fg.bpFactors.head.calculateLogZ)
+    if (value != null)
+      value.accumulate(new Variable2IterableModel[Variable](model).currentScore(labels) - fg.bpFactors.head.calculateLogZ)
 
-    fg.bpFactors.foreach(f => {
-      val factor = f.factor.asInstanceOf[DotFamily#Factor]
-      gradient.accumulate(factor.family, factor.currentStatistics)
-      gradient.accumulate(factor.family, f.calculateMarginal * -1)
-    })
+    if (gradient != null) {
+      fg.bpFactors.foreach(f => {
+        val factor = f.factor.asInstanceOf[DotFamily#Factor]
+        gradient.accumulate(factor.family, factor.currentStatistics)
+        gradient.accumulate(factor.family, f.calculateMarginal * -1)
+      })
+    }
   }
 }
 
@@ -75,6 +75,7 @@ object GoodBadPiece {
 // See DominationLossPieceAllGood for one that outputs a gradient for all goodCandidates
 class DominationLossPiece(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Piece[Variable] {
   def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
+    assert(gradient != null, "The DominationLossPiece needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
     val badScores = badCandidates.map(model.currentScore(_))
     val worstGoodIndex = goodScores.zipWithIndex.maxBy(i => -i._1)._2
@@ -88,6 +89,7 @@ class DominationLossPiece(goodCandidates: Seq[Variable], badCandidates: Seq[Vari
 
 class DominationLossPieceAllGood(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Piece[Variable] {
   def accumulateValueAndGradient(model: Model[Variable], gradient: TensorAccumulator, value: DoubleAccumulator) {
+    assert(gradient != null, "The DominationLossPieceAllGood needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
     val badScores = badCandidates.map(model.currentScore(_))
     val bestBadIndex = badScores.zipWithIndex.maxBy(i => i._1)._2

@@ -53,10 +53,10 @@ class GLMPiece(featureVector: Tensor1, label: Int, lossAndGradient: LossFunction
     val prediction = weightsMatrix matrixVector featureVector
     //    println("Prediction: " + prediction)
     val (loss, sgrad) = lossAndGradient(prediction, label)
-    value.accumulate(loss)
+    if (value != null) value.accumulate(loss)
     if (weight != 0.0) sgrad *= weight
     //    println("Stochastic gradient: " + sgrad)
-    gradient.addOuter(DummyFamily, sgrad, featureVector)
+    if (gradient != null) gradient.addOuter(DummyFamily, sgrad, featureVector)
   }
 }
 
