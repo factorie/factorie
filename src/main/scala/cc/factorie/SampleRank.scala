@@ -75,7 +75,7 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
 
   var learningMargin = 1.0
 
-  def accumulateValueAndGradient(model: Model[DiffList], gradient: TensorAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
     assert(gradient != null, "The SampleRankPiece needs a gradient accumulator")
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)

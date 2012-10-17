@@ -3,7 +3,7 @@ package cc.factorie.optimize
 import cc.factorie.Model
 import collection.GenSeq
 import cc.factorie.util.LocalDoubleAccumulator
-import cc.factorie.la.{Tensor, WeightsTensor, LocalTensorAccumulator}
+import cc.factorie.la.{Tensor, WeightsTensor, LocalWeightsTensorAccumulator}
 
 /**
  * Created by IntelliJ IDEA.
@@ -21,7 +21,7 @@ trait Trainer[C] {
 
 class BatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] {
   val gradient = model.weightsTensor.copy
-  val gradientAccumulator = new LocalTensorAccumulator(gradient.asInstanceOf[WeightsTensor])
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(gradient.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   def process(pieces: GenSeq[Piece[C]]): Unit = {
     if (isConverged) return
@@ -38,7 +38,7 @@ class BatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) ext
 // Hacky proof of concept
 class InlineSGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C], val learningRate: Double = 0.01, val l2: Double = 0.1)
   extends Trainer[C] {
-  val gradientAccumulator = new LocalTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
   override def process(pieces: GenSeq[Piece[C]]): Unit = {
     val weights = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily)
     pieces.foreach(piece => {
@@ -55,7 +55,7 @@ class InlineSGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C],
 
 class SGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] {
   val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.asInstanceOf[WeightsTensor].copy}
-  val gradientAccumulator = new ThreadLocal[LocalTensorAccumulator] {override def initialValue = new LocalTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
+  val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] {override def initialValue = new LocalWeightsTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
 
   override def process(pieces: GenSeq[Piece[C]]): Unit = {
     // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit
@@ -77,7 +77,7 @@ class HogwildTrainer[C](optimizer: GradientOptimizer, model: Model[C]) extends S
 // Hacky proof of concept
 class SGDThenBatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C], val learningRate: Double = 0.01, val l2: Double = 0.1)
   extends Trainer[C] {
-  val gradientAccumulator = new LocalTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   val batchLearner = new BatchTrainer[C](optimizer, model)
   var sgdPasses = 5
