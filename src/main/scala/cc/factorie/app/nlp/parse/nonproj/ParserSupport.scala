@@ -29,8 +29,7 @@ object ParserSupport {
     
     object DepToken {
       def apply(token: Token) = new DepToken(token, form = token.string, lemma = token.attr[Lemma].lemma, pos = token.posLabel.categoryValue)
-      //TODO: will it be a problem to have this in a separate document?
-      //TODO: eclipse didn't like "lazy" here
+      // eclipse didn't like "lazy" here
       def root = new DepToken(new Token(new Document("Root Dummy Document", ""), "<ROOT>"), form = "<ROOT>-f",  lemma = "<ROOT>-m", pos = "<ROOT>-p")
       def nullToken = new DepToken(new Token(new Document("Null Dummy Document", ""), "<NULL>"), form = "<NULL>-f",  lemma = "<NULL>-m", pos = "<NULL>-p")
     }
@@ -47,43 +46,27 @@ object ParserSupport {
     
       def setHead(headToken: DepToken, label: String) {
         head = new DepArc(headToken, label)
-        updateHeadLmDependents(head.depToken.thisIdx)
-        updateHeadRmDependents(head.depToken.thisIdx)
-        //assert(0 <= lmDepIdx && lmDepIdx < state.sentenceTokens.size)
-        //assert(0 <= rmDepIdx && rmDepIdx < state.sentenceTokens.size)
-        //assert(lmDepIdx <= rmDepIdx)
-      }
-      
-      def updateHeadLmDependents(idx: Int) {
-        if (idx < lmDepIdx) {
-          lmDepIdx = idx
-          if (hasHead)
-	        head.depToken.updateHeadLmDependents(idx)
-        }
-      }
-      
-      def updateHeadRmDependents(idx: Int) {
-        if (rmDepIdx < idx) {
-          rmDepIdx = idx
-          if (hasHead)
-            head.depToken.updateHeadRmDependents(idx)
-        }
+        if (thisIdx < head.depToken.thisIdx)
+          state.leftmostDeps(head.depToken.thisIdx) = thisIdx
+        else
+          state.rightmostDeps(head.depToken.thisIdx) = thisIdx
       }
       
       def leftmostDependent(): DepToken = {
-        if (lmDepIdx == Int.MaxValue)
+        val i = state.leftmostDeps(thisIdx)
+        if (i == -1)
           DepToken.nullToken
         else
-          state.sentenceTokens(lmDepIdx)
+          state.sentenceTokens(i)
       }
       
       def rightmostDependent(): DepToken = {
-        if (rmDepIdx == Int.MinValue)
+        val i = state.rightmostDeps(thisIdx)
+        if (i == -1)
           DepToken.nullToken
         else
-          state.sentenceTokens(rmDepIdx)
+          state.sentenceTokens(i)
       }
-      
     
       def hasHead: Boolean = head ne null
     
@@ -115,6 +98,9 @@ object ParserSupport {
       sentenceTokens.foreach(_.state = this)
       
       def this(tokens: Array[DepToken]) = this(0, 1, HashSet[Int](), tokens)
+      
+      val leftmostDeps = Array.fill[Int](sentenceTokens.size)(-1)
+      val rightmostDeps = Array.fill[Int](sentenceTokens.size)(-1)
     
       def inputToken(offset: Int): DepToken = {
         val i = input + offset

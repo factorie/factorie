@@ -82,7 +82,10 @@ object TrainWithSVM {
 	  
       val dts = p.parse(s)
 	  p.clear()
-	  pred append dts.drop(1).map(dt => dt.head).map(arc => (arc.depToken.thisIdx, arc.label))
+	  pred append (dts.drop(1).map { dt => 
+	    if (dt.hasHead) dt.head.depToken.thisIdx -> dt.head.label
+	    else -1 -> null.asInstanceOf[String]
+	  } toSeq)
 	  
 	  i += 1
 	  if (i % 1000 == 0)
