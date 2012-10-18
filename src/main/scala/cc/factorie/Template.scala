@@ -18,7 +18,6 @@ import collection.mutable.HashSet
 import scala.collection.mutable.Set
 
 /** A template for creating Factors.  The creation of Factors is keyed by some context of arbitrary type C. */
-// TODO Make this ContextTemplate[C,F<:Factor] because this is like a Map from C to Fs?
 trait Template[C,F<:Factor] {
   //type FactorType <: Factor
   def addFactorsOfContext(c:C, result:Set[F]): Unit 

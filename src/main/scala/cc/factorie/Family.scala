@@ -39,8 +39,10 @@ trait Family {
     override def factorName = family.factorName
     override def equalityPrerequisite: AnyRef = Family.this
     override def scoreValues(tensor:Tensor): Double = Family.this.scoreValues(tensor)
+    def scoreStatistics(tensor:Tensor): Double = Family.this.scoreStatistics(tensor)
   }
   def scoreValues(tensor:Tensor): Double = throw new Error("Not yet implemented.")
+  def scoreStatistics(tensor:Tensor): Double = throw new Error("Not yet implemented.")
   /** The filename into which to save this Family. */
   protected def filename: String = factorName
   def save(dirname:String, gzip: Boolean = false): Unit = {}
@@ -77,7 +79,7 @@ trait DotFamily extends TensorFamily {
   type FamilyType <: DotFamily
   def weights: Tensor
   //@inline final def score(s:StatisticsType): Double = if (s eq null) 0.0 else scoreStatistics(s.tensor)
-  @inline final def scoreStatistics(t:Tensor): Double = weights dot t
+  @inline final override def scoreStatistics(t:Tensor): Double = weights dot t
 
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also

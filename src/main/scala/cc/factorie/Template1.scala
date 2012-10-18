@@ -34,10 +34,11 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Model
   val neighborClass1a = { val ta = nm1.typeArguments; if (classOf[ContainerVariable[_]].isAssignableFrom(neighborClass1)) { assert(ta.length == 1); ta.head.erasure } else null }
 
   
-//  override def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = {
-//    if (classOf[DiscreteVar].isAssignableFrom(neighborClass1)) 
-//      for (variable <- variables; factor <- factors(variable)) limitedDiscreteValues.+=(factor._1.asInstanceOf[DiscreteVar].intValue)
-//  }
+  def addLimitedDiscreteValuesIn(variables:Iterable[DiscreteVar]): Unit = {
+    if (classOf[DiscreteVar].isAssignableFrom(neighborClass1)) 
+      for (variable <- variables; factor <- factors(variable)) limitedDiscreteValues.+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+  }
+  
   // Factors
   //def factors(v:Variable): Iterable[FactorType] = { val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]; addFactors(v, result); result.asInstanceOf[Iterable[FactorType]] }
   def addFactors(v:Variable, result:Set[cc.factorie.Factor]): Unit = {

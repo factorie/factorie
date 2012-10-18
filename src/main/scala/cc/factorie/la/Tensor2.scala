@@ -36,6 +36,7 @@ trait Tensor2 extends Tensor {
   def apply(i:Int): Double //= apply(i % dim1, i / dim2)
   def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
+  // TODO This method should have a better name -akm
   def matrixVector(t: Tensor): Tensor1 = {
     assert(dim2 == t.dimensions.reduce((a,b) => a*b), "Dimensions don't match: " + dim2 + " " + t.dimensions)
     val newT = new DenseTensor1(dim1)
@@ -215,6 +216,41 @@ class SparseBinaryTensor2(val dim1:Int, val dim2:Int) extends SparseBinaryTensor
   //override def copy = new SparseBinaryTensor2(dim1, dim2, singleIndex1, singleIndex2)
 }
 
+trait Tensor2ElementIterator extends Iterator[Tensor2ElementIterator] {
+  def index: Int
+  def index1: Int
+  def index2: Int
+  def value: Double
+}
+
+class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with SparseIndexedTensor {
+  def activeDomain1: IntSeq = throw new Error("Not yet implemented")
+  def activeDomain2: IntSeq = throw new Error("Not yet implemented")
+  def activeElements2: Tensor2ElementIterator = {
+    _makeReadable
+    new Tensor2ElementIterator { // Must not change _indexs and _values during iteration!
+      var i = 0
+      def hasNext = i < _npos
+      def index = _indices(i-1)
+      def index1 = SparseIndexedTensor2.this.index1(_indices(i-1))
+      def index2 = SparseIndexedTensor2.this.index2(_indices(i-1))
+      def value = _values(i-1)
+      def next = { i += 1; this }
+    }
+  }
+  override def blankCopy: SparseIndexedTensor2 = new SparseIndexedTensor2(dim1, dim2)
+}
+
+/** A Tensor2 that has dense storage, but a sparse activeDomain. */
+// TODO I think we should not keep this because there could be non-zero values in the sparse holes,
+// and we could get some very confusing results.
+class SparseDenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
+  override val activeDomain = new cc.factorie.util.SortedIntSetBuffer 
+  override def activeDomain1 = throw new Error("Not yet implemented")
+  override def activeDomain2 = throw new Error("Not yet implemented")
+  
+}
+
 class UniformTensor2(val dim1:Int, val dim2:Int, val uniformValue:Double) extends Tensor2 with UniformTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
   def activeDomain2 = new RangeIntSeq(0, dim2)
@@ -222,7 +258,7 @@ class UniformTensor2(val dim1:Int, val dim2:Int, val uniformValue:Double) extend
   override def copy = new UniformTensor2(dim1, dim2, uniformValue)
   override def +(t:Tensor): Tensor = t match {
     case t:UniformTensor2 => { require(dim1 == t.dim1 && dim2 == t.dim2); new UniformTensor2(dim1, dim2, uniformValue + t.uniformValue) }
-    case t:Tensor1 => new DenseTensor2(dim1, dim2, uniformValue) + t
+    case t:Tensor2 => new DenseTensor2(dim1, dim2, uniformValue) + t
   }
 }
 

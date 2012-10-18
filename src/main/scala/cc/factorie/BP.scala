@@ -228,12 +228,25 @@ trait BPFactor2MaxProduct { this: BPFactor2 =>
   val edge1Max2 = new Array[Int](edge1.variable.domain.size) // The index value of edge2.variable that lead to the MaxProduct value for each index value of edge1.variable 
   var edge2Max1 = new Array[Int](edge2.variable.domain.size)
   def calculateOutgoing1: Tensor = {
-    val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
-    for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size) {
-      val s = scores(i,j) + edge2.messageFromVariable(j)
-      if (s > result(i)) { result(i) = s; edge1Max2(i) = j } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
+    scores match {
+      case scores:DenseTensor2 => {
+        val result = new DenseTensor1(edge1.variable.domain.size, Double.NegativeInfinity)
+        for (i <- 0 until edge1.variable.domain.size; j <- 0 until edge2.variable.domain.size) {
+          val s = scores(i,j) + edge2.messageFromVariable(j)
+          if (s > result(i)) { result(i) = s; edge1Max2(i) = j } // Note that for a BPFactor3 we would need two such indices.  This is why they are stored in the BPFactor
+        }
+        result
+      }
+      case scores:SparseIndexedTensor2 => { // SparseTensor case
+        val result = new DenseTensor1(scores.dim1, Double.NegativeInfinity) // TODO Consider a non-Dense tensor here
+        for (element <- scores.activeElements2) {
+          val i = element.index1; val j = element.index2
+          val s = element.value + edge2.messageFromVariable(j)
+          if (s > result(i)) { result(i) = s; edge1Max2(i) = j }
+        }
+        result
+      }
     }
-    result
   }
   def calculateOutgoing2: Tensor = {
     val result = new DenseTensor1(edge2.variable.domain.size, Double.NegativeInfinity)
@@ -250,7 +263,7 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
   // TODO Consider making this calculate scores(i,j) on demand, with something like
   // val scores = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size, Double.NaN) { override def apply(i:Int) = if (_values(i).isNaN)... }
   val scores: Tensor2 = factor match {
-    //case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.asInstanceOf[Tensor2] // TODO Why getting DenseTensor1 here??
+    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.asInstanceOf[Tensor2]
     case _ => {
       // TODO Replace this with just efficiently getting factor.family.weights
       val valueTensor = new SingletonBinaryTensor2(edge1.variable.domain.size, edge2.variable.domain.size, 0, 0)
@@ -265,7 +278,7 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
       result
     }
   }
-  def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal,f)
+  def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal,f) // TODO Use a TensorAccumulator; add f:Double to TensorAccumulator
 }
 
 // A BPFactor2 with underlying model Factor3, having two varying neighbors and one constant neighbor
