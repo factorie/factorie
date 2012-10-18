@@ -1,18 +1,176 @@
 package cc.factorie.app.bib
 import cc.factorie.app.bib.parser.Dom
 import cc.factorie.app.bib.parser.Dom.Entry
-import collection.mutable.ArrayBuffer
-import java.io.File
+import collection.mutable.{ArrayBuffer,HashMap}
 import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import org.w3c.dom.{Node, NodeList, Document}
+import java.io.{FileInputStream, InputStreamReader, BufferedReader, File}
+
+object RexaCitationLoader{
+  var numPapers = 0
+  var numReferences = 0
+  def loadFromList(file:File):Seq[PaperEntity] ={
+    println("About to load REXA data from " + file)
+    val result = new ArrayBuffer[PaperEntity]
+    val reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+    var line = reader.readLine
+    while(line!=null){
+      result ++= loadFile(new File(line))
+      line=reader.readLine
+    }
+    println("Finished loading "+numPapers + " papers and "+numReferences + " references. Total: "+(numPapers+numReferences)+".")
+    result
+  }
+  def loadFile(file:File):Seq[PaperEntity] ={
+    val docFactory:DocumentBuilderFactory = DocumentBuilderFactory.newInstance
+    val docBuilder:DocumentBuilder = docFactory.newDocumentBuilder
+    if(!file.exists()) error("Couldn't find file " + file + ", aborting load.")
+    val result = new ArrayBuffer[PaperEntity]
+    val doc:Document = docBuilder.parse(file)
+    val content = doc.getElementsByTagName("content")
+    if(content.getLength==1){
+      val contentChildren = content.item(0).getChildNodes
+      for(i<-0 until contentChildren.getLength){
+        val contentType = contentChildren.item(i).getNodeName
+        val contentFieldNodes = contentChildren.item(i).getChildNodes
+        if(contentType == "headers"){
+          val paper = processPaper(contentChildren.item(i))
+          result += paper
+          numPapers += 1
+        }
+        if(contentType == "biblio"){
+          for(j<-0 until contentFieldNodes.getLength){
+            val biblioNode = contentFieldNodes.item(j)
+            result += processPaper(biblioNode)
+            numReferences += 1
+          }
+        }
+      }
+    }
+    result
+  }
+  protected def processPaper(paperNode:Node):PaperEntity ={
+    val paperAttributeNodes = paperNode.getChildNodes
+    val paper = new PaperEntity("",true)
+    for(j <- 0 until paperAttributeNodes.getLength){
+      val name = paperAttributeNodes.item(j).getNodeName
+      val text = paperAttributeNodes.item(j).getTextContent
+      name match{
+        case "title" => {paper.title := text.replaceAll("[\r\n\t ]+"," ").replaceAll("[^A-Za-z0-9\\-\\.,\\(\\) ]","")}
+        case "date" => {} //more than a year, e.g., September 21, 2006
+        case "authors" => {
+          paperAttributeNodes.item(j).getChildNodes
+          val authorNodes = paperAttributeNodes.item(j).getChildNodes
+          for(k <- 0 until authorNodes.getLength){
+            val authorMention = getAuthor(authorNodes.item(k))
+            authorMention.paper = paper
+            paper.authors += authorMention
+          }
+        }
+        case "note" => {}
+        case "address" =>{}
+        case "institution" => {}
+        case "abstract" => {}
+        case _ => {}
+      }
+    }
+    paper
+  }
+  protected def getAuthor(authorNode:Node):AuthorEntity ={
+    var (f,m,l) = ("","","")
+    val name = authorNode.getNodeName
+    val text = FeatureUtils.normalizeName(authorNode.getTextContent)
+    name match{
+      case "author-first" => f=text
+      case "author-middle" => m=text
+      case "author-last" => l=text
+      case _ => {}
+    }
+    val result = new AuthorEntity(f,m,l,true)
+    result
+  }
+}
+
+object AclAnthologyReader{
+  def loadAnnFile(file:File):Seq[PaperEntity] ={
+    val fileText = scala.io.Source.fromFile(file).toArray.mkString
+    val records = """id.+?[\r\n]author.+?[\r\n]title.+?[\r\n]venue.+?[\r\n]year.+?}""".r.findAllIn(fileText).toSeq
+    records.map(makePaperEntity(_))
+  }
+  def makePaperEntity(record:String):PaperEntity ={
+    val paperEntity = new PaperEntity("",true)
+
+    val Matcher = """id\s=\s\{.+?\}\s*[\r\n]"""+
+       """author\s=\s\{(.*?)\}\s*[\r\n]"""+
+       """title\s=\s\{(.*?)\}\s*[\r\n]"""+
+       """venue\s=\s\{(.*?)\}\s*[\r\n]"""+
+       """year\s=\s\{(\d{4}?)\}""" r
+
+    val Matcher(authorList,title,venue,year) = record
+
+    getAuthors(authorList).foreach(paperEntity.authors+=_)
+    if(!title.equals("")) paperEntity.title.set(title)(null)
+    paperEntity.attr[VenueName]:=venue
+    paperEntity.attr[Year] := year.toInt
+
+    paperEntity
+
+    //    val AuthorMatcher = """author\s=\s\{(.+?)\}""".r
+    //    val TitleMatcher = """title\s=\s\{(.+?)\}""".r
+    //    val TitleMatcher(title) = record
+    //    val VenueMatcher = """venue\s=\s\{(.+?)\}""".r
+    //    val VenueMatcher(venue) = record(3)
+    //    val YearMatcher = """year\s=\s\{(\d{4})\}""".r
+    //    val YearMatcher(year) = record(4)
+  }
+  def getAuthors(authorList:String):Seq[AuthorEntity]={
+    val MatcherType1 = """\s*(.+?)\s*(Jr.)\s*,\s*(.+?)\s+(.+?)\s*""".r
+    val MatcherType2 = """\s*(.+?)\s*(Jr.)\s*,\s*(.+?)\s*""".r
+    val MatcherType3 = """\s*(.+?)\s*,\s*(.+?)\s+(.+?)\s*""".r
+    val MatcherType4 = """\s*(.+?)\s*,\s*(.+?)\s*""".r
+    val MatcherType5 = """\s*,?\s*(.+?)\s*""".r
+    println("authors list: "+authorList)
+    authorList.split(";").flatMap(xs => {
+      println("  xs: "+xs)
+      xs match {
+        case MatcherType1(last,jr,first,middle)=> {
+          //println("  Case 1 (l,j,f,m): f="+first+" m="+middle+" l="+last+" jr="+jr)
+          Seq(new AuthorEntity(first,middle,last,true))
+        }
+        case MatcherType2(last,jr,first)=> {
+          //println("  Case 2 (l,j,f): f="+first+" l="+last+" jr="+jr)
+          Seq(new AuthorEntity(first,"",last,true))
+        }
+        case MatcherType3(last,first,middle)=> {
+          //println("  Case 3: (l,f,m) f="+first+" m="+middle+" l="+last)
+          Seq(new AuthorEntity(first,middle,last,true))
+        }
+        case MatcherType4(last,first)=> {
+          //println("  Case 4: (l,f) f="+first+" l="+last)
+          Seq(new AuthorEntity(first,"",last,true))
+        }
+        case MatcherType5(last)=> {
+          //println("  Case 5 (l): l="+last)
+          Seq(new AuthorEntity("","",last,true))
+        }
+        case _ => {
+          println("  NIL")
+          Nil
+        }
+      }
+    })
+  }
+}
+
 
 object BibReader{
   var skipped=0
   var numParsed=0
-
+  var readErrors = new HashMap[String,Int]
   def loadBibTexDirMultiThreaded(bibDir:File):Seq[PaperEntity] ={
     var count = 0
     //var result = new ArrayBuffer[PaperEntity]
+    if(!bibDir.isDirectory)return loadBibTeXFile(bibDir)
     val files = bibDir.listFiles.filter(_.isFile)
     val result = new Array[Seq[PaperEntity]](files.length)
     println("Mult-threaded load, about to load "+files.length + " .bib files")
@@ -27,6 +185,13 @@ object BibReader{
         if(count % 200 == 0 || count==files.size)println(" Processed "+ count + " documents, but skipped "+BibReader.skipped + ". Papers parsed:"+result.size+". Time: "+((System.currentTimeMillis-startTime)/1000L))
       }
     }
+    var errCount=0
+    println("Read errors:")
+    for((k,v) <- readErrors){
+      println(v+":"+k)
+      errCount += v
+    }
+    println("Total read errors caught: "+errCount)
     result.filter(_ != null).flatMap(_.toSeq).toSeq
     //result
   }
@@ -55,6 +220,7 @@ object BibReader{
       docOrError match{
         case Right(doc:cc.factorie.app.bib.parser.Dom.Document) => docOption = Some(doc)
         case Left(error:String) => {
+          //readErrors(error) = readErrors.getOrElse(error,0) + 1
           //(error+" doc: "+file.getName)
           val split = fileText.split("@")
           if(split.length>=3){
@@ -66,6 +232,7 @@ object BibReader{
     }
     catch{
       case e:Exception => {
+        readErrors(e.getMessage) = readErrors.getOrElse(e.getMessage,0) + 1
           skipped += 1
         //println(e.getMessage+" doc: "+file.getName())
         //skipped += 1
@@ -79,7 +246,7 @@ object BibReader{
       numParsed += 1
     }//end .bib parsed correctly
     def loadBibTexEntry(entry:Entry,provenance:String):PaperEntity ={
-      val paperEntity = new PaperEntity("DEFAULT",true)
+      val paperEntity = new PaperEntity("",true)
       //result += paperEntity
       val entryType = entry.ty
       //val authors = new ArrayBuffer[AuthorEntity]
@@ -109,7 +276,9 @@ object BibReader{
           if(name == "title")paperEntity.title.set(xv)(null)
           if(name == "year"){
             xv = xv.replaceAll("[^0-9]","")
+            if(xv.length>4)xv=xv.substring(4)
             if(xv.length==0 || xv.length>4)xv="-1"
+            if(xv == "-1")println("BibTeX Load error: unrecognizable year format: "+value)
             paperEntity.attr[Year] := xv.toInt
           }
         }
@@ -150,7 +319,7 @@ object RexaLabeledLoader{
     result
   }
   def rexaMention2Paper(file:File,labelString:String):PaperEntity ={
-    val paper = new PaperEntity("DEFAULT",true)
+    val paper = new PaperEntity("",true)
     var authorInFocus = new Array[String](3)
     val loadedFile = scala.io.Source.fromFile(file)
     for(line <- loadedFile.getLines.toSeq.reverse){ //for some reason scala loads files in reverse order...
@@ -184,10 +353,30 @@ object RexaLabeledLoader{
           case "abstract" => {}
           case "keywords" => for(keyword <- value.split(", "))paper.bagOfKeywords += FeatureUtils.filterFieldNameForMongo(keyword.toLowerCase)
           case "keyword" => for(keyword <- value.split(", "))paper.bagOfKeywords += FeatureUtils.filterFieldNameForMongo(keyword.toLowerCase)
-          case "journal" => paper.venueName.set(value)(null)
+          case "journal" => {
+            val jsplit = value.split("year:")
+            paper.venueName.set(jsplit(0))(null)
+            if(jsplit.length==2){
+              //println("Found year field... about to parse")
+              var xv = jsplit(1).replaceAll("[^0-9]","")
+              if(xv.length>4)xv=xv.substring(4)
+              if(xv.length==0 || xv.length>4)xv="-1"
+              if(xv == "-1")println("Rexa Load error: unrecognizable year format: "+value)
+              paper.attr[Year] := xv.toInt
+            }
+          }
           case "institution" => for(keyword <- value.toLowerCase.split(", "))paper.bagOfKeywords += FeatureUtils.filterFieldNameForMongo(keyword)
           case "email" => for(email <- value.split(", "))paper.bagOfKeywords += email.toLowerCase.replaceAll("\\.","DOT")
-          case "year" => {}//paper.year.set(value)(null)
+          case "year" => {
+            //println("Found year field... about to parse")
+            var xv = value.replaceAll("[^0-9]","")
+            if(xv.length>4)xv=xv.substring(4)
+            if(xv.length==0 || xv.length>4)xv="-1"
+            if(xv == "-1")println("Rexa Load error: unrecognizable year format: "+value)
+            paper.attr[Year] := xv.toInt
+
+            //if(value.matches("[0-9]+"))paper.attr[Year] := value.toInt else println("Rexa load error: "+value + " is not in date format.")
+          }//paper.year.set(value)(null)
           case _ => println("(RexaLabeledLoader) Field: "+split(0)+" not used.")
         }
       }

@@ -10,6 +10,8 @@ class EntityExists(val entity:Entity,initialValue:Boolean) extends BooleanVariab
 class IsEntity(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
 class IsMention(val entity:Entity,initialValue:Boolean) extends BooleanVariable(initialValue)
 class Dirty(val entity:Entity) extends IntegerVariable(0){def reset()(implicit d:DiffList):Unit=this.set(0)(d);def ++()(implicit d:DiffList):Unit=this.set(intValue+1)(d);def --()(implicit d:DiffList):Unit=this.set(intValue-1)(d)} //convenient for determining whether an entity needs its attributes recomputed
+class MentionCountVariable(val entity:Entity,initialValue:Int=0) extends IntegerVariable(initialValue)
+
 abstract class HierEntity(isMent:Boolean=false) extends Entity{
   isObserved=isMent
   var groundTruth:Option[String] = None
@@ -19,11 +21,13 @@ abstract class HierEntity(isMent:Boolean=false) extends Entity{
   def isMention = attr[IsMention]
   def exists = attr[EntityExists]
   def dirty = attr[Dirty]
+  def numMentionsInSubtree = attr[MentionCountVariable]
   attr += new EntityExists(this,this.isConnected)
   attr += new IsEntity(this,this.isRoot)
   attr += new IsMention(this,this.isObserved)
   attr += new Dirty(this)
   attr += bagOfTruths
+  if(this.isObserved)attr += new MentionCountVariable(this,1) else attr += new MentionCountVariable(this,0)
   override def removedChildHook(entity:Entity)(implicit d:DiffList)={super.removedChildHook(entity);exists.set(this.isConnected)(d);dirty++}
   override def addedChildHook(entity:Entity)(implicit d:DiffList)={super.addedChildHook(entity);exists.set(this.isConnected)(d);dirty++}
   override def changedParentEntityHook(oldEntity:Entity,newEntity:Entity)(implicit d:DiffList){super.changedParentEntityHook(oldEntity,newEntity);isEntity.set(this.isRoot)(d);exists.set(this.isConnected)(d)}
@@ -194,6 +198,35 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model[Variable]) extends Se
   override def proposalHook(proposal:Proposal) = {
     super.proposalHook(proposal)
     val newEntities = new HashSet[T]
+    for(diff<-proposal.diff){
+      diff.variable match {
+        case v:EntityExists => diff.undo
+        case v:IsEntity => diff.undo
+        case _ => {}
+      }
+    }
+    for(diff<-proposal.diff){
+      diff.variable match{
+        case children:ChildEntities => if(!children.entity.attr[EntityExists].booleanValue && !children.entity.isObserved)newEntities += children.entity.asInstanceOf[T] //cast could be avoided if children entities were typed
+        case _ => {}
+      }
+    }
+    for(diff<-proposal.diff){
+      diff.variable match{
+        case v:EntityExists => diff.redo
+        case v:IsEntity => diff.redo
+        case _ => {}
+      }
+    }
+    /*
+    //undo all vars but bags of words (they are expensive to undo)
+    /*
+    for(diff<-proposal.diff){
+      diff.variable match {
+        case d:BagOfWordsVariable => {}
+        case _ => diff.undo
+      }
+    }*/
     proposal.diff.undo //an entity that does not exit in the current world is one that was newly created by the jump
     for(diff<-proposal.diff){
       diff.variable match{
@@ -201,7 +234,17 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model[Variable]) extends Se
         case _ => {}
       }
     }
+    /*
+    //redo vars that had been undone
+    for(diff<-proposal.diff){
+      diff.variable match {
+        case d:BagOfWordsVariable => {}
+        case _ => diff.redo
+      }
+    }
+    */
     proposal.diff.redo
+    */
     for(entity<-newEntities)addEntity(entity)
   }
   def addEntity(e:T):Unit ={entities += e}
@@ -209,32 +252,7 @@ abstract class HierCorefSampler[T<:HierEntity](model:Model[Variable]) extends Se
 }
 
 
-class FastTemplateModel extends CombinedModel[Variable]() {
-//  override def factorsWithDuplicates(variable:Variable): Iterable[Factor] = {
-//    val result = new ListBuffer[Factor]
-//    var i = 0
-//    while(i<templates.size){result ++= templates(i).factorsWithDuplicates(variable);i+=1}
-//    result
-//  }
-//  override def factorsWithDuplicates(variables:Iterable[Variable]): Iterable[Factor] = {
-//    val result = new ListBuffer[Factor]
-//    for(variable <- variables){
-//      var i=0
-//      while(i<templates.size){result ++= templates(i).factorsWithDuplicates(variable);i+=1}      
-//    }
-//    result
-//  }
-//  override def factorsWithDuplicates(d:DiffList): Iterable[Factor] = {
-//    val result = new ListBuffer[Factor]
-//    if (d.size > 0) {
-//      for(diff <- d){
-//        result ++= factorsWithDuplicates(diff)
-//      }
-//    }
-//    result
-//  }
-
-}
+/*
 abstract class FastTemplate1[N1<:Variable](implicit nm1: Manifest[N1]) extends Template1[N1]()(nm1){
 //  override def factorsWithDuplicates(v:Variable): Iterable[FactorType] = {
 //    // TODO Given the surprise about how slow Manifest <:< was, I wonder how slow this is when there are lots of traits!
@@ -249,7 +267,21 @@ abstract class FastTemplate1[N1<:Variable](implicit nm1: Manifest[N1]) extends T
 //  }
 
 }
+
 abstract class FastTemplate3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends Template3[N1,N2,N3]()(nm1,nm2,nm3){
+<<<<<<< local
+  override def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
+    val ret = new ListBuffer[FactorType]
+    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
+    if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) ret ++= unroll2(v.asInstanceOf[N2])
+    if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) ret ++= unroll3(v.asInstanceOf[N3])
+    if ((nc1a ne null) && nc1a.isAssignableFrom(v.getClass)) ret ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])
+    if ((nc2a ne null) && nc2a.isAssignableFrom(v.getClass)) ret ++= unroll2s(v.asInstanceOf[N2#ContainedVariableType])
+    if ((nc3a ne null) && nc3a.isAssignableFrom(v.getClass)) ret ++= unroll3s(v.asInstanceOf[N3#ContainedVariableType])
+    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) {throw Exception("Error")}//ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))}
+    ret
+  }
+=======
 //    override def factorsWithDuplicates(v: Variable): Iterable[FactorType] = {
 //    val ret = new ListBuffer[FactorType]
 //    if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) ret ++= unroll1(v.asInstanceOf[N1])
@@ -261,48 +293,44 @@ abstract class FastTemplate3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm
 //    //val cascadeVariables = unrollCascade(v); if (cascadeVariables.size > 0) {throw Exception("Error")}//ret ++= cascadeVariables.flatMap(factorsWithDuplicates(_))}
 //    ret
 //  }
+>>>>>>> other
 }
-abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends TupleTemplateWithStatistics3[N1,N2,N3] {
+<<<<<<< local
+abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends FastTemplate3[N1,N2,N3] with Statistics3[N1#Value,N2#Value,N3#Value] {
+  def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = Stat(value1, value2, value3)
+=======
+abstract class FastTemplateWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends   v[N1,N2,N3] {
   //def statistics(value1:N1#Value, value2:N2#Value, value3:N3#Value): StatisticsType = (value1, value2, value3)
+>>>>>>> other
 }
 abstract class FastTemplateWithStatistics1[N1<:Variable](implicit nm1:Manifest[N1]) extends TupleTemplateWithStatistics1[N1] {
   //def statistics(value1:N1#Value): StatisticsType = Statistics(value1)
 }
-
+*/
 
 class ChildParentCosineDistance[B<:BagOfWordsVariable with EntityAttr](val weight:Double = 4.0, val shift:Double = -0.25)(implicit m:Manifest[B]) extends ChildParentTemplateWithStatistics[B]{
+  println("ChildParentCosineDistance: weight="+weight+" shift="+shift)
     override def unroll2(childBow:B) = Nil //note: this is a slight approximation for efficiency
     override def unroll3(childBow:B) = Nil //note this is a slight approximation for efficiency
     def score(er:EntityRef#Value, childBow:B#Value, parentBow:B#Value): Double = {
       //val childBow = s._2
       //val parentBow = s._3
       val result = childBow.cosineSimilarity(parentBow,childBow)
-      (result+shift)*weight
+      (result+shift)*weight * scala.math.min(parentBow.l1Norm,childBow.l1Norm)
     }
 }
-abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends FastTemplateWithStatistics3[EntityRef,A,A] {
+abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends TupleTemplateWithStatistics3[EntityRef,A,A] {
   def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
   def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
   def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
 }
-
-/*
-abstract class ChildParentTemplateWithStatistics[A<:EntityAttr](implicit m:Manifest[A]) extends TemplateWithStatistics3[EntityRef,A,A] {
-  def unroll1(er:EntityRef) = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
-  def unroll2(childAttr:A) = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
-  def unroll3(parentAttr:A) = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
-}
-*/
-
-abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends FastTemplate3[EntityRef,A,A] {
+abstract class ChildParentTemplate[A<:EntityAttr](implicit m:Manifest[A]) extends TupleTemplate3[EntityRef,A,A] {
   def unroll1(er:EntityRef): Iterable[Factor] = if(er.dst!=null)Factor(er, er.src.attr[A], er.dst.attr[A]) else Nil
   def unroll2(childAttr:A): Iterable[Factor] = if(childAttr.entity.parentEntity!=null)Factor(childAttr.entity.parentEntityRef, childAttr, childAttr.entity.parentEntity.attr[A]) else Nil
   def unroll3(parentAttr:A): Iterable[Factor] = for(e<-parentAttr.entity.childEntities) yield Factor(e.parentEntityRef,e.attr[A],parentAttr)
 }
-
-
-
-class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExistenceCost:Double=0.5) extends FastTemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
+class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExistenceCost:Double=0.5) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,IsMention]{
+  println("StructuralPriorsTemplate("+entityExistenceCost+","+subEntityExistenceCost+")")
   def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[IsMention])
   def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[IsMention])
   def unroll3(isMention:IsMention) = throw new Exception("An entitie's status as a mention should never change.")
@@ -316,143 +344,39 @@ class StructuralPriorsTemplate(val entityExistenceCost:Double=2.0,subEntityExist
     result
   }
 }
-
-/*
-class DirichletBagOfWordsTemplateWithStatistics[B<:BagOfWordsVariable](val weight:Double=1.0, val temperature:Double=0.1)(implicit m:Manifest[B]) extends TemplateWithStatistics1[B]{
-  @inline final def symmetricDirichletAlpha = temperature+1.0
-  def normalizer(size:Int):Double = {
-    if(size==0)return 0.0
-    val logn=size.toDouble*maths.logGamma(symmetricDirichletAlpha)//math.log(cc.factorie.maths.gamma(symmetricDirichletAlpha))
-    //val n = math.pow(cc.factorie.maths.gamma(symmetricDirichletAlpha),size.toDouble)
-    val logd=maths.logGamma(size.toDouble*symmetricDirichletAlpha)
-    val logz = logn-logd
-    println("z: "+logz+" n: "+logn+" d: "+logd+" size: "+size)
-    logz
-  }
-  def score(s:Stat):Double ={
-    val bag = s._1
-    var result = 0.0
-    val z = normalizer(bag.size)
-    val kernel = dirichletKernel(bag)
-    if(z!=0.0)result = -math.exp(kernel-z)
-    //var result = -math.exp(dirichletKernel(bag))/normalizer(bag.size)
-    println(" result:"+result+" kernel:"+kernel + " z:"+z)
-    result*weight
-  }
-  def dirichletKernel(bag:BagOfWords):Double ={
-    var result = 0.0
-    var l1Norm = 0.0
-    //val iterator = bag.iterator
-    for((k,v) <- bag.iterator)l1Norm += v
-    for((k,v) <- bag.iterator)result += (symmetricDirichletAlpha-1.0)*math.log(v/l1Norm)//scala.math.pow(v/l1Norm,symmetricDirichletAlpha-1.0)
-    result
-  }
-}
-*/
-
-
-
-/*
-class BagOfWordsTensorVariable extends FeatureVectorVariable[String]{
-  
-}
-*/
-
-/*
-make sparsebagofwords have a composability of bags and an ability to collapse it
-  -adding and removing bags adds and removes bags from the list
-  -collapsing actually adds values to the underlying _bag (called when a move is accepted)
-the diff variables for bag of words replace the actual _members value of the bag of words variable with a ComposedBagOfWords when undo/redo is called.
-
- */
-/*
-class ComposedSparseBagOfWords2(protected val bag1:BagOfWords, protected val bag2:BagOfWords, scale:Double=1.0) extends SparseBagOfWords{
-  protected val smaller = if(bag1.size<bag2.size)bag1 else bag2
-  protected val larger = if(smaller eq bag1)bag2 else bag1
-  //protected var _l2Norm = larger._l2Norm
-  //protected var _l1Norm = larger._l1Norm + smaller.l1Norm
-  for((s,w) <- smaller.iterator){
-    _l1Norm += w*scale
-    _l2Norm += w*w*scale*scale + 2*this(s)*w*scale
-  }
-  override def size = bag1.size+bag2.size
-  override def asHashMap:HashMap[String,Double] ={
-    val result = bag1.asHashMap
-    result ++= bag2.asHashMap
-    result
-  }
-  override def apply(word:String):Double = bag1(word) + bag2(word)
-  override def iterator:Iterator[(String,Double)] = bag1.iterator ++ bag2.iterator
-  def buildSparseBag:SparseBagOfWords ={
-    val underlying = new LinkedHashMap[String,Double]
-    underlying ++= bag1.iterator
-    underlying ++= bag2.iterator
-    val result = new SparseBagOfWords()
-    result.buildFrom(_underlying,this.l1Norm,this.l2Norm)
-    result
-  }
-  //def l2Norm:Double = _l2Norm
-  //def l1Norm:Double = _l2Norm
-}
-
-
-class ComposableBagOfWords extends SparseBagOfWords{
-  protected val added = new ArrayBuffer[BagOfWords]
-  protected val removed = new ArrayBuffer[BagOfWords]
-  protected var _size:Int = 0
-  protected var _l1NormDelta = 0.0
-  protected var _l2NormDelta = 0.0
-  def addBag(bag:BagOfWords):Int ={
-    val result = added.size
-    added += bag
-    for((s,w) <- bag.iterator){
-      _l1NormDelta += w
-      _l2NormDelta += w*w + 2.0*this(s)*w
-      _if(this(s)==0.0)_size += 1
-    }
-    size += bag.size
-    result
-  }
-  def removeBag(bag:BagOfWords):Int ={
-    val result = removed.size
-    added += bag
-    for((s,w) <- bag.iterator){
-      _l1NormDelta -= w
-      _l2NormDelta += w*w + -2.0*this(s)*w
-      if(this(s) == w)_size -= 1
-    }
-    result
-  }
-  override def l1Norm = _l1Norm + l1NormDelta
-  override def l2Norm = _l2Norm + l2NormDelta
-  override def size = _size
-}
-*/
-
-class BagOfWordsPriorWithStatistics[B<:BagOfWordsVariable](val weight:Double=1.0,useL1Norm:Boolean=true)(implicit m:Manifest[B]) extends FastTemplateWithStatistics1[B]{
-  def score(bag:B#Value):Double ={
-    //val bag = s._1
-    var result = bag.size.toDouble
-    if(useL1Norm){
-      var l1Norm = 0.0
-      for((k,v) <- bag.iterator)l1Norm += v
-      bag.size/l1Norm
-    }
-    -result*weight
-  }
-}
-
-class EntropyBagOfWordsPriorWithStatistics[B<:BagOfWordsVariable](val weight:Double=1.0)(implicit m:Manifest[B]) extends FastTemplateWithStatistics1[B]{
-  def score(bag:B#Value):Double ={
-    //val bag = s._1
+class EntropyBagOfWordsPriorWithStatistics[B<:BagOfWordsVariable with EntityAttr](val weight:Double=1.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B]{
+  println("EntropyBagOfWordsPriorWithStatistics("+weight+")")
+  def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[B])
+  def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[B])
+  def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entitie's status as a mention should never change.")
+  def score(exists:EntityExists#Value, isEntity:IsEntity#Value, bag:B#Value): Double ={
     var entropy = 0.0
-    val l1Norm = bag.l1Norm
-    //for((k,v) <- bag.iterator)l1Norm += v
-    for((k,v) <- bag.iterator)entropy -= (v/l1Norm)*math.log(v/l1Norm)
+    if(exists.booleanValue && isEntity.booleanValue){
+      val l1Norm = bag.l1Norm
+      for((k,v) <- bag.iterator)entropy -= (v/l1Norm)*math.log(v/l1Norm)
+    }
     -entropy*weight
   }
 }
-
+class BagOfWordsPriorWithStatistics[B<:BagOfWordsVariable with EntityAttr](val weight:Double=1.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B]{
+  println("BagOfWordsPriorWithStatistics("+weight+")")
+  def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[B])
+  def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[B])
+  def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entitie's status as a mention should never change.")
+  def score(exists:EntityExists#Value, isEntity:IsEntity#Value, bag:B#Value): Double ={
+    var result = 0.0
+    if(exists.booleanValue && isEntity.booleanValue && bag.size>0)result =  bag.size.toDouble/bag.l1Norm
+    -result*weight
+  }
+}
+class EntitySizePrior(val weight:Double=0.1, val exponent:Double=1.2) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,MentionCountVariable]{
+  println("EntitySizePrior: "+weight+" exponent: "+exponent)
+  def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[MentionCountVariable])
+  def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[MentionCountVariable])
+  def unroll3(mentionCount:MentionCountVariable) = Factor(mentionCount.entity.attr[EntityExists],mentionCount.entity.attr[IsEntity],mentionCount)//throw new Exception("An entitie's status as a mention should never change.")
+  def score(exists:EntityExists#Value, isEntity:IsEntity#Value, mentionCount:MentionCountVariable#Value): Double =
+    if(exists.booleanValue && isEntity.booleanValue)scala.math.pow(mentionCount.intValue,1.2) * weight else 0.0
+}
 class BagOfWordsCubbie extends Cubbie{
   def store(bag:BagOfWords) = {_map ++= bag.asHashMap;this}
   def fetch:HashMap[String,Double] = {
@@ -534,6 +458,7 @@ class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,
     _l1Norm=0.0
     _bag = new LinkedHashMap[String,Double]
   }
+  //def underlying = _bag
   def sizeHint(n:Int) = _bag.sizeHint(n)
   if(initialWords!=null)for(w<-initialWords)this += (w,1.0)
   if(initialBag!=null)for((k,v)<-initialBag)this += (k,v)
@@ -553,7 +478,8 @@ class SparseBagOfWords(initialWords:Iterable[String]=null,initialBag:Map[String,
   }
   def deductedDot(that:BagOfWords,deduct:BagOfWords) : Double = {
     var result = 0.0
-    for((k,v) <- iterator)result += v*(that(k) - deduct(k))
+    if(deduct eq this)for((k,v) <- iterator)result += v*(that(k) - v)
+    else for((k,v) <- iterator)result += v*(that(k) - deduct(k))
     result
   }
   /*

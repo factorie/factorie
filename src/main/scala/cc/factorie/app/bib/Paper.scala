@@ -60,6 +60,7 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
   val middleName = StringSlot("mn")
   val lastName = StringSlot("ln")
   val suffix = StringSlot("sf")
+  val year = IntSlot("year")
   val firstNameBag = new CubbieSlot("fnb", () => new BagOfWordsCubbie)
   val middleNameBag = new CubbieSlot("mnb", () => new BagOfWordsCubbie)
   //val bagOfTruths = new CubbieSlot("gtbag", () => new BagOfWordsCubbie)
@@ -91,6 +92,8 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     e.attr[BagOfEmails] ++= emails.value.fetch
     e.attr[BagOfFirstNames] ++= firstNameBag.value.fetch
     e.attr[BagOfMiddleNames] ++= middleNameBag.value.fetch
+    if(year.isDefined)e.attr[Year] := year.value
+
     //
 //    e.attr[TensorBagOfTopics] ++= topicsTensor.value.fetch
 //    e.attr[TensorBagOfVenues] ++= venuesTensor.value.fetch
@@ -115,6 +118,7 @@ class AuthorCubbie extends EntityCubbie[AuthorEntity] {
     emails := new BagOfWordsCubbie().store(e.attr[BagOfEmails].value)
     firstNameBag := new BagOfWordsCubbie().store(e.attr[BagOfFirstNames].value)
     middleNameBag := new BagOfWordsCubbie().store(e.attr[BagOfMiddleNames].value)
+    year := e.attr[Year].intValue
     //
 //    topicsTensor := new BagOfWordsCubbie().store(e.attr[BagOfTopics].value)
 //    venuesTensor := new BagOfWordsCubbie().store(e.attr[BagOfVenues].value)
@@ -170,6 +174,7 @@ class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
     e.attr[BagOfAuthors] ++= authors.value.fetch
     e.attr[BagOfAuthors] ++= venueBag.value.fetch
     e.attr[BagOfAuthors] ++= keywords.value.fetch
+    e.attr[Year] := year.value
     e._id = this.id.toString
   }
   override def store(e:PaperEntity) ={
@@ -181,6 +186,7 @@ class PaperCubbie extends EssayCubbie with EntityCubbie[PaperEntity] {
     authors := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
     venueBag := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
     keywords := new BagOfWordsCubbie().store(e.attr[BagOfAuthors].value)
+    year := e.attr[Year].intValue
     this.id=e.id
   }
 }

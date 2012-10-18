@@ -62,8 +62,13 @@ object FeatureUtils{
   val venueP4 = "(in the )?[Pp]roceedings of (the )?[a-z0-9]+ "
   val venueP5 = "(([Aa]dvances( ?in ?)?|[Pp]roceedings|[Pp]roc\\.? )) ?"
   val venuePost = " ?([Ee]ndowment|[Ee]ndow|Proceedings|Meeting)\\.?"
-  val venForAuthStops = "(advances|association|meeting|assoc|annual|proceedings|proc|endowment|acm|ieee|.iprioendow|conference|journal|workshop|international|symposium|appear|[a-z]+eenth|[a-z]+tieth|first|second|third|fourth|fifth|sixth|seventh|eighth|nineth|tenth|eleventh|twelfth|in|the|of|to)"
+  val venForAuthStops = "(transactions|trans|advances|association|meeting|assoc|annual|proceedings|proc|endowment|acm|ieee|.iprioendow|conference|conf|journal|j|workshop|international|int|symposium|appear|[a-z]+eenth|[a-z]+tieth|first|second|third|fourth|fifth|sixth|seventh|eighth|nineth|tenth|eleventh|twelfth|in|the|of|to)"
   val tokenFilterString = "[^A-Za-z0-9]"
+  val keywordFilterRegex="key-? ?words?:?"
+  def keywordTokens(keywords:String):Array[String] ={
+    val result = keywords.split(",;")
+    result.map(_.trim)
+  }
   def normalizeName(name:String) = deAccent(name).replaceAll("[^A-Za-z ]","").replaceAll("[ ]+"," ")
   def filterFieldNameForMongo(s:String) = s.replaceAll("[$\\.]","")
   def venueBag(s:String):Seq[String] = {val toks = new ArrayBuffer[String];toks++=tokenizeVenuesForAuthors(s);toks ++= getVenueAcronyms(s).map(_._1);toks.map(_.toLowerCase).toSeq}
@@ -189,10 +194,62 @@ object FeatureUtils{
       if(names(i).matches("[A-Z][a-z]+") || names(i).matches("[A-Z]\\.?"))running =false
     }
   }*/
-
+  def addFeatures(author:AuthorEntity):Unit ={
+    if(author.fullName.firstName.trim.length>0)author.bagOfFirstNames += author.fullName.firstName.trim
+    if(author.fullName.middleName.trim.length>0)author.bagOfMiddleNames += author.fullName.middleName.trim
+    if(author.groundTruth!=None)author.bagOfTruths += author.groundTruth.get
+    val paper = author.paper
+    if(paper!=null){
+      if(paper.attr[Year].intValue != -1)author.attr[Year] := paper.attr[Year].intValue
+      author.fullName.setSuffix(paper.title.value)(null)
+      author.bagOfTopics.add(paper.bagOfTopics.value)(null)
+      for(coAuthor <- paper.authors){
+        if(coAuthor.ne(author)){
+          val coauthorString = FeatureUtils.firstInitialLastName(coAuthor)
+          if(coauthorString.length>0)author.bagOfCoAuthors += coauthorString
+        }
+      }
+      if(paper.venueName!=null && paper.venueName.value.length>0)
+        for(tok<-FeatureUtils.venueBag(paper.venueName.value))
+          author.bagOfVenues.add(filterFieldNameForMongo(tok))(null)
+      author.bagOfKeywords.add(paper.bagOfKeywords.value)(null)
+      //author.bagOfKeywords.add(author.bagOfCoAuthors.value)(null)
+      //if(author.bagOfKeywords.value.size>0)println("BagOfKeywords: "+author.bagOfKeywords.value)
+    }else println("Warning: paper is null for author with id "+author.id+" cannot compute features.")
+    //for(bag <- author.attr[BagOfWordsVariable])bag.clear
+  }
+  def addFeatures(paper:PaperEntity):Unit ={
+    //for(author <- paper.authors)
+    //  paper.bagOfAuthors += filterFieldNameForMongo(FeatureUtils.firstInitialLastName(author))
+    if(paper.venueName!=null && paper.venueName.value.length>0){
+      for(tok<-FeatureUtils.venueBag(paper.venueName.value)){
+        //paper.bagOfKeywords.add(filterFieldNameForMongo(tok))(null)
+        paper.bagOfVenues.add(filterFieldNameForMongo(tok))(null)
+      }
+    }
+  }
 }
 
 object EntityUtils{
+  val shortDecimal = new java.text.DecimalFormat("0.0#")
+  def checkIntegrity(entities:Iterable[HierEntity]):Unit ={
+    var numZeroChildren=0
+    var numOneChild=0
+    for(e<-entities){
+      if(!e.isObserved){
+        if(e.childEntitiesSize==0){
+          numZeroChildren+=1
+        }
+        if(e.childEntitiesSize==1){
+          numOneChild+=1
+        }
+      }
+    }
+    val numErrors = numZeroChildren+numOneChild
+    println("Number of errors: "+numErrors)
+    println("  *number of inferred entities with no children: "+numZeroChildren)
+    println("  *number of inferred entities with one child: "+numOneChild)
+  }
   def makeSingletons(entities:Seq[AuthorEntity]):Seq[AuthorEntity] ={
     for(e <- entities)
       e.setParentEntity(null)(null)
@@ -236,6 +293,7 @@ object EntityUtils{
   }
   def null2empty(s:String):String = if(s==null)"" else s
   def reExtractNames(fullName:FullName):Unit ={
+    //println("  reextracting: f="+fullName.firstName+" l="+fullName.lastName)
     var first=""
     var middle=""
     var last=""
@@ -246,7 +304,8 @@ object EntityUtils{
       .replaceAll(" +"," ")
       .trim
     var names = name.split(" ").filter((s:String) => {
-      s.matches("[A-Z][a-z]+") || s.matches("[A-Za-z]\\.?")
+      s.matches("[A-Za-z][A-Za-z]+") || s.matches("[A-Za-z]\\.?")
+      //s.matches("[A-Z][a-z]+") || s.matches("[A-Za-z]\\.?")
     })
     if(names.length==0){
       //println("Relaxing capitalization condition for name: "+name)
@@ -273,6 +332,7 @@ object EntityUtils{
       fullName.setMiddle(middle)(null)
       fullName.setLast(last)(null)
       fullName.setSuffix(suffix)(null)
+      //println("          done: f="+fullName.firstName+" l="+fullName.lastName)
       /*
       println("--New parse--")
       println("  first : "+fullName.firstName)
@@ -332,6 +392,8 @@ object EntityUtils{
     //parent.attr[BagOfTopics].add(e2.attr[BagOfTopics].value)(d)
     for(bag <- e1.attr.all[BagOfWordsVariable])parent.attr(bag.getClass).add(bag.value)(d)
     for(bag <- e2.attr.all[BagOfWordsVariable])parent.attr(bag.getClass).add(bag.value)(d)
+    parent.attr[MentionCountVariable].set(parent.attr[MentionCountVariable].value + e1.attr[MentionCountVariable].value)(d)
+    parent.attr[MentionCountVariable].set(parent.attr[MentionCountVariable].value + e2.attr[MentionCountVariable].value)(d)
     //
 //    for(bag <- e1.attr.all[BagOfWordsTensorVariable])parent.attr(bag.getClass).increment(bag.value)(d)
 //    for(bag <- e2.attr.all[BagOfWordsTensorVariable])parent.attr(bag.getClass).increment(bag.value)(d)
@@ -345,6 +407,7 @@ object EntityUtils{
     //}
     var e = entity.parentEntity
     while(e!=null){
+      e.attr[MentionCountVariable].set(e.attr[MentionCountVariable].value + entity.attr[MentionCountVariable].value)(d)
       for(bag <- entity.attr.all[BagOfWordsVariable])
         e.attr(bag.getClass).add(bag.value)(d)
 //      for(bag <- entity.attr.all[BagOfWordsTensorVariable])
@@ -360,6 +423,7 @@ object EntityUtils{
     //}
     var e = formerParent
     while(e!=null){
+      e.attr[MentionCountVariable].set(e.attr[MentionCountVariable].value - parting.attr[MentionCountVariable].value)(d)
       for(bag <- parting.attr.all[BagOfWordsVariable])
         e.attr(bag.getClass).remove(bag.value)(d)
 //      for(bag <- parting.attr.all[BagOfWordsTensorVariable])
@@ -443,10 +507,98 @@ object EntityUtils{
     val result = new StringBuffer
     val sorted = bag.toList.sortBy(_._2).reverse.take(k)
     for(i<-0 until sorted.length){
-      result.append(sorted(i)._1+" -> "+sorted(i)._2)
+      result.append(sorted(i)._1+"->"+shortDecimal.format(sorted(i)._2))
       if(i<sorted.length-1)
         result.append(", ")
     }
+    result.toString
+  }
+  def defaultEntityContext(e:Entity):String ={
+    val result = new StringBuffer
+    for(bagVar <- e.attr.all[BagOfWordsVariable]){
+      val bag = bagVar.value
+      if(bag.size>0){
+        val name = bag.getClass.toString.split("\\.").toSeq.takeRight(1)
+        result.append("\n  "+name+"("+bag.size+")=["+this.bagToString(bag,8)+"]")
+      }
+    }
+    result.toString
+  }
+
+  def defaultFeaturesToPrint(e:Entity):Seq[String] ={
+    val result = new ArrayBuffer[String]
+    for(bagVar <- e.attr.all[BagOfWordsVariable]){
+      val bag = bagVar.value
+      if(bag.size>0){
+        val name = bagVar.getClass.getName.toString.split("\\.").toSeq.takeRight(1)(0).replaceAll("[A-Za-z]+\\(","").replaceAll("\\)","")
+        result += name+"("+bag.size+"): ["+this.bagToString(bag,8)+"]"
+      }
+    }
+    result
+  }
+  def purity(e:Entity):Double = purity(e.attr[BagOfTruths])
+  def purity(truths:BagOfTruths):Double = {
+    var max = 0.0
+    var sum = 0.0
+    for((k,v) <- truths){
+      sum += v
+      if(v>max)max=v
+    }
+    max/sum
+  }
+  def defaultFeaturesToPrintForAuthors(e:Entity):Seq[String] = {
+    val bags = defaultFeaturesToPrint(e)
+    if(e.isObserved) Seq("title: "+e.attr[FullName].suffix) ++ bags else bags
+  }
+  def prettyPrintAuthors(entities:Seq[AuthorEntity]):Unit = {
+    var count = 0
+    var numSingletons = 0
+    var singletons = new ArrayBuffer[AuthorEntity]
+    var sizeDist = new HashMap[Int,Int]
+    for(e <- entities.filter((e:AuthorEntity) => {e.isRoot && e.isConnected})){
+      if(!e.isObserved)prettyPrintAuthor(e) else singletons += e
+      var size = e.numLeaves
+      sizeDist(size) = sizeDist.getOrElse(size,0) + 1
+      count += 1
+    }
+    println("\n\n------SINGLETONS-----")
+    println("Printing singletons")
+    for(e <- singletons)prettyPrintAuthor(e)
+    println("\nEntity size distribution")
+    val sorted = sizeDist.toList.sortBy(_._2).reverse
+    println(sorted)
+    println("\nPrinted " + count + " entities and "+singletons.size+ " singletons.")
+  }
+
+  def prettyPrintAuthor(e:AuthorEntity):Unit ={
+    val authorString = entityStringPretty(e,
+      (e:Entity)=>{
+        var result:String ="size:"+e.numLeaves+"id:"+e.id.toString+";name:"+e.attr[FullName].toString+" (first:"+bagToString(e.attr[BagOfFirstNames].value)+" middle:"+bagToString(e.attr[BagOfMiddleNames].value)+")"
+        //var result:String = "id:"+e.id.toString.substring(e.id.toString.length-7,e.id.toString.length)+" name:"+e.attr[FullName].toString+" (first:"+bagToString(e.attr[BagOfFirstNames].value)+" middle:"+bagToString(e.attr[BagOfMiddleNames].value)+")"
+        if(e.asInstanceOf[AuthorEntity].groundTruth!=None)result="truth:"+e.asInstanceOf[AuthorEntity].groundTruth.get+";"+result
+        if(e.childEntitiesSize>1)result = "purity="+shortDecimal.format(purity(e))+";"+result
+        result},
+      Some(defaultFeaturesToPrintForAuthors(_))
+    )
+    println(authorString)
+  }
+  def entityStringPretty(e:Entity,flatRepresent:Entity=>String,featuresToPrint:Option[Entity=>Seq[String]],perLevelIndent:String="   ",result:StringBuffer=new StringBuffer,depth:Int=0):String={
+    val levelIndent = {var r="";for(i<-0 until depth)r+=perLevelIndent;r}
+    result.append("\n"+levelIndent)
+    if(e.isRoot){
+      result.append("EntityRoot["+flatRepresent(e)+"]")
+      if(featuresToPrint!=None)result.append("\n"+levelIndent+"| Features\n"+levelIndent+"|   ")
+    }else if(e.isObserved){
+      result.append("-Mention["+flatRepresent(e)+"]")
+      if(featuresToPrint!=None)result.append("\n"+levelIndent+"|   ")
+    }else{
+      result.append("*SubEntity["+flatRepresent(e)+"]")
+      if(e.childEntitiesSize==0)result.append("-SUBENTITY ERROR")//throw new Exception("ERROR SUB ENTITY IS EMPTY")
+      if(featuresToPrint!=None)result.append("\n"+levelIndent+"| Features\n"+levelIndent+"|   ")
+    }
+    for(featuresToPrintFunc<-featuresToPrint)result.append(featuresToPrintFunc(e).mkString("\n"+levelIndent+"|   "))
+    if(e.childEntitiesSize>0)result.append("\n"+levelIndent+" \\Children ("+e.childEntitiesSize+")")
+    for(childEntity <- e.childEntitiesIterator)entityStringPretty(childEntity,flatRepresent,featuresToPrint,perLevelIndent,result,depth+1)
     result.toString
   }
 }
@@ -461,8 +613,8 @@ object LDAUtils{
     for(paper <- papers.par){
       val doc = Document.fromString(WordSeqDomain,paper.id,DEFAULT_DOCUMENT_GENERATOR(paper),segmenter=mySegmenter)
       if(doc.ws.length>0){
-        lda.inferDocumentTheta(doc)
-        doc.theta.value.toSeq.zip(0 until lda.phis.size).filter((t:(Double,Int))=>{t._1>0.1}).foreach((t:(Double,Int))=>{paper.bagOfTopics.add(t._2+"",t._1)(null)})
+        lda.inferDocumentTheta(doc,50)
+        doc.theta.value.toSeq.zip(0 until lda.phis.size).filter((t:(Double,Int))=>{t._1>0.05}).foreach((t:(Double,Int))=>{paper.bagOfTopics.add(t._2+"",t._1)(null)})
         //doc.theta.value.toSeq.zip(0 until lda.phis.size).filter((t:(Double,Int))=>{t._1>0.001}).foreach((t:(Double,Int))=>{paper.bagOfTopics.add(t._2+"",t._1)(null)})
         //println("PAPER: " + DEFAULT_DOCUMENT_GENERATOR(paper)+"\n  topics: "+doc.theta.value.toSeq.zip(0 until lda.phis.size).filter((t:(Double,Int))=>{t._1>0.0}).mkString(" "))
         count += 1
@@ -506,14 +658,20 @@ object LDAUtils{
     }
     var line = reader.readLine()
     var topicCount= -1
+    var lineCount = 0
+    var start = System.currentTimeMillis
     while(line!=null){
       if(line=="/topic"){
         topicCount += 1
         line=reader.readLine
       }
+      lineCount += 1
+      if(lineCount % 1000 == 0)print(lineCount+" ")
+      if(lineCount % 25000 == 0)println("  time: "+((System.currentTimeMillis-start)/1000L))
       val word = line
       val count = reader.readLine.toDouble
-      lda.phis(topicCount).tensor.masses.+=(lda.wordDomain.index(word),count)
+      //lda.phis(topicCount).tensor.masses.+=(lda.wordDomain.index(word),count)
+      lda.phis(topicCount).value.masses.+=(lda.wordDomain.index(word),count)
       line=reader.readLine
     }
     println("Topics: \n"+lda.topicsSummary(10))
@@ -590,7 +748,7 @@ object LDAUtils{
   }
 
   def DEFAULT_DOCUMENT_GENERATOR(paper:PaperEntity):String = {
-    paper.title.value+" "+FeatureUtils.venueBag(paper.venueName.value).mkString(" ")
+    (paper.title.value+" "+FeatureUtils.venueBag(paper.venueName.value).mkString(" ")).toLowerCase
   }
 /*
   def createDocumentsForLDA(papers:Iterable[PaperEntity], outputDir:File, documentGenerator:PaperEntity=>String=DEFAULT_DOCUMENT_GENERATOR(_)):Unit ={
