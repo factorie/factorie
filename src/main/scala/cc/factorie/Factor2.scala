@@ -81,6 +81,12 @@ abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends 
   def valueScores2(tensor1:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
 
   // For implementing sparsity in belief propagation
+  def hasLimitedDiscreteValues = false
+  def limitedDiscreteValues: collection.mutable.Set[(Int,Int)] = throw new Error("Not implemented")
+  def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = values.foreach(t => addLimitedDiscreteValues(t._1, t._2)) // throw new Error("Not implemented") // limitedDiscreteValues ++= values
+  def addLimitedDiscreteValues(i:Int, j:Int): Unit = throw new Error("Not implemented")
+  
+  
 //  def isLimitingValuesIterator = false
 //  def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = Iterator.empty
 
@@ -229,10 +235,14 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
     def score(value1:N1#Value, value2:N2#Value): Double = Family2.this.score(value1, value2)
     override def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = Family2.this.statistics(v1, v2)
     override def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double,StatisticsType) = Family2.this.scoreAndStatistics(v1, v2)
-    //override def scoreValues(tensor:Tensor): Double = thisFamily.scoreValues(tensor) // TODO Consider implementing match here to use available _1 domain
-    //override def scoreStatistics(tensor:Tensor): Double = thisFamily.scoreStatistics(tensor)
+    override def scoreValues(tensor:Tensor): Double = Family2.this.scoreValues(tensor) // TODO Consider implementing match here to use available _1 domain
+    override def scoreStatistics(tensor:Tensor): Double = Family2.this.scoreStatistics(tensor)
     //override def isLimitingValuesIterator = Family2.this.isLimitingValuesIterator
     //override def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = limitedDiscreteValues.iterator
+    override def hasLimitedDiscreteValues = Family2.this.hasLimitedDiscreteValues
+    override def limitedDiscreteValues: collection.mutable.Set[(Int,Int)] = Family2.this.limitedDiscreteValues
+    //override def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = Family2.this.addLimitedDiscreteValues(values)
+    override def addLimitedDiscreteValues(i:Int, j:Int): Unit = Family2.this.addLimitedDiscreteValues(i, j)
   }
   def score(v1:N1#Value, v2:N2#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType]
@@ -252,11 +262,17 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
   }
 
   // For implementing sparsity in belief propagation
-//  var isLimitingValuesIterator = false
-//  lazy val limitedDiscreteValues = new scala.collection.mutable.HashSet[(Int,Int)]
-//  def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = limitedDiscreteValues ++= values
-  //def limitDiscreteValuesIterator
-  
+  var hasLimitedDiscreteValues: Boolean = false
+  lazy val limitedDiscreteValues: collection.mutable.Set[(Int,Int)] = new scala.collection.mutable.HashSet[(Int,Int)]
+  lazy val limitedDiscreteValues1: collection.mutable.Set[Int] = new scala.collection.mutable.HashSet[Int]
+  lazy val limitedDiscreteValues2: collection.mutable.Set[Int] = new scala.collection.mutable.HashSet[Int]
+  //def addLimitedDiscreteValues(values:Iterable[(Int,Int)]): Unit = limitedDiscreteValues ++= values
+  def addLimitedDiscreteValues(i:Int, j:Int): Unit = {
+    limitedDiscreteValues += ((i,j))
+    limitedDiscreteValues1 += i
+    limitedDiscreteValues2 += j
+  }
+
 //  // Cached Statistics
 //  private var cachedStatisticsArray: Array[StatisticsType] = null
 //  private var cachedStatisticsHash: HashMap[Product,StatisticsType] = null

@@ -51,6 +51,7 @@ trait Factor extends Ordered[Factor] {
   /** Return the score for Factors whose values can be represented as a Tensor, otherwise throw an Error.
       For Factors/Family in which the Statistics are the values, this method simply calls scoreValues(Tensor). */
   def scoreValues(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreValues(Tensor).")
+  // Do not declare scoreStatistics(tensor:Tensor) here, because it should be abstract in TensorFactor2, etc.
   /** Return the score for Factors whose Statistics can be represented as a Tensor, otherwise throw an Error.
       For DotFamily this is implemented as simply "weights dot tensor". */
   //def scoreStatistics(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreStatistics(Tensor)") // TODO Is this ever necessary?

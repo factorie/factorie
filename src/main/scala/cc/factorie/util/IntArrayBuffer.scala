@@ -197,12 +197,26 @@ class IntArrayBuffer extends ProtectedIntArrayBuffer with MutableIntSeq {
   def insert(index:Int, elt:Int): Unit = _insert(index, elt)
 }
 
-trait SortedIntArrayBuffer extends ProtectedIntArrayBuffer with IntSeq {
+class SortedIntArrayBuffer extends ProtectedIntArrayBuffer with IntSeq {
   def apply(index:Int): Int = _apply(index)
   def length: Int = _length
+  def setCapacity(c:Int) = _setCapacity(c)
   def toArray = _toArray
   def +=(i:Int): Unit = _insertSorted(i)
   def -=(i:Int): Unit = { val index = _indexForInsertSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSorted(is(j)); j += 1} }
   def ++=(is:Seq[Int]): Unit = { _ensureCapacity(_length + is.length); is.foreach(_insertSorted(_)) }
 }
+
+/** Like SortedIntArrayBuffer, but with no duplicate entries. */
+class SortedIntSetBuffer extends ProtectedIntArrayBuffer with IntSeq {
+  def apply(index:Int): Int = _apply(index)
+  def length: Int = _length
+  def setCapacity(c:Int) = _setCapacity(c)
+  def toArray = _toArray
+  def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
+  def -=(i:Int): Unit = { val index = _indexForInsertSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
+  def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }
+  def ++=(is:Seq[Int]): Unit = { _ensureCapacity(_length + is.length); is.foreach(_insertSortedNoDuplicates(_)) }
+}
+

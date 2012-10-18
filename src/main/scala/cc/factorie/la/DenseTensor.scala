@@ -36,7 +36,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
   }
   protected def _setArray(a:Array[Double]): Unit = { assert(a.length == length); __values = a }
   def isDense = true
-  def activeDomain = new RangeIntSeq(0, length)
+  def activeDomain: IntSeq = new RangeIntSeq(0, length)
   def apply(i:Int): Double = __values(i)
   override def update(i:Int, v:Double): Unit = __values(i) = v
   override def zero(): Unit = java.util.Arrays.fill(__values, 0.0)
