@@ -537,15 +537,15 @@ class ChainNer2 {
 //		    }
 //		      optimizer.optimize()
 //		      optimizer.optimize()
-		    
-      val trainer = new DotMaximumLikelihood(model)
-      trainer.processAllBP(vars, InferByBPChainSum)
+      val pieces = vars.map(v => new BPMaxLikelihoodPiece[ChainNerLabel, String](v.toSeq))
+      val trainer = new BatchTrainer(new L2RegularizedLBFGS(), model)
+      (1 to 100).foreach(i => trainer.process(pieces))
 
-			  (trainLabels ++ testLabels).foreach(_.setRandomly())
+      (trainLabels ++ testLabels).foreach(_.setRandomly())
 	    
-		      trainDocuments.foreach(process(_))
-		      testDocuments.foreach(process(_))
-			  printEvaluation(trainDocuments, testDocuments, "FINAL")			
+      trainDocuments.foreach(process(_))
+      testDocuments.foreach(process(_))
+      printEvaluation(trainDocuments, testDocuments, "FINAL")
 	  } else {
 	
       (trainLabels ++ testLabels).foreach(_.setRandomly())
@@ -603,8 +603,9 @@ class ChainNer2 {
 //		    }
 //		      optimizer1.optimize()
 //		      optimizer1.optimize()
-      val trainer = new DotMaximumLikelihood(model)
-      trainer.processAllBP(vars1, InferByBPChainSum)
+        val pieces = vars1.map(v => new BPMaxLikelihoodPiece[NerLabel, String](v.toSeq))
+        val trainer = new BatchTrainer(new L2RegularizedLBFGS, model)
+        (1 to 100).foreach(i => trainer.process(pieces))
 		      
 			  (trainLabels ++ testLabels).foreach(_.setRandomly())
 	    

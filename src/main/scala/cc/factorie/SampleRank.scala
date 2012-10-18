@@ -16,8 +16,8 @@
 
 package cc.factorie
 import cc.factorie.la._
-import cc.factorie.optimize.GradientOptimizer
 import collection.mutable.HashMap
+import optimize.{Piece, GradientOptimizer}
 import util.DoubleAccumulator
 
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
@@ -75,7 +75,8 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
 
   var learningMargin = 1.0
 
-  def accumulateValueAndGradient(model: Model[DiffList], gradient: TensorAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
+    assert(gradient != null, "The SampleRankPiece needs a gradient accumulator")
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)
     //val g2 = new TensorMap; def gg(df:DotFamily): Tensor = g.getOrElseUpdate(df, Tensor.newSparse(df.weights)

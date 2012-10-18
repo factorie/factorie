@@ -18,6 +18,7 @@ package cc.factorie.example
 
 import java.io.File
 import cc.factorie._
+import cc.factorie.optimize._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import collection.mutable.{ArrayBuffer, Seq => MSeq}
@@ -79,7 +80,7 @@ object ChainNER1ML {
     //throw new Error("DotMaximumLikelihood not yet working for linear-chains")
 
     val pieces = trainLabelsSentences.map(s => new BPMaxLikelihoodPiece[NerLabel,String](s))
-    val learner = new BatchPiecewiseLearner[Variable](new optimize.StepwiseGradientAscent(), model)
+    val learner = new BatchTrainer[Variable](new optimize.StepwiseGradientAscent(), model)
     (1 to 10).foreach(_ => learner.process(pieces))
     val objective = HammingLossObjective
     // slightly more memory efficient - kedarb

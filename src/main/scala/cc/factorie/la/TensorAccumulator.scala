@@ -3,21 +3,24 @@ package cc.factorie.la
 import cc.factorie.util.{TruncatedArrayIntSeq, Accumulator}
 import cc.factorie.DotFamily
 
-trait TensorAccumulator extends Accumulator[WeightsTensor] {
+trait TensorAccumulator[T <: Tensor] extends Accumulator[T] {
   def accumulate(index: Int, value: Double): Unit
+}
+
+trait WeightsTensorAccumulator extends TensorAccumulator[WeightsTensor] {
   def accumulate(family: DotFamily, t: Tensor): Unit
   def accumulate(family: DotFamily, index: Int, value: Double): Unit
   def += (family: DotFamily, t: Tensor, c: Double): Unit
-  def addOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit
 }
 
-class LocalTensorAccumulator(val tensor: WeightsTensor) extends TensorAccumulator {
+class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTensorAccumulator {
   def accumulate(t: WeightsTensor) = tensor += t
   def accumulate(index: Int, value: Double): Unit = tensor(index) += value
   def accumulate(family: DotFamily, t: Tensor): Unit = tensor(family) += t
   def accumulate(family: DotFamily, index: Int, value: Double): Unit = tensor(family)(index) += value
   def += (family: DotFamily, t: Tensor, c: Double) = tensor(family) +=(t, c)
-  def addOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = {
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = {
     (tensor(family), t1, t2) match {
       case (_, t1: UniformTensor1, _) if t1(0) == 0.0 => return
       case (_, _, t2: UniformTensor1) if t2(0) == 0.0 => return
@@ -93,17 +96,17 @@ class LocalTensorAccumulator(val tensor: WeightsTensor) extends TensorAccumulato
     }
   }
   def combine(a: Accumulator[WeightsTensor]): Unit = a match {
-    case a: LocalTensorAccumulator => tensor += a.tensor
+    case a: LocalWeightsTensorAccumulator => tensor += a.tensor
   }
 }
 
-object NoopTensorAccumulator extends TensorAccumulator {
+object NoopWeightsTensorAccumulator extends WeightsTensorAccumulator {
   def accumulate(t: WeightsTensor): Unit = {}
   def accumulate(index: Int, value: Double): Unit = {}
   def accumulate(family: DotFamily, t: Tensor): Unit = {}
   def accumulate(family: DotFamily, index: Int, value: Double): Unit = {}
   def combine(a: Accumulator[WeightsTensor]): Unit = {}
   def += (family: DotFamily, t: Tensor, c: Double): Unit = {}
-  def addOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) = {}
+  def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) = {}
 }
 
