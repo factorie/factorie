@@ -44,6 +44,7 @@ class DiscreteMarginal1[V1<:DiscreteTensorVar](val _1:V1, proportions1:Proportio
   }
   def incrementCurrentValue(w:Double): Unit = _1 match { case d:DiscreteVar => proportions.masses.+=(d.intValue, w); case d:DiscreteTensorVar => throw new Error("Not yet implemented") }
   override def globalize(implicit d:DiffList): Unit = _1 match { case v:MutableDiscreteVar[_] => v.set(proportions.maxIndex); case _ => throw new Error }
+  // TODO Somehow use TensorAccumulator for something like this
 //  /** An Actor that can receive increment requests in a thread-safe manner. */
 //  // TODO How/when does this get garbage collected?  See http://thread.gmane.org/gmane.comp.lang.scala.user/20255/focus=20391
 //  lazy val incrementer = actor {

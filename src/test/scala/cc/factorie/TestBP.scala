@@ -291,7 +291,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
 	    newFactor2(v2, v3, 3, 0)
 	  )
     
-    val fg = BP.inferTreewiseSum(vars, model, root = v3)
+    val fg = BP.inferTreeSum(vars, model, root = v3)
     fg.setToMaximize()
     
     println("v1 : " + fg.marginal(v1).proportions)
@@ -324,7 +324,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
       newFactor2(v3, v4, 5, 0), newFactor2(v5, v4, -5, 0),
       newFactor2(v6, v5, 5, 0), newFactor2(v7, v5, -5, 0)
     )
-    val fg = BP.inferTreewiseSum(vars, model, v4)
+    val fg = BP.inferTreeSum(vars, model, v4)
     fg.setToMaximize()
     
     assert(fg.marginal(v7).proportions(0) > 0.95)

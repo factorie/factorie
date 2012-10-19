@@ -77,7 +77,7 @@ object DocumentClassifier3 {
     (trainVariables ++ testVariables).foreach(_.setRandomly())
 
     // Train and test
-    val pieces = trainVariables.map(v => new optimize.BPMaxLikelihoodPiece[Label, String](Seq(v)))
+    val pieces = trainVariables.map(v => new optimize.DiscretePiece(Seq(v)))
     val trainer = new optimize.SGDTrainer(new optimize.AROW(model), model)
     (1 to 100).foreach(i => trainer.process(pieces))
     val predictor = new VariableSettingsGreedyMaximizer[Label](model)

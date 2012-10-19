@@ -58,6 +58,8 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
     val origIntValue = intValue
     val l = domain.size 
     val distribution = new DenseTensor1(l)
+    // TODO Consider re-writing this such that it does not modify this.value
+    //val assignment = new Assignment1(this, domain.head.asInstanceOf[A])
     var i = 0
     while (i < l) {
       //model.factors(Seq(this)).sumBy(_.values.set(this, i).score) // a version that doesn't change the value of this variable
@@ -80,8 +82,7 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
   }
 }
 
-//trait Var { def foo = "foo" }
-
+// TODO What is this?  Get rid of it. -akm
 trait IntMutableDiscreteVar[A<:DiscreteValue] extends MutableDiscreteVar[A] with IterableSettings {
 }
 

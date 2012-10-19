@@ -108,7 +108,7 @@ class ChainNerBP {
 //    trainDocuments.foreach(process(_))
 //    testDocuments.foreach(process(_))
 //    printEvaluation(trainDocuments, testDocuments, "FINAL")
-    val pieces = vars.map(v => new BPMaxLikelihoodPiece[ChainNerLabel, String](v))
+    val pieces = vars.map(v => new BPMaxLikelihoodPiece(v, InferByBPChainSum))
     val trainer = new BatchTrainer(new L2RegularizedLBFGS, model)
     (1 to 100).foreach(i => trainer.process(pieces))
 

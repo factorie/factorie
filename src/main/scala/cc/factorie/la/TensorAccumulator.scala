@@ -5,21 +5,23 @@ import cc.factorie.DotFamily
 
 trait TensorAccumulator[T <: Tensor] extends Accumulator[T] {
   def accumulate(index: Int, value: Double): Unit
+  def accumulate(t:T, factor:Double): Unit
 }
 
 trait WeightsTensorAccumulator extends TensorAccumulator[WeightsTensor] {
   def accumulate(family: DotFamily, t: Tensor): Unit
   def accumulate(family: DotFamily, index: Int, value: Double): Unit
-  def += (family: DotFamily, t: Tensor, c: Double): Unit
+  def accumulate(family: DotFamily, t: Tensor, factor: Double): Unit
   def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit
 }
 
 class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTensorAccumulator {
   def accumulate(t: WeightsTensor) = tensor += t
+  def accumulate(t: WeightsTensor, factor:Double) = tensor.+=(t, factor)
   def accumulate(index: Int, value: Double): Unit = tensor(index) += value
   def accumulate(family: DotFamily, t: Tensor): Unit = tensor(family) += t
   def accumulate(family: DotFamily, index: Int, value: Double): Unit = tensor(family)(index) += value
-  def += (family: DotFamily, t: Tensor, c: Double) = tensor(family) +=(t, c)
+  def accumulate(family: DotFamily, t: Tensor, factor: Double) = tensor(family).+=(t, factor)
   def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit = {
     (tensor(family), t1, t2) match {
       case (_, t1: UniformTensor1, _) if t1(0) == 0.0 => return
@@ -102,11 +104,12 @@ class LocalWeightsTensorAccumulator(val tensor: WeightsTensor) extends WeightsTe
 
 object NoopWeightsTensorAccumulator extends WeightsTensorAccumulator {
   def accumulate(t: WeightsTensor): Unit = {}
+  def accumulate(t:WeightsTensor, factor:Double): Unit = {}
   def accumulate(index: Int, value: Double): Unit = {}
   def accumulate(family: DotFamily, t: Tensor): Unit = {}
   def accumulate(family: DotFamily, index: Int, value: Double): Unit = {}
   def combine(a: Accumulator[WeightsTensor]): Unit = {}
-  def += (family: DotFamily, t: Tensor, c: Double): Unit = {}
+  def accumulate(family: DotFamily, t: Tensor, c: Double): Unit = {}
   def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1) = {}
 }
 

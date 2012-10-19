@@ -79,7 +79,7 @@ object ChainNER1ML {
     val start = System.currentTimeMillis
     //throw new Error("DotMaximumLikelihood not yet working for linear-chains")
 
-    val pieces = trainLabelsSentences.map(s => new BPMaxLikelihoodPiece[NerLabel,String](s))
+    val pieces = trainLabelsSentences.map(s => new BPMaxLikelihoodPiece(s, InferByBPChainSum))
     val learner = new BatchTrainer[Variable](new optimize.StepwiseGradientAscent(), model)
     (1 to 10).foreach(_ => learner.process(pieces))
     val objective = HammingLossObjective

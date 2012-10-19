@@ -6,7 +6,7 @@ import cc.factorie.util._
 import app.classify
 import cc.factorie.la._
 import classify.{ModelBasedClassifier, LogLinearModel}
-import scala.collection.mutable._
+//import scala.collection.mutable._
 import collection.parallel.mutable.ParSeq
 import collection.GenSeq
 import java.io.File
@@ -25,26 +25,69 @@ import io.Source
 trait Piece[C] {
   // gradient or value can be null if they don't need to be computed.
   def accumulateValueAndGradient(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit
+  // TODO Consider this too.  It would accumulate the "expectations" part, but not the constraints, which presumably would have been added elsewhere.
+  //def accumulateValueAndExpectations(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit
 }
 
 
-class BPMaxLikelihoodPiece[V <: LabeledCategoricalVariable[C],C](labels: collection.Seq[V]) extends Piece[Variable] {
-  def state = null
-
-  labels.foreach(_.setToTarget(null))
-
+class BPMaxLikelihoodPiece[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V], infer:InferByBP) extends Piece[Variable] {
+  labels.foreach(_.setToTarget(null)) // TODO What if someone else changes these values after Piece construction!
   def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
-    val fg = BP.inferTreewiseSum(labels.toSet, model)
+    val summary = infer.infer(labels, model).get
     // The log loss is - score + log Z
     if (value != null)
-      value.accumulate(new Variable2IterableModel[Variable](model).currentScore(labels) - fg.bpFactors.head.calculateLogZ)
+      value.accumulate(modelVariable2Variables(model).currentScore(labels) - summary.logZ)
 
     if (gradient != null) {
-      fg.bpFactors.foreach(f => {
+      summary.bpFactors.foreach(f => {
         val factor = f.factor.asInstanceOf[DotFamily#Factor]
         gradient.accumulate(factor.family, factor.currentStatistics)
-        gradient.accumulate(factor.family, f.calculateMarginal * -1)
+        gradient.accumulate(factor.family, f.calculateMarginal * -1) // TODO No this is wrong, because the BPFactor may have lower rank than its Factor; e.g. BPFactor2Factor3
       })
+    }
+  }
+}
+
+//class MaxLikelihoodPiece[V<:LabeledMutableDiscreteVar[_]](labels:Seq[V], infer:Infer = InferByBPTreeSum) extends Piece[Variable] {
+//  private var _model: Model[Variable] = null
+//  private var _constraints: WeightsTensor = null
+//  // Use cached constraints Tensor if the model id has not changed since the last call
+//  def constraints(model:Model[Variable]): WeightsTensor = if (_model eq model) _constraints else {
+//    _model = model
+//    _constraints = model.newDenseWeightsTensor // TODO Can't afford to keep something this big for every Piece :-(
+//    labels.foreach(_.setToTarget(null))
+//    modelVariable2Variables(model).factorsOfFamilyClass(labels, classOf[DotFamily]).foreach(f => { constraints(f.family) += f.currentStatistics })
+//    _constraints
+//  }
+//  def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
+//    val summary = infer.infer(labels, model).get
+//    if (value ne null)
+//      value.accumulate(model.currentScore(labels) - summary.logZ)
+//    if (gradient ne null) summary.marginals.foreach(m => {
+//      throw new Error("Implementation not yet finished") // Need to be able to get factors from Marginals?
+//    })
+//  }
+//}
+
+/** A gradient from a collection of IID DiscreteVars */
+class DiscretePiece[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V]) extends Piece[Variable] {
+  def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
+    val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
+    labels.foreach(_.setToTarget(null)) // TODO But what if someone changes the values after this construction?
+    for (label <- labels) {
+      val proportions = label.proportions(model)
+      if (value ne null) value.accumulate(math.log(proportions(label.targetIntValue)))
+      if (gradient ne null) {
+        var i = 0
+        while (i < proportions.length) {
+          label := i
+          val p = if (i == label.targetIntValue) 1.0 - proportions(i) else -proportions(i)
+          model.factorsOfFamilies(label, familiesToUpdate).foreach(f => {
+            gradient.accumulate(f.family, f.currentStatistics, p) // TODO Consider instance weights here also?
+          })
+          i += 1
+        }
+      }
     }
   }
 }
