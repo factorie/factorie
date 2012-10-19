@@ -126,7 +126,9 @@ trait BPFactor extends DiscreteMarginal {
   /** Normalized probabilities over values of varying neighbors, in the form of a Proportions */
   override def proportions: Proportions // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginal, false)"
   /** Add to t the normalized probabilities over values of all neighbors. */
-  def addExpectationInto(t:Tensor, f:Double): Unit
+  //def addExpectationInto(t:Tensor, f:Double): Unit
+  /** Add into the accumulator factor statistics for varying values, weighted by the BPFactor's marginal distribution of the varying values. */
+  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit
 }
 
 
@@ -161,6 +163,7 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
     }
   }
   def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal, f)
+  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valueStatistics(calculateMarginal), f)
 }
 
 // A BPFactor1 with underlying model Factor2, with the first neighbor varying and the second neighbor constant 
@@ -174,13 +177,23 @@ class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1
     }
     result
   }
-  def addExpectationInto(t:Tensor, f:Double): Unit = {
+//  // TODO Remove this methods
+//  def addExpectationInto(t:Tensor, f:Double): Unit = {
+//    val marginal = calculateMarginal
+//    // TODO One could imagine more efficient implementations that for DenseTensor t and SparseIndexedTensor factor._2.value, we iterator through the later only once -akm
+//    val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
+//    for (i <- 0 until edge1.variable.domain.size) {
+//      valueTensor.singleIndex1 = i
+//      t.+=(valueTensor, marginal(i) * f)
+//    }
+//  }
+  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = {
     val marginal = calculateMarginal
     // TODO One could imagine more efficient implementations that for DenseTensor t and SparseIndexedTensor factor._2.value, we iterator through the later only once -akm
     val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
     for (i <- 0 until edge1.variable.domain.size) {
       valueTensor.singleIndex1 = i
-      t.+=(valueTensor, marginal(i) * f)
+      accumulator.accumulate(factor.valueStatistics(valueTensor), marginal(i) * f)
     }
   }
 }
@@ -278,7 +291,8 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
       result
     }
   }
-  def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal,f) // TODO Use a TensorAccumulator; add f:Double to TensorAccumulator
+  //def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal,f) // TODO Use a TensorAccumulator; add f:Double to TensorAccumulator
+  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valueStatistics(calculateMarginal), f)
 }
 
 // A BPFactor2 with underlying model Factor3, having two varying neighbors and one constant neighbor
@@ -296,17 +310,34 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
     }
     result
   }
-  def addExpectationInto(t:Tensor, f:Double): Unit = {
+  /** Add into the accumulator the factor's statistics, weighted by the marginal probability of the varying values involved. */
+  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = {
     val marginal = calculateMarginal
     val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
     for (i <- 0 until edge1.variable.domain.size) {
       valueTensor.singleIndex1 = i
       for (j <- 0 until edge2.variable.domain.size) {
         valueTensor.singleIndex2 = j
-        t.+=(valueTensor, marginal(i,j) * f)
+        accumulator.accumulate(factor.valueStatistics(valueTensor), marginal(i,j)*f)
+        // TODO This should accumulator.accumulate(factor.valueStatistics(valueTensor), marginal(i,j)*f)
+        // t.+=(valueTensor, if (i == targetInt1 && j == targetInt2) 1.0 - marginal(i,j) else -marginal(i,j))
+        //t.+=(valueTensor, marginal(i,j) * f)
       }
     }
   }
+//  def addExpectationInto(t:Tensor, f:Double): Unit = {
+//    val marginal = calculateMarginal
+//    val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
+//    for (i <- 0 until edge1.variable.domain.size) {
+//      valueTensor.singleIndex1 = i
+//      for (j <- 0 until edge2.variable.domain.size) {
+//        valueTensor.singleIndex2 = j
+//        // TODO This should accumulator.accumulate(factor.valueStatistics(valueTensor), marginal(i,j)*f)
+//        // t.+=(valueTensor, if (i == targetInt1 && j == targetInt2) 1.0 - marginal(i,j) else -marginal(i,j))
+//        t.+=(valueTensor, marginal(i,j) * f)
+//      }
+//    }
+//  }
 }
 
 
@@ -330,7 +361,8 @@ class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val ed
   def calculateBeliefs: Tensor3 = throw new Error("Not yet implemented")
   override def calculateMarginal: Tensor3 = calculateBeliefs.expNormalized.asInstanceOf[Tensor3]
   override def proportions: Proportions3 = throw new Error("Not yet implemented") // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginal, false)"
-  def addExpectationInto(t:Tensor, f:Double): Unit = throw new Error("Not yet implemented")
+  //def addExpectationInto(t:Tensor, f:Double): Unit = throw new Error("Not yet implemented")
+  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = throw new Error("Not yet implemented")
 }
 
 

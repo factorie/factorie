@@ -297,6 +297,7 @@ abstract class TensorFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override
     Only "scoreStatistics" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
 trait TensorFactorStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends TensorFactor3[N1,N2,N3] {
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = cc.factorie.la.Tensor.outer(v1, v2, v3)
+  final override def valueStatistics(tensor:Tensor): Tensor = tensor
 }
 
 /** A 3-neighbor Factor whose neighbors have Tensor values, 
@@ -339,6 +340,7 @@ trait Family3[N1<:Variable,N2<:Variable,N3<:Variable] extends FamilyWithNeighbor
     def score(value1:N1#Value, value2:N2#Value, value3:N3#Value): Double = Family3.this.score(value1, value2, value3)
     def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): StatisticsType = thisFamily.statistics(v1, v2, v3)
     override def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): (Double,StatisticsType) = Family3.this.scoreAndStatistics(v1, v2, v3)
+    override def valueStatistics(tensor:Tensor): Tensor = Family3.this.valueStatistics(tensor)
     //override def scoreValues(tensor:Tensor): Double = thisFamily.scoreValues(tensor) // TODO Consider implementing match here to use available _1 domain
 //    override def limitedDiscreteValuesIterator: Iterator[(Int,Int,Int)] = limitedDiscreteValues.iterator
 //    override def isLimitingValuesIterator = thisFamily.isLimitingValuesIterator
@@ -346,6 +348,7 @@ trait Family3[N1<:Variable,N2<:Variable,N3<:Variable] extends FamilyWithNeighbor
   def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): StatisticsType
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): (Double,StatisticsType) = (score(v1, v2, v3), statistics(v1, v2, v3))
+  def valueStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
 
   override def scoreValues(tensor:Tensor): Double = tensor match {
     case v: SingletonBinaryTensor3 => {
@@ -378,6 +381,7 @@ trait TensorFamily3[N1<:Variable,N2<:Variable,N3<:Variable] extends Family3[N1,N
 trait TensorFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends TensorFamily3[N1,N2,N3] {
   //type StatisticsType = Tensor
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = Tensor.outer(v1, v2, v3)
+  final override def valueStatistics(tensor:Tensor): Tensor = tensor
 }
 
 trait DotFamily3[N1<:Variable,N2<:Variable,N3<:Variable] extends TensorFamily3[N1,N2,N3] with DotFamily {

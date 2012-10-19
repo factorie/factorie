@@ -3,6 +3,7 @@ package cc.factorie.util
 trait Accumulator[A] {
   //def zero(): Unit
   def accumulate(t: A) : Unit
+  // TODO Rename this method accumulate!
   def combine(ta:Accumulator[A]): Unit
 }
 

@@ -87,6 +87,17 @@ trait AbstractAssignment1[A<:Variable] extends Assignment {
     @author Andrew McCallum */
 class Assignment1[A<:Variable](val _1:A, var value1:A#Value) extends AbstractAssignment1[A]
 
+/** An efficient Assignment of one DiscreteVar. */
+class DiscreteAssignment1[A<:DiscreteVar](override val _1:A, initialIntValue1:Int) extends AbstractAssignment1[A] with MutableAssignment {
+  def this(variable:A, initialValue:A#Value) = this(variable, initialValue.intValue)
+  private var _intValue1 = initialIntValue1
+  def intValue1: Int = _intValue1
+  def intValue1_=(i:Int): Unit = _intValue1 = i
+  def value1: A#Value = _1.domain(_intValue1).asInstanceOf[A#Value]
+  def value1_=(v:A#Value): Unit = _intValue1 = v.intValue
+  def update[V<:Variable, U<:V#Value](variable:V, value:U): Unit = if (variable eq _1) _intValue1 = value.asInstanceOf[DiscreteValue].intValue else throw new Error("Cannot update DiscreteAssignment1 value for variable not present.") 
+}
+
 /** An efficient abstract Assignment of two variables.
     Values for variables not in this assigment are taken from those variables themselves (the "global" assignment).
     @author Andrew McCallum */

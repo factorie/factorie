@@ -55,21 +55,34 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
   }
   /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
   def proportions(model:Model[Variable]): Proportions1 = {
-    val origIntValue = intValue
     val l = domain.size 
     val distribution = new DenseTensor1(l)
-    // TODO Consider re-writing this such that it does not modify this.value
-    //val assignment = new Assignment1(this, domain.head.asInstanceOf[A])
+    val factors = model.factors(this)
+    val assignment = new DiscreteAssignment1(this, 0)
+    var score = 0.0
     var i = 0
     while (i < l) {
-      //model.factors(Seq(this)).sumBy(_.values.set(this, i).score) // a version that doesn't change the value of this variable
-      __value = i
-      distribution(i) = model.currentScore(this)  // compute score of variable with value 'i'
+      assignment.intValue1 = i
+      score = 0.0; factors.foreach(f => score += f.scoreAssignment(assignment))   // compute score of variable with value 'i'
+      distribution(i) = score
       i += 1
     }
     distribution.expNormalize()
-    __value = origIntValue
-    new DenseProportions1(distribution)
+    new NormalizedTensorProportions1(distribution, checkNormalization=false)
+  }
+  /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
+  def caseFactorProportions(model:Model[Variable]): Proportions1 = {
+    val l = domain.size 
+    val distribution = new DenseTensor1(l)
+    val assignment = new DiscreteAssignment1(this, 0)
+    var i = 0
+    while (i < l) {
+      assignment.intValue1 = i
+      distribution(i) = model.assignmentScore(this, assignment)  // compute score of variable with value 'i'
+      i += 1
+    }
+    distribution.expNormalize()
+    new NormalizedTensorProportions1(distribution, checkNormalization=false)
   }
   case class DiscreteVariableDiff(oldValue: Int, newValue: Int) extends Diff {
     @inline final def variable = MutableDiscreteVar.this

@@ -117,6 +117,7 @@ abstract class TensorFactor1[N1<:Variable](override val _1:N1) extends Factor1[N
 trait TensorFactorStatistics1[N1<:TensorVar] extends TensorFactor1[N1] {
   final override def statistics(v1:N1#Value): N1#Value = v1
   final override def currentStatistics = _1.value.asInstanceOf[N1#Value] // TODO Why is this cast necessary?
+  final override def valueStatistics(tensor:Tensor): Tensor = tensor
 }
 
 /** A 1-neighbor Factor whose neighbor has Tensor values, 
@@ -157,12 +158,14 @@ trait Family1[N1<:Variable] extends FamilyWithNeighborDomains {
     override def statistics(v1:N1#Value): StatisticsType = Family1.this.statistics(v1)
     override def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = Family1.this.scoreAndStatistics(v1)
     override def valuesIterator: ValuesIterator1[N1] = Family1.this.valuesIterator(this) 
+    override def valueStatistics(tensor:Tensor): Tensor = Family1.this.valueStatistics(tensor)
     //override def isLimitingValuesIterator = Family1.this.isLimitingValuesIterator
     //override def limitedDiscreteValuesIterator: Iterator[Int] = limitedDiscreteValues.iterator
   }
   def score(v1:N1#Value): Double
-  def statistics(v1:N1#Value): StatisticsType = ((v1)).asInstanceOf[StatisticsType]
+  def statistics(v1:N1#Value): StatisticsType = ((v1)).asInstanceOf[StatisticsType] // TODO Make this throw an Error instead?
   def scoreAndStatistics(v1:N1#Value): (Double,StatisticsType) = (score(v1), statistics(v1))
+  def valueStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
   // For implementing sparsity in belief propagation
   var isLimitingValuesIterator = false
   lazy val limitedDiscreteValues = new scala.collection.mutable.HashSet[Int]
@@ -186,6 +189,7 @@ trait TensorFamily1[N1<:Variable] extends Family1[N1] with TensorFamily {
 trait TensorFamilyWithStatistics1[N1<:TensorVar] extends TensorFamily1[N1] {
   //type StatisticsTypze = N1#Value
   @inline final override def statistics(v1:N1#Value) = v1
+  final override def valueStatistics(tensor:Tensor): Tensor = tensor
 }
 
 trait DotFamily1[N1<:Variable] extends TensorFamily1[N1] with DotFamily {

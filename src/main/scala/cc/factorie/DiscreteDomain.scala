@@ -21,7 +21,7 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 /** A value in a DiscreteDomain. */
 trait DiscreteValue extends SingletonBinaryTensorLike1 {
-  def domain: DiscreteDomain
+  def domain: DiscreteDomain // TODO Strongly consider removing this so that anyone can create a DiscreteValue to pass into Factor.statistics() without knowing the domain.
   @inline final def intValue: Int = singleIndex // TODO Consider swapping singleIndex <-> intValue
   @inline final def booleanValue = if (intValue == 1) true else false
   @inline final def dim1 = domain.size

@@ -195,6 +195,7 @@ abstract class TensorFactor2[N1<:Variable,N2<:Variable](override val _1:N1, over
     Only "scoreStatistics" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
 trait TensorFactorStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFactor2[N1,N2] {
   final override def statistics(v1:N1#Value, v2:N2#Value): Tensor = v1 outer v2
+  final override def valueStatistics(tensor:Tensor): Tensor = tensor
 }
 
 /** A 2-neighbor Factor whose neighbors have Tensor values, 
@@ -237,6 +238,7 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
     override def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double,StatisticsType) = Family2.this.scoreAndStatistics(v1, v2)
     override def scoreValues(tensor:Tensor): Double = Family2.this.scoreValues(tensor) // TODO Consider implementing match here to use available _1 domain
     override def scoreStatistics(tensor:Tensor): Double = Family2.this.scoreStatistics(tensor)
+    override def valueStatistics(tensor:Tensor): Tensor = Family2.this.valueStatistics(tensor)
     //override def isLimitingValuesIterator = Family2.this.isLimitingValuesIterator
     //override def limitedDiscreteValuesIterator: Iterator[(Int,Int)] = limitedDiscreteValues.iterator
     override def hasLimitedDiscreteValues = Family2.this.hasLimitedDiscreteValues
@@ -247,6 +249,7 @@ trait Family2[N1<:Variable,N2<:Variable] extends FamilyWithNeighborDomains {
   def score(v1:N1#Value, v2:N2#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value): StatisticsType = ((v1, v2)).asInstanceOf[StatisticsType]
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value): (Double,StatisticsType) = (score(v1, v2), statistics(v1, v2))
+  def valueStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
   
   override def scoreValues(tensor:Tensor): Double = tensor match {
     case v: SingletonBinaryTensorLike2 => {
@@ -328,6 +331,7 @@ trait TensorFamily2[N1<:Variable,N2<:Variable] extends Family2[N1,N2] with Tenso
 trait TensorFamilyWithStatistics2[N1<:TensorVar,N2<:TensorVar] extends TensorFamily2[N1,N2] {
   //type StatisticsType = Tensor
   final override def statistics(v1:N1#Value, v2:N2#Value) = v1 outer v2
+  final override def valueStatistics(tensor:Tensor): Tensor = tensor
 }
 
 trait DotFamily2[N1<:Variable,N2<:Variable] extends TensorFamily2[N1,N2] with DotFamily {

@@ -104,6 +104,7 @@ abstract class TensorFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:Tenso
     Only "scoreStatistics" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
 trait TensorFactorStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar] extends TensorFactor4[N1,N2,N3,N4] {
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = cc.factorie.la.Tensor.outer(v1, v2, v3, v4)
+  final override def valueStatistics(tensor:Tensor): Tensor = tensor
 }
 
 /** A 4-neighbor Factor whose neighbors have Tensor values, 
@@ -148,10 +149,12 @@ trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Famil
     def score(value1:N1#Value, value2:N2#Value, value3:N3#Value, value4:N4#Value): Double = Family4.this.score(value1, value2, value3, value4)
     def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): StatisticsType = thisFamily.statistics(v1, v2, v3, v4)
     override def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): (Double,StatisticsType) = Family4.this.scoreAndStatistics(v1, v2, v3, v4)
+    override def valueStatistics(tensor:Tensor): Tensor = Family4.this.valueStatistics(tensor)
   }
   def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): StatisticsType
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): (Double,StatisticsType) = (score(v1, v2, v3, v4), statistics(v1, v2, v3, v4))
+  def valueStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
 }
 
 trait TupleFamily4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Family4[N1,N2,N3,N4] {
@@ -170,6 +173,7 @@ trait TensorFamily4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends
 trait TensorFamilyWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar] extends TensorFamily4[N1,N2,N3,N4] {
   //type StatisticsType = Tensor
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Tensor.outer(v1, v2, v3, v4)
+  final override def valueStatistics(tensor:Tensor): Tensor = tensor
 }
 
 trait DotFamily4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends TensorFamily4[N1,N2,N3,N4] with DotFamily {

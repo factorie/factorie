@@ -33,6 +33,17 @@ trait Factor extends Ordered[Factor] {
   def numVariables: Int
   def variable(index: Int): Variable
   
+  // TODO Consider making names uniform:  
+  // scoreCurrent, statisticsCurrent, scoreAndStatisticsCurrent
+  // scoreValues, statisticsValues
+  // scoreAssignment, statisticsAssignment, scoreAndStatisticsAssignment
+  // Or
+  // currentScore, currentStatistics, currentScoreAndStatistics
+  // valuesScore(Tensor), valuesStatistics(Tensor):Tensor
+  // assignmentScore, assignmentStatistics, assignmentScoreAndStatistics
+  // I like the later better.
+  // The later is more consistent with names already used in Model.
+  
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
   def currentScore: Double
   def currentStatistics: StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
@@ -51,6 +62,9 @@ trait Factor extends Ordered[Factor] {
   /** Return the score for Factors whose values can be represented as a Tensor, otherwise throw an Error.
       For Factors/Family in which the Statistics are the values, this method simply calls scoreValues(Tensor). */
   def scoreValues(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreValues(Tensor).")
+  /** Given a Tensor representation of the values, return a Tensor representation of the statistics */
+  // TODO Should this return instead StatisticsType?
+  def valueStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor).")
   // Do not declare scoreStatistics(tensor:Tensor) here, because it should be abstract in TensorFactor2, etc.
   /** Return the score for Factors whose Statistics can be represented as a Tensor, otherwise throw an Error.
       For DotFamily this is implemented as simply "weights dot tensor". */
