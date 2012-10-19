@@ -59,11 +59,11 @@ trait IndexedSeqVar[+E] extends SeqVar[E] with ValueBound[IndexedSeq[E]] with El
   }
   def foreach[U](f:(E)=>U): Unit = {
     var i = 0; val len = length
-    while (i < 0) { f(apply(i)); i += 1 }
+    while (i < len) { f(apply(i)); i += 1 }
   }
   def map[B](f:E=>B): IndexedSeq[B] = {
     val len = length; val result = new ArrayBuffer[B](len); var i = 0
-    while (i < 0) { result += f(apply(i)); i += 1 }; result
+    while (i < len) { result += f(apply(i)); i += 1 }; result
   }
   def head: E = apply(0)
   def last: E = apply(length-1)
