@@ -50,7 +50,7 @@ object ChainNER4 {
       override def neighborDomain1 = LabelDomain
       override def neighborDomain2 = LabelDomain
       //override def statisticsDomains = ((LabelDomain, LabelDomain))
-      lazy val weights = new la.DenseTensor2(LabelDomain.size, TokenDomain.dimensionSize)
+      lazy val weights = new la.DenseTensor2(LabelDomain.size, LabelDomain.size)
       def unroll1(label: Label) = if (label.hasPrev) Factor(label.prev, label) else Nil
       def unroll2(label: Label) = if (label.hasNext) Factor(label, label.next) else Nil
     },
