@@ -24,7 +24,7 @@ trait DoubleSeq {
   def foreach(f:(Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(apply(i)); i += 1 } }
   def foreachElement(f:(Int,Double)=>Unit): Unit = { val l = length; var i = 0; while (i < l) { f(i, apply(i)); i += 1 } }
   def foreachActiveElement(f:(Int,Double)=>Unit): Unit = foreachElement(f) // To be overridden by sparse subclasses
-  def forallElements(f:(Int,Double)=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(i, apply(i))) return false; i += 1 }; return true }
+  def forallElements(f:(Int,Double)=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(i, apply(i))) return false; i += 1 }; true }
   def contains(d:Double): Boolean = { val l = length; var i = 0; while (i < l) { if (d == apply(i)) return true; i += 1 }; false }
   def forall(f:Double=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(apply(i))) { println("DoubleSeq.forall "+apply(i)); return false }; i += 1 }; true }
   def foldLeft[B](z:B)(f:(B,Double)=>B): B = { var acc = z; foreach(el => f(acc, el)); acc }
@@ -57,6 +57,7 @@ trait DoubleSeq {
     while (i < len) {
       diff = apply(i) - t(i)
       sum += diff * diff
+      i += 1
     }
     math.sqrt(sum)
   }
@@ -109,6 +110,7 @@ trait DoubleSeq {
       sum2 += p2
       if (p1 != 0.0)
         klDiv += p1 * math.log(p1 / p2)
+      i += 1
     }
     assert(sum1 > 0.9999 && sum1 < 1.0001)
     assert(sum2 > 0.9999 && sum2 < 1.0001)
@@ -116,10 +118,10 @@ trait DoubleSeq {
   }
   /** Assumes that the values are already normalized to sum to 1. */
   def jsDivergence(p:DoubleSeq): Double = {
-    assert(length == p.length);
+    assert(length == p.length)
     val average = DoubleSeq(length)
-    var i = 0
-    while (i < length) average(i) += (apply(i) + p(i)) / 2.0
+    val l = length; var i = 0
+    while (i < l) { average(i) += (apply(i) + p(i)) / 2.0; i += 1 }
     (this.klDivergence(average) + p.klDivergence(average)) / 2.0
   }
   //def pr(i:Int, normalizer:Double): Double = apply(i) / normalizer
@@ -189,7 +191,7 @@ trait SparseDoubleSeq extends DoubleSeq {
   override def sum: Double = { var s = 0.0; foreachActiveElement((i,v) => { s += v }); s }
   override def oneNorm: Double = { var s = 0.0; foreachActiveElement((i,v) => { s += math.abs(v) }); s }
   override def twoNormSquared: Double = { var s = 0.0; foreachActiveElement((i,v) => { s += v * v }); s }
-  override def contains(d:Double): Boolean = { var s = 0.0; foreachActiveElement((i,v) => if (d == v) return true); false } 
+  override def contains(d:Double): Boolean = { foreachActiveElement((i,v) => if (d == v) return true); false }
   override def different(t:DoubleSeq, threshold:Double): Boolean = t match {
     case t:SparseDoubleSeq => super.different(t, threshold) // TODO Do something clever here
     case t:DoubleSeq => super.different(t, threshold)
@@ -202,14 +204,14 @@ trait SparseDoubleSeq extends DoubleSeq {
   override def containsNaN: Boolean = { foreachActiveElement((i,v) => if (v != v) return true); false } 
   override def sampleIndex(normalizer:Double)(implicit r:Random): Int = {
     assert(normalizer > 0.0, "normalizer = "+normalizer)
-    val l = length; var b = 0.0; val s = r.nextDouble * normalizer
+    var b = 0.0; val s = r.nextDouble * normalizer
     foreachActiveElement((i,v) => { assert(v >= 0.0); if (b > s) return i - 1; b += v })
     length - 1
   }
   /** Assumes that the values are already normalized to sum to 1. */
   override def entropy: Double = {
-    var result = 0.0; var sum = 0.0; var pv = 0.0
-    foreachActiveElement((i,v) => { sum += v; require(v >= 0.0, v); require(v <= 1.000001); if (v > 0.0) result -= v * math.log(pv) })
+    var result = 0.0; var sum = 0.0
+    foreachActiveElement((i,v) => { sum += v; require(v >= 0.0, v); require(v <= 1.000001); if (v > 0.0) result -= v * math.log(v) })
     assert(sum > 0.9999 && sum < 1.0001)
     result / cc.factorie.maths.log2
   }
@@ -218,7 +220,7 @@ trait SparseDoubleSeq extends DoubleSeq {
     assert(length == p.length)
     var klDiv = 0.0
     var sum1 = 0.0
-    val l = length; var i = 0; var p1 = 0.0; var p2 = 0.0
+    var p2 = 0.0
     foreachActiveElement((i,p1) => { p2 = p(i); sum1 += p1; if (p1 != 0.0) klDiv += p1 * math.log(p1 / p2) })
     assert(sum1 > 0.9999 && sum1 < 1.0001)
     klDiv / cc.factorie.maths.log2
@@ -226,10 +228,10 @@ trait SparseDoubleSeq extends DoubleSeq {
   /** Assumes that the values are already normalized to sum to 1. */
   override def jsDivergence(p:DoubleSeq): Double = {
     // TODO We should make this efficient for sparsity
-    assert(length == p.length);
+    assert(length == p.length)
     val average = DoubleSeq(length)
-    var i = 0
-    while (i < length) average(i) += (apply(i) + p(i)) / 2.0
+    val l = length; var i = 0
+    while (i < l) { average(i) += (apply(i) + p(i)) / 2.0; i += 1 }
     (this.klDivergence(average) + p.klDivergence(average)) / 2.0
   }
 
@@ -287,7 +289,7 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
   def /=(ds:DoubleSeq): Unit = { val l = length; require(ds.length == l); var i = 0; while (i < l) { /=(i, ds(i)); i += 1 }}
   def abs: Unit = { val l = length; var i = 0; while (i < l) { val d = apply(i); if (d < 0.0) update(i, math.abs(d)); i += 1 }}
   def normalize(): Double = { val n = oneNorm; /=(n); n }
-  def oneNormalize(): Double = normalize
+  def oneNormalize(): Double = normalize()
   def twoNormalize(): Double = { val n = twoNorm; /=(n); n }
   def twoSquaredNormalize(): Double = { val n = twoNormSquared; /=(n); n }
   //def absNormalize(): Double = { val n = absNorm; /=(n); n }
@@ -311,7 +313,7 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
   def normalizeLogProb(): Double = {
     // normalizeLogProb: [log(a), log(b), log(c)] --> [log(a/Z), log(b/Z), log(c/Z)] where Z = a+b+c
     // expNormalize: [log(a), log(b), log(c)] --> [a/Z, b/Z, c/Z] where Z=a+b+c
-    val n = expNormalize
+    val n = expNormalize()
     var i = 0; val l = length; while (i < l) { update(i, math.log(apply(i))); i += 1 }
     n
   }
