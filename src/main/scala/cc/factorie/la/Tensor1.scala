@@ -47,6 +47,7 @@ trait Tensor1 extends Tensor {
   }
   @inline final def length: Int = dim1
   override def copy: Tensor1 = throw new Error("Method copy not defined on class "+getClass.getName)
+  override def blankCopy: Tensor1 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
   override def stringPrefix = "Tensor1"
 }
 
