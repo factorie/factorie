@@ -276,7 +276,10 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
   // TODO Consider making this calculate scores(i,j) on demand, with something like
   // val scores = new DenseTensor2(edge1.variable.domain.size, edge2.variable.domain.size, Double.NaN) { override def apply(i:Int) = if (_values(i).isNaN)... }
   val scores: Tensor2 = factor match {
-    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily]) => factor.family.weights.asInstanceOf[Tensor2]
+    // TODO: this only works if statistics has not been overridden. See TestBP.loop2 for an example where this fails.
+    case factor:DotFamily#Factor if (factor.family.isInstanceOf[DotFamily] && factor.family.weights.isInstanceOf[Tensor2]) => {
+      factor.family.weights.asInstanceOf[Tensor2]
+    }
     case _ => {
       // TODO Replace this with just efficiently getting factor.family.weights
       val valueTensor = new SingletonBinaryTensor2(edge1.variable.domain.size, edge2.variable.domain.size, 0, 0)
