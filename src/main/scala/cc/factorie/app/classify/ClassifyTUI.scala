@@ -242,6 +242,7 @@ object ClassifyTUI {
       case "NaiveBayesTrainer" => new NaiveBayesTrainer()
       case "SVMTrainer" => new SVMTrainer()
       case "ID3DecisionTreeTrainer" => new ID3DecisionTreeTrainer()
+      case "AdaBoostDecisionStumpTrainer" => new AdaBoostDecisionStumpTrainer()
       case e => throw new IllegalArgumentException("Unknown ClassifierTrainer: " + e)
     }
 
