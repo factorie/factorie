@@ -241,14 +241,27 @@ class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with Spar
   override def blankCopy: SparseIndexedTensor2 = new SparseIndexedTensor2(dim1, dim2)
 }
 
-/** A Tensor2 that has dense storage, but a sparse activeDomain. */
-// TODO I think we should not keep this because there could be non-zero values in the sparse holes,
-// and we could get some very confusing results.
-class SparseDenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
-  override val activeDomain = new cc.factorie.util.SortedIntSetBuffer 
-  override def activeDomain1 = throw new Error("Not yet implemented")
-  override def activeDomain2 = throw new Error("Not yet implemented")
-  
+///** A Tensor2 that has dense storage, but a sparse activeDomain. */
+//// TODO I think we should not keep this because there could be non-zero values in the sparse holes,
+//// and we could get some very confusing results.
+//class SparseDenseTensor2(val dim1:Int, val dim2:Int) extends DenseTensorLike2 {
+//  override val activeDomain = new cc.factorie.util.SortedIntSetBuffer 
+//  override def activeDomain1 = throw new Error("Not yet implemented")
+//  override def activeDomain2 = throw new Error("Not yet implemented")
+//  
+//}
+
+/** A Tensor2 representing the outer product of a Tensor1 (e.g. DenseTensor1) and a Tensor1 (e.g. a SparseBinaryTensor1). */
+class DenseOuterTensor2(val tensor1:DenseTensor1, val tensor2:Tensor1) extends Tensor2 {
+  def dim1 = tensor1.dim1
+  def dim2 = tensor2.dim1
+  def apply(i:Int): Double = tensor1(index1(i)) * tensor2(index2(i))
+  def isDense = tensor2.isDense
+  def activeDomain1 = tensor1.activeDomain1
+  def activeDomain2 = tensor2.activeDomain1
+  def activeDomain = new Outer2IntSeq(dim1, dim2, tensor1.activeDomain1, tensor2.activeDomain1)
+  override def copy = new DenseOuterTensor2(tensor1.copy, tensor2.copy)
+  override def blankCopy = new DenseOuterTensor2(tensor1.blankCopy, tensor2.blankCopy)
 }
 
 class UniformTensor2(val dim1:Int, val dim2:Int, val uniformValue:Double) extends Tensor2 with UniformTensor {
