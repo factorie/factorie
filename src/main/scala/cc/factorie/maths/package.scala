@@ -80,6 +80,7 @@ package object maths {
 trait ArrayOps {
   type A = Array[Double]
   def absNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += math.abs(s(i)); i += 1 }; result }
+  // FIXME oneNorm should = absNorm, we should change this name
   def oneNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i); i += 1 }; result }
   def twoNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * s(i); i += 1 }; math.sqrt(result) }
   def twoNormSquared(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * s(i); i += 1 }; result }

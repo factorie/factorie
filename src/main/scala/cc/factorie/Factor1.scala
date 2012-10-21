@@ -92,11 +92,12 @@ abstract class Factor1[N1<:Variable](val _1:N1) extends Factor {
 //  }
 }
 
+// FIXME: what is the point of the 1-tuple here?
 /** A 1-neighbor Factor whose statistics have type Tuple2.
     Only "score" method is abstract. */
 abstract class TupleFactorWithStatistics1[N1<:Variable](override val _1:N1) extends Factor1[N1](_1) {
   type StatisticsType = Tuple1[N1#Value]
-  final override def statistics(v1:N1#Value) = Tuple(v1)
+  final override def statistics(v1:N1#Value) = Tuple1(v1)
 }
 
 /** A 1-neighbor Factor whose statistics have type Tensor.

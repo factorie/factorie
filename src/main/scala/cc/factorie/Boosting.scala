@@ -6,14 +6,18 @@ import cc.factorie.maths._
 
 /**A template for factors who scores are the weighted sum of scores of
     label S1 given feature vector S2, according to list of boosted classifiers.*/
-abstract class AdaBoostTemplateWithStatistics2[S1 <: MutableDiscreteVar[_<:DiscreteValue], S2 <: DiscreteTensorVar](implicit m1: Manifest[S1], m2: Manifest[S2])
+abstract class AdaBoostTemplateWithStatistics2[S1 <: LabeledCategoricalVariable[_], S2 <: DiscreteTensorVar]
+  (labelToFeatures: S1 => S2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
+  (implicit m1: Manifest[S1], m2: Manifest[S2])
   extends Template2[S1, S2] {
 
   type StatisticsType = (S1#Value, S2#Value)
 
-  type WeakClassifier <: Template2[S1, S2]
   def trainWeakClassifier(labels: ArrayBuffer[S1], getInstanceWeight: Int => Double): WeakClassifier
   def numIterations: Int
+
+
+  type WeakClassifier = Template2[S1, S2]
 
   private var weightedWeakClassifiers: Option[Seq[(WeakClassifier, Double)]] = None
 
@@ -23,6 +27,7 @@ abstract class AdaBoostTemplateWithStatistics2[S1 <: MutableDiscreteVar[_<:Discr
   }
 
   def train(labels: ArrayBuffer[S1]): Unit = {
+    val K = labelDomain.size
     val numInstances = labels.length
     val instanceWeights = Array.fill(numInstances)(1.0 / numInstances)
     var converged = false
@@ -34,8 +39,9 @@ abstract class AdaBoostTemplateWithStatistics2[S1 <: MutableDiscreteVar[_<:Discr
       val classifications = currentClassifier.classifications(labels).toArray
       val isFail = mapIndex(numInstances)(i => classifications(i).bestLabelIndex != labels(i).intValue)
       val amountOfFail = (0 until numInstances).filter(isFail).foldLeft(0.0)((acc, el) => acc + instanceWeights(el))
-      val classifierWeight = 0.5 * math.log((1 - amountOfFail) / amountOfFail)
-      forIndex(numInstances)(i => instanceWeights(i) *= math.exp(if (isFail(i)) classifierWeight else -classifierWeight))
+      // FIXME: why doesn't this work multiclass? The log(K - 1) term should do this (see "Multi-class AdaBoost" by Zhu et al.)
+      val classifierWeight = math.log((1 - amountOfFail) / amountOfFail) + math.log(K - 1)
+      forIndex(numInstances)(i => instanceWeights(i) *= math.exp(if (isFail(i)) classifierWeight else 0))
       val dSum = ArrayOps.oneNorm(instanceWeights)
       forIndex(numInstances)(i => instanceWeights(i) /= dSum)
       weightedClassifiers = (classifierTemplate, classifierWeight) :: weightedClassifiers
@@ -46,13 +52,13 @@ abstract class AdaBoostTemplateWithStatistics2[S1 <: MutableDiscreteVar[_<:Discr
   }
 }
 
-class AdaBoostDecisionStumpTemplate[L <: MutableDiscreteVar[_<:DiscreteValue], F <: DiscreteTensorVar](
-  val labelToFeatures: L => F,
-  val labelDomain: DiscreteDomain with Domain[L#Value],
-  val featureDomain: DiscreteTensorDomain with Domain[F#Value])(implicit m1: Manifest[L], m2: Manifest[F])
-  extends AdaBoostTemplateWithStatistics2[L, F] {
+class AdaBoostDecisionStumpTemplate[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](
+  labelToFeatures: L => F,
+  labelDomain: DiscreteDomain,
+  featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
+  extends AdaBoostTemplateWithStatistics2[L, F](labelToFeatures, labelDomain, featureDomain) {
   var numIterations = 5
-  type WeakClassifier = DecisionStumpTemplate[L, F]
+  //type WeakClassifier = DecisionStumpTemplate[L, F]
   def trainWeakClassifier(labels: ArrayBuffer[L], getInstanceWeight: Int => Double) = {
     val template = new DecisionStumpTemplate[L, F](labelToFeatures, labelDomain, featureDomain)
     template.train(labels, getInstanceWeight)

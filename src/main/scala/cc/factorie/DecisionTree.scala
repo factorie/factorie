@@ -21,7 +21,7 @@ import collection.mutable.{ArrayBuilder, Stack, ArrayBuffer}
     label S1 given feature vector S2, according to a decision tree.
     @author Luke Vilnis*/
 abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
-  (val labelToFeatures: V1 => V2, val labelDomain: DiscreteDomain with Domain[V1#Value], val featureDomain: DiscreteTensorDomain with Domain[V2#Value])
+  (val labelToFeatures: V1 => V2, val labelDomain: DiscreteDomain, val featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends Template2[V1, V2] {
 
@@ -31,12 +31,12 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
 
   def unroll1(label: V1) = Factor(label, labelToFeatures(label))
   def unroll2(features: V2) = throw new Error("Cannot unroll from feature variables.")
-  def statisticsScore(t:Tensor): Double = throw new Error("Not yet implemented")
+  def statisticsScore(t:Tensor): Double = throw new Error("How should this work??")
 
   override def statistics(value1:S1, value2:S2): StatisticsType = (value1, value2)
   // Fixme: DiscreteVar should have value: Value not value: DiscreteValue... but then can't override. Need VarLike?
   def statistics(f: FactorType): StatisticsType = (f._1.value.asInstanceOf[S1], f._2.value.asInstanceOf[S2])
-  def train(labels: Iterable[V1]): Unit = train(labels.map(unroll1(_)).flatten.map(statistics(_)), getInstanceWeight = None)
+  def train(labels: Iterable[V1]): Unit = train(labels.flatMap(unroll1(_)).map(statistics(_)), getInstanceWeight = None)
   def train(labels: Iterable[V1], getInstanceWeight: Int => Double): Unit =
     train(labels.map(unroll1(_)).flatten.map(f => statistics(f._1.value.asInstanceOf[S1], f._2.value.asInstanceOf[S2])), getInstanceWeight = Some(getInstanceWeight))
 
@@ -66,14 +66,14 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
       case DTBranch(yes, no, idx, thresh) => idx +: (inner(yes) ++ inner(no))
       case _ => Seq.empty[Int]
     }
-    decisionTree.map(inner(_)).flatten.toSeq
+    decisionTree.toSeq.flatMap(inner(_))
   }
 
   def train(stats: Iterable[StatisticsType], maxDepth: Int = 100, getInstanceWeight: Option[Int => Double] = None): Unit = {
     val tree =
       if (maxDepth < 1000) trainTree(stats.toSeq, 0, maxDepth, Set.empty[(Int, Double)], getInstanceWeight)
       else trainTreeNoMaxDepth(stats.toSeq, maxDepth, getInstanceWeight)
-    println(tree)
+    //println(tree)
     decisionTree = Some(tree)
   }
 
@@ -83,8 +83,6 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
   def score(s: StatisticsType): Double = score(s, decisionTree.get)
 
   def score(s1: S1, s2: S2): Double = score(statistics(s1, s2), decisionTree.get)
-
-  def score(t: Tensor): Double = throw new Exception("??")
 
   private def trainTree(stats: Seq[StatisticsType], depth: Int, maxDepth: Int, usedFeatures: Set[(Int, Double)], getInstanceWeight: Option[Int => Double]): DTree = {
     if (maxDepth < depth || stats.map(_._1).distinct.length == 1 || shouldStop(stats, depth)) {
@@ -103,7 +101,7 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
     // Use arraybuffer as dense mutable int-indexed map - no IndexOutOfBoundsException, just expand to fit
     type DenseIntMap[T] = ArrayBuffer[T]
     def updateIntMap[@specialized T](ab: DenseIntMap[T], idx: Int, item: T, dfault: T = null.asInstanceOf[T]) = {
-      if (ab.length <= idx) {ab.insertAll(ab.length, Iterable.fill(idx - ab.length + 1)(dfault)) }
+      if (ab.length <= idx) { ab.insertAll(ab.length, Iterable.fill(idx - ab.length + 1)(dfault)) }
       ab.update(idx, item)
     }
     var currentChildId = 0 // get childIdx or create one if it's not there already
@@ -308,7 +306,7 @@ trait ErrorBasedPruning[S1 <: DiscreteVar, S2 <: DiscreteTensorVar] {
 }
 
 class C45DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
-  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain with Domain[V1#Value], featureDomain: DiscreteTensorDomain with Domain[V2#Value])
+  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends DecisionTreeTemplateWithStatistics2[V1, V2](labelToFeatures, labelDomain, featureDomain)
   with GainRatioSplitting[V1, V2]
@@ -318,7 +316,7 @@ class C45DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
 }
 
 class ID3DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
-  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain with Domain[V1#Value], featureDomain: DiscreteTensorDomain with Domain[V2#Value])
+  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends DecisionTreeTemplateWithStatistics2[V1, V2](labelToFeatures, labelDomain, featureDomain)
   with InfoGainSplitting[V1, V2]
@@ -328,7 +326,7 @@ class ID3DecisionTreeTemplate[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
 }
 
 class DecisionStumpTemplate[V1 <: DiscreteVar, V2 <: DiscreteTensorVar]
-  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain with Domain[V1#Value], featureDomain: DiscreteTensorDomain with Domain[V2#Value])
+  (labelToFeatures: V1 => V2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[V1], m2: Manifest[V2])
   extends DecisionTreeTemplateWithStatistics2[V1, V2](labelToFeatures, labelDomain, featureDomain)
   with InfoGainSplitting[V1, V2]
