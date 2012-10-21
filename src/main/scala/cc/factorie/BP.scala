@@ -31,7 +31,16 @@ object BPSumProductRing extends BPRing {
   /** Construct and return a new BPFactor for "factor", creating/obtaining new BPVariables as necessary from "summary".
       Any of the factor neighbors present in "varying" will get a BPVariable and BPEdge; others will be considered constant.
       If "varying" is null, then any DiscreteVars are considered varying. */
-  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = {
+  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = factor match {
+    case factor:Factor1[DiscreteVar] =>  
+      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)))
+    case factor:Factor2[DiscreteVar,DiscreteVar] => 
+      if (factor._2.isInstanceOf[DiscreteVar] && null != varying && varying.contains(factor._2)) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2))) with BPFactor2SumProduct
+      else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1)))
+    case factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar] =>
+      new BPFactor2Factor3(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2))) with BPFactor2SumProduct
+  }
+  def newBPFactorOld(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = {
     val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => (varying eq null) || varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
     val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
     edges.size match {
@@ -49,7 +58,16 @@ object BPSumProductRing extends BPRing {
 
 object BPMaxProductRing extends BPRing {
   def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
-  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = {
+  def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = factor match {
+    case factor:Factor1[DiscreteVar] =>  
+      new BPFactor1Factor1(factor, new BPEdge(summary.bpVariable(factor._1)))
+    case factor:Factor2[DiscreteVar,DiscreteVar] => 
+      if (factor._2.isInstanceOf[DiscreteVar] && null != varying && varying.contains(factor._2)) new BPFactor2Factor2(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2))) with BPFactor2MaxProduct
+      else new BPFactor1Factor2(factor.asInstanceOf[Factor2[DiscreteVar,DiscreteTensorVar]], new BPEdge(summary.bpVariable(factor._1)))
+    case factor:Factor3[DiscreteVar,DiscreteVar,DiscreteTensorVar] =>
+      new BPFactor2Factor3(factor, new BPEdge(summary.bpVariable(factor._1)), new BPEdge(summary.bpVariable(factor._2))) with BPFactor2MaxProduct
+  }
+  def newBPFactorOld(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = {
     val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => (varying eq null) || varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
     val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
     edges.size match {
@@ -392,16 +410,25 @@ object BPSummary {
   def apply(varying:Iterable[DiscreteVar], model:Model[Variable]): BPSummary = apply(varying, BPSumProductRing, model)
 }
 
+// Just in case we want to create different BPSummary implementations
+// TODO Consider removing this
+trait AbstractBPSummary extends Summary[DiscreteMarginal] {
+  def ring: BPRing
+  def bpVariable(v:DiscreteVar): BPVariable1
+  def bpFactors: Iterable[BPFactor]
+  def bpVariables: Iterable[BPVariable1]
+}
+
 /** A collection of marginals inferred by belief propagation.  
     Do not call this constructor directly; instead use the companion object apply methods, 
     which add the appropriate BPFactors, BPVariables and BPEdges. */
-class BPSummary(val ring:BPRing) extends Summary[DiscreteMarginal] {
+class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   private val _bpFactors = new LinkedHashMap[Factor, BPFactor]
   private val _bpVariables = new LinkedHashMap[DiscreteTensorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
   def bpVariables: Iterable[BPVariable1] = _bpVariables.values
-  def marginals = _bpFactors.values ++ _bpVariables.values
+  def marginals: Iterable[DiscreteMarginal] = _bpFactors.values ++ _bpVariables.values
   def marginal(vs: Variable*): DiscreteMarginal = vs.size match {
     case 1 => _bpVariables(vs.head.asInstanceOf[DiscreteVar])
     case 2 => {val factors = _bpFactors.values.filter(f => f.variables.toSet == vs.toSet); factors.head} // Need to actually combine if more than one
@@ -415,6 +442,15 @@ class BPSummary(val ring:BPRing) extends Summary[DiscreteMarginal] {
     case _ => throw new Error("Not yet implemented arbitrary backwards pass.")
   }
 }
+
+
+//class ChainBPSummary(val labels:Seq[DiscreteVar], val ring:BPRing, model:Model[Seq[DiscreteVar]]) extends BPSummary2 {
+//  val bpVariables = labels.map(new BPVariable1(_))
+//  def marginal(vs:Variable*): DiscreteMarginal = vs.size match {
+//    case 1 => 
+//  }
+//}
+
 
 object BPUtil {
   
