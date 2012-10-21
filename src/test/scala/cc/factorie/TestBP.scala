@@ -24,7 +24,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     // one variable, one factor
     val v = new BinVar(0)
     val model = new ItemizedModel(newFactor1(v, 1, 1))
-    val fg = new BPSummary(Set(v), model)
+    val fg = BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
@@ -36,7 +36,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     // one variable, one factor
     val v = new BinVar(0)
     val model = new ItemizedModel(newFactor1(v, 2, 1))
-    val fg = new BPSummary(Set(v), model)
+    val fg = BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
@@ -49,7 +49,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     // one variable, two factors
     val v = new BinVar(0)
     val model = new ItemizedModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
-    val fg = new BPSummary(Set(v), model)
+    val fg = BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 2)
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
@@ -62,7 +62,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
   // one variable, two factors
     val v = new BinVar(0)
     val model = new ItemizedModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
-    val fg = new BPSummary(Set(v), model)
+    val fg = BPSummary(Set(v), model)
     assert(fg.bpFactors.size == 2)
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 1)
@@ -75,7 +75,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     // one variable, two factors
     val v = new BinVar(0)
     val model = new ItemizedModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
-    val fg = new BPSummary(Set(v), BPMaxProductRing, model) 
+    val fg = BPSummary(Set(v), BPMaxProductRing, model) 
     BP.inferLoopy(fg, 2)
     //println(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(3) / (e(3) + e(3)), eps)
@@ -86,7 +86,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     // one variable, two factors
     val v = new BinVar(0)
     val model = new ItemizedModel(newFactor1(v, 0, 1), newFactor1(v, 0, 1))
-    val fg = new BPSummary(Set(v), BPMaxProductRing, model)
+    val fg = BPSummary(Set(v), BPMaxProductRing, model)
     BP.inferLoopy(fg, 1)
     //println(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(0 + 0) / (e(0) + e(2)), eps)
@@ -112,7 +112,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     println(model.subModels.head.asInstanceOf[FamilyWithNeighborDomains].neighborDomains)
 
     // vary both variables
-    val fg = new BPSummary(vars, model)
+    val fg = BPSummary(vars, model)
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 2)
     BP.inferLoopy(fg, 5)
@@ -136,7 +136,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
     val vars: Set[Variable] = Set(v1, v2)
     val varying = Set(v1)
     
-    val fg = new BPSummary(varying, model)
+    val fg = BPSummary(varying, model)
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
     BP.inferLoopy(fg, 5)
@@ -165,7 +165,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
       newFactor2(v1, v2, 3, -1)
     )
     
-    var fg = new BPSummary(vars, model)
+    var fg = BPSummary(vars, model)
     BP.inferLoopy(fg, 1)
     println("v1 : " + fg.marginal(v1).proportions)
     println("v2 : " + fg.marginal(v2).proportions)
@@ -197,7 +197,7 @@ class TestBP { //}extends FunSuite with BeforeAndAfter {
       newFactor1(v4, 10, 0)
     )
     
-    val fg = new BPSummary(vars, model)
+    val fg = BPSummary(vars, model)
     BP.inferLoopy(fg, 4)
     fg.setToMaximize()
     

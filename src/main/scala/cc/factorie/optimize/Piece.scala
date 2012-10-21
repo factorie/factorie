@@ -36,7 +36,7 @@ class BPMaxLikelihoodPiece[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V], 
     val summary = infer.infer(labels, model).get
     // The log loss is - score + log Z
     if (value != null)
-      value.accumulate(modelVariable2Variables(model).currentScore(labels) - summary.logZ)
+      value.accumulate(modelElement2Iterable(model).currentScore(labels) - summary.logZ)
 
     if (gradient != null) {
       summary.bpFactors.foreach(f => {

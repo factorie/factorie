@@ -57,9 +57,9 @@ package object factorie {
   //  implicit def modelVariables2Variable(model:Model[Iterable[Variable]]): Model2[Variable] = new Model2[Variable] {
   //    def factors(variable:Variable): Iterable[Factor] = model.factors(Seq(variable))
   //  }
-  implicit def modelVariable2Variables[V<:Variable](model:Model[V]): Model[Iterable[V]] = {
+  implicit def modelElement2Iterable[C](model:Model[C]): Model[Iterable[C]] = {
     if (model eq null) return null
-    new Variable2IterableModel[V](model)
+    new Element2IterableModel[C](model)
   }
 //  new Model[Iterable[V]] {
 //    def factors(variables:Iterable[V]): Iterable[Factor] = {

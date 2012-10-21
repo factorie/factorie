@@ -28,8 +28,11 @@ trait BPRing {
 
 object BPSumProductRing extends BPRing {
   def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
+  /** Construct and return a new BPFactor for "factor", creating/obtaining new BPVariables as necessary from "summary".
+      Any of the factor neighbors present in "varying" will get a BPVariable and BPEdge; others will be considered constant.
+      If "varying" is null, then any DiscreteVars are considered varying. */
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = {
-    val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
+    val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => (varying eq null) || varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
     val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
     edges.size match {
       case 1 => factor match {
@@ -47,7 +50,7 @@ object BPSumProductRing extends BPRing {
 object BPMaxProductRing extends BPRing {
   def newBPVariable(v:DiscreteVar): BPVariable1 = new BPVariable1(v)
   def newBPFactor(factor:Factor, varying:Set[DiscreteVar], summary:BPSummary): BPFactor = {
-    val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
+    val factorVarying = factor.variables.filter(_ match {case v: DiscreteVar => (varying eq null) || varying.contains(v); case _ => false}).asInstanceOf[Seq[DiscreteVar]]
     val edges = factorVarying.map(v => new BPEdge(summary.bpVariable(v))) //_bpVariables.getOrElseUpdate(v, new BPVariable1(v, ring)))
     edges.size match {
       case 1 => factor match {
@@ -368,19 +371,34 @@ class BPFactor3(val factor: Factor, val edge1: BPEdge, val edge2: BPEdge, val ed
   def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = throw new Error("Not yet implemented")
 }
 
+object BPSummary {
+  def apply[C](context:Iterable[C], varying:Iterable[DiscreteVar], ring:BPRing, model:Model[C]): BPSummary = {
+    val summary = new BPSummary(ring)
+    val varyingSet = varying.toSet
+    for (factor <- model.factors(context)) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
+    summary
+  }
+  def apply[C](context:C, ring:BPRing, model:Model[C]): BPSummary = {
+    val summary = new BPSummary(ring)
+    for (factor <- model.factors(context)) summary._bpFactors(factor) = ring.newBPFactor(factor, null, summary)
+    summary
+  }
+  def apply(varying:Iterable[DiscreteVar], ring:BPRing, model:Model[Variable]): BPSummary = {
+    val summary = new BPSummary(ring)
+    val varyingSet = varying.toSet
+    for (factor <- modelElement2Iterable(model).factors(varying)) summary._bpFactors(factor) = ring.newBPFactor(factor, varyingSet, summary)
+    summary
+  }
+  def apply(varying:Iterable[DiscreteVar], model:Model[Variable]): BPSummary = apply(varying, BPSumProductRing, model)
+}
 
-
-class BPSummary(val ring:BPRing, val model:Model[Variable]) extends Summary[DiscreteMarginal] {
+/** A collection of marginals inferred by belief propagation.  
+    Do not call this constructor directly; instead use the companion object apply methods, 
+    which add the appropriate BPFactors, BPVariables and BPEdges. */
+class BPSummary(val ring:BPRing) extends Summary[DiscreteMarginal] {
   private val _bpFactors = new LinkedHashMap[Factor, BPFactor]
   private val _bpVariables = new LinkedHashMap[DiscreteTensorVar, BPVariable1]
   def bpVariable(v:DiscreteVar): BPVariable1 = _bpVariables.getOrElseUpdate(v, ring.newBPVariable(v))
-  /** Create a new BPSummary to infer the given varying variables.  Other non-varying neighbors of relevant factors are considered constant. */
-  def this(varying:Iterable[DiscreteVar], ring:BPRing, model:Model[Variable]) = {
-    this(ring, model)
-    val varyingSet = varying.toSet
-    for (factor <- model.factors(varying)) _bpFactors(factor) = ring.newBPFactor(factor, varyingSet, this)
-  }
-  def this(varying:Iterable[DiscreteVar], model:Model[Variable]) = this(varying, BPSumProductRing, model)
   def bpFactors: Iterable[BPFactor] = _bpFactors.values
   def bpVariables: Iterable[BPVariable1] = _bpVariables.values
   def marginals = _bpFactors.values ++ _bpVariables.values
@@ -448,7 +466,7 @@ object BP {
     }
   }
   def inferTreeSum(varying:Set[DiscreteVar], model:Model[Variable], root: DiscreteVar = null): BPSummary = {
-    val summary = new BPSummary(varying, BPSumProductRing, model)
+    val summary = BPSummary(varying, BPSumProductRing, model)
     val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
     val bfsSeq = BPUtil.bfs(varying, _root, checkLoops = true)
     BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
@@ -457,13 +475,13 @@ object BP {
   }
   // TODO: add inferTreewiseMax and associated test
   def inferSingle(v:MutableDiscreteVar[_<:DiscreteValue], model:Model[Variable]): BPSummary = {
-    val summary = new BPSummary(Seq(v), BPSumProductRing, model)
+    val summary = BPSummary(Seq(v), BPSumProductRing, model)
     summary.bpFactors.foreach(_.updateOutgoing())
     summary
   }
   // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
   def inferChainMax(varying:Seq[DiscreteVar], model:Model[Variable]): BPSummary = {
-    val summary = new BPSummary(varying, BPMaxProductRing, model)
+    val summary = BPSummary(varying, BPMaxProductRing, model)
     varying.size match {
       case 0 => {}
       case 1 => { summary.bpFactors.foreach(_.updateOutgoing()); summary.bpVariables.head.setToMaximize(null) }
@@ -492,7 +510,7 @@ object BP {
   
   // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
   def inferChainSum(varying:Seq[DiscreteVar], model:Model[Variable]): BPSummary = {
-    val summary = new BPSummary(varying, BPSumProductRing, model)
+    val summary = BPSummary(varying, BPSumProductRing, model)
     varying.size match {
       case 0 => {}
       case 1 => summary.bpFactors.foreach(_.updateOutgoing())

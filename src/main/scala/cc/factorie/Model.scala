@@ -81,33 +81,6 @@ trait Model[C] {
   def currentScore: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
 }
 
-class Variable2DiffListModel(val model:Model[Variable]) extends ProxyModel[Variable,DiffList] {
-  def factors(context:DiffList): Iterable[Factor] = {
-    val result = new collection.mutable.LinkedHashSet[Factor]
-    assert(model ne null)
-    assert(context ne null)
-    assert(context.variables.forall(_ ne null))
-    context.variables.foreach(v => model.addFactors(v, result))
-    result
-  }
-}
-
-class Variable2IterableModel[V<:Variable](val model:Model[V]) extends ProxyModel[V,Iterable[V]] {
-  def factors(context:Iterable[V]): Iterable[Factor] = {
-    val result = new collection.mutable.LinkedHashSet[Factor]
-    context.foreach(v => model.addFactors(v, result))
-    result
-  }
-}
-
-//class Variable2DiffListModel(val model:Model[Variable]) extends ProxyModel[Variable,DiffList] {
-//  def factors(dl:DiffList): Iterable[Factor] = {
-//    val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables in the DiffList
-//    dl.foreach(d => if (d.variable ne null) model.addFactors(d.variable, result))
-//    result
-//  }  
-//}
-
 
 /** Assumes that all calls to addFactors() will only add Factors of type FactorType, and then appropriately casts the return type of factors() methods. */
 trait ModelWithFactorType[C] extends Model[C] {
@@ -211,35 +184,40 @@ trait ProxyModel[C1,C2] extends Model[C2] {
   override def families = model.families
 }
 
+class Variable2DiffListModel(val model:Model[Variable]) extends ProxyModel[Variable,DiffList] {
+  def factors(context:DiffList): Iterable[Factor] = {
+    val result = new collection.mutable.LinkedHashSet[Factor]
+    assert(model ne null)
+    assert(context ne null)
+    assert(context.variables.forall(_ ne null))
+    context.variables.foreach(v => model.addFactors(v, result))
+    result
+  }
+}
 
-/** A Model that creates factors on the fly from Templates.
-    @author Andrew McCallum
-    @since 0.8
-    @see Template
- */
-//@deprecated("Use CombinedModel instead") // TODO But we need to implement "save" and "load".
-//class TemplateModel(initialTemplates:Template*) extends Model {
-//  private val _templates = new ArrayBuffer[Template] ++= initialTemplates
-//  def templates: Seq[Template] = _templates
-//  def ++=(moreTemplates:Iterable[Template]) = _templates ++= moreTemplates
-//  def +=(template:Template) = _templates += template
-//  @deprecated("Will be removed") def clear = _templates.clear // TODO Consider removing this.
-//  override def families = _templates
-//  def limitDiscreteValuesIteratorAsIn(variables:Iterable[DiscreteVar]): Unit = _templates.foreach(_.limitDiscreteValuesIteratorAsIn(variables))
-//  def addFactors(variable:Variable, result:Growable[Factor]): Iterable[Factor] = templates.flatMap(template => template.factorsWithDuplicates(variable))
-//  
-//  def save(dirname:String, gzip: Boolean = false): Unit = {
-//    import java.io.File
-//    //println("Saving model "+getClass.getName+" to "+dirname)
-//    val f = new File(dirname)
-//    // Recursively delete all files in directory "f"
-//    def delete(f:File): Boolean = { if (f.isDirectory) f.listFiles.forall(f2 => delete(f2)) else f.delete }
-//    if (f.exists) if (!delete(f)) throw new Error("Error deleting directory "+dirname)
-//    f.mkdir
-//    templates.foreach(_.save(dirname, gzip))
+//class Variable2IterableModel[V<:Variable](val model:Model[V]) extends ProxyModel[V,Iterable[V]] {
+//  def factors(context:Iterable[V]): Iterable[Factor] = {
+//    val result = new collection.mutable.LinkedHashSet[Factor]
+//    context.foreach(v => model.addFactors(v, result))
+//    result
 //  }
-//  def load(dirname:String, gzip: Boolean = false): Unit = templates.foreach(_.load(dirname, gzip))
-//  def loadFromJar(dirname: String): Unit = templates.foreach(_.loadFromJar(dirname))
 //}
+
+class Element2IterableModel[C](val model:Model[C]) extends ProxyModel[C,Iterable[C]] {
+  def factors(context:Iterable[C]): Iterable[Factor] = {
+    val result = new collection.mutable.LinkedHashSet[Factor]
+    context.foreach(v => model.addFactors(v, result))
+    result
+  }
+}
+
+//class Variable2DiffListModel(val model:Model[Variable]) extends ProxyModel[Variable,DiffList] {
+//  def factors(dl:DiffList): Iterable[Factor] = {
+//    val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables in the DiffList
+//    dl.foreach(d => if (d.variable ne null) model.addFactors(d.variable, result))
+//    result
+//  }  
+//}
+
 
 
