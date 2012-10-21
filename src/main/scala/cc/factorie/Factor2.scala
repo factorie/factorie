@@ -174,7 +174,7 @@ abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends 
     Only "score" method is abstract. */
 abstract class TupleFactorWithStatistics2[N1<:Variable,N2<:Variable](override val _1:N1, override val _2:N2) extends Factor2[N1,N2](_1, _2) {
   type StatisticsType = ((N1#Value, N2#Value))
-  final override def statistics(v1:N1#Value, v2:N2#Value) = Tuple(v1, v2)
+  final override def statistics(v1:N1#Value, v2:N2#Value) = (v1, v2)
 }
 
 /** A 2-neighbor Factor whose statistics have type Tensor.
