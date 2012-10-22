@@ -7,8 +7,8 @@ import cc.factorie._
 object TutorialDomain {
 
   def main(args: Array[String]) {
-    /*& In FACTORIE every Variable has a Domain, which specifies the range of values the Variable can take.
-        Domains have a type member named 'Value' which indicates the type of these values.
+    /*& In FACTORIE every Variable has a Domain that specifies the range of values the Variable can take.
+        Domains have a type member 'Value' which indicates the type of these values.
         All domains are subclasses of the trait Domain[A], where A is a lower bound on the domain's Value type.
 
         For example, the domain of an DoubleVariable is the object DoubleDomain, and DoubleDomain.Value is Double. */

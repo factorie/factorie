@@ -144,8 +144,12 @@ trait BPFactor extends DiscreteMarginal {
   }
   /** Normalized probabilities over values of varying neighbors */
   def calculateMarginal: Tensor = calculateBeliefs.expNormalized
-  /** Normalized probabilities over values of varying neighbors, in the form of a Proportions */
+  /** Normalized probabilities over values of only the varying neighbors, in the form of a Proportions */
   override def proportions: Proportions // Must be overridden to return "new NormalizedTensorProportions{1,2,3,4}(calculateMarginal, false)"
+  /** Returns a Tensor representing the marginal distribution over the values of all the neighbors of the underlying Factor. */
+  def marginalTensorValues: Tensor = throw new Error("Not yet implemented")
+  /** Returns a Tensor representing the marginal distribution over the statistics of all the neighbors of the underlying Factor. */
+  def marginalTensorStatistics: Tensor = throw new Error("Not yet implemented")
   /** Add to t the normalized probabilities over values of all neighbors. */
   //def addExpectationInto(t:Tensor, f:Double): Unit
   /** Add into the accumulator factor statistics for varying values, weighted by the BPFactor's marginal distribution of the varying values. */
@@ -435,6 +439,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   }
   def marginal(v: DiscreteVar): BPVariable1 = _bpVariables(v)
   override def marginal(f: Factor): BPFactor = _bpFactors(f)
+  override def marginalTensorStatistics(factor:Factor): Tensor = _bpFactors(factor).marginalTensorStatistics
   override def logZ: Double = _bpFactors.values.head.calculateLogZ
   override def setToMaximize(implicit d:DiffList = null): Unit = ring match {
     case BPSumProductRing => bpVariables.foreach(_.setToMaximize(d))
