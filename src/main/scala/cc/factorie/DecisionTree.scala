@@ -31,7 +31,7 @@ abstract class DecisionTreeTemplateWithStatistics2[V1 <: DiscreteVar, V2 <: Disc
 
   def unroll1(label: V1) = Factor(label, labelToFeatures(label))
   def unroll2(features: V2) = throw new Error("Cannot unroll from feature variables.")
-  def statisticsScore(t:Tensor): Double = throw new Error("How should this work??")
+  override def statisticsScore(t:Tensor): Double = throw new Error("How should this work??")
 
   override def statistics(value1:S1, value2:S2): StatisticsType = (value1, value2)
   // Fixme: DiscreteVar should have value: Value not value: DiscreteValue... but then can't override. Need VarLike?

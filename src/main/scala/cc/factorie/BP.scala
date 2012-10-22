@@ -178,13 +178,13 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
       val result = new DenseTensor1(edge1.variable.domain.size)
       for (i <- 0 until edge1.variable.domain.size) {
         valueTensor.singleIndex = i
-       result(i) = factor.scoreValues(valueTensor)
+       result(i) = factor.valuesScore(valueTensor)
       }
       result
     }
   }
   def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal, f)
-  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valueStatistics(calculateMarginal), f)
+  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valuesStatistics(calculateMarginal), f)
 }
 
 // A BPFactor1 with underlying model Factor2, with the first neighbor varying and the second neighbor constant 
@@ -194,7 +194,7 @@ class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1
     val result = new DenseTensor1(edge1.variable.domain.size)
     for (i <- 0 until edge1.variable.domain.size) {
       valueTensor.singleIndex1 = i
-      result(i) = factor.scoreValues(valueTensor)
+      result(i) = factor.valuesScore(valueTensor)
     }
     result
   }
@@ -214,7 +214,7 @@ class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1
     val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
     for (i <- 0 until edge1.variable.domain.size) {
       valueTensor.singleIndex1 = i
-      accumulator.accumulate(factor.valueStatistics(valueTensor), marginal(i) * f)
+      accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i) * f)
     }
   }
 }
@@ -309,14 +309,14 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
         valueTensor.singleIndex1 = i
         for (j <- 0 until edge2.variable.domain.size) {
           valueTensor.singleIndex2 = j
-          result(i, j) = factor.scoreValues(valueTensor)
+          result(i, j) = factor.valuesScore(valueTensor)
         }
       }
       result
     }
   }
   //def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal,f) // TODO Use a TensorAccumulator; add f:Double to TensorAccumulator
-  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valueStatistics(calculateMarginal), f)
+  def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valuesStatistics(calculateMarginal), f)
 }
 
 // A BPFactor2 with underlying model Factor3, having two varying neighbors and one constant neighbor
@@ -329,7 +329,7 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
       valueTensor.singleIndex1 = i
       for (j <- 0 until edge2.variable.domain.size) {
         valueTensor.singleIndex2 = j
-        result(i, j) = factor.scoreValues(valueTensor)
+        result(i, j) = factor.valuesScore(valueTensor)
       }
     }
     result
@@ -342,8 +342,8 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
       valueTensor.singleIndex1 = i
       for (j <- 0 until edge2.variable.domain.size) {
         valueTensor.singleIndex2 = j
-        accumulator.accumulate(factor.valueStatistics(valueTensor), marginal(i,j)*f)
-        // TODO This should accumulator.accumulate(factor.valueStatistics(valueTensor), marginal(i,j)*f)
+        accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i,j)*f)
+        // TODO This should accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i,j)*f)
         // t.+=(valueTensor, if (i == targetInt1 && j == targetInt2) 1.0 - marginal(i,j) else -marginal(i,j))
         //t.+=(valueTensor, marginal(i,j) * f)
       }
@@ -356,7 +356,7 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
 //      valueTensor.singleIndex1 = i
 //      for (j <- 0 until edge2.variable.domain.size) {
 //        valueTensor.singleIndex2 = j
-//        // TODO This should accumulator.accumulate(factor.valueStatistics(valueTensor), marginal(i,j)*f)
+//        // TODO This should accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i,j)*f)
 //        // t.+=(valueTensor, if (i == targetInt1 && j == targetInt2) 1.0 - marginal(i,j) else -marginal(i,j))
 //        t.+=(valueTensor, marginal(i,j) * f)
 //      }

@@ -63,7 +63,7 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
     var i = 0
     while (i < l) {
       assignment.intValue1 = i
-      score = 0.0; factors.foreach(f => score += f.scoreAssignment(assignment))   // compute score of variable with value 'i'
+      score = 0.0; factors.foreach(f => score += f.assignmentScore(assignment))   // compute score of variable with value 'i'
       distribution(i) = score
       i += 1
     }

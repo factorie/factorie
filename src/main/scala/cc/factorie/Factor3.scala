@@ -40,11 +40,14 @@ abstract class Factor3[N1<:Variable,N2<:Variable,N3<:Variable](val _1:N1, val _2
   /** Return a record of the current values of this Factor's neighbors. */
   def currentAssignment = new Assignment3(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value], _3, _3.value.asInstanceOf[N3#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
-  def scoreAssignment(a:TypedAssignment[Variable]) = a match {
+  def assignmentScore(a:TypedAssignment[Variable]) = a match {
     case a:AbstractAssignment3[N1,N2,N3] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3)) => score(a.value1, a.value2, a.value3)
     case _ => score(a(_1), a(_2), a(_3))
   }
-
+  override final def assignmentStatistics(a:TypedAssignment[Variable]): StatisticsType = a match {
+    case a:AbstractAssignment3[N1,N2,N3] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3)) => statistics(a.value1, a.value2, a.value3)
+    case _ => statistics(a(_1), a(_2), a(_3))
+  }
   def valuesIterator: ValuesIterator3[N1,N2,N3] = new ValuesIterator3[N1,N2,N3] {
     def factor = Factor3.this
     var _1: N1 = null.asInstanceOf[N1]
@@ -65,9 +68,9 @@ abstract class Factor3[N1<:Variable,N2<:Variable,N3<:Variable](val _1:N1, val _2
   /** Given the Tensor value of neighbors _2 and _3, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
       Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
       If _1 is not a DiscreteVar then throws an Error. */
-  def scoreValues1(tensor1:Tensor, tensor2:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores1")
-  def scoreValues2(tensor1:Tensor, tensor2:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
-  def scoreValues3(tensor1:Tensor, tensor2:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
+  def valuesScore1(tensor1:Tensor, tensor2:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores1")
+  def valuesScore2(tensor1:Tensor, tensor2:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
+  def valuesScore3(tensor1:Tensor, tensor2:Tensor, tensor3:Tensor): Tensor1 = throw new Error("This Factor type does not implement scores2")
 
 //  /** Values iterator in style of specifying fixed neighbors. */
 //  def valuesIterator(fixed: Assignment): Iterator[Values] = {
@@ -284,25 +287,25 @@ abstract class TupleFactorWithStatistics3[N1<:Variable,N2<:Variable,N3<:Variable
 abstract class TensorFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends Factor3[N1,N2,N3](_1, _2, _3) {
   type StatisticsType = Tensor
   override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): Tensor
-  final def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = scoreStatistics(statistics(v1, v2, v3))
+  final def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = statisticsScore(statistics(v1, v2, v3))
   override def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): (Double, Tensor) = {
     val tensor = statistics(v1, v2, v3)
-    (scoreStatistics(tensor), tensor)
+    (statisticsScore(tensor), tensor)
   } 
-  def scoreStatistics(t:Tensor): Double
+  def statisticsScore(t:Tensor): Double
 }
 
 /** A trait for 3-neighbor Factor whose neighbors have Tensor values,
     and whose statistics are the outer product of those values.
-    Only "scoreStatistics" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
+    Only "statisticsScore" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
 trait TensorFactorStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends TensorFactor3[N1,N2,N3] {
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = cc.factorie.la.Tensor.outer(v1, v2, v3)
-  final override def valueStatistics(tensor:Tensor): Tensor = tensor
+  final override def valuesStatistics(tensor:Tensor): Tensor = tensor
 }
 
 /** A 3-neighbor Factor whose neighbors have Tensor values, 
     and whose statistics are the outer product of those values.
-    Only "scoreStatistics" method is abstract. */
+    Only "statisticsScore" method is abstract. */
 abstract class TensorFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends TensorFactor3[N1,N2,N3](_1, _2, _3) with TensorFactorStatistics3[N1,N2,N3]
 
 /** A 3-neighbor Factor whose statistics have type Tensor, 
@@ -310,7 +313,7 @@ abstract class TensorFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:Tenso
     Only "statistics" and "weights" methods are abstract. */
 abstract class DotFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends TensorFactor3[N1,N2,N3](_1, _2, _3) {
   def weights: Tensor
-  def scoreStatistics(t:Tensor): Double = weights dot t
+  def statisticsScore(t:Tensor): Double = weights dot t
 }
 
 /** A 3-neighbor Factor whose neighbors have Tensor values, 
@@ -318,7 +321,7 @@ abstract class DotFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override va
     and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
     Only "weights" method is abstract. */
 abstract class DotFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends DotFactor3(_1, _2, _3) with TensorFactorStatistics3[N1,N2,N3] {
-  override def scoreValues(valueTensor:Tensor) = weights dot valueTensor
+  override def valuesScore(valueTensor:Tensor) = weights dot valueTensor
 }
 
 
@@ -340,17 +343,17 @@ trait Family3[N1<:Variable,N2<:Variable,N3<:Variable] extends FamilyWithNeighbor
     def score(value1:N1#Value, value2:N2#Value, value3:N3#Value): Double = Family3.this.score(value1, value2, value3)
     def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): StatisticsType = thisFamily.statistics(v1, v2, v3)
     override def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): (Double,StatisticsType) = Family3.this.scoreAndStatistics(v1, v2, v3)
-    override def valueStatistics(tensor:Tensor): Tensor = Family3.this.valueStatistics(tensor)
-    //override def scoreValues(tensor:Tensor): Double = thisFamily.scoreValues(tensor) // TODO Consider implementing match here to use available _1 domain
+    override def valuesStatistics(tensor:Tensor): Tensor = Family3.this.valuesStatistics(tensor)
+    //override def valuesScore(tensor:Tensor): Double = thisFamily.valuesScore(tensor) // TODO Consider implementing match here to use available _1 domain
 //    override def limitedDiscreteValuesIterator: Iterator[(Int,Int,Int)] = limitedDiscreteValues.iterator
 //    override def isLimitingValuesIterator = thisFamily.isLimitingValuesIterator
   }
   def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): StatisticsType
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): (Double,StatisticsType) = (score(v1, v2, v3), statistics(v1, v2, v3))
-  def valueStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
+  def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
 
-  override def scoreValues(tensor:Tensor): Double = tensor match {
+  override def valuesScore(tensor:Tensor): Double = tensor match {
     case v: SingletonBinaryTensor3 => {
       val domain1 = neighborDomain1.asInstanceOf[DiscreteDomain with Domain[N1#Value]] // TODO Yipes.  This is a bit shaky (and inefficient?)
       val domain2 = neighborDomain2.asInstanceOf[DiscreteDomain with Domain[N2#Value]]
@@ -381,17 +384,17 @@ trait TensorFamily3[N1<:Variable,N2<:Variable,N3<:Variable] extends Family3[N1,N
 trait TensorFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends TensorFamily3[N1,N2,N3] {
   //type StatisticsType = Tensor
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = Tensor.outer(v1, v2, v3)
-  final override def valueStatistics(tensor:Tensor): Tensor = tensor
+  final override def valuesStatistics(tensor:Tensor): Tensor = tensor
 }
 
 trait DotFamily3[N1<:Variable,N2<:Variable,N3<:Variable] extends TensorFamily3[N1,N2,N3] with DotFamily {
-  def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = scoreStatistics(statistics(v1, v2, v3))
+  def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = statisticsScore(statistics(v1, v2, v3))
 }
 
 trait DotFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends TensorFamilyWithStatistics3[N1,N2,N3] with DotFamily3[N1,N2,N3] {
   override def weights: Tensor3
   //def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double = weights dot statistics(v1, v2, v3)
-  override def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor)
+  override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
   // TODO Consider a more efficient implementation of some cases
   // TODO Should we consider the capability for something other than *summing* over elements of tensor2?
   /** Given the Tensor value of neighbors _2 and _3, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
@@ -453,5 +456,5 @@ trait DotFamilyWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extend
 //
 //trait FamilyWithDotStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends Family3[N1,N2,N3] with DotStatistics3[N1#Value,N2#Value,N3#Value] {
 //  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = Statistics(v1, v2, v3)
-//  def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor) // reflecting the fact that there is no transformation between values and statistics
+//  def valuesScore(tensor:Tensor): Double = statisticsScore(tensor) // reflecting the fact that there is no transformation between values and statistics
 //}

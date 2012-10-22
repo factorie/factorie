@@ -85,14 +85,14 @@ object TutorialFactors {
     
     // We can ask for a factor's score using the values in an Assignment
     // rather than the neighbors current values
-    println("Second factor's score from old assignment is "+f2.scoreAssignment(a2))
-    assertEquals(2.0, f2.scoreAssignment(a2), 0.01)
+    println("Second factor's score from old assignment is "+f2.assignmentScore(a2))
+    assertEquals(2.0, f2.assignmentScore(a2), 0.01)
     
     // The Assignment object could contain values for more variables than the neighbors
     val as = new HashMapAssignment(v1, v2, v3)
     as(v1) = 44
-    println("Second factor's score from a new assignment is "+f2.scoreAssignment(as))
-    assertEquals(44*4.4, f2.scoreAssignment(as), 0.01)
+    println("Second factor's score from a new assignment is "+f2.assignmentScore(as))
+    assertEquals(44*4.4, f2.assignmentScore(as), 0.01)
     
     // All factors also have "statistics"
     // This is some arbitrary object that holds information sufficient to obtain a score.
@@ -173,7 +173,7 @@ object TutorialFactors {
     val f6 = new TensorFactor2(flag1, flag2) {
       val weights = new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0)))
       override def statistics(fv1:BooleanValue, fv2:BooleanValue): Tensor = fv1 outer fv2
-      def scoreStatistics(tensor:Tensor): Double = weights dot tensor
+      def statisticsScore(tensor:Tensor): Double = weights dot tensor
     }
     
     /*&
@@ -183,7 +183,7 @@ object TutorialFactors {
      *&*/
     val f7 = new TensorFactorWithStatistics2(flag1, flag2) {
       val weights = new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0)))
-      def scoreStatistics(tensor:Tensor): Double = weights dot tensor
+      def statisticsScore(tensor:Tensor): Double = weights dot tensor
     }
     
     /*&

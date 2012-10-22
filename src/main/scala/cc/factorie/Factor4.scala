@@ -47,11 +47,15 @@ abstract class Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](val 
   /** Return a record of the current values of this Factor's neighbors. */
   def currentAssignment = new Assignment4(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value], _3, _3.value.asInstanceOf[N3#Value], _4, _4.value.asInstanceOf[N4#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
-  def scoreAssignment(a:TypedAssignment[Variable]) = a match {
+  def assignmentScore(a:TypedAssignment[Variable]) = a match {
     case a:AbstractAssignment4[N1,N2,N3,N4] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) && (a._4 eq _4)) => score(a.value1, a.value2, a.value3, a.value4)
     case _ => score(a(_1), a(_2), a(_3), a(_4))
   }
-
+  override final def assignmentStatistics(a:TypedAssignment[Variable]): StatisticsType = a match {
+    case a:AbstractAssignment4[N1,N2,N3,N4] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) && (a._4 eq _4)) => statistics(a.value1, a.value2, a.value3, a.value4)
+    case _ => statistics(a(_1), a(_2), a(_3), a(_4))
+  }
+  
   def valuesIterator: ValuesIterator4[N1,N2,N3,N4] = new ValuesIterator4[N1,N2,N3,N4] {
     def factor = Factor4.this
     var _1: N1 = null.asInstanceOf[N1]
@@ -91,25 +95,25 @@ abstract class TupleFactorWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable
 abstract class TensorFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   type StatisticsType = Tensor
   override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Tensor
-  final def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double = scoreStatistics(statistics(v1, v2, v3, v4))
+  final def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double = statisticsScore(statistics(v1, v2, v3, v4))
   override def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): (Double, Tensor) = {
     val tensor = statistics(v1, v2, v3, v4)
-    (scoreStatistics(tensor), tensor)
+    (statisticsScore(tensor), tensor)
   } 
-  def scoreStatistics(t:Tensor): Double
+  def statisticsScore(t:Tensor): Double
 }
 
 /** A trait for 4-neighbor Factor whose neighbors have Tensor values,
     and whose statistics are the outer product of those values.
-    Only "scoreStatistics" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
+    Only "statisticsScore" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
 trait TensorFactorStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar] extends TensorFactor4[N1,N2,N3,N4] {
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = cc.factorie.la.Tensor.outer(v1, v2, v3, v4)
-  final override def valueStatistics(tensor:Tensor): Tensor = tensor
+  final override def valuesStatistics(tensor:Tensor): Tensor = tensor
 }
 
 /** A 4-neighbor Factor whose neighbors have Tensor values, 
     and whose statistics are the outer product of those values.
-    Only "scoreStatistics" method is abstract. */
+    Only "statisticsScore" method is abstract. */
 abstract class TensorFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends TensorFactor4[N1,N2,N3,N4](_1, _2, _3, _4) with TensorFactorStatistics4[N1,N2,N3,N4]
 
 /** A 4-neighbor Factor whose statistics have type Tensor, 
@@ -117,7 +121,7 @@ abstract class TensorFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:Tenso
     Only "statistics" and "weights" methods are abstract. */
 abstract class DotFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends TensorFactor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   def weights: Tensor
-  def scoreStatistics(t:Tensor): Double = weights dot t
+  def statisticsScore(t:Tensor): Double = weights dot t
 }
 
 /** A 4-neighbor Factor whose neighbors have Tensor values, 
@@ -125,7 +129,7 @@ abstract class DotFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVa
     and whose score is the dot product between this Tensor and a "weights" parameter Tensor.
     Only "weights" method is abstract. */
 abstract class DotFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends DotFactor4[N1,N2,N3,N4](_1, _2, _3, _4) with TensorFactorStatistics4[N1,N2,N3,N4] {
-  override def scoreValues(valueTensor:Tensor) = weights dot valueTensor
+  override def valuesScore(valueTensor:Tensor) = weights dot valueTensor
 }
 
 
@@ -149,12 +153,12 @@ trait Family4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Famil
     def score(value1:N1#Value, value2:N2#Value, value3:N3#Value, value4:N4#Value): Double = Family4.this.score(value1, value2, value3, value4)
     def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): StatisticsType = thisFamily.statistics(v1, v2, v3, v4)
     override def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): (Double,StatisticsType) = Family4.this.scoreAndStatistics(v1, v2, v3, v4)
-    override def valueStatistics(tensor:Tensor): Tensor = Family4.this.valueStatistics(tensor)
+    override def valuesStatistics(tensor:Tensor): Tensor = Family4.this.valuesStatistics(tensor)
   }
   def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): StatisticsType
   def scoreAndStatistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): (Double,StatisticsType) = (score(v1, v2, v3, v4), statistics(v1, v2, v3, v4))
-  def valueStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
+  def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor)")
 }
 
 trait TupleFamily4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends Family4[N1,N2,N3,N4] {
@@ -173,17 +177,17 @@ trait TensorFamily4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends
 trait TensorFamilyWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar] extends TensorFamily4[N1,N2,N3,N4] {
   //type StatisticsType = Tensor
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Tensor.outer(v1, v2, v3, v4)
-  final override def valueStatistics(tensor:Tensor): Tensor = tensor
+  final override def valuesStatistics(tensor:Tensor): Tensor = tensor
 }
 
 trait DotFamily4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable] extends TensorFamily4[N1,N2,N3,N4] with DotFamily {
-  def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double = scoreStatistics(statistics(v1, v2, v3, v4))
+  def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double = statisticsScore(statistics(v1, v2, v3, v4))
 }
 
 trait DotFamilyWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar] extends TensorFamilyWithStatistics4[N1,N2,N3,N4] with DotFamily4[N1,N2,N3,N4] {
   override def weights: Tensor4
   //def score(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Double = weights dot statistics(v1, v2, v3, v4)
-  override def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor)
+  override def valuesScore(tensor:Tensor): Double = statisticsScore(tensor)
 }
 
 //
@@ -221,5 +225,5 @@ trait DotFamilyWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:Ten
 //
 //trait FamilyWithDotStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar] extends Family4[N1,N2,N3,N4] with DotStatistics4[N1#Value,N2#Value,N3#Value,N4#Value] {
 //  def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = Statistics(v1, v2, v3, v4)
-//  def scoreValues(tensor:Tensor): Double = scoreStatistics(tensor) // reflecting the fact that there is no transformation between values and statistics
+//  def valuesScore(tensor:Tensor): Double = statisticsScore(tensor) // reflecting the fact that there is no transformation between values and statistics
 //}

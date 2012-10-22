@@ -32,43 +32,39 @@ trait Factor extends Ordered[Factor] {
   /** The number of variables neighboring this factor. */
   def numVariables: Int
   def variable(index: Int): Variable
-  
-  // TODO Consider making names uniform:  
-  // scoreCurrent, statisticsCurrent, scoreAndStatisticsCurrent
-  // scoreValues, statisticsValues
-  // scoreAssignment, statisticsAssignment, scoreAndStatisticsAssignment
-  // Or
-  // currentScore, currentStatistics, currentScoreAndStatistics
-  // valuesScore(Tensor), valuesStatistics(Tensor):Tensor
-  // assignmentScore, assignmentStatistics, assignmentScoreAndStatistics
-  // I like the later better.
-  // The later is more consistent with names already used in Model.
-  
-  /** This factors contribution to the unnormalized log-probability of the current possible world. */
-  def currentScore: Double
-  def currentStatistics: StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
-  /** Return the score and statistics of the current neighbor values; this method enables special cases in which it is more efficient to calculate them together. */
-  def currentScoreAndStatistics: (Double,StatisticsType) = (currentScore, currentStatistics)
-
   def touches(variable:Variable): Boolean = this.variables.contains(variable)
   def touchesAny(variables:Iterable[Variable]): Boolean = variables.exists(touches(_))
   
-  // TODO!!! To better match Model "score" method naming consider "assignmentScore", "valuesScore", "statisticsScore" ?? -akm 
+  // Getting the score
+  
+  /** This factors contribution to the unnormalized log-probability of the current possible world. */
+  def currentScore: Double
+  /** The ability to score a Values object is now removed, and this is its closest alternative. */
+  def assignmentScore(a:TypedAssignment[Variable]): Double
+  /** Return the score for Factors whose values can be represented as a Tensor, otherwise throw an Error.
+      For Factors/Family in which the Statistics are the values, this method simply calls valuesScore(Tensor). */
+  def valuesScore(tensor:Tensor): Double = throw new Error("This Factor class does not implement valuesScore(Tensor).")
+  // Do not declare statisticsScore(tensor:Tensor) here, because it should be abstract in TensorFactor2, etc.
+
+  // Getting the statistics
+  
+  /** Return this Factor's sufficient statistics of the current values of the Factor's neighbors. */
+  def currentStatistics: StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
+  /** Return this Factor's sufficient statistics for the values in the Assignment. */
+  def assignmentStatistics(a:TypedAssignment[Variable]): StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
+  /** Given a Tensor representation of the values, return a Tensor representation of the statistics.  We assume that if the values have Tensor representation that the StatisticsType does also. */
+  def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor).")
+
+  /** Return the score and statistics of the current neighbor values; this method enables special cases in which it is more efficient to calculate them together. */
+  def currentScoreAndStatistics: (Double,StatisticsType) = (currentScore, currentStatistics)
+  def assignmentScoreAndStatistics(a:TypedAssignment[Variable]): (Double,StatisticsType) = (assignmentScore(a), assignmentStatistics(a))
+  def valuesScoreAndStatistics(t:Tensor): (Double,Tensor) = (valuesScore(t), valuesStatistics(t))
+
+  // Getting Assignments
 
   /** Return a record of the current values of this Factor's neighbors. */
   def currentAssignment: TypedAssignment[Variable]
-  /** The ability to score a Values object is now removed, and this is its closest alternative. */
-  def scoreAssignment(a:TypedAssignment[Variable]): Double
-  /** Return the score for Factors whose values can be represented as a Tensor, otherwise throw an Error.
-      For Factors/Family in which the Statistics are the values, this method simply calls scoreValues(Tensor). */
-  def scoreValues(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreValues(Tensor).")
-  /** Given a Tensor representation of the values, return a Tensor representation of the statistics */
-  // TODO Should this return instead StatisticsType?
-  def valueStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor).")
-  // Do not declare scoreStatistics(tensor:Tensor) here, because it should be abstract in TensorFactor2, etc.
-  /** Return the score for Factors whose Statistics can be represented as a Tensor, otherwise throw an Error.
-      For DotFamily this is implemented as simply "weights dot tensor". */
-  //def scoreStatistics(tensor:Tensor): Double = throw new Error("This Factor class does not implement scoreStatistics(Tensor)") // TODO Is this ever necessary?
+
   /** Return an object that can iterate over all value assignments to the neighbors of this Factor */
   def valuesIterator: ValuesIterator
   

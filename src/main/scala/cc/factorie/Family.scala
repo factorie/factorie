@@ -38,11 +38,11 @@ trait Family {
     def _1: NeighborType1 // TODO Consider getting rid of this.
     override def factorName = family.factorName
     override def equalityPrerequisite: AnyRef = Family.this
-    override def scoreValues(tensor:Tensor): Double = Family.this.scoreValues(tensor)
-    def scoreStatistics(tensor:Tensor): Double = Family.this.scoreStatistics(tensor)
+    override def valuesScore(tensor:Tensor): Double = Family.this.valuesScore(tensor)
+    def statisticsScore(tensor:Tensor): Double = Family.this.statisticsScore(tensor)
   }
-  def scoreValues(tensor:Tensor): Double = throw new Error("Not yet implemented.")
-  def scoreStatistics(tensor:Tensor): Double = throw new Error("Not yet implemented.")
+  def valuesScore(tensor:Tensor): Double = throw new Error("Not yet implemented.")
+  def statisticsScore(tensor:Tensor): Double = throw new Error("Not yet implemented.")
   /** The filename into which to save this Family. */
   protected def filename: String = factorName
   def save(dirname:String, gzip: Boolean = false): Unit = {}
@@ -78,8 +78,8 @@ trait TensorFamily extends Family {
 trait DotFamily extends TensorFamily {
   type FamilyType <: DotFamily
   def weights: Tensor
-  //@inline final def score(s:StatisticsType): Double = if (s eq null) 0.0 else scoreStatistics(s.tensor)
-  @inline final override def scoreStatistics(t:Tensor): Double = weights dot t
+  //@inline final def score(s:StatisticsType): Double = if (s eq null) 0.0 else statisticsScore(s.tensor)
+  @inline final override def statisticsScore(t:Tensor): Double = weights dot t
 
   override def save(dirname:String, gzip: Boolean = false): Unit = {
     val f = new File(dirname + "/" + filename + { if (gzip) ".gz" else "" }) // TODO: Make this work on MSWindows also
@@ -253,11 +253,11 @@ trait DotFamily extends TensorFamily {
 ////  def newWeightsTypeTensor: Tensor = Tensor.newDense(statisticsTensorDimensions)  // Dense by default, may be override in sub-traits
 ////  def newDenseTensor: Tensor = Tensor.newDense(weights)
 ////  def newSparseTensor: Tensor = Tensor.newSparse(weights)
-//  @inline final def score(s:StatisticsType): Double = if (s eq null) 0.0 else scoreStatistics(s.tensor)
-//  @inline final def scoreStatistics(t:Tensor): Double = {
+//  @inline final def score(s:StatisticsType): Double = if (s eq null) 0.0 else statisticsScore(s.tensor)
+//  @inline final def statisticsScore(t:Tensor): Double = {
 ////    if (!weights.dimensionsMatch(t)) {
 ////      require(weights.oneNorm == 0.0)
-////      println("DotFamily.scoreStatistics re-allocating weights Tensor.")
+////      println("DotFamily.statisticsScore re-allocating weights Tensor.")
 ////      _weights = newWeightsTypeTensor
 ////    }
 //    weights dot t

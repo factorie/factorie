@@ -17,7 +17,7 @@ package cc.factorie
 /** A Variable with a numeric value.
     Note that this does not inherit from Var[] because this trait
     does not yet commit to the Value type of this Variable.
-    See also RealVar and DoubleVar.
+    See also IntegerVar, RealVar and DoubleVar.
     @author Andrew McCallum */
 trait ScalarVar extends Variable {
   def intValue: Int

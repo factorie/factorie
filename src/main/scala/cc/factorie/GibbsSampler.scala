@@ -2,6 +2,7 @@ package cc.factorie
 import cc.factorie.generative.{GenerativeFactor,GenerativeModel}
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
+// TODO Clean this up, and consider getting rid of the Typed version.
 class TypedGibbsSampler[V<:Variable](val model:Model[Variable], val objective:Model[Variable] = null) extends ProposalSampler[V] {
   val handlers = new ArrayBuffer[GibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVarGibbsSamplerHandler) //, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler
