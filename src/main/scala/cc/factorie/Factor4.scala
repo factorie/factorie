@@ -47,11 +47,11 @@ abstract class Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](val 
   /** Return a record of the current values of this Factor's neighbors. */
   def currentAssignment = new Assignment4(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value], _3, _3.value.asInstanceOf[N3#Value], _4, _4.value.asInstanceOf[N4#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
-  def assignmentScore(a:TypedAssignment[Variable]) = a match {
+  def assignmentScore(a:Assignment) = a match {
     case a:AbstractAssignment4[N1,N2,N3,N4] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) && (a._4 eq _4)) => score(a.value1, a.value2, a.value3, a.value4)
     case _ => score(a(_1), a(_2), a(_3), a(_4))
   }
-  override final def assignmentStatistics(a:TypedAssignment[Variable]): StatisticsType = a match {
+  override final def assignmentStatistics(a:Assignment): StatisticsType = a match {
     case a:AbstractAssignment4[N1,N2,N3,N4] if ((a._1 eq _1) && (a._2 eq _2) && (a._3 eq _3) && (a._4 eq _4)) => statistics(a.value1, a.value2, a.value3, a.value4)
     case _ => statistics(a(_1), a(_2), a(_3), a(_4))
   }

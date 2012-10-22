@@ -40,7 +40,7 @@ trait Factor extends Ordered[Factor] {
   /** This factors contribution to the unnormalized log-probability of the current possible world. */
   def currentScore: Double
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
-  def assignmentScore(a:TypedAssignment[Variable]): Double
+  def assignmentScore(a:Assignment): Double
   /** Return the score for Factors whose values can be represented as a Tensor, otherwise throw an Error.
       For Factors/Family in which the Statistics are the values, this method simply calls valuesScore(Tensor). */
   def valuesScore(tensor:Tensor): Double = throw new Error("This Factor class does not implement valuesScore(Tensor).")
@@ -51,19 +51,19 @@ trait Factor extends Ordered[Factor] {
   /** Return this Factor's sufficient statistics of the current values of the Factor's neighbors. */
   def currentStatistics: StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
   /** Return this Factor's sufficient statistics for the values in the Assignment. */
-  def assignmentStatistics(a:TypedAssignment[Variable]): StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
+  def assignmentStatistics(a:Assignment): StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
   /** Given a Tensor representation of the values, return a Tensor representation of the statistics.  We assume that if the values have Tensor representation that the StatisticsType does also. */
   def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor).")
 
   /** Return the score and statistics of the current neighbor values; this method enables special cases in which it is more efficient to calculate them together. */
   def currentScoreAndStatistics: (Double,StatisticsType) = (currentScore, currentStatistics)
-  def assignmentScoreAndStatistics(a:TypedAssignment[Variable]): (Double,StatisticsType) = (assignmentScore(a), assignmentStatistics(a))
+  def assignmentScoreAndStatistics(a:Assignment): (Double,StatisticsType) = (assignmentScore(a), assignmentStatistics(a))
   def valuesScoreAndStatistics(t:Tensor): (Double,Tensor) = (valuesScore(t), valuesStatistics(t))
 
   // Getting Assignments
 
   /** Return a record of the current values of this Factor's neighbors. */
-  def currentAssignment: TypedAssignment[Variable]
+  def currentAssignment: Assignment
 
   /** Return an object that can iterate over all value assignments to the neighbors of this Factor */
   def valuesIterator: ValuesIterator

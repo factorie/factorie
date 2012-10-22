@@ -46,11 +46,11 @@ abstract class Factor2[N1<:Variable,N2<:Variable](val _1:N1, val _2:N2) extends 
   /** Return a record of the current values of this Factor's neighbors. */
   def currentAssignment = new Assignment2(_1, _1.value.asInstanceOf[N1#Value], _2, _2.value.asInstanceOf[N2#Value])
   /** The ability to score a Values object is now removed, and this is its closest alternative. */
-  def assignmentScore(a:TypedAssignment[Variable]) = a match {
+  def assignmentScore(a:Assignment) = a match {
     case a:AbstractAssignment2[N1,N2] if ((a._1 eq _1) && (a._2 eq _2)) => score(a.value1, a.value2)
     case _ => score(a(_1), a(_2))
   }
-  override final def assignmentStatistics(a:TypedAssignment[Variable]): StatisticsType = a match {
+  override final def assignmentStatistics(a:Assignment): StatisticsType = a match {
     case a:AbstractAssignment2[N1,N2] if ((a._1 eq _1) && (a._2 eq _2)) => statistics(a.value1, a.value2)
     case _ => statistics(a(_1), a(_2))
   }

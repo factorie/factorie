@@ -23,21 +23,21 @@ package cc.factorie
     Note that this trait doesn't inherit directly from scala.collection.Map
     because we need a special type signature for 'apply' and 'get'.
     @author Andrew McCallum */
-trait TypedAssignment[A<:Variable] extends Marginal {
+trait Assignment extends Marginal {
   /** All variables with values in this Assignment */
-  def variables: Iterable[A]
+  def variables: Iterable[Variable]
   /** Return the value assigned to variable v, or throw an Error if the variable is not in this Assignment. */
-  def apply[B<:A](v:B): B#Value
+  def apply[B<:Variable](v:B): B#Value
   /** Return the an Option for the value assigned to variable v.  If v is not contained in this Assignment return None. */
-  def get[B<:A](v:B): Option[B#Value]
+  def get[B<:Variable](v:B): Option[B#Value]
   /** Return true if this Assignment has a value for variable v. */
-  def contains(v:A): Boolean
-  def getOrElse[B<:A](v:B, default: => B#Value): B#Value = if (contains(v)) apply(v) else default
+  def contains(v:Variable): Boolean
+  def getOrElse[B<:Variable](v:B, default: => B#Value): B#Value = if (contains(v)) apply(v) else default
   /** Set variables to the values specified in this assignment */
   // TODO Rename this to "set" -akm
   def globalize(implicit d:DiffList): Unit = {
     for (v <- variables) v match {
-      case v:MutableVar[_] => v.set(this.apply(v.asInstanceOf[A]).asInstanceOf[v.Value])
+      case v:MutableVar[_] => v.set(this.apply(v).asInstanceOf[v.Value])
       case _ => throw new Error
     }
   }
@@ -45,7 +45,7 @@ trait TypedAssignment[A<:Variable] extends Marginal {
   final def setToMaximize(implicit d:DiffList): Unit = this.globalize
 }
 
-trait Assignment extends TypedAssignment[Variable]
+//trait Assignment extends TypedAssignment[Variable]
 
 
 /** An Assignment in which variable-value mappings can be changed.

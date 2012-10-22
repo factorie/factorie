@@ -61,7 +61,7 @@ trait Model[C] {
   // TODO Consider an alternative name to "sumScore".  Cannot name "score" because conflicts with Template1.score(N1#Value)
   // Consider factorsScore and factorsScoreAverage
   def currentScore(context:C): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.currentScore; sum }
-  def assignmentScore(context:C, assignment:TypedAssignment[Variable]): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.assignmentScore(assignment); sum }
+  def assignmentScore(context:C, assignment:Assignment): Double = { var sum = 0.0; for (f <- factors(context)) sum += f.assignmentScore(assignment); sum }
 
   // Some Model subclasses have a list of Families to which all its factors belong
   def families: Seq[Family] = throw new Error("Model class does not implement method 'families': "+ this.getClass.getName)
