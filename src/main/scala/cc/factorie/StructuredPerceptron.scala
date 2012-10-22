@@ -19,6 +19,7 @@ import cc.factorie.la._
 
 /** Collins' structured-perceptron.
     @author Andrew McCallum */
+// TODO Make a Piece version of this.
 abstract class StructuredPerceptron[V<:LabeledMutableVar[_]](val model:Model[DiffList], val optimizer:GradientOptimizer) {
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
   var rate = 1.0
@@ -39,77 +40,3 @@ abstract class StructuredPerceptron[V<:LabeledMutableVar[_]](val model:Model[Dif
     }
   }
 }
-
-
-//abstract class StructuredPerceptron[V<:VarWithTargetValue] extends GradientAscentUpdates {
-//  //type TemplatesToUpdate = DotTemplate
-//
-//  val model: TemplateModel
-//  var learningMargin = 1.0 // TODO not currently used
-//  protected[this] var difflist: DiffList = null
-//  
-//  // Abstract method to be provided elsewhere
-//  def predict(vs:Seq[V]): Unit
-//  
-//  def process(vs:Seq[V]): Unit = {
-//    predict(vs)
-//    difflist = new DiffList
-//    vs.foreach(_.setToTarget(difflist))
-//    difflist.undo // TODO Consider commenting this out, but consider carefully.  Dangerous for "addGradient" to have side-effects.
-//    if (difflist.size > 0)
-//      updateWeights // This will result in a call to "addGradient"
-//  }
-//
-//  def addGradient(accumulator:DotFamily=>Tensor, rate:Double): Unit = {
-//    if (!difflist.done) difflist.redo
-//    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.statistics.tensor, rate))
-//    //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += f.statistics.vector *  rate)
-//    difflist.undo
-//    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => accumulator(f.family).+=(f.statistics.tensor, -rate))
-//    //difflist.factorsOf[TemplatesToUpdate](model).foreach(f => accumulator(f.family) += f.statistics.vector * -rate)
-//  }
-//
-//}
-//
-//// TODO What would a MaximumMargin trait look like?
-//
-///**
-// * Averaged version of Collins' structured perceptron
-// *
-// * Usage:
-// *   The user needs to call setToAveraged at the end of training.
-// *
-// * @author Brian Martin
-// */
-//abstract class AveragedStructuredPerceptron[V<:VarWithTargetValue] extends StructuredPerceptron[V] {
-//
-//  private val wa = new HashMap[DotFamily, Tensor]
-//  private var c = 0
-//  def incrementIteration(): Unit = c += 1
-//  def setToAveraged(): Unit = wa.foreach { case (f, v) => f.weights.+=(v, (-1.0/c)) }
-//  def unsetAveraged(): Unit = wa.foreach { case (f, v) => f.weights.+=(v, (1.0/c)) }
-//  def clear(): Unit = { c = 0; wa.clear() }
-//
-//  override def process(vs: Seq[V]): Unit = {
-//    c += 1
-//    super.process(vs)
-//  }
-//
-//  override def addGradient(accumulator:DotFamily=>Tensor, rate:Double): Unit = {
-//    // for some reason familiesToUpdate and model.familiesOfClass(classOf[DotTemplate])
-//    // give null pointer when outside this fn.
-//    if (wa.size == 0) familiesToUpdate.foreach(f => wa(f) = f.weights.blankCopy) //new DenseVector(f.statisticsVectorLength)
-//
-//    if (!difflist.done) difflist.redo
-//    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => {
-//      wa(f.family).+=(f.statistics.tensor, (rate * c))
-//      accumulator(f.family).+=(f.statistics.tensor, rate)
-//    })
-//    difflist.undo
-//    model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => {
-//      wa(f.family).+=(f.statistics.tensor, (-rate * c))
-//      accumulator(f.family).+=(f.statistics.tensor, -rate)
-//    })
-//  }
-//}
-//
