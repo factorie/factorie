@@ -6,7 +6,7 @@ import cc.factorie.maths._
 
 /**A template for factors who scores are the weighted sum of scores of
     label S1 given feature vector S2, according to list of boosted classifiers.*/
-abstract class AdaBoostTemplateWithStatistics2[S1 <: LabeledCategoricalVariable[_], S2 <: DiscreteTensorVar]
+abstract class AdaBoostTemplateWithStatistics2[S1 <: LabeledMutableDiscreteVar[_], S2 <: DiscreteTensorVar]
   (labelToFeatures: S1 => S2, labelDomain: DiscreteDomain, featureDomain: DiscreteTensorDomain)
   (implicit m1: Manifest[S1], m2: Manifest[S2])
   extends Template2[S1, S2] {
@@ -52,7 +52,7 @@ abstract class AdaBoostTemplateWithStatistics2[S1 <: LabeledCategoricalVariable[
   }
 }
 
-class AdaBoostDecisionStumpTemplate[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](
+class AdaBoostDecisionStumpTemplate[L <: LabeledMutableDiscreteVar[_], F <: DiscreteTensorVar](
   labelToFeatures: L => F,
   labelDomain: DiscreteDomain,
   featureDomain: DiscreteTensorDomain)(implicit m1: Manifest[L], m2: Manifest[F])
