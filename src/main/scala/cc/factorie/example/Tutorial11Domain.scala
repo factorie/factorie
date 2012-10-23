@@ -3,7 +3,7 @@ package cc.factorie.example
 import org.junit.Assert._
 import cc.factorie._
 
-/** Examples of FACTORIE Domains, which specify the range of values a Variable can take. */
+/*& Examples of FACTORIE Domains, which specify the range of values a Variable can take. */
 object TutorialDomain {
 
   def main(args: Array[String]) {
