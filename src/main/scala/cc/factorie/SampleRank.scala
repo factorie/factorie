@@ -114,6 +114,7 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
 
 /** A Trainer that does stochastic gradient ascent on gradients from SampleRankPieces. */
 class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) extends optimize.Trainer[DiffList] {
+  def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
   val modelWeights = model.weightsTensor
   def processContext(context:C): Unit = process(new SampleRankPiece(context, sampler))
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))

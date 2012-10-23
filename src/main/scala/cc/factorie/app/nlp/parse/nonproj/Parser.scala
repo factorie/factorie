@@ -27,7 +27,6 @@ object TrainWithSVM {
   def lTof(l: ParseDecisionVariable) = l.features
   
   def generateDecisions(ss: Seq[Sentence], p: Parser): Seq[ParseDecisionVariable] = {
-    //val vs = new ArrayBuffer[ParseDecisionVariable]
 
     val parsers = new ThreadLocal[Parser] { override def initialValue = { val _p = new Parser(mode = p.mode); _p.predict = p.predict; _p }}
     
@@ -45,39 +44,18 @@ object TrainWithSVM {
     vs
   }
   
-  def getEmptyModelAndTemplate[L <: LabeledCategoricalVariable[_], F <: DiscreteTensorVar](ll: LabelList[L, F]) = {
-    val t = new LogLinearTemplate2[L,F](ll.labelToFeatures, ll.labelDomain, ll.instanceDomain)(ll.labelManifest, ll.featureManifest)
-    (new CombinedModel(t), t)
-  }
-  
-  def trainSVM(ll: LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures]) = {
-    val (model, template) = getEmptyModelAndTemplate(ll)
-    
-    val numLabels = ll.labelDomain.size
-    val numFeatures = ll.featureDomain.size
-    val xs: Seq[Tensor1] = ll.map(ll.labelToFeatures(_).tensor.asInstanceOf[Tensor1])
-    val ys: Array[Int]   = ll.map(_.intValue).toArray // TODO: tighten the bounds on L so targetIntValue is available here.
-    val weightTensor = (0 until numLabels).par.map { label => (new LinearL2SVM).train(xs, ys, label) }
-    for (f <- 0 until numFeatures;
-         (l,t) <- (0 until numLabels).zip(weightTensor)) {
-      template.weights(l,f) = t(f)
-    }
-
-    (model, new ModelBasedClassifier[ParseDecisionVariable](model, ll.head.domain))
-  }
-  
   def train(ss: Seq[Sentence]) = {
     var p = new Parser(mode = 0)
     val vs = generateDecisions(ss, p)
     
-    (trainSVM(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)), vs)
+    ((new SVMTrainer).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)), vs)
   }
   
   def boosting(ss: Seq[Sentence]) = {
     var p = new Parser(mode = 2)
     val vs = generateDecisions(ss, p)
     
-    (trainSVM(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)), vs)
+    ((new SVMTrainer).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)), vs)
   }
   
   def predict(c: Classifier[ParseDecisionVariable], ss: Seq[Sentence], parallel: Boolean = true): (Seq[Seq[(Int, String)]], Seq[Seq[(Int, String)]]) = {
@@ -157,7 +135,7 @@ object TrainWithSVM {
     if (!load.wasInvoked) {
 	  modelFile.createNewFile()
 	  
-      val (m, c) = trainSVM(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](trainingVs, lTof))
+      val c = (new SVMTrainer).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](trainingVs, lTof))
       
       println("Train Regular")
       println("------------")
@@ -170,7 +148,7 @@ object TrainWithSVM {
       boostingP.predict = (v: ParseDecisionVariable) => { DecisionDomain.category(c.classify(v).bestLabelIndex) }
       val boostingVs = generateDecisions(sentences, boostingP) 
       
-      val (m2, c2) = trainSVM(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](trainingVs ++ boostingVs, lTof))
+      val c2 = (new SVMTrainer).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](trainingVs ++ boostingVs, lTof))
 	  
       println("Train Boosting")
       println("--------------")
@@ -179,20 +157,22 @@ object TrainWithSVM {
       println("------------")
       testAcc(c2, testSentences)
       
-      Serializer.serialize(m, modelFile, gzip = true)
+      Serializer.serialize(
+          c2.asInstanceOf[ModelBasedClassifier[ParseDecisionVariable]].model,
+          modelFile, gzip = true)
 	  
     }
     else {
       
-      val (m, _) = getEmptyModelAndTemplate(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](Seq(trainingVs.head), lTof))
-      Serializer.deserialize(m, modelFile, gzip = true)
+//      val (m, _) = getEmptyModelAndTemplate(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](Seq(trainingVs.head), lTof))
+//      Serializer.deserialize(m, modelFile, gzip = true)
+//      
+//      val c = new ModelBasedClassifier[ParseDecisionVariable](m, DecisionDomain)     
       
-      val c = new ModelBasedClassifier[ParseDecisionVariable](m, DecisionDomain)     
-      
-      testAcc(c, sentences)
-      println("Test")
-      println("------------")
-      testAcc(c, testSentences)
+//      testAcc(c, sentences)
+//      println("Test")
+//      println("------------")
+//      testAcc(c, testSentences)
       
     }
     

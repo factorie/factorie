@@ -70,7 +70,9 @@ trait Sampler[C] {
     postIterationHooks
     if (!postIterationHook) return 
   }
+  // TODO Consider renaming this processContexts or sampleFromContext.  See also Trainer.processExamples.
   final def processAll(contexts:Iterable[C], numIterations:Int): Unit = for (i <- 0 until numIterations) processAll(contexts)
+  // TODO Consider renaming this processContext
   final def process(context:C, repeat:Int): Unit = for (i <- 0 until repeat) process(context)
   //private var processingWithoutContext = false
   final def process(count:Int): Unit = {
