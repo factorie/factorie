@@ -159,20 +159,18 @@ limitations under the License.
             </launcher>
             -->
             <launcher>
+              <id>LDA</id>
+              <mainClass>cc.factorie.app.topics.lda.LDA</mainClass>
+              <jvmArgs>
+                <jvmArg>-Xmx4g</jvmArg>
+              </jvmArgs>
+            </launcher>
+            <launcher>
               <id>parsing</id>
               <mainClass>cc.factorie.app.nlp.parse.nonproj.TrainWithSVM</mainClass>
               <jvmArgs>
                 <jvmArg>-Xmx4g</jvmArg>
               </jvmArgs>
-              <args>
-                  <arg>--train=../data/conll-2008-Dep/devel.closed</arg>
-                  <arg>--dev=../data/conll-2008-Dep/trial.closed</arg>
-              </args>
-            </launcher>
-            <launcher>
-              <id>bib-demo</id>
-              <mainClass>cc.factorie.app.bib.Coref</mainClass>
-              <jvmArgs><jvmArg>-Xmx4g</jvmArg><jvmArg>-DentityExpansionLimit=100000000</jvmArg></jvmArgs>
             </launcher>
           </launchers>
         </configuration>
