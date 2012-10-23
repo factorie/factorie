@@ -75,7 +75,7 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
   var learningMargin = 1.0
   var zeroGradient = true
   def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
-    assert(gradient != null, "The SampleRankPiece needs a gradient accumulator")
+    require(gradient != null, "The SampleRankPiece needs a gradient accumulator")
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)
     val (bestModel1, bestModel) = proposals.max2ByDouble(_.modelScore)
@@ -108,7 +108,8 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
     }
     val bestProposal = proposals.maxByDouble(_.modelScore)
     bestProposal.diff.redo
-    value.accumulate(margin) // TODO But this isn't really a "value", it is the "margin".  But how else to return it?
+    if (value ne null)
+      value.accumulate(margin) // TODO But this isn't really a "value", it is the "margin".  But how else to return it?
   }
 }
 
