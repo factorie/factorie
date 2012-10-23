@@ -137,7 +137,11 @@ class CombinedModel[C](theSubModels:Model[C]*) extends Model[C] {
   def ++=(models:Iterable[Model[C]]): Unit = subModels ++= models
   def factors(context:C): Iterable[Factor] = addFactors(context, newFactorsCollection)
   override def newFactorsCollection: ListBuffer[Factor] = new collection.mutable.ListBuffer[Factor]
-  override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = { subModels.foreach(_.addFactors(context, result)); result }
+  override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = {
+    val len = subModels.length; var s = 0
+    while (s < len) { subModels(s).addFactors(context, result); s += 1 }
+    result
+  }
   override def variables = subModels.flatMap(_.variables) // TODO Does this need normalization, de-duplication?
   override def factors = subModels.flatMap(_.factors) // TODO Does this need normalization, de-duplication?
   override def families: Seq[Family] = subModels.flatMap(_.families) // filterByClass(classOf[Family]).toSeq
@@ -177,7 +181,7 @@ class TemplateModel(theSubModels:ModelAsTemplate*) extends Model[Variable] {
 
 trait ProxyModel[C1,C2] extends Model[C2] {
   def model: Model[C1]
-  override def newFactorsCollection: ListBuffer[Factor] = new collection.mutable.ListBuffer[Factor]
+  override def newFactorsCollection: ArrayBuffer[Factor] = new collection.mutable.ArrayBuffer[Factor]
   //override def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C2, result:A): A = { subModels.foreach(_.addFactors(context, result)); result }
   override def variables = model.variables
   override def factors = model.factors

@@ -30,7 +30,7 @@ trait IntSeq {
     while (i < len) { a.append(f(apply(i))); i += 1 }
     a
   }
-  def foreach(f:Int=>Unit): Unit = { var i = 0; while (i < length) { f(apply(i)); i += 1 } }
+  def foreach(f:Int=>Unit): Unit = { var i = 0; val l = length; while (i < l) { f(apply(i)); i += 1 } }
   def forElements(f:(Int,Int)=>Unit): Unit = { var i = 0; while (i < length) { f(i, apply(i)); i += 1 } }
   def contains(d:Int): Boolean = { var i = length; while (i >= 0) if (d == apply(i)) return true; false }
   def forall(f:Int=>Boolean): Boolean = { var i = length; while (i >= 0) if (!f(apply(i))) return false; true } 

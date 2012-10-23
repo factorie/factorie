@@ -206,7 +206,17 @@ object Tensor {
           //println("Tensor.outer3 dim1="+t1.dim1+" dim2="+t2.dim1+" dim3="+t3.dim1+"  t2="+t2)
           val t = new SparseBinaryTensor3(t1.dim1, t2.dim1, t3.dim1)
           // TODO This next line is inefficient
-          for (j <- t2.activeDomain1.asSeq; k <- t3.activeDomain1.asSeq) t.update(t1.singleIndex, j, k, 1.0)
+          val t2Arr = t2.activeDomain1.array; val t3Arr = t3.activeDomain1.array
+          val t2Len = t2.activeDomain1.length; val t3Len = t3.activeDomain1.length
+          var j = 0
+          while (j < t2Len) {
+            var k = 0
+            while (k < t3Len) {
+              t.update(t1.singleIndex, t2Arr(j), t3Arr(k), 1.0)
+              k += 1
+            }
+            j += 1
+          }
           t
         }
         // TODO: see Diego's email on factorie-discuss, 9/12/2012

@@ -204,7 +204,11 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
     case t:SingletonTensor3 => apply(t.singleIndex1, t.singleIndex2, t.singleIndex3) * t.singleValue
     case t:Singleton2BinaryLayeredTensorLike3 => { val i = _inners(t.singleIndex1*dim2+t.singleIndex2); if (i ne null) i.dot(t.inner) else 0.0 }
     case t:Singleton2LayeredTensorLike3 => { val i = _inners(t.singleIndex1*dim2+t.singleIndex2); if (i ne null) i.dot(t.inner) * t.singleValue1 * t.singleValue2 else 0.0 }
-    case t:SparseBinaryTensor3 => { /*println("Dense2LayeredTensorLike3 this.length="+length+" t.length="+t.length+" dims="+t.dimensions.toSeq);*/ var s = 0.0; t.foreachActiveElement((i,v) => s += apply(i)); s }
+    case t:SparseBinaryTensor3 =>
+    /*println("Dense2LayeredTensorLike3 this.length="+length+" t.length="+t.length+" dims="+t.dimensions.toSeq);*/
+    val tArr = t.activeDomain.array; val tLen = tArr.length; var s = 0.0; var i = 0
+    while (i < tLen) { s += apply(tArr(i)); i += 1 }
+    s
   }
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensor3 => +=(t.singleIndex1, t.singleIndex2, t.singleIndex3, f)

@@ -61,7 +61,7 @@ class DiffList extends ArrayBuffer[Diff] {
     done = false
   }
   def variables: Seq[Variable] = {
-    val result = new collection.mutable.ListBuffer[Variable]
+    val result = new collection.mutable.ArrayBuffer[Variable]
     this.foreach(diff => if (diff.variable ne null) result += diff.variable)
     result
   }
