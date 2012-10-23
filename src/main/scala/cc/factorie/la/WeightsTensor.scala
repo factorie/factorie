@@ -42,6 +42,11 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = (df:DotFamily) => Tensor.n
     }
     throw new Error("Index out of bounds: "+index)
   }
+  override def blankCopy = {
+    val w = new WeightsTensor()
+    _map.keys.foreach(k => w(k) = _map(k).blankCopy)
+    w
+  }
   def activeDomain1: IntSeq = throw new Error("Method activeDomain1 not defined for WeightTensors.")
   def isDense = false
   override def stringPrefix = "WeightsTensor"
