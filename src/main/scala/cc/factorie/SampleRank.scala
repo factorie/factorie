@@ -72,29 +72,22 @@ class SampleRank[C](val model:Model[DiffList], sampler:ProposalSampler[C], optim
 }
 
 class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extends Piece[DiffList] {
-
   var learningMargin = 1.0
-
-  def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
     assert(gradient != null, "The SampleRankPiece needs a gradient accumulator")
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)
-    //val g2 = new TensorMap; def gg(df:DotFamily): Tensor = g.getOrElseUpdate(df, Tensor.newSparse(df.weights)
-    val bestModels = proposals.max2ByDouble(_ modelScore)
-    val bestModel1 = bestModels._1
-    val bestModel = bestModels._2
-    val bestObjectives = proposals.max2ByDouble(_ objectiveScore)
-    val bestObjective1 = bestObjectives._1
-    val bestObjective2 = bestObjectives._2
+    val bestModels = proposals.max2ByDouble(_ modelScore); val bestModel1 = bestModels._1; val bestModel = bestModels._2
+    val bestObjectives = proposals.max2ByDouble(_ objectiveScore); val bestObjective1 = bestObjectives._1; val bestObjective2 = bestObjectives._2
     val margin = bestModel1.modelScore - bestModel.modelScore
     if (bestModel1 ne bestObjective1) {
       // ...update parameters by adding sufficient stats of truth, and subtracting error
       bestObjective1.diff.redo
       model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family.asInstanceOf[DotFamily], f.currentStatistics))
       bestObjective1.diff.undo
-      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics * -1.0))
+      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
       bestModel1.diff.redo
-      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics * -1.0))
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
       bestModel1.diff.undo
       model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
     }
@@ -103,16 +96,32 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
       bestObjective1.diff.redo
       model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       bestObjective1.diff.undo
-      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics * -1.0))
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
       bestModel.diff.redo
-      model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics * -1.0))
+      model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
       bestModel.diff.undo
       model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
     }
-
     val bestProposal = proposals.maxByDouble(_.modelScore)
     bestProposal.diff.redo
+    value.accumulate(margin) // TODO But this isn't really a "value", it is the "margin".  But how else to return it?
   }
+}
+
+/** A Trainer that does stochastic gradient ascent on gradients from SampleRankPieces. */
+class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) extends optimize.Trainer[DiffList] {
+  def processContext(context:C): Unit = process(new SampleRankPiece(context, sampler))
+  def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
+  def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
+  def process(piece:Piece[DiffList]): Unit = {
+    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
+    val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
+    piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
+    // Note that here valueAccumulator will actually contain the SampleRank margin
+    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, 0, valueAccumulator.value)
+  }
+  def processAll(pieces: Iterable[Piece[DiffList]]): Unit = pieces.foreach(p => process(p))
+  def processAll(pieces: Iterable[Piece[DiffList]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(pieces)
 }
 
 // In the old SampleRank there was something like the following.  Do we need this for any reason?

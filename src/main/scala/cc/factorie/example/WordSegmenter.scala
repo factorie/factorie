@@ -153,9 +153,11 @@ object WordSegmenterDemo {
     // Sample and Learn!
     //var learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
     //var learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
-    var learner = new SampleRank(new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
+    //var learner = new SampleRankTrainer(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
+    var learner = new SampleRank(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
     //learner.learningRate = 1.0
     for (i <- 0 until 7) {
+      //learner.processContexts(trainVariables, 2)
       learner.processAll(trainVariables, 2)
       //learner.learningRate *= 0.8
       sampler.processAll(testVariables, 2)

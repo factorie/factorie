@@ -70,7 +70,7 @@ object ChainNER1a {
     val learner = new SGDTrainer[DiffList](new optimize.StepwiseGradientAscent(), model)
     val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
     for (iteration <- 1 until 5) {
-      learner.process(pieces)
+      learner.processAll(pieces)
       predictor.processAll(testLabels)
     }
     println("Train Acccuracy = "+HammingLossObjective.accuracy(trainLabels))

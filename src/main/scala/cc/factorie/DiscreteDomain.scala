@@ -46,7 +46,7 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
   private val __elements = new scala.collection.mutable.ArrayBuffer[Value]
   def _elements = __elements // Define this way so that _elements can be overridden
 
-  // If _size >= 0 it is used to determine DiscreteDomain.size, otherwise _sizeProxy.size is used. 
+  // If _size >= 0, _size is used to determine DiscreteDomain.size, otherwise _sizeProxy.size is used. 
   private var _size = -1
   private val _sizeProxy = sizeProxy
   def length = if (_size >= 0) _size else _sizeProxy.size
@@ -59,10 +59,10 @@ class DiscreteDomain(sizeProxy:Iterable[Any]) extends IndexedSeq[DiscreteValue] 
     __elements(index)
   }
   def unapply(value:Value): Option[Int] = value match { // TODO Is this callable?
-    case dv:DiscreteValue => Some(dv.intValue)
+    case dv:DiscreteValue => Some(dv.intValue)  //if (value.domain == this) Some(value.intValue) else None
     case _ => None
-  }//if (value.domain == this) Some(value.intValue) else None
-  override def iterator: Iterator[Value] = _elements.iterator // TODO Remove this method.
+  }
+  override def iterator: Iterator[Value] = _elements.iterator
   def getAll(c: Iterator[Int]) = c map apply
   def getAll(c: List[Int]) = c map apply
   def getAll(c: Array[Int]) = c map apply

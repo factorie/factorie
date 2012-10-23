@@ -98,7 +98,7 @@ object ForwardBackwardPOS {
 //    optimizer.optimize()
     val pieces = sentenceLabels.map(s => new optimize.BPMaxLikelihoodPiece(s, InferByBPChainSum))
     val trainer = new optimize.SGDTrainer(new optimize.AROW(PosModel), PosModel)
-    (1 to 100).foreach(i => trainer.process(pieces))
+    (1 to 100).foreach(i => trainer.processAll(pieces))
     
     testSavePrint("final")
   }

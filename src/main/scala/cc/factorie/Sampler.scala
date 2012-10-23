@@ -96,15 +96,15 @@ trait Sampler[C] {
 // So we can call super in traits that override these methods
 // TODO Is there a better way to do this?
 // TODO Remove this and put ProposalSampler instead?  But then problems with SampleRank trait re-overriding methods it shouldn't?  Look into this. 
-trait ProposalSampler0 {
-  def proposalsHook(proposals:Seq[Proposal]): Unit
-  def proposalHook(proposal:Proposal): Unit
-}
+//trait ProposalSampler0 {
+//  def proposalsHook(proposals:Seq[Proposal]): Unit
+//  def proposalHook(proposal:Proposal): Unit
+//}
 
 /** Samplers that generate a list of Proposal objects, and select one log-proportionally to their modelScore.
     Proposal objects come from abstract method "proposals". 
     @author Andrew McCallum */
-trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
+trait ProposalSampler[C] extends Sampler[C] {
   def model: Model[Variable]
   var temperature = 1.0 // Not used here, but used in subclasses; here for uniformity // TODO Consider moving use from SettingsSampler to this.process1
   def proposals(context:C): Seq[Proposal]
@@ -131,16 +131,16 @@ trait ProposalSampler[C] extends Sampler[C] with ProposalSampler0 {
 
 // Not intended for users.  Here just so that SampleRank can override it.
 // TODO is there a better way to do this?
-trait SettingsSampler0 {
-  def objective: Model[Variable]
-}
+//trait SettingsSampler0 {
+//  def objective: Model[Variable]
+//}
 
 /** Tries each one of the settings in the Iterator provided by the abstract method "settings(C), 
     scores each, builds a distribution from the scores, and samples from it.
     @author Andrew McCallum */
-abstract class SettingsSampler[C](theModel:Model[Variable], theObjective:Model[Variable] = null) extends ProposalSampler[C] with SettingsSampler0 {
+abstract class SettingsSampler[C](theModel:Model[Variable], theObjective:Model[Variable] = null) extends ProposalSampler[C] {
   //def this(m:Model) = this(m, null)
-  def model = theModel
+  def model: Model[Variable] = theModel
   def objective = theObjective 
   /** Abstract method must be implemented in sub-classes.  
       Provides access to all different possible worlds we will evaluate for each call to 'process' */ 
