@@ -16,7 +16,7 @@ class LinearL2SVM(lossType: Int = 0, cost: Double = 0.1, eps: Double = 1e-5, bia
     val N = ys.size
     val D = xTensors.head.length
 
-    val xs = xTensors.map(t => t.activeDomain.asArray)
+    val xs = xTensors.map(t => t.activeDomain.asSeq)
 
     val QD = Array.ofDim[Double](N)
     val alpha = Array.ofDim[Double](N)
@@ -29,9 +29,8 @@ class LinearL2SVM(lossType: Int = 0, cost: Double = 0.1, eps: Double = 1e-5, bia
     var active_size = N
     var i, j, s, iter = 0
     var yi: Byte = 0
-    var xi = Array.ofDim[Int](0)
-    var vi = Array.ofDim[Double](0)
-
+    var xi: Seq[Int] = Array.ofDim[Int](0)
+    var vi: Seq[Double] = Array.ofDim[Double](0)
 
     // PG: projected gradient, for shrinking and stopping
     var PG: Double = 0.0

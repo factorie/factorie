@@ -14,6 +14,8 @@ import java.io.PrintStream
 import java.io.BufferedReader
 import java.io.FileReader
 
+import collection.GenSeq
+
 /**
  * A non-projective shift-reduce dependency parser based on Jinho Choi's thesis work and ClearNLP.
  *
@@ -25,16 +27,21 @@ object TrainWithSVM {
   def lTof(l: ParseDecisionVariable) = l.features
   
   def generateDecisions(ss: Seq[Sentence], p: Parser): Seq[ParseDecisionVariable] = {
-    val vs = new ArrayBuffer[ParseDecisionVariable]
-    var i = 0
-    for (s <- ss) {
-      p.parse(s)
-	  vs ++= p.instances
-	  p.clear()
-	  i += 1
+    //val vs = new ArrayBuffer[ParseDecisionVariable]
+
+    val parsers = new ThreadLocal[Parser] { override def initialValue = { val _p = new Parser(mode = p.mode); _p.predict = p.predict; _p }}
+    
+    val vs = ss.par.zipWithIndex.flatMap { case (s, i) => 
 	  if (i % 1000 == 0)
 	    println("Parsed: " + i)
-    }
+	    
+      val parser = parsers.get 
+	  parser.clear()
+	    
+      parser.parse(s)
+	  parser.instances
+    } seq
+
     vs
   }
   
@@ -60,67 +67,53 @@ object TrainWithSVM {
   }
   
   def train(ss: Seq[Sentence]) = {
-    var p = new Parser()
-    p.mode = 0
+    var p = new Parser(mode = 0)
     val vs = generateDecisions(ss, p)
     
     (trainSVM(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)), vs)
   }
   
-  def predict(c: Classifier[ParseDecisionVariable], ss: Seq[Sentence]): (Seq[Seq[(Int, String)]], Seq[Seq[(Int, String)]]) = {
-    val p = new Parser()
+  def boosting(ss: Seq[Sentence]) = {
+    var p = new Parser(mode = 2)
+    val vs = generateDecisions(ss, p)
     
-    p.mode = 1 // predicting
+    (trainSVM(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)), vs)
+  }
+  
+  def predict(c: Classifier[ParseDecisionVariable], ss: Seq[Sentence], parallel: Boolean = true): (Seq[Seq[(Int, String)]], Seq[Seq[(Int, String)]]) = {
+    val p = new Parser(mode = 1)
     p.predict = (v: ParseDecisionVariable) => { DecisionDomain.category(c.classify(v).bestLabelIndex) }
     
-    val pred = new ListBuffer[Seq[(Int, String)]]
-    val gold = new ListBuffer[Seq[(Int, String)]]
+    val parsers = new ThreadLocal[Parser] { override def initialValue = { val _p = new Parser(mode = p.mode); _p.predict = p.predict; _p }}
     
-    var i = 0
-    for (s <- ss) {
-	  gold append p.getSimpleDepArcs(s)
+    val (gold, pred) = ss.par.zipWithIndex.map({ case (s, i) => 
+	  if (i % 1000 == 0)
+	    println("Parsed: " + i)
+	    
+	  val parser = parsers.get
+	  parser.clear()
 	  
-      val dts = p.parse(s)
+	  val gold = parser.getSimpleDepArcs(s)
+	  parser.clear()
+
+      val dts = parser.parse(s)
 	  p.clear()
-	  pred append (dts.drop(1).map { dt => 
+	  var pred = (dts.drop(1).map { dt => 
 	    if (dt.hasHead) dt.head.depToken.thisIdx -> dt.head.label
 	    else -1 -> null.asInstanceOf[String]
 	  } toSeq)
 	  
-	  i += 1
-	  if (i % 1000 == 0)
-	    println("Parsed: " + i)
-    }
+	  (gold, pred)
+      
+    }).foldLeft(new ListBuffer[Seq[(Int, String)]], new ListBuffer[Seq[(Int, String)]])({ case (prev, curr) => 
+      prev._1 append curr._1
+      prev._2 append curr._2
+      prev
+    })
     
     (gold.toSeq, pred.toSeq)
   }
-  
-//  def boosting(m: liblinear.Model, ss: Seq[Sentence]): (Seq[Seq[(Int, String)]], Seq[Seq[(Int, String)]]) = {
-//    val p = new Parser
-//    
-//    p.mode = 2 // boosting 
-//    p.predict = (v: ParseDecisionVariable) => DecisionDomain.category(predictLibLinear(m ,lTof)(v))
-//    p.predict = (v: ParseDecisionVariable) => {c.classify(v); v.categoryValue }
-//    
-//    val pred = new ListBuffer[Seq[(Int, String)]]
-//    val gold = new ListBuffer[Seq[(Int, String)]]
-//    
-//    var i = 0
-//    for (s <- ss) {
-//	  gold append p.getSimpleDepArcs(s)
-//	  
-//      val dts = p.parse(s)
-//	  p.clear()
-//	  pred append dts.drop(1).map(dt => dt.head).map(arc => (arc.parentIdx, arc.label))
-//	  
-//	  i += 1
-//	  if (i % 1000 == 0)
-//	    println("Parsed: " + i)
-//    }
-//    
-//    (gold.toSeq, pred.toSeq)
-//  }
-    
+
   def testAcc(c: Classifier[ParseDecisionVariable], ss: Seq[Sentence]): Unit = {
     val (gold, pred) = predict(c, ss)
     println("LAS: " + ParserEval.calcLas(gold, pred))
@@ -165,11 +158,26 @@ object TrainWithSVM {
 	  modelFile.createNewFile()
 	  
       val (m, c) = trainSVM(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](trainingVs, lTof))
-	  
+      
+      println("Train Regular")
+      println("------------")
       testAcc(c, sentences)
-      println("Test")
+      println("Test Regular")
       println("------------")
       testAcc(c, testSentences)
+      
+      val boostingP = new Parser(2)
+      boostingP.predict = (v: ParseDecisionVariable) => { DecisionDomain.category(c.classify(v).bestLabelIndex) }
+      val boostingVs = generateDecisions(sentences, boostingP) 
+      
+      val (m2, c2) = trainSVM(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](trainingVs ++ boostingVs, lTof))
+	  
+      println("Train Boosting")
+      println("--------------")
+      testAcc(c2, sentences)
+      println("Test Boosting")
+      println("------------")
+      testAcc(c2, testSentences)
       
       Serializer.serialize(m, modelFile, gzip = true)
 	  
@@ -307,14 +315,12 @@ class Parser(var mode: Int = 0) {
     val lambda = state.stackToken(0)
     val beta = state.inputToken(0)
     lambda.setHead(beta, label)
-    //beta.lmDepIdx = lambda.thisIdx
   }
 
   private def rightArc(label: String) {
     val lambda = state.stackToken(0)
     val beta = state.inputToken(0)
     beta.setHead(lambda, label)
-    //lambda.rmDepIdx = beta.thisIdx
   }
 
   private def shift() = {
@@ -332,9 +338,7 @@ class Parser(var mode: Int = 0) {
   private def pass() = passAux()
 
   private def passAux(): Unit = {
-
     debugPrint("Pass")
-
     var i = state.stack - 1
     while (i >= 0) {
       if (!state.reducedIds.contains(i)) {
@@ -353,27 +357,21 @@ class Parser(var mode: Int = 0) {
   private def rightPass(label: String)  { debugPrint("RightPass");  rightArc(label); pass()   }
 
   private def getDecision(): ParseDecision = {
-
-    var decision: ParseDecision = null
-    
     mode match {
       case TRAINING => {
-	      decision = getGoldDecision()
-	      val label = new ParseDecisionVariable(decision, state)
-	      instances += label
-	    }
-      case PREDICTING => {
-          decision = predict(new ParseDecisionVariable(state))
-        }
+	    val decision = getGoldDecision()
+	    instances += new ParseDecisionVariable(decision, state)
+	    decision
+	  }
       case BOOSTING => {
-	      val label = new ParseDecisionVariable(getGoldDecision(), state)
-	      instances += label
-	      val d = predict(label)
-	      decision = d
-	    }
+	    val label = new ParseDecisionVariable(getGoldDecision(), state)
+	    instances += label
+	    predict(label)
+	  }
+      case PREDICTING => {
+        predict(new ParseDecisionVariable(state))
+      }
     }
-    
-    decision
   }
 
   def getGoldDecision(): ParseDecision = {
