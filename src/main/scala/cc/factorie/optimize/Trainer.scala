@@ -17,6 +17,7 @@ import cc.factorie.util.FastLogging
 trait Trainer[C] {
   def model: Model[C]
   def processAll(pieces: Iterable[Piece[C]]): Unit
+  // TODO Rename processExamples
 }
 
 /** Learns the parameters of a Model by summing the gradients and values of all Examples, 
