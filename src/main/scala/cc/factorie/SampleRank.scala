@@ -114,6 +114,7 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
 
 /** A Trainer that does stochastic gradient ascent on gradients from SampleRankPieces. */
 class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) extends optimize.Trainer[DiffList] {
+  val modelWeights = model.weightsTensor
   def processContext(context:C): Unit = process(new SampleRankPiece(context, sampler))
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
@@ -123,7 +124,7 @@ class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C]
     piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
     // Note that here valueAccumulator will actually contain the SampleRank margin
     if (!piece.asInstanceOf[SampleRankPiece[C]].zeroGradient)
-      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, 0, valueAccumulator.value)
+      optimizer.step(modelWeights, gradientAccumulator.tensor, Double.NaN, valueAccumulator.value)
   }
   def processAll(pieces: Iterable[Piece[DiffList]]): Unit = pieces.foreach(p => process(p))
   def processAll(pieces: Iterable[Piece[DiffList]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(pieces)
