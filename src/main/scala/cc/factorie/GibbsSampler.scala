@@ -50,8 +50,18 @@ class TypedGibbsSampler[V<:Variable](val model:Model[Variable], val objective:Mo
       case v:Variable with IterableSettings => proposals(v.settings)
     } 
   }
-  def proposals(si:SettingIterator): Seq[Proposal] = si.map(d => {val (m,o) = d.scoreAndUndo(model,objective); new Proposal(d, m, o, m/temperature)}).toSeq
-  // Special case for a bit more efficiency 
+  def proposals(si:SettingIterator): Seq[Proposal] = {
+    val dmodel = model: Model[DiffList]
+    val dobjective = objective: Model[DiffList]
+    val props = new ArrayBuffer[Proposal]()
+    while (si.hasNext) {
+      val d = si.next()
+      val (m,o) = d.scoreAndUndo(dmodel,dobjective)
+      props += new Proposal(d, m, o, m/temperature)
+    }
+    props
+  }
+  // Special case for a bit more efficiency
   def proposals(dv:DiscreteVariable): Seq[Proposal] = {
     var i = 0; val len = dv.domain.size
     val result = new ArrayBuffer[Proposal](len)
