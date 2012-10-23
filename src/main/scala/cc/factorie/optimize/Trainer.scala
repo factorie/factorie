@@ -20,20 +20,32 @@ trait Trainer[C] {
   // TODO Rename processExamples
 }
 
+// TODO Re-order the constructor arguments to Trainer: model, optimizer
+
 /** Learns the parameters of a Model by summing the gradients and values of all Examples, 
     and passing them to a GradientOptimizer (such as ConjugateGradient or LBFGS). */
 class BatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] with FastLogging {
-  val gradient = model.weightsTensor.blankCopy
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(gradient.asInstanceOf[WeightsTensor])
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   def processAll(pieces: Iterable[Piece[C]]): Unit = {
     if (isConverged) return
-    gradient.zero()
+    gradientAccumulator.tensor.zero()
     valueAccumulator.value = 0.0
-    // Note that nothing stops us from computing the gradients in parallel if the machine is 64-bit...
-    pieces /*.par */ .foreach(piece => piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator))
-    logger.info("Gradient: " + gradient + "\nLoss: " + valueAccumulator.value)
-    optimizer.step(model.weightsTensor, gradient, valueAccumulator.value, 0)
+    pieces.foreach(piece => piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator))
+    logger.info("Gradient Norm: " + gradientAccumulator.tensor.oneNorm + "\nLoss: " + valueAccumulator.value)
+    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, 0)
+  }
+  def isConverged = optimizer.isConverged
+}
+
+class ParallelBatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] with FastLogging {
+  def processAll(pieces: Iterable[Piece[C]]): Unit = {
+    if (isConverged) return
+    val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { override def initialValue = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor]) }
+    val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator }
+    pieces.par.foreach(piece => piece.accumulateValueAndGradient(model, gradientAccumulator.get, valueAccumulator.get))
+    throw new Error("Not yet implemented.  Now need to gather all gradientAccumulator from each thread, combine them and pass to optimizer.")
+    optimizer.step(model.weightsTensor, gradientAccumulator.get.tensor, valueAccumulator.get.value, 0)
   }
   def isConverged = optimizer.isConverged
 }
@@ -41,7 +53,7 @@ class BatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) ext
 // Hacky proof of concept
 class InlineSGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C], val learningRate: Double = 0.01, val l2: Double = 0.1)
   extends Trainer[C] {
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
   override def processAll(pieces: Iterable[Piece[C]]): Unit = {
     val weights = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily)
     pieces.foreach(piece => {
@@ -57,19 +69,20 @@ class InlineSGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C],
 }
 
 class SGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] {
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.weightsTensor.blankCopy.asInstanceOf[WeightsTensor])
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
+  val valueAccumulator = new LocalDoubleAccumulator
   override def processAll(pieces: Iterable[Piece[C]]): Unit = {
     pieces.foreach(piece => {
       gradientAccumulator.tensor.zero()
-      piece.accumulateValueAndGradient(model, gradientAccumulator, null)
-      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, 0, 0)
+      piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
+      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, 0)
     })
   }
   def isConverged = false
 }
 
 class HogwildTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] {
-  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.weightsTensor.asInstanceOf[WeightsTensor].copy}
+  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.newSparseWeightsTensor }
   val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] {override def initialValue = new LocalWeightsTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
   override def processAll(pieces: Iterable[Piece[C]]): Unit = {
     pieces.toSeq.par.foreach(piece => {

@@ -44,6 +44,7 @@ trait Tensor3 extends Tensor {
   @inline final def index2(i:Int): Int = (i/dim3)%dim2
   @inline final def index3(i:Int): Int = i%dim3
   override def copy: Tensor3 = throw new Error("Method copy not defined on class "+getClass.getName)
+  override def blankCopy: Tensor3 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
 
 trait DenseTensorLike3 extends Tensor3 with DenseTensor {
@@ -106,6 +107,37 @@ class GrowableDenseTensor3(d1:Int, d2:Int, d3:Int) extends { private var _dim1 =
   override def copy: GrowableDenseTensor3 = { val c = new GrowableDenseTensor3(_dim1, _dim2, _dim3); c := this; c }
   override def blankCopy: GrowableDenseTensor3 = new GrowableDenseTensor3(_dim1, _dim2, _dim3)
 } 
+
+
+/** A Tensor3 representing the outer product of a Tensor2 (e.g. DenseTensor2) and a Tensor1 (e.g. a SparseBinaryTensor1). */
+class Outer2Tensor3(val tensor1:Tensor2, val tensor2:Tensor1) extends Tensor3 {
+  def dim1 = tensor1.dim1
+  def dim2 = tensor1.dim2
+  def dim3 = tensor2.dim1
+  def apply(i:Int): Double = tensor1(index1(i), index2(i)) * tensor2(index3(i))
+  def isDense = tensor2.isDense
+  def activeDomain1 = tensor1.activeDomain1
+  def activeDomain2 = tensor1.activeDomain2
+  def activeDomain3 = tensor2.activeDomain1
+  def activeDomain = throw new Error("Not yet implemented.") // new Outer2IntSeq(dim1, dim2, tensor1.activeDomain1, tensor2.activeDomain1)
+  override def copy = new Outer2Tensor3(tensor1.copy, tensor2.copy)
+  override def blankCopy = new Outer2Tensor3(tensor1.blankCopy, tensor2.blankCopy)
+}
+
+/** A Tensor3 representing the outer product of a Tensor1 (e.g. DenseTensor1) and a Tensor2 (e.g. a SparseBinaryTensor2). */
+class Outer1Tensor3(val tensor1:Tensor1, val tensor2:Tensor2) extends Tensor3 {
+  def dim1 = tensor1.dim1
+  def dim2 = tensor2.dim1
+  def dim3 = tensor2.dim2
+  def apply(i:Int): Double = tensor1(index1(i)) * tensor2(index2(i), index3(i))
+  def isDense = tensor1.isDense && tensor2.isDense
+  def activeDomain1 = tensor1.activeDomain1
+  def activeDomain2 = tensor2.activeDomain1
+  def activeDomain3 = tensor2.activeDomain2
+  def activeDomain = throw new Error("Not yet implemented.") // new Outer2IntSeq(dim1, dim2, tensor1.activeDomain1, tensor2.activeDomain1)
+  override def copy = new Outer1Tensor3(tensor1.copy, tensor2.copy)
+  override def blankCopy = new Outer1Tensor3(tensor1.blankCopy, tensor2.blankCopy)
+}
 
 
 class SingletonBinaryTensor3(val dim1:Int, val dim2:Int, val dim3:Int, val singleIndex1:Int, val singleIndex2:Int, val singleIndex3:Int) extends Tensor3 with SingletonBinaryTensor {

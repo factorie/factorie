@@ -88,6 +88,7 @@ abstract class Factor4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](val 
 abstract class TupleFactorWithStatistics4[N1<:Variable,N2<:Variable,N3<:Variable,N4<:Variable](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value, N4#Value))
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = ((v1, v2, v3, v4))
+  final override def statisticsAreValues: Boolean = true
 }
 
 /** A 4-neighbor Factor whose statistics have type Tensor.
@@ -109,6 +110,7 @@ abstract class TensorFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:Tenso
 trait TensorFactorStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar] extends TensorFactor4[N1,N2,N3,N4] {
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = cc.factorie.la.Tensor.outer(v1, v2, v3, v4)
   final override def valuesStatistics(tensor:Tensor): Tensor = tensor
+  final override def statisticsAreValues: Boolean = true
 }
 
 /** A 4-neighbor Factor whose neighbors have Tensor values, 

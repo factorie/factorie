@@ -31,7 +31,7 @@ import scala.collection.generic.Growable
     @since 0.11
  */
 
-trait Model[C] {
+trait Model[-C] {
   //def variables(context:C): Iterable[Variable]
   def factors(context:C): Iterable[Factor]
   def addFactors[A<:Iterable[Factor] with Growable[Factor]](context:C, result:A): A = { result ++= factors(context); result } 
@@ -71,6 +71,7 @@ trait Model[C] {
   // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
   //def weights: Tensor = weightsTensor
   def weightsTensor: Tensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t }
+  def newWeightsTensor: Tensor = weightsTensor.blankCopy
   def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
   def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
 
@@ -83,7 +84,7 @@ trait Model[C] {
 
 
 /** Assumes that all calls to addFactors() will only add Factors of type FactorType, and then appropriately casts the return type of factors() methods. */
-trait ModelWithFactorType[C] extends Model[C] {
+trait ModelWithFactorType[-C] extends Model[C] {
   trait FactorType <: Factor
   /** Return all Factors in this Model that touch any of the given "variables".  The result will not have any duplicate Factors. */
   //override def factors(context:C): Iterable[FactorType] // = super.factors(context).asInstanceOf[FactorType] 

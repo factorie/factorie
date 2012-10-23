@@ -239,10 +239,10 @@ class LimitedMemoryBFGS(val numIterations: Double = 1000) extends GradientOptimi
 
 class L2RegularizedLBFGS(var l2: Double = 0.1) extends LimitedMemoryBFGS {
   override def step(weights: Tensor, gradient: Tensor, value: Double, margin: Double) {
-    println("in step")
+    //println("in step")
     gradient += (weights, -l2)
-    println("added grad")
+    //println("added grad")
     super.step(weights, gradient, value - l2 * (weights dot weights), margin)
-    println("super stepped")
+    //println("super stepped")
   }
 }

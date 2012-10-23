@@ -187,8 +187,8 @@ class BPFactor1Factor1(val factor: Factor1[DiscreteVar], edge1:BPEdge) extends B
       result
     }
   }
-  def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal, f)
   def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valuesStatistics(calculateMarginal), f)
+  override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginal) 
 }
 
 // A BPFactor1 with underlying model Factor2, with the first neighbor varying and the second neighbor constant 
@@ -202,16 +202,6 @@ class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1
     }
     result
   }
-//  // TODO Remove this methods
-//  def addExpectationInto(t:Tensor, f:Double): Unit = {
-//    val marginal = calculateMarginal
-//    // TODO One could imagine more efficient implementations that for DenseTensor t and SparseIndexedTensor factor._2.value, we iterator through the later only once -akm
-//    val valueTensor = new SingletonBinaryLayeredTensor2(edge1.variable.domain.size, factor._2.domain.dimensionDomain.size, 0, factor._2.value.asInstanceOf[Tensor1])
-//    for (i <- 0 until edge1.variable.domain.size) {
-//      valueTensor.singleIndex1 = i
-//      t.+=(valueTensor, marginal(i) * f)
-//    }
-//  }
   def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = {
     val marginal = calculateMarginal
     // TODO One could imagine more efficient implementations that for DenseTensor t and SparseIndexedTensor factor._2.value, we iterator through the later only once -akm
@@ -221,6 +211,11 @@ class BPFactor1Factor2(val factor: Factor2[DiscreteVar,DiscreteTensorVar], edge1
       accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i) * f)
     }
   }
+  override def marginalTensorStatistics: Tensor = factor._2.value match {
+    case t2:Tensor1 => factor.valuesStatistics(new Outer1Tensor2(calculateMarginal, t2))
+    case t2:Tensor2 => factor.valuesStatistics(new Outer1Tensor3(calculateMarginal, t2))
+  }
+    
 }
 
 
@@ -319,8 +314,8 @@ abstract class BPFactor2Factor2(val factor:Factor2[DiscreteVar,DiscreteVar], edg
       result
     }
   }
-  //def addExpectationInto(t:Tensor, f:Double): Unit = t.+=(calculateMarginal,f) // TODO Use a TensorAccumulator; add f:Double to TensorAccumulator
   def accumulateExpectedStatisticsInto(accumulator:la.TensorAccumulator, f:Double): Unit = accumulator.accumulate(factor.valuesStatistics(calculateMarginal), f)
+  override def marginalTensorStatistics: Tensor = factor.valuesStatistics(calculateMarginal) 
 }
 
 // A BPFactor2 with underlying model Factor3, having two varying neighbors and one constant neighbor
@@ -347,25 +342,12 @@ abstract class BPFactor2Factor3(val factor:Factor3[DiscreteVar,DiscreteVar,Discr
       for (j <- 0 until edge2.variable.domain.size) {
         valueTensor.singleIndex2 = j
         accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i,j)*f)
-        // TODO This should accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i,j)*f)
-        // t.+=(valueTensor, if (i == targetInt1 && j == targetInt2) 1.0 - marginal(i,j) else -marginal(i,j))
-        //t.+=(valueTensor, marginal(i,j) * f)
       }
     }
   }
-//  def addExpectationInto(t:Tensor, f:Double): Unit = {
-//    val marginal = calculateMarginal
-//    val valueTensor = new Singleton2LayeredTensor3(edge1.variable.domain.size, edge2.variable.domain.size, factor._3.domain.dimensionDomain.size, 0, 0, 1.0, 1.0, factor._3.value.asInstanceOf[Tensor1])
-//    for (i <- 0 until edge1.variable.domain.size) {
-//      valueTensor.singleIndex1 = i
-//      for (j <- 0 until edge2.variable.domain.size) {
-//        valueTensor.singleIndex2 = j
-//        // TODO This should accumulator.accumulate(factor.valuesStatistics(valueTensor), marginal(i,j)*f)
-//        // t.+=(valueTensor, if (i == targetInt1 && j == targetInt2) 1.0 - marginal(i,j) else -marginal(i,j))
-//        t.+=(valueTensor, marginal(i,j) * f)
-//      }
-//    }
-//  }
+  override def marginalTensorStatistics: Tensor = factor._2.value match {
+    case t2:Tensor1 => factor.valuesStatistics(new Outer2Tensor3(calculateMarginal, t2))
+  }
 }
 
 
@@ -441,6 +423,7 @@ class BPSummary(val ring:BPRing) extends AbstractBPSummary {
   override def marginal(f: Factor): BPFactor = _bpFactors(f)
   override def marginalTensorStatistics(factor:Factor): Tensor = _bpFactors(factor).marginalTensorStatistics
   override def logZ: Double = _bpFactors.values.head.calculateLogZ
+  //def setToMaximizeMarginals(implicit d:DiffList = null): Unit = bpVariables.foreach(_.setToMaximize(d))
   override def setToMaximize(implicit d:DiffList = null): Unit = ring match {
     case BPSumProductRing => bpVariables.foreach(_.setToMaximize(d))
     case BPMaxProductRing => throw new Error("Not yet implemented.  Note: If you're using a chain model BP.inferChainMax already sets the variables to max values.")
@@ -514,6 +497,14 @@ object BP {
     BPUtil.sendAccordingToOrdering(bfsSeq)
     summary
   }
+  def inferTreeMarginalMax(varying:Set[DiscreteVar], model:Model[Variable], root:DiscreteVar = null): BPSummary = {
+    val summary = BPSummary(varying, BPMaxProductRing, model)
+    val _root = if (root != null) summary.bpVariable(root) else summary.bpVariables.head
+    val bfsSeq = BPUtil.bfs(varying, _root, checkLoops = true)
+    BPUtil.sendAccordingToOrdering(bfsSeq.reverse)
+    BPUtil.sendAccordingToOrdering(bfsSeq)
+    summary
+  }
   // TODO: add inferTreewiseMax and associated test
   def inferSingle(v:MutableDiscreteVar[_<:DiscreteValue], model:Model[Variable]): BPSummary = {
     val summary = BPSummary(Seq(v), BPSumProductRing, model)
@@ -529,6 +520,7 @@ object BP {
       case _ => {
         val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2 with BPFactor2MaxProduct]]
+        assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
         //println("BP.inferChainMax  markovBPFactors.size = "+markovBPFactors.size)
         // Send all messages from observations to labels in parallel
         obsBPFactors.foreach(_.updateOutgoing())
@@ -538,6 +530,8 @@ object BP {
           f.edge1.bpFactor.updateOutgoing(f.edge2)   // send message from factor to neighbor2
         }
         // Do Viterbi backtrace, setting label values
+        // TODO Perhaps this should be removed from here, and put into a method on BPSummary?
+        // Because we might want to run this inference, but not change global state.
         var maxIndex = markovBPFactors.last.edge2.bpVariable.proportions.maxIndex // TODO We don't actually need to expNormalize here; save computation by avoiding this
         markovBPFactors.last.edge2.variable.asInstanceOf[MutableDiscreteVar[_]] := maxIndex
         for (f <- markovBPFactors.reverse) {
@@ -549,14 +543,14 @@ object BP {
     summary
   }
   
-  // Works specifically on a linear-chain with factors Factor2[Label,Features] and Factor2[Label1,Label2]
+  // Works specifically on a linear-chain with factors Factor2[Label,Features], Factor1[Label] and Factor2[Label1,Label2]
   def inferChainSum(varying:Seq[DiscreteVar], model:Model[Variable]): BPSummary = {
     val summary = BPSummary(varying, BPSumProductRing, model)
     varying.size match {
       case 0 => {}
       case 1 => summary.bpFactors.foreach(_.updateOutgoing())
       case _ => {
-        val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1])
+        val obsBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor1]) // this includes both Factor1[Label], Factor2[Label,Features]
         val markovBPFactors = summary.bpFactors.toSeq.filter(_.isInstanceOf[BPFactor2]).asInstanceOf[Seq[BPFactor2]]
         assert(obsBPFactors.size + markovBPFactors.size == summary.bpFactors.size)
         // Send all messages from observations to labels in parallel
@@ -597,6 +591,14 @@ object InferByBPChainSum extends InferByBP {
     case _ => None
   }
   def apply(varying:Seq[DiscreteVar], model:Model[Variable]): BPSummary = BP.inferChainSum(varying, model)
+}
+
+object InferByBPChainMax extends InferByBP {
+  override def infer(variables:Iterable[Variable], model:Model[Variable], summary:Summary[Marginal] = null): Option[BPSummary] = variables match {
+    case variables:Seq[DiscreteVar] if (variables.forall(_.isInstanceOf[DiscreteVar])) => Some(apply(variables, model))
+    case _ => None
+  }
+  def apply(varying:Seq[DiscreteVar], model:Model[Variable]): BPSummary = BP.inferChainMax(varying, model)
 }
 
 //object InferByBPIndependent extends InferByBP {

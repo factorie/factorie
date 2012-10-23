@@ -23,7 +23,7 @@ trait WeightsTensorAccumulator extends TensorAccumulator {
   def accumulate(family: DotFamily, t: Tensor): Unit
   def accumulate(family: DotFamily, index: Int, value: Double): Unit
   def accumulate(family: DotFamily, t: Tensor, factor: Double): Unit
-  // TODO Move this to TensorAccumulator
+  // TODO Move this to TensorAccumulator, or perhaps even better: get rid of it, or use Outer1Tensor2 instead
   def accumulateOuter(family: DotFamily, t1: Tensor1, t2: Tensor1): Unit
 }
 

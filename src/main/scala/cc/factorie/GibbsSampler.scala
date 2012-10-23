@@ -4,6 +4,7 @@ import scala.collection.mutable.{ArrayBuffer,HashMap}
 
 // TODO Clean this up, and consider getting rid of the Typed version.
 class TypedGibbsSampler[V<:Variable](val model:Model[Variable], val objective:Model[Variable] = null) extends ProposalSampler[V] {
+  // TODO Avoid constructor computation and memory, because we might create one of these for every Piece.
   val handlers = new ArrayBuffer[GibbsSamplerHandler]
   def defaultHandlers = List(GeneratedVarGibbsSamplerHandler) //, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler
   handlers ++= defaultHandlers

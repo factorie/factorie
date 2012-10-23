@@ -42,7 +42,7 @@ object ChainNER2 {
   
   // The model
   val excludeSkipEdges = true
-  val model = new CombinedModel(
+  val model = new TemplateModel(
     // Bias term on each individual label 
     new DotTemplateWithStatistics1[Label] {
       //def statisticsDomains = Tuple1(LabelDomain)
@@ -79,27 +79,27 @@ object ChainNER2 {
     if (args.length != 2) throw new Error("Usage: ChainNER2 trainfile testfile.")
 
     // Read in the data
-    val trainSentences = load(args(0))
-    val testSentences = load(args(1))
+    val trainSentences = load(args(0)).take(1000)
+    val testSentences = load(args(1)).take(200)
 
     // Get the variables to be inferred (for now, just operate on a subset)
-    val trainLabels = trainSentences.map(_.links).flatten.take(10000)
-    val testLabels = testSentences.map(_.links).flatten.take(2000)
+    val trainLabels = trainSentences.map(_.links).flatten //.take(10000)
+    val testLabels = testSentences.map(_.links).flatten //.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     
     // Train for 5 iterations
-    val learner = new SampleRank(new GibbsSampler(model, objective), new StepwiseGradientAscent)
-    learner.processAll(trainLabels, 5)
+    //val pieces = trainLabels.map(l => new SampleRankPiece[Variable](l, new GibbsSampler(model, HammingLossObjective)))
+    //val trainer = new SGDTrainer[DiffList](new AROW(model), model)
+    val pieces = trainSentences.map(s => new MaxLikelihoodPiece(s.asSeq, InferByBPChainSum))
+    val trainer = new BatchTrainer(new L2RegularizedLBFGS(), model)
+    val predictor = InferByBPChainMax // new VariableSettingsSampler[ChainNerLabel](model, null)
+    while (!trainer.optimizer.isConverged) {
+      trainer.processAll(pieces)
+      (trainSentences ++ testSentences).foreach(s => predictor(s.asSeq, model))
+      println ("Train accuracy = "+ objective.accuracy(trainLabels))
+      println ("Test  accuracy = "+ objective.accuracy(testLabels))
+    }
 
-    // Predict, also by sampling, visiting each variable 3 times.
-    // TODO Make an IteratedConditionalModes Sampler
-    val predictor = new VariableSettingsSampler[Label](model)
-    //predictor.processAll(testLabels, 3)
-    for (i <- 0 until 3; label <- testLabels) predictor.process(label)
-    
-    // Evaluate
-    println ("Train accuracy = "+ objective.accuracy(trainLabels))
-    println ("Test  accuracy = "+ objective.accuracy(testLabels))
   }
 
 

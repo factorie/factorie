@@ -52,9 +52,12 @@ trait Factor extends Ordered[Factor] {
   def currentStatistics: StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
   /** Return this Factor's sufficient statistics for the values in the Assignment. */
   def assignmentStatistics(a:Assignment): StatisticsType = throw new Error("This Factor class does not implement statistics.") // currentAssignment.asInstanceOf[StatisticsType] // A dummy default for statistics
-  /** Given a Tensor representation of the values, return a Tensor representation of the statistics.  We assume that if the values have Tensor representation that the StatisticsType does also. */
+  /** Given a Tensor representation of the values, return a Tensor representation of the statistics.  We assume that if the values have Tensor representation that the StatisticsType does also.
+      Note that (e.g. in BP) the Tensor may represent not just a single value for each neighbor, but a distribution over values */
   def valuesStatistics(tensor:Tensor): Tensor = throw new Error("This Factor class does not implement valuesStatistics(Tensor).")
-
+  /** True iff the statistics are the values (without transformation), e.g. valuesStatistics simply returns its argument. */
+  def statisticsAreValues: Boolean = false
+  
   /** Return the score and statistics of the current neighbor values; this method enables special cases in which it is more efficient to calculate them together. */
   def currentScoreAndStatistics: (Double,StatisticsType) = (currentScore, currentStatistics)
   def assignmentScoreAndStatistics(a:Assignment): (Double,StatisticsType) = (assignmentScore(a), assignmentStatistics(a))

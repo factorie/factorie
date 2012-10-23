@@ -74,7 +74,24 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
     case t:SparseBinaryTensorLike1 => t.=+(__values, f)
     case t:DenseTensor => { val len = length; var i = 0; while (i < len) { __values(i) += f * t.__values(i); i += 1 }}
     case t:UniformTensor => { val len = length; val u = t.uniformValue * f; var i = 0; while (i < len) { __values(i) += u; i += 1 }}
-    case t:TensorTimesScalar => { t.tensor.activeDomain.foreach(i => this(i) += t(i)*t.scalar) }
+    case t:TensorTimesScalar => this.+=(t.tensor, t.scalar) //{ t.tensor.activeDomain.foreach(i => this(i) += t(i)*t.scalar) } 
+    case t:Outer1Tensor2 => {
+      require(this.isInstanceOf[Tensor2]) // Makes sure rank matches!
+      val t1 = t.tensor1; val t2 = t.tensor2; val l1 = t1.length; var i = 0
+      while (i < l1) {
+        val v = t1(i)
+        if (v != 0) +=(t2, i*t2.dim1, f*v) // increment at the appropriate offset
+        i += 1
+      }
+    }
+  }
+  
+  /** Increment into this DenseTensor at an offset. */
+  def +=(t:DoubleSeq, offset:Int, f:Double): Unit = t match {
+    case t:SingletonBinaryTensor => __values(offset + t.singleIndex) += f
+    case t:SingletonTensor => __values(offset + t.singleIndex) += f * t.singleValue
+    case t:SparseBinaryTensorLike1 => t.=+(__values, offset, f)
+    case t:DenseTensor => { val len = t.length; var i = 0; while (i < len) { __values(i+offset) += f * t.__values(i); i += 1 }}
   }
 }
 

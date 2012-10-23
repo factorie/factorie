@@ -19,9 +19,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import java.io.File
 
-/** Simple, introductory linear-chain CRF for named-entity recognition,
-    using FACTORIE's "entity-relationship" language to define model structure.
-
+/** Simple, introductory linear-chain CRF for named-entity recognition.
     Demonstrates model creation, training and testing.
     Overly simple features to not, however, provide very high accuracy.
     See ChainNER3 for a related example with better features. 
@@ -67,14 +65,15 @@ object ChainNER1a {
     val testLabels : Seq[ChainNerLabel] = testDocuments.map(_.tokens).flatten.map(_.attr[ChainNerLabel]) //.take(2000)
     (trainLabels ++ testLabels).foreach(_.setRandomly())
     val pieces: Seq[Piece[DiffList]] = trainLabels.map(l => new SampleRankPiece[Variable](l, new TypedGibbsSampler[Variable](model, HammingLossObjective)))
-    val learner = new SGDTrainer[DiffList](new optimize.StepwiseGradientAscent(), model)
+    val learner = new SGDTrainer[DiffList](new optimize.AROW(model), model)
     val predictor = new VariableSettingsSampler[ChainNerLabel](model, null)
     for (iteration <- 1 until 5) {
       learner.processAll(pieces)
       predictor.processAll(testLabels)
+      println("Train Acccuracy = "+HammingLossObjective.accuracy(trainLabels))
+      println("Test Acccuracy = "+HammingLossObjective.accuracy(testLabels))
+      println()
     }
-    println("Train Acccuracy = "+HammingLossObjective.accuracy(trainLabels))
-    println("Test Acccuracy = "+HammingLossObjective.accuracy(testLabels))
   }
 }
   

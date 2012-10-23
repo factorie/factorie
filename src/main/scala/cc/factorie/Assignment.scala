@@ -54,6 +54,18 @@ trait MutableAssignment extends Assignment {
   def update[V<:Variable, U <: V#Value](variable:V, value:U): Unit
 }
 
+/** For LabeledVar return the targetValue, otherwise return the current global assignment. */
+object TargetAssignment extends Assignment {
+  def variables = throw new Error("Cannot list all variables of the TargetAssignment.")
+  def apply[V<:Variable](v:V): V#Value = v match {
+    case v:LabeledVar => v.targetValue.asInstanceOf[V#Value]
+    case v:Variable => v.value.asInstanceOf[V#Value]
+  }
+  def get[V<:Variable](v:V): Option[V#Value] = Some(apply(v))
+  def contains(v:Variable) = true
+  override def globalize(implicit d:DiffList): Unit = throw new Error("Cannot set a TargetAssignment.  Instead use variables.setToTarget(DiffList).")
+}
+
 /** A MutableAssignment backed by a HashMap.
     @author Andrew McCallum */
 class HashMapAssignment extends MutableAssignment {

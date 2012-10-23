@@ -11,6 +11,7 @@ import collection.GenSeq
 import java.io.File
 import io.Source
 
+
 /**
  * Created by IntelliJ IDEA.
  * User: Alexandre Passos, Luke Vilnis
@@ -20,34 +21,74 @@ import io.Source
  */
 //trait PieceState { def merge(other: PieceState): PieceState }
 
-// Pieces are thread safe
+// TODO Rename Piece to "Grade" or "Example"
+// Lately I like "Grade" better.  "Example" can mean the data, not the gradient/value evaluation.  "Grade" has one syllable.
+// "Training" also associated with education, for which there are "grades".
+
+// Pieces must be thread safe? -alex  Really? Must they be? -akm
 trait Piece[C] {
   // gradient or value can be null if they don't need to be computed.
   // TODO Rename accumulateValueAndGradientInto
+  // TODO Rename accumulateGradeInto(model:Model[C], gradient:WeightsTensorAccumulator, value:DoubleAccumulator, margin:DoubleAccumulator)
   def accumulateValueAndGradient(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit
   // TODO Consider this too.  It would accumulate the "expectations" part, but not the constraints, which presumably would have been added elsewhere.
   //def accumulateValueAndExpectations(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit
 }
 
 
-class BPMaxLikelihoodPiece[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V], infer:InferByBP) extends Piece[Variable] {
-  labels.foreach(_.setToTarget(null)) // TODO What if someone else changes these values after Piece construction!
-  def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
-    val summary = infer.infer(labels, model).get
-    // The log loss is - score + log Z
-    if (value != null)
-      value.accumulate(modelElement2Iterable(model).currentScore(labels) - summary.logZ)
+//class BPMaxLikelihoodPiece[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V], infer:InferByBP) extends Piece[Variable] {
+//  labels.foreach(_.setToTarget(null)) // TODO What if someone else changes these values after Piece construction!
+//  def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
+//    val summary = infer.infer(labels, model).get
+//    // The log loss is - score + log Z
+//    if (value != null)
+//      value.accumulate(modelElement2Iterable(model).currentScore(labels) - summary.logZ)
+//
+//    if (gradient != null) {
+//      summary.bpFactors.foreach(f => {
+//        val factor = f.factor.asInstanceOf[DotFamily#Factor]
+//        gradient.accumulate(factor.family, factor.currentStatistics)
+//        f.accumulateExpectedStatisticsInto(gradient.accumulator(factor.family), -1.0)
+//        //gradient.accumulate(factor.family, f.calculateMarginal * -1) // TODO No this is wrong, because the BPFactor may have lower rank than its Factor; e.g. BPFactor2Factor3
+//      })
+//    }
+//  }
+//}
 
+class MaxLikelihoodPiece[V<:LabeledVar](labels:Iterable[V], infer:Infer) extends Piece[Variable] {
+  def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
+    if (labels.size == 0) return
+    val summary = infer.infer(labels, model).get
+    val model2 = modelElement2Iterable(model)
+    if (value != null)
+      value.accumulate(model2.assignmentScore(labels, TargetAssignment) - summary.logZ)
+    // TODO Note that this unrolls the model twice.  We could consider ways to avoid this.
     if (gradient != null) {
-      summary.bpFactors.foreach(f => {
-        val factor = f.factor.asInstanceOf[DotFamily#Factor]
-        gradient.accumulate(factor.family, factor.currentStatistics)
-        f.accumulateExpectedStatisticsInto(gradient.accumulator(factor.family), -1.0)
-        //gradient.accumulate(factor.family, f.calculateMarginal * -1) // TODO No this is wrong, because the BPFactor may have lower rank than its Factor; e.g. BPFactor2Factor3
+      model2.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily]).foreach(factor => {
+        gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
+        gradient.accumulate(factor.family, summary.marginalTensorStatistics(factor), -1.0)
       })
     }
   }
 }
+
+// Explorations in a MaxLikelihoodPiece that will work on Model[C] for arbitrary C.  But Infer.infer would have to work with Model[C].  Tricky.
+//class MaxLikelihoodPiece2[C](context:C, infer:Infer) extends Piece[C] {
+//  def accumulateValueAndGradient(model: Model[C], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
+//    val varying: Iterable[Variable] = context match { case vs:Iterable[Variable] if (vs.forall(_.isInstanceOf[Variable])) => vs }
+//    val summary = infer.infer(varying, model).get
+//    val model2 = modelElement2Iterable(model)
+//    if (value != null)
+//      value.accumulate(model2.assignmentScore(context, TargetAssignment) - summary.logZ)
+//    // TODO Note that this unrolls the model twice.  We could consider ways to avoid this.
+//    if (gradient != null) {
+//      model2.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily]).foreach(factor => {
+//        gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
+//        gradient.accumulate(factor.family, summary.marginalTensorStatistics(factor), -1.0)
+//      })
+//    }
+//  }
+//}
 
 //class MaxLikelihoodPiece[V<:LabeledMutableDiscreteVar[_]](labels:Seq[V], infer:Infer) extends Piece[Variable] {
 //  private var _model: Model[Variable] = null
@@ -57,7 +98,7 @@ class BPMaxLikelihoodPiece[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V], 
 //    _model = model
 //    _constraints = model.newDenseWeightsTensor // TODO Can't afford to keep something this big for every Piece :-(
 //    labels.foreach(_.setToTarget(null))
-//    modelVariable2Variables(model).factorsOfFamilyClass(labels, classOf[DotFamily]).foreach(f => { constraints(f.family) += f.currentStatistics })
+//    modelElement2Iterable(model).factorsOfFamilyClass(labels, classOf[DotFamily]).foreach(f => constraints(f.family) += f.currentStatistics)
 //    _constraints
 //  }
 //  def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {

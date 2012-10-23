@@ -49,6 +49,7 @@ trait Tensor2 extends Tensor {
   @inline final def index1(i:Int): Int = i/dim2
   @inline final def index2(i:Int): Int = i%dim2
   override def copy: Tensor2 = throw new Error("Method copy not defined on class "+getClass.getName)
+  override def blankCopy: Tensor2 = throw new Error("Method blankCopy not defined on class "+getClass.getName)
 }
 
 
@@ -252,7 +253,7 @@ class SparseIndexedTensor2(val dim1:Int, val dim2:Int) extends Tensor2 with Spar
 //}
 
 /** A Tensor2 representing the outer product of a Tensor1 (e.g. DenseTensor1) and a Tensor1 (e.g. a SparseBinaryTensor1). */
-class DenseOuterTensor2(val tensor1:DenseTensor1, val tensor2:Tensor1) extends Tensor2 {
+class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
   def dim1 = tensor1.dim1
   def dim2 = tensor2.dim1
   def apply(i:Int): Double = tensor1(index1(i)) * tensor2(index2(i))
@@ -260,8 +261,8 @@ class DenseOuterTensor2(val tensor1:DenseTensor1, val tensor2:Tensor1) extends T
   def activeDomain1 = tensor1.activeDomain1
   def activeDomain2 = tensor2.activeDomain1
   def activeDomain = new Outer2IntSeq(dim1, dim2, tensor1.activeDomain1, tensor2.activeDomain1)
-  override def copy = new DenseOuterTensor2(tensor1.copy, tensor2.copy)
-  override def blankCopy = new DenseOuterTensor2(tensor1.blankCopy, tensor2.blankCopy)
+  override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
+  override def blankCopy = new Outer1Tensor2(tensor1.blankCopy, tensor2.blankCopy)
 }
 
 class UniformTensor2(val dim1:Int, val dim2:Int, val uniformValue:Double) extends Tensor2 with UniformTensor {

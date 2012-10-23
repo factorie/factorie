@@ -102,7 +102,7 @@ object POS {
 //      }
 //    }
 //    optimizer.optimize()
-    val pieces = labels.map(l => new optimize.BPMaxLikelihoodPiece(l, InferByBPChainSum))
+    val pieces = labels.map(l => new optimize.MaxLikelihoodPiece(l, InferByBPChainSum))
     val trainer = new optimize.BatchTrainer(new optimize.L2RegularizedLBFGS, PosModel)
     (1 to 100).foreach(i =>trainer.processAll(pieces))
 

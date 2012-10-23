@@ -10,7 +10,7 @@ trait Accumulator[A] {
 
 trait DoubleAccumulator extends Accumulator[Double]
 
-class LocalDoubleAccumulator(var value:Double) extends DoubleAccumulator {
+class LocalDoubleAccumulator(var value:Double = 0.0) extends DoubleAccumulator {
   def accumulate(t: Double) : Unit = value += t
   def combine(a:Accumulator[Double]): Unit = a match {
     case a:LocalDoubleAccumulator => value += a.value
