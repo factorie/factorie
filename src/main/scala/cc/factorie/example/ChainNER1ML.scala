@@ -81,7 +81,7 @@ object ChainNER1ML {
 
     val pieces = trainLabelsSentences.map(s => new BPMaxLikelihoodPiece(s, InferByBPChainSum))
     val learner = new BatchTrainer[Variable](new optimize.StepwiseGradientAscent(), model)
-    (1 to 10).foreach(_ => learner.process(pieces))
+    (1 to 10).foreach(_ => learner.processAll(pieces))
     val objective = HammingLossObjective
     // slightly more memory efficient - kedarb
     println("*** Starting inference (#sentences=%d)".format(testDocuments.map(_.sentences.size).sum))

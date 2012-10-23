@@ -79,7 +79,7 @@ object DocumentClassifier3 {
     // Train and test
     val pieces = trainVariables.map(v => new optimize.DiscretePiece(Seq(v)))
     val trainer = new optimize.SGDTrainer(new optimize.AROW(model), model)
-    (1 to 100).foreach(i => trainer.process(pieces))
+    (1 to 100).foreach(i => trainer.processAll(pieces))
     val predictor = new VariableSettingsGreedyMaximizer[Label](model)
     predictor.processAll(trainVariables)
     predictor.processAll(testVariables)

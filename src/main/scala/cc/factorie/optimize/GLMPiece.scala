@@ -130,7 +130,7 @@ object GlmTest {
     var perfectAccuracy = false
     while (i < 100 && !strategy.isConverged && !perfectAccuracy) {
       val t0 = System.currentTimeMillis()
-      strategy.process(pieces)
+      strategy.processAll(pieces)
 
       //      val classifier = new classify.MaxEntTrainer().train(trainLabels)
 
