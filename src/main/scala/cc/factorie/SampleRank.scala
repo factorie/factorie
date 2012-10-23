@@ -75,38 +75,36 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
   var learningMargin = 1.0
   var zeroGradient = true
   def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
-    assert(gradient != null, "The SampleRankPiece needs a gradient accumulator")
+    require(gradient != null, "The SampleRankPiece needs a gradient accumulator")
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)
     val (bestModel1, bestModel) = proposals.max2ByDouble(_.modelScore)
     val (bestObjective1, bestObjective2) = proposals.max2ByDouble(_.objectiveScore)
     val margin = bestModel1.modelScore - bestModel.modelScore
     zeroGradient = true
-    if (gradient ne null) {
-      if (bestModel1 ne bestObjective1) {
-        // ...update parameters by adding sufficient stats of truth, and subtracting error
-        zeroGradient = false
-        bestObjective1.diff.redo
-        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family.asInstanceOf[DotFamily], f.currentStatistics))
-        bestObjective1.diff.undo
-        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-        bestModel1.diff.redo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-        bestModel1.diff.undo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
-      }
-      else if (margin < learningMargin) {
-        // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
-        zeroGradient = false
-        bestObjective1.diff.redo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
-        bestObjective1.diff.undo
-        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-        bestModel.diff.redo
-        model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-        bestModel.diff.undo
-        model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
-      }
+    if (bestModel1 ne bestObjective1) {
+      // ...update parameters by adding sufficient stats of truth, and subtracting error
+      zeroGradient = false
+      bestObjective1.diff.redo
+      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family.asInstanceOf[DotFamily], f.currentStatistics))
+      bestObjective1.diff.undo
+      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+      bestModel1.diff.redo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+      bestModel1.diff.undo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+    }
+    else if (margin < learningMargin) {
+      // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
+      zeroGradient = false
+      bestObjective1.diff.redo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+      bestObjective1.diff.undo
+      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+      bestModel.diff.redo
+      model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+      bestModel.diff.undo
+      model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
     }
     val bestProposal = proposals.maxByDouble(_.modelScore)
     bestProposal.diff.redo
