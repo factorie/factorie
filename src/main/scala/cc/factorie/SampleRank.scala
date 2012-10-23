@@ -82,33 +82,36 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
     val (bestObjective1, bestObjective2) = proposals.max2ByDouble(_.objectiveScore)
     val margin = bestModel1.modelScore - bestModel.modelScore
     zeroGradient = true
-    if (bestModel1 ne bestObjective1) {
-      // ...update parameters by adding sufficient stats of truth, and subtracting error
-      zeroGradient = false
-      bestObjective1.diff.redo
-      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family.asInstanceOf[DotFamily], f.currentStatistics))
-      bestObjective1.diff.undo
-      model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-      bestModel1.diff.redo
-      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-      bestModel1.diff.undo
-      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
-    }
-    else if (margin < learningMargin) {
-      // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
-      zeroGradient = false
-      bestObjective1.diff.redo
-      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
-      bestObjective1.diff.undo
-      model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-      bestModel.diff.redo
-      model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
-      bestModel.diff.undo
-      model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+    if (gradient ne null) {
+      if (bestModel1 ne bestObjective1) {
+        // ...update parameters by adding sufficient stats of truth, and subtracting error
+        zeroGradient = false
+        bestObjective1.diff.redo
+        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family.asInstanceOf[DotFamily], f.currentStatistics))
+        bestObjective1.diff.undo
+        model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+        bestModel1.diff.redo
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+        bestModel1.diff.undo
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+      }
+      else if (margin < learningMargin) {
+        // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
+        zeroGradient = false
+        bestObjective1.diff.redo
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+        bestObjective1.diff.undo
+        model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+        bestModel.diff.redo
+        model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics, -1.0))
+        bestModel.diff.undo
+        model.factorsOfFamilies(bestModel.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
+      }
     }
     val bestProposal = proposals.maxByDouble(_.modelScore)
     bestProposal.diff.redo
-    value.accumulate(margin) // TODO But this isn't really a "value", it is the "margin".  But how else to return it?
+    if (value ne null)
+      value.accumulate(margin) // TODO But this isn't really a "value", it is the "margin".  But how else to return it?
   }
 }
 
