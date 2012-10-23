@@ -73,6 +73,7 @@ class SampleRank[C](val model:Model[DiffList], sampler:ProposalSampler[C], optim
 
 class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extends Piece[DiffList] {
   var learningMargin = 1.0
+  var zeroGradient = true
   def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
     assert(gradient != null, "The SampleRankPiece needs a gradient accumulator")
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
@@ -80,8 +81,10 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
     val bestModels = proposals.max2ByDouble(_ modelScore); val bestModel1 = bestModels._1; val bestModel = bestModels._2
     val bestObjectives = proposals.max2ByDouble(_ objectiveScore); val bestObjective1 = bestObjectives._1; val bestObjective2 = bestObjectives._2
     val margin = bestModel1.modelScore - bestModel.modelScore
+    zeroGradient = true
     if (bestModel1 ne bestObjective1) {
       // ...update parameters by adding sufficient stats of truth, and subtracting error
+      zeroGradient = false
       bestObjective1.diff.redo
       model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family.asInstanceOf[DotFamily], f.currentStatistics))
       bestObjective1.diff.undo
@@ -93,6 +96,7 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
     }
     else if (margin < learningMargin) {
       // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
+      zeroGradient = false
       bestObjective1.diff.redo
       model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
       bestObjective1.diff.undo
@@ -118,7 +122,8 @@ class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C]
     val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
     piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
     // Note that here valueAccumulator will actually contain the SampleRank margin
-    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, 0, valueAccumulator.value)
+    if (!piece.asInstanceOf[SampleRankPiece[C]].zeroGradient)
+      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, 0, valueAccumulator.value)
   }
   def processAll(pieces: Iterable[Piece[DiffList]]): Unit = pieces.foreach(p => process(p))
   def processAll(pieces: Iterable[Piece[DiffList]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(pieces)
