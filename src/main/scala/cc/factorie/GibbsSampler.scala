@@ -2,12 +2,17 @@ package cc.factorie
 import cc.factorie.generative.{GenerativeFactor,GenerativeModel}
 import scala.collection.mutable.{ArrayBuffer,HashMap}
 
-// TODO Clean this up, and consider getting rid of the Typed version.
-class TypedGibbsSampler[V<:Variable](val model:Model[Variable], val objective:Model[Variable] = null) extends ProposalSampler[V] {
-  // TODO Avoid constructor computation and memory, because we might create one of these for every Piece.
-  val handlers = new ArrayBuffer[GibbsSamplerHandler]
-  def defaultHandlers = List(GeneratedVarGibbsSamplerHandler) //, MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler
-  handlers ++= defaultHandlers
+/** Sample a value for a single variable.  This sampler works in one of two ways:  
+    If the model is a GenerativeModel, then sampling is performed based on a suite a handlers
+    selected according to the variable type and its neighboring factors.
+    If the model is not a GenerativeModel, then the variable should inherit from IterableSettings
+    which is used to create a list of Proposals with alternative values. */
+class GibbsSampler(val model:Model[Variable], val objective:Model[Variable] = null) extends ProposalSampler[Variable] {
+  type V = Variable
+  private var _handlers: Iterable[GibbsSamplerHandler] = null 
+  def defaultHandlers = GibbsSamplerDefaultHandlers
+  def setHandlers(h:Iterable[GibbsSamplerHandler]): Unit = _handlers = h
+  def handlers: Iterable[GibbsSamplerHandler] = if (_handlers eq null) defaultHandlers else _handlers
   val cacheClosures = true
   def closures = new HashMap[V, GibbsSamplerClosure]
   val doProcessByHandlers = model.isInstanceOf[GenerativeModel]
@@ -77,10 +82,14 @@ class TypedGibbsSampler[V<:Variable](val model:Model[Variable], val objective:Mo
   }
 }
 
-class GibbsSampler(model:Model[Variable], objective:Model[Variable] = null) extends TypedGibbsSampler[Variable](model, objective)
+object GibbsSamplerDefaultHandlers extends ArrayBuffer[GibbsSamplerHandler] {
+  this += GeneratedVarGibbsSamplerHandler
+}
+
+
 
 trait GibbsSamplerHandler {
-  def sampler(v:Variable, factors:Seq[Factor], sampler:TypedGibbsSampler[_]): GibbsSamplerClosure
+  def sampler(v:Variable, factors:Seq[Factor], sampler:GibbsSampler): GibbsSamplerClosure
 }
 trait GibbsSamplerClosure {
   def sample(implicit d:DiffList = null): Unit
@@ -91,7 +100,7 @@ object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
   class Closure(val variable:MutableVar[_], val factor:GenerativeFactor) extends GibbsSamplerClosure {
     def sample(implicit d:DiffList = null): Unit = variable.set(factor.sampledValue.asInstanceOf[variable.Value])
   }
-  def sampler(v:Variable, factors:Seq[Factor], sampler:TypedGibbsSampler[_]): GibbsSamplerClosure = {
+  def sampler(v:Variable, factors:Seq[Factor], sampler:GibbsSampler): GibbsSamplerClosure = {
     factors match {
       case List(factor:GenerativeFactor) => {
         v match {
@@ -103,3 +112,4 @@ object GeneratedVarGibbsSamplerHandler extends GibbsSamplerHandler {
   }
 }
 
+// TODO Create MixtureChoiceGibbsSamplerHandler, IterableSettingsGibbsSamplerHandler

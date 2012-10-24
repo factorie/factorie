@@ -314,6 +314,7 @@ trait DenseLayeredTensorLike2 extends Tensor2 with SparseDoubleSeq {
     case t:SingletonLayeredTensorLike2 => { getInner(t.singleIndex1).+=(t.inner, f) }
     case t:SingletonBinaryLayeredTensorLike2 => { getInner(t.singleIndex1).+=(t.inner, f) }
     case t:DenseLayeredTensorLike2 => { val len = t._inners.length; var i = 0; while (i < len) { if (t._inners(i) ne null) getInner(i).+=(t._inners(i), f); i += 1 } }
+    case t:Outer1Tensor2 => { val t1 = t.tensor1; val l1 = t1.length; var i = 0; while (i < l1) { if (t1(i) != 0.0) { getInner(i).+=(t.tensor2, f) }; i += 1 }}
     case t:DoubleSeq => throw new Error("Not yet implemented for class "+t.getClass.getName)
     //case t:DoubleSeq => super.+=(ds)
   }
