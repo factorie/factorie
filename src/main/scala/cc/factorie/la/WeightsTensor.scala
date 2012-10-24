@@ -59,7 +59,6 @@ class WeightsTensor(val newTensor:DotFamily=>Tensor = (df:DotFamily) => Tensor.n
   //override def toArray: Array[Double] = throw new Error("Cannot be implemented.")
   override def toArray: Array[Double] = { val a = new Array[Double](dim1); var offset = 0; _map.values.foreach(t => { System.arraycopy(t.asArray, 0, a, offset, t.length); offset += t.length }); a }
   override def copy: WeightsTensor = { val t = new WeightsTensor(newTensor); _map.keys.foreach(k => t(k) = apply(k).copy); t }
-  override def blankCopy: WeightsTensor = new WeightsTensor(newTensor)
   override def different(t:DoubleSeq, threshold:Double): Boolean = t match {
     case t:WeightsTensor => _map.keys.exists(k => _map(k).different(t._map(k), threshold))
   }
