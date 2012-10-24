@@ -92,6 +92,7 @@ object Tensor {
     case 3 => new GrowableDenseTensor3(dims(0), dims(1), dims(2))
   }
   def newSparse(t:Tensor): Tensor = t match {
+    case t:WeightsTensor => new WeightsTensor(t.newTensor)
     case t:Tensor1 => new SparseTensor1(t.dim1)
     case t:Tensor2 => new DenseLayeredTensor2(t.dim1, t.dim2, (dim1:Int) => new SparseTensor1(dim1))
     case t:Tensor3 => new Dense2LayeredTensor3(t.dim1, t.dim2, t.dim3, new SparseTensor1(_))
