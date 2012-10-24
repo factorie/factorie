@@ -1,6 +1,7 @@
 package cc.factorie.app.classify
 import cc.factorie._
 import collection.mutable.HashMap
+import la.WeightsTensor
 
 // Bias weights
 class LogLinearTemplate1[L<:DiscreteVar](val labelStatisticsDomain:DiscreteDomain)(implicit lm:Manifest[L]) extends DotTemplateWithStatistics1[L]() {
@@ -28,6 +29,13 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labe
   def factors(vs:Iterable[Variable]): Iterable[Factor] =  {
     if (vs.size == 1) factors(vs.head)
     else vs.flatMap(factors).toSeq
+  }
+  // TODO: weightsTensor is unimplemented in a lot of different Models right now - fix this
+  override lazy val weightsTensor = {
+    val wt = new WeightsTensor()
+    wt(biasTemplate) = biasTemplate.weights
+    wt(evidenceTemplate) = evidenceTemplate.weights
+    wt
   }
   override def factors(v:Variable): Iterable[Factor] = {
     v match {

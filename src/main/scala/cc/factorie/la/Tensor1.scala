@@ -446,6 +446,8 @@ class SparseIndexedTensor1(len:Int) extends Tensor1 {
     case t:SparseBinaryTensorLike1 => { val a = t.asIntArray; val len = a.length; var i = 0; while (i < len) { +=(a(i), f); i += 1 }}
     case t:SparseIndexedTensor1 => { val len = t._npos; var i = 0; while (i < len) { +=(t.__indexs(i), f * t.__values(i)); i += 1 }}
     case t:DenseTensor1 => { val l = t.length; var i = 0; while (i < l) { val v = t(i); if (v != 0.0) +=(i, f * v); i += 1 }}
+    case t: TensorTimesScalar => this += (t.tensor, f * t.scalar)
+    case _ => super.+=(t, f)
   }
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = { var i = 0; while (i < _npos) { a(__indexs(i)+offset) += f * __values(i); i += 1 }}
   
