@@ -167,7 +167,7 @@ limitations under the License.
             </launcher>
             <launcher>
               <id>parsing</id>
-              <mainClass>cc.factorie.app.nlp.parse.nonproj.TrainWithSVM</mainClass>
+              <mainClass>cc.factorie.app.nlp.parse.nonproj.TrainParserSVM</mainClass>
               <jvmArgs>
                 <jvmArg>-Xmx4g</jvmArg>
               </jvmArgs>

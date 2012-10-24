@@ -163,17 +163,13 @@ class CaseFactorDiscretePiece[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V
 // factors that touch a pair of Good/Bad variables
 object GoodBadPiece {
   def addGoodBad[C](gradient: WeightsTensorAccumulator, model: Model[C], good: C, bad: C) {
-    model.factors(good).foreach(f => {
-      f match {
-        case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics)
-        case _ => Nil
-      }
+    model.factors(good).foreach({
+      case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics)
+      case _ => sys.error("Domination loss requires DotFamily")
     })
-    model.factors(bad).foreach(f => {
-      f match {
-        case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics * -1.0)
-        case _ => Nil
-      }
+    model.factors(bad).foreach({
+      case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics * -1.0)
+      case _ => sys.error("Domination loss requires DotFamily")
     })
   }
 }
@@ -185,7 +181,7 @@ object GoodBadPiece {
 // See DominationLossPieceAllGood for one that outputs a gradient for all goodCandidates
 class DominationLossPiece(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Piece[Variable] {
   def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
-    assert(gradient != null, "The DominationLossPiece needs a gradient accumulator")
+    require(gradient != null, "The DominationLossPiece needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
     val badScores = badCandidates.map(model.currentScore(_))
     val worstGoodIndex = goodScores.zipWithIndex.maxBy(i => -i._1)._2
@@ -199,7 +195,7 @@ class DominationLossPiece(goodCandidates: Seq[Variable], badCandidates: Seq[Vari
 
 class DominationLossPieceAllGood(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Piece[Variable] {
   def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
-    assert(gradient != null, "The DominationLossPieceAllGood needs a gradient accumulator")
+    require(gradient != null, "The DominationLossPieceAllGood needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
     val badScores = badCandidates.map(model.currentScore(_))
     val bestBadIndex = badScores.zipWithIndex.maxBy(i => i._1)._2

@@ -75,11 +75,11 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
   var learningMargin = 1.0
   var zeroGradient = true
   def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
-    assert(gradient != null, "The SampleRankPiece needs a gradient accumulator")
+    require(gradient != null, "The SampleRankPiece needs a gradient accumulator")
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)
-    val bestModels = proposals.max2ByDouble(_ modelScore); val bestModel1 = bestModels._1; val bestModel = bestModels._2
-    val bestObjectives = proposals.max2ByDouble(_ objectiveScore); val bestObjective1 = bestObjectives._1; val bestObjective2 = bestObjectives._2
+    val (bestModel1, bestModel) = proposals.max2ByDouble(_.modelScore)
+    val (bestObjective1, bestObjective2) = proposals.max2ByDouble(_.objectiveScore)
     val margin = bestModel1.modelScore - bestModel.modelScore
     zeroGradient = true
     if (bestModel1 ne bestObjective1) {
@@ -108,7 +108,8 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
     }
     val bestProposal = proposals.maxByDouble(_.modelScore)
     bestProposal.diff.redo
-    value.accumulate(margin) // TODO But this isn't really a "value", it is the "margin".  But how else to return it?
+    if (value ne null)
+      value.accumulate(margin) // TODO But this isn't really a "value", it is the "margin".  But how else to return it?
   }
 }
 

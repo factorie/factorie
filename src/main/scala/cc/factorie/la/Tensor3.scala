@@ -229,7 +229,15 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
   override def +=(i:Int, incr:Double): Unit = inner(index1(i), index2(i)).+=(index3(i), incr)
   override def +=(i1:Int, i2:Int, i3:Int, incr:Double): Unit = inner(i1, i2).+=(i3, incr)
   override def =+(a:Array[Double], offset:Int, f:Double): Unit = {
-    val len = _inners.length; var i = 0; while (i < len) { val in = _inners(i); if (in ne null) inner(i).=+(a, offset+i*dim1*dim2, f); i += 1 }
+    val len = _inners.length
+    var i = 0
+    while (i < len) {
+      val in = _inners(i)
+      if (in ne null) {
+        inner(i).=+(a, offset+i*dim3, f)
+      }
+      i += 1
+    }
   }
   override def dot(ds:DoubleSeq): Double = ds match {
     case t:SingletonBinaryTensor3 => apply(t.singleIndex1, t.singleIndex2, t.singleIndex3)

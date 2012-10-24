@@ -22,8 +22,46 @@ import collection.GenSeq
  * @author Brian Martin
  */
 
-object TrainWithSVM {
+trait ParserClassifier {
   
+  def save(file: File, gzip: Boolean = true): Unit
+  def load(file: File, gzip: Boolean = true): Unit
+  def classify(v: ParseDecisionVariable): ParseDecision
+  
+}
+
+class BaseParserClassifier(val backingClassifier: ModelBasedClassifier[ParseDecisionVariable]) extends ParserClassifier {
+  
+  def save(file: File, gzip: Boolean = true): Unit = Serializer.serialize( backingClassifier.model, file, gzip = gzip)
+  def load(file: File, gzip: Boolean = true): Unit = throw new Error()
+  def classify(v: ParseDecisionVariable): ParseDecision =
+    DecisionDomain.category(backingClassifier.classify(v).bestLabelIndex)
+  
+}
+
+
+
+object TrainParserSVM {
+  def main(args: Array[String]): Unit = {
+    val trainer = new TrainParserSVM()
+    trainer.run(args)
+  }
+}
+class TrainParserSVM extends TrainParser {
+  
+  def train[B <: ParseDecisionVariable](vs: Seq[B]): ParserClassifier = {
+    val backingClassifier = (new SVMTrainer).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)).asInstanceOf[ModelBasedClassifier[ParseDecisionVariable]]
+    new BaseParserClassifier(backingClassifier)
+  }
+  
+}
+
+abstract class TrainParser {
+  
+  def train[V <: ParseDecisionVariable](vs: Seq[V]): ParserClassifier
+  
+  //////////////////////////////////////////////////////////
+ 
   def lTof(l: ParseDecisionVariable) = l.features
   
   def generateDecisions(ss: Seq[Sentence], p: Parser): Seq[ParseDecisionVariable] = {
@@ -44,23 +82,22 @@ object TrainWithSVM {
     vs
   }
   
-  def train(ss: Seq[Sentence]) = {
+  def train[A <: Sentence](ss: Seq[A])(implicit s: DummyImplicit): ParserClassifier = { 
     var p = new Parser(mode = 0)
     val vs = generateDecisions(ss, p)
-    
-    ((new SVMTrainer).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)), vs)
+    train(vs)
   }
   
-  def boosting(ss: Seq[Sentence]) = {
+  def boosting(existingClassifier: ParserClassifier, ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable]): ParserClassifier = {
     var p = new Parser(mode = 2)
-    val vs = generateDecisions(ss, p)
-    
-    ((new SVMTrainer).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](vs, lTof)), vs)
+    p.predict = (v: ParseDecisionVariable) => { existingClassifier.classify(v) }
+    var newVs = generateDecisions(ss, p)
+    train(addlVs ++ newVs)
   }
   
-  def predict(c: Classifier[ParseDecisionVariable], ss: Seq[Sentence], parallel: Boolean = true): (Seq[Seq[(Int, String)]], Seq[Seq[(Int, String)]]) = {
+  def predict(c: ParserClassifier, ss: Seq[Sentence], parallel: Boolean = true): (Seq[Seq[(Int, String)]], Seq[Seq[(Int, String)]]) = {
     val p = new Parser(mode = 1)
-    p.predict = (v: ParseDecisionVariable) => { DecisionDomain.category(c.classify(v).bestLabelIndex) }
+    p.predict = (v: ParseDecisionVariable) => { c.classify(v) }
     
     val parsers = new ThreadLocal[Parser] { override def initialValue = { val _p = new Parser(mode = p.mode); _p.predict = p.predict; _p }}
     
@@ -92,13 +129,13 @@ object TrainWithSVM {
     (gold.toSeq, pred.toSeq)
   }
 
-  def testAcc(c: Classifier[ParseDecisionVariable], ss: Seq[Sentence]): Unit = {
+  def testAcc(c: ParserClassifier, ss: Seq[Sentence]): Unit = {
     val (gold, pred) = predict(c, ss)
     println("LAS: " + ParserEval.calcLas(gold, pred))
     println("UAS: " + ParserEval.calcUas(gold, pred))
   }
   
-  def main(args: Array[String]) = {
+  def run(args: Array[String]) = {
     
     object opts extends cc.factorie.util.DefaultCmdOptions {
       val trainFiles =  new CmdOption("train", List(""), "FILE...", "")
@@ -135,7 +172,7 @@ object TrainWithSVM {
     if (!load.wasInvoked) {
 	  modelFile.createNewFile()
 	  
-      val c = (new SVMTrainer).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](trainingVs, lTof))
+	  val c = train(trainingVs)
       
       println("Train Regular")
       println("------------")
@@ -144,12 +181,8 @@ object TrainWithSVM {
       println("------------")
       testAcc(c, testSentences)
       
-      val boostingP = new Parser(2)
-      boostingP.predict = (v: ParseDecisionVariable) => { DecisionDomain.category(c.classify(v).bestLabelIndex) }
-      val boostingVs = generateDecisions(sentences, boostingP) 
+      val c2 = boosting(c, sentences, trainingVs)
       
-      val c2 = (new SVMTrainer).train(new LabelList[ParseDecisionVariable, NonProjDependencyParserFeatures](trainingVs ++ boostingVs, lTof))
-	  
       println("Train Boosting")
       println("--------------")
       testAcc(c2, sentences)
@@ -157,9 +190,7 @@ object TrainWithSVM {
       println("------------")
       testAcc(c2, testSentences)
       
-      Serializer.serialize(
-          c2.asInstanceOf[ModelBasedClassifier[ParseDecisionVariable]].model,
-          modelFile, gzip = true)
+      c2.save(modelFile, gzip = true)
 	  
     }
     else {
@@ -177,6 +208,7 @@ object TrainWithSVM {
     }
     
   }
+  
 }
 
 class Parser(var mode: Int = 0) {
