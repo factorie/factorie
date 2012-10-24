@@ -88,7 +88,7 @@ abstract class TrainParser {
     train(vs)
   }
   
-  def boosting(existingClassifier: ParserClassifier, ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable]): ParserClassifier = {
+  def boosting(existingClassifier: ParserClassifier, ss: Seq[Sentence], addlVs: Seq[ParseDecisionVariable] = Seq.empty[ParseDecisionVariable]): ParserClassifier = {
     var p = new Parser(mode = 2)
     p.predict = (v: ParseDecisionVariable) => { existingClassifier.classify(v) }
     var newVs = generateDecisions(ss, p)
@@ -145,6 +145,7 @@ abstract class TrainParser {
       val cutoff    = new CmdOption("cutoff", "0", "", "")
       val load      = new CmdOption("load", "", "", "")
       val modelDir =  new CmdOption("model", "model", "DIR", "Directory in which to save the trained model.")
+      val bootstrapping = new CmdOption("bootstrap", "0", "INT", "The number of bootstrapping iterations to do. 0 means no bootstrapping.")
     }
     opts.parse(args)
     import opts._
@@ -152,6 +153,8 @@ abstract class TrainParser {
     var loader = LoadConll2008.fromFilename(_)
     if (ontonotes.wasInvoked)
       loader = LoadOntonotes5.fromFilename(_)
+      
+    val numBootstrappingIterations = bootstrapping.value.toInt
     
     val sentences =   trainFiles.value.flatMap(f => loader(f).head.sentences)
     val testSentences = devFiles.value.flatMap(f => loader(f).head.sentences)
@@ -181,16 +184,20 @@ abstract class TrainParser {
       println("------------")
       testAcc(c, testSentences)
       
-      val c2 = boosting(c, sentences, trainingVs)
+      for (i <- 0 until numBootstrappingIterations) {
+        val c2 = boosting(c, sentences)
       
-      println("Train Boosting")
-      println("--------------")
-      testAcc(c2, sentences)
-      println("Test Boosting")
-      println("------------")
-      testAcc(c2, testSentences)
+        println("Train Boosting " + i)
+        println("--------------")
+        testAcc(c2, sentences)
+        println("Test Boosting" + i)
+        println("------------")
+        testAcc(c2, testSentences)
       
-      c2.save(modelFile, gzip = true)
+        val currModelFile = new File(modelFile.getAbsolutePath() + "-bootstrap-iter=" + i)
+        
+        c2.save(currModelFile, gzip = true)
+      }
 	  
     }
     else {
