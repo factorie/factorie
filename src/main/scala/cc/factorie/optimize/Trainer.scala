@@ -28,13 +28,16 @@ trait Trainer[M<:Model[_]] {
 class BatchTrainer[M<:Model[_]](val optimizer:GradientOptimizer, val model:M) extends Trainer[M] with FastLogging {
   val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
+  val marginAccumulator = new LocalDoubleAccumulator(0.0)
+  // TODO This is sad:  The optimizer determins which of gradient/value/margin it needs, but we don't know here
+  // so we create them all, possibly causing the Example to do more work.
   def processAll(examples: Iterable[Example[M]]): Unit = {
     if (isConverged) return
     gradientAccumulator.tensor.zero()
     valueAccumulator.value = 0.0
-    examples.foreach(example => example.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator))
+    examples.foreach(example => example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator))
     logger.info("Gradient Norm: " + gradientAccumulator.tensor.oneNorm + "\nLoss: " + valueAccumulator.value)
-    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, 0)
+    optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, marginAccumulator.value)
   }
   def isConverged = optimizer.isConverged
 }
@@ -44,9 +47,10 @@ class ParallelBatchTrainer[M<:Model[_]](val optimizer: GradientOptimizer, val mo
     if (isConverged) return
     val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { override def initialValue = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor]) }
     val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator }
-    examples.par.foreach(example => example.accumulateValueAndGradient(model, gradientAccumulator.get, valueAccumulator.get))
+    val marginAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator }
+    examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator.get, valueAccumulator.get, marginAccumulator.get))
     throw new Error("Not yet implemented.  Now need to gather all gradientAccumulator from each thread, combine them and pass to optimizer.")
-    optimizer.step(model.weightsTensor, gradientAccumulator.get.tensor, valueAccumulator.get.value, 0)
+    optimizer.step(model.weightsTensor, gradientAccumulator.get.tensor, valueAccumulator.get.value, marginAccumulator.get.value)
   }
   def isConverged = optimizer.isConverged
 }
@@ -60,7 +64,7 @@ class InlineSGDTrainer(val optimizer: GradientOptimizer, val model: LogLinearMod
       val glmExample = example.asInstanceOf[GLMExample]
       val oldWeight = glmExample.weight
       glmExample.weight *= learningRate
-      example.accumulateValueAndGradient(model, gradientAccumulator, null)
+      example.accumulateExampleInto(model, gradientAccumulator, null, null)
       glmExample.weight = oldWeight
     })
     weights *= (1.0 - l2)
@@ -71,11 +75,12 @@ class InlineSGDTrainer(val optimizer: GradientOptimizer, val model: LogLinearMod
 class SGDTrainer[M<:Model[_]](val optimizer: GradientOptimizer, val model:M) extends Trainer[M] {
   val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator
+  val marginAccumulator = new LocalDoubleAccumulator
   override def processAll(examples: Iterable[Example[M]]): Unit = {
     examples.foreach(example => {
       gradientAccumulator.tensor.zero()
-      example.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
-      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, 0)
+      example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator)
+      optimizer.step(model.weightsTensor, gradientAccumulator.tensor, valueAccumulator.value, marginAccumulator.value)
     })
   }
   def isConverged = false
@@ -87,7 +92,7 @@ class HogwildTrainer[M<:Model[_]](val optimizer: GradientOptimizer, val model: M
   override def processAll(examples: Iterable[Example[M]]): Unit = {
     examples.toSeq.par.foreach(example => {
       gradient.get.zero()
-      example.accumulateValueAndGradient(model, gradientAccumulator.get, null)
+      example.accumulateExampleInto(model, gradientAccumulator.get, null, null)
       throw new Error("Not implemented: Next step isn't thread safe.")
       optimizer.step(model.weightsTensor, gradient.get, 0, 0) // TODO But this isn't thread-safe!
     })
@@ -99,7 +104,8 @@ class HogwildTrainer[M<:Model[_]](val optimizer: GradientOptimizer, val model: M
 class SGDThenBatchTrainer[M<:Model[_]](val optimizer:GradientOptimizer, val model:M, val learningRate: Double = 0.01, val l2: Double = 0.1)
   extends Trainer[M] with FastLogging {
   val gradientAccumulator = new LocalWeightsTensorAccumulator(model.weightsTensor.asInstanceOf[WeightsTensor])
-  val valueAccumulator = new LocalDoubleAccumulator(0.0)
+  val valueAccumulator = new LocalDoubleAccumulator
+  val marginAccumulator = new LocalDoubleAccumulator
   val batchLearner = new BatchTrainer(optimizer, model)
   var sgdPasses = 5
   override def processAll(examples: Iterable[Example[M]]): Unit = {
@@ -109,7 +115,7 @@ class SGDThenBatchTrainer[M<:Model[_]](val optimizer:GradientOptimizer, val mode
         val glmExample = example.asInstanceOf[GLMExample]
         val oldWeight = glmExample.weight
         glmExample.weight *= learningRate
-        example.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
+        example.accumulateExampleInto(model, gradientAccumulator, valueAccumulator, marginAccumulator)
         glmExample.weight = oldWeight
       })
       model.asInstanceOf[cc.factorie.app.classify.LogLinearModel[_,_]].evidenceTemplate.weightsTensor *= math.pow(1.0 - learningRate * l2, math.sqrt(examples.size))

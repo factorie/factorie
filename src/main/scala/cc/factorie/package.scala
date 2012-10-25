@@ -92,8 +92,8 @@ package object factorie {
   implicit def iterableExampleDiffList2Variable(examples:Iterable[Example[Model[DiffList]]]): Iterable[Example[Model[Variable]]] = 
     examples.map(e =>
       new Example[Model[Variable]] {
-        def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit =
-          e.accumulateValueAndGradient(model, gradient, value)
+        def accumulateExampleInto(model:Model[Variable], gradient:WeightsTensorAccumulator, value:DoubleAccumulator, margin:DoubleAccumulator): Unit =
+          e.accumulateExampleInto(model, gradient, value, margin)
       })
 
   // TODO Consider removing this now that we have separate, more specific samplers.

@@ -74,13 +74,13 @@ class SampleRank[C](val model:Model[DiffList], sampler:ProposalSampler[C], optim
 class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[Model[DiffList]] {
   var learningMargin = 1.0
   var zeroGradient = true
-  def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
+  def accumulateExampleInto(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     require(gradient != null, "The SampleRankExample needs a gradient accumulator")
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)
     val (bestModel1, bestModel) = proposals.max2ByDouble(_.modelScore)
     val (bestObjective1, bestObjective2) = proposals.max2ByDouble(_.objectiveScore)
-    val margin = bestModel1.modelScore - bestModel.modelScore
+    val marg = bestModel1.modelScore - bestModel.modelScore
     zeroGradient = true
     if (bestModel1 ne bestObjective1) {
       // ...update parameters by adding sufficient stats of truth, and subtracting error
@@ -94,7 +94,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
       bestModel1.diff.undo
       model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => gradient.accumulate(f.family, f.currentStatistics))
     }
-    else if (margin < learningMargin) {
+    else if (marg < learningMargin) {
       // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
       zeroGradient = false
       bestObjective1.diff.redo
@@ -108,8 +108,8 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
     }
     val bestProposal = proposals.maxByDouble(_.modelScore)
     bestProposal.diff.redo
-    if (value ne null)
-      value.accumulate(margin) // TODO But this isn't really a "value", it is the "margin".  But how else to return it?
+    if (margin ne null)
+      margin.accumulate(marg) // TODO But this isn't really a "value", it is the "margin".  But how else to return it?
   }
 }
 
@@ -120,16 +120,16 @@ class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C]
   def processContext(context:C): Unit = process(new SampleRankExample(context, sampler))
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
-  def process(piece:Example[Model[DiffList]]): Unit = {
+  def process(example:Example[Model[DiffList]]): Unit = {
     val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
-    val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
-    piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
+    val marginAccumulator = new util.LocalDoubleAccumulator(0.0)
+    example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
     // Note that here valueAccumulator will actually contain the SampleRank margin
-    if (!piece.asInstanceOf[SampleRankExample[C]].zeroGradient)
-      optimizer.step(modelWeights, gradientAccumulator.tensor, Double.NaN, valueAccumulator.value)
+    if (!example.asInstanceOf[SampleRankExample[C]].zeroGradient)
+      optimizer.step(modelWeights, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
   }
-  def processAll(pieces: Iterable[Example[Model[DiffList]]]): Unit = pieces.foreach(p => process(p))
-  def processAll(pieces: Iterable[Example[Model[DiffList]]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(pieces)
+  def processAll(examples: Iterable[Example[Model[DiffList]]]): Unit = examples.foreach(p => process(p))
+  def processAll(examples: Iterable[Example[Model[DiffList]]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(examples)
 }
 
 // In the old SampleRank there was something like the following.  Do we need this for any reason?

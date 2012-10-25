@@ -47,7 +47,7 @@ object ObjectiveFunctions {
 class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[LogLinearModel[_,_]] {
   //def updateState(state: ExampleState): Unit = { }
   def state = null
-  def accumulateValueAndGradient(model: LogLinearModel[_,_], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
+  def accumulateExampleInto(model: LogLinearModel[_,_], gradient:WeightsTensorAccumulator, value:DoubleAccumulator, margin:DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
     val weightsMatrix = model.evidenceTemplate.weights
     val prediction = weightsMatrix matrixVector featureVector
