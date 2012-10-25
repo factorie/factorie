@@ -44,8 +44,8 @@ object LossFunctions {
   }
 }
 
-class GLMPiece(featureVector: Tensor1, label: Int, lossAndGradient: LossFunctions.MultiClassLossFunction, var weight: Double = 1.0) extends Piece[Variable] {
-  //def updateState(state: PieceState): Unit = { }
+class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: LossFunctions.MultiClassLossFunction, var weight: Double = 1.0) extends Example[Variable] {
+  //def updateState(state: ExampleState): Unit = { }
   def state = null
   def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
@@ -114,7 +114,7 @@ object GlmTest {
     val modelWithWeights = new ModelWithWeightsImpl(model)
 
     //   val forOuter = new la.SingletonBinaryTensor1(2, 0)
-    val pieces = trainLabels.map(l => new GLMPiece(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
+    val pieces = trainLabels.map(l => new GLMExample(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
     //        val strategy = new BatchTrainer(new L2RegularizedConjugateGradient, modelWithWeights)

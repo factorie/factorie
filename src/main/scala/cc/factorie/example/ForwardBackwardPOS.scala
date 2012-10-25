@@ -2,7 +2,7 @@ package cc.factorie.example
 
 import cc.factorie._
 //import bp.specialized.Viterbi
-//import bp.{ParallelTrainer, ForwardBackwardPiece}
+//import bp.{ParallelTrainer, ForwardBackwardExample}
 import app.nlp._
 import app.nlp.pos.{PosLabel, PosFeatures, PosDomain, PosFeaturesDomain}
 import app.chain.Observations.addNeighboringFeatureConjunctions
@@ -92,11 +92,11 @@ object ForwardBackwardPOS {
     val sentences: Seq[Sentence] = documents.flatMap(_.sentences)
     val sentenceLabels = sentences.map(_.posLabels).filter(_.size > 0)
 
-//    val pieces = sentenceLabels.map(vs => new ForwardBackwardPiece(vs.toArray, PosModel.localTemplate, PosModel.transTemplate))
+//    val pieces = sentenceLabels.map(vs => new ForwardBackwardExample(vs.toArray, PosModel.localTemplate, PosModel.transTemplate))
 //    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
 //    val optimizer = new LimitedMemoryBFGS(trainer) { override def postIteration(iter: Int): Unit = { testSavePrint(iter + "") } }
 //    optimizer.optimize()
-    val pieces = sentenceLabels.map(s => new optimize.MaxLikelihoodPiece(s, InferByBPChainSum))
+    val pieces = sentenceLabels.map(s => new optimize.MaxLikelihoodExample(s, InferByBPChainSum))
     val trainer = new optimize.SGDTrainer(new optimize.AROW(PosModel), PosModel)
     (1 to 100).foreach(i => trainer.processAll(pieces))
     

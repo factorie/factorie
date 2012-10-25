@@ -91,7 +91,7 @@ object POS {
     val sentences = documents.flatMap(_.sentences.filter(s => s.length > 0))
     val labels = sentences.map(s => s.posLabels) // was flatMap -akm
 
-//    val pieces = labels.map(ls => ModelPiece(PosModel, ls))
+//    val pieces = labels.map(ls => ModelExample(PosModel, ls))
 //    val trainer = new ParallelTrainer(pieces, PosModel.familiesOfClass(classOf[DotFamily]))
 //    val optimizer = new LimitedMemoryBFGS(trainer) {
 //      override def postIteration(iter: Int): Unit = {
@@ -102,7 +102,7 @@ object POS {
 //      }
 //    }
 //    optimizer.optimize()
-    val pieces = labels.map(l => new optimize.MaxLikelihoodPiece(l, InferByBPChainSum))
+    val pieces = labels.map(l => new optimize.MaxLikelihoodExample(l, InferByBPChainSum))
     val trainer = new optimize.BatchTrainer(new optimize.L2RegularizedLBFGS, PosModel)
     (1 to 100).foreach(i =>trainer.processAll(pieces))
 

@@ -16,7 +16,7 @@ import cc.factorie.util.FastLogging
 /** Learns the parameters of a Model by processing the gradients and values from a collection of Examples. */
 trait Trainer[C] {
   def model: Model[C]
-  def processAll(pieces: Iterable[Piece[C]]): Unit
+  def processAll(pieces: Iterable[Example[C]]): Unit
   // TODO Rename processExamples
 }
 
@@ -27,7 +27,7 @@ trait Trainer[C] {
 class BatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] with FastLogging {
   val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
-  def processAll(pieces: Iterable[Piece[C]]): Unit = {
+  def processAll(pieces: Iterable[Example[C]]): Unit = {
     if (isConverged) return
     gradientAccumulator.tensor.zero()
     valueAccumulator.value = 0.0
@@ -39,7 +39,7 @@ class BatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) ext
 }
 
 class ParallelBatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] with FastLogging {
-  def processAll(pieces: Iterable[Piece[C]]): Unit = {
+  def processAll(pieces: Iterable[Example[C]]): Unit = {
     if (isConverged) return
     val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { override def initialValue = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor]) }
     val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator }
@@ -54,14 +54,14 @@ class ParallelBatchTrainer[C](val optimizer: GradientOptimizer, val model: Model
 class InlineSGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C], val learningRate: Double = 0.01, val l2: Double = 0.1)
   extends Trainer[C] {
   val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
-  override def processAll(pieces: Iterable[Piece[C]]): Unit = {
+  override def processAll(pieces: Iterable[Example[C]]): Unit = {
     val weights = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily)
     pieces.foreach(piece => {
-      val glmPiece = piece.asInstanceOf[GLMPiece]
-      val oldWeight = glmPiece.weight
-      glmPiece.weight *= learningRate
+      val glmExample = piece.asInstanceOf[GLMExample]
+      val oldWeight = glmExample.weight
+      glmExample.weight *= learningRate
       piece.accumulateValueAndGradient(model, gradientAccumulator, null)
-      glmPiece.weight = oldWeight
+      glmExample.weight = oldWeight
     })
     weights *= (1.0 - l2)
   }
@@ -71,7 +71,7 @@ class InlineSGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C],
 class SGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] {
   val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator
-  override def processAll(pieces: Iterable[Piece[C]]): Unit = {
+  override def processAll(pieces: Iterable[Example[C]]): Unit = {
     pieces.foreach(piece => {
       gradientAccumulator.tensor.zero()
       piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
@@ -84,7 +84,7 @@ class SGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) exten
 class HogwildTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] {
   val gradient = new ThreadLocal[Tensor] {override def initialValue = model.newWeightsTensor }
   val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] {override def initialValue = new LocalWeightsTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
-  override def processAll(pieces: Iterable[Piece[C]]): Unit = {
+  override def processAll(pieces: Iterable[Example[C]]): Unit = {
     pieces.toSeq.par.foreach(piece => {
       gradient.get.zero()
       piece.accumulateValueAndGradient(model, gradientAccumulator.get, null)
@@ -102,15 +102,15 @@ class SGDThenBatchTrainer[C](val optimizer: GradientOptimizer, val model: Model[
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   val batchLearner = new BatchTrainer[C](optimizer, model)
   var sgdPasses = 5
-  override def processAll(pieces: Iterable[Piece[C]]): Unit = {
+  override def processAll(pieces: Iterable[Example[C]]): Unit = {
     if (sgdPasses > 0) {
       valueAccumulator.value = 0.0
       pieces.foreach(piece => {
-        val glmPiece = piece.asInstanceOf[GLMPiece]
-        val oldWeight = glmPiece.weight
-        glmPiece.weight *= learningRate
+        val glmExample = piece.asInstanceOf[GLMExample]
+        val oldWeight = glmExample.weight
+        glmExample.weight *= learningRate
         piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
-        glmPiece.weight = oldWeight
+        glmExample.weight = oldWeight
       })
       model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily) *= math.pow(1.0 - learningRate * l2, math.sqrt(pieces.size))
       valueAccumulator.value += -l2 * (model.weightsTensor dot model.weightsTensor)

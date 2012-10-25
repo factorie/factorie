@@ -99,7 +99,7 @@ class ChainNerBP {
  
     // Train for 5 iterations
     val vars = for(td <- trainDocuments; sentence <- td.sentences) yield sentence.tokens.map(_.attr[ChainNerLabel])
-//    val trainingInstances = vars.map(ModelPiece(model, _))
+//    val trainingInstances = vars.map(ModelExample(model, _))
 //    val newLearner = new cc.factorie.bp.ParallelTrainer(model, trainingInstances) with L2Regularizer { override def sigmaSq = 10.0 }
 //    println("Size of families: " + model.familiesOfClass[DotFamily]().size)
 //    val optimizer = new LimitedMemoryBFGS(newLearner)
@@ -108,7 +108,7 @@ class ChainNerBP {
 //    trainDocuments.foreach(process(_))
 //    testDocuments.foreach(process(_))
 //    printEvaluation(trainDocuments, testDocuments, "FINAL")
-    val pieces = vars.map(v => new MaxLikelihoodPiece(v, InferByBPChainSum))
+    val pieces = vars.map(v => new MaxLikelihoodExample(v, InferByBPChainSum))
     val trainer = new BatchTrainer(new L2RegularizedLBFGS, model)
     (1 to 100).foreach(i => trainer.processAll(pieces))
 

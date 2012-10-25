@@ -17,7 +17,7 @@
 package cc.factorie
 import cc.factorie.la._
 import collection.mutable.HashMap
-import optimize.{Piece, GradientOptimizer}
+import optimize.{Example, GradientOptimizer}
 import util.DoubleAccumulator
 
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
@@ -71,11 +71,11 @@ class SampleRank[C](val model:Model[DiffList], sampler:ProposalSampler[C], optim
   def processAll(cs:Iterable[C], repeat:Int): Unit = for (i <- 0 until repeat) cs.foreach(process(_))
 }
 
-class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extends Piece[DiffList] {
+class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[DiffList] {
   var learningMargin = 1.0
   var zeroGradient = true
   def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
-    require(gradient != null, "The SampleRankPiece needs a gradient accumulator")
+    require(gradient != null, "The SampleRankExample needs a gradient accumulator")
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)
     val (bestModel1, bestModel) = proposals.max2ByDouble(_.modelScore)
@@ -113,23 +113,23 @@ class SampleRankPiece[C](val context: C, val sampler: ProposalSampler[C]) extend
   }
 }
 
-/** A Trainer that does stochastic gradient ascent on gradients from SampleRankPieces. */
+/** A Trainer that does stochastic gradient ascent on gradients from SampleRankExamples. */
 class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) extends optimize.Trainer[DiffList] {
   def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
   val modelWeights = model.weightsTensor
-  def processContext(context:C): Unit = process(new SampleRankPiece(context, sampler))
+  def processContext(context:C): Unit = process(new SampleRankExample(context, sampler))
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
-  def process(piece:Piece[DiffList]): Unit = {
+  def process(piece:Example[DiffList]): Unit = {
     val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
     val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
     piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
     // Note that here valueAccumulator will actually contain the SampleRank margin
-    if (!piece.asInstanceOf[SampleRankPiece[C]].zeroGradient)
+    if (!piece.asInstanceOf[SampleRankExample[C]].zeroGradient)
       optimizer.step(modelWeights, gradientAccumulator.tensor, Double.NaN, valueAccumulator.value)
   }
-  def processAll(pieces: Iterable[Piece[DiffList]]): Unit = pieces.foreach(p => process(p))
-  def processAll(pieces: Iterable[Piece[DiffList]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(pieces)
+  def processAll(pieces: Iterable[Example[DiffList]]): Unit = pieces.foreach(p => process(p))
+  def processAll(pieces: Iterable[Example[DiffList]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(pieces)
 }
 
 // In the old SampleRank there was something like the following.  Do we need this for any reason?

@@ -526,7 +526,7 @@ class ChainNer2 {
 
 			val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
 
-//		    val pieces = vars.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
+//		    val pieces = vars.map(vs => new ForwardBackwardExample(vs.toArray, model.localTemplate, model.transitionTemplate))
 //		    val trainer = new ParallelTrainer(pieces, model.familiesOfClass(classOf[DotFamily]))
 //		    val optimizer = new LimitedMemoryBFGS(trainer) {
 //		      override def postIteration(iter: Int): Unit = {
@@ -537,7 +537,7 @@ class ChainNer2 {
 //		    }
 //		      optimizer.optimize()
 //		      optimizer.optimize()
-      val pieces = vars.map(v => new MaxLikelihoodPiece(v.toSeq, InferByBPChainSum))
+      val pieces = vars.map(v => new MaxLikelihoodExample(v.toSeq, InferByBPChainSum))
       val trainer = new BatchTrainer(new L2RegularizedLBFGS(), model)
       (1 to 100).foreach(i => trainer.processAll(pieces))
 
@@ -592,7 +592,7 @@ class ChainNer2 {
 
 			val vars1 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[ChainNerLabel])
 
-//		    val pieces1 = vars1.map(vs => new ForwardBackwardPiece(vs.toArray, model.localTemplate, model.transitionTemplate))
+//		    val pieces1 = vars1.map(vs => new ForwardBackwardExample(vs.toArray, model.localTemplate, model.transitionTemplate))
 //		    val trainer1 = new ParallelTrainer(pieces1, model.familiesOfClass(classOf[DotFamily]))
 //		    val optimizer1 = new LimitedMemoryBFGS(trainer1) {
 //		      override def postIteration(iter: Int): Unit = {
@@ -603,7 +603,7 @@ class ChainNer2 {
 //		    }
 //		      optimizer1.optimize()
 //		      optimizer1.optimize()
-        val pieces = vars1.map(v => new MaxLikelihoodPiece(v.toSeq, InferByBPChainSum))
+        val pieces = vars1.map(v => new MaxLikelihoodExample(v.toSeq, InferByBPChainSum))
         val trainer = new BatchTrainer(new L2RegularizedLBFGS, model)
         (1 to 100).foreach(i => trainer.processAll(pieces))
 		      
