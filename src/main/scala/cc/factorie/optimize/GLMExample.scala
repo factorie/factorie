@@ -16,9 +16,9 @@ import io.Source
  */
 
 
-object LossFunctions {
-  type MultiClassLossFunction = (Tensor1, Int) => (Double, Tensor1)
-  val logMultiClassLoss: MultiClassLossFunction = (prediction, label) => {
+object ObjectiveFunctions {
+  type MultiClassObjectiveFunction = (Tensor1, Int) => (Double, Tensor1)
+  val logMultiClassObjective: MultiClassObjectiveFunction = (prediction, label) => {
     val normed = prediction.expNormalized
     val loss = math.log(normed(label))
     normed *= -1
@@ -26,7 +26,7 @@ object LossFunctions {
     val gradient = normed.asInstanceOf[Tensor1]
     (loss, gradient)
   }
-  val hingeMultiClassLoss: MultiClassLossFunction = (prediction, label) => {
+  val hingeMultiClassObjective: MultiClassObjectiveFunction = (prediction, label) => {
     // TODO: this seems wrong - shouldnt it have loss for every weight vector it has a margin violation with?
     // same with the gradient, should it be 0 for categories without margin violations, 1 for those with, -1 for correct category?
     val loss = -math.max(0, 1 - prediction(label))
@@ -44,40 +44,37 @@ object LossFunctions {
   }
 }
 
-class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: LossFunctions.MultiClassLossFunction, var weight: Double = 1.0) extends Example[Variable] {
+class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveFunctions.MultiClassObjectiveFunction, var weight: Double = 1.0) extends Example[LogLinearModel[_,_]] {
   //def updateState(state: ExampleState): Unit = { }
   def state = null
-  def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
+  def accumulateValueAndGradient(model: LogLinearModel[_,_], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
-    val weightsMatrix = model.weightsTensor.asInstanceOf[WeightsTensor](DummyFamily).asInstanceOf[Tensor2]
+    val weightsMatrix = model.evidenceTemplate.weights
     val prediction = weightsMatrix matrixVector featureVector
     //    println("Prediction: " + prediction)
     val (loss, sgrad) = lossAndGradient(prediction, label)
     if (value != null) value.accumulate(loss)
     if (weight != 0.0) sgrad *= weight
     //    println("Stochastic gradient: " + sgrad)
-    if (gradient != null) gradient.accumulateOuter(DummyFamily, sgrad, featureVector)
+    if (gradient != null) gradient.accumulateOuter(model.evidenceTemplate, sgrad, featureVector)
   }
 }
 
 // This family exists only to  allow us to map a single tensor into a WeightsTensor
-object DummyFamily extends DotFamily {
-  type FamilyType = this.type
-
-  type NeighborType1 = Variable
-  type FactorType = Factor
-
-  def weights = null
-}
-
-class ModelWithWeightsImpl(model: Model[Variable]) extends Model[Variable] {
-  def factors(v: Variable): Iterable[Factor] = throw new Error
-  def copy = sys.error("unimpl")
-  //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
-  val weights = new WeightsTensor()
-  weights(DummyFamily) = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
-  override def weightsTensor = weights
-}
+//object DummyFamily extends DotFamily {
+//  type FamilyType = this.type
+//  type NeighborType1 = Variable
+//  type FactorType = Factor
+//  def weights = null
+//}
+//class ModelWithWeightsImpl(model: Model[Variable]) extends Model[Variable] {
+//  def factors(v: Variable): Iterable[Factor] = throw new Error
+//  def copy = sys.error("unimpl")
+//  //def setWeights(t: Tensor) { model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights := t }
+//  val weights = new WeightsTensor()
+//  weights(DummyFamily) = model.asInstanceOf[LogLinearModel[_, _]].evidenceTemplate.weights
+//  override def weightsTensor = weights
+//}
 
 object GlmTest {
   object DocumentDomain extends CategoricalTensorDomain[String]
@@ -108,10 +105,10 @@ object GlmTest {
     val trainLabels = new classify.LabelList[Label, Document](trainSet, _.document)
     val testLabels = new classify.LabelList[Label, Document](testSet, _.document)
 
-    val loss = LossFunctions.logMultiClassLoss
+    val loss = ObjectiveFunctions.logMultiClassObjective
     // needs to be binary
     val model = new LogLinearModel[Label, Document](_.document, LabelDomain, DocumentDomain)
-    val modelWithWeights = new ModelWithWeightsImpl(model)
+    //val modelWithWeights = new ModelWithWeightsImpl(model)
 
     //   val forOuter = new la.SingletonBinaryTensor1(2, 0)
     val pieces = trainLabels.map(l => new GLMExample(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
@@ -122,7 +119,7 @@ object GlmTest {
     //    val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
     val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
     lbfgs.tolerance = 0.05
-    val strategy = new SGDThenBatchTrainer(lbfgs, modelWithWeights, learningRate = .01)
+    val strategy = new SGDThenBatchTrainer(lbfgs, model, learningRate = .01)
     //    val strategy = new BatchTrainer(new SparseL2RegularizedGradientAscent(rate = 10.0 / trainLabels.size), modelWithWeights)
 
     var totalTime = 0L

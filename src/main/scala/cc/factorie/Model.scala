@@ -78,6 +78,7 @@ trait Model[-C] {
     familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t
   }
   def newWeightsTensor: Tensor = weightsTensor.blankCopy
+  // TODO Make these just return Tensor, not WeightsTensor
   def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
   def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
 

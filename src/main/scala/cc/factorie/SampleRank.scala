@@ -71,7 +71,7 @@ class SampleRank[C](val model:Model[DiffList], sampler:ProposalSampler[C], optim
   def processAll(cs:Iterable[C], repeat:Int): Unit = for (i <- 0 until repeat) cs.foreach(process(_))
 }
 
-class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[DiffList] {
+class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[Model[DiffList]] {
   var learningMargin = 1.0
   var zeroGradient = true
   def accumulateValueAndGradient(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
@@ -114,13 +114,13 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
 }
 
 /** A Trainer that does stochastic gradient ascent on gradients from SampleRankExamples. */
-class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) extends optimize.Trainer[DiffList] {
+class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) extends optimize.Trainer[Model[DiffList]] {
   def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
   val modelWeights = model.weightsTensor
   def processContext(context:C): Unit = process(new SampleRankExample(context, sampler))
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
-  def process(piece:Example[DiffList]): Unit = {
+  def process(piece:Example[Model[DiffList]]): Unit = {
     val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
     val valueAccumulator = new util.LocalDoubleAccumulator(0.0)
     piece.accumulateValueAndGradient(model, gradientAccumulator, valueAccumulator)
@@ -128,8 +128,8 @@ class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C]
     if (!piece.asInstanceOf[SampleRankExample[C]].zeroGradient)
       optimizer.step(modelWeights, gradientAccumulator.tensor, Double.NaN, valueAccumulator.value)
   }
-  def processAll(pieces: Iterable[Example[DiffList]]): Unit = pieces.foreach(p => process(p))
-  def processAll(pieces: Iterable[Example[DiffList]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(pieces)
+  def processAll(pieces: Iterable[Example[Model[DiffList]]]): Unit = pieces.foreach(p => process(p))
+  def processAll(pieces: Iterable[Example[Model[DiffList]]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(pieces)
 }
 
 // In the old SampleRank there was something like the following.  Do we need this for any reason?

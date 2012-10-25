@@ -30,13 +30,15 @@ class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labe
     if (vs.size == 1) factors(vs.head)
     else vs.flatMap(factors).toSeq
   }
-  // TODO: weightsTensor is unimplemented in a lot of different Models right now - fix this
-  override lazy val weightsTensor = {
-    val wt = new WeightsTensor()
-    wt(biasTemplate) = biasTemplate.weights
-    wt(evidenceTemplate) = evidenceTemplate.weights
-    wt
-  }
+  override def families = Seq(biasTemplate, evidenceTemplate)
+//  // TODO: weightsTensor is unimplemented in a lot of different Models right now - fix this
+//  // No, just override families, then the default implementation will work. -akm
+//  override lazy val weightsTensor = {
+//    val wt = new WeightsTensor()
+//    wt(biasTemplate) = biasTemplate.weights
+//    wt(evidenceTemplate) = evidenceTemplate.weights
+//    wt
+//  }
   override def factors(v:Variable): Iterable[Factor] = {
     v match {
       case v:L if lm.erasure.isAssignableFrom(v.getClass) => Seq(biasTemplate.Factor(v), evidenceTemplate.Factor(v, lf(v)))

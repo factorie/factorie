@@ -14,6 +14,9 @@
 
 package cc
 import scala.util.Random
+import cc.factorie.optimize.Example
+import cc.factorie.util._
+import cc.factorie.la._
 
 package object factorie {
   
@@ -85,6 +88,13 @@ package object factorie {
   implicit def modelDiffList2Variables(model:Model[DiffList]): Model[Iterable[Variable]] = new Model[Iterable[Variable]] {
     def factors(variables:Iterable[Variable]): Iterable[Factor] = model.factors(new DiffList ++= variables.map(NoopDiff(_)))
   }
+  
+  implicit def iterableExampleDiffList2Variable(examples:Iterable[Example[Model[DiffList]]]): Iterable[Example[Model[Variable]]] = 
+    examples.map(e =>
+      new Example[Model[Variable]] {
+        def accumulateValueAndGradient(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit =
+          e.accumulateValueAndGradient(model, gradient, value)
+      })
 
   // TODO Consider removing this now that we have separate, more specific samplers.
   // TODO Consider also removing SamplerSuite?

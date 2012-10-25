@@ -39,12 +39,12 @@ class MaxEntLikelihoodTrainer(val l2: Double = 10.0, val warmStart: Tensor = nul
     val pieces = il.map(l => new GLMExample(
       il.labelToFeatures(l).tensor.asInstanceOf[Tensor1],
       l.intValue,
-      LossFunctions.logMultiClassLoss,
+      ObjectiveFunctions.logMultiClassObjective,
       weight = il.instanceWeight(l)))
     if (warmStart != null) cmodel.evidenceTemplate.weights := warmStart
     // Do the training by BFGS
     val lbfgs = new L2RegularizedLBFGS(l2 = 1 / l2)
-    val strategy = new BatchTrainer(lbfgs, new ModelWithWeightsImpl(cmodel))
+    val strategy = new BatchTrainer(lbfgs, cmodel)
     while (!strategy.isConverged)
       strategy.processAll(pieces)
     new ModelBasedClassifier[L](cmodel, il.head.domain) {val weights = cmodel.evidenceTemplate.weights}
