@@ -70,7 +70,13 @@ trait Model[-C] {
 
   // Getting parameter weight Tensors for models; only really works for Models whose parameters are in Families
   //def weights: Tensor = weightsTensor
-  def weightsTensor: Tensor = { val t = new WeightsTensor(f => throw new Error); familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t }
+  def weightsTensor: Tensor = {
+    val t = new WeightsTensor(f => f match {
+      case f:DotFamily if (families.contains(f)) => f.weights.blankCopy // So that Model.weightsTensor.blankCopy will work
+      case _ => throw new Error("Trying to add Tensor for DotFamily that was not part of initialization") 
+    })
+    familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t
+  }
   def newWeightsTensor: Tensor = weightsTensor.blankCopy
   def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
   def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
@@ -80,6 +86,10 @@ trait Model[-C] {
   def variables: Iterable[Variable] = throw new Error("Model class does not implement method 'variables': "+ this.getClass.getName)
   def factors: Iterable[Factor] = throw new Error("Model class does not implement method 'factors': "+ this.getClass.getName)
   def currentScore: Double = { var s = 0.0; for (f <- factors) s += f.currentScore; s } 
+}
+
+trait DotFamilyModel[-C] extends Model[C] {
+  //abstract override def families: Seq[DotFamily]
 }
 
 

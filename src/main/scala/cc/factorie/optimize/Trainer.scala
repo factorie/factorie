@@ -69,7 +69,7 @@ class InlineSGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C],
 }
 
 class SGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] {
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator
   override def processAll(pieces: Iterable[Piece[C]]): Unit = {
     pieces.foreach(piece => {
@@ -82,7 +82,7 @@ class SGDTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) exten
 }
 
 class HogwildTrainer[C](val optimizer: GradientOptimizer, val model: Model[C]) extends Trainer[C] {
-  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.newSparseWeightsTensor }
+  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.newWeightsTensor }
   val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] {override def initialValue = new LocalWeightsTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
   override def processAll(pieces: Iterable[Piece[C]]): Unit = {
     pieces.toSeq.par.foreach(piece => {
