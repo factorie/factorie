@@ -5,11 +5,43 @@ title: "factorie: Changelog"
 Changelog
 ===
 
+New in version 1.0.0-M2:
+---
+
+* Documentation
+	- markdown based website, the source for which is checked into the repository
+	- Tutorial on Domains
+	- more assertions throughout the code (including tutorials)
+	- better Tutorial prettifier
+
+* Models and Templates
+	- Factors can provide statistics and scores on any Assignment and valueTensors
+	- trait Model independent of context, ModelWithContext[C] can unroll given any context
+
+* NLP
+
+* Inference
+	- BPSummary is more efficient, includes an abstract version
+
+* Optimization and Training
+	- Pieces are now Examples, Learners are Trainers
+	- MaxlikelihoodExample is efficient in computing constraints
+	- SampleRankExample replaces old trainer, almost as efficient
+
+* Tensors
+	- Filled in more of the missing cases in Tensors
+	- Fixed indexing bugs in a few Tensor types
+	- OuterTensors that efficiently represent the outer product between Tensors
+
+* Serialization
+	- gzip support
+
+* Misc
+
 New in version 1.0.0-M1:
 ---
 
 * Models and Templates
-
 	- All templates are now Models
 	- Models are now parameterized by the type of things they can score
 	- It is possible to write code that does not deduplicate factors

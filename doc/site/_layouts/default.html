@@ -1,14 +1,75 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
     <head>
-        <link rel="stylesheet" type="text/css" href="http://localhost:4000/css/pygments/default.css" media="screen" />
+        <meta charset="UTF-8">
+        <link href="/assets/css/bootstrap.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="/assets/css/pygments/default.css" media="screen" />
+        <link rel="stylesheet" type="text/css" href="http://twitter.github.com/bootstrap/assets/js/google-code-prettify/prettify.css" />
+
+        <style type="text/css">
+
+            .pre {
+            
+            }
+
+        </style>
+
+        <title>Factorie: {{ page.title }}</title>
     </head>
 
-    <title>{{ page.title }}</title>
-
     <body>
+        <div class="container">
+            <div class="page-header">
+                <h1><img width="100px" src="/assets/images/factorie-logo55.png"> Factorie</h1>
+            </div>
 
-        {{ content }}
+
+            <!--
+            <div class="row">
+                <div class="span3">
+                    <ul class="nav nav-list">  
+                            <li class="nav-header">List header</li>  
+                            <li class="active"><a href="#"><i class="icon-white icon-home"></i> Home</a></li>  
+                            <li><a href="#"><i class="icon-book"></i> Library</a></li>  
+                            <li><a href="#"><i class="icon-pencil"></i> Applications</a></li>  
+                            <li class="nav-header">Another list header</li>  
+                            <li><a href="#"><i class="icon-user"></i> Profile</a></li>  
+                            <li><a href="#"><i class="icon-cog"></i> Settings</a></li>  
+                            <li class="divider"></li>  
+                            <li><a href="#"><i class="icon-flag"></i> Help</a></li>  
+                    </ul>
+                </div>
+                <div class="span9">
+                    {{ content }}
+                </div>
+            </div>
+            -->
+
+
+            <div class="row">
+                <div class="span12">
+
+                    <ul class="nav nav-tabs">
+                        <li class="active">
+                        <a href="#">Home</a> </li>
+                        <li><a href="#">Tutorials</a></li>
+                        <li><a href="#">Practice Editor </a></li>
+                        <li><a href="#">Gallery</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                    {{ content }}
+
+
+                </div>
+            </div> <!-- /row -->
+            <hr>
+            <footer>
+            <p>
+            Factorie is open source software <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>. Please cite for research use.<br>
+            <a href="http://www.iesl.cs.umass.edu/">Information Extraction and Synthesis Laboratory</a> (IESL); <a href="http://www.cs.umass.edu/">Computer Science Department</a>. <a href="http://www.umass.edu/">University of Massachusetts Amherst</a>
+              </p>
+            </footer>
+        </div> <!-- /container -->
 
     </body>
 </html>
