@@ -46,7 +46,7 @@ trait IntGeneratingFactor extends GenerativeFactor {
   def logpr(x:Int): Double
 }
 
-abstract class GenerativeFactorWithStatistics1[C<:Variable](override val _1:C) extends TupleFactorWithStatistics1[C](_1) with GenerativeFactor {
+abstract class GenerativeFactorWithStatistics1[C<:Variable](override val _1:C) extends FactorWithStatistics1[C](_1) with GenerativeFactor {
   type ChildType = C
   def child = _1
   def parents: Seq[Variable] = Nil

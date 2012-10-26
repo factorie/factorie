@@ -59,7 +59,6 @@ package object maths {
     def oneNormalize(): Double = ArrayOps.oneNormalize(s)
     def twoNormalize(): Double = ArrayOps.twoNormalize(s)
     def twoSquaredNormalize(): Double = ArrayOps.twoSquaredNormalize(s)
-    def absNormalize(): Double = ArrayOps.absNormalize(s)
     def expNormalize(): Double = ArrayOps.expNormalize(s)
     def normalizeLogProb(): Double = ArrayOps.normalizeLogProb(s)
     def contains(d: Double): Boolean = ArrayOps.contains(s, d)
@@ -79,9 +78,7 @@ package object maths {
   
 trait ArrayOps {
   type A = Array[Double]
-  def absNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += math.abs(s(i)); i += 1 }; result }
-  // FIXME oneNorm should = absNorm, we should change this name
-  def oneNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i); i += 1 }; result }
+  def oneNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += math.abs(s(i)); i += 1 }; result }
   def twoNorm(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * s(i); i += 1 }; math.sqrt(result) }
   def twoNormSquared(s:A): Double = { var result = 0.0; var i = 0; while (i < s.length) { result += s(i) * s(i); i += 1 }; result }
   def infinityNorm(s:A): Double = { var result = s(0); var i = 0; while (i < s.length) { if (math.abs(s(i)) > result) result = math.abs(s(i)); i += 1 }; result }
@@ -98,7 +95,6 @@ trait ArrayOps {
   def oneNormalize(s:A): Double = normalize(s)
   def twoNormalize(s:A): Double = { val norm = twoNorm(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
   def twoSquaredNormalize(s:A): Double = { val norm = twoNormSquared(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
-  def absNormalize(s:A): Double = { val norm = absNorm(s); var i = 0; while (i < s.length) { s(i) /= norm; i += 1 }; norm }
   def contains(s:A, d:Double): Boolean = { var i = 0; while (i < s.length) { if (s(i) == d) return true; i += 1 }; false }
   def maxIndex(a:Array[Double]): Int = { var i = 0; var j = 0; for (i <- 0 until a.length) if (a(j) < a(i)) j = i; j }
   def isNaN(s:A): Boolean = contains(s, Double.NaN)
