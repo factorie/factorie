@@ -153,7 +153,7 @@ object WordSegmenterDemo {
     // Sample and Learn!
     //var learner = new VariableSettingsSampler[Label](model, objective) with SampleRank with GradientAscentUpdates
     //var learner = new cc.factorie.bp.SampleRank2(model, new VariableSettingsSampler[Label](model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
-    var learner = new SampleRankTrainer(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
+    val learner = new SampleRankTrainer(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
     //var learner = new SampleRank(model, new GibbsSampler(model, objective), new cc.factorie.optimize.StepwiseGradientAscent)
     //learner.learningRate = 1.0
     for (i <- 0 until 7) {
@@ -164,7 +164,7 @@ object WordSegmenterDemo {
       sampler.temperature *= 0.8
       println("Train accuracy = "+ objective.accuracy(trainVariables))
       println("Test  accuracy = "+ objective.accuracy(testVariables))
-      println
+      println()
       if (startTime == 0) startTime = System.currentTimeMillis // do the timing only after HotSpot has warmed up
     }
     //println ("Setting weights to average")

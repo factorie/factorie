@@ -109,7 +109,7 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
     val bestProposal = proposals.maxByDouble(_.modelScore)
     bestProposal.diff.redo
     if (margin ne null)
-      margin.accumulate(marg) // TODO But this isn't really a "value", it is the "margin".  But how else to return it?
+      margin.accumulate(marg)
   }
 }
 
