@@ -32,7 +32,7 @@ abstract class StructuredPerceptron[V<:LabeledMutableVar[_]](val model:Model, va
     val difflist = new DiffList
     vs.foreach(_.setToTarget(difflist))
     if (difflist.size > 0) {
-      val gradient: WeightsTensor = model.newSparseWeightsTensor
+      val gradient: WeightsTensor = model.newBlankSparseWeightsTensor
       model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => gradient(f.family).+=(f.currentStatistics, rate))
       difflist.undo
       model.factorsOfFamilies(difflist, familiesToUpdate).foreach(f => gradient(f.family).+=(f.currentStatistics, -rate))

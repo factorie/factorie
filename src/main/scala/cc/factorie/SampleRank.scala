@@ -33,7 +33,7 @@ class SampleRank[C](val model:Model, sampler:ProposalSampler[C], optimizer:Gradi
     val margin = bestModel1.modelScore - bestModel.modelScore
     if (bestModel1 ne bestObjective1) {
       // ...update parameters by adding sufficient stats of truth, and subtracting error
-      g = model.newSparseWeightsTensor
+      g = model.newBlankSparseWeightsTensor
       bestObjective1.diff.redo
       model.factorsOfFamilies(bestObjective1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, 1.0))
       bestObjective1.diff.undo
@@ -45,7 +45,7 @@ class SampleRank[C](val model:Model, sampler:ProposalSampler[C], optimizer:Gradi
     }
     else if (margin < learningMargin) {
       // ...update parameters by adding sufficient stats of truth, and subtracting runner-up
-      g = model.newSparseWeightsTensor
+      g = model.newBlankSparseWeightsTensor
       bestObjective1.diff.redo
       model.factorsOfFamilies(bestModel1.diff, familiesToUpdate).foreach(f => g(f.family).+=(f.currentStatistics, 1.0))
       bestObjective1.diff.undo
@@ -121,7 +121,7 @@ class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimize
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
   def process(example:Example[Model]): Unit = {
-    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
+    val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankSparseWeightsTensor)
     val marginAccumulator = new util.LocalDoubleAccumulator(0.0)
     example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
     // Note that here valueAccumulator will actually contain the SampleRank margin
