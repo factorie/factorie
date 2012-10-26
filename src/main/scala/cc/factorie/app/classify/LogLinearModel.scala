@@ -19,14 +19,14 @@ class LogLinearTemplate2[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, 
 }
 
 // TODO Consider renaming this DotModel, like DotMaximumLikelihood
-class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends CombinedModel[Variable] {
+class LogLinearModel[L<:DiscreteVar,F<:DiscreteTensorVar](lf:L=>F, fl:F=>L, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) extends CombinedModel {
   def this(lf:L=>F, labelStatisticsDomain:DiscreteDomain, featureStatisticsDomain:DiscreteTensorDomain)(implicit lm:Manifest[L], fm:Manifest[F]) = this(lf, (f:F) => throw new Error("Function from classify features to label not provided."), labelStatisticsDomain, featureStatisticsDomain)
   val biasTemplate = new LogLinearTemplate1[L](labelStatisticsDomain)
   val evidenceTemplate = new LogLinearTemplate2[L,F](lf, fl, labelStatisticsDomain, featureStatisticsDomain)
   this += biasTemplate
   this += evidenceTemplate
   val factorCache = HashMap[Variable, Iterable[Factor]]()
-  def factors(vs:Iterable[Variable]): Iterable[Factor] =  {
+  override def factors(vs:Iterable[Variable]): Iterable[Factor] =  {
     if (vs.size == 1) factors(vs.head)
     else vs.flatMap(factors).toSeq
   }

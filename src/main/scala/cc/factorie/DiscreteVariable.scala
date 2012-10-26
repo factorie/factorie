@@ -54,7 +54,7 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
     __value = newValue
   }
   /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
-  def proportions(model:Model[Variable]): Proportions1 = {
+  def proportions(model:Model): Proportions1 = {
     val l = domain.size 
     val distribution = new DenseTensor1(l)
     val factors = model.factors(this)
@@ -71,7 +71,7 @@ trait MutableDiscreteVar[A<:DiscreteValue] extends DiscreteVar with MutableVar[A
     new NormalizedTensorProportions1(distribution, checkNormalization=false)
   }
   /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
-  def caseFactorProportions(model:Model[Variable]): Proportions1 = {
+  def caseFactorProportions(model:Model): Proportions1 = {
     val l = domain.size 
     val distribution = new DenseTensor1(l)
     val assignment = new DiscreteAssignment1(this, 0)
@@ -107,7 +107,7 @@ abstract class DiscreteVariable extends IntMutableDiscreteVar[DiscreteValue]  {
 
 
 object MaximizeDiscrete extends Maximize {
-  def maxIndex(d:MutableDiscreteVar[_], model:Model[Variable]): Int = {
+  def maxIndex(d:MutableDiscreteVar[_], model:Model): Int = {
     val origI = d.intValue
     var maxScore = Double.MinValue
     var maxI = -1
@@ -120,11 +120,11 @@ object MaximizeDiscrete extends Maximize {
     d := origI
     maxI
   }
-  def apply(d:MutableDiscreteVar[_], model:Model[Variable]): Unit = d := maxIndex(d, model)
-  def apply(varying:Iterable[MutableDiscreteVar[_]], model:Model[Variable]): Unit = for (d <- varying) apply(d, model)
-  def infer[V<:MutableDiscreteVar[_]](varying:V, model:Model[Variable]): Option[DiscreteMarginal1[V]] =
+  def apply(d:MutableDiscreteVar[_], model:Model): Unit = d := maxIndex(d, model)
+  def apply(varying:Iterable[MutableDiscreteVar[_]], model:Model): Unit = for (d <- varying) apply(d, model)
+  def infer[V<:MutableDiscreteVar[_]](varying:V, model:Model): Option[DiscreteMarginal1[V]] =
     Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxIndex(varying, model))))
-  override def infer(variables:Iterable[Variable], model:Model[Variable], summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVar]] = {
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVar]] = {
     if (summary ne null) return None
     if (!variables.forall(_.isInstanceOf[MutableDiscreteVar[_]])) return None
     val result = new DiscreteSummary1[DiscreteVar]

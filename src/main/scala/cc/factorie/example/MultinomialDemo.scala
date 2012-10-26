@@ -25,7 +25,7 @@ object MultinomialDemo {
   val numSides = 6
   object RollDomain extends DiscreteDomain(numSides)
   class Roll extends DiscreteVariable { def domain = RollDomain }
-  implicit val model = new ItemizedGenerativeModel
+  implicit val model = GenerativeModel() // ItemizedGenerativeModel
 
   def main(args:Array[String]) : Unit = {
     val die = new ProportionsVariable(new DenseProportions1(Array(.1, .2, .3, .2, .2)))

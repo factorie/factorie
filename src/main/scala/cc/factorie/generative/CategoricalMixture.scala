@@ -105,7 +105,7 @@ object MaximizeGate extends Maximize {
     maxi
   }
   /** Returns -1 on failure. */
-  def maxIndex[A](gate:DiscreteVariable, model:Model[Variable]): Int = {
+  def maxIndex[A](gate:DiscreteVariable, model:Model): Int = {
     val factors = model.factors(gate).toSeq
     if (factors.size != 2) return -1
     (factors(0), factors(1)) match {
@@ -116,17 +116,17 @@ object MaximizeGate extends Maximize {
   }
   // For typical direct callers
   def apply[A](gate:DiscreteVariable, df:Discrete.Factor, dmf:CategoricalMixture[A]#Factor): Unit = gate.set(maxIndex(gate, df, dmf))(null)
-  def apply(gate:DiscreteVariable, model:Model[Variable]): Unit = {
+  def apply(gate:DiscreteVariable, model:Model): Unit = {
     val maxi = maxIndex(gate, model)
     if (maxi >= 0) gate.set(maxi)(null) else throw new Error("MaximizeGate unable to handle model factors.")
   }
   // For generic inference engines
-  def infer[V<:DiscreteVariable](varying:V, model:Model[Variable]): Option[DiscreteMarginal1[V]] = {
+  def infer[V<:DiscreteVariable](varying:V, model:Model): Option[DiscreteMarginal1[V]] = {
     val maxi = maxIndex(varying, model)
     if (maxi >= 0) Some(new DiscreteMarginal1(varying, new SingletonProportions1(varying.domain.size, maxi)))
     else None
   }
-  override def infer(variables:Iterable[Variable], model:Model[Variable], summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
+  override def infer(variables:Iterable[Variable], model:Model, summary:Summary[Marginal] = null): Option[DiscreteSummary1[DiscreteVariable]] = {
     if (summary ne null) return None
     if (!variables.forall(_.isInstanceOf[DiscreteVariable])) return None
     val result = new DiscreteSummary1[DiscreteVariable]

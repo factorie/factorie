@@ -27,7 +27,7 @@ import java.io._
 //  and have it be generic as a collection of arbitrary Models.
 //  (Now possible if Templates are now responsible for their own de-duplication.)
 
-abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends ModelWithFactorType[Variable] with ModelAsTemplate with Family1[N1] 
+abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends ModelWithFactorType with ModelAsTemplate with Family1[N1] 
 {
   val neighborClass1 = nm1.erasure
   def neighborClasses: Seq[Class[_]] = Seq(neighborClass1)
@@ -41,7 +41,7 @@ abstract class Template1[N1<:Variable](implicit nm1: Manifest[N1]) extends Model
   
   // Factors
   //def factors(v:Variable): Iterable[FactorType] = { val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]; addFactors(v, result); result.asInstanceOf[Iterable[FactorType]] }
-  def addFactors(v:Variable, result:Set[cc.factorie.Factor]): Unit = {
+  override def addFactors(v:Variable, result:Set[cc.factorie.Factor]): Unit = {
     val vClass = v.getClass
     if (nm1.erasure.isAssignableFrom(vClass)) unroll1(v.asInstanceOf[N1]) match { case fs:IterableSingleFactor[Factor] => result += fs.factor; case Nil => {}; case fs => result ++= fs }
     if ((neighborClass1a ne null) && neighborClass1a.isAssignableFrom(v.getClass)) result ++= unroll1s(v.asInstanceOf[N1#ContainedVariableType])

@@ -18,13 +18,15 @@ import collection.mutable.HashSet
 import scala.collection.mutable.Set
 
 /** A template for creating Factors.  The creation of Factors is keyed by some context of arbitrary type C. */
-trait Template[C,F<:Factor] {
-  //type FactorType <: Factor
-  def addFactorsOfContext(c:C, result:Set[F]): Unit 
-  def factorsOfContext(c:C): Iterable[F] = { val result = newContextFactorsCollection; addFactorsOfContext(c, result); result }
-  def itemizedModel(c:C): ItemizedModel = new ItemizedModel(factorsOfContext(c))
-  protected def newContextFactorsCollection: Set[F] = new collection.mutable.LinkedHashSet[F]
-}
+// TODO No need for this.  Just use ModelWithFactorType
+//trait Template[C,F<:Factor] {
+//  //type FactorType <: Factor
+//  def addFactorsOfContext(c:C, result:Set[F]): Unit 
+//  def factorsOfContext(c:C): Iterable[F] = { val result = newContextFactorsCollection; addFactorsOfContext(c, result); result }
+//  // TODO Move this to Model
+//  //def itemizedModel(c:C): ItemizedModel = new ItemizedModel(factorsOfContext(c))
+//  protected def newContextFactorsCollection: Set[F] = new collection.mutable.LinkedHashSet[F]
+//}
 
 // Future, discussed with Sebastian:
 // class SymbolicTemplate extends NeighborAwareTemplate[SymbolicPredicate] 
@@ -54,11 +56,11 @@ object Template {
     Its subclasses use "unroll*" methods, which given on of the Factor's variables, finding the other neighboring variables.
     @author Andrew McCallum
 */
-trait ModelAsTemplate extends Model[Variable] with Template[Variable,Factor] with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
+trait ModelAsTemplate extends Model with FamilyWithNeighborDomains with FamilyWithNeighborClasses { thisTemplate =>
   // TODO This method is a little messy.  Clean up this situation. -akm
   def addFactors(v:Variable, result:Set[cc.factorie.Factor]): Unit
-  def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
-  override def factors(v:Variable): Iterable[FactorType] = {
+  //def addFactorsOfContext(c:Variable, result:Set[cc.factorie.Factor]): Unit = addFactors(c, result)
+  def factors(v:Variable): Iterable[FactorType] = {
     val result = new collection.mutable.LinkedHashSet[cc.factorie.Factor]
     addFactors(v, result)
     result.asInstanceOf[Iterable[FactorType]]

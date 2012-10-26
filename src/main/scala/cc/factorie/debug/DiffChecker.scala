@@ -12,7 +12,7 @@ import cc.factorie._
 object DiffChecker {
   // Scores a given difflist according to the model, and compares with exhaustively scoring previous
   // and next configurations (of the given variables)
-  def diffListScore(diffList: DiffList, variables: Iterable[Variable], model: Model[DiffList]): Boolean = {
+  def diffListScore(diffList: DiffList, variables: Iterable[Variable], model: Model): Boolean = {
     // TODO check variables in difflist are in variables
     diffList.redo
     val diffScore:Double = diffList.scoreAndUndo(model)

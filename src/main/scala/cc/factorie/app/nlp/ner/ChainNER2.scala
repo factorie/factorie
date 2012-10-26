@@ -33,7 +33,7 @@ class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[Str
   override def skipNonCategories = true
 } 
 
-class ChainNer21Model extends CombinedModel[Variable] {
+class ChainNer21Model extends CombinedModel {
   
   // Bias term on each individual label 
   val biasTemplate = new DotTemplateWithStatistics1[ChainNerLabel] {
@@ -59,7 +59,7 @@ class ChainNer21Model extends CombinedModel[Variable] {
   this += transitionTemplate
 }
 
-class ChainNer2Model extends CombinedModel[Variable] {
+class ChainNer2Model extends CombinedModel {
   // Bias term on each individual label 
   val bias = new DotTemplateWithStatistics1[ChainNerLabel] {
     factorName = "bias"
@@ -85,7 +85,7 @@ class ChainNer2Model extends CombinedModel[Variable] {
   this += transitionTemplate
 }
 
-class ChainNer2WindowModel extends CombinedModel[Variable] (
+class ChainNer2WindowModel extends CombinedModel (
   new DotTemplateWithStatistics1[ChainNerLabel] {
     factorName = "bias"
     lazy val weights = new la.DenseTensor1(Conll2003NerDomain.size)

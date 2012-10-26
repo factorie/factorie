@@ -34,7 +34,7 @@ object WordSegmenterDemo2 {
   class Sentence extends Chain[Sentence,Token]
 
   
-  val model = new Model[IndexedSeq[Label]] {
+  val model = new ModelWithContext[IndexedSeq[Label]] {
     object bias extends DotFamilyWithStatistics1[Label] {
       factorName = "Label"
       lazy val weights = new la.DenseTensor1(BooleanDomain.size)
@@ -56,7 +56,7 @@ object WordSegmenterDemo2 {
       lazy val weights = new la.DenseTensor1(BooleanDomain.size)
       override def statistics(v1:Label#Value, v2:Label#Value) = BooleanValue(v1 == v2)
     }
-    def factors(labels:IndexedSeq[Label]): Iterable[Factor] = {
+    def factorsWithContext(labels:IndexedSeq[Label]): Iterable[Factor] = {
       val result = new ListBuffer[Factor]
       for (i <- 0 until labels.length) {
         result += bias.Factor(labels(i))
@@ -65,6 +65,7 @@ object WordSegmenterDemo2 {
       }
       result
     }
+    def factors(v:Variable) = throw new Error("Not implemented.")
 
   }
 

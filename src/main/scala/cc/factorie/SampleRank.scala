@@ -21,7 +21,7 @@ import optimize.{Example, GradientOptimizer}
 import util.DoubleAccumulator
 
 /** Set the parameters so that the model.score ranks the top sample the same as the objective.score, with a margin. */
-class SampleRank[C](val model:Model[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) {
+class SampleRank[C](val model:Model, sampler:ProposalSampler[C], optimizer:GradientOptimizer) {
   def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
   var learningMargin = 1.0
   def familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
@@ -71,10 +71,10 @@ class SampleRank[C](val model:Model[DiffList], sampler:ProposalSampler[C], optim
   def processAll(cs:Iterable[C], repeat:Int): Unit = for (i <- 0 until repeat) cs.foreach(process(_))
 }
 
-class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[Model[DiffList]] {
+class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example[Model] {
   var learningMargin = 1.0
   var zeroGradient = true
-  def accumulateExampleInto(model: Model[DiffList], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     require(gradient != null, "The SampleRankExample needs a gradient accumulator")
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     val proposals = sampler.proposals(context)
@@ -114,13 +114,13 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
 }
 
 /** A Trainer that does stochastic gradient ascent on gradients from SampleRankExamples. */
-class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C], optimizer:GradientOptimizer) extends optimize.Trainer[Model[DiffList]] {
+class SampleRankTrainer[C](val model:Model, sampler:ProposalSampler[C], optimizer:GradientOptimizer) extends optimize.Trainer[Model] {
   def this(sampler:ProposalSampler[C], optimizer:GradientOptimizer) = this(sampler.model, sampler, optimizer)
   val modelWeights = model.weightsTensor
   def processContext(context:C): Unit = process(new SampleRankExample(context, sampler))
   def processContexts(contexts:Iterable[C]): Unit = contexts.foreach(c => processContext(c))
   def processContexts(contexts:Iterable[C], iterations:Int): Unit = for (i <- 0 until iterations) processContexts(contexts)
-  def process(example:Example[Model[DiffList]]): Unit = {
+  def process(example:Example[Model]): Unit = {
     val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
     val marginAccumulator = new util.LocalDoubleAccumulator(0.0)
     example.accumulateExampleInto(model, gradientAccumulator, null, marginAccumulator)
@@ -128,8 +128,8 @@ class SampleRankTrainer[C](val model:Model[DiffList], sampler:ProposalSampler[C]
     if (!example.asInstanceOf[SampleRankExample[C]].zeroGradient)
       optimizer.step(modelWeights, gradientAccumulator.tensor, Double.NaN, marginAccumulator.value)
   }
-  def processAll(examples: Iterable[Example[Model[DiffList]]]): Unit = examples.foreach(p => process(p))
-  def processAll(examples: Iterable[Example[Model[DiffList]]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(examples)
+  def processAll(examples: Iterable[Example[Model]]): Unit = examples.foreach(p => process(p))
+  def processAll(examples: Iterable[Example[Model]], iterations:Int): Unit = for (i <- 0 until iterations) processAll(examples)
 }
 
 // In the old SampleRank there was something like the following.  Do we need this for any reason?

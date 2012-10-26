@@ -62,7 +62,7 @@ class SerializeTests extends JUnitSuite {
   }
   class Sentence extends Chain[Sentence, Token]
 
-  class SegmenterModel extends Model[Iterable[Label]] {
+  class SegmenterModel extends ModelWithContext[Seq[Label]] {
     object bias extends DotFamilyWithStatistics1[Label] {
       factorName = "Label"
       lazy val weights = new la.DenseTensor1(BooleanDomain.size)
@@ -72,9 +72,10 @@ class SerializeTests extends JUnitSuite {
       lazy val weights = new la.DenseTensor2(BooleanDomain.size, TokenDomain.dimensionSize)
     }
     override def families: Seq[Family] = Seq(bias, obs)
-    def factors(labels: Iterable[Label]): Iterable[Factor] = {
+    def factorsWithContext(label: Seq[Label]): Iterable[Factor] = {
       Seq.empty[Factor]
     }
+    def factors(v:Variable) = throw new Error("Not yet implemented.")
   }
 
   val data = Array(

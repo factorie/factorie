@@ -18,7 +18,7 @@ import app.chain.Observations.addNeighboringFeatureConjunctions
 
 object ForwardBackwardPOS {
 
-  object PosModel extends CombinedModel[Variable] {
+  object PosModel extends TemplateModel {
     // Factor between label and observed token
     val localTemplate = new DotTemplateWithStatistics2[PosLabel,PosFeatures] {
       //override def statisticsDomains = ((PosDomain, PosFeaturesDomain))

@@ -23,7 +23,7 @@ import cc.factorie.la._
 import cc.factorie.util.Substitutions
 import java.io._
 
-abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends ModelWithFactorType[Variable] with Family3[N1,N2,N3] with ModelAsTemplate {
+abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Manifest[N1], nm2:Manifest[N2], nm3:Manifest[N3]) extends ModelWithFactorType with Family3[N1,N2,N3] with ModelAsTemplate {
   val neighborClass1 = nm1.erasure
   val neighborClass2 = nm2.erasure
   val neighborClass3 = nm3.erasure
@@ -41,7 +41,7 @@ abstract class Template3[N1<:Variable,N2<:Variable,N3<:Variable](implicit nm1:Ma
 //          factor._2.asInstanceOf[DiscreteVar].intValue,
 //          factor._3.asInstanceOf[DiscreteVar].intValue))
 //  }
-  def addFactors(v:Variable, result:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
+  override def addFactors(v:Variable, result:scala.collection.mutable.Set[cc.factorie.Factor]): Unit = {
     if (neighborClass1.isAssignableFrom(v.getClass) && ((neighborDomain1 eq null) || (neighborDomain1 eq v.domain))) result ++= unroll1(v.asInstanceOf[N1])
     if (neighborClass2.isAssignableFrom(v.getClass) && ((neighborDomain2 eq null) || (neighborDomain2 eq v.domain))) result ++= unroll2(v.asInstanceOf[N2])
     if (neighborClass3.isAssignableFrom(v.getClass) && ((neighborDomain3 eq null) || (neighborDomain3 eq v.domain))) result ++= unroll3(v.asInstanceOf[N3])

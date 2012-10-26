@@ -100,11 +100,11 @@ object Serializer {
     }
   }
 
-  implicit object ModelSerializer extends Serializer[Model[_]] {
-    def serialize(m: Model[_], str: PrintStream): Unit = {
+  implicit object ModelSerializer extends Serializer[Model] {
+    def serialize(m: Model, str: PrintStream): Unit = {
       m.families.foreach(Serializer.serialize(_, str))
     }
-    def deserialize(model: Model[_], reader: BufferedReader): Unit = {
+    def deserialize(model: Model, reader: BufferedReader): Unit = {
       model.families.foreach(Serializer.deserialize(_, reader))
     }
   }

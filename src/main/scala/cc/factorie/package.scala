@@ -60,10 +60,10 @@ package object factorie {
   //  implicit def modelVariables2Variable(model:Model[Iterable[Variable]]): Model2[Variable] = new Model2[Variable] {
   //    def factors(variable:Variable): Iterable[Factor] = model.factors(Seq(variable))
   //  }
-  implicit def modelElement2Iterable[C](model:Model[C]): Model[Iterable[C]] = {
-    if (model eq null) return null
-    new Element2IterableModel[C](model)
-  }
+//  implicit def modelElement2Iterable[C](model:ModelWithContext[C]): ModelWithContext[Iterable[C]] = {
+//    if (model eq null) return null
+//    new Element2IterableModel[C](model)
+//  }
 //  new Model[Iterable[V]] {
 //    def factors(variables:Iterable[V]): Iterable[Factor] = {
 //      val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables
@@ -71,10 +71,10 @@ package object factorie {
 //      result
 //    }
 //  }
-  implicit def modelVariable2DiffList(model:Model[Variable]): Model[DiffList] = {
-    if (model eq null) return null
-    new Variable2DiffListModel(model)
-  }
+//  implicit def modelVariable2DiffList(model:Model[Variable]): Model[DiffList] = {
+//    if (model eq null) return null
+//    new Variable2DiffListModel(model)
+//  }
 //    new Model[DiffList] {
 //    def factors(dl:DiffList): Iterable[Factor] = {
 //      val result = new collection.mutable.LinkedHashSet[Factor] // Because there might be duplicates, even of Variables in the DiffList
@@ -82,19 +82,19 @@ package object factorie {
 //      result
 //    }
 //  }
-  implicit def modelVariables2DiffList(model:Model[Iterable[Variable]]): Model[DiffList] = new Model[DiffList] {
-    def factors(dl:DiffList): Iterable[Factor] = model.factors(dl.variables)
-  }
-  implicit def modelDiffList2Variables(model:Model[DiffList]): Model[Iterable[Variable]] = new Model[Iterable[Variable]] {
-    def factors(variables:Iterable[Variable]): Iterable[Factor] = model.factors(new DiffList ++= variables.map(NoopDiff(_)))
-  }
-  
-  implicit def iterableExampleDiffList2Variable(examples:Iterable[Example[Model[DiffList]]]): Iterable[Example[Model[Variable]]] = 
-    examples.map(e =>
-      new Example[Model[Variable]] {
-        def accumulateExampleInto(model:Model[Variable], gradient:WeightsTensorAccumulator, value:DoubleAccumulator, margin:DoubleAccumulator): Unit =
-          e.accumulateExampleInto(model, gradient, value, margin)
-      })
+//  implicit def modelVariables2DiffList(model:Model[Iterable[Variable]]): Model[DiffList] = new Model[DiffList] {
+//    def factors(dl:DiffList): Iterable[Factor] = model.factors(dl.variables)
+//  }
+//  implicit def modelDiffList2Variables(model:Model[DiffList]): Model[Iterable[Variable]] = new Model[Iterable[Variable]] {
+//    def factors(variables:Iterable[Variable]): Iterable[Factor] = model.factors(new DiffList ++= variables.map(NoopDiff(_)))
+//  }
+//  
+//  implicit def iterableExampleDiffList2Variable(examples:Iterable[Example[Model[DiffList]]]): Iterable[Example[Model[Variable]]] = 
+//    examples.map(e =>
+//      new Example[Model[Variable]] {
+//        def accumulateExampleInto(model:Model[Variable], gradient:WeightsTensorAccumulator, value:DoubleAccumulator, margin:DoubleAccumulator): Unit =
+//          e.accumulateExampleInto(model, gradient, value, margin)
+//      })
 
   // TODO Consider removing this now that we have separate, more specific samplers.
   // TODO Consider also removing SamplerSuite?

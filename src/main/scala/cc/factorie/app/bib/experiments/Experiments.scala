@@ -10,7 +10,7 @@ import cc.factorie._
 import app.nlp.coref._
 import io.Source
 
-class AuthorSamplerWriter(model:Model[Variable], val initialDB:Seq[AuthorEntity], val evidenceBatches:Seq[Seq[AuthorEntity]], val initialDBNameOpt:Option[String]=None,val evidenceBatchNames:Option[Seq[String]]=None,var initialSteps:Int=0,stepsPerBatch:Int=10000) extends AuthorSampler(model){
+class AuthorSamplerWriter(model:Model, val initialDB:Seq[AuthorEntity], val evidenceBatches:Seq[Seq[AuthorEntity]], val initialDBNameOpt:Option[String]=None,val evidenceBatchNames:Option[Seq[String]]=None,var initialSteps:Int=0,stepsPerBatch:Int=10000) extends AuthorSampler(model){
   protected var pwOption:Option[PrintWriter]=None
   val labeledData = initialDB.filter(_.groundTruth != None)
   def snapshotInterval = 10000

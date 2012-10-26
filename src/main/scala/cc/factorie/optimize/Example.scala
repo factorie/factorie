@@ -26,7 +26,7 @@ import io.Source
 // "Training" also associated with education, for which there are "grades".
 
 // Examples must be thread safe? -alex  Really? Must they be? -akm
-trait Example[-M<:Model[_]] {
+trait Example[-M<:Model] {
   // gradient or value or margin can be null if they don't need to be computed.
   def accumulateExampleInto(model:M, gradient:WeightsTensorAccumulator, value:DoubleAccumulator, margin:DoubleAccumulator): Unit
   // TODO Consider this too.  It would accumulate the "expectations" part, but not the constraints, which presumably would have been added elsewhere.
@@ -36,7 +36,7 @@ trait Example[-M<:Model[_]] {
 
 //class BPMaxLikelihoodExample[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V], infer:InferByBP) extends Example[Variable] {
 //  labels.foreach(_.setToTarget(null)) // TODO What if someone else changes these values after Example construction!
-//  def accumulateExampleInto(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
+//  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator) {
 //    val summary = infer.infer(labels, model).get
 //    // The log loss is - score + log Z
 //    if (value != null)
@@ -53,16 +53,16 @@ trait Example[-M<:Model[_]] {
 //  }
 //}
 
-class MaxLikelihoodExample[V<:LabeledVar](labels:Iterable[V], infer:Infer) extends Example[Model[Variable]] {
-  def accumulateExampleInto(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
+class MaxLikelihoodExample[V<:LabeledVar](labels:Iterable[V], infer:Infer) extends Example[Model] {
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     if (labels.size == 0) return
     val summary = infer.infer(labels, model).get
-    val model2 = modelElement2Iterable(model)
+    //val model2 = modelElement2Iterable(model)
     if (value != null)
-      value.accumulate(model2.assignmentScore(labels, TargetAssignment) - summary.logZ)
+      value.accumulate(model.assignmentScore(labels, TargetAssignment) - summary.logZ)
     // TODO Note that this unrolls the model twice.  We could consider ways to avoid this.
     if (gradient != null) {
-      model2.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily]).foreach(factor => {
+      model.factorsOfFamilyClass[DotFamily](labels, classOf[DotFamily]).foreach(factor => {
         gradient.accumulate(factor.family, factor.assignmentStatistics(TargetAssignment))
         gradient.accumulate(factor.family, summary.marginalTensorStatistics(factor), -1.0)
       })
@@ -89,17 +89,17 @@ class MaxLikelihoodExample[V<:LabeledVar](labels:Iterable[V], infer:Infer) exten
 //}
 
 //class MaxLikelihoodExample[V<:LabeledMutableDiscreteVar[_]](labels:Seq[V], infer:Infer) extends Example[Variable] {
-//  private var _model: Model[Variable] = null
+//  private var _model: Model = null
 //  private var _constraints: WeightsTensor = null
 //  // Use cached constraints Tensor if the model id has not changed since the last call
-//  def constraints(model:Model[Variable]): WeightsTensor = if (_model eq model) _constraints else {
+//  def constraints(model:Model): WeightsTensor = if (_model eq model) _constraints else {
 //    _model = model
 //    _constraints = model.newDenseWeightsTensor // TODO Can't afford to keep something this big for every Example :-(
 //    labels.foreach(_.setToTarget(null))
 //    modelElement2Iterable(model).factorsOfFamilyClass(labels, classOf[DotFamily]).foreach(f => constraints(f.family) += f.currentStatistics)
 //    _constraints
 //  }
-//  def accumulateExampleInto(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
+//  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator): Unit = {
 //    val summary = infer.infer(labels, model).get
 //    if (value ne null)
 //      value.accumulate(model.currentScore(labels) - summary.logZ)
@@ -110,8 +110,8 @@ class MaxLikelihoodExample[V<:LabeledVar](labels:Iterable[V], infer:Infer) exten
 //}
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors should remain the same as the DiscreteVar value changes. */
-class DiscreteExample[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V]) extends Example[Model[Variable]] {
-  def accumulateExampleInto(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
+class DiscreteExample[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V]) extends Example[Model] {
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     labels.foreach(_.setToTarget(null)) // TODO But what if someone changes the values after this construction?
     for (label <- labels) {
@@ -135,8 +135,8 @@ class DiscreteExample[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V]) exten
 }
 
 /** A gradient from a collection of IID DiscreteVars, where the set of factors is allowed to change based on the DiscreteVar value. */
-class CaseFactorDiscreteExample[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V]) extends Example[Model[Variable]] {
-  def accumulateExampleInto(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
+class CaseFactorDiscreteExample[V<:LabeledMutableDiscreteVar[_]](labels:Iterable[V]) extends Example[Model] {
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator): Unit = {
     val familiesToUpdate: Seq[DotFamily] = model.familiesOfClass(classOf[DotFamily])
     labels.foreach(_.setToTarget(null)) // TODO But what if someone changes the values after this construction?
     for (label <- labels) {
@@ -160,7 +160,7 @@ class CaseFactorDiscreteExample[V<:LabeledMutableDiscreteVar[_]](labels:Iterable
 // The following trait has convenience methods for adding to an accumulator the
 // factors that touch a pair of Good/Bad variables
 object GoodBadExample {
-  def addGoodBad[C](gradient: WeightsTensorAccumulator, model: Model[C], good: C, bad: C) {
+  def addGoodBad(gradient: WeightsTensorAccumulator, model: Model, good:Variable, bad:Variable) {
     model.factors(good).foreach({
       case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics)
       case _ => sys.error("Domination loss requires DotFamily")
@@ -177,8 +177,8 @@ object GoodBadExample {
 // The actual loss used in this version is the maximum (margin-augmented) difference between
 // goodCandidates and badCandidates.
 // See DominationLossExampleAllGood for one that outputs a gradient for all goodCandidates
-class DominationLossExample(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Example[Model[Variable]] {
-  def accumulateExampleInto(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator) {
+class DominationLossExample(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Example[Model] {
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator) {
     require(gradient != null, "The DominationLossExample needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
     val badScores = badCandidates.map(model.currentScore(_))
@@ -191,8 +191,8 @@ class DominationLossExample(goodCandidates: Seq[Variable], badCandidates: Seq[Va
   }
 }
 
-class DominationLossExampleAllGood(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Example[Model[Variable]] {
-  def accumulateExampleInto(model: Model[Variable], gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator) {
+class DominationLossExampleAllGood(goodCandidates: Seq[Variable], badCandidates: Seq[Variable]) extends Example[Model] {
+  def accumulateExampleInto(model: Model, gradient: WeightsTensorAccumulator, value: DoubleAccumulator, margin:DoubleAccumulator) {
     require(gradient != null, "The DominationLossExampleAllGood needs a gradient accumulator")
     val goodScores = goodCandidates.map(model.currentScore(_))
     val badScores = badCandidates.map(model.currentScore(_))

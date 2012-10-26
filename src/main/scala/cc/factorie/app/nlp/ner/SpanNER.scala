@@ -99,7 +99,7 @@ class SpanNerModel extends CombinedModel(
 }
 
 // The training objective
-class SpanNerObjective extends CombinedModel(
+class SpanNerObjective extends TemplateModel(
   new TupleTemplateWithStatistics2[NerSpan,SpanNerLabel] {
     //def statisticsDomains = ((NerSpanDomain, SpanNerLabelDomain))
     def unroll1(span:NerSpan) = Factor(span, span.label)
@@ -132,7 +132,7 @@ class SpanNerObjective extends CombinedModel(
 )
 
 // The sampler
-class TokenSpanSampler(model:Model[Variable], objective:Model[Variable]) extends SettingsSampler[Token](model, objective) {
+class TokenSpanSampler(model:Model, objective:Model) extends SettingsSampler[Token](model, objective) {
   // The proposer for changes to Spans touching this Token
   def settings(token:Token) = new SettingIterator {
     private val _seq = token.document
@@ -204,7 +204,7 @@ class TokenSpanSampler(model:Model[Variable], objective:Model[Variable]) extends
 }
 
 // The predictor for test data
-class SpanNerPredictor(model:Model[Variable]) extends TokenSpanSampler(model, null) {
+class SpanNerPredictor(model:Model) extends TokenSpanSampler(model, null) {
   def this(file:File) = this(new SpanNerModel(file))
   var verbose = false
   temperature = 0.0001 

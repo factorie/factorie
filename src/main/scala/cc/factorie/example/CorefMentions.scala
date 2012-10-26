@@ -106,7 +106,7 @@ object CorefMentionsDemo {
         })
       }}
 
-      val model = new CombinedModel[Variable]
+      val model = new TemplateModel
 
       // Pairwise affinity factor between Mentions in the same partition
       model += new DotTemplate4[EntityRef,EntityRef,Mention,Mention] {

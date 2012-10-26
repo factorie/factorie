@@ -4,7 +4,7 @@ import cc.factorie.la._
 import cc.factorie.la.Tensor
 import cc.factorie.maths
 
-class AROW(model:Model[_], learningMargin:Double = 1.0, val lambdaAROW:Double=1.0) extends ConfidenceWeighting(model,learningMargin) {
+class AROW(model:Model, learningMargin:Double = 1.0, val lambdaAROW:Double=1.0) extends ConfidenceWeighting(model,learningMargin) {
   //parameters specific to the algorithm
   //
   protected def alpha(modelScore:Double,gradient:WeightsTensor) : Double = math.max(0,1-modelScore) * beta(gradient)
@@ -25,7 +25,7 @@ class AROW(model:Model[_], learningMargin:Double = 1.0, val lambdaAROW:Double=1.
   override def calculateLearningRate(gradient: WeightsTensor,margin:Double): Double = alpha(margin,gradient)
 }
 
-class ConfidenceWeighting(val model:Model[_], var learningMargin:Double=1.0) extends GradientOptimizer {
+class ConfidenceWeighting(val model:Model, var learningMargin:Double=1.0) extends GradientOptimizer {
   /**Initialize the diagonal covariance matrix; this is the value in the diagonal elements */
   var initialVariance = 0.1;
   var numUpdates : Double = 0

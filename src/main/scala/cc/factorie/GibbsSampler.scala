@@ -7,7 +7,7 @@ import scala.collection.mutable.{ArrayBuffer,HashMap}
     selected according to the variable type and its neighboring factors.
     If the model is not a GenerativeModel, then the variable should inherit from IterableSettings
     which is used to create a list of Proposals with alternative values. */
-class GibbsSampler(val model:Model[Variable], val objective:Model[Variable] = null) extends ProposalSampler[Variable] {
+class GibbsSampler(val model:Model, val objective:Model = null) extends ProposalSampler[Variable] {
   type V = Variable
   private var _handlers: Iterable[GibbsSamplerHandler] = null 
   def defaultHandlers = GibbsSamplerDefaultHandlers
@@ -51,14 +51,14 @@ class GibbsSampler(val model:Model[Variable], val objective:Model[Variable] = nu
 
   def proposals(v:V): Seq[Proposal] = model match {
     case m:GenerativeModel => throw new Error("Not yet implemented")
-    case m:Model[Variable] => v match {
+    case m:Model => v match {
       case v:DiscreteVariable => proposals(v)
       case v:Variable with IterableSettings => proposals(v.settings)
     } 
   }
   def proposals(si:SettingIterator): Seq[Proposal] = {
-    val dmodel = model: Model[DiffList]
-    val dobjective = objective: Model[DiffList]
+    val dmodel = model: Model
+    val dobjective = objective: Model
     val props = new ArrayBuffer[Proposal]()
     while (si.hasNext) {
       val d = si.next()
