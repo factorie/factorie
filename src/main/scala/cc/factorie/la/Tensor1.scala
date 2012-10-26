@@ -157,13 +157,14 @@ class GrowableSingletonBinaryTensor1(val sizeProxy:Iterable[Any], var singleInde
   def dim1 = sizeProxy.size
 }
 
-class UniformTensor1(val dim1:Int, val uniformValue:Double) extends Tensor1 with UniformTensor {
+class UniformTensor1(val dim1:Int, var uniformValue:Double) extends Tensor1 with UniformTensor {
   def activeDomain1 = new RangeIntSeq(0, dim1)
   override def copy = new UniformTensor1(dim1, uniformValue)
   override def +(t:Tensor): Tensor = t match {
     case t:UniformTensor1 => new UniformTensor1(dim1, uniformValue + t.uniformValue)
     case t:Tensor1 => new DenseTensor1(dim1, uniformValue) + t
   }
+  override def *=(d: Double) = uniformValue *= d
 }
 class UnaryTensor1(dim1:Int) extends UniformTensor1(dim1, 1.0) {
   override def copy = new UnaryTensor1(dim1)

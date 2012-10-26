@@ -218,7 +218,8 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
   override def apply(i:Int, j:Int, k:Int): Double = {
     assert(i*dim2+j < dim1*dim2, "len="+length+" dim1="+dim1+" dim2="+dim2+" dim3="+dim3+" i="+i+" j="+j+" k="+k)
     val t1 = _inners(i*dim2+j)
-    if (t1 ne null) t1.apply(k) else 0.0 }
+    if (t1 ne null) t1.apply(k) else 0.0
+  }
   def isDense = false
   def apply(i:Int): Double = apply(i/dim2/dim3, (i/dim3)%dim2, i%dim3)
   override def update(i:Int, v: Double): Unit = update(i/dim2/dim3, (i/dim3)%dim2, i%dim3, v)
@@ -250,10 +251,10 @@ trait Dense2LayeredTensorLike3 extends Tensor3 with SparseDoubleSeq {
     case t:Singleton2BinaryLayeredTensorLike3 => { val i = _inners(t.singleIndex1*dim2+t.singleIndex2); if (i ne null) i.dot(t.inner) else 0.0 }
     case t:Singleton2LayeredTensorLike3 => { val i = _inners(t.singleIndex1*dim2+t.singleIndex2); if (i ne null) i.dot(t.inner) * t.singleValue1 * t.singleValue2 else 0.0 }
     case t:SparseBinaryTensor3 =>
-    /*println("Dense2LayeredTensorLike3 this.length="+length+" t.length="+t.length+" dims="+t.dimensions.toSeq);*/
-    val tArr = t.activeDomain.array; val tLen = tArr.length; var s = 0.0; var i = 0
-    while (i < tLen) { s += apply(tArr(i)); i += 1 }
-    s
+      /*println("Dense2LayeredTensorLike3 this.length="+length+" t.length="+t.length+" dims="+t.dimensions.toSeq);*/
+      val tArr = t.activeDomain.array; val tLen = tArr.length; var s = 0.0; var i = 0
+      while (i < tLen) { s += apply(tArr(i)); i += 1 }
+      s
   }
   override def +=(t:DoubleSeq, f:Double): Unit = t match {
     case t:SingletonBinaryTensor3 => +=(t.singleIndex1, t.singleIndex2, t.singleIndex3, f)

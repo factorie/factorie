@@ -27,20 +27,21 @@ object ObjectiveFunctions {
     (loss, gradient)
   }
   val hingeMultiClassObjective: MultiClassObjectiveFunction = (prediction, label) => {
-    // TODO: this seems wrong - shouldnt it have loss for every weight vector it has a margin violation with?
-    // same with the gradient, should it be 0 for categories without margin violations, 1 for those with, -1 for correct category?
-    val loss = -math.max(0, 1 - prediction(label))
-    val predictedLabel = prediction.maxIndex
-    val gradient =
-      if (label == predictedLabel)
-        new UniformTensor1(prediction.size, 0.0)
-      else {
-        val g = new DenseTensor1(prediction.size, 0.0)
-        g(label) += 1.0
-        g(predictedLabel) += -1.0
-        g
-      }
-    (loss, gradient)
+    var loss = 0.0; var i = 0; val len = prediction.length
+    while (i < len) {
+      if (i == label) loss += -math.max(0, 1 - prediction(label))
+      else loss += -math.max(0, prediction(i) - 1)
+      i += 1
+    }
+    val gradient = new DenseTensor1(prediction.size, 0.0)
+    i = 0; var isPerfectlyClassified = true
+    while (i < len) {
+      if (i == label && prediction(i) < 1.0) { gradient(i) = 1.0; isPerfectlyClassified = false }
+      else if (i != label && prediction(i) > 1.0) { gradient(i) = -1.0; isPerfectlyClassified = false }
+//      else if (i == predictedLabel && predictedLabel != label && prediction(i) > 1.0) gradient(i) = -1.0
+      i += 1
+    }
+    (loss, if (isPerfectlyClassified) new UniformTensor1(len, 0.0) else gradient)
   }
 }
 
@@ -56,6 +57,8 @@ class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveF
     if (value != null) value.accumulate(loss)
     if (weight != 0.0) sgrad *= weight
     //    println("Stochastic gradient: " + sgrad)
+    // TODO: find out why using the Outer1Tensor2 here is so much slower than accumulateOuter? Inlining??
+    //    if (gradient != null) gradient.accumulate(model.evidenceTemplate, new la.Outer1Tensor2(sgrad, featureVector))
     if (gradient != null) gradient.accumulateOuter(model.evidenceTemplate, sgrad, featureVector)
   }
 }
@@ -105,7 +108,7 @@ object GlmTest {
     val trainLabels = new classify.LabelList[Label, Document](trainSet, _.document)
     val testLabels = new classify.LabelList[Label, Document](testSet, _.document)
 
-    val loss = ObjectiveFunctions.logMultiClassObjective
+    val loss = ObjectiveFunctions.hingeMultiClassObjective
     // needs to be binary
     val model = new LogLinearModel[Label, Document](_.document, LabelDomain, DocumentDomain)
     //val modelWithWeights = new ModelWithWeightsImpl(model)
@@ -114,12 +117,12 @@ object GlmTest {
     val pieces = trainLabels.map(l => new GLMExample(l.document.value.asInstanceOf[Tensor1], l.target.intValue, loss))
 
     //    val strategy = new HogwildTrainer(new SparseL2RegularizedGradientAscent(rate = .01), modelWithWeights)
-    //        val strategy = new BatchTrainer(new L2RegularizedConjugateGradient, modelWithWeights)
-    //        val strategy = new SGDTrainer(new ConfidenceWeighting(modelWithWeights), modelWithWeights)
-    //    val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
-    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
-    lbfgs.tolerance = 0.05
-    val strategy = new SGDThenBatchTrainer(lbfgs, model, learningRate = .01)
+            val strategy = new BatchTrainer(new ConfidenceWeighting(model), model)
+//            val strategy = new SGDTrainer(new ConfidenceWeighting(model), model)
+//        val strategy = new SGDThenBatchTrainer(new L2RegularizedLBFGS, modelWithWeights)
+//    val lbfgs = new L2RegularizedLBFGS(l2 = 0.1)
+//    lbfgs.tolerance = 0.05
+//    val strategy = new SGDThenBatchTrainer(lbfgs, model, learningRate = .01)
     //    val strategy = new BatchTrainer(new SparseL2RegularizedGradientAscent(rate = 10.0 / trainLabels.size), modelWithWeights)
 
     var totalTime = 0L

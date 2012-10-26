@@ -263,6 +263,80 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
   def activeDomain = new Outer2IntSeq(dim1, dim2, tensor1.activeDomain1, tensor2.activeDomain1)
   override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer1Tensor2(tensor1.blankCopy, tensor2.blankCopy)
+  override def =+(a: Array[Double], offset: Int, v: Double): Unit = {
+    require(v == 1.0, "Outer1Tensor2 =+ requires v == 1.0")
+    require(offset == 0, "Outer1Tensor2 =+ requires offset == 0")
+    (tensor1, tensor2) match {
+          case (t1: UniformTensor1, _) if t1(0) == 0.0 => return
+          case (_, t2: UniformTensor1) if t2(0) == 0.0 => return
+          case (t1: DenseTensor1, t2: DenseTensor1) =>
+            val t2Size = t2.size
+            val t1Size = t1.size
+            val t1Values = t1.asArray
+            val t2Values = t2.asArray
+            var idx1 = 0
+            while (idx1 < t1Size) {
+              val v1 = t1Values(idx1)
+              val offset = t2Size * idx1
+              var idx2 = 0
+              while (idx2 < t2Size) {
+                val v2 = t2Values(idx2)
+                a(offset + idx2) += (v1 * v2)
+                idx2 += 1
+              }
+              idx1 += 1
+            }
+          case (t1: DenseTensor1, t2: SparseIndexedTensor1) =>
+            val t2Size = t2.size
+            val t1Size = t1.size
+            val t1Values = t1.asArray
+            val t2Indices = t2._indices
+            val t2Values = t2._values
+            var idx1 = 0
+            while (idx1 < t1Size) {
+              val v1 = t1Values(idx1)
+              val offset = t2Size * idx1
+              var t2i = 0
+              while (t2i < t2Indices.length) {
+                val idx2 = t2Indices(t2i)
+                val v2 = t2Values(t2i)
+                a(offset + idx2) += (v1 * v2)
+                t2i += 1
+              }
+              idx1 += 1
+            }
+          case (t1: DenseTensor1, t2: SparseBinaryTensorLike1) =>
+            val t2Size = t2.size
+            val t1Size = t1.size
+            val t2IndexSeq = t2.activeDomain.asInstanceOf[TruncatedArrayIntSeq]
+            val t2Indices = t2IndexSeq.array
+            val t1Values = t1.asArray
+            var idx1 = 0
+            while (idx1 < t1Size) {
+              val v1 = t1Values(idx1)
+              val offset = t2Size * idx1
+              var t2i = 0
+              while (t2i < t2IndexSeq.size) {
+                val idx2 = t2Indices(t2i)
+                a(offset + idx2) += v1
+                t2i += 1
+              }
+              idx1 += 1
+            }
+          case (t1, t2) =>
+            val t2Size = t2.size
+            val t1Iter = t1.activeElements
+            while (t1Iter.hasNext) {
+              val (idx1, v1) = t1Iter.next()
+              val offset = t2Size * idx1
+              val t2Iter = t2.activeElements
+              while (t2Iter.hasNext) {
+                val (idx2, v2) = t2Iter.next()
+                a(offset + idx2) += (v1 * v2)
+              }
+            }
+        }
+  }
 }
 
 class UniformTensor2(val dim1:Int, val dim2:Int, val uniformValue:Double) extends Tensor2 with UniformTensor {

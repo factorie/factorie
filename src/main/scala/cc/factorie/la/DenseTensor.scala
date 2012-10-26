@@ -77,12 +77,13 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue {
     case t:TensorTimesScalar => this.+=(t.tensor, t.scalar) //{ t.tensor.activeDomain.foreach(i => this(i) += t(i)*t.scalar) } 
     case t:Outer1Tensor2 => {
       require(this.isInstanceOf[Tensor2]) // Makes sure rank matches!
-      val t1 = t.tensor1; val t2 = t.tensor2; val l1 = t1.length; var i = 0
-      while (i < l1) {
-        val v = t1(i)
-        if (v != 0) +=(t2, i*t2.dim1, f*v) // increment at the appropriate offset
-        i += 1
-      }
+      t =+ (__values, f)
+//      val t1 = t.tensor1; val t2 = t.tensor2; val l1 = t1.length; var i = 0
+//      while (i < l1) {
+//        val v = t1(i)
+//        if (v != 0) +=(t2, i*t2.dim1, f*v) // increment at the appropriate offset
+//        i += 1
+//      }
     }
   }
   
