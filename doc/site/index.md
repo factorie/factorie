@@ -39,13 +39,15 @@ Citation
 
 Factorie has been released under the Apache License 2.0, and is free to use for commercial or academic purposes. However, please acknowledge its use with a citation:
 
-    Andrew McCallum, Karl Schultz, Sameer Singh. "FACTORIE: Probabilistic Programming via Imperatively Defined Factor Graphs". Neural Information Processing Systems (NIPS), 2009.
+Andrew McCallum, Karl Schultz, Sameer Singh. "FACTORIE: Probabilistic Programming via Imperatively Defined Factor Graphs". Neural Information Processing Systems (NIPS), 2009.
 
-    @inproceedings{mccallum09:factorie:,
-      Author = {Andrew McCallum and Karl Schultz and Sameer Singh}, 
-      Booktitle = {Neural Information Processing Systems (NIPS)}, 
-      Title = {{FACTORIE}: Probabilistic Programming via Imperatively Defined Factor Graphs}, 
-      Year = {2009}}
+```scala
+@inproceedings{mccallum09:factorie:,
+  Author = {Andrew McCallum and Karl Schultz and Sameer Singh}, 
+  Booktitle = {Neural Information Processing Systems (NIPS)}, 
+  Title = { {FACTORIE}: Probabilistic Programming via Imperatively Defined Factor Graphs}, 
+  Year = {2009}}
+```
 
 Sponsors
 ---
