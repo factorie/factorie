@@ -51,7 +51,7 @@ class GLMExample(featureVector: Tensor1, label: Int, lossAndGradient: ObjectiveF
   def accumulateExampleInto(model: LogLinearModel[_,_], gradient:WeightsTensorAccumulator, value:DoubleAccumulator, margin:DoubleAccumulator) {
     // println("featureVector size: %d weights size: %d" format (featureVector.size, model.weights.size))
     val weightsMatrix = model.evidenceTemplate.weights
-    val prediction = weightsMatrix matrixVector featureVector
+    val prediction = weightsMatrix * featureVector
     //    println("Prediction: " + prediction)
     val (loss, sgrad) = lossAndGradient(prediction, label)
     if (value != null) value.accumulate(loss)

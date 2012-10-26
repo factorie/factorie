@@ -35,7 +35,7 @@ class LinearRegressor[E<:TensorVar,A<:TensorVar](val dependant2Explanatory: A=>E
   linearRegressor =>
 
   def regression(x: A) = {
-    val result = weights.matrixVector(dependant2Explanatory(x).value).reshape(x.value.dimensions)
+    val result = (weights * dependant2Explanatory(x).value.asInstanceOf[Tensor1]).reshape(x.value.dimensions)
     new Regression[A] {
       def dependant = x
       def dependantValue = result.asInstanceOf[A#Value]
@@ -59,8 +59,8 @@ object LinearRegressionTrainer {
       gradient.zero()
       var value = 0.0
       examples.foreach(e => {
-        val features = dependant2Explanatory(e).value
-        val prediction = weights.matrixVector(features)
+        val features = dependant2Explanatory(e).value.asInstanceOf[Tensor1]
+        val prediction = weights * features
         prediction.activeDomain.foreach(i => prediction(i) -= e.value(i))
         value -= prediction.dot(prediction)
         // add the gradients
