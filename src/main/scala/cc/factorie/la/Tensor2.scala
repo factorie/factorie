@@ -264,9 +264,8 @@ class Outer1Tensor2(val tensor1:Tensor1, val tensor2:Tensor1) extends Tensor2 {
   override def copy = new Outer1Tensor2(tensor1.copy, tensor2.copy)
   override def blankCopy = new Outer1Tensor2(tensor1.blankCopy, tensor2.blankCopy)
   override def =+(a: Array[Double], offset: Int, v: Double): Unit = {
-    require(v == 1.0, "Outer1Tensor2 =+ requires v == 1.0")
-    require(offset == 0, "Outer1Tensor2 =+ requires offset == 0")
-    (tensor1, tensor2) match {
+    if (v != 1.0 || offset != 0) super.=+(a, offset, v)
+    else (tensor1, tensor2) match {
           case (t1: UniformTensor1, _) if t1(0) == 0.0 => return
           case (_, t2: UniformTensor1) if t2(0) == 0.0 => return
           case (t1: DenseTensor1, t2: DenseTensor1) =>
