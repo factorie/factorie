@@ -24,6 +24,9 @@ New in version 1.0.0-M2:
 	- MaxlikelihoodExample is efficient in computing constraints
 	- SampleRankExample replaces old trainer, almost as efficient
 
+* Classifiers
+    - Added DecisionTree, AdaBoost, SVM classifiers in app.classify
+
 * Tensors
 	- Filled in more of the missing cases in Tensors
 	- Fixed indexing bugs in a few Tensor types
