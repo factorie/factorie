@@ -166,7 +166,7 @@ object GoodBadExample {
       case _ => sys.error("Domination loss requires DotFamily")
     })
     model.factors(bad).foreach({
-      case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics * -1.0)
+      case f: DotFamily#Factor => gradient.accumulate(f.family, f.currentStatistics, -1.0)
       case _ => sys.error("Domination loss requires DotFamily")
     })
   }

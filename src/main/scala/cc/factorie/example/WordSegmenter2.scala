@@ -32,7 +32,6 @@ object WordSegmenterDemo2 {
     if ("aeiou".contains(char)) this += "VOWEL"
   }
   class Sentence extends Chain[Sentence,Token]
-
   
   val model = new ModelWithContext[IndexedSeq[Label]] {
     object bias extends DotFamilyWithStatistics1[Label] {
@@ -65,13 +64,20 @@ object WordSegmenterDemo2 {
       }
       result
     }
-    def factors(v:Variable) = throw new Error("Not implemented.")
-
+    def factors(v:Variable) = {
+      val label = v.asInstanceOf[Label]
+      val result = new ArrayBuffer[Factor](4)
+      result += bias.Factor(label)
+      result += obs.Factor(label, label.token)
+      if (label.token.hasPrev)
+        result += markov.Factor(label.token.prev.label, label)
+      if (label.token.hasNext)
+        result += markov.Factor(label, label.token.next.label)
+      result
+    }
   }
 
-
   val objective = new HammingLossTemplate[Label]
-
 
   def main(args: Array[String]) : Unit = {
     implicit val random = new scala.util.Random 
@@ -97,8 +103,8 @@ object WordSegmenterDemo2 {
 
     // Make a test/train split
     val (testSet, trainSet) = sentences.shuffle(random).split(0.5) //RichSeq.split(RichSeq.shuffle(instances), 0.5)
-    var trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
-    var testVariables = testSet.map(_.links).flatMap(_.map(_.label))
+    val trainVariables = trainSet.map(_.links).flatMap(_.map(_.label))
+    val testVariables = testSet.map(_.links).flatMap(_.map(_.label))
     
     testVariables.foreach(_.setRandomly())
     println ("Read "+(trainVariables.size+testVariables.size)+" characters")

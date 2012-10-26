@@ -26,7 +26,7 @@ trait Trainer[M<:Model] {
 /** Learns the parameters of a Model by summing the gradients and values of all Examples, 
     and passing them to a GradientOptimizer (such as ConjugateGradient or LBFGS). */
 class BatchTrainer[M<:Model](val optimizer:GradientOptimizer, val model:M) extends Trainer[M] with FastLogging {
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor])
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   val marginAccumulator = new LocalDoubleAccumulator(0.0)
   // TODO This is sad:  The optimizer determins which of gradient/value/margin it needs, but we don't know here
@@ -45,7 +45,7 @@ class BatchTrainer[M<:Model](val optimizer:GradientOptimizer, val model:M) exten
 class ParallelBatchTrainer[M<:Model](val optimizer: GradientOptimizer, val model: M) extends Trainer[M] with FastLogging {
   def processAll(examples: Iterable[Example[M]]): Unit = {
     if (isConverged) return
-    val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { override def initialValue = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor]) }
+    val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] { override def initialValue = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor]) }
     val valueAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator }
     val marginAccumulator = new ThreadLocal[LocalDoubleAccumulator] { override def initialValue = new LocalDoubleAccumulator }
     examples.par.foreach(example => example.accumulateExampleInto(model, gradientAccumulator.get, valueAccumulator.get, marginAccumulator.get))
@@ -57,9 +57,9 @@ class ParallelBatchTrainer[M<:Model](val optimizer: GradientOptimizer, val model
 
 // Hacky proof of concept
 class InlineSGDTrainer(val optimizer: GradientOptimizer, val model: LogLinearModel[_,_], val learningRate: Double = 0.01, val l2: Double = 0.1) extends Trainer[LogLinearModel[_,_]] {
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newSparseWeightsTensor)
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
   override def processAll(examples: Iterable[Example[LogLinearModel[_,_]]]): Unit = {
-    val weights = model.evidenceTemplate.weightsTensor // weightsTensor.asInstanceOf[WeightsTensor](DummyFamily)
+    val weights = model.evidenceTemplate.weightsTensor
     examples.foreach(example => {
       val glmExample = example.asInstanceOf[GLMExample]
       val oldWeight = glmExample.weight
@@ -73,7 +73,7 @@ class InlineSGDTrainer(val optimizer: GradientOptimizer, val model: LogLinearMod
 }
 
 class SGDTrainer[M<:Model](val optimizer: GradientOptimizer, val model:M) extends Trainer[M] {
-  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newWeightsTensor.asInstanceOf[WeightsTensor])
+  val gradientAccumulator = new LocalWeightsTensorAccumulator(model.newBlankWeightsTensor.asInstanceOf[WeightsTensor])
   val valueAccumulator = new LocalDoubleAccumulator
   val marginAccumulator = new LocalDoubleAccumulator
   override def processAll(examples: Iterable[Example[M]]): Unit = {
@@ -87,7 +87,7 @@ class SGDTrainer[M<:Model](val optimizer: GradientOptimizer, val model:M) extend
 }
 
 class HogwildTrainer[M<:Model](val optimizer: GradientOptimizer, val model: M) extends Trainer[M] {
-  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.newWeightsTensor }
+  val gradient = new ThreadLocal[Tensor] {override def initialValue = model.newBlankWeightsTensor }
   val gradientAccumulator = new ThreadLocal[LocalWeightsTensorAccumulator] {override def initialValue = new LocalWeightsTensorAccumulator(gradient.get.asInstanceOf[WeightsTensor])}
   override def processAll(examples: Iterable[Example[M]]): Unit = {
     examples.toSeq.par.foreach(example => {

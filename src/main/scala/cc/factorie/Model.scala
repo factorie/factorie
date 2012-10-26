@@ -118,10 +118,10 @@ trait Model {
     })
     familiesOfClass[DotFamily].foreach(f => t(f) = f.weights); t
   }
-  def newWeightsTensor: Tensor = weightsTensor.blankCopy
+  def newBlankWeightsTensor: Tensor = weightsTensor.blankCopy
   // TODO Make these just return Tensor, not WeightsTensor
-  def newDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
-  def newSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
+  def newBlankDenseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newDense(dotFamily.weights))
+  def newBlankSparseWeightsTensor: WeightsTensor = new WeightsTensor(dotFamily => la.Tensor.newSparse(dotFamily.weights))
 
   // Some Model subclasses that have a fixed set of factors and variables can override the methods below
   // TODO Consider making a Model trait for these methods.  Yes!
